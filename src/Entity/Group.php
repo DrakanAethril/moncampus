@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Repository\GroupRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 /**
  * A role-granting group - either mirrored from a real LDAP group (ldapCn set, upserted by
@@ -45,6 +48,19 @@ class Group
     #[ORM\JoinColumn(name: 'group_type_id', nullable: true)]
     private ?GroupType $groupType = null;
 
+    // The group this one sits inside - "SIO2 est dans SIO, qui est dans Campus". Optional (a root
+    // group has none) and at most one, so the hierarchy is a tree rather than a graph. The parent
+    // must be of a *different* GroupType than this group (validateParent() below): a Classe hangs
+    // off a Filière, never off another Classe. Deliberately independent of LDAP - the annuaire has
+    // no notion of it, so it survives a re-sync and applies to local-only groups alike.
+    #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'children')]
+    #[ORM\JoinColumn(name: 'parent_id', nullable: true, onDelete: 'SET NULL')]
+    private ?self $parent = null;
+
+    /** @var Collection<int, self> */
+    #[ORM\OneToMany(mappedBy: 'parent', targetEntity: self::class)]
+    private Collection $children;
+
     // The ROLE_X granted to a user manually assigned to this group - free text (validated as a
     // ROLE_ prefix, not restricted to the app's existing fixed role vocabulary), since the whole
     // point of a locally-created group is introducing a role that doesn't exist elsewhere yet.
@@ -72,6 +88,7 @@ class Group
         $this->ldapCn = $ldapCn;
         $this->manuallyAssignable = $manuallyAssignable;
         $this->creationDate = new \DateTimeImmutable();
+        $this->children = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -152,5 +169,106 @@ class Group
         $this->inactiveDate = $inactiveDate;
 
         return $this;
+    }
+
+    public function getParent(): ?self
+    {
+        return $this->parent;
+    }
+
+    public function setParent(?self $parent): static
+    {
+        $this->parent = $parent;
+
+        return $this;
+    }
+
+    /** @return Collection<int, self> */
+    public function getChildren(): Collection
+    {
+        return $this->children;
+    }
+
+    /**
+     * The chain up to the root, root first, excluding the group itself - "Campus, SIO" for SIO2.
+     * The object-graph twin of App\Service\GroupHierarchy::ancestorIds(), for the one caller that
+     * holds a single Group rather than a screenful of them; loop-guarded for the same reason.
+     *
+     * @return list<self>
+     */
+    public function getAncestors(): array
+    {
+        $ancestors = [];
+        $seen = [spl_object_id($this) => true];
+        $current = $this->parent;
+
+        while (null !== $current && !isset($seen[spl_object_id($current)])) {
+            $seen[spl_object_id($current)] = true;
+            $ancestors[] = $current;
+            $current = $current->getParent();
+        }
+
+        return array_reverse($ancestors);
+    }
+
+    // "Campus › SIO › SIO2" - the one-line reading of where a group sits, for a table cell or a
+    // choice label. The separator matches the breadcrumb partial's.
+    public function getHierarchyPath(string $separator = ' › '): string
+    {
+        $names = array_map(static fn (self $group): string => $group->getName(), $this->getAncestors());
+        $names[] = $this->name;
+
+        return implode($separator, $names);
+    }
+
+    public function isDescendantOf(self $group): bool
+    {
+        return \in_array($group, $this->getAncestors(), true);
+    }
+
+    /**
+     * The three rules of the hierarchy, checked here so they hold whatever writes the group - the
+     * settings form, a future import, a command. Read them as one: a group hangs off at most one
+     * other group, of a different kind, above it and never below.
+     */
+    #[Assert\Callback]
+    public function validateParent(ExecutionContextInterface $context): void
+    {
+        if (null === $this->parent) {
+            return;
+        }
+
+        if ($this->parent === $this) {
+            $context->buildViolation('groupParentSelfMessage')->atPath('parent')->addViolation();
+
+            return;
+        }
+
+        $typeId = $this->groupType?->getId();
+        $parentTypeId = $this->parent->getGroupType()?->getId();
+
+        // Two groups nothing distinguishes are siblings, not a level of hierarchy. An untyped group
+        // under a typed one stays allowed - the types differ, which is all the rule asks.
+        if (null === $typeId && null === $parentTypeId) {
+            $context->buildViolation('groupParentBothUntypedMessage')->atPath('parent')->addViolation();
+
+            return;
+        }
+
+        if ($typeId === $parentTypeId) {
+            $context->buildViolation('groupParentSameTypeMessage')
+                ->setParameter('%type%', $this->groupType?->getName() ?? '')
+                ->atPath('parent')
+                ->addViolation();
+
+            return;
+        }
+
+        if ($this->parent->isDescendantOf($this)) {
+            $context->buildViolation('groupParentCycleMessage')
+                ->setParameter('%group%', $this->parent->getName())
+                ->atPath('parent')
+                ->addViolation();
+        }
     }
 }

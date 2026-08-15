@@ -12,6 +12,7 @@ use App\Form\GroupTypeType;
 use App\Repository\GroupRepository;
 use App\Repository\GroupTypeRepository;
 use App\Service\DataTableParams;
+use App\Service\GroupHierarchy;
 use App\Service\JsonRequestPayload;
 use App\Service\LdapGroupSyncer;
 use Doctrine\ORM\EntityManagerInterface;
@@ -37,6 +38,32 @@ class SettingsGroupsController extends AbstractController
     public function index(): Response
     {
         return $this->render('settings/groups.html.twig', ['activeTab' => 'groups']);
+    }
+
+    // The same groups read the other way round: not a flat list of rows but the tree they form
+    // through Group::$parent. Server-rendered rather than a DataTable - a tree has no meaningful
+    // paging, and the whole point of the screen is seeing every level at once.
+    #[Route(path: '/settings/groups/hierarchy', name: 'app_settings_groups_hierarchy')]
+    public function hierarchyTab(GroupRepository $repository, GroupHierarchy $hierarchy): Response
+    {
+        $groups = $repository->findActiveOrderedByType();
+
+        $groupsById = [];
+        $rows = [];
+
+        foreach ($groups as $group) {
+            $id = (int) $group->getId();
+            $groupsById[$id] = $group;
+            $rows[] = ['id' => $id, 'parentId' => $group->getParent()?->getId()];
+        }
+
+        return $this->render('settings/groups.html.twig', [
+            'activeTab' => 'hierarchy',
+            'nodes' => array_map(
+                static fn (array $node): array => ['group' => $groupsById[$node['id']], 'depth' => $node['depth']],
+                $hierarchy->flatten($rows),
+            ),
+        ]);
     }
 
     #[Route(path: '/settings/groups/types', name: 'app_settings_group_types')]
@@ -141,6 +168,7 @@ class SettingsGroupsController extends AbstractController
                     'name' => $group->getName(),
                     'role' => $group->getRole(),
                     'groupTypeName' => $group->getGroupType()?->getName() ?? '—',
+                    'parentName' => $group->getParent()?->getName() ?? '—',
                     'sourceLabel' => $translator->trans($group->isLdapSynced() ? 'groupSourceLdapLabel' : 'groupSourceLocalLabel'),
                     'manuallyAssignableLabel' => $translator->trans($group->isManuallyAssignable() ? 'yesLabel' : 'noLabel'),
                     'creationDate' => $group->getCreationDate()->format('d/m/Y H:i'),

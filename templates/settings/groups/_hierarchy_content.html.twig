@@ -1,0 +1,35 @@
+{# The active groups as the tree Group::$parent forms - already flattened, depth-first, by
+   App\Service\GroupHierarchy::flatten(), so this only has to indent each row by its depth. #}
+<div class="table-responsive">
+    <p class="text-secondary mt-3 mb-2">{{ 'groupHierarchyHelpText'|trans }}</p>
+    <table class="table table-vcenter card-table table-striped">
+        <thead>
+            <tr>
+                <th>{{ 'groupNameColumnLabel'|trans }}</th>
+                <th>{{ 'groupTypeFieldLabel'|trans }}</th>
+                <th>{{ 'groupRoleFieldLabel'|trans }}</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for node in nodes %}
+                <tr>
+                    <td>
+                        <span style="display: inline-block; width: {{ node.depth * 20 }}px;"></span>
+                        {% if node.depth > 0 %}<span class="text-secondary me-1">└</span>{% endif %}
+                        {{ node.group.name }}
+                    </td>
+                    <td>{{ node.group.groupType ? node.group.groupType.name : '—' }}</td>
+                    <td><span class="text-secondary">{{ node.group.role }}</span></td>
+                    <td class="cm-actions">
+                        <a href="{{ path('app_settings_groups_edit', {id: node.group.id}) }}" class="cm-action--warning">{{ 'editActionLabel'|trans }}</a>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="4" class="text-center text-secondary">{{ 'datatableZeroRecordsLabel'|trans }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

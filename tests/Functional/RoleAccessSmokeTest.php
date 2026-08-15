@@ -137,6 +137,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,
+            '/settings/groups' => 403,
+            '/settings/groups/hierarchy' => 403,
             '/directory/users' => 403,
             '/ufa' => 403,
             '/ufa/configuration/contract-import' => 403,
@@ -150,6 +152,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/' => 200,
             '/settings/configuration' => 200,
             '/settings/teaching' => 200,
+            // Groups are admin-only, deliberately stricter than the rest of Settings - see
+            // App\Controller\SettingsGroupsController's own note.
+            '/settings/groups' => 200,
+            '/settings/groups/hierarchy' => 200,
             '/directory/users' => 200,
             '/ufa' => 200,
             '/ufa/reminders' => 200,
