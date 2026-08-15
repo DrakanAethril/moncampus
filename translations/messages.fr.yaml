@@ -1082,7 +1082,6 @@ skillSummativeAssessmentFieldLabel: 'Sommative'
 skillCertifyingAssessmentFieldLabel: 'Certificative'
 
 # Certification préparée, par option
-programInternshipCertificationTabLabel: 'Certification'
 programCertificationSectionTitle: 'Certification préparée'
 programCertificationSectionHint: "Une certification par option : une même formation peut préparer deux titres aux codes RNCP distincts. Laisser l'intitulé vide pour indiquer qu'une option ne prépare aucune certification."
 programCertificationWholeProgramLabel: "Toute la formation"
@@ -1097,13 +1096,14 @@ programCertificationLevelFieldLabel: 'Niveau'
 programCertificationLevelFieldHelp: '5 pour Bac+2, 6 pour Bac+3/4, 7 pour Bac+5.'
 programCertificationCertifierFieldLabel: 'Certificateur'
 programCertificationCertifierFieldHelp: "L'organisme qui délivre le titre, par exemple « Ministère du Travail »."
-programCertificationUpdatedFlashMessage: 'Les certifications ont été enregistrées avec succès.'
 certificationKindTitreProLabel: 'Titre professionnel'
 certificationKindBtsLabel: 'BTS'
 certificationKindBachelorLabel: 'Bachelor'
 certificationKindLicenceLabel: 'Licence'
 certificationKindMasterLabel: 'Master'
 certificationKindOtherLabel: 'Autre'
+referentialExportPdfButtonLabel: 'Exporter les fiches (PDF)'
+referentialExportPdfFailedFlashMessage: "L'export PDF n'a pas pu être généré : le service de conversion est indisponible. Réessayez dans quelques instants."
 
 addInternshipTutorLinkButtonLabel: 'Ajouter un tuteur'
 internshipTutorLinkStudentColumnLabel: 'Alternant'

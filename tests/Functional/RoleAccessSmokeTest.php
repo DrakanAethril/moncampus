@@ -197,7 +197,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
 
         $screens = [
             sprintf('/programs/%d/settings/skill-groups', $programId),
-            sprintf('/programs/%d/internship/certification', $programId),
+            // The certification rides this tab rather than one of its own.
+            sprintf('/programs/%d/internship/denomination', $programId),
             '/ufa/configuration/training-center',
         ];
 

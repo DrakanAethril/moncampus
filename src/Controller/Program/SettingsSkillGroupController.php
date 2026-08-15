@@ -16,7 +16,9 @@ use App\Repository\SkillRepository;
 use App\Service\JsonRequestPayload;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\ExpressionLanguage\Expression;
+use Symfony\Component\HtmlSanitizer\HtmlSanitizerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -190,7 +192,7 @@ class SettingsSkillGroupController extends AbstractController
 
     #[Route(path: '/programs/{id}/settings/skill-groups/{groupId}/skills/new', name: 'app_program_settings_skill_groups_skills_new')]
     #[Route(path: '/programs/{id}/settings/skill-groups/{groupId}/skills/{skillId}/edit', name: 'app_program_settings_skill_groups_skills_edit')]
-    public function skillForm(int $id, int $groupId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, SkillGroupRepository $skillGroupRepository, SkillRepository $skillRepository, ?int $skillId = null): Response
+    public function skillForm(int $id, int $groupId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, SkillGroupRepository $skillGroupRepository, SkillRepository $skillRepository, #[Target('app.message_body')] HtmlSanitizerInterface $sanitizer, ?int $skillId = null): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $skillGroup = $this->findSkillGroupOrNotFound($skillGroupRepository, $program, $groupId);
@@ -209,6 +211,13 @@ class SettingsSkillGroupController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $entity = $form->getData();
+            // HugeRTE-authored HTML, sanitized the same way as the Livret's own rich text
+            // (InternshipExamModalityController) - the referential export prints it raw.
+            $skill
+                ->setKnowledgeHtml($this->sanitizeOrNull($sanitizer, $skill->getKnowledgeHtml()))
+                ->setActivitiesHtml($this->sanitizeOrNull($sanitizer, $skill->getActivitiesHtml()))
+                ->setPerformanceCriteriaHtml($this->sanitizeOrNull($sanitizer, $skill->getPerformanceCriteriaHtml()))
+            ;
             $this->stampAuditFields($entity, $isEdit);
 
             $entityManager->persist($entity);
@@ -240,6 +249,12 @@ class SettingsSkillGroupController extends AbstractController
         $entityManager->flush();
 
         return $this->json(['success' => true]);
+    }
+
+    /** Empty stays empty: a sanitizer given '' returns '', and null must not become one. */
+    private function sanitizeOrNull(HtmlSanitizerInterface $sanitizer, ?string $html): ?string
+    {
+        return null !== $html && '' !== $html ? $sanitizer->sanitize($html) : $html;
     }
 
     private function findSkillGroupOrNotFound(SkillGroupRepository $repository, Program $program, int $groupId): SkillGroup

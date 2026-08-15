@@ -34,6 +34,42 @@
         {% endif %}
     </div>
 
+    {# Second zone of the same form and the same actionbar - what the formation is called, then
+       what it awards. #}
+    <div class="d-flex flex-column gap-2 mt-4">
+        <div class="cm-subhead">
+            <div class="cm-subhead__title">{{ 'programCertificationSectionTitle'|trans }}</div>
+            <div class="cm-subhead__hint">{{ 'programCertificationSectionHint'|trans }}</div>
+        </div>
+        {% for row in certificationRows %}
+            {% set subForm = attribute(form, row.fieldName) %}
+            <div class="cm-editorblock">
+                <div class="cm-editorblock__head">
+                    <div>
+                        <div class="cm-editorblock__name">{{ row.option ? row.option.name : 'programCertificationWholeProgramLabel'|trans }}</div>
+                        {% if row.option %}
+                            <div class="cm-editorblock__sub">{{ 'optionShortNameSubLabel'|trans({'%shortName%': row.option.shortName}) }}</div>
+                        {% endif %}
+                    </div>
+                    {% if row.certification.id %}
+                        <span class="badge bg-green-lt ms-auto">{{ 'programCertificationSetBadge'|trans }}</span>
+                    {% else %}
+                        <span class="badge bg-secondary-lt ms-auto">{{ 'programCertificationUnsetBadge'|trans }}</span>
+                    {% endif %}
+                </div>
+                <div class="cm-editorblock__body">
+                    <div class="row">
+                        <div class="col-md-3">{{ form_row(subForm.kind) }}</div>
+                        <div class="col-md-9">{{ form_row(subForm.label) }}</div>
+                        <div class="col-md-4">{{ form_row(subForm.rncpCode) }}</div>
+                        <div class="col-md-3">{{ form_row(subForm.level) }}</div>
+                        <div class="col-md-5">{{ form_row(subForm.certifier) }}</div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
     <div class="cm-actionbar">
         {% include '_last_modified_meta.html.twig' with {entity: info} %}
         <div class="cm-actionbar__buttons">

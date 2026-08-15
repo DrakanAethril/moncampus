@@ -19,7 +19,6 @@
             {url: path('app_program_internship_denomination', {id: program.id}), label: 'programInternshipDenominationTabLabel'|trans, active: activeTab == 'denomination'},
             {url: path('app_program_internship_contract_modalities', {id: program.id}), label: 'programInternshipContractModalitiesTabLabel'|trans, active: activeTab == 'contract_modalities'},
             {url: path('app_program_internship_exam_modalities', {id: program.id}), label: 'programInternshipExamModalitiesTabLabel'|trans, active: activeTab == 'exam_modalities'},
-            {url: path('app_program_internship_certification', {id: program.id}), label: 'programInternshipCertificationTabLabel'|trans, active: activeTab == 'certification'},
         ],
         tabs_action: 'program/internship/_' ~ activeTab ~ '_button.html.twig',
     } %}
