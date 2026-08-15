@@ -11,14 +11,14 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * Une production attendue d'un travail de type Dépôt (design_handoff_creation_travail 2a) : ce que
- * l'étudiant doit rendre, sous quel format, et pour quand.
+ * An expected production of a Dépôt assignment (design_handoff_creation_travail 2a): what the
+ * student must hand in, in which format, and by when.
  *
- * L'échéance est facultative et déroge à celle du travail, comme la date de visibilité d'un
- * LessonLogAttachment déroge à celle de sa section : null = « échéance du travail », une date = le
- * fichier a la sienne, et le travail affiche alors un bandeau de rappel côté enseignant comme côté
- * étudiant. C'est ce qui permet d'annoncer un compte rendu pour la semaine prochaine et ses fichiers
- * de configuration pour ce soir sans créer deux travaux.
+ * The deadline is optional and departs from the assignment's own, as a LessonLogAttachment's
+ * visibility date departs from its section's: null = « the assignment's deadline », a date = the file
+ * has its own, and the assignment then shows a reminder banner on the teacher side as on the student
+ * side. That is what allows announcing a report for next week and its configuration files for
+ * tonight without creating two assignments.
  */
 #[ORM\Entity(repositoryClass: AssignmentExpectedProductionRepository::class)]
 #[ORM\Table(name: 'assignment_expected_production')]
@@ -44,14 +44,14 @@ class AssignmentExpectedProduction
     #[ORM\Column(name: 'due_date', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $dueDate = null;
 
-    // Rang d'affichage : les lignes se lisent dans l'ordre où l'enseignant les a posées.
+    // Display rank: the rows read in the order the teacher laid them out.
     #[ORM\Column]
     private int $position = 0;
 
     /**
-     * Le travail est facultatif au constructeur : les lignes ajoutées à la volée dans l'assistant
-     * naissent sans porteur (CollectionType les instancie sans argument) et sont rattachées ensuite
-     * par Assignment::addExpectedProduction().
+     * The assignment is optional in the constructor: the rows added on the fly in the wizard are born
+     * with no carrier (CollectionType instantiates them with no argument) and are attached afterwards
+     * by Assignment::addExpectedProduction().
      */
     public function __construct(?Assignment $assignment = null)
     {
@@ -127,7 +127,7 @@ class AssignmentExpectedProduction
         return $this;
     }
 
-    /** L'échéance qui s'applique réellement : la sienne, sinon celle du travail. */
+    /** The deadline that actually applies: its own, otherwise the assignment's. */
     public function getEffectiveDueDate(): ?\DateTimeImmutable
     {
         return $this->dueDate ?? $this->assignment?->getDueDate();

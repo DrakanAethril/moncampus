@@ -48,27 +48,27 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * Les travaux vus par l'enseignant, toutes classes confondues (design_handoff_creation_travail) :
- * la liste 2b et l'assistant de création 2a.
+ * Assignments as the teacher sees them, all classes together (design_handoff_creation_travail):
+ * the 2b list and the 2a creation wizard.
  *
- * Délibérément hors de l'arborescence /programs/{id}/… : un enseignant travaille sur plusieurs
- * classes et la maquette lui donne une page unique. Les écrans par formation
- * (ProgramAssignmentController, côté paramétrage) restent en place et servent un autre besoin -
- * l'administration des travaux d'une formation par le personnel.
+ * Deliberately outside the /programs/{id}/… tree: a teacher works across several classes and the
+ * mockup gives them a single page. The per-program screens (ProgramAssignmentController, on the
+ * settings side) stay in place and serve another need - staff administering a program's
+ * assignments.
  */
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class AssignmentController extends AbstractController
 {
     private const string ATTACHMENT_UPLOAD_PREFIX = 'assignment-attachments/';
 
-    // Les états proposés par le filtre « Tous les états » de la liste (2b).
+    // The states offered by the list's « Tous les états » filter (2b).
     private const string STATE_OVERDUE = 'overdue';
     private const string STATE_IMMINENT = 'imminent';
     private const string STATE_UPCOMING = 'upcoming';
     private const string STATE_HIDDEN = 'hidden';
 
-    // « Imminent » : l'échéance tombe dans les deux jours. Ce qui reste au-delà est simplement à
-    // venir, ce qui est passé est échu.
+    // « Imminent »: the deadline falls within two days. Anything beyond is simply upcoming,
+    // anything past is overdue.
     private const int IMMINENT_DAYS = 2;
 
     public function __construct(
@@ -133,13 +133,13 @@ class AssignmentController extends AbstractController
     }
 
     /**
-     * L'assistant « Nouveau travail ». Un seul point d'entrée pour les trois montages (pleine page,
-     * modale, panneau) et pour tous les contextes d'appel : ce qui change est décrit par la requête
-     * - la classe d'où l'on vient, la séance d'où l'on vient - et se résout en un
-     * AssignmentWizardContext, que le gabarit et le formulaire se partagent.
+     * The « Nouveau travail » wizard. A single entry point for the three mountings (full page,
+     * modal, panel) and for every calling context: what changes is described by the request - the
+     * class one comes from, the séance one comes from - and resolves into an
+     * AssignmentWizardContext, shared by the template and the form.
      *
-     * GET dessine, POST publie. Rien n'est écrit entre les deux : les quatre étapes vivent dans la
-     * page, pas en base, et un aller-retour serveur n'a lieu qu'à la publication.
+     * GET draws, POST publishes. Nothing is written in between: the four steps live in the page,
+     * not in the database, and a server round trip only happens on publication.
      */
     #[Route(path: '/assignments/new', name: 'app_assignment_new', methods: ['GET', 'POST'])]
     public function wizard(
@@ -156,12 +156,13 @@ class AssignmentController extends AbstractController
     }
 
     /**
-     * Modifier un travail déjà donné. Le même assistant, ouvert sur un travail existant : c'est le
-     * seul écran d'un travail, qu'on le crée ou qu'on y revienne, depuis que le cahier de texte a
-     * abandonné son modal propre.
+     * Edit an assignment already given. The same wizard, opened on an existing assignment: it is
+     * the only screen of an assignment, whether it is being created or revisited, ever since the
+     * cahier de texte dropped its own modal.
      *
-     * Une seule chose n'y est pas modifiable : la classe. Déplacer un travail publié d'une classe à
-     * l'autre changerait sans le dire qui le doit, et ce que sont devenus les rendus déjà faits.
+     * One single thing cannot be changed there: the class. Moving a published assignment from one
+     * class to another would silently change who owes it, and what became of the submissions
+     * already made.
      */
     #[Route(path: '/assignments/{id}/edit', name: 'app_assignment_edit', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
     public function edit(
@@ -195,9 +196,9 @@ class AssignmentController extends AbstractController
         $isEdit = null !== $existing;
         $mode = $this->mountMode($request);
 
-        // À la modification, la seule classe offerte est celle du travail : l'assistant garde son
-        // étape 1 - les destinataires AU SEIN de la classe, eux, restent modifiables - mais le
-        // travail ne change pas de classe.
+        // On edit, the only class offered is the assignment's own: the wizard keeps its step 1 -
+        // the recipients WITHIN the class do stay editable - but the assignment does not change
+        // class.
         $programs = $isEdit ? [$existing->getProgram()] : $this->teachingPrograms($programRepository);
 
         if ([] === $programs) {
@@ -252,9 +253,9 @@ class AssignmentController extends AbstractController
 
             $entityManager->flush();
 
-            // Une modification, ou une création faite depuis une séance, revient là d'où elle
-            // vient : la séance affiche le travail dans son temps, c'est la confirmation. L'écran
-            // de confirmation du 2a, lui, conclut une création qui n'avait pas d'écran d'origine.
+            // An edit, or a creation started from a séance, goes back where it came from: the
+            // séance shows the assignment in its part, and that is the confirmation. The 2a
+            // confirmation screen closes a creation that had no screen of origin.
             if ($isEdit || null !== $context->lessonSession) {
                 $this->addFlash('success', $isEdit ? 'assignmentSavedFlashMessage' : 'assignmentPublishedFlashMessage');
 
@@ -264,10 +265,10 @@ class AssignmentController extends AbstractController
             return $this->redirectToRoute('app_assignment_published', ['id' => $saved->getId()]);
         }
 
-        // Le montage en modale ou en panneau est un fragment : il n'a ni en-tête ni feuille de
-        // style, et n'a de sens que chargé dans le cadre Turbo d'un écran déjà affiché. Ouverte
-        // directement, la même adresse rend la pleine page - une adresse partagée ou rouverte ne
-        // doit pas donner un écran nu.
+        // The modal and panel mountings are a fragment: they carry neither header nor stylesheet,
+        // and only make sense loaded into the Turbo frame of an already displayed screen. Opened
+        // directly, the same address renders the full page - a shared or reopened address must not
+        // yield a bare screen.
         $embedded = $context->isEmbedded() && $request->headers->has('Turbo-Frame');
 
         return $this->render($embedded ? 'assignment/_wizard_embedded.html.twig' : 'assignment/new.html.twig', [
@@ -275,8 +276,8 @@ class AssignmentController extends AbstractController
             'context' => $context,
             'isEdit' => $isEdit,
             'assignment' => $isEdit ? $existing : null,
-            // Le formulaire poste sur SA propre adresse et non sur celle de la page : monté dans un
-            // cadre Turbo, une action vide viserait l'écran qui l'héberge.
+            // The form posts to ITS own address and not to the page's: mounted in a Turbo frame, an
+            // empty action would target the screen hosting it.
             'wizardAction' => $request->getRequestUri(),
             'programs' => $programs,
             'presets' => $this->dueDatePresets($context),
@@ -285,7 +286,7 @@ class AssignmentController extends AbstractController
         ]);
     }
 
-    /** L'écran de confirmation de publication - une page à part entière, atteinte par redirection. */
+    /** The publication confirmation screen - a page in its own right, reached by redirect. */
     #[Route(path: '/assignments/{id}/published', name: 'app_assignment_published', methods: ['GET'], requirements: ['id' => '\d+'])]
     public function published(int $id, AssignmentRepository $assignmentRepository, ProgramRepository $programRepository, AssignmentAudienceResolver $audienceResolver): Response
     {
@@ -298,9 +299,9 @@ class AssignmentController extends AbstractController
     }
 
     /**
-     * « Consulter » : le suivi des rendus d'un travail. L'écran complet (relances, corrections) est
-     * hors du périmètre de ce handoff - ce qui est posé ici est la navigation et l'état des rendus,
-     * étudiant par étudiant.
+     * « Consulter »: the follow-up of an assignment's submissions. The full screen (reminders,
+     * corrections) is outside this handoff's scope - what is laid down here is the navigation and
+     * the state of the submissions, student by student.
      */
     #[Route(path: '/assignments/{id}', name: 'app_assignment_show', methods: ['GET'], requirements: ['id' => '\d+'])]
     public function show(int $id, AssignmentRepository $assignmentRepository, ProgramRepository $programRepository, AssignmentSubmissionRepository $submissionRepository, AssignmentAudienceResolver $audienceResolver, AssignmentProgressSummarizer $summarizer): Response
@@ -338,9 +339,9 @@ class AssignmentController extends AbstractController
     }
 
     /**
-     * Les classes sur lesquelles l'utilisateur peut donner du travail : celles qu'il enseigne, ou
-     * toutes celles qu'il voit pour le personnel. La gestion des travaux se désactive formation par
-     * formation, et une formation qui l'a fermée n'apparaît nulle part ici.
+     * The classes the user may give work to: the ones they teach, or every one they can see for
+     * staff. Assignment management is switched off program by program, and a program that has
+     * closed it appears nowhere here.
      *
      * @return list<Program>
      */
@@ -364,8 +365,8 @@ class AssignmentController extends AbstractController
     }
 
     /**
-     * Où « Annuler » et l'enregistrement ramènent : la séance quand le travail y est rattaché, la
-     * liste des travaux sinon. On revient toujours à l'écran d'où l'on parlait de ce travail.
+     * Where « Annuler » and saving lead back to: the séance when the assignment hangs off one, the
+     * assignment list otherwise. One always returns to the screen this assignment was spoken of on.
      */
     private function returnUrlFor(?LessonSession $session): string
     {
@@ -381,8 +382,8 @@ class AssignmentController extends AbstractController
         if (0 !== $sessionId) {
             $session = $lessonSessionRepository->find($sessionId);
 
-            // Le rattachement ne se demande jamais : il vient du point d'entrée. Encore faut-il que
-            // ce point d'entrée soit une séance d'une classe où l'on enseigne.
+            // The attachment is never asked for: it comes from the entry point. That entry point
+            // still has to be a séance of a class one teaches.
             if ($session instanceof LessonSession && $this->isAmong($session->getProgram(), $programs)) {
                 return AssignmentWizardContext::forLessonSession(
                     $session,
@@ -433,7 +434,7 @@ class AssignmentController extends AbstractController
         return AssignmentWizardContext::generic($listUrl, $mode);
     }
 
-    /** Les trois cartes « Visibilité pour les étudiants » se lisent depuis la seule date stockée. */
+    /** The three « Visibilité pour les étudiants » cards are read off the single stored date. */
     private function visibilityOf(Assignment $assignment): string
     {
         return match (true) {
@@ -444,9 +445,9 @@ class AssignmentController extends AbstractController
     }
 
     /**
-     * Les supports décrochés à la modification. Cochés dans l'écran, ils ne partent qu'à
-     * l'enregistrement - rien n'est écrit avant, à la modification comme à la création - et le
-     * fichier stocké s'en va avec sa ligne, faute de quoi il resterait seul sur S3.
+     * The supports detached on edit. Ticked on screen, they only go on saving - nothing is written
+     * before, on edit as on creation - and the stored file leaves with its row, failing which it
+     * would be left alone on S3.
      */
     private function removeDroppedAttachments(Assignment $assignment, Request $request, FileUploadService $fileUploadService): void
     {
@@ -466,8 +467,8 @@ class AssignmentController extends AbstractController
     }
 
     /**
-     * Le travail tel qu'il se présente à l'ouverture de l'assistant : ce que le point d'entrée sait
-     * déjà. Rien n'est persisté - c'est un objet de formulaire, pas un brouillon.
+     * The assignment as it stands when the wizard opens: what the entry point already knows.
+     * Nothing is persisted - this is a form object, not a draft.
      *
      * @param list<Program> $programs
      */
@@ -475,8 +476,8 @@ class AssignmentController extends AbstractController
     {
         $assignment = new Assignment($context->program ?? $programs[0]);
 
-        // Sans classe connue, l'étape 1 doit s'ouvrir vide et bloquer - la première classe de la
-        // liste n'est là que pour donner un porteur à l'objet.
+        // With no known class, step 1 must open empty and block - the first class of the list is
+        // only there to give the object a carrier.
         if (null === $context->program) {
             $assignment->setProgram(null);
         }
@@ -507,8 +508,8 @@ class AssignmentController extends AbstractController
         return $assignment;
     }
 
-    // « Prochaine séance » de la maquette : la semaine suivante à l'heure de la séance quand on
-    // vient d'un cours, demain matin sinon.
+    // The mockup's « Prochaine séance »: the following week at the séance's time when coming from a
+    // lesson, tomorrow morning otherwise.
     private function defaultDueDate(AssignmentWizardContext $context): \DateTimeImmutable
     {
         $start = $context->lessonSession?->getStartAt();
@@ -519,8 +520,8 @@ class AssignmentController extends AbstractController
     }
 
     /**
-     * Les deux raccourcis d'échéance de l'étape 4 - « Prochaine séance » et « Fin de semaine ». Ils
-     * se calculent ici, où l'on connaît la séance d'origine ; l'écran ne fait que les proposer.
+     * The two deadline shortcuts of step 4 - « Prochaine séance » and « Fin de semaine ». They are
+     * computed here, where the originating séance is known; the screen only offers them.
      *
      * @return array{next: \DateTimeImmutable, week: \DateTimeImmutable}
      */
@@ -533,16 +534,16 @@ class AssignmentController extends AbstractController
     }
 
     /**
-     * Les destinataires nommés un par un, cochés dans la liste de l'étape 1. Même convention que
-     * ProgramAssignmentController : des cases brutes plutôt qu'un champ de formulaire, la liste
-     * dépendant de la classe choisie dans le même écran.
+     * The recipients named one by one, ticked in the step 1 list. Same convention as
+     * ProgramAssignmentController: raw checkboxes rather than a form field, the list depending on
+     * the class chosen in the same screen.
      */
     private function applyAudience(Assignment $assignment, Request $request, UserRepository $userRepository): void
     {
         $program = $assignment->getProgram();
 
-        // Une option cochée pour une autre classe n'a rien à faire ici : l'écran les masque, le
-        // serveur les retire.
+        // An option ticked for another class has no business here: the screen hides them, the
+        // server strips them.
         foreach ($assignment->getOptions()->toArray() as $option) {
             if (AssignmentAudienceType::Option !== $assignment->getAudienceType() || !$this->optionBelongsTo($option, $program)) {
                 $assignment->removeOption($option);
@@ -565,7 +566,7 @@ class AssignmentController extends AbstractController
         }
     }
 
-    /** Les trois cartes « Visibilité pour les étudiants » se rangent dans une seule date. */
+    /** The three « Visibilité pour les étudiants » cards fold into a single date. */
     private function applyVisibility(Assignment $assignment, \Symfony\Component\Form\FormInterface $form): void
     {
         $assignment->setVisibleAt(match ($form->get('visibility')->getData()) {
@@ -576,8 +577,8 @@ class AssignmentController extends AbstractController
     }
 
     /**
-     * Les supports voyagent avec le formulaire et ne deviennent des lignes qu'ici : le travail
-     * n'existait pas avant, il n'y avait donc rien à quoi les rattacher.
+     * The supports travel with the form and only become rows here: the assignment did not exist
+     * before, so there was nothing to attach them to.
      */
     private function applyAttachments(Assignment $assignment, \Symfony\Component\Form\FormInterface $form, FileUploadService $fileUploadService): void
     {
@@ -607,10 +608,10 @@ class AssignmentController extends AbstractController
     }
 
     /**
-     * Le rattachement automatique, jamais demandé : la séance et son temps quand on vient du cahier
-     * de texte, et la matière - celle de la séance, ou l'unique matière que l'enseignant assure
-     * dans la classe choisie. Plusieurs matières possibles et aucune séance : on n'invente rien, le
-     * travail se lira sans mention de matière.
+     * The automatic attachment, never asked for: the séance and its part when coming from the
+     * cahier de texte, and the matière - the séance's own, or the single matière the teacher covers
+     * in the chosen class. Several possible matières and no séance: nothing is invented, the
+     * assignment will be read with no matière mentioned.
      */
     private function applyAutomaticAttachment(Assignment $assignment, AssignmentWizardContext $context, TopicRepository $topicRepository): void
     {
@@ -634,10 +635,10 @@ class AssignmentController extends AbstractController
     }
 
     /**
-     * Les deux seules règles que le type impose : un quiz à dérouler pour un travail de type Quiz,
-     * une évaluation à estimer pour une autoévaluation. Sans elles l'étudiant n'aurait rien à
-     * ouvrir. Elles se vérifient ici et non dans le type de formulaire, qui ne voit pas les autres
-     * champs au moment de se construire.
+     * The only two rules the type imposes: a quiz to run for a Quiz assignment, an evaluation to
+     * estimate for a self-assessment. Without them the student would have nothing to open. They are
+     * checked here and not in the form type, which does not see the other fields at the time it is
+     * built.
      */
     private function validateNatureRequirements(\Symfony\Component\Form\FormInterface $form): void
     {
@@ -650,8 +651,8 @@ class AssignmentController extends AbstractController
     }
 
     /**
-     * La sous-ligne d'un travail en liste : ce qui le distingue d'un autre du même type - qui il
-     * vise, et ce qu'il a de particulier.
+     * The sub-line of an assignment in the list: what tells it apart from another of the same type
+     * - who it targets, and what is particular about it.
      *
      * @return array{audience: string, particularities: list<string>}
      */
@@ -684,8 +685,8 @@ class AssignmentController extends AbstractController
         return ['audience' => $audience, 'particularities' => $particularities];
     }
 
-    // L'état d'un travail tel que la colonne Échéance le donne à lire : masqué, échu, imminent ou
-    // à venir - dans cet ordre, un travail masqué n'ayant pas d'échéance qui compte encore.
+    // The state of an assignment as the Échéance column gives it to read: hidden, overdue, imminent
+    // or upcoming - in that order, a hidden assignment having no deadline that still counts.
     private function stateOf(Assignment $assignment, \DateTimeImmutable $now): string
     {
         return match (true) {
@@ -708,8 +709,8 @@ class AssignmentController extends AbstractController
     }
 
     /**
-     * Les élèves de chaque classe candidate, pour la liste à cocher de l'étape 1 - toutes les
-     * classes d'un coup, l'écran n'affichant que celle qui est choisie.
+     * The students of each candidate class, for the tick list of step 1 - every class at once, the
+     * screen only displaying the chosen one.
      *
      * @param list<Program> $programs
      *
@@ -729,13 +730,13 @@ class AssignmentController extends AbstractController
     }
 
     /**
-     * La composition des lots de groupes de l'enseignant, prête à afficher en chips récapitulatives
-     * (étape 1, ciblage « Par groupes »). Les identifiants figés du lot sont recroisés avec la
-     * classe d'aujourd'hui : un étudiant parti depuis n'apparaît plus dans son groupe.
+     * The make-up of the teacher's group batches, ready to display as summary chips (step 1,
+     * « Par groupes » targeting). The batch's frozen identifiers are cross-checked against today's
+     * class: a student who has left since no longer appears in their group.
      *
      * @param list<Program> $programs
      *
-     * @return array<int, list<list<string>>> identifiant du lot => groupes => noms des membres
+     * @return array<int, list<list<string>>> batch identifier => groups => member names
      */
     private function groupBatchMembers(array $programs, GroupBatchRepository $groupBatchRepository): array
     {

@@ -8,15 +8,15 @@ use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
 /**
- * Coefficient de matière : poids de chaque Topic dans la moyenne générale de l'étudiant
- * (Carnet de notes), à côté du coefficient déjà porté par chaque Evaluation - voir
+ * Matière coefficient: the weight of each Topic in the student's overall average
+ * (Carnet de notes), alongside the coefficient each Evaluation already carries - see
  * App\Service\EvaluationAverageCalculator::overallAverage().
  *
- * Reprise de l'existant : toutes les matières déjà en base partent à 1, coefficient neutre, donc
- * aucune moyenne par matière ne bouge. La moyenne *générale* change en revanche de définition
- * (moyenne pondérée des moyennes par matière, et non plus moyenne de toutes les notes mises à
- * plat) : à coefficients égaux, une matière ne pèse plus proportionnellement à son nombre
- * d'évaluations. C'est le comportement attendu d'un bulletin, pas une régression.
+ * Migration of the existing data: every matière already in the database starts at 1, a neutral
+ * coefficient, so no per-matière average moves. The *overall* average, however, changes definition
+ * (a weighted average of the per-matière averages, and no longer an average of every grade
+ * flattened): at equal coefficients, a matière no longer weighs in proportion to its number of
+ * evaluations. That is the expected behavior of a report card, not a regression.
  */
 final class Version20260804120000 extends AbstractMigration
 {
@@ -27,9 +27,9 @@ final class Version20260804120000 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        // DEFAULT 1 le temps de remplir les lignes existantes, puis retiré : le mapping Doctrine
-        // ne déclare aucun default côté base (l'initialiseur PHP suffit), et le laisser ferait
-        // diverger doctrine:schema:validate.
+        // DEFAULT 1 long enough to fill the existing rows, then dropped: the Doctrine mapping
+        // declares no default on the database side (the PHP initialiser is enough), and leaving it
+        // would make doctrine:schema:validate diverge.
         $this->addSql('ALTER TABLE topic ADD coefficient DOUBLE PRECISION NOT NULL DEFAULT 1');
         $this->addSql('ALTER TABLE topic ALTER coefficient DROP DEFAULT');
     }

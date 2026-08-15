@@ -9,17 +9,17 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * La consultation d'un travail par un étudiant : la trace que la page du travail - sa consigne et
- * ses documents - a été ouverte.
+ * A student's consultation of an assignment: the trace that the assignment's page - its instructions
+ * and its documents - was opened.
  *
- * C'est ce qui alimente le « ouvert par 19 / 24 » du cahier de texte, en remplacement de la
- * déclaration « marquer comme fait », qui restait une parole d'étudiant. Une ouverture n'est pas
- * une preuve de lecture, mais c'est un fait observé, daté, et que l'étudiant ne choisit pas de
- * produire - c'est ce qui la rend plus fiable.
+ * This is what feeds the cahier de texte's « ouvert par 19 / 24 », replacing the « marquer comme
+ * fait » declaration, which remained a student's word. An opening is not proof of reading, but it is
+ * an observed fact, dated, and one the student does not choose to produce - which is what makes it
+ * more reliable.
  *
- * Une ligne par (travail, étudiant), écrite à la première ouverture puis seulement mise à jour :
- * la première date dit quand l'étudiant a pris connaissance du travail, la dernière quand il y est
- * revenu, et le compteur combien de fois.
+ * One row per (assignment, student), written on the first opening then only updated: the first date
+ * says when the student became aware of the assignment, the last when they came back to it, and the
+ * counter how many times.
  */
 #[ORM\Entity(repositoryClass: AssignmentViewRepository::class)]
 #[ORM\Table(name: 'assignment_view')]

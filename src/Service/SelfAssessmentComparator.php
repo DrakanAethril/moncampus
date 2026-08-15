@@ -9,22 +9,22 @@ use App\Entity\Grade;
 use App\Entity\SelfAssessment;
 
 /**
- * Rapproche l'estimation d'un étudiant de la notation de l'enseignant
- * (design_handoff_carnet_de_notes, PROMPT_MODIFICATIONS §9, écrans 5c et 5d).
+ * Brings a student's estimate together with the teacher's grading
+ * (design_handoff_carnet_de_notes, PROMPT_MODIFICATIONS §9, screens 5c and 5d).
  *
- * Un seul endroit décide de ce qu'est un écart et de ce qu'est « juste », pour que l'écran comparé
- * de l'étudiant et le suivi de l'enseignant ne puissent pas raconter deux histoires différentes.
+ * A single place decides what a gap is and what « juste » means, so that the student's comparison
+ * screen and the teacher's tracking screen cannot tell two different stories.
  */
 class SelfAssessmentComparator
 {
-    // Marge en points sous laquelle une estimation est comptée comme juste (compteur « justes à
-    // ±1 pt » du 5d, chip « juste » du 5c).
+    // Margin in points below which an estimate counts as accurate (the « justes à ±1 pt » counter of
+    // 5d, the « juste » chip of 5c).
     public const float FAIR_MARGIN = 1.0;
 
     /**
-     * L'écran comparé n'existe que si l'enseignant a partagé sa notation, que l'estimation est
-     * validée, et que la note est effectivement lisible par l'étudiant - une évaluation à
-     * visibilité programmée reste masquée jusqu'à son échéance, autoévaluation ou non.
+     * The comparison screen only exists if the teacher shared their grading, if the estimate is
+     * submitted, and if the grade is actually readable by the student - an evaluation with scheduled
+     * visibility stays hidden until its deadline, self-assessment or not.
      */
     public function isComparisonReadable(Assignment $assignment, ?SelfAssessment $selfAssessment, ?Grade $grade, \DateTimeImmutable $now): bool
     {
@@ -46,8 +46,8 @@ class SelfAssessmentComparator
     }
 
     /**
-     * Justesse au grain de la note totale : la tolérance de ±1 point du compteur « justes à ±1 pt »
-     * (5d) et de la phrase de synthèse (5c).
+     * Accuracy at the grain of the total grade: the ±1 point tolerance of the « justes à ±1 pt »
+     * counter (5d) and of the summary sentence (5c).
      */
     public function isFair(?float $gap): bool
     {
@@ -55,9 +55,9 @@ class SelfAssessmentComparator
     }
 
     /**
-     * Justesse au grain d'une question : là, aucune tolérance - les créas affichent « +0,5 » ou
-     * « −0,5 » plutôt que « juste » dès qu'un demi-point sépare l'estimation de la notation, et ne
-     * réservent « juste » qu'à l'estimation exacte.
+     * Accuracy at the grain of a question: here, no tolerance at all - the designs show « +0,5 » or
+     * « −0,5 » rather than « juste » as soon as half a point separates the estimate from the
+     * grading, and reserve « juste » for the exact estimate.
      */
     public function isExact(?float $gap): bool
     {
@@ -65,8 +65,8 @@ class SelfAssessmentComparator
     }
 
     /**
-     * Le détail question par question du 5c : l'estimation de l'étudiant et les points réellement
-     * attribués, avec leur part du maximum pour les deux barres de progression.
+     * The question-by-question detail of 5c: the student's estimate and the points actually awarded,
+     * with their share of the maximum for the two progress bars.
      *
      * @return list<array{sectionName: string, label: string, maxPoints: float, estimated: ?float, graded: ?float, estimatedPercent: float, gradedPercent: float, gap: ?float}>
      */

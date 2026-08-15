@@ -1,8 +1,8 @@
 {% extends 'layout/app.html.twig' %}
 
-{# Écrans 2g (lectures par article) et 2h (articles jamais lus) : le même tableau, une dernière
-   colonne différente. La bascule « depuis la remise à zéro / depuis toujours » n'a pas de sens
-   sur 2h, qui ne liste que des articles à zéro lecture des deux côtés. #}
+{# Screens 2g (reads per article) and 2h (articles never read): the same table, a different last
+   column. The « since the reset / since the beginning » toggle makes no sense on 2h, which only lists
+   articles at zero reads on both sides. #}
 
 {% set heading = neverReadOnly ? 'documentationNeverReadHeading'|trans : 'documentationReadsListHeading'|trans %}
 {% set listRoute = neverReadOnly ? 'app_documentation_never_read' : 'app_documentation_reads' %}
@@ -29,9 +29,9 @@
                 <select name="scope" class="cm-doc-select" data-action="change->auto-submit#submit">
                     <option value="">{{ 'documentationAllPerimetersLabel'|trans }}</option>
                     {% for row in perimeterTree %}
-                        {# Indentation d'un <option> : des tirets, faute de mieux. Le garde-fou sur
-                           depth > 0 n'est pas décoratif - en Twig, `1..0` compte à rebours et
-                           rendrait deux tirets devant la racine. #}
+                        {# Indenting an <option>: dashes, for want of anything better. The guard on
+                           depth > 0 is not decorative - in Twig, `1..0` counts backwards and would
+                           render two dashes before the root. #}
                         <option value="{{ row.group.id }}"{{ scope and scope.id == row.group.id ? ' selected' }}>{% if row.depth > 0 %}{% for _ in 1..row.depth %}&mdash;{% endfor %} {% endif %}{{ row.group.name }}</option>
                     {% endfor %}
                 </select>

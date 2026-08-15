@@ -9,13 +9,13 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * « Marquer comme fait » : la déclaration d'un étudiant sur un travail qui n'attend ni dépôt ni
- * passation (maquette 4a). Une lecture, une révision, des exercices sur cahier n'ont pas d'autre
- * preuve d'achèvement que la parole de l'étudiant.
+ * « Marquer comme fait »: a student's declaration on an assignment that expects neither a submission
+ * nor an attempt (mockup 4a). A reading, a revision, exercises in a notebook have no proof of
+ * completion other than the student's word.
  *
- * Une ligne par (travail, étudiant), créée à la déclaration et supprimée si l'étudiant se dédit -
- * l'absence de ligne est donc « à faire », ce qui évite d'avoir à en écrire une pour chaque
- * étudiant à la création d'un travail. Le dépôt de fichier a sa propre trace, AssignmentSubmission.
+ * One row per (assignment, student), created on declaration and deleted if the student takes it back
+ * - the absence of a row therefore means « to do », which avoids having to write one for every
+ * student when an assignment is created. File submission has its own trace, AssignmentSubmission.
  */
 #[ORM\Entity(repositoryClass: AssignmentCompletionRepository::class)]
 #[ORM\Table(name: 'assignment_completion')]

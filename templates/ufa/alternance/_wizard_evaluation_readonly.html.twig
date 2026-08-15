@@ -43,8 +43,8 @@
             {{ 'internshipTutorEvaluationRemarksFieldLabel'|trans }}
             {% if tutorEvaluation.signedAt %}· {{ tutorEvaluation.signedBy.displayName ?? tutorEvaluation.signedBy.username }}, {{ tutorEvaluation.signedAt|date('d/m/Y') }}{% endif %}
         </div>
-        {# nl2br et non raw : la saisie est du texte brut depuis l'abandon de l'éditeur riche,
-           et sans cela ses retours à la ligne disparaissaient à l'affichage. #}
+        {# nl2br and not raw: the input has been plain text since the rich editor was dropped, and
+           without this its line breaks disappeared on display. #}
         {{ (tutorEvaluation.remarksText ?: '—')|nl2br }}
     </div>
 {% endif %}

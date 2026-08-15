@@ -1,8 +1,8 @@
 {% extends 'layout/app.html.twig' %}
 
-{# Liseuse du livret pour l'onglet Tuteurs de Paramétrage > UFA - la dernière des quatre entrées
-   vers le livret à servir encore le document brut. Même partiel et mêmes actions que les liseuses
-   staff, tuteur et alternant : les exports PDF ne vivent que sur cette page. #}
+{# Booklet reader for the Tuteurs tab of Paramétrage > UFA - the last of the four ways into the
+   booklet still serving the raw document. Same partial and same actions as the staff, tutor and
+   apprentice readers: the PDF exports only live on this page. #}
 {% block title %}{{ 'ufaAlternanceLivretPageHeading'|trans }} — {{ tutorLink.student.displayName ?? tutorLink.student.username }}{% endblock %}
 
 {% block page_breadcrumb %}

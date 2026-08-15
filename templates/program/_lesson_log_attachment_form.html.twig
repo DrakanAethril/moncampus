@@ -1,7 +1,6 @@
-{# Ajout d'un document, en modal ouvert par le « + Ajouter un document » d'un temps (l'URL porte
-   ?document=<temps>). Hors du formulaire principal, et non dans la carte du temps : un envoi de
-   fichier a son propre <form>, et un <form> dans un <form> est du HTML invalide que le navigateur
-   laisse tomber sans rien dire. #}
+{# Adding a document, in a modal opened by a part's « + Ajouter un document » (the URL carries
+   ?document=<part>). Outside the main form, and not inside the part's card: a file upload has its own
+   <form>, and a <form> inside a <form> is invalid HTML the browser drops without saying a word. #}
 <a href="{{ path('app_program_timetable_session_log', {id: program.id, sessionId: session.id}) }}" class="cm-panel-backdrop" aria-label="{{ 'cancelAction'|trans }}"></a>
 <div class="cm-modal" role="dialog" aria-modal="true">
     <div class="cm-modal__header">

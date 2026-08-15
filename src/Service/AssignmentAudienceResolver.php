@@ -34,9 +34,9 @@ class AssignmentAudienceResolver
     }
 
     /**
-     * Le public d'un travail par groupes est l'union des membres du lot - un étudiant sorti de la
-     * classe depuis l'enregistrement du lot n'en fait plus partie, d'où le passage par le dépôt
-     * plutôt qu'un simple decodage des identifiants figés.
+     * The audience of an assignment targeted by groups is the union of the batch's members - a student
+     * who has left the class since the batch was saved is no longer part of it, hence going through the
+     * repository rather than simply decoding the frozen identifiers.
      *
      * @return list<User>
      */
@@ -54,8 +54,8 @@ class AssignmentAudienceResolver
     }
 
     /**
-     * Les groupes du lot visé, chacun résolu en ses membres présents - ce que la maquette montre en
-     * chips récapitulatives, et ce sur quoi se compte l'avancement « n / m groupes ont déposé ».
+     * The groups of the targeted batch, each resolved into its present members - what the mockup shows
+     * as summary chips, and what the « n / m groupes ont déposé » progress is counted on.
      *
      * @return list<list<User>>
      */

@@ -79,9 +79,9 @@ class ProgramAssignmentSubmissionController extends AbstractController
         $assignment = $this->findAssignmentForStudentOrNotFound($assignmentRepository, $program, $assignmentId);
         $student = $this->currentUser();
 
-        // Ouvrir la page d'un travail, c'est en prendre connaissance : la trace est écrite ici, et
-        // c'est elle qui alimente le « ouvert par » du cahier de texte. Un fait observé plutôt
-        // qu'une déclaration - l'étudiant ne choisit pas de la produire.
+        // Opening an assignment's page is becoming aware of it: the trace is written here, and it is
+        // what feeds the cahier de texte's « ouvert par ». An observed fact rather than a declaration
+        // - the student does not choose to produce it.
         $view = $viewRepository->findOneFor($assignment, $student);
         $view ? $view->registerView() : $entityManager->persist($view = new AssignmentView($assignment, $student));
         $entityManager->flush();
@@ -122,7 +122,7 @@ class ProgramAssignmentSubmissionController extends AbstractController
             $submissionFile = new AssignmentSubmissionFile($submission, $key, $file->getClientOriginalName());
 
             // « Une évaluation est créée automatiquement dans le carnet de notes à la réception des
-            // rendus » (2a) - à la réception, donc ici, et non à la publication du travail.
+            // rendus » (2a) - on reception, therefore here, and not on the assignment's publication.
             $gradebookLinker->ensureEvaluationExists($assignment);
 
             $entityManager->persist($submission);

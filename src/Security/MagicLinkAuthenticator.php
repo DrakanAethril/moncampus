@@ -67,7 +67,7 @@ class MagicLinkAuthenticator extends AbstractAuthenticator
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
     {
         $user = $token->getUser();
-        // Voir LdapAuthenticator : chaque authenticator journalise son propre moyen de connexion.
+        // See LdapAuthenticator: each authenticator logs its own means of login.
         $this->activityRecorder->record(PlatformActivityType::LoginMagicLink, $user instanceof User ? $user : null, $request);
 
         if ($user instanceof User && $user->isMustChangePassword()) {

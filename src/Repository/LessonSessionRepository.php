@@ -116,9 +116,9 @@ class LessonSessionRepository extends ServiceEntityRepository
 
     // Powers the exports (signature sheets, invoicing) - both need every session in a staff-
     // picked date range, ordered so a day's sessions print left-to-right in chronological order -
-    // ainsi que les feeds de calendrier, dont la plage est celle de la semaine affichée. La salle
-    // est jointe pour ces derniers (LessonSessionEventFormatter la lit sur chaque évènement) ;
-    // c'est une jointure vers-un de plus, sans effet sur le nombre de lignes rendues.
+    // as well as the calendar feeds, whose range is that of the week displayed. The room is joined
+    // for the latter (LessonSessionEventFormatter reads it on every event); it is one more to-one
+    // join, with no effect on the number of rows returned.
     /** @return list<LessonSession> */
     public function findForProgramBetween(Program $program, \DateTimeImmutable $start, \DateTimeImmutable $end): array
     {
@@ -442,14 +442,14 @@ class LessonSessionRepository extends ServiceEntityRepository
     }
 
     /**
-     * Les séances comparables à celle-ci et dont le cahier de texte dit quelque chose : le même
-     * cours, ailleurs - à un autre groupe cette année, ou les années précédentes.
+     * The séances comparable to this one whose cahier de texte says something: the same lesson,
+     * elsewhere - to another group this year, or in previous years.
      *
-     * « Le même cours » se reconnaît au nom de la matière : chaque formation a son propre Topic, et
-     * deux groupes qui suivent le même cours ont deux Topic homonymes. C'est le seul lien que le
-     * modèle offre entre eux, faute d'un référentiel de matières partagé.
+     * « The same lesson » is recognised by the matière name: each program has its own Topic, and two
+     * groups following the same lesson have two homonymous Topics. It is the only link the model
+     * offers between them, for want of a shared matière reference framework.
      *
-     * Les plus récentes d'abord, la séance courante et sa propre formation exclues.
+     * The most recent first, the current séance and its own program excluded.
      *
      * @return list<LessonSession>
      */
@@ -468,8 +468,8 @@ class LessonSessionRepository extends ServiceEntityRepository
             ->where('tp.name = :topicName')
             ->andWhere('l.id != :session')
             ->andWhere('p.id != :program')
-            // Un cahier de texte vide n'a rien à donner : au moins un des trois temps doit dire
-            // quelque chose.
+            // An empty cahier de texte has nothing to give: at least one of the three parts must say
+            // something.
             ->andWhere("COALESCE(log.contenuRealise, '') != '' OR COALESCE(log.travailAvantDescription, '') != '' OR COALESCE(log.travailApresDescription, '') != ''")
             ->setParameter('topicName', $topicName)
             ->setParameter('session', $session->getId())

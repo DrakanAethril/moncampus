@@ -1,15 +1,15 @@
 import { Controller } from '@hotwired/stimulus';
 
 /**
- * L'assistant « Nouveau travail » en quatre étapes (design_handoff_creation_travail 2a).
+ * The four-step « Nouveau travail » wizard (design_handoff_creation_travail 2a).
  *
- * Tout l'assistant tient dans un seul formulaire déjà rendu : ce contrôleur ne fait que décider ce
- * qui se voit - l'étape courante, les destinataires de la classe choisie, les sections que le type
- * de travail appelle. Rien n'est enregistré avant « Publier le travail », donc aucune étape ne
- * déclenche d'aller-retour serveur, et le seul envoi est celui de la dernière étape.
+ * The whole wizard fits in a single already-rendered form: this controller only decides what is
+ * shown - the current step, the recipients of the chosen class, the sections the work type calls
+ * for. Nothing is saved before « Publier le travail », so no step triggers a server round trip, and
+ * the only submission is that of the last step.
  *
- * Le même contrôleur sert aux trois montages (pleine page, modale, panneau) : il ne connaît que sa
- * carte, jamais la page autour.
+ * The same controller serves the three mountings (full page, modal, panel): it only knows its own
+ * card, never the page around it.
  */
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
@@ -26,7 +26,7 @@ export default class extends Controller {
     ];
 
     static values = {
-        // L'étape portant la première erreur de publication, 0 s'il n'y en a pas - voir le gabarit.
+        // The step carrying the first publication error, 0 if there is none - see the template.
         errorStep: Number,
         groupMembers: Object,
         nextDue: String,
@@ -37,8 +37,7 @@ export default class extends Controller {
 
     connect() {
         this.step = 1;
-        // Les liens collés vivent dans un champ caché, une URL par ligne ; les chips ne sont que
-        // leur lecture.
+        // Pasted links live in a hidden field, one URL per line; the chips are only their reading.
         this.links = (this.attachmentLinksTarget.value || '').split(/\r?\n/).filter((line) => line.trim() !== '');
 
         this.duePresetNextLabelTarget.textContent = this.nextDueLabelValue;
@@ -51,12 +50,12 @@ export default class extends Controller {
         this.refreshToggleLabels();
         this.refreshAttachmentChips();
         this.productionDueModeTargets.forEach((select) => this.applyProductionDueMode(select));
-        // Une publication refusée rouvre l'assistant sur l'étape fautive : le message y est déjà,
-        // encore faut-il que l'étape soit celle qu'on regarde.
+        // A refused publication reopens the wizard on the offending step: the message is already
+        // there, the step still has to be the one being looked at.
         this.showStep(this.errorStepValue || 1);
     }
 
-    /* ---------- Navigation entre étapes ---------- */
+    /* ---------- Navigation between steps ---------- */
 
     goToStep(event) {
         this.showStep(Number(event.currentTarget.dataset.step));
@@ -67,8 +66,8 @@ export default class extends Controller {
     }
 
     /**
-     * Le même bouton avance de trois étapes puis publie. Publier est le seul geste qui écrit :
-     * c'est ici, et nulle part avant, que le formulaire part au serveur.
+     * The same button advances three steps then publishes. Publishing is the only gesture that
+     * writes: it is here, and nowhere before, that the form goes to the server.
      */
     next() {
         if (this.step < 4) {
@@ -101,8 +100,8 @@ export default class extends Controller {
     }
 
     /**
-     * « Un travail est toujours assigné à une classe » : sans classe choisie, l'étape 1 ne se
-     * franchit pas et le bouton reste éteint.
+     * « Un travail est toujours assigné à une classe »: with no class chosen, step 1 cannot be
+     * cleared and the button stays off.
      */
     refreshGate() {
         const blocked = this.step === 1 && this.selectedProgramId() === null;
@@ -124,8 +123,8 @@ export default class extends Controller {
 
         this.audienceBlockTarget.classList.toggle('d-none', programId === null);
 
-        // Chaque choix dépendant de la classe porte la liste des classes où il a cours ; on ne
-        // montre que ceux de la classe retenue, et on décoche silencieusement les autres.
+        // Every class-dependent choice carries the list of classes it applies to; only those of the
+        // selected class are shown, and the others are silently unticked.
         this.optionChoiceTargets.forEach((choice) => {
             const belongs = this.belongsToProgram(choice.dataset.programs, programId);
             choice.classList.toggle('d-none', !belongs);
@@ -154,10 +153,10 @@ export default class extends Controller {
     }
 
     /**
-     * Le titre de l'écran nomme la classe dès qu'elle est choisie. L'élément est repéré par son
-     * attribut et non par une classe de mise en page : c'est la page qui se déclare réécrivable,
-     * l'assistant n'ira jamais toucher au titre d'un écran qui ne l'a pas demandé - une modale
-     * ouverte par-dessus un autre écran n'en renomme pas la page.
+     * The screen title names the class as soon as it is chosen. The element is spotted by its
+     * attribute and not by a layout class: it is the page that declares itself rewritable, the
+     * wizard will never touch the title of a screen that has not asked for it - a modal opened over
+     * another screen does not rename that page.
      */
     refreshHeading() {
         const heading = document.querySelector('[data-assignment-wizard-heading]');
@@ -166,8 +165,8 @@ export default class extends Controller {
             return;
         }
 
-        // Le libellé est lu sur la pastille elle-même : son textContent emporterait aussi celui du
-        // .form-check-label que le thème Bootstrap ajoute et que la feuille de style masque.
+        // The label is read off the chip itself: its textContent would also carry that of the
+        // .form-check-label the Bootstrap theme adds and the stylesheet hides.
         const label = this.programPickTarget.querySelector('input:checked')?.closest('.cm-pillpick__item')?.dataset.programLabel;
 
         heading.textContent = label
@@ -179,7 +178,7 @@ export default class extends Controller {
         return programId !== null && (programs ?? '').split(' ').includes(programId);
     }
 
-    /** Une liste déroulante ne se filtre pas par classe : on retire les entrées d'une autre. */
+    /** A dropdown cannot be filtered by class: entries of another one are removed. */
     filterSelect(select, programId) {
         let selectedWasRemoved = false;
 
@@ -224,7 +223,7 @@ export default class extends Controller {
         this.selectedCountTarget.textContent = this.selectedCountTarget.textContent.replace(/\d+/, count);
     }
 
-    /** Les chips récapitulatives du lot choisi - qui est avec qui, avant de publier. */
+    /** The summary chips of the chosen batch - who is with whom, before publishing. */
     groupBatchChanged() {
         const batchId = this.groupBatchSelectTarget.value;
         const groups = this.groupMembersValue[batchId] ?? [];
@@ -254,8 +253,8 @@ export default class extends Controller {
     }
 
     /**
-     * Les interrupteurs de la maquette disent leur état en toutes lettres - « Dépôt en retard
-     * autorisé » / « non autorisé » - et non par leur seule position.
+     * The mockup's switches say their state in full - « Dépôt en retard autorisé » / « non
+     * autorisé » - and not by their position alone.
      */
     refreshToggleLabels() {
         const gradeVisible = this.gradeVisibilityTarget.querySelector('input').checked;
@@ -290,8 +289,8 @@ export default class extends Controller {
         this.refreshMultiDueBanner();
     }
 
-    // Le rang tel que les lignes se lisent : retirer celle du milieu ne doit pas laisser un trou
-    // que le serveur trierait de travers.
+    // The rank as the rows read: removing the middle one must not leave a gap the server would sort
+    // wrongly.
     renumberProductions() {
         this.productionPositionTargets.forEach((field, index) => {
             field.value = String(index);
@@ -312,8 +311,8 @@ export default class extends Controller {
     }
 
     /**
-     * Le bandeau des échéances multiples : il nomme les fichiers qui ne suivent pas l'échéance du
-     * travail, puisque c'est ce que l'étudiant verra de son côté.
+     * The multiple-deadlines banner: it names the files that do not follow the assignment's
+     * deadline, since that is what the student will see on their side.
      */
     refreshMultiDueBanner() {
         if (!this.hasMultiDueBannerTarget) {
@@ -334,9 +333,9 @@ export default class extends Controller {
     }
 
     /**
-     * Un support déjà joint que l'on décroche : la chip se barre au lieu de disparaître, parce que
-     * sa case doit rester dans le formulaire pour dire au serveur, à l'enregistrement, de le
-     * retirer - et parce qu'on doit pouvoir se raviser avant.
+     * A support already attached that is being detached: the chip is struck through instead of
+     * disappearing, because its checkbox must stay in the form to tell the server, on saving, to
+     * remove it - and because one must be able to change one's mind before that.
      */
     attachmentDropToggled(event) {
         event.currentTarget.closest('.cm-chip').classList.toggle('is-dropped', event.currentTarget.checked);
@@ -360,8 +359,8 @@ export default class extends Controller {
     }
 
     /**
-     * Un glisser-déposer ne remplit pas un `<input type="file">` tout seul : il faut lui repasser
-     * un DataTransfer, seul moyen d'écrire dans `files` sans passer par la boîte de dialogue.
+     * A drag-and-drop does not fill an `<input type="file">` on its own: it has to be handed a
+     * DataTransfer, the only way to write into `files` without going through the dialog box.
      */
     dropFiles(event) {
         event.preventDefault();
@@ -447,7 +446,7 @@ export default class extends Controller {
         this.syncDueTimeFromField();
     }
 
-    /** Le sélecteur d'heure ne porte que l'heure : il réécrit celle de la date, jamais son jour. */
+    /** The time picker only carries the time: it rewrites the date's time, never its day. */
     dueTimeChanged() {
         const [date] = (this.dueDateTarget.value || '').split('T');
 

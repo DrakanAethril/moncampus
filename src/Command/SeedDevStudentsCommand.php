@@ -25,15 +25,15 @@ use Symfony\Component\Ldap\Exception\ExceptionInterface as LdapException;
 use Symfony\Component\Ldap\LdapInterface;
 
 /**
- * OUTIL DE DÉVELOPPEMENT - complète chaque formation d'une base de dev jusqu'à dix étudiants
- * fictifs (ETU001 / SIO1-001, numérotation repartant de 001 à chaque formation).
+ * DEVELOPMENT TOOL - tops every program of a dev database up to ten fictitious students
+ * (ETU001 / SIO1-001, the numbering restarting at 001 for each program).
  *
- * Les comptes sont créés des deux côtés, sans quoi ils seraient inutilisables : une entrée dans
- * l'annuaire de dev (c'est lui qui porte le mot de passe, l'application n'en stocke aucun - voir
- * App\Security\LdapAuthenticator) et la ligne App\Entity\User correspondante, avec les mêmes rôles
- * que ceux qu'une vraie connexion déduirait des groupes LDAP.
+ * The accounts are created on both sides, without which they would be unusable: an entry in the dev
+ * directory (that is what carries the password, the application stores none - see
+ * App\Security\LdapAuthenticator) and the matching App\Entity\User row, with the same roles a real
+ * login would infer from the LDAP groups.
  *
- * Rien n'est écrit dans ldap_manage_* : ces comptes ne doivent pas remonter vers l'annuaire réel.
+ * Nothing is written to ldap_manage_*: these accounts must not go up to the real directory.
  */
 #[AsCommand(
     name: 'app:seed-dev-students',
@@ -45,8 +45,8 @@ class SeedDevStudentsCommand extends Command
     private const string PASSWORD = 'P@ssword123!';
 
     /**
-     * Code court utilisé dans le nom de famille et l'identifiant. Il colle au nom court de la
-     * formation, sauf pour le Bac+3 Info dont le nom court porte espace et « + ».
+     * Short code used in the surname and the username. It sticks to the program's short name, except
+     * for the Bac+3 Info, whose short name carries a space and a « + ».
      *
      * @var array<string, string>
      */
@@ -55,7 +55,7 @@ class SeedDevStudentsCommand extends Command
         'MCO1' => 'MCO1', 'MCO2' => 'MCO2', 'DCG' => 'DCG', 'Bac+3 Info' => 'INFO3',
     ];
 
-    /** Filière et classe, en rôles applicatifs et en groupes de l'annuaire. */
+    /** Track and class, as application roles and as directory groups. */
     private const array PROGRAM_GROUPS = [
         'SIO1' => ['sio', 'sio-1'],
         'SIO2' => ['sio', 'sio-2'],
@@ -68,15 +68,15 @@ class SeedDevStudentsCommand extends Command
     ];
 
     /**
-     * Options tirées au sort pour chaque étudiant, par formation.
+     * Options drawn for each student, per program.
      *
-     * - « required » : une et une seule des options citées (les demi-groupes du BTS SIO 1re année,
-     *   la spécialité du BTS SIO 2e année).
-     * - « optional » : au plus une, un étudiant sur deux n'en a aucune.
+     * - « required »: one and only one of the options listed (the half-groups of BTS SIO first year,
+     *   the specialty of BTS SIO second year).
+     * - « optional »: at most one, every other student having none.
      *
-     * Le nom court est celui des Option en base. Pour SIO1 ce sont « Groupe 1 » / « Groupe 2 » et
-     * non A / B : ce sont les demi-groupes que porte son emploi du temps, les groupes A et B
-     * appartenant au BTS CG 1re année et au DCG.
+     * The short name is that of the Options in the database. For SIO1 these are « Groupe 1 » /
+     * « Groupe 2 » and not A / B: those are the half-groups its timetable carries, groups A and B
+     * belonging to BTS CG first year and to the DCG.
      *
      * @var array<string, array{required?: list<string>, optional?: list<string>}>
      */
@@ -85,12 +85,12 @@ class SeedDevStudentsCommand extends Command
         'SIO2' => ['required' => ['SLAM', 'SISR']],
     ];
 
-    /** Option de parcours absente de la base : elle n'existait qu'en tant que matière. */
+    /** Track option missing from the database: it only existed as a matière. */
     private const array NEW_OPTIONS = [
         'CERTIF' => ['Parcours de certification', '#f6ad55', ['SIO1', 'SIO2']],
     ];
 
-    /** Groupes de l'annuaire correspondant à une option, quand il en existe un. */
+    /** Directory groups matching an option, where one exists. */
     private const array OPTION_GROUPS = ['SISR' => 'sio-sisr', 'SLAM' => 'sio-slam'];
 
     public function __construct(
@@ -194,7 +194,7 @@ class SeedDevStudentsCommand extends Command
         $student->setFirstname($firstname);
         $student->setLastname($lastname);
         $student->setEmail($username.'@beaupeyrat.lan');
-        // Mêmes rôles que ceux qu'App\Security\LdapAuthenticator déduirait des groupes ci-dessus.
+        // The same roles App\Security\LdapAuthenticator would infer from the groups above.
         $student->setRoles(array_map(
             static fn (string $group): string => 'ROLE_'.strtoupper($group),
             $groups,
@@ -210,9 +210,9 @@ class SeedDevStudentsCommand extends Command
     }
 
     /**
-     * Un étudiant sur deux porte une option facultative, en alternant les valeurs : de quoi avoir
-     * les trois cas (aucune, l'une, l'autre) dans chaque promotion sans tirage aléatoire, qui
-     * rendrait la commande non reproductible.
+     * Every other student carries an optional option, alternating the values: enough to have the
+     * three cases (none, one, the other) in each cohort without a random draw, which would make the
+     * command non-reproducible.
      *
      * @param array<string, Option> $options
      *
@@ -256,7 +256,7 @@ class SeedDevStudentsCommand extends Command
                 'userPassword' => [self::PASSWORD],
             ]));
         } catch (LdapException) {
-            // Déjà présente : la commande est rejouable, on remet seulement les appartenances.
+            // Already present: the command is replayable, only the memberships are set again.
         }
 
         foreach (array_unique($groups) as $group) {
@@ -267,7 +267,7 @@ class SeedDevStudentsCommand extends Command
                     [$dn],
                 );
             } catch (LdapException) {
-                // Déjà membre.
+                // Already a member.
             }
         }
     }

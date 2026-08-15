@@ -15,11 +15,11 @@
 {% block page_title %}{{ 'technicalPageHeading'|trans }}{% endblock %}
 
 {% block main %}
-    {# design_handoff_description_technique. La règle de mise en page du handoff, celle qui corrige
-       la version précédente : une section ne se découpe en colonnes que si ses blocs ont une hauteur
-       comparable. Dès qu'un bloc est nettement plus long que son voisin — patrons de conception,
-       services externes — il passe en pleine largeur avec une grille interne. Deux colonnes
-       indépendantes qui se déroulent chacune à leur rythme laissent la moitié de la page vide. #}
+    {# design_handoff_description_technique. The handoff's layout rule, the one correcting the
+       previous version: a section is only split into columns if its blocks have comparable heights.
+       As soon as one block is markedly longer than its neighbour — design patterns, external
+       services — it goes full width with an internal grid. Two independent columns each unrolling at
+       their own pace leave half the page empty. #}
     <div class="cm-tech">
         <div class="cm-tech__card cm-tech__intro">
             <p class="cm-tech__lede">{{ 'technicalLedeText'|trans }}</p>
@@ -89,7 +89,7 @@
                 <p>{{ 'technicalCommonNatureText'|trans }}</p>
                 <p class="mb-0">{{ 'technicalCommonNatureSecondText'|trans }}</p>
             </div>
-            {# Le seul schéma « produit » de la page : ce qui se raconte mal en trois paragraphes. #}
+            {# The page's only « product » diagram: what does not tell well in three paragraphs. #}
             <div class="cm-tech__diagram">
                 <span class="cm-tech__kicker cm-tech__kicker--gold">{{ 'technicalDiagramHeading'|trans }}</span>
                 <div class="cm-tech__diagram-row">
@@ -121,10 +121,10 @@
                 {% for item in stack %}
                     <div class="cm-tech__stack-item">
                         <div class="cm-tech__stack-head">
-                            {# Logos vendus sous assets/images/tech/ plutôt que chargés depuis un CDN :
-                               convention du projet, et la page reste lisible sans accès extérieur.
-                               Twig, OpenLDAP et FrankenPHP n'existent dans aucune des deux collections
-                               employées — monogramme texte, comme le prévoit le handoff. #}
+                            {# Logos vendored under assets/images/tech/ rather than loaded from a CDN:
+                               project convention, and the page stays legible with no outside access.
+                               Twig, OpenLDAP and FrankenPHP exist in neither of the two collections
+                               used — a text monogram, as the handoff provides for. #}
                             <span class="cm-tech__stack-logo">
                                 {%- if item.logo is defined -%}
                                     <img src="{{ asset('images/tech/' ~ item.logo) }}" alt="" width="24" height="24">

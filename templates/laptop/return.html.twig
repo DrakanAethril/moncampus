@@ -14,9 +14,9 @@
 {% block page_title %}{{ 'returnLaptopPageHeading'|trans }}{% endblock %}
 
 {% block main %}
-    {# Conforme à design/design_handoff_ufa/screenshots/25f-retour-formulaire.png : un bandeau
-       récapitulatif du prêt en tête, la date et l'état constaté côte à côte, le rappel de l'état
-       au prêt en pleine largeur, puis les notes, et les actions dans un pied de carte. #}
+    {# Follows design/design_handoff_ufa/screenshots/25f-retour-formulaire.png: a summary banner of the
+       loan at the top, the date and the observed condition side by side, the reminder of the condition
+       at lending time full width, then the notes, and the actions in a card footer. #}
     <div class="card">
         {{ form_start(form) }}
             <div class="card-body">
@@ -24,8 +24,8 @@
                 <div class="cm-loan-summary">
                     <div>
                         <span class="cm-loan-summary__label">{{ 'laptopStudentColumnLabel'|trans }}</span>
-                        {# Nom et classe, comme sur la maquette : deux prêts se distinguent souvent
-                           par la classe plus vite que par le nom. #}
+                        {# Name and class, as on the mockup: two loans are often told apart by the class
+                           faster than by the name. #}
                         <span class="cm-loan-summary__value">{{ loan.borrower.displayName ?? loan.borrower.username }}{% if borrowerProgram %} — {{ borrowerProgram.displayShortName }}{% endif %}</span>
                     </div>
                     <div>
@@ -38,8 +38,8 @@
                     </div>
                     <div>
                         <span class="cm-loan-summary__label">{{ 'laptopDueAtColumnLabel'|trans }}</span>
-                        {# Le retard se dit ici, en rouge à côté de l'échéance, plutôt que dans une
-                           alerte séparée en haut de carte. #}
+                        {# The overdue state is said here, in red next to the deadline, rather than in a
+                           separate alert at the top of the card. #}
                         <span class="cm-loan-summary__value{{ daysOverdue is not null ? ' cm-loan-summary__value--late' }}">
                             {{- loan.dueAt ? loan.dueAt|date('d/m/Y') : '—' }}{% if daysOverdue is not null %} · {{ 'laptopReturnOverdueInlineLabel'|trans({'%days%': daysOverdue}) }}{% endif -%}
                         </span>

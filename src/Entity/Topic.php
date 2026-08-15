@@ -57,10 +57,10 @@ class Topic
     #[Assert\PositiveOrZero]
     private string $targetTpHours = '0';
 
-    // Poids de la matière dans la moyenne générale de l'étudiant (bulletin) - décimal, à ne pas
-    // confondre avec Evaluation::$coefficient, qui ne pondère que les évaluations *entre elles* à
-    // l'intérieur de cette matière. Même type float que ce dernier, pour que les deux niveaux de
-    // pondération se manipulent de la même façon - voir App\Service\EvaluationAverageCalculator.
+    // Weight of the matière in the student's overall average (report card) - decimal, not to be
+    // confused with Evaluation::$coefficient, which only weights the evaluations *among themselves*
+    // inside this matière. Same float type as the latter, so the two levels of weighting are handled
+    // the same way - see App\Service\EvaluationAverageCalculator.
     #[ORM\Column]
     #[Assert\GreaterThan(0)]
     private float $coefficient = 1.0;

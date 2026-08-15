@@ -72,9 +72,9 @@ class LdapAuthenticator extends AbstractLoginFormAuthenticator
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
     {
         $user = $token->getUser();
-        // Journalisé ici et non dans un écouteur global : c'est l'authenticator qui sait par quel
-        // moyen on s'est connecté, et c'est la distinction que le journal doit porter (voir
-        // MagicLinkAuthenticator pour l'autre moyen).
+        // Logged here and not in a global listener: it is the authenticator that knows by which means
+        // the user logged in, and that is the distinction the log must carry (see
+        // MagicLinkAuthenticator for the other means).
         $this->activityRecorder->record(PlatformActivityType::LoginPassword, $user instanceof User ? $user : null, $request);
 
         if ($user instanceof User && $user->isMustChangePassword()) {

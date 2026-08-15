@@ -8,11 +8,11 @@ use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
 /**
- * Base documentaire (design_handoff_base_documentaire) : articles, pièces jointes, tags partagés
- * et remises à zéro des compteurs de lecture.
+ * Documentation base (design_handoff_base_documentaire): articles, attachments, shared tags and
+ * resets of the read counters.
  *
- * Le périmètre d'un article est une relation vers `group` : c'est la hiérarchie de groupes qui
- * porte « tout le campus > filière > classe », et rien n'en est dupliqué ici.
+ * An article's scope is a relation to `group`: it is the group hierarchy that carries « the whole
+ * campus > track > class », and nothing of it is duplicated here.
  */
 final class Version20260815170000 extends AbstractMigration
 {

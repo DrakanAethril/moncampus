@@ -182,8 +182,8 @@ class ProgramGradebookController extends AbstractController
         $allGrades = [] === $subjects ? [] : array_merge(...array_map(static fn (array $s): array => array_column($s['rows'], 'grade'), $subjects));
         $allGrades = array_values(array_filter($allGrades, static fn (?Grade $g): bool => null !== $g && $g->getStatus()->countsTowardAverage()));
 
-        // "Dernières notes" : les 4 évaluations notées les plus récentes, toutes matières
-        // confondues (design écran 5, grille de 3 colonnes fixes).
+        // "Dernières notes": the 4 most recent graded evaluations, across all matières (design
+        // screen 5, grid of 3 fixed columns).
         $recent = [];
         foreach ($subjects as $subject) {
             foreach ($subject['rows'] as $row) {
@@ -199,8 +199,8 @@ class ProgramGradebookController extends AbstractController
             'subjects' => $subjects,
             'recent' => \array_slice($recent, 0, 4),
             'gradedCount' => \count($allGrades),
-            // Pondérée par le coefficient de chaque matière, donc calculée à partir des moyennes
-            // par matière et non de $allGrades mises à plat - voir overallAverage().
+            // Weighted by each matière's coefficient, therefore computed from the per-matière
+            // averages and not from $allGrades flattened - see overallAverage().
             'overallAverage' => $calculator->overallAverage(array_map(
                 static fn (array $s): array => ['average' => $s['average'], 'coefficient' => $s['topic']->getCoefficient()],
                 $subjects,
@@ -285,9 +285,9 @@ class ProgramGradebookController extends AbstractController
             $topicId = QueryValue::int($request, 'topic', 0);
             $topic = $this->findTopicOrNotFound($topicRepository, $program, $topicId);
             $evaluation = new Evaluation($topic, '', new \DateTimeImmutable());
-            // Visibilité programmée à J+1 par défaut : le temps de finir la saisie avant que la
-            // classe ne voie ses notes (handoff itération 2, point 6). L'enseignant peut toujours
-            // repasser en visibilité immédiate ou déplacer l'échéance.
+            // Visibility scheduled at D+1 by default: time enough to finish entering grades before
+            // the class sees them (handoff iteration 2, point 6). The teacher can always switch back
+            // to immediate visibility or move the deadline.
             $evaluation->setVisibleAt(new \DateTimeImmutable('+24 hours'));
             $this->denyAccessUnlessGranted(EvaluationVoter::MANAGE, $evaluation);
         }
@@ -312,8 +312,8 @@ class ProgramGradebookController extends AbstractController
 
             $this->addFlash('success', $isEdit ? 'evaluationUpdatedFlashMessage' : 'evaluationCreatedFlashMessage');
 
-            // Le barème passe devant : sans ses sections, l'écran de saisie n'aurait aucune
-            // colonne à proposer (design écran 2, « étape supplémentaire après la création »).
+            // The rubric comes first: without its sections, the entry screen would have no column to
+            // offer (design screen 2, « étape supplémentaire après la création »).
             if ($form->get('hasRubric')->getData()) {
                 return $this->redirectToRoute('app_program_gradebook_evaluation_rubric', ['id' => $program->getId(), 'evaluationId' => $evaluation->getId()]);
             }
@@ -581,11 +581,11 @@ class ProgramGradebookController extends AbstractController
     }
 
     /**
-     * La liste des élèves telle que les écrans la peignent : nom, puis étiquette d'option
-     * (SLAM/SISR...) à droite du nom. Les créas donnent la forme de l'étiquette mais lui inventent
-     * deux couleurs fixes ; l'application, elle, stocke déjà une couleur par Option et l'affiche
-     * partout ailleurs de la même façon (nom court sur fond coloré, texte blanc - voir
-     * program/_user_card.html.twig), donc c'est cette couleur-là qui est retenue.
+     * The student list as the screens paint it: name, then the option tag (SLAM/SISR...) to the
+     * right of the name. The designs give the tag's shape but invent two fixed colors for it; the
+     * application already stores a color per Option and displays it the same way everywhere else
+     * (short name on a colored background, white text - see program/_user_card.html.twig), so that
+     * is the color kept.
      *
      * @return list<array{id: int, name: string, option: ?string, optionColor: ?string}>
      */
@@ -629,8 +629,8 @@ class ProgramGradebookController extends AbstractController
             'modality' => $evaluation->getModality()->value,
             'status' => $evaluation->getStatus()->value,
             'date' => $evaluation->getDate()?->format('Y-m-d'),
-            // Jour/mois seuls : la colonne fait 132px, l'année n'y tient pas et la grille couvre
-            // de toute façon une seule période scolaire.
+            // Day/month alone: the column is 132px, the year does not fit and the grid covers a
+            // single school period anyway.
             'dateLabel' => $evaluation->getDate()?->format('d/m') ?? '—',
             'scale' => $evaluation->getScale(),
             'coefficient' => $evaluation->getCoefficient(),
@@ -757,12 +757,12 @@ class ProgramGradebookController extends AbstractController
     }
 
     /**
-     * Ordre par défaut de tous les écrans qui listent des élèves : nom de famille croissant, puis
-     * prénom (handoff itération 2, point 7). Les tris manuels de la grille (par moyenne, par note)
-     * se posent par-dessus côté client et retombent sur cet ordre quand on les annule.
+     * Default order of every screen that lists students: surname ascending, then first name (handoff
+     * iteration 2, point 7). The grid's manual sorts (by average, by grade) settle on top of it on
+     * the client side and fall back to this order when they are cancelled.
      *
-     * Le nom affiché (« Prénom Nom ») trierait par prénom, d'où le tri sur les champs séparés ;
-     * il ne sert que de repli pour un compte sans nom renseigné.
+     * The displayed name (« Prénom Nom ») would sort by first name, hence the sort on the separate
+     * fields; it only serves as a fallback for an account with no surname filled in.
      *
      * @param list<User> $users
      *

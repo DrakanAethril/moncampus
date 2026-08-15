@@ -724,8 +724,8 @@ class ProgressionPlacementService
         return [] === $ids ? '*' : implode('-', $ids);
     }
 
-    // Ne sert plus qu'à reconnaître un titre écrit par l'ancienne version de validate() pour le
-    // nettoyer (releaseSequence()) : plus rien ne nomme un créneau d'après sa séance.
+    // Now only serves to recognise a title written by the old version of validate() so it can be
+    // cleaned up (releaseSequence()): nothing names a slot after its séance any more.
     private function sessionTitleFor(ProgressionSeance $seance, int $partIndex, int $partCount): string
     {
         return $partCount > 1

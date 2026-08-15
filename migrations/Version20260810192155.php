@@ -8,10 +8,10 @@ use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
 /**
- * Un quiz lancé peut désormais fusionner plusieurs quiz en un seul vivier de questions (les cinq
- * quiz de séance devenant l'évaluation de fin de séquence) : la provenance passe donc d'une seule
- * colonne à une table de liaison. `source_template_id` reste en place et désigne le quiz d'où le
- * lancement est parti.
+ * A launched quiz can now merge several quizzes into a single pool of questions (the five séance
+ * quizzes becoming the end-of-séquence evaluation): the provenance therefore moves from a single
+ * column to a join table. `source_template_id` stays in place and designates the quiz the launch
+ * started from.
  */
 final class Version20260810192155 extends AbstractMigration
 {
@@ -27,9 +27,9 @@ final class Version20260810192155 extends AbstractMigration
         $this->addSql('ALTER TABLE quiz_instance_source_template ADD CONSTRAINT FK_E88CBB77157761BD FOREIGN KEY (quiz_instance_id) REFERENCES quiz_instance (id) ON DELETE CASCADE');
         $this->addSql('ALTER TABLE quiz_instance_source_template ADD CONSTRAINT FK_E88CBB772AFC1C18 FOREIGN KEY (quiz_template_id) REFERENCES quiz_template (id) ON DELETE CASCADE');
 
-        // Les instances déjà lancées ont un seul quiz source : on la reporte, sinon leur provenance
-        // se lirait comme vide alors qu'elle est connue. Celles dont le quiz a été supprimé depuis
-        // (source_template_id NULL) n'ont rien à reporter.
+        // Instances already launched have a single source quiz: it is carried over, otherwise their
+        // provenance would read as empty when it is in fact known. Those whose quiz has been deleted
+        // since (source_template_id NULL) have nothing to carry over.
         $this->addSql('INSERT INTO quiz_instance_source_template (quiz_instance_id, quiz_template_id) SELECT id, source_template_id FROM quiz_instance WHERE source_template_id IS NOT NULL');
     }
 

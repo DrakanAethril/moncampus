@@ -82,10 +82,10 @@ class SeanceTemplate
     private ?string $watchPoints = null;
 
     // Optional draft content for the real LessonLog's main "contenu réalisé" field, offered (not
-    // auto-applied) once a séance is scheduled - le bouton « Pré-remplir » du cahier de texte
-    // (assets/controllers/lesson_log_prefill_controller.js) le préfère à $objectifs quand il est
-    // renseigné, et se contente de poser le contenu dans le formulaire : rien n'est enregistré
-    // tant que l'enseignant n'a pas cliqué sur « Enregistrer ».
+    // auto-applied) once a séance is scheduled - the cahier de texte's « Pré-remplir » button
+    // (assets/controllers/lesson_log_prefill_controller.js) prefers it to $objectifs when it is
+    // filled in, and merely drops the content into the form: nothing is saved until the teacher has
+    // clicked « Enregistrer ».
     #[ORM\Column(name: 'cahier_de_texte_description', type: Types::TEXT, nullable: true)]
     private ?string $cahierDeTexteDescription = null;
 

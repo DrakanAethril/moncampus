@@ -118,20 +118,19 @@ class InternshipBookletBuilder
         // on - see InternshipEvaluationPeriod's docblock for why these were split apart.
         $rawPeriods = $this->periodRepository->findAllActiveForProgram($program);
 
-        // Chaque contribution paraît dès qu'elle est SIGNÉE par son auteur, sans attendre la
-        // clôture de la période par le chargé de suivi. C'est cette clôture que le livret exigeait
-        // auparavant ("le livret se remplit au fil des points de suivi", plan doc §7) : un tuteur
-        // qui venait de transmettre son bilan ne le retrouvait nulle part. La signature est la
-        // bonne frontière - elle est l'acte par lequel un rôle passe la main - là où la clôture
-        // faisait attendre tout le monde jusqu'au dernier.
+        // Each contribution appears as soon as it is SIGNED by its author, without waiting for the
+        // period to be closed by the follow-up officer. It was that closing the booklet used to
+        // require ("the booklet fills in as the follow-up meetings go", doc plan §7): a tutor who had
+        // just sent their report found it nowhere. The signature is the right boundary - it is the
+        // act by which a role hands over - where closing made everyone wait for the last one.
         //
-        // Un brouillon enregistré sans signature (le "Enregistrer cette étape" du chargé de suivi)
-        // reste donc hors du livret, et de son export PDF.
+        // A draft saved without a signature (the follow-up officer's "Enregistrer cette étape")
+        // therefore stays out of the booklet, and out of its PDF export.
         //
-        // Rien de tout cela n'est stocké : le filtre s'applique à la lecture, si bien que
-        // l'existant en base reparaît de lui-même dès lors qu'il est signé. Le livret ne dit rien
-        // de la clôture de la période elle-même : $supervisorEvaluation reste passé au gabarit
-        // pour qui en aurait besoin.
+        // None of this is stored: the filter applies on reading, so that what is already in the
+        // database reappears by itself as soon as it is signed. The booklet says nothing about the
+        // closing of the period itself: $supervisorEvaluation is still passed to the template for
+        // whoever might need it.
         $periods = array_map(
             function (InternshipEvaluationPeriod $evaluationPeriod) use ($tutorLink, $student): array {
                 $supervisorEvaluation = $this->supervisorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $evaluationPeriod);

@@ -10,19 +10,19 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Journal horodaté des actions de l'UFA - signatures du livret, relances - destiné aux écrans de
- * suivi des derniers événements.
+ * Timestamped log of the UFA's actions - booklet signatures, reminders - meant for the screens that
+ * follow the latest events.
  *
- * En ajout seul : une ligne n'est jamais modifiée ni supprimée, et rien dans l'application ne s'en
- * sert comme source de vérité. C'est ce qui autorise à y écrire APRÈS le flush métier, sans
- * transaction commune : un journal ne doit pas pouvoir faire échouer l'action qu'il observe.
+ * Append-only: a row is never modified nor deleted, and nothing in the application uses it as a
+ * source of truth. That is what allows writing to it AFTER the business flush, with no shared
+ * transaction: a log must not be able to make the action it observes fail.
  *
- * $payload garde l'instantané des noms au moment des faits. Les clés étrangères servent à filtrer
- * et à naviguer, le payload à rendre la phrase - une alternance désactivée, un compte renommé ou
- * une période supprimée laissent ainsi un historique encore lisible.
+ * $payload keeps the snapshot of the names at the time of the facts. The foreign keys serve to
+ * filter and to navigate, the payload to render the sentence - a deactivated alternation, a renamed
+ * account or a deleted period thus leave a history that is still legible.
  *
- * Pas de purge ici, contrairement à App\Entity\PlatformActivity : le volume est faible (quelques
- * lignes par alternance et par période) et ces événements sont l'histoire d'un livret.
+ * No purge here, unlike App\Entity\PlatformActivity: the volume is small (a few rows per alternation
+ * and per period) and these events are the story of a booklet.
  */
 #[ORM\Entity(repositoryClass: UfaActivityRepository::class)]
 #[ORM\Table(name: 'ufa_activity')]
@@ -42,8 +42,8 @@ class UfaActivity
     #[ORM\Column(length: 60, enumType: UfaActivityType::class)]
     private UfaActivityType $type;
 
-    // Null pour ce qu'aucun humain n'a déclenché - rien aujourd'hui, mais une relance automatique
-    // est prévue de longue date (voir InternshipReminder::$auto).
+    // Null for whatever no human triggered - nothing today, but an automatic reminder has long been
+    // planned (see InternshipReminder::$auto).
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(name: 'actor_id', nullable: true, onDelete: 'SET NULL')]
     private ?User $actor = null;
@@ -52,19 +52,19 @@ class UfaActivity
     #[ORM\JoinColumn(name: 'tutor_link_id', nullable: true, onDelete: 'SET NULL')]
     private ?InternshipTutorLink $tutorLink = null;
 
-    // Null pour les 3 signatures d'engagement, qui ne portent sur aucune période.
+    // Null for the 3 engagement signatures, which bear on no period.
     #[ORM\ManyToOne(targetEntity: InternshipEvaluationPeriod::class)]
     #[ORM\JoinColumn(name: 'evaluation_period_id', nullable: true, onDelete: 'SET NULL')]
     private ?InternshipEvaluationPeriod $evaluationPeriod = null;
 
-    // Dénormalisé depuis l'alternance : les écrans UFA filtrent par formation, et le faire par
-    // jointure sur tutor_link interdirait de garder la trace après désactivation de l'alternance.
+    // Denormalised from the alternation: the UFA screens filter by program, and doing so by joining
+    // on tutor_link would forbid keeping the trace after the alternation is deactivated.
     #[ORM\ManyToOne(targetEntity: Program::class)]
     #[ORM\JoinColumn(name: 'program_id', nullable: true, onDelete: 'SET NULL')]
     private ?Program $program = null;
 
-    // Recopié de InternshipTutorLink::$testAlternance : sans lui, un écran de suivi mélangerait
-    // les deux mondes que le reste de l'UFA sépare strictement.
+    // Copied from InternshipTutorLink::$testAlternance: without it, a tracking screen would mix the
+    // two worlds the rest of the UFA keeps strictly apart.
     #[ORM\Column(name: 'test_data', options: ['default' => false])]
     private bool $testData = false;
 

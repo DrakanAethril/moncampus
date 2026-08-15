@@ -44,7 +44,7 @@
         <dd><code>{{ message.messageId ?: '—' }}</code></dd>
 
         {% if message.inReplyTo %}
-            {# La clé de rattachement d'une réponse à l'envoi qui l'a provoquée. #}
+            {# The key attaching a reply to the send that provoked it. #}
             <dt>In-Reply-To</dt>
             <dd><code>{{ message.inReplyTo }}</code></dd>
         {% endif %}
@@ -74,9 +74,9 @@
     <section>
         <h2>Corps HTML</h2>
         {% if message.htmlBody %}
-            {# Affiché en source, jamais interprété : ce HTML vient d'un expéditeur extérieur et
-               n'a été assaini par personne. Pour un outil de vérification, voir ce qui est
-               réellement arrivé est de toute façon plus utile qu'un rendu. #}
+            {# Shown as source, never interpreted: this HTML comes from an outside sender and has been
+               sanitised by nobody. For a verification tool, seeing what actually arrived is more
+               useful than a rendering anyway. #}
             <pre>{{ message.htmlBody }}</pre>
         {% else %}
             <p class="muted">Aucune partie HTML.</p>

@@ -23,7 +23,7 @@ enum AssignmentAudienceType: string
     }
 
     /**
-     * Les quatre segments « au sein de la classe » du 2a, dans l'ordre de la maquette.
+     * The four « au sein de la classe » segments of 2a, in the mockup's order.
      *
      * @return list<self>
      */

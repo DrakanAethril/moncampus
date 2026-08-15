@@ -39,8 +39,8 @@
                             {{ message.student.firstname }} {{ message.student.lastname }}
                             <br><span class="muted">{{ message.student.username }}</span>
                         {% else %}
-                            {# Le cas qui compte pendant un test : le mail est bien capté, mais aucun
-                               alias ne correspond. Rien n'est perdu, il attend un rattachement. #}
+                            {# The case that matters during a test: the mail is indeed caught, but no
+                               alias matches. Nothing is lost, it waits to be attached. #}
                             <span class="tag tag-warn">à rattacher</span>
                         {% endif %}
                     </td>

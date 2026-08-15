@@ -47,12 +47,12 @@ class LessonLog
     private Collection $attachments;
 
     /**
-     * Visibilité de chacun des trois temps (maquette 2a). Trois colonnes plutôt qu'une table :
-     * il y en a exactement trois, connues à l'avance, et les lire ensemble est la règle - un
-     * cahier de texte s'affiche toujours en entier.
+     * Visibility of each of the three parts (mockup 2a). Three columns rather than a table: there
+     * are exactly three of them, known in advance, and reading them together is the rule - a cahier
+     * de texte is always displayed whole.
      *
-     * Le défaut est Hidden : un cahier de texte à peine ouvert n'est encore lisible de personne,
-     * et c'est l'enseignant qui décide de publier temps par temps.
+     * The default is Hidden: a cahier de texte barely opened is not yet readable by anyone, and it
+     * is the teacher who decides to publish part by part.
      */
     #[ORM\Column(name: 'visibility_before', length: 20, enumType: LessonLogVisibility::class)]
     private LessonLogVisibility $visibilityBefore = LessonLogVisibility::Hidden;
@@ -145,8 +145,8 @@ class LessonLog
         };
     }
 
-    // Accès champ par champ, pour que le formulaire puisse les mapper : getVisibility() et son
-    // setter prennent un temps en argument, ce que Symfony ne sait pas appeler.
+    // Field-by-field accessors, so the form can map them: getVisibility() and its setter take a part
+    // as an argument, which Symfony does not know how to call.
     public function getVisibilityBefore(): LessonLogVisibility
     {
         return $this->visibilityBefore;
@@ -171,8 +171,8 @@ class LessonLog
         return $this;
     }
 
-    // Accès champ par champ, pour que le formulaire puisse les mapper : getVisibility() et son
-    // setter prennent un temps en argument, ce que Symfony ne sait pas appeler.
+    // Field-by-field accessors, so the form can map them: getVisibility() and its setter take a part
+    // as an argument, which Symfony does not know how to call.
     public function getVisibilityDuring(): LessonLogVisibility
     {
         return $this->visibilityDuring;
@@ -197,8 +197,8 @@ class LessonLog
         return $this;
     }
 
-    // Accès champ par champ, pour que le formulaire puisse les mapper : getVisibility() et son
-    // setter prennent un temps en argument, ce que Symfony ne sait pas appeler.
+    // Field-by-field accessors, so the form can map them: getVisibility() and its setter take a part
+    // as an argument, which Symfony does not know how to call.
     public function getVisibilityAfter(): LessonLogVisibility
     {
         return $this->visibilityAfter;
@@ -234,8 +234,8 @@ class LessonLog
 
     public function setVisibility(LessonLogSection $section, LessonLogVisibility $visibility, ?\DateTimeImmutable $visibleAt = null): static
     {
-        // La date n'est conservée que par le choix qui en demande une : repasser en « visible dès
-        // maintenant » puis revenir à « programmer » ne doit pas ressusciter une date oubliée.
+        // The date is only kept by the choice that asks for one: switching back to « visible dès
+        // maintenant » then returning to « programmer » must not resurrect a forgotten date.
         $visibleAt = $visibility->needsDate() ? $visibleAt : null;
 
         match ($section) {
@@ -248,15 +248,15 @@ class LessonLog
     }
 
     /**
-     * La date à laquelle un temps devient lisible, ou null s'il ne le devient jamais de lui-même.
-     * « Fin de la séance » se lit sur le créneau, ce qui évite de recopier une date qui bougerait
-     * si l'emploi du temps change.
+     * The date a part becomes readable, or null if it never becomes so by itself. « Fin de la
+     * séance » is read off the slot, which avoids copying a date that would move if the timetable
+     * changes.
      */
     public function getVisibleAt(LessonLogSection $section): ?\DateTimeImmutable
     {
         return match ($this->getVisibility($section)) {
-            // Now n'a pas de date : isSectionVisible() le traite à part, et l'écran n'affiche
-            // alors pas de « depuis le … » mais un simple « visible ».
+            // Now has no date: isSectionVisible() handles it separately, and the screen then shows
+            // no « depuis le … » but a plain « visible ».
             LessonLogVisibility::Now => null,
             LessonLogVisibility::AfterSession => $this->lessonSession?->getEndAt(),
             LessonLogVisibility::Scheduled => match ($section) {

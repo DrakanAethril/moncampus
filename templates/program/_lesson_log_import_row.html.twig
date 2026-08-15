@@ -1,7 +1,7 @@
-{# Une séance proposée : d'où elle vient, quand, et le bouton qui reprend son contenu. L'import
-   enregistre - c'est le seul moyen de reprendre aussi les documents et les travaux, qui sont des
-   objets à part entière et non du texte à déposer dans un champ - d'où la confirmation dès qu'il y
-   a quelque chose à écraser. #}
+{# One séance offered: where it comes from, when, and the button that takes its content over. The
+   import saves - it is the only way to take over the documents and the assignments too, which are
+   objects in their own right and not text to drop into a field - hence the confirmation as soon as
+   there is something to overwrite. #}
 <form method="post" action="{{ url }}" class="cm-import-row"
       {% if confirmMessage %}onsubmit="return confirm('{{ confirmMessage|e('js') }}')"{% endif %}>
     <input type="hidden" name="_token" value="{{ csrf_token('lesson_log_import') }}">

@@ -15,18 +15,18 @@ framework:
         handler_id: null
         save_path: '%kernel.project_dir%/var/sessions/%kernel.environment%'
 
-    # Coupe l'en-tête HTTP `Link: rel="preload"` que Symfony ajoute automatiquement (WebLink) en
-    # doublon du HTML. AssetMapper, pour chaque feuille de style de l'importmap, écrit DÉJÀ un
-    # <link rel="stylesheet"> dans <head> *et* enregistre un preload WebLink pour la même URL
-    # (ImportMapRenderer::render(), lignes 96-104) : la ressource est donc annoncée deux fois par
-    # la même réponse. Le Caddyfile active `vulcain`, qui agit sur ces en-têtes au niveau HTTP/2,
-    # d'où les avertissements Chrome « was preloaded using link preload but not used » — invisibles
-    # en HTTP/1.1 local.
+    # Switches off the `Link: rel="preload"` HTTP header Symfony adds automatically (WebLink) as a
+    # duplicate of the HTML. For each stylesheet of the importmap, AssetMapper ALREADY writes a
+    # <link rel="stylesheet"> in <head> *and* registers a WebLink preload for the same URL
+    # (ImportMapRenderer::render(), lines 96-104): the resource is therefore announced twice by the
+    # same response. The Caddyfile enables `vulcain`, which acts on those headers at the HTTP/2
+    # level, hence the Chrome warnings « was preloaded using link preload but not used » — invisible
+    # over local HTTP/1.1.
     #
-    # Sans risque ici : ces 4 feuilles de style sont les seuls WebLink que l'application produit
-    # (aucune découverte Mercure par en-tête Link — le hub est passé explicitement aux contrôleurs
-    # Stimulus via mercurePublicUrl), et les <link rel="stylesheet"> restent inchangés, donc
-    # l'ordre de cascade décrit dans assets/app.js ne bouge pas.
+    # Risk-free here: these 4 stylesheets are the only WebLinks the application produces (no Mercure
+    # discovery through a Link header — the hub is passed explicitly to the Stimulus controllers via
+    # mercurePublicUrl), and the <link rel="stylesheet"> tags stay unchanged, so the cascade order
+    # described in assets/app.js does not move.
     web_link:
         enabled: false
 

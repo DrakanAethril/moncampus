@@ -129,12 +129,12 @@ class AssignmentSubmissionRepository extends ServiceEntityRepository
     }
 
     /**
-     * Combien d'étudiants ont déposé, travail par travail - l'avancement de la liste « Travaux »
-     * (2b), qui se lit sur toutes les classes de l'enseignant d'un coup.
+     * How many students submitted, assignment by assignment - the progress of the « Travaux » list
+     * (2b), which is read across all the teacher's classes at once.
      *
      * @param list<Assignment> $assignments
      *
-     * @return array<int, int> identifiant du travail => nombre de déposants
+     * @return array<int, int> assignment identifier => number of submitters
      */
     public function countByAssignment(array $assignments): array
     {
@@ -161,13 +161,13 @@ class AssignmentSubmissionRepository extends ServiceEntityRepository
     }
 
     /**
-     * Les identifiants des étudiants ayant déposé, travail par travail - il faut savoir QUI a
-     * déposé, et non combien, pour compter les groupes ayant rendu (un seul membre dépose pour son
-     * groupe).
+     * The identifiers of the students who submitted, assignment by assignment - one needs to know
+     * WHO submitted, and not how many, in order to count the groups that handed in (a single member
+     * submits for their group).
      *
      * @param list<Assignment> $assignments
      *
-     * @return array<int, list<int>> identifiant du travail => identifiants des déposants
+     * @return array<int, list<int>> assignment identifier => submitter identifiers
      */
     public function findSubmitterIdsByAssignment(array $assignments): array
     {
@@ -191,8 +191,8 @@ class AssignmentSubmissionRepository extends ServiceEntityRepository
     }
 
     /**
-     * Y a-t-il au moins un dépôt sur ce travail ? Le supprimer emporterait les fichiers déposés :
-     * l'import depuis la bibliothèque s'y refuse, et laisse ce geste à l'enseignant.
+     * Is there at least one submission on this assignment? Deleting it would carry the submitted
+     * files away: the import from the library refuses to, and leaves that gesture to the teacher.
      */
     public function hasAnyForAssignment(Assignment $assignment): bool
     {

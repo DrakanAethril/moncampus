@@ -27,9 +27,9 @@
 
     <div class="row g-4 align-items-start"
          data-controller="copy-block quiz-prompt-builder"
-         {# e('html_attr') n'est pas de la ceinture-bretelles : une capture {% set %} est du Markup,
-         que l'échappement automatique laisse passer, et le {"format":"…"} de l'enveloppe
-         fermerait l'attribut sur sa première guillemet. #}
+         {# e('html_attr') is not belt and braces: a {% set %} capture is Markup, which automatic
+         escaping lets through, and the envelope's {"format":"…"} would close the attribute on its
+         first quote. #}
          data-quiz-prompt-builder-envelope-value="{{ promptEnvelope|e('html_attr') }}"
          data-quiz-prompt-builder-closing-value="{{ promptClosing|e('html_attr') }}"
          data-quiz-prompt-builder-fragments-value="{{ promptFragments|json_encode }}"
@@ -37,24 +37,24 @@
          data-quiz-prompt-builder-count-template-value="{{ 'quizImportPromptCountTemplate'|trans }}"
          data-quiz-prompt-builder-images-title-value="{{ 'quizImportPromptImagesTitle'|trans }}"
          data-quiz-prompt-builder-empty-value="{{ 'quizImportPromptEmptyText'|trans }}"
-         {# Les quatre variantes assemblées viennent de App\Service\QuizSourceContext : le navigateur
-         en choisit une et la compte, il n'assemble jamais le bloc lui-même. C'est ce qui garde le
-         chiffre affiché égal au texte réellement envoyé. #}
+         {# The four assembled variants come from App\Service\QuizSourceContext: the browser picks one
+         and counts it, it never assembles the block itself. That is what keeps the number displayed
+         equal to the text actually sent. #}
          data-quiz-prompt-builder-context-variants-value="{{ (sourceContext ? sourceContext.variants : {})|json_encode }}"
          data-quiz-prompt-builder-context-max-value="{{ sourceContext ? sourceContext.max : 0 }}"
          data-quiz-prompt-builder-context-count-template-value="{{ 'quizImportContextCountTemplate'|trans }}"
          data-quiz-prompt-builder-context-over-template-value="{{ 'quizImportContextOverTemplate'|trans }}"
-         {# Les lignes de « Ma demande », réécrites à la frappe. PHP les a déjà écrites dans la
-         clôture au premier rendu (App\Service\QuizPromptCatalog::demand) ; les deux builders
-         prennent les mêmes morceaux plutôt que d'en garder chacun une copie. #}
+         {# The lines of « Ma demande », rewritten as the user types. PHP already wrote them into the
+         closure on the first render (App\Service\QuizPromptCatalog::demand); the two builders take
+         the same pieces rather than each keeping a copy. #}
          data-quiz-prompt-builder-demand-template-value="{{ promptDemandTemplate|e('html_attr') }}"
          data-quiz-prompt-builder-demand-placeholders-value="{{ promptDemandPlaceholders|json_encode }}"
          data-quiz-prompt-builder-demand-extra-heading-value="{{ promptDemandExtraHeading }}">
-        {# ── Colonne gauche : ce que l'enseignant règle ─────────────────────────────────────── #}
+        {# ── Left column: what the teacher sets ─────────────────────────────────────────────── #}
         <div class="col-12 col-lg-5 d-flex flex-column gap-3">
-            {# « Ma demande » : les quatre lignes que le prompt portait entre crochets. Un champ laissé
-               vide garde son exemple entre crochets, donc ne rien remplir rend exactement le prompt
-               d'avant l'assistant — le pire cas est l'ancien écran. #}
+            {# « Ma demande »: the four lines the prompt used to carry in brackets. A field left empty
+               keeps its example in brackets, so filling nothing in renders exactly the prompt from
+               before the assistant — the worst case is the old screen. #}
             {% if path == pathSubject %}
                 <div class="card cm-audio-card">
                     <div class="cm-audio-card__head">
@@ -85,8 +85,8 @@
                 </div>
             {% endif %}
 
-            {# Le nombre de questions vaut pour tous les parcours qui font écrire le modèle : un cours
-               dit de quoi parlent les questions, jamais combien en écrire. #}
+            {# The number of questions applies to every path that has the model write: a lesson says
+               what the questions are about, never how many to write. #}
             {% if path != pathTranspose %}
                 <div class="card cm-audio-card">
                     <div class="cm-audio-card__head">
@@ -109,9 +109,9 @@
                 </div>
             {% endif %}
 
-            {# Le cours, lu dans la bibliothèque et écrit dans le prompt : un modèle ne peut pas lire la
-               séquence, donc une génération qui ne l'emporte pas produit des questions sur la matière
-               plutôt que sur cette leçon-là. #}
+            {# The lesson, read from the library and written into the prompt: a model cannot read the
+               séquence, so a generation that does not carry it produces questions about the matière
+               rather than about that particular lesson. #}
             {% if path == pathCourse %}
                 {% if sourceContext is null or sourceContext.isEmpty %}
                     <div class="cm-note">
@@ -139,16 +139,16 @@
                                     {{ 'quizImportContextPhasesLabel'|trans }}
                                 </label>
                             </div>
-                            {# Le plafond est visible et ne tronque jamais : au-delà, cette ligne le dit
-                               et nomme les deux leviers. #}
+                            {# The cap is visible and never truncates: beyond it, this line says so
+                               and names the two levers. #}
                             <div class="cm-qimport-context-count" data-quiz-prompt-builder-target="contextCount"></div>
                         </div>
                     </div>
                 {% endif %}
             {% endif %}
 
-            {# Les images : le modèle voit le fichier parce que l'enseignant le joint à sa conversation,
-               la clé courte dit seulement lequel. Rien n'est publié. #}
+            {# The images: the model sees the file because the teacher attaches it to their
+               conversation, the short key only says which one. Nothing is published. #}
             <div class="card cm-audio-card">
                 <div class="cm-audio-card__head">
                     <span class="cm-audio-card__label">{{ 'quizImportImagesSectionTitle'|trans }}</span>
@@ -192,7 +192,7 @@
             </div>
         </div>
 
-        {# ── Colonne droite : le prompt qui en sort ─────────────────────────────────────────── #}
+        {# ── Right column: the prompt that comes out ────────────────────────────────────────── #}
         <div class="col-12 col-lg-7 d-flex flex-column gap-3">
 
             <div class="cm-subhead">
@@ -202,10 +202,10 @@
                 </div>
             </div>
 
-            {# Cocher n'est pas un confort : les douze fragments concaténés font un prompt inutilisable,
-               et un seul type coché donne exactement le « prompt pour ce type ». « Concours live »
-               arrive pré-coché quand c'est ce que l'enseignant a demandé — 7 types sur 12 en sont
-               exclus, et le filtre est la réponse de l'enum elle-même, portée par chaque ligne. #}
+            {# Ticking is not a convenience: the twelve fragments concatenated make an unusable prompt,
+               and a single type ticked gives exactly the « prompt for this type ». « Concours live »
+               arrives pre-ticked when that is what the teacher asked for — 7 of the 12 types are
+               excluded from it, and the filter is the enum's own answer, carried by each row. #}
             <div class="cm-grp-segmented">
                 <button type="button" class="cm-grp-segmented__opt{{ liveOnly ? '' : ' is-active' }}" data-action="quiz-prompt-builder#selectAll" data-quiz-prompt-builder-target="allButton">{{ 'quizImportPromptFilterAllLabel'|trans }}</button>
                 <button type="button" class="cm-grp-segmented__opt{{ liveOnly ? ' is-active' : '' }}" data-action="quiz-prompt-builder#selectLive" data-quiz-prompt-builder-target="liveButton">{{ 'quizImportPromptFilterLiveLabel'|trans }}</button>

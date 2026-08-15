@@ -13,8 +13,8 @@
                         <div style="font: 600 16px var(--cm-font-title); color: var(--cm-ink);">{{ quizInstance.name }}</div>
                         <div class="text-secondary small">{{ quizInstance.mode.labelKey|trans }} · {{ program.displayShortName }}</div>
                     </div>
-                    {# Le temps de CETTE question : le sien s'il en a un, celui du quiz sinon,
-                       aucun quand l'un ou l'autre dit « illimité » - le badge disparaît alors. #}
+                    {# The time for THIS question: its own if it has one, the quiz's otherwise, none
+                       when either says « unlimited » - the badge then disappears. #}
                     {% set question_seconds = question.resolveSeconds(quizInstance.secondsPerQuestion) %}
                     {% if question_seconds %}
                         <span class="badge bg-warning-lt ms-auto d-flex align-items-center gap-2" style="font-weight:700;font-size:15px;padding:7px 14px;" data-controller="quiz-passation" data-quiz-passation-seconds-value="{{ question_seconds }}" data-quiz-passation-form-id-value="quiz-answer-form" data-quiz-passation-target="timer">

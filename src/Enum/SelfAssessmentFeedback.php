@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace App\Enum;
 
 /**
- * Ce que l'étudiant reçoit en retour de son autoévaluation (design_handoff_carnet_de_notes,
- * PROMPT_MODIFICATIONS §9, écran 5a).
+ * What the student gets back from their self-assessment (design_handoff_carnet_de_notes,
+ * PROMPT_MODIFICATIONS §9, screen 5a).
  *
- * Comparison ouvre l'écran comparé (5c) une fois l'estimation validée ET la notation de
- * l'enseignant devenue visible ; Alone garde la notation pour l'enseignant seul - l'étudiant voit
- * simplement que son autoévaluation est transmise. C'est un choix par travail, pas un réglage de
- * l'évaluation : la même évaluation peut être autoévaluée à l'aveugle en cours d'année et en
- * comparaison plus tard.
+ * Comparison opens the comparison screen (5c) once the estimate is submitted AND the teacher's
+ * grading has become visible; Alone keeps the grading for the teacher alone - the student simply sees
+ * that their self-assessment has been sent. It is a per-assignment choice, not a setting of the
+ * evaluation: the same evaluation can be self-assessed blind during the year and in comparison later.
  */
 enum SelfAssessmentFeedback: string
 {

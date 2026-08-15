@@ -282,17 +282,17 @@
                                 <div class="dropdown-menu">
                                     <a class="dropdown-item {{ current_route == 'app_ufa' ? 'active' }}" href="{{ path('app_ufa') }}">{{ 'ufaDashboardNavLabel'|trans }}</a>
                                     {% set ufa_formations_list = ufa_nav_formations() %}
-                                    {# Purement une liste : aucune entrée "Nouvelle UFA" ici, on ne crée pas d'UFA.
-                                       Une UFA est une formation portant la modalité alternance, donc elle naît des
-                                       écrans de paramétrage pédagogique et apparaît ici toute seule. #}
+                                    {# Purely a list: no "Nouvelle UFA" entry here, one does not create a UFA.
+                                       A UFA is a program carrying the alternance modality, so it is born of the
+                                       pedagogical settings screens and appears here on its own. #}
                                     <div class="dropend">
                                         <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_ufa_formation' ? 'active' }}" href="#navbar-ufa-formations" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                                             {{ 'ufaFormationsNavLabel'|trans }}
                                         </a>
                                         <div class="dropdown-menu">
-                                            {# Formations réelles, puis les formations de test isolées sous leur
-                                               propre en-tête - même disposition que les groupes du menu Section
-                                               plus haut. L'en-tête n'apparaît que s'il y a quelque chose dessous. #}
+                                            {# Real programs, then the test programs isolated under their
+                                               own header - same layout as the groups of the Section menu
+                                               above. The header only appears if there is something below it. #}
                                             {% for formation in ufa_formations_list.regular %}
                                                 <a class="dropdown-item {{ current_route starts with 'app_ufa_formation' and app.request.attributes.get('id') == formation.id ? 'active' }}" href="{{ path('app_ufa_formation_evaluation_periods', {id: formation.id}) }}">{{ formation.displayShortName }}</a>
                                             {% endfor %}

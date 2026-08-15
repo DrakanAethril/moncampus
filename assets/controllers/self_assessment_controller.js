@@ -1,9 +1,9 @@
 import { Controller } from '@hotwired/stimulus';
 
-// Autoévaluation - saisie étudiante (design_handoff_carnet_de_notes, PROMPT_MODIFICATIONS §9,
-// écran 5b). Le total se calcule à la frappe et « Valider mon autoévaluation » reste fermé tant
-// qu'une question n'est pas renseignée : toutes le sont ou aucune validation.
-// Le serveur revérifie la complétude - le bouton désactivé n'est qu'une affordance.
+// Autoévaluation - student entry (design_handoff_carnet_de_notes, PROMPT_MODIFICATIONS §9,
+// screen 5b). The total is computed as the user types and « Valider mon autoévaluation » stays
+// closed as long as a question is unanswered: either all of them are, or no submission.
+// The server rechecks completeness - the disabled button is only an affordance.
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['input', 'total', 'answered', 'hint', 'validate'];
@@ -24,7 +24,7 @@ export default class extends Controller {
 
         for (const input of this.inputTargets) {
             const value = this.read(input);
-            // La question en attente se signale en ambre, comme sur la maquette.
+            // The pending question flags itself in amber, as on the mockup.
             input.classList.toggle('is-missing', value === null);
             if (value === null) continue;
 
@@ -44,8 +44,8 @@ export default class extends Controller {
         this.validateTarget.disabled = !complete;
     }
 
-    // Une estimation hors barème (négative ou au-dessus du maximum de la question) ne compte pas :
-    // le serveur la ramènerait de toute façon dans les bornes.
+    // An estimate outside the scale (negative or above the question's maximum) does not count: the
+    // server would bring it back within bounds anyway.
     read(input) {
         const raw = String(input.value).trim().replace(',', '.');
         if (raw === '' || Number.isNaN(Number(raw))) return null;

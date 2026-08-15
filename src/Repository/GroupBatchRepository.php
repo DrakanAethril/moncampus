@@ -34,8 +34,8 @@ class GroupBatchRepository extends ServiceEntityRepository
     }
 
     /**
-     * Les lots de l'enseignant sur plusieurs classes à la fois - l'assistant de création d'un
-     * travail (2a) charge ceux de toutes ses classes, la classe n'étant choisie qu'à l'étape 1.
+     * The teacher's batches across several classes at once - the assignment creation wizard (2a)
+     * loads those of all their classes, the class only being chosen at step 1.
      *
      * @param list<Program> $programs
      *

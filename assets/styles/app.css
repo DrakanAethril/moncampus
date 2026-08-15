@@ -30,24 +30,24 @@
     --cm-surface-alt: #f7fafc;
     --cm-border: #dde5ec;
     --cm-border-soft: #eef2f6;
-    /* Filet entre deux lignes d'un tableau : encore plus léger que --cm-border-soft, qui sert lui
-       aux séparations de blocs (barre d'outils, pied de carte). Valeur des maquettes 25a/25c/25d. */
+    /* Rule between two table rows: lighter still than --cm-border-soft, which separates blocks
+       (toolbar, card footer). Value taken from mockups 25a/25c/25d. */
     --cm-border-faint: #f4f7fa;
-    /* Fond des pieds de carte et de panneau : un blanc à peine cassé, qui détache la barre
-       d'actions du corps du formulaire sans la traiter comme une zone grise. */
+    /* Card and panel footer background: an off-white that lifts the action bar away from the form
+       body without treating it as a grey zone. */
     --cm-surface-soft: #fbfcfd;
     --cm-ink: #1c2b36;
     --cm-text: #3d4f5c;
     --cm-muted: #5b6c79;
     --cm-faint: #8a99a6;
-    /* Gris d'un élément présent mais inactif (bouton de pagination en bout de liste, séparateur de
-       fil d'Ariane) : lisible sans jamais se proposer à la lecture. */
+    /* Grey for an element that is present but inactive (pagination button at the end of a list,
+       breadcrumb separator): legible without ever inviting the eye. */
     --cm-disabled: #c3cfd9;
 
     --cm-blue-bg: #dcebf7;   --cm-blue-tx: #12507e;
-    /* Bleu encore plus pâle que --cm-blue-bg (qui sert au survol de ligne et aux badges) : c'est le
-       fond d'un élément bleu *sélectionné mais au repos* - pastille d'un trou rempli, carte de mode
-       cochée (design_handoff_quiz, écrans 2a/2c). */
+    /* Even paler than --cm-blue-bg (which serves row hover and badges): this is the background of a
+       blue element *selected but at rest* - the chip of a filled blank, a checked mode card
+       (design_handoff_quiz, screens 2a/2c). */
     --cm-blue-bg-soft: #eef5fb;
     /* The searched term highlighted inside a help search result (design_handoff_aide, écran 3).
        A background colour and nothing else here: the text keeps the ink it already had. */
@@ -59,9 +59,9 @@
     --cm-teal-bg: #dde8ee;   --cm-teal-tx: #2f5468;
     --cm-warn-tx: #b0722a;
 
-    /* Couleurs des actions de ligne (.cm-action--*). Le handoff UFA les donne en toutes lettres et
-       sans exception sur ses 32 liens d'action : bleu pour l'action principale (Modifier,
-       Enregistrer le retour, Réactiver), brique pour l'action destructrice (Désactiver). */
+    /* Row action colors (.cm-action--*). The UFA handoff spells them out, without exception, across
+       its 32 action links: blue for the main action (Modifier, Enregistrer le retour, Réactiver),
+       brick for the destructive one (Désactiver). */
     --cm-action-main: #12507e;
     --cm-action-danger: #b0553f;
 
@@ -82,8 +82,8 @@
     --cm-topbar-bg: #12344d;
     --cm-topbar-tx: #cfdde9;
     --cm-topbar-dim: #7d99b0;
-    /* Hauteur de la barre de navigation authentifiée : sert d'ancrage aux éléments qui doivent
-       commencer juste en dessous (panneau latéral et son voile). */
+    /* Height of the authenticated navbar: anchors the elements that must start right below it
+       (side panel and its overlay). */
     --cm-topbar-h: 90px;
 
     --cm-radius: 10px;
@@ -222,8 +222,8 @@
 
 /* ---------- Headings: Spectral, Tabler has no dedicated heading-font variable ---------- */
 h1, h2, h3, h4,
-/* Encre et non --cm-text : c'est la couleur des titres de la référence (#1c2b36, voir les
-   maquettes 25a/25c/25e du handoff UFA), qui les détache du texte courant. */
+/* Ink and not --cm-text: this is the heading color of the reference (#1c2b36, see mockups
+   25a/25c/25e of the UFA handoff), which lifts them off the running text. */
 .page-title, .card-title, .h1, .h2, .h3, .h4 {
     font-family: var(--cm-font-title);
     font-weight: 600;
@@ -231,31 +231,32 @@ h1, h2, h3, h4,
 }
 
 /* ==========================================================================
-   Typographie et contrôles : les valeurs des maquettes, en surcharge de Tabler
+   Typography and controls: the mockup values, overriding Tabler
 
-   Les maquettes priment sur les réglages d'origine de Tabler : quand une mesure
-   de la créa contredit ce que livre le framework, c'est le framework qui plie.
-   Toutes les valeurs ci-dessous sont relevées telles quelles dans
-   design/design_handoff_ufa/reference/UFA.dc.html (écrans 25a à 25f), qui fixe
-   la référence pour toute l'application et non pour ses seuls écrans.
+   The mockups outrank Tabler's own settings: when a measurement from the
+   design contradicts what the framework ships, the framework gives way. Every
+   value below is taken verbatim from
+   design/design_handoff_ufa/reference/UFA.dc.html (screens 25a to 25f), which
+   sets the reference for the whole application and not for its own screens
+   alone.
 
-   Chaque règle est écrite avec au moins la spécificité de celle de Tabler
-   qu'elle remplace : app.css se charge après tabler.min.css, donc à égalité la
-   dernière déclaration l'emporte.
+   Each rule is written with at least the specificity of the Tabler rule it
+   replaces: app.css loads after tabler.min.css, so on a tie the last
+   declaration wins.
    ========================================================================== */
 
-/* 24px dans les maquettes, 20px chez Tabler. */
+/* 24px in the mockups, 20px in Tabler. */
 .page-title { font-size: 24px; }
-/* Titre de section à l'intérieur d'une carte. */
+/* Section heading inside a card. */
 .card-title { font-size: 15px; }
 
-/* Le libellé annonce le champ sans concurrencer sa valeur : plus petit et plus gris que la
-   saisie, mais gras. Tabler en fait l'inverse (14px, gris foncé, demi-gras). */
+/* The label announces the field without competing with its value: smaller and greyer than the
+   input, but bold. Tabler does the opposite (14px, dark grey, semi-bold). */
 .form-label { font: 600 12px var(--cm-font-ui); color: var(--cm-muted); margin-bottom: 6px; }
-/* L'astérisque des champs requis, dans le rouge des maquettes plutôt que celui de Tabler. Un champ
-   requis en porte un, un champ facultatif n'en porte pas : c'est la seule règle, et Symfony pose
-   déjà la classe .required d'après l'option `required` du champ. Les libellés écrits à la main dans
-   un gabarit doivent donc porter cette classe eux-mêmes dès que le serveur impose le champ. */
+/* The required-field asterisk, in the mockups' red rather than Tabler's. A required field carries
+   one, an optional field does not: that is the only rule, and Symfony already sets the .required
+   class from the field's `required` option. Labels hand-written in a template must therefore carry
+   that class themselves as soon as the server makes the field mandatory. */
 .required::after, .form-label.required::after { color: #d4483b; }
 /* One required field, one asterisk. An expanded choice field breaks that on its own: Symfony marks
    every single choice label .required, so a three-radio group draws four asterisks - one per choice
@@ -264,14 +265,14 @@ h1, h2, h3, h4,
 
 .form-control, .form-select { font-size: 13.5px; }
 .form-control { padding: 9px 12px; }
-/* La flèche du select est peinte en image de fond à droite : sa réserve doit rester. */
+/* The select arrow is painted as a background image on the right: its room must stay. */
 .form-select { padding: 9px 36px 9px 12px; }
 
-/* Les maquettes ne décrivent que la taille par défaut : .btn-sm/.btn-lg/.btn-icon gardent la
-   leur, d'où les :not() - qui font aussi passer la règle devant celles de ces trois classes. */
+/* The mockups only describe the default size: .btn-sm/.btn-lg/.btn-icon keep theirs, hence the
+   :not() - which also puts the rule ahead of those three classes' own. */
 .btn:not(.btn-sm):not(.btn-lg):not(.btn-icon) { font: 600 13px var(--cm-font-ui); padding: 10px 18px; }
-/* Bouton secondaire (Annuler) : un contour discret dans le gris des bordures, pas le gris
-   soutenu de Bootstrap, et il vire au bleu de marque au survol. */
+/* Secondary button (Annuler): a discreet outline in the border grey, not Bootstrap's heavy grey,
+   turning brand blue on hover. */
 .btn-outline-secondary { border-color: var(--cm-border); color: var(--cm-text); padding: 9px 15px; }
 .btn-outline-secondary:hover, .btn-outline-secondary:focus {
     background: var(--cm-bg); border-color: var(--cm-border); color: var(--cm-brand-strong);
@@ -989,9 +990,9 @@ h1, h2, h3, h4,
 /* ==========================================================================
    DataTables (datatables.net-bs5) - targets the plugin's own class names
    ========================================================================== */
-/* Mêmes en-têtes et mêmes lignes pour les tableaux écrits à la main dans une carte (.card-table)
-   que pour ceux gérés par DataTables juste en dessous : les maquettes ne distinguent pas les deux,
-   et la moitié des tableaux de l'application sont dans ce cas (liste des états 25c, par exemple). */
+/* Same headers and same rows for tables hand-written inside a card (.card-table) as for the ones
+   DataTables manages just below: the mockups do not distinguish the two, and half the application's
+   tables are in that case (the condition list 25c, for instance). */
 .card-table thead th {
     background: var(--cm-surface-alt); color: var(--cm-muted);
     font: 600 11px var(--cm-font-ui); text-transform: uppercase; letter-spacing: .7px;
@@ -999,12 +1000,12 @@ h1, h2, h3, h4,
 }
 .card-table tbody td { padding: 13px 20px; border-bottom: 1px solid var(--cm-border-faint); font-size: 13.5px; }
 
-/* Barre d'outils et note de pied d'un tableau écrit à la main dans une carte. DataTables génère
-   les siennes et le contrôleur Stimulus les habille (voir styleWrapper()) ; un tableau simple n'a
-   personne pour le faire, et son contenu se retrouvait collé aux bords de la carte. Mêmes mesures
-   que les blocs de DataTables, pour que les deux familles d'écrans se ressemblent. */
-/* Contenu enrichi affiché sans son éditeur (cahier de texte consulté sans droit de modification) :
-   l'encadré d'un champ, mais en lecture, avec la respiration d'un texte plutôt que d'une saisie. */
+/* Toolbar and footnote of a table hand-written inside a card. DataTables generates its own and the
+   Stimulus controller dresses them (see styleWrapper()); a plain table has nobody to do it, and its
+   content ended up flush against the card edges. Same measurements as the DataTables blocks, so the
+   two families of screens look alike. */
+/* Rich content displayed without its editor (cahier de texte read without edit rights): a field's
+   box, but read-only, with the breathing room of prose rather than of an input. */
 .cm-readonly-html { border: 1px solid var(--cm-border); border-radius: var(--cm-radius-sm); padding: 12px 14px; background: var(--cm-surface); font-size: 13.5px; line-height: 1.6; }
 .cm-readonly-html > :last-child { margin-bottom: 0; }
 
@@ -1016,11 +1017,11 @@ h1, h2, h3, h4,
 /* Legend on the left, the figure it summarises pushed to the right edge of the same line. */
 .cm-card-note--split { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 
-/* Ni zébrage ni survol bleuté : les maquettes montrent des lignes blanches séparées d'un filet
-   très clair, et un survol à peine teinté. Les deux variables sont déclarées par Tabler sur .table
-   lui-même - les redéclarer sur :root n'aurait donc aucun effet, quelle que soit la spécificité.
-   Les gabarits gardent leur classe .table-striped : elle reste juste sans effet, plutôt que de
-   faire le tour des vingtaines de tableaux de l'application pour la retirer. */
+/* Neither zebra striping nor blue hover: the mockups show white rows separated by a very light
+   rule, and a barely tinted hover. Both variables are declared by Tabler on .table itself -
+   redeclaring them on :root would therefore have no effect, whatever the specificity.
+   Templates keep their .table-striped class: it simply stays without effect, rather than touring
+   the twenty-odd tables of the application to remove it. */
 .table {
     --tblr-table-striped-bg: transparent;
     --tblr-table-hover-bg: var(--cm-surface-alt);
@@ -1033,28 +1034,28 @@ table.dataTable { border-collapse: collapse; width: 100%; color: var(--cm-text);
    cm-dt-group/subtotal/total rules below - a bare "table.dataTable thead th" (1 class) loses to
    it regardless of load order, leaving thead's background transparent. */
 table.dataTable.table thead th {
-    /* Gris et non bleu de marque : c'est la couleur des en-têtes de colonnes des maquettes de
-       référence (25a/25d du handoff UFA), où le bleu est réservé aux liens. */
+    /* Grey and not brand blue: this is the column header color of the reference mockups
+       (25a/25d of the UFA handoff), where blue is reserved for links. */
     background: var(--cm-surface-alt); color: var(--cm-muted);
     font: 600 11px var(--cm-font-ui); text-transform: uppercase; letter-spacing: .7px;
-    /* Un simple filet, pas la barre bleue de 2px héritée de Tabler : dans les maquettes le bleu
-       est réservé aux liens et à l'action principale. */
+    /* A plain rule, not the 2px blue bar inherited from Tabler: in the mockups blue is reserved
+       for links and for the main action. */
     border-bottom: 1px solid var(--cm-border); padding: 11px 20px; text-align: left;
 }
 table.dataTable tbody td { padding: 13px 20px; border-bottom: 1px solid var(--cm-border-faint); }
-/* DataTables classe une colonne "dt-type-numeric" dès que ses valeurs ressemblent à des nombres et
-   l'aligne à droite. Un numéro d'inventaire ou de salle n'est pas une grandeur : les maquettes
-   alignent toutes les colonnes à gauche, seule la colonne d'actions est à droite. Les tableaux qui
-   veulent vraiment une colonne chiffrée à droite le disent avec .text-end, qui reste prioritaire. */
+/* DataTables marks a column "dt-type-numeric" as soon as its values look like numbers and aligns it
+   right. An inventory or room number is not a quantity: the mockups align every column left, only
+   the actions column sits right. Tables that really want a right-aligned numeric column say so with
+   .text-end, which still wins. */
 table.dataTable td.dt-type-numeric, table.dataTable th.dt-type-numeric { text-align: left; }
-/* Zébrage et survol de DataTables. Ils ne se peignent pas en background mais en ombre interne de
-   9999px sur chaque cellule (dataTables.bootstrap5.min.css) - un background sur le <tr>, comme le
-   faisaient les règles précédentes, passait donc dessous sans rien changer à l'écran. Deux
-   conséquences sur l'écriture ci-dessous : c'est bien box-shadow qu'il faut neutraliser, et la
-   feuille de DataTables est injectée par son propre contrôleur Stimulus, donc APRÈS app.css - d'où
-   le ".table" répété, qui fait passer ces sélecteurs devant les siens à égalité par ailleurs.
-   Le zébrage disparaît (lignes blanches dans les maquettes) et le survol prend le gris très clair
-   des maquettes plutôt que le bleu qu'il avait pris ici. */
+/* DataTables striping and hover. They are painted not as a background but as a 9999px inset shadow
+   on each cell (dataTables.bootstrap5.min.css) - a background on the <tr>, as the previous rules
+   did, therefore passed underneath and changed nothing on screen. Two consequences for what is
+   written below: box-shadow is what must be neutralised, and the DataTables stylesheet is injected
+   by its own Stimulus controller, hence AFTER app.css - whence the repeated ".table", which puts
+   these selectors ahead of its own when everything else ties.
+   The striping disappears (white rows in the mockups) and the hover takes the very light grey of
+   the mockups rather than the blue it had taken here. */
 table.table.table.dataTable.table-striped > tbody > tr:nth-of-type(2n+1) > * { box-shadow: none; }
 table.table.table.dataTable.table-hover > tbody > tr:hover > * { box-shadow: inset 0 0 0 9999px var(--cm-surface-alt); }
 table.dataTable td.dt-empty { color: var(--cm-muted); }
@@ -1065,18 +1066,18 @@ table.dataTable td.dt-empty { color: var(--cm-muted); }
 }
 .dataTables_wrapper .dataTables_info { color: var(--cm-muted); font-size: 13px; }
 
-/* Les trois règles ci-dessus datent de DataTables 1.x. La version en service ici est la 2.x, qui
-   nomme ses blocs .dt-length / .dt-search / .dt-info : sans les sélecteurs suivants, ces contrôles
-   retombaient sur les .form-select/.form-control de Tabler, loin des maquettes. */
-/* Sélecteurs volontairement plus spécifiques que ceux de DataTables
-   ("div.dt-container div.dt-search input{width:auto}", 3 classes) : sa feuille est injectée par le
-   contrôleur Stimulus, donc après app.css, et l'emporterait à égalité. */
+/* The three rules above date from DataTables 1.x. The version in service here is 2.x, which names
+   its blocks .dt-length / .dt-search / .dt-info: without the selectors below, those controls fell
+   back on Tabler's .form-select/.form-control, far from the mockups. */
+/* Selectors deliberately more specific than DataTables' own
+   ("div.dt-container div.dt-search input{width:auto}", 3 classes): its stylesheet is injected by
+   the Stimulus controller, hence after app.css, and would win on a tie. */
 div.dt-container div.dt-length select.form-select {
     width: auto; font-size: 13px; padding: 7px 30px 7px 11px; border-radius: var(--cm-radius-sm);
     color: var(--cm-ink);
 }
-/* Champ de recherche : la loupe est une image de fond plutôt qu'une icône dans le gabarit, parce
-   que DataTables génère lui-même ce bloc et qu'on n'a pas la main sur son balisage. */
+/* Search field: the magnifier is a background image rather than an icon in the template, because
+   DataTables generates that block itself and we have no hold on its markup. */
 div.dt-container div.dt-search input.form-control {
     width: 230px; max-width: 100%; font-size: 13px; padding: 8px 12px 8px 34px;
     border-radius: var(--cm-radius-sm); color: var(--cm-ink);
@@ -1085,10 +1086,10 @@ div.dt-container div.dt-search input.form-control {
 }
 .dt-container .dt-info { font-size: 12.5px; color: var(--cm-faint); }
 
-/* Pagination : pastilles de la maquette (12,5px, contour très clair, rayon 7, 11px de respiration
-   latérale), là où Bootstrap livrait du 14px sans contour, presque sans marge intérieure et collé.
-   Les maquettes ne montrent qu'un cas d'un seul page, donc avec Précédente/Suivante inactifs : le
-   bleu de lien pour l'état actif est une extrapolation, cohérente avec le reste des liens. */
+/* Pagination: the mockup's pills (12.5px, very light outline, radius 7, 11px of side breathing
+   room), where Bootstrap shipped 14px with no outline, almost no inner padding and everything
+   flush. The mockups only show a single-page case, so with Précédente/Suivante inactive: the link
+   blue for the active state is an extrapolation, consistent with the rest of the links. */
 .dt-container .dt-paging .pagination { gap: 6px; }
 .dt-container .dt-paging .page-link {
     font-size: 12.5px; padding: 5px 11px; border-radius: 7px; margin: 0;
@@ -1158,11 +1159,11 @@ td.cm-actions, .cm-actions {
     text-decoration: none; font: inherit;
 }
 .cm-actions a:hover, .cm-actions button:hover { text-decoration: underline; }
-/* --warning porte l'action principale d'une ligne (Modifier, presque partout). Son nom vient du
-   doré qu'elle avait à l'origine, repris du handoff projet ; le handoff UFA, qui fait désormais
-   référence pour toute l'application, la donne en bleu sur ses 32 liens d'action sans exception.
-   La classe garde son nom - le renommer voudrait dire toucher une quinzaine de gabarits et le
-   contrôleur DataTables sans rien changer à l'écran. */
+/* --warning carries the main action of a row (Modifier, almost everywhere). Its name comes from the
+   gold it originally had, taken from the project handoff; the UFA handoff, which is now the
+   reference for the whole application, gives it in blue on all 32 of its action links without
+   exception. The class keeps its name - renaming it would mean touching a dozen or so templates and
+   the DataTables controller without changing anything on screen. */
 .cm-actions .cm-action--positive { color: var(--cm-positive-tx); }
 .cm-actions .cm-action--neutral  { color: var(--cm-muted); }
 .cm-actions .cm-action--warning  { color: var(--cm-action-main); }
@@ -1272,46 +1273,46 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 
 /* ---------- Breadcrumb + page head (sub-pages only, never menu root pages) ----------
    Every segment (including the current page) is a real <a href>. */
-/* Couleurs et séparateurs alignés sur 25e-pret-formulaire.png : liens parents en bleu de marque,
-   segment courant en encre et en gras, chevrons plutôt que barres obliques. */
-/* Positions relevées sur 25e-pret-formulaire.png : 17px entre le bas de la barre de navigation et
-   le fil d'Ariane (Tabler en met 24), puis 13px entre le fil et le titre - ce qui laisse le titre
-   exactement là où la maquette le place. */
-/* Sélecteur qualifié comme celui de Tabler (".page-wrapper .page-header{margin:var(--tblr-page-padding-y) 0 0}"),
-   sans quoi la marge d'origine l'emporte quel que soit l'ordre de chargement. */
+/* Colors and separators aligned on 25e-pret-formulaire.png: parent links in brand blue, current
+   segment in ink and bold, chevrons rather than slashes. */
+/* Positions read off 25e-pret-formulaire.png: 17px between the bottom of the navbar and the
+   breadcrumb (Tabler puts 24), then 13px between the breadcrumb and the title - which leaves the
+   title exactly where the mockup places it. */
+/* Selector qualified like Tabler's own (".page-wrapper .page-header{margin:var(--tblr-page-padding-y) 0 0}"),
+   without which the original margin wins whatever the load order. */
 .page-wrapper .page-header { margin-top: 17px; }
-/* Même logique pour le corps de page : Tabler applique var(--tblr-page-padding-y) (24px), on le divise
-   par deux. Sélecteur qualifié pour l'emporter sur ".page-body" quel que soit l'ordre de chargement. */
+/* Same logic for the page body: Tabler applies var(--tblr-page-padding-y) (24px), we halve it.
+   Selector qualified so it beats ".page-body" whatever the load order. */
 .page-wrapper .page-body { margin-top: 12px; }
 .cm-breadcrumb { display: flex; gap: 6px; align-items: center; font-size: 12.5px; color: var(--cm-faint); margin-bottom: 13px; }
 .cm-breadcrumb .sep { color: var(--cm-faint); }
 .cm-breadcrumb__home { color: var(--cm-brand-strong); flex: none; }
 
-/* Pastille de couleur d'un <option> dans un tom-select (états du matériel) : 11px dans un champ,
-   13px en tête de ligne d'une liste, où elle tient lieu de repère visuel principal (maquette 25c). */
+/* Color chip of an <option> in a tom-select (equipment conditions): 11px inside a field, 13px at
+   the head of a list row, where it stands as the main visual cue (mockup 25c). */
 .cm-select-dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 9px; vertical-align: baseline; }
 .cm-select-dot--lg { width: 13px; height: 13px; margin-right: 11px; }
 
-/* Poignée de réordonnancement : les six points de la maquette, en gris de bordure, qui passent au
-   gris de texte au survol pour signaler qu'on peut l'attraper. */
+/* Reorder handle: the mockup's six dots, in border grey, turning text grey on hover to signal that
+   it can be grabbed. */
 .cm-grip { color: #c3cfd9; cursor: grab; display: inline-grid; place-items: center; width: 18px; }
 .cm-grip:hover { color: var(--cm-muted); }
 
-/* Code hexadécimal d'une couleur : en chasse fixe, comme toute valeur technique lue caractère par
-   caractère (maquette 25c). */
+/* Hexadecimal color code: monospaced, like any technical value read character by character
+   (mockup 25c). */
 .cm-hex { font: 12.5px ui-monospace, Menlo, Consolas, monospace; color: var(--cm-faint); }
 
-/* Cellule qui identifie sa ligne (nom de l'étudiant, n° d'inventaire) : encre plutôt que gris de
-   texte, comme dans les maquettes, où elle se lit avant tout le reste de la ligne. */
+/* The cell that identifies its row (student name, inventory number): ink rather than text grey, as
+   in the mockups, where it is read before anything else on the row. */
 .text-ink { color: var(--cm-ink); }
 
-/* Champs courts : un numéro d'inventaire ou un choix d'état n'ont pas besoin de toute la largeur
-   du panneau, et les maquettes leur donnent une laisse fixe (25b, 25e). */
+/* Short fields: an inventory number or a condition choice do not need the full width of the panel,
+   and the mockups give them a fixed leash (25b, 25e). */
 .cm-field--sm { max-width: 260px; }
 .cm-field--md { max-width: 280px; }
 
-/* Bandeau récapitulatif d'un prêt en tête du formulaire de retour (maquette 25f) et rappel de
-   l'état au prêt : deux encadrés gris clair, non éditables. */
+/* Summary banner of a loan at the top of the return form (mockup 25f) and reminder of the condition
+   at lending time: two light grey boxes, not editable. */
 .cm-loan-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); border-radius: var(--cm-radius); padding: 14px 16px; }
 .cm-loan-summary__label { display: block; font: 600 12px var(--cm-font-ui); color: var(--cm-muted); margin-bottom: 3px; }
 .cm-loan-summary__value { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); }
@@ -1727,12 +1728,12 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-panel__title { font: 600 17px var(--cm-font-title); color: var(--cm-ink); }
 .cm-panel__close { background: none; border: 0; color: var(--cm-faint); cursor: pointer; font-size: 22px; line-height: 1; padding: 0; }
 .cm-panel__close:hover { color: var(--cm-ink); }
-/* Le <form> s'intercale entre le panneau et ses deux zones : sans le rendre lui-même flexible, le
-   corps ne s'étire pas et la barre d'actions flotte au milieu du panneau au lieu d'en tenir le bas. */
+/* The <form> sits between the panel and its two zones: without making it flexible itself, the body
+   does not stretch and the action bar floats mid-panel instead of holding its bottom. */
 .cm-panel form { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .cm-panel__body { padding: 22px 24px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
-/* Le corps du panneau espace ses champs lui-même (gap), la marge basse des .mb-3 de Symfony ferait
-   double emploi et casserait le rythme de 16px de la maquette. */
+/* The panel body spaces its own fields (gap); the bottom margin of Symfony's .mb-3 would duplicate
+   it and break the mockup's 16px rhythm. */
 .cm-panel__body > .mb-3 { margin-bottom: 0 !important; }
 .cm-panel__footer { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; border-top: 1px solid var(--cm-border-soft); background: var(--cm-surface-soft); flex: none; }
 .cm-panel__footer-buttons { display: flex; gap: 10px; margin-left: auto; }
@@ -1810,20 +1811,20 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 
 /* ==========================================================================
    Texte à trous (.cm-blanks-*, .cm-chip, .cm-toggle) - design/design_handoff_quiz,
-   écrans 2a/2b (éditeur) et 2c/2d (passation).
+   screens 2a/2b (editor) and 2c/2d (attempt).
    ========================================================================== */
 
-/* ---------- « Texte à compléter » : textarea transparente posée sur un calque de rendu ----------
-   Les maquettes montrent les « ... » surlignés en pastilles bleues *dans la zone de saisie*, ce
-   qu'aucun <textarea> ne sait faire. Le calque .highlight rejoue donc le texte avec ses pastilles
-   et la <textarea>, strictement superposée et sans fond, garde tout le comportement natif (curseur,
-   sélection, undo, saisie mobile) - à l'inverse d'un contenteditable, qui l'aurait perdu.
-   La police, l'interligne et le padding doivent rester identiques des deux côtés : le moindre écart
-   décale le texte lu par rapport au texte saisi. */
+/* ---------- « Texte à compléter »: a transparent textarea laid over a rendering layer ----------
+   The mockups show the « ... » highlighted as blue chips *inside the input area*, which no
+   <textarea> can do. The .highlight layer therefore replays the text with its chips while the
+   <textarea>, strictly superimposed and without background, keeps every native behavior (caret,
+   selection, undo, mobile input) - unlike a contenteditable, which would have lost them.
+   Font, line height and padding must stay identical on both sides: the slightest gap offsets the
+   text being read from the text being typed. */
 .cm-blanks-field { position: relative; }
-/* Hors « texte à trous », le champ Énoncé reste une .form-control ordinaire : seul .is-blanks fait
-   apparaître le calque et efface la textarea. C'est le même champ dans les deux cas - l'énoncé et
-   le texte à compléter sont une seule et même donnée (QuizQuestion::$label). */
+/* Outside « texte à trous », the Énoncé field stays an ordinary .form-control: only .is-blanks
+   reveals the layer and blanks the textarea. It is the same field in both cases - the statement and
+   the text to complete are one and the same datum (QuizQuestion::$label). */
 .cm-blanks-field__highlight { display: none; }
 .cm-blanks-field.is-blanks .cm-blanks-field__highlight {
     display: block; font: 400 14px/1.8 var(--cm-font-ui); padding: 12px 13px; min-height: 76px;
@@ -1834,15 +1835,15 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-blanks-field.is-blanks:focus-within .cm-blanks-field__highlight {
     border-color: var(--cm-brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--cm-brand) 12%, transparent);
 }
-/* Le calque est dans le flux : c'est lui qui donne sa hauteur au champ, et il grandit avec le texte.
-   La textarea, posée dessus, n'a donc jamais besoin de sa propre barre de défilement. */
+/* The layer is in the flow: it is what gives the field its height, and it grows with the text. The
+   textarea laid over it therefore never needs a scrollbar of its own. */
 .cm-blanks-field.is-blanks .cm-blanks-field__input {
     position: absolute; inset: 0; width: 100%; height: 100%; resize: none; overflow: hidden;
     font: 400 14px/1.8 var(--cm-font-ui); padding: 12px 13px; border: 0; border-radius: 8px;
     color: transparent; caret-color: var(--cm-ink); background: transparent; box-shadow: none;
 }
 .cm-blanks-field.is-blanks .cm-blanks-field__input:focus { outline: none; box-shadow: none; }
-/* La sélection reste visible malgré le texte transparent (le calque, lui, ne se sélectionne pas). */
+/* The selection stays visible despite the transparent text (the layer itself is not selectable). */
 .cm-blanks-field.is-blanks .cm-blanks-field__input::selection { background: color-mix(in srgb, var(--cm-brand) 25%, transparent); }
 .cm-blank-chip {
     background: var(--cm-blue-bg-soft); border: 1px solid #c6ddf0; border-radius: 5px;
@@ -1851,7 +1852,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-blanks-count { font-size: 12px; font-weight: 600; color: var(--cm-positive-tx); }
 .cm-blanks-count.is-empty { color: var(--cm-faint); }
 
-/* ---------- Réponses par trou ---------- */
+/* ---------- Answers per blank ---------- */
 .cm-blank-row { display: flex; align-items: center; gap: 10px; }
 .cm-blank-index { flex: none; width: 52px; font: 600 12px ui-monospace, Menlo, monospace; color: var(--cm-faint); }
 .cm-blank-row .form-control { flex: 1; }
@@ -1898,7 +1899,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-toggle:has(input:checked) .cm-toggle__track::after { transform: translateX(18px); }
 .cm-toggle:has(input:focus-visible) .cm-toggle__track { outline: 2px solid var(--cm-brand); outline-offset: 2px; }
 
-/* ---------- Passation (2c/2d) : le texte et ses trous ---------- */
+/* ---------- Attempt (2c/2d): the text and its blanks ---------- */
 .cm-blanks-text { font: 400 17px/2.2 var(--cm-font-title); color: var(--cm-ink); }
 .cm-blanks-hint { font-size: 12.5px; color: var(--cm-faint); }
 .cm-blank-slot {
@@ -1908,15 +1909,15 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     cursor: pointer;
 }
 .cm-blank-slot:hover { border-color: var(--cm-brand); }
-/* Trou courant : pointillés bleus + halo, avant même qu'un mot y soit posé. */
+/* Current blank: blue dashes + halo, before any word is even dropped in. */
 .cm-blank-slot.is-active { background: var(--cm-surface); border-color: var(--cm-brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--cm-brand) 12%, transparent); }
-/* Trou rempli : pastille bleue pleine, cliquer la renvoie le mot à la banque. */
+/* Filled blank: solid blue chip; clicking it sends the word back to the bank. */
 .cm-blank-slot.is-filled {
     border-style: solid; border-width: 1px; border-color: var(--cm-brand);
     background: var(--cm-blue-bg-soft); color: var(--cm-blue-tx);
 }
 .cm-blank-slot.is-filled:hover { background: var(--cm-blue-bg); }
-/* Saisie libre : un vrai champ, dimensionné sur son contenu par le contrôleur Stimulus. */
+/* Free input: a real field, sized on its content by the Stimulus controller. */
 .cm-blank-input {
     display: inline-flex; min-width: 88px; border: 1px solid var(--cm-disabled); border-radius: 7px;
     padding: 3px 12px; font: 600 15px var(--cm-font-ui); color: var(--cm-ink); background: var(--cm-surface);
@@ -1925,7 +1926,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-blank-input:not(:placeholder-shown) { border-color: var(--cm-brand); }
 .cm-blank-input:focus { outline: none; border-color: var(--cm-brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--cm-brand) 15%, transparent); }
 
-/* ---------- Passation (2c) : la banque de mots ---------- */
+/* ---------- Attempt (2c): the word bank ---------- */
 .cm-wordbank { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--cm-border-soft); padding-top: 14px; }
 .cm-wordbank__title { font: 600 12px var(--cm-font-ui); color: var(--cm-faint); text-transform: uppercase; letter-spacing: .5px; }
 .cm-wordbank__word {
@@ -1934,11 +1935,11 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 }
 .cm-wordbank__word:hover { border-color: var(--cm-brand); background: #f6f9fb; }
 .cm-wordbank__word.is-selected { border-color: var(--cm-brand); background: var(--cm-blue-bg-soft); color: var(--cm-blue-tx); box-shadow: 0 0 0 3px color-mix(in srgb, var(--cm-brand) 15%, transparent); }
-/* Mot déjà posé dans un trou : barré et grisé, mais laissé en place pour que la banque ne bouge pas. */
+/* Word already dropped into a blank: struck through and greyed, but left in place so the bank does not move. */
 .cm-wordbank__word.is-used { background: var(--cm-surface-alt); color: var(--cm-disabled); text-decoration: line-through; cursor: default; box-shadow: none; }
 .cm-wordbank__word.is-used:hover { border-color: var(--cm-border); background: var(--cm-surface-alt); }
 
-/* ---------- Correction (1m) : chaque trou en vert/rouge ---------- */
+/* ---------- Correction (1m): each blank in green/red ---------- */
 .cm-blank-slot--correct { border: 1px solid #cde3d6; background: #eaf3ee; color: #25603d; cursor: default; }
 .cm-blank-slot--wrong { border: 1px solid color-mix(in srgb, var(--cm-red-tx) 35%, var(--cm-border)); background: var(--cm-red-bg); color: var(--cm-red-tx); text-decoration: line-through; cursor: default; }
 .cm-blank-expected { font: 600 12.5px var(--cm-font-ui); color: var(--cm-positive-tx); }
@@ -2196,23 +2197,23 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 
 /* ==========================================================================
    Carnet de notes (design/design_handoff_carnet_de_notes) - the five screens of the module:
-   grille professeur, formulaire d'évaluation, barème, saisie rapide, écran élève.
+   teacher grid, evaluation form, rubric, quick entry, student screen.
 
-   Les créas font foi sous le titre de page : tout ce qui suit reprend leurs mesures telles
-   quelles. Les couleurs passent par les tokens --cm-* quand la valeur du handoff est celle que
-   l'application a déjà nommée (#1B6BA8 = --cm-brand, #12344d = --cm-navy, #8a99a6 = --cm-faint...),
-   pour que le mode sombre suive sans seconde feuille ; les rares teintes propres au module
-   (filet gros de la grille, fonds des badges type/modalité/statut) ont leur variable locale
-   ci-dessous, redéclarée en sombre.
+   The designs are authoritative below the page title: everything that follows takes their
+   measurements verbatim. Colors go through the --cm-* tokens whenever the handoff value is one the
+   application has already named (#1B6BA8 = --cm-brand, #12344d = --cm-navy, #8a99a6 = --cm-faint...),
+   so dark mode follows without a second stylesheet; the few hues specific to the module (the grid's
+   thick rule, the type/modality/status badge backgrounds) have their own local variable below,
+   redeclared in dark.
 
-   L'en-tête de page (barre de navigation, fil d'Ariane, titre) reste celui de layout/app.html.twig
-   et n'est pas repris des créas, qui montrent leur propre chrome de maquette.
+   The page header (navbar, breadcrumb, title) stays the one from layout/app.html.twig and is not
+   taken from the designs, which show their own mockup chrome.
    ========================================================================== */
 :root {
-    /* Filet épais entre l'en-tête de la grille et ses lignes (#e4ebf1) : entre --cm-border et
-       --cm-border-soft, il n'existe pas ailleurs dans l'application. */
+    /* Thick rule between the grid header and its rows (#e4ebf1): between --cm-border and
+       --cm-border-soft, it exists nowhere else in the application. */
     --cm-gb-rule: #e4ebf1;
-    /* Fond des cases de saisie au focus. */
+    /* Background of the entry cells on focus. */
     --cm-gb-focus-bg: #f6fafe;
 }
 [data-bs-theme="dark"] {
@@ -2220,7 +2221,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     --cm-gb-focus-bg: #1f2f3d;
 }
 
-/* ---------- Barre d'outils (matière / période / filtres) ---------- */
+/* ---------- Toolbar (matière / period / filters) ---------- */
 .cm-gb-toolbar {
     background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: 12px;
     padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px;
@@ -2228,7 +2229,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-gb-toolbar__row { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
 .cm-gb-toolbar__rule { height: 1px; background: var(--cm-border-soft); }
 .cm-gb-field { display: flex; align-items: center; gap: 9px; }
-/* Le libellé uppercase du handoff, commun à toutes ses colonnes et sections. */
+/* The handoff's uppercase label, shared by all of its columns and sections. */
 .cm-gb-label {
     font: 700 11px var(--cm-font-ui); color: var(--cm-faint);
     text-transform: uppercase; letter-spacing: .5px;
@@ -2240,7 +2241,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 }
 [data-bs-theme="dark"] .cm-gb-select { color: var(--cm-ink); }
 
-/* Filtres : des pastilles de texte, pas des <select> - un seul état actif par groupe. */
+/* Filters: text chips, not <select> - a single active state per group. */
 .cm-gb-filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .cm-gb-filters__group { display: flex; gap: 3px; font: 600 11.5px var(--cm-font-ui); }
 .cm-gb-filters__sep { color: var(--cm-border); }
@@ -2252,11 +2253,11 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-gb-chip.is-active { background: #e4ecf3; color: var(--cm-navy); }
 [data-bs-theme="dark"] .cm-gb-chip.is-active { background: var(--cm-blue-bg); color: var(--cm-blue-tx); }
 
-/* ---------- Grille de classe ----------
-   Pas un <table> : la colonne des élèves est `position: sticky` pendant que les colonnes
-   d'évaluations défilent, ce qu'un tableau ne fait pas de façon fiable sur toutes les
-   configurations. D'où des colonnes en flex, chacune responsable de ses propres hauteurs de
-   ligne (44px) - elles doivent rester identiques d'une colonne à l'autre. */
+/* ---------- Class grid ----------
+   Not a <table>: the student column is `position: sticky` while the evaluation columns scroll,
+   which a table does not do reliably across every configuration. Hence flex columns, each
+   responsible for its own row heights (44px) - which must stay identical from one column to the
+   next. */
 .cm-gb-grid {
     overflow-x: auto; background: var(--cm-surface);
     border: 1px solid var(--cm-border); border-radius: 12px;
@@ -2287,9 +2288,9 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-gb-foot--avg { font: 700 14px var(--cm-font-title); color: var(--cm-navy); }
 [data-bs-theme="dark"] .cm-gb-foot--avg { color: var(--cm-ink); }
 .cm-gb-student { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); white-space: nowrap; }
-/* Option de l'élève (SLAM / SISR...) : la forme vient des créas, la couleur de fond est celle
-   stockée sur l'Option et posée en style inline - c'est déjà ainsi que tous les autres écrans
-   affichent une option (nom court, fond coloré, texte blanc : program/_user_card.html.twig). */
+/* The student's option (SLAM / SISR...): the shape comes from the designs, the background color is
+   the one stored on the Option and set inline - that is already how every other screen displays an
+   option (short name, colored background, white text: program/_user_card.html.twig). */
 .cm-gb-tag {
     margin-left: auto; font: 700 9.5px var(--cm-font-ui); padding: 2px 6px; border-radius: 7px;
     background: var(--cm-brand); color: #fff; white-space: nowrap;
@@ -2298,7 +2299,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     font: 700 13.5px var(--cm-font-ui); padding: 3px 9px; border-radius: 7px;
 }
 
-/* En-tête d'une colonne d'évaluation. */
+/* Header of an evaluation column. */
 .cm-gb-evname {
     font: 700 12.5px var(--cm-font-ui); color: var(--cm-ink); line-height: 1.2; height: 30px;
     overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
@@ -2348,7 +2349,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-gb-val--abs { font-weight: 600; font-size: 12px; color: #7a8790; letter-spacing: .3px; }
 .cm-gb-val--nt { font-weight: 600; font-size: 12px; color: #96a3ad; letter-spacing: .3px; }
 .cm-gb-val--ne { font-weight: 600; font-size: 12px; color: #adb8c1; letter-spacing: .3px; }
-/* Note non comptée : le pointillé est la seule marque qui reste lisible sans couleur de fond. */
+/* Grade not counted: the dashed outline is the only mark that stays legible without a background color. */
 .cm-gb-val--paren {
     font: 600 12.5px var(--cm-font-ui); font-style: italic; padding: 3px 7px; border-radius: 6px;
     background: transparent; border: 1px dashed currentColor; opacity: .8;
@@ -2362,8 +2363,8 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     font-size: 12px; color: var(--cm-faint);
 }
 .cm-gb-legend__item { display: inline-flex; align-items: center; gap: 7px; }
-/* Pastille ronde en tête de la modale de suppression (44px dans les créas, contre les 66px de
-   .cm-authcard__pastille, qui appartient par ailleurs aux écrans de connexion). */
+/* Round chip at the top of the delete modal (44px in the designs, against the 66px of
+   .cm-authcard__pastille, which belongs to the login screens). */
 .cm-gb-confirm__icon {
     width: 44px; height: 44px; border-radius: 50%; margin: 0 auto 12px;
     background: var(--cm-red-bg); color: var(--cm-red-tx); display: grid; place-items: center;
@@ -2387,9 +2388,9 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: 12px;
     padding: 24px; display: flex; flex-direction: column; gap: 20px;
 }
-/* Formulaire d'évaluation : deux colonnes séparées d'un filet vertical. Le filet disparaît en
-   dessous de 1000px, où les deux colonnes s'empilent - un trait horizontal ferait doublon avec
-   l'espacement qui sépare déjà les groupes de champs. */
+/* Evaluation form: two columns separated by a vertical rule. The rule disappears below 1000px,
+   where the two columns stack - a horizontal line would duplicate the spacing that already
+   separates the field groups. */
 .cm-gb-panel--split { flex-direction: row; align-items: stretch; gap: 40px; padding: 28px; }
 .cm-gb-panel__col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 20px; }
 .cm-gb-panel__rule { width: 1px; flex: none; background: var(--cm-border-soft); }
@@ -2407,11 +2408,10 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     display: flex; align-items: center; gap: 9px; cursor: pointer;
     font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink);
 }
-/* Même traitement que .cm-radiocard : les layouts Bootstrap de Symfony rendent, sur une vue de
-   choix étendue ou une case à cocher, tout le bloc .form-check (input + son propre label) et non
-   un <input> nu. Les gabarits d'ici écrivent leur propre libellé, donc celui de Symfony est
-   masqué plutôt que laissé en double ; le <label> englobant continue de cocher l'input
-   nativement, sans attribut `for`. */
+/* Same treatment as .cm-radiocard: on an expanded choice view or a checkbox, Symfony's Bootstrap
+   layouts render the whole .form-check block (input plus its own label) and not a bare <input>.
+   The templates here write their own label, so Symfony's is hidden rather than left duplicated; the
+   wrapping <label> keeps checking the input natively, with no `for` attribute. */
 .cm-gb-check .form-check,
 .cm-gb-seg__opt .form-check,
 .cm-gb-pickcard .form-check { display: contents; }
@@ -2422,7 +2422,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     width: 16px; height: 16px; accent-color: var(--cm-brand); cursor: pointer; margin: 0; flex: none;
 }
 
-/* Cartes de choix (Type d'évaluation) et segments (Modalité / Statut / Visibilité). */
+/* Choice cards (Type d'évaluation) and segments (Modalité / Statut / Visibilité). */
 .cm-gb-pickcards { display: flex; gap: 9px; flex-wrap: wrap; }
 .cm-gb-pickcard {
     flex: 1; min-width: 130px; display: flex; flex-direction: column; gap: 2px; align-items: flex-start;
@@ -2447,7 +2447,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-gb-seg__opt input[type="radio"] { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .cm-gb-seg__opt:has(input:checked) { background: var(--cm-brand); color: #fff; }
 .cm-gb-seg--pad .cm-gb-seg__opt { flex: none; padding: 9px 18px; }
-/* Segment de navigation (période côté élève) : mêmes formes, mais des liens et non des radios. */
+/* Navigation segment (period, student side): same shapes, but links and not radios. */
 .cm-gb-seg__link {
     flex: none; padding: 9px 18px; text-align: center; text-decoration: none;
     background: var(--cm-surface); color: var(--cm-muted);
@@ -2455,15 +2455,15 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-gb-seg__link:hover { color: var(--cm-brand-strong); }
 .cm-gb-seg__link.is-active { background: var(--cm-brand); color: #fff; }
 .cm-gb-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
-/* Le couple date+heure de la visibilité programmée. Sa propre classe plutôt que .d-flex : les
-   utilitaires Bootstrap portent !important et l'emporteraient sur l'attribut hidden qui masque ce
-   bloc tant que la visibilité est immédiate. */
+/* The date+time pair of scheduled visibility. Its own class rather than .d-flex: the Bootstrap
+   utilities carry !important and would beat the hidden attribute that hides this block for as long
+   as visibility is immediate. */
 .cm-gb-visfields { display: flex; align-items: center; gap: 8px; }
 .cm-gb-visfields[hidden] { display: none; }
 
-/* ---------- Éditeur de barème ---------- */
-/* Sections en grille de 2 colonnes, alignées en haut : une section courte ne s'étire pas à la
-   hauteur de sa voisine. La tuile « + Ajouter une section » est une cellule de cette grille. */
+/* ---------- Rubric editor ---------- */
+/* Sections in a 2-column grid, top-aligned: a short section does not stretch to its neighbour's
+   height. The « + Ajouter une section » tile is a cell of that grid. */
 .cm-gb-sections { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; align-items: start; }
 @media (max-width: 900px) {
     .cm-gb-sections { grid-template-columns: 1fr; }
@@ -2496,7 +2496,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     align-self: stretch; border-width: 1.5px; border-radius: 12px; padding: 13px;
     font-size: 13.5px; background: transparent; text-align: center;
 }
-/* Variante « tuile de la grille des sections » : même hauteur minimale qu'une section vide. */
+/* « Section grid tile » variant: same minimum height as an empty section. */
 .cm-gb-dashed--tile { min-height: 120px; }
 
 /* ---------- Saisie rapide ---------- */
@@ -2536,9 +2536,9 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .cm-gb-entry__name .cm-gb-tag { margin-left: 0; padding: 2px 7px; }
-/* La note déjà enregistrée se rappelle en texte coloré à gauche du champ : la bande pastel de
-   .cm-grade-band-* n'y sert que de couleur d'encre, son fond est neutralisé (règle postérieure, à
-   spécificité égale) - un aplat de 96px de large déséquilibrerait la ligne. */
+/* The grade already recorded is recalled as colored text to the left of the field: the pastel band
+   of .cm-grade-band-* serves only as ink color there, its background being neutralised (later rule,
+   equal specificity) - a 96px-wide flat area would unbalance the row. */
 .cm-gb-entry__status {
     width: 96px; text-align: right; flex: none; white-space: nowrap;
     font: 600 12px var(--cm-font-ui); background: transparent;
@@ -2561,7 +2561,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-gb-quick .cm-gb-quick--ne { border-color: #e2e7ec; background: #f7f9fb; color: var(--cm-faint); }
 [data-bs-theme="dark"] .cm-gb-quick .cm-gb-quick--abs { border-color: var(--cm-gold-bg); background: var(--cm-gold-bg); color: var(--cm-gold-tx); }
 [data-bs-theme="dark"] .cm-gb-quick .cm-gb-quick--ne { border-color: var(--cm-border); background: var(--cm-surface-alt); }
-/* Colonnes de questions (mode barème). */
+/* Question columns (rubric mode). */
 .cm-gb-qhead { padding: 10px 16px 0; border-bottom: 2px solid var(--cm-gb-rule); background: var(--cm-surface-soft); min-width: max-content; }
 .cm-gb-qhead__sections { display: flex; gap: 10px; align-items: flex-end; }
 .cm-gb-qhead__cols { display: flex; align-items: flex-end; gap: 10px; padding: 7px 0 10px; }
@@ -2585,7 +2585,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     width: 90px; flex: none; text-align: center; font: 700 16px var(--cm-font-ui);
     white-space: nowrap; background: transparent;
 }
-/* Commentaire audio en bout de ligne. */
+/* Audio comment at the end of the row. */
 .cm-gb-audio { display: flex; align-items: center; gap: 6px; flex: none; margin-left: auto; }
 /* The record button carries its label: a lone microphone glyph at the far right of a row of grade
    inputs reads as decoration, and nothing else on this screen says what it does. */
@@ -2631,7 +2631,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 }
 [data-bs-theme="dark"] .cm-gb-warn { background: var(--cm-gold-bg); border-color: var(--cm-gold-bg); color: var(--cm-gold-tx); }
 .cm-gb-footbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-/* La phrase d'aide peut passer à la ligne, les boutons restent à droite dans tous les cas. */
+/* The help sentence may wrap; the buttons stay on the right in every case. */
 .cm-gb-footbar__hint { font-size: 12px; color: var(--cm-faint); flex: 1 1 320px; }
 .cm-gb-footbar > :last-child { margin-left: auto; }
 
@@ -2663,8 +2663,8 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: 12px;
     padding: 14px 18px; display: flex; flex-direction: column; gap: 11px;
 }
-/* Trois colonnes fixes, jamais un flex-wrap : une carte occupe exactement 1/3 de la ligne et son
-   titre s'ellipse - explicitement demandé par le handoff. */
+/* Three fixed columns, never a flex-wrap: a card takes exactly 1/3 of the row and its title
+   ellipsises - explicitly asked for by the handoff. */
 .cm-gb-recent { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .cm-gb-recent__item {
     border: 1px solid var(--cm-border-soft); border-radius: 10px; padding: 10px 12px;
@@ -2692,8 +2692,8 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     display: grid; place-items: center; font: 700 15px var(--cm-font-ui); flex: none; line-height: 1;
     transition: transform .15s ease;
 }
-/* Un seul chevron dans le gabarit, pivoté quand le panneau est déplié - c'est l'attribut que
-   Bootstrap tient déjà à jour sur le bouton de repli. */
+/* A single chevron in the template, rotated when the panel is expanded - it is the attribute
+   Bootstrap already keeps up to date on the collapse button. */
 .cm-gb-subject[aria-expanded="true"] .cm-gb-subject__chevron { transform: rotate(90deg); }
 [data-bs-theme="dark"] .cm-gb-subject__chevron { background: var(--cm-surface-alt); }
 .cm-gb-subject__name { font: 600 15px var(--cm-font-title); color: var(--cm-ink); }
@@ -2713,10 +2713,10 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 }
 
 /* ==========================================================================
-   Autoévaluation (design_handoff_carnet_de_notes, PROMPT_MODIFICATIONS §9, écrans 5b/5c/5d) :
-   saisie de l'estimation par l'étudiant, écran comparé, suivi enseignant. Même vocabulaire de
-   formes que le carnet de notes ci-dessus (bandeau dégradé, cartes, pastilles), d'où la réutilisation
-   de ses tokens plutôt qu'une seconde palette.
+   Autoévaluation (design_handoff_carnet_de_notes, PROMPT_MODIFICATIONS §9, screens 5b/5c/5d):
+   the student's own estimate, the comparison screen, the teacher's tracking. Same vocabulary of
+   shapes as the carnet de notes above (gradient banner, cards, chips), hence the reuse of its
+   tokens rather than a second palette.
    ========================================================================== */
 .cm-sa-hero {
     background: linear-gradient(120deg, #12344d, #1c4a6b); color: #fff; border-radius: 13px;
@@ -2726,7 +2726,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-sa-hero__kicker { font-size: 11px; color: #9fb4c6; text-transform: uppercase; letter-spacing: 1px; }
 .cm-sa-hero__title { font: 600 19px var(--cm-font-title); }
 .cm-sa-hero__meta { font-size: 12.5px; color: #a9c0d2; }
-/* Les deux notes du 5c : l'estimation en bleu, la note du professeur en or. */
+/* The two grades of 5c: the estimate in blue, the teacher's grade in gold. */
 .cm-sa-score {
     background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .18);
     border-radius: 11px; padding: 12px 18px; text-align: center;
@@ -2769,7 +2769,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     outline: none; background: var(--cm-surface);
 }
 .cm-sa-input:focus { border-color: var(--cm-brand); background: var(--cm-gb-focus-bg); }
-/* Question encore en attente : ambre, comme la maquette - c'est ce qui bloque la validation. */
+/* Question still pending: amber, as in the mockup - this is what blocks submission. */
 .cm-sa-input.is-missing { border-color: #d4a53e; background: #fdf8ec; }
 [data-bs-theme="dark"] .cm-sa-input.is-missing { background: var(--cm-gold-bg); }
 .cm-sa-total {
@@ -2812,7 +2812,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-sa-comparerow__label { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); width: 110px; flex: none; }
 .cm-sa-comparerow__you { font: 700 12.5px var(--cm-font-ui); color: var(--cm-brand-strong); width: 54px; text-align: right; }
 .cm-sa-comparerow__teacher { font: 700 12.5px var(--cm-font-ui); color: var(--cm-gold-tx); width: 54px; text-align: right; }
-/* Deux barres superposées plutôt que côte à côte : l'écart se lit d'un coup d'œil vertical. */
+/* Two stacked bars rather than side by side: the gap reads at a single vertical glance. */
 .cm-sa-bars { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 80px; }
 .cm-sa-bar { height: 8px; border-radius: 4px; background: var(--cm-border-soft); overflow: hidden; }
 .cm-sa-bar__fill { height: 100%; border-radius: 4px; }
@@ -2827,7 +2827,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-sa-gap--under { background: var(--cm-blue-bg); color: var(--cm-blue-tx); }
 .cm-sa-gap--none { background: transparent; color: var(--cm-disabled); }
 
-/* Suivi enseignant (5d) : mêmes largeurs de colonnes en tête et dans les lignes. */
+/* Teacher tracking (5d): same column widths in the header and in the rows. */
 .cm-sa-trackhead, .cm-sa-trackrow { display: flex; align-items: center; gap: 12px; padding: 11px 18px; }
 .cm-sa-trackhead {
     background: var(--cm-surface-soft); border-bottom: 1px solid var(--cm-border-soft);
@@ -2849,7 +2849,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-sa-status--draft { color: var(--cm-warn-tx); }
 .cm-sa-status--pending { color: var(--cm-faint); }
 .cm-sa-trackfoot { padding: 10px 18px; border-top: 1px solid var(--cm-border-soft); font-size: 12px; color: var(--cm-faint); }
-/* Les deux retours possibles, en cartes radio du modal « Ajouter un travail » (5a). */
+/* The two possible feedbacks, as radio cards of the « Ajouter un travail » modal (5a). */
 .cm-feedback-choice { display: flex; flex-direction: column; gap: 8px; }
 
 /* ==========================================================================
@@ -3249,8 +3249,8 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
    Dashboards par profil (design/design_handoff_dashboards)
    ========================================================================== */
 
-/* Bandeau d'action - une seule chose à dire, la plus urgente (grammaire commune §1.2).
-   Ambre = action attendue, vert = "vous êtes à jour" (tuteur), rouge = retard (tuteur/staff). */
+/* Action banner - one thing to say, the most urgent one (shared grammar §1.2).
+   Amber = action expected, green = "vous êtes à jour" (tutor), red = overdue (tutor/staff). */
 .cm-dash-banner {
   display: flex; align-items: center; gap: 14px;
   border: 1px solid #e0b25f; background: #fdf6e8; color: #8a6a1f;
@@ -3267,7 +3267,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 [data-bs-theme=dark] .cm-dash-banner--ok { background: #1d3327; border-color: #2e5c44; color: #8cc3a2; }
 [data-bs-theme=dark] .cm-dash-banner--danger { background: #40221c; border-color: #7a4033; color: #e09384; }
 
-/* Pastille de date (jour + mois) - événements et travail à réaliser */
+/* Date chip (day + month) - events and work to do */
 .cm-date-chip {
   flex: none; width: 46px; text-align: center;
   border: 1px solid var(--cm-border); border-radius: 8px; padding: 5px 0;
@@ -3284,7 +3284,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 [data-bs-theme=dark] .cm-date-chip--late .cm-date-chip__day,
 [data-bs-theme=dark] .cm-date-chip--late .cm-date-chip__month { color: #e09384; }
 
-/* Événements à venir - jusqu'à quatre vignettes côte à côte (grammaire commune §1.3) */
+/* Upcoming events - up to four thumbnails side by side (shared grammar §1.3) */
 .cm-event-row { display: flex; gap: 14px; align-items: stretch; }
 /* max-width, not just flex:1 - a lone event otherwise stretched across the whole strip.
    Capped at a quarter of the row so any number of events keeps the same tile proportions, with
@@ -3301,11 +3301,11 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 /* Stacked: the quarter-width cap would leave a sliver of a tile. */
 @media (max-width: 768px) { .cm-event-row { flex-direction: column; } .cm-event-tile { max-width: none; } }
 
-/* Deux colonnes égales (grammaire commune §1.4) */
+/* Two equal columns (shared grammar §1.4) */
 .cm-dash-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
 @media (max-width: 992px) { .cm-dash-cols { grid-template-columns: 1fr; } }
 
-/* Emploi du temps du jour - une ligne par séance, filet vertical coloré */
+/* Day timetable - one row per séance, colored vertical rule */
 .cm-sched { display: flex; flex-direction: column; }
 .cm-sched__row { display: flex; gap: 13px; align-items: stretch; padding: 9px 0; }
 .cm-sched__row + .cm-sched__row { border-top: 1px solid var(--cm-border-soft); }
@@ -3318,7 +3318,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-sched__meta { font-size: 12px; color: var(--cm-faint); }
 .cm-sched__side { margin-left: auto; align-self: center; flex: none; display: flex; align-items: center; gap: 10px; }
 
-/* Chip de formation (étudiant double inscription) + pastille de formation sur les items */
+/* Program chip (student with a double enrolment) + program dot on the items */
 .cm-formation-chip {
   display: inline-flex; align-items: center; gap: 9px;
   border: 1px solid var(--cm-border); border-radius: 9px; padding: 8px 14px;
@@ -3428,8 +3428,8 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     opacity: 0; pointer-events: none; border: 0; padding: 0;
 }
 
-/* Chaîne des 4 rôles en chips encadrées (Mon alternance, tuteur, dashboards) - variante
-   encadrée du .cm-role-progress des wizards */
+/* Chain of the 4 roles as boxed chips (Mon alternance, tutor, dashboards) - boxed variant of the
+   wizards' .cm-role-progress */
 .cm-role-progress--boxed { justify-content: flex-start; margin-bottom: 0; }
 .cm-role-progress--boxed .cm-role-progress__chip {
   border: 1px solid var(--cm-border); border-radius: 9px; padding: 8px 13px;
@@ -3441,7 +3441,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-role-progress--boxed .cm-role-progress__chip.is-waiting { background: var(--cm-bg); }
 .cm-role-progress__icon--late { background: var(--cm-red-bg); color: var(--cm-red-tx); }
 
-/* En-tête de page dashboard : Bonjour + sous-titre, actions à droite au niveau du titre */
+/* Dashboard page header: greeting + subtitle, actions on the right at title level */
 .cm-dash-head { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 16px; }
 .cm-dash-head__greeting { margin: 0; font: 600 25px var(--cm-font-title); color: var(--cm-ink); }
 .cm-dash-head__sub { font-size: 13px; color: var(--cm-muted); margin-top: 4px; }
@@ -3457,13 +3457,12 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-role-switch__btn:hover { color: var(--cm-brand-strong); background: var(--cm-bg); }
 .cm-role-switch__btn.is-active { color: var(--cm-brand-strong); border-color: var(--cm-brand); background: var(--cm-blue-bg); }
 
-/* Élément masqué par le filtre dashboard (dashboard_filter_controller.js) - !important pour
-   gagner sur les display inline (ex. display: contents des lignes de la matrice staff) */
+/* Element hidden by the dashboard filter (dashboard_filter_controller.js) - !important to beat
+   inline displays (e.g. display: contents on the staff matrix rows) */
 .cm-filter-hidden { display: none !important; }
 
-/* Boutons + badges de la charte (design_handoff_dashboards/css/campus-theme.css) - jusqu'ici
-   seuls les .btn Tabler étaient utilisés ; les dashboards introduisent les variantes or/outline
-   de la maquette */
+/* Buttons + badges of the design system (design_handoff_dashboards/css/campus-theme.css) - until
+   now only Tabler's .btn were used; the dashboards introduce the mockup's gold/outline variants */
 .cm-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;
   border-radius: var(--cm-radius-sm); padding: 8px 16px;
@@ -3490,13 +3489,13 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-badge--gray   { background: var(--cm-border-soft); color: var(--cm-faint); }
 
 /* ===========================================================================
-   Progression pédagogique (design_handoff_progression) - écrans 4a/4b/3a/3c/5a/2a/2b.
-   Tout est exprimé en jetons --cm-* : le thème sombre suit sans règle dédiée.
+   Progression pédagogique (design_handoff_progression) - screens 4a/4b/3a/3c/5a/2a/2b.
+   Everything is expressed in --cm-* tokens: dark mode follows with no dedicated rule.
    =========================================================================== */
 
 .cm-btn--sm { padding: 5px 12px; font-size: 12px; }
 
-/* -- Barre de filtres partagée 4a/4b ------------------------------------- */
+/* -- Filter bar shared by 4a/4b ------------------------------------------ */
 .cm-prog-filters { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
 .cm-prog-filters__field { display: flex; align-items: center; gap: 7px; font: 600 12px var(--cm-font-ui); color: var(--cm-muted); }
 .cm-prog-filters__select {
@@ -3504,13 +3503,13 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
   border-radius: var(--cm-radius-sm); padding: 7px 12px;
   font: 600 12.5px var(--cm-font-ui); min-width: 150px;
 }
-/* Le multi-select « Classes » reste sur une ligne comme la maquette : il se déroule au focus */
+/* The « Classes » multi-select stays on one line as in the mockup: it unfolds on focus */
 .cm-prog-filters__select[multiple] { height: 36px; overflow: hidden; }
 .cm-prog-filters__select[multiple]:focus { height: auto; overflow: auto; }
 .cm-prog-filters__action { margin-left: auto; display: flex; align-items: center; gap: 6px; }
 .cm-prog-filters__month { font: 600 12.5px var(--cm-font-ui); color: var(--cm-ink); }
 
-/* -- 4a : dix colonnes de mois à défilement horizontal -------------------- */
+/* -- 4a: ten month columns with horizontal scrolling --------------------- */
 .cm-prog-months {
   display: grid; grid-auto-flow: column; grid-auto-columns: 316px; gap: 12px;
   overflow-x: auto; padding-bottom: 10px; align-items: start;
@@ -3542,7 +3541,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-prog-week__range { font-size: 11px; color: var(--cm-faint); }
 .cm-prog-week__body { padding: 10px 12px; display: flex; flex-direction: column; gap: 7px; }
 
-/* Libellé de regroupement, partagé entre les blocs de classe (4a) et de jour (4b) */
+/* Grouping label, shared by the class blocks (4a) and the day blocks (4b) */
 .cm-prog-classblock { display: flex; flex-direction: column; gap: 6px; }
 .cm-prog-classblock__head { display: flex; align-items: center; gap: 8px; }
 .cm-prog-classblock__label {
@@ -3585,7 +3584,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 /* §4.3 / §4.7 : « signalée visuellement sur la vue de progression » */
 .cm-prog-card__flag { margin-top: 4px; font: 600 10.5px var(--cm-font-ui); color: var(--cm-warn-tx); }
 
-/* -- 3a : chips de classe + tableau -------------------------------------- */
+/* -- 3a: class chips + table --------------------------------------------- */
 .cm-prog-chips { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
 .cm-prog-chips__label { font: 600 12px var(--cm-font-ui); color: var(--cm-muted); }
 .cm-prog-chip {
@@ -3597,7 +3596,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-prog-chip.is-active { border-color: var(--cm-brand); background: var(--cm-blue-bg); color: var(--cm-blue-tx); }
 .cm-prog-dfs { font: 600 12px var(--cm-font-ui); color: var(--cm-text); }
 
-/* -- Lignes réordonnables, partagées 3c / 5a / 2a ------------------------- */
+/* -- Reorderable rows, shared by 3c / 5a / 2a ---------------------------- */
 .cm-prog-rows { display: flex; flex-direction: column; gap: 9px; }
 .cm-prog-row {
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
@@ -3669,8 +3668,8 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-prog-cardhead__actions { margin-left: auto; display: flex; gap: 8px; }
 .cm-prog-hint { margin: 10px 0 0; font-size: 11.5px; color: var(--cm-faint); }
 
-/* Formulaires repliés (ajout séquence / évaluation / séance) : un <form> à part entière,
-   jamais imbriqué dans un autre - cf. la classe de bug relevée à l'audit UFA */
+/* Collapsed forms (add séquence / evaluation / séance): a <form> in its own right, never nested in
+   another one - see the bug class found in the UFA audit */
 .cm-prog-inlineform {
   display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap;
   padding: 14px 18px; border-top: 1px solid var(--cm-border-soft);
@@ -3712,7 +3711,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-prog-options__check small { display: block; font-weight: 400; font-size: 11px; color: var(--cm-faint); }
 .cm-prog-options > button { margin-left: auto; }
 
-/* -- 3c : étapes du formulaire de création -------------------------------- */
+/* -- 3c: steps of the creation form -------------------------------------- */
 .cm-prog-form { display: flex; flex-direction: column; gap: 18px; }
 .cm-prog-step { display: flex; flex-direction: column; gap: 8px; }
 .cm-prog-step__title { margin: 0; font: 600 12px var(--cm-font-ui); color: var(--cm-muted); letter-spacing: .4px; text-transform: uppercase; }
@@ -3757,7 +3756,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-prog-note__title { display: block; font: 600 12px var(--cm-font-ui); color: var(--cm-muted); letter-spacing: .4px; text-transform: uppercase; }
 .cm-prog-note__list { margin: 6px 0 0; padding-left: 18px; font-size: 12px; line-height: 1.55; color: var(--cm-muted); }
 
-/* -- 2a : créneaux associés à une séance ---------------------------------- */
+/* -- 2a: créneaux linked to a séance ------------------------------------- */
 .cm-prog-slots { display: flex; flex-direction: column; gap: 4px; }
 .cm-prog-slot { display: flex; align-items: center; gap: 7px; }
 .cm-prog-slot__group { padding: 2px 9px; border-radius: 999px; background: var(--cm-navy); color: #fff; font: 600 10.5px var(--cm-font-ui); }
@@ -3770,7 +3769,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-prog-slot__button--empty { border-style: dashed; background: var(--cm-surface); color: var(--cm-muted); }
 .cm-prog-slot__flag { font: 600 10.5px var(--cm-font-ui); color: var(--cm-warn-tx); }
 
-/* -- 2b : sélecteur de créneaux ------------------------------------------- */
+/* -- 2b: créneau picker --------------------------------------------------- */
 .cm-prog-picker {
   border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
   background: var(--cm-surface); color: var(--cm-text);
@@ -3799,7 +3798,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-prog-picker__legend { font: 600 12px var(--cm-font-ui); color: var(--cm-muted); letter-spacing: .4px; text-transform: uppercase; }
 .cm-prog-picker__foot { padding: 13px 20px; border-top: 1px solid var(--cm-border-soft); display: flex; justify-content: flex-end; gap: 8px; }
 
-/* Pastille D/F/S sur l'en-tête de colonne du Carnet de notes (evaluation_grid_controller.js) */
+/* D/F/S chip on the Carnet de notes column header (evaluation_grid_controller.js) */
 .cm-prog-natureDot {
   display: inline-grid; place-items: center; width: 16px; height: 16px; margin-right: 5px;
   border-radius: 4px; font: 700 10px var(--cm-font-ui); vertical-align: 1px;
@@ -3809,18 +3808,18 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-prog-natureDot--summative  { background: var(--cm-red-bg);  color: var(--cm-red-tx); }
 
 /* ==========================================================================
-   Cahier de texte (design_handoff_cahier_de_texte 2a/2b) - trois temps, chacun avec sa visibilité,
-   ses documents et ses travaux.
+   Cahier de texte (design_handoff_cahier_de_texte 2a/2b) - three parts, each with its own
+   visibility, its documents and its assignments.
    ========================================================================== */
 
-/* En-tête de temps : pastille numérotée, titre, état de visibilité et son réglage. */
+/* Part header: numbered chip, title, visibility state and its setting. */
 .cm-log-section__head { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--cm-border-soft); }
 .cm-step { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 700 11px var(--cm-font-ui); flex: none; }
 .cm-step--gold { background: var(--cm-gold-bg); color: var(--cm-gold-tx); }
 .cm-step--blue { background: var(--cm-blue-bg); color: var(--cm-blue-tx); }
 .cm-step--gray { background: var(--cm-border-soft); color: var(--cm-muted); }
 
-/* Menu de visibilité : quatre choix en cartes, celui en vigueur mis en avant. */
+/* Visibility menu: four choices as cards, the one in force brought forward. */
 .cm-visibility-menu { width: 288px; padding: 12px; }
 .cm-visibility-menu__title { font: 600 11px var(--cm-font-ui); text-transform: uppercase; letter-spacing: .4px; color: var(--cm-muted); margin-bottom: 8px; }
 .cm-visibility-menu__note { font-size: 11.5px; color: var(--cm-faint); margin: 8px 0 0; line-height: 1.5; }
@@ -3832,7 +3831,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-visibility-option:hover { border-color: var(--cm-brand); }
 .cm-visibility-option.is-selected { border-color: var(--cm-brand); background: var(--cm-mail-tint-bg); color: var(--cm-brand-strong); }
 
-/* Documents d'un temps, en pastilles supprimables. */
+/* Documents of a part, as removable chips. */
 .cm-doc-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .cm-doc-row__label { font: 600 12px var(--cm-font-ui); color: var(--cm-muted); }
 .cm-doc-chip { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--cm-border); border-radius: var(--cm-radius-sm); padding: 5px 10px; font-size: 12.5px; background: var(--cm-surface); }
@@ -3844,7 +3843,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-inline-add { font: 600 12.5px var(--cm-font-ui); color: var(--cm-brand-strong); text-decoration: none; }
 .cm-inline-add:hover { text-decoration: underline; color: var(--cm-brand-strong); }
 
-/* Travaux donnés sur un temps. */
+/* Assignments given on a part. */
 .cm-work-list { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
 .cm-work { display: flex; align-items: center; gap: 12px; border: 1px solid var(--cm-border-soft); border-radius: var(--cm-radius-sm); padding: 12px 14px; background: var(--cm-surface-soft); }
 .cm-work__icon { width: 32px; height: 32px; border-radius: var(--cm-radius-sm); background: var(--cm-mail-tint-bg); color: var(--cm-brand-strong); display: grid; place-items: center; font: 700 13px var(--cm-font-ui); flex: none; }
@@ -3852,7 +3851,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-work__title { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); }
 .cm-work__meta { font-size: 12px; color: var(--cm-faint); }
 
-/* Modal (2b) - même famille que le panneau latéral, mais centré. */
+/* Modal (2b) - same family as the side panel, but centered. */
 .cm-modal {
     position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 620px; max-width: calc(100vw - 40px);
     max-height: calc(100vh - 80px); background: var(--cm-surface); border-radius: var(--cm-radius);
@@ -3864,7 +3863,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-modal__body { padding: 22px 24px; flex: 1; overflow-y: auto; }
 .cm-modal__footer { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 24px; border-top: 1px solid var(--cm-border-soft); background: var(--cm-surface-soft); flex: none; }
 
-/* Grille de types de travail : trois colonnes de cartes sélectionnables, la radio elle-même masquée. */
+/* Work-type grid: three columns of selectable cards, the radio itself hidden. */
 .cm-field-label { font: 600 12px var(--cm-font-ui); color: var(--cm-muted); margin-bottom: 6px; }
 .cm-nature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
 .cm-nature-card { border: 1px solid var(--cm-border); border-radius: var(--cm-radius-sm); padding: 10px 12px; cursor: pointer; display: block; }
@@ -3873,15 +3872,15 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-nature-card__hint { display: block; font-size: 11.5px; color: var(--cm-faint); }
 .cm-nature-card:has(input:checked) { border-color: var(--cm-brand); background: var(--cm-mail-tint-bg); }
 
-/* Barre d'actions unique en pied d'écran (une seule par page, cf. .cm-actionbar existant). */
+/* Single action bar at the foot of the screen (one per page, cf. the existing .cm-actionbar). */
 .cm-footer-actions { display: flex; justify-content: flex-end; margin-bottom: 16px; }
 
-/* Le thème Bootstrap rend déjà un libellé pour chaque radio ; la carte de type porte le sien, plus
-   son sous-texte, et l'astérisque de champ requis n'a pas de sens sur un choix parmi six. */
+/* The Bootstrap theme already renders a label for each radio; the type card carries its own, plus
+   its sub-text, and the required-field asterisk makes no sense on a choice among six. */
 .cm-nature-card .form-check-label, .cm-nature-card .form-check { display: contents; }
 .cm-nature-card > .form-check > .form-check-label { display: none; }
 
-/* Travail à réaliser côté étudiant (4a) : une carte par travail, groupée par échéance. */
+/* Work to do, student side (4a): one card per assignment, grouped by deadline. */
 .cm-group-label { font: 600 11px var(--cm-font-ui); text-transform: uppercase; letter-spacing: .4px; color: var(--cm-muted); margin: 18px 0 8px; }
 .cm-group-label--late { color: var(--cm-red-tx); }
 .cm-work-card { display: flex; align-items: center; gap: 14px; background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 14px 18px; margin-bottom: 8px; }
@@ -3892,7 +3891,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-work-card__due.is-late { color: var(--cm-red-tx); }
 .cm-work-card__action { flex: none; }
 
-/* Vue cours du cahier de texte (1b) : liste des séances à gauche, aperçu à droite. */
+/* Course view of the cahier de texte (1b): list of séances on the left, preview on the right. */
 .cm-course-view { display: grid; grid-template-columns: 330px 1fr; gap: 16px; align-items: start; }
 .cm-session-list { display: flex; flex-direction: column; }
 .cm-session { display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-bottom: 1px solid var(--cm-border-faint); text-decoration: none; color: inherit; }
@@ -3913,8 +3912,8 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     .cm-course-view { grid-template-columns: 1fr; }
 }
 
-/* Frise de séquence en tête du cahier de texte (2a) : une barre par séance, l'état se lit à la
-   couleur - passé, en cours, à venir. */
+/* Séquence timeline at the top of the cahier de texte (2a): one bar per séance, the state reads
+   from the color - past, current, upcoming. */
 .cm-seq-strip { display: flex; gap: 12px; margin-top: 14px; }
 .cm-seq-strip__item { flex: 1; min-width: 0; }
 .cm-seq-bar { display: block; height: 7px; border-radius: 999px; background: var(--cm-border); }
@@ -3923,8 +3922,8 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-seq-label { display: block; font-size: 11.5px; color: var(--cm-faint); margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cm-seq-label.is-current { color: var(--cm-brand-strong); font-weight: 600; }
 
-/* Pastilles de choix (maquette 2b) : échéance et formats de dépôt. Les cases à cocher gardent leur
-   rôle - c'est leur habillage qui change, la coche elle-même disparaissant sous la pastille. */
+/* Choice chips (mockup 2b): deadline and submission formats. The checkboxes keep their role - only
+   their dressing changes, the tick itself disappearing under the chip. */
 .cm-pill-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .cm-pill {
     border: 1px solid var(--cm-border); background: var(--cm-surface); color: var(--cm-text);
@@ -3940,7 +3939,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 }
 .cm-pill-choice .form-check:has(input:checked) .form-check-label { border-color: var(--cm-brand); background: var(--cm-mail-tint-bg); color: var(--cm-brand-strong); }
 
-/* Menu « Importer depuis une séance » (2a) : les suggestions d'abord, la liste complète ensuite. */
+/* « Importer depuis une séance » menu (2a): the suggestions first, the full list after. */
 .cm-import-menu { width: 400px; padding: 12px; max-height: 70vh; overflow-y: auto; }
 .cm-import-row { display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: var(--cm-radius-sm); }
 .cm-import-row:hover { background: var(--cm-surface-alt); }
@@ -3948,13 +3947,13 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-import-row__kind { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
 .cm-import-row__meta { font-size: 12px; color: var(--cm-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Les radios de visibilité sont dans les cartes de choix, pas à côté : la carte cochée se reconnaît
-   à son fond, comme la grille des types de travail. */
+/* The visibility radios are inside the choice cards, not next to them: the checked card is
+   recognised by its background, like the work-type grid. */
 .cm-visibility-option input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .cm-visibility-option .form-check { display: contents; }
 
-/* Le titre d'un travail est un lien vers sa page : il garde l'allure d'un titre, la couleur du lien
-   n'apparaissant qu'au survol. */
+/* An assignment's title is a link to its page: it keeps the look of a title, the link color
+   appearing only on hover. */
 .cm-work__title a { color: inherit; text-decoration: none; }
 .cm-work__title a:hover { color: var(--cm-brand-strong); text-decoration: underline; }
 
@@ -4490,23 +4489,22 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 [data-bs-theme=dark] .cm-training-unlocked { background: #1d3327; border-color: #2e5c44; color: #8cc3a2; }
 
 /* ============================================================================
-   Création d'un travail (2a) et liste des travaux (2b)
-   design/design_handoff_creation_travail — les mesures viennent du README du
-   handoff, qui prime sur les valeurs Tabler correspondantes.
+   Création d'un travail (2a) and the assignment list (2b)
+   design/design_handoff_creation_travail — the measurements come from the
+   handoff's README, which outranks the matching Tabler values.
    ============================================================================ */
 
-/* ---------- 2a · L'assistant ---------- */
+/* ---------- 2a · The wizard ---------- */
 .cm-wizard-card {
   background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: 11px;
   overflow: hidden; display: flex; flex-direction: column;
 }
 .cm-wizard-form { display: flex; flex-direction: column; }
-/* minmax(0, 1fr) et non 1fr : une colonne 1fr prend pour plancher la largeur intrinsèque de son
-   contenu, et une seule ligne de productions trop large repoussait alors toute la carte hors de
-   l'écran. */
+/* minmax(0, 1fr) and not 1fr: a 1fr column takes its content's intrinsic width as a floor, and a
+   single over-wide production row then pushed the whole card off screen. */
 .cm-wizard { display: grid; grid-template-columns: 230px minmax(0, 1fr); min-height: 440px; }
 
-/* La colonne des étapes : cliquables librement, l'état se lit à la pastille. */
+/* The step column: freely clickable, the state reads from the chip. */
 .cm-wizard__rail {
   border-right: 1px solid var(--cm-border-soft); background: var(--cm-surface-soft);
   padding: 16px 12px; display: flex; flex-direction: column; gap: 4px;
@@ -4522,7 +4520,7 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
   background: var(--cm-border-soft); color: var(--cm-faint); font: 600 11px var(--cm-font-ui);
 }
 .cm-wizard__step.is-current .cm-wizard__num { background: var(--cm-brand); color: #fff; }
-/* Une étape franchie porte une coche, pas son numéro : c'est la coche qui dit « c'est fait ». */
+/* A completed step carries a tick, not its number: the tick is what says « c'est fait ». */
 .cm-wizard__step.is-done .cm-wizard__num { background: #1f7a54; color: #fff; font-size: 0; }
 .cm-wizard__step.is-done .cm-wizard__num::after { content: '✓'; font-size: 11px; }
 .cm-wizard__steptext { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
@@ -4532,8 +4530,9 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 
 .cm-wizard__panel { padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .cm-wizard__step-panel { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-/* L'éditeur riche de la consigne est un champ parmi d'autres, pas la page : sa hauteur est fixée
-   au montage (data-hugerte-editor-height-value), il ne reste ici qu'à l'empêcher de déborder. */
+/* The rich editor of the instructions is one field among others, not the page: its height is set at
+   mount time (data-hugerte-editor-height-value), all that is left here is to keep it from
+   overflowing. */
 .cm-wizard__panel .tox-hugerte { max-width: 100%; }
 .cm-wizard__conditional { display: flex; flex-direction: column; gap: 8px; }
 .cm-wizard__label {
@@ -4543,7 +4542,7 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-wizard__label-note { font: 400 11.5px var(--cm-font-ui); color: var(--cm-faint); text-transform: none; letter-spacing: 0; }
 .cm-wizard__note { font-size: 11.5px; color: var(--cm-faint); }
 
-/* Bandeau d'avertissement ambre : classe manquante, échéances multiples. */
+/* Amber warning banner: missing class, multiple deadlines. */
 .cm-wizard__banner {
   display: flex; align-items: flex-start; gap: 9px;
   border: 1px solid #eadfc3; background: #fdf6e8; color: #8a6a1f;
@@ -4557,8 +4556,8 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-wizard__hint { font-size: 12px; color: var(--cm-faint); flex: 1; }
 .cm-wizard__foot .cm-btn:disabled { background: var(--cm-disabled); border-color: var(--cm-disabled); cursor: not-allowed; }
 
-/* Pastilles à cocher/à choisir : classes, options, caractère, notation. La radio ou la case
-   disparaît sous la pastille, qui porte à elle seule l'état. */
+/* Chips to tick or to pick: classes, options, nature, grading. The radio or the checkbox
+   disappears under the chip, which carries the state on its own. */
 .cm-pillpick { display: flex; flex-wrap: wrap; gap: 6px; }
 .cm-pillpick__item { display: inline-flex; margin: 0; cursor: pointer; }
 .cm-pillpick__item input { position: absolute; opacity: 0; width: 1px; height: 1px; }
@@ -4569,15 +4568,15 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-pillpick__item:hover > span { border-color: var(--cm-brand); }
 .cm-pillpick__item:has(input:checked) > span { border-color: var(--cm-brand); background: var(--cm-blue-bg-soft); color: var(--cm-brand-strong); }
 .cm-pillpick__item:has(input:focus-visible) > span { outline: 2px solid var(--cm-brand); outline-offset: 2px; }
-/* Le thème Bootstrap enveloppe chaque radio dans un .form-check avec son propre libellé (et son
-   astérisque de champ requis) : la pastille porte déjà le sien, on efface l'enveloppe. Même
-   traitement que .cm-nature-card. */
+/* The Bootstrap theme wraps each radio in a .form-check with its own label (and its required-field
+   asterisk): the chip already carries its own, so the wrapper is blanked out. Same treatment as
+   .cm-nature-card. */
 .cm-pillpick__item .form-check, .cm-segment .form-check, .cm-typecard .form-check,
 .cm-visibility .cm-radiocard .form-check { display: contents; }
 .cm-pillpick__item .form-check-label, .cm-segment .form-check-label, .cm-typecard .form-check-label,
 .cm-visibility .cm-radiocard .form-check-label { display: none; }
 
-/* Les quatre segments « au sein de la classe » : des cartes carrées, pas des pastilles. */
+/* The four « au sein de la classe » segments: square cards, not chips. */
 .cm-segment-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .cm-segment { display: inline-flex; margin: 0; cursor: pointer; }
 .cm-segment input { position: absolute; opacity: 0; width: 1px; height: 1px; }
@@ -4589,8 +4588,8 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-segment:has(input:checked) > span { border-color: var(--cm-brand); background: #f6fafe; color: var(--cm-brand-strong); }
 .cm-audience-pane { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
 
-/* Sélection d'élèves : une liste à cocher avec sa recherche, la classe comptant une trentaine
-   d'élèves - inutile d'aller les chercher au serveur. */
+/* Student selection: a tick list with its own search, the class counting some thirty students -
+   no need to go to the server for them. */
 .cm-studentpick { display: flex; flex-direction: column; border: 1px solid var(--cm-border-soft); border-radius: var(--cm-radius); overflow: hidden; }
 .cm-studentpick__head {
   display: flex; align-items: center; gap: 10px; padding: 9px 14px;
@@ -4608,8 +4607,8 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-studentpick__row input { accent-color: var(--cm-brand); margin: 0; }
 .cm-studentpick__name { font-size: 13px; color: var(--cm-muted); }
 .cm-studentpick__row:has(input:checked) .cm-studentpick__name { font-weight: 600; color: var(--cm-ink); }
-/* Élève d'une autre classe, ou écarté par la recherche : hors de la liste sans quitter le DOM,
-   pour que sa case reste soumise si jamais elle était cochée. */
+/* A student from another class, or filtered out by the search: out of the list without leaving the
+   DOM, so their checkbox is still submitted if it happened to be ticked. */
 .cm-studentpick__row.is-off-program, .cm-studentpick__row.is-filtered { display: none; }
 
 .cm-groupchips { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -4621,8 +4620,8 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-inline-field__label { font-size: 13px; color: var(--cm-text); }
 .cm-inline-field__hint { font-size: 11.5px; color: var(--cm-faint); }
 
-/* Grille des sept types de travail : trois colonnes de cartes, sans texte d'aide gris - la
-   maquette n'en veut pas. */
+/* Grid of the seven work types: three columns of cards, without grey help text - the mockup does
+   not want any. */
 .cm-typegrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .cm-typecard { border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 12px 14px; margin: 0; cursor: pointer; }
 .cm-typecard input { position: absolute; opacity: 0; width: 1px; height: 1px; }
@@ -4656,7 +4655,7 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-select:focus { border-color: var(--cm-brand); }
 .cm-select--time { border-radius: 999px; padding: 7px 13px; }
 
-/* Supports et exemples : chips des fichiers/liens retenus, et la zone de dépôt sous elles. */
+/* Supports and examples: chips of the files/links kept, and the drop zone below them. */
 .cm-attachpick { display: flex; flex-direction: column; gap: 8px; }
 .cm-dropzone {
   border: 1.5px dashed var(--cm-disabled); border-radius: 9px; padding: 10px;
@@ -4664,19 +4663,20 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 }
 .cm-dropzone.is-hover { border-color: var(--cm-brand); background: var(--cm-blue-bg-soft); }
 .cm-linkish { border: 0; background: none; padding: 0; font: 600 12.5px var(--cm-font-ui); color: var(--cm-brand-strong); cursor: pointer; text-decoration: underline; }
-/* Un support déjà joint que l'on décroche : la chip se barre au lieu de disparaître - sa case doit
-   rester dans le formulaire jusqu'à l'enregistrement, et on doit pouvoir se raviser avant. */
+/* A support already attached that is being detached: the chip is struck through instead of
+   disappearing - its checkbox must stay in the form until saving, and one must be able to change
+   one's mind before that. */
 .cm-chip--kept { cursor: pointer; }
 .cm-chip--kept input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .cm-chip--kept.is-dropped { opacity: .55; }
 .cm-chip--kept.is-dropped > span:first-of-type { text-decoration: line-through; }
 
-/* Productions attendues : une ligne par production. Une échéance propre fait passer la ligne en
-   ambre - c'est la seule chose qui distingue les deux cas à la lecture. */
+/* Expected productions: one row per production. A deadline of its own turns the row amber - that is
+   the only thing that tells the two cases apart at a glance. */
 .cm-prod-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .cm-prod-row__name { flex: 1; min-width: 0; font-size: 13px; padding: 9px 12px; }
-/* Largeurs fixes : ces trois contrôles se lisent en colonnes d'une ligne à l'autre, et le thème
-   Bootstrap étirerait sinon chaque <select> à toute la largeur disponible. */
+/* Fixed widths: these three controls are read as columns from one row to the next, and the
+   Bootstrap theme would otherwise stretch each <select> to the full available width. */
 .cm-prod-row__format { flex: none; width: 140px; }
 .cm-prod-row__mode { flex: none; width: 200px; }
 .cm-prod-row__date { flex: none; width: 195px; }
@@ -4692,14 +4692,14 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 
 .cm-visibility { display: flex; flex-direction: column; gap: 7px; }
 
-/* Écran de confirmation de publication. */
+/* Publication confirmation screen. */
 .cm-published { padding: 46px 40px; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
 .cm-published__check { width: 52px; height: 52px; border-radius: 50%; background: #e9f4ee; color: #1f7a54; display: grid; place-items: center; font-size: 24px; }
 .cm-published__title { font: 600 19px var(--cm-font-title); color: var(--cm-ink); }
 .cm-published__summary { font-size: 13px; color: var(--cm-muted); max-width: 560px; line-height: 1.5; margin: 0; }
 .cm-published__actions { display: flex; gap: 9px; margin-top: 6px; }
 
-/* Montage en modale ou en panneau : la même carte, posée par-dessus l'écran appelant. */
+/* Mounted as a modal or as a panel: the same card, laid over the calling screen. */
 .cm-wizard-shell {
   position: fixed; background: var(--cm-surface); z-index: 1031;
   display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 24px 60px rgba(0, 0, 0, .28);
@@ -4716,8 +4716,8 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-wizard-shell__title { font: 600 17px var(--cm-font-title); color: var(--cm-ink); }
 .cm-wizard-shell .cm-wizard-card { border: 0; border-radius: 0; flex: 1; min-height: 0; overflow-y: auto; }
 
-/* ---------- 2b · La liste des travaux ---------- */
-/* La barre d'outils vit sur le fond de page, au-dessus de la carte - pas en tête de tableau. */
+/* ---------- 2b · The assignment list ---------- */
+/* The toolbar lives on the page background, above the card - not at the head of the table. */
 .cm-worktoolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
 .cm-worktoolbar__search {
   display: flex; align-items: center; gap: 8px; width: 300px;
@@ -4751,8 +4751,8 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-worktable__action a:hover { text-decoration: underline; }
 .cm-worktable__empty { color: var(--cm-faint); font-size: 13px; }
 
-/* L'état d'un travail se lit à la couleur de son échéance, la ligne entière virant au rose quand
-   elle est échue - c'est la seule ligne qui appelle une action tout de suite. */
+/* An assignment's state reads from the color of its deadline, the whole row turning pink once it
+   has passed - it is the only row that calls for an action right away. */
 .cm-workrow__date { display: block; font: 600 12.5px var(--cm-font-ui); color: #12344d; line-height: 1.25; }
 .cm-workrow__time { display: block; font-size: 10.5px; color: inherit; }
 .cm-workrow--overdue { background: #fdf8f7; }
@@ -4771,7 +4771,7 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
   display: inline-flex; padding: 3px 10px; border-radius: 999px; white-space: nowrap;
   background: var(--cm-blue-bg-soft); color: var(--cm-brand-strong); font: 600 11.5px var(--cm-font-ui);
 }
-/* Ambre dès que le travail ne vise qu'une partie de la classe : la nuance se lit sans l'ouvrir. */
+/* Amber as soon as the assignment targets only part of the class: the nuance reads without opening it. */
 .cm-classbadge--targeted { background: #fdf6e8; color: #8a6a1f; }
 
 .cm-worksummary { display: flex; flex-wrap: wrap; gap: 28px; }
@@ -5113,8 +5113,8 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-eco-pill--ready::before { content: '●\00a0'; }
 
 /* ---------------------------------------------------------------------------------------------
-   e-CO — carte du parcours d'un coureur (écran Résultats, assets/controllers/eco_result_map_controller.js).
-   Les marqueurs sont des divIcon Leaflet : aucune image de la CSS Leaflet n'est utilisée.
+   e-CO — map of a runner's course (Résultats screen, assets/controllers/eco_result_map_controller.js).
+   The markers are Leaflet divIcons: no image from the Leaflet CSS is used.
    --------------------------------------------------------------------------------------------- */
 .eco-map { height: 380px; border-bottom-left-radius: inherit; border-bottom-right-radius: inherit; }
 .eco-map .leaflet-container { font: 400 12px var(--cm-font-ui); }
@@ -5124,7 +5124,7 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
   background: var(--cm-surface); border: 2px solid var(--cm-faint); color: var(--cm-faint);
   font: 700 12px var(--cm-font-ui); box-shadow: 0 1px 4px rgba(18, 52, 77, .35);
 }
-/* Validée par ce coureur : la balise se lit en vert, comme le tableau juste en dessous. */
+/* Validated by this runner: the checkpoint reads in green, like the table just below. */
 .eco-map__checkpoint-dot.is-validated { border-color: #1f7a54; color: #1f7a54; }
 
 /* Parcours map (1e): a located checkpoint is filled in, Départ and Arrivée keep the navy. */
@@ -5147,7 +5147,7 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 /* The pill sizes itself on its text: Leaflet centres a size-less divIcon on its own point. */
 .eco-map__runner { width: auto !important; height: auto !important; margin: -11px 0 0 -20px; }
 
-/* Analyse de performance : arrêts, scans refusés et légende de la carte. */
+/* Performance analysis: stops, refused scans and the map legend. */
 .eco-map__refused-mark {
   display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%;
   background: #fdf3f2; border: 2px solid #b8493d; color: #b8493d;
@@ -5165,13 +5165,13 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .eco-map__legend-swatch--live-sos { width: 10px; height: 10px; border-radius: 50%; background: var(--cm-red-tx); }
 .eco-map__legend-swatch--refused { width: 10px; height: 10px; border-radius: 50%; background: #fdf3f2; border: 2px solid #b8493d; }
 
-/* Carte en plein écran : le bouton Leaflet, et le repli en surcouche fixe quand le navigateur
-   refuse l'API Fullscreen. */
+/* Fullscreen map: the Leaflet button, and the fixed overlay fallback when the browser refuses the
+   Fullscreen API. */
 .eco-map__fullscreen a { font-size: 16px; line-height: 26px; text-align: center; }
 .eco-map--expanded {
   position: fixed; inset: 0; z-index: 1080; height: auto; border-radius: 0;
 }
-/* Le plein écran natif sort l'élément du flux : sans hauteur explicite il garde ses 380 px. */
+/* Native fullscreen takes the element out of the flow: without an explicit height it keeps its 380px. */
 .eco-map:fullscreen { height: 100%; border-radius: 0; }
 .eco-map__legend-swatch--worst { background: #b8493d; }
 .eco-map__legend-swatch--best { background: #1f7a54; }

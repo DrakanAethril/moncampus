@@ -1,7 +1,7 @@
-{# Une ligne « quiz ajouté » du vivier d'un concours live. Cet écran n'a pas de formulaire Symfony :
-   le gabarit sert uniquement de prototype à quiz_pool_controller.js, qui le clone à chaque ajout.
-   D'où le name en tableau plutôt qu'indexé - l'ordre des lignes suffit, un concours live joue le
-   vivier dans l'ordre. #}
+{# One « quiz added » row of a live contest's pool. This screen has no Symfony form: the template
+   serves only as a prototype for quiz_pool_controller.js, which clones it on every addition.
+   Hence the array-style name rather than an indexed one - the order of the rows is enough, a live
+   contest plays the pool in order. #}
 <div class="cm-quizpool__row" data-quiz-pool-row>
     <select class="form-select cm-quizpool__select" name="additionalTemplateIds[]" data-quiz-pool-target="select" data-action="change->quiz-pool#update">
         <option value="">{{ 'quizLaunchAdditionalTemplatePlaceholder'|trans }}</option>

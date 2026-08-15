@@ -1,7 +1,7 @@
 {% extends 'layout/app.html.twig' %}
 
-{# Écran de confirmation après publication (2a). Une page à part, atteinte par redirection : le
-   travail existe désormais, revenir en arrière ne doit pas rejouer sa création. #}
+{# Confirmation screen after publication (2a). A page of its own, reached by redirect: the assignment
+   now exists, and going back must not replay its creation. #}
 
 {% set page_heading = 'assignmentWizardPageHeadingWithClass'|trans({'%class%': assignment.program.displayShortName}) %}
 

@@ -8,14 +8,14 @@ use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
 /**
- * Le média qu'un import a nommé sans pouvoir le déposer.
+ * The medium an import named without being able to upload it.
  *
- * Une IA ne peut pas déposer un fichier dans l'application : elle nomme celui qu'on lui a montré.
- * La question est créée quand même et marquée incomplète — le verrou est au lancement, là où un
- * média manquant casserait vraiment une passation. La colonne est distincte de image_storage_key,
- * qui est une clé d'objet déjà déposé : joindre le fichier efface l'une et renseigne l'autre.
+ * An AI cannot upload a file into the application: it names the one it was shown. The question is
+ * created all the same and marked incomplete — the lock is at launch time, where a missing medium
+ * would really break an attempt. The column is distinct from image_storage_key, which is the key of
+ * an object already uploaded: attaching the file clears one and fills the other.
  *
- * Colonne nullable ajoutée : aucune ligne existante n'est réécrite.
+ * Nullable column added: no existing row is rewritten.
  */
 final class Version20260812120038 extends AbstractMigration
 {

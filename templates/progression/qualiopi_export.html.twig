@@ -107,7 +107,7 @@
 </head>
 <body>
 
-{# ---- Page de garde : qui, quoi, quand, combien --------------------------- #}
+{# ---- Cover page: who, what, when, how many ------------------------------ #}
 <div class="qp-cover">
     <div class="qp-cover__kicker">Progression pédagogique{{ yearLabel ? ' · ' ~ yearLabel }}</div>
     <h1 class="qp-cover__title">{{ topic ? topic.name : '—' }}</h1>
@@ -170,9 +170,9 @@
     </tbody>
 </table>
 
-{# The document counts ONE thing, and says which. A séance dédoublée par groupe est donnée deux fois
-   par le formateur, mais chaque apprenant n'en reçoit qu'une : ce sont les heures reçues qui sont
-   comptées ici, et le dédoublement est nommé créneau par créneau dans la progression détaillée. #}
+{# The document counts ONE thing, and says which. A séance split by group is given twice by the
+   trainer, but each learner only receives one of them: it is the hours received that are counted
+   here, and the splitting is named slot by slot in the detailed progression. #}
 {% if data.perGroupSeanceCount > 0 %}
     <div class="qp-note">
         <strong>Une lecture unique : les heures reçues par un apprenant.</strong>
@@ -284,7 +284,7 @@
     </div>
 {% endfor %}
 
-{# ---- 3. Méthodes : le déroulé séance par séance -------------------------- #}
+{# ---- 3. Methods: the running order, séance by séance --------------------- #}
 <h2 class="qp-h2 qp-break">3. Méthodes pédagogiques — déroulé des séances</h2>
 <p class="qp-crit">Critère 3 — les méthodes réellement mises en œuvre : ce que fait le formateur, ce que fait l’apprenant, et avec quels supports.</p>
 

@@ -55,15 +55,15 @@
     {% endif %}
 {% endmacro %}
 
-{# Quelle tranche du livret rendre. 'all' (défaut) = tout, c'est la visualisation web et l'export
-   PDF habituel. Quand le calendrier d'alternance est un fichier PDF téléversé, l'export ne peut pas
-   le faire passer par ce HTML : App\Service\InternshipBookletPdfExporter rend alors 'before' puis
-   'after' et fusionne [before, fichier, after], le fichier prenant la place de la page Calendrier.
-   Une tranche ne coupe qu'à cette frontière-là, nulle part ailleurs. #}
+{# Which slice of the booklet to render. 'all' (default) = everything, which is the web view and the
+   usual PDF export. When the alternation calendar is an uploaded PDF file, the export cannot pass it
+   through this HTML: App\Service\InternshipBookletPdfExporter then renders 'before' then 'after' and
+   merges [before, file, after], the file taking the place of the Calendrier page.
+   A slice only cuts at that boundary, nowhere else. #}
 {% set slice = bookletSlice|default('all') %}
-{# Pages ajoutées par ce fichier au-delà de la page unique qu'occupait le calendrier généré. Les
-   numéros de page du livret sont écrits en dur (pieds de page et sommaire), il faut donc les
-   décaler à la main pour tout ce qui suit la section Calendrier. #}
+{# Pages added by this file beyond the single page the generated calendar used to take. The
+   booklet's page numbers are hard-coded (footers and table of contents), so they have to be shifted
+   by hand for everything following the Calendrier section. #}
 {% set calendarExtraPages = calendarExtraPages|default(0) %}
 {# Export partiel : the id of the single InternshipEvaluationPeriod to keep, or null for the whole
    booklet. A partial export is the cover page, that one period's own pages, and the back cover -
@@ -128,9 +128,9 @@
           <tr><th colspan="2" class="lv-th-main">INFORMATIONS ALTERNANT</th></tr>
           <tr><td class="lv-td-label" style="width: 34%;">Section&nbsp;:</td><td class="lv-td-value">{{ program.displayShortName }}</td></tr>
           <tr><td class="lv-td-label">Nom Pr&eacute;nom&nbsp;:</td><td class="lv-td-value">{{ studentName }}</td></tr>
-          {# contactEmail, jamais student.email : ce dernier est l'adresse interne @beaupeyrat.lan
-             dérivée du login LDAP, pas une adresse à laquelle qui que ce soit écrit. Même règle
-             que la ligne Mail du tuteur plus bas et que partout ailleurs dans l'application. #}
+          {# contactEmail, never student.email: the latter is the internal @beaupeyrat.lan address
+             derived from the LDAP login, not an address anybody writes to. Same rule as the tutor's
+             Mail row further down and as everywhere else in the application. #}
           <tr><td class="lv-td-label">&#9742; / Mail&nbsp;:</td><td class="lv-td-value">{{ student.phoneNumber }}{% if student.phoneNumber and student.contactEmail %} &mdash; {% endif %}{{ student.contactEmail ?? '' }}</td></tr>
         </tbody>
       </table>
@@ -189,8 +189,8 @@
         </tr>
       </thead>
       <tbody>
-        {# Une ligne par groupe de matières, dans l'ordre alphabétique (celui du dépôt), face à
-           l'enseignant du groupe - à défaut l'un de ceux de ses matières, voir
+        {# One row per matière group, in alphabetical order (the repository's own), facing the
+           group's teacher - failing that one of the teachers of its matières, see
            App\Service\InternshipBookletBuilder::resolveTopicGroupTeacher(). #}
         {% for row in teamRows %}
           <tr>
@@ -295,10 +295,10 @@
           <th style="border: 0.5pt solid #8aa2bd; padding: 2mm; background: #1F4E79; color: #ffffff;">Le repr&eacute;sentant du CFC</th>
         </tr>
       </thead>
-      {# Les 3 signatures déjà recueillies dans l'application (InternshipLivretEngagement) sont
-         reportées ici : sans cela le livret imprimait des cases vides sous des gens qui ont
-         signé. La colonne "représentant légal" reste vierge, elle n'a pas d'équivalent en base -
-         c'est une signature manuscrite, à recueillir sur le papier. #}
+      {# The 3 signatures already collected in the application (InternshipLivretEngagement) are
+         carried over here: without that the booklet printed empty boxes under people who have
+         signed. The "représentant légal" column stays blank, it has no equivalent in the database -
+         it is a handwritten signature, to be collected on paper. #}
       {% set signatures = [
         {at: engagement ? engagement.signedStudentAt : null, by: engagement ? engagement.signedStudentBy : null},
         {at: null, by: null},
@@ -338,23 +338,23 @@
   </div>
   {% endif %}{# end of pages 2 to 9, skipped by a partial export #}
 
-{% endif %}{# fin de la tranche "before" #}
+{% endif %}{# end of the "before" slice #}
 
 {% if slice == 'all' and partialPeriodId is null %}
   <!-- PAGE 10 - II. Informations pedagogiques / Calendrier -->
   {% if calendarFileUrl %}
-    {# Le calendrier de la formation est un PDF téléversé : on l'affiche tel quel plutôt que de
-       regénérer une grille à partir des périodes. Ici, en visualisation web, il est embarqué dans
-       un lecteur PDF du navigateur ; à l'export c'est le fichier lui-même qui est fusionné à cette
-       place (voir la note sur `slice` en haut de ce fichier), ce bloc n'y apparaît jamais. #}
+    {# The program's calendar is an uploaded PDF: it is displayed as is rather than regenerating a
+       grid from the periods. Here, in the web view, it is embedded in the browser's PDF reader; on
+       export it is the file itself that is merged at this place (see the note on `slice` at the top
+       of this file), and this block never appears there. #}
     <div class="lv-page lv-page--banner">
       <img src="{{ assetBase }}{{ asset('images/livret-alternant/bandeau-aquarelle.png') }}" alt="" class="lv-banner">
       <h1 class="lv-h1" id="section-ii">II. Informations p&eacute;dagogiques</h1>
       <h2 class="lv-h2" id="section-ii-1">1. Calendrier d&rsquo;alternance</h2>
       <div style="text-align: center; font-weight: 700; font-size: 13pt; color: #1b2430;">{{ program.displayName }} &ndash; Planning d&rsquo;alternance</div>
       <object data="{{ calendarFileUrl }}" type="application/pdf" style="flex: 1; width: 100%; min-height: 180mm; border: 0.5pt solid #c9d2de; margin-top: 3mm;">
-        {# Repli pour tout ce qui n'affiche pas les PDF en ligne (et pour une impression navigateur
-           du livret web, qui ne rend pas le contenu embarqué) : le lien reste utilisable. #}
+        {# Fallback for anything that does not display PDFs inline (and for a browser print of the
+           web booklet, which does not render embedded content): the link stays usable. #}
         <div style="padding: 6mm; text-align: center;">
           <a href="{{ calendarFileUrl }}" target="_blank" rel="noopener">{{ 'internshipBookletCalendarFileLinkLabel'|trans }}</a>
         </div>
@@ -396,7 +396,7 @@
     <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page 10</span></div>
   </div>
   {% endif %}
-{% endif %}{# fin de la page Calendrier #}
+{% endif %}{# end of the Calendrier page #}
 
 {% if slice != 'before' %}
 
@@ -464,9 +464,9 @@
     <!-- Appreciation du comportement -->
     <div class="lv-page" id="section-period-{{ loop.index }}">
       <div class="lv-corner">{{ studentName }}</div>
-      {# En-tête du bloc de la période : les 5 pages qui suivent (comportement, compétences,
-         points forts, remarques) en font partie, ce que la hiérarchie typographique doit dire -
-         d'où un titre plus gros que les titres de section qu'il chapeaute. #}
+      {# Header of the period block: the 5 pages that follow (behavior, skills, strengths, remarks)
+         are part of it, which the typographic hierarchy has to say - hence a heading larger than the
+         section headings it caps. #}
       <div style="text-align: center; font-weight: 700; font-size: 16pt; color: #1F4E79; margin: 2mm 0 1mm;">{{ period.name }}&nbsp;: Date {{ period.startDate|date('d / m / Y') }}</div>
       <h2 style="color: #2E74B5; font-size: 12pt; text-align: center; margin: 0 0 2mm;">APPR&Eacute;CIATION DU COMPORTEMENT AU TRAVAIL</h2>
       <div style="text-align: center; font-weight: 700; font-size: 9pt; margin-bottom: 2mm;">Crit&egrave;res d&rsquo;appr&eacute;ciation du comportement au travail &mdash; Grille d&rsquo;aide au positionnement</div>
@@ -654,7 +654,7 @@
     </div>
   </div>
 
-{% endif %}{# fin de la tranche "after" #}
+{% endif %}{# end of the "after" slice #}
 
 </div>
 </body>

@@ -9,12 +9,12 @@ use App\Repository\AssignmentAttachmentRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Un support ou un exemple joint à un travail (design_handoff_creation_travail 2a, « Documents et
- * liens ») : soit un fichier déposé sur S3 ($storageKey), soit un lien extérieur ($url) - jamais les
- * deux, comme LessonLogAttachment, dont c'est le pendant côté travail.
+ * A support or an example attached to an assignment (design_handoff_creation_travail 2a, « Documents
+ * et liens »): either a file uploaded to S3 ($storageKey), or an external link ($url) - never both,
+ * like LessonLogAttachment, of which it is the assignment-side counterpart.
  *
- * Rien n'est écrit avant la publication du travail : les fichiers restent dans le formulaire tant
- * que l'assistant n'est pas allé au bout, et ne sont téléversés qu'au moment où le travail existe.
+ * Nothing is written before the assignment is published: the files stay in the form as long as the
+ * wizard has not run its course, and are only uploaded once the assignment exists.
  */
 #[ORM\Entity(repositoryClass: AssignmentAttachmentRepository::class)]
 #[ORM\Table(name: 'assignment_attachment')]
@@ -35,7 +35,7 @@ class AssignmentAttachment
     #[ORM\Column(length: 20, enumType: AssignmentAttachmentSourceType::class)]
     private AssignmentAttachmentSourceType $type;
 
-    // Clé d'objet S3 pour un fichier déposé - pas une URL, voir App\Service\FileUploadService.
+    // S3 object key for an uploaded file - not a URL, see App\Service\FileUploadService.
     #[ORM\Column(name: 'storage_key', length: 255, nullable: true)]
     private ?string $storageKey = null;
 

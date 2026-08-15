@@ -19,9 +19,9 @@ class EmailAttachmentRepository extends ServiceEntityRepository
     }
 
     /**
-     * Une pièce déjà stockée sous cette empreinte, quel que soit le message porteur : évite de
-     * réécrire sur S3 un fichier identique octet pour octet (la même plaquette d'entreprise
-     * envoyée à toute une promotion).
+     * An attachment already stored under this fingerprint, whatever the carrying message: avoids
+     * writing a byte-for-byte identical file to S3 again (the same company brochure sent to a whole
+     * cohort).
      */
     public function findOneByContentHash(string $contentHash): ?EmailAttachment
     {

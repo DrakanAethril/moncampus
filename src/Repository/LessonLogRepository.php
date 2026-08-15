@@ -32,8 +32,8 @@ class LessonLogRepository extends ServiceEntityRepository
     }
 
     /**
-     * Les cahiers de texte d'une formation, pour la vue cours (1b) : une requête plutôt qu'une par
-     * séance, l'écran les affichant toutes ensemble.
+     * The cahiers de texte of a program, for the course view (1b): one query rather than one per
+     * séance, the screen displaying them all together.
      *
      * @return list<LessonLog>
      */

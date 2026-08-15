@@ -28,8 +28,8 @@
         </div>
 
         {% if validated %}
-            {# Estimation déjà validée sans comparaison possible : soit l'enseignant garde sa
-               notation pour lui, soit elle n'est pas encore publiée. #}
+            {# Estimate already submitted with no comparison possible: either the teacher keeps their
+               grading to themselves, or it is not published yet. #}
             <div class="cm-sa-transmitted">
                 <span class="cm-sa-transmitted__title">{{ 'selfAssessmentTransmittedTitle'|trans }}</span>
                 <span class="cm-sa-transmitted__meta">
@@ -58,9 +58,9 @@
                     {% if questions|length > 0 %}
                         {% for section in sections %}
                             <div class="cm-sa-section">
-                                {# Repère A, B, C… de la maquette : la position de la partie, pas son
-                                   nom. `slice` et non un accès par indice - Twig ne sait pas indexer
-                                   une chaîne, il renverrait null. #}
+                                {# The mockup's A, B, C… marker: the section's position, not its name.
+                                   `slice` and not an access by index - Twig cannot index a string, it
+                                   would return null. #}
                                 <span class="cm-sa-section__letter">{{ 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'|slice(loop.index0, 1) ?: '·' }}</span>
                                 <span class="cm-sa-section__name">{{ section.name }}</span>
                                 <span class="cm-sa-section__scale">/{{ section.questions|reduce((sum, q) => sum + q.maxPoints, 0) }}</span>
@@ -82,7 +82,7 @@
                             {% endfor %}
                         {% endfor %}
                     {% else %}
-                        {# Sans barème détaillé : une seule estimation globale. #}
+                        {# With no detailed rubric: a single overall estimate. #}
                         <div class="cm-sa-row">
                             <span class="cm-sa-row__label">{{ 'selfAssessmentGlobalLabel'|trans }}</span>
                             <span class="cm-sa-row__hint">{{ 'selfAssessmentEstimateLabel'|trans }}</span>

@@ -12,19 +12,17 @@ use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * Passe la main au rôle suivant, par mail, quand une signature vient d'être apposée sur une
- * période d'évaluation : le tuteur signe -> l'alternant est prévenu que c'est à lui, l'alternant
- * signe -> les enseignants référents de la formation sont prévenus que l'équipe pédagogique doit
- * remplir sa partie.
+ * Hands over to the next role, by mail, when a signature has just been affixed to an evaluation
+ * period: the tutor signs -> the apprentice is told it is their turn, the apprentice signs -> the
+ * program's referent teachers are told the teaching team must fill in its part.
  *
- * Un service à part plutôt que du code dans les contrôleurs : chacune de ces deux signatures peut
- * être apposée depuis deux écrans (l'intéressé lui-même, ou le staff qui agit pour son compte),
- * soit quatre points d'appel pour deux messages.
+ * A separate service rather than code in the controllers: each of these two signatures can be
+ * affixed from two screens (the person themselves, or the staff acting on their behalf), that is
+ * four call sites for two messages.
  *
- * Rien n'est envoyé - silencieusement - à qui n'a pas d'adresse de contact : c'est un trou dans
- * une fiche, pas quelque chose que le signataire puisse corriger, et échouer bloquerait une
- * signature par ailleurs valide. Même règle que AlternanceReminderService::sendSingle() et
- * AlternanceEngagementService::invite().
+ * Nothing is sent - silently - to anyone with no contact address: that is a gap in a record, not
+ * something the signatory can fix, and failing would block an otherwise valid signature. Same rule
+ * as AlternanceReminderService::sendSingle() and AlternanceEngagementService::invite().
  */
 class AlternancePeriodChainNotifier
 {
@@ -34,7 +32,7 @@ class AlternancePeriodChainNotifier
     ) {
     }
 
-    // Le tuteur vient de signer : au tour de l'alternant.
+    // The tutor has just signed: the apprentice's turn.
     public function notifyStudentAfterTutorSignature(InternshipTutorLink $tutorLink, InternshipEvaluationPeriod $period): void
     {
         $this->send(
@@ -47,10 +45,10 @@ class AlternancePeriodChainNotifier
         );
     }
 
-    // L'alternant vient de signer : au tour de l'équipe pédagogique, dont les enseignants
-    // référents de la formation sont le point de contact (Program::$referentTeachers - la seule
-    // désignation nominative que porte une formation ; l'étape elle-même reste ouverte à tout
-    // enseignant du programme). Aucun référent désigné = aucun envoi, comme une adresse manquante.
+    // The apprentice has just signed: the teaching team's turn, the program's referent teachers
+    // being the point of contact (Program::$referentTeachers - the only nominative designation a
+    // program carries; the step itself stays open to any teacher of the program). No referent
+    // designated = nothing sent, like a missing address.
     public function notifyReferentTeachersAfterStudentSignature(InternshipTutorLink $tutorLink, InternshipEvaluationPeriod $period): void
     {
         foreach ($tutorLink->getProgram()->getReferentTeachers() as $referent) {

@@ -6,15 +6,15 @@ namespace App\Controller;
 
 use Symfony\Component\HttpFoundation\Request;
 
-// Shared by the three calendar feeds (formation, paramétrage de la formation, enseignant), qui
-// alimentent tous le même contrôleur Stimulus (assets/controllers/lesson_timetable_controller.js).
+// Shared by the three calendar feeds (program, program settings, teacher), which all feed the same
+// Stimulus controller (assets/controllers/lesson_timetable_controller.js).
 //
-// FullCalendar redemande ses évènements à chaque changement de semaine et borne sa requête par la
-// plage affichée. C'est cette plage, et elle seule, qui doit revenir : sans elle un feed renvoie
-// l'intégralité des créneaux de la formation, toutes périodes confondues, à chaque navigation.
+// FullCalendar asks for its events again on every change of week and bounds its request by the range
+// displayed. It is that range, and it alone, that must come back: without it a feed returns every
+// slot of the program, across all periods, on every navigation.
 //
-// La plage arrive dans le CORPS de la requête et non dans l'URL, la source d'évènements étant
-// déclarée en POST côté JavaScript - d'où $request->request et non $request->query.
+// The range arrives in the request BODY and not in the URL, the event source being declared as POST
+// on the JavaScript side - hence $request->request and not $request->query.
 trait CalendarFeedRangeTrait
 {
     /**

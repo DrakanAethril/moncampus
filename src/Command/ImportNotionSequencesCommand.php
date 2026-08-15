@@ -33,20 +33,20 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
- * Reprend un export Markdown/CSV Notion de séquences pédagogiques dans la bibliothèque personnelle
- * d'un enseignant (App\Entity\SequenceTemplate et ses séances/phases).
+ * Takes a Notion Markdown/CSV export of pedagogical séquences into a teacher's personal library
+ * (App\Entity\SequenceTemplate and its séances/phases).
  *
- * L'export attendu est celui produit par « Exporter » sur la base Notion des séquences, au format
- * Markdown & CSV, avec les sous-pages : un CSV d'index à la racine, un .md par séquence, puis par
- * séquence un CSV « Organisation de la séquence » et un .md par séance.
+ * The expected export is the one produced by « Exporter » on the Notion séquence database, in
+ * Markdown & CSV format, with the sub-pages: an index CSV at the root, one .md per séquence, then
+ * per séquence an « Organisation de la séquence » CSV and one .md per séance.
  *
- * L'appariement se fait sur les titres - l'export ne porte aucun identifiant commun avec la base -
- * en ignorant les apostrophes, l'export écrivant l'apostrophe typographique là où une saisie faite
- * dans l'application porte souvent l'apostrophe droite.
+ * Matching is done on titles - the export carries no identifier in common with the database -
+ * ignoring apostrophes, since the export writes the typographic apostrophe where input made in the
+ * application often carries the straight one.
  *
- * Ce que l'export contient et que la bibliothèque ne stocke pas est laissé de côté : les périodes
- * et dates de séance (une séquence de bibliothèque est sans dates, par construction) et les pièces
- * jointes (images, PDF) - seuls les textes sont repris.
+ * What the export contains and the library does not store is left aside: séance periods and dates
+ * (a library séquence has no dates, by construction) and attachments (images, PDFs) - only the
+ * texts are taken.
  */
 #[AsCommand(
     name: 'app:import-notion-sequences',
@@ -56,12 +56,12 @@ class ImportNotionSequencesCommand extends Command
 {
     private const string DEFAULT_RELATIVE_PATH = 'design/notion/Séquences pédagogiques 2025-2026';
 
-    /** Propriétés Notion connues : toute autre ligne du bloc d'entête prolonge la précédente. */
+    /** Known Notion properties: any other line of the header block continues the previous one. */
     private const array PROPERTY_LABELS = [
         'Bloc', 'Niveau', 'Option', 'Période', 'Séances', 'Date', 'Durée', 'Objectifs', 'Objectifs/Activité',
     ];
 
-    /** Entêtes du tableau d'une page séquence → champ de SequenceTemplate, par clé normalisée. */
+    /** Table headers of a séquence page → SequenceTemplate field, by normalised key. */
     private const array SEQUENCE_FIELDS = [
         'capacitesoucompetencesattendues' => 'setCapacitesAttendues',
         'prerequiscapacitesoucompetences' => 'setPreRequis',
@@ -71,7 +71,7 @@ class ImportNotionSequencesCommand extends Command
         'supports' => 'setSupportsGeneraux',
     ];
 
-    /** Libellés de ligne d'un tableau de phase → champ de SeancePhaseTemplate, par clé normalisée. */
+    /** Row labels of a phase table → SeancePhaseTemplate field, by normalised key. */
     private const array PHASE_FIELDS = [
         'contenu' => 'setContenu',
         'objectifs' => 'setObjectifs',
@@ -85,9 +85,10 @@ class ImportNotionSequencesCommand extends Command
     private array $warnings = [];
 
     /**
-     * Étiquettes déjà résolues pendant l'import, par classe et libellé. App\Service\LibraryTagResolver
-     * cherche en base : sans ce cache, dix-neuf séquences qui portent le même Niveau créeraient dix-neuf
-     * fois l'étiquette tant que rien n'est enregistré, et le flush final buterait sur l'unicité.
+     * Tags already resolved during the import, by class and label. App\Service\LibraryTagResolver
+     * looks them up in the database: without this cache, nineteen séquences carrying the same Niveau
+     * would create the tag nineteen times as long as nothing is saved, and the final flush would hit
+     * the uniqueness constraint.
      *
      * @var array<string, AbstractLibraryTag>
      */
@@ -205,7 +206,7 @@ class ImportNotionSequencesCommand extends Command
         return Command::SUCCESS;
     }
 
-    /** @param array<string, string> $indexRow ligne du CSV d'index, qui porte les facettes de la séquence */
+    /** @param array<string, string> $indexRow row of the index CSV, which carries the séquence's facets */
     private function importSequence(User $teacher, string $title, string $page, array $indexRow, int $order): SequenceTemplate
     {
         $markdown = (string) file_get_contents($page);
@@ -242,8 +243,8 @@ class ImportNotionSequencesCommand extends Command
         $seanceDir = \dirname($page).'/'.$this->pageDirectoryName($page);
         $seanceCsv = is_dir($seanceDir) ? $this->findDatabaseCsv($seanceDir, 'Organisation de la séquence') : null;
         if (null === $seanceCsv) {
-            // Les pages « AP - … » de l'export n'ont pas de séances : un projet suivi sur la
-            // période, décrit en prose et en images, pas un déroulé de séquence.
+            // The export's « AP - … » pages have no séances: a project followed over the period,
+            // described in prose and pictures, not the running order of a séquence.
             $this->warnings[] = \sprintf('Séquence « %s » : aucune séance dans l\'export, séquence créée sans séance.', $title);
 
             return $sequence;
@@ -279,8 +280,8 @@ class ImportNotionSequencesCommand extends Command
         $seance->setTitre($title);
         $seance->setOrdre($ordre);
         $seance->setDuree(DurationParser::minutes($properties['Durée'] ?? null));
-        // « Objectifs » sur la plupart des séquences, « Objectifs/Activité » sur celles où
-        // l'enseignant a renommé la propriété : c'est la même colonne Notion.
+        // « Objectifs » on most séquences, « Objectifs/Activité » on the ones where the teacher
+        // renamed the property: it is the same Notion column.
         $objectifs = MarkdownRenderer::toPlainText($properties['Objectifs'] ?? ($properties['Objectifs/Activité'] ?? ''));
         $seance->setObjectifs('' === $objectifs ? null : $objectifs);
         $seance->setEvaluationNature($this->guessEvaluationNature($title));
@@ -322,10 +323,10 @@ class ImportNotionSequencesCommand extends Command
         return $this->tags[$tagClass.'|'.$label] ??= $this->tagResolver->resolveOne($repository, $tagClass, $teacher, $label);
     }
 
-    // Une séance porte une nature d'évaluation quand son titre l'annonce - « Evaluation sommative
-    // (BTS blanc) », « Evaluation diagnostique ». Une séance qui ne fait que nommer une évaluation
+    // A séance carries an evaluation nature when its title announces it - « Evaluation sommative
+    // (BTS blanc) », « Evaluation diagnostique ». A séance that merely names an evaluation
     // (« Correction évaluation sommative », « Remédiation et préparation à l'évaluation
-    // sommative ») n'en est pas une : d'où le titre qui doit *commencer* par le mot.
+    // sommative ») is not one: hence the title having to *begin* with the word.
     private function guessEvaluationNature(string $title): ?EvaluationNature
     {
         $normalized = $this->normalize($title);
@@ -342,8 +343,8 @@ class ImportNotionSequencesCommand extends Command
     }
 
     /**
-     * Bloc d'entête d'une page Notion : « Libellé: valeur », la valeur pouvant courir sur
-     * plusieurs lignes jusqu'à la propriété suivante.
+     * Header block of a Notion page: « Label: value », the value possibly running over several
+     * lines up to the next property.
      *
      * @return array<string, string>
      */
@@ -380,7 +381,7 @@ class ImportNotionSequencesCommand extends Command
     }
 
     /**
-     * Découpe un Markdown en sections d'un niveau de titre donné : « titre → corps ».
+     * Splits a Markdown document into sections of a given heading level: « title → body ».
      *
      * @return array<string, string>
      */
@@ -412,13 +413,13 @@ class ImportNotionSequencesCommand extends Command
     }
 
     /**
-     * Tableaux Notion dont chaque valeur est précédée de son libellé en gras - aussi bien le
-     * tableau à deux colonnes d'une séquence (les libellés forment une ligne, les valeurs la
-     * suivante) que celui d'une phase (un libellé et sa valeur par ligne).
+     * Notion tables where each value is preceded by its label in bold - both the two-column table of
+     * a séquence (the labels make one row, the values the next) and that of a phase (one label and
+     * its value per row).
      *
-     * @param array<string, string> $fields libellé normalisé → nom du setter
+     * @param array<string, string> $fields normalised label → setter name
      *
-     * @return array<string, string> nom du setter → valeur
+     * @return array<string, string> setter name → value
      */
     private function readLabelledTable(string $markdown, array $fields): array
     {
@@ -438,7 +439,7 @@ class ImportNotionSequencesCommand extends Command
                 continue;
             }
 
-            // Ligne mixte « **Libellé** | valeur » (phases), ou ligne de valeurs sous ses libellés.
+            // Mixed « **Label** | value » row (phases), or a row of values under its labels.
             if (1 === \count($rowLabels) && 2 === \count($cells)) {
                 $labels = [$rowLabels[0]];
                 $cells = [$cells[1]];
@@ -456,8 +457,8 @@ class ImportNotionSequencesCommand extends Command
     }
 
     /**
-     * Lignes d'un tableau Markdown Notion. Une cellule peut contenir de vraies fins de ligne : une
-     * ligne de tableau commence par « | » et court jusqu'à la ligne qui se termine par « | ».
+     * Rows of a Notion Markdown table. A cell may contain real line breaks: a table row starts with
+     * « | » and runs up to the line that ends with « | ».
      *
      * @return list<list<string>>
      */
@@ -486,7 +487,7 @@ class ImportNotionSequencesCommand extends Command
             $buffer = null;
 
             if ([] !== $cells && [] === array_filter($cells, static fn (string $cell): bool => '---' !== $cell)) {
-                continue; // ligne de séparation
+                continue; // separator row
             }
             if ([] !== $cells) {
                 $rows[] = $cells;
@@ -497,8 +498,8 @@ class ImportNotionSequencesCommand extends Command
     }
 
     /**
-     * Sections « Avant / Après la séance » : un tableau de deux colonnes titrées, rendu en texte
-     * simple - ces champs de la séance ne sont pas du texte enrichi.
+     * « Avant / Après la séance » sections: a two-column titled table, rendered as plain text -
+     * these séance fields are not rich text.
      */
     private function twoColumnText(string $markdown): ?string
     {
@@ -521,15 +522,15 @@ class ImportNotionSequencesCommand extends Command
         return [] === $parts ? null : implode("\n\n", $parts);
     }
 
-    /** Markdown → texte simple : gras retiré, liens aplatis, libellé suivi de l'URL si elle diffère. */
+    /** Markdown → plain text: bold removed, links flattened, label followed by the URL if it differs. */
     /**
-     * Un CSV de base Notion s'appelle « <titre> <hash>.csv » ; sa variante « _all » n'apporte que
-     * les colonnes masquées de la vue, dans un ordre différent - c'est la vue qu'on suit.
+     * A Notion database CSV is named « <title> <hash>.csv »; its « _all » variant only adds the
+     * columns hidden from the view, in a different order - the view is what we follow.
      */
     private function findDatabaseCsv(string $directory, string $title): ?string
     {
-        // Les noms de fichier sont comparés sous forme normalisée : macOS stocke « é » décomposé
-        // là où la même chaîne écrite dans le code est composée, et les deux ne s'égalent pas.
+        // File names are compared in normalised form: macOS stores « é » decomposed where the same
+        // string written in the code is composed, and the two are not equal.
         $title = $this->normalizeUnicode($title).' ';
         foreach (glob($directory.'/*.csv') ?: [] as $candidate) {
             $name = $this->normalizeUnicode(basename($candidate));
@@ -547,8 +548,8 @@ class ImportNotionSequencesCommand extends Command
     }
 
     /**
-     * Titre normalisé → chemin de la page, pour tous les .md d'un dossier. Le nom de fichier étant
-     * tronqué par Notion, le titre est lu dans le H1 de la page.
+     * Normalised title → page path, for every .md of a folder. The file name being truncated by
+     * Notion, the title is read from the page's H1.
      *
      * @return array<string, string>
      */
@@ -566,7 +567,7 @@ class ImportNotionSequencesCommand extends Command
         return $pages;
     }
 
-    /** Dossier des sous-pages d'une page ou d'une base : son nom de fichier sans le hash ni l'extension. */
+    /** Sub-page folder of a page or a database: its file name without the hash nor the extension. */
     private function pageDirectoryName(string $page): string
     {
         return preg_replace('/ [0-9a-f]{32}\.md$/', '', basename($page)) ?? basename($page);
@@ -578,9 +579,9 @@ class ImportNotionSequencesCommand extends Command
     }
 
     /**
-     * Appariement par titres : l'export Notion écrit l'apostrophe typographique là où la même
-     * chaîne saisie dans l'application porte souvent l'apostrophe droite. On retire donc les
-     * apostrophes des deux côtés plutôt que de parier sur l'une des deux formes.
+     * Matching by title: the Notion export writes the typographic apostrophe where the same string
+     * typed into the application often carries the straight one. Apostrophes are therefore stripped
+     * on both sides rather than betting on either form.
      */
     private function normalize(string $value): string
     {
@@ -588,8 +589,8 @@ class ImportNotionSequencesCommand extends Command
     }
 
     /**
-     * Clé d'un libellé de tableau : accents, ponctuation et espaces retirés, l'export écrivant le
-     * même libellé de plusieurs façons d'une page à l'autre (« Moyens/Supports », « Pré-requis :
+     * Key of a table label: accents, punctuation and spaces removed, the export writing the same
+     * label in several ways from one page to the next (« Moyens/Supports », « Pré-requis :
      * capacités ou compétences »).
      */
     private function normalizeLabel(string $value): string
@@ -604,7 +605,7 @@ class ImportNotionSequencesCommand extends Command
     }
 
     /**
-     * Lignes d'un CSV Notion, indexées par entête (BOM compris).
+     * Rows of a Notion CSV, indexed by header (BOM included).
      *
      * @return list<array<string, string>>
      */

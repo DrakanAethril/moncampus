@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Enum;
 
 /**
- * Ce qu'une ligne de App\Entity\PlatformActivity raconte - le journal hors UFA. Même mécanique
- * d'extension que App\Enum\UfaActivityType : un case, une clé, un appel au recorder.
+ * What a row of App\Entity\PlatformActivity tells - the log outside the UFA. Same extension mechanics
+ * as App\Enum\UfaActivityType: a case, a key, a call to the recorder.
  *
- * Volontairement limité aux connexions réussies pour l'instant : les échecs de connexion ne sont
- * pas journalisés (décision produit - ils porteraient sur des identifiants inexistants et
- * changeraient la nature de la table), et la déconnexion non plus.
+ * Deliberately limited to successful logins for now: failed logins are not recorded (a product
+ * decision - they would bear on non-existent usernames and would change the nature of the table), and
+ * neither is logging out.
  */
 enum PlatformActivityType: string
 {

@@ -89,7 +89,7 @@ class QuizInstance implements AccessConditionHost
     #[ORM\Column(name: 'closes_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $closesAt = null;
 
-    // ---- Draw & fairness (les 3 toggles d'équité) ----
+    // ---- Draw & fairness (the 3 fairness toggles) ----
     #[ORM\Column(name: 'question_count')]
     private int $questionCount = 20;
 

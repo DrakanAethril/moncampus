@@ -76,10 +76,10 @@ class AlternanceReminderService
         $this->entityManager->persist($reminder);
         $this->entityManager->flush();
 
-        // Doublon assumé avec la ligne internship_reminder ci-dessus : celle-ci sert le suivi
-        // détaillé d'une relance (destinataire, copies, historique du panneau), le journal sert le
-        // flux chronologique unique des écrans de suivi. Y verser la relance évite à ces écrans
-        // d'avoir à fusionner deux sources.
+        // A deliberate duplicate of the internship_reminder row above: that one serves the detailed
+        // follow-up of a reminder (recipient, copies, panel history), the log serves the single
+        // chronological feed of the tracking screens. Pouring the reminder into it saves those
+        // screens from having to merge two sources.
         $this->activityRecorder->record(
             UfaActivityType::ReminderSent,
             $tutorLink,

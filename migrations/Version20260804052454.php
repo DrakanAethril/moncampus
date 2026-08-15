@@ -8,11 +8,11 @@ use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
 /**
- * Encart « Correction : … » de l'écran 1m (design_handoff_quiz) : une explication facultative par
- * question, affichée à l'étudiant en correction d'entraînement quand il a raté la question.
+ * The « Correction: … » box of screen 1m (design_handoff_quiz): an optional explanation per question,
+ * shown to the student in a practice correction when they got the question wrong.
  *
- * Figée au lancement comme le reste de la question, d'où la colonne sur les deux tables : modifier
- * l'explication du modèle ne doit rien changer aux quiz déjà lancés.
+ * Frozen at launch like the rest of the question, hence the column on both tables: editing the
+ * template's explanation must change nothing to the quizzes already launched.
  */
 final class Version20260804052454 extends AbstractMigration
 {

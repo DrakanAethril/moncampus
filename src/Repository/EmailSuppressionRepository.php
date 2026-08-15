@@ -18,7 +18,7 @@ class EmailSuppressionRepository extends ServiceEntityRepository
         parent::__construct($registry, EmailSuppression::class);
     }
 
-    /** À interroger avant tout envoi : écrire à une adresse morte abîme la réputation du domaine. */
+    /** To be queried before any send: writing to a dead address damages the domain's reputation. */
     public function isSuppressed(string $address): bool
     {
         return null !== $this->findOneBy(['address' => mb_strtolower(trim($address))]);

@@ -12,11 +12,11 @@ use Symfony\Component\Validator\Validation;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 /**
- * La règle du point, vérifiée là où elle est réellement appliquée.
+ * The dot rule, checked where it is actually applied.
  *
- * App\Tests\Util\SchoolMailLocalPartTest couvre la règle elle-même ; ici on s'assure qu'elle est
- * bien câblée à l'entité et qu'elle dépend de l'origine - c'est cette dépendance qui fait vivre
- * ensemble « toute adresse saisie doit contenir un point » et « l'alias de login n'en a jamais ».
+ * App\Tests\Util\SchoolMailLocalPartTest covers the rule itself; here we make sure it is properly
+ * wired to the entity and that it depends on the origin - it is that dependency which makes « every
+ * address entered must contain a dot » and « the login alias never has one » live together.
  */
 class EmailAliasValidationTest extends TestCase
 {
@@ -45,8 +45,8 @@ class EmailAliasValidationTest extends TestCase
 
     public function testTheLoginAliasIsExemptFromTheDotRule(): void
     {
-        // La seule exception, et elle tient à ce que cet alias n'est pas saisi : il reprend
-        // l'identifiant de l'annuaire et n'est administrable depuis aucun écran.
+        // The only exception, and it holds because this alias is not typed in: it takes the
+        // directory's username and is administrable from no screen.
         self::assertCount(0, $this->validate('croux', EmailAliasOrigin::Login));
     }
 

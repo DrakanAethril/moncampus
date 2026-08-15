@@ -13,8 +13,8 @@
             ]} %}
             <div class="row g-2 align-items-center">
                 <div class="col">
-                    {# "Bonjour" seul pour l'étudiant, "Bonjour <Prénom>" pour les profils internes
-                       (grammaire commune §1.1). #}
+                    {# "Bonjour" alone for the student, "Bonjour <Prénom>" for the internal profiles
+                       (shared grammar §1.1). #}
                     {% set is_internal = teacher is defined or staff is defined or admin is defined %}
                     <h2 class="page-title">{{ is_internal ? 'homeGreetingNamed'|trans({'%firstname%': user.firstname ?? (user.displayName ?? user.username)}) : 'homeGreeting'|trans }}</h2>
                     {% if student is defined %}
@@ -37,7 +37,7 @@
                 </div>
                 {% if staff is defined or admin is defined %}
                     <div class="col-auto ms-auto">
-                        {# "Accès rapides" : menu déroulant au niveau du titre, pas une carte (staff-b). #}
+                        {# "Accès rapides": a dropdown at title level, not a card (staff-b). #}
                         <div class="dropdown">
                             <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">{{ 'homeQuickAccessLabel'|trans }}</button>
                             <div class="dropdown-menu dropdown-menu-end">

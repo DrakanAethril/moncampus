@@ -12,9 +12,9 @@
                 </div>
                 {% if tutorLink %}
                     <div class="col-auto ms-auto">
-                        {# Un seul bouton ici : l'export PDF vit désormais sur la page de
-                           consultation du livret, où il porte sur ce qu'on est en train de lire.
-                           Plus de target="_blank" non plus, cette page a maintenant sa navigation. #}
+                        {# A single button here: the PDF export now lives on the booklet consultation
+                           page, where it bears on what is being read. No more target="_blank" either,
+                           this page now has its own navigation. #}
                         <div class="btn-list">
                             <a href="{{ path('app_program_internship_my_booklet', {id: program.id}) }}" class="btn btn-primary">{{ 'myAlternanceViewBookletButtonLabel'|trans }}</a>
                         </div>

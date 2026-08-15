@@ -10,12 +10,12 @@ use Doctrine\Migrations\AbstractMigration;
 final class Version20260802180000 extends AbstractMigration
 {
     /**
-     * Cahiers de texte repris de l'export Notion des séquences 2025-2026
-     * (design/notion/Séquences pédagogiques 2025-2026), un par séance : séquence, séance, contenu.
+     * Cahiers de texte taken from the Notion export of the 2025-2026 séquences
+     * (design/notion/Séquences pédagogiques 2025-2026), one per séance: séquence, séance, content.
      *
-     * Le contenu est converti du Markdown vers le HTML attendu par l'éditeur de la séance : un
-     * paragraphe par bloc, un retour à la ligne entre les lignes d'un même bloc, une liste pour les
-     * puces. Aucune autre construction n'apparaît dans l'export.
+     * The content is converted from Markdown to the HTML expected by the séance editor: one
+     * paragraph per block, a line break between the lines of a same block, a list for bullets. No
+     * other construct appears in the export.
      *
      * @var list<array{0: string, 1: string, 2: string}>
      */
@@ -128,11 +128,11 @@ final class Version20260802180000 extends AbstractMigration
     }
 
     /**
-     * L'appariement se fait sur le couple (titre de séquence, titre de séance) : l'export Notion
-     * n'a aucun identifiant commun avec la base. Un couple qui ne correspond à rien ne fait rien -
-     * postUp() les compte et les nomme, pour que l'écart se voie au lieu de passer inaperçu.
+     * Matching is done on the (séquence title, séance title) pair: the Notion export has no
+     * identifier in common with the database. A pair matching nothing does nothing - postUp() counts
+     * and names them, so the gap is visible instead of going unnoticed.
      *
-     * Rien n'est écrasé : seules les séances dont le cahier de texte est encore vide sont écrites.
+     * Nothing is overwritten: only the séances whose cahier de texte is still empty are written.
      */
     public function up(Schema $schema): void
     {
@@ -150,9 +150,9 @@ final class Version20260802180000 extends AbstractMigration
             );
         }
 
-        // Les séquences déjà instanciées dans une formation gardent leur propre copie, et c'est
-        // celle-là que lit le « pré-remplir » du cahier de texte. Elle n'a pas besoin des titres :
-        // une instance sait de quel modèle elle vient.
+        // Séquences already instantiated in a program keep their own copy, and that is the one the
+        // cahier de texte's « pre-fill » reads. It does not need the titles: an instance knows which
+        // template it comes from.
         $this->addSql(<<<'SQL'
             UPDATE seance_instance si
             INNER JOIN seance_template st ON st.id = si.source_template_id
@@ -187,9 +187,8 @@ final class Version20260802180000 extends AbstractMigration
     }
 
     /**
-     * Réversible, contrairement aux migrations de nettoyage de titres : on ne vide que les cahiers
-     * de texte encore identiques à ce que celle-ci a écrit. Une séance retouchée depuis garde sa
-     * version.
+     * Reversible, unlike the title-cleanup migrations: only the cahiers de texte still identical to
+     * what this one wrote are emptied. A séance edited since keeps its version.
      */
     public function down(Schema $schema): void
     {

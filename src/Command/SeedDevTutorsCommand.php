@@ -23,15 +23,15 @@ use Symfony\Component\Ldap\Exception\ExceptionInterface as LdapException;
 use Symfony\Component\Ldap\LdapInterface;
 
 /**
- * OUTIL DE DÉVELOPPEMENT - crée cinq tuteurs d'alternance fictifs par formation, chacun avec son
- * entreprise, sur le même modèle que App\Command\SeedDevStudentsCommand.
+ * DEVELOPMENT TOOL - creates five fictitious apprenticeship tutors per program, each with their own
+ * company, on the same model as App\Command\SeedDevStudentsCommand.
  *
- * Aucune alternance n'est créée : App\Entity\InternshipTutorLink est justement ce qui relie un
- * tuteur, son entreprise, un étudiant et une formation. Tant qu'il n'existe pas, « cinq tuteurs
- * par formation » ne vit que dans leur nommage - c'est volontaire, l'appariement viendra ensuite.
+ * No alternation is created: App\Entity\InternshipTutorLink is precisely what ties a tutor, their
+ * company, a student and a program together. As long as it does not exist, « five tutors per
+ * program » only lives in their naming - that is deliberate, the pairing will come later.
  *
- * Comme pour les étudiants, le compte est créé des deux côtés (annuaire de dev pour le mot de
- * passe, base pour l'application) et rien n'est écrit dans ldap_manage_*.
+ * As for students, the account is created on both sides (dev directory for the password, database
+ * for the application) and nothing is written to ldap_manage_*.
  */
 #[AsCommand(
     name: 'app:seed-dev-tutors',
@@ -42,16 +42,16 @@ class SeedDevTutorsCommand extends Command
     private const int PER_PROGRAM = 5;
     private const string PASSWORD = 'P@ssword123!';
 
-    /** Même table de codes que les étudiants, pour que les identifiants se lisent pareil. */
+    /** Same code table as the students, so the usernames read alike. */
     private const array CODES = [
         'SIO1' => 'SIO1', 'SIO2' => 'SIO2', 'CG1' => 'CG1', 'CG2' => 'CG2',
         'MCO1' => 'MCO1', 'MCO2' => 'MCO2', 'DCG' => 'DCG', 'Bac+3 Info' => 'INFO3',
     ];
 
     /**
-     * Un tuteur n'appartient ni au campus ni à une filière : c'est un intervenant extérieur, dont
-     * l'accès se limite au portail tuteur. Les deux tuteurs déjà en base ne portent, eux aussi,
-     * que ce seul rôle.
+     * A tutor belongs neither to the campus nor to a track: they are an outside participant, whose
+     * access is limited to the tutor portal. The two tutors already in the database carry, likewise,
+     * only that single role.
      */
     private const array GROUPS = ['tutor'];
 
@@ -89,7 +89,7 @@ class SeedDevTutorsCommand extends Command
             return Command::FAILURE;
         }
 
-        // Enterprise porte AuditableTrait : sa colonne created_by_id n'accepte pas le vide.
+        // Enterprise carries AuditableTrait: its created_by_id column does not accept an empty value.
         $author = $this->userRepository->findOneBy(['username' => 'stharaud']);
         if (!$author instanceof User) {
             $io->error('Auteur « stharaud » introuvable.');
@@ -181,7 +181,7 @@ class SeedDevTutorsCommand extends Command
                 'userPassword' => [self::PASSWORD],
             ]));
         } catch (LdapException) {
-            // Déjà présente : la commande est rejouable.
+            // Already present: the command is replayable.
         }
 
         foreach (self::GROUPS as $group) {
@@ -192,7 +192,7 @@ class SeedDevTutorsCommand extends Command
                     [$dn],
                 );
             } catch (LdapException) {
-                // Déjà membre.
+                // Already a member.
             }
         }
     }

@@ -18,16 +18,16 @@ use App\Repository\SelfAssessmentRepository;
 use App\Repository\VideoWatchProgressRepository;
 
 /**
- * L'« Avancement » de la liste des travaux (design_handoff_creation_travail 2b) : une phrase par
- * travail, dont la forme dépend du type - « 21 rendus · 3 non rendus » pour un dépôt échu, « 18 / 24
- * ont répondu » pour un quiz, « lu par 12 / 19 » pour une lecture suivie, « 2 / 5 groupes ont
- * déposé » quand le dépôt est collectif.
+ * The « Avancement » column of the assignment list (design_handoff_creation_travail 2b): one sentence
+ * per assignment, whose shape depends on the type - « 21 rendus · 3 non rendus » for an overdue
+ * submission, « 18 / 24 ont répondu » for a quiz, « lu par 12 / 19 » for a tracked reading, « 2 / 5
+ * groupes ont déposé » when the submission is collective.
  *
- * Tout se calcule en une passe sur toute la liste (un comptage groupé par type de preuve), et non
- * travail par travail : la page couvre plusieurs classes d'un coup.
+ * Everything is computed in one pass over the whole list (a count grouped by kind of evidence), and
+ * not assignment by assignment: the page covers several classes at once.
  *
- * Un travail qui n'est pas encore visible n'a pas d'avancement à montrer - personne ne l'a vu. Il
- * rend à la place son état de publication, que la maquette affiche en pastille grise.
+ * An assignment that is not visible yet has no progress to show - nobody has seen it. It returns its
+ * publication state instead, which the mockup displays as a grey chip.
  */
 class AssignmentProgressSummarizer
 {
@@ -198,9 +198,9 @@ class AssignmentProgressSummarizer
     }
 
     /**
-     * Un dépôt se raconte différemment avant et après l'échéance : « 5 / 14 ont déposé » tant qu'il
-     * reste du temps, « 21 rendus · 3 non rendus » une fois l'heure passée - c'est alors le manque
-     * qui compte, et il se lit en rouge.
+     * A submission is told differently before and after the deadline: « 5 / 14 ont déposé » as long
+     * as there is time left, « 21 rendus · 3 non rendus » once the hour has passed - it is then the
+     * shortfall that counts, and it reads in red.
      *
      * @param list<int> $submitterIds
      *

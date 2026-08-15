@@ -1,5 +1,5 @@
-{# Une ligne « quiz ajouté » du vivier (écran 1c). Le même gabarit sert aux lignes déjà soumises et
-   au prototype cloné par quiz_pool_controller.js, d'où l'include plutôt qu'un form_row. #}
+{# One « quiz added » row of the pool (screen 1c). The same template serves the rows already submitted
+   and the prototype cloned by quiz_pool_controller.js, hence the include rather than a form_row. #}
 <div class="cm-quizpool__row" data-quiz-pool-row>
     {{ form_widget(entry, {attr: {class: 'cm-select cm-quizpool__select', 'data-quiz-pool-target': 'select', 'data-action': 'change->quiz-pool#update'}}) }}
     <button type="button" class="cm-quizpool__remove" data-action="quiz-pool#remove" aria-label="{{ 'quizLaunchRemoveTemplateAction'|trans }}">&times;</button>

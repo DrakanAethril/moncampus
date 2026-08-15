@@ -1,12 +1,12 @@
 {% extends 'layout/app.html.twig' %}
 
-{# Historique d'un journal d'activité - filtres à gauche, flux à droite. Un seul gabarit pour les
-   deux journaux : ils ne diffèrent que par leurs filtres, d'où le bloc `extraFilters` que
-   l'appelant fournit (formation et données de test côté UFA, rien côté plateforme).
+{# History of an activity log - filters on the left, feed on the right. A single template for both
+   logs: they only differ by their filters, hence the `extraFilters` block the caller supplies
+   (program and test data on the UFA side, nothing on the platform side).
 
-   Attend : pageTitle, breadcrumbParent{Label,Path} (facultatifs), formAction, types (value => label),
-   selectedType, search, from, to, activities, page, pageCount, total, filters (pour les liens de
-   pagination), emptyMessage, et un `extraFilters` optionnel. #}
+   Expects: pageTitle, breadcrumbParent{Label,Path} (optional), formAction, types (value => label),
+   selectedType, search, from, to, activities, page, pageCount, total, filters (for the pagination
+   links), emptyMessage, and an optional `extraFilters`. #}
 {% block title %}{{ pageTitle }}{% endblock %}
 
 {# Shared by activity/ufa_history and activity/platform_history. Accueil always opens the trail;

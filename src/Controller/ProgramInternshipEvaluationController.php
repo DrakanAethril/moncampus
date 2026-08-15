@@ -108,8 +108,8 @@ class ProgramInternshipEvaluationController extends AbstractController
         if ('remarques' === $step && !$readOnly) {
             $form->handleRequest($request);
             if ($form->isSubmitted() && $form->isValid()) {
-                // Voir InternshipTutorEvaluationController::periodStep() : seule la transition
-                // vers "signé" déclenche l'avis au rôle suivant.
+                // See InternshipTutorEvaluationController::periodStep(): only the transition to
+                // "signed" triggers the notice to the next role.
                 $wasSigned = $evaluation->isSigned();
                 $evaluation->setValidationDate(new \DateTimeImmutable());
                 $evaluation->setLastEditedBy($student);

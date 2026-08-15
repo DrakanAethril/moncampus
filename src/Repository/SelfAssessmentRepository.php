@@ -57,9 +57,9 @@ class SelfAssessmentRepository extends ServiceEntityRepository
     }
 
     /**
-     * Toutes les autoévaluations d'un travail, indexées par identifiant d'étudiant - ce que le
-     * suivi enseignant (5d) recoupe avec la liste de la classe pour distinguer les rendues des
-     * attendues.
+     * Every self-assessment of an assignment, indexed by student identifier - what the teacher
+     * tracking screen (5d) cross-checks against the class list to tell those handed in from those
+     * still expected.
      *
      * @return array<int, SelfAssessment>
      */
@@ -82,12 +82,12 @@ class SelfAssessmentRepository extends ServiceEntityRepository
     }
 
     /**
-     * Combien d'étudiants ont rendu leur estimation, travail par travail - l'avancement de la
-     * liste « Travaux » (2b) pour les travaux d'autoévaluation.
+     * How many students handed in their estimate, assignment by assignment - the progress of the
+     * « Travaux » list (2b) for self-assessment assignments.
      *
      * @param list<Assignment> $assignments
      *
-     * @return array<int, int> identifiant du travail => nombre d'estimations
+     * @return array<int, int> assignment identifier => number of estimates
      */
     public function countByAssignment(array $assignments): array
     {

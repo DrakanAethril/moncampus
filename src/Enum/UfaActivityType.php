@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Enum;
 
 /**
- * Ce qu'une ligne de App\Entity\UfaActivity raconte. Ajouter un suivi tient en trois gestes et
- * aucune migration (la colonne est un varchar, pas un enum SQL) : un case ici, sa clé de
- * traduction dans messageKey(), et un appel à App\Service\UfaActivityRecorder au point d'action.
+ * What a row of App\Entity\UfaActivity tells. Adding a tracked action takes three gestures and no
+ * migration (the column is a varchar, not an SQL enum): a case here, its translation key in
+ * messageKey(), and a call to App\Service\UfaActivityRecorder at the point of action.
  *
- * Les libellés sont des clés à placeholders et non des phrases toutes faites : le journal stocke
- * un type et un instantané de noms (UfaActivity::$payload), la phrase se compose à l'affichage.
- * Reformuler n'a donc jamais à réécrire l'historique.
+ * The labels are keys with placeholders and not ready-made sentences: the log stores a type and a
+ * snapshot of names (UfaActivity::$payload), the sentence is composed at display time. Rewording
+ * therefore never has to rewrite the history.
  */
 enum UfaActivityType: string
 {
@@ -25,8 +25,8 @@ enum UfaActivityType: string
     case ReminderSent = 'reminder_sent';
 
     /**
-     * Les placeholders disponibles sont ceux que le recorder met dans le payload : %student%,
-     * %tutor%, %actor%, %period%, %role%.
+     * The placeholders available are those the recorder puts in the payload: %student%, %tutor%,
+     * %actor%, %period%, %role%.
      */
     public function messageKey(): string
     {

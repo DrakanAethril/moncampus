@@ -64,17 +64,16 @@ class EvaluationAverageCalculator
     }
 
     /**
-     * Moyenne générale de l'étudiant : moyenne des moyennes *par matière*, chacune pondérée par
+     * The student's overall average: the average of the *per-matière* averages, each weighted by
      * Topic::$coefficient.
      *
-     * Volontairement pas un studentAverage() sur toutes les notes mises à plat : à ce niveau-là,
-     * une matière pèserait proportionnellement à son *nombre* d'évaluations, et le coefficient de
-     * matière n'aurait aucun effet. Les deux pondérations restent donc bien séparées -
-     * Evaluation::$coefficient à l'intérieur d'une matière, Topic::$coefficient entre matières,
-     * exactement comme sur un bulletin.
+     * Deliberately not a studentAverage() over every grade flattened: at that level, a matière would
+     * weigh in proportion to its *number* of evaluations, and the matière coefficient would have no
+     * effect at all. The two weightings therefore stay well apart - Evaluation::$coefficient within a
+     * matière, Topic::$coefficient between matières, exactly as on a report card.
      *
-     * Une matière sans aucune note comptable (moyenne null) est ignorée, coefficient compris :
-     * elle ne doit pas tirer la moyenne générale vers le bas.
+     * A matière with no countable grade at all (null average) is ignored, coefficient included: it
+     * must not drag the overall average down.
      *
      * @param list<array{average: ?float, coefficient: float}> $subjects
      */

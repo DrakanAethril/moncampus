@@ -1,8 +1,8 @@
-{# Liseuse du livret : sommaire à gauche, document réel dans une iframe à droite (voir
-   assets/controllers/livret_reader_controller.js). Partagée par l'écran staff
-   (ufa/alternance/livret.html.twig) et celui du tuteur (internship_tutor/booklet.html.twig), qui
-   ne diffèrent que par leur en-tête et par la route de l'iframe - d'où les deux seuls paramètres
-   attendus : `frameUrl` et `periods`. #}
+{# Booklet reader: table of contents on the left, the real document in an iframe on the right (see
+   assets/controllers/livret_reader_controller.js). Shared by the staff screen
+   (ufa/alternance/livret.html.twig) and the tutor's (internship_tutor/booklet.html.twig), which only
+   differ by their header and by the iframe's route - hence the only two parameters expected:
+   `frameUrl` and `periods`. #}
 <div class="row" data-controller="livret-reader">
     <div class="col-md-3">
         <div class="card">

@@ -31,8 +31,8 @@ export default class extends Controller {
         url: String,
         columns: Array,
         language: Object,
-        // Indication du champ de recherche (maquettes 25a/25d : "Étudiant, n° d'inventaire…").
-        // Séparée de `language` parce que DataTables ne la propose pas dans son objet de langue.
+        // Placeholder of the search field (mockups 25a/25d: "Étudiant, n° d'inventaire…").
+        // Kept apart from `language` because DataTables does not offer it in its language object.
         searchPlaceholder: String,
         pageLength: { type: Number, default: 10 },
         // Off for the Messages list (search across subject/body is a v2 item, see
@@ -144,16 +144,16 @@ export default class extends Controller {
                     window.location.reload();
                 },
             },
-            // `emptyTable` (tableau vide) est une chaîne distincte de `zeroRecords` (recherche sans
-            // résultat) chez DataTables, et aucun gabarit ne la fournissait : le tableau vide
-            // affichait donc l'anglais d'origine, "No data available in table". Faute de mieux,
-            // c'est le message de recherche vide qui sert de repli - il dit la même chose - mais un
-            // gabarit qui fournit sa propre clé garde la main, d'où l'ordre des deux termes.
+            // `emptyTable` (an empty table) is a string distinct from `zeroRecords` (a search with no
+            // result) in DataTables, and no template provided it: an empty table therefore displayed
+            // the original English, "No data available in table". For want of anything better, the
+            // empty-search message serves as the fallback - it says the same thing - but a template
+            // providing its own key keeps the upper hand, hence the order of the two terms.
             language: { emptyTable: this.languageValue.zeroRecords, ...this.languageValue },
             initComplete: () => {
                 if ('' !== this.searchPlaceholderValue) {
-                    // Les deux sélecteurs : DataTables 1.x nomme le bloc .dataTables_filter, 2.x
-                    // le nomme .dt-search.
+                    // The two selectors: DataTables 1.x names the block .dataTables_filter, 2.x names
+                    // it .dt-search.
                     this.element.querySelector('.dataTables_filter input, .dt-search input')?.setAttribute('placeholder', this.searchPlaceholderValue);
                 }
             },
@@ -177,8 +177,8 @@ export default class extends Controller {
         const $container = $(this.tableTarget).closest('.dt-container');
         this.$headerRow = $container.find('> .row').first().addClass('border-bottom py-3 mx-0 position-relative');
         $container.find('.dt-layout-table').next('.row').addClass('border-top py-3 mx-0');
-        // Pas de .text-secondary ici : cette utilitaire de Tabler pose sa couleur en !important et
-        // rendait inatteignable celle de la maquette (voir .dt-info dans assets/styles/app.css).
+        // No .text-secondary here: that Tabler utility sets its color with !important and made the
+        // mockup's color unreachable (see .dt-info in assets/styles/app.css).
 
         // Handles the common case where the switch markup is already present when connect()
         // runs. includeInactiveWrapperTargetConnected() below covers the rare case where the
@@ -413,8 +413,8 @@ export default class extends Controller {
 
                     const color = row[column.colorField];
 
-                    // Pastel plutôt que fond plein : texte à la couleur de l'état sur un fond
-                    // teinté, comme les maquettes 25a/25d du handoff UFA.
+                    // Pastel rather than a solid background: text in the condition's color over a
+                    // tinted background, like mockups 25a/25d of the UFA handoff.
                     return `<span class="badge" style="background: color-mix(in srgb, ${escapeHtml(color)} 14%, #fff); color: ${escapeHtml(color)}; border: 1px solid color-mix(in srgb, ${escapeHtml(color)} 28%, #fff);">${escapeHtml(data)}</span>`;
                 },
             };

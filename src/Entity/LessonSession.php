@@ -138,9 +138,9 @@ class LessonSession
     }
 
     /**
-     * Le jour et l'heure réunis, ce que le modèle sépare en deux colonnes. Utile partout où une
-     * séance doit se comparer à un instant : visibilité programmée « fin de la séance », échéance
-     * « prochaine séance », tri d'un fil d'actualité.
+     * The day and the time together, which the model keeps in two columns. Useful anywhere a séance
+     * has to be compared to an instant: scheduled visibility « fin de la séance », deadline
+     * « prochaine séance », sorting an activity feed.
      */
     public function getStartAt(): ?\DateTimeImmutable
     {
@@ -185,15 +185,15 @@ class LessonSession
         return $this;
     }
 
-    // La matière d'abord, le titre seulement à défaut : un emploi du temps annonce ce qu'on y
-    // enseigne, et un créneau sans matière (réunion, examen blanc) n'a que son titre à donner.
+    // The matière first, the title only failing that: a timetable announces what is taught in it, and
+    // a slot with no matière (a meeting, a mock exam) has only its title to give.
     //
-    // L'inverse valait jusqu'ici, et deux modules en ont profité pour recopier le nom d'une séance
-    // dans ce titre - l'ancien écran « planifier une séance », puis la validation d'une séquence de
-    // progression. Ni l'un ni l'autre n'écrit plus, et deux migrations ont rendu leur matière aux
-    // créneaux dont le titre était encore le nom exact de la séance ; restent ceux dont la copie a
-    // dérivé depuis (séance renommée, séance supprimée), qu'aucune règle sur les données ne
-    // distingue d'un titre saisi à la main. D'où la règle d'affichage, qui les couvre tous.
+    // The opposite held until now, and two modules took advantage of it to copy a séance's name into
+    // that title - the old « planifier une séance » screen, then the validation of a progression
+    // séquence. Neither writes any more, and two migrations gave their matière back to the slots
+    // whose title was still the séance's exact name; what remains are those whose copy has drifted
+    // since (séance renamed, séance deleted), which no rule on the data tells apart from a title
+    // typed by hand. Hence the display rule, which covers them all.
     public function getDisplayName(): string
     {
         return $this->topic?->getName() ?? $this->title ?? '—';
