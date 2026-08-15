@@ -78,6 +78,15 @@ export default class extends Controller {
         // fields whose content is routinely long enough to need more room up front (e.g. Program
         // internship/UFA contract and exam modality texts).
         height: { type: Number, default: 0 },
+        // Documentation base only (design_handoff_base_documentaire, écran 2d, whose toolbar draws
+        // an image button): adds the "image" plugin and uploads what the author picks or drops to
+        // imageUploadUrl, which answers {"location": "<url>"}. Opt-in and off everywhere else -
+        // the other editors have no upload endpoint of their own, and offering the button without
+        // one would only produce broken data: URLs the sanitizer then drops.
+        image: { type: Boolean, default: false },
+        imageUploadUrl: { type: String, default: '' },
+        // Sent as X-CSRF-Token on that upload, the same idiom as every other fetch endpoint here.
+        imageUploadToken: { type: String, default: '' },
     };
 
     async connect() {
@@ -95,7 +104,9 @@ export default class extends Controller {
             : this.signatureValue
                 ? 'bold italic underline forecolor | link'
                 : 'bold italic strikethrough forecolor | blocks | alignleft aligncenter alignright alignjustify'
-                    + ' | bullist numlist outdent indent | blockquote | link table | code fullscreen'
+                    + ' | bullist numlist outdent indent | blockquote | link'
+                    + (this.imageValue ? ' image' : '')
+                    + ' table | code fullscreen'
                     + (this.emojiValue ? ' | emoji' : '');
 
         // HugeRTE's own chrome (toolbar/menus) and editable-area typography are separate skins,
@@ -118,9 +129,14 @@ export default class extends Controller {
             // public/hugerte/plugins/ - none of this wider set is offered on the signature or
             // messaging editors, which are intentionally narrower (messaging keeps fullscreen,
             // signature doesn't even offer that).
-            plugins: this.signatureValue ? 'link' : this.messagingValue ? 'lists link fullscreen' : 'lists link code table fullscreen',
+            plugins: this.signatureValue
+                ? 'link'
+                : this.messagingValue
+                    ? 'lists link fullscreen'
+                    : 'lists link code table fullscreen' + (this.imageValue ? ' image' : ''),
             toolbar,
             block_formats: 'Paragraph=p;Heading 1=h1;Heading 2=h2;Heading 3=h3;Preformatted=pre',
+            ...(this.imageValue ? this.imageOptions() : {}),
             setup: (setupEditor) => {
                 // HugeRTE only syncs its content back into the underlying textarea by default on
                 // the form's "submit" event - too late here, since the textarea is hidden
@@ -148,6 +164,47 @@ export default class extends Controller {
     disconnect() {
         this.emojiPicker?.remove();
         this.editor?.remove();
+    }
+
+    // The upload half of the image button. Two things are deliberate here:
+    //
+    // - automatic_uploads + a real handler, so a pasted or dropped image is uploaded straight
+    //   away rather than left in the body as a base64 data: URL - the sanitizer drops those on
+    //   save (data: is not an allowed media scheme), which would silently lose the picture;
+    // - images_upload_credentials, so the session cookie rides along and the endpoint can answer
+    //   for the author rather than for an anonymous visitor.
+    imageOptions() {
+        return {
+            automatic_uploads: true,
+            images_upload_credentials: true,
+            // No source/dimension/caption fields in the dialog: an article's image is a picture
+            // dropped into a paragraph, and the URL of a bucket object is nobody's business.
+            image_description: true,
+            images_upload_handler: (blobInfo) => new Promise((resolve, reject) => {
+                const body = new FormData();
+                body.append('file', blobInfo.blob(), blobInfo.filename());
+
+                fetch(this.imageUploadUrlValue, {
+                    method: 'POST',
+                    body,
+                    credentials: 'same-origin',
+                    headers: { 'X-CSRF-Token': this.imageUploadTokenValue, Accept: 'application/json' },
+                })
+                    .then(async (response) => {
+                        const payload = await response.json().catch(() => ({}));
+
+                        if (!response.ok || 'string' !== typeof payload.location) {
+                            // A plain string rejection is what HugeRTE shows in its own notification.
+                            reject(payload.error ?? `HTTP ${response.status}`);
+
+                            return;
+                        }
+
+                        resolve(payload.location);
+                    })
+                    .catch((error) => reject(error.message));
+            }),
+        };
     }
 
     async toggleEmojiPicker(editor) {

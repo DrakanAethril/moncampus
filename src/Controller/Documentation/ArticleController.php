@@ -45,6 +45,17 @@ class ArticleController extends AbstractController
 {
     private const string UPLOAD_PREFIX = 'documentation/';
 
+    // Images pasted into an article's body, kept apart from its attachments: they are referenced
+    // by URL from the HTML rather than listed anywhere.
+    private const string IMAGE_UPLOAD_PREFIX = 'documentation/images/';
+
+    // Raster formats only: an SVG is a document that can carry script, and it would be served
+    // from the uploads bucket under a URL a reader opens directly.
+    /** @var list<string> */
+    private const array IMAGE_MIME_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+
+    private const int IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly DocumentationArticleRepository $articles,
@@ -163,6 +174,48 @@ class ArticleController extends AbstractController
         }
 
         return $this->json($matches);
+    }
+
+    /**
+     * The image button of the editor (écran 2d). HugeRTE posts one file and expects
+     * {"location": "<url>"} back, which it writes into the body as an <img src>.
+     *
+     * The picture lands in the same bucket as the attachments and is referenced by URL, so it is
+     * deliberately not tracked as a row: deleting an article does not chase the images its body
+     * points at, the same trade every WYSIWYG upload in this app makes. Only what the sanitizer
+     * lets through survives the save anyway - an <img> with a plain http(s) src.
+     */
+    #[Route(path: '/images', name: 'app_documentation_image_upload', methods: ['POST'])]
+    public function uploadImage(Request $request): JsonResponse
+    {
+        if (!$this->isCsrfTokenValid('documentation_image', $request->headers->get('X-CSRF-Token'))) {
+            return $this->json(['error' => 'Invalid CSRF token.'], Response::HTTP_FORBIDDEN);
+        }
+
+        $file = $request->files->get('file');
+
+        if (!$file instanceof UploadedFile) {
+            return $this->json(['error' => 'No file received.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $mimeType = $file->getMimeType() ?? '';
+
+        // Checked on the guessed type, not on the name: an .png that is really a script must not
+        // end up served from the uploads bucket.
+        if (!\in_array($mimeType, self::IMAGE_MIME_TYPES, true)) {
+            return $this->json(['error' => 'Unsupported image type.'], Response::HTTP_UNSUPPORTED_MEDIA_TYPE);
+        }
+
+        $size = $file->getSize();
+
+        if (false !== $size && $size > self::IMAGE_MAX_BYTES) {
+            return $this->json(['error' => 'Image too large.'], Response::HTTP_REQUEST_ENTITY_TOO_LARGE);
+        }
+
+        $extension = $file->guessExtension() ?? 'bin';
+        $key = $this->uploads->upload(self::IMAGE_UPLOAD_PREFIX, \sprintf('%s.%s', bin2hex(random_bytes(16)), $extension), $file);
+
+        return $this->json(['location' => $this->uploads->url($key)]);
     }
 
     private function newArticle(Request $request, User $user): DocumentationArticle

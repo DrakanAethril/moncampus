@@ -6750,6 +6750,9 @@ button.cm-tabs__tab { border: 0; background: none; font: inherit; cursor: pointe
 .cm-doc-article__content h2 { font: 600 19px var(--cm-font-title); color: var(--cm-ink); margin: 26px 0 12px; }
 .cm-doc-article__content h3 { font: 600 16.5px var(--cm-font-title); color: var(--cm-ink); margin: 22px 0 10px; }
 .cm-doc-article__content p { margin: 0 0 14px; }
+/* An image pasted into the body is sized by the author in the editor; the page only guarantees it
+   never pushes the reading column wider than itself. */
+.cm-doc-article__content img { max-width: 100%; height: auto; border-radius: 8px; }
 .cm-doc-article__content table { width: 100%; border-collapse: collapse; margin: 8px 0 18px; }
 .cm-doc-article__content th {
     text-align: left; background: var(--cm-surface-alt); padding: 9px 12px;
