@@ -12,6 +12,10 @@
 {% set schoolYear = program ? program.schoolYear : null %}
 {% set yearLabel = schoolYear and schoolYear.startDate and schoolYear.endDate ? schoolYear.startDate|date('Y') ~ '–' ~ schoolYear.endDate|date('Y') : '' %}
 {% set teacherName = progression.teacher ? (progression.teacher.displayName ?? progression.teacher.username) : '—' %}
+{% set programLabel = program ? program.displayShortName : '—' %}
+{# The programme's short name IS the cohort's name on most formations, and the cover printed it
+   twice ("SIO1 — SIO1"). The cohort is named only when it says something the short name does not. #}
+{% set cohortLabel = program and program.cohort and program.cohort.name|lower != programLabel|lower ? program.cohort.name : '' %}
 {% set docTitle = 'Progression pédagogique — ' ~ (topic ? topic.name : '—') ~ ' × ' ~ (program ? program.displayShortName : '—') %}
 <!DOCTYPE html>
 <html lang="fr">
@@ -37,6 +41,7 @@
     .qp-cover__kicker { font-size: 8pt; letter-spacing: 1.4px; text-transform: uppercase; color: #2E74B5; }
     .qp-cover__title { font-size: 21pt; color: #1F4E79; margin: 3mm 0 1mm; }
     .qp-cover__sub { font-size: 12pt; color: #33415c; }
+    .qp-cover__teacher { font-size: 10pt; color: #55637a; margin-top: 1.5mm; }
 
     .qp-id { width: 100%; border-collapse: collapse; margin-top: 6mm; }
     .qp-id th { text-align: left; width: 38mm; padding: 1.6mm 2mm; background: #eef3f9; border: 0.5pt solid #b9c8da; font-weight: 600; font-size: 8.5pt; }
@@ -82,6 +87,14 @@
     .qp-nature--formative { background: #fbf1dc; color: #8a6100; }
     .qp-nature--summative { background: #fae4e4; color: #9b2226; }
 
+    /* The year's supports, one per line over two columns. `break-inside: avoid` sits on the items
+       and not on the list: a two-dozen-entry list may legitimately need to span two pages, but an
+       entry cut in half between them reads as a truncated name. */
+    .qp-means { columns: 2; column-gap: 7mm; margin: 0 0 2mm; padding: 2.5mm 3mm; list-style: none;
+                border: 0.5pt solid #b9c8da; background: #f7fafd; font-size: 8.5pt; }
+    .qp-means li { break-inside: avoid; position: relative; padding: 0.9mm 0 0.9mm 3.5mm; color: #33415c; }
+    .qp-means li::before { content: '▪'; position: absolute; left: 0; top: 0.9mm; color: #2E74B5; font-size: 7pt; }
+
     .qp-muted { color: #8a93a3; }
     .qp-note { border: 0.5pt solid #b9c8da; background: #f7fafd; padding: 2.5mm 3mm; font-size: 8pt; color: #55637a; break-inside: avoid; }
     .qp-redelivery { display: block; margin-top: 0.8mm; font-size: 7.5pt; color: #55637a; font-style: italic; }
@@ -95,7 +108,8 @@
 <div class="qp-cover">
     <div class="qp-cover__kicker">Progression pédagogique{{ yearLabel ? ' · ' ~ yearLabel }}</div>
     <h1 class="qp-cover__title">{{ topic ? topic.name : '—' }}</h1>
-    <div class="qp-cover__sub">{{ program ? program.displayShortName : '—' }}{% if program and program.cohort %} — {{ program.cohort.name }}{% endif %}</div>
+    <div class="qp-cover__sub">{{ programLabel }}{% if cohortLabel %} — {{ cohortLabel }}{% endif %}</div>
+    <div class="qp-cover__teacher">{{ teacherName }}</div>
 </div>
 
 <table class="qp-id">
@@ -119,7 +133,10 @@
 </div>
 
 {# ---- 1. Synthèse --------------------------------------------------------- #}
-<h2 class="qp-h2">1. Synthèse de l’année</h2>
+{# Page 1 is the cover: who, what, when, and the note saying where the figures come from. The
+   synthèse starts its own page rather than sharing the tail of it, so the document opens on a page
+   de garde and every numbered part begins at the top of a page. #}
+<h2 class="qp-h2 qp-break">1. Synthèse de l’année</h2>
 <p class="qp-crit">Critère 1 — information sur les objectifs, la durée et les modalités · Critère 2 — objectifs adaptés au public.</p>
 
 <div class="qp-kpis">
@@ -167,7 +184,12 @@
 {% if data.methodSummary is not empty %}
     <h3 class="qp-h3">Moyens et supports mobilisés sur l’année</h3>
     <p class="qp-crit">Critère 3 — adaptation des moyens pédagogiques, techniques et d’encadrement.</p>
-    <div class="qp-note">{{ data.methodSummary|join(' · ') }}</div>
+    {# One entry per line rather than a single run of text separated by middots: the list is read by
+       scanning for a support, and a paragraph of two dozen names joined by « · » is read by nobody.
+       Two columns, since the entries are short enough that one would waste half the width. #}
+    <ul class="qp-means">
+        {% for entry in data.methodSummary %}<li>{{ entry }}</li>{% endfor %}
+    </ul>
 {% endif %}
 
 {# ---- 2. Progression détaillée ------------------------------------------- #}
