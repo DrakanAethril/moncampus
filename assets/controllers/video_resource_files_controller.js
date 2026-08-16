@@ -173,6 +173,7 @@ export default class extends Controller {
         this.request = null;
         this.progressFill = null;
         this.progressPercent = null;
+        this.progressCancel = null;
 
         // disconnect() aborts a transfer in flight, and the abort handler lands here once the card
         // has left the page: there is nothing left to paint then.
@@ -217,6 +218,11 @@ export default class extends Controller {
         percent.textContent = sent
             ? this.labelsValue.processingLabel
             : (null === ratio ? '' : this.formatPercent(ratio));
+
+        // Cancelling stops being offered once the last byte is out: the server writes the file
+        // whether the browser is still listening or not, so an abort from here would only hide a
+        // video that does exist - the teacher would then upload it a second time.
+        if (this.progressCancel) this.progressCancel.disabled = sent;
     }
 
     async deleteFile(file) {
@@ -306,10 +312,10 @@ export default class extends Controller {
         this.progressPercent = this.el('span', 'cm-video-upload__percent');
         row.appendChild(this.progressPercent);
 
-        const cancel = this.el('button', 'cm-audio-ghost', this.labelsValue.cancelLabel);
-        cancel.type = 'button';
-        cancel.addEventListener('click', () => this.cancelUpload());
-        row.appendChild(cancel);
+        this.progressCancel = this.el('button', 'cm-audio-ghost', this.labelsValue.cancelLabel);
+        this.progressCancel.type = 'button';
+        this.progressCancel.addEventListener('click', () => this.cancelUpload());
+        row.appendChild(this.progressCancel);
 
         this.paintProgress();
 
