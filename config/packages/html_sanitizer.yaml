@@ -54,22 +54,65 @@ framework:
                 allow_attributes:
                     style: [span, p, h1, h2, h3, li, blockquote, table, col, td, th]
 
-            # WikiNode::$body - a wiki page, written in the shared HugeRTE toolbar and read back by
-            # whoever may reach the wiki. Its own sanitizer instance per this file's
-            # one-per-feature rule, and today the same configuration as app.documentation_article_body
-            # because the wiki runs on the same toolbar.
+            # WikiNode::$body - a wiki page, written in the wiki's own editor
+            # (assets/controllers/wiki_editor_controller.js) and read back by whoever may reach the
+            # wiki. The widest configuration in this file, and the only one that admits any SVG.
             #
-            # It is meant to become the widest entry in this file: the wiki's own editor (menubar,
-            # codesample, accordion, KaTeX, Mermaid, callouts) is a lot of its own, and this target
-            # widens with it - `class` on pre/code/span, `id` on the heading levels the outline
-            # anchors, details/summary, and an enumerated SVG subtree for Mermaid. What it must
-            # never gain is iframe/video/embed/object: there is no video in a wiki by decision, and
-            # enforcing that here rather than only in the toolbar is what keeps the element list
-            # closed.
+            # What it must NEVER gain is iframe/video/embed/object. There is no video in a wiki by
+            # decision (design/validated/wiki.md), the `media` plugin is deliberately not vendored,
+            # and enforcing that here rather than only in the toolbar is what keeps the element list
+            # closed - a toolbar decides what is easy to insert, a sanitizer decides what survives.
+            #
+            # The SVG subtree is the part that needed real care, and it is enumerated rather than
+            # opened: an SVG is a document that can carry script. Excluded on purpose and by name:
+            #   - `script`, which is the obvious one;
+            #   - `foreignObject`, which embeds arbitrary HTML inside the picture - which is also
+            #     why the editor configures Mermaid with htmlLabels:false, so its labels come back
+            #     as <text> and nothing is lost by refusing it;
+            #   - every `href`/`xlink:href`, so no <use> or <a> inside a diagram can point anywhere;
+            #   - every `on*` handler, which the sanitizer drops by default and which no attribute
+            #     below re-admits.
+            #
+            # `style` (the element) IS allowed, and that is a deliberate, bounded concession rather
+            # than an oversight: Mermaid emits its diagram's CSS as a <style> block scoped to the
+            # diagram's own svg id, and dropping it leaves an unreadable picture. The residual reach
+            # is that somebody could hand-write CSS affecting the page they are on - and the people
+            # who read a wiki page are the people who may already rewrite it, so it grants no reach
+            # they did not have. It is not granted to any other sanitizer in this file.
             app.wiki_page_body:
                 allow_safe_elements: true
+                allow_elements:
+                    # accordion
+                    details: []
+                    summary: []
+                    # Mermaid's rendered output, stored at save time with its source kept in
+                    # data-mermaid so the diagram stays editable.
+                    svg: ['viewBox', 'width', 'height', 'xmlns', 'class', 'style', 'id', 'preserveAspectRatio', 'role', 'aria-roledescription']
+                    g: ['class', 'style', 'transform', 'id']
+                    path: ['d', 'class', 'style', 'fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap', 'marker-start', 'marker-end', 'transform', 'id']
+                    rect: ['x', 'y', 'width', 'height', 'rx', 'ry', 'class', 'style', 'fill', 'stroke', 'stroke-width', 'transform', 'id']
+                    circle: ['cx', 'cy', 'r', 'class', 'style', 'fill', 'stroke', 'stroke-width', 'transform', 'id']
+                    ellipse: ['cx', 'cy', 'rx', 'ry', 'class', 'style', 'fill', 'stroke', 'stroke-width', 'transform', 'id']
+                    line: ['x1', 'y1', 'x2', 'y2', 'class', 'style', 'stroke', 'stroke-width', 'transform', 'id']
+                    polyline: ['points', 'class', 'style', 'fill', 'stroke', 'stroke-width', 'transform', 'id']
+                    polygon: ['points', 'class', 'style', 'fill', 'stroke', 'stroke-width', 'transform', 'id']
+                    text: ['x', 'y', 'dx', 'dy', 'class', 'style', 'fill', 'text-anchor', 'dominant-baseline', 'font-size', 'font-family', 'font-weight', 'transform', 'id']
+                    tspan: ['x', 'y', 'dx', 'dy', 'class', 'style', 'fill']
+                    defs: []
+                    marker: ['id', 'viewBox', 'refX', 'refY', 'markerWidth', 'markerHeight', 'orient', 'markerUnits', 'class', 'style']
+                    style: []
                 allow_attributes:
-                    style: [span, p, h1, h2, h3, h4, li, blockquote, table, col, td, th]
+                    style: [span, p, h1, h2, h3, h4, li, blockquote, table, col, td, th, div]
+                    # Outline anchors (h2/h3, stamped by App\Service\WikiPageOutline at read time),
+                    # named anchors the `anchor` plugin writes, and the ids Mermaid's own markup
+                    # carries.
+                    id: [h1, h2, h3, h4, a]
+                    # codesample's language classes, KaTeX's own markup, and the callout blocks.
+                    class: [pre, code, span, div, p, ol, ul, li, table]
+                    # KaTeX keeps the LaTeX source next to its rendered output, and Mermaid keeps
+                    # its diagram source, so both stay editable rather than becoming one-way output.
+                    data-katex: [span, div]
+                    data-mermaid: [div]
 
             # SeanceTemplate::$cahierDeTexteDescription, when it arrives through the séquence import
             # assistant (App\Service\SequenceJsonImporter). It is the one HTML field of the library's

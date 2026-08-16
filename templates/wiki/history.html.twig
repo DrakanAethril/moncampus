@@ -5,6 +5,12 @@
 
 {% block title %}{{ node.title }}{% endblock %}
 
+{# The compare panes render past bodies, formulas included. #}
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('katex/katex.min.css') }}">
+{% endblock %}
+
 {% block page_breadcrumb %}
     {% include 'wiki/_breadcrumb.html.twig' with {
         wiki: wiki,
