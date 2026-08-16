@@ -5,6 +5,14 @@
 
 {% block title %}{{ node.title }}{% endblock %}
 
+{# KaTeX renders with CSS alone - the formula's markup is already in the body, stored at insert
+   time - so the read side needs this stylesheet and no JavaScript at all. Vendored under
+   public/katex/ (MIT), never CDN-loaded, and the same reason the PDF export can inline it. #}
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('katex/katex.min.css') }}">
+{% endblock %}
+
 {% block page_breadcrumb %}
     {% include 'wiki/_breadcrumb.html.twig' with {wiki: wiki, ancestors: ancestors, node: node} %}
 {% endblock %}

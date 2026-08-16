@@ -8,6 +8,13 @@
 
 {% block title %}{{ node.title }}{% endblock %}
 
+{# Same stylesheet as the read screen: a formula already in the body has to render inside the
+   editor too, or the author edits a wall of markup. #}
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('katex/katex.min.css') }}">
+{% endblock %}
+
 {% block page_breadcrumb %}
     {% include 'wiki/_breadcrumb.html.twig' with {
         wiki: wiki,
@@ -60,12 +67,30 @@
                             <div class="cm-wiki-linkpicker__panel" data-wiki-link-picker-target="panel" hidden></div>
                         </div>
                     </div>
+                    {# The wiki's own editor, not the shared one: menubar on, three buttons of its
+                       own, callouts, KaTeX and Mermaid. Every label it shows comes from here so
+                       nothing user-visible is written in JavaScript. #}
                     <textarea id="wiki-page-body" name="body" class="d-none"
-                              data-controller="hugerte-editor"
-                              data-hugerte-editor-height-value="520"
-                              data-hugerte-editor-image-value="true"
-                              data-hugerte-editor-image-upload-url-value="{{ path('app_wiki_image_upload', {id: wiki.id}) }}"
-                              data-hugerte-editor-image-upload-token-value="{{ csrf_token('wiki_image') }}">{{ node.body }}</textarea>
+                              data-controller="wiki-editor"
+                              data-wiki-editor-height-value="520"
+                              data-wiki-editor-pages-url-value="{{ path('app_wiki_pages', {id: wiki.id}) }}"
+                              data-wiki-editor-image-upload-url-value="{{ path('app_wiki_image_upload', {id: wiki.id}) }}"
+                              data-wiki-editor-image-upload-token-value="{{ csrf_token('wiki_image') }}"
+                              data-wiki-editor-labels-value="{{ {
+                                  callouts: 'wikiCalloutMenuLabel'|trans,
+                                  calloutInfo: 'wikiCalloutInfoLabel'|trans,
+                                  calloutWarning: 'wikiCalloutWarningLabel'|trans,
+                                  calloutTip: 'wikiCalloutTipLabel'|trans,
+                                  wikiLink: 'wikiEditorLinkButtonLabel'|trans,
+                                  wikiLinkTooltip: 'wikiEditorLinkTooltip'|trans,
+                                  katexTooltip: 'wikiEditorFormulaTooltip'|trans,
+                                  mermaid: 'wikiEditorDiagramButtonLabel'|trans,
+                                  mermaidTooltip: 'wikiEditorDiagramTooltip'|trans,
+                                  page: 'wikiEditorPageFieldLabel'|trans,
+                                  insert: 'wikiEditorInsertAction'|trans,
+                                  cancel: 'cancelAction'|trans,
+                                  loadFailed: 'wikiEditorLoadFailedText'|trans,
+                              }|json_encode|e('html_attr') }}">{{ node.body }}</textarea>
                 </div>
 
                 <div class="cm-wiki__editor-actions">

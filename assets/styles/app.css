@@ -7059,3 +7059,31 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
 @media (max-width: 992px) {
     .cm-wiki-compare { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* --- Wiki: editor lot (callouts, diagrams, formulas, code, accordion, page break) ---------
+   These style what the editor STORES, so the same rules have to hold in three places: the read
+   screen, the editor's own content area, and the PDF. That is why they are built on --cm-* tokens
+   and on nothing else - no Tabler class, no editor-only selector.
+   ------------------------------------------------------------------------------------------ */
+
+.cm-callout { margin: 1.1em 0; padding: 12px 16px; border-left: 3px solid var(--cm-brand); border-radius: 0 8px 8px 0; background: var(--cm-blue-bg-soft); color: var(--cm-text); }
+.cm-callout > p:last-child { margin-bottom: 0; }
+.cm-callout--info { border-left-color: var(--cm-brand); background: var(--cm-blue-bg-soft); }
+.cm-callout--warning { border-left-color: var(--cm-gold); background: var(--cm-gold-bg); color: var(--cm-gold-tx); }
+.cm-callout--tip { border-left-color: var(--cm-green-tx); background: var(--cm-green-bg); color: var(--cm-green-tx); }
+
+.cm-mermaid { margin: 1.2em 0; text-align: center; }
+.cm-mermaid svg { max-width: 100%; height: auto; }
+
+.cm-katex { display: inline-block; }
+
+.cm-wiki__body pre { padding: 12px 14px; border: 1px solid var(--cm-border); border-radius: 8px; background: var(--cm-surface-alt); overflow-x: auto; font-size: 13px; }
+.cm-wiki__body code { font-size: 0.92em; }
+.cm-wiki__body blockquote { margin: 1.1em 0; padding: 4px 0 4px 16px; border-left: 3px solid var(--cm-border); color: var(--cm-muted); }
+
+.cm-wiki__body details { margin: 1em 0; padding: 10px 14px; border: 1px solid var(--cm-border); border-radius: 8px; background: var(--cm-surface-alt); }
+.cm-wiki__body summary { cursor: pointer; font-weight: 600; color: var(--cm-ink); }
+
+/* pagebreak's marker: invisible furniture on screen, a real page break in the PDF (the export's
+   own stylesheet turns it into `break-after: page`). */
+.cm-wiki-pagebreak { height: 0; margin: 1.4em 0; border-top: 1px dashed var(--cm-border); }
