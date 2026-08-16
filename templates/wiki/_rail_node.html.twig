@@ -1,12 +1,52 @@
 {# One node of the rail, recursing into its children. `row` is what App\Service\WikiTree::assemble()
-   produced: the node itself plus its ordered children. #}
+   produced: the node itself plus its ordered children.
+
+   The `data-parent-id` is what makes a *reorder* possible rather than only a re-parent: dropping on
+   the upper or lower edge of a node means "beside it", and the rank is then read off this node's own
+   list of siblings, in the DOM, without a round trip. #}
 {% set entry = row.node %}
-<li class="cm-wiki__node{{ entry.folder ? ' cm-wiki__node--folder' }}" data-wiki-tree-target="node" data-node-id="{{ entry.id }}" draggable="true">
-    <a class="cm-wiki__node-link{{ currentNode and currentNode.id == entry.id ? ' is-current' }}"
-       href="{{ path('app_wiki_page', {id: wiki.id, nodeId: entry.id}) }}">
-        <span class="cm-wiki__node-icon" aria-hidden="true">{{ entry.folder ? '▸' : '·' }}</span>
-        <span class="cm-wiki__node-title">{{ entry.title }}</span>
-    </a>
+<li class="cm-wiki__node{{ entry.folder ? ' cm-wiki__node--folder' }}" data-wiki-tree-target="node"
+    data-node-id="{{ entry.id }}" data-parent-id="{{ entry.parent ? entry.parent.id : '' }}" draggable="true">
+    <div class="cm-wiki__node-row">
+        <a class="cm-wiki__node-link{{ currentNode and currentNode.id == entry.id ? ' is-current' }}"
+           href="{{ path('app_wiki_page', {id: wiki.id, nodeId: entry.id}) }}">
+            <span class="cm-wiki__node-icon" aria-hidden="true">{{ entry.folder ? '▸' : '·' }}</span>
+            <span class="cm-wiki__node-title">{{ entry.title }}</span>
+        </a>
+
+        {% if is_granted('WIKI_EDIT', wiki) %}
+            {# The two acts that change the tree, at the page they act on rather than in a bar at the
+               top of the screen: what you add a sub-page to, and what you delete, is the line your
+               pointer is on. #}
+            <span class="cm-wiki__node-actions">
+                <form method="post" action="{{ path('app_wiki_node_create', {id: wiki.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('wiki_node') }}">
+                    <input type="hidden" name="parent" value="{{ entry.id }}">
+                    <input type="hidden" name="type" value="page">
+                    <button type="submit" class="cm-wiki__node-action"
+                            title="{{ 'wikiAddChildPageAction'|trans }}"
+                            aria-label="{{ 'wikiAddChildPageOfAction'|trans({'%title%': entry.title}) }}">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+                    </button>
+                </form>
+
+                {# The confirmation names the branch, not just the page: deleting a folder takes
+                   everything under it, and the rail is where that is least visible. #}
+                <form method="post" action="{{ path('app_wiki_node_delete', {id: wiki.id, nodeId: entry.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('wiki_node') }}">
+                    <button type="submit" class="cm-wiki__node-action cm-wiki__node-action--danger"
+                            title="{{ 'wikiDeletePageAction'|trans }}"
+                            aria-label="{{ 'wikiDeletePageNamedAction'|trans({'%title%': entry.title}) }}"
+                            data-controller="confirm-submit"
+                            data-confirm-submit-message-value="{{ 'wikiDeleteNodeConfirmText'|trans({'%title%': entry.title}) }}"
+                            data-action="click->confirm-submit#confirm">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"></path></svg>
+                    </button>
+                </form>
+            </span>
+        {% endif %}
+    </div>
+
     {% if row.children is not empty %}
         <ul class="cm-wiki__tree cm-wiki__tree--nested">
             {% for child in row.children %}

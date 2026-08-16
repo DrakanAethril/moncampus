@@ -6985,13 +6985,24 @@ button.cm-tabs__tab { border: 0; background: none; font: inherit; cursor: pointe
 .cm-wiki__tree--nested { margin: 2px 0 2px 14px; border-left: 1px solid var(--cm-border-soft); padding-left: 6px; }
 .cm-wiki__node { margin: 1px 0; }
 .cm-wiki__node.is-dragging { opacity: 0.45; }
-.cm-wiki__node.is-drop-target > .cm-wiki__node-link { background: var(--cm-blue-bg-soft); box-shadow: inset 0 0 0 1px var(--cm-brand); }
-.cm-wiki__node-link { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 6px; font: 400 13px var(--cm-font-ui); color: var(--cm-text); text-decoration: none; }
+.cm-wiki__node.is-drop-target > .cm-wiki__node-row { background: var(--cm-blue-bg-soft); box-shadow: inset 0 0 0 1px var(--cm-brand); border-radius: 6px; }
+/* The two edge zones: a rule where the page would land, drawn on the row rather than on the whole
+   <li> - a folder's <li> is as tall as its subtree. */
+.cm-wiki__node.is-drop-before > .cm-wiki__node-row { box-shadow: inset 0 2px 0 0 var(--cm-brand); }
+.cm-wiki__node.is-drop-after > .cm-wiki__node-row { box-shadow: inset 0 -2px 0 0 var(--cm-brand); }
+.cm-wiki__node-row { display: flex; align-items: center; gap: 2px; }
+.cm-wiki__node-link { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 6px; font: 400 13px var(--cm-font-ui); color: var(--cm-text); text-decoration: none; }
 .cm-wiki__node-link:hover { background: var(--cm-surface-alt); color: var(--cm-ink); }
 .cm-wiki__node-link.is-current { background: var(--cm-blue-bg); color: var(--cm-blue-tx); font-weight: 600; }
 .cm-wiki__node-icon { flex: none; width: 10px; color: var(--cm-faint); font-size: 11px; }
 .cm-wiki__node-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cm-wiki__node--folder > .cm-wiki__node-link .cm-wiki__node-title { font-weight: 600; }
+.cm-wiki__node--folder > .cm-wiki__node-row .cm-wiki__node-link .cm-wiki__node-title { font-weight: 600; }
+/* Always visible rather than hover-revealed: a rail is also read on a touch screen, where hover
+   never happens and a hidden action is an absent one. */
+.cm-wiki__node-actions { flex: none; display: flex; align-items: center; gap: 1px; }
+.cm-wiki__node-action { display: grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 5px; background: none; color: var(--cm-faint); cursor: pointer; }
+.cm-wiki__node-action:hover { background: var(--cm-surface-alt); color: var(--cm-brand-strong); }
+.cm-wiki__node-action--danger:hover { background: var(--cm-red-bg); color: var(--cm-red-tx); }
 
 .cm-wiki__content { background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 24px 26px 26px; }
 .cm-wiki__body { font: 400 15px/1.65 var(--cm-font-ui); color: var(--cm-text); }
@@ -7001,7 +7012,10 @@ button.cm-tabs__tab { border: 0; background: none; font: inherit; cursor: pointe
 .cm-wiki__body td, .cm-wiki__body th { border: 1px solid var(--cm-border); padding: 7px 10px; }
 .cm-wiki__body img { max-width: 100%; height: auto; }
 .cm-wiki__placeholder { font: 400 13.5px var(--cm-font-ui); color: var(--cm-faint); }
-.cm-wiki__meta { margin: 20px 0 0; padding-top: 12px; border-top: 1px solid var(--cm-border-soft); font: 400 12px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-wiki__meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; margin: 20px 0 0; padding-top: 12px; border-top: 1px solid var(--cm-border-soft); font: 400 12px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-wiki__meta-link { color: var(--cm-brand-strong); text-decoration: none; }
+.cm-wiki__meta-link:hover { text-decoration: underline; }
+.cm-wiki-history-cap { margin: 0 0 14px; font: 400 12.5px var(--cm-font-ui); color: var(--cm-muted); }
 .cm-wiki__inline-form { display: inline-block; }
 .cm-wiki__editor-actions { display: flex; gap: 10px; align-items: center; }
 
@@ -7036,6 +7050,10 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
 .cm-wiki-settings { max-width: 900px; background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 22px 24px; }
 .cm-wiki-settings__checks { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 6px; }
 .cm-wiki-settings__check { display: flex; align-items: center; gap: 7px; font: 400 13px var(--cm-font-ui); color: var(--cm-text); }
+.cm-wiki-settings__block { max-width: 900px; margin-top: 18px; background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 18px 24px 20px; }
+.cm-wiki-settings__block-title { display: block; font: 600 11.5px var(--cm-font-ui); letter-spacing: 0.06em; text-transform: uppercase; color: var(--cm-faint); }
+.cm-wiki-settings__block-hint { margin: 6px 0 14px; font: 400 13px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-wiki-settings__block-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .cm-wiki-settings__danger { display: flex; gap: 12px; max-width: 900px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--cm-border-soft); }
 
 @media (max-width: 992px) {
@@ -7056,17 +7074,37 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
 .cm-wiki__rail-search { margin-top: 10px; }
 .cm-wiki__rail-search-input { width: 100%; padding: 6px 9px; border: 1px solid var(--cm-border); border-radius: 7px; background: var(--cm-surface); font: 400 12.5px var(--cm-font-ui); color: var(--cm-ink); }
 
-.cm-wiki-attachments { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--cm-border-soft); }
-.cm-wiki-attachments__title { display: block; margin-bottom: 10px; font: 600 11.5px var(--cm-font-ui); letter-spacing: 0.06em; text-transform: uppercase; color: var(--cm-faint); }
-.cm-wiki-attachments__list { list-style: none; margin: 0 0 14px; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
-.cm-wiki-attachment { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border: 1px solid var(--cm-border); border-radius: 8px; background: var(--cm-surface-alt); }
-.cm-wiki-attachment__name { flex: 1; min-width: 0; font: 600 13px var(--cm-font-ui); color: var(--cm-ink); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cm-wiki-attachment__name:hover { color: var(--cm-brand-strong); text-decoration: underline; }
-.cm-wiki-attachment__meta { flex: none; font: 400 11.5px var(--cm-font-ui); color: var(--cm-faint); }
-.cm-wiki-attachment__remove { border: 0; background: none; padding: 0 2px; font-size: 16px; line-height: 1; color: var(--cm-faint); cursor: pointer; }
+/* The Base documentaire's attachment block, worn by the wiki: same panel, same cards, same drop
+   zone - the two features attach the same kind of file for the same reason, and a reader who has
+   seen one should not have to learn the other. */
+.cm-wiki-attachments { margin-top: 26px; border: 1px solid var(--cm-gold-bg); border-radius: 10px; background: var(--cm-highlight-bg); padding: 16px 18px 18px; }
+.cm-wiki-attachments__rule { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; font: 600 11.5px var(--cm-font-ui); letter-spacing: 0.06em; text-transform: uppercase; color: var(--cm-gold-deep); }
+.cm-wiki-attachments__rule::after { content: ''; flex: 1; height: 1px; background: var(--cm-gold-bg); }
+.cm-wiki-attachments__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cm-wiki-attachments__grid:empty { display: none; }
+.cm-wiki-attachment {
+    display: flex; align-items: center; gap: 6px;
+    border: 1px solid var(--cm-border); border-radius: 9px; background: var(--cm-surface); padding: 11px 13px;
+}
+.cm-wiki-attachment:hover { border-color: var(--cm-brand); background: var(--cm-surface-alt); }
+.cm-wiki-attachment__open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 11px; text-decoration: none; }
+.cm-wiki-attachment__icon {
+    width: 34px; height: 34px; flex: none; border-radius: 8px; display: grid; place-items: center;
+    background: var(--cm-highlight-bg); color: var(--cm-gold-deep);
+}
+.cm-wiki-attachment__text { display: flex; flex-direction: column; min-width: 0; }
+.cm-wiki-attachment__name { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); overflow-wrap: anywhere; }
+.cm-wiki-attachment__meta { font: 400 11.5px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-wiki-attachment__remove { flex: none; border: 0; background: transparent; color: var(--cm-faint); font-size: 18px; line-height: 1; cursor: pointer; }
 .cm-wiki-attachment__remove:hover { color: var(--cm-red-tx); }
-.cm-wiki-attachments__add { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.cm-wiki-attachments__input { font: 400 12.5px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-wiki-attachments__dropzone {
+    display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
+    border: 1px dashed var(--cm-disabled); border-radius: 10px; padding: 16px;
+    font: 600 13px var(--cm-font-ui); color: var(--cm-muted); margin-top: 12px;
+}
+.cm-wiki-attachments__dropzone.is-dragover { border-color: var(--cm-brand); color: var(--cm-brand-strong); }
+.cm-wiki-attachments__add > .cm-wiki-attachments__grid { margin-top: 10px; }
+.cm-wiki-attachments__submit { display: flex; justify-content: flex-end; margin-top: 12px; }
 
 .cm-wiki-lock { margin-bottom: 16px; padding: 10px 14px; border-radius: 8px; background: var(--cm-gold-bg); border: 1px solid var(--cm-gold); font: 400 13px var(--cm-font-ui); color: var(--cm-gold-tx); }
 
@@ -7088,6 +7126,7 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
 
 @media (max-width: 992px) {
     .cm-wiki-compare { grid-template-columns: minmax(0, 1fr); }
+    .cm-wiki-attachments__grid { grid-template-columns: 1fr; }
 }
 
 /* --- Wiki: editor lot (callouts, diagrams, formulas, code, accordion, page break) ---------

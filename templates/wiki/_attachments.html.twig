@@ -1,38 +1,66 @@
 {# The page's attachments, drawn as downloadable cards with a format and a size - the same block as
    the Base documentaire's, deliberately: the two features attach the same kind of file for the same
-   reason.
+   reason, so they are read the same way. The reading cards and the drop zone below are that screen's
+   (templates/documentation/article.html.twig and article_form.html.twig), down to the icon.
+
+   The one difference is where the upload happens: an article's files ride along with the article's
+   own form, while a wiki page's attachments are their own POST - the page body is edited on another
+   screen entirely, and attaching a file must not mean opening the editor.
 
    This is the one upload field on the platform that narrows the rule by nothing (see
    design/validated/upload-policy.md): the wiki is the general-purpose workspace, so documents,
    spreadsheets, images, audio, video, archives, captures and inert source files all pass - only the
    executables and the archive-only formats do not. #}
-<div class="cm-wiki-attachments">
-    {% if node.attachments|length > 0 %}
-        <span class="cm-wiki-attachments__title">{{ 'wikiAttachmentsHeading'|trans }}</span>
-        <ul class="cm-wiki-attachments__list">
-            {% for attachment in node.attachments %}
-                <li class="cm-wiki-attachment">
-                    <a class="cm-wiki-attachment__name" href="{{ file_url(attachment.storageKey) }}" download>{{ attachment.label }}</a>
-                    <span class="cm-wiki-attachment__meta">
-                        {{ attachment.formatLabel }}{% if attachment.sizeBytes %} · {{ (attachment.sizeBytes / 1024)|round }} Ko{% endif %}
-                    </span>
-                    {% if is_granted('WIKI_EDIT', wiki) %}
-                        <form method="post" action="{{ path('app_wiki_attachment_delete', {id: wiki.id, nodeId: node.id, attachmentId: attachment.id}) }}">
-                            <input type="hidden" name="_token" value="{{ csrf_token('wiki_attachment') }}">
-                            <button type="submit" class="cm-wiki-attachment__remove" aria-label="{{ 'wikiAttachmentRemoveAction'|trans }}">×</button>
-                        </form>
-                    {% endif %}
-                </li>
-            {% endfor %}
-        </ul>
-    {% endif %}
+{% if node.attachments|length > 0 or is_granted('WIKI_EDIT', wiki) %}
+    <section class="cm-wiki-attachments">
+        <div class="cm-wiki-attachments__rule"><span>{{ 'wikiAttachmentsHeading'|trans }}</span></div>
 
-    {% if is_granted('WIKI_EDIT', wiki) %}
-        <form method="post" action="{{ path('app_wiki_attachment_add', {id: wiki.id, nodeId: node.id}) }}"
-              enctype="multipart/form-data" class="cm-wiki-attachments__add">
-            <input type="hidden" name="_token" value="{{ csrf_token('wiki_attachment') }}">
-            <input type="file" name="attachments[]" multiple class="cm-wiki-attachments__input" aria-label="{{ 'wikiAttachmentsFieldLabel'|trans }}">
-            <button type="submit" class="cm-btn cm-btn--sm cm-btn--outline">{{ 'wikiAttachmentAddAction'|trans }}</button>
-        </form>
-    {% endif %}
-</div>
+        {% if node.attachments|length > 0 %}
+            <div class="cm-wiki-attachments__grid">
+                {% for attachment in node.attachments %}
+                    <div class="cm-wiki-attachment">
+                        <a class="cm-wiki-attachment__open" href="{{ file_url(attachment.storageKey) }}" target="_blank" rel="noopener">
+                            <span class="cm-wiki-attachment__icon" aria-hidden="true">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"></path></svg>
+                            </span>
+                            <span class="cm-wiki-attachment__text">
+                                <span class="cm-wiki-attachment__name">{{ attachment.label }}</span>
+                                <span class="cm-wiki-attachment__meta">{{ attachment.formatLabel }}{% if attachment.sizeBytes %} &middot; {{ (attachment.sizeBytes / 1024)|round }} Ko{% endif %}</span>
+                            </span>
+                        </a>
+                        {% if is_granted('WIKI_EDIT', wiki) %}
+                            {# Its own form beside the link, never nested inside it: a form inside an
+                               anchor is the second of the two recurring bugs this repository has
+                               already paid for on small in-place actions. #}
+                            <form method="post" action="{{ path('app_wiki_attachment_delete', {id: wiki.id, nodeId: node.id, attachmentId: attachment.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('wiki_attachment') }}">
+                                <button type="submit" class="cm-wiki-attachment__remove" aria-label="{{ 'wikiAttachmentRemoveAction'|trans }}">&times;</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% if is_granted('WIKI_EDIT', wiki) %}
+            <form method="post" action="{{ path('app_wiki_attachment_add', {id: wiki.id, nodeId: node.id}) }}"
+                  enctype="multipart/form-data" class="cm-wiki-attachments__add"
+                  data-controller="file-dropzone">
+                <input type="hidden" name="_token" value="{{ csrf_token('wiki_attachment') }}">
+
+                <label class="cm-wiki-attachments__dropzone" data-file-dropzone-target="zone">
+                    <span>{{ 'wikiAttachmentsDropFileLabel'|trans }}</span>
+                    <input type="file" name="attachments[]" multiple class="d-none"
+                           data-file-dropzone-target="input" data-action="change->file-dropzone#update"
+                           aria-label="{{ 'wikiAttachmentsFieldLabel'|trans }}">
+                </label>
+
+                <div class="cm-wiki-attachments__grid" data-file-dropzone-target="list"></div>
+
+                <div class="cm-wiki-attachments__submit">
+                    <button type="submit" class="cm-btn cm-btn--sm cm-btn--outline">{{ 'wikiAttachmentAddAction'|trans }}</button>
+                </div>
+            </form>
+        {% endif %}
+    </section>
+{% endif %}

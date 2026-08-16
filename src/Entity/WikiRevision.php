@@ -11,10 +11,14 @@ use Doctrine\ORM\Mapping as ORM;
 /**
  * One saved state of a page: title and body as they were, and who wrote them.
  *
- * Capped at the 50 most recent per node, pruned on write - without the cap, a wiki used seriously
+ * Capped at the two most recent per node, pruned on write - without the cap, a wiki used seriously
  * for a year is the biggest table in the schema. This history is also why the feature logs nothing
  * into App\Entity\PlatformActivity: it already records who changed what and when, page by page, and
  * duplicating it would only make two sources of truth that can disagree.
+ *
+ * Two is a deliberately short memory: the history answers "undo what I just did", not "what did
+ * this page look like in October". Because it is short, the history screen has to *say* so - a user
+ * who believes every save is kept would find out the hard way.
  */
 #[ORM\Entity(repositoryClass: WikiRevisionRepository::class)]
 #[ORM\Table(name: 'wiki_revision')]
@@ -22,7 +26,7 @@ use Doctrine\ORM\Mapping as ORM;
 class WikiRevision
 {
     /** How many states of one page are kept. */
-    public const int KEEP_PER_NODE = 50;
+    public const int KEEP_PER_NODE = 2;
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
