@@ -64,6 +64,7 @@ Application commands (`src/Command/`), all cron-driven in production:
 | `app:import-edt-timetable`, `app:import-edt-periods` | Timetable import from the school's EDT export |
 | `app:import-notion-sequences` | One-off import of pedagogical sequences from a Notion export |
 | `app:purge-platform-activity` | Retention on `PlatformActivity` |
+| `app:antivirus:check` | **Diagnostic, not cron.** Scans a clean file and the EICAR test string through the configured `ANTIVIRUS_DSN`; exits non-zero unless uploads are genuinely being refused. The state it exists for is the silent one — a blank DSN disables scanning without announcing it anywhere |
 | `app:help:sync-content` | Creates the missing help sections/articles from `App\Help\HelpContentCatalog`; never overwrites what an admin has edited (`--refresh` also rewrites the untouched ones). Run it once after a deploy that adds catalogue entries |
 | `app:seed-dev-*`, `app:dev:*`, `app:configure-dev-programs` | **Dev-machine only.** Populate/inject into the local database. These must never be relied on in staging or production. |
 
