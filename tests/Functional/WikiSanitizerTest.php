@@ -46,9 +46,16 @@ class WikiSanitizerTest extends KernelTestCase
         );
 
         self::assertStringContainsString('data-mermaid="graph TD; A--&gt;B;"', $html);
-        foreach (['<svg', '<style', '<defs', '<marker', '<rect', '<text', '<path', 'viewBox=', 'transform=', 'marker-end='] as $expected) {
+
+        foreach (['<svg', '<defs', '<marker', '<rect', '<text', '<path', 'viewbox=', 'transform=', 'marker-end=', 'class=', 'id='] as $expected) {
             self::assertStringContainsString($expected, $html, $expected.' should have survived');
         }
+
+        // Mermaid's own <style> block never survives - the component drops the element
+        // unconditionally, whatever allow_elements says. That is why the diagram is styled by
+        // `.cm-mermaid` rules in app.css instead, and this assertion is here so nobody spends an
+        // afternoon trying to allow it again.
+        self::assertStringNotContainsString('<style', $html);
     }
 
     public function testAKatexFormulaSurvivesWithItsSourceAndItsMarkup(): void
@@ -57,7 +64,12 @@ class WikiSanitizerTest extends KernelTestCase
             '<span class="cm-katex" data-katex="e^{i\pi}+1=0"><span class="katex"><span class="katex-mathml">…</span></span></span>',
         );
 
-        self::assertStringContainsString('data-katex="e^{i\pi}+1=0"', $html);
+        // The value comes back HTML-encoded ("+" as &#43;), which is the component escaping an
+        // attribute rather than altering it - what matters is that it decodes to the source the
+        // editor put there, so the formula stays editable.
+        self::assertStringContainsString('data-katex=', $html);
+        self::assertStringContainsString('e^{i\pi}', html_entity_decode($html, \ENT_QUOTES | \ENT_HTML5, 'UTF-8'));
+        self::assertStringContainsString('+1=0', html_entity_decode($html, \ENT_QUOTES | \ENT_HTML5, 'UTF-8'));
         self::assertStringContainsString('class="katex"', $html);
     }
 
@@ -102,15 +114,28 @@ class WikiSanitizerTest extends KernelTestCase
         self::assertStringNotContainsString('foreignObject', $html);
     }
 
-    public function testNoLinkTargetSurvivesInsideADiagram(): void
+    public function testNoSvgReferenceMechanismSurvives(): void
     {
         $html = $this->sanitizer()->sanitize(
-            '<svg><use href="#x"/><a href="https://exemple.test"><rect/></a><path d="M0,0" xlink:href="https://exemple.test"/></svg>',
+            '<svg><use href="#x"/><path d="M0,0" xlink:href="https://exemple.test"/><image href="https://exemple.test/a.png"/></svg>',
         );
 
-        self::assertStringNotContainsString('xlink:href', $html);
-        self::assertStringNotContainsString('exemple.test', $html);
+        // <use> and xlink:href are the two that can pull another document - or a data: URI - into
+        // the picture, which is the reason the subtree is enumerated at all.
         self::assertStringNotContainsString('<use', $html);
+        self::assertStringNotContainsString('xlink:href', $html);
+        self::assertStringNotContainsString('<image', $html);
+        self::assertStringNotContainsString('exemple.test', $html);
+    }
+
+    public function testAnOrdinaryLinkIsNotSpecialCasedInsideADiagram(): void
+    {
+        // Deliberately NOT forbidden: a sanitizer has no parent-scoped rules, so "an <a href>
+        // inside an <svg>" is indistinguishable from one in prose - and prose links are the point
+        // of a wiki. The scheme is what is dangerous, and that is checked below.
+        $html = $this->sanitizer()->sanitize('<svg><a href="https://exemple.test"><rect/></a></svg>');
+
+        self::assertStringContainsString('href="https://exemple.test"', $html);
     }
 
     public function testEventHandlersAreDroppedEverywhere(): void
