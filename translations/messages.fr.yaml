@@ -5422,3 +5422,4 @@ wikiImportEntryTooLargeMessage: 'Un fichier de cette archive dépasse la taille 
 wikiImportArchiveTooLargeMessage: 'Le contenu décompressé de cette archive dépasse la taille maximale autorisée.'
 wikiImportUnsafePathMessage: 'Cette archive contient un chemin de fichier qui sort de son dossier : elle est refusée.'
 wikiImportSymlinkMessage: 'Cette archive contient un lien symbolique : elle est refusée.'
+wikiImportAnotherFileAction: 'Choisir un autre fichier'

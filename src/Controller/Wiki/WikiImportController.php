@@ -95,9 +95,14 @@ class WikiImportController extends AbstractController
         if ($request->isMethod('POST')) {
             $this->assertToken($request, 'wiki_import');
 
-            return 'confirm' === PostValue::string($request, 'step')
-                ? $this->confirm($request, $wiki, $user, $sanitizer, $id)
-                : $this->analyse($request, $id);
+            return match (PostValue::string($request, 'step')) {
+                'confirm' => $this->confirm($request, $wiki, $user, $sanitizer, $id),
+                // Without this, an analysed archive could only be got rid of by importing it or by
+                // waiting for the session to expire - "Annuler" led straight back to the same
+                // analysis, which is not what the word means.
+                'reset' => $this->reset($request, $id),
+                default => $this->analyse($request, $id),
+            };
         }
 
         $stored = $session->get(self::SESSION_KEY);
@@ -145,6 +150,21 @@ class WikiImportController extends AbstractController
 
         $file->move(\dirname($held), basename($held));
         $request->getSession()->set(self::SESSION_KEY, $held);
+
+        return $this->redirectToRoute('app_wiki_import', ['id' => $id]);
+    }
+
+    /** Throws the analysed archive away, so another one can be uploaded in its place. */
+    private function reset(Request $request, int $id): Response
+    {
+        $session = $request->getSession();
+        $stored = $session->get(self::SESSION_KEY);
+
+        if (\is_string($stored)) {
+            @unlink($stored);
+        }
+
+        $session->remove(self::SESSION_KEY);
 
         return $this->redirectToRoute('app_wiki_import', ['id' => $id]);
     }

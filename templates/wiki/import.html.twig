@@ -99,8 +99,15 @@
                         <button type="submit" class="cm-btn cm-btn--primary"{{ analysis.importable ? '' : ' disabled' }}>
                             {{ 'wikiImportConfirmAction'|trans }}
                         </button>
-                        <a href="{{ path('app_wiki_import', {id: wiki.id}) }}" class="cm-btn cm-btn--outline">{{ 'cancelAction'|trans }}</a>
                     </div>
+                </form>
+
+                {# Its own form, and a POST: "Annuler" has to actually throw the analysed archive
+                   away, or the screen offers no way back to the upload step. #}
+                <form method="post" action="{{ path('app_wiki_import', {id: wiki.id}) }}" class="cm-wiki-import__reset">
+                    <input type="hidden" name="_token" value="{{ csrf_token('wiki_import') }}">
+                    <input type="hidden" name="step" value="reset">
+                    <button type="submit" class="cm-btn cm-btn--outline">{{ 'wikiImportAnotherFileAction'|trans }}</button>
                 </form>
             {% endif %}
         </div>
