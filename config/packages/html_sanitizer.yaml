@@ -54,6 +54,23 @@ framework:
                 allow_attributes:
                     style: [span, p, h1, h2, h3, li, blockquote, table, col, td, th]
 
+            # WikiNode::$body - a wiki page, written in the shared HugeRTE toolbar and read back by
+            # whoever may reach the wiki. Its own sanitizer instance per this file's
+            # one-per-feature rule, and today the same configuration as app.documentation_article_body
+            # because the wiki runs on the same toolbar.
+            #
+            # It is meant to become the widest entry in this file: the wiki's own editor (menubar,
+            # codesample, accordion, KaTeX, Mermaid, callouts) is a lot of its own, and this target
+            # widens with it - `class` on pre/code/span, `id` on the heading levels the outline
+            # anchors, details/summary, and an enumerated SVG subtree for Mermaid. What it must
+            # never gain is iframe/video/embed/object: there is no video in a wiki by decision, and
+            # enforcing that here rather than only in the toolbar is what keeps the element list
+            # closed.
+            app.wiki_page_body:
+                allow_safe_elements: true
+                allow_attributes:
+                    style: [span, p, h1, h2, h3, h4, li, blockquote, table, col, td, th]
+
             # SeanceTemplate::$cahierDeTexteDescription, when it arrives through the séquence import
             # assistant (App\Service\SequenceJsonImporter). It is the one HTML field of the library's
             # three entities, it is rendered `|raw` in library/seance_show.html.twig, and once the

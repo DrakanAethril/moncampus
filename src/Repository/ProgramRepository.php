@@ -316,4 +316,61 @@ class ProgramRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * Every Program somebody belongs to - enrolled in or teaching - **including past school
+     * years**, ordered most recent year first.
+     *
+     * Written for "Mes wikis" (App\Controller\Wiki\WikiController), which groups by class and
+     * collapses the earlier years rather than hiding them: a wiki does not expire with its
+     * Program, and the archive of last year's project is exactly what a student comes looking for.
+     * That is why this one deliberately does not filter on inactiveDate, unlike every method above.
+     *
+     * @return list<Program>
+     */
+    public function findAllWithMember(User $user): array
+    {
+        /** @var list<Program> $programs */
+        $programs = $this->createQueryBuilder('p')
+            ->addSelect('c', 'y')
+            ->leftJoin('p.cohort', 'c')
+            ->leftJoin('p.schoolYear', 'y')
+            ->leftJoin('p.students', 's')
+            ->leftJoin('p.teachers', 't')
+            ->where('s = :user OR t = :user')
+            ->andWhere(':testMode = false OR p.testProgram = true')
+            ->setParameter('user', $user)
+            ->setParameter('testMode', $user->isTestUser())
+            ->distinct()
+            ->orderBy('y.startDate', 'DESC')
+            ->addOrderBy('p.shortName', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        return $programs;
+    }
+
+    /**
+     * Every active Program with its students hydrated - the supervision screen of the wiki
+     * ("Wikis des étudiants") for a staff account, which sees every class rather than the ones it
+     * teaches.
+     *
+     * @return list<Program>
+     */
+    public function findAllActiveWithStudents(): array
+    {
+        /** @var list<Program> $programs */
+        $programs = $this->createQueryBuilder('p')
+            ->addSelect('c', 'y', 's')
+            ->leftJoin('p.cohort', 'c')
+            ->leftJoin('p.schoolYear', 'y')
+            ->leftJoin('p.students', 's')
+            ->where('p.inactiveDate IS NULL')
+            ->orderBy('y.startDate', 'DESC')
+            ->addOrderBy('p.shortName', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        return $programs;
+    }
 }

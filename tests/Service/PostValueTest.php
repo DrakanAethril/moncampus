@@ -87,6 +87,22 @@ class PostValueTest extends TestCase
         self::assertSame('', PostValue::string(self::request(['_token' => ['x']]), '_token'));
     }
 
+    public function testIntListTypesASubmittedSetOfIdentifiers(): void
+    {
+        // The reading a picker's `members[]` needs, so no controller ever casts a submitted id.
+        self::assertSame([3, 7], PostValue::intList(self::request(['members' => ['3', '7']]), 'members'));
+        // A single value with no brackets, and an unchecked group that submits nothing at all.
+        self::assertSame([5], PostValue::intList(self::request(['members' => '5']), 'members'));
+        self::assertSame([], PostValue::intList(self::request([]), 'members'));
+        self::assertSame([], PostValue::intList(self::request(['members' => '']), 'members'));
+    }
+
+    public function testIntListDropsWhatCannotBeAnIdentifier(): void
+    {
+        // No row carries id 0, so a field naming only junk names nothing.
+        self::assertSame([4], PostValue::intList(self::request(['members' => ['4', 'x', '', '0']]), 'members'));
+    }
+
     public function testBoolAcceptsTheUsualTruthyFormsAndNeverThrows(): void
     {
         foreach (['1', 'true', 'on', 'yes'] as $truthy) {

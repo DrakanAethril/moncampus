@@ -1,0 +1,111 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Title, members, classes, archive, delete - and the one thing this screen exists for beyond the
+   form: **saying the current regime in words**.
+
+   The access rule derives visibility from the audience, which is its single weakness: it changes
+   what a wiki is as a side effect of who is in it. So the banner states it, and the warning below
+   the pickers says what adding a first student or class will do *before* the save. Nothing is
+   hidden behind an inference the user cannot see. #}
+
+{% set isNew = wiki is null %}
+
+{% block title %}{{ isNew ? 'wikiNewPageHeading'|trans : 'wikiSettingsPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% if isNew %}
+        {% include '_breadcrumb.html.twig' with {segments: [
+            {label: 'homeNavLabel'|trans, url: path('app_home')},
+            {label: 'wikiSharedNavLabel'|trans, url: path('app_wiki_shared')},
+            {label: 'wikiNewPageHeading'|trans, url: path('app_wiki_new')},
+        ]} %}
+    {% else %}
+        {% include 'wiki/_breadcrumb.html.twig' with {
+            wiki: wiki,
+            extra: [{label: 'wikiSettingsNavLabel'|trans, url: path('app_wiki_settings', {id: wiki.id})}],
+        } %}
+    {% endif %}
+{% endblock %}
+
+{% block page_title %}{{ isNew ? 'wikiNewPageHeading'|trans : 'wikiSettingsPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% if not isNew %}
+        <p class="cm-wiki-regime{{ hasStudentAudience ? ' cm-wiki-regime--supervised' }}">
+            {{ (hasStudentAudience ? 'wikiRegimeSupervisedText' : 'wikiRegimeMembersOnlyText')|trans }}
+        </p>
+    {% endif %}
+
+    <form method="post" action="{{ isNew ? path('app_wiki_new') : path('app_wiki_settings', {id: wiki.id}) }}" class="cm-wiki-settings">
+        <input type="hidden" name="_token" value="{{ csrf_token('wiki_settings') }}">
+
+        <div class="mb-3">
+            <label class="form-label" for="wiki-title">{{ 'wikiTitleLabel'|trans }}</label>
+            <input type="text" class="form-control" id="wiki-title" name="title" maxlength="255" required
+                   value="{{ isNew ? '' : wiki.title }}">
+        </div>
+
+        {% if isNew or not wiki.personal %}
+            <div class="mb-3">
+                <label class="form-label" for="wiki-members">{{ 'wikiMembersLabel'|trans }}</label>
+                {# Picking Users always goes through tomselect + ajax, and the endpoint returns only
+                   the people this composer may add - the form re-checks the ids at save anyway,
+                   because a picker is a convenience and never the control. #}
+                <select id="wiki-members" name="members[]" multiple
+                        data-controller="tom-select"
+                        data-tom-select-url-value="{{ path('app_wiki_member_search') }}"
+                        data-tom-select-placeholder-value="{{ 'wikiMembersPlaceholder'|trans }}">
+                    {% if not isNew %}
+                        {% for member in wiki.members %}
+                            <option value="{{ member.id }}" selected>{{ member.displayName ?? member.username }}</option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+                <span class="form-hint">{{ 'wikiMembersHelpText'|trans }}</span>
+            </div>
+
+            <div class="mb-3">
+                <span class="form-label">{{ 'wikiProgramsLabel'|trans }}</span>
+                {# Checkbox group rather than a <select multiple>, per this app's form convention. #}
+                <div class="cm-wiki-settings__checks">
+                    {% for program in assignablePrograms %}
+                        <label class="cm-wiki-settings__check">
+                            <input type="checkbox" name="programs[]" value="{{ program.id }}"
+                                   {{ not isNew and wiki.programs.contains(program) ? 'checked' }}>
+                            <span>{{ program.displayShortName }}</span>
+                        </label>
+                    {% else %}
+                        <p class="cm-wiki__placeholder">{{ 'wikiNoAssignableProgramText'|trans }}</p>
+                    {% endfor %}
+                </div>
+                <span class="form-hint">{{ 'wikiAudienceWarningText'|trans }}</span>
+            </div>
+        {% endif %}
+
+        <div class="cm-wiki__editor-actions">
+            <button type="submit" class="cm-btn cm-btn--primary">{{ 'submitSaveAction'|trans }}</button>
+            <a href="{{ isNew ? path('app_wiki_shared') : path('app_wiki_show', {id: wiki.id}) }}" class="cm-btn cm-btn--outline">{{ 'cancelAction'|trans }}</a>
+        </div>
+    </form>
+
+    {% if not isNew %}
+        <div class="cm-wiki-settings__danger">
+            <form method="post" action="{{ path('app_wiki_archive', {id: wiki.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('wiki_settings') }}">
+                <button type="submit" class="cm-btn cm-btn--outline">
+                    {{ (wiki.archived ? 'wikiUnarchiveAction' : 'wikiArchiveAction')|trans }}
+                </button>
+            </form>
+
+            {% if is_granted('WIKI_DELETE', wiki) %}
+                <form method="post" action="{{ path('app_wiki_delete', {id: wiki.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('wiki_delete') }}">
+                    <button type="submit" class="cm-btn cm-btn--danger"
+                            data-controller="confirm-submit"
+                            data-confirm-submit-message-value="{{ 'wikiDeleteConfirmText'|trans }}"
+                            data-action="click->confirm-submit#confirm">{{ 'wikiDeleteAction'|trans }}</button>
+                </form>
+            {% endif %}
+        </div>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,17 @@
+{# One node of the rail, recursing into its children. `row` is what App\Service\WikiTree::assemble()
+   produced: the node itself plus its ordered children. #}
+{% set entry = row.node %}
+<li class="cm-wiki__node{{ entry.folder ? ' cm-wiki__node--folder' }}" data-wiki-tree-target="node" data-node-id="{{ entry.id }}" draggable="true">
+    <a class="cm-wiki__node-link{{ currentNode and currentNode.id == entry.id ? ' is-current' }}"
+       href="{{ path('app_wiki_page', {id: wiki.id, nodeId: entry.id}) }}">
+        <span class="cm-wiki__node-icon" aria-hidden="true">{{ entry.folder ? '▸' : '·' }}</span>
+        <span class="cm-wiki__node-title">{{ entry.title }}</span>
+    </a>
+    {% if row.children is not empty %}
+        <ul class="cm-wiki__tree cm-wiki__tree--nested">
+            {% for child in row.children %}
+                {% include 'wiki/_rail_node.html.twig' with {row: child, wiki: wiki, currentNode: currentNode} only %}
+            {% endfor %}
+        </ul>
+    {% endif %}
+</li>

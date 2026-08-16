@@ -6932,3 +6932,83 @@ button.cm-tabs__tab { border: 0; background: none; font: inherit; cursor: pointe
     .cm-doc-editor__main, .cm-doc-article__body { padding: 22px 20px 26px; }
     .cm-doc-attachments__grid { grid-template-columns: 1fr; }
 }
+
+/* ==========================================================================
+   Wiki (design/validated/wiki.md)
+   A rail on the left holding the whole tree, the page on the right. The rail is the feature:
+   without a permanent, complete tree a wiki is a pile of pages, so it stays visible on every
+   screen of the area - reading, editing, and the trash alike.
+   ========================================================================== */
+
+.cm-wiki { display: grid; grid-template-columns: 264px minmax(0, 1fr); gap: 22px; align-items: start; }
+
+.cm-wiki__rail { position: sticky; top: 84px; background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 14px 12px; }
+.cm-wiki__rail-head { display: flex; align-items: center; gap: 8px; padding: 0 4px 10px; border-bottom: 1px solid var(--cm-border-soft); }
+.cm-wiki__rail-title { flex: 1; min-width: 0; font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-wiki__rail-add { flex: none; }
+.cm-wiki__rail-empty { margin: 12px 4px; font: 400 12.5px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-wiki__rail-foot { display: flex; gap: 12px; padding-top: 10px; margin-top: 10px; border-top: 1px solid var(--cm-border-soft); }
+.cm-wiki__rail-link { font: 500 12.5px var(--cm-font-ui); color: var(--cm-brand-strong); text-decoration: none; }
+.cm-wiki__rail-link:hover { text-decoration: underline; }
+
+.cm-wiki__tree { list-style: none; margin: 10px 0 0; padding: 0; }
+.cm-wiki__tree--nested { margin: 2px 0 2px 14px; border-left: 1px solid var(--cm-border-soft); padding-left: 6px; }
+.cm-wiki__node { margin: 1px 0; }
+.cm-wiki__node.is-dragging { opacity: 0.45; }
+.cm-wiki__node.is-drop-target > .cm-wiki__node-link { background: var(--cm-blue-bg-soft); box-shadow: inset 0 0 0 1px var(--cm-brand); }
+.cm-wiki__node-link { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 6px; font: 400 13px var(--cm-font-ui); color: var(--cm-text); text-decoration: none; }
+.cm-wiki__node-link:hover { background: var(--cm-surface-alt); color: var(--cm-ink); }
+.cm-wiki__node-link.is-current { background: var(--cm-blue-bg); color: var(--cm-blue-tx); font-weight: 600; }
+.cm-wiki__node-icon { flex: none; width: 10px; color: var(--cm-faint); font-size: 11px; }
+.cm-wiki__node-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-wiki__node--folder > .cm-wiki__node-link .cm-wiki__node-title { font-weight: 600; }
+
+.cm-wiki__content { background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 24px 26px 26px; }
+.cm-wiki__body { font: 400 15px/1.65 var(--cm-font-ui); color: var(--cm-text); }
+.cm-wiki__body h1, .cm-wiki__body h2, .cm-wiki__body h3, .cm-wiki__body h4 { font-family: var(--cm-font-title); color: var(--cm-ink); margin: 1.4em 0 0.5em; }
+.cm-wiki__body h1:first-child, .cm-wiki__body h2:first-child { margin-top: 0; }
+.cm-wiki__body table { width: 100%; border-collapse: collapse; margin: 1em 0; }
+.cm-wiki__body td, .cm-wiki__body th { border: 1px solid var(--cm-border); padding: 7px 10px; }
+.cm-wiki__body img { max-width: 100%; height: auto; }
+.cm-wiki__placeholder { font: 400 13.5px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-wiki__meta { margin: 20px 0 0; padding-top: 12px; border-top: 1px solid var(--cm-border-soft); font: 400 12px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-wiki__inline-form { display: inline-block; }
+.cm-wiki__editor-actions { display: flex; gap: 10px; align-items: center; }
+
+.cm-wiki-invite { max-width: 720px; background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 26px 28px; }
+.cm-wiki-invite__lead { font: 400 15px/1.6 var(--cm-font-ui); color: var(--cm-text); }
+.cm-wiki-invite__list { margin: 0 0 22px; padding-left: 20px; font: 400 14px/1.7 var(--cm-font-ui); color: var(--cm-text); }
+.cm-wiki-invite__reader { color: var(--cm-ink); font-weight: 600; }
+
+.cm-wiki-filter { display: flex; align-items: center; gap: 10px; }
+.cm-wiki-filter__input, .cm-wiki-filter__select { min-width: 200px; padding: 7px 11px; border: 1px solid var(--cm-border); border-radius: 8px; background: var(--cm-surface); font: 400 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-wiki-filter__check { display: flex; align-items: center; gap: 6px; font: 400 12.5px var(--cm-font-ui); color: var(--cm-muted); white-space: nowrap; }
+
+.cm-wiki-group { margin-bottom: 18px; background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 14px 18px; }
+.cm-wiki-group__head { display: flex; align-items: baseline; gap: 12px; cursor: pointer; }
+.cm-wiki-group__name { font: 600 12px var(--cm-font-ui); letter-spacing: 0.06em; text-transform: uppercase; color: var(--cm-muted); }
+.cm-wiki-group__year, .cm-wiki-group__count { margin-left: auto; font: 400 12px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-wiki-group__idle { margin-top: 8px; font: 400 12.5px var(--cm-font-ui); color: var(--cm-faint); }
+
+.cm-wiki-list { list-style: none; margin: 10px 0 0; padding: 0; }
+.cm-wiki-list__row { display: flex; align-items: center; gap: 12px; padding: 9px 2px; border-top: 1px solid var(--cm-border-faint); }
+.cm-wiki-list__row:first-child { border-top: 0; }
+.cm-wiki-list__row--muted { color: var(--cm-faint); }
+.cm-wiki-list__title { font: 600 14px var(--cm-font-ui); color: var(--cm-ink); text-decoration: none; }
+a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: underline; }
+.cm-wiki-list__subtitle { flex: 1; min-width: 0; font: 400 12.5px var(--cm-font-ui); color: var(--cm-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-wiki-list__date { flex: none; font: 400 12px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-wiki-list--muted .cm-wiki-list__row { border-top: 0; padding: 3px 2px; }
+
+.cm-wiki-regime { max-width: 900px; margin-bottom: 18px; padding: 11px 14px; border-radius: 8px; background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); font: 400 13px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-wiki-regime--supervised { background: var(--cm-gold-bg); border-color: var(--cm-gold); color: var(--cm-gold-tx); }
+
+.cm-wiki-settings { max-width: 900px; background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 22px 24px; }
+.cm-wiki-settings__checks { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 6px; }
+.cm-wiki-settings__check { display: flex; align-items: center; gap: 7px; font: 400 13px var(--cm-font-ui); color: var(--cm-text); }
+.cm-wiki-settings__danger { display: flex; gap: 12px; max-width: 900px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--cm-border-soft); }
+
+@media (max-width: 992px) {
+    .cm-wiki { grid-template-columns: minmax(0, 1fr); }
+    .cm-wiki__rail { position: static; }
+}

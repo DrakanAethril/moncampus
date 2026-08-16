@@ -1,0 +1,72 @@
+{% extends 'layout/app.html.twig' %}
+
+{# "Mes wikis" - grouped by class, because flat it becomes an unreadable pile after two school
+   years. Program being Cohort x SchoolYear, the grouping separates the years by itself: only the
+   current one opens expanded, and a wiki addressed to a pair of students carries their names as
+   its subtitle, which is what tells three project wikis of the same class apart. #}
+
+{% block title %}{{ 'wikiSharedPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'wikiSharedNavLabel'|trans, url: path('app_wiki_shared')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'wikiSharedPageHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    {# A "show me a result" form: GET, per the Turbo rule - a POST here would have to redirect. #}
+    <form class="cm-wiki-filter" method="get" action="{{ path('app_wiki_shared') }}">
+        <input type="search" name="q" class="cm-wiki-filter__input" value="{{ search }}"
+               placeholder="{{ 'wikiSearchPlaceholder'|trans }}" aria-label="{{ 'wikiSearchPlaceholder'|trans }}">
+        <label class="cm-wiki-filter__check">
+            <input type="checkbox" name="archived" value="1"{{ includeArchived ? ' checked' }}>
+            {{ 'wikiShowArchivedLabel'|trans }}
+        </label>
+        <button type="submit" class="cm-btn cm-btn--sm cm-btn--outline">{{ 'wikiFilterAction'|trans }}</button>
+    </form>
+    {% if is_granted('ROLE_TEACHER') or is_staff() %}
+        <a href="{{ path('app_wiki_new') }}" class="cm-btn cm-btn--primary">{{ 'wikiNewAction'|trans }}</a>
+    {% endif %}
+{% endblock %}
+
+{% block main %}
+    {% if groups is empty %}
+        <p class="cm-wiki__placeholder">{{ 'wikiSharedEmptyText'|trans }}</p>
+    {% else %}
+        {% for group in groups %}
+            {% set program = group.programId ? programsById[group.programId]|default(null) : null %}
+            {% set expanded = group.kind != 'program' or group.programId in currentSchoolYearIds %}
+            <details class="cm-wiki-group"{{ expanded ? ' open' }}>
+                <summary class="cm-wiki-group__head">
+                    <span class="cm-wiki-group__name">
+                        {{ program ? program.displayShortName : board.groupLabelKey(group.kind)|trans }}
+                    </span>
+                    {% if program and program.schoolYear %}
+                        <span class="cm-wiki-group__year">{{ program.schoolYear.startDate|date('Y') }}-{{ program.schoolYear.endDate|date('Y') }}</span>
+                    {% endif %}
+                </summary>
+                <ul class="cm-wiki-list">
+                    {% for wikiId in group.wikiIds %}
+                        {% set entry = wikisById[wikiId] %}
+                        <li class="cm-wiki-list__row">
+                            <a class="cm-wiki-list__title" href="{{ path('app_wiki_show', {id: entry.id}) }}">{{ entry.title }}</a>
+                            <span class="cm-wiki-list__subtitle">
+                                {%- if entry.programs|length > 0 and entry.members|length == 0 -%}
+                                    {{ 'wikiWholeClassSubtitle'|trans }}
+                                {%- else -%}
+                                    {% for member in entry.members|slice(0, 4) %}{{ member.displayName ?? member.username }}{{ loop.last ? '' : ', ' }}{% endfor %}
+                                    {%- if entry.members|length > 4 %} …{% endif -%}
+                                {%- endif -%}
+                            </span>
+                            {% if entry.archived %}<span class="cm-badge cm-badge--gray">{{ 'wikiArchivedBadge'|trans }}</span>{% endif %}
+                            <span class="cm-wiki-list__date">{{ entry.updatedAt|date('d/m/Y') }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </details>
+        {% endfor %}
+    {% endif %}
+{% endblock %}

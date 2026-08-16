@@ -1,0 +1,45 @@
+{% extends 'layout/app.html.twig' %}
+
+{# The editor. Lot 1 reuses the app's existing HugeRTE controller at its current toolbar; the
+   wiki's own editor - menubar, custom buttons, callouts, KaTeX, Mermaid - is its own lot, and
+   arrives with the sanitizer that has to widen alongside it. #}
+
+{% block title %}{{ node.title }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'wiki/_breadcrumb.html.twig' with {
+        wiki: wiki,
+        ancestors: ancestors,
+        node: node,
+        extra: [{label: 'wikiEditPageAction'|trans, url: path('app_wiki_page_edit', {id: wiki.id, nodeId: node.id})}],
+    } %}
+{% endblock %}
+
+{% block page_title %}{{ 'wikiEditPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="cm-wiki">
+        {% include 'wiki/_rail.html.twig' with {wiki: wiki, tree: tree, node: node} %}
+
+        <div class="cm-wiki__content">
+            <form method="post" action="{{ path('app_wiki_page_edit', {id: wiki.id, nodeId: node.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('wiki_page_edit') }}">
+
+                <div class="mb-3">
+                    <label class="form-label" for="wiki-page-title">{{ 'wikiPageTitleLabel'|trans }}</label>
+                    <input type="text" class="form-control" id="wiki-page-title" name="title" value="{{ node.title }}" maxlength="255" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="wiki-page-body">{{ 'wikiPageBodyLabel'|trans }}</label>
+                    <textarea id="wiki-page-body" name="body" class="d-none" data-controller="hugerte-editor" data-hugerte-editor-height-value="520">{{ node.body }}</textarea>
+                </div>
+
+                <div class="cm-wiki__editor-actions">
+                    <button type="submit" class="cm-btn cm-btn--primary">{{ 'submitSaveAction'|trans }}</button>
+                    <a href="{{ path('app_wiki_page', {id: wiki.id, nodeId: node.id}) }}" class="cm-btn cm-btn--outline">{{ 'cancelAction'|trans }}</a>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}
