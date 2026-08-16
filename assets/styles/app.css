@@ -5329,6 +5329,8 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
   background: var(--cm-surface); text-decoration: none;
 }
 .cm-audio-ghost:hover { border-color: var(--cm-brand); color: var(--cm-brand-strong); }
+.cm-audio-ghost:disabled { opacity: .45; cursor: default; }
+.cm-audio-ghost:disabled:hover { border-color: var(--cm-border); color: var(--cm-brand); }
 
 /* ---- The two-step stepper ---- */
 
