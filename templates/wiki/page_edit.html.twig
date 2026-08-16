@@ -1,8 +1,10 @@
 {% extends 'layout/app.html.twig' %}
 
-{# The editor. Lot 1 reuses the app's existing HugeRTE controller at its current toolbar; the
-   wiki's own editor - menubar, custom buttons, callouts, KaTeX, Mermaid - is its own lot, and
-   arrives with the sanitizer that has to widen alongside it. #}
+{# The editor, plus the two things the content lot adds around it: the soft-lock banner, and the
+   internal-link picker.
+
+   Lot 1's toolbar is still the app's shared one; the wiki's own editor - menubar, custom buttons,
+   callouts, KaTeX, Mermaid - is its own lot, and the sanitizer widens with it. #}
 
 {% block title %}{{ node.title }}{% endblock %}
 
@@ -22,7 +24,21 @@
         {% include 'wiki/_rail.html.twig' with {wiki: wiki, tree: tree, node: node} %}
 
         <div class="cm-wiki__content">
-            <form method="post" action="{{ path('app_wiki_page_edit', {id: wiki.id, nodeId: node.id}) }}">
+            {% if lockedBy %}
+                {# It prevents nothing: it removes the silent overwrite by saying who is already in
+                   there, and lets this person carry on anyway. #}
+                <p class="cm-wiki-lock">
+                    {{ 'wikiLockBannerText'|trans({
+                        '%name%': lockedBy.displayName ?? lockedBy.username,
+                        '%minutes%': lockedSince ? (date().timestamp - lockedSince.timestamp) // 60 : 0,
+                    }) }}
+                </p>
+            {% endif %}
+
+            <form method="post" action="{{ path('app_wiki_page_edit', {id: wiki.id, nodeId: node.id}) }}"
+                  data-controller="wiki-lock"
+                  data-wiki-lock-url-value="{{ path('app_wiki_page_lock', {id: wiki.id, nodeId: node.id}) }}"
+                  data-wiki-lock-token-value="{{ csrf_token('wiki_lock') }}">
                 <input type="hidden" name="_token" value="{{ csrf_token('wiki_page_edit') }}">
 
                 <div class="mb-3">
@@ -31,8 +47,25 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label" for="wiki-page-body">{{ 'wikiPageBodyLabel'|trans }}</label>
-                    <textarea id="wiki-page-body" name="body" class="d-none" data-controller="hugerte-editor" data-hugerte-editor-height-value="520">{{ node.body }}</textarea>
+                    <div class="cm-wiki__editor-head">
+                        <label class="form-label" for="wiki-page-body">{{ 'wikiPageBodyLabel'|trans }}</label>
+                        {# The internal-link picker. Linking one page to another is what makes this a
+                           wiki rather than a pile of pages; the toolbar button that will open the
+                           same list arrives with the wiki's own editor. #}
+                        <div class="cm-wiki-linkpicker" data-controller="wiki-link-picker"
+                             data-wiki-link-picker-url-value="{{ path('app_wiki_pages', {id: wiki.id}) }}"
+                             data-wiki-link-picker-editor-value="wiki-page-body">
+                            <button type="button" class="cm-btn cm-btn--sm cm-btn--outline"
+                                    data-action="wiki-link-picker#toggle">{{ 'wikiInsertLinkAction'|trans }}</button>
+                            <div class="cm-wiki-linkpicker__panel" data-wiki-link-picker-target="panel" hidden></div>
+                        </div>
+                    </div>
+                    <textarea id="wiki-page-body" name="body" class="d-none"
+                              data-controller="hugerte-editor"
+                              data-hugerte-editor-height-value="520"
+                              data-hugerte-editor-image-value="true"
+                              data-hugerte-editor-image-upload-url-value="{{ path('app_wiki_image_upload', {id: wiki.id}) }}"
+                              data-hugerte-editor-image-upload-token-value="{{ csrf_token('wiki_image') }}">{{ node.body }}</textarea>
                 </div>
 
                 <div class="cm-wiki__editor-actions">

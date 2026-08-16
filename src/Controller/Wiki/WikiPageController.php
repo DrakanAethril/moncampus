@@ -7,9 +7,11 @@ namespace App\Controller\Wiki;
 use App\Entity\User;
 use App\Repository\WikiNodeRepository;
 use App\Repository\WikiRepository;
+use App\Repository\WikiRevisionRepository;
 use App\Security\Voter\WikiVoter;
 use App\Service\PostValue;
 use App\Service\WikiNodeManager;
+use App\Service\WikiPageOutline;
 use App\Service\WikiTree;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -39,6 +41,8 @@ class WikiPageController extends AbstractController
         private readonly WikiNodeRepository $nodes,
         private readonly WikiTree $tree,
         private readonly WikiNodeManager $nodeManager,
+        private readonly WikiRevisionRepository $revisions,
+        private readonly WikiPageOutline $outline,
     ) {
     }
 
@@ -53,12 +57,17 @@ class WikiPageController extends AbstractController
         }
 
         $rail = $this->rail($wiki);
+        // Derived at read time, never stored: a writer who renames a heading has nothing else to
+        // update, and the anchors the sommaire links to are stamped in the same pass.
+        $outline = $this->outline->build($node->getBody());
 
         return $this->render('wiki/page.html.twig', [
             'wiki' => $wiki,
             'node' => $node,
             'tree' => $rail['tree'],
             'ancestors' => $this->nodeManager->ancestorsOf($node, $rail['byId']),
+            'body' => '' === $outline['html'] ? $node->getBody() : $outline['html'],
+            'outline' => $outline['entries'],
         ]);
     }
 
@@ -81,6 +90,10 @@ class WikiPageController extends AbstractController
         if ($request->isMethod('POST')) {
             $this->assertToken($request, 'wiki_page_edit');
 
+            // Recorded before anything changes, so a revision is what the page *was* - which is
+            // what makes "restaurer" mean something.
+            $this->revisions->record($node, $user);
+
             $title = PostValue::trimmed($request, 'title');
 
             if ('' !== $title && $title !== $node->getTitle()) {
@@ -101,12 +114,22 @@ class WikiPageController extends AbstractController
         }
 
         $rail = $this->rail($wiki);
+        // Read *before* taking the lock, or the editor would always report itself as the holder.
+        $heldBy = $node->isLockedFor($user) ? $node->getLockedBy() : null;
+        $lockedSince = $node->getLockedAt();
+
+        // Opening the editor takes the lock, take-over included: the banner tells the second person
+        // what is happening, it does not stop them.
+        $node->lockFor($user);
+        $this->entityManager->flush();
 
         return $this->render('wiki/page_edit.html.twig', [
             'wiki' => $wiki,
             'node' => $node,
             'tree' => $rail['tree'],
             'ancestors' => $this->nodeManager->ancestorsOf($node, $rail['byId']),
+            'lockedBy' => $heldBy,
+            'lockedSince' => $heldBy ? $lockedSince : null,
         ]);
     }
 }

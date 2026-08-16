@@ -1,7 +1,7 @@
 {% extends 'layout/app.html.twig' %}
 
-{# Rail (tree) + page. The attachments panel and the per-page outline arrive with the content lot;
-   what is here is the reading half of the foundations. #}
+{# Rail (tree) + page + attachments panel + outline. The sommaire is derived from the page's own
+   headings at read time and hidden when there are none - most wiki pages are a paragraph. #}
 
 {% block title %}{{ node.title }}{% endblock %}
 
@@ -12,6 +12,7 @@
 {% block page_title %}{{ node.title }}{% endblock %}
 
 {% block page_actions %}
+    <a href="{{ path('app_wiki_page_history', {id: wiki.id, nodeId: node.id}) }}" class="cm-btn cm-btn--outline">{{ 'wikiHistoryAction'|trans }}</a>
     {% if is_granted('WIKI_EDIT', wiki) %}
         <a href="{{ path('app_wiki_page_edit', {id: wiki.id, nodeId: node.id}) }}" class="cm-btn cm-btn--primary">{{ 'wikiEditPageAction'|trans }}</a>
         <form method="post" action="{{ path('app_wiki_node_create', {id: wiki.id}) }}" class="cm-wiki__inline-form">
@@ -28,15 +29,17 @@
 {% endblock %}
 
 {% block main %}
-    <div class="cm-wiki">
+    <div class="cm-wiki{{ outline is not empty ? ' cm-wiki--with-outline' }}">
         {% include 'wiki/_rail.html.twig' with {wiki: wiki, tree: tree, node: node} %}
 
         <div class="cm-wiki__content">
-            {% if node.body %}
-                <div class="cm-wiki__body">{{ node.body|raw }}</div>
+            {% if body %}
+                <div class="cm-wiki__body">{{ body|raw }}</div>
             {% else %}
                 <p class="cm-wiki__placeholder">{{ 'wikiPageEmptyText'|trans }}</p>
             {% endif %}
+
+            {% include 'wiki/_attachments.html.twig' with {wiki: wiki, node: node} %}
 
             <p class="cm-wiki__meta">
                 {{ 'wikiPageUpdatedMeta'|trans({
@@ -45,5 +48,18 @@
                 }) }}
             </p>
         </div>
+
+        {% if outline is not empty %}
+            <aside class="cm-wiki__outline">
+                <span class="cm-wiki__outline-title">{{ 'wikiOutlineHeading'|trans }}</span>
+                <ul>
+                    {% for entry in outline %}
+                        <li class="cm-wiki__outline-entry cm-wiki__outline-entry--h{{ entry.level }}">
+                            <a href="#{{ entry.id }}">{{ entry.title }}</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </aside>
+        {% endif %}
     </div>
 {% endblock %}

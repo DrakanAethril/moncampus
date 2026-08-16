@@ -1,0 +1,45 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Results within this wiki. Cross-wiki search was considered and deferred: it is worth building the
+   day a teacher actually follows thirty student wikis, and this field answers everything before
+   that. #}
+
+{% block title %}{{ 'wikiSearchPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'wiki/_breadcrumb.html.twig' with {
+        wiki: wiki,
+        extra: [{label: 'wikiSearchPageHeading'|trans, url: path('app_wiki_search', {id: wiki.id})}],
+    } %}
+{% endblock %}
+
+{% block page_title %}{{ 'wikiSearchPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="cm-wiki">
+        {% include 'wiki/_rail.html.twig' with {wiki: wiki, tree: tree} %}
+
+        <div class="cm-wiki__content">
+            <form class="cm-wiki-filter" method="get" action="{{ path('app_wiki_search', {id: wiki.id}) }}">
+                <input type="search" name="q" class="cm-wiki-filter__input" value="{{ search }}"
+                       placeholder="{{ 'wikiSearchInWikiPlaceholder'|trans }}" aria-label="{{ 'wikiSearchInWikiPlaceholder'|trans }}" autofocus>
+                <button type="submit" class="cm-btn cm-btn--sm cm-btn--outline">{{ 'wikiSearchAction'|trans }}</button>
+            </form>
+
+            {% if search is not empty %}
+                {% if results is empty %}
+                    <p class="cm-wiki__placeholder">{{ 'wikiSearchNoResultText'|trans({'%query%': search}) }}</p>
+                {% else %}
+                    <ul class="cm-wiki-list">
+                        {% for result in results %}
+                            <li class="cm-wiki-list__row">
+                                <a class="cm-wiki-list__title" href="{{ path('app_wiki_page', {id: wiki.id, nodeId: result.id}) }}">{{ result.title }}</a>
+                                <span class="cm-wiki-list__subtitle">{{ result.bodyText ? result.bodyText|u.truncate(160, '…') : '' }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
