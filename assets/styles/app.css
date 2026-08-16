@@ -7064,14 +7064,26 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
 .cm-wiki-regime { max-width: 900px; margin-bottom: 18px; padding: 11px 14px; border-radius: 8px; background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); font: 400 13px var(--cm-font-ui); color: var(--cm-muted); }
 .cm-wiki-regime--supervised { background: var(--cm-gold-bg); border-color: var(--cm-gold); color: var(--cm-gold-tx); }
 
-.cm-wiki-settings { max-width: 900px; background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 22px 24px; }
+/* What the wiki *is* on the left, what one does to it as a whole on the right. The right column
+   collapses under the form on a narrow screen rather than squeezing both. */
+.cm-wiki-settings-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 22px; align-items: start; }
+.cm-wiki-settings-layout--single { grid-template-columns: minmax(0, 1fr); max-width: 900px; }
+.cm-wiki-settings-layout__side { display: flex; flex-direction: column; gap: 16px; }
+
+.cm-wiki-settings { background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 22px 24px; }
 .cm-wiki-settings__checks { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 6px; }
 .cm-wiki-settings__check { display: flex; align-items: center; gap: 7px; font: 400 13px var(--cm-font-ui); color: var(--cm-text); }
-.cm-wiki-settings__block { max-width: 900px; margin-top: 18px; background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 18px 24px 20px; }
+.cm-wiki-settings__block { background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 18px 24px 20px; }
 .cm-wiki-settings__block-title { display: block; font: 600 11.5px var(--cm-font-ui); letter-spacing: 0.06em; text-transform: uppercase; color: var(--cm-faint); }
 .cm-wiki-settings__block-hint { margin: 6px 0 14px; font: 400 13px var(--cm-font-ui); color: var(--cm-muted); }
 .cm-wiki-settings__block-actions { display: flex; flex-wrap: wrap; gap: 10px; }
-.cm-wiki-settings__danger { display: flex; gap: 12px; max-width: 900px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--cm-border-soft); }
+/* In the side column the buttons stack and fill it: three of them side by side would wrap into a
+   ragged block at 340px. */
+.cm-wiki-settings-layout__side .cm-wiki-settings__block-actions { flex-direction: column; align-items: stretch; gap: 8px; }
+.cm-wiki-settings-layout__side .cm-wiki-settings__block-actions .cm-btn { justify-content: center; width: 100%; }
+/* The irreversible pair, said out loud rather than merely placed last. */
+.cm-wiki-settings__block--danger { border-color: var(--cm-red-bg); }
+.cm-wiki-settings__block--danger .cm-wiki-settings__block-title { color: var(--cm-red-tx); }
 
 @media (max-width: 992px) {
     .cm-wiki { grid-template-columns: minmax(0, 1fr); }
@@ -7157,6 +7169,9 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
 @media (max-width: 1200px) {
     .cm-wiki--with-outline { grid-template-columns: 264px minmax(0, 1fr); }
     .cm-wiki__outline { display: none; }
+    .cm-wiki-settings-layout { grid-template-columns: minmax(0, 1fr); max-width: 900px; }
+    .cm-wiki-settings-layout__side .cm-wiki-settings__block-actions { flex-direction: row; align-items: center; }
+    .cm-wiki-settings-layout__side .cm-wiki-settings__block-actions .cm-btn { width: auto; }
 }
 
 @media (max-width: 992px) {
