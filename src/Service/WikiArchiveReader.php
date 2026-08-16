@@ -98,21 +98,56 @@ class WikiArchiveReader
         ];
     }
 
+    /** Read in chunks of this size, so a large entry costs a buffer rather than its whole length. */
+    private const int CHUNK_BYTES = 262144;
+
     /**
-     * Reads one entry, refusing anything that turns out bigger than it declared - a ZIP's directory
-     * is written by whoever built it and a hostile one lies, so the declared size is a filter and
-     * never a guarantee.
+     * Reads one entry, stopping if it turns out bigger than it declared - a ZIP's directory is
+     * written by whoever built it, and a hostile one lies, so the declared size filters but never
+     * guarantees.
+     *
+     * **Not** `getFromName($name, $maxLength)`: that argument makes ZipArchive *preallocate* a
+     * buffer of exactly that size, so passing the 200 MB cap asked PHP for 200 MB per entry and
+     * exhausted the memory limit on the first small file. Measured, on an archive of four text
+     * files. Streaming keeps the cap meaningful and the memory flat.
      */
     public function read(\ZipArchive $zip, string $name): string
     {
-        $contents = $zip->getFromName($name, WikiArchiveSafety::MAX_ENTRY_BYTES + 1);
+        $stat = $zip->statName($name);
 
-        if (false === $contents) {
+        if (false === $stat) {
             return '';
         }
 
-        if (\strlen($contents) > WikiArchiveSafety::MAX_ENTRY_BYTES) {
+        if ((int) $stat['size'] > WikiArchiveSafety::MAX_ENTRY_BYTES) {
             throw new WikiArchiveException(WikiArchiveSafety::REJECTION_ENTRY_TOO_LARGE);
+        }
+
+        $stream = $zip->getStream($name);
+
+        if (false === $stream) {
+            return '';
+        }
+
+        $contents = '';
+
+        try {
+            while (!feof($stream)) {
+                $chunk = fread($stream, self::CHUNK_BYTES);
+
+                if (false === $chunk || '' === $chunk) {
+                    break;
+                }
+
+                $contents .= $chunk;
+
+                // The declaration said otherwise; whatever this is, it is not what was announced.
+                if (\strlen($contents) > WikiArchiveSafety::MAX_ENTRY_BYTES) {
+                    throw new WikiArchiveException(WikiArchiveSafety::REJECTION_ENTRY_TOO_LARGE);
+                }
+            }
+        } finally {
+            fclose($stream);
         }
 
         return $contents;
@@ -140,9 +175,15 @@ class WikiArchiveReader
     /** @return ?array<string, mixed> */
     private function manifestOf(\ZipArchive $zip, string $root): ?array
     {
-        $raw = $zip->getFromName($root.'manifest.json', 2 * 1024 * 1024);
+        // Through read() like everything else, so the streaming cap applies here too rather than
+        // this one place trusting a length argument.
+        try {
+            $raw = $this->read($zip, $root.'manifest.json');
+        } catch (WikiArchiveException) {
+            return null;
+        }
 
-        if (false === $raw) {
+        if ('' === $raw) {
             return null;
         }
 
