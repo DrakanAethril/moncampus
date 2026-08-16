@@ -114,6 +114,23 @@ export default class extends Controller {
             block_formats: 'Paragraph=p;Titre 1=h1;Titre 2=h2;Titre 3=h3;Titre 4=h4;Préformaté=pre',
             // pagebreak's marker is read by the PDF export as a real page break.
             pagebreak_separator: '<div class="cm-wiki-pagebreak"></div>',
+            // HugeRTE validates content against its own HTML schema, which knows nothing about
+            // SVG - so a Mermaid diagram was silently stripped *in the editor*, before the server's
+            // sanitizer ever saw it. Measured, not guessed: the stored page came back holding
+            // data-mermaid and no picture.
+            //
+            // The list mirrors the server's allowlist (config/packages/html_sanitizer.yaml) and
+            // deliberately omits the same things - no `use`, no `image`, no `foreignObject`, and no
+            // `style`. Omitting `style` matters for a reason beyond safety: the server drops it
+            // whatever happens, so letting the editor keep it would show the author a styled
+            // diagram that turns plain the moment it is saved.
+            //
+            // `[*]` on each element is not a second opinion about attributes - the server's
+            // enumerated list is what decides. This only has to stop the editor from throwing the
+            // elements away.
+            extended_valid_elements: 'svg[*],g[*],path[*],rect[*],circle[*],ellipse[*],line[*],'
+                + 'polyline[*],polygon[*],text[*],tspan[*],defs[*],marker[*]',
+            valid_children: '+div[svg]',
             setup: (setupEditor) => {
                 setupEditor.on('change input undo redo', () => setupEditor.save());
                 this.registerCallouts(setupEditor);
