@@ -1,16 +1,49 @@
 {# One node of the rail, recursing into its children. `row` is what App\Service\WikiTree::assemble()
    produced: the node itself plus its ordered children.
 
+   **What is open by default**: the branch leading to the page being read, and that page's own direct
+   children - nothing else. A wiki of any size renders its whole tree into this rail, and unfolded it
+   is a wall; folded to the current branch it is a map. The rule needs no state and no round trip: the
+   materialized path already says who is an ancestor of the current page, so the server answers it
+   while rendering, and navigating into a branch keeps that branch open on the next screen.
+
    The `data-parent-id` is what makes a *reorder* possible rather than only a re-parent: dropping on
    the upper or lower edge of a node means "beside it", and the rank is then read off this node's own
    list of siblings, in the DOM, without a round trip. #}
 {% set entry = row.node %}
-<li class="cm-wiki__node{{ entry.folder ? ' cm-wiki__node--folder' }}" data-wiki-tree-target="node"
+{% set hasChildren = row.children is not empty %}
+{# The path of the current page contains every ancestor's id and not its own, so the two tests
+   together are exactly "this node is on the way to the current page, or is it". #}
+{% set expanded = hasChildren and currentNode and (currentNode.id == entry.id or ('/' ~ entry.id ~ '/') in currentNode.path) %}
+<li class="cm-wiki__node{{ entry.folder ? ' cm-wiki__node--folder' }}{{ hasChildren and not expanded ? ' is-collapsed' }}"
+    data-wiki-tree-target="node"
     data-node-id="{{ entry.id }}" data-parent-id="{{ entry.parent ? entry.parent.id : '' }}" draggable="true">
     <div class="cm-wiki__node-row">
+        {% if is_granted('WIKI_EDIT', wiki) %}
+            {# The grip says "this row can be dragged" - the row was draggable before and nothing on
+               screen said so. It is an affordance, not a handle: the whole <li> stays draggable, so
+               a drag started anywhere on the row still works. #}
+            <span class="cm-wiki__node-grip" aria-hidden="true">
+                <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor"><circle cx="3" cy="3" r="1.2"></circle><circle cx="7" cy="3" r="1.2"></circle><circle cx="3" cy="7" r="1.2"></circle><circle cx="7" cy="7" r="1.2"></circle><circle cx="3" cy="11" r="1.2"></circle><circle cx="7" cy="11" r="1.2"></circle></svg>
+            </span>
+        {% endif %}
+
+        {% if hasChildren %}
+            {# The triangle is drawn once and rotated by CSS, so the two states cannot drift apart. #}
+            <button type="button" class="cm-wiki__node-toggle"
+                    aria-expanded="{{ expanded ? 'true' : 'false' }}"
+                    aria-label="{{ 'wikiToggleBranchAction'|trans({'%title%': entry.title}) }}"
+                    data-action="wiki-tree#toggleBranch">
+                <svg width="9" height="9" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true"><path d="M3 1l5 4-5 4z"></path></svg>
+            </button>
+        {% else %}
+            {# Keeps the titles of childless pages on the same left edge as their siblings'. #}
+            <span class="cm-wiki__node-toggle cm-wiki__node-toggle--empty" aria-hidden="true"></span>
+        {% endif %}
+
         <a class="cm-wiki__node-link{{ currentNode and currentNode.id == entry.id ? ' is-current' }}"
-           href="{{ path('app_wiki_page', {id: wiki.id, nodeId: entry.id}) }}">
-            <span class="cm-wiki__node-icon" aria-hidden="true">{{ entry.folder ? '▸' : '·' }}</span>
+           href="{{ path('app_wiki_page', {id: wiki.id, nodeId: entry.id}) }}"
+           title="{{ entry.title }}">
             <span class="cm-wiki__node-title">{{ entry.title }}</span>
         </a>
 
@@ -47,7 +80,7 @@
         {% endif %}
     </div>
 
-    {% if row.children is not empty %}
+    {% if hasChildren %}
         <ul class="cm-wiki__tree cm-wiki__tree--nested">
             {% for child in row.children %}
                 {% include 'wiki/_rail_node.html.twig' with {row: child, wiki: wiki, currentNode: currentNode} only %}

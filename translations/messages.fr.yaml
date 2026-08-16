@@ -5436,3 +5436,6 @@ wikiDeleteNodeConfirmText: 'Supprimer « %title% » et toutes ses sous-pages ?'
 wikiAttachmentsDropFileLabel: 'Déposer un fichier ou parcourir'
 wikiTransferHeading: 'Export et import'
 wikiTransferHelpText: 'Ces actions portent sur le wiki entier. Pour exporter une seule page, utilisez le lien en bas de cette page.'
+
+# Wiki - lot 9, le rail pliable.
+wikiToggleBranchAction: 'Déplier ou replier les sous-pages de « %title% »'

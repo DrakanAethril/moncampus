@@ -4665,3 +4665,6 @@ wikiDeleteNodeConfirmText: 'Delete "%title%" and all of its sub-pages?'
 wikiAttachmentsDropFileLabel: 'Drop a file or browse'
 wikiTransferHeading: 'Export and import'
 wikiTransferHelpText: 'These actions cover the whole wiki. To export a single page, use the link at the foot of that page.'
+
+# Wiki - lot 9, the foldable rail.
+wikiToggleBranchAction: 'Expand or collapse the sub-pages of "%title%"'

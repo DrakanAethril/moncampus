@@ -1,4 +1,6 @@
 import { Controller } from '@hotwired/stimulus';
+import TomSelect from 'tom-select';
+import 'tom-select/dist/css/tom-select.bootstrap5.min.css';
 
 /**
  * The wiki's editor - a separate controller from hugerte_editor_controller.js on purpose.
@@ -24,6 +26,14 @@ const MERMAID_URL = '/mermaid/mermaid.min.js';
 
 let hugerteLoadPromise = null;
 const externalLoads = new Map();
+
+/** Escapes text going into an HTML string - a page title is user input and reaches the body. */
+function escapeHtml(text) {
+    const holder = document.createElement('span');
+    holder.textContent = text;
+
+    return holder.innerHTML;
+}
 
 function isDarkTheme() {
     return 'dark' === document.documentElement.getAttribute('data-bs-theme');
@@ -253,7 +263,19 @@ export default class extends Controller {
     /**
      * The button that makes this a wiki rather than a pile of pages - without it the rest is
      * decoration. The list comes from the same endpoint the edit screen's own picker uses, so
-     * there is one source of truth for "what pages exist here".
+     * there is one source of truth for "what pages exist here", and that endpoint is scoped to a
+     * single wiki: no other wiki's pages can appear in it.
+     *
+     * The field is a Tom Select rather than HugeRTE's own `selectbox`, which is a bare <select>: on
+     * a wiki of any size the page you want sits somewhere in a hundred-line list, and scrolling one
+     * is not finding one. Tom Select is this app's picker everywhere else, so it is also the one the
+     * author already knows.
+     *
+     * It is mounted through an `htmlpanel` because HugeRTE has no searchable field of its own, and
+     * that has two consequences worth knowing before touching this. The value cannot come from
+     * `dialog.getData()` - an htmlpanel carries no form data - so the instance is read directly. And
+     * the dropdown must stay *inside* the dialog rather than being appended to <body>: HugeRTE's
+     * modal traps focus, and anything outside it would be unreachable.
      */
     registerWikiLink(editor) {
         editor.ui.registry.addButton('wikilink', {
@@ -271,18 +293,18 @@ export default class extends Controller {
                     return;
                 }
 
+                const fieldId = `wiki-link-page-${editor.id}`;
+                let picker = null;
+
                 editor.windowManager.open({
                     title: this.label('wikiLinkTooltip', 'Lien vers une page de ce wiki'),
                     body: {
                         type: 'panel',
                         items: [{
-                            type: 'selectbox',
-                            name: 'page',
-                            label: this.label('page', 'Page'),
-                            items: pages.map((page) => ({
-                                value: `${page.url}|${page.title}`,
-                                text: `${'  '.repeat(page.depth)}${page.title}`,
-                            })),
+                            type: 'htmlpanel',
+                            html: `<label class="cm-wiki-linkfield__label" for="${fieldId}">`
+                                + `${escapeHtml(this.label('page', 'Page'))}</label>`
+                                + `<div class="cm-wiki-linkfield"><select id="${fieldId}"></select></div>`,
                         }],
                     },
                     buttons: [
@@ -290,12 +312,40 @@ export default class extends Controller {
                         { type: 'submit', text: this.label('insert', 'Insérer'), primary: true },
                     ],
                     onSubmit: (dialog) => {
-                        const [url, title] = dialog.getData().page.split('|');
+                        const page = pages.find((candidate) => String(candidate.id) === picker?.getValue());
+
+                        if (!page) {
+                            // Nothing chosen: the dialog stays open rather than inserting an empty
+                            // link the author would have to find again later.
+                            return;
+                        }
+
                         const selected = editor.selection.getContent({ format: 'text' });
-                        editor.insertContent(`<a href="${url}">${selected || title}</a>`);
+                        editor.insertContent(`<a href="${page.url}">${selected || escapeHtml(page.title)}</a>`);
                         dialog.close();
                     },
+                    onClose: () => {
+                        picker?.destroy();
+                        picker = null;
+                    },
                 });
+
+                // The panel's markup only exists once the dialog has been put into the DOM.
+                const field = document.getElementById(fieldId);
+
+                if (field) {
+                    picker = new TomSelect(field, {
+                        options: pages.map((page) => ({
+                            value: String(page.id),
+                            // The indent is what turns the flat list back into the tree it came
+                            // from. Non-breaking spaces, or the browser collapses them away.
+                            text: `${'  '.repeat(page.depth)}${page.title}`,
+                        })),
+                        maxOptions: null,
+                        placeholder: this.label('page', 'Page'),
+                    });
+                    picker.focus();
+                }
             },
         });
     }

@@ -19,11 +19,9 @@
         {% endif %}
     </div>
 
-    {# A GET form, per the Turbo rule - "montre-moi un résultat" never posts. #}
-    <form class="cm-wiki__rail-search" method="get" action="{{ path('app_wiki_search', {id: wiki.id}) }}">
-        <input type="search" name="q" class="cm-wiki__rail-search-input"
-               placeholder="{{ 'wikiSearchInWikiPlaceholder'|trans }}" aria-label="{{ 'wikiSearchInWikiPlaceholder'|trans }}">
-    </form>
+    {# The search field used to sit here, buried under the rail's head. It moved up into the screen's
+       action bar (wiki/_search_form.html.twig), on the line of the "Modifier" button, where it is
+       the second thing the eye lands on rather than the fifth. #}
 
     {% if tree is empty %}
         <p class="cm-wiki__rail-empty">{{ 'wikiRailEmptyText'|trans }}</p>
@@ -35,14 +33,14 @@
         </ul>
     {% endif %}
 
+    {# Réglages on the left, Corbeille pushed to the right edge: the two are not a list of siblings,
+       one configures the wiki and the other is where deleted pages wait. #}
     <div class="cm-wiki__rail-foot">
-        {% if is_granted('WIKI_EDIT', wiki) %}
-            <a href="{{ path('app_wiki_trash', {id: wiki.id}) }}" class="cm-wiki__rail-link">{{ 'wikiTrashNavLabel'|trans }}</a>
-        {% endif %}
         {# WIKI_EDIT rather than WIKI_MANAGE since the réglages screen gained the export: composing
            the wiki is still a manager's half of it, but taking it away is everybody's. #}
         {% if is_granted('WIKI_EDIT', wiki) %}
             <a href="{{ path('app_wiki_settings', {id: wiki.id}) }}" class="cm-wiki__rail-link">{{ 'wikiSettingsNavLabel'|trans }}</a>
+            <a href="{{ path('app_wiki_trash', {id: wiki.id}) }}" class="cm-wiki__rail-link cm-wiki__rail-link--end">{{ 'wikiTrashNavLabel'|trans }}</a>
         {% endif %}
     </div>
 </aside>

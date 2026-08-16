@@ -41,6 +41,27 @@ export default class extends Controller {
         }
     }
 
+    /**
+     * Folds or unfolds one branch.
+     *
+     * Purely local: what is open by default is the server's call (the branch of the page being read),
+     * and nothing is persisted - navigating into a branch re-opens it on the next screen anyway,
+     * which is the only continuity a reader actually notices.
+     */
+    toggleBranch(event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const node = event.currentTarget.closest('[data-node-id]');
+
+        if (!node) {
+            return;
+        }
+
+        const collapsed = node.classList.toggle('is-collapsed');
+        event.currentTarget.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    }
+
     dragStart(event) {
         const node = event.target.closest('[data-node-id]');
 
