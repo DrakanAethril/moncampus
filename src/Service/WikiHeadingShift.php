@@ -50,4 +50,18 @@ class WikiHeadingShift
     {
         return min($depth + 1, self::MAX_LEVEL);
     }
+
+    /**
+     * By how much a page's *body* is demoted - one level further than its title, so the body nests
+     * **under** the title rather than beside it.
+     *
+     * Shifting the body by the plain depth was tried first and read wrong in the produced PDF: a
+     * root page printed its title as h1 and then its author's own h1 as another h1, which is the
+     * "dozen competing h1s" the whole shift exists to prevent - just one page at a time instead of
+     * one document at a time.
+     */
+    public function bodyOffset(int $depth): int
+    {
+        return $this->titleLevel($depth);
+    }
 }
