@@ -18,7 +18,7 @@ export default class extends Controller {
         'programPick', 'noClassBanner', 'audienceBlock', 'audiencePane', 'optionChoice',
         'studentRow', 'selectedCount', 'groupBatchSelect', 'groupChips',
         'naturePane', 'productionList', 'productionRow', 'productionDueMode', 'productionPosition',
-        'attachmentInput', 'attachmentChips', 'attachmentLinks',
+        'attachmentChips', 'attachmentLinks',
         'quizSelect', 'evaluationSelect',
         'duePreset', 'duePresetNextLabel', 'duePresetWeekLabel', 'dueCustom', 'dueDate', 'dueTime',
         'multiDueBanner', 'multiDueText', 'lateLabel', 'gradeVisibility', 'gradeVisibilityLabel',
@@ -341,39 +341,6 @@ export default class extends Controller {
         event.currentTarget.closest('.cm-chip').classList.toggle('is-dropped', event.currentTarget.checked);
     }
 
-    browseFiles() {
-        this.attachmentInputTarget.click();
-    }
-
-    filesPicked() {
-        this.refreshAttachmentChips();
-    }
-
-    dragOver(event) {
-        event.preventDefault();
-        event.currentTarget.classList.add('is-hover');
-    }
-
-    dragLeave(event) {
-        event.currentTarget.classList.remove('is-hover');
-    }
-
-    /**
-     * A drag-and-drop does not fill an `<input type="file">` on its own: it has to be handed a
-     * DataTransfer, the only way to write into `files` without going through the dialog box.
-     */
-    dropFiles(event) {
-        event.preventDefault();
-        event.currentTarget.classList.remove('is-hover');
-
-        const transfer = new DataTransfer();
-        Array.from(this.attachmentInputTarget.files).forEach((file) => transfer.items.add(file));
-        Array.from(event.dataTransfer.files).forEach((file) => transfer.items.add(file));
-
-        this.attachmentInputTarget.files = transfer.files;
-        this.refreshAttachmentChips();
-    }
-
     pasteLink() {
         const url = window.prompt(this.attachmentChipsTarget.dataset.linkPrompt ?? '');
 
@@ -384,30 +351,19 @@ export default class extends Controller {
         }
     }
 
+    // Links only, since the file half moved to App\Form\FilePickerType: the picker draws its own
+    // rows, with a progress bar and a verdict per file, and a second list of chips saying the same
+    // thing in fewer words would be two places to keep in step.
     removeAttachment(event) {
-        const { index, kind } = event.currentTarget.dataset;
+        const { index } = event.currentTarget.dataset;
 
-        if (kind === 'link') {
-            this.links.splice(Number(index), 1);
-            this.attachmentLinksTarget.value = this.links.join('\n');
-        } else {
-            const transfer = new DataTransfer();
-            Array.from(this.attachmentInputTarget.files)
-                .filter((_, position) => position !== Number(index))
-                .forEach((file) => transfer.items.add(file));
-            this.attachmentInputTarget.files = transfer.files;
-        }
-
+        this.links.splice(Number(index), 1);
+        this.attachmentLinksTarget.value = this.links.join('\n');
         this.refreshAttachmentChips();
     }
 
     refreshAttachmentChips() {
-        const chips = [
-            ...Array.from(this.attachmentInputTarget.files).map((file, index) => this.buildChip(file.name, index, 'file')),
-            ...this.links.map((url, index) => this.buildChip(url, index, 'link')),
-        ];
-
-        this.attachmentChipsTarget.replaceChildren(...chips);
+        this.attachmentChipsTarget.replaceChildren(...this.links.map((url, index) => this.buildChip(url, index, 'link')));
     }
 
     buildChip(label, index, kind) {

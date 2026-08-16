@@ -43,6 +43,36 @@ class UploadIntake
             : $this->fileUploads->upload($prefix, $filename, $file);
     }
 
+    /**
+     * The submitted file as something with a **path on disk**, for the callers that read its
+     * contents rather than store it - the two import assistants, which parse a spreadsheet before
+     * anything is created.
+     *
+     * A staged upload has no local path: its bytes are already in the bucket. So this fetches them
+     * back into a temp file and wraps it as an UploadedFile, which is what those readers take. The
+     * round trip is real and it is the honest price of the field carrying no bytes: an import file
+     * is a few dozen kilobytes, and what it buys is that the type and the virus were checked before
+     * the teacher ever reached the analysis screen.
+     *
+     * The temp file is left to the system, exactly as PHP's own upload temp files are.
+     */
+    public function asLocalFile(UploadedFile|StagedUpload $file): UploadedFile
+    {
+        if ($file instanceof UploadedFile) {
+            return $file;
+        }
+
+        $path = tempnam(sys_get_temp_dir(), 'staged-read-');
+
+        if (false === $path || false === file_put_contents($path, $this->fileUploads->read($file->key))) {
+            throw new \RuntimeException(\sprintf('Could not fetch the staged upload "%s" back for reading.', $file->key));
+        }
+
+        // test: true - the file did not arrive through PHP's upload handling, and refusing it on
+        // that ground is exactly the check that does not apply here.
+        return new UploadedFile($path, $file->originalName, '' === $file->mimeType ? null : $file->mimeType, null, true);
+    }
+
     public static function originalName(UploadedFile|StagedUpload $file): string
     {
         return $file instanceof StagedUpload ? $file->originalName : $file->getClientOriginalName();

@@ -106,25 +106,36 @@ class FilePickerTypeTest extends TypeTestCase
 
     public function testTheFieldBuildsItsOwnConstraintFromItsPolicy(): void
     {
-        $single = $this->factory->create(FilePickerType::class, null, ['policy' => UploadPolicy::pdf()]);
-        $constraints = $single->getConfig()->getOption('constraints');
+        $single = $this->constraintsOf(['policy' => UploadPolicy::pdf()]);
 
-        self::assertCount(1, $constraints);
-        self::assertInstanceOf(AllowedUpload::class, $constraints[0]);
-        self::assertSame(['pdf'], $constraints[0]->policy->extensions());
+        self::assertCount(1, $single);
+        self::assertInstanceOf(AllowedUpload::class, $single[0]);
+        self::assertSame(['pdf'], $single[0]->policy->extensions());
 
         // The half that used to be forgotten at every call site: a multiple field validates each
         // item, and a constraint aimed at the array itself answers "should be of type string".
-        $multiple = $this->factory->create(FilePickerType::class, null, ['policy' => UploadPolicy::pdf(), 'multiple' => true]);
-        self::assertInstanceOf(All::class, $multiple->getConfig()->getOption('constraints')[0]);
+        self::assertInstanceOf(All::class, $this->constraintsOf(['policy' => UploadPolicy::pdf(), 'multiple' => true])[0]);
     }
 
     public function testMaxSizeNarrowsThePolicyRatherThanSittingBesideIt(): void
     {
-        $form = $this->factory->create(FilePickerType::class, null, ['policy' => UploadPolicy::images(), 'max_size' => '2M']);
-        $constraints = $form->getConfig()->getOption('constraints');
+        $constraints = $this->constraintsOf(['policy' => UploadPolicy::images(), 'max_size' => '2M']);
 
+        self::assertInstanceOf(AllowedUpload::class, $constraints[0]);
         self::assertSame(2 * 1024 * 1024, $constraints[0]->policy->maxSizeInBytes());
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     *
+     * @return list<\Symfony\Component\Validator\Constraint>
+     */
+    private function constraintsOf(array $options): array
+    {
+        $constraints = $this->factory->create(FilePickerType::class, null, $options)->getConfig()->getOption('constraints');
+        self::assertIsArray($constraints);
+
+        return array_values($constraints);
     }
 
     protected function getExtensions(): array
