@@ -7072,8 +7072,26 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
 .cm-callout--warning { border-left-color: var(--cm-gold); background: var(--cm-gold-bg); color: var(--cm-gold-tx); }
 .cm-callout--tip { border-left-color: var(--cm-green-tx); background: var(--cm-green-bg); color: var(--cm-green-tx); }
 
+/* Mermaid stores its diagram as an SVG, and the sanitizer drops the <style> block Mermaid emits
+   with it - the html-sanitizer component refuses that element unconditionally, whatever
+   allow_elements says (measured; see App\Tests\Functional\WikiSanitizerTest). So the diagram is
+   styled here instead, by Mermaid's own class names.
+
+   That turns out better than keeping its theme: the diagram now follows --cm-* like everything
+   else, so one appearance holds on screen, in dark mode and in the PDF - which is exactly what the
+   design asks of the callouts just above. */
 .cm-mermaid { margin: 1.2em 0; text-align: center; }
-.cm-mermaid svg { max-width: 100%; height: auto; }
+.cm-mermaid svg { max-width: 100%; height: auto; font-family: var(--cm-font-ui); }
+.cm-mermaid .node rect, .cm-mermaid .node circle, .cm-mermaid .node ellipse,
+.cm-mermaid .node polygon, .cm-mermaid .node path { fill: var(--cm-blue-bg-soft); stroke: var(--cm-brand); stroke-width: 1px; }
+.cm-mermaid .cluster rect { fill: var(--cm-surface-alt); stroke: var(--cm-border); }
+.cm-mermaid .label, .cm-mermaid .nodeLabel, .cm-mermaid .edgeLabel, .cm-mermaid text { fill: var(--cm-ink); color: var(--cm-ink); font-size: 13px; }
+.cm-mermaid .edgeLabel rect { fill: var(--cm-surface); }
+.cm-mermaid .edgePath path, .cm-mermaid .flowchart-link, .cm-mermaid .messageLine0, .cm-mermaid .messageLine1 { stroke: var(--cm-muted); fill: none; stroke-width: 1.4px; }
+.cm-mermaid marker path, .cm-mermaid .marker { fill: var(--cm-muted); stroke: var(--cm-muted); }
+.cm-mermaid .actor { fill: var(--cm-blue-bg-soft); stroke: var(--cm-brand); }
+.cm-mermaid .section0, .cm-mermaid .section2 { fill: var(--cm-surface-alt); }
+.cm-mermaid .grid path { stroke: var(--cm-border); }
 
 .cm-katex { display: inline-block; }
 
