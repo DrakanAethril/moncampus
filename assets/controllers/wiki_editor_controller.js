@@ -304,7 +304,8 @@ export default class extends Controller {
                             type: 'htmlpanel',
                             html: `<label class="cm-wiki-linkfield__label" for="${fieldId}">`
                                 + `${escapeHtml(this.label('page', 'Page'))}</label>`
-                                + `<div class="cm-wiki-linkfield"><select id="${fieldId}"></select></div>`,
+                                + `<div class="cm-wiki-linkfield"><select id="${fieldId}"></select></div>`
+                                + '<div class="cm-wiki-linkfield__room" aria-hidden="true"></div>',
                         }],
                     },
                     buttons: [

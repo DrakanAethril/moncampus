@@ -7132,8 +7132,12 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
    the app's Tom Select styling already applies; this only gives it the width and the room its
    dropdown needs, the dialog body being a scroll container that would otherwise clip it. */
 .cm-wiki-linkfield__label { display: block; margin-bottom: 6px; font: 600 12px var(--cm-font-ui); color: var(--cm-ink); }
-.cm-wiki-linkfield { min-width: 380px; max-width: 100%; padding-bottom: 220px; margin-bottom: -220px; }
+.cm-wiki-linkfield { min-width: 420px; max-width: 100%; }
 .cm-wiki-linkfield .ts-dropdown { z-index: 1200; }
+/* An empty area under the field, not padding on the field itself: the dialog body is a scroll
+   container, so without room reserved below it the open list is clipped - and padding on the field
+   would stretch the control instead of leaving space beneath it. */
+.cm-wiki-linkfield__room { height: 240px; }
 
 .cm-wiki-linkpicker { position: relative; }
 .cm-wiki-linkpicker__panel { position: absolute; right: 0; z-index: 20; min-width: 240px; max-height: 320px; overflow-y: auto; margin-top: 6px; padding: 8px; border: 1px solid var(--cm-border); border-radius: 8px; background: var(--cm-surface); box-shadow: 0 8px 24px rgba(18, 52, 77, 0.12); }
