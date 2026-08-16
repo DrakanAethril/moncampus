@@ -5386,3 +5386,8 @@ wikiEditorDiagramTooltip: 'Diagramme Mermaid'
 wikiEditorPageFieldLabel: 'Page'
 wikiEditorInsertAction: 'Insérer'
 wikiEditorLoadFailedText: 'La liste des pages n’a pas pu être chargée.'
+
+# Wiki - lot 6, l'export PDF.
+wikiExportPdfAction: 'Exporter le wiki (PDF)'
+wikiExportPagePdfAction: 'Exporter cette page (PDF)'
+wikiExportUnavailableFlashMessage: 'Le service de génération de PDF est momentanément indisponible. Réessayez dans quelques minutes.'
