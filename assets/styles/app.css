@@ -7255,3 +7255,49 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
 .cm-wiki-import__warnings { background: var(--cm-gold-bg); color: var(--cm-gold-tx); border: 1px solid var(--cm-gold); }
 .cm-wiki-import__blocking li, .cm-wiki-import__warnings li { margin: 2px 0; }
 .cm-wiki-import__reset { max-width: 760px; margin-top: 10px; }
+
+/* --- The upload component, everywhere (App\Form\FilePickerType) --------------------------- */
+/* Mockup 5 of design_handoff_bibliotheque_fichiers, which draws four states on one capture:
+   finished, in flight, linked from the library (lot 4) and refused. The refusal arrives while the
+   teacher is still filling the form in, which is the whole point of staging the upload. */
+
+.cm-filepick { border: 1px solid var(--cm-border); border-radius: 11px; background: var(--cm-surface); overflow: hidden; }
+.cm-filepick__tabs { display: flex; border-bottom: 1px solid var(--cm-border-soft); background: var(--cm-surface-alt); }
+.cm-filepick__tab { font: 600 12.5px/1 var(--cm-font-ui); padding: 11px 15px; color: var(--cm-muted); border-bottom: 2px solid transparent; display: flex; align-items: center; gap: 7px; }
+.cm-filepick__tab--on { color: var(--cm-brand-strong); border-bottom-color: var(--cm-brand); background: var(--cm-surface); }
+
+/* A <button>, not a <div>: it opens the file dialog, so the keyboard has to reach it. Reset to look
+   like the dashed zone the mockup draws rather than like a button. */
+.cm-filepick__drop { display: block; width: calc(100% - 28px); margin: 14px; padding: 26px 18px; text-align: center; border: 1.5px dashed var(--cm-border); border-radius: 10px; background: var(--cm-surface-alt); cursor: pointer; }
+.cm-filepick__drop:hover, .cm-filepick__drop:focus-visible, .cm-filepick__drop.is-hot { border-color: var(--cm-brand); background: var(--cm-blue-bg-soft); }
+.cm-filepick__drop-main { display: block; font: 600 14px/1.4 var(--cm-font-ui); color: var(--cm-ink); }
+.cm-filepick__drop-sub { display: block; font-size: 12.5px; color: var(--cm-faint); margin-top: 5px; }
+
+.cm-filepick__row { display: flex; align-items: center; gap: 11px; padding: 10px 14px; border-top: 1px solid var(--cm-border-soft); }
+.cm-filepick__grow { flex: 1 1 auto; min-width: 0; }
+.cm-filepick__name { display: block; font: 600 13px/1.3 var(--cm-font-ui); color: var(--cm-ink); overflow-wrap: anywhere; }
+.cm-filepick__meta { display: block; font-size: 11.5px; color: var(--cm-faint); font-variant-numeric: tabular-nums; }
+.cm-filepick__remove { border: 0; background: none; color: var(--cm-faint); font-weight: 700; line-height: 1; padding: 4px 6px; border-radius: 6px; cursor: pointer; }
+.cm-filepick__remove:hover { color: var(--cm-action-danger); background: var(--cm-red-bg); }
+
+.cm-filepick__track { display: block; height: 5px; border-radius: 999px; background: var(--cm-blue-bg); overflow: hidden; margin-top: 6px; }
+.cm-filepick__fill { display: block; height: 100%; width: 0; background: var(--cm-brand); border-radius: 999px; transition: width .15s linear; }
+/* A total the server never announced - a proxy that strips Content-Length. The bar sweeps rather
+   than fills, and no percentage is claimed. */
+.cm-filepick__track.is-indeterminate .cm-filepick__fill { width: 35%; animation: cm-filepick-sweep 1.1s ease-in-out infinite; }
+@keyframes cm-filepick-sweep { 0% { margin-left: -35%; } 100% { margin-left: 100%; } }
+
+.cm-filepick__state { font: 600 11.5px/1 var(--cm-font-ui); padding: 4px 8px; border-radius: 999px; white-space: nowrap; }
+.cm-filepick__state--ok { background: var(--cm-green-bg); color: var(--cm-green-tx); }
+.cm-filepick__state--go { background: var(--cm-blue-bg); color: var(--cm-blue-tx); font-variant-numeric: tabular-nums; }
+.cm-filepick__state--ko { background: var(--cm-red-bg); color: var(--cm-red-tx); }
+/* The library pill is gold on purpose: a linked file is visibly not the same thing as an uploaded
+   one, because deleting it from the library later will remove it from here (lot 4). */
+.cm-filepick__state--lib { background: var(--cm-gold-bg); color: var(--cm-gold-tx); }
+
+.cm-filepick__ext { font: 700 9.5px/1 var(--cm-font-ui); letter-spacing: .04em; padding: 5px 6px; border-radius: 5px; min-width: 34px; text-align: center; flex: none; background: var(--cm-surface-alt); color: var(--cm-muted); border: 1px solid var(--cm-border-soft); }
+.cm-filepick__ext--pdf { background: var(--cm-red-bg); color: var(--cm-red-tx); border-color: transparent; }
+.cm-filepick__ext--img { background: var(--cm-green-bg); color: var(--cm-green-tx); border-color: transparent; }
+.cm-filepick__ext--vid { background: var(--cm-teal-bg); color: var(--cm-teal-tx); border-color: transparent; }
+.cm-filepick__ext--doc { background: var(--cm-blue-bg); color: var(--cm-blue-tx); border-color: transparent; }
+.cm-filepick__ext--zip { background: var(--cm-purple-bg); color: var(--cm-purple-tx); border-color: transparent; }

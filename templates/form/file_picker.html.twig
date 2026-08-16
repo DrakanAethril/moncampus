@@ -1,0 +1,55 @@
+{# The one upload widget of the application - App\Form\FilePickerType, mockup 5 of
+   design/design_handoff_bibliotheque_fichiers. Everything below the hidden input is painted by
+   assets/controllers/file_picker_controller.js: a row appears when a file is chosen, carries its own
+   progress bar while the bytes go out, and settles into "Déposé · analysé" or a refusal.
+
+   The hidden input is the field itself - it carries the signed tokens, and it is the only thing the
+   form POST sends. #}
+{% block file_picker_widget %}
+    <div class="cm-filepick"
+         data-controller="file-picker"
+         data-file-picker-multiple-value="{{ multiple ? 'true' : 'false' }}"
+         data-file-picker-max-bytes-value="{{ max_bytes }}"
+         data-file-picker-url-value="{{ path('app_upload_stage') }}"
+         data-file-picker-discard-url-value="{{ path('app_upload_discard') }}"
+         data-file-picker-csrf-token-value="{{ csrf_token('staged-upload') }}"
+         data-file-picker-labels-value="{{ {
+             drop: 'filePickerDropLabel'|trans,
+             dropMultiple: 'filePickerDropMultipleLabel'|trans,
+             uploading: 'filePickerUploadingLabel'|trans,
+             done: 'filePickerDoneLabel'|trans,
+             refused: 'filePickerRefusedLabel'|trans,
+             remove: 'filePickerRemoveAction'|trans,
+             tooLarge: 'filePickerTooLargeMessage'|trans,
+             networkError: 'filePickerNetworkErrorMessage'|trans,
+             onlyOne: 'filePickerOnlyOneMessage'|trans,
+             tabUpload: 'filePickerUploadTabLabel'|trans,
+         }|json_encode|e('html_attr') }}">
+
+        <div class="cm-filepick__tabs">
+            <span class="cm-filepick__tab cm-filepick__tab--on">{{ 'filePickerUploadTabLabel'|trans }}</span>
+        </div>
+
+        <button type="button" class="cm-filepick__drop" data-file-picker-target="drop" data-action="click->file-picker#pick dragover->file-picker#dragOver dragleave->file-picker#dragLeave drop->file-picker#dropped">
+            <span class="cm-filepick__drop-main">{{ (multiple ? 'filePickerDropMultipleLabel' : 'filePickerDropLabel')|trans }}</span>
+            <span class="cm-filepick__drop-sub">{{ 'filePickerLimitsHelpText'|trans({'%size%': (max_bytes // 1024 // 1024) ~ ' Mo'}) }}</span>
+        </button>
+
+        {# Never inside the form's own submit path: this input is a picker, and its files travel by
+           XHR. `form=""` would be wrong (it is already outside no form), so what keeps it from being
+           posted is that it carries no name. #}
+        <input type="file"
+               class="cm-filepick__input"
+               {% if multiple %}multiple{% endif %}
+               accept="{{ accept }}"
+               hidden
+               aria-hidden="true"
+               tabindex="-1"
+               data-file-picker-target="input"
+               data-action="change->file-picker#selected">
+
+        <div class="cm-filepick__rows" data-file-picker-target="rows"></div>
+
+        <input type="hidden" {{ block('widget_attributes') }}{% if value is not empty %} value="{{ value }}"{% endif %} data-file-picker-target="tokens">
+    </div>
+{% endblock %}
