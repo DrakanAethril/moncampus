@@ -117,7 +117,13 @@ framework:
                 # there is no video in a wiki by decision, and "safe" is not the question being
                 # asked. drop_elements takes the children with it, so no caption or <source> is left
                 # behind either.
-                drop_elements: [iframe, video, audio, source, track, embed, object, canvas]
+                #
+                # `image` is in the list for a different reason and is easy to miss: it is <img>'s
+                # SVG cousin, it survives as a safe element, and it keeps an `href` - which is a way
+                # to make a stored wiki page fetch an arbitrary external URL every time somebody
+                # opens it. Inline pictures go through <img> and the wiki's own upload endpoint;
+                # nothing legitimate needs this one.
+                drop_elements: [iframe, video, audio, source, track, embed, object, canvas, image]
                 allow_attributes:
                     style: [span, p, h1, h2, h3, h4, li, blockquote, table, col, td, th, div,
                             svg, g, path, rect, circle, ellipse, line, polyline, polygon, text, tspan, marker]
