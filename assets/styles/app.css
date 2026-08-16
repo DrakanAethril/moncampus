@@ -7095,8 +7095,12 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
 
 .cm-katex { display: inline-block; }
 
-.cm-wiki__body pre { padding: 12px 14px; border: 1px solid var(--cm-border); border-radius: 8px; background: var(--cm-surface-alt); overflow-x: auto; font-size: 13px; }
-.cm-wiki__body code { font-size: 0.92em; }
+/* `color` is not decoration here: Tabler styles <pre> for a dark code panel and paints its text
+   near-white, so a code sample on this light surface was invisible - the block rendered as an empty
+   box. Measured in a browser, which is the only way that kind of bug shows up. */
+.cm-wiki__body pre { padding: 12px 14px; border: 1px solid var(--cm-border); border-radius: 8px; background: var(--cm-surface-alt); color: var(--cm-ink); overflow-x: auto; font-size: 13px; }
+.cm-wiki__body pre code { color: inherit; background: none; }
+.cm-wiki__body code { font-size: 0.92em; color: var(--cm-ink); }
 .cm-wiki__body blockquote { margin: 1.1em 0; padding: 4px 0 4px 16px; border-left: 3px solid var(--cm-border); color: var(--cm-muted); }
 
 .cm-wiki__body details { margin: 1em 0; padding: 10px 14px; border: 1px solid var(--cm-border); border-radius: 8px; background: var(--cm-surface-alt); }

@@ -142,10 +142,68 @@ export default class extends Controller {
         });
 
         this.editor = editor;
+
+        // See renderBeforeSubmit(): the formulas are rebuilt after the editor has serialized, so
+        // this has to run before the form actually posts.
+        this.form = this.element.closest('form');
+        this.onSubmit = (event) => this.renderBeforeSubmit(event);
+        this.form?.addEventListener('submit', this.onSubmit);
     }
 
     disconnect() {
+        this.form?.removeEventListener('submit', this.onSubmit);
         this.editor?.remove();
+    }
+
+    /**
+     * Rebuilds every KaTeX block from its source, **after** the editor has produced the HTML.
+     *
+     * Measured, and the reason this exists at all: HugeRTE's serializer removes empty inline
+     * elements, and KaTeX's layout is built out of empty `<span class="katex-strut">`s carrying
+     * only a height. Storing KaTeX's output directly therefore gave a formula whose exponent had
+     * come loose - it round-tripped through the editor and lost its struts. Neither
+     * `mceNonEditable` nor `contenteditable="false"` protects them; the serializer walks
+     * everything.
+     *
+     * Regenerating here sidesteps the serializer entirely: what the editor holds is only the
+     * source in data-katex, and the full markup is produced on the way out. The stored page is then
+     * exactly what the design wanted - rendered output that needs no JavaScript to read, and works
+     * unchanged inside Gotenberg's Chromium, which only has to load the stylesheet.
+     */
+    async renderBeforeSubmit(event) {
+        if (this.rendering) {
+            return;
+        }
+
+        const html = this.editor.getContent();
+
+        if (!html.includes('data-katex')) {
+            this.element.value = html;
+
+            return;
+        }
+
+        event.preventDefault();
+
+        const holder = document.createElement('div');
+        holder.innerHTML = html;
+
+        try {
+            await loadScript(KATEX_URL, () => window.katex);
+
+            holder.querySelectorAll('[data-katex]').forEach((block) => {
+                // throwOnError false: a formula the author has since broken must not be what stops
+                // them saving the rest of the page.
+                block.innerHTML = window.katex.renderToString(block.getAttribute('data-katex'), { throwOnError: false });
+            });
+        } catch {
+            // KaTeX unreachable - save the page as the editor produced it rather than lose the
+            // edit; the sources are all still in data-katex, so nothing is destroyed.
+        }
+
+        this.element.value = holder.innerHTML;
+        this.rendering = true;
+        this.form.requestSubmit(event.submitter ?? undefined);
     }
 
     label(key, fallback) {
