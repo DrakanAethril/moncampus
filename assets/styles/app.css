@@ -7109,3 +7109,13 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
 /* pagebreak's marker: invisible furniture on screen, a real page break in the PDF (the export's
    own stylesheet turns it into `break-after: page`). */
 .cm-wiki-pagebreak { height: 0; margin: 1.4em 0; border-top: 1px dashed var(--cm-border); }
+
+/* --- Wiki: Markdown archive (the import assistant's analysis step) ------------------------ */
+
+.cm-wiki-import { max-width: 760px; margin-top: 16px; }
+.cm-wiki-import .form-label { display: block; margin-bottom: 6px; }
+.cm-wiki-import__summary { margin: 14px 0 4px; font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-wiki-import__blocking, .cm-wiki-import__warnings { list-style: none; margin: 0 0 14px; padding: 12px 16px; border-radius: 8px; font: 400 13px var(--cm-font-ui); }
+.cm-wiki-import__blocking { background: var(--cm-red-bg); color: var(--cm-red-tx); border: 1px solid var(--cm-red-tx); }
+.cm-wiki-import__warnings { background: var(--cm-gold-bg); color: var(--cm-gold-tx); border: 1px solid var(--cm-gold); }
+.cm-wiki-import__blocking li, .cm-wiki-import__warnings li { margin: 2px 0; }
