@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Form;
 
+use App\Service\UploadPolicy;
+use App\Validator\AllowedUpload;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\Validator\Constraints\File;
 
 // Not entity-backed, same shape as App\Form\LessonLogAttachmentType's file field - the controller
 // builds the AssignmentSubmission/AssignmentSubmissionFile itself from the uploaded file.
@@ -17,21 +18,14 @@ class AssignmentSubmissionFileType extends AbstractType
     /**
      * What a student may hand in. Shared with the "Travail à faire" screen, which posts its own
      * bare form (one "Déposer" button per expected production, no field to fill in) and validates
-     * the file against this very constraint - one list, so both ways in accept the same thing.
+     * the file against this very constraint - one rule, so both ways in accept the same thing.
+     *
+     * The "documents" narrowing of the platform upload policy: the same twelve types this field
+     * used to enumerate itself, now declared once (design/validated/upload-policy.md).
      */
-    public static function fileConstraint(): File
+    public static function fileConstraint(): AllowedUpload
     {
-        return new File(
-            maxSize: FileUploadDefaults::MAX_SIZE,
-            mimeTypes: [
-                'application/pdf', 'image/jpeg', 'image/png', 'image/webp',
-                'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'text/plain', 'application/zip',
-            ],
-            mimeTypesMessage: 'assignmentSubmissionInvalidTypeMessage',
-        );
+        return new AllowedUpload(UploadPolicy::documents());
     }
 
     public function buildForm(FormBuilderInterface $builder, array $options): void

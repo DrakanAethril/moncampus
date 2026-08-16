@@ -1,31 +1,66 @@
-# Le changelog de MonCampus, tel que la page /changelog le rend (App\Service\Changelog).
+# The MonCampus changelog, as the /changelog page renders it (App\Service\Changelog).
 #
-# Il vit ici, dans le dépôt, et non en base : le changelog fait partie de la livraison, il part donc
-# en production avec elle. Rien à lancer sur le serveur, rien qui puisse se désynchroniser.
+# It lives here, in the repository, and not in the database: the changelog is part of the release, so
+# it goes to production with it. Nothing to run on the server, nothing that can drift out of sync.
 #
-# Une version = une mise en production, et son numéro est la date de cette mise en production :
-# 2026.08.10. Un deuxième déploiement le même jour prend un rang, 2026.08.10.2, et ainsi de suite.
+# One version = one production release, and its number is the date of that release: 2026.08.10. A
+# second deploy on the same day takes a rank, 2026.08.10.2, and so on.
 #
-# Le rang mensuel employé jusqu'au 2026-08-10 (« 11e version d'août ») a été abandonné : tant qu'il
-# restait sous 31, il se lisait comme un numéro de jour. La 2026.08.11 datée du 10 août l'a montré
-# le jour même de sa publication.
+# The monthly rank used until 2026-08-10 (« 11th version of August ») was dropped: as long as it
+# stayed below 31, it read as a day number. Version 2026.08.11 dated 10 August proved it on the very
+# day it shipped.
 #
-# Chaque entrée porte un type :
-#   nouveaute    — quelque chose qui n'existait pas
-#   modification — quelque chose qui existait et qui change
-#   fix          — quelque chose qui ne marchait pas
-#   interne      — le code lui-même : outillage, performances, refactorisations. Replié sur la page.
-#   autre        — le reste (publications d'applications mobiles, documentation…)
+# Each entry carries a type:
+#   nouveaute    — something that did not exist
+#   modification — something that existed and is changing
+#   fix          — something that was not working
+#   interne      — the code itself: tooling, performance, refactorings. Collapsed on the page.
+#   autre        — the rest (mobile app releases, documentation…)
 #
-# Les versions les plus récentes en premier, par convention ; l'ordre du fichier n'a toutefois aucune
-# importance, la lecture retrie par date.
+# Most recent versions first, by convention; the file order carries no weight, however, since reading
+# it sorts by date again.
 #
-# Ce fichier est écrit par le skill /beaup-deploy au moment du déploiement. L'historique antérieur au
-# 2026-08-10 a été reconstitué depuis les fusions dans `main`, une version par jour de mise en
-# production. Avant le 2026-07-05, le dépôt ne portait pas cette application mais le gabarit
-# dunglas/symfony-docker dont elle est issue : il n'y a rien à en dire ici.
+# This file is written by the /beaup-deploy skill at deploy time. The history before 2026-08-10 was
+# reconstructed from the merges into `main`, one version per production day. Before 2026-07-05, the
+# repository did not carry this application but the dunglas/symfony-docker template it came from:
+# there is nothing to say about it here.
 
 releases:
+    - version: '2026.08.16'
+      date: '2026-08-16'
+      summary: "Le wiki fait son entrée : des espaces de pages arborescentes, écrites dans un éditeur complet (encadrés, formules, schémas), qui s'exportent en PDF relié ou en archive Markdown réimportable. En arrière-plan, tous les dépôts de fichiers de la plateforme passent désormais par une même règle d'extensions et de taille, et par une analyse antivirale."
+      entries:
+          - type: nouveaute
+            title: 'Le wiki'
+            detail: "Un wiki personnel pour chacun, des wikis partagés adressés à un public, et dans chacun une arborescence de pages que l'on réordonne au glisser-déposer. Chaque page offre son sommaire automatique, ses pièces jointes, ses liens vers les autres pages du wiki, une recherche plein texte et l'historique de ses deux dernières versions, avec restauration. Un verrou signale qu'une page est déjà en cours d'écriture plutôt que d'écraser silencieusement le travail d'un collègue."
+          - type: nouveaute
+            title: "L'éditeur du wiki"
+            detail: "Barre de menus complète : encadrés, accordéons, blocs de code, caractères spéciaux, rechercher-remplacer, formules mathématiques (KaTeX) et schémas (Mermaid). Le sélecteur « Lien wiki » cherche parmi les pages du wiki courant."
+          - type: nouveaute
+            title: 'Exporter un wiki en PDF'
+            detail: "Le wiki entier, une branche ou une seule page, avec page de couverture, sommaire, pieds de page numérotés et titres décalés selon la profondeur de chaque page — un document relié, pas une pile de pages."
+          - type: nouveaute
+            title: 'Archive Markdown : export et import'
+            detail: "Un wiki s'exporte en archive de fichiers Markdown lisibles ailleurs, et se réimporte sans rien perdre de sa mise en forme. L'import se fait en trois étapes, avec une analyse préalable qui dit exactement ce qui sera créé avant d'écrire quoi que ce soit."
+          - type: nouveaute
+            title: 'Analyse antivirale des fichiers déposés'
+            detail: "Tout fichier déposé sur la plateforme est analysé avant d'être enregistré. Un fichier reconnu comme infecté est refusé à l'envoi."
+          - type: modification
+            title: 'Une seule règle de dépôt de fichiers pour toute la plateforme'
+            detail: "Les extensions acceptées et les tailles maximales sont désormais définies au même endroit ; chaque champ ne peut que restreindre cette liste. Deux champs qui n'imposaient aucune limite — les pièces jointes d'un article et celles d'un travail à faire — y entrent à leur tour."
+          - type: modification
+            title: "L'envoi d'une vidéo affiche sa progression"
+            detail: "Nom, poids, barre de progression, pourcentage et bouton Annuler pendant le transfert, puis « Traitement… » le temps de l'enregistrement. Un fichier trop volumineux est enfin signalé comme un refus, et non plus comme une erreur inexpliquée."
+          - type: fix
+            title: "L'export PDF d'une progression n'est plus rogné sur le bord droit"
+            detail: "La bordure droite des bannières et des tableaux disparaissait à l'impression. La liste « Moyens et supports mobilisés sur l'année » quitte par ailleurs la partie 1, où elle répétait ce que le détail par phase donne déjà."
+          - type: fix
+            title: 'Les liens collés dans un éditeur ne sont plus réécrits'
+            detail: "Un lien interne était enregistré avec l'adresse du serveur qui l'avait vu passer, et se cassait ailleurs. Il est désormais conservé tel quel."
+          - type: interne
+            title: 'Commentaires du code passés en anglais'
+          - type: interne
+            title: 'Image ClamAV épinglée sur linux/amd64 en développement'
     - version: '2026.08.15.2'
       date: '2026-08-15'
       summary: "Une base documentaire fait son entrée sous Ressources : des articles rédigés et illustrés dans l'application, adressés à un public et à un périmètre précis grâce à la nouvelle hiérarchie de groupes. L'import d'une séquence ne bloque plus sur du contenu resté non affecté, et l'export PDF d'une progression gagne en lisibilité."

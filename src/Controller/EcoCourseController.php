@@ -317,7 +317,7 @@ class EcoCourseController extends AbstractController
             }
         }
 
-        // Les tronçons du coureur comparé, pour que chaque infobulle porte les deux lectures.
+        // The compared runner's legs, so each tooltip carries both readings.
         $comparedLegs = null !== $comparedRunner ? $analyzer->analyse($comparedRunner, $runners)['legs'] : [];
 
         return $this->render('eco/course_results.html.twig', [

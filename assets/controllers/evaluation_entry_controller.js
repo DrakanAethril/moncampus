@@ -1,18 +1,18 @@
 import { Controller } from '@hotwired/stimulus';
 
-// Carnet de notes - saisie rapide d'une évaluation (design/design_handoff_carnet_de_notes, écran 4).
-// Une ligne par élève, dans l'un des deux modes du handoff : note globale (input + boutons
-// Abs/N.É./( )) ou une case par question du barème avec total automatique.
+// Carnet de notes - quick entry of an evaluation (design/design_handoff_carnet_de_notes, screen 4).
+// One row per student, in one of the handoff's two modes: overall grade (input + Abs/N.É./( )
+// buttons) or one box per rubric question with an automatic total.
 //
 // The per-student audio comment, which used to be laid here, has left the gradebook: the microphone
 // recorder became the "Enregistrements audio" tool (assets/audio/mic_recorder.js), from where
 // audio_recording_files_controller.js drives it.
 //
-// Les lignes sont construites une fois au connect() puis mises à jour en place (statut, total,
-// compteurs de l'en-tête) plutôt que redessinées : un re-render complet à chaque enregistrement
-// ferait perdre le focus au beau milieu d'une saisie au clavier.
+// The rows are built once on connect() then updated in place (status, total, header counters)
+// rather than redrawn: a full re-render on every save would lose the focus in the middle of a
+// keyboard entry.
 //
-// L'enregistrement est automatique et par cellule ; il n'y a pas de bouton « enregistrer » global.
+// Saving is automatic and per cell; there is no global « save » button.
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['list', 'entered', 'average', 'progress', 'sortLabel'];
@@ -66,14 +66,14 @@ export default class extends Controller {
     buildQuestionHead() {
         const head = this.el('div', 'cm-gb-qhead');
 
-        // Bande des sections, alignée au-dessus des colonnes de leurs propres questions.
+        // Section band, aligned above the columns of their own questions.
         const sectionsRow = this.el('div', 'cm-gb-qhead__sections');
         sectionsRow.appendChild(this.spacer(22));
         sectionsRow.appendChild(this.spacer(230));
         for (const section of this.sections) {
             const band = this.el('div', 'cm-gb-qhead__section', section.name);
             band.title = section.name;
-            // 54px par question + les 10px de gouttière entre deux colonnes.
+            // 54px per question + the 10px gutter between two columns.
             band.style.width = `${section.questions.length * 54 + (section.questions.length - 1) * 10}px`;
             sectionsRow.appendChild(band);
         }
@@ -150,8 +150,8 @@ export default class extends Controller {
                 const quick = this.el('div', 'cm-gb-quick');
                 quick.appendChild(this.quickButton('cm-gb-quick--abs', this.labelsValue.absentShortLabel, this.labelsValue.absentLabel, () => this.commitGrade(row, 'abs')));
                 quick.appendChild(this.quickButton('cm-gb-quick--ne', this.labelsValue.notEvaluatedShortLabel, this.labelsValue.notEvaluatedLabel, () => this.commitGrade(row, 'ne')));
-                // Mettre entre parenthèses n'a de sens que sur une note déjà saisie : la valeur
-                // reste, seul son décompte dans la moyenne change.
+                // Putting a grade in parentheses only makes sense on one already entered: the value
+                // stays, only its counting towards the average changes.
                 quick.appendChild(this.quickButton('', this.labelsValue.excludedButtonLabel, this.labelsValue.excludedButtonTitle, () => {
                     if (row.value != null) this.commitGrade(row, `(${row.value})`);
                 }));
@@ -175,7 +175,7 @@ export default class extends Controller {
         return button;
     }
 
-    // Statut, total et couleur d'une ligne - rappelé après chaque enregistrement.
+    // Status, total and color of a row - refreshed after every save.
     paintRow(row) {
         const refs = this.nodes[row.id];
         if (!refs) return;
@@ -238,8 +238,8 @@ export default class extends Controller {
             .replace('__QUESTION_ID__', question.id);
 
         const response = await this.post(url, { raw }, true);
-        // Une valeur au-dessus du maximum de la question est refusée telle quelle, pas rabotée
-        // (qSet() des créas) : on remet la dernière valeur réellement enregistrée.
+        // A value above the question's maximum is refused as such, not clamped (the designs' qSet()):
+        // the last value actually saved is put back.
         if (response === 422) {
             input.value = input.dataset.lastValid;
             input.classList.add('is-invalid');
@@ -297,8 +297,8 @@ export default class extends Controller {
 
     onRubricKeydown(event, row, question, input) {
         if (!['Enter', 'ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(event.key)) return;
-        // Gauche/droite ne prennent la main que sur une case déjà vide ou entièrement
-        // sélectionnée, sinon elles doivent rester le déplacement du curseur dans le champ.
+        // Left/right only take over on a box that is already empty or entirely selected, otherwise
+        // they must stay the caret movement inside the field.
         const atEdge = input.selectionStart === input.selectionEnd
             && (event.key !== 'ArrowLeft' || input.selectionStart === 0)
             && (event.key !== 'ArrowRight' || input.selectionStart === input.value.length);
@@ -321,7 +321,7 @@ export default class extends Controller {
         });
     }
 
-    // ---- Compteurs de l'en-tête -----------------------------------------------------------
+    // ---- Header counters ------------------------------------------------------------------
 
     isEntered(row) {
         return null != row.status || (this.hasRubric && row.value != null);
@@ -342,7 +342,7 @@ export default class extends Controller {
 
     // ---- Utilitaires ----------------------------------------------------------------------
 
-    // Arrondi : additionner des quarts de point en virgule flottante donne vite 20.000000000000004.
+    // Rounding: adding quarter points in floating point quickly gives 20.000000000000004.
     rubricTotalPoints() {
         return Math.round(this.questions.reduce((sum, question) => sum + question.maxPoints, 0) * 100) / 100;
     }
@@ -362,9 +362,9 @@ export default class extends Controller {
         return row.status === 'excluded' ? `(${this.formatGrade(row.value)})` : String(this.formatGrade(row.value));
     }
 
-    // Deux décimales au plus, sans zéro inutile : 12 → « 12 », 12,5 → « 12.5 », 12,25 → « 12.25 ».
-    // Arrondir au dixième rendait le quart de point insaisissable : le champ se réaffichait à 12.3
-    // et c'est cette valeur-là qui repartait au serveur au blur suivant.
+    // Two decimals at most, with no useless zero: 12 → « 12 », 12.5 → « 12.5 », 12.25 → « 12.25 ».
+    // Rounding to a tenth made the quarter point impossible to enter: the field redisplayed 12.3 and
+    // it was that value that went back to the server on the next blur.
     formatGrade(value) {
         return String(Math.round(value * 100) / 100);
     }

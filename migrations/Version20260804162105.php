@@ -18,18 +18,18 @@ final class Version20260804162105 extends AbstractMigration
     }
 
     /**
-     * « Quelle est l'adresse de cet élève ? » est un fait à valeur unique portant sur l'élève, et
-     * non une propriété de chacun de ses alias. Porté par un booléen réparti sur N lignes, il
-     * aurait fallu le défendre par un index unique partiel - « unique parmi les lignes où
-     * is_primary est vrai » - que MySQL ne sait pas exprimer : UNIQUE(is_primary) n'autoriserait
-     * qu'une seule ligne principale pour tout l'établissement, et UNIQUE(user_id, is_primary)
-     * interdirait à un élève d'avoir plus d'un alias secondaire, ce qui est justement l'usage
-     * courant (login, adresses conservées après un changement d'état civil).
+     * « Which is this student's address? » is a single-valued fact about the student, and not a
+     * property of each of their aliases. Carried by a boolean spread over N rows, it would have had
+     * to be defended by a partial unique index - « unique among the rows where is_primary is true » -
+     * which MySQL cannot express: UNIQUE(is_primary) would allow only one main row for the whole
+     * school, and UNIQUE(user_id, is_primary) would forbid a student from having more than one
+     * secondary alias, which is precisely the common case (login, addresses kept after a change of
+     * civil status).
      *
-     * Un pointeur nullable côté user rend l'invariant vrai par construction : une colonne ne
-     * contient qu'une valeur.
+     * A nullable pointer on the user side makes the invariant true by construction: a column holds
+     * only one value.
      *
-     * Effectuée pendant que la table est vide - aucune reprise de données n'est donc nécessaire.
+     * Done while the table is empty - no data migration is therefore needed.
      */
     public function up(Schema $schema): void
     {

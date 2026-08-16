@@ -8,17 +8,18 @@ use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
 /**
- * Nouveau type de question « Texte à trous » (design_handoff_quiz, écrans 2a-2d).
+ * New « Texte à trous » question type (design_handoff_quiz, screens 2a-2d).
  *
- * Toute la définition d'une question à trous tient dans `blanks_config` : le texte lui-même reste
- * dans `label` (les trous y sont écrits « ... »), et le JSON porte le mode, les variantes acceptées
- * par trou, les intrus et les deux tolérances. Aucune ligne `quiz_answer` n'est créée pour ce type.
+ * The whole definition of a fill-in-the-blanks question fits in `blanks_config`: the text itself
+ * stays in `label` (the blanks are written « ... » in it), and the JSON carries the mode, the
+ * variants accepted per blank, the decoys and the two tolerances. No `quiz_answer` row is created for
+ * this type.
  *
- * Reprise de l'existant : c'est le seul type à noter partiellement, d'où `quiz_attempt_answer.score`
- * et le passage de `quiz_attempt.correct_count` en décimal. Les tentatives déjà terminées gardent
- * exactement leur note (un entier reste un entier en NUMERIC(7,2)), et leurs réponses reçoivent le
- * score 1/0 qui découle de `is_correct` — sans ce backfill, la somme des scores d'une ancienne
- * tentative recalculée vaudrait 0.
+ * Migration of the existing data: it is the only type to be graded partially, hence
+ * `quiz_attempt_answer.score` and the move of `quiz_attempt.correct_count` to decimal. Attempts
+ * already finished keep exactly their score (an integer stays an integer in NUMERIC(7,2)), and their
+ * answers receive the 1/0 score following from `is_correct` — without that backfill, the sum of the
+ * scores of an old attempt recomputed would be 0.
  */
 final class Version20260804050407 extends AbstractMigration
 {
@@ -42,7 +43,7 @@ final class Version20260804050407 extends AbstractMigration
         $this->addSql('ALTER TABLE quiz_question DROP blanks_config, DROP points');
         $this->addSql('ALTER TABLE quiz_instance_question DROP blanks_config, DROP points');
         $this->addSql('ALTER TABLE quiz_attempt_answer DROP score, DROP blank_responses');
-        // Les notes partielles éventuelles sont tronquées : NUMERIC -> INT ne peut pas les garder.
+        // Any partial scores are truncated: NUMERIC -> INT cannot keep them.
         $this->addSql('ALTER TABLE quiz_attempt CHANGE correct_count correct_count INT DEFAULT NULL');
     }
 }

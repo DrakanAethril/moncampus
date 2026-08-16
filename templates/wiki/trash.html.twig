@@ -1,0 +1,52 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Deleted nodes: restore or purge. Deleting a node trashed it *and its descendants*, so restoring
+   one brings its whole branch back - and a node whose parent is still in the trash comes back at
+   root level rather than into a branch that is still invisible. #}
+
+{% block title %}{{ 'wikiTrashPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'wiki/_breadcrumb.html.twig' with {
+        wiki: wiki,
+        extra: [{label: 'wikiTrashNavLabel'|trans, url: path('app_wiki_trash', {id: wiki.id})}],
+    } %}
+{% endblock %}
+
+{% block page_title %}{{ 'wikiTrashPageHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    {% include 'wiki/_search_form.html.twig' with {wiki: wiki} %}
+{% endblock %}
+
+{% block main %}
+    <div class="cm-wiki">
+        {% include 'wiki/_rail.html.twig' with {wiki: wiki, tree: tree} %}
+
+        <div class="cm-wiki__content">
+            {% if trashed is empty %}
+                <p class="cm-wiki__placeholder">{{ 'wikiTrashEmptyText'|trans }}</p>
+            {% else %}
+                <ul class="cm-wiki-list">
+                    {% for entry in trashed %}
+                        <li class="cm-wiki-list__row">
+                            <span class="cm-wiki-list__title">{{ entry.title }}</span>
+                            <span class="cm-wiki-list__subtitle">{{ entry.deletedAt|date('d/m/Y') }}</span>
+                            <form method="post" action="{{ path('app_wiki_node_restore', {id: wiki.id, nodeId: entry.id}) }}" class="cm-wiki__inline-form">
+                                <input type="hidden" name="_token" value="{{ csrf_token('wiki_trash') }}">
+                                <button type="submit" class="cm-btn cm-btn--sm cm-btn--outline">{{ 'wikiRestoreAction'|trans }}</button>
+                            </form>
+                            <form method="post" action="{{ path('app_wiki_node_purge', {id: wiki.id, nodeId: entry.id}) }}" class="cm-wiki__inline-form">
+                                <input type="hidden" name="_token" value="{{ csrf_token('wiki_trash') }}">
+                                <button type="submit" class="cm-btn cm-btn--sm cm-btn--danger"
+                                        data-controller="confirm-submit"
+                                        data-confirm-submit-message-value="{{ 'wikiPurgeConfirmText'|trans }}"
+                                        data-action="click->confirm-submit#confirm">{{ 'wikiPurgeAction'|trans }}</button>
+                            </form>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

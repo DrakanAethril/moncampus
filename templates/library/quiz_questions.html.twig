@@ -133,9 +133,9 @@
                                     {{ form_label(form.difficulty) }}
                                     <div class="cm-diffpicker">{{ form_widget(form.difficulty) }}</div>
                                 </div>
-                                {# Temps de CETTE question. « Valeur du quiz » par défaut : le
-                                   réglage du quiz reste la réponse tant qu'on ne le contredit pas
-                                   ici. La saisie en secondes n'apparaît que pour « Défini ». #}
+                                {# Time for THIS question. « Valeur du quiz » by default: the quiz's own
+                                   setting stays the answer as long as it is not contradicted here. The
+                                   entry in seconds only appears for « Défini ». #}
                                 <div class="col-12 d-flex flex-column gap-1" data-controller="radio-reveal">
                                     {{ form_label(form.timeMode) }}
                                     <div class="cm-choice-group d-flex flex-wrap align-items-center gap-3">

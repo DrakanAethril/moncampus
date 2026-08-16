@@ -1,0 +1,25 @@
+{# The wiki trail: Accueil > Wikis > <wiki> > <ancestors...> > <page>.
+
+   Built here rather than in each screen because five of them draw the same first three segments
+   and only differ by what they append - see templates/audio_recording/_breadcrumb.html.twig for
+   the same pattern. Callers pass `extra` (a list of {label, url}) for whatever hangs below the
+   wiki; `node`/`ancestors` are optional and expand into one segment per level.
+
+   "Wikis" points at the screen the wiki actually belongs to - a personal wiki is reached through
+   "Mon wiki", everything else through "Mes wikis" - so the trail retraces the way the reader came
+   rather than naming a hub that does not exist. #}
+{% set segments = [
+    {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {label: 'wikiNavLabel'|trans, url: wiki.personal ? path('app_wiki_personal') : path('app_wiki_shared')},
+    {label: wiki.title, url: path('app_wiki_show', {id: wiki.id})},
+] %}
+{% for ancestor in ancestors|default([]) %}
+    {% set segments = segments|merge([{label: ancestor.title, url: path('app_wiki_page', {id: wiki.id, nodeId: ancestor.id})}]) %}
+{% endfor %}
+{% if node is defined and node %}
+    {% set segments = segments|merge([{label: node.title, url: path('app_wiki_page', {id: wiki.id, nodeId: node.id})}]) %}
+{% endif %}
+{% for segment in extra|default([]) %}
+    {% set segments = segments|merge([segment]) %}
+{% endfor %}
+{% include '_breadcrumb.html.twig' with {segments: segments} %}

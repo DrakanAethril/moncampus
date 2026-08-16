@@ -192,8 +192,8 @@ class InternshipTutorEvaluationController extends AbstractController
         if (!$readOnly) {
             $form->handleRequest($request);
             if ($form->isSubmitted() && $form->isValid()) {
-                // Avant de signer : c'est le passage de non-signé à signé qui prévient l'alternant,
-                // pas le fait d'être signé - sans quoi un re-enregistrement le relancerait.
+                // Before signing: it is the move from unsigned to signed that warns the apprentice,
+                // not the fact of being signed - without which a re-save would chase them again.
                 $wasSigned = $evaluation->isSigned();
                 $evaluation->setValidationDate(new \DateTimeImmutable());
                 $evaluation->setLastEditedBy($this->currentUser());

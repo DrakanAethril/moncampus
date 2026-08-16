@@ -20,13 +20,13 @@ class LaptopLoanReturnType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            // Date du retour, saisissable comme sur la maquette 25f - le retour n'est pas toujours
-            // enregistré le jour où l'ordinateur revient.
+            // Return date, editable as on mockup 25f - the return is not always recorded on the day
+            // the laptop comes back.
             ->add('returnedAt', DateType::class, [
                 'label' => 'laptopLoanReturnedAtFieldLabel',
-                // Valeur par défaut portée par le champ et non par l'entité : renseigner
-                // $returnedAt sur le prêt le ferait passer pour rendu (LaptopLoan::isReturned()),
-                // et l'écran perdrait aussitôt son indication de retard.
+                // Default value carried by the field and not by the entity: filling $returnedAt on
+                // the loan would make it look returned (LaptopLoan::isReturned()), and the screen
+                // would immediately lose its overdue indication.
                 'data' => new \DateTimeImmutable(),
                 'widget' => 'single_text',
                 'html5' => true,
@@ -40,10 +40,10 @@ class LaptopLoanReturnType extends AbstractType
                 'choice_label' => 'name',
                 'choice_attr' => static fn (LaptopConditionType $type): array => ['data-color' => $type->getColor()],
                 'label' => 'laptopLoanReturnConditionFieldLabel',
-                // Un choix vide en tête, et non 'placeholder' => false : l'état constaté au retour
-                // est une saisie, pas une reconduction. Sans lui le navigateur sélectionne le
-                // premier état de la liste et un retour enregistré sans y toucher affirme un état
-                // que personne n'a constaté.
+                // An empty choice at the top, and not 'placeholder' => false: the condition observed
+                // on return is an entry, not a carry-over. Without it the browser selects the first
+                // condition of the list and a return recorded without touching it asserts a condition
+                // nobody observed.
                 'placeholder' => 'laptopConditionPlaceholder',
                 'required' => false,
                 'attr' => ['data-controller' => 'tom-select'],

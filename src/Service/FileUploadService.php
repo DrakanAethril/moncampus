@@ -22,6 +22,7 @@ class FileUploadService
 {
     public function __construct(
         private readonly FilesystemOperator $uploadsStorage,
+        private readonly AntivirusScanner $antivirus,
         private readonly string $awsS3Bucket,
         private readonly string $awsS3PublicEndpoint,
         private readonly string $awsCloudfrontDomain,
@@ -41,11 +42,18 @@ class FileUploadService
             throw new \InvalidArgumentException(sprintf('Prefix "%s" must end with "/".', $prefix));
         }
 
+        // Before a single byte reaches S3, so a rejected file never enters the bucket and nothing
+        // has to be cleaned up afterwards. Usually a no-op: the form constraint already cleared
+        // this exact temp file, and App\Service\AntivirusScanner remembers it for the request. The
+        // paths with no form at all - the mobile API, the import assistants - are why it is here
+        // and not only there.
+        $this->antivirus->assertClean($file->getPathname(), $file->getClientOriginalName());
+
         $key = $prefix.$filename;
         $stream = fopen($file->getPathname(), 'r') ?: throw new \RuntimeException(sprintf('Could not open "%s" for reading.', $file->getPathname()));
 
         try {
-            $this->uploadsStorage->writeStream($key, $stream);
+            $this->uploadsStorage->writeStream($key, $stream, $this->dispositionFor($key));
         } finally {
             if (\is_resource($stream)) {
                 fclose($stream);
@@ -53,6 +61,32 @@ class FileUploadService
         }
 
         return $key;
+    }
+
+    /**
+     * The single highest-value measure of the platform upload policy (design/validated/
+     * upload-policy.md), and the one that does not depend on the allowlist being right.
+     *
+     * Objects are served by CloudFront, unsigned, from the school's own CDN domain - so anything
+     * the browser can render was, until this, rendered **inline** on that domain. Handing everything
+     * but images and PDF over as a download neutralises the whole "dangerous because of how it
+     * opens" family - HTML, SVG, MHTML - regardless of what any allowlist says. The allowlist then
+     * only has to answer the other half: dangerous because of *what the file is*.
+     *
+     * The two media services that write to this bucket through the raw S3 client
+     * (App\Service\AudioUploadService, App\Service\VideoUploadService) deliberately do not do this:
+     * they set their own Content-Type from a closed audio/MP4 allowlist, so nothing that opens as
+     * anything else can reach the bucket by those paths.
+     *
+     * @return array{ContentDisposition?: string}
+     */
+    private function dispositionFor(string $key): array
+    {
+        if (UploadPolicy::servesInline($key)) {
+            return [];
+        }
+
+        return ['ContentDisposition' => 'attachment'];
     }
 
     public function delete(string $key): void

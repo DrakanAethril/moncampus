@@ -53,8 +53,8 @@
     </div>
 
     {% if analysis.blockingCount > 0 %}
-        {# Le fichier entier est refusé, pas seulement ces lignes : un import à moitié écrit est
-           l'état que personne ne sait rattraper. #}
+        {# The whole file is refused, not only these rows: a half-written import is the state nobody
+           knows how to recover from. #}
         <div class="card mb-3">
             <div class="card-header">
                 <h3 class="card-title">{{ 'ufaContractImportBlockingSectionTitle'|trans }}</h3>
@@ -134,8 +134,8 @@
     </div>
 
     {% if analysis.studentEmailLabels is not empty %}
-        {# La seule écriture de l'import qui ne porte pas sur l'alternance elle-même : elle est
-           annoncée à part, jamais glissée dans le détail. #}
+        {# The only write of the import that does not bear on the alternation itself: it is announced
+           separately, never slipped into the detail. #}
         <div class="card mb-3">
             <div class="card-header">
                 <h3 class="card-title">{{ 'ufaContractImportStudentEmailsSectionTitle'|trans({'%count%': analysis.studentEmailLabels|length}) }}</h3>
@@ -175,9 +175,9 @@
                                 {% endif %}
                             </td>
                             <td>
-                                {# Le code classe du fichier et la formation retrouvée côte à côte :
-                                   c'est cet appariement que l'opérateur valide à l'œil, rien ne
-                                   traduit « BACHELORAIS » en Formation. #}
+                                {# The file's class code and the program found, side by side: it is
+                                   this pairing the operator validates by eye, nothing translates
+                                   « BACHELORAIS » into a Program. #}
                                 <div>{{ row.program ? row.program.displayShortName : '—' }}</div>
                                 {% if row.row.classCode is not empty %}
                                     <div class="text-secondary small">{{ 'ufaContractImportFileClassCodeLabel'|trans({'%code%': row.row.classCode}) }}</div>

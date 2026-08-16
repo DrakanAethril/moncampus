@@ -49,7 +49,7 @@ final class SchoolMailLocalPart
         return 1 === preg_match('/^[a-z0-9-]+(?:\.[a-z0-9-]+)+$/', $localPart);
     }
 
-    /** Le jeu de caractères admis, commun à toutes les origines. */
+    /** The character set allowed, common to every origin. */
     public static function isWellFormed(string $localPart): bool
     {
         if ('' === $localPart || \strlen($localPart) > 64) {

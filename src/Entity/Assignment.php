@@ -42,9 +42,9 @@ class Assignment implements AccessConditionHost
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
 
-    // Horodatée depuis le cahier de texte (« pour mar. 04 août · 08:00 ») : une échéance de fin de
-    // journée n'était plus assez précise dès lors qu'un travail se donne d'une séance à l'autre.
-    // Les devoirs antérieurs ont été repris à 23:59, qui était le sens de la date seule.
+    // Timestamped since the cahier de texte (« pour mar. 04 août · 08:00 »): an end-of-day deadline
+    // was no longer precise enough once an assignment is given from one séance to the next.
+    // Earlier assignments were carried over at 23:59, which was what the bare date meant.
     #[ORM\Column(name: 'due_date', type: Types::DATETIME_IMMUTABLE)]
     #[Assert\NotNull]
     private ?\DateTimeImmutable $dueDate = null;
@@ -80,12 +80,12 @@ class Assignment implements AccessConditionHost
     private Collection $manualRecipients;
 
     /**
-     * Le créneau d'où vient le travail, quand il a été donné depuis un cahier de texte (2b), et le
-     * temps auquel il s'y rattache. Nuls pour un devoir créé par l'écran devoir historique, qui ne
-     * connaît aucune séance - d'où le rattachement facultatif plutôt qu'une entité séparée.
+     * The slot the assignment comes from, when it was given from a cahier de texte (2b), and the
+     * part it hangs off there. Null for an assignment created by the historical screen, which knows
+     * no séance - hence the optional attachment rather than a separate entity.
      *
-     * C'est ce lien qui fait apparaître « séance du 04 août » sous le travail chez l'étudiant, et
-     * qui permet de rouvrir la séance pour un absent (maquette 4a).
+     * It is this link that makes « séance du 04 août » appear under the assignment on the student
+     * side, and that allows reopening the séance for an absent student (mockup 4a).
      */
     #[ORM\ManyToOne(targetEntity: LessonSession::class)]
     #[ORM\JoinColumn(name: 'lesson_session_id', nullable: true, onDelete: 'SET NULL')]
@@ -95,8 +95,8 @@ class Assignment implements AccessConditionHost
     private ?LessonLogSection $lessonLogSection = null;
 
     /**
-     * Formats acceptés au dépôt (« PDF », « ZIP », ou aucun = tout format). Une liste plutôt qu'un
-     * type unique : la maquette les donne en sélection multiple.
+     * Formats accepted on submission (« PDF », « ZIP », or none = any format). A list rather than a
+     * single type: the mockup offers them as a multiple selection.
      *
      * @var list<string>
      */
@@ -104,19 +104,19 @@ class Assignment implements AccessConditionHost
     private array $acceptedFormats = [];
 
     /**
-     * À partir de quand le travail est lisible par les étudiants. Null = jamais encore publié
-     * (l'interrupteur « visible dès l'enregistrement » du 2b, laissé fermé).
+     * From when the assignment is readable by students. Null = never published yet (the « visible
+     * dès l'enregistrement » switch of 2b, left closed).
      */
     #[ORM\Column(name: 'visible_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $visibleAt = null;
 
     /**
-     * Le quiz que ce travail demande de dérouler, pour la nature Quiz - et seulement elle. Une
-     * instance de quiz, donc un quiz déjà lancé sur la formation avec ses questions figées, et non
-     * un modèle de la bibliothèque : c'est l'objet que l'étudiant peut ouvrir.
+     * The quiz this assignment asks to run, for the Quiz nature - and only it. A quiz instance,
+     * therefore a quiz already launched on the program with its questions frozen, and not a library
+     * template: this is the object the student can open.
      *
-     * Les quiz en mode Live sont exclus du choix : un concours se déroule ensemble, à l'heure dite,
-     * il ne se donne pas à faire pour la prochaine fois.
+     * Quizzes in Live mode are excluded from the choice: a live contest is run together, at the
+     * appointed time; it is not given out to do for next time.
      */
     #[ORM\ManyToOne(targetEntity: QuizInstance::class)]
     #[ORM\JoinColumn(name: 'quiz_instance_id', nullable: true, onDelete: 'SET NULL')]
@@ -158,78 +158,77 @@ class Assignment implements AccessConditionHost
     private ?VideoResource $videoResource = null;
 
     /**
-     * L'évaluation du carnet de notes que l'étudiant doit estimer, pour la nature SelfAssessment -
-     * et seulement elle. Même forme que $quizInstance ci-dessus : le travail désigne l'objet que
-     * l'étudiant ouvre, sans le posséder.
+     * The gradebook evaluation the student must estimate, for the SelfAssessment nature - and only
+     * it. Same shape as $quizInstance above: the assignment designates the object the student opens,
+     * without owning it.
      */
     #[ORM\ManyToOne(targetEntity: Evaluation::class)]
     #[ORM\JoinColumn(name: 'evaluation_id', nullable: true, onDelete: 'SET NULL')]
     private ?Evaluation $evaluation = null;
 
     /**
-     * Ce que l'étudiant reçoit une fois son estimation validée. Null hors nature SelfAssessment.
+     * What the student gets once their estimate is submitted. Null outside the SelfAssessment nature.
      */
     #[ORM\Column(name: 'self_assessment_feedback', type: Types::STRING, length: 20, nullable: true, enumType: SelfAssessmentFeedback::class)]
     private ?SelfAssessmentFeedback $selfAssessmentFeedback = null;
 
     /**
-     * La matière du travail, quand elle se déduit du point d'entrée (la séance d'où il est donné,
-     * ou l'unique matière que l'enseignant assure dans la classe). Jamais demandée à l'enseignant -
-     * le rattachement est déterminé automatiquement (design_handoff_creation_travail, règles
-     * produit) - donc nulle quand rien ne permet de trancher, et le travail se lit alors sans
-     * mention de matière.
+     * The assignment's matière, when it can be inferred from the entry point (the séance it is given
+     * from, or the single matière the teacher covers in the class). Never asked of the teacher - the
+     * attachment is determined automatically (design_handoff_creation_travail, product rules) - so
+     * null when nothing settles it, and the assignment is then read with no matière mentioned.
      */
     #[ORM\ManyToOne(targetEntity: Topic::class)]
     #[ORM\JoinColumn(name: 'topic_id', nullable: true, onDelete: 'SET NULL')]
     private ?Topic $topic = null;
 
     /**
-     * Le lot de groupes visé, pour le seul ciblage GroupBatch. Un lot est un instantané figé de la
-     * composition des groupes (voir GroupBatch) : viser le lot, et non des groupes recalculés,
-     * garantit que le public du travail ne bouge plus après sa publication.
+     * The group batch targeted, for the GroupBatch targeting only. A batch is a frozen snapshot of
+     * the groups' make-up (see GroupBatch): targeting the batch, and not recomputed groups,
+     * guarantees the assignment's audience no longer moves after publication.
      */
     #[ORM\ManyToOne(targetEntity: GroupBatch::class)]
     #[ORM\JoinColumn(name: 'group_batch_id', nullable: true, onDelete: 'SET NULL')]
     private ?GroupBatch $groupBatch = null;
 
-    // Caractère du travail (étape 2 du 2a) : obligatoire par défaut, facultatif à la demande.
+    // Character of the assignment (step 2 of 2a): mandatory by default, optional on request.
     #[ORM\Column]
     private bool $mandatory = true;
 
     /**
-     * « Noté » (défaut) / « Non noté ». Un travail noté fait naître une évaluation au carnet à la
-     * réception des rendus - voir App\Service\AssignmentGradebookLinker, qui la crée et la range
-     * dans $gradebookEvaluation.
+     * « Noté » (default) / « Non noté ». A graded assignment gives birth to a gradebook evaluation
+     * when the submissions come in - see App\Service\AssignmentGradebookLinker, which creates it and
+     * stores it in $gradebookEvaluation.
      */
     #[ORM\Column]
     private bool $graded = true;
 
-    // Si le choix de notation se lit côté étudiant. Modifiable après coup, d'où un champ à part
-    // plutôt qu'une déduction de $graded.
+    // Whether the grading choice is readable on the student side. Editable afterwards, hence a
+    // separate field rather than an inference from $graded.
     #[ORM\Column(name: 'grading_visible_to_students')]
     private bool $gradingVisibleToStudents = true;
 
     /**
-     * L'évaluation du carnet créée automatiquement pour ce travail noté, une fois les premiers
-     * rendus arrivés. Distincte de $evaluation, qui désigne au contraire une évaluation existante
-     * que l'étudiant doit estimer (nature Autoévaluation) : ici le travail est la source de la
-     * note, là il en est le miroir.
+     * The gradebook evaluation created automatically for this graded assignment, once the first
+     * submissions have arrived. Distinct from $evaluation, which on the contrary designates an
+     * existing evaluation the student must estimate (Autoévaluation nature): here the assignment is
+     * the source of the grade, there it is its mirror.
      */
     #[ORM\ManyToOne(targetEntity: Evaluation::class)]
     #[ORM\JoinColumn(name: 'gradebook_evaluation_id', nullable: true, onDelete: 'SET NULL')]
     private ?Evaluation $gradebookEvaluation = null;
 
     /**
-     * Dépôt en retard autorisé (nature Dépôt uniquement). Fermé par défaut. Aucune limite de temps
-     * quand il est ouvert : le rendu est simplement signalé « en retard » dans le suivi.
+     * Late submission allowed (Dépôt nature only). Closed by default. No time limit when it is open:
+     * the submission is simply flagged « en retard » in the follow-up.
      */
     #[ORM\Column(name: 'late_submission_allowed')]
     private bool $lateSubmissionAllowed = false;
 
     /**
-     * Suivi de lecture (nature À lire uniquement) : l'enseignant voit qui a ouvert le travail. Le
-     * fait est déjà enregistré pour tous par AssignmentView ; ce drapeau dit seulement s'il est
-     * remonté comme avancement sur la liste des travaux.
+     * Read tracking (À lire nature only): the teacher sees who opened the assignment. The fact is
+     * already recorded for everyone by AssignmentView; this flag only says whether it is reported as
+     * progress on the assignment list.
      */
     #[ORM\Column(name: 'read_tracking_enabled')]
     private bool $readTrackingEnabled = true;
@@ -298,8 +297,8 @@ class Assignment implements AccessConditionHost
         return $this->program;
     }
 
-    // La classe est posée au constructeur pour tout point d'entrée qui la connaît déjà ; l'assistant
-    // du 2a, lui, la fait choisir à l'étape 1 et la repose ici avant publication.
+    // The class is set in the constructor for every entry point that already knows it; the 2a wizard,
+    // by contrast, has it chosen at step 1 and sets it here before publication.
     public function setProgram(?Program $program): static
     {
         $this->program = $program;
@@ -433,8 +432,9 @@ class Assignment implements AccessConditionHost
     }
 
     /**
-     * Le travail annonce plusieurs dates : au moins une production a son échéance propre. C'est ce
-     * qui déclenche le bandeau ambre de l'étape 4 et la mention « échéances multiples » en liste.
+     * The assignment announces several dates: at least one production has a deadline of its own.
+     * This is what triggers the amber banner of step 4 and the « échéances multiples » mention in
+     * the list.
      */
     public function hasMultipleDueDates(): bool
     {
@@ -521,7 +521,7 @@ class Assignment implements AccessConditionHost
         return $this;
     }
 
-    // L'écran comparé (5c) n'existe que si l'enseignant a partagé sa notation.
+    // The comparison screen (5c) only exists if the teacher shared their grading.
     public function sharesTeacherGrade(): bool
     {
         return SelfAssessmentFeedback::Comparison === $this->selfAssessmentFeedback;

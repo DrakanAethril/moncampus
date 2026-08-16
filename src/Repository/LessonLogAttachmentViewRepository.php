@@ -26,11 +26,11 @@ class LessonLogAttachmentViewRepository extends ServiceEntityRepository
     }
 
     /**
-     * Combien d'étudiants distincts ont ouvert chaque document.
+     * How many distinct students opened each document.
      *
      * @param list<LessonLogAttachment> $attachments
      *
-     * @return array<int, int> identifiant du document => nombre d'étudiants
+     * @return array<int, int> document identifier => number of students
      */
     public function countByAttachment(array $attachments): array
     {
@@ -55,8 +55,8 @@ class LessonLogAttachmentViewRepository extends ServiceEntityRepository
     }
 
     /**
-     * Combien d'étudiants ont ouvert TOUS les documents donnés - la statistique d'ensemble d'une
-     * séance : en avoir ouvert trois sur quatre, c'est ne pas avoir tout lu.
+     * How many students opened ALL the given documents - the overall statistic of a séance: having
+     * opened three out of four is not having read everything.
      *
      * @param list<LessonLogAttachment> $attachments
      */

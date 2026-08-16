@@ -1,12 +1,11 @@
 import { Controller } from '@hotwired/stimulus';
 
-// Carnet de notes - éditeur de barème (design/design_handoff_carnet_de_notes, écran 3).
-// Structure à deux niveaux (sections contenant des questions), donc pas un CollectionType : de
-// simples champs nommés sections[i][name] / sections[i][questions][j][label]|[maxPoints], relus à
-// la main côté serveur (App\Controller\ProgramGradebookController::applyRubricSubmission()) - même
-// raisonnement que la liste de réponses de QuizQuestionType. Les compteurs d'index ne font que
-// croître : une ligne supprimée laisse un trou, sans conséquence puisque PHP itère les clés
-// réellement présentes.
+// Carnet de notes - rubric editor (design/design_handoff_carnet_de_notes, screen 3).
+// A two-level structure (sections containing questions), hence not a CollectionType: plain named
+// fields sections[i][name] / sections[i][questions][j][label]|[maxPoints], read back by hand on the
+// server side (App\Controller\ProgramGradebookController::applyRubricSubmission()) - same reasoning
+// as the answer list of QuizQuestionType. The index counters only ever grow: a deleted row leaves a
+// gap, with no consequence since PHP iterates the keys actually present.
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['sections', 'addTile', 'count', 'total'];
@@ -30,19 +29,19 @@ export default class extends Controller {
         this.refreshTotals();
     }
 
-    // La tuile « + Ajouter une section » est une cellule de la grille : toute nouvelle section
-    // s'insère avant elle, pour qu'elle reste la dernière.
+    // The « + Ajouter une section » tile is a cell of the grid: any new section is inserted before
+    // it, so it stays last.
     insertSection(section) {
         this.sectionsTarget.insertBefore(this.buildSection(section), this.addTileTarget);
     }
 
-    // Pied de page des créas : « N questions · X points — barème de l'évaluation : /20 ». Recalculé
-    // à chaque frappe, c'est le seul moyen pour l'enseignant de voir que son barème tombe juste.
+    // Footer from the designs: « N questions · X points — barème de l'évaluation : /20 ». Recomputed
+    // on every keystroke, it is the only way for the teacher to see that their rubric adds up.
     refreshTotals() {
         const points = [...this.element.querySelectorAll('[data-rubric-points]')];
         this.countTarget.textContent = String(points.length);
-        // Arrondi au centième : additionner des quarts de point en virgule flottante afficherait
-        // sinon 20.000000000000004.
+        // Rounded to the hundredth: adding quarter points in floating point would otherwise display
+        // 20.000000000000004.
         const total = points.reduce((sum, input) => sum + (parseFloat(String(input.value).replace(',', '.')) || 0), 0);
         this.totalTarget.textContent = String(Math.round(total * 100) / 100);
     }
@@ -105,8 +104,8 @@ export default class extends Controller {
 
         const pointsInput = this.el('input', 'cm-gb-bar-input');
         pointsInput.type = 'number';
-        // Quart de point : c'est le pas de notation en usage, et il vaut aussi bien pour les points
-        // d'une question du barème que pour la note elle-même.
+        // Quarter point: that is the grading step in use, and it applies to the points of a rubric
+        // question as much as to the grade itself.
         pointsInput.step = '0.25';
         pointsInput.min = '0.25';
         pointsInput.style.cssText = 'width: 76px; text-align: center;';

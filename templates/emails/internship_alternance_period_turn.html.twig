@@ -1,8 +1,8 @@
 {% extends 'emails/_layout.html.twig' %}
 
-{# "C'est à vous" du chaînage des périodes d'évaluation - envoyé par
-   App\Service\AlternancePeriodChainNotifier quand la signature précédente vient d'être apposée.
-   role = 'student' (le tuteur a signé) ou 'team' (l'alternant a signé). #}
+{# The "it's your turn" mail of the evaluation-period chaining - sent by
+   App\Service\AlternancePeriodChainNotifier when the previous signature has just been affixed.
+   role = 'student' (the tutor has signed) or 'team' (the apprentice has signed). #}
 {% block subject %}{{ 'ufaAlternancePeriodTurnEmailSubject'|trans({'%period%': periodName}) }}{% endblock %}
 
 {% block preheader %}{{ 'ufaAlternancePeriodTurnEmailPreheader'|trans }}{% endblock %}

@@ -29,6 +29,7 @@ class AudioUploadService
 {
     public function __construct(
         private readonly S3Client $s3Client,
+        private readonly AntivirusScanner $antivirus,
         private readonly string $awsS3Bucket,
         private readonly string $awsS3Prefix,
         private readonly string $awsS3PublicEndpoint,
@@ -55,6 +56,13 @@ class AudioUploadService
      * What the browser is allowed to hand over: whatever MediaRecorder produces, which is WebM/Opus
      * on Chrome and Ogg/Opus on Firefox. A WebM container carrying only an audio track is still
      * reported as video/webm by fileinfo, hence its presence here.
+     *
+     * This is the "media" narrowing of the platform upload policy (design/validated/
+     * upload-policy.md) expressed as a sniffed-type allowlist rather than through
+     * App\Service\UploadPolicy, and stricter than it: the recording arrives as a Blob from
+     * MediaRecorder with a synthetic name, so there is no filename to run the extension rules
+     * against - and the closed list below already decides both what is accepted and the
+     * Content-Type the object is served with.
      */
     private const array AUDIO_MIME_TYPES = [
         'audio/webm' => 'audio/webm',
@@ -80,6 +88,12 @@ class AudioUploadService
         if (null === $contentType) {
             return false;
         }
+
+        // This service writes to the bucket through the raw S3 client, so hooking the scanner into
+        // FileUploadService alone would have left every audio recording unscanned - and nothing
+        // would have said so. See App\Tests\Service\BucketWritePathsTest, which fails when a fourth
+        // path appears.
+        $this->antivirus->assertClean($file->getPathname(), $file->getClientOriginalName());
 
         $stream = fopen($file->getPathname(), 'r') ?: throw new \RuntimeException(sprintf('Could not open "%s" for reading.', $file->getPathname()));
 

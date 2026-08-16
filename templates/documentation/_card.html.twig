@@ -1,6 +1,6 @@
-{# La carte d'article des écrans 2a/2b : tag, titre, accroche, puis auteur et date poussés en bas.
-   Le statut n'est écrit nulle part sauf quand il n'est pas « publié » - seul un gestionnaire voit
-   alors la pastille, puisque lui seul voit ces articles-là. #}
+{# The article card of screens 2a/2b: tag, title, teaser, then author and date pushed to the bottom.
+   The status is written nowhere except when it is not « published » - only a manager then sees the
+   chip, since they alone see those articles. #}
 <a class="cm-doc-card" href="{{ path('app_documentation_article', {id: article.id}) }}">
     {% set firstTag = article.tags|first %}
     <span class="cm-doc-card__tag">{{ firstTag ? firstTag.label : '' }}</span>

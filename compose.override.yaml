@@ -197,7 +197,33 @@ services:
       mc anonymous set download local/$$AWS_S3_BUCKET
       "
 
+  # Virus scanning, OPT-IN in dev (App\Service\AntivirusScanner). Start it with
+  #
+  #   docker compose --profile antivirus up -d clamav
+  #
+  # and put ANTIVIRUS_DSN=clamav://clamav:3310 in .env.dev.local. Without both, scanning is simply
+  # disabled - which is the normal state of dev and of CI, and a deliberately different state from
+  # "configured but unreachable", which refuses every upload.
+  #
+  # Behind a profile rather than started by default because ClamAV downloads a few hundred
+  # megabytes of signatures on first boot and holds roughly 1.5 GB of RAM: nobody should pay that
+  # to run the test suite. This is also how the EICAR test string gets exercised against a real
+  # clamd rather than against a stub.
+  clamav:
+    image: clamav/clamav:1.4
+    # The official ClamAV images publish **amd64 only** - there is no arm64 manifest for any tag.
+    # Pinned explicitly so an Apple Silicon dev machine runs it under emulation instead of failing
+    # the pull with "no matching manifest for linux/arm64/v8". Slow to start there (measured: a few
+    # minutes for clamd to come up), which is another reason this sits behind a profile. The
+    # production host is amd64, so compose.prod.yaml needs no pin.
+    platform: linux/amd64
+    profiles: [antivirus]
+    restart: unless-stopped
+    volumes:
+      - clamav_db:/var/lib/clamav
+
 volumes:
   database_data:
   ldap_data:
   minio_data:
+  clamav_db:

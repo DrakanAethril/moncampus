@@ -1,21 +1,21 @@
-{# Assistant « Nouveau travail » (design_handoff_creation_travail 2a) - composant réutilisable.
+{# The « Nouveau travail » wizard (design_handoff_creation_travail 2a) - a reusable component.
 
-   Les quatre étapes sont dans le DOM en permanence et assignment_wizard_controller.js n'en montre
-   qu'une : rien n'est enregistré avant « Publier le travail », il n'y a donc ni brouillon ni
-   aller-retour serveur entre les étapes. Ce partiel se monte tel quel en pleine page, en modale ou
-   en panneau - seule son enveloppe change (voir new.html.twig et _wizard_embedded.html.twig).
+   The four steps are permanently in the DOM and assignment_wizard_controller.js only shows one of
+   them: nothing is saved before « Publier le travail », so there is neither a draft nor a server
+   round trip between steps. This partial mounts as is in full page, in a modal or in a panel - only
+   its wrapper changes (see new.html.twig and _wizard_embedded.html.twig).
 
-   `context` porte ce que le point d'entrée sait déjà (classe, options, séance) ; le rattachement
-   séance/temps/matière n'est jamais demandé, il est posé par le contrôleur. #}
-{# Une valeur Stimulus de type Object refuse un tableau : sans lot enregistré, PHP sérialise `[]`
-   et le contrôleur ne se connecte plus du tout. La forme objet est forcée ici plutôt qu'avec
-   JSON_FORCE_OBJECT, qui transformerait aussi les groupes eux-mêmes en objets. #}
+   `context` carries what the entry point already knows (class, options, séance); the
+   séance/part/matière attachment is never asked for, it is set by the controller. #}
+{# A Stimulus value of type Object refuses an array: with no batch saved, PHP serialises `[]` and
+   the controller stops connecting altogether. The object form is forced here rather than with
+   JSON_FORCE_OBJECT, which would also turn the groups themselves into objects. #}
 {% set group_members_json = groupBatchMembers|length > 0 ? groupBatchMembers|json_encode : '{}' %}
-{# Libellés propres à l'assistant : ceux de AssignmentAudienceType servent ailleurs (cahier de
-   texte, écrans de paramétrage) et n'ont pas à changer pour cette maquette. #}
-{# Une publication refusée revient sur la page avec ses erreurs. L'assistant doit alors s'ouvrir sur
-   l'étape fautive et non sur la première : le message vit dans son étape, et resterait invisible.
-   Les champs sont listés par étape, dans l'ordre où l'assistant les pose. #}
+{# Labels specific to the wizard: those of AssignmentAudienceType serve elsewhere (cahier de texte,
+   settings screens) and have no reason to change for this mockup. #}
+{# A refused publication comes back to the page with its errors. The wizard must then open on the
+   offending step and not on the first one: the message lives in its step, and would stay invisible.
+   The fields are listed by step, in the order the wizard lays them out. #}
 {% set steps_fields = {
     1: ['program', 'audienceType', 'options', 'groupBatch'],
     2: ['nature', 'mandatory', 'graded'],
@@ -31,10 +31,10 @@
     'manual': 'assignmentWizardAudienceStudentPickLabel',
     'group_batch': 'assignmentWizardAudienceByGroupsLabel',
 } %}
-{# `action` explicite : monté dans un cadre Turbo, une action vide viserait l'écran hôte et non
-   l'assistant. `data-turbo-frame="_top"` fait sortir l'envoi du cadre - la réponse est soit
-   l'écran d'origine retrouvé, soit l'assistant en pleine page avec ses erreurs, jamais un écran à
-   recoller dans un cadre qui n'existe plus. #}
+{# Explicit `action`: mounted in a Turbo frame, an empty action would target the host screen and not
+   the wizard. `data-turbo-frame="_top"` takes the submission out of the frame - the answer is either
+   the screen of origin found again, or the wizard full page with its errors, never a screen to glue
+   back into a frame that no longer exists. #}
 <div class="cm-wizard-card">
     {{ form_start(form, {action: wizardAction, attr: {
         'data-controller': 'assignment-wizard',
@@ -49,8 +49,8 @@
         'data-turbo-frame': context.isEmbedded ? '_top' : null,
     }}) }}
         <div class="cm-wizard">
-            {# Colonne des étapes : cliquables librement, l'état se lit à la pastille - faite,
-               courante, ou à venir. #}
+            {# Step column: freely clickable, the state reads from the chip - done, current, or
+               upcoming. #}
             <nav class="cm-wizard__rail" aria-label="{{ 'assignmentWizardStepsLabel'|trans }}">
                 {% for step in 1..4 %}
                     <button type="button" class="cm-wizard__step" data-assignment-wizard-target="railStep" data-step="{{ step }}" data-action="assignment-wizard#goToStep">
@@ -80,8 +80,8 @@
                     {% do form.program.setRendered %}
                     {{ form_errors(form.program) }}
 
-                    {# Un travail est toujours assigné à une classe : sans elle l'étape bloque, et
-                       le bouton Continuer reste éteint. #}
+                    {# An assignment is always assigned to a class: without it the step blocks, and
+                       the Continuer button stays off. #}
                     <div class="cm-wizard__banner d-none" data-assignment-wizard-target="noClassBanner">
                         <span aria-hidden="true">⚠️</span>
                         <span>{{ 'assignmentWizardNoClassWarning'|trans }}</span>
@@ -99,9 +99,9 @@
                         </div>
                         {% do form.audienceType.setRendered %}
 
-                        {# Par option : les options de la classe choisie, les autres restant dans le
-                           DOM mais masquées - le serveur retire à la publication celles qui ne sont
-                           pas de la classe. #}
+                        {# By option: the options of the chosen class, the others staying in the DOM
+                           but hidden - on publication the server strips those that do not belong to
+                           the class. #}
                         <div class="cm-audience-pane d-none" data-assignment-wizard-target="audiencePane" data-audience="option">
                             <div class="cm-pillpick">
                                 {% for choice in form.options %}
@@ -114,9 +114,9 @@
                             {% do form.options.setRendered %}
                         </div>
 
-                        {# Sélection d'élèves : cases brutes plutôt qu'un champ de formulaire, la
-                           liste dépendant de la classe choisie dans le même écran (même convention
-                           que ProgramAssignmentController). #}
+                        {# Student selection: raw checkboxes rather than a form field, the list
+                           depending on the class chosen in the same screen (same convention as
+                           ProgramAssignmentController). #}
                         <div class="cm-audience-pane d-none" data-assignment-wizard-target="audiencePane" data-audience="manual">
                             <div class="cm-studentpick">
                                 <div class="cm-studentpick__head">
@@ -136,8 +136,8 @@
                             </div>
                         </div>
 
-                        {# Par groupes : un lot enregistré avec l'outil Création de groupes, dont la
-                           composition est figée - viser le lot, et non des groupes recalculés. #}
+                        {# By groups: a batch saved with the Création de groupes tool, whose make-up
+                           is frozen - target the batch, and not recomputed groups. #}
                         <div class="cm-audience-pane d-none" data-assignment-wizard-target="audiencePane" data-audience="group_batch">
                             <div class="cm-inline-field">
                                 <span class="cm-inline-field__label">{{ 'assignmentWizardGroupBatchFieldLabel'|trans }}</span>
@@ -151,7 +151,7 @@
                     </div>
                 </section>
 
-                {# ---------- Étape 2 · Type de travail ---------- #}
+                {# ---------- Step 2 · Work type ---------- #}
                 <section class="cm-wizard__step-panel d-none" data-assignment-wizard-target="stepPanel" data-step="2">
                     <span class="cm-wizard__label">{{ 'assignmentWizardNatureFieldLabel'|trans }}</span>
                     <div class="cm-typegrid">
@@ -213,9 +213,9 @@
 
                     <span class="cm-wizard__label">{{ 'assignmentWizardAttachmentsFieldLabel'|trans }}</span>
                     <div class="cm-attachpick" data-assignment-wizard-target="attachments">
-                        {# Les supports déjà joints. Les décrocher ne les efface pas tout de suite :
-                           la case part avec le formulaire, comme le reste - rien n'est écrit avant
-                           l'enregistrement, à la modification comme à la création. #}
+                        {# The supports already attached. Detaching them does not erase them right
+                           away: the checkbox travels with the form, like the rest - nothing is
+                           written before saving, on edit as on creation. #}
                         {% if isEdit and assignment.attachments|length > 0 %}
                             <div class="cm-chip-list">
                                 {% for attachment in assignment.attachments %}
@@ -241,9 +241,9 @@
                     {% do form.attachmentFiles.setRendered %}
                     {% do form.attachmentLinks.setRendered %}
 
-                    {# Sections conditionnelles : le type choisi à l'étape 2 décide desquelles
-                       s'affichent. Elles restent dans le DOM, le serveur remettant à leur place
-                       les champs qui ne concernent pas le type retenu. #}
+                    {# Conditional sections: the type chosen at step 2 decides which ones are shown.
+                       They stay in the DOM, the server putting back in place the fields that do not
+                       concern the chosen type. #}
                     <div class="cm-wizard__conditional d-none" data-assignment-wizard-target="naturePane" data-natures="to_submit">
                         <span class="cm-wizard__label">
                             {{ 'assignmentWizardProductionsFieldLabel'|trans }}
@@ -303,8 +303,8 @@
                         </div>
                     {% endif %}
 
-                    {# Idem pour un visionnage : la vidéo est déjà choisie, c'est ce dont le travail
-                       parle. #}
+                    {# Same for a viewing: the video is already chosen, it is what the assignment is
+                       about. #}
                     {% if context.videoResource %}
                         <div class="cm-wizard__conditional d-none" data-assignment-wizard-target="naturePane" data-natures="watching">
                             <span class="cm-wizard__label">{{ 'assignmentWizardVideoResourceFieldLabel'|trans }}</span>
@@ -363,8 +363,8 @@
                         </label>
                         {% do form.lateSubmissionAllowed.setRendered %}
 
-                        {# Bandeau des échéances multiples : rappelle, avant de publier, que certains
-                           fichiers ne sont pas attendus pour la même date que le travail. #}
+                        {# Multiple-deadlines banner: recalls, before publishing, that some files are
+                           not due on the same date as the assignment. #}
                         <div class="cm-wizard__banner d-none" data-assignment-wizard-target="multiDueBanner">
                             <span aria-hidden="true">🗓</span>
                             <span data-assignment-wizard-target="multiDueText" data-template="{{ 'assignmentWizardMultipleDueDatesBanner'|trans({'%files%': '%files%'}) }}"></span>
@@ -394,9 +394,9 @@
             <span class="cm-wizard__hint">{{ (isEdit ? 'assignmentWizardEditHint' : 'assignmentWizardNothingSavedHint')|trans }}</span>
             <a href="{{ context.returnUrl }}" class="cm-btn cm-btn--outline"{{ context.isEmbedded ? ' data-turbo-frame="_top"' }}>{{ 'cancelAction'|trans }}</a>
             <button type="button" class="cm-btn cm-btn--outline d-none" data-assignment-wizard-target="backButton" data-action="assignment-wizard#back">{{ 'assignmentWizardBackAction'|trans }}</button>
-            {# type="button" et non "submit" : le même bouton avance de trois étapes avant de
-               publier, et une touche Entrée frappée dans un champ ne doit surtout pas créer le
-               travail depuis l'étape 1. C'est le contrôleur qui déclenche l'envoi, à la fin. #}
+            {# type="button" and not "submit": the same button advances three steps before
+               publishing, and an Enter key pressed in a field must on no account create the
+               assignment from step 1. The controller triggers the submission, at the end. #}
             <button type="button" class="cm-btn cm-btn--primary" data-assignment-wizard-target="nextButton" data-action="assignment-wizard#next"
                     data-continue-label="{{ 'assignmentWizardContinueAction'|trans }}"
                     data-publish-label="{{ (isEdit ? 'submitSaveAction' : 'assignmentWizardPublishAction')|trans }}">{{ 'assignmentWizardContinueAction'|trans }}</button>

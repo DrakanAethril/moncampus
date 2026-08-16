@@ -106,9 +106,9 @@ class EvaluationFormType extends AbstractType
                 'required' => false,
                 'data' => $evaluation?->hasRubric() ?? false,
             ])
-            // Pas de SubmitType : les créas donnent deux boutons d'envoi (« Créer » et « Créer et
-            // saisir → »), écrits directement dans le gabarit et distingués côté contrôleur par le
-            // nom du bouton cliqué.
+            // No SubmitType: the designs give two submit buttons (« Créer » and « Créer et saisir → »),
+            // written directly in the template and told apart on the controller side by the name of
+            // the button clicked.
         ;
     }
 

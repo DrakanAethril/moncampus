@@ -8,12 +8,12 @@ use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
 /**
- * Conditions d'accès (point 3) : deux colonnes sur les quatre hôtes.
+ * Access conditions (point 3): two columns on the four hosts.
  *
- * `access_condition` est nullable et null vaut « aucune condition », donc aucune ligne existante
- * n'est réécrite et rien ne change pour ce qui est déjà en base. `access_condition_display` porte
- * son défaut « locked » côté MySQL comme côté entité : c'est le côté sûr, un grisé injustifié se
- * voit là où un masquage injustifié fait disparaître un travail sans diagnostic.
+ * `access_condition` is nullable and null means « no condition », so no existing row is rewritten and
+ * nothing changes for what is already in the database. `access_condition_display` carries its
+ * « locked » default on the MySQL side as on the entity side: that is the safe side, an unwarranted
+ * greying-out is visible where an unwarranted hiding makes an assignment disappear with no diagnosis.
  */
 final class Version20260812082828 extends AbstractMigration
 {

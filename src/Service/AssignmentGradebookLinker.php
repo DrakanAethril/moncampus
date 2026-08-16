@@ -13,16 +13,16 @@ use Doctrine\ORM\EntityManagerInterface;
 
 /**
  * « Si le travail est noté, une évaluation est créée automatiquement dans le carnet de notes à la
- * réception des rendus » (design_handoff_creation_travail 2a, étape Type).
+ * réception des rendus » (design_handoff_creation_travail 2a, Type step).
  *
- * À la réception, et non à la publication : un travail noté que personne ne rend n'a pas à laisser
- * une colonne vide dans le carnet. La première production reçue fait naître l'évaluation, les
- * suivantes la retrouvent - c'est Assignment::$gradebookEvaluation qui garde le lien, et son
- * existence qui sert de garde-fou contre les doublons.
+ * On reception, and not on publication: a graded assignment nobody hands in has no business leaving
+ * an empty column in the gradebook. The first production received gives birth to the evaluation, the
+ * following ones find it again - Assignment::$gradebookEvaluation keeps the link, and its existence
+ * serves as the safeguard against duplicates.
  *
- * L'évaluation naît sur la matière du travail. Sans matière (travail donné hors séance, dans une
- * classe où l'enseignant en assure plusieurs), il n'y a pas d'endroit où la ranger au carnet et
- * rien n'est créé : le travail reste noté, sa note se saisit à la main.
+ * The evaluation is born on the assignment's matière. With no matière (an assignment given outside a
+ * séance, in a class where the teacher covers several), there is nowhere to file it in the gradebook
+ * and nothing is created: the assignment stays graded, its grade being entered by hand.
  */
 class AssignmentGradebookLinker
 {
@@ -49,8 +49,8 @@ class AssignmentGradebookLinker
         $evaluation->setCreatedBy($assignment->getCreatedBy() ?? $topic->getTeacher());
         $evaluation->setStatus(EvaluationStatus::Planned);
         $evaluation->setLessonSession($assignment->getLessonSession());
-        // Un dépôt par groupe se note une fois pour tout le groupe : la note du rendu alimente le
-        // carnet pour chacun de ses membres.
+        // A submission per group is graded once for the whole group: the submission's grade feeds the
+        // gradebook for each of its members.
         $evaluation->setModality(AssignmentAudienceType::GroupBatch === $assignment->getAudienceType()
             ? EvaluationModality::Group
             : EvaluationModality::Individual);

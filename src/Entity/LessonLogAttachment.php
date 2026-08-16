@@ -44,16 +44,16 @@ class LessonLogAttachment
     private ?string $url = null;
 
     /**
-     * Le temps du cahier de texte auquel le document se rattache (maquette 2a). Les pièces jointes
-     * antérieures au découpage en trois temps sont reprises sur « pendant la séance », qui était le
-     * seul endroit où elles s'affichaient.
+     * The part of the cahier de texte the document hangs off (mockup 2a). Attachments predating the
+     * split into three parts are carried over onto « pendant la séance », which was the only place
+     * they used to be displayed.
      */
     #[ORM\Column(length: 20, enumType: LessonLogSection::class)]
     private LessonLogSection $section = LessonLogSection::During;
 
     /**
-     * Date de visibilité propre au document, qui déroge à celle de sa section - le cas de la
-     * correction publiée après la remise des copies. Null = le document suit sa section.
+     * Visibility date specific to the document, which departs from its section's - the case of the
+     * correction published after the papers are handed in. Null = the document follows its section.
      */
     #[ORM\Column(name: 'visible_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $visibleAt = null;
@@ -151,9 +151,10 @@ class LessonLogAttachment
     }
 
     /**
-     * Un document se lit quand sa date propre le permet, et à défaut quand son temps est publié.
-     * La date propre DÉROGE à la section, elle ne s'y ajoute pas : c'est ce que veut le cas de la
-     * correction, déposée sur un temps déjà lisible mais publiée seulement après la remise.
+     * A document is readable when its own date allows it, and failing that when its part is
+     * published. The document's own date DEPARTS from the section, it does not add to it: that is
+     * what the correction case calls for, filed on an already readable part but only published after
+     * the papers are handed in.
      */
     public function isVisibleFor(?\DateTimeImmutable $now = null): bool
     {

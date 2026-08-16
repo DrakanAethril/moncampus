@@ -26,8 +26,8 @@ class AssignmentCompletionRepository extends ServiceEntityRepository
     }
 
     /**
-     * Les identifiants des travaux qu'un étudiant a déclarés faits, pour trancher en une requête
-     * le « à faire » du « fait » sur une liste entière plutôt qu'un travail à la fois.
+     * The identifiers of the assignments a student has declared done, to tell « to do » from « done »
+     * over a whole list in one query rather than one assignment at a time.
      *
      * @param list<Assignment> $assignments
      *
@@ -82,7 +82,7 @@ class AssignmentCompletionRepository extends ServiceEntityRepository
         return $dates;
     }
 
-    /** Au moins un étudiant a-t-il déclaré ce travail fait ? */
+    /** Has at least one student declared this assignment done? */
     public function hasAnyForAssignment(Assignment $assignment): bool
     {
         return 0 < (int) $this->createQueryBuilder('c')
@@ -94,12 +94,12 @@ class AssignmentCompletionRepository extends ServiceEntityRepository
     }
 
     /**
-     * Combien d'étudiants ont déclaré chaque travail fait, en une requête plutôt qu'une par travail
-     * - le suivi de lecture s'affiche sur toute une séance à la fois.
+     * How many students declared each assignment done, in one query rather than one per assignment -
+     * the read tracking is displayed for a whole séance at a time.
      *
      * @param list<Assignment> $assignments
      *
-     * @return array<int, int> identifiant du travail => nombre de déclarations
+     * @return array<int, int> assignment identifier => number of declarations
      */
     public function countByAssignment(array $assignments): array
     {

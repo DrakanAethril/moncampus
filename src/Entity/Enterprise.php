@@ -34,8 +34,8 @@ class Enterprise
     private ?string $address = null;
 
     /**
-     * Ville, saisie à la création d'une entreprise depuis l'écran 3g (facultative, contrairement
-     * au nom). Distincte de $address, qui est l'adresse postale complète du module UFA.
+     * City, entered when creating a company from screen 3g (optional, unlike the name). Distinct from
+     * $address, which is the full postal address of the UFA module.
      */
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $city = null;

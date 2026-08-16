@@ -1,0 +1,119 @@
+{% extends 'layout/app.html.twig' %}
+
+{# The three-step assistant - upload, dry-run analysis, confirmation - the same shape as the quiz
+   and sequence import assistants.
+
+   Step two is the point of the whole screen: nothing is written until the analysis has been read
+   and confirmed, and a blocking problem refuses the file outright rather than importing what it
+   can. Half an imported wiki is worse than none, because nobody can tell which half. #}
+
+{% block title %}{{ 'wikiImportPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'wiki/_breadcrumb.html.twig' with {
+        wiki: wiki,
+        extra: [{label: 'wikiImportPageHeading'|trans, url: path('app_wiki_import', {id: wiki.id})}],
+    } %}
+{% endblock %}
+
+{% block page_title %}{{ 'wikiImportPageHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    {% include 'wiki/_search_form.html.twig' with {wiki: wiki} %}
+{% endblock %}
+
+{% block main %}
+    <div class="cm-wiki">
+        {% include 'wiki/_rail.html.twig' with {wiki: wiki, tree: tree} %}
+
+        <div class="cm-wiki__content">
+            {% include '_wizard_steps.html.twig' with {
+                stepLabels: ['wikiImportStepUploadLabel'|trans, 'wikiImportStepAnalysisLabel'|trans, 'wikiImportStepConfirmLabel'|trans],
+                currentStepIndex: analysis is null ? 1 : 2,
+            } only %}
+
+            {% if analysis is null %}
+                <p class="cm-wiki__placeholder">{{ 'wikiImportLeadText'|trans }}</p>
+
+                <form method="post" action="{{ path('app_wiki_import', {id: wiki.id}) }}" enctype="multipart/form-data" class="cm-wiki-import">
+                    <input type="hidden" name="_token" value="{{ csrf_token('wiki_import') }}">
+                    <input type="hidden" name="step" value="analyse">
+                    <label class="form-label" for="wiki-archive">{{ 'wikiImportFileFieldLabel'|trans }}</label>
+                    <input type="file" id="wiki-archive" name="archive" accept=".zip" required class="form-control">
+                    <span class="form-hint">{{ 'wikiImportFileHelpText'|trans }}</span>
+                    <div class="cm-wiki__editor-actions">
+                        <button type="submit" class="cm-btn cm-btn--primary">{{ 'wikiImportAnalyseAction'|trans }}</button>
+                    </div>
+                </form>
+            {% else %}
+                <p class="cm-wiki-regime">
+                    {{ (analysis.kind == 'moncampus' ? 'wikiImportKindMoncampusText' : 'wikiImportKindGenericText')|trans }}
+                </p>
+
+                {% if analysis.blocking is not empty %}
+                    <ul class="cm-wiki-import__blocking">
+                        {% for message in analysis.blocking %}
+                            <li>{{ message|trans }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+
+                {% if analysis.warnings is not empty %}
+                    <ul class="cm-wiki-import__warnings">
+                        {% for warning in analysis.warnings %}
+                            <li>{{ warning.message|trans }}{% if warning.detail %} — <code>{{ warning.detail }}</code>{% endif %}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+
+                {% if analysis.pages is not empty %}
+                    <p class="cm-wiki-import__summary">
+                        {{ 'wikiImportSummaryText'|trans({'%pages%': analysis.pages|length, '%attachments%': analysis.attachments}) }}
+                    </p>
+                    <ul class="cm-wiki-list">
+                        {% for page in analysis.pages|slice(0, 60) %}
+                            <li class="cm-wiki-list__row">
+                                <span class="cm-wiki-list__title" style="padding-left: {{ page.depth * 14 }}px">{{ page.title }}</span>
+                                <span class="cm-wiki-list__subtitle"><code>{{ page.path }}</code></span>
+                                {% if page.attachments %}<span class="cm-badge cm-badge--gray">{{ page.attachments }}</span>{% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    {% if analysis.pages|length > 60 %}
+                        {# Never a silent truncation: the list is capped, the count is not. #}
+                        <p class="cm-wiki__placeholder">{{ 'wikiImportListTruncatedText'|trans({'%count%': analysis.pages|length - 60}) }}</p>
+                    {% endif %}
+                {% endif %}
+
+                <form method="post" action="{{ path('app_wiki_import', {id: wiki.id}) }}" class="cm-wiki-import">
+                    <input type="hidden" name="_token" value="{{ csrf_token('wiki_import') }}">
+                    <input type="hidden" name="step" value="confirm">
+
+                    <label class="form-label" for="wiki-import-target">{{ 'wikiImportTargetFieldLabel'|trans }}</label>
+                    <select id="wiki-import-target" name="target" class="form-select">
+                        {# A select used for input, so it carries a placeholder - here the "at the
+                           root of the wiki" option, which is a real choice rather than an absence. #}
+                        <option value="">{{ 'wikiImportTargetRootOption'|trans }}</option>
+                        {% for target in targets %}
+                            <option value="{{ target.id }}">{{ target.title }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <div class="cm-wiki__editor-actions">
+                        <button type="submit" class="cm-btn cm-btn--primary"{{ analysis.importable ? '' : ' disabled' }}>
+                            {{ 'wikiImportConfirmAction'|trans }}
+                        </button>
+                    </div>
+                </form>
+
+                {# Its own form, and a POST: "Annuler" has to actually throw the analysed archive
+                   away, or the screen offers no way back to the upload step. #}
+                <form method="post" action="{{ path('app_wiki_import', {id: wiki.id}) }}" class="cm-wiki-import__reset">
+                    <input type="hidden" name="_token" value="{{ csrf_token('wiki_import') }}">
+                    <input type="hidden" name="step" value="reset">
+                    <button type="submit" class="cm-btn cm-btn--outline">{{ 'wikiImportAnotherFileAction'|trans }}</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

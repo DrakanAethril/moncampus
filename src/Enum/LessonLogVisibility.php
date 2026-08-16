@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Enum;
 
 /**
- * Quand un temps du cahier de texte devient lisible par les étudiants
- * (design_handoff_cahier_de_texte 2a, dropdown « Visibilité de la section »).
+ * When a part of the cahier de texte becomes readable by students
+ * (design_handoff_cahier_de_texte 2a, « Visibilité de la section » dropdown).
  *
- * Le calcul du « est-ce visible maintenant » vit dans App\Entity\LessonLog::isSectionVisible() :
- * AfterSession et Scheduled se résolvent en une date, l'une prise sur la séance, l'autre saisie.
+ * The « is it visible now » computation lives in App\Entity\LessonLog::isSectionVisible():
+ * AfterSession and Scheduled resolve into a date, one taken from the séance, the other entered.
  */
 enum LessonLogVisibility: string
 {
@@ -28,7 +28,7 @@ enum LessonLogVisibility: string
         };
     }
 
-    /** Le choix qui demande une date : les autres se passent de saisie. */
+    /** The choice that asks for a date: the others need no input. */
     public function needsDate(): bool
     {
         return self::Scheduled === $this;

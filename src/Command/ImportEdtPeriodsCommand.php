@@ -25,18 +25,17 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
- * OUTIL DE DÉVELOPPEMENT - peuple une base de dev avec le calendrier des périodes 2026-2027 lu
- * dans design/sources/EDT/2026_06_23_-_Calendrier_2026-2027.xls. N'a pas vocation à tourner en
- * production : les dates sont figées dans le fichier ci-dessous plutôt que relues du classeur,
- * dont le format (une couleur de cellule par formation et par jour) n'est pas exploitable
- * directement.
+ * DEVELOPMENT TOOL - populates a dev database with the 2026-2027 period calendar read from
+ * design/sources/EDT/2026_06_23_-_Calendrier_2026-2027.xls. Not meant to run in production: the
+ * dates are frozen in the file below rather than read back from the workbook, whose format (one
+ * cell color per program and per day) cannot be used directly.
  *
- * Origine des dates : la couleur de présence de chaque formation, jour par jour, recoupée avec les
- * annotations du classeur qui nomment les stages (« Stages CG2 (4 sem) / SIO2 (7 sem) », « Stage
+ * Where the dates come from: each program's presence color, day by day, cross-checked with the
+ * workbook annotations naming the internships (« Stages CG2 (4 sem) / SIO2 (7 sem) », « Stage
  * des CG1 (6 semaines) », « Stages des SIO1 (5 semaines) », « Stages MCO (4 - 5 sem) »).
  *
- * Le classeur ne connaît que « présent / absent » : les fins d'année de CG2, DCG et SIO2 (épreuves
- * du BTS et du DCG) sont des absences qui ne sont PAS des stages, elles restent donc en École.
+ * The workbook only knows « present / absent »: the end of year for CG2, DCG and SIO2 (BTS and DCG
+ * examinations) are absences that are NOT internships, so they stay as school time.
  */
 #[AsCommand(
     name: 'app:import-edt-periods',
@@ -44,15 +43,15 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class ImportEdtPeriodsCommand extends Command
 {
-    /** Le classeur couvre septembre → juin ; on prolonge jusqu'à la fin de l'année scolaire. */
+    /** The workbook covers September → June; we extend to the end of the school year. */
     private const string SPAN_START = '2026-09-01';
     private const string SPAN_END = '2027-07-12';
 
     /**
-     * Périodes hors établissement, par nom court de formation. Tout ce qui n'est pas listé ici est
-     * du temps école : les périodes produites forment une partition continue de l'année, comme le
-     * groupe « Calendrier Bac+3 Info » saisi à la main, puisque c'est ce qu'attend la résolution
-     * date → période (App\Service\InternshipCalendarBuilder::findPeriodForDate()).
+     * Periods away from the school, by program short name. Anything not listed here is school time:
+     * the periods produced form a continuous partition of the year, like the « Calendrier Bac+3
+     * Info » group entered by hand, since that is what the date → period resolution expects
+     * (App\Service\InternshipCalendarBuilder::findPeriodForDate()).
      *
      * @var array<string, list<array{0: string, 1: string, 2: string}>>
      */
@@ -61,12 +60,12 @@ class ImportEdtPeriodsCommand extends Command
         'SIO2' => [['2027-01-04', '2027-02-16', 'Stage (7 semaines)']],
         'CG1' => [['2027-05-18', '2027-06-25', 'Stage (6 semaines)']],
         'CG2' => [['2027-01-04', '2027-01-29', 'Stage (4 semaines)']],
-        // Le classeur annonce 4 à 5 semaines pour un bloc qui ne couvre que 2,5 semaines ouvrées :
-        // le stage court vraisemblablement sur les vacances de Noël, d'où la borne au 1er janvier.
+        // The workbook announces 4 to 5 weeks for a block covering only 2.5 working weeks: the
+        // internship most likely runs over the Christmas holidays, hence the bound at 1 January.
         'MCO1' => [['2026-12-02', '2027-01-01', 'Stage (4 à 5 semaines)']],
         'MCO2' => [['2026-12-02', '2027-01-01', 'Stage (4 à 5 semaines)']],
-        // Alternance par blocs, sans stage nommé : les couleurs donnent trois blocs de cours
-        // (07/09 → 09/10, 04/01 → 12/02, 01/06 → 25/06), le reste est en entreprise.
+        // Block-based alternation, with no named internship: the colors give three teaching blocks
+        // (07/09 → 09/10, 04/01 → 12/02, 01/06 → 25/06), the rest is spent in the company.
         'Bac+3 Info' => [
             ['2026-10-12', '2027-01-03', 'Entreprise - automne'],
             ['2027-02-15', '2027-05-31', 'Entreprise - printemps'],
@@ -159,9 +158,9 @@ class ImportEdtPeriodsCommand extends Command
                 $periods[] = \sprintf('%s (%s → %s)', $label, $start, $end);
             }
 
-            // Le Bac+3 a déjà son « Calendrier Bac+3 Info 2026-2027 » saisi à la main, qui pilote
-            // le livret d'alternance : le calendrier EDT passe derrière lui en priorité, pour ne
-            // rien changer à la résolution date → période existante.
+            // The Bac+3 already has its « Calendrier Bac+3 Info 2026-2027 » entered by hand, which
+            // drives the livret d'alternance: the EDT calendar comes behind it in priority, so as to
+            // change nothing to the existing date → period resolution.
             $priority = 1 + $program->getProgramPeriodGroups()->count();
             $this->entityManager->persist(new ProgramPeriodGroup($program, $group, $priority));
 
@@ -181,12 +180,12 @@ class ImportEdtPeriodsCommand extends Command
     }
 
     /**
-     * Complète les blocs entreprise par les blocs école qui les entourent, de façon à couvrir
-     * l'année sans trou ni chevauchement.
+     * Completes the company blocks with the school blocks surrounding them, so as to cover the year
+     * with neither gap nor overlap.
      *
      * @param list<array{0: string, 1: string, 2: string}> $blocks
      *
-     * @return list<array{0: string, 1: string, 2: string, 3: bool}> libellé, début, fin, entreprise ?
+     * @return list<array{0: string, 1: string, 2: string, 3: bool}> label, start, end, in company?
      */
     private function buildPeriods(array $blocks): array
     {

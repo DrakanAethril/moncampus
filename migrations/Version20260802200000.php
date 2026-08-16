@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 final class Version20260802200000 extends AbstractMigration
 {
     /**
-     * Mêmes contenus que Version20260802180000, réappariés autrement.
+     * The same contents as Version20260802180000, matched differently.
      *
      * @var list<array{0: string, 1: string, 2: string}>
      */
@@ -123,18 +123,18 @@ final class Version20260802200000 extends AbstractMigration
     }
 
     /**
-     * Version20260802180000 n'a retrouvé que 61 séances sur 100. Les 39 manquantes sont exactement
-     * celles dont le titre - de séance ou de séquence - contient une apostrophe : l'export Notion
-     * écrit l'apostrophe typographique (’) là où la base en porte une autre forme. Toute séquence
-     * dont le titre en contient une échouait en bloc, d'où « Techno Web - l’authentification » ou
-     * « Qualité d’un projet web » entièrement absentes.
+     * Version20260802180000 only found 61 séances out of 100. The 39 missing ones are exactly those
+     * whose title - séance or séquence - contains an apostrophe: the Notion export writes the
+     * typographic apostrophe (’) where the database carries another form. Any séquence whose title
+     * contained one failed wholesale, hence « Techno Web - l’authentification » or « Qualité d’un
+     * projet web » being entirely absent.
      *
-     * L'appariement ignore donc l'apostrophe des deux côtés, sous toutes ses formes, plutôt que de
-     * parier sur celle que porte la base. Aucun des 100 couples ne devient ambigu une fois
-     * l'apostrophe retirée - vérifié sur l'export.
+     * The matching therefore ignores the apostrophe on both sides, in all its forms, rather than
+     * betting on the one the database carries. None of the 100 pairs becomes ambiguous once the
+     * apostrophe is removed - checked against the export.
      *
-     * Les 100 entrées sont rejouées, et non les 39 seules : les séances déjà renseignées restent
-     * protégées par la même clause qu'avant, celle qui n'écrit que dans un cahier de texte vide.
+     * All 100 entries are replayed, and not the 39 alone: the séances already filled in stay
+     * protected by the same clause as before, the one that only writes into an empty cahier de texte.
      */
     public function up(Schema $schema): void
     {

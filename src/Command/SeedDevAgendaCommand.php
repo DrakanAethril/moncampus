@@ -21,21 +21,21 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
- * OUTIL DE DÉVELOPPEMENT - transforme les annotations du calendrier annuel
- * (design/sources/EDT/2026_06_23_-_Calendrier_2026-2027.xls, extraites vers agenda-notes.json) en
- * événements d'agenda.
+ * DEVELOPMENT TOOL - turns the annotations of the yearly calendar
+ * (design/sources/EDT/2026_06_23_-_Calendrier_2026-2027.xls, extracted into agenda-notes.json) into
+ * agenda events.
  *
- * Le classeur écrit un texte libre par jour : « BTS Blanc MCO / DCG Blanc », « 17h15 - CC SIO1 »,
- * « JPO (9 - 15h) ». Trois traitements en découlent, tous faits ici plutôt qu'à l'extraction, pour
- * que les règles restent lisibles et modifiables au même endroit :
+ * The workbook writes free text per day: « BTS Blanc MCO / DCG Blanc », « 17h15 - CC SIO1 »,
+ * « JPO (9 - 15h) ». Three treatments follow, all done here rather than at extraction time, so that
+ * the rules stay legible and editable in the same place:
  *
- * 1. une cellule peut porter plusieurs événements, séparés par « / » ;
- * 2. l'horaire est dans le libellé quand il existe, sinon l'événement occupe la journée ;
- * 3. le public se déduit du libellé - « Conseil de classe SIO2 » ne concerne que SIO2 et ses
- *    enseignants, « JPO » concerne tout le monde.
+ * 1. a cell may carry several events, separated by « / »;
+ * 2. the time is in the label when there is one, otherwise the event takes the whole day;
+ * 3. the audience is inferred from the label - « Conseil de classe SIO2 » only concerns SIO2 and
+ *    its teachers, « JPO » concerns everyone.
  *
- * Les jours consécutifs portant le même titre sont fusionnés en un seul événement (les épreuves
- * orales du 25/05 au 04/06 font un événement, pas neuf).
+ * Consecutive days carrying the same title are merged into a single event (the oral examinations
+ * from 25/05 to 04/06 make one event, not nine).
  */
 #[AsCommand(
     name: 'app:seed-dev-agenda',
@@ -46,20 +46,20 @@ class SeedDevAgendaCommand extends Command
     private const string NOTES_FILE = 'design/sources/EDT/agenda-notes.json';
 
     /**
-     * Annotations qui ne sont pas des événements : elles disent qui est présent (déjà porté par
-     * l'emploi du temps) ou quand commence un stage (déjà porté par les périodes).
+     * Annotations that are not events: they say who is present (already carried by the timetable) or
+     * when an internship starts (already carried by the periods).
      */
     private const array SKIPPED = ['Cours MCO', 'Stages', 'Stage des', 'Stage MCO'];
 
     /**
-     * Ciblage par mot-clé, dans l'ordre : la première entrée trouvée dans le libellé gagne.
-     * Chaque règle dit les formations visées et si l'événement s'adresse aux étudiants, aux
-     * enseignants, ou aux deux.
+     * Keyword targeting, in order: the first entry found in the label wins.
+     * Each rule says which programs are targeted and whether the event addresses students, teachers,
+     * or both.
      *
-     * @var list<array{0: string, 1: list<string>, 2: bool, 3: bool}> motif, formations, étudiants, enseignants
+     * @var list<array{0: string, 1: list<string>, 2: bool, 3: bool}> pattern, programs, students, teachers
      */
     private const array TARGETS = [
-        // Conseils et pré-conseils : affaire d'enseignants, pas d'étudiants.
+        // Class councils and pre-councils: a teacher matter, not a student one.
         ['Pré-conseils BTS CG', ['CG1', 'CG2'], false, true],
         ['Pré-conseils BTS SIO', ['SIO1', 'SIO2'], false, true],
         ['Pré-conseil BTS MCO', ['MCO1', 'MCO2'], false, true],
@@ -77,7 +77,7 @@ class SeedDevAgendaCommand extends Command
         ['CC MCO1', ['MCO1'], false, true],
         ['CC DCG', ['DCG'], false, true],
 
-        // Évaluations blanches et examens : les étudiants concernés et leurs enseignants.
+        // Mock evaluations and examinations: the students concerned and their teachers.
         ['DCG Blanc', ['DCG'], true, true],
         ['DCG blanc', ['DCG'], true, true],
         ['BTS Blanc MCO', ['MCO1', 'MCO2'], true, true],
@@ -88,16 +88,16 @@ class SeedDevAgendaCommand extends Command
         ['Epreuves écrites', ['CG2', 'SIO2', 'MCO2'], true, true],
         ['Epreuves orales', ['CG2', 'SIO2', 'MCO2'], true, true],
 
-        // Temps forts d'une seule promotion.
+        // Highlights of a single cohort.
         ['Séminaire rentrée MCO', ['MCO1', 'MCO2'], true, true],
         ['Rentrée Bachelor info', ['Bac+3 Info'], true, true],
         ['Business Game', ['MCO1', 'MCO2'], true, true],
     ];
 
     /**
-     * Cellules qui portent plusieurs événements sans séparateur, ou qui mêlent un événement et une
-     * annotation de stage : le classeur les a écrites sur plusieurs lignes d'une même case, et
-     * l'extraction les a recollées. Réécrites ici avec le « / » qui manque.
+     * Cells carrying several events with no separator, or mixing an event and an internship
+     * annotation: the workbook wrote them on several lines of a single box, and the extraction glued
+     * them back together. Rewritten here with the missing « / ».
      */
     private const array REWRITES = [
         '9h - DCG 13h30 - BTS 1ère année 14h30 - BTS 2ème année' => '9h - Rentrée DCG / 13h30 - Rentrée BTS 1ère année / 14h30 - Rentrée BTS 2ème année',
@@ -114,7 +114,7 @@ class SeedDevAgendaCommand extends Command
         '14: Visio tuteurs Campus' => '14h - Visio tuteurs Campus',
     ];
 
-    /** Horaires connus qui ne se lisent pas dans le libellé, pour éviter des journées entières. */
+    /** Known times that cannot be read from the label, to avoid whole-day events. */
     private const array KNOWN_HOURS = [
         'JPO (9 - 15h)' => ['09:00', '15:00', 'Journée portes ouvertes'],
         'JPO 9h-13h' => ['09:00', '13:00', 'Journée portes ouvertes'],
@@ -193,9 +193,9 @@ class SeedDevAgendaCommand extends Command
             $agendaEvent->setIncludeTeachers($teachers);
             $agendaEvent->setCreatedBy($author);
 
-            // Aucun public « tout le monde » n'existe : AllStaff ne vise que l'administration
-            // (App\Service\AudienceResolver::STAFF_ROLES). Un événement de campus est donc ciblé
-            // sur toutes les formations, étudiants et enseignants compris.
+            // No « everyone » audience exists: AllStaff only targets the administration
+            // (App\Service\AudienceResolver::STAFF_ROLES). A campus-wide event is therefore targeted
+            // at every program, students and teachers included.
             $agendaEvent->setAudienceTypes([MessageAudienceType::Program]);
             foreach ([] === $targetPrograms ? array_values($programs) : $targetPrograms as $program) {
                 $agendaEvent->addProgram($program);
@@ -230,12 +230,12 @@ class SeedDevAgendaCommand extends Command
         return Command::SUCCESS;
     }
 
-    /** Marque les événements issus de cet import, pour pouvoir les reprendre sans toucher au reste. */
+    /** Marks the events coming from this import, so they can be redone without touching the rest. */
     private const string DESCRIPTION = 'Repris du calendrier 2026-2027';
 
     /**
-     * Une cellule → une ou plusieurs entrées datées : découpage sur « / », retrait des annotations
-     * qui n'en sont pas, extraction de l'horaire.
+     * One cell → one or more dated entries: split on « / », removal of the annotations that are not
+     * events, extraction of the time.
      *
      * @param list<array{date: string, note: string}> $notes
      *
@@ -274,12 +274,12 @@ class SeedDevAgendaCommand extends Command
     /** @return list<string> */
     private function splitTitles(string $note): array
     {
-        // « Conseil de classe CG1 DCG Blanc » : deux événements qu'aucun séparateur ne sépare, le
-        // classeur les ayant écrits sur deux lignes de la même cellule. Les cas connus sont listés.
+        // « Conseil de classe CG1 DCG Blanc »: two events that no separator separates, the workbook
+        // having written them on two lines of the same cell. The known cases are listed.
         $note = strtr($note, self::REWRITES);
 
-        // Les « / » qui ne séparent rien - une fraction, un intitulé - sont mis à l'abri le temps
-        // du découpage.
+        // The « / » that separate nothing - a fraction, a title - are put out of harm's way for the
+        // duration of the split.
         $note = str_replace(['CG/SIO', 'CG1/SIO1', '1/2'], ['CG~SIO', 'CG1~SIO1', '1~2'], $note);
 
         return array_values(array_filter(array_map(
@@ -289,8 +289,8 @@ class SeedDevAgendaCommand extends Command
     }
 
     /**
-     * « 18h - Remise des diplômes », « 12h Conseil de classe DCG », « JPO (9 - 15h) » : l'horaire
-     * est dans le texte quand il y est. Sans horaire, l'événement couvre la journée de cours.
+     * « 18h - Remise des diplômes », « 12h Conseil de classe DCG », « JPO (9 - 15h) »: the time is
+     * in the text when it is there at all. With no time, the event covers the teaching day.
      *
      * @return array{0: string, 1: string, 2: string}
      */
@@ -314,8 +314,8 @@ class SeedDevAgendaCommand extends Command
     }
 
     /**
-     * Fusionne les jours consécutifs de même titre : « BTS Blanc MCO » du 4 au 6 novembre fait un
-     * événement de trois jours, pas trois événements.
+     * Merges consecutive days with the same title: « BTS Blanc MCO » from 4 to 6 November makes one
+     * three-day event, not three events.
      *
      * @param list<array{date: string, titre: string, debut: string, fin: string}> $entries
      *

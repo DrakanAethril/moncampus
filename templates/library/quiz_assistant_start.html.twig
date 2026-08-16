@@ -32,7 +32,7 @@
        into the session before anything else happens - the assistant must be resumable from the very
        first click, and a GET that mutates state is a Back button away from a surprise. #}
     <div class="d-flex flex-column gap-3">
-        {# 1. Transposer : le chemin qui ne demande aucun cours. #}
+        {# 1. Transpose: the path that asks for no lesson. #}
         <form method="post" action="{{ path('app_library_quiz_assistant') }}">
             <input type="hidden" name="_token" value="{{ csrf_token('quiz_assistant_start') }}">
             <input type="hidden" name="path" value="transpose">
@@ -50,9 +50,9 @@
             </button>
         </form>
 
-        {# 2. Depuis un cours : la carte porte son propre sélecteur. Un seul select pour deux natures
-           d'objet ("sequence:7" / "seance:42") - deux listes côte à côte laisseraient choisir une
-           séance d'une autre séquence, et ne voudraient plus rien dire ensemble. #}
+        {# 2. From a lesson: the card carries its own picker. A single select for two kinds of object
+           ("sequence:7" / "seance:42") - two lists side by side would let one pick a séance from
+           another séquence, and would no longer mean anything together. #}
         <div class="card cm-audio-card cm-import-choice{{ sequences is empty ? ' opacity-75' }}">
             <div class="cm-audio-card__body">
                 <div class="cm-subhead">
@@ -85,8 +85,8 @@
             </div>
         </div>
 
-        {# 3. Depuis un sujet : rien à choisir ici, les champs sont à l'étape 2 avec le prompt qu'ils
-           remplissent - les taper loin du texte qu'ils produisent, c'est les taper à l'aveugle. #}
+        {# 3. From a topic: nothing to choose here, the fields are on step 2 with the prompt they fill
+           in - typing them far from the text they produce is typing them blind. #}
         <form method="post" action="{{ path('app_library_quiz_assistant') }}">
             <input type="hidden" name="_token" value="{{ csrf_token('quiz_assistant_start') }}">
             <input type="hidden" name="path" value="subject">
@@ -103,9 +103,9 @@
             </button>
         </form>
 
-        {# 4. Un fichier : sort de l'assistant tout de suite. Un fichier n'est pas une conversation,
-           il n'a donc ni prompt ni collage - mais il répond bien à la même question, d'où la carte
-           plutôt qu'un onglet. #}
+        {# 4. A file: leaves the assistant right away. A file is not a conversation, so it has neither
+           prompt nor paste-back - but it does answer the same question, hence the card rather than a
+           tab. #}
         <form method="post" action="{{ path('app_library_quiz_assistant') }}">
             <input type="hidden" name="_token" value="{{ csrf_token('quiz_assistant_start') }}">
             <input type="hidden" name="path" value="csv">

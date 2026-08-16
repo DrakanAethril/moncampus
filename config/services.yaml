@@ -53,9 +53,16 @@ services:
             # storage-level prefix, since it goes through Flysystem rather than the raw S3Client.
             string $awsS3Prefix: '%env(AWS_S3_PREFIX)%'
             string $gotenbergUrl: '%env(GOTENBERG_URL)%'
+            # Blank means scanning is disabled - a different state from "configured but
+            # unreachable", which refuses every upload. See App\Service\AntivirusScanner.
+            string $antivirusDsn: '%env(ANTIVIRUS_DSN)%'
             # Backgrounds of the printed loan conventions - read from disk and inlined as base64,
             # never served to a browser, hence a plain project path rather than an asset.
             string $loanDocumentResourceDir: '%kernel.project_dir%/resources/laptop_loan_documents'
+            # App\Service\WikiPdfStylesheet reads public/katex/ off disk to inline it into the wiki's
+            # PDF export - Gotenberg has no browser origin, so a relative asset URL resolves to
+            # nothing there.
+            string $projectDir: '%kernel.project_dir%'
             string $ldapPasswordAesKey: '%env(AES_KEY)%'
             # "Tout le campus", the root of the documentation base's perimeter - the name of the
             # App\Entity\Group every other perimeter group hangs under in Paramètres > Groupes.
@@ -148,14 +155,14 @@ services:
             $httpClient: '@app.discord_alert_http_client'
 
     # --- Courrier école ---------------------------------------------------------------------
-    # Le stockage et les files du Courrier école vivent dans un *autre compte AWS* que les
-    # uploads ci-dessus (celui qui porte SES et la zone Route 53) et dans une autre région
-    # (eu-west-3, imposée par la réception SES qui exige un bucket colocalisé). D'où un second
-    # jeu complet de client et d'identifiants, plutôt qu'un préfixe sur l'existant : ce ne sont
-    # ni les mêmes clés, ni le même compte, ni la même frontière de données personnelles.
+    # The Courrier école storage and queues live in *another AWS account* than the uploads above
+    # (the one carrying SES and the Route 53 zone) and in another region (eu-west-3, imposed by
+    # SES reception, which requires a co-located bucket). Hence a second complete set of client
+    # and credentials, rather than a prefix on the existing one: these are neither the same keys,
+    # nor the same account, nor the same personal-data boundary.
     #
-    # Services nommés et non autowirés par type : Aws\S3\S3Client est déjà pris par le stockage
-    # des uploads, et les deux ne doivent surtout pas être confondus.
+    # Named services and not autowired by type: Aws\S3\S3Client is already taken by the uploads
+    # storage, and the two must on no account be confused.
     mail.s3_client:
         class: Aws\S3\S3Client
         factory: ['App\Service\S3ClientFactory', 'create']

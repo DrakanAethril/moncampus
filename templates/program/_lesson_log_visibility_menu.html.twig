@@ -1,5 +1,5 @@
-{# Les quatre choix de la maquette, en radios du formulaire principal : changer la visibilité ne
-   sauvegarde plus rien de soi-même, c'est le bouton Enregistrer qui la porte avec le reste. #}
+{# The mockup's four choices, as radios of the main form: changing the visibility no longer saves
+   anything by itself, the Enregistrer button carries it with the rest. #}
 <div class="cm-visibility-menu__title">{{ 'lessonLogVisibilityMenuTitle'|trans }}</div>
 {% for choice in visibilityField %}
     <label class="cm-visibility-option {{ choice.vars.checked ? 'is-selected' }}">
@@ -9,8 +9,8 @@
 {% endfor %}
 {% do visibilityField.setRendered %}
 
-{# La date ne concerne que « choisir date et heure » ; elle reste soumise dans tous les cas, le
-   modèle l'effaçant lui-même dès qu'un autre choix est retenu. #}
+{# The date only concerns « choisir date et heure »; it stays submitted in every case, the model
+   clearing it itself as soon as another choice is kept. #}
 <div class="mt-2">{{ form_widget(visibleAtField) }}</div>
 {% do visibleAtField.setRendered %}
 

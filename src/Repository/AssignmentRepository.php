@@ -37,12 +37,12 @@ class AssignmentRepository extends ServiceEntityRepository
     }
 
     /**
-     * La liste « Travaux » de l'enseignant (design_handoff_creation_travail 2b) : ses travaux sur
-     * toutes ses classes à la fois, du plus proche au plus lointain - un travail échu se lit en
-     * tête parce que c'est celui dont les rendus arrivent, pas parce qu'il est vieux.
+     * The teacher's « Travaux » list (design_handoff_creation_travail 2b): their assignments across
+     * all their classes at once, from the nearest to the furthest - an overdue assignment reads at
+     * the top because it is the one whose submissions are coming in, not because it is old.
      *
-     * $creator restreint aux travaux donnés par l'enseignant lui-même ; null (personnel) rend ceux
-     * de toute l'équipe sur les classes visées.
+     * $creator restricts to the assignments given by the teacher themselves; null (staff) returns
+     * those of the whole team on the classes targeted.
      *
      * @param list<Program> $programs
      *
@@ -71,8 +71,8 @@ class AssignmentRepository extends ServiceEntityRepository
         return $builder->getQuery()->getResult();
     }
 
-    // Les travaux donnés depuis le cahier de texte d'une séance (maquette 2a), tous temps confondus
-    // - le contrôleur les range ensuite par temps.
+    // The assignments given from a séance's cahier de texte (mockup 2a), all parts together - the
+    // controller then sorts them by part.
     /** @return list<Assignment> */
     public function findForLessonSession(LessonSession $session): array
     {
@@ -87,9 +87,9 @@ class AssignmentRepository extends ServiceEntityRepository
     }
 
     /**
-     * Tout le travail d'un étudiant, en retard compris - ce que la page « Travail à réaliser » (4a)
-     * montre, contrairement à la carte du tableau de bord qui s'en tient à ce qui vient.
-     * L'appartenance au public reste filtrée par l'appelant via AssignmentAudienceResolver.
+     * All of a student's work, overdue included - what the « Travail à réaliser » page (4a) shows,
+     * unlike the dashboard card, which sticks to what is coming.
+     * Membership of the audience is still filtered by the caller through AssignmentAudienceResolver.
      *
      * @param list<Program> $programs
      *
@@ -106,8 +106,8 @@ class AssignmentRepository extends ServiceEntityRepository
             ->leftJoin('a.options', 'o')
             ->leftJoin('a.lessonSession', 'l')
             ->where('a.program IN (:programs)')
-            // Un travail donné depuis une séance n'existe pour l'étudiant qu'une fois publié ; les
-            // devoirs de l'écran historique ont été publiés par la migration, ils passent donc tous.
+            // An assignment given from a séance only exists for the student once published; the
+            // assignments of the historical screen were published by the migration, so they all pass.
             ->andWhere('a.visibleAt IS NOT NULL AND a.visibleAt <= :now')
             ->setParameter('programs', $programs)
             ->setParameter('now', $now)

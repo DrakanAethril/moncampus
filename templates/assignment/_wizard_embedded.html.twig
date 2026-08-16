@@ -1,9 +1,9 @@
-{# Montage en modale ou en panneau de l'assistant (2a) : la même carte, posée par-dessus l'écran
-   d'où on l'a ouvert. Rendu en fragment - sans layout - pour être chargé dans un cadre Turbo par
-   l'écran appelant, qui garde ainsi son propre contenu derrière.
+{# Modal or panel mounting of the wizard (2a): the same card, laid over the screen it was opened from.
+   Rendered as a fragment - with no layout - so it can be loaded into a Turbo frame by the calling
+   screen, which thus keeps its own content behind it.
 
-   Le contenu, lui, est rigoureusement le même qu'en pleine page : c'est ce que veut dire
-   « composant réutilisable ». #}
+   The content itself is rigorously the same as in full page: that is what « reusable component »
+   means. #}
 <turbo-frame id="assignment-wizard">
     <a href="{{ context.returnUrl }}" class="cm-panel-backdrop" aria-label="{{ 'cancelAction'|trans }}" data-turbo-frame="_top"></a>
     <div class="cm-wizard-shell cm-wizard-shell--{{ context.mode }}" role="dialog" aria-modal="true" aria-label="{{ (isEdit ? 'assignmentWizardEditPageHeading' : 'assignmentWizardPageHeading')|trans }}">

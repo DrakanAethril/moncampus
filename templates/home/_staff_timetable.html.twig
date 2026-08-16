@@ -13,8 +13,8 @@
     <div class="card" data-controller="staff-timetable">
         <div class="card-header">
             <h3 class="card-title">{{ 'homeStaffMatrixCardTitle'|trans }}</h3>
-            {# Axe de lecture de la matrice. Un GET dans le turbo-frame, comme le sélecteur de
-               date : c'est le serveur qui regroupe les séances, le jour affiché suit. #}
+            {# Reading axis of the matrix. A GET inside the turbo-frame, like the date picker: it is
+               the server that groups the séances, the day displayed follows. #}
             <form method="get" action="{{ path('app_home_staff_timetable') }}" class="ms-3" data-staff-timetable-target="viewForm">
                 <input type="hidden" name="day" value="{{ timetable.day|date('Y-m-d') }}">
                 <select name="view" class="form-select form-select-sm" style="width: auto;"
@@ -100,8 +100,8 @@
                                     {% set block_body %}
                                         <span class="cm-matrix__block-hours">{{ block.startLabel }} – {{ block.endLabel }}</span>
                                         <span class="cm-matrix__block-title">{{ session.displayName }}{% if extra > 0 %} <span class="cm-matrix__block-more">+{{ extra }}</span>{% endif %}</span>
-                                        {# En vue Salles, la salle est déjà le nom de la ligne : c'est la
-                                           formation qui manquerait sinon. #}
+                                        {# In the Salles view, the room is already the row's name: it is
+                                           the program that would be missing otherwise. #}
                                         {% set block_place = timetable.view == 'rooms' ? session.program.displayShortName : (session.classRoom ? session.classRoom.name : '') %}
                                         <span class="cm-matrix__block-meta">{{ block_place }}{% if session.teacher %}{% if block_place %} · {% endif %}{{ session.teacher.displayName ?? session.teacher.username }}{% endif %}</span>
                                     {% endset %}

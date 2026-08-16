@@ -282,17 +282,17 @@
                                 <div class="dropdown-menu">
                                     <a class="dropdown-item {{ current_route == 'app_ufa' ? 'active' }}" href="{{ path('app_ufa') }}">{{ 'ufaDashboardNavLabel'|trans }}</a>
                                     {% set ufa_formations_list = ufa_nav_formations() %}
-                                    {# Purement une liste : aucune entrée "Nouvelle UFA" ici, on ne crée pas d'UFA.
-                                       Une UFA est une formation portant la modalité alternance, donc elle naît des
-                                       écrans de paramétrage pédagogique et apparaît ici toute seule. #}
+                                    {# Purely a list: no "Nouvelle UFA" entry here, one does not create a UFA.
+                                       A UFA is a program carrying the alternance modality, so it is born of the
+                                       pedagogical settings screens and appears here on its own. #}
                                     <div class="dropend">
                                         <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_ufa_formation' ? 'active' }}" href="#navbar-ufa-formations" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                                             {{ 'ufaFormationsNavLabel'|trans }}
                                         </a>
                                         <div class="dropdown-menu">
-                                            {# Formations réelles, puis les formations de test isolées sous leur
-                                               propre en-tête - même disposition que les groupes du menu Section
-                                               plus haut. L'en-tête n'apparaît que s'il y a quelque chose dessous. #}
+                                            {# Real programs, then the test programs isolated under their
+                                               own header - same layout as the groups of the Section menu
+                                               above. The header only appears if there is something below it. #}
                                             {% for formation in ufa_formations_list.regular %}
                                                 <a class="dropdown-item {{ current_route starts with 'app_ufa_formation' and app.request.attributes.get('id') == formation.id ? 'active' }}" href="{{ path('app_ufa_formation_evaluation_periods', {id: formation.id}) }}">{{ formation.displayShortName }}</a>
                                             {% endfor %}
@@ -428,12 +428,36 @@
                            itself - the two app-download entries keep the ROLE_ADMIN gate they were
                            given by explicit product request, so a student sees "Ressources" with
                            the single entry they may use. #}
-                        {% set resources_is_active = current_route starts with 'app_resources_' or current_route starts with 'app_documentation' %}
+                        {% set resources_is_active = current_route starts with 'app_resources_' or current_route starts with 'app_documentation' or current_route starts with 'app_wiki' %}
                         <li class="nav-item dropdown {{ resources_is_active ? 'active' }}">
                             <a class="nav-link dropdown-toggle" href="#navbar-resources" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ resources_is_active ? ' aria-current="page"' }}>
                                 <span class="nav-link-title">{{ 'resourcesNavLabel'|trans }}</span>
                             </a>
                             <div class="dropdown-menu">
+                                {# Wikis, first entry, unfolding into the three questions a user
+                                   actually asks. Same dropend shape as UFA > Formations and
+                                   Gestion > Annuaire - Bootstrap disables Popper inside a .navbar,
+                                   so placement is CSS-only and nav_submenu_placement_controller.js
+                                   reframes what overflows; with three short entries the overflow it
+                                   exists for cannot occur here.
+
+                                   Hidden from tutors and the other outside accounts, which are
+                                   excluded from the feature entirely - the same posture messaging
+                                   takes, and enforced again at the controller's door. #}
+                                {% if not is_granted('ROLE_TUTOR') and not is_granted('ROLE_EXTERNAL') %}
+                                    <div class="dropend">
+                                        <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_wiki' ? 'active' }}" href="#navbar-resources-wikis" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                            {{ 'wikiNavLabel'|trans }}
+                                        </a>
+                                        <div class="dropdown-menu">
+                                            <a class="dropdown-item {{ current_route == 'app_wiki_personal' ? 'active' }}" href="{{ path('app_wiki_personal') }}">{{ 'wikiPersonalNavLabel'|trans }}</a>
+                                            <a class="dropdown-item {{ current_route == 'app_wiki_shared' ? 'active' }}" href="{{ path('app_wiki_shared') }}">{{ 'wikiSharedNavLabel'|trans }}</a>
+                                            {% if is_granted('ROLE_TEACHER') or is_staff() %}
+                                                <a class="dropdown-item {{ current_route == 'app_wiki_students' ? 'active' }}" href="{{ path('app_wiki_students') }}">{{ 'wikiStudentsNavLabel'|trans }}</a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endif %}
                                 <a class="dropdown-item {{ current_route starts with 'app_documentation' ? 'active' }}" href="{{ path('app_documentation') }}">{{ 'documentationNavLabel'|trans }}</a>
                                 {% if is_granted('ROLE_ADMIN') %}
                                     <a class="dropdown-item {{ current_route == 'app_resources_mobile' ? 'active' }}" href="{{ path('app_resources_mobile') }}">{{ 'resourcesMobileAppNavLabel'|trans }}</a>

@@ -11,16 +11,16 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * L'estimation qu'un étudiant fait de sa propre note, pour un travail de nature Autoévaluation
- * (design_handoff_carnet_de_notes, PROMPT_MODIFICATIONS §9, écrans 5b/5c).
+ * The estimate a student makes of their own grade, for an assignment of the Autoévaluation nature
+ * (design_handoff_carnet_de_notes, PROMPT_MODIFICATIONS §9, screens 5b/5c).
  *
- * La ligne existe dès le premier brouillon (« Reprendre plus tard ») ; $validatedAt marque le
- * passage à l'estimation définitive, qui ne se reprend plus - c'est la promesse faite à l'étudiant
- * sur l'écran de saisie, et ce qui rend la comparaison honnête.
+ * The row exists from the first draft (« Reprendre plus tard »); $validatedAt marks the move to the
+ * final estimate, which cannot be taken up again - that is the promise made to the student on the
+ * entry screen, and what makes the comparison honest.
  *
- * $estimatedValue est toujours renseigné, y compris quand l'évaluation porte un barème détaillé :
- * il vaut alors la somme des $answers, figée à la validation plutôt que recalculée à la lecture,
- * de sorte qu'un barème retouché après coup ne réécrive pas l'estimation d'un étudiant.
+ * $estimatedValue is always filled in, including when the evaluation carries a detailed rubric: it is
+ * then the sum of the $answers, frozen on submission rather than recomputed on reading, so that a
+ * rubric edited afterwards does not rewrite a student's estimate.
  */
 #[ORM\Entity(repositoryClass: SelfAssessmentRepository::class)]
 #[ORM\Table(name: 'self_assessment')]

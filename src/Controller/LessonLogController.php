@@ -59,9 +59,9 @@ class LessonLogController extends AbstractController
     }
 
     /**
-     * Vue cours (design_handoff_cahier_de_texte 1b) : où en est le cahier de texte d'une formation,
-     * séance par séance. Écran de navigation et de repérage des trous, pas d'édition - la saisie se
-     * fait sur la page de séance, vers laquelle chaque ligne renvoie.
+     * Course view (design_handoff_cahier_de_texte 1b): where a program's cahier de texte stands,
+     * séance by séance. A screen for navigating and spotting the gaps, not for editing - entry
+     * happens on the séance page, which every row links to.
      */
     #[Route(path: '/programs/{id}/lesson-log', name: 'app_program_lesson_logs')]
     public function courseView(int $id, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, AssignmentRepository $assignmentRepository, AssignmentViewRepository $viewRepository, AssignmentCompletionRepository $completionRepository, LessonLogAttachmentViewRepository $attachmentViewRepository, ProgramStudentOptionRepository $studentOptionRepository, AssignmentAudienceResolver $audienceResolver, LessonLogBoard $board): Response
@@ -69,9 +69,9 @@ class LessonLogController extends AbstractController
         $program = $this->findOrNotFound($id, $repository);
         $this->assertProgramFeatureEnabled($program->isTimetableManagementEnabled());
 
-        // Écran d'enseignant, et non une version « liste » du cahier de texte : il montre chaque
-        // séance sans égard pour la visibilité réglée temps par temps, et le suivi de lecture de la
-        // classe avec. Il se ferme donc aux étudiants plutôt que de se filtrer.
+        // A teacher screen, and not a « list » version of the cahier de texte: it shows every
+        // séance regardless of the visibility set part by part, and the class's read tracking with
+        // it. So it closes itself to students rather than filtering itself.
         if (!$this->accessChecker->isProgramTeacher($program)) {
             throw $this->createAccessDeniedException();
         }
@@ -122,8 +122,8 @@ class LessonLogController extends AbstractController
         $rows = $rowsByWeek[$week->format('Y-m-d')] ?? [];
         $filled = \count(array_filter($rows, static fn (array $row): bool => 'filled' === $row['state']));
 
-        // La séance mise en aperçu : celle demandée, sinon la première non remplie, sinon la
-        // dernière - ce qu'un enseignant vient chercher en ouvrant cet écran.
+        // The séance put in preview: the one asked for, else the first unfilled one, else the last
+        // - what a teacher comes looking for when opening this screen.
         // Scoped to the displayed week, otherwise the preview would describe a session that isn't
         // in the list.
         $selectedId = QueryValue::int($request, 'seance');
@@ -139,8 +139,8 @@ class LessonLogController extends AbstractController
         // The week can be empty (holidays, internship), in which case there is nothing to preview.
         $selected ??= [] === $rows ? null : $rows[array_key_last($rows)];
 
-        // Le suivi de lecture de la séance en aperçu : c'est ici qu'on vient voir où en est la
-        // classe, autant l'y dire plutôt que d'obliger à ouvrir la séance pour le savoir.
+        // Read tracking for the previewed séance: this is where one comes to see where the class
+        // stands, so it may as well be said here rather than forcing the séance open to find out.
         $selectedSession = $selected['session'] ?? null;
         $selectedWorks = null !== $selectedSession ? $this->worksBySection($assignmentRepository, $selectedSession) : [];
 
@@ -220,9 +220,9 @@ class LessonLogController extends AbstractController
         $works = $this->worksBySection($assignmentRepository, $session);
         $sectionViews = $this->sectionViews($program, $log, $works);
 
-        // Donner ou modifier un travail se fait dans l'assistant (design_handoff_creation_travail
-        // 2a), monté en modale par-dessus cette page depuis _lesson_log_works.html.twig : la séance
-        // n'a plus son propre formulaire de travail, seulement le cadre où l'assistant se pose.
+        // Giving or editing an assignment happens in the wizard (design_handoff_creation_travail
+        // 2a), mounted as a modal over this page from _lesson_log_works.html.twig: the séance no
+        // longer has its own assignment form, only the frame the wizard settles into.
 
         return $this->render('program/lesson_log.html.twig', [
             'program' => $program,
@@ -230,9 +230,9 @@ class LessonLogController extends AbstractController
             'log' => $log,
             'form' => $form,
             'canEdit' => $canEdit,
-            // Les outils d'enseignant que la page propose sans qu'ils demandent le droit de
-            // modifier CETTE séance : la vue cours et le suivi des autoévaluations, ouverts à
-            // toute l'équipe de la formation, fermés aux étudiants.
+            // The teacher tools this page offers without their requiring the right to edit THIS
+            // séance: the course view and the self-assessment tracking, open to the whole program
+            // team, closed to students.
             'canViewTeacherTools' => $this->accessChecker->isProgramTeacher($program),
             'attachmentForm' => $canEdit ? $this->createForm(LessonLogAttachmentType::class) : null,
             'sections' => LessonLogSection::cases(),
@@ -240,15 +240,15 @@ class LessonLogController extends AbstractController
             'anySectionShown' => [] !== array_filter($sectionViews, static fn (array $view): bool => $view['shown']),
             'sequenceStrip' => $this->sequenceStrip($placementRepository, $session),
             'importSuggestions' => $canEdit ? $importer->suggestionsFor($session) : [],
-            // La séance de bibliothèque dont ce créneau est issu, s'il l'est - première entrée du
-            // menu d'import. Déjà résolue plus bas pour le pré-remplissage, réutilisée telle quelle.
+            // The library séance this slot came from, if it did - first entry of the import menu.
+            // Already resolved further down for pre-filling, reused as is.
             'importBrowsable' => $canEdit ? $importer->browsableFor($session) : [],
             'documentSection' => LessonLogSection::tryFrom((string) $request->query->get('document')),
             'workTracking' => $canEdit ? $this->workTracking($works, $viewRepository, $completionRepository, $audienceResolver) : [],
             'documentTracking' => $canEdit ? $this->attachmentTracking($log, $session, $attachmentViewRepository, $studentOptionRepository) : null,
-            // Les travaux déjà commencés par des étudiants : la suppression les prévient autrement.
+            // The assignments students have already started: deletion warns about them differently.
             'worksWithProduction' => $canEdit ? $importer->worksWithProduction($session) : [],
-            // Sert à ne demander confirmation que lorsque l'import écrase réellement quelque chose.
+            // Used to ask for confirmation only when the import really overwrites something.
             'importHasContent' => $canEdit && $importer->hasContent($session),
             // Only offered when it exists - see design/validated/teaching-sequence-library.md's
             // "relationship to part A". Part A fully works without part C ever being built.
@@ -257,19 +257,19 @@ class LessonLogController extends AbstractController
     }
 
     /**
-     * Ce que chaque temps laisse voir à qui regarde. La visibilité réglée par l'enseignant
-     * (maquette 2a) ne servait jusqu'ici qu'à s'afficher : elle s'applique ici, et rien qu'ici,
-     * pour que les trois règles restent lisibles au même endroit.
+     * What each part lets whoever is looking see. The visibility set by the teacher (mockup 2a) so
+     * far only served to display itself: it is applied here, and here only, so that the three rules
+     * stay legible in the same place.
      *
-     * - le contenu d'un temps suit la visibilité de ce temps ;
-     * - un document suit sa date propre quand il en a une, sinon son temps (voir
-     *   LessonLogAttachment::isVisibleFor()) ;
-     * - un travail suit sa propre publication, comme partout ailleurs dans l'application : il vit
-     *   aussi dans « Travail à réaliser », le cacher ici ne le cacherait pas là-bas.
+     * - a part's content follows that part's visibility;
+     * - a document follows its own date when it has one, otherwise its part (see
+     *   LessonLogAttachment::isVisibleFor());
+     * - an assignment follows its own publication, as everywhere else in the application: it also
+     *   lives in « Travail à réaliser », and hiding it here would not hide it there.
      *
-     * Les enseignants de la formation et le personnel voient tout, y compris ce qui n'est pas
-     * publié - c'est leur écran de travail. Le droit de modifier CETTE séance n'entre pas en
-     * ligne de compte : un collègue qui relit la séance d'un autre n'est pas un étudiant.
+     * The program's teachers and the staff see everything, including what is not published - this
+     * is their working screen. The right to edit THIS séance does not come into it: a colleague
+     * reading someone else's séance is not a student.
      *
      * @param array<string, list<Assignment>> $works
      *
@@ -298,8 +298,8 @@ class LessonLogController extends AbstractController
                 'contentVisible' => $contentVisible,
                 'attachments' => $attachments,
                 'works' => $sectionWorks,
-                // La carte disparaît quand il n'y reste rien à lire : un temps masqué ne doit pas
-                // laisser un cadre vide qui dit tout de même « il se passe quelque chose ici ».
+                // The card disappears when nothing is left to read in it: a hidden part must not
+                // leave an empty frame that still says « something is happening here ».
                 'shown' => !$restricted || $contentVisible || [] !== $attachments || [] !== $sectionWorks,
             ];
         }
@@ -308,13 +308,13 @@ class LessonLogController extends AbstractController
     }
 
     /**
-     * Le bandeau de séquence en tête du cahier de texte (maquette 2a) : où en est cette séance dans
-     * la séquence qui la porte, et l'état des autres.
+     * The séquence banner at the top of the cahier de texte (mockup 2a): where this séance stands
+     * in the séquence carrying it, and the state of the others.
      *
-     * Null quand la séance n'est rattachée à aucune progression - le bandeau disparaît alors, ce que
-     * la maquette prévoit explicitement. Les séances de la séquence sont ordonnées par leur créneau
-     * plutôt que par leur position déclarée : c'est l'ordre dans lequel la classe les vivra, et le
-     * seul qui permette de dire « faite » ou « à venir ».
+     * Null when the séance hangs off no progression - the banner then disappears, which the mockup
+     * explicitly provides for. The séquence's séances are ordered by their créneau rather than by
+     * their declared position: that is the order the class will live them in, and the only one that
+     * allows saying « done » or « upcoming ».
      *
      * @return array{title: string, seances: list<array{label: string, state: string}>, index: int, total: int}|null
      */
@@ -372,12 +372,12 @@ class LessonLogController extends AbstractController
     }
 
     /**
-     * Ouvrir un document : la trace est posée ici, puis l'étudiant est renvoyé vers le fichier ou
-     * le lien. Passer par l'application plutôt que de pointer le fichier directement est le seul
-     * moyen de savoir qu'un support a été ouvert, et non seulement affiché dans une liste.
+     * Opening a document: the trace is recorded here, then the student is sent on to the file or
+     * the link. Going through the application rather than pointing at the file directly is the only
+     * way to know that a support was opened, and not merely listed.
      *
-     * Seules les ouvertures d'étudiants sont comptées : l'enseignant qui relit son propre cahier de
-     * texte n'a pas à gonfler ses statistiques.
+     * Only student openings are counted: a teacher re-reading their own cahier de texte has no
+     * business inflating its statistics.
      */
     #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/documents/{attachmentId}/open', name: 'app_program_timetable_session_log_attachment_open', methods: ['GET'], requirements: ['attachmentId' => '\\d+'])]
     public function openAttachment(int $id, int $sessionId, int $attachmentId, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogAttachmentRepository $attachmentRepository, LessonLogAttachmentViewRepository $viewRepository, FileUploadService $fileUploadService): Response
@@ -391,8 +391,8 @@ class LessonLogController extends AbstractController
             throw $this->createNotFoundException();
         }
 
-        // Le lien ne s'affiche pas tant que le document n'est pas publié, mais une adresse se
-        // devine : sans ce contrôle, la visibilité ne tiendrait qu'au gabarit.
+        // The link is not shown until the document is published, but an address can be guessed:
+        // without this check, visibility would rest on the template alone.
         if (!$this->accessChecker->isProgramTeacher($program) && !$attachment->isVisibleFor()) {
             throw $this->createNotFoundException();
         }
@@ -411,13 +411,13 @@ class LessonLogController extends AbstractController
     }
 
     /**
-     * Le suivi d'ouverture des documents d'une séance : par document, et pour l'ensemble.
+     * Open tracking for a séance's documents: per document, and for the whole set.
      *
-     * L'ensemble ne compte que les étudiants ayant ouvert TOUS les documents - en avoir ouvert
-     * trois sur quatre, c'est ne pas avoir tout lu, et une moyenne le masquerait.
+     * The whole set only counts students who opened ALL the documents - having opened three out of
+     * four is not having read everything, and an average would hide it.
      *
-     * Le public est celui de la séance : ses options quand elle en porte - un TP de demi-groupe ne
-     * concerne pas l'autre moitié -, sinon toute la formation.
+     * The audience is the séance's own: its options when it carries any - a half-group practical
+     * does not concern the other half -, otherwise the whole program.
      *
      * @return array{perAttachment: array<int, int>, all: int, total: int}
      */
@@ -437,15 +437,15 @@ class LessonLogController extends AbstractController
     }
 
     /**
-     * Le suivi affiché sous chaque travail (maquette 2a, « lu par 19 / 24 ») : où en est le public
-     * visé.
+     * The tracking shown under each assignment (mockup 2a, « lu par 19 / 24 »): where the targeted
+     * audience stands.
      *
-     * Deux compteurs, deux natures de preuve :
-     *  - « ouvert par », pour les travaux à lire : la page du travail a été ouverte, fait observé
-     *    et daté que l'étudiant ne choisit pas de produire. C'est le suivi de lecture proprement
-     *    dit, et il ne prétend pas dire que le texte a été lu - seulement qu'il a été affiché ;
-     *  - « fait par », pour tout travail qui se solde par une déclaration : l'étudiant dit avoir
-     *    fini. Moins fiable, mais c'est la seule chose qu'un exercice sur cahier puisse produire.
+     * Two counters, two kinds of evidence:
+     *  - « ouvert par », for assignments to read: the assignment page was opened, an observed and
+     *    dated fact the student does not choose to produce. This is read tracking proper, and it
+     *    does not claim the text was read - only that it was displayed;
+     *  - « fait par », for any assignment settled by a declaration: the student says they have
+     *    finished. Less reliable, but it is the only thing an exercise on paper can produce.
      *
      * @param array<string, list<Assignment>> $worksBySection
      *
@@ -477,8 +477,8 @@ class LessonLogController extends AbstractController
     }
 
     /**
-     * Les travaux de la séance, rangés par temps. Le « pendant » n'en accueille pas, mais la clé
-     * existe pour que le gabarit puisse boucler sur les trois temps sans se poser la question.
+     * The séance's assignments, sorted by part. The « during » part takes none, but the key exists
+     * so the template can loop over the three parts without asking itself the question.
      *
      * @return array<string, list<Assignment>>
      */
@@ -495,9 +495,9 @@ class LessonLogController extends AbstractController
     }
 
     /**
-     * Supprimer un travail donné. Geste délibéré, y compris quand des étudiants ont déjà déposé ou
-     * déclaré avoir fini - l'import, lui, s'y refuse et les épargne. L'écran prévient plus
-     * fermement dans ce cas, puisque la suppression emporte aussi leurs productions.
+     * Delete a given assignment. A deliberate gesture, including when students have already
+     * submitted or declared themselves finished - the import, by contrast, refuses and spares them.
+     * The screen warns more firmly in that case, since deletion carries their productions away too.
      */
     #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/assignments/{assignmentId}/delete', name: 'app_program_timetable_session_log_work_remove', methods: ['POST'], requirements: ['assignmentId' => '\d+'])]
     public function removeWork(int $id, int $sessionId, int $assignmentId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, AssignmentRepository $assignmentRepository): Response
@@ -524,8 +524,8 @@ class LessonLogController extends AbstractController
     }
 
     /**
-     * Reprendre la séance de bibliothèque dont ce créneau est issu : la première entrée du menu
-     * d'import, et la seule qui remplace au lieu de compléter - la séance source fait autorité.
+     * Take back the library séance this slot came from: the first entry of the import menu, and the
+     * only one that replaces instead of completing - the source séance is authoritative.
      */
     #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/import-library', name: 'app_program_timetable_session_log_import_library', methods: ['POST'])]
     public function importFromLibrary(int $id, int $sessionId, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, SeanceContentResolver $seanceContentResolver, LessonLogImporter $importer, TranslatorInterface $translator): Response
@@ -543,8 +543,8 @@ class LessonLogController extends AbstractController
 
         $this->addFlash('success', 'lessonLogImportedFlashMessage');
 
-        // Dit ce qui a survécu à l'import plutôt que de laisser l'enseignant le découvrir : ces
-        // travaux-là portent déjà des productions, et lui seul peut décider de les supprimer.
+        // Says what survived the import rather than leaving the teacher to find out: those
+        // assignments already carry productions, and they alone can decide to delete them.
         if (0 < $kept) {
             $this->addFlash('info', $translator->trans('lessonLogImportKeptWorksMessage', ['%count%' => $kept]));
         }
@@ -553,9 +553,9 @@ class LessonLogController extends AbstractController
     }
 
     /**
-     * Reprendre le cahier de texte d'une autre séance (maquette 2a). La séance source doit être
-     * comparable - même matière, autre formation - et l'enseignant doit pouvoir modifier la cible ;
-     * il n'a en revanche pas à pouvoir modifier la source, qu'il ne fait que lire.
+     * Take back another séance's cahier de texte (mockup 2a). The source séance must be comparable
+     * - same matière, another program - and the teacher must be able to edit the target; they need
+     * not, on the other hand, be able to edit the source, which they only read.
      */
     #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/import/{sourceId}', name: 'app_program_timetable_session_log_import', methods: ['POST'], requirements: ['sourceId' => '\d+'])]
     public function importFromSession(int $id, int $sessionId, int $sourceId, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogImporter $importer): Response
@@ -570,8 +570,8 @@ class LessonLogController extends AbstractController
 
         $source = $lessonSessionRepository->find($sourceId) ?? throw $this->createNotFoundException();
 
-        // La source doit figurer parmi les séances proposées : c'est ce qui garantit qu'elle porte
-        // bien la même matière, et qu'on ne recopie pas n'importe quel cahier de texte de la base.
+        // The source must appear among the séances offered: that is what guarantees it carries the
+        // same matière, and that we are not copying just any cahier de texte from the database.
         $allowed = false;
         foreach ($importer->browsableFor($session) as $candidate) {
             $allowed = $allowed || $candidate->getId() === $source->getId();
@@ -620,8 +620,8 @@ class LessonLogController extends AbstractController
                 }
 
                 $attachment = new LessonLogAttachment($log, $label);
-                // Le temps auquel rattacher le document vient du lien « + Ajouter » cliqué ; à
-                // défaut, le contenu réalisé, seul endroit où les documents s'affichaient avant.
+                // The part to attach the document to comes from the « + Ajouter » link clicked;
+                // failing that, the work done, the only place documents used to be displayed.
                 $attachment->setSection(LessonLogSection::tryFrom((string) $request->request->get('section')) ?? LessonLogSection::During);
 
                 if (null !== $file) {
@@ -666,8 +666,8 @@ class LessonLogController extends AbstractController
             throw $this->createNotFoundException();
         }
 
-        // Champ nommé à part : le bouton est un formaction du formulaire des trois temps, qui a
-        // déjà son propre _token.
+        // A separately named field: the button is a formaction of the three-part form, which
+        // already has its own _token.
         if (!$this->isCsrfTokenValid('lesson_log_attachment_delete', $request->request->get('attachment_delete_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }

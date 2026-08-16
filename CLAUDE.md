@@ -310,8 +310,15 @@ tab for new 404s under `/hugerte/`.
 
 - **Code is English, display text is French.** Identifiers, comments and docblocks are always English;
   only user-visible strings are French. This is the convention that slips most often in `app.css` and in
-  Twig — check before writing the comment. (`app.css` still contains French comments from before the
-  rule; fix them opportunistically, don't sweep.)
+  Twig — check before writing the comment. The whole repository was swept on **2026-08-15** (235 files
+  across `src/`, `tests/`, `config/`, `assets/`, `templates/` and `migrations/`), so a French comment is
+  now a regression rather than a leftover. Two things stay French on purpose and are **not** violations:
+  screen and label names quoted inside an English sentence (« Nouveau travail », « Visibilité pour les
+  étudiants »…), and the domain vocabulary the code already speaks (séance, séquence, créneau, matière,
+  cahier de texte, carnet de notes, livret alternant). Beware when re-running such a sweep:
+  `QuizPromptCatalog` and `SequencePromptCatalog` hold French heredocs whose Markdown headings look
+  exactly like `#` comments — they are prompt text sent to the model, and translating them would change
+  behavior.
 - **URLs are English too** — route paths were swept to English (117 of them). Route names follow, and
   are English apart from the domain word `seance` (`app_library_seances_*`, `app_progression_seance_*`),
   kept as a domain term the way `Program` or `Cohort` are.

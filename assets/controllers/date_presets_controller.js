@@ -1,13 +1,13 @@
 import { Controller } from '@hotwired/stimulus';
 
 /**
- * Pastilles de raccourci au-dessus d'un champ date-heure (maquette 2b : « Prochaine séance ·
- * 11 août », « Date et heure… »).
+ * Shortcut chips above a date-time field (mockup 2b: « Prochaine séance · 11 août », « Date et
+ * heure… »).
  *
- * Le champ natif reste la source de vérité - c'est lui qui part au serveur, et il continue de
- * fonctionner seul si ce contrôleur ne se charge pas. Les pastilles ne font que le remplir, et
- * celle qui est active se déduit de sa valeur plutôt que d'un état gardé à côté, qui pourrait
- * diverger dès que l'utilisateur saisit une date à la main.
+ * The native field stays the source of truth - it is what goes to the server, and it keeps working
+ * on its own if this controller does not load. The chips only fill it in, and the active one is
+ * inferred from its value rather than from a state kept alongside, which could diverge as soon as
+ * the user types a date by hand.
  */
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
@@ -24,7 +24,7 @@ export default class extends Controller {
         this.refresh();
     }
 
-    // « Date et heure… » ne pose aucune valeur : elle ouvre le champ pour que l'utilisateur écrive.
+    // « Date et heure… » sets no value: it opens the field so the user can write.
     reveal() {
         this.customTarget.classList.remove('d-none');
         this.fieldTarget.focus();
@@ -41,8 +41,8 @@ export default class extends Controller {
             matched ||= isActive;
         });
 
-        // Une date qui ne correspond à aucune pastille est forcément une saisie libre : le champ
-        // reste alors visible, sans quoi l'utilisateur ne verrait plus ce qu'il a écrit.
+        // A date matching no chip is necessarily free input: the field then stays visible, without
+        // which the user would no longer see what they wrote.
         if (!matched) {
             this.customTarget.classList.remove('d-none');
         }

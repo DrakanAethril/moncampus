@@ -37,11 +37,11 @@ class Modality extends AbstractStructureNode
     #[ORM\Column(name: 'is_alternance', options: ['default' => false])]
     private bool $isAlternance = false;
 
-    // Le pendant de $isAlternance pour le stage. "Traineeship" et non "internship" : dans ce
-    // codebase, Internship* désigne déjà tout le module livret de l'alternance
-    // (InternshipTutorLink et consorts), un Modality::$isInternship voudrait donc dire le
-    // contraire de ce que son nom laisse croire. Aucun comportement n'y est encore accroché - le
-    // drapeau existe pour être posé dès maintenant sur les modalités concernées.
+    // The counterpart of $isAlternance for internships. "Traineeship" and not "internship": in this
+    // codebase, Internship* already designates the whole livret de l'alternance module
+    // (InternshipTutorLink and friends), so a Modality::$isInternship would mean the opposite of what
+    // its name suggests. No behavior hangs off it yet - the flag exists so it can be set on the
+    // modalities concerned right away.
     #[ORM\Column(name: 'is_traineeship', options: ['default' => false])]
     private bool $isTraineeship = false;
 

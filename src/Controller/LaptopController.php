@@ -493,8 +493,8 @@ class LaptopController extends AbstractController
                     return [
                         'id' => $laptop->getId(),
                         'isInactive' => null !== $laptop->getInactiveDate(),
-                        // Le numéro d'inventaire identifie la ligne : il est en gras sur la maquette
-                        // 25d, comme le nom de l'étudiant sur 25a.
+                        // The inventory number identifies the row: it is in bold on mockup 25d, like
+                        // the student's name on 25a.
                         'assetTag' => sprintf('<div class="fw-semibold text-ink">%s</div>', htmlspecialchars($laptop->getAssetTag())),
                         'deviceLabel' => trim(sprintf('%s %s', $laptop->getBrand() ?? '', $laptop->getModel() ?? '')) ?: '—',
                         'conditionName' => $condition?->getName(),

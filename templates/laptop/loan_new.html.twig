@@ -14,9 +14,9 @@
 {% block page_title %}{{ 'lendLaptopPageHeading'|trans }}{% endblock %}
 
 {% block main %}
-    {# Conforme à design/design_handoff_ufa/screenshots/25e-pret-formulaire.png : deux colonnes
-       pour l'identité du prêt, deux colonnes pour les dates, puis l'état du matériel avec ses
-       notes à droite, et les actions dans un pied de carte séparé. #}
+    {# Follows design/design_handoff_ufa/screenshots/25e-pret-formulaire.png: two columns for the
+       loan's identity, two columns for the dates, then the equipment condition with its notes on the
+       right, and the actions in a separate card footer. #}
     {# The loan type follows from the student's modality; the operator keeps the last word on it. #}
     <div class="card" data-controller="laptop-loan-type"
          data-laptop-loan-type-url-value="{{ path('app_laptops_loans_suggested_type') }}">
@@ -26,11 +26,11 @@
                 <h3 class="card-title">{{ 'laptopLoanSectionHeading'|trans }}</h3>
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        {# Astérisque : ces deux champs sont obligatoires, même s'ils ne portent pas
-                           l'attribut required (leur <select> d'origine est masqué par tom-select,
-                           qu'un contrôle natif ne saurait pas mettre en avant). C'est le serveur qui
-                           les impose - Assert\NotNull sur le prêteur, erreur de formulaire sur
-                           l'ordinateur - et la règle est la même partout : champ requis, astérisque. #}
+                        {# Asterisk: these two fields are mandatory, even though they do not carry the
+                           required attribute (their original <select> is hidden by tom-select, which
+                           a native control could not bring forward). It is the server that imposes
+                           them - Assert\NotNull on the lender, a form error on the laptop - and the
+                           rule is the same everywhere: required field, asterisk. #}
                         <label class="form-label required" for="borrower">{{ 'laptopStudentColumnLabel'|trans }}</label>
                         <select id="borrower" name="borrower" class="form-select"
                                 data-controller="tom-select"

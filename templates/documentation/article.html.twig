@@ -1,8 +1,8 @@
 {% extends 'layout/app.html.twig' %}
 
-{# Écrans 2c (vue propriétaire / staff / admin) et 2e (vue étudiant / tuteur) : un seul gabarit,
-   deux colonnes de droite. Un enseignant qui n'est pas propriétaire voit le panneau de gestion
-   inerte - c'est la troisième ligne du tableau des droits du handoff. #}
+{# Screens 2c (owner / staff / admin view) and 2e (student / tutor view): a single template, two
+   different right-hand columns. A teacher who is not the owner sees the management panel inert -
+   that is the third row of the handoff's rights table. #}
 
 {% set canSeeManagementPanel = canManage or is_granted('ROLE_TEACHER') %}
 
@@ -145,7 +145,7 @@
                     <p class="cm-doc-date">{{ (article.publishedAt ?? article.createdAt)|localized_date('d MMMM yyyy') }}</p>
                 </div>
 
-                {# Le bloc « Dernière mise à jour » n'apparaît que si la date diffère de la publication. #}
+                {# The « Dernière mise à jour » block only appears if the date differs from the publication. #}
                 {% if article.publishedAt and article.updatedAt|date('Y-m-d') != article.publishedAt|date('Y-m-d') %}
                     <div class="cm-doc-card-block">
                         <div class="cm-doc__rule cm-doc__rule--gold"><span>{{ 'documentationLastUpdateHeading'|trans }}</span></div>

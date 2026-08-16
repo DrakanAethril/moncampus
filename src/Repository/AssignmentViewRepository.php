@@ -26,12 +26,12 @@ class AssignmentViewRepository extends ServiceEntityRepository
     }
 
     /**
-     * Combien d'étudiants distincts ont ouvert chaque travail, en une requête plutôt qu'une par
-     * travail - le suivi s'affiche sur toute une séance à la fois.
+     * How many distinct students opened each assignment, in one query rather than one per assignment
+     * - the tracking is displayed for a whole séance at a time.
      *
      * @param list<Assignment> $assignments
      *
-     * @return array<int, int> identifiant du travail => nombre d'étudiants l'ayant ouvert
+     * @return array<int, int> assignment identifier => number of students who opened it
      */
     public function countByAssignment(array $assignments): array
     {

@@ -46,8 +46,8 @@
             </span>
         </div>
     {% elseif banner.type == 'waitingEngagement' %}
-        {# Le tuteur a signé, les autres non : les périodes restent fermées. Sans ce cas, cette
-           attente tombait dans le "vous êtes à jour" et renvoyait vers la période SUIVANTE. #}
+        {# The tutor has signed, the others have not: the periods stay closed. Without this case, that
+           wait fell into the "vous êtes à jour" branch and pointed to the NEXT period. #}
         <div class="cm-dash-banner">
             <span class="cm-dash-banner__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></span>
             <span class="cm-dash-banner__body">
@@ -87,8 +87,8 @@
                         {% elseif is_late or (row.current and row.current.state == 'toFill') %}
                             <span class="cm-badge cm-badge--blue">{{ 'myAlternancePeriodYourTurnLabel'|trans }}</span>
                         {% elseif not row.periodsOpen %}
-                            {# Le tuteur a signé mais le livret n'est pas ouvert : ce n'est pas
-                               "rien à faire", c'est une attente - cf. la bannière du même nom. #}
+                            {# The tutor has signed but the booklet is not open: this is not
+                               "nothing to do", it is a wait - cf. the banner of the same name. #}
                             <span class="cm-badge cm-badge--blue">{{ 'internshipTutorWaitingBadgeLabel'|trans }}</span>
                         {% else %}
                             <span class="cm-badge cm-badge--green">{{ 'internshipTutorNothingToDoBadgeLabel'|trans }}</span>

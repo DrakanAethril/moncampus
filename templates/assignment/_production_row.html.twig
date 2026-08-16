@@ -1,9 +1,9 @@
-{# Une ligne de « Productions attendues » (2a, étape Consigne). Le même gabarit sert aux lignes
-   déjà présentes et au prototype des lignes ajoutées à la volée - d'où la bascule d'échéance en
-   champ de formulaire plutôt qu'en HTML libre du gabarit parent.
+{# One row of « Productions attendues » (2a, Consigne step). The same template serves the rows already
+   present and the prototype of the rows added on the fly - hence the deadline toggle being a form
+   field rather than free HTML in the parent template.
 
-   La ligne passe en ambre dès qu'elle porte une échéance propre : c'est ce qui rend visible, d'un
-   coup d'œil, qu'un travail annonce plusieurs dates. #}
+   The row turns amber as soon as it carries a deadline of its own: that is what makes it visible, at
+   a glance, that an assignment announces several dates. #}
 <div class="cm-prod-row" data-assignment-wizard-target="productionRow">
     {{ form_widget(production.name, {attr: {class: 'cm-input cm-prod-row__name'}}) }}
     {{ form_widget(production.format, {attr: {class: 'cm-select cm-prod-row__format'}}) }}

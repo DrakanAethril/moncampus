@@ -9,18 +9,17 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Un événement d'acheminement SES (Send, Delivery, Bounce, Complaint, Reject, DeliveryDelay)
- * consommé depuis la file « events », conservé brut en plus du statut agrégé porté par
+ * An SES delivery event (Send, Delivery, Bounce, Complaint, Reject, DeliveryDelay) consumed from the
+ * « events » queue, kept raw in addition to the aggregated status carried by
  * App\Entity\EmailMessage::$deliveryStatus.
  *
- * Deux raisons de garder l'historique plutôt que le seul dernier état : un rebond contient le
- * motif exact du refus, qu'on veut pouvoir montrer à l'élève ; et les événements n'arrivent pas
- * forcément dans l'ordre chronologique, donc il faut pouvoir recalculer le statut plutôt que de
- * l'écraser aveuglément.
+ * Two reasons to keep the history rather than the last state alone: a bounce contains the exact
+ * reason for the refusal, which we want to be able to show the student; and events do not
+ * necessarily arrive in chronological order, so the status has to be recomputable rather than blindly
+ * overwritten.
  *
- * `message_id` est une chaîne, pas une relation : un événement peut précéder l'écriture du
- * message auquel il se rapporte, ou concerner un envoi purgé. La corrélation se fait à la
- * lecture.
+ * `message_id` is a string, not a relation: an event may precede the writing of the message it
+ * relates to, or concern a purged send. The correlation is made on reading.
  */
 #[ORM\Entity(repositoryClass: EmailEventRepository::class)]
 #[ORM\Table(name: 'email_event')]
@@ -36,7 +35,7 @@ class EmailEvent
     #[ORM\Column(name: 'message_id', length: 255)]
     private string $messageId;
 
-    /** Le type tel que SES l'écrit (`Delivery`, `Bounce`, ...), sans normalisation. */
+    /** The type as SES writes it (`Delivery`, `Bounce`, ...), with no normalisation. */
     #[ORM\Column(name: 'event_type', length: 32)]
     private string $eventType;
 
@@ -45,9 +44,9 @@ class EmailEvent
     private array $payload = [];
 
     /**
-     * L'horodatage porté par l'événement SES lui-même, pas celui de sa consommation. C'est lui
-     * qui participe à la clé d'unicité : SQS pouvant relivrer, c'est le triplet
-     * (message, type, instant) qui identifie un événement.
+     * The timestamp carried by the SES event itself, not that of its consumption. It is the one that
+     * takes part in the uniqueness key: SQS being able to redeliver, it is the (message, type,
+     * instant) triple that identifies an event.
      */
     #[ORM\Column(name: 'occurred_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $occurredAt;

@@ -1,0 +1,155 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Title, members, classes, archive, delete, plus the wiki's export and import - and the one thing
+   this screen exists for beyond the form: **saying the current regime in words**.
+
+   The access rule derives visibility from the audience, which is its single weakness: it changes
+   what a wiki is as a side effect of who is in it. So the banner states it, and the warning below
+   the pickers says what adding a first student or class will do *before* the save. Nothing is
+   hidden behind an inference the user cannot see.
+
+   Two halves with two audiences. Composing the wiki is WIKI_MANAGE and is simply not drawn for
+   somebody who may not do it; taking the wiki away, or bringing an archive into it, follows the
+   same rule as everywhere else in the feature - anybody who can read it can export it, anybody who
+   can write it can import into it. Those two moved here from the top of every page because they act
+   on the whole wiki, not on the page one happens to be reading.
+
+   The layout is two columns: what the wiki *is* on the left, what one *does to it as a whole* on the
+   right - export first, then the irreversible pair. Putting archive and delete in a named block of
+   their own is the point of that side column: they used to sit in a bare row under the form, one
+   scroll below the save button and looking like part of it. #}
+
+{% set isNew = wiki is null %}
+{# The side column only exists for a wiki that exists: there is nothing to export or delete while
+   creating one, so that screen stays a single column. #}
+{% set hasSide = not isNew %}
+
+{% block title %}{{ isNew ? 'wikiNewPageHeading'|trans : 'wikiSettingsPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% if isNew %}
+        {% include '_breadcrumb.html.twig' with {segments: [
+            {label: 'homeNavLabel'|trans, url: path('app_home')},
+            {label: 'wikiSharedNavLabel'|trans, url: path('app_wiki_shared')},
+            {label: 'wikiNewPageHeading'|trans, url: path('app_wiki_new')},
+        ]} %}
+    {% else %}
+        {% include 'wiki/_breadcrumb.html.twig' with {
+            wiki: wiki,
+            extra: [{label: 'wikiSettingsNavLabel'|trans, url: path('app_wiki_settings', {id: wiki.id})}],
+        } %}
+    {% endif %}
+{% endblock %}
+
+{% block page_title %}{{ isNew ? 'wikiNewPageHeading'|trans : 'wikiSettingsPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% if not isNew %}
+        <p class="cm-wiki-regime{{ hasStudentAudience ? ' cm-wiki-regime--supervised' }}">
+            {{ (hasStudentAudience ? 'wikiRegimeSupervisedText' : 'wikiRegimeMembersOnlyText')|trans }}
+        </p>
+    {% endif %}
+
+    <div class="cm-wiki-settings-layout{{ not (hasSide and canManage) ? ' cm-wiki-settings-layout--single' }}">
+        {% if canManage %}
+            <form method="post" action="{{ isNew ? path('app_wiki_new') : path('app_wiki_settings', {id: wiki.id}) }}" class="cm-wiki-settings">
+                <input type="hidden" name="_token" value="{{ csrf_token('wiki_settings') }}">
+
+                <div class="mb-3">
+                    <label class="form-label" for="wiki-title">{{ 'wikiTitleLabel'|trans }}</label>
+                    <input type="text" class="form-control" id="wiki-title" name="title" maxlength="255" required
+                           value="{{ isNew ? '' : wiki.title }}">
+                </div>
+
+                {% if isNew or not wiki.personal %}
+                    <div class="mb-3">
+                        <label class="form-label" for="wiki-members">{{ 'wikiMembersLabel'|trans }}</label>
+                        {# Picking Users always goes through tomselect + ajax, and the endpoint returns
+                           only the people this composer may add - the form re-checks the ids at save
+                           anyway, because a picker is a convenience and never the control. #}
+                        <select id="wiki-members" name="members[]" multiple
+                                data-controller="tom-select"
+                                data-tom-select-url-value="{{ path('app_wiki_member_search') }}"
+                                data-tom-select-placeholder-value="{{ 'wikiMembersPlaceholder'|trans }}">
+                            {% if not isNew %}
+                                {% for member in wiki.members %}
+                                    <option value="{{ member.id }}" selected>{{ member.displayName ?? member.username }}</option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+                        <span class="form-hint">{{ 'wikiMembersHelpText'|trans }}</span>
+                    </div>
+
+                    <div class="mb-3">
+                        <span class="form-label">{{ 'wikiProgramsLabel'|trans }}</span>
+                        {# Checkbox group rather than a <select multiple>, per this app's form convention. #}
+                        <div class="cm-wiki-settings__checks">
+                            {% for program in assignablePrograms %}
+                                <label class="cm-wiki-settings__check">
+                                    <input type="checkbox" name="programs[]" value="{{ program.id }}"
+                                           {{ not isNew and wiki.programs.contains(program) ? 'checked' }}>
+                                    <span>{{ program.displayShortName }}</span>
+                                </label>
+                            {% else %}
+                                <p class="cm-wiki__placeholder">{{ 'wikiNoAssignableProgramText'|trans }}</p>
+                            {% endfor %}
+                        </div>
+                        <span class="form-hint">{{ 'wikiAudienceWarningText'|trans }}</span>
+                    </div>
+                {% endif %}
+
+                <div class="cm-wiki__editor-actions">
+                    <button type="submit" class="cm-btn cm-btn--primary">{{ 'submitSaveAction'|trans }}</button>
+                    <a href="{{ isNew ? path('app_wiki_shared') : path('app_wiki_show', {id: wiki.id}) }}" class="cm-btn cm-btn--outline">{{ 'cancelAction'|trans }}</a>
+                </div>
+            </form>
+        {% endif %}
+
+        {% if hasSide %}
+            <aside class="cm-wiki-settings-layout__side">
+                {# Whole-wiki scopes only: exporting a single page stays at the foot of that page,
+                   where the reader who wants it is already looking. #}
+                <section class="cm-wiki-settings__block">
+                    <span class="cm-wiki-settings__block-title">{{ 'wikiTransferHeading'|trans }}</span>
+                    <p class="cm-wiki-settings__block-hint">{{ 'wikiTransferHelpText'|trans }}</p>
+
+                    <div class="cm-wiki-settings__block-actions">
+                        <a href="{{ path('app_wiki_export_pdf', {id: wiki.id}) }}" class="cm-btn cm-btn--outline">{{ 'wikiExportPdfAction'|trans }}</a>
+                        <a href="{{ path('app_wiki_export_archive', {id: wiki.id}) }}" class="cm-btn cm-btn--outline">{{ 'wikiExportArchiveAction'|trans }}</a>
+                        {% if is_granted('WIKI_EDIT', wiki) %}
+                            <a href="{{ path('app_wiki_import', {id: wiki.id}) }}" class="cm-btn cm-btn--outline">{{ 'wikiImportAction'|trans }}</a>
+                        {% endif %}
+                    </div>
+                </section>
+
+                {% if canManage %}
+                    {# Named and set apart rather than merely last on the screen: archiving is
+                       reversible and deleting is not, and neither should read as one more setting. #}
+                    <section class="cm-wiki-settings__block cm-wiki-settings__block--danger">
+                        <span class="cm-wiki-settings__block-title">{{ 'wikiDangerZoneHeading'|trans }}</span>
+                        <p class="cm-wiki-settings__block-hint">{{ 'wikiDangerZoneHelpText'|trans }}</p>
+
+                        <div class="cm-wiki-settings__block-actions">
+                            <form method="post" action="{{ path('app_wiki_archive', {id: wiki.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('wiki_settings') }}">
+                                <button type="submit" class="cm-btn cm-btn--outline">
+                                    {{ (wiki.archived ? 'wikiUnarchiveAction' : 'wikiArchiveAction')|trans }}
+                                </button>
+                            </form>
+
+                            {% if is_granted('WIKI_DELETE', wiki) %}
+                                <form method="post" action="{{ path('app_wiki_delete', {id: wiki.id}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('wiki_delete') }}">
+                                    <button type="submit" class="cm-btn cm-btn--danger"
+                                            data-controller="confirm-submit"
+                                            data-confirm-submit-message-value="{{ 'wikiDeleteConfirmText'|trans }}"
+                                            data-action="click->confirm-submit#confirm">{{ 'wikiDeleteAction'|trans }}</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </section>
+                {% endif %}
+            </aside>
+        {% endif %}
+    </div>
+{% endblock %}

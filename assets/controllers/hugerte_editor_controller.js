@@ -136,6 +136,15 @@ export default class extends Controller {
                     : 'lists link code table fullscreen' + (this.imageValue ? ' image' : ''),
             toolbar,
             block_formats: 'Paragraph=p;Heading 1=h1;Heading 2=h2;Heading 3=h3;Preformatted=pre',
+            // HugeRTE rewrites hrefs by default: a root-relative "/wiki/2/p/3" is stored as
+            // "http://localhost/wiki/2/p/3/", which then breaks the day the same content is read
+            // under the production domain. Measured on the wiki's internal-link picker, and it
+            // would affect any same-origin link anybody pastes into any of these editors. Off, so
+            // what is inserted is what is stored.
+            //
+            // Cross-origin URLs (the uploaded images, which come from CloudFront or MinIO) were
+            // never converted anyway, so nothing about the image button changes.
+            convert_urls: false,
             ...(this.imageValue ? this.imageOptions() : {}),
             setup: (setupEditor) => {
                 // HugeRTE only syncs its content back into the underlying textarea by default on

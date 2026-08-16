@@ -1,5 +1,5 @@
-{# Badge d'état de visibilité d'un temps (maquette 2a) : vert quand c'est lisible, ambre quand c'est
-   programmé, gris quand c'est masqué. La date n'apparaît que lorsqu'elle veut dire quelque chose. #}
+{# Visibility state badge of a part (mockup 2a): green when it is readable, amber when it is
+   scheduled, grey when it is hidden. The date only appears when it means something. #}
 {% if visibility.value == 'hidden' %}
     <span class="cm-badge cm-badge--gray">{{ 'lessonLogVisibilityHiddenBadge'|trans }}</span>
 {% elseif visibility.value == 'now' %}

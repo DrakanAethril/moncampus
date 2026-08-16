@@ -72,6 +72,14 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/documentation/articles/new' => 403,
             '/documentation/manage/dashboard' => 403,
             '/documentation/manage/tags' => 403,
+            // The wiki. /wiki/personal renders the invitation page rather than redirecting, since
+            // nothing is created until its owner asks - that 200 is the consent rule holding.
+            '/wiki' => 302,
+            '/wiki/personal' => 200,
+            '/wiki/shared' => 200,
+            // Supervision and composing an audience are both teacher/staff business.
+            '/wiki/students' => 403,
+            '/wiki/new' => 403,
             // Both hand over to a screen scoped to the student's own program/mailbox.
             '/my/timetable' => 302,
             '/school-mail' => 302,
@@ -127,6 +135,13 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/documentation/articles/new' => 200,
             '/documentation/manage/dashboard' => 403,
             '/documentation/manage/tags' => 403,
+            // The wiki, supervision side included: a teacher reads every student wiki, and
+            // composes extra ones.
+            '/wiki' => 302,
+            '/wiki/personal' => 200,
+            '/wiki/shared' => 200,
+            '/wiki/students' => 200,
+            '/wiki/new' => 200,
             // Student-only screens.
             '/my/timetable' => 403,
             '/student-work' => 403,
@@ -197,6 +212,11 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/documentation/manage/reads' => 200,
             '/documentation/manage/never-read' => 200,
             '/documentation/manage/tags' => 200,
+            '/wiki' => 302,
+            '/wiki/personal' => 200,
+            '/wiki/shared' => 200,
+            '/wiki/students' => 200,
+            '/wiki/new' => 200,
             // Staff pick a class first, so these hand over to the program-scoped screen.
             '/tools/lesson-log' => 302,
             '/tools/gradebook' => 302,
@@ -266,6 +286,13 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/documentation' => 200,
             '/documentation/articles/new' => 403,
             '/documentation/manage/dashboard' => 403,
+            // The wiki excludes outside accounts entirely - no wiki of their own, never a member,
+            // never a reader. Same posture as messaging, and the reason the menu hides it too.
+            '/wiki' => 403,
+            '/wiki/personal' => 403,
+            '/wiki/shared' => 403,
+            '/wiki/students' => 403,
+            '/wiki/new' => 403,
             '/student-work' => 403,
             '/timetable' => 403,
             '/my/timetable' => 403,

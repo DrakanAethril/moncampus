@@ -54,6 +54,93 @@ framework:
                 allow_attributes:
                     style: [span, p, h1, h2, h3, li, blockquote, table, col, td, th]
 
+            # WikiNode::$body - a wiki page, written in the wiki's own editor
+            # (assets/controllers/wiki_editor_controller.js) and read back by whoever may reach the
+            # wiki. The widest configuration in this file, and the only one that admits any SVG.
+            #
+            # What it must NEVER gain is iframe/video/embed/object. There is no video in a wiki by
+            # decision (design/validated/wiki.md), the `media` plugin is deliberately not vendored,
+            # and enforcing that here rather than only in the toolbar is what keeps the element list
+            # closed - a toolbar decides what is easy to insert, a sanitizer decides what survives.
+            #
+            # The SVG subtree is the part that needed real care, and it is enumerated rather than
+            # opened: an SVG is a document that can carry script. Excluded on purpose and by name:
+            #   - `script`, which is the obvious one;
+            #   - `foreignObject`, which embeds arbitrary HTML inside the picture - which is also
+            #     why the editor configures Mermaid with htmlLabels:false, so its labels come back
+            #     as <text> and nothing is lost by refusing it;
+            #   - every `href`/`xlink:href`, so no <use> or <a> inside a diagram can point anywhere;
+            #   - every `on*` handler, which the sanitizer drops by default and which no attribute
+            #     below re-admits.
+            #
+            # Three things about this configuration were **measured, not assumed** - each of them
+            # was written the obvious way first and App\Tests\Functional\WikiSanitizerTest caught it:
+            #
+            #  1. **`<style>` cannot be allowed at all.** The component drops it unconditionally and
+            #     `allow_elements` does not re-admit it. Mermaid emits its diagram's CSS as a
+            #     <style> block, so that block never survives - which is why the diagram is styled
+            #     by `.cm-mermaid` rules in assets/styles/app.css instead, built on --cm-* tokens.
+            #     That is better than Mermaid's own theme anyway: one appearance on screen, in dark
+            #     mode and in the PDF.
+            #  2. **SVG attribute names must be written lowercase here.** The HTML parser lowercases
+            #     them (`viewBox` arrives as `viewbox`), so a camelCase entry matches nothing and the
+            #     attribute is silently dropped - a diagram that loses `viewbox` loses its scaling.
+            #     The browser maps them back to their camelCase SVG form when it parses the stored
+            #     markup as foreign content.
+            #  3. **`allow_attributes` REPLACES an attribute's element list**, so an attribute
+            #     granted here and also named in an `allow_elements` list is only allowed on the
+            #     elements named *here*. class/id/style are therefore declared once, below, for both
+            #     the prose elements and the SVG ones - listing them per element above did nothing.
+            app.wiki_page_body:
+                allow_safe_elements: true
+                allow_elements:
+                    # accordion
+                    details: []
+                    summary: []
+                    # Mermaid's rendered output, stored at insert time with its source kept in
+                    # data-mermaid so the diagram stays editable. class/id/style come from
+                    # allow_attributes below - see note 3.
+                    svg: ['viewbox', 'width', 'height', 'xmlns', 'preserveaspectratio', 'role', 'aria-roledescription']
+                    g: ['transform']
+                    path: ['d', 'fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap', 'marker-start', 'marker-end', 'transform']
+                    rect: ['x', 'y', 'width', 'height', 'rx', 'ry', 'fill', 'stroke', 'stroke-width', 'transform']
+                    circle: ['cx', 'cy', 'r', 'fill', 'stroke', 'stroke-width', 'transform']
+                    ellipse: ['cx', 'cy', 'rx', 'ry', 'fill', 'stroke', 'stroke-width', 'transform']
+                    line: ['x1', 'y1', 'x2', 'y2', 'stroke', 'stroke-width', 'transform']
+                    polyline: ['points', 'fill', 'stroke', 'stroke-width', 'transform']
+                    polygon: ['points', 'fill', 'stroke', 'stroke-width', 'transform']
+                    text: ['x', 'y', 'dx', 'dy', 'fill', 'text-anchor', 'dominant-baseline', 'font-size', 'font-family', 'font-weight', 'transform']
+                    tspan: ['x', 'y', 'dx', 'dy', 'fill']
+                    defs: []
+                    marker: ['viewbox', 'refx', 'refy', 'markerwidth', 'markerheight', 'orient', 'markerunits']
+                # Named rather than left to allow_safe_elements, which treats video/audio as safe:
+                # there is no video in a wiki by decision, and "safe" is not the question being
+                # asked. drop_elements takes the children with it, so no caption or <source> is left
+                # behind either.
+                #
+                # `image` is in the list for a different reason and is easy to miss: it is <img>'s
+                # SVG cousin, it survives as a safe element, and it keeps an `href` - which is a way
+                # to make a stored wiki page fetch an arbitrary external URL every time somebody
+                # opens it. Inline pictures go through <img> and the wiki's own upload endpoint;
+                # nothing legitimate needs this one.
+                drop_elements: [iframe, video, audio, source, track, embed, object, canvas, image]
+                allow_attributes:
+                    style: [span, p, h1, h2, h3, h4, li, blockquote, table, col, td, th, div,
+                            svg, g, path, rect, circle, ellipse, line, polyline, polygon, text, tspan, marker]
+                    # Outline anchors (h2/h3, stamped by App\Service\WikiPageOutline at read time),
+                    # named anchors the `anchor` plugin writes, and the ids Mermaid's own markup
+                    # carries - a diagram's <marker> is referenced by `marker-end="url(#id)"`, so
+                    # dropping id would leave every arrow head off.
+                    id: [h1, h2, h3, h4, a, svg, g, path, rect, circle, ellipse, line, polyline, polygon, text, marker, defs]
+                    # codesample's language classes, KaTeX's own markup, the callout blocks - and
+                    # every SVG element, Mermaid's styling being entirely class-driven.
+                    class: [pre, code, span, div, p, ol, ul, li, table,
+                            svg, g, path, rect, circle, ellipse, line, polyline, polygon, text, tspan, marker]
+                    # KaTeX keeps the LaTeX source next to its rendered output, and Mermaid keeps
+                    # its diagram source, so both stay editable rather than becoming one-way output.
+                    data-katex: [span, div]
+                    data-mermaid: [div]
+
             # SeanceTemplate::$cahierDeTexteDescription, when it arrives through the séquence import
             # assistant (App\Service\SequenceJsonImporter). It is the one HTML field of the library's
             # three entities, it is rendered `|raw` in library/seance_show.html.twig, and once the

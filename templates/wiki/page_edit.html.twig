@@ -1,0 +1,107 @@
+{% extends 'layout/app.html.twig' %}
+
+{# The editor, plus the two things the content lot adds around it: the soft-lock banner, and the
+   internal-link picker.
+
+   Lot 1's toolbar is still the app's shared one; the wiki's own editor - menubar, custom buttons,
+   callouts, KaTeX, Mermaid - is its own lot, and the sanitizer widens with it. #}
+
+{% block title %}{{ node.title }}{% endblock %}
+
+{# Same stylesheet as the read screen: a formula already in the body has to render inside the
+   editor too, or the author edits a wall of markup. #}
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('katex/katex.min.css') }}">
+{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'wiki/_breadcrumb.html.twig' with {
+        wiki: wiki,
+        ancestors: ancestors,
+        node: node,
+        extra: [{label: 'wikiEditPageAction'|trans, url: path('app_wiki_page_edit', {id: wiki.id, nodeId: node.id})}],
+    } %}
+{% endblock %}
+
+{% block page_title %}{{ 'wikiEditPageHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    {% include 'wiki/_search_form.html.twig' with {wiki: wiki} %}
+{% endblock %}
+
+{% block main %}
+    <div class="cm-wiki">
+        {% include 'wiki/_rail.html.twig' with {wiki: wiki, tree: tree, node: node} %}
+
+        <div class="cm-wiki__content">
+            {% if lockedBy %}
+                {# It prevents nothing: it removes the silent overwrite by saying who is already in
+                   there, and lets this person carry on anyway. #}
+                <p class="cm-wiki-lock">
+                    {{ 'wikiLockBannerText'|trans({
+                        '%name%': lockedBy.displayName ?? lockedBy.username,
+                        '%minutes%': lockedSince ? (date().timestamp - lockedSince.timestamp) // 60 : 0,
+                    }) }}
+                </p>
+            {% endif %}
+
+            <form method="post" action="{{ path('app_wiki_page_edit', {id: wiki.id, nodeId: node.id}) }}"
+                  data-controller="wiki-lock"
+                  data-wiki-lock-url-value="{{ path('app_wiki_page_lock', {id: wiki.id, nodeId: node.id}) }}"
+                  data-wiki-lock-token-value="{{ csrf_token('wiki_lock') }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('wiki_page_edit') }}">
+
+                <div class="mb-3">
+                    <label class="form-label" for="wiki-page-title">{{ 'wikiPageTitleLabel'|trans }}</label>
+                    <input type="text" class="form-control" id="wiki-page-title" name="title" value="{{ node.title }}" maxlength="255" required>
+                </div>
+
+                <div class="mb-3">
+                    <div class="cm-wiki__editor-head">
+                        <label class="form-label" for="wiki-page-body">{{ 'wikiPageBodyLabel'|trans }}</label>
+                        {# The internal-link picker. Linking one page to another is what makes this a
+                           wiki rather than a pile of pages; the toolbar button that will open the
+                           same list arrives with the wiki's own editor. #}
+                        <div class="cm-wiki-linkpicker" data-controller="wiki-link-picker"
+                             data-wiki-link-picker-url-value="{{ path('app_wiki_pages', {id: wiki.id}) }}"
+                             data-wiki-link-picker-editor-value="wiki-page-body">
+                            <button type="button" class="cm-btn cm-btn--sm cm-btn--outline"
+                                    data-action="wiki-link-picker#toggle">{{ 'wikiInsertLinkAction'|trans }}</button>
+                            <div class="cm-wiki-linkpicker__panel" data-wiki-link-picker-target="panel" hidden></div>
+                        </div>
+                    </div>
+                    {# The wiki's own editor, not the shared one: menubar on, three buttons of its
+                       own, callouts, KaTeX and Mermaid. Every label it shows comes from here so
+                       nothing user-visible is written in JavaScript. #}
+                    <textarea id="wiki-page-body" name="body" class="d-none"
+                              data-controller="wiki-editor"
+                              data-wiki-editor-height-value="520"
+                              data-wiki-editor-pages-url-value="{{ path('app_wiki_pages', {id: wiki.id}) }}"
+                              data-wiki-editor-image-upload-url-value="{{ path('app_wiki_image_upload', {id: wiki.id}) }}"
+                              data-wiki-editor-image-upload-token-value="{{ csrf_token('wiki_image') }}"
+                              data-wiki-editor-labels-value="{{ {
+                                  callouts: 'wikiCalloutMenuLabel'|trans,
+                                  calloutInfo: 'wikiCalloutInfoLabel'|trans,
+                                  calloutWarning: 'wikiCalloutWarningLabel'|trans,
+                                  calloutTip: 'wikiCalloutTipLabel'|trans,
+                                  wikiLink: 'wikiEditorLinkButtonLabel'|trans,
+                                  wikiLinkTooltip: 'wikiEditorLinkTooltip'|trans,
+                                  katexTooltip: 'wikiEditorFormulaTooltip'|trans,
+                                  mermaid: 'wikiEditorDiagramButtonLabel'|trans,
+                                  mermaidTooltip: 'wikiEditorDiagramTooltip'|trans,
+                                  page: 'wikiEditorPageFieldLabel'|trans,
+                                  insert: 'wikiEditorInsertAction'|trans,
+                                  cancel: 'cancelAction'|trans,
+                                  loadFailed: 'wikiEditorLoadFailedText'|trans,
+                              }|json_encode|e('html_attr') }}">{{ node.body }}</textarea>
+                </div>
+
+                <div class="cm-wiki__editor-actions">
+                    <button type="submit" class="cm-btn cm-btn--primary">{{ 'submitSaveAction'|trans }}</button>
+                    <a href="{{ path('app_wiki_page', {id: wiki.id, nodeId: node.id}) }}" class="cm-btn cm-btn--outline">{{ 'cancelAction'|trans }}</a>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

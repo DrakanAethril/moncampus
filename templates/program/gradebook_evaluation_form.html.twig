@@ -27,8 +27,8 @@
 
         {{ form_errors(form) }}
 
-        {# Deux colonnes séparées d'un filet : ce que l'évaluation EST à gauche, comment elle se
-           note et quand elle paraît à droite. #}
+        {# Two columns separated by a rule: what the evaluation IS on the left, how it is graded and
+           when it appears on the right. #}
         <div class="cm-gb-panel cm-gb-panel--split">
             <div class="cm-gb-panel__col">
                 <div class="cm-gb-fieldset">
@@ -37,8 +37,8 @@
                     {{ form_errors(form.name) }}
                 </div>
 
-                {# Support : trois cartes cliquables. Les radios restent dans le DOM (le <label> les
-                   enveloppe) - c'est :has(input:checked) qui peint la carte, sans JavaScript. #}
+                {# Support: three clickable cards. The radios stay in the DOM (the <label> wraps them)
+                   - it is :has(input:checked) that paints the card, with no JavaScript. #}
                 <div class="cm-gb-fieldset">
                     <span class="cm-gb-label">{{ 'evaluationTypeFieldLabel'|trans }}</span>
                     <div class="cm-gb-pickcards">
@@ -72,9 +72,9 @@
                     </div>
                 </div>
 
-                {# « Autre » est le choix vide du champ (l'évaluation n'appartient alors à aucune
-                   progression). Symfony rend toujours ce choix en premier : il est repoussé en fin
-                   de segment pour respecter l'ordre Diagnostique/Formative/Sommative/Autre. #}
+                {# « Autre » is the field's empty choice (the evaluation then belongs to no
+                   progression). Symfony always renders that choice first: it is pushed to the end of
+                   the segment to keep the Diagnostique/Formative/Sommative/Autre order. #}
                 <div class="cm-gb-fieldset">
                     <span class="cm-gb-label">{{ 'evaluationNatureFieldLabel'|trans }}</span>
                     <div class="cm-gb-seg">
@@ -120,10 +120,10 @@
                     <span class="cm-gb-hint cm-gb-hint--indent">{{ 'evaluationHasRubricFieldHelpText'|trans }}</span>
                 </div>
 
-                {# Visibilité : un segment Immédiate/Programmée qui montre ou cache le couple
-                   date+heure. La case hasScheduledVisibility reste le champ réellement soumis (voir
-                   ProgramGradebookController::evaluationForm()), le segment ne fait que la piloter.
-                   À la création, elle arrive cochée sur maintenant + 24 h. #}
+                {# Visibility: an Immédiate/Programmée segment that shows or hides the date+time pair.
+                   The hasScheduledVisibility checkbox stays the field actually submitted (see
+                   ProgramGradebookController::evaluationForm()), the segment only drives it.
+                   On creation, it arrives ticked on now + 24 h. #}
                 <div class="cm-gb-fieldset" data-evaluation-form-target="visibility">
                     <span class="cm-gb-label">{{ 'evaluationVisibilityFieldLabel'|trans }}</span>
                     <div class="d-flex align-items-center gap-3 flex-wrap">
@@ -137,8 +137,8 @@
                                 {{ 'evaluationVisibilityScheduledLabel'|trans }}
                             </label>
                         </div>
-                        {# Classe dédiée et non .d-flex : cette dernière porte un !important qui
-                           l'emporterait sur l'attribut hidden, laissant le champ visible. #}
+                        {# A dedicated class and not .d-flex: the latter carries an !important that
+                           would beat the hidden attribute, leaving the field visible. #}
                         <div class="cm-gb-visfields" data-evaluation-form-target="scheduledFields" {{ form.hasScheduledVisibility.vars.checked ? '' : 'hidden' }}>
                             <span class="cm-gb-recap__label">{{ 'evaluationVisibilityFromLabel'|trans }}</span>
                             {{ form_widget(form.visibleAt, {attr: {class: 'form-control'}}) }}

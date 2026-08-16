@@ -37,7 +37,16 @@
        as its footer, printed inside the bottom margin where it cannot collide with anything. */
     @page { size: A4 portrait; }
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; box-sizing: border-box; }
-    body { margin: 0; font-family: 'Source Sans 3', 'Segoe UI', Arial, sans-serif; color: #1b2430; font-size: 9.5pt; line-height: 1.45; }
+    /* The 2px on the right are not decoration, they are the width bug. Chromium lays this document
+       out in a box ROUNDED UP to a whole CSS pixel - 704px for the 186mm between the 12mm margins,
+       which is 703.05px - and then clips the page to the real 186mm. So the last ~0.26mm of every
+       `width: 100%` block falls outside the clip: a 0.5pt right border (0.26mm wide, drawn from
+       185.99mm to 186.27mm) is cut down to 0.02mm and disappears, which is why the bordered banners
+       and the tables printed open on their right edge. Measured on the content stream: the block
+       ended at 198.17mm with the clip at 197.92mm; with these 2px it ends at 197.64mm and the border
+       is painted whole. Reserving pixels rather than millimetres is deliberate - the overflow IS a
+       pixel-rounding artefact, and it stays one whatever the margins become. */
+    body { margin: 0; padding-right: 2px; font-family: 'Source Sans 3', 'Segoe UI', Arial, sans-serif; color: #1b2430; font-size: 9.5pt; line-height: 1.45; }
     h1, h2, h3 { font-family: Spectral, Georgia, serif; margin: 0; }
 
     .qp-cover { border: 1.2pt solid #1F4E79; padding: 9mm; margin-bottom: 7mm; }
@@ -90,14 +99,6 @@
     .qp-nature--formative { background: #fbf1dc; color: #8a6100; }
     .qp-nature--summative { background: #fae4e4; color: #9b2226; }
 
-    /* The year's supports, one per line over two columns. `break-inside: avoid` sits on the items
-       and not on the list: a two-dozen-entry list may legitimately need to span two pages, but an
-       entry cut in half between them reads as a truncated name. */
-    .qp-means { columns: 2; column-gap: 7mm; margin: 0 0 2mm; padding: 2.5mm 3mm; list-style: none;
-                border: 0.5pt solid #b9c8da; background: #f7fafd; font-size: 8.5pt; }
-    .qp-means li { break-inside: avoid; position: relative; padding: 0.9mm 0 0.9mm 3.5mm; color: #33415c; }
-    .qp-means li::before { content: '▪'; position: absolute; left: 0; top: 0.9mm; color: #2E74B5; font-size: 7pt; }
-
     .qp-muted { color: #8a93a3; }
     .qp-note { border: 0.5pt solid #b9c8da; background: #f7fafd; padding: 2.5mm 3mm; font-size: 8pt; color: #55637a; break-inside: avoid; }
     .qp-redelivery { display: block; margin-top: 0.8mm; font-size: 7.5pt; color: #55637a; font-style: italic; }
@@ -107,7 +108,7 @@
 </head>
 <body>
 
-{# ---- Page de garde : qui, quoi, quand, combien --------------------------- #}
+{# ---- Cover page: who, what, when, how many ------------------------------ #}
 <div class="qp-cover">
     <div class="qp-cover__kicker">Progression pédagogique{{ yearLabel ? ' · ' ~ yearLabel }}</div>
     <h1 class="qp-cover__title">{{ topic ? topic.name : '—' }}</h1>
@@ -170,9 +171,9 @@
     </tbody>
 </table>
 
-{# The document counts ONE thing, and says which. A séance dédoublée par groupe est donnée deux fois
-   par le formateur, mais chaque apprenant n'en reçoit qu'une : ce sont les heures reçues qui sont
-   comptées ici, et le dédoublement est nommé créneau par créneau dans la progression détaillée. #}
+{# The document counts ONE thing, and says which. A séance split by group is given twice by the
+   trainer, but each learner only receives one of them: it is the hours received that are counted
+   here, and the splitting is named slot by slot in the detailed progression. #}
 {% if data.perGroupSeanceCount > 0 %}
     <div class="qp-note">
         <strong>Une lecture unique : les heures reçues par un apprenant.</strong>
@@ -184,16 +185,10 @@
     </div>
 {% endif %}
 
-{% if data.methodSummary is not empty %}
-    <h3 class="qp-h3">Moyens et supports mobilisés sur l’année</h3>
-    <p class="qp-crit">Critère 3 — adaptation des moyens pédagogiques, techniques et d’encadrement.</p>
-    {# One entry per line rather than a single run of text separated by middots: the list is read by
-       scanning for a support, and a paragraph of two dozen names joined by « · » is read by nobody.
-       Two columns, since the entries are short enough that one would waste half the width. #}
-    <ul class="qp-means">
-        {% for entry in data.methodSummary %}<li>{{ entry }}</li>{% endfor %}
-    </ul>
-{% endif %}
+{# The year's list of moyens et supports is deliberately NOT printed here: the same information is
+   given where it is evidence rather than inventory - phase by phase, in the "Moyens et supports"
+   column of § 3. `data.methodSummary` is still built (and tested), so restoring the block is a
+   template change alone. #}
 
 {# ---- 2. Progression détaillée ------------------------------------------- #}
 <h2 class="qp-h2 qp-break">2. Progression détaillée</h2>
@@ -284,7 +279,7 @@
     </div>
 {% endfor %}
 
-{# ---- 3. Méthodes : le déroulé séance par séance -------------------------- #}
+{# ---- 3. Methods: the running order, séance by séance --------------------- #}
 <h2 class="qp-h2 qp-break">3. Méthodes pédagogiques — déroulé des séances</h2>
 <p class="qp-crit">Critère 3 — les méthodes réellement mises en œuvre : ce que fait le formateur, ce que fait l’apprenant, et avec quels supports.</p>
 

@@ -1,8 +1,8 @@
-{# Flux d'activité - repris de la page Activity de Tabler (design/tabler/shared/includes/parts/
-   activity.html) : une liste divide-y, pastille d'initiales à gauche, phrase et horodatage à
-   droite. Partagé par les deux tableaux de bord et les deux historiques, pour les deux journaux.
+{# Activity feed - taken from Tabler's Activity page (design/tabler/shared/includes/parts/
+   activity.html): a divide-y list, an initials chip on the left, sentence and timestamp on the
+   right. Shared by the two dashboards and the two histories, for both logs.
 
-   Attend : `activities` (list<UfaActivity|PlatformActivity>), `emptyMessage` (traduit). #}
+   Expects: `activities` (list<UfaActivity|PlatformActivity>), `emptyMessage` (translated). #}
 {% if activities is empty %}
     <p class="text-secondary mb-0">{{ emptyMessage }}</p>
 {% else %}

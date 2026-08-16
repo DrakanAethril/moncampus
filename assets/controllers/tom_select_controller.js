@@ -34,10 +34,10 @@ export default class extends Controller {
 
     connect() {
         const config = {
-            // À défaut de placeholder explicite, celui du <select> lui-même : Symfony rend son
-            // option 'placeholder' comme une <option value="">, que Tom Select masque en reprenant
-            // la liste - sans ce repli, un champ qui affichait "Choisissez un état" se retrouve
-            // vide une fois enrichi.
+            // Failing an explicit placeholder, the <select>'s own: Symfony renders its 'placeholder'
+            // option as an <option value="">, which Tom Select hides when taking over the list -
+            // without this fallback, a field that displayed "Choisissez un état" ends up empty once
+            // enriched.
             placeholder: this.placeholderValue || this.element.querySelector('option[value=""]')?.textContent.trim() || '',
             plugins: ['remove_button'],
             create: this.createValue,
@@ -72,11 +72,11 @@ export default class extends Controller {
             };
         }
 
-        // Une fois un choix fait, la saisie qui l'a trouvé n'a plus lieu d'être : sur un champ
-        // multiple, on enchaîne presque toujours sur un deuxième nom, et garder « cha » obligeait à
-        // l'effacer à la main avant de chercher le suivant. Tom Select laisse le texte en place dès
-        // qu'une fonction load est fournie - il ne sait pas si la recherche distante reste
-        // pertinente - donc c'est à nous de le vider, et de rouvrir la liste sur ce vide.
+        // Once a choice is made, the input that found it has no reason to remain: on a multiple
+        // field, one almost always goes straight on to a second name, and keeping « cha » forced the
+        // user to erase it by hand before searching for the next one. Tom Select leaves the text in
+        // place as soon as a load function is supplied - it does not know whether the remote search
+        // is still relevant - so it is up to us to clear it, and to reopen the list on that blank.
         if (this.element.multiple) {
             config.onItemAdd = function () {
                 this.setTextboxValue('');
@@ -84,9 +84,9 @@ export default class extends Controller {
             };
         }
 
-        // Pastille de couleur devant le libellé, quand les <option> portent un data-color (états
-        // du matériel : voir les maquettes 25b/25e/25f du handoff UFA, où l'état se lit à sa
-        // couleur avant de se lire à son nom). Sans data-color, rendu standard.
+        // Color chip before the label, when the <option> elements carry a data-color (equipment
+        // conditions: see mockups 25b/25e/25f of the UFA handoff, where the condition reads from its
+        // color before it reads from its name). With no data-color, standard rendering.
         if (this.element.querySelector('option[data-color]')) {
             const withDot = (data, escape) => {
                 const option = this.element.querySelector(`option[value="${CSS.escape(data.value)}"]`);

@@ -15,17 +15,17 @@ final class Version20260802210622 extends AbstractMigration
     }
 
     /**
-     * Les colonnes ajoutées sont d'abord posées avec une valeur par défaut, le temps que les lignes
-     * existantes la reçoivent, puis la valeur par défaut est retirée - le modèle Doctrine n'en
-     * déclare aucune, et un diff ultérieur voudrait sinon la supprimer à nouveau.
+     * The columns added are first laid down with a default value, long enough for the existing rows
+     * to receive it, then the default is dropped - the Doctrine model declares none, and a later diff
+     * would otherwise want to remove it again.
      *
-     * Les valeurs choisies pour l'existant reconduisent le comportement d'avant :
-     *  - un cahier de texte était lisible par les étudiants de la formation dès qu'il existait, donc
-     *    ses trois temps deviennent « visible dès maintenant » (le défaut du modèle, « masqué », ne
-     *    vaut que pour les cahiers ouverts à partir de maintenant) ;
-     *  - un devoir était visible dès sa création, donc il est publié à l'instant de la migration ;
-     *  - une échéance à la journée valait pour la fin de cette journée, d'où 23:59 ;
-     *  - une pièce jointe ne s'affichait qu'au contenu réalisé, d'où le temps « pendant ».
+     * The values chosen for the existing rows carry the previous behavior over:
+     *  - a cahier de texte was readable by the program's students as soon as it existed, so its three
+     *    parts become « visible dès maintenant » (the model's default, « masqué », only applies to
+     *    the cahiers opened from now on);
+     *  - an assignment was visible from its creation, so it is published as of the migration;
+     *  - a day-grained deadline meant the end of that day, hence 23:59;
+     *  - an attachment was only displayed on the work done, hence the « during » part.
      */
     public function up(Schema $schema): void
     {
@@ -38,8 +38,8 @@ final class Version20260802210622 extends AbstractMigration
         $this->addSql('CREATE INDEX IDX_30C544BA6C36A50E ON assignment (lesson_session_id)');
         $this->addSql("UPDATE assignment SET accepted_formats = '[]', visible_at = NOW()");
 
-        // La conversion DATE -> DATETIME poserait 00:00 : les devoirs existants seraient soudain
-        // attendus au réveil plutôt qu'en fin de journée.
+        // The DATE -> DATETIME conversion would set 00:00: existing assignments would suddenly be due
+        // on waking up rather than at the end of the day.
         $this->addSql('ALTER TABLE assignment CHANGE due_date due_date DATETIME NOT NULL');
         $this->addSql("UPDATE assignment SET due_date = DATE_ADD(DATE(due_date), INTERVAL '23:59' HOUR_MINUTE)");
 

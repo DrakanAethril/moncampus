@@ -1,5 +1,5 @@
-{# Barre d'outils et note de pied à part, comme les tableaux DataTables des deux autres écrans du
-   parc : le tableau, lui, tient toute la largeur de la carte, en-tête compris - disposition de
+{# Toolbar and footnote kept apart, like the DataTables tables of the other two screens of the
+   equipment pool: the table itself takes the full width of the card, header included - layout from
    design/design_handoff_ufa/screenshots/25c-etats-configuration.png. #}
 <div class="cm-card-toolbar">
     <div class="form-check form-switch m-0">
@@ -11,9 +11,9 @@
     <table class="table table-vcenter card-table table-striped">
         <thead>
             <tr>
-                {# Largeurs de la maquette 25c : la poignée ne prend que sa place, le nom occupe le
-                   reste, couleur et actions sont calées à droite. Sans elles le navigateur répartit
-                   les quatre colonnes à parts presque égales et la poignée flotte au milieu. #}
+                {# Widths from mockup 25c: the handle takes only its own room, the name takes the
+                   rest, color and actions are pinned to the right. Without them the browser spreads
+                   the four columns almost evenly and the handle floats in the middle. #}
                 <th style="width: 26px"></th>
                 <th>{{ 'structureNameColumnLabel'|trans }}</th>
                 <th style="width: 160px">{{ 'structureColorColumnLabel'|trans }}</th>
@@ -33,8 +33,8 @@
                             </svg>
                         </span>
                     </td>
-                    {# Pastille devant le nom, nom en gras, code couleur seul dans sa colonne :
-                       disposition de design/design_handoff_ufa/screenshots/25c-etats-configuration.png. #}
+                    {# Chip before the name, name in bold, color code alone in its column: layout from
+                       design/design_handoff_ufa/screenshots/25c-etats-configuration.png. #}
                     <td>
                         <span class="cm-select-dot cm-select-dot--lg" style="background: {{ conditionType.color }}"></span>
                         <strong>{{ conditionType.name }}</strong>
@@ -46,7 +46,7 @@
                         {% if isInactive %}
                             <form method="post" action="{{ path('app_laptops_configuration_reactivate', {id: conditionType.id}) }}" class="d-inline">
                                 <input type="hidden" name="_token" value="{{ csrf_token('laptop_configuration_deactivate') }}">
-                                {# Réactiver est l'action principale d'une ligne désactivée : bleu, comme Modifier (25c). #}
+                                {# Réactiver is the main action of a deactivated row: blue, like Modifier (25c). #}
                                 <button type="submit" class="cm-action--warning" style="background: none; border: 0;">{{ 'reactivateActionLabel'|trans }}</button>
                             </form>
                         {% else %}

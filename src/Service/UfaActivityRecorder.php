@@ -12,15 +12,15 @@ use App\Enum\UfaActivityType;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Le seul point d'écriture du journal UFA (App\Entity\UfaActivity). Ajouter un suivi = un case
- * dans App\Enum\UfaActivityType, sa clé de traduction, et un appel ici.
+ * The only write point of the UFA log (App\Entity\UfaActivity). Adding a tracked action = a case in
+ * App\Enum\UfaActivityType, its translation key, and a call here.
  *
- * À appeler APRÈS le flush de l'action observée : le journal la constate, il ne participe pas à
- * sa transaction. Une écriture de journal qui échouerait ne doit pas annuler une signature.
+ * To be called AFTER the flush of the action observed: the log records it, it does not take part in
+ * its transaction. A log write that failed must not cancel a signature.
  *
- * Le payload est rempli ici et non par les appelants, pour que la même phrase soit composable
- * quel que soit l'écran d'où l'action est partie - le tuteur qui signe lui-même et le staff qui
- * signe pour son compte produisent la même ligne, seul l'acteur change.
+ * The payload is filled in here and not by the callers, so that the same sentence is composable
+ * whatever screen the action started from - the tutor signing themselves and the staff signing on
+ * their behalf produce the same row, only the actor changes.
  */
 class UfaActivityRecorder
 {
@@ -44,9 +44,9 @@ class UfaActivityRecorder
             'tutor' => $this->name($tutor),
             'actor' => $this->name($actor),
             'period' => $period?->getName() ?? '',
-            // Pour les phrases qui mentionnent la période entre parenthèses : sans ce suffixe
-            // pré-composé, une relance d'engagement - qui ne porte sur aucune période - affichait
-            // des parenthèses vides.
+            // For the sentences that mention the period in parentheses: without this pre-composed
+            // suffix, an engagement reminder - which bears on no period - displayed empty
+            // parentheses.
             'periodSuffix' => null !== $period ? ' ('.$period->getName().')' : '',
             ...$extraPayload,
         ]);

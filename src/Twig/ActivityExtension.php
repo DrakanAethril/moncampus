@@ -11,13 +11,12 @@ use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
 
 /**
- * Compose la phrase d'une ligne de journal (App\Entity\UfaActivity /
- * App\Entity\PlatformActivity) : les tables stockent un type et un instantané de noms, jamais la
- * phrase elle-même - voir le docblock des entités. C'est ici que les deux se rejoignent.
+ * Composes the sentence of a log row (App\Entity\UfaActivity /
+ * App\Entity\PlatformActivity): the tables store a type and a snapshot of names, never the sentence
+ * itself - see the entities' docblocks. This is where the two meet.
  *
- * Le payload est recopié en placeholders %clé% : ajouter une donnée à afficher revient à la
- * mettre dans le payload côté recorder et à s'en servir dans la traduction, sans toucher à ce
- * fichier.
+ * The payload is copied into %key% placeholders: adding a datum to display amounts to putting it in
+ * the payload on the recorder side and using it in the translation, without touching this file.
  */
 class ActivityExtension extends AbstractExtension
 {
@@ -42,9 +41,9 @@ class ActivityExtension extends AbstractExtension
 
         $message = $this->translator->trans($activity->getType()->messageKey(), $parameters);
 
-        // Filet pour les lignes plus anciennes que la phrase : ajouter un placeholder à une
-        // traduction laisse les payloads déjà écrits sans la clé correspondante, et le traducteur
-        // rend alors le %jeton% tel quel. On l'efface plutôt que d'afficher de la plomberie.
+        // A safety net for rows older than the sentence: adding a placeholder to a translation leaves
+        // the payloads already written without the matching key, and the translator then renders the
+        // %token% as is. It is erased rather than displaying plumbing.
         return trim(preg_replace('/\s*%[a-zA-Z0-9_]+%/', '', $message));
     }
 }

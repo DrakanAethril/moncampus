@@ -11,13 +11,13 @@
 {% endblock %}
 {% block page_title %}{{ 'ufaAlternanceShowPageHeading'|trans }} — {{ tutorLink.student.displayName ?? tutorLink.student.username }}{% endblock %}
 {% block page_actions %}
-    {# Une seule action ici : imprimer et exporter en PDF vivent sur la liseuse du livret, où
-       elles portent sur ce qu'on est en train de lire - même règle pour tous les rôles. #}
+    {# A single action here: printing and exporting to PDF live on the booklet reader, where they
+       bear on what is being read - same rule for every role. #}
     <a href="{{ path('app_ufa_alternance_livret', {id: tutorLink.id}) }}" class="btn btn-primary">{{ 'ufaAlternanceActionConsultLivretLabel'|trans }}</a>
 {% endblock %}
 
 {% block main %}
-    {# Sous-titre 34a : formation · entreprise · tuteur · chargé de suivi #}
+    {# Subtitle 34a: program · company · tutor · follow-up officer #}
     <div class="text-secondary mb-3" style="margin-top: -8px;">
         {% if tutorLink.testAlternance %}<span class="badge bg-purple-lt me-1">{{ 'ufaAlternanceTestBadgeLabel'|trans }}</span>{% endif %}
         {{ tutorLink.program.displayShortName }}
@@ -36,10 +36,10 @@
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
                     <strong>{{ 'ufaAlternanceSuiviBannerLateTitleLabel'|trans }}</strong>
-                    {# La mise à disposition du livret n'est pas rattachée à une période et n'a donc
-                       pas d'échéance : son message se passe de date, plutôt que d'afficher
-                       "depuis le ." (même raison pour le repli sans dueDate - InternshipEvaluationPeriod
-                       ::getEndDate() est nullable). #}
+                    {# Making the booklet available is not attached to a period and therefore has no
+                       deadline: its message does without a date, rather than displaying
+                       "depuis le ." (same reason for the fallback with no dueDate -
+                       InternshipEvaluationPeriod::getEndDate() is nullable). #}
                     {% if currentStatus.isEngagementStep %}
                         {{ 'ufaAlternanceSuiviBannerEngagementBodyLabel'|trans({'%actor%': currentActorName}) }}
                     {% elseif currentStatus.dueDate %}
@@ -115,8 +115,8 @@
                             {% endif %}
                         </div>
                     </div>
-                    {# Chaîne des 4 rôles (34a) - chaque pastille ouvre le parcours du rôle
-                       correspondant : c'est la navigation staff vers les wizards. #}
+                    {# Chain of the 4 roles (34a) - each chip opens the corresponding role's wizard:
+                       this is the staff navigation into the wizards. #}
                     {% if row.status.step != 'not_opened' %}
                         {% set roleLinks = [
                             {label: 'ufaAlternanceRoleTutorLabel'|trans, url: path('app_ufa_alternance_period_tuteur', {id: tutorLink.id, periodId: row.period.id, step: 'comportement'}), signedAt: row.tutorEvaluation ? row.tutorEvaluation.signedAt : null, reached: true},

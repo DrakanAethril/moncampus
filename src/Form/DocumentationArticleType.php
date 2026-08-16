@@ -10,6 +10,7 @@ use App\Entity\Group;
 use App\Entity\User;
 use App\Enum\DocumentationAudience;
 use App\Enum\DocumentationStatus;
+use App\Validator\AllowedUpload;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -25,7 +26,6 @@ use Symfony\Component\Form\FormEvents;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\All;
-use Symfony\Component\Validator\Constraints\File;
 
 /**
  * The article editor of handoff 2d.
@@ -126,8 +126,14 @@ class DocumentationArticleType extends AbstractType
                 // All(), not a bare File(): with multiple => true the submitted value is an array
                 // of uploads, and a File constraint aimed at the array itself answers "this value
                 // should be of type string" on every save, attachment or not.
+                // The platform rule, unnarrowed. This field used to declare no type restriction at
+                // all - an .exe was accepted - so putting it under the platform rule is a pure
+                // tightening. It is deliberately not narrowed to "documents" the way messaging and
+                // the lesson log are: a documentation article legitimately attaches a capture, a
+                // notebook or a source file, and narrowing it further would be a product decision
+                // design/validated/upload-policy.md did not take.
                 'constraints' => [
-                    new All([new File(maxSize: FileUploadDefaults::MAX_SIZE)]),
+                    new All([new AllowedUpload()]),
                 ],
             ]);
 

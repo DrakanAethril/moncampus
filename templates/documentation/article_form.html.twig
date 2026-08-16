@@ -1,7 +1,7 @@
 {% extends 'layout/app.html.twig' %}
 
-{# Écran 2d - édition d'un article. Deux colonnes : la rédaction à gauche, tout ce qui décide de
-   sa diffusion à droite, dans une seule carte dont les blocs sont séparés par un filet. #}
+{# Screen 2d - editing an article. Two columns: the writing on the left, everything that decides its
+   distribution on the right, in a single card whose blocks are separated by a rule. #}
 
 {% block title %}{{ isEdit ? 'documentationEditHeading'|trans : 'documentationNewHeading'|trans }}{% endblock %}
 
@@ -87,14 +87,14 @@
                 {{ form_errors(form.status) }}
             </div>
 
-            {# radio-reveal, comme l'écran de création de travail : les deux champs de date ne
-               s'affichent que sur « Sur une période ». Le formulaire, lui, efface les dates quand
-               « Permanente » est choisi - c'est le serveur qui décide, pas l'affichage. #}
+            {# radio-reveal, like the assignment creation screen: the two date fields are only shown
+               on « Sur une période ». The form itself clears the dates when « Permanente » is chosen
+               - it is the server that decides, not the display. #}
             <div class="cm-doc-card-block" data-controller="radio-reveal" data-radio-reveal-value="period">
                 <div class="cm-doc__rule cm-doc__rule--gold"><span>{{ 'documentationDiffusionFieldLabel'|trans }}</span></div>
                 <div class="cm-doc-radios">
-                    {# Le thème de formulaire rend déjà sa propre étiquette liée à la case ; on ne
-                       la redouble pas ici (`label: false` n'est pas honoré à ce niveau). #}
+                    {# The form theme already renders its own label bound to the checkbox; it is not
+                       duplicated here (`label: false` is not honoured at this level). #}
                     {% for choice in form.diffusion %}
                         <div class="cm-doc-radio">
                             {{ form_widget(choice, {attr: {'data-radio-reveal-target': 'radio', 'data-action': 'change->radio-reveal#refresh'}}) }}

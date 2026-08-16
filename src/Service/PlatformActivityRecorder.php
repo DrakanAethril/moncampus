@@ -11,11 +11,11 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
- * Le seul point d'écriture du journal plateforme (App\Entity\PlatformActivity) - pendant de
- * App\Service\UfaActivityRecorder, mêmes règles, et rien de l'UFA n'y entre.
+ * The only write point of the platform log (App\Entity\PlatformActivity) - the counterpart of
+ * App\Service\UfaActivityRecorder, same rules, and nothing from the UFA enters it.
  *
- * $request sert à relever IP et User-Agent : les deux seules colonnes propres à ce journal, et
- * celles qui rendent une liste de connexions réellement utile.
+ * $request serves to read the IP and the User-Agent: the only two columns specific to this log, and
+ * the ones that make a list of logins genuinely useful.
  */
 class PlatformActivityRecorder
 {

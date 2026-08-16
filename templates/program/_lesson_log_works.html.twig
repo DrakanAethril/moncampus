@@ -1,5 +1,5 @@
-{# Travaux donnés sur ce temps. Ce sont des devoirs à part entière : ils alimentent le « Travail à
-   réaliser » de l'étudiant et se retrouvent dans la liste des devoirs de la formation. #}
+{# Assignments given on this part. They are assignments in their own right: they feed the student's
+   « Travail à réaliser » and appear in the program's assignment list. #}
 <div class="cm-work-list">
     {% for work in works %}
         <div class="cm-work">
@@ -12,9 +12,9 @@
                     {%- if work.quizInstance %} · {{ work.quizInstance.name }}{% endif %}
                     {%- if work.evaluation %} · {{ work.evaluation.name }}{% endif %}
                     {%- if not work.isVisibleFor() %} · {{ 'lessonLogWorkNotPublishedLabel'|trans }}{% endif %}
-                    {#- Suivi du public : « ouvert par » pour ce qui se lit, « fait par » pour ce
-                        qui se déclare. N'a de sens qu'une fois le travail publié - personne ne peut
-                        avoir ouvert ce qui n'est pas encore visible. -#}
+                    {#- Audience tracking: « ouvert par » for what is read, « fait par » for what is
+                        declared. Only makes sense once the assignment is published - nobody can have
+                        opened what is not visible yet. -#}
                     {%- set stats = workTracking[work.id]|default(null) %}
                     {%- if stats and work.isVisibleFor() %}
                         {%- if stats.opened is not null %} · {{ 'lessonLogWorkOpenedCountLabel'|trans({'%count%': stats.opened, '%total%': stats.total}) }}{% endif %}
@@ -24,19 +24,19 @@
             </div>
             <span class="cm-badge {{ work.nature.badgeClass }}">{{ work.nature.labelKey|trans }}</span>
             {% if canViewTeacherTools and work.nature.expectsSelfAssessment and work.evaluation %}
-                {# Suivi des estimations reçues (5d) - lisible par tout enseignant de la formation,
-                   pas seulement par qui peut modifier la séance, mais par aucun étudiant : l'écran
-                   qu'il ouvre montre les estimations de toute la classe. #}
+                {# Tracking of the estimates received (5d) - readable by any teacher of the program,
+                   not only by whoever may edit the séance, but by no student: the screen it opens
+                   shows the estimates of the whole class. #}
                 <a class="cm-action--main ms-3" href="{{ path('app_program_self_assessments', {id: program.id, assignmentId: work.id}) }}">{{ 'selfAssessmentTrackingLinkLabel'|trans }}</a>
             {% endif %}
             {% if canEdit %}
-                {# Le travail s'ouvre dans l'assistant (design_handoff_creation_travail 2a), monté en
-                   modale par-dessus la séance - c'est le seul écran d'un travail depuis qu'il a
-                   remplacé le modal propre au cahier de texte. #}
+                {# The assignment opens in the wizard (design_handoff_creation_travail 2a), mounted as
+                   a modal over the séance - it is the only screen of an assignment since it replaced
+                   the cahier de texte's own modal. #}
                 <a class="cm-action--warning ms-3" href="{{ path('app_assignment_edit', {id: work.id, embed: 'modal'}) }}" data-turbo-frame="assignment-wizard">{{ 'editActionLabel'|trans }}</a>
-                {# formaction plutôt qu'un <form> imbriqué : la liste des travaux vit à l'intérieur du
-                   formulaire qui enveloppe les trois temps, et un <form> dans un <form> est du HTML
-                   invalide que le navigateur laisse tomber sans rien dire. #}
+                {# formaction rather than a nested <form>: the assignment list lives inside the form
+                   that wraps the three parts, and a <form> inside a <form> is invalid HTML the browser
+                   drops without saying a word. #}
                 <button type="submit" class="cm-action--danger ms-3"
                         formaction="{{ path('app_program_timetable_session_log_work_remove', {id: program.id, sessionId: session.id, assignmentId: work.id}) }}"
                         formmethod="post" formnovalidate

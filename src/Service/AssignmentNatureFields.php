@@ -45,8 +45,8 @@ final class AssignmentNatureFields
             $assignment->setEvaluation(null);
             $assignment->setSelfAssessmentFeedback(null);
         } else {
-            // La maquette annonce un seul retour possible - « note comparée à la sienne » - et ne
-            // pose donc pas la question.
+            // The mockup announces a single possible feedback - « note comparée à la sienne » - and
+            // therefore does not ask the question.
             $assignment->setSelfAssessmentFeedback($assignment->getSelfAssessmentFeedback() ?? SelfAssessmentFeedback::Comparison);
         }
 
@@ -62,9 +62,9 @@ final class AssignmentNatureFields
             $assignment->setReadTrackingEnabled(false);
         }
 
-        // Une production sans nom n'annonce rien : la ligne restée vide est simplement abandonnée.
-        // Les positions se referment derrière elle, sinon le tableau de bord de l'étudiant
-        // ordonnerait autour d'un trou.
+        // A production with no name announces nothing: a row left empty is simply dropped. The
+        // positions close up behind it, otherwise the student's dashboard would order itself around a
+        // gap.
         $position = 0;
         foreach ($assignment->getExpectedProductions()->toArray() as $production) {
             if ('' === trim($production->getName())) {

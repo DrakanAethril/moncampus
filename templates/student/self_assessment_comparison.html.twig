@@ -4,8 +4,8 @@
 
 {% block title %}{{ 'selfAssessmentComparisonPageHeading'|trans }} - {{ evaluation.name }}{% endblock %}
 
-{# La même page sert à l'étudiant et à l'enseignant qui ouvre le « détail » d'un élève depuis le
-   suivi (5d) : seuls le fil d'Ariane et le titre changent, la comparaison est la même. #}
+{# The same page serves the student and the teacher opening a student's « détail » from the tracking
+   screen (5d): only the breadcrumb and the title change, the comparison is the same. #}
 {% set viewed = viewedStudent is defined ? viewedStudent : null %}
 
 {% block page_breadcrumb %}
@@ -53,7 +53,7 @@
             </div>
         </div>
 
-        {# Phrase de synthèse : sur- ou sous-estimation, en points. #}
+        {# Summary sentence: over- or under-estimation, in points. #}
         <div class="cm-sa-summary">
             {% if comparator.isFair(gap) %}
                 {{ 'selfAssessmentSummaryFairLabel'|trans }}
@@ -79,8 +79,8 @@
                         {% set currentSection = row.sectionName %}
                         {% set sectionIndex = sectionIndex + 1 %}
                         <div class="cm-sa-section">
-                            {# Repère de la partie, pas de la ligne : `slice` car Twig ne sait pas
-                               indexer une chaîne. #}
+                            {# Marker of the section, not of the row: `slice` because Twig cannot index
+                               a string. #}
                             <span class="cm-sa-section__letter">{{ 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'|slice(sectionIndex, 1) ?: '·' }}</span>
                             <span class="cm-sa-section__name">{{ row.sectionName }}</span>
                         </div>

@@ -8,11 +8,11 @@ use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
 /**
- * Travail de nature Autoévaluation : l'étudiant estime sa note sur une évaluation du carnet
- * (design_handoff_carnet_de_notes, PROMPT_MODIFICATIONS §9).
+ * Assignment of the Autoévaluation nature: the student estimates their grade on a gradebook
+ * evaluation (design_handoff_carnet_de_notes, PROMPT_MODIFICATIONS §9).
  *
- * Rien à reprendre sur l'existant : les deux colonnes ajoutées à `assignment` ne valent que pour la
- * nouvelle nature et restent nulles partout ailleurs.
+ * Nothing to migrate on the existing data: the two columns added to `assignment` only apply to the
+ * new nature and stay null everywhere else.
  */
 final class Version20260803211632 extends AbstractMigration
 {

@@ -8,6 +8,8 @@ use App\Entity\QuizQuestion;
 use App\Enum\QuestionDifficulty;
 use App\Enum\QuestionTimeMode;
 use App\Enum\QuestionType;
+use App\Service\UploadPolicy;
+use App\Validator\AllowedUpload;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
@@ -17,7 +19,6 @@ use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Component\Validator\Constraints\File;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Constraints\Positive;
 
@@ -78,11 +79,7 @@ class QuizQuestionType extends AbstractType
                 'required' => false,
                 'help' => FileUploadDefaults::MAX_SIZE_HELP_KEY,
                 'constraints' => [
-                    new File(
-                        maxSize: FileUploadDefaults::MAX_SIZE,
-                        mimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
-                        mimeTypesMessage: 'quizQuestionImageInvalidTypeMessage',
-                    ),
+                    new AllowedUpload(UploadPolicy::images()),
                 ],
             ])
             ->add('removeImage', CheckboxType::class, [

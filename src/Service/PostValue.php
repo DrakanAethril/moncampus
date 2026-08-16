@@ -80,6 +80,35 @@ final class PostValue
     }
 
     /**
+     * A repeated field of identifiers (`members[]`, `programs[]`) as a list of ints - the POST
+     * counterpart of QueryValue::intList(), and the reason a controller never has to cast a
+     * submitted id itself.
+     *
+     * Zero and anything unparseable are dropped, since no row carries id 0: a field naming only
+     * junk names nothing, which is the same answer as submitting nothing.
+     *
+     * @return list<int>
+     */
+    public static function intList(Request $request, string $key): array
+    {
+        $value = self::raw($request, $key);
+
+        if (!\is_array($value)) {
+            $value = [$value];
+        }
+
+        $ids = [];
+
+        foreach ($value as $entry) {
+            if (is_numeric($entry) && 0 !== (int) $entry) {
+                $ids[] = (int) $entry;
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
      * True only for the forms a checkbox actually posts; everything else, including the empty
      * string and an absent field, is false.
      */

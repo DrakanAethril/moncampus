@@ -10,13 +10,13 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Une adresse à laquelle la plateforme n'écrit plus, alimentée par les rebonds définitifs et les
- * plaintes remontés par la file « events ».
+ * An address the platform no longer writes to, fed by the permanent bounces and the complaints
+ * reported through the « events » queue.
  *
- * L'enjeu n'est pas l'adresse morte elle-même mais la réputation du domaine : SES suspend l'envoi
- * d'un compte au-delà de 5 % de rebonds, ce qui couperait aussi le mail transactionnel de
- * l'établissement, qui partage la même région. Bloquer en amont est donc une protection de la
- * plateforme entière, pas une commodité d'affichage.
+ * What is at stake is not the dead address itself but the domain's reputation: SES suspends an
+ * account's sending beyond 5 % of bounces, which would also cut the school's transactional mail,
+ * sharing the same region. Blocking upstream is therefore a protection of the whole platform, not a
+ * display convenience.
  */
 #[ORM\Entity(repositoryClass: EmailSuppressionRepository::class)]
 #[ORM\Table(name: 'email_suppression')]
@@ -28,14 +28,14 @@ class EmailSuppression
     #[ORM\Column]
     private ?int $id = null;
 
-    /** Toujours stockée en minuscules : la comparaison doit être insensible à la casse. */
+    /** Always stored in lower case: the comparison must be case-insensitive. */
     #[ORM\Column(length: 255)]
     private string $address;
 
     #[ORM\Column(length: 20, enumType: EmailSuppressionReason::class)]
     private EmailSuppressionReason $reason;
 
-    /** Le motif détaillé renvoyé par SES (`diagnosticCode`), pour pouvoir l'expliquer à l'élève. */
+    /** The detailed reason returned by SES (`diagnosticCode`), so it can be explained to the student. */
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $details = null;
 

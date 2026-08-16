@@ -8,19 +8,19 @@ use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
 /**
- * L'assistant de création d'un travail (design_handoff_creation_travail 2a) : ce qu'un travail
- * annonce désormais en plus de son titre et de son échéance.
+ * The assignment creation wizard (design_handoff_creation_travail 2a): what an assignment now
+ * announces beyond its title and its deadline.
  *
- * Trois familles s'ajoutent à `assignment` : son caractère et sa notation (obligatoire/facultatif,
- * noté/non noté et la visibilité de ce choix), les règles de dépôt (retard autorisé, suivi de
- * lecture), et ses rattachements (matière, lot de groupes visé, évaluation créée au carnet). Deux
- * tables filles portent ce qu'un travail peut avoir en plusieurs exemplaires : les productions
- * attendues, chacune avec son format et éventuellement sa propre échéance, et les supports joints.
+ * Three families are added to `assignment`: its character and its grading (mandatory/optional,
+ * graded/not graded and the visibility of that choice), the submission rules (late allowed, read
+ * tracking), and its attachments (matière, group batch targeted, evaluation created in the
+ * gradebook). Two child tables carry what an assignment may have several of: the expected
+ * productions, each with its format and possibly its own deadline, and the attached supports.
  *
- * Les travaux existants sont repris à leur sens d'avant, et non aux valeurs par défaut du nouvel
- * écran : obligatoires (ce qu'ils étaient tous), non notés (aucun n'a jamais fait naître
- * d'évaluation au carnet), dépôt en retard fermé, suivi de lecture ouvert - la trace d'ouverture
- * étant déjà écrite pour eux par AssignmentView.
+ * Existing assignments are carried over with the meaning they had before, and not with the new
+ * screen's default values: mandatory (which they all were), not graded (none has ever given birth to
+ * a gradebook evaluation), late submission closed, read tracking open - the opening trace being
+ * already written for them by AssignmentView.
  */
 final class Version20260806095638 extends AbstractMigration
 {
@@ -35,11 +35,11 @@ final class Version20260806095638 extends AbstractMigration
         $this->addSql('CREATE TABLE assignment_expected_production (id INT AUTO_INCREMENT NOT NULL, name VARCHAR(255) NOT NULL, format VARCHAR(20) NOT NULL, due_date DATETIME DEFAULT NULL, position INT NOT NULL, assignment_id INT NOT NULL, INDEX IDX_E29E2842D19302F8 (assignment_id), PRIMARY KEY (id)) DEFAULT CHARACTER SET utf8mb4');
         $this->addSql('ALTER TABLE assignment_attachment ADD CONSTRAINT FK_47FCBD64D19302F8 FOREIGN KEY (assignment_id) REFERENCES assignment (id) ON DELETE CASCADE');
         $this->addSql('ALTER TABLE assignment_expected_production ADD CONSTRAINT FK_E29E2842D19302F8 FOREIGN KEY (assignment_id) REFERENCES assignment (id) ON DELETE CASCADE');
-        // Les DEFAULT portent la reprise des travaux existants (voir le docblock) autant que la
-        // valeur d'une insertion qui ne les nommerait pas.
+        // The DEFAULTs carry the migration of existing assignments (see the docblock) as much as the
+        // value of an insert that would not name them.
         $this->addSql('ALTER TABLE assignment ADD mandatory TINYINT NOT NULL DEFAULT 1, ADD graded TINYINT NOT NULL DEFAULT 0, ADD grading_visible_to_students TINYINT NOT NULL DEFAULT 1, ADD late_submission_allowed TINYINT NOT NULL DEFAULT 0, ADD read_tracking_enabled TINYINT NOT NULL DEFAULT 1, ADD topic_id INT DEFAULT NULL, ADD group_batch_id INT DEFAULT NULL, ADD gradebook_evaluation_id INT DEFAULT NULL');
-        // La matière d'un travail déjà donné depuis une séance se déduit de cette séance - c'est
-        // elle qui la portait, et le travail la reprend telle quelle.
+        // The matière of an assignment already given from a séance is inferred from that séance - it
+        // is what carried it, and the assignment takes it as is.
         $this->addSql('UPDATE assignment a INNER JOIN lesson_session s ON s.id = a.lesson_session_id SET a.topic_id = s.topic_id WHERE s.topic_id IS NOT NULL');
         $this->addSql('ALTER TABLE assignment ADD CONSTRAINT FK_30C544BA1F55203D FOREIGN KEY (topic_id) REFERENCES topic (id) ON DELETE SET NULL');
         $this->addSql('ALTER TABLE assignment ADD CONSTRAINT FK_30C544BAFAAEF205 FOREIGN KEY (group_batch_id) REFERENCES group_batch (id) ON DELETE SET NULL');

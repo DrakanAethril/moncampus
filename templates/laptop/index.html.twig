@@ -17,10 +17,10 @@
     ]} %}
 {% endblock %}
 {% block page_title %}{{ page_heading_key|trans }}{% endblock %}
-{# Pas d'onglets ici, contrairement aux autres écrans à onglets de l'application : le menu UFA >
-   Matériel > Ordinateurs portables mène déjà directement à ces trois pages, les onglets n'auraient
-   fait que doubler cette navigation. L'action principale remonte donc en tête de page, à la place
-   qu'elle occupe sur les maquettes 25a/25c/25d. #}
+{# No tabs here, unlike the application's other tabbed screens: the UFA > Matériel > Ordinateurs
+   portables menu already leads straight to these three pages, and tabs would only have duplicated
+   that navigation. The main action therefore moves up to the top of the page, to the place it
+   occupies on mockups 25a/25c/25d. #}
 {% block page_actions %}{% include 'laptop/_' ~ activeTab ~ '_button.html.twig' %}{% endblock %}
 
 {% block main %}
