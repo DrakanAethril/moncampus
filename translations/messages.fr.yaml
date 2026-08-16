@@ -4103,7 +4103,7 @@ aboutVersionLabel: 'Version'
 # découpage tronc commun / SLAM / SISR. Tous les chiffres sont mesurés par
 # App\Service\TechnicalProfile, jamais saisis ici.
 technicalPageHeading: 'Description technique'
-technicalLedeText: "MonCampus est une application de gestion de campus, à dominante pédagogique : emploi du temps, cahier de texte, travaux à faire, carnet de notes, progressions, quiz. Elle ne s'y limite pas — suivi de l'alternance, courrier des élèves, annuaire, prêt de matériel, support et courses d'orientation en font aussi partie. Son code source est public et sous licence libre : cette page décrit ce qu'il y a dedans, pour que les étudiants qui l'utilisent tous les jours puissent aussi l'étudier. Le découpage suit celui du référentiel du BTS SIO : un tronc commun, puis ce qui relève de l'option SLAM et ce qui relève de l'option SISR."
+technicalLedeText: "MonCampus est une application de gestion de campus, à dominante pédagogique : emploi du temps, cahier de texte, travaux à faire, carnet de notes, progressions, quiz, espaces de cours et wiki. Elle ne s'y limite pas — suivi de l'alternance, courrier des élèves, annuaire, base documentaire, prêt de matériel, support et courses d'orientation en font aussi partie. Son code source est public et sous licence libre : cette page décrit ce qu'il y a dedans, pour que les étudiants qui l'utilisent tous les jours puissent aussi l'étudier. Le découpage suit celui du référentiel du BTS SIO : un tronc commun, puis ce qui relève de l'option SLAM et ce qui relève de l'option SISR."
 technicalMeasuredNoticeText: "Les chiffres de cette page sont comptés dans l'application au moment où vous l'affichez — entités déclarées à Doctrine, routes du routeur compilé, fichiers réellement déployés. Deux exceptions, mesurées le %date% : le nombre de commits et le nombre de tests, l'historique Git et le dossier des tests n'étant pas embarqués dans l'image de production."
 
 technicalVolumetryHeading: 'Volumétrie'
@@ -4154,7 +4154,7 @@ technicalStackFrontText: 'Twig pour les gabarits côté serveur, Hotwired (Turbo
 technicalStackDirectoryTerm: 'Annuaire'
 technicalStackDirectoryText: "LDAP. Les comptes, les groupes et les droits viennent de l'annuaire de l'établissement ; l'application ne les invente pas."
 technicalStackServicesTerm: 'Services externes'
-technicalStackServicesText: 'AWS S3 (fichiers), SES et SQS (courrier), Mercure (temps réel), Gotenberg (PDF), Matomo (mesure d’audience, soumise au consentement), Discord (alertes).'
+technicalStackServicesText: 'AWS S3 (fichiers), SES et SQS (courrier), ClamAV (analyse antivirale des dépôts), Mercure (temps réel), Gotenberg (PDF), Matomo (mesure d’audience, soumise au consentement), Discord (alertes).'
 
 technicalCommonRequestHeading: "Le trajet d'une requête"
 technicalCommonRequestIntroText: "Comprendre ce trajet, c'est comprendre l'essentiel de l'architecture. Quand un utilisateur demande une page :"
@@ -4180,6 +4180,8 @@ technicalSecurityXssTerm: 'XSS'
 technicalSecurityXssText: "Twig échappe toutes les variables par défaut. Les textes rédigés dans l'éditeur enrichi, eux, sont du HTML : ils traversent un assainisseur à liste blanche avant d'être stockés, qui ne laisse passer qu'un jeu d'éléments et d'attributs connus."
 technicalSecuritySqlTerm: 'Injection SQL'
 technicalSecuritySqlText: "les requêtes passent par Doctrine et utilisent des paramètres liés. La valeur saisie par l'utilisateur n'est jamais concaténée dans la requête."
+technicalSecurityUploadsTerm: 'Dépôts de fichiers'
+technicalSecurityUploadsText: "un fichier déposé traverse deux contrôles distincts. Une règle unique à la plateforme dit d'abord quelles extensions sont acceptées — chaque champ peut la restreindre, aucun ne peut en sortir — et vérifie que l'extension correspond au type réellement deviné à la lecture du fichier ; les extensions dangereuses sont refusées sur chacun des segments du nom, pas seulement sur le dernier. Un antivirus analyse ensuite le contenu, avant que le moindre octet n'atteigne le stockage. S'il ne répond pas, le dépôt est refusé plutôt qu'accepté sans analyse."
 technicalSecurityRateLimitTerm: 'Limitation de débit'
 technicalSecurityRateLimitText: "la connexion par lien envoyé par e-mail est limitée, à la fois par adresse IP et par adresse de destination, pour qu'elle ne serve pas à sonder les comptes existants."
 technicalSecuritySupplyChainTerm: "Chaîne d'approvisionnement"
@@ -4264,7 +4266,7 @@ technicalSisrHeading: 'Option SISR — infrastructure, systèmes et réseaux'
 technicalSisrContainersHeading: 'Conteneurisation'
 technicalSisrContainersIntroText: "L'application ne s'installe pas sur un serveur : elle est empaquetée dans une image Docker, qui contient le serveur web, PHP, ses extensions et le code. La même image tourne sur le poste du développeur et en production, ce qui supprime la classe de pannes du « ça marche chez moi »."
 technicalSisrContainersStagesText: "L'image est construite en plusieurs étapes. Une étape de construction installe les outils, télécharge les dépendances et compile les assets ; l'image finale part d'une base Debian minimale et ne reçoit que le résultat. Les outils de construction ne sont donc pas embarqués en production — l'image est plus petite et sa surface d'attaque plus réduite. Le processus y tourne sous un compte non privilégié."
-technicalSisrContainersComposeText: "L'orchestration locale se fait avec Docker Compose, en fichiers superposés : un fichier de base, une surcouche de développement qui ajoute les services de substitution (base de données, annuaire, serveur de messagerie, stockage objet) et le débogueur pas-à-pas, une surcouche de production qui injecte les secrets depuis l'environnement."
+technicalSisrContainersComposeText: "L'orchestration locale se fait avec Docker Compose, en fichiers superposés : un fichier de base, une surcouche de développement qui ajoute les services de substitution (base de données, annuaire, serveur de messagerie, stockage objet) et le débogueur pas-à-pas, une surcouche de production qui injecte les secrets depuis l'environnement et démarre l'antivirus. Ce dernier n'est pas dans le fichier de base à dessein : il réclame environ 1,5 Go de mémoire, que la chaîne d'intégration n'a aucune raison de payer à chaque exécution."
 
 technicalSisrServerHeading: 'Serveur applicatif'
 technicalSisrServerIntroText: "FrankenPHP réunit dans un seul processus le serveur HTTP Caddy et l'interpréteur PHP. Il n'y a ni nginx ni PHP-FPM, donc pas de socket entre les deux ni de double configuration à tenir."
@@ -4278,6 +4280,8 @@ technicalServiceLdapTerm: 'Annuaire'
 technicalServiceLdapText: "LDAP, source de vérité des comptes et des groupes. L'application n'y écrit jamais directement : elle dépose des demandes de provisionnement qu'un script externe traite."
 technicalServiceStorageTerm: 'Stockage objet'
 technicalServiceStorageText: "Amazon S3 pour les pièces jointes, les enregistrements audio et les PDF, avec un CDN devant. En développement, un serveur MinIO local parle le même protocole : le code est identique."
+technicalServiceAntivirusTerm: 'Analyse antivirale'
+technicalServiceAntivirusText: "ClamAV, dans son propre conteneur. L'application ne lui donne pas un chemin de fichier — les deux conteneurs ne partagent aucun disque — mais lui envoie les octets sur une connexion réseau et lit son verdict. Sa base de signatures, quelques centaines de méga-octets, est conservée dans un volume pour qu'une mise en production ne la retélécharge pas : le temps de ce téléchargement, tous les dépôts seraient refusés. En développement et en intégration continue, le service n'est pas démarré et l'analyse est simplement désactivée."
 technicalServiceMailTerm: 'Courrier'
 technicalServiceMailText: "Amazon SES pour l'envoi. Pour la réception, SES dépose le message dans un compartiment S3 et signale son arrivée dans une file SQS, qu'une tâche planifiée relève. Il n'y a pas de processus résident à surveiller."
 technicalServiceMercureTerm: 'Temps réel'

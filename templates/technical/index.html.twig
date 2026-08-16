@@ -184,7 +184,7 @@
                     <span>{{ 'technicalCommonSecurityIntroText'|trans }}</span>
                 </div>
                 <div class="cm-tech__security">
-                    {% for item in ['Authn', 'Authz', 'Csrf', 'Xss', 'Sql', 'RateLimit', 'SupplyChain', 'Secrets'] %}
+                    {% for item in ['Authn', 'Authz', 'Csrf', 'Xss', 'Sql', 'Uploads', 'RateLimit', 'SupplyChain', 'Secrets'] %}
                         <div class="cm-tech__security-item">
                             <span class="cm-tech__security-term">{{ ('technicalSecurity' ~ item ~ 'Term')|trans }}</span>
                             <span class="cm-tech__security-text">{{ ('technicalSecurity' ~ item ~ 'Text')|trans }}</span>
@@ -234,7 +234,7 @@
         <div class="cm-tech__card">
             <h3>{{ 'technicalSisrServicesHeading'|trans }}</h3>
             <div class="cm-tech__services">
-                {% for item in ['Database', 'Ldap', 'Storage', 'Mail', 'Mercure', 'Pdf', 'Discord'] %}
+                {% for item in ['Database', 'Ldap', 'Storage', 'Antivirus', 'Mail', 'Mercure', 'Pdf', 'Discord'] %}
                     <div class="cm-tech__service">
                         <span class="cm-tech__service-term">{{ ('technicalService' ~ item ~ 'Term')|trans }}</span>
                         <span class="cm-tech__service-text">{{ ('technicalService' ~ item ~ 'Text')|trans }}</span>
