@@ -7119,3 +7119,4 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
 .cm-wiki-import__blocking { background: var(--cm-red-bg); color: var(--cm-red-tx); border: 1px solid var(--cm-red-tx); }
 .cm-wiki-import__warnings { background: var(--cm-gold-bg); color: var(--cm-gold-tx); border: 1px solid var(--cm-gold); }
 .cm-wiki-import__blocking li, .cm-wiki-import__warnings li { margin: 2px 0; }
+.cm-wiki-import__reset { max-width: 760px; margin-top: 10px; }

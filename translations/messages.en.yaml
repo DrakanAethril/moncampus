@@ -4651,3 +4651,4 @@ wikiImportEntryTooLargeMessage: 'A file in this archive is over the maximum allo
 wikiImportArchiveTooLargeMessage: 'The uncompressed contents of this archive are over the maximum allowed size.'
 wikiImportUnsafePathMessage: 'This archive holds a file path that escapes its folder: it is refused.'
 wikiImportSymlinkMessage: 'This archive holds a symbolic link: it is refused.'
+wikiImportAnotherFileAction: 'Choose another file'
