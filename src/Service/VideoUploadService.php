@@ -26,6 +26,7 @@ class VideoUploadService
 {
     public function __construct(
         private readonly S3Client $s3Client,
+        private readonly AntivirusScanner $antivirus,
         private readonly string $awsS3Bucket,
         private readonly string $awsS3Prefix,
         private readonly string $awsS3PublicEndpoint,
@@ -51,6 +52,11 @@ class VideoUploadService
      */
     public function store(string $key, UploadedFile $file): bool
     {
+        // The third path into the bucket, and the one design/validated/upload-policy.md's survey
+        // missed: it names two services, and this raw-S3-client one is a third. It scans for the
+        // same reason AudioUploadService does - see App\Tests\Service\BucketWritePathsTest.
+        $this->antivirus->assertClean($file->getPathname(), $file->getClientOriginalName());
+
         $stream = fopen($file->getPathname(), 'r');
 
         if (false === $stream) {

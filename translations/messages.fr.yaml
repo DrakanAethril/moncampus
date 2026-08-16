@@ -5347,3 +5347,5 @@ uploadPolicyForbiddenExtensionMessage: 'Ce type de fichier n’est jamais accept
 uploadPolicyArchiveOnlyExtensionMessage: 'Ce type de fichier n’est accepté qu’à l’intérieur d’une archive ZIP.'
 uploadPolicyUnsupportedExtensionMessage: 'Ce type de fichier n’est pas accepté ici.'
 uploadPolicyMismatchedTypeMessage: 'Le contenu de ce fichier ne correspond pas à son extension.'
+uploadPolicyInfectedFileMessage: 'Ce fichier a été refusé : l’analyse antivirale y a détecté une menace ({{ signature }}).'
+uploadPolicyScannerUnavailableMessage: 'L’analyse antivirale est indisponible : le dépôt est refusé par précaution. Réessayez dans quelques minutes.'

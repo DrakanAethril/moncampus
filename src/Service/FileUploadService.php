@@ -22,6 +22,7 @@ class FileUploadService
 {
     public function __construct(
         private readonly FilesystemOperator $uploadsStorage,
+        private readonly AntivirusScanner $antivirus,
         private readonly string $awsS3Bucket,
         private readonly string $awsS3PublicEndpoint,
         private readonly string $awsCloudfrontDomain,
@@ -40,6 +41,13 @@ class FileUploadService
         if (!str_ends_with($prefix, '/')) {
             throw new \InvalidArgumentException(sprintf('Prefix "%s" must end with "/".', $prefix));
         }
+
+        // Before a single byte reaches S3, so a rejected file never enters the bucket and nothing
+        // has to be cleaned up afterwards. Usually a no-op: the form constraint already cleared
+        // this exact temp file, and App\Service\AntivirusScanner remembers it for the request. The
+        // paths with no form at all - the mobile API, the import assistants - are why it is here
+        // and not only there.
+        $this->antivirus->assertClean($file->getPathname(), $file->getClientOriginalName());
 
         $key = $prefix.$filename;
         $stream = fopen($file->getPathname(), 'r') ?: throw new \RuntimeException(sprintf('Could not open "%s" for reading.', $file->getPathname()));
