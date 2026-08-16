@@ -59,6 +59,10 @@ services:
             # Backgrounds of the printed loan conventions - read from disk and inlined as base64,
             # never served to a browser, hence a plain project path rather than an asset.
             string $loanDocumentResourceDir: '%kernel.project_dir%/resources/laptop_loan_documents'
+            # App\Service\WikiPdfStylesheet reads public/katex/ off disk to inline it into the wiki's
+            # PDF export - Gotenberg has no browser origin, so a relative asset URL resolves to
+            # nothing there.
+            string $projectDir: '%kernel.project_dir%'
             string $ldapPasswordAesKey: '%env(AES_KEY)%'
             # "Tout le campus", the root of the documentation base's perimeter - the name of the
             # App\Entity\Group every other perimeter group hangs under in Paramètres > Groupes.
