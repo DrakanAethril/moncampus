@@ -26,6 +26,41 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.08.16'
+      date: '2026-08-16'
+      summary: "Le wiki fait son entrée : des espaces de pages arborescentes, écrites dans un éditeur complet (encadrés, formules, schémas), qui s'exportent en PDF relié ou en archive Markdown réimportable. En arrière-plan, tous les dépôts de fichiers de la plateforme passent désormais par une même règle d'extensions et de taille, et par une analyse antivirale."
+      entries:
+          - type: nouveaute
+            title: 'Le wiki'
+            detail: "Un wiki personnel pour chacun, des wikis partagés adressés à un public, et dans chacun une arborescence de pages que l'on réordonne au glisser-déposer. Chaque page offre son sommaire automatique, ses pièces jointes, ses liens vers les autres pages du wiki, une recherche plein texte et l'historique de ses deux dernières versions, avec restauration. Un verrou signale qu'une page est déjà en cours d'écriture plutôt que d'écraser silencieusement le travail d'un collègue."
+          - type: nouveaute
+            title: "L'éditeur du wiki"
+            detail: "Barre de menus complète : encadrés, accordéons, blocs de code, caractères spéciaux, rechercher-remplacer, formules mathématiques (KaTeX) et schémas (Mermaid). Le sélecteur « Lien wiki » cherche parmi les pages du wiki courant."
+          - type: nouveaute
+            title: 'Exporter un wiki en PDF'
+            detail: "Le wiki entier, une branche ou une seule page, avec page de couverture, sommaire, pieds de page numérotés et titres décalés selon la profondeur de chaque page — un document relié, pas une pile de pages."
+          - type: nouveaute
+            title: 'Archive Markdown : export et import'
+            detail: "Un wiki s'exporte en archive de fichiers Markdown lisibles ailleurs, et se réimporte sans rien perdre de sa mise en forme. L'import se fait en trois étapes, avec une analyse préalable qui dit exactement ce qui sera créé avant d'écrire quoi que ce soit."
+          - type: nouveaute
+            title: 'Analyse antivirale des fichiers déposés'
+            detail: "Tout fichier déposé sur la plateforme est analysé avant d'être enregistré. Un fichier reconnu comme infecté est refusé à l'envoi."
+          - type: modification
+            title: 'Une seule règle de dépôt de fichiers pour toute la plateforme'
+            detail: "Les extensions acceptées et les tailles maximales sont désormais définies au même endroit ; chaque champ ne peut que restreindre cette liste. Deux champs qui n'imposaient aucune limite — les pièces jointes d'un article et celles d'un travail à faire — y entrent à leur tour."
+          - type: modification
+            title: "L'envoi d'une vidéo affiche sa progression"
+            detail: "Nom, poids, barre de progression, pourcentage et bouton Annuler pendant le transfert, puis « Traitement… » le temps de l'enregistrement. Un fichier trop volumineux est enfin signalé comme un refus, et non plus comme une erreur inexpliquée."
+          - type: fix
+            title: "L'export PDF d'une progression n'est plus rogné sur le bord droit"
+            detail: "La bordure droite des bannières et des tableaux disparaissait à l'impression. La liste « Moyens et supports mobilisés sur l'année » quitte par ailleurs la partie 1, où elle répétait ce que le détail par phase donne déjà."
+          - type: fix
+            title: 'Les liens collés dans un éditeur ne sont plus réécrits'
+            detail: "Un lien interne était enregistré avec l'adresse du serveur qui l'avait vu passer, et se cassait ailleurs. Il est désormais conservé tel quel."
+          - type: interne
+            title: 'Commentaires du code passés en anglais'
+          - type: interne
+            title: 'Image ClamAV épinglée sur linux/amd64 en développement'
     - version: '2026.08.15.2'
       date: '2026-08-15'
       summary: "Une base documentaire fait son entrée sous Ressources : des articles rédigés et illustrés dans l'application, adressés à un public et à un périmètre précis grâce à la nouvelle hiérarchie de groupes. L'import d'une séquence ne bloque plus sur du contenu resté non affecté, et l'export PDF d'une progression gagne en lisibilité."
