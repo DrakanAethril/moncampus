@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\Command;
 
-use App\Service\FileUploadService;
-use App\Service\StagedUploadStore;
+use App\Repository\DeletedObjectRepository;
+use App\Service\ObjectStore;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -17,18 +18,24 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * The nightly cleanup of the uploads bucket (design/validated/object-deletion.md, "The purge").
  *
  * One command and one cron line, because there is one thing to say about this platform's bytes:
- * this is what removes them. It has two passes, and this lot ships the first:
+ * this is what removes them. It walks App\Entity\DeletedObject and removes every object whose
+ * retention window has run out - thirty days for a teacher's deleted course material, one day for
+ * the two origins nobody asked to keep:
  *
- * | Pass    | Rule                                                                |
- * |---------|---------------------------------------------------------------------|
- * | staged  | unclaimed staged uploads older than 24 h                             |
- * | deleted | (lot 1 bis) DeletedObject rows past their origin's retention window  |
+ * | Origin  | Window | What it is                                                            |
+ * |---------|--------|-----------------------------------------------------------------------|
+ * | staged  | 1 day  | an upload a teacher's browser sent and no form ever claimed            |
+ * | import  | 1 day  | images extracted from a document whose assistant was abandoned         |
+ * | (other) | 30 days| a file somebody deleted, and may still want back from a corbeille      |
  *
- * A staged object is one a teacher's browser sent and no form ever claimed - a screen abandoned
- * with files in the picker. It is the honest cost of uploading before the user commits to the form,
- * and paying it nightly is what keeps `staged/` from growing without bound. An S3 lifecycle rule on
- * that prefix is the belt to these suspenders, not a replacement: the rule cannot be read from the
- * code, and this can.
+ * The staged case is the honest cost of uploading before the user commits to a form, and paying it
+ * nightly is what keeps `staged/` from growing without bound. design/validated/object-deletion.md
+ * gave it a pass of its own, listing the prefix by age; it is folded in here instead, because
+ * App\Service\StagedUploadStore now schedules each staged object at the moment it writes it - see
+ * that class for why (the IAM user has no `s3:ListBucket`, so there is nothing to list with).
+ *
+ * An S3 lifecycle rule on `staged/` is the belt to these suspenders, not a replacement: the rule
+ * cannot be read from the code, and this can.
  *
  * Three properties it must keep, each for a reason already met in this repository:
  *
@@ -41,19 +48,20 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *   leak - which is the failure the whole design exists to avoid.
  *
  * Cron context note: `symfony/ux-turbo` pings Mercure on every flush, CLI included, so `MERCURE_URL`
- * must be set wherever this runs. The staged pass alone touches no row, but the deleted pass will.
+ * must be set wherever this runs - the deleted pass flushes on every batch.
  */
 #[AsCommand(
     name: 'app:uploads:purge',
-    description: 'Supprime définitivement les objets en attente : dépôts anticipés jamais utilisés, puis fichiers supprimés hors délai.',
+    description: 'Supprime définitivement les objets dont le délai de conservation est écoulé.',
 )]
 class PurgeUploadsCommand extends Command
 {
     private const int DEFAULT_LIMIT = 500;
 
     public function __construct(
-        private readonly StagedUploadStore $stagedUploads,
-        private readonly FileUploadService $fileUploads,
+        private readonly ObjectStore $objectStore,
+        private readonly DeletedObjectRepository $deletedObjects,
+        private readonly EntityManagerInterface $entityManager,
     ) {
         parent::__construct();
     }
@@ -73,23 +81,40 @@ class PurgeUploadsCommand extends Command
 
         $io->title('Purge des dépôts');
 
-        return $this->purgeStaged($io, $limit, $dryRun);
+        return $this->purgeDeleted($io, $limit, $dryRun);
     }
 
-    /** @return int a Command:: exit code */
-    private function purgeStaged(SymfonyStyle $io, int $limit, bool $dryRun): int
+    /**
+     * The pass that ends the thirty-day window: every App\Entity\DeletedObject whose retention has
+     * run out, its bytes removed and `purgedAt` stamped **after** the removal succeeded.
+     *
+     * Stamping after and not before is the whole of the honesty this design asks for: a row marked
+     * purged while the object is still in the bucket would turn a permission problem into a
+     * permanent, invisible leak. A failure is counted on the row (`attempts`, `lastError`) and
+     * retried the next night, and the run still exits non-zero so the failure is seen.
+     *
+     * @return int a Command:: exit code
+     */
+    private function purgeDeleted(SymfonyStyle $io, int $limit, bool $dryRun): int
     {
-        $keys = $this->stagedUploads->stale(new \DateTimeImmutable(), $limit);
+        $now = new \DateTimeImmutable();
+        $cutoffByOrigin = [];
 
-        if ([] === $keys) {
-            $io->writeln('Dépôts anticipés : rien à supprimer.');
+        foreach (array_keys(ObjectStore::RETENTION_DAYS_BY_ORIGIN) as $origin) {
+            $cutoffByOrigin[$origin] = $now->modify(\sprintf('-%d days', ObjectStore::retentionDaysFor($origin)));
+        }
+
+        $due = $this->deletedObjects->findDue($cutoffByOrigin, $now->modify(\sprintf('-%d days', ObjectStore::DEFAULT_RETENTION_DAYS)), $limit);
+
+        if ([] === $due) {
+            $io->writeln('Fichiers supprimés : rien à purger.');
 
             return Command::SUCCESS;
         }
 
         if ($dryRun) {
-            $io->writeln(\sprintf('Dépôts anticipés : %d objet(s) seraient supprimés.', \count($keys)));
-            $io->listing(\array_slice($keys, 0, 20));
+            $io->writeln(\sprintf('Fichiers supprimés : %d objet(s) seraient purgés.', \count($due)));
+            $io->listing(array_map(static fn ($row): string => \sprintf('%s (%s, supprimé le %s)', $row->getStorageKey(), $row->getOrigin(), $row->getDeletedAt()->format('d/m/Y')), \array_slice($due, 0, 20)));
 
             return Command::SUCCESS;
         }
@@ -97,22 +122,25 @@ class PurgeUploadsCommand extends Command
         $purged = 0;
         $failures = [];
 
-        foreach ($keys as $key) {
+        foreach ($due as $row) {
             try {
-                // Immediate and not deferred, unlike a user deletion: nobody asked for this object
-                // to exist, and routing it through the thirty-day window would mean keeping bytes
-                // for a file that was never anything but an accident.
-                $this->fileUploads->delete($key);
+                $this->objectStore->remove($row->getStorageKey());
+                $row->setPurgedAt(new \DateTimeImmutable());
                 ++$purged;
             } catch (\Throwable $failure) {
-                $failures[] = \sprintf('%s : %s', $key, $failure->getMessage());
+                $row->recordFailure($failure->getMessage());
+                $failures[] = \sprintf('%s : %s', $row->getStorageKey(), $failure->getMessage());
             }
         }
 
-        $io->writeln(\sprintf('Dépôts anticipés : %d objet(s) supprimés.', $purged));
+        // One flush for the batch: a run killed halfway then re-does the objects it had already
+        // removed, and removing an object that has gone is a success everywhere in this command.
+        $this->entityManager->flush();
+
+        $io->writeln(\sprintf('Fichiers supprimés : %d objet(s) purgés.', $purged));
 
         if ([] !== $failures) {
-            $io->error(\sprintf('%d objet(s) n’ont pas pu être supprimés.', \count($failures)));
+            $io->error(\sprintf('%d objet(s) n’ont pas pu être purgés ; ils seront retentés.', \count($failures)));
             $io->listing(\array_slice($failures, 0, 20));
 
             return Command::FAILURE;

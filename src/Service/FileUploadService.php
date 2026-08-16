@@ -23,6 +23,7 @@ class FileUploadService
     public function __construct(
         private readonly FilesystemOperator $uploadsStorage,
         private readonly AntivirusScanner $antivirus,
+        private readonly ObjectStore $objectStore,
         private readonly string $awsS3Bucket,
         private readonly string $awsS3PublicEndpoint,
         private readonly string $awsCloudfrontDomain,
@@ -60,6 +61,12 @@ class FileUploadService
             }
         }
 
+        // Since deletion became deferred (design/validated/object-deletion.md), writing a key that
+        // is pending removal has to cancel that removal - otherwise a caller using a deterministic
+        // key, which this method's docblock explicitly allows, would have its **new** object purged
+        // thirty days later.
+        $this->objectStore->cancelDeletion($key);
+
         return $key;
     }
 
@@ -89,9 +96,21 @@ class FileUploadService
         return ['ContentDisposition' => 'attachment'];
     }
 
-    public function delete(string $key): void
+    /**
+     * Marks the object for removal - it does **not** remove it
+     * (design/validated/object-deletion.md).
+     *
+     * The name and the signature are unchanged on purpose: nineteen call sites across the
+     * application say `delete($key)` and none of them had to learn anything. What changed is what
+     * the word means - the bytes now live on for the retention window of their origin, which is
+     * what gives the file library a corbeille and what makes a mistaken delete recoverable.
+     *
+     * `$origin` is optional for the same reason: the existing callers pass a key and nothing else,
+     * and App\Service\ObjectStore reads the origin off the key's own prefix when they do.
+     */
+    public function delete(string $key, ?string $origin = null): void
     {
-        $this->uploadsStorage->delete($key);
+        $this->objectStore->scheduleDeletion($key, $origin);
     }
 
     /**

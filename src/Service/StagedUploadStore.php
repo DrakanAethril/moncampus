@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Service;
 
 use League\Flysystem\FilesystemOperator;
-use League\Flysystem\StorageAttributes;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 /**
@@ -34,17 +33,28 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
  *
  * ## The token
  *
- * Signed, not stored. A staged upload has no row anywhere: the token *is* the record, carrying the
- * key, the name, the sniffed type, the size and the owner, with an HMAC over the lot. Two reasons
- * rather than one:
- *
- * - a table would need its own purge, kept in step with the objects it describes - a second truth
- *   about the same thing, which is the mistake `file-library.md` refuses for the quota as well;
- * - the purge can then work off the bucket alone (`staged/` listed by age), which is the only
- *   source that cannot drift from what is actually stored.
+ * Signed, not stored. A staged upload has no row of its own: the token *is* the record, carrying the
+ * key, the name, the sniffed type, the size and the owner, with an HMAC over the lot. A table
+ * describing staged objects would be a second truth about the same thing, kept in step by hand -
+ * the mistake `file-library.md` refuses for the quota as well.
  *
  * Nothing in the token is trusted on the way back in: the signature is verified, and the owner is
  * compared against the user doing the claiming, so one account cannot claim another's object.
+ *
+ * ## The fuse, and why the purge does not list the bucket
+ *
+ * An object is written here **already scheduled for deletion**: `stage()` records it through
+ * App\Service\ObjectStore with origin `staged`, whose retention is one day. Claiming it defuses that
+ * (the object is copied to the caller's prefix and the row goes); abandoning the screen does
+ * nothing, and App\Command\PurgeUploadsCommand removes it the next night.
+ *
+ * design/validated/object-deletion.md described this pass as a listing of `staged/` by age, on the
+ * grounds that the bucket is the one source that cannot drift. **It is also a source this deployment
+ * cannot read**: the IAM user holds PutObject, GetObject and DeleteObject on the bucket - measured
+ * with `app:uploads:check` - but not `s3:ListBucket`, so `ListObjectsV2` answers 403. Scheduling at
+ * write time reaches the same rule through a permission the runtime does have, and covers one case
+ * the listing missed: an upload that succeeded server-side but whose reply never reached the browser
+ * is fused like any other.
  */
 class StagedUploadStore
 {
@@ -54,12 +64,17 @@ class StagedUploadStore
      */
     public const string PREFIX = 'staged/';
 
-    /** How long an unclaimed object survives. Long enough for a slow form, short enough to matter. */
-    public const int RETENTION_HOURS = 24;
+    /**
+     * How long an unclaimed object survives, in the one place that decides it: the `staged` entry of
+     * App\Service\ObjectStore::RETENTION_DAYS_BY_ORIGIN. Long enough for a slow form, short enough
+     * to matter.
+     */
+    public const string ORIGIN = 'staged';
 
     public function __construct(
         private readonly FilesystemOperator $uploadsStorage,
         private readonly AntivirusScanner $antivirus,
+        private readonly ObjectStore $objectStore,
         private readonly string $appSecret,
     ) {
     }
@@ -96,6 +111,10 @@ class StagedUploadStore
                 fclose($stream);
             }
         }
+
+        // The fuse - see the class docblock. Lit before the token is handed out, so an object exists
+        // for no longer than a day unless a form claims it, whatever happens to the response.
+        $this->objectStore->scheduleDeletion($key, self::ORIGIN);
 
         // Sniffed, never claimed: getClientMimeType() only repeats what the sender chose to write,
         // and this value is what the field's own narrowing will later be checked against.
@@ -171,7 +190,12 @@ class StagedUploadStore
 
         $key = $prefix.$filename;
         $this->uploadsStorage->copy($staged->key, $key);
-        $this->uploadsStorage->delete($staged->key);
+        // Through the choke point like every other removal on this platform, and immediate rather
+        // than deferred: nobody has ever seen this object as a file of theirs, and it has just been
+        // copied - App\Service\ObjectStore's window exists for things somebody may want back. The
+        // fuse lit at stage time then has nothing left to burn, so its row goes too.
+        $this->objectStore->remove($this->objectStore->storageKeyFor($staged->key));
+        $this->objectStore->cancelDeletion($staged->key);
 
         return $key;
     }
@@ -187,55 +211,19 @@ class StagedUploadStore
     }
 
     /**
-     * Drops a staged object nobody claimed - a screen abandoned with the picker still holding files.
-     * Best effort: an object that has already gone is the outcome asked for.
+     * Drops a staged object a screen is done with - a picker whose file the teacher removed again
+     * before submitting. Best effort: an object that has already gone is the outcome asked for, and
+     * the fuse would have taken it within the day anyway.
      */
     public function discard(StagedUpload $staged): void
     {
         try {
-            $this->uploadsStorage->delete($staged->key);
+            $this->objectStore->remove($this->objectStore->storageKeyFor($staged->key));
+            $this->objectStore->cancelDeletion($staged->key);
         } catch (\Throwable) {
             // Nothing to report: the nightly purge is what actually guarantees this prefix stays
             // empty, and this is only the polite version of it.
         }
-    }
-
-    /**
-     * Everything under `staged/` older than the retention window, oldest first.
-     *
-     * Listing rather than a table, per the class docblock - the bucket is the only source that
-     * cannot drift from what is actually stored. The caller deletes; this only decides what is
-     * stale, so that the purge command stays the single thing that removes bytes.
-     *
-     * @return list<string> storage keys
-     */
-    public function stale(\DateTimeImmutable $now, int $limit): array
-    {
-        $threshold = $now->modify(\sprintf('-%d hours', self::RETENTION_HOURS))->getTimestamp();
-        $stale = [];
-
-        /** @var StorageAttributes $item */
-        foreach ($this->uploadsStorage->listContents(rtrim(self::PREFIX, '/'), true) as $item) {
-            if (!$item->isFile()) {
-                continue;
-            }
-
-            $lastModified = $item->lastModified();
-
-            // No timestamp means an adapter that does not report one; deleting on "we cannot tell"
-            // is how a purge removes a file somebody is still uploading.
-            if (null === $lastModified || $lastModified >= $threshold) {
-                continue;
-            }
-
-            $stale[] = $item->path();
-
-            if (\count($stale) >= $limit) {
-                break;
-            }
-        }
-
-        return $stale;
     }
 
     private function sign(string $key, string $originalName, string $mimeType, int $size, int $ownerId): StagedUpload
