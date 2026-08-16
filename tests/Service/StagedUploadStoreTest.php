@@ -6,6 +6,7 @@ namespace App\Tests\Service;
 
 use App\Service\AntivirusScanner;
 use App\Service\ClamAvClient;
+use App\Service\ObjectStore;
 use App\Service\StagedUploadStore;
 use League\Flysystem\Filesystem;
 use League\Flysystem\Local\LocalFilesystemAdapter;
@@ -26,13 +27,36 @@ class StagedUploadStoreTest extends TestCase
     private Filesystem $filesystem;
     private StagedUploadStore $store;
 
+    /** @var list<string> the origins scheduled for deletion, in order */
+    private array $scheduled = [];
+
+    /** @var list<string> the keys whose scheduled deletion was cancelled again */
+    private array $cancelled = [];
+
     protected function setUp(): void
     {
         $this->root = sys_get_temp_dir().'/staged-'.bin2hex(random_bytes(6));
         mkdir($this->root, 0o777, true);
 
         $this->filesystem = new Filesystem(new LocalFilesystemAdapter($this->root));
-        $this->store = new StagedUploadStore($this->filesystem, new AntivirusScanner(new ClamAvClient(), ''), 'test-secret');
+
+        // Removal goes through the choke point, never through Flysystem
+        // (design/validated/object-deletion.md) - so the double both stands in for S3 and records
+        // what this store asked somebody else to do. `storageKeyFor()` is the identity here: the
+        // test filesystem has no environment prefix.
+        $objectStore = $this->createStub(ObjectStore::class);
+        $objectStore->method('storageKeyFor')->willReturnArgument(0);
+        $objectStore->method('remove')->willReturnCallback(function (string $key): void {
+            $this->filesystem->delete($key);
+        });
+        $objectStore->method('scheduleDeletion')->willReturnCallback(function (string $key, ?string $origin): void {
+            $this->scheduled[] = $origin ?? '(derived)';
+        });
+        $objectStore->method('cancelDeletion')->willReturnCallback(function (string $key): void {
+            $this->cancelled[] = $key;
+        });
+
+        $this->store = new StagedUploadStore($this->filesystem, new AntivirusScanner(new ClamAvClient(), ''), $objectStore, 'test-secret');
     }
 
     protected function tearDown(): void
@@ -99,26 +123,21 @@ class StagedUploadStoreTest extends TestCase
         $this->store->claim($staged, 'library/', 'def.pdf');
     }
 
-    public function testOnlyUnclaimedObjectsPastTheRetentionWindowAreStale(): void
+    public function testAStagedObjectIsScheduledForRemovalTheMomentItIsWritten(): void
     {
-        $fresh = $this->store->stage($this->upload('fresh.pdf', 'body'), 12);
-        $old = $this->store->stage($this->upload('old.pdf', 'body'), 12);
-        touch($this->root.'/'.$old->key, time() - (StagedUploadStore::RETENTION_HOURS + 1) * 3600);
+        $this->store->stage($this->upload('cours.pdf', 'body'), 12);
 
-        $stale = $this->store->stale(new \DateTimeImmutable(), 50);
-
-        self::assertSame([$old->key], $stale);
-        self::assertNotContains($fresh->key, $stale);
+        // The fuse: an object exists for no longer than the `staged` window unless a form claims
+        // it, whatever happens to the response the browser was waiting for.
+        self::assertSame([StagedUploadStore::ORIGIN], $this->scheduled);
     }
 
-    public function testTheStaleListingIsBoundedByItsLimit(): void
+    public function testClaimingDefusesTheScheduledRemoval(): void
     {
-        foreach (['a.pdf', 'b.pdf', 'c.pdf'] as $name) {
-            $staged = $this->store->stage($this->upload($name, 'body'), 12);
-            touch($this->root.'/'.$staged->key, time() - (StagedUploadStore::RETENTION_HOURS + 1) * 3600);
-        }
+        $staged = $this->store->stage($this->upload('cours.pdf', 'body'), 12);
+        $this->store->claim($staged, 'library/', 'abc.pdf');
 
-        self::assertCount(2, $this->store->stale(new \DateTimeImmutable(), 2));
+        self::assertSame([$staged->key], $this->cancelled);
     }
 
     private function upload(string $name, string $contents): UploadedFile
