@@ -152,9 +152,23 @@ export default class extends Controller {
         });
 
         this.editor = editor;
+
+        // The last word before the page posts. Deliberately **synchronous** and without
+        // preventDefault: it only rewrites the field the form is about to read, so none of the
+        // re-submit trap described on renderKatexIntoField() applies. It exists because the
+        // per-change rebuild is driven by editor events, and a save that follows a programmatic
+        // setContent - or any path that writes the field without a change event - would otherwise
+        // post the flattened markup.
+        this.form = this.element.closest('form');
+        this.onSubmit = () => {
+            this.editor?.save();
+            this.renderKatexIntoField();
+        };
+        this.form?.addEventListener('submit', this.onSubmit);
     }
 
     disconnect() {
+        this.form?.removeEventListener('submit', this.onSubmit);
         this.editor?.remove();
     }
 
