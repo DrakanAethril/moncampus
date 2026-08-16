@@ -104,7 +104,8 @@ class WikiExportBuilder
             'depth' => $depth,
             'level' => $this->shift->titleLevel($depth),
             'anchor' => 'wiki-page-'.$node->getId(),
-            'body' => $this->shift->apply($body, $depth),
+            // One level further than the title, so the body nests under it - see bodyOffset().
+            'body' => $this->shift->apply($body, $this->shift->bodyOffset($depth)),
         ];
     }
 

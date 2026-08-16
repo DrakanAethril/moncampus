@@ -79,4 +79,16 @@ class WikiHeadingShiftTest extends TestCase
         self::assertSame(6, $shift->titleLevel(5));
         self::assertSame(6, $shift->titleLevel(12));
     }
+
+    public function testABodyNestsUnderItsOwnTitleRatherThanBesideIt(): void
+    {
+        $shift = new WikiHeadingShift();
+
+        // Shifting the body by the plain depth was tried first and read wrong in the produced PDF:
+        // a root page printed its title as h1 and then the author's own h1 as another h1 - the very
+        // "competing h1s" the shift exists to prevent, one page at a time.
+        self::assertSame($shift->titleLevel(0), $shift->bodyOffset(0));
+        self::assertSame('<h2>Écrit en h1</h2>', $shift->apply('<h1>Écrit en h1</h1>', $shift->bodyOffset(0)));
+        self::assertSame('<h3>Écrit en h1</h3>', $shift->apply('<h1>Écrit en h1</h1>', $shift->bodyOffset(1)));
+    }
 }
