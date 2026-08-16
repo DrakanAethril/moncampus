@@ -7,6 +7,8 @@ namespace App\Form;
 use App\Entity\Program;
 use App\Entity\SignupList;
 use App\Enum\MessageAudienceType;
+use App\Service\UploadPolicy;
+use App\Validator\AllowedUpload;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
@@ -19,7 +21,6 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\All;
-use Symfony\Component\Validator\Constraints\File;
 
 // audienceTypes/programs/includeStudents/includeTeachers/attachments wiring mirrors
 // MessageComposeType/AnnouncementType/AgendaEventType exactly - see those classes' docblocks.
@@ -89,19 +90,7 @@ class SignupListType extends AbstractType
                 'required' => false,
                 'help' => FileUploadDefaults::MAX_SIZE_HELP_KEY,
                 'constraints' => [
-                    new All([
-                        new File(
-                            maxSize: FileUploadDefaults::MAX_SIZE,
-                            mimeTypes: [
-                                'application/pdf', 'image/jpeg', 'image/png', 'image/webp',
-                                'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                                'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                                'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                                'text/plain', 'application/zip',
-                            ],
-                            mimeTypesMessage: 'messageAttachmentInvalidTypeMessage',
-                        ),
-                    ]),
+                    new All([new AllowedUpload(UploadPolicy::documents())]),
                 ],
             ])
             ->add('submit', SubmitType::class, [

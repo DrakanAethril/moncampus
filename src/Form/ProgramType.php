@@ -16,6 +16,8 @@ use App\Enum\ProgramAlternanceCalendarMode;
 use App\Enum\ProgramSyllabusMode;
 use App\Enum\VisibilityLevel;
 use App\Repository\EvaluationPeriodGroupRepository;
+use App\Service\UploadPolicy;
+use App\Validator\AllowedUpload;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
@@ -27,7 +29,6 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Component\Validator\Constraints\File;
 
 class ProgramType extends AbstractType
 {
@@ -119,11 +120,7 @@ class ProgramType extends AbstractType
                 'mapped' => false,
                 'required' => false,
                 'constraints' => [
-                    new File(
-                        maxSize: FileUploadDefaults::MAX_SIZE,
-                        mimeTypes: ['application/pdf'],
-                        mimeTypesMessage: 'programFileUploadInvalidTypeMessage',
-                    ),
+                    new AllowedUpload(UploadPolicy::pdf()),
                 ],
             ])
             ->add('financialManagementEnabled', CheckboxType::class, [
@@ -164,11 +161,7 @@ class ProgramType extends AbstractType
                 'mapped' => false,
                 'required' => false,
                 'constraints' => [
-                    new File(
-                        maxSize: FileUploadDefaults::MAX_SIZE,
-                        mimeTypes: ['application/pdf'],
-                        mimeTypesMessage: 'programFileUploadInvalidTypeMessage',
-                    ),
+                    new AllowedUpload(UploadPolicy::pdf()),
                 ],
             ])
             ->add('evaluationPeriodGroup', EntityType::class, [

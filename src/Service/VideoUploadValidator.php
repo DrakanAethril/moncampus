@@ -52,6 +52,14 @@ class VideoUploadValidator
             return 'videoUploadTooLargeError';
         }
 
+        // The platform upload rule applies here as everywhere else (design/validated/
+        // upload-policy.md): this validator has always read the file's *bytes*, and never its
+        // name, so a genuine MP4 uploaded as "cours.mp4.exe" passed. The media narrowing carries
+        // the same 200 M ceiling as MAX_BYTES above, which is where that number comes from.
+        if (!UploadPolicy::media()->accepts($file->getClientOriginalName(), $file->getMimeType())) {
+            return 'videoUploadNotMp4Error';
+        }
+
         // getMimeType() sniffs the content; getClientMimeType() only repeats what was sent.
         $mimeType = $file->getMimeType() ?? $file->getClientMimeType();
 

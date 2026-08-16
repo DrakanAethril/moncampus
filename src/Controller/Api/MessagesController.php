@@ -10,7 +10,6 @@ use App\Entity\MessageThread;
 use App\Entity\MessageThreadRecipient;
 use App\Entity\User;
 use App\Enum\MessageAudienceType;
-use App\Form\FileUploadDefaults;
 use App\Repository\MessageRepository;
 use App\Repository\MessageThreadRecipientRepository;
 use App\Repository\MessageThreadRepository;
@@ -22,6 +21,8 @@ use App\Service\MessageEmailNotifier;
 use App\Service\MessagingAccessChecker;
 use App\Service\PostValue;
 use App\Service\QueryValue;
+use App\Service\UploadPolicy;
+use App\Validator\AllowedUpload;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -30,7 +31,6 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Validator\Constraints\File;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 /**
@@ -47,15 +47,6 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 class MessagesController extends AbstractController
 {
     private const string ATTACHMENT_PREFIX = 'messages/';
-
-    /** @var list<string> */
-    private const array ATTACHMENT_MIME_TYPES = [
-        'application/pdf', 'image/jpeg', 'image/png', 'image/webp',
-        'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-        'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'text/plain', 'application/zip',
-    ];
 
     #[Route(path: '/api/messages/threads', name: 'api_messages_threads', methods: ['GET'])]
     public function threads(Request $request, MessageThreadRecipientRepository $recipientRepository, MessageRepository $messageRepository): JsonResponse
@@ -351,13 +342,14 @@ class MessagesController extends AbstractController
     }
 
     // Manual UploadedFile validation (rather than a Symfony Form's File/All constraint, which
-    // needs a form field to attach to) - same maxSize/mimeTypes as MessageComposeType/
-    // MessageReplyType's "attachments" field.
+    // needs a form field to attach to) - the same "documents" narrowing as MessageComposeType/
+    // MessageReplyType's "attachments" field, now taken from the one place it is declared instead
+    // of from a copy of the twelve MIME types that lived here.
     /** @return list<UploadedFile>|JsonResponse */
     private function validatedAttachments(Request $request, ValidatorInterface $validator): array|JsonResponse
     {
         $files = $request->files->all('attachments');
-        $constraint = new File(maxSize: FileUploadDefaults::MAX_SIZE, mimeTypes: self::ATTACHMENT_MIME_TYPES);
+        $constraint = new AllowedUpload(UploadPolicy::documents());
 
         foreach ($files as $file) {
             if (!$file instanceof UploadedFile || !$file->isValid()) {
