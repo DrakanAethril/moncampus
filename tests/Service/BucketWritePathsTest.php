@@ -33,6 +33,10 @@ class BucketWritePathsTest extends TestCase
         \App\Service\FileUploadService::class,
         \App\Service\AudioUploadService::class,
         \App\Service\VideoUploadService::class,
+        // The fourth, and the first one added since this test was written: staged uploads reach the
+        // bucket before any form is submitted (design/validated/file-library.md), which is exactly
+        // the shape this list exists to keep honest - it writes, so it scans.
+        \App\Service\StagedUploadStore::class,
     ];
 
     public function testOnlyTheKnownClassesTakeAWayIntoTheBucket(): void

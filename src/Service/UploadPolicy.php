@@ -242,6 +242,16 @@ final class UploadPolicy
         return $this->maxSize;
     }
 
+    /**
+     * The same ceiling as a number, for the two callers that cannot use the "20M" shorthand: the
+     * staging endpoint, which compares it against a client hint, and the validator's staged-upload
+     * branch, which has a size in bytes and no File constraint to delegate to.
+     */
+    public function maxSizeInBytes(): int
+    {
+        return self::toBytes($this->maxSize);
+    }
+
     /** @return list<string> */
     public function extensions(): array
     {

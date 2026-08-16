@@ -5356,6 +5356,8 @@ uploadPolicyUnsupportedExtensionMessage: 'Ce type de fichier n’est pas accept�
 uploadPolicyMismatchedTypeMessage: 'Le contenu de ce fichier ne correspond pas à son extension.'
 uploadPolicyInfectedFileMessage: 'Ce fichier a été refusé : l’analyse antivirale y a détecté une menace ({{ signature }}).'
 uploadPolicyScannerUnavailableMessage: 'L’analyse antivirale est indisponible : le dépôt est refusé par précaution. Réessayez dans quelques minutes.'
+uploadPolicyTooLargeMessage: 'Ce fichier est trop volumineux : la limite est de {{ limit }}.'
+stagedUploadMissingFileError: 'Aucun fichier reçu.'
 
 # Wiki - lot 4, le contenu.
 wikiOutlineHeading: 'Sur cette page'
