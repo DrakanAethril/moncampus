@@ -4668,3 +4668,5 @@ wikiTransferHelpText: 'These actions cover the whole wiki. To export a single pa
 
 # Wiki - lot 9, the foldable rail.
 wikiToggleBranchAction: 'Expand or collapse the sub-pages of "%title%"'
+wikiDangerZoneHeading: 'Danger Zone'
+wikiDangerZoneHelpText: 'Archiving keeps the wiki and its contents, out of the lists. Deleting is permanent.'

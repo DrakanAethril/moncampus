@@ -5439,3 +5439,5 @@ wikiTransferHelpText: 'Ces actions portent sur le wiki entier. Pour exporter une
 
 # Wiki - lot 9, le rail pliable.
 wikiToggleBranchAction: 'Déplier ou replier les sous-pages de « %title% »'
+wikiDangerZoneHeading: 'Danger Zone'
+wikiDangerZoneHelpText: 'Archiver garde le wiki et son contenu, en le sortant des listes. La suppression est définitive.'
