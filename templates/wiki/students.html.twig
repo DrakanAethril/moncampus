@@ -1,0 +1,78 @@
+{% extends 'layout/app.html.twig' %}
+
+{# "Wikis des étudiants" - the supervision screen, grouped by class.
+
+   The activated wikis are the content. The students who have none are present but demoted to a
+   collapsed, non-clickable line at the end of their group: the teacher keeps the most useful fact
+   on the screen - who has not started - without it drowning those who have. The "22 / 30" of the
+   group header gives the same information at a glance. #}
+
+{% block title %}{{ 'wikiStudentsPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'wikiStudentsNavLabel'|trans, url: path('app_wiki_students')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'wikiStudentsPageHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    {% if isStaff %}
+        <form class="cm-wiki-filter" method="get" action="{{ path('app_wiki_students') }}">
+            <select name="program" class="form-select cm-wiki-filter__select" aria-label="{{ 'wikiStudentsProgramFilterLabel'|trans }}">
+                {# A consultation filter, so its first entry may carry the "all" meaning - and its
+                   value stays empty, which App\Service\QueryValue reads without the 400 that
+                   InputBag::getInt() answers to an empty string. #}
+                <option value="">{{ 'wikiStudentsAllProgramsOption'|trans }}</option>
+                {% for program in allPrograms %}
+                    <option value="{{ program.id }}"{{ programFilter == program.id ? ' selected' }}>{{ program.displayShortName }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="cm-btn cm-btn--sm cm-btn--outline">{{ 'wikiFilterAction'|trans }}</button>
+        </form>
+    {% endif %}
+{% endblock %}
+
+{% block main %}
+    {% if programs is empty %}
+        <p class="cm-wiki__placeholder">{{ 'wikiStudentsEmptyText'|trans }}</p>
+    {% endif %}
+
+    {% for program in programs %}
+        {% set students = program.students|sort((a, b) => (a.lastname ?? a.username) <=> (b.lastname ?? b.username)) %}
+        {% set withWiki = students|filter(student => wikiByOwner[student.id] is defined) %}
+        {% set without = students|filter(student => wikiByOwner[student.id] is not defined) %}
+        <section class="cm-wiki-group">
+            <div class="cm-wiki-group__head">
+                <span class="cm-wiki-group__name">{{ program.displayShortName }}</span>
+                <span class="cm-wiki-group__count">{{ withWiki|length }} / {{ students|length }}</span>
+            </div>
+
+            <ul class="cm-wiki-list">
+                {% for student in withWiki %}
+                    {% set entry = wikiByOwner[student.id] %}
+                    <li class="cm-wiki-list__row">
+                        <a class="cm-wiki-list__title" href="{{ path('app_wiki_show', {id: entry.id}) }}">{{ student.displayName ?? student.username }}</a>
+                        <span class="cm-wiki-list__subtitle">{{ 'wikiPageCountSubtitle'|trans({'%count%': pageCounts[entry.id]|default(0)}) }}</span>
+                        <span class="cm-wiki-list__date">{{ entry.updatedAt|date('d/m/Y') }}</span>
+                    </li>
+                {% else %}
+                    <li class="cm-wiki-list__row cm-wiki-list__row--muted">{{ 'wikiStudentsNoWikiYetText'|trans }}</li>
+                {% endfor %}
+            </ul>
+
+            {% if without|length > 0 %}
+                <details class="cm-wiki-group__idle">
+                    <summary>{{ 'wikiStudentsWithoutWikiSummary'|trans({'%count%': without|length}) }}</summary>
+                    <ul class="cm-wiki-list cm-wiki-list--muted">
+                        {% for student in without %}
+                            <li class="cm-wiki-list__row cm-wiki-list__row--muted">{{ student.displayName ?? student.username }}</li>
+                        {% endfor %}
+                    </ul>
+                </details>
+            {% endif %}
+        </section>
+    {% endfor %}
+{% endblock %}

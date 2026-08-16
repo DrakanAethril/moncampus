@@ -1,0 +1,25 @@
+{% extends 'layout/app.html.twig' %}
+
+{# A wiki whose every node is in the trash - rare, and reachable, so it gets a screen rather than a
+   redirect loop through /wiki/{id}. #}
+
+{% block title %}{{ wiki.title }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'wiki/_breadcrumb.html.twig' with {wiki: wiki} %}
+{% endblock %}
+
+{% block page_title %}{{ wiki.title }}{% endblock %}
+
+{% block main %}
+    <div class="cm-wiki-invite">
+        <p class="cm-wiki-invite__lead">{{ 'wikiEmptyText'|trans }}</p>
+        {% if is_granted('WIKI_EDIT', wiki) %}
+            <form method="post" action="{{ path('app_wiki_node_create', {id: wiki.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('wiki_node') }}">
+                <input type="hidden" name="type" value="page">
+                <button type="submit" class="cm-btn cm-btn--primary">{{ 'wikiAddPageAction'|trans }}</button>
+            </form>
+        {% endif %}
+    </div>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends 'layout/app.html.twig' %}
+
+{# /wiki/personal when there is nothing to redirect to yet.
+
+   Nothing is written until the button below is pressed: consent, not statistics, is what keeps
+   1 500 empty wikis out of the database. The second paragraph is the one that matters - a student
+   learns here who reads their wiki, or never learns it at all. #}
+
+{% block title %}{{ 'wikiPersonalPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'wikiPersonalNavLabel'|trans, url: path('app_wiki_personal')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'wikiPersonalPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="cm-wiki-invite">
+        <p class="cm-wiki-invite__lead">{{ 'wikiInvitationLeadText'|trans }}</p>
+
+        <ul class="cm-wiki-invite__list">
+            <li>{{ 'wikiInvitationWhatText'|trans }}</li>
+            <li class="cm-wiki-invite__reader">
+                {{ (ownerIsStudent ? 'wikiInvitationReadersStudentText' : 'wikiInvitationReadersStaffText')|trans }}
+            </li>
+            <li>{{ 'wikiInvitationHomePageText'|trans }}</li>
+            <li>{{ 'wikiInvitationExportText'|trans }}</li>
+        </ul>
+
+        <form method="post" action="{{ path('app_wiki_personal_create') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('wiki_personal_create') }}">
+            <button type="submit" class="cm-btn cm-btn--primary">{{ 'wikiCreatePersonalAction'|trans }}</button>
+        </form>
+    </div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{# The rail: the whole tree of the wiki, plus the actions that change it.
+
+   The drag-and-drop reorder and the collapse state are wiki_tree_controller.js's, and the
+   controller owns this subtree exclusively - nothing else may rewrite it, which is the trap
+   recorded for DataTables and applies to any DOM-rewriting library. #}
+<aside class="cm-wiki__rail" data-controller="wiki-tree"
+       data-wiki-tree-move-url-value="{{ path('app_wiki_node_move', {id: wiki.id}) }}"
+       data-wiki-tree-editable-value="{{ is_granted('WIKI_EDIT', wiki) ? 'true' : 'false' }}"
+       data-wiki-tree-token-value="{{ csrf_token('wiki_node') }}"
+       data-action="dragstart->wiki-tree#dragStart dragend->wiki-tree#dragEnd dragover->wiki-tree#dragOver drop->wiki-tree#drop">
+    <div class="cm-wiki__rail-head">
+        <span class="cm-wiki__rail-title">{{ wiki.title }}</span>
+        {% if is_granted('WIKI_EDIT', wiki) %}
+            <form method="post" action="{{ path('app_wiki_node_create', {id: wiki.id}) }}" class="cm-wiki__rail-add">
+                <input type="hidden" name="_token" value="{{ csrf_token('wiki_node') }}">
+                <input type="hidden" name="type" value="page">
+                <button type="submit" class="cm-btn cm-btn--sm cm-btn--outline">{{ 'wikiAddPageAction'|trans }}</button>
+            </form>
+        {% endif %}
+    </div>
+
+    {% if tree is empty %}
+        <p class="cm-wiki__rail-empty">{{ 'wikiRailEmptyText'|trans }}</p>
+    {% else %}
+        <ul class="cm-wiki__tree" data-wiki-tree-target="root">
+            {% for row in tree %}
+                {% include 'wiki/_rail_node.html.twig' with {row: row, wiki: wiki, currentNode: node|default(null)} only %}
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <div class="cm-wiki__rail-foot">
+        {% if is_granted('WIKI_EDIT', wiki) %}
+            <a href="{{ path('app_wiki_trash', {id: wiki.id}) }}" class="cm-wiki__rail-link">{{ 'wikiTrashNavLabel'|trans }}</a>
+        {% endif %}
+        {% if is_granted('WIKI_MANAGE', wiki) %}
+            <a href="{{ path('app_wiki_settings', {id: wiki.id}) }}" class="cm-wiki__rail-link">{{ 'wikiSettingsNavLabel'|trans }}</a>
+        {% endif %}
+    </div>
+</aside>
