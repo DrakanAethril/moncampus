@@ -19,6 +19,12 @@
         {% endif %}
     </div>
 
+    {# A GET form, per the Turbo rule - "montre-moi un résultat" never posts. #}
+    <form class="cm-wiki__rail-search" method="get" action="{{ path('app_wiki_search', {id: wiki.id}) }}">
+        <input type="search" name="q" class="cm-wiki__rail-search-input"
+               placeholder="{{ 'wikiSearchInWikiPlaceholder'|trans }}" aria-label="{{ 'wikiSearchInWikiPlaceholder'|trans }}">
+    </form>
+
     {% if tree is empty %}
         <p class="cm-wiki__rail-empty">{{ 'wikiRailEmptyText'|trans }}</p>
     {% else %}

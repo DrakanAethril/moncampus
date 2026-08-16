@@ -8,6 +8,7 @@ use App\Entity\Wiki;
 use App\Entity\WikiNode;
 use App\Enum\WikiNodeType;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\ParameterType;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -140,6 +141,56 @@ class WikiNodeRepository extends ServiceEntityRepository
         }
 
         return $nodes[0] ?? null;
+    }
+
+    /**
+     * The rail's search, within one wiki.
+     *
+     * MATCH ... AGAINST in boolean mode over the FULLTEXT index on (title, body_text) - which is
+     * why `bodyText` is a column of its own rather than a LIKE over `body`: a search for "table"
+     * must find the word, not every page holding a table, and a LIKE could not use an index anyway.
+     *
+     * Native SQL rather than DQL because MATCH ... AGAINST is not part of DQL and adding a custom
+     * function to the ORM for one query would cost more than it saves. The ids come back from SQL
+     * and the rows are then hydrated normally, so nothing downstream has to know.
+     *
+     * @return list<WikiNode>
+     */
+    public function search(Wiki $wiki, string $booleanTerms, int $limit = 50): array
+    {
+        if ('' === $booleanTerms) {
+            return [];
+        }
+
+        /** @var list<array{id: int}> $rows */
+        $rows = $this->getEntityManager()->getConnection()->fetchAllAssociative(
+            'SELECT id FROM wiki_node
+             WHERE wiki_id = :wiki
+               AND deleted_at IS NULL
+               AND MATCH (title, body_text) AGAINST (:terms IN BOOLEAN MODE)
+             ORDER BY MATCH (title, body_text) AGAINST (:terms IN BOOLEAN MODE) DESC
+             LIMIT :limit',
+            ['wiki' => $wiki->getId(), 'terms' => $booleanTerms, 'limit' => $limit],
+            // LIMIT will not take a string parameter, so the type has to be declared.
+            ['limit' => ParameterType::INTEGER],
+        );
+
+        if ([] === $rows) {
+            return [];
+        }
+
+        /** @var list<WikiNode> $nodes */
+        $nodes = $this->createQueryBuilder('n')
+            ->andWhere('n.id IN (:ids)')
+            ->setParameter('ids', array_column($rows, 'id'))
+            ->getQuery()
+            ->getResult();
+
+        // The database ranked them; re-order the hydrated rows the same way rather than by id.
+        $rank = array_flip(array_column($rows, 'id'));
+        usort($nodes, static fn (WikiNode $a, WikiNode $b): int => ($rank[$a->getId()] ?? \PHP_INT_MAX) <=> ($rank[$b->getId()] ?? \PHP_INT_MAX));
+
+        return $nodes;
     }
 
     private function restrictToParent(\Doctrine\ORM\QueryBuilder $qb, ?WikiNode $parent): void

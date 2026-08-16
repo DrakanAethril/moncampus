@@ -84,4 +84,24 @@ class WikiRevision
     {
         return $this->createdAt;
     }
+
+    /**
+     * Which of a node's revisions are past the cap and may go.
+     *
+     * Pure, and here rather than in the repository, so the off-by-one that would either keep one
+     * row too many for ever or delete the revision somebody is about to restore is pinned by a test
+     * that needs no database.
+     *
+     * The parameter is deliberately wider than the lists its callers pass: array_values() below is
+     * input normalisation on a public method, not redundancy, and the promise of a list is the
+     * thing that would be wrong.
+     *
+     * @param array<array-key, int> $orderedNewestFirst revision ids, newest first
+     *
+     * @return list<int>
+     */
+    public static function excess(array $orderedNewestFirst, int $keep = self::KEEP_PER_NODE): array
+    {
+        return \array_slice(array_values($orderedNewestFirst), $keep);
+    }
 }

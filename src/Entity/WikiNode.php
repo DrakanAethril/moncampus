@@ -39,6 +39,10 @@ use Doctrine\ORM\Mapping as ORM;
 // Deliberately NOT unique - see the class docblock. This is a lookup index for "the slugs already
 // taken among these siblings", which is the question uniqueSlug() asks.
 #[ORM\Index(name: 'idx_wiki_node_slug', columns: ['wiki_id', 'parent_id', 'slug'])]
+// The rail's search. FULLTEXT over the de-tagged copy and the title together, so one MATCH answers
+// "this word is in the page" whether it is in the heading or in the body - a second index on
+// `title` alone would need a second MATCH and a UNION to combine them.
+#[ORM\Index(name: 'ft_wiki_node_search', columns: ['title', 'body_text'], flags: ['fulltext'])]
 class WikiNode
 {
     /** How long a soft edit lock is believed before it reads as abandoned. */

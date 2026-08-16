@@ -1,0 +1,38 @@
+{# The page's attachments, drawn as downloadable cards with a format and a size - the same block as
+   the Base documentaire's, deliberately: the two features attach the same kind of file for the same
+   reason.
+
+   This is the one upload field on the platform that narrows the rule by nothing (see
+   design/validated/upload-policy.md): the wiki is the general-purpose workspace, so documents,
+   spreadsheets, images, audio, video, archives, captures and inert source files all pass - only the
+   executables and the archive-only formats do not. #}
+<div class="cm-wiki-attachments">
+    {% if node.attachments|length > 0 %}
+        <span class="cm-wiki-attachments__title">{{ 'wikiAttachmentsHeading'|trans }}</span>
+        <ul class="cm-wiki-attachments__list">
+            {% for attachment in node.attachments %}
+                <li class="cm-wiki-attachment">
+                    <a class="cm-wiki-attachment__name" href="{{ file_url(attachment.storageKey) }}" download>{{ attachment.label }}</a>
+                    <span class="cm-wiki-attachment__meta">
+                        {{ attachment.formatLabel }}{% if attachment.sizeBytes %} · {{ (attachment.sizeBytes / 1024)|round }} Ko{% endif %}
+                    </span>
+                    {% if is_granted('WIKI_EDIT', wiki) %}
+                        <form method="post" action="{{ path('app_wiki_attachment_delete', {id: wiki.id, nodeId: node.id, attachmentId: attachment.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('wiki_attachment') }}">
+                            <button type="submit" class="cm-wiki-attachment__remove" aria-label="{{ 'wikiAttachmentRemoveAction'|trans }}">×</button>
+                        </form>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if is_granted('WIKI_EDIT', wiki) %}
+        <form method="post" action="{{ path('app_wiki_attachment_add', {id: wiki.id, nodeId: node.id}) }}"
+              enctype="multipart/form-data" class="cm-wiki-attachments__add">
+            <input type="hidden" name="_token" value="{{ csrf_token('wiki_attachment') }}">
+            <input type="file" name="attachments[]" multiple class="cm-wiki-attachments__input" aria-label="{{ 'wikiAttachmentsFieldLabel'|trans }}">
+            <button type="submit" class="cm-btn cm-btn--sm cm-btn--outline">{{ 'wikiAttachmentAddAction'|trans }}</button>
+        </form>
+    {% endif %}
+</div>
