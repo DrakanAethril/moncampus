@@ -6972,18 +6972,34 @@ button.cm-tabs__tab { border: 0; background: none; font: inherit; cursor: pointe
 
 .cm-wiki { display: grid; grid-template-columns: 264px minmax(0, 1fr); gap: 22px; align-items: start; }
 
-.cm-wiki__rail { position: sticky; top: 84px; background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 14px 12px; }
+/* The sticky box is bounded, and the tree scrolls inside it. Without the max-height, a tree taller
+   than the viewport is not merely cut off at the fold - it is unreachable: the rail sticks at 84px
+   and scrolling no longer moves it, so the lower branches and the foot's Réglages/Corbeille links
+   only reappear once the *page* has been scrolled to its very end and the rail finally meets the
+   bottom of its containing block. Bounding it turns the overflow into an ordinary scroll.
+   The 104px is the 84px offset plus a gutter, so the rail never touches the bottom edge. */
+.cm-wiki__rail { position: sticky; top: 84px; max-height: calc(100vh - 104px); display: flex; flex-direction: column; background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 14px 12px; }
 .cm-wiki__rail-head { display: flex; align-items: center; gap: 8px; padding: 0 4px 10px; border-bottom: 1px solid var(--cm-border-soft); }
 .cm-wiki__rail-title { flex: 1; min-width: 0; font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cm-wiki__rail-add { flex: none; }
 .cm-wiki__rail-empty { margin: 12px 4px; font: 400 12.5px var(--cm-font-ui); color: var(--cm-faint); }
-.cm-wiki__rail-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 10px; margin-top: 10px; border-top: 1px solid var(--cm-border-soft); }
+/* margin-top: auto rather than 10px - the rail is a flex column now, so the foot sits on its bottom
+   edge instead of wherever the tree happens to stop. On a three-page wiki that is the difference
+   between two links halfway up the screen and two links where they are looked for. */
+.cm-wiki__rail-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 10px; margin-top: auto; border-top: 1px solid var(--cm-border-soft); }
 /* Pushed to the right edge even when it is the only link left, so its place never moves. */
 .cm-wiki__rail-link--end { margin-left: auto; }
 .cm-wiki__rail-link { font: 500 12.5px var(--cm-font-ui); color: var(--cm-brand-strong); text-decoration: none; }
 .cm-wiki__rail-link:hover { text-decoration: underline; }
 
 .cm-wiki__tree { list-style: none; margin: 10px 0 0; padding: 0; }
+/* The root list is the one part of the rail that scrolls - `:not(--nested)` because the two share a
+   class and a nested list must not become a scroll container of its own: setting one axis to
+   something other than `visible` computes the other to `auto`, which would hand every branch its own
+   stray horizontal scrollbar. `min-height: 0` is what makes it actually shrink: a flex item's
+   default `min-height: auto` sizes it to its content, and the overflow would then be pushed outside
+   the bounded rail instead of scrolling inside it. */
+.cm-wiki__tree:not(.cm-wiki__tree--nested) { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 .cm-wiki__tree--nested { margin: 2px 0 2px 14px; border-left: 1px solid var(--cm-border-soft); padding-left: 6px; }
 .cm-wiki__node { margin: 1px 0; }
 .cm-wiki__node.is-dragging { opacity: 0.45; }
