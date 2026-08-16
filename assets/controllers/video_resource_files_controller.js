@@ -16,6 +16,10 @@ import { Controller } from '@hotwired/stimulus';
 //     transfer that ends in "MP4 uniquement" is a minute of the teacher's life for an answer the
 //     browser already had. The server checks again all the same
 //     (App\Service\VideoUploadValidator) - this one is a courtesy, not a control.
+//  3. The transfer is driven by XMLHttpRequest, not by fetch. fetch reports nothing at all about how
+//     much of the *request* body has gone out, and a two hundred megabyte upload behind a silent
+//     screen reads as a frozen app - the teacher reloads the page and starts the transfer over.
+//     `xhr.upload.progress` is the only thing in the platform that answers that question.
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['list', 'input', 'pickButton', 'pickLabel', 'warning', 'probe'];
@@ -35,7 +39,17 @@ export default class extends Controller {
         // or every mutation would be silently lost.
         this.files = JSON.parse(JSON.stringify(this.filesValue));
         this.uploading = false;
+        // The row painted while a file is on its way: name, weight and how far it has got. Null when
+        // nothing is being sent, which is what render() reads to decide whether to draw it at all.
+        this.pending = null;
+        this.request = null;
         this.render();
+    }
+
+    disconnect() {
+        // Leaving the screen mid-transfer: the request outlives the controller otherwise, and its
+        // load handler would then paint into a card that is no longer in the page.
+        this.request?.abort();
     }
 
     pick() {
@@ -65,7 +79,7 @@ export default class extends Controller {
         }
 
         this.warningTarget.hidden = true;
-        await this.upload(file, await this.readDuration(file));
+        this.upload(file, await this.readDuration(file));
     }
 
     // The duration, read by handing the local file to a hidden <video>. Zero when the browser cannot
@@ -87,42 +101,122 @@ export default class extends Controller {
         });
     }
 
-    async upload(file, durationSeconds) {
+    upload(file, durationSeconds) {
         this.uploading = true;
         this.pickLabelTarget.textContent = this.labelsValue.uploadingLabel;
         this.pickButtonTarget.disabled = true;
+        this.pending = { name: file.name, size: file.size, ratio: 0, sent: false };
+        this.render();
 
         const payload = new FormData();
         payload.append('video', file, file.name);
         payload.append('duration', String(durationSeconds));
 
-        let data;
-        try {
-            const response = await fetch(this.uploadUrlValue, {
-                method: 'POST',
-                headers: { 'X-CSRF-Token': this.csrfTokenValue },
-                body: payload,
-            });
-            data = await response.json().catch(() => null);
-            if (!response.ok) throw new Error(data?.error ?? 'upload failed');
-        } catch (e) {
-            // The server names what it refused - too large, not an MP4 - and that is what the
-            // teacher is told; anything else is a transfer that did not go through.
-            this.warn(this.messageFor(e.message));
+        const request = new XMLHttpRequest();
+        this.request = request;
+
+        request.upload.addEventListener('progress', (event) => {
+            // A ratio of null draws a bar with no scale: a proxy that hides the total is a bar that
+            // cannot be measured, never a reason to stop showing that something is happening.
+            this.updateProgress(event.lengthComputable ? event.loaded / event.total : null);
+        });
+
+        // The last byte is out, and the server now has to write a video to S3 - sixteen seconds for
+        // twenty megabytes, measured. A bar left at 100 % during that is read as a stall, so the row
+        // switches to "Traitement…" instead.
+        request.upload.addEventListener('load', () => this.markSent());
+
+        request.addEventListener('load', () => this.finishRequest(request));
+        request.addEventListener('error', () => {
+            this.warn(this.labelsValue.networkErrorMessage);
+            this.finishUpload();
+        });
+        // Aborting is the teacher's own doing (the row's "Annuler"), or a page they have left: it
+        // needs no message.
+        request.addEventListener('abort', () => this.finishUpload());
+
+        request.open('POST', this.uploadUrlValue);
+        request.setRequestHeader('X-CSRF-Token', this.csrfTokenValue);
+        request.send(payload);
+    }
+
+    cancelUpload() {
+        this.request?.abort();
+    }
+
+    /**
+     * What the server answered. The controller replies JSON on every path it takes, so a body that
+     * does not parse is a reply the controller never wrote - the request was turned away above it,
+     * on a size limit of the server's own (FrankenPHP answers an oversized POST with an HTML page,
+     * and a 200 at that). Reading `data.file` off it is what used to throw
+     * "Cannot read properties of null".
+     */
+    finishRequest(request) {
+        const data = this.parseJson(request.responseText);
+
+        if (request.status >= 200 && request.status < 300 && data?.file) {
+            this.files.push(data.file);
             this.finishUpload();
 
             return;
         }
 
-        this.files.push(data.file);
+        // The server names what it refused - too large, not an MP4 - and that is what the teacher is
+        // told; a reply with no name to it is one that never reached the application.
+        this.warn(data?.error ? this.messageFor(data.error) : this.labelsValue.serverRefusedMessage);
         this.finishUpload();
     }
 
     finishUpload() {
         this.uploading = false;
+        this.pending = null;
+        this.request = null;
+        this.progressFill = null;
+        this.progressPercent = null;
+
+        // disconnect() aborts a transfer in flight, and the abort handler lands here once the card
+        // has left the page: there is nothing left to paint then.
+        if (!this.hasPickLabelTarget) return;
+
         this.pickLabelTarget.textContent = this.labelsValue.addLabel;
         this.pickButtonTarget.disabled = false;
         this.render();
+    }
+
+    // ---- Progress ---------------------------------------------------------------------------------
+
+    // The bar is written into the nodes it already has rather than through render(): progress fires
+    // dozens of times a second, and rebuilding the whole list at that rate is how a card starts to
+    // flicker.
+    updateProgress(ratio) {
+        if (!this.pending || this.pending.sent) return;
+
+        this.pending.ratio = ratio;
+        this.paintProgress();
+    }
+
+    markSent() {
+        if (!this.pending) return;
+
+        this.pending.sent = true;
+        this.pending.ratio = 1;
+        this.paintProgress();
+    }
+
+    paintProgress() {
+        const fill = this.progressFill;
+        const percent = this.progressPercent;
+
+        if (!this.pending || !fill || !percent) return;
+
+        const { ratio, sent } = this.pending;
+
+        // An unknown total: the bar sweeps rather than fills, and no percentage is claimed.
+        fill.parentElement.classList.toggle('is-indeterminate', null === ratio);
+        fill.style.width = null === ratio ? '' : `${Math.round(ratio * 100)}%`;
+        percent.textContent = sent
+            ? this.labelsValue.processingLabel
+            : (null === ratio ? '' : this.formatPercent(ratio));
     }
 
     async deleteFile(file) {
@@ -147,14 +241,15 @@ export default class extends Controller {
     // ---- Rendering ------------------------------------------------------------------------------
 
     render() {
-        if (this.files.length === 0) {
-            const empty = this.el('div', 'text-secondary', this.labelsValue.emptyMessage);
-            this.listTarget.replaceChildren(empty);
+        const rows = this.files.map((file) => this.buildFileRow(file));
 
-            return;
+        if (this.pending) {
+            rows.push(this.buildProgressRow());
+        } else if (rows.length === 0) {
+            rows.push(this.el('div', 'text-secondary', this.labelsValue.emptyMessage));
         }
 
-        this.listTarget.replaceChildren(...this.files.map((file) => this.buildFileRow(file)));
+        this.listTarget.replaceChildren(...rows);
     }
 
     // The same row as an audio common file - play button aside, since nothing is played from this
@@ -188,7 +283,57 @@ export default class extends Controller {
         return row;
     }
 
+    // The row of a file on its way up: the same shape as a finished one - icon, name, weight - with
+    // the bar taking the place the "Questions" link holds on the others, and "Annuler" the bin's.
+    buildProgressRow() {
+        const row = this.el('div', 'cm-audio-file cm-video-upload');
+
+        const icon = this.el('span', 'cm-video-file__icon');
+        icon.appendChild(this.icon('M12 16V4|m6 10 6-6 6 6|M4 20h16', 16));
+        row.appendChild(icon);
+        row.appendChild(this.el('span', 'cm-audio-file__name', this.pending.name));
+        row.appendChild(this.el('span', 'cm-audio-file__duration', this.formatSize(this.pending.size)));
+
+        const track = this.el('span', 'cm-video-upload__track');
+        // Announced rather than merely drawn: an upload nobody can see the end of is exactly the
+        // case a screen reader needs told.
+        track.setAttribute('role', 'progressbar');
+        track.setAttribute('aria-label', this.labelsValue.uploadingLabel);
+        this.progressFill = this.el('span', 'cm-video-upload__fill');
+        track.appendChild(this.progressFill);
+        row.appendChild(track);
+
+        this.progressPercent = this.el('span', 'cm-video-upload__percent');
+        row.appendChild(this.progressPercent);
+
+        const cancel = this.el('button', 'cm-audio-ghost', this.labelsValue.cancelLabel);
+        cancel.type = 'button';
+        cancel.addEventListener('click', () => this.cancelUpload());
+        row.appendChild(cancel);
+
+        this.paintProgress();
+
+        return row;
+    }
+
     // ---- Helpers --------------------------------------------------------------------------------
+
+    // The controller answers JSON on every path; anything else is a reply it did not write.
+    parseJson(text) {
+        try {
+            const data = JSON.parse(text);
+
+            return null !== data && 'object' === typeof data ? data : null;
+        } catch {
+            return null;
+        }
+    }
+
+    // Through Intl rather than by hand: French writes "37 %" and English "37%", and the page already
+    // says which one it is.
+    formatPercent(ratio) {
+        return new Intl.NumberFormat(document.documentElement.lang || 'fr', { style: 'percent' }).format(ratio);
+    }
 
     messageFor(error) {
         if (error === 'videoUploadTooLargeError') return this.labelsValue.tooLargeMessage;
