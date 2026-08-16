@@ -7132,8 +7132,14 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
    the app's Tom Select styling already applies; this only gives it the width and the room its
    dropdown needs, the dialog body being a scroll container that would otherwise clip it. */
 .cm-wiki-linkfield__label { display: block; margin-bottom: 6px; font: 600 12px var(--cm-font-ui); color: var(--cm-ink); }
-.cm-wiki-linkfield { min-width: 420px; max-width: 100%; }
-.cm-wiki-linkfield .ts-dropdown { z-index: 1200; }
+/* The layout is pinned here rather than left to Tom Select's own stylesheet, which is loaded but
+   does not win inside HugeRTE's dialog: measured, the dropdown computes `position: static` there,
+   so it lands *beside* the control instead of under it and the control stretches to the panel's
+   height. Four declarations put it back; none of them is a preference. */
+.cm-wiki-linkfield { position: relative; width: 420px; max-width: 100%; }
+.cm-wiki-linkfield .ts-wrapper { display: block; width: 100%; }
+.cm-wiki-linkfield .ts-control { display: flex; flex-wrap: wrap; align-items: center; width: 100%; min-height: 38px; height: auto; }
+.cm-wiki-linkfield .ts-dropdown { position: absolute; top: 100%; left: 0; width: 100%; z-index: 1200; }
 /* An empty area under the field, not padding on the field itself: the dialog body is a scroll
    container, so without room reserved below it the open list is clipped - and padding on the field
    would stretch the control instead of leaving space beneath it. */
