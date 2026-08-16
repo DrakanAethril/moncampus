@@ -1,0 +1,10 @@
+{# The wiki's search field, in the screen's action bar rather than in the rail.
+
+   It sits on the line of the "Modifier" button on purpose: buried under the rail's head it read as
+   part of the tree's furniture, and searching is how one actually finds a page in a wiki of any size.
+
+   A GET form, per the Turbo rule - "montre-moi un résultat" never posts. #}
+<form class="cm-wiki-search" method="get" action="{{ path('app_wiki_search', {id: wiki.id}) }}">
+    <input type="search" name="q" class="cm-wiki-search__input" value="{{ search|default('') }}"
+           placeholder="{{ 'wikiSearchInWikiPlaceholder'|trans }}" aria-label="{{ 'wikiSearchInWikiPlaceholder'|trans }}">
+</form>

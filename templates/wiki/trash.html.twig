@@ -15,6 +15,10 @@
 
 {% block page_title %}{{ 'wikiTrashPageHeading'|trans }}{% endblock %}
 
+{% block page_actions %}
+    {% include 'wiki/_search_form.html.twig' with {wiki: wiki} %}
+{% endblock %}
+
 {% block main %}
     <div class="cm-wiki">
         {% include 'wiki/_rail.html.twig' with {wiki: wiki, tree: tree} %}

@@ -24,6 +24,7 @@
    icons - beside the page they act on - and the history and this page's PDF to the foot of the text,
    where somebody who has just finished reading it is looking. #}
 {% block page_actions %}
+    {% include 'wiki/_search_form.html.twig' with {wiki: wiki} %}
     {% if is_granted('WIKI_EDIT', wiki) %}
         <a href="{{ path('app_wiki_page_edit', {id: wiki.id, nodeId: node.id}) }}" class="cm-btn cm-btn--primary">{{ 'wikiEditPageAction'|trans }}</a>
     {% endif %}
