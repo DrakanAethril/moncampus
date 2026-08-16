@@ -19,27 +19,13 @@
 
 {% block page_title %}{{ node.title }}{% endblock %}
 
+{# One button, and only one. Everything the bar used to carry moved to where it belongs: the whole-
+   wiki export and the import to the réglages screen, adding and deleting a page to the rail's own
+   icons - beside the page they act on - and the history and this page's PDF to the foot of the text,
+   where somebody who has just finished reading it is looking. #}
 {% block page_actions %}
-    {# Whole wiki, this branch, or this page alone - three scopes, one route. #}
-    <a href="{{ path('app_wiki_export_pdf', {id: wiki.id}) }}" class="cm-btn cm-btn--outline">{{ 'wikiExportPdfAction'|trans }}</a>
-    <a href="{{ path('app_wiki_export_pdf', {id: wiki.id, node: node.id, page: 1}) }}" class="cm-btn cm-btn--outline">{{ 'wikiExportPagePdfAction'|trans }}</a>
-    <a href="{{ path('app_wiki_export_archive', {id: wiki.id}) }}" class="cm-btn cm-btn--outline">{{ 'wikiExportArchiveAction'|trans }}</a>
-    {% if is_granted('WIKI_EDIT', wiki) %}
-        <a href="{{ path('app_wiki_import', {id: wiki.id}) }}" class="cm-btn cm-btn--outline">{{ 'wikiImportAction'|trans }}</a>
-    {% endif %}
-    <a href="{{ path('app_wiki_page_history', {id: wiki.id, nodeId: node.id}) }}" class="cm-btn cm-btn--outline">{{ 'wikiHistoryAction'|trans }}</a>
     {% if is_granted('WIKI_EDIT', wiki) %}
         <a href="{{ path('app_wiki_page_edit', {id: wiki.id, nodeId: node.id}) }}" class="cm-btn cm-btn--primary">{{ 'wikiEditPageAction'|trans }}</a>
-        <form method="post" action="{{ path('app_wiki_node_create', {id: wiki.id}) }}" class="cm-wiki__inline-form">
-            <input type="hidden" name="_token" value="{{ csrf_token('wiki_node') }}">
-            <input type="hidden" name="parent" value="{{ node.id }}">
-            <input type="hidden" name="type" value="page">
-            <button type="submit" class="cm-btn cm-btn--outline">{{ 'wikiAddChildPageAction'|trans }}</button>
-        </form>
-        <form method="post" action="{{ path('app_wiki_node_delete', {id: wiki.id, nodeId: node.id}) }}" class="cm-wiki__inline-form">
-            <input type="hidden" name="_token" value="{{ csrf_token('wiki_node') }}">
-            <button type="submit" class="cm-btn cm-btn--outline">{{ 'wikiDeletePageAction'|trans }}</button>
-        </form>
     {% endif %}
 {% endblock %}
 
@@ -57,10 +43,12 @@
             {% include 'wiki/_attachments.html.twig' with {wiki: wiki, node: node} %}
 
             <p class="cm-wiki__meta">
-                {{ 'wikiPageUpdatedMeta'|trans({
+                <span>{{ 'wikiPageUpdatedMeta'|trans({
                     '%date%': node.updatedAt|date('d/m/Y'),
                     '%author%': node.updatedBy ? (node.updatedBy.displayName ?? node.updatedBy.username) : '—',
-                }) }}
+                }) }}</span>
+                <a class="cm-wiki__meta-link" href="{{ path('app_wiki_page_history', {id: wiki.id, nodeId: node.id}) }}">{{ 'wikiViewHistoryAction'|trans }}</a>
+                <a class="cm-wiki__meta-link" href="{{ path('app_wiki_export_pdf', {id: wiki.id, node: node.id, page: 1}) }}">{{ 'wikiExportPagePdfAction'|trans }}</a>
             </p>
         </div>
 

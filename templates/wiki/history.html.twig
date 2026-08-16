@@ -1,7 +1,10 @@
 {% extends 'layout/app.html.twig' %}
 
-{# Revisions, compare, restore. One row per save, capped at the 50 most recent per page - without
-   the cap a wiki used seriously for a year is the biggest table in the schema. #}
+{# Revisions, compare, restore. One row per save, capped at the two most recent per page - without
+   the cap a wiki used seriously for a year is the biggest table in the schema.
+
+   The cap is short enough to be surprising, so the screen says it out loud: a user who believes
+   every save is kept would only find out by looking for one that is gone. #}
 
 {% block title %}{{ node.title }}{% endblock %}
 
@@ -27,6 +30,8 @@
         {% include 'wiki/_rail.html.twig' with {wiki: wiki, tree: tree, node: node} %}
 
         <div class="cm-wiki__content">
+            <p class="cm-wiki-history-cap">{{ 'wikiHistoryCapNoticeText'|trans({'%count%': revisionCap}) }}</p>
+
             {% if revisions is empty %}
                 <p class="cm-wiki__placeholder">{{ 'wikiHistoryEmptyText'|trans }}</p>
             {% else %}

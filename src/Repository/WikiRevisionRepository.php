@@ -50,7 +50,7 @@ class WikiRevisionRepository extends ServiceEntityRepository
             ->getResult();
 
         // KEEP_PER_NODE - 1, because the revision just persisted is not in this list yet: keeping
-        // 50 including it is what the cap means.
+        // KEEP_PER_NODE including it is what the cap means.
         $excess = WikiRevision::excess(array_column($rows, 'id'), WikiRevision::KEEP_PER_NODE - 1);
 
         if ([] === $excess) {

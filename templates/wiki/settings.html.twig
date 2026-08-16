@@ -1,12 +1,18 @@
 {% extends 'layout/app.html.twig' %}
 
-{# Title, members, classes, archive, delete - and the one thing this screen exists for beyond the
-   form: **saying the current regime in words**.
+{# Title, members, classes, archive, delete, plus the wiki's export and import - and the one thing
+   this screen exists for beyond the form: **saying the current regime in words**.
 
    The access rule derives visibility from the audience, which is its single weakness: it changes
    what a wiki is as a side effect of who is in it. So the banner states it, and the warning below
    the pickers says what adding a first student or class will do *before* the save. Nothing is
-   hidden behind an inference the user cannot see. #}
+   hidden behind an inference the user cannot see.
+
+   Two halves with two audiences. Composing the wiki is WIKI_MANAGE and is simply not drawn for
+   somebody who may not do it; taking the wiki away, or bringing an archive into it, follows the
+   same rule as everywhere else in the feature - anybody who can read it can export it, anybody who
+   can write it can import into it. Those two moved here from the top of every page because they act
+   on the whole wiki, not on the page one happens to be reading. #}
 
 {% set isNew = wiki is null %}
 
@@ -36,59 +42,78 @@
         </p>
     {% endif %}
 
-    <form method="post" action="{{ isNew ? path('app_wiki_new') : path('app_wiki_settings', {id: wiki.id}) }}" class="cm-wiki-settings">
-        <input type="hidden" name="_token" value="{{ csrf_token('wiki_settings') }}">
+    {% if canManage %}
+        <form method="post" action="{{ isNew ? path('app_wiki_new') : path('app_wiki_settings', {id: wiki.id}) }}" class="cm-wiki-settings">
+            <input type="hidden" name="_token" value="{{ csrf_token('wiki_settings') }}">
 
-        <div class="mb-3">
-            <label class="form-label" for="wiki-title">{{ 'wikiTitleLabel'|trans }}</label>
-            <input type="text" class="form-control" id="wiki-title" name="title" maxlength="255" required
-                   value="{{ isNew ? '' : wiki.title }}">
-        </div>
-
-        {% if isNew or not wiki.personal %}
             <div class="mb-3">
-                <label class="form-label" for="wiki-members">{{ 'wikiMembersLabel'|trans }}</label>
-                {# Picking Users always goes through tomselect + ajax, and the endpoint returns only
-                   the people this composer may add - the form re-checks the ids at save anyway,
-                   because a picker is a convenience and never the control. #}
-                <select id="wiki-members" name="members[]" multiple
-                        data-controller="tom-select"
-                        data-tom-select-url-value="{{ path('app_wiki_member_search') }}"
-                        data-tom-select-placeholder-value="{{ 'wikiMembersPlaceholder'|trans }}">
-                    {% if not isNew %}
-                        {% for member in wiki.members %}
-                            <option value="{{ member.id }}" selected>{{ member.displayName ?? member.username }}</option>
-                        {% endfor %}
-                    {% endif %}
-                </select>
-                <span class="form-hint">{{ 'wikiMembersHelpText'|trans }}</span>
+                <label class="form-label" for="wiki-title">{{ 'wikiTitleLabel'|trans }}</label>
+                <input type="text" class="form-control" id="wiki-title" name="title" maxlength="255" required
+                       value="{{ isNew ? '' : wiki.title }}">
             </div>
 
-            <div class="mb-3">
-                <span class="form-label">{{ 'wikiProgramsLabel'|trans }}</span>
-                {# Checkbox group rather than a <select multiple>, per this app's form convention. #}
-                <div class="cm-wiki-settings__checks">
-                    {% for program in assignablePrograms %}
-                        <label class="cm-wiki-settings__check">
-                            <input type="checkbox" name="programs[]" value="{{ program.id }}"
-                                   {{ not isNew and wiki.programs.contains(program) ? 'checked' }}>
-                            <span>{{ program.displayShortName }}</span>
-                        </label>
-                    {% else %}
-                        <p class="cm-wiki__placeholder">{{ 'wikiNoAssignableProgramText'|trans }}</p>
-                    {% endfor %}
+            {% if isNew or not wiki.personal %}
+                <div class="mb-3">
+                    <label class="form-label" for="wiki-members">{{ 'wikiMembersLabel'|trans }}</label>
+                    {# Picking Users always goes through tomselect + ajax, and the endpoint returns
+                       only the people this composer may add - the form re-checks the ids at save
+                       anyway, because a picker is a convenience and never the control. #}
+                    <select id="wiki-members" name="members[]" multiple
+                            data-controller="tom-select"
+                            data-tom-select-url-value="{{ path('app_wiki_member_search') }}"
+                            data-tom-select-placeholder-value="{{ 'wikiMembersPlaceholder'|trans }}">
+                        {% if not isNew %}
+                            {% for member in wiki.members %}
+                                <option value="{{ member.id }}" selected>{{ member.displayName ?? member.username }}</option>
+                            {% endfor %}
+                        {% endif %}
+                    </select>
+                    <span class="form-hint">{{ 'wikiMembersHelpText'|trans }}</span>
                 </div>
-                <span class="form-hint">{{ 'wikiAudienceWarningText'|trans }}</span>
-            </div>
-        {% endif %}
 
-        <div class="cm-wiki__editor-actions">
-            <button type="submit" class="cm-btn cm-btn--primary">{{ 'submitSaveAction'|trans }}</button>
-            <a href="{{ isNew ? path('app_wiki_shared') : path('app_wiki_show', {id: wiki.id}) }}" class="cm-btn cm-btn--outline">{{ 'cancelAction'|trans }}</a>
-        </div>
-    </form>
+                <div class="mb-3">
+                    <span class="form-label">{{ 'wikiProgramsLabel'|trans }}</span>
+                    {# Checkbox group rather than a <select multiple>, per this app's form convention. #}
+                    <div class="cm-wiki-settings__checks">
+                        {% for program in assignablePrograms %}
+                            <label class="cm-wiki-settings__check">
+                                <input type="checkbox" name="programs[]" value="{{ program.id }}"
+                                       {{ not isNew and wiki.programs.contains(program) ? 'checked' }}>
+                                <span>{{ program.displayShortName }}</span>
+                            </label>
+                        {% else %}
+                            <p class="cm-wiki__placeholder">{{ 'wikiNoAssignableProgramText'|trans }}</p>
+                        {% endfor %}
+                    </div>
+                    <span class="form-hint">{{ 'wikiAudienceWarningText'|trans }}</span>
+                </div>
+            {% endif %}
+
+            <div class="cm-wiki__editor-actions">
+                <button type="submit" class="cm-btn cm-btn--primary">{{ 'submitSaveAction'|trans }}</button>
+                <a href="{{ isNew ? path('app_wiki_shared') : path('app_wiki_show', {id: wiki.id}) }}" class="cm-btn cm-btn--outline">{{ 'cancelAction'|trans }}</a>
+            </div>
+        </form>
+    {% endif %}
 
     {% if not isNew %}
+        {# Whole-wiki scopes only: exporting a single page stays at the foot of that page, where the
+           reader who wants it is already looking. #}
+        <section class="cm-wiki-settings__block">
+            <span class="cm-wiki-settings__block-title">{{ 'wikiTransferHeading'|trans }}</span>
+            <p class="cm-wiki-settings__block-hint">{{ 'wikiTransferHelpText'|trans }}</p>
+
+            <div class="cm-wiki-settings__block-actions">
+                <a href="{{ path('app_wiki_export_pdf', {id: wiki.id}) }}" class="cm-btn cm-btn--outline">{{ 'wikiExportPdfAction'|trans }}</a>
+                <a href="{{ path('app_wiki_export_archive', {id: wiki.id}) }}" class="cm-btn cm-btn--outline">{{ 'wikiExportArchiveAction'|trans }}</a>
+                {% if is_granted('WIKI_EDIT', wiki) %}
+                    <a href="{{ path('app_wiki_import', {id: wiki.id}) }}" class="cm-btn cm-btn--outline">{{ 'wikiImportAction'|trans }}</a>
+                {% endif %}
+            </div>
+        </section>
+    {% endif %}
+
+    {% if not isNew and canManage %}
         <div class="cm-wiki-settings__danger">
             <form method="post" action="{{ path('app_wiki_archive', {id: wiki.id}) }}">
                 <input type="hidden" name="_token" value="{{ csrf_token('wiki_settings') }}">

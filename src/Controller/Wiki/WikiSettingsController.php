@@ -39,8 +39,14 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  *
  * Membership is re-checked here at save, not merely offered by the picker - the same posture
  * messaging takes for its recipients.
+ *
+ * The screen is also the wiki's *réglages* in the wider sense: it carries the whole-wiki export and
+ * the import, which used to sit as buttons above every page. That is why the class no longer demands
+ * a teacher's role - a student reads the réglages of their own personal wiki to export it, and only
+ * the composing half is WIKI_MANAGE. Creating a shared wiki and searching for members stay
+ * teacher-and-above, on the actions themselves.
  */
-#[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD") or is_granted("ROLE_ADMIN")'))]
+#[IsGranted(new Expression('is_granted("ROLE_USER") and not is_granted("ROLE_TUTOR") and not is_granted("ROLE_EXTERNAL")'))]
 #[Route(path: '/wiki')]
 class WikiSettingsController extends AbstractController
 {
@@ -65,6 +71,7 @@ class WikiSettingsController extends AbstractController
      * screens - but "let teachers create extra wikis" is the feature's own purpose, and the
      * composing form is this controller's, next to the settings screen it is the twin of.
      */
+    #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD") or is_granted("ROLE_ADMIN")'))]
     #[Route(path: '/new', name: 'app_wiki_new', methods: ['GET', 'POST'])]
     public function create(Request $request): Response
     {
@@ -101,19 +108,29 @@ class WikiSettingsController extends AbstractController
 
         return $this->render('wiki/settings.html.twig', [
             'wiki' => null,
+            'canManage' => true,
             'assignablePrograms' => $this->scope->assignablePrograms($user),
             'hasStudentAudience' => false,
         ]);
     }
 
+    /**
+     * The réglages screen: what the wiki *is* (title, members, classes) for whoever manages it, and
+     * what one can do with it as a whole (export, import) for everybody who can reach it.
+     *
+     * Reading it takes WIKI_EDIT and writing it takes WIKI_MANAGE, which is not the usual pairing:
+     * the two halves of the screen have different audiences on purpose, and the composing half is
+     * simply not rendered to a reader who may not change it.
+     */
     #[Route(path: '/{id}/settings', name: 'app_wiki_settings', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
     public function settings(Request $request, int $id): Response
     {
         $wiki = $this->wikis->find($id) ?? throw $this->createNotFoundException();
-        $this->denyAccessUnlessGranted(WikiVoter::MANAGE, $wiki);
+        $this->denyAccessUnlessGranted(WikiVoter::EDIT, $wiki);
         $user = $this->currentUser();
 
         if ($request->isMethod('POST')) {
+            $this->denyAccessUnlessGranted(WikiVoter::MANAGE, $wiki);
             $this->assertToken($request, 'wiki_settings');
             $title = PostValue::trimmed($request, 'title');
 
@@ -133,9 +150,14 @@ class WikiSettingsController extends AbstractController
             return $this->redirectToRoute('app_wiki_settings', ['id' => $id]);
         }
 
+        $canManage = $this->isGranted(WikiVoter::MANAGE, $wiki);
+
         return $this->render('wiki/settings.html.twig', [
             'wiki' => $wiki,
-            'assignablePrograms' => $this->scope->assignablePrograms($user),
+            'canManage' => $canManage,
+            // Not computed for a reader who cannot compose the audience anyway - the picker is the
+            // only thing that reads it.
+            'assignablePrograms' => $canManage ? $this->scope->assignablePrograms($user) : [],
             'hasStudentAudience' => $this->access->hasStudentAudience($wiki->getPrograms()->count(), $wiki->getMemberRoles()),
         ]);
     }
@@ -172,6 +194,7 @@ class WikiSettingsController extends AbstractController
     }
 
     /** The tomselect ajax endpoint - it returns only the people the requester may actually add. */
+    #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD") or is_granted("ROLE_ADMIN")'))]
     #[Route(path: '/members/search', name: 'app_wiki_member_search', methods: ['GET'])]
     public function memberSearch(Request $request): JsonResponse
     {

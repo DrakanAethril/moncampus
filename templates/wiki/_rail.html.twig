@@ -39,7 +39,9 @@
         {% if is_granted('WIKI_EDIT', wiki) %}
             <a href="{{ path('app_wiki_trash', {id: wiki.id}) }}" class="cm-wiki__rail-link">{{ 'wikiTrashNavLabel'|trans }}</a>
         {% endif %}
-        {% if is_granted('WIKI_MANAGE', wiki) %}
+        {# WIKI_EDIT rather than WIKI_MANAGE since the réglages screen gained the export: composing
+           the wiki is still a manager's half of it, but taking it away is everybody's. #}
+        {% if is_granted('WIKI_EDIT', wiki) %}
             <a href="{{ path('app_wiki_settings', {id: wiki.id}) }}" class="cm-wiki__rail-link">{{ 'wikiSettingsNavLabel'|trans }}</a>
         {% endif %}
     </div>

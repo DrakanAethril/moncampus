@@ -4655,3 +4655,13 @@ wikiImportArchiveTooLargeMessage: 'The uncompressed contents of this archive are
 wikiImportUnsafePathMessage: 'This archive holds a file path that escapes its folder: it is refused.'
 wikiImportSymlinkMessage: 'This archive holds a symbolic link: it is refused.'
 wikiImportAnotherFileAction: 'Choose another file'
+
+# Wiki - lot 8, the screen tightening.
+wikiViewHistoryAction: 'View the history'
+wikiHistoryCapNoticeText: 'Only the last %count% versions of a page are kept: saving a new one deletes the oldest.'
+wikiAddChildPageOfAction: 'Add a sub-page to "%title%"'
+wikiDeletePageNamedAction: 'Delete the page "%title%"'
+wikiDeleteNodeConfirmText: 'Delete "%title%" and all of its sub-pages?'
+wikiAttachmentsDropFileLabel: 'Drop a file or browse'
+wikiTransferHeading: 'Export and import'
+wikiTransferHelpText: 'These actions cover the whole wiki. To export a single page, use the link at the foot of that page.'

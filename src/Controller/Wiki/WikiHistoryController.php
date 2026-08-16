@@ -6,6 +6,7 @@ namespace App\Controller\Wiki;
 
 use App\Entity\User;
 use App\Entity\Wiki;
+use App\Entity\WikiRevision;
 use App\Repository\WikiNodeRepository;
 use App\Repository\WikiRepository;
 use App\Repository\WikiRevisionRepository;
@@ -87,6 +88,9 @@ class WikiHistoryController extends AbstractController
             'ancestors' => $this->nodeManager->ancestorsOf($node, $rail['byId']),
             'revisions' => $revisions,
             'selected' => $selected,
+            // The cap is short enough to be surprising, so the screen states it rather than letting
+            // a user assume every save is still there.
+            'revisionCap' => WikiRevision::KEEP_PER_NODE,
         ]);
     }
 
