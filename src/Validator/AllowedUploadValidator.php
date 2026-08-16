@@ -7,6 +7,7 @@ namespace App\Validator;
 use App\Service\AntivirusScanner;
 use App\Service\ClamAvUnavailableException;
 use App\Service\InfectedUploadException;
+use App\Service\StagedUpload;
 use Symfony\Component\HttpFoundation\File\File as HttpFile;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Validator\Constraint;
@@ -49,6 +50,16 @@ class AllowedUploadValidator extends ConstraintValidator
             return;
         }
 
+        // The second shape a field may submit since design/validated/file-library.md's staged
+        // uploads: the bytes are already in the bucket and what is left to check is the same pair
+        // of questions, asked of values the server itself recorded. One instanceof here is what
+        // lets every field keep its own narrowing with no change to the field.
+        if ($value instanceof StagedUpload) {
+            $this->validateStaged($value, $constraint);
+
+            return;
+        }
+
         if (!$value instanceof HttpFile) {
             throw new UnexpectedTypeException($value, HttpFile::class);
         }
@@ -79,6 +90,50 @@ class AllowedUploadValidator extends ConstraintValidator
         }
 
         $this->assertNotHostile($value->getPathname(), $name);
+    }
+
+    /**
+     * A file that reached the bucket before the form was submitted.
+     *
+     * Two differences from the branch above, both of them consequences of the bytes being gone:
+     *
+     * - **size is compared here rather than delegated to Assert\File**, which needs a path on disk.
+     *   The number comes from the request that carried the bytes, not from the client;
+     * - **nothing is re-sniffed and nothing is re-scanned.** App\Service\StagedUploadStore did both
+     *   at staging time, before writing, and the sniffed type travels inside the signed token. A
+     *   second scan would mean pulling the object back out of S3 to learn what is already known.
+     *
+     * What is *not* different is the decision: the same policy, so a field that narrows to PDF
+     * still refuses a staged .docx, and refuses it with the same message.
+     */
+    private function validateStaged(StagedUpload $staged, AllowedUpload $constraint): void
+    {
+        $limit = $constraint->policy->maxSizeInBytes();
+
+        if ($staged->size > $limit) {
+            $this->context->buildViolation('uploadPolicyTooLargeMessage')
+                ->setParameter('{{ name }}', $this->formatValue($staged->originalName))
+                ->setParameter('{{ limit }}', $this->formatValue($this->megabytes($limit)))
+                ->setCode('uploadPolicyTooLargeMessage')
+                ->addViolation();
+
+            return;
+        }
+
+        $reason = $constraint->policy->refusalReason($staged->originalName, '' === $staged->mimeType ? null : $staged->mimeType);
+
+        if (null !== $reason) {
+            $this->context->buildViolation($reason)
+                ->setParameter('{{ name }}', $this->formatValue($staged->originalName))
+                ->setCode($reason)
+                ->addViolation();
+        }
+    }
+
+    /** The limit as the message states it - "20 Mo", never 20971520. */
+    private function megabytes(int $bytes): string
+    {
+        return \sprintf('%s Mo', round($bytes / 1024 / 1024, 1));
     }
 
     /**

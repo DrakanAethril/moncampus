@@ -4581,6 +4581,8 @@ uploadPolicyUnsupportedExtensionMessage: 'This kind of file is not accepted here
 uploadPolicyMismatchedTypeMessage: 'This file’s content does not match its extension.'
 uploadPolicyInfectedFileMessage: 'This file was refused: the antivirus scan found a threat in it ({{ signature }}).'
 uploadPolicyScannerUnavailableMessage: 'The antivirus scan is unavailable, so the upload is refused as a precaution. Try again in a few minutes.'
+uploadPolicyTooLargeMessage: 'This file is too large: the limit is {{ limit }}.'
+stagedUploadMissingFileError: 'No file received.'
 
 # Wiki - lot 4, the content.
 wikiOutlineHeading: 'On this page'
