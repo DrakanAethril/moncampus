@@ -4576,3 +4576,5 @@ uploadPolicyForbiddenExtensionMessage: 'This kind of file is never accepted: exe
 uploadPolicyArchiveOnlyExtensionMessage: 'This kind of file is only accepted inside a ZIP archive.'
 uploadPolicyUnsupportedExtensionMessage: 'This kind of file is not accepted here.'
 uploadPolicyMismatchedTypeMessage: 'This file’s content does not match its extension.'
+uploadPolicyInfectedFileMessage: 'This file was refused: the antivirus scan found a threat in it ({{ signature }}).'
+uploadPolicyScannerUnavailableMessage: 'The antivirus scan is unavailable, so the upload is refused as a precaution. Try again in a few minutes.'

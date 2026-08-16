@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Validator;
 
+use App\Service\AntivirusScanner;
+use App\Service\ClamAvUnavailableException;
+use App\Service\InfectedUploadException;
 use Symfony\Component\HttpFoundation\File\File as HttpFile;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Validator\Constraint;
@@ -27,6 +30,15 @@ use Symfony\Component\Validator\Exception\UnexpectedTypeException;
  */
 class AllowedUploadValidator extends ConstraintValidator
 {
+    /**
+     * The scanner is optional so this validator stays usable from a plain unit test with no
+     * container - which is how App\Tests\Validator\AllowedUploadValidatorTest drives it. In the
+     * application it is always injected, and the write paths assert independently anyway.
+     */
+    public function __construct(private readonly ?AntivirusScanner $antivirus = null)
+    {
+    }
+
     public function validate(mixed $value, Constraint $constraint): void
     {
         if (!$constraint instanceof AllowedUpload) {
@@ -57,14 +69,47 @@ class AllowedUploadValidator extends ConstraintValidator
         $name = $value instanceof UploadedFile ? $value->getClientOriginalName() : $value->getFilename();
         $reason = $constraint->policy->refusalReason($name, $this->sniff($value));
 
-        if (null === $reason) {
+        if (null !== $reason) {
+            $this->context->buildViolation($reason)
+                ->setParameter('{{ name }}', $this->formatValue($name))
+                ->setCode($reason)
+                ->addViolation();
+
             return;
         }
 
-        $this->context->buildViolation($reason)
-            ->setParameter('{{ name }}', $this->formatValue($name))
-            ->setCode($reason)
-            ->addViolation();
+        $this->assertNotHostile($value->getPathname(), $name);
+    }
+
+    /**
+     * The second question, and a different one: the policy above said what kind of file this is,
+     * this says whether it is hostile (design/validated/upload-policy.md, lot 3).
+     *
+     * Reported as a violation rather than left to throw, so a user who picked the wrong file gets a
+     * message on the form instead of an error page. The guarantee that nothing unscanned reaches
+     * the bucket is not here though - it is in the three services that write to it, which assert
+     * independently. This layer is the courtesy; that one is the rule.
+     */
+    private function assertNotHostile(string $path, string $name): void
+    {
+        if (null === $this->antivirus) {
+            return;
+        }
+
+        try {
+            $this->antivirus->assertClean($path, $name);
+        } catch (InfectedUploadException $infected) {
+            $this->context->buildViolation('uploadPolicyInfectedFileMessage')
+                ->setParameter('{{ signature }}', $this->formatValue($infected->signature))
+                ->setCode('uploadPolicyInfectedFileMessage')
+                ->addViolation();
+        } catch (ClamAvUnavailableException) {
+            // Fail closed: refusing an upload nobody could check is the only honest answer, and
+            // saying so is better than a silent acceptance the platform would later believe in.
+            $this->context->buildViolation('uploadPolicyScannerUnavailableMessage')
+                ->setCode('uploadPolicyScannerUnavailableMessage')
+                ->addViolation();
+        }
     }
 
     /**

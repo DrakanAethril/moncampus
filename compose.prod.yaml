@@ -63,5 +63,32 @@ services:
       # documented way to (re)generate the keypair, not just to read it afterwards.
       - ./config/jwt:/app/config/jwt
 
+  # Virus scanning for every upload on the platform (App\Service\AntivirusScanner), reached over
+  # clamd's TCP socket at the ANTIVIRUS_DSN set in .env.prod.local (clamav://clamav:3310).
+  #
+  # **In this overlay and not in compose.yaml on purpose.** Anything added to the base file is on
+  # CI's boot path, and this repository has already been bitten once by a compose service that took
+  # too long to report healthy ("php-1 is unhealthy"). ClamAV downloads a few hundred megabytes of
+  # signatures on first start and holds roughly 1.5 GB of RAM - the production host must have it,
+  # and CI must not pay for it. Dev gets the opt-in `--profile antivirus` service in
+  # compose.override.yaml instead.
+  #
+  # The signature database lives in a named volume so a redeploy does not re-download it, which is
+  # what would otherwise leave every upload refused (fail-closed) for the minutes freshclam takes.
+  clamav:
+    image: clamav/clamav:1.4
+    restart: unless-stopped
+    volumes:
+      - clamav_db:/var/lib/clamav
+    healthcheck:
+      test: ['CMD-SHELL', 'clamdcheck.sh || exit 1']
+      interval: 30s
+      timeout: 10s
+      # Generous on purpose: the first start has a signature database to fetch, and an unhealthy
+      # clamav must not be read as a broken deploy.
+      retries: 20
+      start_period: 300s
+
 volumes:
   php_sessions:
+  clamav_db:

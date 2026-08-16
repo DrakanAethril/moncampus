@@ -29,6 +29,7 @@ class AudioUploadService
 {
     public function __construct(
         private readonly S3Client $s3Client,
+        private readonly AntivirusScanner $antivirus,
         private readonly string $awsS3Bucket,
         private readonly string $awsS3Prefix,
         private readonly string $awsS3PublicEndpoint,
@@ -87,6 +88,12 @@ class AudioUploadService
         if (null === $contentType) {
             return false;
         }
+
+        // This service writes to the bucket through the raw S3 client, so hooking the scanner into
+        // FileUploadService alone would have left every audio recording unscanned - and nothing
+        // would have said so. See App\Tests\Service\BucketWritePathsTest, which fails when a fourth
+        // path appears.
+        $this->antivirus->assertClean($file->getPathname(), $file->getClientOriginalName());
 
         $stream = fopen($file->getPathname(), 'r') ?: throw new \RuntimeException(sprintf('Could not open "%s" for reading.', $file->getPathname()));
 
