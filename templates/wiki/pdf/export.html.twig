@@ -1,0 +1,144 @@
+{# Standalone print document (no base.html.twig) - rendered by Gotenberg, which has no browser
+   origin of its own, so nothing here loads an asset by relative URL. KaTeX's stylesheet is inlined
+   with its fonts as data: URIs for exactly that reason (App\Service\WikiPdfStylesheet).
+
+   Cover, then a clickable table of contents, then the pages depth-first. Each page's headings have
+   already been demoted by its depth (App\Service\WikiHeadingShift), so the whole export has one
+   outline rather than a dozen competing h1s. #}
+<!DOCTYPE html>
+<html lang="fr">
+{# <meta charset> is not optional: without it Chromium guesses GBK and every accent prints as an
+   ideogram. #}
+<head>
+<meta charset="utf-8">
+<title>{{ documentTitle }}</title>
+<style>
+    /* A4 portrait. The page MARGINS are not set here: Gotenberg drives them as conversion
+       parameters (App\Service\GotenbergPageSetup), and Chromium's print pipeline ignores @page
+       margins when it receives its own. The running footer is likewise not in this document - it is
+       templates/wiki/pdf/_footer.html.twig, printed inside the bottom margin where it cannot
+       collide with the text. */
+    @page { size: A4 portrait; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; box-sizing: border-box; }
+
+    /* The 2px on the right are not decoration, they are the width bug already recorded for the
+       progression export: Chromium lays the document out in a box ROUNDED UP to a whole CSS pixel
+       (704px for the 186mm between the 12mm margins, which is 703.05px) and then clips the page to
+       the real 186mm. The last ~0.26mm of every `width: 100%` block therefore falls outside the
+       clip, and a 0.5pt right border disappears. Reserving pixels rather than millimetres is
+       deliberate - the overflow IS a pixel-rounding artefact and stays one whatever the margins
+       become. */
+    body { margin: 0; padding-right: 2px; font-family: 'Source Sans 3', 'Segoe UI', Arial, sans-serif;
+           color: #1b2430; font-size: 9.5pt; line-height: 1.5; }
+    h1, h2, h3, h4, h5, h6 { font-family: Spectral, Georgia, serif; color: #12344d; margin: 0 0 .35em; line-height: 1.25; }
+    h1 { font-size: 17pt; } h2 { font-size: 14pt; } h3 { font-size: 12pt; }
+    h4 { font-size: 10.5pt; } h5 { font-size: 10pt; } h6 { font-size: 9.5pt; }
+    p { margin: 0 0 .6em; }
+    a { color: #12507e; text-decoration: none; }
+
+    /* Cover */
+    .cover { height: 235mm; display: table; width: 100%; }
+    .cover__inner { display: table-cell; vertical-align: middle; text-align: center; }
+    .cover__kicker { font-size: 8pt; letter-spacing: .14em; text-transform: uppercase; color: #8a93a3; }
+    .cover__title { font-size: 26pt; margin: 6mm 0 4mm; }
+    .cover__audience { font-size: 11pt; color: #5b6c79; }
+    .cover__date { margin-top: 8mm; font-size: 9pt; color: #8a93a3; }
+
+    /* Table of contents */
+    .toc { break-after: page; }
+    .toc h2 { font-size: 13pt; margin-bottom: 4mm; }
+    .toc ol { list-style: none; margin: 0; padding: 0; }
+    .toc li { padding: 1.1mm 0; border-bottom: 0.4pt dotted #d3dae4; }
+    .toc a { color: #1b2430; }
+    .toc__d1 { padding-left: 6mm; } .toc__d2 { padding-left: 12mm; }
+    .toc__d3 { padding-left: 18mm; } .toc__d4 { padding-left: 24mm; }
+
+    /* Pages. Each starts on its own page: a wiki page is a unit, and running two of them together
+       makes the demoted headings read as sections of the wrong parent. */
+    .page { break-before: page; }
+    .page__path { font-size: 7.5pt; color: #8a93a3; margin-bottom: 1.5mm; }
+    .body { margin-top: 2mm; }
+    .body img { max-width: 100%; height: auto; }
+    .body table { width: 100%; border-collapse: collapse; margin: 1em 0; }
+    .body td, .body th { border: 0.5pt solid #d3dae4; padding: 1.6mm 2mm; text-align: left; }
+    .body pre { padding: 2.5mm 3mm; border: 0.5pt solid #d3dae4; border-radius: 1.5mm; background: #f7fafc;
+                color: #1b2430; font-size: 8.5pt; white-space: pre-wrap; word-wrap: break-word; }
+    .body blockquote { margin: 1em 0; padding-left: 4mm; border-left: 1pt solid #d3dae4; color: #5b6c79; }
+    .body details { border: 0.5pt solid #d3dae4; border-radius: 1.5mm; padding: 2mm 3mm; margin: 1em 0; }
+    .body summary { font-weight: 600; }
+
+    /* The callouts, the diagrams and the formulas keep the appearance they have on screen - the
+       whole reason they were built on plain classes rather than on anything the app's stylesheet
+       alone could provide. */
+    .body .cm-callout { margin: 1em 0; padding: 2.5mm 3.5mm; border-left: 1pt solid #1B6BA8; background: #eef5fb; }
+    .body .cm-callout--warning { border-left-color: #c9a04e; background: #f5e9cf; color: #7a5417; }
+    .body .cm-callout--tip { border-left-color: #25543c; background: #e3ede6; color: #25543c; }
+    .body .cm-mermaid { text-align: center; margin: 1em 0; }
+    .body .cm-mermaid svg { max-width: 100%; height: auto; }
+    .body .cm-mermaid .node rect, .body .cm-mermaid .node circle, .body .cm-mermaid .node polygon,
+    .body .cm-mermaid .node ellipse, .body .cm-mermaid .node path { fill: #eef5fb; stroke: #1B6BA8; stroke-width: 1px; }
+    .body .cm-mermaid text, .body .cm-mermaid .nodeLabel, .body .cm-mermaid .edgeLabel { fill: #1b2430; font-size: 12px; }
+    .body .cm-mermaid .edgePath path, .body .cm-mermaid .flowchart-link { stroke: #5b6c79; fill: none; }
+    .body .cm-mermaid marker path, .body .cm-mermaid .marker { fill: #5b6c79; stroke: #5b6c79; }
+
+    /* pagebreak's marker, inserted by the editor, becomes a real page break here. */
+    .body .cm-wiki-pagebreak { break-after: page; height: 0; border: 0; }
+
+    /* Attachments are LISTED, never embedded: a PDF cannot carry them, and a link to the bucket
+       would expire. Name, format and size is what lets somebody ask for the right file. */
+    .attachments { margin-top: 4mm; padding-top: 2mm; border-top: 0.5pt solid #d3dae4; }
+    .attachments__title { font-size: 7.5pt; letter-spacing: .08em; text-transform: uppercase; color: #8a93a3; }
+    .attachments ul { margin: 1.5mm 0 0; padding-left: 5mm; font-size: 8.5pt; color: #5b6c79; }
+
+    .empty { color: #8a93a3; font-style: italic; }
+</style>
+{% if katexCss %}<style>{{ katexCss|raw }}</style>{% endif %}
+</head>
+<body>
+
+<section class="cover">
+    <div class="cover__inner">
+        <div class="cover__kicker">Wiki</div>
+        <h1 class="cover__title">{{ documentTitle }}</h1>
+        {% if audience %}<div class="cover__audience">{{ audience }}</div>{% endif %}
+        <div class="cover__date">Édité le {{ generatedAt|date('d/m/Y') }}</div>
+    </div>
+</section>
+
+{% if pages|length > 1 %}
+    <section class="toc">
+        <h2>Sommaire</h2>
+        <ol>
+            {% for page in pages %}
+                {# A real anchor, so the table of contents is clickable in the produced PDF. #}
+                <li class="toc__d{{ min(page.depth, 4) }}"><a href="#{{ page.anchor }}">{{ page.node.title }}</a></li>
+            {% endfor %}
+        </ol>
+    </section>
+{% endif %}
+
+{% for page in pages %}
+    <section class="page" id="{{ page.anchor }}">
+        <h{{ page.level }}>{{ page.node.title }}</h{{ page.level }}>
+
+        {% if page.body %}
+            <div class="body">{{ page.body|raw }}</div>
+        {% else %}
+            <p class="empty">Cette page est vide.</p>
+        {% endif %}
+
+        {% if page.node.attachments|length > 0 %}
+            <div class="attachments">
+                <div class="attachments__title">Pièces jointes</div>
+                <ul>
+                    {% for attachment in page.node.attachments %}
+                        <li>{{ attachment.label }} — {{ attachment.formatLabel }}{% if attachment.sizeBytes %}, {{ (attachment.sizeBytes / 1024)|round }} Ko{% endif %}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+    </section>
+{% endfor %}
+
+</body>
+</html>
