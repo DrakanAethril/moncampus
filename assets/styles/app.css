@@ -7128,30 +7128,21 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
 .cm-wiki-lock { margin-bottom: 16px; padding: 10px 14px; border-radius: 8px; background: var(--cm-gold-bg); border: 1px solid var(--cm-gold); font: 400 13px var(--cm-font-ui); color: var(--cm-gold-tx); }
 
 .cm-wiki__editor-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-/* The "Lien wiki" field inside HugeRTE's dialog. The dialog is plain page DOM - not an iframe - so
-   the app's Tom Select styling already applies; this only gives it the width and the room its
-   dropdown needs, the dialog body being a scroll container that would otherwise clip it. */
+/* The "Lien wiki" field inside HugeRTE's dialog.
+
+   Tom Select's own stylesheet is loaded on the page but does not win inside that dialog - measured,
+   the list computes `position: static` there and lands beside the control instead of under it - so
+   the geometry is pinned here. None of these declarations is a preference.
+
+   The list itself is rendered on <body> (dropdownParent, in wiki_editor_controller.js) rather than
+   inside the field: the dialog clips and stacks its own content, and every attempt to make it give
+   the list room from the inside failed. Escaping the dialog is what actually works, which is why
+   the z-index has to clear HugeRTE's modal rather than merely the page. */
 .cm-wiki-linkfield__label { display: block; margin-bottom: 6px; font: 600 12px var(--cm-font-ui); color: var(--cm-ink); }
-/* The layout is pinned here rather than left to Tom Select's own stylesheet, which is loaded but
-   does not win inside HugeRTE's dialog: measured, the dropdown computes `position: static` there,
-   so it lands *beside* the control instead of under it and the control stretches to the panel's
-   height. Four declarations put it back; none of them is a preference. */
 .cm-wiki-linkfield { position: relative; width: 420px; max-width: 100%; }
 .cm-wiki-linkfield .ts-wrapper { display: block; width: 100%; }
 .cm-wiki-linkfield .ts-control { display: flex; flex-wrap: wrap; align-items: center; width: 100%; min-height: 38px; height: auto; }
-.cm-wiki-linkfield .ts-dropdown { position: absolute; top: 100%; left: 0; width: 100%; z-index: 1200; }
-/* An empty area under the field, not padding on the field itself: the dialog body is a scroll
-   container, so without room reserved below it the open list is clipped - and padding on the field
-   would stretch the control instead of leaving space beneath it.
-
-   `flex: none` is the whole point of this rule. The dialog body is a height-constrained column flex
-   container, so a plain `height` on a child is only a starting size there: measured, this div came
-   out 0 pixels tall and the list stayed clipped. */
-.cm-wiki-linkfield__room { flex: none; height: 240px; }
-/* And the belt to that pair of braces: the dialog body clips what leaves it, so the one that holds
-   this field stops clipping. Scoped by :has() to that dialog alone - no other HugeRTE dialog in the
-   app changes behaviour. */
-.tox-dialog__body-content:has(.cm-wiki-linkfield) { overflow: visible; }
+.cm-wiki-linkfield__dropdown { z-index: 1500; }
 
 .cm-wiki-linkpicker { position: relative; }
 .cm-wiki-linkpicker__panel { position: absolute; right: 0; z-index: 20; min-width: 240px; max-height: 320px; overflow-y: auto; margin-top: 6px; padding: 8px; border: 1px solid var(--cm-border); border-radius: 8px; background: var(--cm-surface); box-shadow: 0 8px 24px rgba(18, 52, 77, 0.12); }

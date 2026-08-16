@@ -304,8 +304,7 @@ export default class extends Controller {
                             type: 'htmlpanel',
                             html: `<label class="cm-wiki-linkfield__label" for="${fieldId}">`
                                 + `${escapeHtml(this.label('page', 'Page'))}</label>`
-                                + `<div class="cm-wiki-linkfield"><select id="${fieldId}"></select></div>`
-                                + '<div class="cm-wiki-linkfield__room" aria-hidden="true"></div>',
+                                + `<div class="cm-wiki-linkfield"><select id="${fieldId}"></select></div>`,
                         }],
                     },
                     buttons: [
@@ -344,6 +343,12 @@ export default class extends Controller {
                         })),
                         maxOptions: null,
                         placeholder: this.label('page', 'Page'),
+                        // On <body>, not inside the field: HugeRTE's dialog clips and stacks its own
+                        // content, and the list is simply not visible from within it - measured
+                        // several ways before settling here. The dialog's focus handling is a Tab
+                        // cycle, and the text input stays inside the dialog, so nothing is lost.
+                        dropdownParent: 'body',
+                        dropdownClass: 'ts-dropdown cm-wiki-linkfield__dropdown',
                     });
                     picker.focus();
                 }
