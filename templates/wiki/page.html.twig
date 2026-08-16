@@ -23,6 +23,10 @@
     {# Whole wiki, this branch, or this page alone - three scopes, one route. #}
     <a href="{{ path('app_wiki_export_pdf', {id: wiki.id}) }}" class="cm-btn cm-btn--outline">{{ 'wikiExportPdfAction'|trans }}</a>
     <a href="{{ path('app_wiki_export_pdf', {id: wiki.id, node: node.id, page: 1}) }}" class="cm-btn cm-btn--outline">{{ 'wikiExportPagePdfAction'|trans }}</a>
+    <a href="{{ path('app_wiki_export_archive', {id: wiki.id}) }}" class="cm-btn cm-btn--outline">{{ 'wikiExportArchiveAction'|trans }}</a>
+    {% if is_granted('WIKI_EDIT', wiki) %}
+        <a href="{{ path('app_wiki_import', {id: wiki.id}) }}" class="cm-btn cm-btn--outline">{{ 'wikiImportAction'|trans }}</a>
+    {% endif %}
     <a href="{{ path('app_wiki_page_history', {id: wiki.id, nodeId: node.id}) }}" class="cm-btn cm-btn--outline">{{ 'wikiHistoryAction'|trans }}</a>
     {% if is_granted('WIKI_EDIT', wiki) %}
         <a href="{{ path('app_wiki_page_edit', {id: wiki.id, nodeId: node.id}) }}" class="cm-btn cm-btn--primary">{{ 'wikiEditPageAction'|trans }}</a>
