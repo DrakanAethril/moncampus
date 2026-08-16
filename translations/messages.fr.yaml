@@ -3956,6 +3956,8 @@ videoResourceProgramRequiredMessage: 'Choisissez la classe concernée.'
 videoResourceFilesHeading: 'Fichiers vidéo'
 videoResourceAddFileAction: 'Ajouter une vidéo'
 videoResourceUploadingLabel: 'Envoi en cours…'
+videoResourceProcessingLabel: 'Traitement…'
+videoResourceCancelUploadAction: 'Annuler'
 videoResourceUploadHintLabel: 'MP4 uniquement · %size% Mo maximum'
 videoResourceDeleteFileTitle: 'Supprimer cette vidéo'
 videoResourceDeleteConfirmMessage: 'Supprimer cette vidéo ?'
@@ -3980,6 +3982,7 @@ videoResourceWatchStatusNotStartedLabel: 'Non commencé'
 videoUploadNotMp4Error: 'MP4 uniquement : convertissez la vidéo avant de la déposer.'
 videoUploadTooLargeError: 'Vidéo trop lourde.'
 videoUploadFailedError: "L'envoi n'a pas abouti. Réessayez."
+videoUploadServerRefusedError: "Le serveur a refusé l'envoi avant même de lire la vidéo — elle dépasse la taille qu'il accepte. Signalez-le au support."
 assignmentNatureWatchingLabel: 'Visionnage'
 assignmentNatureWatchingHint: "L'étudiant regarde les vidéos du support."
 assignmentWizardVideoResourceFieldLabel: 'Vidéo'
