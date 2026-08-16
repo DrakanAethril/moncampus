@@ -7142,8 +7142,16 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
 .cm-wiki-linkfield .ts-dropdown { position: absolute; top: 100%; left: 0; width: 100%; z-index: 1200; }
 /* An empty area under the field, not padding on the field itself: the dialog body is a scroll
    container, so without room reserved below it the open list is clipped - and padding on the field
-   would stretch the control instead of leaving space beneath it. */
-.cm-wiki-linkfield__room { height: 240px; }
+   would stretch the control instead of leaving space beneath it.
+
+   `flex: none` is the whole point of this rule. The dialog body is a height-constrained column flex
+   container, so a plain `height` on a child is only a starting size there: measured, this div came
+   out 0 pixels tall and the list stayed clipped. */
+.cm-wiki-linkfield__room { flex: none; height: 240px; }
+/* And the belt to that pair of braces: the dialog body clips what leaves it, so the one that holds
+   this field stops clipping. Scoped by :has() to that dialog alone - no other HugeRTE dialog in the
+   app changes behaviour. */
+.tox-dialog__body-content:has(.cm-wiki-linkfield) { overflow: visible; }
 
 .cm-wiki-linkpicker { position: relative; }
 .cm-wiki-linkpicker__panel { position: absolute; right: 0; z-index: 20; min-width: 240px; max-height: 320px; overflow-y: auto; margin-top: 6px; padding: 8px; border: 1px solid var(--cm-border); border-radius: 8px; background: var(--cm-surface); box-shadow: 0 8px 24px rgba(18, 52, 77, 0.12); }
