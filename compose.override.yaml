@@ -211,6 +211,12 @@ services:
   # clamd rather than against a stub.
   clamav:
     image: clamav/clamav:1.4
+    # The official ClamAV images publish **amd64 only** - there is no arm64 manifest for any tag.
+    # Pinned explicitly so an Apple Silicon dev machine runs it under emulation instead of failing
+    # the pull with "no matching manifest for linux/arm64/v8". Slow to start there (measured: a few
+    # minutes for clamd to come up), which is another reason this sits behind a profile. The
+    # production host is amd64, so compose.prod.yaml needs no pin.
+    platform: linux/amd64
     profiles: [antivirus]
     restart: unless-stopped
     volumes:
