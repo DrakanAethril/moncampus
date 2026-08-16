@@ -137,12 +137,16 @@ export default class extends Controller {
                 + 'polyline[*],polygon[*],text[*],tspan[*],defs[*],marker[*]',
             valid_children: '+div[svg]',
             setup: (setupEditor) => {
-                setupEditor.on('change input undo redo', () => setupEditor.save());
+                // save() writes the serialized HTML into the textarea; renderKatexIntoField()
+                // immediately rebuilds the formulas the serializer flattened on the way past.
+                setupEditor.on('change input undo redo', () => {
+                    setupEditor.save();
+                    this.renderKatexIntoField();
+                });
                 this.registerCallouts(setupEditor);
                 this.registerWikiLink(setupEditor);
                 this.registerKatex(setupEditor);
                 this.registerMermaid(setupEditor);
-                this.renderKatexOnSave(setupEditor);
             },
             ...(this.imageUploadUrlValue ? this.imageOptions() : {}),
         });
@@ -155,41 +159,46 @@ export default class extends Controller {
     }
 
     /**
-     * Rebuilds every KaTeX block from its source on the way out of the editor.
+     * Rebuilds every KaTeX block from its source, in the textarea, right after the editor has
+     * written to it.
      *
      * Measured, and the reason this exists at all: HugeRTE's serializer removes empty inline
      * elements, and KaTeX's layout is built out of empty `<span class="katex-strut">`s carrying
      * only a height. Storing KaTeX's output directly therefore gave a formula whose exponent had
-     * come loose. Neither `mceNonEditable` nor `contenteditable="false"` protects them; the
-     * serializer walks everything.
+     * come loose. Neither `mceNonEditable` nor `contenteditable="false"` protects them - the
+     * serializer walks everything - and the server's sanitizer is not the culprit either: it
+     * preserves an empty span untouched, which was checked separately.
      *
-     * `SaveContent` is the editor's own hook for exactly this - it hands over the serialized HTML
-     * and takes back whatever is written into `event.content`, so the full markup is produced
-     * *after* the serializer has had its say and never round-trips through it. Doing this on the
-     * form's submit instead was tried first and is a trap: preventing the default and re-submitting
-     * from an async handler leaves the form silently unsent.
+     * Two tidier-looking hooks were tried first and both are traps, so neither should be
+     * reintroduced:
      *
-     * The stored page is then what the design asked for: rendered output that needs no JavaScript
-     * to read, and that works unchanged inside Gotenberg's Chromium, which only loads the
-     * stylesheet.
+     *   - **the form's `submit` event**: preventing the default and re-submitting from an async
+     *     handler leaves the form silently unsent - no POST goes out and nothing reports it;
+     *   - **the editor's `SaveContent` event**: the listener does fire and `event.content` really
+     *     does come back rewritten, but this version writes the textarea from the *unmodified*
+     *     content anyway, so the rewrite is discarded.
+     *
+     * Writing the textarea directly depends on no hook semantics at all. The stored page is then
+     * what the design asked for: rendered output that needs no JavaScript to read, and that works
+     * unchanged inside Gotenberg's Chromium, which only loads the stylesheet.
      */
-    renderKatexOnSave(editor) {
-        editor.on('SaveContent', (event) => {
-            if (!event.content.includes('data-katex') || !window.katex) {
-                return;
-            }
+    renderKatexIntoField() {
+        const html = this.element.value;
 
-            const holder = document.createElement('div');
-            holder.innerHTML = event.content;
+        if (!html.includes('data-katex') || !window.katex) {
+            return;
+        }
 
-            holder.querySelectorAll('[data-katex]').forEach((block) => {
-                // throwOnError false: a formula the author has since broken must not be what stops
-                // them saving the rest of the page.
-                block.innerHTML = window.katex.renderToString(block.getAttribute('data-katex'), { throwOnError: false });
-            });
+        const holder = document.createElement('div');
+        holder.innerHTML = html;
 
-            event.content = holder.innerHTML;
+        holder.querySelectorAll('[data-katex]').forEach((block) => {
+            // throwOnError false: a formula the author has since broken must not be what stops them
+            // saving the rest of the page.
+            block.innerHTML = window.katex.renderToString(block.getAttribute('data-katex'), { throwOnError: false });
         });
+
+        this.element.value = holder.innerHTML;
     }
 
     label(key, fallback) {
@@ -386,6 +395,7 @@ export default class extends Controller {
 
         editor.insertContent(html);
         editor.save();
+        this.renderKatexIntoField();
     }
 
     escapeAttribute(value) {
