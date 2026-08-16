@@ -34,7 +34,11 @@
                         {% for result in results %}
                             <li class="cm-wiki-list__row">
                                 <a class="cm-wiki-list__title" href="{{ path('app_wiki_page', {id: wiki.id, nodeId: result.id}) }}">{{ result.title }}</a>
-                                <span class="cm-wiki-list__subtitle">{{ result.bodyText ? result.bodyText|u.truncate(160, '…') : '' }}</span>
+                                {# A plain slice rather than |u.truncate: twig/string-extra is not
+                                   installed here, and one excerpt is not a reason to add it. #}
+                                <span class="cm-wiki-list__subtitle">
+                                    {{- result.bodyText ? result.bodyText|slice(0, 160) ~ (result.bodyText|length > 160 ? '…') : '' -}}
+                                </span>
                             </li>
                         {% endfor %}
                     </ul>
