@@ -68,14 +68,10 @@
                         {% endfor %}
                     </div>
                 {% endif %}
-                <div data-controller="file-dropzone" data-file-dropzone-max-size-value="20971520"
-                     data-file-dropzone-too-large-text-value="{{ 'documentationAttachmentTooLargeLabel'|trans }}">
-                    <label class="cm-doc-dropzone" data-file-dropzone-target="zone">
-                        <span>{{ 'documentationDropFileLabel'|trans }}</span>
-                        {{ form_widget(form.files, {attr: {class: 'd-none', 'data-file-dropzone-target': 'input', 'data-action': 'change->file-dropzone#update'}}) }}
-                    </label>
-                    <div class="cm-doc-attachments__grid" data-file-dropzone-target="list"></div>
-                </div>
+                {# The screen's own drop zone gave way to the platform's one component
+                   (App\Form\FilePickerType): it draws the same gesture, and it is the only one that
+                   can show a progress bar and report a refusal before the article is saved. #}
+                {{ form_widget(form.files) }}
                 {{ form_errors(form.files) }}
             </div>
         </div>

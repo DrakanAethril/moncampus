@@ -12,10 +12,10 @@ use App\Service\AlternanceImport\ImportAnalyzer;
 use App\Service\AlternanceImport\ImportExecutor;
 use App\Service\AlternanceImport\ImportFileException;
 use App\Service\AlternanceImport\ImportOutcome;
+use App\Service\UploadIntake;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\Form\FormError;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -53,14 +53,15 @@ class ContractImportController extends AbstractController
     private const string OUTCOME_SESSION_KEY = 'ufa_contract_import_outcome';
 
     #[Route(path: '/ufa/configuration/contract-import', name: 'app_ufa_configuration_contract_import', methods: ['GET', 'POST'])]
-    public function upload(Request $request, ContractSpreadsheetReader $reader, TranslatorInterface $translator): Response
+    public function upload(Request $request, ContractSpreadsheetReader $reader, TranslatorInterface $translator, UploadIntake $uploadIntake): Response
     {
         $form = $this->createForm(UfaContractImportType::class);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            /** @var UploadedFile $file */
-            $file = $form->get('file')->getData();
+            // The bytes are already in the bucket (the field stages them - see
+            // App\Form\FilePickerType) and the reader wants a path: asLocalFile() fetches them back.
+            $file = $uploadIntake->asLocalFile($form->get('file')->getData());
 
             try {
                 $rows = $reader->read($file->getPathname());

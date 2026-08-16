@@ -7,6 +7,7 @@ namespace App\Controller\Wiki;
 use App\Entity\User;
 use App\Entity\Wiki;
 use App\Entity\WikiAttachment;
+use App\Form\WikiAttachmentType;
 use App\Repository\WikiNodeRepository;
 use App\Repository\WikiRepository;
 use App\Security\Voter\WikiVoter;
@@ -14,6 +15,8 @@ use App\Service\ClamAvUnavailableException;
 use App\Service\FileUploadService;
 use App\Service\InfectedUploadException;
 use App\Service\PostValue;
+use App\Service\StagedUpload;
+use App\Service\UploadIntake;
 use App\Service\UploadPolicy;
 use App\Service\WikiTree;
 use Doctrine\ORM\EntityManagerInterface;
@@ -64,53 +67,43 @@ class WikiContentController extends AbstractController
     }
 
     #[Route(path: '/p/{nodeId}/attachments', name: 'app_wiki_attachment_add', requirements: ['nodeId' => '\d+'], methods: ['POST'])]
-    public function addAttachments(Request $request, int $id, int $nodeId): Response
+    public function addAttachments(Request $request, int $id, int $nodeId, UploadIntake $uploadIntake): Response
     {
         $wiki = $this->editableWiki($id);
-        $this->assertToken($request, 'wiki_attachment');
         $node = $this->loadNode($wiki, $nodeId);
         $user = $this->currentUser();
 
-        $files = $request->files->all('attachments');
+        // A form type since the fifteenth upload field of the platform stopped carrying bytes
+        // (App\Form\FilePickerType): the CSRF token this route used to check by hand is the form's
+        // own now, the platform policy is the field's, and the antivirus ran at staging time - so
+        // the three refusal paths that used to live here are gone rather than moved.
+        $form = $this->createForm(WikiAttachmentType::class);
+        $form->handleRequest($request);
+
+        if (!$form->isSubmitted() || !$form->isValid()) {
+            foreach ($form->getErrors(true) as $error) {
+                $this->addFlash('danger', $error->getMessage());
+            }
+
+            return $this->redirectToRoute('app_wiki_page', ['id' => $id, 'nodeId' => $nodeId]);
+        }
+
+        /** @var list<StagedUpload> $files */
+        $files = $form->get('files')->getData();
         $position = \count($node->getAttachments());
-        $policy = UploadPolicy::platform();
         $accepted = 0;
 
         foreach ($files as $file) {
-            if (!$file instanceof UploadedFile || !$file->isValid()) {
-                continue;
-            }
+            $key = $uploadIntake->store(
+                $file,
+                self::ATTACHMENT_PREFIX,
+                \sprintf('%s.%s', bin2hex(random_bytes(16)), UploadIntake::extension($file)),
+            );
 
-            $name = $file->getClientOriginalName();
-            $reason = $policy->refusalReason($name, $file->getMimeType());
-
-            if (null !== $reason) {
-                $this->addFlash('danger', $reason);
-
-                continue;
-            }
-
-            try {
-                $key = $this->uploads->upload(
-                    self::ATTACHMENT_PREFIX,
-                    \sprintf('%s.%s', bin2hex(random_bytes(16)), pathinfo(mb_strtolower($name), \PATHINFO_EXTENSION)),
-                    $file,
-                );
-            } catch (InfectedUploadException) {
-                $this->addFlash('danger', 'uploadPolicyInfectedFileMessage');
-
-                continue;
-            } catch (ClamAvUnavailableException) {
-                $this->addFlash('danger', 'uploadPolicyScannerUnavailableMessage');
-
-                continue;
-            }
-
-            $size = $file->getSize();
             $node->addAttachment(
-                (new WikiAttachment($name, $key))
-                    ->setMimeType($file->getClientMimeType())
-                    ->setSizeBytes(false === $size ? null : $size)
+                (new WikiAttachment(UploadIntake::originalName($file), $key))
+                    ->setMimeType(UploadIntake::mimeType($file))
+                    ->setSizeBytes(UploadIntake::size($file))
                     ->setPosition($position++),
             );
             ++$accepted;

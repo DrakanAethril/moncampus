@@ -235,11 +235,12 @@
                                            deposit. Attaching a file here is what closes it. #}
                                         <div class="cm-audio-warn">{{ 'quizQuestionAwaitedMediaTemplate'|trans({'%name%': selectedQuestion.expectedMediaName}) }}</div>
                                     {% endif %}
-                                    <label class="cm-imagedrop" for="{{ form.imageFile.vars.id }}">
-                                        <span class="cm-imagedrop__icon">🖼</span>
-                                        <span>{{ 'quizQuestionImageDropText'|trans }}</span>
-                                        {{ form_widget(form.imageFile, {attr: {'data-quiz-question-editor-target': 'imageInput', 'data-action': 'change->quiz-question-editor#previewImage'}}) }}
-                                    </label>
+                                    {# The editor's own image drop zone gave way to the platform's one
+                                       component (App\Form\FilePickerType). What is lost is the local
+                                       preview before saving; what is gained is that the image is
+                                       already deposited, typed and scanned by the time the question
+                                       is saved, instead of being refused afterwards. #}
+                                    {{ form_widget(form.imageFile) }}
                                     {% if selectedQuestion.imageStorageKey %}
                                         <img src="{{ file_url(selectedQuestion.imageStorageKey) }}" alt="" class="cm-imagedrop__preview" data-quiz-question-editor-target="imagePreview">
                                         <div>{{ form_row(form.removeImage) }}</div>

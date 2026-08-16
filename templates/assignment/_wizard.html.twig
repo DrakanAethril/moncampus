@@ -227,14 +227,16 @@
                                 {% endfor %}
                             </div>
                         {% endif %}
+                        {# The chips and the "coller un lien" button stay: they are the *links* half,
+                           which the picker does not carry. What went is the wizard's own drop zone
+                           and its hidden native input - the files half is the platform's one
+                           component now (App\Form\FilePickerType), which is what puts a progress bar
+                           on a 180 Mo support and refuses an .exe before the work is published. #}
                         <div class="cm-chip-list" data-assignment-wizard-target="attachmentChips" data-link-prompt="{{ 'assignmentWizardPasteLinkPrompt'|trans }}"></div>
-                        <div class="cm-dropzone" data-action="dragover->assignment-wizard#dragOver dragleave->assignment-wizard#dragLeave drop->assignment-wizard#dropFiles">
-                            {{ 'assignmentWizardDropzoneText'|trans }}
-                            <button type="button" class="cm-linkish" data-action="assignment-wizard#browseFiles">{{ 'assignmentWizardBrowseAction'|trans }}</button>
-                            {{ 'assignmentWizardDropzoneOr'|trans }}
+                        {{ form_widget(form.attachmentFiles) }}
+                        <div class="cm-dropzone cm-dropzone--link">
                             <button type="button" class="cm-linkish" data-action="assignment-wizard#pasteLink">{{ 'assignmentWizardPasteLinkAction'|trans }}</button>
                         </div>
-                        {{ form_widget(form.attachmentFiles, {attr: {class: 'd-none', 'data-assignment-wizard-target': 'attachmentInput', 'data-action': 'change->assignment-wizard#filesPicked'}}) }}
                         {{ form_widget(form.attachmentLinks, {attr: {class: 'd-none', 'data-assignment-wizard-target': 'attachmentLinks'}}) }}
                         {{ form_errors(form.attachmentFiles) }}
                     </div>

@@ -37,10 +37,11 @@ use App\Service\FileUploadService;
 use App\Service\FormValue;
 use App\Service\PostValue;
 use App\Service\QueryValue;
+use App\Service\StagedUpload;
+use App\Service\UploadIntake;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -150,9 +151,10 @@ class AssignmentController extends AbstractController
         TopicRepository $topicRepository,
         UserRepository $userRepository,
         GroupBatchRepository $groupBatchRepository,
+        UploadIntake $uploadIntake,
         FileUploadService $fileUploadService,
     ): Response {
-        return $this->runWizard($request, null, $entityManager, $programRepository, $lessonSessionRepository, $topicRepository, $userRepository, $groupBatchRepository, $fileUploadService);
+        return $this->runWizard($request, null, $entityManager, $programRepository, $lessonSessionRepository, $topicRepository, $userRepository, $groupBatchRepository, $uploadIntake, $fileUploadService);
     }
 
     /**
@@ -175,11 +177,12 @@ class AssignmentController extends AbstractController
         TopicRepository $topicRepository,
         UserRepository $userRepository,
         GroupBatchRepository $groupBatchRepository,
+        UploadIntake $uploadIntake,
         FileUploadService $fileUploadService,
     ): Response {
         $assignment = $this->findOrNotFound($id, $assignmentRepository, $programRepository);
 
-        return $this->runWizard($request, $assignment, $entityManager, $programRepository, $lessonSessionRepository, $topicRepository, $userRepository, $groupBatchRepository, $fileUploadService);
+        return $this->runWizard($request, $assignment, $entityManager, $programRepository, $lessonSessionRepository, $topicRepository, $userRepository, $groupBatchRepository, $uploadIntake, $fileUploadService);
     }
 
     private function runWizard(
@@ -191,6 +194,7 @@ class AssignmentController extends AbstractController
         TopicRepository $topicRepository,
         UserRepository $userRepository,
         GroupBatchRepository $groupBatchRepository,
+        UploadIntake $uploadIntake,
         FileUploadService $fileUploadService,
     ): Response {
         $isEdit = null !== $existing;
@@ -235,7 +239,7 @@ class AssignmentController extends AbstractController
             $this->natureFields->apply($saved);
             $this->applyVisibility($saved, $form);
             $this->removeDroppedAttachments($saved, $request, $fileUploadService);
-            $this->applyAttachments($saved, $form, $fileUploadService);
+            $this->applyAttachments($saved, $form, $uploadIntake);
 
             if ($isEdit) {
                 $saved->setLastUpdatedBy($this->currentUser());
@@ -580,20 +584,20 @@ class AssignmentController extends AbstractController
      * The supports travel with the form and only become rows here: the assignment did not exist
      * before, so there was nothing to attach them to.
      */
-    private function applyAttachments(Assignment $assignment, \Symfony\Component\Form\FormInterface $form, FileUploadService $fileUploadService): void
+    private function applyAttachments(Assignment $assignment, \Symfony\Component\Form\FormInterface $form, UploadIntake $uploadIntake): void
     {
-        /** @var list<UploadedFile> $files */
+        /** @var list<StagedUpload> $files */
         $files = $form->get('attachmentFiles')->getData() ?? [];
 
         foreach ($files as $file) {
-            $extension = $file->guessExtension() ?? $file->getClientOriginalExtension();
-            $key = $fileUploadService->upload(
+            $extension = UploadIntake::extension($file);
+            $key = $uploadIntake->store(
+                $file,
                 self::ATTACHMENT_UPLOAD_PREFIX,
                 sprintf('%d-%s.%s', time(), bin2hex(random_bytes(4)), $extension),
-                $file,
             );
 
-            (new AssignmentAttachment($assignment, $file->getClientOriginalName(), AssignmentAttachmentSourceType::Upload))->setStorageKey($key);
+            (new AssignmentAttachment($assignment, UploadIntake::originalName($file), AssignmentAttachmentSourceType::Upload))->setStorageKey($key);
         }
 
         foreach (preg_split('/\R/', FormValue::string($form, 'attachmentLinks')) ?: [] as $line) {

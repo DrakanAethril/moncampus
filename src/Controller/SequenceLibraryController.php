@@ -39,11 +39,11 @@ use App\Service\SequenceInstantiationService;
 use App\Service\SequenceJsonExporter;
 use App\Service\SequencePromptCatalog;
 use App\Service\SequenceQuizBoard;
+use App\Service\UploadIntake;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\Form\FormError;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -225,12 +225,12 @@ class SequenceLibraryController extends AbstractController
     }
 
     #[Route(path: '/library/sequences/{id}/resources', name: 'app_library_sequences_resources_new', methods: ['POST'])]
-    public function sequenceResourceAdd(int $id, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $repository, FileUploadService $fileUploadService, LibraryTagResolver $tagResolver, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
+    public function sequenceResourceAdd(int $id, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $repository, UploadIntake $uploadIntake, LibraryTagResolver $tagResolver, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
 
-        $this->handleResourceForm($request, $entityManager, $fileUploadService, $tagResolver, $niveauTagRepository, $optionTagRepository, $blocTagRepository, static function (LibraryResource $resource) use ($sequenceTemplate): void {
+        $this->handleResourceForm($request, $entityManager, $uploadIntake, $tagResolver, $niveauTagRepository, $optionTagRepository, $blocTagRepository, static function (LibraryResource $resource) use ($sequenceTemplate): void {
             $resource->setSequenceTemplate($sequenceTemplate);
         });
 
@@ -419,13 +419,13 @@ class SequenceLibraryController extends AbstractController
     }
 
     #[Route(path: '/library/sequences/{sequenceId}/sessions/{id}/resources', name: 'app_library_seances_resources_new', methods: ['POST'])]
-    public function seanceResourceAdd(int $sequenceId, int $id, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, FileUploadService $fileUploadService, LibraryTagResolver $tagResolver, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
+    public function seanceResourceAdd(int $sequenceId, int $id, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, UploadIntake $uploadIntake, LibraryTagResolver $tagResolver, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
         $this->denyAccessUnlessGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
         $seanceTemplate = $this->findSeanceOrNotFound($seanceRepository, $sequenceTemplate, $id);
 
-        $this->handleResourceForm($request, $entityManager, $fileUploadService, $tagResolver, $niveauTagRepository, $optionTagRepository, $blocTagRepository, static function (LibraryResource $resource) use ($seanceTemplate): void {
+        $this->handleResourceForm($request, $entityManager, $uploadIntake, $tagResolver, $niveauTagRepository, $optionTagRepository, $blocTagRepository, static function (LibraryResource $resource) use ($seanceTemplate): void {
             $resource->setSeanceTemplate($seanceTemplate);
         });
 
@@ -554,14 +554,14 @@ class SequenceLibraryController extends AbstractController
     }
 
     #[Route(path: '/library/sequences/{sequenceId}/sessions/{seanceId}/phases/{id}/resources', name: 'app_library_phases_resources_new', methods: ['POST'])]
-    public function phaseResourceAdd(int $sequenceId, int $seanceId, int $id, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, SeancePhaseTemplateRepository $phaseRepository, FileUploadService $fileUploadService, LibraryTagResolver $tagResolver, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
+    public function phaseResourceAdd(int $sequenceId, int $seanceId, int $id, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, SeancePhaseTemplateRepository $phaseRepository, UploadIntake $uploadIntake, LibraryTagResolver $tagResolver, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
         $this->denyAccessUnlessGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
         $seanceTemplate = $this->findSeanceOrNotFound($seanceRepository, $sequenceTemplate, $seanceId);
         $phaseTemplate = $this->findPhaseOrNotFound($phaseRepository, $seanceTemplate, $id);
 
-        $this->handleResourceForm($request, $entityManager, $fileUploadService, $tagResolver, $niveauTagRepository, $optionTagRepository, $blocTagRepository, static function (LibraryResource $resource) use ($phaseTemplate): void {
+        $this->handleResourceForm($request, $entityManager, $uploadIntake, $tagResolver, $niveauTagRepository, $optionTagRepository, $blocTagRepository, static function (LibraryResource $resource) use ($phaseTemplate): void {
             $resource->setSeancePhaseTemplate($phaseTemplate);
         });
 
@@ -589,7 +589,7 @@ class SequenceLibraryController extends AbstractController
     // Shared by the sequence/seance/phase resource-add actions - $attach wires the new resource to
     // whichever of the three the caller is actually adding to (exactly one gets set, matching
     // LibraryResource's XOR shape - see its class docblock).
-    private function handleResourceForm(Request $request, EntityManagerInterface $entityManager, FileUploadService $fileUploadService, LibraryTagResolver $tagResolver, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository, \Closure $attach): void
+    private function handleResourceForm(Request $request, EntityManagerInterface $entityManager, UploadIntake $uploadIntake, LibraryTagResolver $tagResolver, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository, \Closure $attach): void
     {
         $form = $this->createForm(LibraryResourceType::class);
         $form->handleRequest($request);
@@ -602,7 +602,7 @@ class SequenceLibraryController extends AbstractController
             return;
         }
 
-        /** @var UploadedFile|null $file */
+        /** @var \App\Service\StagedUpload|null $file */
         $file = $form->get('file')->getData();
         $url = $form->get('url')->getData();
 
@@ -624,8 +624,8 @@ class SequenceLibraryController extends AbstractController
         $resource->setOption($tagResolver->resolveOne($optionTagRepository, LibraryOptionTag::class, $teacher, $request->request->get('option')));
 
         if (null !== $file) {
-            $extension = $file->guessExtension() ?? $file->getClientOriginalExtension();
-            $key = $fileUploadService->upload(self::RESOURCE_UPLOAD_PREFIX, sprintf('%s.%s', bin2hex(random_bytes(8)), $extension), $file);
+            $extension = UploadIntake::extension($file);
+            $key = $uploadIntake->store($file, self::RESOURCE_UPLOAD_PREFIX, sprintf('%s.%s', bin2hex(random_bytes(8)), $extension));
             $resource->setType(LibraryResourceSourceType::Upload);
             $resource->setStorageKey($key);
         } else {

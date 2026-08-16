@@ -17,13 +17,11 @@ use App\Enum\ProgramSyllabusMode;
 use App\Enum\VisibilityLevel;
 use App\Repository\EvaluationPeriodGroupRepository;
 use App\Service\UploadPolicy;
-use App\Validator\AllowedUpload;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
-use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -114,14 +112,14 @@ class ProgramType extends AbstractType
                 'choice_label' => static fn (ProgramSyllabusMode $mode): string => $mode->labelKey(),
                 'label' => 'programSyllabusModeFieldLabel',
             ])
-            ->add('syllabusFile', FileType::class, [
+            ->add('syllabusFile', FilePickerType::class, [
                 'label' => 'programSyllabusFileFieldLabel',
                 'help' => FileUploadDefaults::MAX_SIZE_HELP_KEY,
                 'mapped' => false,
                 'required' => false,
-                'constraints' => [
-                    new AllowedUpload(UploadPolicy::pdf()),
-                ],
+                'policy' => UploadPolicy::pdf(),
+                // A programme document rather than a teacher's own course material: no library tab.
+                'library' => false,
             ])
             ->add('financialManagementEnabled', CheckboxType::class, [
                 'label' => 'programFinancialManagementFieldLabel',
@@ -155,14 +153,14 @@ class ProgramType extends AbstractType
                 'choice_label' => static fn (ProgramAlternanceCalendarMode $mode): string => $mode->labelKey(),
                 'label' => 'programAlternanceCalendarModeFieldLabel',
             ])
-            ->add('alternanceCalendarFile', FileType::class, [
+            ->add('alternanceCalendarFile', FilePickerType::class, [
                 'label' => 'programAlternanceCalendarFileFieldLabel',
                 'help' => FileUploadDefaults::MAX_SIZE_HELP_KEY,
                 'mapped' => false,
                 'required' => false,
-                'constraints' => [
-                    new AllowedUpload(UploadPolicy::pdf()),
-                ],
+                'policy' => UploadPolicy::pdf(),
+                // A programme document rather than a teacher's own course material: no library tab.
+                'library' => false,
             ])
             ->add('evaluationPeriodGroup', EntityType::class, [
                 'class' => EvaluationPeriodGroup::class,

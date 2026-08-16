@@ -7,7 +7,6 @@ namespace App\Form;
 use App\Service\UploadPolicy;
 use App\Validator\AllowedUpload;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\FormBuilderInterface;
 
@@ -31,11 +30,15 @@ class AssignmentSubmissionFileType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('file', FileType::class, [
+            ->add('file', FilePickerType::class, [
                 'label' => 'assignmentSubmissionFileFieldLabel',
                 'mapped' => false,
+                'required' => true,
                 'help' => FileUploadDefaults::MAX_SIZE_HELP_KEY,
-                'constraints' => [self::fileConstraint()],
+                'policy' => UploadPolicy::documents(),
+                // A student has no library, and this is the student side of the assignment
+                // (design/validated/file-library.md, "The component").
+                'library' => false,
             ])
             ->add('submit', SubmitType::class, [
                 'label' => 'assignmentSubmissionUploadAction',

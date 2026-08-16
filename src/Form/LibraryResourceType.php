@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace App\Form;
 
 use App\Service\UploadPolicy;
-use App\Validator\AllowedUpload;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\UrlType;
@@ -26,14 +24,15 @@ class LibraryResourceType extends AbstractType
             ->add('label', TextType::class, [
                 'label' => 'libraryResourceLabelFieldLabel',
             ])
-            ->add('file', FileType::class, [
+            ->add('file', FilePickerType::class, [
                 'label' => 'libraryResourceFileFieldLabel',
                 'mapped' => false,
                 'required' => false,
                 'help' => FileUploadDefaults::MAX_SIZE_HELP_KEY,
-                'constraints' => [
-                    new AllowedUpload(UploadPolicy::documents()),
-                ],
+                'policy' => UploadPolicy::documents(),
+                // Course material, so the library tab belongs here - it arrives with the library
+                // itself (design/validated/file-library.md, lot 4).
+                'library' => false,
             ])
             ->add('url', UrlType::class, [
                 'label' => 'libraryResourceUrlFieldLabel',

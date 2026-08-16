@@ -33,6 +33,7 @@ use App\Service\QueryValue;
 use App\Service\QuizAnswerChecker;
 use App\Service\QuizInstantiationService;
 use App\Service\QuizQuestionCompleteness;
+use App\Service\UploadIntake;
 use App\Util\NumericAnswerParser;
 use App\Util\NumericVariableParser;
 use Doctrine\ORM\EntityManagerInterface;
@@ -584,7 +585,7 @@ class QuizLibraryController extends AbstractController
     }
 
     #[Route(path: '/library/quiz/{id}/questions/{questionId}', name: 'app_library_quiz_questions_save', methods: ['POST'])]
-    public function questionSave(int $id, int $questionId, Request $request, EntityManagerInterface $entityManager, QuizTemplateRepository $repository, QuizQuestionRepository $questionRepository, FileUploadService $fileUploadService, MatchingImageStore $matchingImageStore, QuizQuestionCompleteness $completeness): Response
+    public function questionSave(int $id, int $questionId, Request $request, EntityManagerInterface $entityManager, QuizTemplateRepository $repository, QuizQuestionRepository $questionRepository, FileUploadService $fileUploadService, UploadIntake $uploadIntake, MatchingImageStore $matchingImageStore, QuizQuestionCompleteness $completeness): Response
     {
         $template = $this->findTemplateOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
@@ -600,7 +601,7 @@ class QuizLibraryController extends AbstractController
             $this->applyMatching($question, $request, $fileUploadService, $matchingImageStore);
             $this->applyNumeric($question, $request);
 
-            /** @var UploadedFile|null $imageFile */
+            /** @var \App\Service\StagedUpload|null $imageFile */
             $imageFile = $form->get('imageFile')->getData();
             $removeImage = (bool) $form->get('removeImage')->getData();
 
@@ -608,8 +609,8 @@ class QuizLibraryController extends AbstractController
                 if (null !== $question->getImageStorageKey()) {
                     $fileUploadService->delete($question->getImageStorageKey());
                 }
-                $extension = $imageFile->guessExtension() ?? $imageFile->getClientOriginalExtension();
-                $key = $fileUploadService->upload(self::IMAGE_UPLOAD_PREFIX, sprintf('%s.%s', bin2hex(random_bytes(16)), $extension), $imageFile);
+                $extension = UploadIntake::extension($imageFile);
+                $key = $uploadIntake->store($imageFile, self::IMAGE_UPLOAD_PREFIX, sprintf('%s.%s', bin2hex(random_bytes(16)), $extension));
                 // attachMedia() rather than setImageStorageKey(): this is the gesture an imported
                 // question was waiting for, and the name it was waiting on goes with the file.
                 $question->attachMedia($key);

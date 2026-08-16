@@ -9,11 +9,9 @@ use App\Entity\Program;
 use App\Entity\User;
 use App\Enum\MessageAudienceType;
 use App\Service\UploadPolicy;
-use App\Validator\AllowedUpload;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
-use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -126,22 +124,19 @@ class MessageComposeType extends AbstractType
         }
 
         $builder
-            ->add('attachments', FileType::class, [
+            ->add('attachments', FilePickerType::class, [
                 'label' => 'messageAttachmentsFieldLabel',
                 'mapped' => false,
                 'multiple' => true,
                 'required' => false,
                 'help' => FileUploadDefaults::MAX_SIZE_HELP_KEY,
-                // 'multiple' => true means the submitted value is an array of UploadedFiles - a
-                // bare File constraint would validate the array itself (and fail with a generic
-                // "should be of type string" type error), so it has to be wrapped in All to be
-                // applied to each file individually.
-                'constraints' => [
-                    // The "documents" narrowing of the platform upload policy - the same twelve
-                    // types this field used to enumerate, declared once
-                    // (design/validated/upload-policy.md).
-                    new All([new AllowedUpload(UploadPolicy::documents())]),
-                ],
+                // The "documents" narrowing of the platform upload policy - the same twelve types
+                // this field used to enumerate, declared once (design/validated/upload-policy.md).
+                // The All() a multiple field needs is FilePickerType's business now.
+                'policy' => UploadPolicy::documents(),
+                // Course material reaches other people through messaging, so the library tab
+                // belongs here - it arrives with the library itself (lot 4).
+                'library' => false,
             ])
             ->add('submit', SubmitType::class, [
                 'label' => 'messageSendAction',

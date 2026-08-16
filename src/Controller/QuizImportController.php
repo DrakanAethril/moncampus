@@ -26,6 +26,7 @@ use App\Service\QuizImportImages;
 use App\Service\QuizImportImageValidator;
 use App\Service\QuizImportSession;
 use App\Service\QuizQuestionCompleteness;
+use App\Service\UploadIntake;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -78,7 +79,7 @@ class QuizImportController extends AbstractController
      */
     #[Route(path: '/library/quiz/import', name: 'app_library_quiz_import', methods: ['GET', 'POST'], defaults: ['source' => QuizImportType::SOURCE_CSV])]
     #[Route(path: '/library/quiz/import/kahoot', name: 'app_library_quiz_import_kahoot', methods: ['GET', 'POST'], defaults: ['source' => QuizImportType::SOURCE_KAHOOT])]
-    public function upload(string $source, Request $request, QuizCsvImporter $importer, KahootXlsxImporter $kahootImporter, TranslatorInterface $translator): Response
+    public function upload(string $source, Request $request, QuizCsvImporter $importer, KahootXlsxImporter $kahootImporter, TranslatorInterface $translator, UploadIntake $uploadIntake): Response
     {
         $form = $this->createForm(QuizImportType::class, null, ['source' => $source]);
         $form->handleRequest($request);
@@ -93,8 +94,11 @@ class QuizImportController extends AbstractController
         }
 
         if ($form->isSubmitted() && $form->isValid()) {
-            /** @var UploadedFile $file */
-            $file = $form->get('file')->getData();
+            // The bytes are already in the bucket (the field stages them - see
+            // App\Form\FilePickerType), and both readers want a path on disk: asLocalFile() fetches
+            // them back into a temp file, which is what an import of a few dozen kilobytes costs for
+            // having its type and its virus checked before this screen was ever submitted.
+            $file = $uploadIntake->asLocalFile($form->get('file')->getData());
 
             try {
                 $payload = QuizImportType::SOURCE_KAHOOT === $source

@@ -20,7 +20,6 @@ use App\Repository\MessageThreadRepository;
 use App\Repository\UserRepository;
 use App\Security\Voter\MessageThreadVoter;
 use App\Service\AudienceResolver;
-use App\Service\FileUploadService;
 use App\Service\FormValue;
 use App\Service\JsonRequestPayload;
 use App\Service\MessageAudienceMerger;
@@ -29,6 +28,8 @@ use App\Service\MessageThreadRecipientSyncer;
 use App\Service\MessagingAccessChecker;
 use App\Service\PostValue;
 use App\Service\QueryValue;
+use App\Service\StagedUpload;
+use App\Service\UploadIntake;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -36,7 +37,6 @@ use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizerInterface;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -149,7 +149,7 @@ class MessageController extends AbstractController
         AudienceResolver $audienceResolver,
         MessageThreadRepository $threadRepository,
         UserRepository $userRepository,
-        FileUploadService $fileUploadService,
+        UploadIntake $uploadIntake,
         MessageEmailNotifier $emailNotifier,
         #[Target('app.message_body')] HtmlSanitizerInterface $sanitizer,
     ): Response {
@@ -241,7 +241,7 @@ class MessageController extends AbstractController
                 $message = new Message($thread, $sender, $body);
                 $entityManager->persist($message);
 
-                $this->persistAttachments($message, $form->get('attachments')->getData(), $fileUploadService, $entityManager);
+                $this->persistAttachments($message, $form->get('attachments')->getData(), $uploadIntake, $entityManager);
 
                 $this->fanOutRecipients($thread, $sender, $recipients, $entityManager);
 
@@ -447,7 +447,7 @@ class MessageController extends AbstractController
         MessageThreadRepository $threadRepository,
         MessageThreadRecipientRepository $recipientRepository,
         EntityManagerInterface $entityManager,
-        FileUploadService $fileUploadService,
+        UploadIntake $uploadIntake,
         MessageEmailNotifier $emailNotifier,
         #[Target('app.message_body')] HtmlSanitizerInterface $sanitizer,
     ): Response {
@@ -463,7 +463,7 @@ class MessageController extends AbstractController
             $message = new Message($thread, $sender, $body);
             $entityManager->persist($message);
 
-            $this->persistAttachments($message, $form->get('attachments')->getData(), $fileUploadService, $entityManager);
+            $this->persistAttachments($message, $form->get('attachments')->getData(), $uploadIntake, $entityManager);
 
             $thread->touchLastMessageAt($message->getSentAt());
 
@@ -575,13 +575,13 @@ class MessageController extends AbstractController
         return $recipientRepository->findOneForUserAndThread($this->currentUser(), $thread) ?? throw $this->createNotFoundException();
     }
 
-    /** @param list<UploadedFile>|null $files */
-    private function persistAttachments(Message $message, ?array $files, FileUploadService $fileUploadService, EntityManagerInterface $entityManager): void
+    /** @param list<StagedUpload>|null $files */
+    private function persistAttachments(Message $message, ?array $files, UploadIntake $uploadIntake, EntityManagerInterface $entityManager): void
     {
         foreach ($files ?? [] as $file) {
-            $extension = $file->guessExtension() ?? $file->getClientOriginalExtension();
-            $key = $fileUploadService->upload(self::ATTACHMENT_PREFIX, \sprintf('%s.%s', bin2hex(random_bytes(16)), $extension), $file);
-            $entityManager->persist(new MessageAttachment($message, $key, $file->getClientOriginalName()));
+            $extension = UploadIntake::extension($file);
+            $key = $uploadIntake->store($file, self::ATTACHMENT_PREFIX, \sprintf('%s.%s', bin2hex(random_bytes(16)), $extension));
+            $entityManager->persist(new MessageAttachment($message, $key, UploadIntake::originalName($file)));
         }
     }
 

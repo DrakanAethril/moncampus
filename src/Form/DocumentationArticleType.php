@@ -10,13 +10,12 @@ use App\Entity\Group;
 use App\Entity\User;
 use App\Enum\DocumentationAudience;
 use App\Enum\DocumentationStatus;
-use App\Validator\AllowedUpload;
+use App\Service\UploadPolicy;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
-use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -118,23 +117,25 @@ class DocumentationArticleType extends AbstractType
                     ))
                     : '',
             ])
-            ->add('files', FileType::class, [
+            ->add('files', FilePickerType::class, [
                 'label' => 'documentationAttachmentsFieldLabel',
                 'mapped' => false,
                 'required' => false,
                 'multiple' => true,
-                // All(), not a bare File(): with multiple => true the submitted value is an array
-                // of uploads, and a File constraint aimed at the array itself answers "this value
-                // should be of type string" on every save, attachment or not.
                 // The platform rule, unnarrowed. This field used to declare no type restriction at
                 // all - an .exe was accepted - so putting it under the platform rule is a pure
                 // tightening. It is deliberately not narrowed to "documents" the way messaging and
                 // the lesson log are: a documentation article legitimately attaches a capture, a
                 // notebook or a source file, and narrowing it further would be a product decision
                 // design/validated/upload-policy.md did not take.
-                'constraints' => [
-                    new All([new AllowedUpload()]),
-                ],
+                //
+                // The All() wrapper a multiple field needs is FilePickerType's own business now -
+                // it builds the constraint from this policy, which is the half that used to be
+                // forgotten at every call site.
+                'policy' => UploadPolicy::platform(),
+                // Course material, so the library tab belongs here - it arrives with the library
+                // itself (design/validated/file-library.md, lot 4).
+                'library' => false,
             ]);
 
         // "Permanente" must win over whatever the two date inputs still hold - the mock leaves

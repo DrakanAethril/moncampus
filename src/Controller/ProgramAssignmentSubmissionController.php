@@ -21,9 +21,9 @@ use App\Security\Voter\AssignmentVoter;
 use App\Service\AssignmentAudienceResolver;
 use App\Service\AssignmentGradebookLinker;
 use App\Service\FileUploadService;
+use App\Service\UploadIntake;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -73,7 +73,7 @@ class ProgramAssignmentSubmissionController extends AbstractController
 
     #[Route(path: '/programs/{id}/assignments/{assignmentId}', name: 'app_program_my_assignment', methods: ['GET', 'POST'])]
     #[IsGranted('ROLE_STUDENT')]
-    public function show(int $id, int $assignmentId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, AssignmentRepository $assignmentRepository, AssignmentSubmissionRepository $submissionRepository, AssignmentViewRepository $viewRepository, FileUploadService $fileUploadService, AssignmentGradebookLinker $gradebookLinker): Response
+    public function show(int $id, int $assignmentId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, AssignmentRepository $assignmentRepository, AssignmentSubmissionRepository $submissionRepository, AssignmentViewRepository $viewRepository, FileUploadService $fileUploadService, UploadIntake $uploadIntake, AssignmentGradebookLinker $gradebookLinker): Response
     {
         $program = $this->findProgramForStudentOrNotFound($id, $repository);
         $assignment = $this->findAssignmentForStudentOrNotFound($assignmentRepository, $program, $assignmentId);
@@ -107,19 +107,19 @@ class ProgramAssignmentSubmissionController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            /** @var UploadedFile $file */
+            /** @var \App\Service\StagedUpload $file */
             $file = $form->get('file')->getData();
 
             $submission = $submissionRepository->findOneForAssignmentAndStudent($assignment, $student, $production)
                 ?? new AssignmentSubmission($assignment, $student, $production);
 
-            $extension = $file->guessExtension() ?? $file->getClientOriginalExtension();
-            $key = $fileUploadService->upload(
+            $extension = UploadIntake::extension($file);
+            $key = $uploadIntake->store(
+                $file,
                 self::SUBMISSION_UPLOAD_PREFIX,
                 sprintf('%d-%d-%s.%s', $assignment->getId(), $student->getId(), bin2hex(random_bytes(4)), $extension),
-                $file,
             );
-            $submissionFile = new AssignmentSubmissionFile($submission, $key, $file->getClientOriginalName());
+            $submissionFile = new AssignmentSubmissionFile($submission, $key, UploadIntake::originalName($file));
 
             // « Une évaluation est créée automatiquement dans le carnet de notes à la réception des
             // rendus » (2a) - on reception, therefore here, and not on the assignment's publication.

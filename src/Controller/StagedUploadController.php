@@ -93,6 +93,38 @@ class StagedUploadController extends AbstractController
     }
 
     /**
+     * The picker's "✕" on a row the teacher changed their mind about, before the form is submitted.
+     *
+     * Courtesy rather than housekeeping: App\Service\StagedUploadStore schedules every staged object
+     * for removal as it writes it, so an object nobody discards goes within the day anyway. What
+     * this buys is that it goes now, which is what a teacher who has just removed a 180 Mo video
+     * from the picker would expect of their quota.
+     */
+    #[Route(path: '/uploads/stage/discard', name: 'app_upload_discard', methods: ['POST'])]
+    public function discard(Request $request, StagedUploadStore $store, TranslatorInterface $translator): JsonResponse
+    {
+        $token = $request->headers->get('X-CSRF-Token') ?? $request->request->get('_token');
+
+        if (!$this->isCsrfTokenValid(self::CSRF_TOKEN_ID, \is_string($token) ? $token : null)) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        /** @var User $user */
+        $user = $this->getUser();
+        $staged = $store->resolve(PostValue::string($request, 'token'), (int) $user->getId());
+
+        if (null === $staged) {
+            // Forged, or somebody else's. Answered as a refusal rather than as a 404: from here the
+            // two are the same thing, and the picker has nothing different to do about either.
+            return $this->refuse($translator, 'filePickerInvalidTokenMessage');
+        }
+
+        $store->discard($staged);
+
+        return $this->json(['discarded' => true]);
+    }
+
+    /**
      * The size this request is told about, in bytes. The hint only ever lowers the platform
      * ceiling: a field that accepts 20 M gets told at 20 M instead of at 200 M, and a client
      * claiming more than the platform allows is simply ignored.
