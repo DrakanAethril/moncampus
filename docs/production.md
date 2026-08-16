@@ -145,6 +145,45 @@ If you skip this, mobile login fails for every user (a 500 from the missing keyp
 the app as a generic "wrong credentials" error) while web login keeps working fine, since it never
 needs a JWT at all.
 
+## Turning on antivirus scanning of uploads
+
+Every upload on the platform is scanned by ClamAV before a byte reaches S3
+(`App\Service\AntivirusScanner`). `compose.prod.yaml` starts the `clamav` service for it - the base
+`compose.yaml` deliberately does not, since that file is also CI's boot path and ClamAV downloads a
+few hundred megabytes of signatures on first start and holds roughly 1.5 GB of RAM.
+
+**The `php` container reads `ANTIVIRUS_DSN` from `.env.prod.local` only.** Left blank there,
+scanning is not broken - it is *off*, which is a state nothing in the application announces: files
+upload normally, nothing is logged, no alert fires. A server that never got the variable looks
+exactly like a protected one. This is a **one-time** step per server:
+
+```console
+# 1. Bring the stack up and wait for clamav to be healthy - the first start has a signature
+#    database to fetch, which is why its healthcheck allows a 300s start period. Do not skip
+#    ahead: scanning fails closed, so a DSN pointing at a clamd that is still downloading
+#    refuses *every* upload in the meantime.
+docker compose -f compose.yaml -f compose.prod.yaml up --wait
+docker compose -f compose.yaml -f compose.prod.yaml ps clamav
+docker compose -f compose.yaml -f compose.prod.yaml logs --tail=50 clamav
+
+# 2. Then point the app at it, and recreate php so it re-reads the env file.
+echo "ANTIVIRUS_DSN=clamav://clamav:3310" >> .env.prod.local
+docker compose -f compose.yaml -f compose.prod.yaml up -d --wait php
+
+# 3. Prove it, rather than assume it. The command scans a clean file and a known-hostile one
+#    (the EICAR test string, the standard harmless stand-in for a virus) and exits non-zero
+#    unless uploads are genuinely being refused.
+docker compose -f compose.yaml -f compose.prod.yaml exec php bin/console app:antivirus:check
+```
+
+The signature database lives in the `clamav_db` named volume so a redeploy does not re-download it
+- which would otherwise leave every upload refused for the minutes freshclam takes.
+
+Watch the host's memory the first time: ClamAV's ~1.5 GB sits alongside the `php` container, whose
+worker count is sized in `compose.prod.yaml` against the host's total RAM. If the two do not fit,
+lower `FRANKENPHP_WORKER_CONFIG: num` there, or give clamd `ConcurrentDatabaseReload no` so it
+stops doubling its database in memory during a reload.
+
 ## Connecting to an LDAP server over LDAPS
 
 Production is expected to point `LDAP_HOST` at a real corporate LDAP/AD server rather than the
