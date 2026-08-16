@@ -8,6 +8,8 @@ use App\Entity\MessageThread;
 use App\Entity\Program;
 use App\Entity\User;
 use App\Enum\MessageAudienceType;
+use App\Service\UploadPolicy;
+use App\Validator\AllowedUpload;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
@@ -18,7 +20,6 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\All;
-use Symfony\Component\Validator\Constraints\File;
 use Symfony\Component\Validator\Constraints\NotBlank;
 
 // audienceProgram/audienceAllStudents/audienceAllTeachers/audienceAllStaff/audienceManual
@@ -136,19 +137,10 @@ class MessageComposeType extends AbstractType
                 // "should be of type string" type error), so it has to be wrapped in All to be
                 // applied to each file individually.
                 'constraints' => [
-                    new All([
-                        new File(
-                            maxSize: FileUploadDefaults::MAX_SIZE,
-                            mimeTypes: [
-                                'application/pdf', 'image/jpeg', 'image/png', 'image/webp',
-                                'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                                'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                                'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                                'text/plain', 'application/zip',
-                            ],
-                            mimeTypesMessage: 'messageAttachmentInvalidTypeMessage',
-                        ),
-                    ]),
+                    // The "documents" narrowing of the platform upload policy - the same twelve
+                    // types this field used to enumerate, declared once
+                    // (design/validated/upload-policy.md).
+                    new All([new AllowedUpload(UploadPolicy::documents())]),
                 ],
             ])
             ->add('submit', SubmitType::class, [

@@ -4569,3 +4569,10 @@ wikiNewFolderDefaultTitle: 'New folder'
 wikiBoardColleaguesGroupLabel: 'Between colleagues'
 wikiBoardSeveralClassesGroupLabel: 'Several classes'
 wikiBoardOtherGroupLabel: 'Others'
+
+# Platform upload rule (design/validated/upload-policy.md) - lot 2.
+uploadPolicyNoExtensionMessage: 'This file has no extension: rename it before uploading.'
+uploadPolicyForbiddenExtensionMessage: 'This kind of file is never accepted: executables and macro-enabled Office documents.'
+uploadPolicyArchiveOnlyExtensionMessage: 'This kind of file is only accepted inside a ZIP archive.'
+uploadPolicyUnsupportedExtensionMessage: 'This kind of file is not accepted here.'
+uploadPolicyMismatchedTypeMessage: 'This file’s content does not match its extension.'

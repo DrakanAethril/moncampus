@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace App\Form;
 
+use App\Service\UploadPolicy;
+use App\Validator\AllowedUpload;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\UrlType;
 use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\Validator\Constraints\File;
 
 // Not entity-backed, same reasoning as App\Form\AvatarUploadType: the controller decides
 // whether $file or $url was actually filled in (exactly one is expected) and builds the
@@ -29,17 +30,7 @@ class LessonLogAttachmentType extends AbstractType
                 'required' => false,
                 'help' => FileUploadDefaults::MAX_SIZE_HELP_KEY,
                 'constraints' => [
-                    new File(
-                        maxSize: FileUploadDefaults::MAX_SIZE,
-                        mimeTypes: [
-                            'application/pdf', 'image/jpeg', 'image/png', 'image/webp',
-                            'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                            'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                            'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                            'text/plain', 'application/zip',
-                        ],
-                        mimeTypesMessage: 'lessonLogAttachmentInvalidTypeMessage',
-                    ),
+                    new AllowedUpload(UploadPolicy::documents()),
                 ],
             ])
             ->add('url', UrlType::class, [

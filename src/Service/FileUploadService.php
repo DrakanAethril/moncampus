@@ -45,7 +45,7 @@ class FileUploadService
         $stream = fopen($file->getPathname(), 'r') ?: throw new \RuntimeException(sprintf('Could not open "%s" for reading.', $file->getPathname()));
 
         try {
-            $this->uploadsStorage->writeStream($key, $stream);
+            $this->uploadsStorage->writeStream($key, $stream, $this->dispositionFor($key));
         } finally {
             if (\is_resource($stream)) {
                 fclose($stream);
@@ -53,6 +53,32 @@ class FileUploadService
         }
 
         return $key;
+    }
+
+    /**
+     * The single highest-value measure of the platform upload policy (design/validated/
+     * upload-policy.md), and the one that does not depend on the allowlist being right.
+     *
+     * Objects are served by CloudFront, unsigned, from the school's own CDN domain - so anything
+     * the browser can render was, until this, rendered **inline** on that domain. Handing everything
+     * but images and PDF over as a download neutralises the whole "dangerous because of how it
+     * opens" family - HTML, SVG, MHTML - regardless of what any allowlist says. The allowlist then
+     * only has to answer the other half: dangerous because of *what the file is*.
+     *
+     * The two media services that write to this bucket through the raw S3 client
+     * (App\Service\AudioUploadService, App\Service\VideoUploadService) deliberately do not do this:
+     * they set their own Content-Type from a closed audio/MP4 allowlist, so nothing that opens as
+     * anything else can reach the bucket by those paths.
+     *
+     * @return array{ContentDisposition?: string}
+     */
+    private function dispositionFor(string $key): array
+    {
+        if (UploadPolicy::servesInline($key)) {
+            return [];
+        }
+
+        return ['ContentDisposition' => 'attachment'];
     }
 
     public function delete(string $key): void

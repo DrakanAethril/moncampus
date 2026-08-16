@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Form;
 
+use App\Service\UploadPolicy;
+use App\Validator\AllowedUpload;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\Validator\Constraints\File;
 
 // Not entity-backed (no data_class): the uploaded file is handled directly in the controller,
 // which builds the S3 key and calls App\Service\FileUploadService itself - this form's only job
@@ -25,11 +26,7 @@ class AvatarUploadType extends AbstractType
                 // never needs the platform's general 20M ceiling.
                 'help' => 'avatarUploadMaxSizeHelpText',
                 'constraints' => [
-                    new File(
-                        maxSize: '2M',
-                        mimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
-                        mimeTypesMessage: 'avatarUploadInvalidTypeMessage',
-                    ),
+                    new AllowedUpload(UploadPolicy::images()->withMaxSize('2M')),
                 ],
             ])
             ->add('submit', SubmitType::class, [

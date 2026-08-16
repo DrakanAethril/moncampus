@@ -5340,3 +5340,10 @@ wikiNewFolderDefaultTitle: 'Nouveau dossier'
 wikiBoardColleaguesGroupLabel: 'Entre collègues'
 wikiBoardSeveralClassesGroupLabel: 'Plusieurs classes'
 wikiBoardOtherGroupLabel: 'Autres'
+
+# Règle de dépôt de fichiers de la plateforme (design/validated/upload-policy.md) - lot 2.
+uploadPolicyNoExtensionMessage: 'Ce fichier n’a pas d’extension : renommez-le avant de le déposer.'
+uploadPolicyForbiddenExtensionMessage: 'Ce type de fichier n’est jamais accepté : programmes exécutables et documents Office à macros.'
+uploadPolicyArchiveOnlyExtensionMessage: 'Ce type de fichier n’est accepté qu’à l’intérieur d’une archive ZIP.'
+uploadPolicyUnsupportedExtensionMessage: 'Ce type de fichier n’est pas accepté ici.'
+uploadPolicyMismatchedTypeMessage: 'Le contenu de ce fichier ne correspond pas à son extension.'

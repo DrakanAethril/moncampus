@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Form;
 
+use App\Service\UploadPolicy;
+use App\Validator\AllowedUpload;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\Validator\Constraints\File;
 use Symfony\Component\Validator\Constraints\NotNull;
 
 // The upload half of the UFA contract import (App\Controller\Ufa\ContractImportController): one
@@ -29,15 +30,11 @@ class UfaContractImportType extends AbstractType
                 'help' => 'ufaContractImportFileFieldHelpText',
                 'constraints' => [
                     new NotNull(message: 'ufaContractImportFileRequiredMessage'),
-                    new File(
-                        maxSize: self::MAX_SIZE,
-                        extensions: ['xlsx' => [
-                            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                            'application/zip',
-                            'application/octet-stream',
-                        ]],
-                        extensionsMessage: 'ufaContractImportInvalidExtensionMessage',
-                    ),
+                    // The "spreadsheets" narrowing, itself narrowed to the one format the school's
+                    // export produces. The three MIME types this field used to spell out are the
+                    // platform map's own entry for .xlsx - an OOXML file is a zip and sniffs as
+                    // one, which is why Assert\File's default list rejected the real export.
+                    new AllowedUpload(UploadPolicy::spreadsheets()->restrictTo('xlsx')->withMaxSize(self::MAX_SIZE)),
                 ],
             ])
         ;

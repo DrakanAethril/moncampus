@@ -14,6 +14,7 @@ use App\Entity\User;
 use App\Enum\AssignmentAudienceType;
 use App\Enum\AssignmentNature;
 use App\Enum\QuizMode;
+use App\Validator\AllowedUpload;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
@@ -164,7 +165,11 @@ class AssignmentWizardType extends AbstractType
                 'mapped' => false,
                 'multiple' => true,
                 'required' => false,
-                'constraints' => [new Assert\All([new Assert\File(maxSize: '20M', maxSizeMessage: 'assignmentWizardAttachmentTooLargeMessage')])],
+                // The platform rule, unnarrowed - this field declared no type restriction at all
+                // until now. Deliberately not the "documents" narrowing: a teacher legitimately
+                // attaches a source file or a capture to a BTS SIO assignment, and refusing those
+                // would be a product decision design/validated/upload-policy.md did not take.
+                'constraints' => [new Assert\All([new AllowedUpload()])],
             ])
             // The pasted links, one per line: the field stays hidden, it is the template's chips
             // that write it.
