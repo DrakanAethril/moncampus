@@ -350,7 +350,6 @@
                         {% if is_granted('ROLE_TEACHER') or is_staff() %}
                             {% set tools_is_active = current_route starts with 'app_tools_'
                                 or current_route starts with 'app_audio_recording'
-                                or current_route starts with 'app_video_resource'
                                 or current_route starts with 'app_progression'
                                 or current_route starts with 'app_library_'
                                 or current_route starts with 'app_file_library' %}
@@ -373,8 +372,16 @@
                                        menu is already gated on ROLE_TEACHER or isStaff(), which is
                                        exactly who has a library. #}
                                     <a class="dropdown-item {{ current_route starts with 'app_file_library' ? 'active' }}" href="{{ path('app_file_library') }}">{{ 'fileLibraryNavLabel'|trans }}</a>
+                                    {# « Vidéos » has lost its menu entry, not its feature
+                                       (design/validated/file-library.md, "What disappears"):
+                                       VideoResource still carries the cue points, the watch tracking,
+                                       the statistics screen and the mobile API. What the library
+                                       replaced is the *hosting* - uploading a video was the only
+                                       reason to open that tool first - so it keeps everything and
+                                       gains a back door: « Créer un travail » on a video of the
+                                       library. Existing resources stay reachable by their routes,
+                                       from the work and from Travail à faire. #}
                                     <a class="dropdown-item {{ current_route starts with 'app_audio_recording' ? 'active' }}" href="{{ path('app_audio_recordings') }}">{{ 'audioRecordingsNavLabel'|trans }}</a>
-                                    <a class="dropdown-item {{ current_route starts with 'app_video_resource' ? 'active' }}" href="{{ path('app_video_resources') }}">{{ 'videoResourcesNavLabel'|trans }}</a>
                                     <div class="dropdown-divider"></div>
                                     <h6 class="dropdown-header">{{ 'toolsGroupFollowStudentsLabel'|trans }}</h6>
                                     <a class="dropdown-item {{ current_route == 'app_tools_lesson_log' ? 'active' }}" href="{{ path('app_tools_lesson_log') }}">{{ 'lessonLogPageHeading'|trans }}</a>
