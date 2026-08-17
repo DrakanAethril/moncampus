@@ -1,6 +1,19 @@
 framework:
     html_sanitizer:
         sanitizers:
+            # A word about `max_input_length`, which every body-of-HTML sanitizer below now sets.
+            #
+            # The component's own default is **20 000 bytes, and anything longer is truncated** -
+            # silently, in the middle of the markup, with nothing logged and nothing thrown. The
+            # FrameworkBundle only calls withMaxInputLength() when a non-zero value is configured,
+            # so leaving the key out is not "no limit", it is that limit. It was found on the wiki,
+            # where a page carries rendered SVG and passes 20 KB with two diagrams in it, but every
+            # long-form field here had it: an article somebody spent an afternoon writing would come
+            # back cut off at exactly the same place every time they saved.
+            #
+            # -1 is no limit, and nothing about the guard is lost: PHP's post_max_size bounds what
+            # can arrive and the column bounds what can be stored.
+
             # Message::$body is HugeRTE-authored HTML rendered back to other users (see
             # design/validated/internal-messaging.md). allow_safe_elements covers every element
             # the toolbar in assets/controllers/hugerte_editor_controller.js can produce -
@@ -19,6 +32,7 @@ framework:
             # Anything else (script, event handler attributes, ...) is still dropped by default.
             app.message_body:
                 allow_safe_elements: true
+                max_input_length: -1
                 allow_attributes:
                     style: [span, p, h1, h2, h3, li, blockquote, table, col, td, th]
 
@@ -28,6 +42,7 @@ framework:
             # entities, even though the config happens to be identical today).
             app.signup_list_description:
                 allow_safe_elements: true
+                max_input_length: -1
                 allow_attributes:
                     style: [span, p, h1, h2, h3, li, blockquote, table, col, td, th]
 
@@ -39,6 +54,7 @@ framework:
             # survive sanitizing on h2/h3 - it is not a safe attribute by default.
             app.help_article_body:
                 allow_safe_elements: true
+                max_input_length: -1
                 allow_attributes:
                     style: [span, p, h1, h2, h3, li, blockquote, table, col, td, th]
                     id: [h2, h3]
@@ -51,6 +67,7 @@ framework:
             # this one grants none.
             app.documentation_article_body:
                 allow_safe_elements: true
+                max_input_length: -1
                 allow_attributes:
                     style: [span, p, h1, h2, h3, li, blockquote, table, col, td, th]
 
@@ -96,6 +113,11 @@ framework:
             #     the prose elements and the SVG ones - listing them per element above did nothing.
             app.wiki_page_body:
                 allow_safe_elements: true
+                # See the note at the top of this file: the pages that showed the truncation were
+                # 17 973 and 19 064 bytes, one diagram away from the 20 KB default. The column is not
+                # a second ceiling - `Types::TEXT` with no length is LONGTEXT on MySQL, checked in
+                # information_schema rather than assumed from the attribute.
+                max_input_length: -1
                 allow_elements:
                     # accordion
                     details: []
@@ -158,6 +180,7 @@ framework:
             # this is.
             app.library_content:
                 allow_safe_elements: true
+                max_input_length: -1
 
             # User::$signature - a deliberately narrower toolbar than message_body's (see
             # assets/controllers/hugerte_editor_controller.js's signatureValue): bold/italic/
@@ -168,6 +191,7 @@ framework:
             # allow_attributes for the same replace-vs-add reason as app.message_body above.
             app.message_signature:
                 allow_safe_elements: true
+                max_input_length: -1
                 allow_elements:
                     u: '*'
                 allow_attributes:
