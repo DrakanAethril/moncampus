@@ -4629,8 +4629,12 @@ wikiEditorLinkTooltip: 'Link to a page of this wiki'
 wikiEditorFormulaTooltip: 'Mathematical formula (LaTeX)'
 wikiEditorDiagramButtonLabel: 'Diagram'
 wikiEditorDiagramTooltip: 'Mermaid diagram'
+wikiEditorDiagramEditAction: 'Edit'
+wikiEditorDiagramRemoveAction: 'Delete'
+wikiEditorDiagramEditHintText: 'Double-click to edit this diagram'
 wikiEditorPageFieldLabel: 'Page'
 wikiEditorInsertAction: 'Insert'
+wikiEditorUpdateAction: 'Update'
 wikiEditorLoadFailedText: 'The page list could not be loaded.'
 
 # Wiki - lot 6, the PDF export.

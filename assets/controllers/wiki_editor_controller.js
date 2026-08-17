@@ -129,6 +129,9 @@ export default class extends Controller {
             block_formats: 'Paragraph=p;Titre 1=h1;Titre 2=h2;Titre 3=h3;Titre 4=h4;Préformaté=pre',
             // pagebreak's marker is read by the PDF export as a real page break.
             pagebreak_separator: '<div class="cm-wiki-pagebreak"></div>',
+            // The editing area is an iframe and does not load app.css, so a diagram's affordance has
+            // to be declared here: it is an object to click, not text to walk into.
+            content_style: '.cm-mermaid { cursor: pointer; }',
             // HugeRTE validates content against its own HTML schema, which knows nothing about
             // SVG - so a Mermaid diagram was silently stripped *in the editor*, before the server's
             // sanitizer ever saw it. Measured, not guessed: the stored page came back holding
@@ -157,6 +160,7 @@ export default class extends Controller {
                 this.registerWikiLink(setupEditor);
                 this.registerKatex(setupEditor);
                 this.registerMermaid(setupEditor);
+                this.registerMermaidEditing(setupEditor);
             },
             ...(this.imageUploadUrlValue ? this.imageOptions() : {}),
         });
@@ -365,7 +369,8 @@ export default class extends Controller {
             onAction: () => this.openSourceDialog(editor, {
                 title: this.label('katexTooltip', 'Formule mathématique'),
                 placeholder: 'e^{i\\pi} + 1 = 0',
-                initial: this.sourceUnderCursor(editor, 'katex'),
+                target: this.blockUnderCursor(editor, 'katex'),
+                kind: 'katex',
                 render: async (source) => {
                     await loadScript(KATEX_URL, () => window.katex);
                     // Rendered here and stored as its output: the read side then needs only the
@@ -384,34 +389,117 @@ export default class extends Controller {
         editor.ui.registry.addButton('mermaid', {
             text: this.label('mermaid', 'Schéma'),
             tooltip: this.label('mermaidTooltip', 'Diagramme Mermaid'),
-            onAction: () => this.openSourceDialog(editor, {
-                title: this.label('mermaidTooltip', 'Diagramme Mermaid'),
-                placeholder: 'graph TD;\n  A-->B;',
-                initial: this.sourceUnderCursor(editor, 'mermaid'),
-                multiline: true,
-                render: async (source) => {
-                    await loadScript(MERMAID_URL, () => window.mermaid);
-                    window.mermaid.initialize({
-                        startOnLoad: false,
-                        // htmlLabels:false is what lets the sanitizer refuse <foreignObject>
-                        // without losing every label: labels come back as <text> instead.
-                        htmlLabels: false,
-                        flowchart: { htmlLabels: false },
-                        securityLevel: 'strict',
-                        theme: isDarkTheme() ? 'dark' : 'default',
-                    });
+            // On a selected diagram the button edits it rather than inserting a second one below.
+            onAction: () => this.openMermaidDialog(editor, this.blockUnderCursor(editor, 'mermaid')),
+        });
+    }
 
-                    const { svg } = await window.mermaid.render(`mermaid-${Date.now()}`, source);
+    /** The one dialog for both cases: `target` null inserts, `target` set rewrites that diagram. */
+    openMermaidDialog(editor, target) {
+        this.openSourceDialog(editor, {
+            title: this.label('mermaidTooltip', 'Diagramme Mermaid'),
+            placeholder: 'graph TD;\n  A-->B;',
+            target,
+            kind: 'mermaid',
+            multiline: true,
+            // Only on insertion: an empty paragraph after the block is what leaves somewhere to
+            // type. Re-adding it on every edit would pile blank lines under the diagram.
+            trailing: '<p></p>',
+            render: async (source) => {
+                await loadScript(MERMAID_URL, () => window.mermaid);
+                window.mermaid.initialize({
+                    startOnLoad: false,
+                    // htmlLabels:false is what lets the sanitizer refuse <foreignObject>
+                    // without losing every label: labels come back as <text> instead.
+                    htmlLabels: false,
+                    flowchart: { htmlLabels: false },
+                    securityLevel: 'strict',
+                    theme: isDarkTheme() ? 'dark' : 'default',
+                });
 
-                    return `<div class="cm-mermaid" data-mermaid="${this.escapeAttribute(source)}">${svg}</div><p></p>`;
-                },
-            }),
+                const { svg } = await window.mermaid.render(`mermaid-${Date.now()}`, source);
+
+                return `<div class="cm-mermaid" data-mermaid="${this.escapeAttribute(source)}">${svg}</div>`;
+            },
+        });
+    }
+
+    /**
+     * What makes an inserted diagram modifiable at all - the toolbar button alone was not enough,
+     * and this is the bug it fixes: **a caret cannot be placed inside an `<svg>`**. Wherever the
+     * author clicked on the picture, the browser put the selection in the nearest text position,
+     * which is the paragraph beside the diagram, so `blockUnderCursor()` found nothing and the
+     * dialog always opened empty - the diagram looked write-once even though its source was there
+     * all along, in `data-mermaid`.
+     *
+     * Marking the wrapper `contenteditable="false"` turns it into a single object instead: one click
+     * selects the whole diagram, Suppr deletes it, a context toolbar offers Modifier / Supprimer,
+     * and a double click opens the source straight away. That is the behaviour an author already
+     * knows from an image, which is the point - nothing here has to be learned or explained.
+     *
+     * The attribute exists **in the editor only**: it is stamped when content is parsed and taken
+     * off again when it is serialized, so the stored page keeps exactly the markup it had before and
+     * no migration is needed for the pages already written. (The server's sanitizer would drop it
+     * anyway - `contenteditable` is not in `app.wiki_page_body`'s allowed attributes - but relying on
+     * that would mean storing markup we know is wrong and trusting something else to clean it.)
+     */
+    registerMermaidEditing(editor) {
+        editor.on('PreInit', () => {
+            editor.parser.addAttributeFilter('data-mermaid', (nodes) => nodes.forEach((node) => {
+                node.attr('contenteditable', 'false');
+                node.attr('title', this.label('mermaidEditHint', 'Double-cliquez pour modifier ce schéma'));
+            }));
+            editor.serializer.addAttributeFilter('data-mermaid', (nodes) => nodes.forEach((node) => {
+                node.attr('contenteditable', null);
+                node.attr('title', null);
+            }));
+        });
+
+        // The shortest path of the three, and the one most authors will find on their own.
+        editor.on('dblclick', (event) => {
+            const block = event.target?.closest?.('[data-mermaid]');
+
+            if (block) {
+                this.openMermaidDialog(editor, block);
+            }
+        });
+
+        editor.ui.registry.addButton('mermaidedit', {
+            text: this.label('mermaidEdit', 'Modifier'),
+            onAction: () => this.openMermaidDialog(editor, this.blockUnderCursor(editor, 'mermaid')),
+        });
+        editor.ui.registry.addButton('mermaidremove', {
+            text: this.label('mermaidRemove', 'Supprimer'),
+            onAction: () => {
+                const block = this.blockUnderCursor(editor, 'mermaid');
+
+                if (block) {
+                    editor.undoManager.transact(() => editor.dom.remove(block));
+                    editor.save();
+                    editor.nodeChanged();
+                }
+            },
+        });
+        // Floating over the selected diagram, the way the image and table toolbars already do.
+        editor.ui.registry.addContextToolbar('mermaidactions', {
+            predicate: (node) => !!node?.getAttribute?.('data-mermaid'),
+            items: 'mermaidedit mermaidremove',
+            position: 'node',
+            scope: 'node',
+        });
+    }
+
+    /** Re-stamps the editor-only attributes on blocks that arrived after the parser ran. */
+    markMermaidObjects(editor) {
+        editor.dom.select('[data-mermaid]').forEach((block) => {
+            editor.dom.setAttrib(block, 'contenteditable', 'false');
+            editor.dom.setAttrib(block, 'title', this.label('mermaidEditHint', 'Double-cliquez pour modifier ce schéma'));
         });
     }
 
     // --- Shared dialog for the two source-carrying blocks ---------------------------------
 
-    openSourceDialog(editor, { title, placeholder, initial, multiline = false, render }) {
+    openSourceDialog(editor, { title, placeholder, target, kind, multiline = false, trailing = '', render }) {
         editor.windowManager.open({
             title,
             body: {
@@ -424,10 +512,16 @@ export default class extends Controller {
                     maximized: multiline,
                 }],
             },
-            initialData: { source: initial ?? '' },
+            initialData: { source: target?.getAttribute(`data-${kind}`) ?? '' },
             buttons: [
                 { type: 'cancel', text: this.label('cancel', 'Annuler') },
-                { type: 'submit', text: this.label('insert', 'Insérer'), primary: true },
+                {
+                    type: 'submit',
+                    // Naming the action is half of what tells the author which of the two they are
+                    // doing - the pre-filled source being the other half.
+                    text: target ? this.label('update', 'Mettre à jour') : this.label('insert', 'Insérer'),
+                    primary: true,
+                },
             ],
             onSubmit: async (dialog) => {
                 const source = dialog.getData().source.trim();
@@ -440,9 +534,21 @@ export default class extends Controller {
 
                 try {
                     const html = await render(source);
-                    // Replacing rather than appending when the cursor sits on an existing block is
-                    // what makes these editable instead of write-once.
-                    this.replaceBlockUnderCursor(editor, html);
+
+                    if (target?.parentNode) {
+                        // Rewriting the block **by reference**, not through the selection: that is
+                        // what makes editing work at all, since a diagram is selected as an object
+                        // and the caret is never inside it. setOuterHTML bypasses the content
+                        // parser, so the editor-only attributes are stamped back on afterwards.
+                        editor.undoManager.transact(() => editor.dom.setOuterHTML(target, html));
+                        this.markMermaidObjects(editor);
+                    } else {
+                        editor.insertContent(html + trailing);
+                    }
+
+                    editor.save();
+                    this.renderKatexIntoField();
+                    editor.nodeChanged();
                     dialog.close();
                 } catch (error) {
                     editor.notificationManager.open({ text: String(error.message ?? error), type: 'error' });
@@ -451,21 +557,9 @@ export default class extends Controller {
         });
     }
 
-    /** The source of the KaTeX/Mermaid block the cursor is inside, when there is one. */
-    sourceUnderCursor(editor, kind) {
-        return editor.dom.getParent(editor.selection.getNode(), `[data-${kind}]`)?.getAttribute(`data-${kind}`) ?? '';
-    }
-
-    replaceBlockUnderCursor(editor, html) {
-        const existing = editor.dom.getParent(editor.selection.getNode(), '[data-katex],[data-mermaid]');
-
-        if (existing) {
-            editor.selection.select(existing);
-        }
-
-        editor.insertContent(html);
-        editor.save();
-        this.renderKatexIntoField();
+    /** The KaTeX/Mermaid block the selection sits in or on, when there is one. */
+    blockUnderCursor(editor, kind) {
+        return editor.dom.getParent(editor.selection.getNode(), `[data-${kind}]`);
     }
 
     escapeAttribute(value) {

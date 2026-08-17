@@ -5407,8 +5407,12 @@ wikiEditorLinkTooltip: 'Lien vers une page de ce wiki'
 wikiEditorFormulaTooltip: 'Formule mathématique (LaTeX)'
 wikiEditorDiagramButtonLabel: 'Schéma'
 wikiEditorDiagramTooltip: 'Diagramme Mermaid'
+wikiEditorDiagramEditAction: 'Modifier'
+wikiEditorDiagramRemoveAction: 'Supprimer'
+wikiEditorDiagramEditHintText: 'Double-cliquez pour modifier ce schéma'
 wikiEditorPageFieldLabel: 'Page'
 wikiEditorInsertAction: 'Insérer'
+wikiEditorUpdateAction: 'Mettre à jour'
 wikiEditorLoadFailedText: 'La liste des pages n’a pas pu être chargée.'
 
 # Wiki - lot 6, l'export PDF.
