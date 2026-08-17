@@ -3829,7 +3829,10 @@ assignmentPublishedFlashMessage: 'Le travail a été publié.'
 # paramétrage des devoirs, celui-ci porte celui de l'assistant.
 assignmentSavedFlashMessage: 'Le travail a été enregistré.'
 
-# --- Enregistrements audio (design_handoff_enregistrements_audio) ---------------------------
+# --- Corrections audio (design_handoff_enregistrements_audio, renommé par file-library.md) ---
+# Le libellé affiché est « Corrections audio » depuis que la bibliothèque de fichiers existe : un
+# document destiné à toute la classe s'y range, et cet outil-ci ne sert plus qu'aux retours
+# individuels. Les noms de routes et les chemins restent `audio-recordings`.
 # Le nouvel outil enseignant, qui remplace les commentaires audio du carnet de notes.
 # « travail », jamais « devoir », comme partout ailleurs.
 toolsNavLabel: 'Outils'
@@ -3842,8 +3845,8 @@ toolsGroupFollowStudentsLabel: 'Suivre les étudiants'
 toolsStudentWorkNavLabel: 'Travail étudiant'
 todayLabel: "aujourd'hui"
 yesterdayLabel: 'hier'
-audioRecordingsNavLabel: 'Enregistrements audio'
-audioRecordingsPageHeading: 'Enregistrements audio'
+audioRecordingsNavLabel: 'Corrections audio'
+audioRecordingsPageHeading: 'Corrections audio'
 audioRecordingNewPageHeading: 'Nouvel enregistrement'
 audioRecordingStatisticsPageHeading: "Statistiques d'écoute"
 audioRecordingsEmptyMessage: "Aucun enregistrement pour l'instant."

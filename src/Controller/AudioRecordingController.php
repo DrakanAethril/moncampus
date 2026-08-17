@@ -382,7 +382,6 @@ class AudioRecordingController extends AbstractController
             'name' => trim((string) $request->request->get('name', '')),
             'program' => PostValue::int($request, 'program', (int) $preselected?->getId()),
             'options' => array_map('intval', PostValue::all($request, 'options')),
-            'mode' => (string) $request->request->get('mode', AudioRecordingMode::Common->value),
         ];
 
         if ($request->isMethod('POST')) {
@@ -395,16 +394,16 @@ class AudioRecordingController extends AbstractController
                 }
             }
 
-            $mode = AudioRecordingMode::tryFrom($submitted['mode']);
+            // Not read from the request any more: every new recording is individualised
+            // (design/validated/file-library.md, "Corrections audio"). The enum keeps its other case
+            // for the recordings already created with it.
+            $mode = AudioRecordingMode::Individual;
 
             if ('' === $submitted['name']) {
                 $errors['name'] = 'audioRecordingNameRequiredMessage';
             }
             if (null === $program) {
                 $errors['program'] = 'audioRecordingProgramRequiredMessage';
-            }
-            if (null === $mode) {
-                $errors['mode'] = 'audioRecordingModeRequiredMessage';
             }
 
             if ([] === $errors) {
@@ -433,7 +432,6 @@ class AudioRecordingController extends AbstractController
             'scopedProgram' => $preselected,
             'submitted' => $submitted,
             'errors' => $errors,
-            'modes' => AudioRecordingMode::cases(),
         ]);
     }
 
