@@ -24,6 +24,7 @@ use App\Security\Voter\SignupListVoter;
 use App\Service\FileUploadService;
 use App\Service\PostValue;
 use App\Service\SignupListAccessChecker;
+use App\Service\UploadIntake;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -75,7 +76,7 @@ class SignupListController extends AbstractController
         SignupListRepository $repository,
         SignupListAccessChecker $accessChecker,
         UserRepository $userRepository,
-        FileUploadService $fileUploadService,
+        UploadIntake $uploadIntake,
         #[Target('app.signup_list_description')] HtmlSanitizerInterface $sanitizer,
         ?int $id = null,
     ): Response {
@@ -135,7 +136,7 @@ class SignupListController extends AbstractController
                 $signupList->setLastUpdatedDate(new \DateTimeImmutable());
             }
 
-            $this->persistAttachments($signupList, $form->get('attachments')->getData(), $fileUploadService, $entityManager);
+            $this->persistAttachments($signupList, $form->get('attachments')->getData(), $uploadIntake, $entityManager);
 
             $entityManager->flush();
 
@@ -360,12 +361,12 @@ class SignupListController extends AbstractController
     }
 
     /** @param list<UploadedFile>|null $files */
-    private function persistAttachments(SignupList $signupList, ?array $files, FileUploadService $fileUploadService, EntityManagerInterface $entityManager): void
+    private function persistAttachments(SignupList $signupList, ?array $files, UploadIntake $uploadIntake, EntityManagerInterface $entityManager): void
     {
         foreach ($files ?? [] as $file) {
-            $extension = $file->guessExtension() ?? $file->getClientOriginalExtension();
-            $key = $fileUploadService->upload(self::ATTACHMENT_PREFIX, \sprintf('%s.%s', bin2hex(random_bytes(16)), $extension), $file);
-            $entityManager->persist(new SignupListAttachment($signupList, $key, $file->getClientOriginalName()));
+            $extension = UploadIntake::extension($file);
+            $key = $uploadIntake->store($file, self::ATTACHMENT_PREFIX, \sprintf('%s.%s', bin2hex(random_bytes(16)), $extension));
+            $entityManager->persist((new SignupListAttachment($signupList, $key, UploadIntake::originalName($file)))->setLibraryNode(UploadIntake::libraryNodeOf($file)));
         }
     }
 

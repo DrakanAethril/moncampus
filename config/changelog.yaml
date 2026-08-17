@@ -26,6 +26,52 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.08.17'
+      date: '2026-08-17'
+      summary: "La bibliothèque de fichiers arrive : chaque enseignant et chaque membre du personnel dispose d'un espace de dossiers où déposer son matériel une seule fois, puis le réutiliser partout — un travail, un message, un article, une séance — sans jamais le renvoyer. Elle apporte aussi le partage d'un document à une classe, que les étudiants retrouvent dans un menu nettement allégé."
+      entries:
+          - type: nouveaute
+            title: 'La bibliothèque de fichiers'
+            detail: "Un espace personnel par enseignant et par membre du personnel : des dossiers que l'on crée et réorganise au glisser-déposer, une recherche par nom, une corbeille et une jauge de place occupée. Les fichiers y sont déposés une fois pour toutes."
+          - type: nouveaute
+            title: 'Un fichier déposé une fois, réutilisable partout'
+            detail: "Tous les champs de la plateforme qui portent du matériel de cours offrent désormais un onglet « Bibliothèque de fichiers ». Ce que l'on y choisit est une référence et non une copie : le fichier ne compte qu'une fois dans la place occupée, une colonne dit combien de fois il est utilisé, et le remplacer met à jour tous les endroits d'un coup."
+          - type: nouveaute
+            title: 'Partager un document à une classe'
+            detail: "Depuis le menu d'un fichier de la bibliothèque : la classe visée, éventuellement resserrée à certaines options et/ou modalités, la matière sous laquelle le ranger, et une durée de visibilité — illimitée par défaut, ou bornée par une date de début et de fin."
+          - type: nouveaute
+            title: 'Documents partagés, côté étudiant'
+            detail: "La liste de tout ce que ses enseignants ont mis à sa disposition, regroupée par matière ou par enseignant, ou à plat, et triée par date de mise à disposition ou par ordre alphabétique."
+          - type: nouveaute
+            title: "Créer un travail depuis un fichier de la bibliothèque"
+            detail: "Le fichier est déjà attaché dès la première étape de l'assistant, et la nature du travail suit ce qu'il est : une vidéo devient un « à visionner », un audio un « à écouter », le reste un « à rendre »."
+          - type: modification
+            title: "Le menu de l'étudiant"
+            detail: "Il ne garde en tête que l'Accueil, l'Emploi du temps et le Travail à faire ; le Courrier école, les Candidatures et les wikis rejoignent le menu Ressources, où « Documents partagés » arrive en premier. « Mes cours » y devient « Séquences de l'année » et ouvre directement la formation quand il n'y en a qu'une."
+          - type: modification
+            title: "Tout envoi de fichier affiche sa progression"
+            detail: "Le fichier part dès qu'il est choisi, avec son poids, sa barre de progression et un bouton Annuler. Son format et son innocuité sont vérifiés pendant que l'on remplit le reste de l'écran : un fichier refusé l'est avant l'envoi du formulaire, et non après une longue attente."
+          - type: modification
+            title: 'Un fichier supprimé reste récupérable trente jours'
+            detail: "Toute suppression de fichier sur la plateforme est désormais différée : la corbeille de la bibliothèque affiche ce qui a été supprimé et le nombre de jours restants pour le restaurer."
+          - type: modification
+            title: 'Le menu Outils fait le ménage'
+            detail: "« Vidéos » perd son entrée de menu — une vidéo se dépose maintenant dans la bibliothèque — sans rien perdre de ses fonctions : questions incrustées, suivi du visionnage et statistiques sont inchangés. « Enregistrements audio » devient « Corrections audio », et le mode commun disparaît de leur création, un document destiné à toute la classe ayant sa place dans la bibliothèque."
+          - type: modification
+            title: "La description technique parle de l'antivirus et des dépôts"
+            detail: "La page ouverte à tous décrit l'analyse antivirale et la règle unique de dépôt de fichiers arrivées la veille."
+          - type: fix
+            title: 'Le bas du rail du wiki redevient atteignable'
+            detail: "Dans un wiki dont l'arborescence dépassait la hauteur de l'écran, les branches basses et les liens Réglages et Corbeille ne revenaient qu'une fois la page défilée jusqu'à sa fin. Le rail défile désormais sur lui-même."
+          - type: interne
+            title: 'Un seul point de passage pour supprimer un fichier'
+            detail: "Trois services effaçaient des octets à dix-neuf endroits sans jamais vérifier que l'effacement avait réussi. Ils délèguent tous à un objet unique, qui inscrit la suppression et la purge trente jours plus tard."
+          - type: interne
+            title: 'Un champ de dépôt unique pour les quinze champs de la plateforme'
+            detail: "Les quinze champs de fichier, quatre zones de dépôt maison et un aperçu d'image cèdent la place au même composant. Plus aucun formulaire ne transporte d'octets."
+          - type: interne
+            title: 'Commandes de vérification des dépôts et de l’antivirus'
+            detail: "Deux sondes de diagnostic : l'une écrit, relit et supprime un objet sur chacun des préfixes du stockage, l'autre fait passer le fichier de test EICAR par l'antivirus configuré."
     - version: '2026.08.16'
       date: '2026-08-16'
       summary: "Le wiki fait son entrée : des espaces de pages arborescentes, écrites dans un éditeur complet (encadrés, formules, schémas), qui s'exportent en PDF relié ou en archive Markdown réimportable. En arrière-plan, tous les dépôts de fichiers de la plateforme passent désormais par une même règle d'extensions et de taille, et par une analyse antivirale."

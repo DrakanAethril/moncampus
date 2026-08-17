@@ -1,0 +1,70 @@
+{# The "Ressources" dropdown, included twice by layout/app.html.twig and rendered once.
+
+   It is a partial because the entry sits in **two different places in the bar**: a pure student
+   reads it right after « Travail à faire », the dropdown being the whole of their navigation since
+   2026-08-17, while every other role keeps it after Agenda/Support where it has always been. Two
+   positions, one menu - duplicating the block would let the two drift, and the drift would only
+   show for the role that navigates least.
+
+   The dropdown is open to everyone since the Base documentaire arrived
+   (design_handoff_base_documentaire): the base is read by every role, and the menu that carries it
+   must be too. Each entry keeps its own gate.
+
+   Parameters (passed with `only`): current_route, is_pure_student. #}
+{% set resources_is_active = current_route starts with 'app_resources_' or current_route starts with 'app_documentation' or current_route starts with 'app_wiki'
+    or current_route starts with 'app_student_shared_document' or current_route starts with 'app_school_mail' or current_route starts with 'app_training_'
+    or current_route == 'app_my_job_applications' or current_route starts with 'app_my_courses' %}
+<li class="nav-item dropdown {{ resources_is_active ? 'active' }}">
+    <a class="nav-link dropdown-toggle" href="#navbar-resources" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ resources_is_active ? ' aria-current="page"' }}>
+        <span class="nav-link-title">{{ 'resourcesNavLabel'|trans }}</span>
+    </a>
+    <div class="dropdown-menu">
+        {# First entry, and the reason this dropdown became the student's main door: the documents
+           their teachers put at the class's disposal. Shown to students only - a teacher shares
+           from their own file library, and reads the result back through the file's utilisations. #}
+        {% if is_granted('ROLE_STUDENT') and not is_staff() %}
+            <a class="dropdown-item {{ current_route starts with 'app_student_shared_document' ? 'active' }}" href="{{ path('app_student_shared_documents') }}">{{ 'sharedDocumentNavLabel'|trans }}</a>
+        {% endif %}
+        {# The two entries of the retired student "Outils" dropdown - their mailbox and their
+           applications. Still student-only: staff reach both through the class screens, which is
+           not the same screen. #}
+        {% if is_pure_student %}
+            <a class="dropdown-item {{ current_route starts with 'app_school_mail' or current_route starts with 'app_training_' ? 'active' }}" href="{{ path('app_school_mail') }}">{{ 'schoolMailNavLabel'|trans }}</a>
+            <a class="dropdown-item {{ current_route == 'app_my_job_applications' ? 'active' }}" href="{{ path('app_my_job_applications') }}">{{ 'jobApplicationsNavLabel'|trans }}</a>
+        {% endif %}
+        {# Wikis, unfolding into the three questions a user actually asks. Same dropend shape as
+           UFA > Formations and Gestion > Annuaire - Bootstrap disables Popper inside a .navbar, so
+           placement is CSS-only and nav_submenu_placement_controller.js reframes what overflows;
+           with three short entries the overflow it exists for cannot occur here.
+
+           Hidden from tutors and the other outside accounts, which are excluded from the feature
+           entirely - the same posture messaging takes, and enforced again at the controller's
+           door. #}
+        {% if not is_granted('ROLE_TUTOR') and not is_granted('ROLE_EXTERNAL') %}
+            <div class="dropend">
+                <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_wiki' ? 'active' }}" href="#navbar-resources-wikis" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                    {{ 'wikiNavLabel'|trans }}
+                </a>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item {{ current_route == 'app_wiki_personal' ? 'active' }}" href="{{ path('app_wiki_personal') }}">{{ 'wikiPersonalNavLabel'|trans }}</a>
+                    <a class="dropdown-item {{ current_route == 'app_wiki_shared' ? 'active' }}" href="{{ path('app_wiki_shared') }}">{{ 'wikiSharedNavLabel'|trans }}</a>
+                    {% if is_granted('ROLE_TEACHER') or is_staff() %}
+                        <a class="dropdown-item {{ current_route == 'app_wiki_students' ? 'active' }}" href="{{ path('app_wiki_students') }}">{{ 'wikiStudentsNavLabel'|trans }}</a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+        {# « Mes cours » under its real name: what the student reads there is the year's séquences,
+           and the old label promised a course space that this screen is only one face of. #}
+        {% if is_granted('ROLE_STUDENT') and not is_staff() %}
+            <a class="dropdown-item {{ current_route starts with 'app_my_courses' ? 'active' }}" href="{{ path('app_my_courses') }}">{{ 'courseSpaceNavLabel'|trans }}</a>
+        {% endif %}
+        <a class="dropdown-item {{ current_route starts with 'app_documentation' ? 'active' }}" href="{{ path('app_documentation') }}">{{ 'documentationNavLabel'|trans }}</a>
+        {# The two app-download entries keep the ROLE_ADMIN gate they were given by explicit product
+           request. #}
+        {% if is_granted('ROLE_ADMIN') %}
+            <a class="dropdown-item {{ current_route == 'app_resources_mobile' ? 'active' }}" href="{{ path('app_resources_mobile') }}">{{ 'resourcesMobileAppNavLabel'|trans }}</a>
+            <a class="dropdown-item {{ current_route == 'app_resources_eco' ? 'active' }}" href="{{ path('app_resources_eco') }}">{{ 'resourcesEcoAppNavLabel'|trans }}</a>
+        {% endif %}
+    </div>
+</li>

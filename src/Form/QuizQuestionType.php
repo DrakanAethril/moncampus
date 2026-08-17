@@ -9,11 +9,9 @@ use App\Enum\QuestionDifficulty;
 use App\Enum\QuestionTimeMode;
 use App\Enum\QuestionType;
 use App\Service\UploadPolicy;
-use App\Validator\AllowedUpload;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
-use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
@@ -73,14 +71,16 @@ class QuizQuestionType extends AbstractType
                 'help' => 'quizQuestionExplanationFieldHint',
                 'attr' => ['rows' => 2],
             ])
-            ->add('imageFile', FileType::class, [
+            ->add('imageFile', FilePickerType::class, [
                 'label' => 'quizQuestionImageFieldLabel',
                 'mapped' => false,
                 'required' => false,
                 'help' => FileUploadDefaults::MAX_SIZE_HELP_KEY,
-                'constraints' => [
-                    new AllowedUpload(UploadPolicy::images()),
-                ],
+                'policy' => UploadPolicy::images(),
+                // Teacher-authored course material: the « Bibliothèque de fichiers » tab is offered
+                // here (design/validated/file-library.md, "The component"). A file picked there is a
+                // reference - it weighs once, and deleting it from the library removes it from here.
+                'library' => true,
             ])
             ->add('removeImage', CheckboxType::class, [
                 'label' => 'quizQuestionRemoveImageFieldLabel',

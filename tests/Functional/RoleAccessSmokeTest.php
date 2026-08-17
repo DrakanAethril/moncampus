@@ -52,7 +52,12 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->assertScreens($this->student, [
             '/' => 200,
             '/student-work' => 200,
-            '/my/courses' => 200,
+            // « Séquences de l'année » hands over to the single formation this student belongs to
+            // rather than drawing a picker with one card in it (2026-08-17). The list still renders
+            // for a student straddling two, and for the empty state.
+            '/my/courses' => 302,
+            // « Documents partagés » - open to the role, empty until a teacher shares something.
+            '/my/shared-documents' => 200,
             '/my/applications' => 200,
             '/agenda' => 200,
             '/messages' => 200,
@@ -92,6 +97,11 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tools/job-search-tracking' => 403,
             '/tools/quiz' => 403,
             '/tools/videos' => 403,
+            // No student library, and no entry point: what a student sees is unchanged - the file
+            // inside the assignment, exactly as today (design/validated/file-library.md).
+            '/tools/file-library' => 403,
+            '/tools/file-library/trash' => 403,
+            '/tools/file-library/search' => 403,
             '/library/quiz/import/assistant' => 403,
             '/progression' => 403,
             '/library/sequences' => 403,
@@ -113,6 +123,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // The course-space index is the student's own list of programs; a teacher reaches the
             // same sequences from their program screens instead.
             '/my/courses' => 403,
+            // A teacher shares *from* their file library and reads the result back through the
+            // file's utilisations; the student list is not their screen.
+            '/my/shared-documents' => 403,
             '/timetable' => 200,
             '/assignments' => 200,
             '/progression' => 200,
@@ -161,6 +174,11 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tools/quiz' => 200,
             // Same reading: the video list shows what the viewer owns, empty included.
             '/tools/videos' => 200,
+            // The library is personal and lazily created: an account with no file has an empty
+            // library rather than a missing one, so these render rather than hand over.
+            '/tools/file-library' => 200,
+            '/tools/file-library/trash' => 200,
+            '/tools/file-library/search' => 200,
             '/library/quiz/import/assistant' => 200,
             '/help/manage' => 403,
             '/settings/configuration' => 403,
@@ -224,6 +242,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tools/job-search-tracking' => 302,
             '/tools/quiz' => 200,
             '/tools/videos' => 200,
+            // An admin holding ROLE_ADMIN also *owns* a library - that is the first row of the
+            // access table, not the narrow "somebody else's quota" one.
+            '/tools/file-library' => 200,
+            '/tools/file-library/trash' => 200,
             '/library/quiz/import/assistant' => 200,
             // An admin is neither enrolled nor teaching, so the two personal timetables stay shut.
             '/my/timetable' => 403,
@@ -304,6 +326,11 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tools/job-search-tracking' => 403,
             '/tools/quiz' => 403,
             '/tools/videos' => 403,
+            // ROLE_TUTOR is excluded from the library entirely, as it is from the wiki and from
+            // messaging (design/validated/file-library.md, "Who has a library").
+            '/tools/file-library' => 403,
+            '/tools/file-library/trash' => 403,
+            '/tools/file-library/search' => 403,
             '/library/quiz/import/assistant' => 403,
             '/help/manage' => 403,
             '/settings/configuration' => 403,

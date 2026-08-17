@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Entity\Assignment;
 use App\Entity\AssignmentAttachment;
 use App\Entity\AudioRecording;
+use App\Entity\FileLibraryNode;
 use App\Entity\LessonSession;
 use App\Entity\Option;
 use App\Entity\Program;
@@ -21,6 +22,7 @@ use App\Form\AssignmentWizardType;
 use App\Repository\AssignmentRepository;
 use App\Repository\AssignmentSubmissionRepository;
 use App\Repository\AudioRecordingRepository;
+use App\Repository\FileLibraryNodeRepository;
 use App\Repository\GroupBatchRepository;
 use App\Repository\LessonSessionRepository;
 use App\Repository\ProgramRepository;
@@ -28,19 +30,22 @@ use App\Repository\TopicRepository;
 use App\Repository\UserRepository;
 use App\Repository\VideoResourceRepository;
 use App\Security\StructureAccessChecker;
+use App\Security\Voter\FileLibraryVoter;
 use App\Service\AssignmentAudienceResolver;
 use App\Service\AssignmentNatureFields;
 use App\Service\AssignmentNatureRequirements;
 use App\Service\AssignmentProgressSummarizer;
 use App\Service\AssignmentWizardContext;
+use App\Service\FileLibraryWorkFactory;
 use App\Service\FileUploadService;
 use App\Service\FormValue;
 use App\Service\PostValue;
 use App\Service\QueryValue;
+use App\Service\StagedUpload;
+use App\Service\UploadIntake;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -78,6 +83,8 @@ class AssignmentController extends AbstractController
         private readonly VideoResourceRepository $videoResourceRepository,
         private readonly AssignmentNatureRequirements $natureRequirements,
         private readonly AssignmentNatureFields $natureFields,
+        private readonly FileLibraryNodeRepository $libraryNodes,
+        private readonly FileLibraryWorkFactory $workFactory,
     ) {
     }
 
@@ -150,9 +157,10 @@ class AssignmentController extends AbstractController
         TopicRepository $topicRepository,
         UserRepository $userRepository,
         GroupBatchRepository $groupBatchRepository,
+        UploadIntake $uploadIntake,
         FileUploadService $fileUploadService,
     ): Response {
-        return $this->runWizard($request, null, $entityManager, $programRepository, $lessonSessionRepository, $topicRepository, $userRepository, $groupBatchRepository, $fileUploadService);
+        return $this->runWizard($request, null, $entityManager, $programRepository, $lessonSessionRepository, $topicRepository, $userRepository, $groupBatchRepository, $uploadIntake, $fileUploadService);
     }
 
     /**
@@ -175,11 +183,12 @@ class AssignmentController extends AbstractController
         TopicRepository $topicRepository,
         UserRepository $userRepository,
         GroupBatchRepository $groupBatchRepository,
+        UploadIntake $uploadIntake,
         FileUploadService $fileUploadService,
     ): Response {
         $assignment = $this->findOrNotFound($id, $assignmentRepository, $programRepository);
 
-        return $this->runWizard($request, $assignment, $entityManager, $programRepository, $lessonSessionRepository, $topicRepository, $userRepository, $groupBatchRepository, $fileUploadService);
+        return $this->runWizard($request, $assignment, $entityManager, $programRepository, $lessonSessionRepository, $topicRepository, $userRepository, $groupBatchRepository, $uploadIntake, $fileUploadService);
     }
 
     private function runWizard(
@@ -191,6 +200,7 @@ class AssignmentController extends AbstractController
         TopicRepository $topicRepository,
         UserRepository $userRepository,
         GroupBatchRepository $groupBatchRepository,
+        UploadIntake $uploadIntake,
         FileUploadService $fileUploadService,
     ): Response {
         $isEdit = null !== $existing;
@@ -235,7 +245,7 @@ class AssignmentController extends AbstractController
             $this->natureFields->apply($saved);
             $this->applyVisibility($saved, $form);
             $this->removeDroppedAttachments($saved, $request, $fileUploadService);
-            $this->applyAttachments($saved, $form, $fileUploadService);
+            $this->applyAttachments($saved, $form, $uploadIntake);
 
             if ($isEdit) {
                 $saved->setLastUpdatedBy($this->currentUser());
@@ -249,6 +259,19 @@ class AssignmentController extends AbstractController
                 // statistics screen. Same on the video side.
                 $context->audioRecording?->setAssignment($saved);
                 $context->videoResource?->setAssignment($saved);
+
+                if (null !== $context->libraryNode) {
+                    // The file is a **link**: the row carries the node's own storage key plus a
+                    // foreign key back to it.
+                    $this->workFactory->attach($saved, $context->libraryNode);
+
+                    // And a video opens the Vidéos tool's back door: the resource and its file are
+                    // created here, referencing the same object, so the cue-point editor and the
+                    // statistics screen are reached from the work exactly as they always were.
+                    if (AssignmentNature::Watching === $saved->getNature()) {
+                        $saved->setVideoResource($this->workFactory->createVideoResource($saved, $context->libraryNode, $this->currentUser()));
+                    }
+                }
             }
 
             $entityManager->flush();
@@ -423,6 +446,21 @@ class AssignmentController extends AbstractController
             }
         }
 
+        // From a file of the teacher's own library. The Voter is what makes "their own" true: a node
+        // id in a query string is not a permission.
+        $libraryNodeId = QueryValue::int($request, 'libraryNode');
+        if (0 !== $libraryNodeId) {
+            $node = $this->libraryNodes->find($libraryNodeId);
+
+            if ($node instanceof FileLibraryNode && $node->isFile() && !$node->isDeleted() && $this->isGranted(FileLibraryVoter::LINK, $node)) {
+                return AssignmentWizardContext::forLibraryNode(
+                    $node,
+                    $this->generateUrl('app_file_library'),
+                    $mode,
+                );
+            }
+        }
+
         $listUrl = $this->generateUrl('app_assignments');
         $programId = QueryValue::int($request, 'classe');
         foreach ($programs as $program) {
@@ -491,11 +529,19 @@ class AssignmentController extends AbstractController
         $assignment->setNature(match (true) {
             null !== $context->audioRecording => AssignmentNature::Listening,
             null !== $context->videoResource => AssignmentNature::Watching,
+            // A file of the library says what kind of work it is: a video is a watching, an audio
+            // file a listening, anything else a to-submit.
+            null !== $context->libraryNode => $this->workFactory->natureFor($context->libraryNode),
             default => AssignmentNature::ToSubmit,
         });
         $assignment->setAudioRecording($context->audioRecording);
         $assignment->setVideoResource($context->videoResource);
-        $assignment->setTitle($context->audioRecording?->getName() ?? $context->videoResource?->getName());
+        $assignment->setTitle(
+            $context->audioRecording?->getName()
+            ?? $context->videoResource?->getName()
+            // The file's name without its extension, which is what the teacher would have typed.
+            ?? (null === $context->libraryNode ? null : $this->workFactory->titleFor($context->libraryNode)),
+        );
         $assignment->setDueDate($this->defaultDueDate($context));
         $assignment->setLessonSession($context->lessonSession);
         $assignment->setLessonLogSection($context->lessonLogSection);
@@ -580,20 +626,26 @@ class AssignmentController extends AbstractController
      * The supports travel with the form and only become rows here: the assignment did not exist
      * before, so there was nothing to attach them to.
      */
-    private function applyAttachments(Assignment $assignment, \Symfony\Component\Form\FormInterface $form, FileUploadService $fileUploadService): void
+    private function applyAttachments(Assignment $assignment, \Symfony\Component\Form\FormInterface $form, UploadIntake $uploadIntake): void
     {
-        /** @var list<UploadedFile> $files */
+        /** @var list<StagedUpload> $files */
         $files = $form->get('attachmentFiles')->getData() ?? [];
 
         foreach ($files as $file) {
-            $extension = $file->guessExtension() ?? $file->getClientOriginalExtension();
-            $key = $fileUploadService->upload(
+            $extension = UploadIntake::extension($file);
+            $key = $uploadIntake->store(
+                $file,
                 self::ATTACHMENT_UPLOAD_PREFIX,
                 sprintf('%d-%s.%s', time(), bin2hex(random_bytes(4)), $extension),
-                $file,
             );
 
-            (new AssignmentAttachment($assignment, $file->getClientOriginalName(), AssignmentAttachmentSourceType::Upload))->setStorageKey($key);
+            $node = UploadIntake::libraryNodeOf($file);
+            // Library or Upload: the row reads the same either way - it carries its own storage key -
+            // and what the third case adds is *where it came from*, which is what the usage panel and
+            // the deletion modal both need to know.
+            (new AssignmentAttachment($assignment, UploadIntake::originalName($file), null === $node ? AssignmentAttachmentSourceType::Upload : AssignmentAttachmentSourceType::Library))
+                ->setStorageKey($key)
+                ->setLibraryNode($node);
         }
 
         foreach (preg_split('/\R/', FormValue::string($form, 'attachmentLinks')) ?: [] as $line) {

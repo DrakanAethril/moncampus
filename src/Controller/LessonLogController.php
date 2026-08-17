@@ -35,9 +35,10 @@ use App\Service\LessonLogBoard;
 use App\Service\LessonLogImporter;
 use App\Service\QueryValue;
 use App\Service\SeanceContentResolver;
+use App\Service\StagedUpload;
+use App\Service\UploadIntake;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -589,7 +590,7 @@ class LessonLogController extends AbstractController
     }
 
     #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/attachments', name: 'app_program_timetable_session_log_attachments_new', methods: ['POST'])]
-    public function addAttachment(int $id, int $sessionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, FileUploadService $fileUploadService): Response
+    public function addAttachment(int $id, int $sessionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, UploadIntake $uploadIntake): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
@@ -606,7 +607,7 @@ class LessonLogController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            /** @var UploadedFile|null $file */
+            /** @var StagedUpload|null $file */
             $file = $form->get('file')->getData();
             $url = $form->get('url')->getData();
             $label = $form->get('label')->getData();
@@ -625,14 +626,16 @@ class LessonLogController extends AbstractController
                 $attachment->setSection(LessonLogSection::tryFrom((string) $request->request->get('section')) ?? LessonLogSection::During);
 
                 if (null !== $file) {
-                    $extension = $file->guessExtension() ?? $file->getClientOriginalExtension();
-                    $key = $fileUploadService->upload(
+                    $extension = UploadIntake::extension($file);
+                    $key = $uploadIntake->store(
+                        $file,
                         self::ATTACHMENT_UPLOAD_PREFIX,
                         sprintf('%d-%d-%s.%s', $session->getId(), time(), bin2hex(random_bytes(4)), $extension),
-                        $file,
                     );
-                    $attachment->setType(LessonLogAttachmentSourceType::Upload);
+                    $libraryNode = UploadIntake::libraryNodeOf($file);
+                    $attachment->setType(null === $libraryNode ? LessonLogAttachmentSourceType::Upload : LessonLogAttachmentSourceType::Library);
                     $attachment->setStorageKey($key);
+                    $attachment->setLibraryNode($libraryNode);
                 } else {
                     $attachment->setType(LessonLogAttachmentSourceType::Link);
                     $attachment->setUrl($url);

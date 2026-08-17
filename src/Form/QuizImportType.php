@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace App\Form;
 
 use App\Service\UploadPolicy;
-use App\Validator\AllowedUpload;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\NotNull;
@@ -32,20 +30,21 @@ class QuizImportType extends AbstractType
         $kahoot = self::SOURCE_KAHOOT === $options['source'];
 
         $builder
-            ->add('file', FileType::class, [
+            ->add('file', FilePickerType::class, [
                 'label' => 'quizImportFileFieldLabel',
                 'help' => $kahoot ? 'quizImportKahootFileFieldHelpText' : 'quizImportFileFieldHelpText',
+                // Kahoot hands over an .xlsx; the app's own format is a .csv, and .txt stays
+                // accepted alongside it because that is what this field already did. Both are
+                // narrowings of the platform list, so neither can drift outside it.
+                'policy' => $kahoot
+                    ? UploadPolicy::spreadsheets()->restrictTo('xlsx')
+                    : UploadPolicy::platform()->restrictTo('csv', 'txt'),
+                'max_size' => self::MAX_SIZE,
+                // No library tab: a document imported once is not course material
+                // (design/validated/file-library.md, "The component").
+                'library' => false,
                 'constraints' => [
                     new NotNull(message: 'quizImportFileRequiredMessage'),
-                    // Kahoot hands over an .xlsx; the app's own format is a .csv, and .txt stays
-                    // accepted alongside it because that is what this field already did. Both are
-                    // narrowings of the platform list, so neither can drift outside it.
-                    new AllowedUpload(
-                        ($kahoot
-                            ? UploadPolicy::spreadsheets()->restrictTo('xlsx')
-                            : UploadPolicy::platform()->restrictTo('csv', 'txt')
-                        )->withMaxSize(self::MAX_SIZE),
-                    ),
                 ],
             ])
         ;

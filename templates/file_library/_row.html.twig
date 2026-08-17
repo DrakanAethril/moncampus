@@ -1,0 +1,100 @@
+{# One row of the table - a folder or a file, read the same way (mockup 1): the same columns, the
+   size replaced by the file count on a folder.
+
+   The row menu has seven entries at most, in this order: Partager à une classe (lot 7), Créer un
+   travail (lot 5), Aperçu, Télécharger, Renommer, Remplacer, Supprimer. Two rules about it:
+
+     - **`Aperçu` is absent, not disabled**, when the file has no preview. A menu that shows what
+       cannot be done teaches the reader to stop reading it;
+     - **there is no `Déplacer`.** Moving is dragging the row onto a folder of the rail - one gesture,
+       and one the wiki has already taught. #}
+{% set node = row.node %}
+{% set previewable = node.type.value == 'file' and file_library_previewable(node.name) %}
+<tr class="cm-flib__row{{ node.type.value == 'folder' ? ' is-folder' }}"
+    data-node-id="{{ node.id }}"
+    data-node-name="{{ node.name }}"
+    {% if previewable %}data-preview-url="{{ path('app_file_library_node_download', {nodeId: node.id}) }}"{% endif %}
+    draggable="true">
+    <td>
+        <span class="cm-flib__name">
+            {% if node.type.value == 'folder' %}
+                <span class="cm-flib__ext cm-flib__ext--dir" aria-hidden="true">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"></path></svg>
+                </span>
+                <a href="{{ path('app_file_library_folder', {nodeId: node.id}) }}">{{ node.name }}</a>
+            {% else %}
+                <span class="cm-flib__ext cm-flib__ext--{{ file_library_family(node.name) }}">{{ node.extension|upper|slice(0, 4) ?: '?' }}</span>
+                {% if previewable %}
+                    <button type="button" class="cm-flib__namelink" data-action="file-library#preview">{{ node.name }}</button>
+                {% else %}
+                    <a href="{{ path('app_file_library_node_download', {nodeId: node.id}) }}">{{ node.name }}</a>
+                {% endif %}
+            {% endif %}
+        </span>
+    </td>
+    <td class="cm-flib__num">
+        {% if node.type.value == 'folder' %}
+            {{ 'fileLibraryFileCountLabel'|trans({'%count%': row.fileCount}) }}
+        {% else %}
+            {{ byte_size(node.sizeBytes) }}
+        {% endif %}
+    </td>
+    <td class="cm-flib__num">{{ node.modifiedAt|date('d/m/Y') }}</td>
+    <td>
+        {# The count is a link, and it is the only way into the usage panel now: the row menu
+           deliberately does not carry one, six entries being already the most a menu can hold and
+           still be read. #}
+        {% if node.type.value == 'file' and row.usageCount > 0 %}
+            <button type="button" class="cm-flib__use cm-flib__use--n" data-action="file-library#usages">{{ 'fileLibraryUsageCountLabel'|trans({'%count%': row.usageCount}) }}</button>
+        {% else %}
+            <span class="cm-flib__use">{{ 'fileLibraryNoUsageLabel'|trans }}</span>
+        {% endif %}
+    </td>
+    <td class="cm-flib__menu">
+        <div class="dropdown">
+            <button type="button" class="cm-flib__kebab" data-bs-toggle="dropdown" aria-expanded="false"
+                    aria-label="{{ 'fileLibraryRowMenuLabel'|trans }}">⋮</button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                {# First entry, above « Créer un travail »: putting a document at a class's disposal
+                   asks nothing of the student, where a travail asks for something back - and the
+                   lighter of the two is the one reached first. #}
+                {% if node.type.value == 'file' %}
+                    <li><a class="dropdown-item" href="{{ path('app_file_library_node_share', {nodeId: node.id}) }}">{{ 'sharedDocumentShareAction'|trans }}</a></li>
+                {% endif %}
+                {# The Vidéos tool's front door too: a video here creates the VideoResource and its
+                   file, and the wizard opens on a « à visionner ». For anything else it is a « à
+                   rendre » with the file already attached. #}
+                {% if node.type.value == 'file' %}
+                    <li><a class="dropdown-item" href="{{ path('app_assignment_new', {libraryNode: node.id}) }}">{{ 'fileLibraryCreateWorkAction'|trans }}</a></li>
+                {% endif %}
+                {% if previewable %}
+                    <li><button type="button" class="dropdown-item" data-action="file-library#preview">{{ 'fileLibraryPreviewAction'|trans }}</button></li>
+                {% endif %}
+                {% if node.type.value == 'file' %}
+                    <li><a class="dropdown-item" href="{{ path('app_file_library_node_download', {nodeId: node.id}) }}">{{ 'fileLibraryDownloadAction'|trans }}</a></li>
+                {% endif %}
+                <li><button type="button" class="dropdown-item" data-action="file-library#promptRename">{{ 'fileLibraryRenameAction'|trans }}</button></li>
+                {% if node.type.value == 'file' %}
+                    <li><button type="button" class="dropdown-item" data-action="file-library#replace">{{ 'fileLibraryReplaceAction'|trans }}</button></li>
+                {% endif %}
+                <li>
+                    {# A file that is used anywhere goes through the modal, which lists every usage by
+                       name before it removes them - « Supprimer partout (11 utilisations) ». A file
+                       used nowhere, and a folder, keep the plain confirmation: a modal that lists
+                       nothing is a modal nobody reads. #}
+                    {% if node.type.value == 'file' and row.usageCount > 0 %}
+                        <button type="button" class="dropdown-item text-danger" data-action="file-library#confirmDelete">{{ 'fileLibraryDeleteAction'|trans }}</button>
+                    {% else %}
+                        <form method="post" action="{{ path('app_file_library_node_delete', {nodeId: node.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('file_library_node') }}">
+                            <button type="submit" class="dropdown-item text-danger"
+                                    data-controller="confirm-submit"
+                                    data-confirm-submit-message-value="{{ (node.type.value == 'folder' ? 'fileLibraryDeleteFolderConfirmText' : 'fileLibraryDeleteFileConfirmText')|trans({'%name%': node.name}) }}"
+                                    data-action="click->confirm-submit#confirm">{{ 'fileLibraryDeleteAction'|trans }}</button>
+                        </form>
+                    {% endif %}
+                </li>
+            </ul>
+        </div>
+    </td>
+</tr>

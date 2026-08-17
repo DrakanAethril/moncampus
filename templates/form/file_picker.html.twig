@@ -1,0 +1,80 @@
+{# The one upload widget of the application - App\Form\FilePickerType, mockup 5 of
+   design/design_handoff_bibliotheque_fichiers. Everything below the hidden input is painted by
+   assets/controllers/file_picker_controller.js: a row appears when a file is chosen, carries its own
+   progress bar while the bytes go out, and settles into "Déposé · analysé" or a refusal.
+
+   The hidden input is the field itself - it carries the signed tokens (and the `lib:<id>` entries of
+   files linked from the library), and it is the only thing the form POST sends. #}
+{% block file_picker_widget %}
+    <div class="cm-filepick"
+         data-controller="file-picker"
+         data-file-picker-multiple-value="{{ multiple ? 'true' : 'false' }}"
+         data-file-picker-max-bytes-value="{{ max_bytes }}"
+         data-file-picker-url-value="{{ path('app_upload_stage') }}"
+         data-file-picker-discard-url-value="{{ path('app_upload_discard') }}"
+         data-file-picker-csrf-token-value="{{ csrf_token('staged-upload') }}"
+         {% if library %}data-file-picker-library-url-value="{{ path('app_file_library_picker') }}"{% endif %}
+         data-file-picker-labels-value="{{ {
+             drop: 'filePickerDropLabel'|trans,
+             dropMultiple: 'filePickerDropMultipleLabel'|trans,
+             uploading: 'filePickerUploadingLabel'|trans,
+             done: 'filePickerDoneLabel'|trans,
+             refused: 'filePickerRefusedLabel'|trans,
+             remove: 'filePickerRemoveAction'|trans,
+             tooLarge: 'filePickerTooLargeMessage'|trans,
+             networkError: 'filePickerNetworkErrorMessage'|trans,
+             onlyOne: 'filePickerOnlyOneMessage'|trans,
+             tabUpload: 'filePickerUploadTabLabel'|trans,
+             fromLibrary: 'filePickerFromLibraryLabel'|trans,
+             libraryEmpty: 'filePickerLibraryEmptyText'|trans,
+             librarySearch: 'filePickerLibrarySearchPlaceholder'|trans,
+             libraryRoot: 'fileLibraryRailTitleLabel'|trans,
+         }|json_encode|e('html_attr') }}">
+
+        <div class="cm-filepick__tabs">
+            <button type="button" class="cm-filepick__tab cm-filepick__tab--on" data-file-picker-target="tabUpload" data-action="file-picker#showUpload">{{ 'filePickerUploadTabLabel'|trans }}</button>
+            {# Only for a field that carries course material, and only for somebody who has a library:
+               App\Form\FilePickerType asks the Voter, so "who may link" and "who has one" are one
+               answer. #}
+            {% if library %}
+                <button type="button" class="cm-filepick__tab" data-file-picker-target="tabLibrary" data-action="file-picker#showLibrary">{{ 'filePickerLibraryTabLabel'|trans }}</button>
+            {% endif %}
+        </div>
+
+        <button type="button" class="cm-filepick__drop" data-file-picker-target="drop" data-action="click->file-picker#pick dragover->file-picker#dragOver dragleave->file-picker#dragLeave drop->file-picker#dropped">
+            <span class="cm-filepick__drop-main">{{ (multiple ? 'filePickerDropMultipleLabel' : 'filePickerDropLabel')|trans }}</span>
+            <span class="cm-filepick__drop-sub">{{ 'filePickerLimitsHelpText'|trans({'%size%': (max_bytes // 1024 // 1024) ~ ' Mo'}) }}</span>
+        </button>
+
+        {% if library %}
+            {# The Bibliothèque tab: the same tree on the left, the folder's files on the right, a
+               search field. Painted by the controller from app_file_library_picker's answer. #}
+            <div class="cm-filepick__library" data-file-picker-target="libraryPane" hidden>
+                <input type="search" class="form-control form-control-sm cm-filepick__library-search"
+                       placeholder="{{ 'filePickerLibrarySearchPlaceholder'|trans }}"
+                       aria-label="{{ 'filePickerLibrarySearchPlaceholder'|trans }}"
+                       data-file-picker-target="librarySearch" data-action="input->file-picker#searchLibrary">
+                <div class="cm-filepick__library-body">
+                    <div class="cm-filepick__library-tree" data-file-picker-target="libraryTree"></div>
+                    <div class="cm-filepick__library-files" data-file-picker-target="libraryFiles"></div>
+                </div>
+            </div>
+        {% endif %}
+
+        {# Never inside the form's own submit path: this input is a picker, and its files travel by
+           XHR. What keeps it from being posted is that it carries no name. #}
+        <input type="file"
+               class="cm-filepick__input"
+               {% if multiple %}multiple{% endif %}
+               accept="{{ accept }}"
+               hidden
+               aria-hidden="true"
+               tabindex="-1"
+               data-file-picker-target="input"
+               data-action="change->file-picker#selected">
+
+        <div class="cm-filepick__rows" data-file-picker-target="rows"></div>
+
+        <input type="hidden" {{ block('widget_attributes') }}{% if value is not empty %} value="{{ value }}"{% endif %} data-file-picker-target="tokens">
+    </div>
+{% endblock %}

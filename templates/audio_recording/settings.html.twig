@@ -67,21 +67,11 @@
             </div>
         {% endif %}
 
-        <div class="cm-audio-form__field">
-            <span class="cm-audio-form__label">{{ 'audioRecordingModeFieldLabel'|trans }}</span>
-            <div class="cm-audio-modes">
-                {% for mode in modes %}
-                    <label class="cm-audio-mode">
-                        <input type="radio" name="mode" value="{{ mode.value }}" {{ submitted.mode == mode.value ? 'checked' }}>
-                        <span class="cm-audio-mode__dot" aria-hidden="true"></span>
-                        {# hintKey, not labelKey: the cards spell the mode out ("Communs à toute la
-                           cible"), where the list's Type column says it in one word. #}
-                        <span class="cm-audio-mode__label">{{ mode.hintKey|trans }}</span>
-                    </label>
-                {% endfor %}
-            </div>
-            {% if errors.mode is defined %}<span class="cm-audio-form__error">{{ errors.mode|trans }}</span>{% endif %}
-        </div>
+        {# The mode chooser is gone (design/validated/file-library.md, "Corrections audio"): a
+           document meant for the whole class belongs in the file library, not in a tool built for
+           per-student feedback, so every new recording is individualised - and a wizard step with one
+           choice is not a choice. App\Enum\AudioRecordingMode keeps both cases: the recordings
+           already created as Common go on rendering, unmigrated and unconverted. #}
 
         <div class="cm-audio-form__footer">
             <a class="btn btn-outline-secondary" href="{{ scopedProgram

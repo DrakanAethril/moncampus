@@ -161,17 +161,10 @@
 
             <div>
                 <label class="form-label">{{ 'messageAttachmentsFieldLabel'|trans }}</label>
-                <div class="cm-mail-attachments-row" data-controller="file-dropzone" data-file-dropzone-max-size-value="20971520" data-file-dropzone-too-large-text-value="{{ 'messagesAttachmentTooLargeLabel'|trans }}">
-                    <label class="cm-mail-dropzone" data-file-dropzone-target="zone">
-                        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--cm-brand-strong)"><path d="M12 16.5V5"></path><path d="m7.5 9.5 4.5-4.5 4.5 4.5"></path><path d="M4.5 18.5h15"></path></svg>
-                        <span>
-                            <span class="cm-mail-dropzone__title" style="display:block">{{ 'messagesDropzoneTitleLabel'|trans }}</span>
-                            <span class="cm-mail-dropzone__hint">{{ 'messagesDropzoneHintLabel'|trans }}</span>
-                        </span>
-                        {{ form_widget(form.attachments, {attr: {class: 'd-none', 'data-file-dropzone-target': 'input', 'data-action': 'change->file-dropzone#update'}}) }}
-                    </label>
-                    <div data-file-dropzone-target="list"></div>
-                </div>
+                {# The composer's own drop zone gave way to the platform's one component
+                   (App\Form\FilePickerType): same gesture, plus a progress bar and a refusal that
+                   arrives before the message is sent rather than on submitting it. #}
+                {{ form_widget(form.attachments) }}
                 {{ form_errors(form.attachments) }}
             </div>
         </div>

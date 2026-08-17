@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace App\Form;
 
 use App\Service\UploadPolicy;
-use App\Validator\AllowedUpload;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Validator\Constraints\NotNull;
 
@@ -25,16 +23,20 @@ class UfaContractImportType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('file', FileType::class, [
+            ->add('file', FilePickerType::class, [
                 'label' => 'ufaContractImportFileFieldLabel',
                 'help' => 'ufaContractImportFileFieldHelpText',
+                // The "spreadsheets" narrowing, itself narrowed to the one format the school's
+                // export produces. The three MIME types this field used to spell out are the
+                // platform map's own entry for .xlsx - an OOXML file is a zip and sniffs as one,
+                // which is why Assert\File's default list rejected the real export.
+                'policy' => UploadPolicy::spreadsheets()->restrictTo('xlsx'),
+                'max_size' => self::MAX_SIZE,
+                // No library tab: a spreadsheet imported once is not course material
+                // (design/validated/file-library.md, "The component").
+                'library' => false,
                 'constraints' => [
                     new NotNull(message: 'ufaContractImportFileRequiredMessage'),
-                    // The "spreadsheets" narrowing, itself narrowed to the one format the school's
-                    // export produces. The three MIME types this field used to spell out are the
-                    // platform map's own entry for .xlsx - an OOXML file is a zip and sniffs as
-                    // one, which is why Assert\File's default list rejected the real export.
-                    new AllowedUpload(UploadPolicy::spreadsheets()->restrictTo('xlsx')->withMaxSize(self::MAX_SIZE)),
                 ],
             ])
         ;

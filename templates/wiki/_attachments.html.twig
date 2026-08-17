@@ -43,24 +43,17 @@
         {% endif %}
 
         {% if is_granted('WIKI_EDIT', wiki) %}
-            <form method="post" action="{{ path('app_wiki_attachment_add', {id: wiki.id, nodeId: node.id}) }}"
-                  enctype="multipart/form-data" class="cm-wiki-attachments__add"
-                  data-controller="file-dropzone">
-                <input type="hidden" name="_token" value="{{ csrf_token('wiki_attachment') }}">
-
-                <label class="cm-wiki-attachments__dropzone" data-file-dropzone-target="zone">
-                    <span>{{ 'wikiAttachmentsDropFileLabel'|trans }}</span>
-                    <input type="file" name="attachments[]" multiple class="d-none"
-                           data-file-dropzone-target="input" data-action="change->file-dropzone#update"
-                           aria-label="{{ 'wikiAttachmentsFieldLabel'|trans }}">
-                </label>
-
-                <div class="cm-wiki-attachments__grid" data-file-dropzone-target="list"></div>
+            {# The page's own drop zone gave way to the platform's one component
+               (App\Form\FilePickerType, through App\Form\WikiAttachmentType): the files are already
+               deposited and scanned when "Ajouter" is pressed, so this POST carries tokens and no
+               bytes - and it no longer needs enctype at all. #}
+            {{ form_start(attachmentForm, {action: path('app_wiki_attachment_add', {id: wiki.id, nodeId: node.id}), attr: {class: 'cm-wiki-attachments__add'}}) }}
+                {{ form_widget(attachmentForm.files) }}
 
                 <div class="cm-wiki-attachments__submit">
                     <button type="submit" class="cm-btn cm-btn--sm cm-btn--outline">{{ 'wikiAttachmentAddAction'|trans }}</button>
                 </div>
-            </form>
+            {{ form_end(attachmentForm) }}
         {% endif %}
     </section>
 {% endif %}

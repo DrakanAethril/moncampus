@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace App\Form;
 
 use App\Service\UploadPolicy;
-use App\Validator\AllowedUpload;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -28,18 +26,18 @@ class MessageReplyType extends AbstractType
                 'mapped' => false,
                 'constraints' => [new NotBlank()],
             ])
-            ->add('attachments', FileType::class, [
+            ->add('attachments', FilePickerType::class, [
                 'label' => 'messageAttachmentsFieldLabel',
                 'mapped' => false,
                 'multiple' => true,
                 'required' => false,
                 'help' => FileUploadDefaults::MAX_SIZE_HELP_KEY,
-                // See MessageComposeType's identical field for why this needs All(): 'multiple'
-                // => true submits an array of files, and a bare File constraint would validate
-                // the array itself instead of each file.
-                'constraints' => [
-                    new All([new AllowedUpload(UploadPolicy::documents())]),
-                ],
+                // See MessageComposeType's identical field.
+                'policy' => UploadPolicy::documents(),
+                // Teacher-authored course material: the « Bibliothèque de fichiers » tab is offered
+                // here (design/validated/file-library.md, "The component"). A file picked there is a
+                // reference - it weighs once, and deleting it from the library removes it from here.
+                'library' => true,
             ])
             ->add('submit', SubmitType::class, [
                 'label' => 'messageReplyAction',

@@ -14,7 +14,7 @@ use App\Entity\User;
 use App\Enum\AssignmentAudienceType;
 use App\Enum\AssignmentNature;
 use App\Enum\QuizMode;
-use App\Validator\AllowedUpload;
+use App\Service\UploadPolicy;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
@@ -22,7 +22,6 @@ use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
-use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -160,7 +159,7 @@ class AssignmentWizardType extends AbstractType
             ])
             // The supports are not data of the assignment as long as it does not exist: they travel
             // with the form and are only uploaded on publication.
-            ->add('attachmentFiles', FileType::class, [
+            ->add('attachmentFiles', FilePickerType::class, [
                 'label' => 'assignmentWizardAttachmentsFieldLabel',
                 'mapped' => false,
                 'multiple' => true,
@@ -169,7 +168,11 @@ class AssignmentWizardType extends AbstractType
                 // until now. Deliberately not the "documents" narrowing: a teacher legitimately
                 // attaches a source file or a capture to a BTS SIO assignment, and refusing those
                 // would be a product decision design/validated/upload-policy.md did not take.
-                'constraints' => [new Assert\All([new AllowedUpload()])],
+                'policy' => UploadPolicy::platform(),
+                // Teacher-authored course material: the « Bibliothèque de fichiers » tab is offered
+                // here (design/validated/file-library.md, "The component"). A file picked there is a
+                // reference - it weighs once, and deleting it from the library removes it from here.
+                'library' => true,
             ])
             // The pasted links, one per line: the field stays hidden, it is the template's chips
             // that write it.

@@ -10,11 +10,15 @@ enum LessonLogAttachmentSourceType: string
     case Upload = 'upload';
     case Link = 'link';
 
+    /** Taken from the teacher's file library - see AssignmentAttachmentSourceType::Library. */
+    case Library = 'library';
+
     public function labelKey(): string
     {
         return match ($this) {
             self::Upload => 'lessonLogAttachmentSourceTypeUploadLabel',
             self::Link => 'lessonLogAttachmentSourceTypeLinkLabel',
+            self::Library => 'lessonLogAttachmentSourceTypeLibraryLabel',
         };
     }
 }

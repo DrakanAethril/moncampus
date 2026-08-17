@@ -15,11 +15,12 @@ use App\Service\ContactEmailVerifier;
 use App\Service\FileUploadService;
 use App\Service\JsonRequestPayload;
 use App\Service\QueueStateFormatter;
+use App\Service\StagedUpload;
+use App\Service\UploadIntake;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizerInterface;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -213,7 +214,7 @@ class ProfileController extends AbstractController
     // #[IsGranted('ROLE_USER')] can never allow.
 
     #[Route(path: '/profile/avatar', name: 'app_profile_avatar', methods: ['POST'])]
-    public function uploadAvatar(Request $request, EntityManagerInterface $entityManager, FileUploadService $fileUploadService): Response
+    public function uploadAvatar(Request $request, EntityManagerInterface $entityManager, FileUploadService $fileUploadService, UploadIntake $uploadIntake): Response
     {
         $user = $this->currentUser();
 
@@ -221,16 +222,16 @@ class ProfileController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            /** @var UploadedFile $file */
+            /** @var StagedUpload $file */
             $file = $form->get('avatarFile')->getData();
-            $extension = $file->guessExtension() ?? $file->getClientOriginalExtension();
+            $extension = UploadIntake::extension($file);
 
             // Timestamp in the filename (not a query-string cache-buster) so the URL itself
             // changes on every replace - CloudFront/browsers never need to be told to revalidate
             // a stale cached image. The old object is only deleted after the new one is safely
             // persisted, so a mid-upload failure never leaves the user with a broken avatar.
             $oldKey = $user->getAvatarKey();
-            $newKey = $fileUploadService->upload(self::AVATAR_PREFIX, sprintf('%d-%d.%s', $user->getId(), time(), $extension), $file);
+            $newKey = $uploadIntake->store($file, self::AVATAR_PREFIX, sprintf('%d-%d.%s', $user->getId(), time(), $extension));
 
             $user->setAvatarKey($newKey);
             $entityManager->flush();

@@ -18,7 +18,7 @@ import { Controller } from '@hotwired/stimulus';
  */
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
-    static targets = ['typeSelect', 'answerList', 'answerRow', 'answerTemplate', 'addAnswerButton', 'hintText', 'imageInput', 'imagePreview', 'classicSection', 'blanksSection', 'zoneSection', 'matchingSection', 'numericSection', 'shortAnswerSection', 'imageSection', 'labelField', 'labelText', 'labelHint', 'blankCount'];
+    static targets = ['typeSelect', 'answerList', 'answerRow', 'answerTemplate', 'addAnswerButton', 'hintText', 'imagePreview', 'classicSection', 'blanksSection', 'zoneSection', 'matchingSection', 'numericSection', 'shortAnswerSection', 'imageSection', 'labelField', 'labelText', 'labelHint', 'blankCount'];
     static values = { trueLabel: String, falseLabel: String, hintDefault: String, hintOrdre: String, labelEnonce: String, labelBlanks: String, labelCalculee: String, hintCalculee: String };
 
     connect() {
@@ -213,13 +213,5 @@ export default class extends Controller {
         event.currentTarget.classList.toggle('is-correct', nowCorrect);
     }
 
-    previewImage() {
-        const file = this.imageInputTarget.files[0];
-        if (!file) {
-            return;
-        }
-
-        this.imagePreviewTarget.src = URL.createObjectURL(file);
-        this.imagePreviewTarget.hidden = false;
-    }
 }
+

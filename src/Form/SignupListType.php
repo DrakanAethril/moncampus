@@ -8,19 +8,16 @@ use App\Entity\Program;
 use App\Entity\SignupList;
 use App\Enum\MessageAudienceType;
 use App\Service\UploadPolicy;
-use App\Validator\AllowedUpload;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
-use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Component\Validator\Constraints\All;
 
 // audienceTypes/programs/includeStudents/includeTeachers/attachments wiring mirrors
 // MessageComposeType/AnnouncementType/AgendaEventType exactly - see those classes' docblocks.
@@ -83,15 +80,17 @@ class SignupListType extends AbstractType
                 'label' => 'messageAudienceRoleTeachersLabel',
                 'required' => false,
             ])
-            ->add('attachments', FileType::class, [
+            ->add('attachments', FilePickerType::class, [
                 'label' => 'messageAttachmentsFieldLabel',
                 'mapped' => false,
                 'multiple' => true,
                 'required' => false,
                 'help' => FileUploadDefaults::MAX_SIZE_HELP_KEY,
-                'constraints' => [
-                    new All([new AllowedUpload(UploadPolicy::documents())]),
-                ],
+                'policy' => UploadPolicy::documents(),
+                // Teacher-authored course material: the « Bibliothèque de fichiers » tab is offered
+                // here (design/validated/file-library.md, "The component"). A file picked there is a
+                // reference - it weighs once, and deleting it from the library removes it from here.
+                'library' => true,
             ])
             ->add('submit', SubmitType::class, [
                 'label' => 'submitSaveAction',

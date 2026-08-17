@@ -22,13 +22,13 @@ use App\Service\JsonRequestPayload;
 use App\Service\PostValue;
 use App\Service\QuizCsvImporter;
 use App\Service\QuizCsvImportException;
+use App\Service\UploadIntake;
 use App\Service\VideoImportContext;
 use App\Service\VideoResourceAudienceResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\Form\FormError;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -229,7 +229,7 @@ class VideoCuePointController extends AbstractController
      * library's, knows the title and the running time and writes them in.
      */
     #[Route(path: '/tools/videos/{resourceId}/files/{fileId}/questions/import', name: 'app_video_resource_cue_import', methods: ['GET', 'POST'], requirements: ['resourceId' => '\d+', 'fileId' => '\d+'])]
-    public function import(int $resourceId, int $fileId, Request $request, QuizCsvImporter $importer, TranslatorInterface $translator): Response
+    public function import(int $resourceId, int $fileId, Request $request, QuizCsvImporter $importer, TranslatorInterface $translator, UploadIntake $uploadIntake): Response
     {
         $resource = $this->findOwnResource($resourceId);
         $file = $this->findFileOrNotFound($resource, $fileId);
@@ -243,8 +243,9 @@ class VideoCuePointController extends AbstractController
         }
 
         if ($form->isSubmitted() && $form->isValid()) {
-            /** @var UploadedFile $upload */
-            $upload = $form->get('file')->getData();
+            // Same field as the quiz library's own import, so the same shape: the bytes are already
+            // in the bucket and the reader wants a path (see App\Service\UploadIntake).
+            $upload = $uploadIntake->asLocalFile($form->get('file')->getData());
 
             try {
                 $payload = $importer->parse($upload, VideoImportContext::forFile($file));

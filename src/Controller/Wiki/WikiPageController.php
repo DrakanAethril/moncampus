@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Wiki;
 
 use App\Entity\User;
+use App\Form\WikiAttachmentType;
 use App\Repository\WikiNodeRepository;
 use App\Repository\WikiRepository;
 use App\Repository\WikiRevisionRepository;
@@ -68,6 +69,9 @@ class WikiPageController extends AbstractController
             'ancestors' => $this->nodeManager->ancestorsOf($node, $rail['byId']),
             'body' => '' === $outline['html'] ? $node->getBody() : $outline['html'],
             'outline' => $outline['entries'],
+            // The attachments block posts to WikiContentController::addAttachments(), which now
+            // reads this form rather than a raw `attachments[]` - see App\Form\WikiAttachmentType.
+            'attachmentForm' => $this->createForm(WikiAttachmentType::class),
         ]);
     }
 

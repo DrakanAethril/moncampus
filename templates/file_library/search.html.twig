@@ -1,0 +1,69 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Name search over the whole library. **Names only** - there is no full-text search of contents,
+   which is a stated non-goal rather than an omission (design/validated/file-library.md).
+
+   The results are a flat list rather than a tree: what the reader asked for is "where is this file",
+   and the folder each one lives in is the answer, shown on the row. #}
+
+{% block title %}{{ 'fileLibrarySearchTitle'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'file_library/_breadcrumb.html.twig' with {
+        extra: [{label: 'fileLibrarySearchTitle'|trans, url: path('app_file_library_search', {q: terms})}]
+    } %}
+{% endblock %}
+
+{% block page_title %}{{ 'fileLibrarySearchTitle'|trans }}{% endblock %}
+
+{% block page_actions %}
+    <form method="get" action="{{ path('app_file_library_search') }}" class="cm-flib__search">
+        <input type="search" name="q" value="{{ terms }}" class="form-control form-control-sm"
+               placeholder="{{ 'fileLibrarySearchPlaceholder'|trans }}"
+               aria-label="{{ 'fileLibrarySearchPlaceholder'|trans }}">
+    </form>
+{% endblock %}
+
+{% block main %}
+    <div class="cm-flib">
+        {% include 'file_library/_rail.html.twig' with {rail: rail, quota: quota, currentFolder: null} %}
+
+        <div class="cm-flib__content">
+            {% if terms is empty %}
+                <p class="cm-flib__empty">{{ 'fileLibrarySearchPromptText'|trans }}</p>
+            {% elseif results is empty %}
+                <p class="cm-flib__empty">{{ 'fileLibrarySearchNoResultText'|trans({'%terms%': terms}) }}</p>
+            {% else %}
+                <div class="table-responsive">
+                    <table class="cm-flib__table">
+                        <thead>
+                            <tr>
+                                <th>{{ 'fileLibraryNameColumnLabel'|trans }}</th>
+                                <th>{{ 'fileLibrarySizeColumnLabel'|trans }}</th>
+                                <th>{{ 'fileLibraryModifiedColumnLabel'|trans }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for node in results %}
+                                <tr class="cm-flib__row{{ node.type.value == 'folder' ? ' is-folder' }}">
+                                    <td>
+                                        <span class="cm-flib__name">
+                                            <span class="cm-flib__ext cm-flib__ext--{{ node.type.value == 'folder' ? 'dir' : file_library_family(node.name) }}">{{ node.type.value == 'folder' ? '' : (node.extension|upper|slice(0, 4) ?: '?') }}</span>
+                                            {% if node.type.value == 'folder' %}
+                                                <a href="{{ path('app_file_library_folder', {nodeId: node.id}) }}">{{ node.name }}</a>
+                                            {% else %}
+                                                <a href="{{ path('app_file_library_node_download', {nodeId: node.id}) }}">{{ node.name }}</a>
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                    <td class="cm-flib__num">{{ node.type.value == 'folder' ? '—' : byte_size(node.sizeBytes) }}</td>
+                                    <td class="cm-flib__num">{{ node.modifiedAt|date('d/m/Y') }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

@@ -33,12 +33,35 @@ class BucketWritePathsTest extends TestCase
         \App\Service\FileUploadService::class,
         \App\Service\AudioUploadService::class,
         \App\Service\VideoUploadService::class,
+        // The fourth, and the first one added since this test was written: staged uploads reach the
+        // bucket before any form is submitted (design/validated/file-library.md), which is exactly
+        // the shape this list exists to keep honest - it writes, so it scans.
+        \App\Service\StagedUploadStore::class,
+    ];
+
+    /**
+     * The one class that holds bucket access without ever accepting user-supplied bytes, and
+     * therefore without scanning: App\Service\ObjectStore, the deletion choke point
+     * (design/validated/object-deletion.md).
+     *
+     * It exists as a second list rather than as an exception inside the first, because the two say
+     * different things. The list above means "this writes what a user handed it, so it scans"; this
+     * one means "this removes bytes, and the only thing it ever writes is a diagnostic sentence the
+     * application composed itself" - which is what App\Command\CheckUploadsCommand probes with.
+     *
+     * **Adding to this list is a decision, not a reflex.** A class that lands here because scanning
+     * was inconvenient is precisely the unscanned path both lists exist to prevent.
+     *
+     * @var list<class-string>
+     */
+    private const array KNOWN_UNSCANNED_PATHS = [
+        \App\Service\ObjectStore::class,
     ];
 
     public function testOnlyTheKnownClassesTakeAWayIntoTheBucket(): void
     {
         self::assertSame(
-            self::KNOWN_WRITE_PATHS,
+            [...self::KNOWN_WRITE_PATHS, ...self::KNOWN_UNSCANNED_PATHS],
             $this->classesTakingBucketAccess(),
             'A class gained an S3Client or a FilesystemOperator for the uploads bucket. '
             .'Make it call App\Service\AntivirusScanner::assertClean() before it writes, then add it to KNOWN_WRITE_PATHS.',
@@ -87,11 +110,11 @@ class BucketWritePathsTest extends TestCase
         }
 
         sort($found);
-        $known = self::KNOWN_WRITE_PATHS;
+        $known = [...self::KNOWN_WRITE_PATHS, ...self::KNOWN_UNSCANNED_PATHS];
         sort($known);
 
-        // Compared in the declared order so the failure message reads like the list above.
-        return $found === $known ? self::KNOWN_WRITE_PATHS : $found;
+        // Compared in the declared order so the failure message reads like the lists above.
+        return $found === $known ? [...self::KNOWN_WRITE_PATHS, ...self::KNOWN_UNSCANNED_PATHS] : $found;
     }
 
     /**

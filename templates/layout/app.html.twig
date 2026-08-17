@@ -150,33 +150,13 @@
                                     <span class="nav-link-title">{{ 'studentWorkNavLabel'|trans }}</span>
                                 </a>
                             </li>
-                            {# "Mes cours" reads what "Travail à faire" acts on, so it sits right
-                               after it: the two are the student's pair - what to do, and what to
-                               study it with. #}
-                            <li class="nav-item {{ current_route starts with 'app_my_courses' ? 'active' }}">
-                                <a class="nav-link" href="{{ path('app_my_courses') }}"{{ current_route starts with 'app_my_courses' ? ' aria-current="page"' }}>
-                                    <span class="nav-link-title">{{ 'courseSpaceNavLabel'|trans }}</span>
-                                </a>
-                            </li>
                         {% endif %}
-                        {% if is_pure_student %}
-                            {# The "Tools" entry of the School mail mockup (screen 3a): the external
-                               mailbox and the application tracking, student-only - these are their
-                               mails and their applications; staff see them through the class
-                               screens (1a/2a). Sits between "Travail à faire" and "Agenda", the
-                               student bar reading Accueil · Emploi du temps · Travail à faire ·
-                               Outils · Agenda · Support. #}
-                            {% set student_tools_is_active = current_route starts with 'app_school_mail' or current_route starts with 'app_training_' or current_route == 'app_my_job_applications' %}
-                            <li class="nav-item dropdown {{ student_tools_is_active ? 'active' }}">
-                                <a class="nav-link dropdown-toggle" href="#navbar-student-tools" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ student_tools_is_active ? ' aria-current="page"' }}>
-                                    <span class="nav-link-title">{{ 'studentToolsNavLabel'|trans }}</span>
-                                </a>
-                                <div class="dropdown-menu">
-                                    <a class="dropdown-item {{ current_route starts with 'app_school_mail' or current_route starts with 'app_training_' ? 'active' }}" href="{{ path('app_school_mail') }}">{{ 'schoolMailNavLabel'|trans }}</a>
-                                    <a class="dropdown-item {{ current_route == 'app_my_job_applications' ? 'active' }}" href="{{ path('app_my_job_applications') }}">{{ 'jobApplicationsNavLabel'|trans }}</a>
-                                </div>
-                            </li>
-                        {% endif %}
+                        {# The student bar stops here, at Accueil · Emploi du temps · Travail à faire,
+                           and everything else they read moved into "Ressources" further down
+                           (2026-08-17). Three entries left the top level in that move: "Mes cours",
+                           now "Séquences de l'année"; and the whole "Outils" dropdown, whose two
+                           entries - Courrier école and Candidatures - are resources like the rest.
+                           The bar had grown to seven items for the role that navigates least. #}
                         {% if not is_pure_student %}
                         {% for section in structure_nav_sections() %}
                             {% set section_school_year_groups = structure_nav_school_year_groups(section) %}
@@ -350,9 +330,9 @@
                         {% if is_granted('ROLE_TEACHER') or is_staff() %}
                             {% set tools_is_active = current_route starts with 'app_tools_'
                                 or current_route starts with 'app_audio_recording'
-                                or current_route starts with 'app_video_resource'
                                 or current_route starts with 'app_progression'
-                                or current_route starts with 'app_library_' %}
+                                or current_route starts with 'app_library_'
+                                or current_route starts with 'app_file_library' %}
                             <li class="nav-item dropdown {{ tools_is_active ? 'active' }}">
                                 <a class="nav-link dropdown-toggle" href="#navbar-tools" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ tools_is_active ? ' aria-current="page"' }}>
                                     <span class="nav-link-title">{{ 'toolsNavLabel'|trans }}</span>
@@ -367,8 +347,21 @@
                                     <a class="dropdown-item {{ current_route starts with 'app_progression' ? 'active' }}" href="{{ path('app_progression') }}">{{ 'progressionNavLabel'|trans }}</a>
                                     <a class="dropdown-item {{ current_route starts with 'app_library_sequences' or current_route starts with 'app_library_seances' or current_route starts with 'app_library_phases' ? 'active' }}" href="{{ path('app_library_sequences') }}">{{ 'libraryNavLabel'|trans }}</a>
                                     <a class="dropdown-item {{ current_route starts with 'app_library_quiz' ? 'active' }}" href="{{ path('app_library_quiz') }}">{{ 'libraryQuizNavLabel'|trans }}</a>
+                                    {# After the quiz library, per design/validated/file-library.md's
+                                       "Outils, after". The entry needs no condition of its own: this
+                                       menu is already gated on ROLE_TEACHER or isStaff(), which is
+                                       exactly who has a library. #}
+                                    <a class="dropdown-item {{ current_route starts with 'app_file_library' ? 'active' }}" href="{{ path('app_file_library') }}">{{ 'fileLibraryNavLabel'|trans }}</a>
+                                    {# « Vidéos » has lost its menu entry, not its feature
+                                       (design/validated/file-library.md, "What disappears"):
+                                       VideoResource still carries the cue points, the watch tracking,
+                                       the statistics screen and the mobile API. What the library
+                                       replaced is the *hosting* - uploading a video was the only
+                                       reason to open that tool first - so it keeps everything and
+                                       gains a back door: « Créer un travail » on a video of the
+                                       library. Existing resources stay reachable by their routes,
+                                       from the work and from Travail à faire. #}
                                     <a class="dropdown-item {{ current_route starts with 'app_audio_recording' ? 'active' }}" href="{{ path('app_audio_recordings') }}">{{ 'audioRecordingsNavLabel'|trans }}</a>
-                                    <a class="dropdown-item {{ current_route starts with 'app_video_resource' ? 'active' }}" href="{{ path('app_video_resources') }}">{{ 'videoResourcesNavLabel'|trans }}</a>
                                     <div class="dropdown-divider"></div>
                                     <h6 class="dropdown-header">{{ 'toolsGroupFollowStudentsLabel'|trans }}</h6>
                                     <a class="dropdown-item {{ current_route == 'app_tools_lesson_log' ? 'active' }}" href="{{ path('app_tools_lesson_log') }}">{{ 'lessonLogPageHeading'|trans }}</a>
@@ -384,6 +377,13 @@
                            (tickets stay reachable via Gestion). Before Agenda for enseignant/staff,
                            after it for the étudiant, matching the per-profile bar order. #}
                         {% set support_is_active = current_route starts with 'app_tickets' and current_route != 'app_tickets_queue' and current_route != 'app_tickets_queue_categories' %}
+                        {# The student reads "Ressources" here, right after « Travail à faire »: the
+                           dropdown is the whole of their navigation now, so it comes before Agenda
+                           and Support rather than at the far end of the bar. Every other role keeps
+                           it where it has always been, further down - see the second include. #}
+                        {% if is_pure_student %}
+                            {% include 'layout/_nav_resources.html.twig' with {current_route: current_route, is_pure_student: is_pure_student} only %}
+                        {% endif %}
                         {% if not is_granted('ROLE_ADMIN') and not is_pure_student %}
                             <li class="nav-item {{ support_is_active ? 'active' }}">
                                 <a class="nav-link" href="{{ path('app_tickets') }}"{{ support_is_active ? ' aria-current="page"' }}>
@@ -422,49 +422,9 @@
                                 </a>
                             </li>
                         {% endif %}
-                        {# "Ressources" is open to everyone since the Base documentaire arrived
-                           (design_handoff_base_documentaire): the base is read by every role, and
-                           the menu that carries it must be too. What changed is only the dropdown
-                           itself - the two app-download entries keep the ROLE_ADMIN gate they were
-                           given by explicit product request, so a student sees "Ressources" with
-                           the single entry they may use. #}
-                        {% set resources_is_active = current_route starts with 'app_resources_' or current_route starts with 'app_documentation' or current_route starts with 'app_wiki' %}
-                        <li class="nav-item dropdown {{ resources_is_active ? 'active' }}">
-                            <a class="nav-link dropdown-toggle" href="#navbar-resources" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ resources_is_active ? ' aria-current="page"' }}>
-                                <span class="nav-link-title">{{ 'resourcesNavLabel'|trans }}</span>
-                            </a>
-                            <div class="dropdown-menu">
-                                {# Wikis, first entry, unfolding into the three questions a user
-                                   actually asks. Same dropend shape as UFA > Formations and
-                                   Gestion > Annuaire - Bootstrap disables Popper inside a .navbar,
-                                   so placement is CSS-only and nav_submenu_placement_controller.js
-                                   reframes what overflows; with three short entries the overflow it
-                                   exists for cannot occur here.
-
-                                   Hidden from tutors and the other outside accounts, which are
-                                   excluded from the feature entirely - the same posture messaging
-                                   takes, and enforced again at the controller's door. #}
-                                {% if not is_granted('ROLE_TUTOR') and not is_granted('ROLE_EXTERNAL') %}
-                                    <div class="dropend">
-                                        <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_wiki' ? 'active' }}" href="#navbar-resources-wikis" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
-                                            {{ 'wikiNavLabel'|trans }}
-                                        </a>
-                                        <div class="dropdown-menu">
-                                            <a class="dropdown-item {{ current_route == 'app_wiki_personal' ? 'active' }}" href="{{ path('app_wiki_personal') }}">{{ 'wikiPersonalNavLabel'|trans }}</a>
-                                            <a class="dropdown-item {{ current_route == 'app_wiki_shared' ? 'active' }}" href="{{ path('app_wiki_shared') }}">{{ 'wikiSharedNavLabel'|trans }}</a>
-                                            {% if is_granted('ROLE_TEACHER') or is_staff() %}
-                                                <a class="dropdown-item {{ current_route == 'app_wiki_students' ? 'active' }}" href="{{ path('app_wiki_students') }}">{{ 'wikiStudentsNavLabel'|trans }}</a>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                {% endif %}
-                                <a class="dropdown-item {{ current_route starts with 'app_documentation' ? 'active' }}" href="{{ path('app_documentation') }}">{{ 'documentationNavLabel'|trans }}</a>
-                                {% if is_granted('ROLE_ADMIN') %}
-                                    <a class="dropdown-item {{ current_route == 'app_resources_mobile' ? 'active' }}" href="{{ path('app_resources_mobile') }}">{{ 'resourcesMobileAppNavLabel'|trans }}</a>
-                                    <a class="dropdown-item {{ current_route == 'app_resources_eco' ? 'active' }}" href="{{ path('app_resources_eco') }}">{{ 'resourcesEcoAppNavLabel'|trans }}</a>
-                                {% endif %}
-                            </div>
-                        </li>
+                        {% if not is_pure_student %}
+                            {% include 'layout/_nav_resources.html.twig' with {current_route: current_route, is_pure_student: is_pure_student} only %}
+                        {% endif %}
                         {# Staff/admin only since the per-role bars (§3) - étudiant/enseignant reach
                            their tickets through the top-level Support tab instead, and lose the
                            other Gestion entries entirely. Active state deliberately excludes the

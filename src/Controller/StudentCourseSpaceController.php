@@ -38,13 +38,25 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  */
 class StudentCourseSpaceController extends AbstractController
 {
+    /**
+     * The picker, and it only draws itself when there is something to pick.
+     *
+     * **A single formation goes straight in** (2026-08-17): a page offering one card is a click that
+     * teaches nothing, and that is the ordinary case - a student belongs to one active Program per
+     * school year. The list survives for the students who straddle two, and for the empty state,
+     * which is the one thing a redirect cannot say.
+     */
     #[Route(path: '/my/courses', name: 'app_my_courses')]
     #[IsGranted('ROLE_STUDENT')]
     public function index(ProgramRepository $programRepository): Response
     {
-        return $this->render('course_space/index.html.twig', [
-            'programs' => $programRepository->findAllActiveForStudent($this->currentUser()),
-        ]);
+        $programs = $programRepository->findAllActiveForStudent($this->currentUser());
+
+        if (1 === \count($programs)) {
+            return $this->redirectToRoute('app_my_courses_program', ['programId' => $programs[0]->getId()]);
+        }
+
+        return $this->render('course_space/index.html.twig', ['programs' => $programs]);
     }
 
     #[Route(path: '/my/courses/{programId}', name: 'app_my_courses_program', requirements: ['programId' => '\d+'])]

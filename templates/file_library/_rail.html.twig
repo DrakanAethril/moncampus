@@ -1,0 +1,59 @@
+{# The library's rail - **the wiki's rail, derived rather than reinvented**
+   (design/validated/file-library.md). Same gestures, same states, class shapes mirroring
+   `cm-wiki__rail`, because there must not be two implementations of one tree in this application.
+
+   Four deliberate differences, each with a reason:
+
+     - the quota bar sits at the very top, above the title: it answers the question actually being
+       asked - « est-ce que je peux encore déposer ? » - at the moment it is asked;
+     - the rail holds **folders only**. Files are the table's business; a rail listing both would be
+       the same list twice;
+     - **no counters** here. The rail navigates and receives a drop, it does not measure - the count
+       lives in the table, next to something you can act on;
+     - the foot is **pinned to the bottom of the block** (`margin-top: auto`), and carries a button
+       on the left and a link on the right: creating a folder is daily housekeeping, the corbeille is
+       a rarely-opened back door, and the difference should be visible without being read. #}
+<aside class="cm-flib__rail" data-controller="file-library-tree"
+       data-file-library-tree-move-url-template-value="{{ path('app_file_library_node_move', {nodeId: '__NODE_ID__'}) }}"
+       data-file-library-tree-token-value="{{ csrf_token('file_library_node') }}"
+       data-file-library-tree-refused-message-value="{{ 'fileLibraryMoveRefusedMessage'|trans }}"
+       {# dragstart/dragend are listened for on the whole screen by the controller itself: what is
+          dragged is a row of the table, which is outside this element (see the controller). #}
+       data-action="dragover->file-library-tree#dragOver dragleave->file-library-tree#dragLeave drop->file-library-tree#drop">
+
+    {# Two lines, a 4px track, no heading: an ambient indicator, not a figure somebody comes to
+       consult. It exists in exactly two places on the platform - here and on the admin's user
+       sheet - and deliberately neither in the action bar nor in the upload component. #}
+    <div class="cm-flib__quota cm-flib__quota--{{ quota.level }}">
+        <div class="cm-flib__quota-line">
+            <span>{{ quota.usedLabel }} / {{ quota.limitLabel }}</span>
+            <span class="cm-flib__quota-percent">{{ quota.percent }} %</span>
+        </div>
+        <div class="cm-flib__quota-track">
+            {# Capped at 100 for the *drawing* only: over quota the bar is full and red, and the
+               figure above it still reads 118 %, which is the number to act on. #}
+            <div class="cm-flib__quota-fill" style="width: {{ min(quota.percent, 100) }}%"></div>
+        </div>
+    </div>
+
+    <div class="cm-flib__rail-head">
+        <span class="cm-flib__rail-title">{{ 'fileLibraryRailTitleLabel'|trans }}</span>
+    </div>
+
+    {% if rail is empty %}
+        <p class="cm-flib__rail-empty">{{ 'fileLibraryRailEmptyText'|trans }}</p>
+    {% else %}
+        <ul class="cm-flib__tree" data-file-library-tree-target="root">
+            {% for row in rail %}
+                {% include 'file_library/_rail_node.html.twig' with {row: row, currentFolder: currentFolder|default(null)} only %}
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <div class="cm-flib__rail-foot">
+        <button type="button" class="cm-btn cm-btn--sm cm-btn--outline"
+                data-action="file-library#promptFolder"
+                data-parent-id="{{ currentFolder ? currentFolder.id : '' }}">{{ 'fileLibraryNewFolderAction'|trans }}</button>
+        <a href="{{ path('app_file_library_trash') }}" class="cm-flib__rail-link cm-flib__rail-link--end">{{ 'fileLibraryTrashNavLabel'|trans }}</a>
+    </div>
+</aside>

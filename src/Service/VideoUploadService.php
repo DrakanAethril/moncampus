@@ -27,6 +27,7 @@ class VideoUploadService
     public function __construct(
         private readonly S3Client $s3Client,
         private readonly AntivirusScanner $antivirus,
+        private readonly ObjectStore $objectStore,
         private readonly string $awsS3Bucket,
         private readonly string $awsS3Prefix,
         private readonly string $awsS3PublicEndpoint,
@@ -79,9 +80,14 @@ class VideoUploadService
         return true;
     }
 
+    /**
+     * Marks the object for removal rather than removing it - see App\Service\ObjectStore, which is
+     * now the only thing on this platform allowed to take bytes out of the bucket. Same name, same
+     * signature, different meaning (design/validated/object-deletion.md).
+     */
     public function delete(string $key): void
     {
-        $this->s3Client->deleteObject(['Bucket' => $this->awsS3Bucket, 'Key' => $this->awsS3Prefix.$key]);
+        $this->objectStore->scheduleDeletion($key);
     }
 
     /**
