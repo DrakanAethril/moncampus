@@ -83,7 +83,9 @@ class WikiSanitizerTest extends KernelTestCase
             'style="fill:#eef5fb;stroke:#1B6BA8;stroke-width:1px"',
             'marker-end:url(#arrow)',
             'stroke-dasharray:4px, 3px',
-            'font-family:&quot;Source Sans 3&quot;, sans-serif',
+            // Re-encoded as &#34; on the way out - the quotes are kept, which is what matters: a
+            // font name with a space in it is meaningless without them.
+            'font-family:&#34;Source Sans 3&#34;, sans-serif',
             'font-size:14px',
         ] as $expected) {
             self::assertStringContainsString($expected, $html, $expected.' should have survived');
