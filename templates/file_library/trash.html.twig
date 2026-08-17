@@ -1,0 +1,80 @@
+{% extends 'layout/app.html.twig' %}
+
+{# The corbeille (mockup 9), which exists because deletion became deferred platform-wide
+   (design/validated/object-deletion.md): the bytes genuinely survive thirty days whatever the screen
+   shows, so the only question left was whether the teacher is allowed to see them.
+
+   Two things this screen has to say plainly, and does:
+
+     - a deleted file **stops counting against the quota at once** - that is why the bar in the rail
+       has already moved;
+     - **restoring brings back the file, not its links.** « Supprimer partout » removed the attachment
+       rows, and nothing puts them back. #}
+
+{% block title %}{{ 'fileLibraryTrashNavLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'file_library/_breadcrumb.html.twig' with {
+        extra: [{label: 'fileLibraryTrashNavLabel'|trans, url: path('app_file_library_trash')}]
+    } %}
+{% endblock %}
+
+{% block page_title %}{{ 'fileLibraryTrashNavLabel'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="cm-flib">
+        {% include 'file_library/_rail.html.twig' with {rail: rail, quota: quota, currentFolder: null} %}
+
+        <div class="cm-flib__content">
+            <p class="cm-flib__trash-lead">{{ 'fileLibraryTrashLeadText'|trans }}</p>
+
+            {% if rows is empty %}
+                <p class="cm-flib__empty">{{ 'fileLibraryTrashEmptyText'|trans }}</p>
+            {% else %}
+                <div class="table-responsive">
+                    <table class="cm-flib__table">
+                        <thead>
+                            <tr>
+                                <th>{{ 'fileLibraryNameColumnLabel'|trans }}</th>
+                                <th>{{ 'fileLibrarySizeColumnLabel'|trans }}</th>
+                                <th>{{ 'fileLibraryDeletedColumnLabel'|trans }}</th>
+                                <th><span class="visually-hidden">{{ 'fileLibraryRowMenuLabel'|trans }}</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in rows %}
+                                <tr class="cm-flib__row{{ row.node.type.value == 'folder' ? ' is-folder' }}">
+                                    <td>
+                                        <span class="cm-flib__name">
+                                            <span class="cm-flib__ext cm-flib__ext--{{ row.node.type.value == 'folder' ? 'dir' : file_library_family(row.node.name) }}">{{ row.node.type.value == 'folder' ? '' : (row.node.extension|upper|slice(0, 4) ?: '?') }}</span>
+                                            {{ row.node.name }}
+                                        </span>
+                                    </td>
+                                    <td class="cm-flib__num">{{ row.node.type.value == 'folder' ? '—' : byte_size(row.node.sizeBytes) }}</td>
+                                    <td class="cm-flib__num">
+                                        {{ 'fileLibraryDeletedOnLabel'|trans({'%date%': row.node.deletedAt|date('d/m/Y')}) }}
+                                        &middot;
+                                        <span class="cm-flib__days">{{ 'fileLibraryRestorableDaysLabel'|trans({'%count%': row.daysLeft}) }}</span>
+                                    </td>
+                                    <td class="cm-flib__menu">
+                                        <form method="post" action="{{ path('app_file_library_node_restore', {nodeId: row.node.id}) }}" class="d-inline">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('file_library_node') }}">
+                                            <button type="submit" class="cm-btn cm-btn--sm cm-btn--outline">{{ 'fileLibraryRestoreAction'|trans }}</button>
+                                        </form>
+                                        <form method="post" action="{{ path('app_file_library_node_purge', {nodeId: row.node.id}) }}" class="d-inline">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('file_library_node') }}">
+                                            <button type="submit" class="cm-btn cm-btn--sm cm-btn--danger"
+                                                    data-controller="confirm-submit"
+                                                    data-confirm-submit-message-value="{{ 'fileLibraryPurgeConfirmText'|trans({'%name%': row.node.name}) }}"
+                                                    data-action="click->confirm-submit#confirm">{{ 'fileLibraryPurgeAction'|trans }}</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

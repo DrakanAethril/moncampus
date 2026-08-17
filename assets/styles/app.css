@@ -7301,3 +7301,128 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
 .cm-filepick__ext--vid { background: var(--cm-teal-bg); color: var(--cm-teal-tx); border-color: transparent; }
 .cm-filepick__ext--doc { background: var(--cm-blue-bg); color: var(--cm-blue-tx); border-color: transparent; }
 .cm-filepick__ext--zip { background: var(--cm-purple-bg); color: var(--cm-purple-tx); border-color: transparent; }
+
+/* --- Bibliothèque de fichiers (design/validated/file-library.md, maquettes 1 à 3 et 9) ----- */
+/* The rail derives from `.cm-wiki__rail` deliberately - same gestures, same states, same class
+   shapes - so there are not two vocabularies for one tree. The bounded sticky box is the rule fixed
+   for the wiki on 2026-08-16 and copied here rather than rediscovered: without the max-height a tree
+   taller than the viewport is not merely cut off, it is unreachable. */
+
+.cm-flib { display: grid; grid-template-columns: 264px minmax(0, 1fr); gap: 22px; align-items: start; }
+.cm-flib__rail { position: sticky; top: 84px; max-height: calc(100vh - 104px); display: flex; flex-direction: column; background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 14px 12px; }
+
+/* The quota bar: two lines, a 4px track, no heading. An ambient indicator answering "can I still
+   drop something here", not a figure somebody comes to consult - which is why it is here and neither
+   in the action bar nor in the upload component. */
+.cm-flib__quota { padding: 0 4px 10px; }
+.cm-flib__quota-line { display: flex; justify-content: space-between; gap: 8px; font: 500 11.5px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-flib__quota-percent { font-variant-numeric: tabular-nums; }
+.cm-flib__quota-track { height: 4px; margin-top: 5px; border-radius: 999px; background: var(--cm-border-soft); overflow: hidden; }
+.cm-flib__quota-fill { display: block; height: 100%; border-radius: 999px; background: var(--cm-positive-tx); }
+.cm-flib__quota--amber .cm-flib__quota-fill { background: var(--cm-gold); }
+.cm-flib__quota--red .cm-flib__quota-fill { background: var(--cm-action-danger); }
+.cm-flib__quota--red .cm-flib__quota-percent { color: var(--cm-red-tx); font-weight: 700; }
+
+.cm-flib__rail-head { display: flex; align-items: center; gap: 8px; padding: 0 4px 10px; border-bottom: 1px solid var(--cm-border-soft); }
+.cm-flib__rail-title { flex: 1; min-width: 0; font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-flib__rail-empty { margin: 12px 4px; font: 400 12.5px var(--cm-font-ui); color: var(--cm-faint); }
+/* Pinned to the bottom of the block rather than laid under the last folder: its two entries act on
+   the *whole* library. A button on the left, a link on the right - creating a folder is daily
+   housekeeping, the corbeille is a rarely-opened back door, and the two must not weigh the same. */
+.cm-flib__rail-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 10px; margin-top: auto; border-top: 1px solid var(--cm-border-soft); }
+.cm-flib__rail-link { font: 500 12.5px var(--cm-font-ui); color: var(--cm-brand-strong); text-decoration: none; }
+.cm-flib__rail-link:hover { text-decoration: underline; }
+.cm-flib__rail-link--end { margin-left: auto; }
+
+.cm-flib__tree { list-style: none; margin: 10px 0 0; padding: 0; }
+/* `:not(--nested)` for the reason the wiki records: the two lists share a class, and setting one
+   overflow axis to anything but `visible` computes the other to `auto` - every branch would get a
+   stray horizontal scrollbar. `min-height: 0` is what makes a flex item actually shrink. */
+.cm-flib__tree:not(.cm-flib__tree--nested) { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.cm-flib__tree--nested { margin: 2px 0 2px 14px; border-left: 1px solid var(--cm-border-soft); padding-left: 6px; }
+.cm-flib__node { margin: 1px 0; }
+.cm-flib__node.is-dragging { opacity: 0.45; }
+/* One drop state, not the wiki's three: there is no re-order here, so "between two folders" means
+   nothing - a drop is always *into*. */
+.cm-flib__node.is-drop-target > .cm-flib__node-row { background: var(--cm-blue-bg-soft); box-shadow: inset 0 0 0 1px var(--cm-brand); border-radius: 6px; }
+.cm-flib__node-row { display: flex; align-items: center; gap: 1px; min-width: 0; }
+.cm-flib__node-link { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; padding: 5px 6px; border-radius: 6px; font: 400 13px var(--cm-font-ui); color: var(--cm-text); text-decoration: none; }
+.cm-flib__node-link:hover { background: var(--cm-surface-alt); color: var(--cm-ink); }
+.cm-flib__node-link.is-current { background: var(--cm-blue-bg); color: var(--cm-blue-tx); font-weight: 600; }
+.cm-flib__node-ico { flex: none; display: grid; place-items: center; color: var(--cm-faint); }
+.cm-flib__node-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-flib__node-toggle { flex: none; display: grid; place-items: center; width: 14px; height: 18px; padding: 0; border: 0; background: none; color: var(--cm-faint); cursor: pointer; }
+.cm-flib__node-toggle svg { transform: rotate(90deg); transition: transform 0.12s ease; }
+.cm-flib__node.is-collapsed > .cm-flib__node-row .cm-flib__node-toggle svg { transform: rotate(0deg); }
+.cm-flib__node-toggle--empty { cursor: default; }
+.cm-flib__node.is-collapsed > .cm-flib__tree--nested { display: none; }
+.cm-flib__node-grip { flex: none; display: grid; place-items: center; width: 12px; color: var(--cm-disabled); cursor: grab; }
+.cm-flib__node-row:hover .cm-flib__node-grip { color: var(--cm-faint); }
+.cm-flib__node-actions { flex: none; display: flex; align-items: center; gap: 1px; }
+.cm-flib__node-action { display: grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 5px; background: none; color: var(--cm-faint); cursor: pointer; }
+.cm-flib__node-action:hover { background: var(--cm-surface-alt); color: var(--cm-brand-strong); }
+.cm-flib__node-action--danger:hover { background: var(--cm-red-bg); color: var(--cm-red-tx); }
+
+.cm-flib__content { background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 18px 20px 20px; }
+.cm-flib__empty { margin: 8px 2px; font: 400 13.5px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-flib__search { min-width: 220px; }
+.cm-flib__trash-lead { margin: 0 0 14px; font: 400 13px var(--cm-font-ui); color: var(--cm-muted); }
+
+/* Not a DataTable, and there is no grid view: this table hosts drag-and-drop and rows a Stimulus
+   controller acts on, and the rule here is never to bind a controller to an element a DOM-rewriting
+   library moves. */
+.cm-flib__table { width: 100%; border-collapse: collapse; font: 400 13px var(--cm-font-ui); }
+.cm-flib__table th { text-align: left; padding: 6px 10px; font: 600 11px var(--cm-font-ui); letter-spacing: 0.05em; text-transform: uppercase; color: var(--cm-faint); border-bottom: 1px solid var(--cm-border-soft); }
+.cm-flib__table td { padding: 9px 10px; border-bottom: 1px solid var(--cm-border-faint); color: var(--cm-text); vertical-align: middle; }
+.cm-flib__row:hover td { background: var(--cm-surface-alt); }
+.cm-flib__row.is-dragging td { opacity: 0.45; }
+.cm-flib__name { display: flex; align-items: center; gap: 9px; min-width: 0; font-weight: 600; color: var(--cm-ink); }
+.cm-flib__name a, .cm-flib__namelink { color: inherit; text-decoration: none; border: 0; background: none; padding: 0; font: inherit; cursor: pointer; text-align: left; }
+.cm-flib__name a:hover, .cm-flib__namelink:hover { text-decoration: underline; }
+.cm-flib__row.is-folder .cm-flib__name a { color: var(--cm-brand-strong); }
+.cm-flib__num { font-variant-numeric: tabular-nums; color: var(--cm-muted); white-space: nowrap; }
+.cm-flib__use { font: 600 11.5px var(--cm-font-ui); padding: 4px 8px; border-radius: 999px; background: var(--cm-surface-alt); color: var(--cm-muted); border: 1px solid var(--cm-border-soft); white-space: nowrap; }
+.cm-flib__days { color: var(--cm-warn-tx); }
+.cm-flib__menu { width: 1%; white-space: nowrap; text-align: right; }
+.cm-flib__kebab { border: 0; background: none; color: var(--cm-faint); font-weight: 700; letter-spacing: 1px; padding: 2px 6px; border-radius: 6px; cursor: pointer; }
+.cm-flib__kebab:hover { background: var(--cm-surface-alt); color: var(--cm-ink); }
+
+/* The same coloured tile as the upload component's, on purpose: an extension reads the same whether
+   it is in a picker or in the library. */
+.cm-flib__ext { font: 700 9.5px/1 var(--cm-font-ui); letter-spacing: .04em; padding: 5px 6px; border-radius: 5px; min-width: 34px; text-align: center; flex: none; background: var(--cm-surface-alt); color: var(--cm-muted); border: 1px solid var(--cm-border-soft); display: grid; place-items: center; }
+.cm-flib__ext--pdf { background: var(--cm-red-bg); color: var(--cm-red-tx); border-color: transparent; }
+.cm-flib__ext--img { background: var(--cm-green-bg); color: var(--cm-green-tx); border-color: transparent; }
+.cm-flib__ext--vid { background: var(--cm-teal-bg); color: var(--cm-teal-tx); border-color: transparent; }
+.cm-flib__ext--aud { background: var(--cm-gold-bg); color: var(--cm-gold-tx); border-color: transparent; }
+.cm-flib__ext--doc { background: var(--cm-blue-bg); color: var(--cm-blue-tx); border-color: transparent; }
+.cm-flib__ext--zip { background: var(--cm-purple-bg); color: var(--cm-purple-tx); border-color: transparent; }
+.cm-flib__ext--dir { background: transparent; color: var(--cm-brand); border-color: var(--cm-border); }
+
+/* The upload strip. The table draws no progress bar of its own - one place shows a transfer. */
+.cm-flib__uploads { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.cm-flib__upload { display: flex; align-items: center; gap: 11px; padding: 8px 10px; border: 1px solid var(--cm-border-soft); border-radius: 8px; background: var(--cm-surface-alt); }
+.cm-flib__upload.is-failed { background: var(--cm-red-bg); border-color: transparent; }
+.cm-flib__upload-name { flex: 1; min-width: 0; font: 600 12.5px var(--cm-font-ui); color: var(--cm-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-flib__upload-track { flex: 0 0 160px; height: 5px; border-radius: 999px; background: var(--cm-blue-bg); overflow: hidden; }
+.cm-flib__upload-fill { display: block; height: 100%; width: 0; background: var(--cm-brand); border-radius: 999px; transition: width .15s linear; }
+.cm-flib__upload-state { font: 600 11.5px var(--cm-font-ui); color: var(--cm-muted); white-space: nowrap; }
+
+/* A full-frame viewer, not a side panel: with no grid view this is the only place a document is
+   actually looked at, and a PDF in a 240px column is not looked at. */
+.cm-flib__viewer { position: fixed; inset: 0; z-index: 1080; display: flex; flex-direction: column; background: rgba(18, 52, 77, .92); }
+.cm-flib__viewer-head { display: flex; align-items: center; gap: 14px; padding: 14px 20px; color: #fff; }
+.cm-flib__viewer-name { flex: 1; min-width: 0; font: 600 14px var(--cm-font-ui); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-flib__viewer-count { font: 500 12.5px var(--cm-font-ui); opacity: .8; font-variant-numeric: tabular-nums; }
+.cm-flib__viewer-close { border: 0; background: none; color: #fff; font-size: 26px; line-height: 1; cursor: pointer; }
+.cm-flib__viewer-body { flex: 1; min-height: 0; display: grid; place-items: center; padding: 0 20px; }
+.cm-flib__viewer-body img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.cm-flib__viewer-body iframe, .cm-flib__viewer-body video { width: 100%; height: 100%; border: 0; background: #fff; }
+.cm-flib__viewer-body audio { width: min(560px, 90%); }
+/* The footer repeats the menu's actions minus the ones that make no sense while looking at the file
+   (renommer, supprimer). */
+.cm-flib__viewer-foot { display: flex; justify-content: center; gap: 10px; padding: 14px 20px; }
+
+@media (max-width: 991.98px) {
+    .cm-flib { grid-template-columns: minmax(0, 1fr); }
+    .cm-flib__rail { position: static; max-height: none; }
+}

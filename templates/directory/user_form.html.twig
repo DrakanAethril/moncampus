@@ -312,4 +312,43 @@
             {{ form_end(form) }}
         </div>
     </div>
+
+    {# The quota card (design/validated/file-library.md, mockup 8) - the *whole* of what an admin may
+       do to somebody else's library: a usage total and a number. Not a folder, not a file name, not
+       a preview.
+
+       Its own <form>, outside the one above, for two reasons: nesting forms is one of the two bug
+       classes this repository has already recorded, and the quota is not part of the identity being
+       edited - saving one must not save the other. #}
+    {% if isEdit and fileLibraryQuota is defined and fileLibraryQuota %}
+        <div class="card mt-3">
+            <div class="card-body">
+                <div class="cm-subhead">
+                    <div class="cm-subhead__title">{{ 'fileLibraryQuotaCardTitle'|trans }}</div>
+                </div>
+
+                <p class="cm-flib__quota-usage">{{ 'fileLibraryQuotaUsageLabel'|trans({'%used%': fileLibraryQuota.usedLabel, '%limit%': fileLibraryQuota.limitLabel}) }}</p>
+                <div class="cm-flib__quota cm-flib__quota--{{ fileLibraryQuota.level }}">
+                    <div class="cm-flib__quota-line">
+                        <span></span>
+                        <span class="cm-flib__quota-percent">{{ fileLibraryQuota.percent }} %</span>
+                    </div>
+                    <div class="cm-flib__quota-track">
+                        <div class="cm-flib__quota-fill" style="width: {{ min(fileLibraryQuota.percent, 100) }}%"></div>
+                    </div>
+                </div>
+
+                <form method="post" action="{{ path('app_directory_user_file_library_quota', {id: editedUser.id}) }}" class="d-flex align-items-end gap-2 mt-3">
+                    <input type="hidden" name="_token" value="{{ csrf_token('file_library_quota') }}">
+                    <div>
+                        <label class="form-label" for="file-library-quota">{{ 'fileLibraryQuotaFieldLabel'|trans }}</label>
+                        <input type="text" id="file-library-quota" name="quota" class="form-control"
+                               value="{{ fileLibraryQuota.override }}" placeholder="{{ fileLibraryQuota.defaultLabel }}">
+                    </div>
+                    <button type="submit" class="btn btn-primary">{{ 'submitSaveAction'|trans }}</button>
+                </form>
+                <div class="form-hint mt-1">{{ 'fileLibraryQuotaFieldHelpText'|trans({'%default%': fileLibraryQuota.defaultLabel}) }}</div>
+            </div>
+        </div>
+    {% endif %}
 {% endblock %}

@@ -1,0 +1,73 @@
+{# One folder of the rail, recursing into its children - the wiki's `_rail_node` shape, minus what
+   the library does not have.
+
+   **What is open by default**: the branch leading to the folder being browsed, and that folder's own
+   direct children. The rule needs no state and no round trip - the materialized path already says
+   who is an ancestor of the current folder, so the server answers it while rendering.
+
+   There is **no re-order drag** here, so a node carries no `data-parent-id`: dropping means "into
+   this folder" and nothing else. That is the one gesture the library has, and it is the one the wiki
+   already taught its users. #}
+{% set hasChildren = row.children is not empty %}
+{% set expanded = hasChildren and currentFolder and (currentFolder.id == row.id or ('/' ~ row.id ~ '/') in currentFolder.path) %}
+<li class="cm-flib__node{{ hasChildren and not expanded ? ' is-collapsed' }}"
+    data-file-library-tree-target="node"
+    data-node-id="{{ row.id }}" draggable="true">
+    <div class="cm-flib__node-row">
+        <span class="cm-flib__node-grip" aria-hidden="true">
+            <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor"><circle cx="3" cy="3" r="1.2"></circle><circle cx="7" cy="3" r="1.2"></circle><circle cx="3" cy="7" r="1.2"></circle><circle cx="7" cy="7" r="1.2"></circle><circle cx="3" cy="11" r="1.2"></circle><circle cx="7" cy="11" r="1.2"></circle></svg>
+        </span>
+
+        {% if hasChildren %}
+            {# One triangle, rotated by CSS: the two states cannot drift apart the way two glyphs would. #}
+            <button type="button" class="cm-flib__node-toggle"
+                    aria-expanded="{{ expanded ? 'true' : 'false' }}"
+                    aria-label="{{ 'fileLibraryToggleBranchAction'|trans({'%name%': row.name}) }}"
+                    data-action="file-library-tree#toggleBranch">
+                <svg width="9" height="9" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true"><path d="M3 1l5 4-5 4z"></path></svg>
+            </button>
+        {% else %}
+            <span class="cm-flib__node-toggle cm-flib__node-toggle--empty" aria-hidden="true"></span>
+        {% endif %}
+
+        <a class="cm-flib__node-link{{ currentFolder and currentFolder.id == row.id ? ' is-current' }}"
+           href="{{ path('app_file_library_folder', {nodeId: row.id}) }}" title="{{ row.name }}">
+            <span class="cm-flib__node-ico" aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"></path></svg>
+            </span>
+            <span class="cm-flib__node-title">{{ row.name }}</span>
+        </a>
+
+        {# The two acts that change the tree, at the row they act on rather than in a bar at the top. #}
+        <span class="cm-flib__node-actions">
+            <button type="button" class="cm-flib__node-action"
+                    title="{{ 'fileLibraryNewSubfolderAction'|trans }}"
+                    aria-label="{{ 'fileLibraryNewSubfolderOfAction'|trans({'%name%': row.name}) }}"
+                    data-action="file-library#promptFolder" data-parent-id="{{ row.id }}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+            </button>
+
+            <form method="post" action="{{ path('app_file_library_node_delete', {nodeId: row.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('file_library_node') }}">
+                {# The confirmation names the folder, not just "this": deleting one takes everything
+                   under it, and the rail is where that is least visible. #}
+                <button type="submit" class="cm-flib__node-action cm-flib__node-action--danger"
+                        title="{{ 'fileLibraryDeleteFolderAction'|trans }}"
+                        aria-label="{{ 'fileLibraryDeleteFolderNamedAction'|trans({'%name%': row.name}) }}"
+                        data-controller="confirm-submit"
+                        data-confirm-submit-message-value="{{ 'fileLibraryDeleteFolderConfirmText'|trans({'%name%': row.name}) }}"
+                        data-action="click->confirm-submit#confirm">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"></path></svg>
+                </button>
+            </form>
+        </span>
+    </div>
+
+    {% if hasChildren %}
+        <ul class="cm-flib__tree cm-flib__tree--nested">
+            {% for child in row.children %}
+                {% include 'file_library/_rail_node.html.twig' with {row: child, currentFolder: currentFolder} only %}
+            {% endfor %}
+        </ul>
+    {% endif %}
+</li>

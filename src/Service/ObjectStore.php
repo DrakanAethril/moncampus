@@ -154,6 +154,35 @@ class ObjectStore
     }
 
     /**
+     * Brings a scheduled removal forward, for « Supprimer définitivement » in the file library's
+     * corbeille.
+     *
+     * It back-dates the row rather than deleting inline, and that is the whole point: **one path
+     * removes bytes**, App\Command\PurgeUploadsCommand's. The teacher's row goes from the corbeille
+     * at once, which is what they asked for; the object goes with the next run.
+     *
+     * A key with no pending row gets one - the case of a file deleted before this feature existed,
+     * or of a purge that has already run and left the row purged.
+     */
+    public function expediteDeletion(string $key, ?string $origin = null): void
+    {
+        $storageKey = $this->awsS3Prefix.$key;
+        $expired = (new \DateTimeImmutable())->modify(\sprintf('-%d days', self::DEFAULT_RETENTION_DAYS + 1))->format('Y-m-d H:i:s');
+
+        $this->connection->executeStatement(
+            'INSERT INTO deleted_object (storage_key, deleted_at, deleted_by_id, origin, attempts)
+             VALUES (:key, :deletedAt, :deletedBy, :origin, 0)
+             ON DUPLICATE KEY UPDATE deleted_at = VALUES(deleted_at), purged_at = NULL',
+            [
+                'key' => $storageKey,
+                'deletedAt' => $expired,
+                'deletedBy' => $this->security->getUser() instanceof User ? $this->security->getUser()->getId() : null,
+                'origin' => $origin ?? $this->originOf($key),
+            ],
+        );
+    }
+
+    /**
      * Removes the bytes - the only method on this platform that does.
      *
      * Called by the purge, and by App\Command\CheckUploadsCommand's probe - which is the one place

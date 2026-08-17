@@ -92,6 +92,11 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tools/job-search-tracking' => 403,
             '/tools/quiz' => 403,
             '/tools/videos' => 403,
+            // No student library, and no entry point: what a student sees is unchanged - the file
+            // inside the assignment, exactly as today (design/validated/file-library.md).
+            '/tools/file-library' => 403,
+            '/tools/file-library/trash' => 403,
+            '/tools/file-library/search' => 403,
             '/library/quiz/import/assistant' => 403,
             '/progression' => 403,
             '/library/sequences' => 403,
@@ -161,6 +166,11 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tools/quiz' => 200,
             // Same reading: the video list shows what the viewer owns, empty included.
             '/tools/videos' => 200,
+            // The library is personal and lazily created: an account with no file has an empty
+            // library rather than a missing one, so these render rather than hand over.
+            '/tools/file-library' => 200,
+            '/tools/file-library/trash' => 200,
+            '/tools/file-library/search' => 200,
             '/library/quiz/import/assistant' => 200,
             '/help/manage' => 403,
             '/settings/configuration' => 403,
@@ -224,6 +234,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tools/job-search-tracking' => 302,
             '/tools/quiz' => 200,
             '/tools/videos' => 200,
+            // An admin holding ROLE_ADMIN also *owns* a library - that is the first row of the
+            // access table, not the narrow "somebody else's quota" one.
+            '/tools/file-library' => 200,
+            '/tools/file-library/trash' => 200,
             '/library/quiz/import/assistant' => 200,
             // An admin is neither enrolled nor teaching, so the two personal timetables stay shut.
             '/my/timetable' => 403,
@@ -304,6 +318,11 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tools/job-search-tracking' => 403,
             '/tools/quiz' => 403,
             '/tools/videos' => 403,
+            // ROLE_TUTOR is excluded from the library entirely, as it is from the wiki and from
+            // messaging (design/validated/file-library.md, "Who has a library").
+            '/tools/file-library' => 403,
+            '/tools/file-library/trash' => 403,
+            '/tools/file-library/search' => 403,
             '/library/quiz/import/assistant' => 403,
             '/help/manage' => 403,
             '/settings/configuration' => 403,
