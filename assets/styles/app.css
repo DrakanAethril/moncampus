@@ -7219,7 +7219,10 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
 
 /* The diagram is drawn once, in the light palette, and those colours are inside the file - the way a
    photograph's are. So dark mode gives it a light surface to sit on rather than trying to repaint
-   it, which is also what keeps screen and PDF showing the same picture. */
+   it, which is also what keeps screen and PDF showing the same picture. Without this the labels
+   Mermaid draws straight on the background - a sequence diagram's messages, a flowchart's edge
+   labels - are dark ink on a dark page, which is to say gone.
+
    The surface goes on the <svg> and not on `.cm-mermaid`, which is a full-width block: painting the
    block would draw a white band across the page instead of a card behind the picture. */
 [data-bs-theme="dark"] .cm-mermaid svg { background: #ffffff; border-radius: 10px; padding: 10px; }

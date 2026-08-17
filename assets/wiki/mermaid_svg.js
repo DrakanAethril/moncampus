@@ -227,5 +227,17 @@ export const DIAGRAM_THEME = {
         textColor: '#1b2430',
         fontFamily: '"Source Sans 3", system-ui, -apple-system, sans-serif',
         fontSize: '14px',
+        // A pie chart is the one type `base` does not derive from the colours above: left alone it
+        // draws near-white slices behind a heavy black outline, which is unreadable rather than
+        // sober. Four shades of the brand, in the order Mermaid uses them.
+        pie1: '#1B6BA8',
+        pie2: '#6FA8CE',
+        pie3: '#cfe2f0',
+        pie4: '#eef5fb',
+        pieStrokeColor: '#ffffff',
+        pieOuterStrokeColor: '#5b6c79',
+        pieOuterStrokeWidth: '1px',
+        pieSectionTextColor: '#1b2430',
+        pieTitleTextColor: '#1b2430',
     },
 };
