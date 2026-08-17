@@ -1,0 +1,75 @@
+{# One row of the table - a folder or a file, read the same way (mockup 1): the same columns, the
+   size replaced by the file count on a folder.
+
+   The row menu has six entries at most, in this order: Créer un travail (lot 5), Aperçu, Télécharger,
+   Renommer, Remplacer, Supprimer. Two rules about it:
+
+     - **`Aperçu` is absent, not disabled**, when the file has no preview. A menu that shows what
+       cannot be done teaches the reader to stop reading it;
+     - **there is no `Déplacer`.** Moving is dragging the row onto a folder of the rail - one gesture,
+       and one the wiki has already taught. #}
+{% set node = row.node %}
+{% set previewable = node.type.value == 'file' and file_library_previewable(node.name) %}
+<tr class="cm-flib__row{{ node.type.value == 'folder' ? ' is-folder' }}"
+    data-node-id="{{ node.id }}"
+    data-node-name="{{ node.name }}"
+    {% if previewable %}data-preview-url="{{ path('app_file_library_node_download', {nodeId: node.id}) }}"{% endif %}
+    draggable="true">
+    <td>
+        <span class="cm-flib__name">
+            {% if node.type.value == 'folder' %}
+                <span class="cm-flib__ext cm-flib__ext--dir" aria-hidden="true">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"></path></svg>
+                </span>
+                <a href="{{ path('app_file_library_folder', {nodeId: node.id}) }}">{{ node.name }}</a>
+            {% else %}
+                <span class="cm-flib__ext cm-flib__ext--{{ file_library_family(node.name) }}">{{ node.extension|upper|slice(0, 4) ?: '?' }}</span>
+                {% if previewable %}
+                    <button type="button" class="cm-flib__namelink" data-action="file-library#preview">{{ node.name }}</button>
+                {% else %}
+                    <a href="{{ path('app_file_library_node_download', {nodeId: node.id}) }}">{{ node.name }}</a>
+                {% endif %}
+            {% endif %}
+        </span>
+    </td>
+    <td class="cm-flib__num">
+        {% if node.type.value == 'folder' %}
+            {{ 'fileLibraryFileCountLabel'|trans({'%count%': row.fileCount}) }}
+        {% else %}
+            {{ byte_size(node.sizeBytes) }}
+        {% endif %}
+    </td>
+    <td class="cm-flib__num">{{ node.modifiedAt|date('d/m/Y') }}</td>
+    <td>
+        {# The usage count arrives with the link (lot 4): until a file can be linked, there is nothing
+           to count and a column of zeroes would only teach the reader to ignore it. #}
+        <span class="cm-flib__use">{{ 'fileLibraryNoUsageLabel'|trans }}</span>
+    </td>
+    <td class="cm-flib__menu">
+        <div class="dropdown">
+            <button type="button" class="cm-flib__kebab" data-bs-toggle="dropdown" aria-expanded="false"
+                    aria-label="{{ 'fileLibraryRowMenuLabel'|trans }}">⋮</button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                {% if previewable %}
+                    <li><button type="button" class="dropdown-item" data-action="file-library#preview">{{ 'fileLibraryPreviewAction'|trans }}</button></li>
+                {% endif %}
+                {% if node.type.value == 'file' %}
+                    <li><a class="dropdown-item" href="{{ path('app_file_library_node_download', {nodeId: node.id}) }}">{{ 'fileLibraryDownloadAction'|trans }}</a></li>
+                {% endif %}
+                <li><button type="button" class="dropdown-item" data-action="file-library#promptRename">{{ 'fileLibraryRenameAction'|trans }}</button></li>
+                {% if node.type.value == 'file' %}
+                    <li><button type="button" class="dropdown-item" data-action="file-library#replace">{{ 'fileLibraryReplaceAction'|trans }}</button></li>
+                {% endif %}
+                <li>
+                    <form method="post" action="{{ path('app_file_library_node_delete', {nodeId: node.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('file_library_node') }}">
+                        <button type="submit" class="dropdown-item text-danger"
+                                data-controller="confirm-submit"
+                                data-confirm-submit-message-value="{{ (node.type.value == 'folder' ? 'fileLibraryDeleteFolderConfirmText' : 'fileLibraryDeleteFileConfirmText')|trans({'%name%': node.name}) }}"
+                                data-action="click->confirm-submit#confirm">{{ 'fileLibraryDeleteAction'|trans }}</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </td>
+</tr>

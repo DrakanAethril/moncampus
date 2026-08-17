@@ -155,6 +155,15 @@ class User implements UserInterface
     #[ORM\Column(name: 'theme_preference', length: 5, options: ['default' => 'light'])]
     private string $themePreference = 'light';
 
+    // How much this account's file library may hold, in bytes - null meaning "whatever the platform
+    // currently says" (App\Service\FileLibraryQuota, design/validated/file-library.md).
+    //
+    // **Nullable is the whole design**: null is not zero, it is the absence of an override, so
+    // raising FILE_LIBRARY_DEFAULT_QUOTA later raises it for everyone who was never overridden.
+    // Writing 1 073 741 824 into 1 500 rows would freeze today's default into history.
+    #[ORM\Column(name: 'file_library_quota_bytes', type: Types::BIGINT, nullable: true)]
+    private ?int $fileLibraryQuotaBytes = null;
+
     // S3 object key under the "avatars/" prefix (see App\Service\FileUploadService), not a URL -
     // keeps the bucket/CloudFront domain changeable without a data migration.
     #[ORM\Column(name: 'avatar_key', length: 255, nullable: true)]
@@ -463,6 +472,18 @@ class User implements UserInterface
     public function setThemePreference(string $themePreference): static
     {
         $this->themePreference = $themePreference;
+
+        return $this;
+    }
+
+    public function getFileLibraryQuotaBytes(): ?int
+    {
+        return $this->fileLibraryQuotaBytes;
+    }
+
+    public function setFileLibraryQuotaBytes(?int $fileLibraryQuotaBytes): static
+    {
+        $this->fileLibraryQuotaBytes = $fileLibraryQuotaBytes;
 
         return $this;
     }

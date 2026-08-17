@@ -56,6 +56,9 @@ services:
             # App\Service\StagedUploadStore signs its tokens with it - a staged upload has no row
             # anywhere, so the token is the record and the signature is what makes it one.
             string $appSecret: '%kernel.secret%'
+            # The platform's file-library quota, as a human writes it ("1G", "1 Go") - parsed by
+            # App\Service\ByteSize, which is also what the admin's quota field reads. See .env.
+            string $fileLibraryDefaultQuota: '%env(FILE_LIBRARY_DEFAULT_QUOTA)%'
             # Blank means scanning is disabled - a different state from "configured but
             # unreachable", which refuses every upload. See App\Service\AntivirusScanner.
             string $antivirusDsn: '%env(ANTIVIRUS_DSN)%'

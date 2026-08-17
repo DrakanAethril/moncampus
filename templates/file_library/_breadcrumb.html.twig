@@ -1,0 +1,20 @@
+{# The library's trail: Accueil > Bibliothèque de fichiers > <ancestors...> > <folder>.
+
+   Built here rather than in each screen because the four of them draw the same first two segments
+   and differ only by what they append - `extra` is a list of {label, url} for the corbeille and the
+   search results. Depth follows navigation: one segment per ancestor, read off the folder's own
+   materialized path. #}
+{% set segments = [
+    {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {label: 'fileLibraryNavLabel'|trans, url: path('app_file_library')},
+] %}
+{% for ancestor in ancestors|default([]) %}
+    {% set segments = segments|merge([{label: ancestor.name, url: path('app_file_library_folder', {nodeId: ancestor.id})}]) %}
+{% endfor %}
+{% if currentFolder is defined and currentFolder %}
+    {% set segments = segments|merge([{label: currentFolder.name, url: path('app_file_library_folder', {nodeId: currentFolder.id})}]) %}
+{% endif %}
+{% for segment in extra|default([]) %}
+    {% set segments = segments|merge([segment]) %}
+{% endfor %}
+{% include '_breadcrumb.html.twig' with {segments: segments} %}

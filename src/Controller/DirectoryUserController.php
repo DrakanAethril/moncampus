@@ -14,8 +14,11 @@ use App\Form\UserProfileType;
 use App\Repository\GroupRepository;
 use App\Repository\LdapManageUserRepository;
 use App\Repository\UserRepository;
+use App\Security\Voter\FileLibraryVoter;
+use App\Service\ByteSize;
 use App\Service\ContactEmailVerifier;
 use App\Service\DataTableParams;
+use App\Service\FileLibraryQuota;
 use App\Service\FormValue;
 use App\Service\LdapManageUserRoleResolver;
 use App\Service\LoginGenerator;
@@ -166,6 +169,8 @@ class DirectoryUserController extends AbstractController
         QueueStateFormatter $stateFormatter,
         StudentMailAliasValidator $aliasValidator,
         TranslatorInterface $translator,
+        FileLibraryQuota $libraryQuota,
+        FileLibraryVoter $libraryVoter,
         #[Autowire('%env(MAIL_STUDENT_DOMAIN)%')]
         string $studentMailDomain,
         int $id,
@@ -271,6 +276,19 @@ class DirectoryUserController extends AbstractController
                 // error to put in front of staff.
                 'error' => 3 === $ldapManageUser->getState() && null !== $ldapAddLog && '' !== trim($ldapAddLog) ? trim($ldapAddLog) : null,
             ],
+            // The file-library quota card, and only for an account that has a library at all - a
+            // student has none, and an empty card would invite the question of why
+            // (design/validated/file-library.md, "The admin quota field").
+            'fileLibraryQuota' => $libraryVoter->hasLibrary($user) ? [
+                'usedLabel' => ByteSize::format($libraryQuota->usedBytes($user)),
+                'limitLabel' => ByteSize::format($libraryQuota->limitFor($user)),
+                'percent' => $libraryQuota->usedPercent($user),
+                'level' => $libraryQuota->level($user),
+                // The field shows the override and nothing else: an empty box means "the platform
+                // default", which is what the help text under it says.
+                'override' => null === $user->getFileLibraryQuotaBytes() ? '' : ByteSize::format($user->getFileLibraryQuotaBytes()),
+                'defaultLabel' => ByteSize::format($libraryQuota->defaultBytes()),
+            ] : null,
         ]);
     }
 

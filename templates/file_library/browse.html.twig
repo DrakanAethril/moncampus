@@ -1,0 +1,102 @@
+{% extends 'layout/app.html.twig' %}
+
+{# The library's one screen (design/validated/file-library.md, mockups 1, 2 and 3): a rail of folders
+   on the left, the current folder's contents on the right.
+
+   **This table is not a DataTable**, and there is no grid view. It hosts drag-and-drop and rows a
+   Stimulus controller acts on, and the rule in this repository is never to bind a `data-controller`
+   to an element a DOM-rewriting library moves. One presentation is also what keeps the
+   drag-and-drop rules explainable. #}
+
+{% block title %}{{ currentFolder ? currentFolder.name : 'fileLibraryNavLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'file_library/_breadcrumb.html.twig' with {currentFolder: currentFolder, ancestors: ancestors} %}
+{% endblock %}
+
+{% block page_title %}{{ currentFolder ? currentFolder.name : 'fileLibraryNavLabel'|trans }}{% endblock %}
+
+{% block page_actions %}
+    {# GET, per the repository's rule for a "show me a result" form - a POST would have to redirect. #}
+    <form method="get" action="{{ path('app_file_library_search') }}" class="cm-flib__search">
+        <input type="search" name="q" class="form-control form-control-sm"
+               placeholder="{{ 'fileLibrarySearchPlaceholder'|trans }}"
+               aria-label="{{ 'fileLibrarySearchPlaceholder'|trans }}">
+    </form>
+    <button type="button" class="cm-btn cm-btn--primary" data-action="file-library#pick">{{ 'fileLibraryImportAction'|trans }}</button>
+{% endblock %}
+
+{% block main %}
+    <div class="cm-flib"
+         data-controller="file-library"
+         data-file-library-folder-id-value="{{ currentFolder ? currentFolder.id : '' }}"
+         data-file-library-stage-url-value="{{ path('app_upload_stage') }}"
+         data-file-library-upload-url-value="{{ path('app_file_library_upload') }}"
+         data-file-library-folder-url-value="{{ path('app_file_library_folder_new') }}"
+         data-file-library-rename-url-template-value="{{ path('app_file_library_node_rename', {nodeId: '__NODE_ID__'}) }}"
+         data-file-library-replace-url-template-value="{{ path('app_file_library_node_replace', {nodeId: '__NODE_ID__'}) }}"
+         data-file-library-max-bytes-value="{{ maxBytes }}"
+         data-file-library-stage-token-value="{{ csrf_token('staged-upload') }}"
+         data-file-library-token-value="{{ csrf_token('file_library_node') }}"
+         data-file-library-labels-value="{{ {
+             folderPrompt: 'fileLibraryFolderNamePrompt'|trans,
+             renamePrompt: 'fileLibraryRenamePrompt'|trans,
+             uploading: 'fileLibraryUploadingLabel'|trans,
+             networkError: 'filePickerNetworkErrorMessage'|trans,
+             replaceConfirm: 'fileLibraryReplaceConfirmText'|trans,
+         }|json_encode|e('html_attr') }}">
+
+        {% include 'file_library/_rail.html.twig' with {rail: rail, quota: quota, currentFolder: currentFolder} %}
+
+        <div class="cm-flib__content">
+            {# Dropping files from the desktop onto the table uploads into the current folder, through
+               the same staging endpoint every other field of the platform uses. The progress is drawn
+               in this strip, never in the table itself. #}
+            <div class="cm-flib__uploads" data-file-library-target="uploads" hidden></div>
+
+            {% if rows is empty %}
+                <p class="cm-flib__empty">{{ 'fileLibraryEmptyFolderText'|trans }}</p>
+            {% else %}
+                <div class="table-responsive">
+                    <table class="cm-flib__table" data-file-library-target="table">
+                        <thead>
+                            <tr>
+                                <th>{{ 'fileLibraryNameColumnLabel'|trans }}</th>
+                                <th>{{ 'fileLibrarySizeColumnLabel'|trans }}</th>
+                                <th>{{ 'fileLibraryModifiedColumnLabel'|trans }}</th>
+                                <th>{{ 'fileLibraryUsagesColumnLabel'|trans }}</th>
+                                <th><span class="visually-hidden">{{ 'fileLibraryRowMenuLabel'|trans }}</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in rows %}
+                                {% include 'file_library/_row.html.twig' with {row: row} only %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+
+        {# The native picker, driven by the action bar's button and by the drop zone. It carries no
+           name: nothing here is a form, the files leave on their own XHR. #}
+        <input type="file" multiple hidden aria-hidden="true" tabindex="-1"
+               data-file-library-target="input" data-action="change->file-library#selected">
+
+        {# The full-frame viewer (mockup 3). With no grid view this is the only place a document is
+           actually looked at, and a PDF in a 240px column is not looked at. #}
+        <div class="cm-flib__viewer" data-file-library-target="viewer" hidden>
+            <div class="cm-flib__viewer-head">
+                <span class="cm-flib__viewer-name" data-file-library-target="viewerName"></span>
+                <span class="cm-flib__viewer-count" data-file-library-target="viewerCount"></span>
+                <button type="button" class="cm-flib__viewer-close" data-action="file-library#closeViewer" aria-label="{{ 'fileLibraryClosePreviewAction'|trans }}">&times;</button>
+            </div>
+            <div class="cm-flib__viewer-body" data-file-library-target="viewerBody"></div>
+            <div class="cm-flib__viewer-foot">
+                <button type="button" class="cm-btn cm-btn--sm cm-btn--outline" data-action="file-library#previousPreview">{{ 'fileLibraryPreviousAction'|trans }}</button>
+                <button type="button" class="cm-btn cm-btn--sm cm-btn--outline" data-action="file-library#nextPreview">{{ 'fileLibraryNextAction'|trans }}</button>
+                <a class="cm-btn cm-btn--sm cm-btn--outline" data-file-library-target="viewerDownload" href="#">{{ 'fileLibraryDownloadAction'|trans }}</a>
+            </div>
+        </div>
+    </div>
+{% endblock %}
