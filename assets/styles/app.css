@@ -7470,3 +7470,8 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 /* One line, and only one - see the controller: the modal says the links go now and the bytes go in
    thirty days, and anything more turns a confirmation into a lecture. */
 .cm-flib__usenotice { margin: 14px 0 0; padding: 10px 12px; border-radius: 8px; background: var(--cm-gold-bg); color: var(--cm-gold-tx); font-size: 12.5px; }
+
+/* The chip of a file the wizard was opened from: gold, like the picker's library pill, because it
+   is a link and not a copy - deleting the file from the library will remove it from the work too. */
+.cm-chip--library { background: var(--cm-gold-bg); color: var(--cm-gold-tx); border-color: transparent; }
+.cm-chip__note { margin-left: 8px; font-size: 11px; opacity: .85; }
