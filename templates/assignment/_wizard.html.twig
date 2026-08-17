@@ -227,6 +227,20 @@
                                 {% endfor %}
                             </div>
                         {% endif %}
+                        {# Opened from a file of the library: it is **already attached**, and the chip
+                           says so from step 1 rather than leaving the teacher to wonder whether the
+                           file came along. It is not a form field - nothing is written before
+                           « Publier », and the attachment is made at save time from the context
+                           (App\Service\FileLibraryWorkFactory). Gold, like the picker's own library
+                           pill: it is a link, not a copy. #}
+                        {% if context.libraryNode %}
+                            <div class="cm-chip-list">
+                                <span class="cm-chip cm-chip--library">
+                                    <span>{{ context.libraryNode.name }}</span>
+                                    <span class="cm-chip__note">{{ 'filePickerFromLibraryLabel'|trans }}</span>
+                                </span>
+                            </div>
+                        {% endif %}
                         {# The chips and the "coller un lien" button stay: they are the *links* half,
                            which the picker does not carry. What went is the wizard's own drop zone
                            and its hidden native input - the files half is the platform's one
