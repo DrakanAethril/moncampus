@@ -34,7 +34,10 @@ class MessageReplyType extends AbstractType
                 'help' => FileUploadDefaults::MAX_SIZE_HELP_KEY,
                 // See MessageComposeType's identical field.
                 'policy' => UploadPolicy::documents(),
-                'library' => false,
+                // Teacher-authored course material: the « Bibliothèque de fichiers » tab is offered
+                // here (design/validated/file-library.md, "The component"). A file picked there is a
+                // reference - it weighs once, and deleting it from the library removes it from here.
+                'library' => true,
             ])
             ->add('submit', SubmitType::class, [
                 'label' => 'messageReplyAction',

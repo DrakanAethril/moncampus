@@ -23,16 +23,21 @@ import { Controller } from '@hotwired/stimulus';
 //     refused while they are still writing the title.
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
-    static targets = ['input', 'rows', 'tokens', 'drop'];
+    static targets = ['input', 'rows', 'tokens', 'drop', 'tabUpload', 'tabLibrary', 'libraryPane', 'libraryTree', 'libraryFiles', 'librarySearch'];
 
     static values = {
         multiple: Boolean,
         maxBytes: Number,
         url: String,
         discardUrl: String,
+        libraryUrl: String,
         csrfToken: String,
         labels: Object,
     };
+
+    // How a linked file is written into the field, beside the signed tokens - the server's own
+    // prefix (App\Form\DataTransformer\StagedUploadTransformer::LIBRARY_PREFIX).
+    static LIBRARY_PREFIX = 'lib:';
 
     connect() {
         // Stimulus Object values re-parse on every access: a working copy, or every read pays for a
@@ -58,6 +63,12 @@ export default class extends Controller {
 
         try {
             return JSON.parse(raw).map((token) => {
+                // A library entry carries no payload to decode: it is an id, and the name it had was
+                // drawn from the modal. After a validation error the row keeps its id and says so.
+                if (token.startsWith(this.constructor.LIBRARY_PREFIX)) {
+                    return { token, name: this.labels.fromLibrary, size: 0, state: 'library' };
+                }
+
                 const payload = this.readToken(token);
 
                 return { token, name: payload?.n ?? '', size: payload?.s ?? 0, state: 'done', ratio: 1 };
@@ -65,6 +76,109 @@ export default class extends Controller {
         } catch {
             return [];
         }
+    }
+
+    // ---- The Bibliothèque tab -----------------------------------------------------------------
+
+    showUpload() {
+        this.dropTarget.hidden = !this.multipleValue && this.files.length > 0;
+        if (this.hasLibraryPaneTarget) this.libraryPaneTarget.hidden = true;
+        this.tabUploadTarget.classList.add('cm-filepick__tab--on');
+        if (this.hasTabLibraryTarget) this.tabLibraryTarget.classList.remove('cm-filepick__tab--on');
+    }
+
+    showLibrary() {
+        this.dropTarget.hidden = true;
+        this.libraryPaneTarget.hidden = false;
+        this.tabUploadTarget.classList.remove('cm-filepick__tab--on');
+        this.tabLibraryTarget.classList.add('cm-filepick__tab--on');
+        this.loadLibrary();
+    }
+
+    searchLibrary() {
+        clearTimeout(this.searchTimer);
+        // Debounced: the field is typed into, and one request per keystroke would be a request per
+        // keystroke.
+        this.searchTimer = setTimeout(() => this.loadLibrary({ q: this.librarySearchTarget.value.trim() }), 250);
+    }
+
+    openLibraryFolder(event) {
+        this.libraryFolderId = event.currentTarget.dataset.folderId ?? '';
+        this.librarySearchTarget.value = '';
+        this.loadLibrary();
+    }
+
+    async loadLibrary({ q = '' } = {}) {
+        const url = new URL(this.libraryUrlValue, window.location.origin);
+        if (q) url.searchParams.set('q', q);
+        else if (this.libraryFolderId) url.searchParams.set('folder', this.libraryFolderId);
+
+        try {
+            const response = await fetch(url, { headers: { Accept: 'application/json' } });
+            this.paintLibrary(await response.json());
+        } catch {
+            this.libraryFilesTarget.textContent = this.labels.networkError;
+        }
+    }
+
+    paintLibrary(data) {
+        const tree = document.createElement('ul');
+        tree.className = 'cm-filepick__library-list';
+        tree.appendChild(this.buildFolderRow({ id: '', name: this.labels.libraryRoot }, 0));
+        (data.folders ?? []).forEach((folder) => this.appendFolder(tree, folder, 1));
+        this.libraryTreeTarget.replaceChildren(tree);
+
+        const files = data.files ?? [];
+
+        if (files.length === 0) {
+            this.libraryFilesTarget.replaceChildren(this.el('p', 'cm-filepick__library-empty', this.labels.libraryEmpty));
+
+            return;
+        }
+
+        this.libraryFilesTarget.replaceChildren(...files.map((file) => {
+            const row = this.el('button', 'cm-filepick__library-file');
+            row.type = 'button';
+            row.appendChild(this.extensionChip(file.name));
+            row.appendChild(this.el('span', 'cm-filepick__library-file-name', file.name));
+            row.appendChild(this.el('span', 'cm-filepick__meta', file.size));
+            row.addEventListener('click', () => this.link(file));
+
+            return row;
+        }));
+    }
+
+    appendFolder(list, folder, depth) {
+        list.appendChild(this.buildFolderRow(folder, depth));
+        (folder.children ?? []).forEach((child) => this.appendFolder(list, child, depth + 1));
+    }
+
+    buildFolderRow(folder, depth) {
+        const item = document.createElement('li');
+        const button = this.el('button', 'cm-filepick__library-folder', folder.name);
+        button.type = 'button';
+        button.style.paddingLeft = `${6 + depth * 12}px`;
+        button.dataset.folderId = folder.id ?? '';
+        button.addEventListener('click', (event) => this.openLibraryFolder(event));
+        item.appendChild(button);
+
+        return item;
+    }
+
+    // Choosing a library file adds a chip **visibly not the same thing** as an uploaded one: the gold
+    // pill says so, because deleting that file from the library later will remove it from here.
+    link(file) {
+        if (!this.multipleValue) this.files = [];
+
+        this.files.push({
+            token: this.constructor.LIBRARY_PREFIX + file.id,
+            name: file.name,
+            size: 0,
+            sizeLabel: file.size,
+            state: 'library',
+        });
+        this.render();
+        this.showUpload();
     }
 
     // The token's payload segment, base64url-encoded JSON. Null when it is not one - a token this
@@ -203,7 +317,9 @@ export default class extends Controller {
 
         // The object goes now rather than waiting for the nightly purge, which is what a teacher
         // who has just removed a 180 Mo video would expect. Best effort: it is scheduled either way.
-        if (tellTheServer && row.token) {
+        // A library file was never staged: there is nothing to discard, and asking the server to
+        // would only be asking it to refuse.
+        if (tellTheServer && row.token && !row.token.startsWith(this.constructor.LIBRARY_PREFIX)) {
             const payload = new FormData();
             payload.append('token', row.token);
             fetch(this.discardUrlValue, { method: 'POST', headers: { 'X-CSRF-Token': this.csrfTokenValue }, body: payload }).catch(() => {});
@@ -230,7 +346,7 @@ export default class extends Controller {
 
         const grow = this.el('span', 'cm-filepick__grow');
         grow.appendChild(this.el('span', 'cm-filepick__name', row.name));
-        grow.appendChild(this.el('span', 'cm-filepick__meta', row.message ?? this.formatSize(row.size)));
+        grow.appendChild(this.el('span', 'cm-filepick__meta', row.message ?? row.sizeLabel ?? this.formatSize(row.size)));
 
         if (row.state === 'uploading' || row.state === 'scanning') {
             const track = this.el('span', 'cm-filepick__track');
@@ -273,6 +389,7 @@ export default class extends Controller {
     stateModifier(row) {
         if (row.state === 'done') return 'ok';
         if (row.state === 'refused') return 'ko';
+        if (row.state === 'library') return 'lib';
 
         return 'go';
     }
@@ -280,6 +397,7 @@ export default class extends Controller {
     stateLabel(row) {
         if (row.state === 'done') return this.labels.done;
         if (row.state === 'refused') return this.labels.refused;
+        if (row.state === 'library') return this.labels.fromLibrary;
         if (row.state === 'scanning') return this.labels.uploading;
 
         return row.ratio === null ? this.labels.uploading : this.formatPercent(row.ratio);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Entity\FileLibraryNode;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 /**
@@ -36,11 +37,30 @@ class UploadIntake
      *
      * @return non-empty-string the full storage key
      */
-    public function store(UploadedFile|StagedUpload $file, string $prefix, string $filename): string
+    public function store(UploadedFile|StagedUpload|FileLibraryNode $file, string $prefix, string $filename): string
     {
+        // **A link is a reference, not a copy** (design/validated/file-library.md): the row takes the
+        // library node's own storage key, so the file exists once, weighs once, and correcting it in
+        // the library corrects it everywhere. Nothing is written to the bucket here at all - which is
+        // also why linking a 180 Mo video is instant.
+        if ($file instanceof FileLibraryNode) {
+            return $file->getStorageKey() ?? throw new \InvalidArgumentException(\sprintf('Library node %d carries no object to link.', (int) $file->getId()));
+        }
+
         return $file instanceof StagedUpload
             ? $this->stagedUploads->claim($file, $prefix, $filename)
             : $this->fileUploads->upload($prefix, $filename, $file);
+    }
+
+    /**
+     * The library file this submission came from, or null when it was an ordinary upload.
+     *
+     * What the caller does with it is set the row's `library_node_id`, which is the only thing that
+     * tells "where is this file used" apart from a coincidence of storage keys.
+     */
+    public static function libraryNodeOf(UploadedFile|StagedUpload|FileLibraryNode $file): ?FileLibraryNode
+    {
+        return $file instanceof FileLibraryNode ? $file : null;
     }
 
     /**
@@ -56,41 +76,56 @@ class UploadIntake
      *
      * The temp file is left to the system, exactly as PHP's own upload temp files are.
      */
-    public function asLocalFile(UploadedFile|StagedUpload $file): UploadedFile
+    public function asLocalFile(UploadedFile|StagedUpload|FileLibraryNode $file): UploadedFile
     {
         if ($file instanceof UploadedFile) {
             return $file;
         }
 
+        $key = $file instanceof FileLibraryNode ? (string) $file->getStorageKey() : $file->key;
         $path = tempnam(sys_get_temp_dir(), 'staged-read-');
 
-        if (false === $path || false === file_put_contents($path, $this->fileUploads->read($file->key))) {
-            throw new \RuntimeException(\sprintf('Could not fetch the staged upload "%s" back for reading.', $file->key));
+        if (false === $path || false === file_put_contents($path, $this->fileUploads->read($key))) {
+            throw new \RuntimeException(\sprintf('Could not fetch the stored object "%s" back for reading.', $key));
         }
 
         // test: true - the file did not arrive through PHP's upload handling, and refusing it on
         // that ground is exactly the check that does not apply here.
-        return new UploadedFile($path, $file->originalName, '' === $file->mimeType ? null : $file->mimeType, null, true);
+        return new UploadedFile($path, self::originalName($file), '' === self::mimeType($file) ? null : self::mimeType($file), null, true);
     }
 
-    public static function originalName(UploadedFile|StagedUpload $file): string
+    public static function originalName(UploadedFile|StagedUpload|FileLibraryNode $file): string
     {
-        return $file instanceof StagedUpload ? $file->originalName : $file->getClientOriginalName();
+        return match (true) {
+            $file instanceof StagedUpload => $file->originalName,
+            // The library node's *display* name, which is what a reader recognises - it may have been
+            // renamed since the upload, and the row is a label rather than a filename.
+            $file instanceof FileLibraryNode => $file->getName(),
+            default => $file->getClientOriginalName(),
+        };
     }
 
-    public static function size(UploadedFile|StagedUpload $file): int
+    public static function size(UploadedFile|StagedUpload|FileLibraryNode $file): int
     {
-        return $file instanceof StagedUpload ? $file->size : (int) $file->getSize();
+        return match (true) {
+            $file instanceof StagedUpload => $file->size,
+            $file instanceof FileLibraryNode => $file->getSizeBytes() ?? 0,
+            default => (int) $file->getSize(),
+        };
     }
 
     /**
      * The sniffed type - for a staged upload, the one the server read at staging time and carried in
      * the signed token, never what the browser claimed.
      */
-    public static function mimeType(UploadedFile|StagedUpload $file): string
+    public static function mimeType(UploadedFile|StagedUpload|FileLibraryNode $file): string
     {
         if ($file instanceof StagedUpload) {
             return $file->mimeType;
+        }
+
+        if ($file instanceof FileLibraryNode) {
+            return $file->getMimeType() ?? '';
         }
 
         try {
@@ -108,7 +143,7 @@ class UploadIntake
      * `.pcap` as application/octet-stream). The name has already been checked against the type by
      * App\Validator\AllowedUpload before anything gets here, so it is the trustworthy half.
      */
-    public static function extension(UploadedFile|StagedUpload $file): string
+    public static function extension(UploadedFile|StagedUpload|FileLibraryNode $file): string
     {
         return mb_strtolower(pathinfo(self::originalName($file), \PATHINFO_EXTENSION));
     }

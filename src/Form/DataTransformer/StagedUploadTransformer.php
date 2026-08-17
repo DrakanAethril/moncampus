@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Form\DataTransformer;
 
+use App\Entity\FileLibraryNode;
 use App\Entity\User;
+use App\Repository\FileLibraryNodeRepository;
 use App\Service\StagedUpload;
 use App\Service\StagedUploadStore;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -34,9 +36,19 @@ use Symfony\Component\Form\Exception\TransformationFailedException;
  */
 class StagedUploadTransformer implements DataTransformerInterface
 {
+    /**
+     * What a library entry looks like in the field's value: `lib:48` beside the signed tokens.
+     *
+     * A prefix rather than a second hidden field, because the two kinds are one *ordered list* to the
+     * reader - the chips are in the order they were added - and two fields would have to be zipped
+     * back together on every redisplay.
+     */
+    public const string LIBRARY_PREFIX = 'lib:';
+
     public function __construct(
         private readonly StagedUploadStore $store,
         private readonly Security $security,
+        private readonly FileLibraryNodeRepository $libraryNodes,
         private readonly bool $multiple,
     ) {
     }
@@ -60,13 +72,17 @@ class StagedUploadTransformer implements DataTransformerInterface
             if ($file instanceof StagedUpload) {
                 $tokens[] = $file->token;
             }
+
+            if ($file instanceof FileLibraryNode) {
+                $tokens[] = self::LIBRARY_PREFIX.$file->getId();
+            }
         }
 
         return [] === $tokens ? '' : json_encode($tokens, \JSON_THROW_ON_ERROR);
     }
 
     /** View to model. */
-    public function reverseTransform(mixed $value): StagedUpload|array|null
+    public function reverseTransform(mixed $value): StagedUpload|FileLibraryNode|array|null
     {
         $empty = $this->multiple ? [] : null;
 
@@ -93,6 +109,15 @@ class StagedUploadTransformer implements DataTransformerInterface
                 throw new TransformationFailedException('A file picker token must be a string.');
             }
 
+            // A file picked from the library rather than uploaded. **The id is re-checked here**:
+            // the picker only ever offers this account's own files, but a picker is a convenience and
+            // never a control - the check is what makes that true.
+            if (str_starts_with($token, self::LIBRARY_PREFIX)) {
+                $files[] = $this->libraryNode((int) substr($token, \strlen(self::LIBRARY_PREFIX)), $user);
+
+                continue;
+            }
+
             $staged = $this->store->resolve($token, (int) $user->getId());
 
             if (null === $staged) {
@@ -109,5 +134,16 @@ class StagedUploadTransformer implements DataTransformerInterface
         }
 
         return $this->multiple ? $files : $files[0];
+    }
+
+    private function libraryNode(int $id, User $user): FileLibraryNode
+    {
+        $node = $this->libraryNodes->find($id);
+
+        if (null === $node || !$node->isFile() || $node->isDeleted() || $node->getOwner()->getId() !== $user->getId()) {
+            throw new TransformationFailedException('This library file cannot be linked by this account.');
+        }
+
+        return $node;
     }
 }

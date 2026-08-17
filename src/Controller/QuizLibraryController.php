@@ -614,6 +614,7 @@ class QuizLibraryController extends AbstractController
                 // attachMedia() rather than setImageStorageKey(): this is the gesture an imported
                 // question was waiting for, and the name it was waiting on goes with the file.
                 $question->attachMedia($key);
+                $question->setLibraryNode(UploadIntake::libraryNodeOf($imageFile));
             } elseif ($removeImage && null !== $question->getImageStorageKey()) {
                 $fileUploadService->delete($question->getImageStorageKey());
                 $question->setImageStorageKey(null);

@@ -134,9 +134,10 @@ class MessageComposeType extends AbstractType
                 // this field used to enumerate, declared once (design/validated/upload-policy.md).
                 // The All() a multiple field needs is FilePickerType's business now.
                 'policy' => UploadPolicy::documents(),
-                // Course material reaches other people through messaging, so the library tab
-                // belongs here - it arrives with the library itself (lot 4).
-                'library' => false,
+                // Teacher-authored course material: the « Bibliothèque de fichiers » tab is offered
+                // here (design/validated/file-library.md, "The component"). A file picked there is a
+                // reference - it weighs once, and deleting it from the library removes it from here.
+                'library' => true,
             ])
             ->add('submit', SubmitType::class, [
                 'label' => 'messageSendAction',

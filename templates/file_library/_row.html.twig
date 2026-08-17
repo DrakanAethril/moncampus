@@ -41,9 +41,14 @@
     </td>
     <td class="cm-flib__num">{{ node.modifiedAt|date('d/m/Y') }}</td>
     <td>
-        {# The usage count arrives with the link (lot 4): until a file can be linked, there is nothing
-           to count and a column of zeroes would only teach the reader to ignore it. #}
-        <span class="cm-flib__use">{{ 'fileLibraryNoUsageLabel'|trans }}</span>
+        {# The count is a link, and it is the only way into the usage panel now: the row menu
+           deliberately does not carry one, six entries being already the most a menu can hold and
+           still be read. #}
+        {% if node.type.value == 'file' and row.usageCount > 0 %}
+            <button type="button" class="cm-flib__use cm-flib__use--n" data-action="file-library#usages">{{ 'fileLibraryUsageCountLabel'|trans({'%count%': row.usageCount}) }}</button>
+        {% else %}
+            <span class="cm-flib__use">{{ 'fileLibraryNoUsageLabel'|trans }}</span>
+        {% endif %}
     </td>
     <td class="cm-flib__menu">
         <div class="dropdown">
@@ -61,13 +66,21 @@
                     <li><button type="button" class="dropdown-item" data-action="file-library#replace">{{ 'fileLibraryReplaceAction'|trans }}</button></li>
                 {% endif %}
                 <li>
-                    <form method="post" action="{{ path('app_file_library_node_delete', {nodeId: node.id}) }}">
-                        <input type="hidden" name="_token" value="{{ csrf_token('file_library_node') }}">
-                        <button type="submit" class="dropdown-item text-danger"
-                                data-controller="confirm-submit"
-                                data-confirm-submit-message-value="{{ (node.type.value == 'folder' ? 'fileLibraryDeleteFolderConfirmText' : 'fileLibraryDeleteFileConfirmText')|trans({'%name%': node.name}) }}"
-                                data-action="click->confirm-submit#confirm">{{ 'fileLibraryDeleteAction'|trans }}</button>
-                    </form>
+                    {# A file that is used anywhere goes through the modal, which lists every usage by
+                       name before it removes them - « Supprimer partout (11 utilisations) ». A file
+                       used nowhere, and a folder, keep the plain confirmation: a modal that lists
+                       nothing is a modal nobody reads. #}
+                    {% if node.type.value == 'file' and row.usageCount > 0 %}
+                        <button type="button" class="dropdown-item text-danger" data-action="file-library#confirmDelete">{{ 'fileLibraryDeleteAction'|trans }}</button>
+                    {% else %}
+                        <form method="post" action="{{ path('app_file_library_node_delete', {nodeId: node.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('file_library_node') }}">
+                            <button type="submit" class="dropdown-item text-danger"
+                                    data-controller="confirm-submit"
+                                    data-confirm-submit-message-value="{{ (node.type.value == 'folder' ? 'fileLibraryDeleteFolderConfirmText' : 'fileLibraryDeleteFileConfirmText')|trans({'%name%': node.name}) }}"
+                                    data-action="click->confirm-submit#confirm">{{ 'fileLibraryDeleteAction'|trans }}</button>
+                        </form>
+                    {% endif %}
                 </li>
             </ul>
         </div>

@@ -628,6 +628,7 @@ class SequenceLibraryController extends AbstractController
             $key = $uploadIntake->store($file, self::RESOURCE_UPLOAD_PREFIX, sprintf('%s.%s', bin2hex(random_bytes(8)), $extension));
             $resource->setType(LibraryResourceSourceType::Upload);
             $resource->setStorageKey($key);
+            $resource->setLibraryNode(UploadIntake::libraryNodeOf($file));
         } else {
             $resource->setType(LibraryResourceSourceType::Link);
             $resource->setUrl($url);

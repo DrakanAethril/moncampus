@@ -6,6 +6,7 @@ namespace App\Tests\Form;
 
 use App\Entity\User;
 use App\Form\FilePickerType;
+use App\Repository\FileLibraryNodeRepository;
 use App\Service\StagedUpload;
 use App\Service\StagedUploadStore;
 use App\Service\UploadPolicy;
@@ -15,6 +16,7 @@ use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Form\Extension\Validator\ValidatorExtension;
 use Symfony\Component\Form\PreloadedExtension;
 use Symfony\Component\Form\Test\TypeTestCase;
+use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 use Symfony\Component\Validator\Constraints\All;
 use Symfony\Component\Validator\Validation;
 
@@ -149,8 +151,14 @@ class FilePickerTypeTest extends TypeTestCase
         $security = $this->createStub(Security::class);
         $security->method('getUser')->willReturn($user);
 
+        // No library in this test: what the tab does has its own screens, and what is under test here
+        // is the field. An authorization checker that grants nothing keeps the tab out of the way.
+        $libraryNodes = $this->createStub(FileLibraryNodeRepository::class);
+        $authorization = $this->createStub(AuthorizationCheckerInterface::class);
+        $authorization->method('isGranted')->willReturn(false);
+
         return [
-            new PreloadedExtension([new FilePickerType($this->store, $security)], []),
+            new PreloadedExtension([new FilePickerType($this->store, $security, $libraryNodes, $authorization)], []),
             // The `constraints` option is the validator extension's, and this type normalises it -
             // building its own AllowedUpload from the policy. Without the extension the option does
             // not exist and every case here dies on resolution, which is a property of the bare test
