@@ -112,9 +112,13 @@ function keptInlineDeclarations(element) {
  * both intentions - never wider than the column, never blown up past its own size.
  */
 function normalizeRoot(svg) {
+    // The viewBox first and the attribute only as a fallback: Mermaid writes `width="100%"`, and
+    // reading that as a number gives a natural width of 100 - a diagram capped at 100 pixels, which
+    // is exactly what it looked like.
     const viewBox = svg.getAttribute('viewBox');
-    const natural = Number.parseFloat(svg.getAttribute('width'))
-        || (viewBox ? Number.parseFloat(viewBox.split(/[\s,]+/)[2]) : 0);
+    const width = svg.getAttribute('width') ?? '';
+    const natural = (viewBox ? Number.parseFloat(viewBox.split(/[\s,]+/)[2]) : 0)
+        || (width.endsWith('%') ? 0 : Number.parseFloat(width));
 
     svg.setAttribute('width', '100%');
     svg.removeAttribute('height');
