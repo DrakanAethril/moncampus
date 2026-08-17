@@ -149,4 +149,28 @@ class TopicRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * The matières one teacher may file a shared document under, for one class: the ones they own
+     * (Topic::$teacher, the strict rule findForTeacherInProgram() applies) **plus** the ones they
+     * actually hold créneaux in, which is how a colleague's matière comes to be taught by them.
+     *
+     * Deliberately **not** narrowed to matières with sessions still to come: a document belonging to
+     * a first-semester matière is filed under it in the middle of the second, and a list that hid it
+     * would send the teacher looking for a matière that is right there in their timetable.
+     *
+     * @return list<Topic>
+     */
+    public function findTaughtByTeacherInProgram(Program $program, User $teacher): array
+    {
+        return $this->createQueryBuilder('t')
+            ->where('t.program = :program')
+            ->andWhere('t.inactiveDate IS NULL')
+            ->andWhere('t.teacher = :teacher OR EXISTS (SELECT 1 FROM App\Entity\LessonSession ls WHERE ls.topic = t AND ls.teacher = :teacher)')
+            ->setParameter('program', $program)
+            ->setParameter('teacher', $teacher)
+            ->orderBy('t.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }

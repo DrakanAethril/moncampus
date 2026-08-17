@@ -1,0 +1,86 @@
+{% extends 'layout/app.html.twig' %}
+
+{# « Documents partagés » - what the teachers have put at this student's classes' disposal.
+
+   Two selects, and they are consultation controls rather than input: every value means something, so
+   neither carries a placeholder. The defaults are the ones a student reaches for without thinking -
+   matière, then newest first - and the URL carries them, so a grouping is a link that can be kept.
+
+   The « Matière » / « Enseignant » column swaps with the grouping: whichever of the two is the
+   heading has no business being repeated on every row underneath it. #}
+
+{% block title %}{{ 'sharedDocumentNavLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'sharedDocumentNavLabel'|trans, url: path('app_student_shared_documents')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'sharedDocumentNavLabel'|trans }}{% endblock %}
+
+{% block main %}
+    <form method="get" class="cm-worktoolbar" data-controller="auto-submit">
+        <select name="group" class="cm-worktoolbar__select" aria-label="{{ 'sharedDocumentGroupFieldLabel'|trans }}" data-action="change->auto-submit#submit">
+            {% for choice in groupings %}
+                <option value="{{ choice.value }}"{{ grouping == choice ? ' selected' }}>{{ choice.labelKey|trans }}</option>
+            {% endfor %}
+        </select>
+        <select name="order" class="cm-worktoolbar__select" aria-label="{{ 'sharedDocumentOrderFieldLabel'|trans }}" data-action="change->auto-submit#submit">
+            {% for choice in orderings %}
+                <option value="{{ choice.value }}"{{ ordering == choice ? ' selected' }}>{{ choice.labelKey|trans }}</option>
+            {% endfor %}
+        </select>
+    </form>
+
+    {% if groups is empty %}
+        <div class="cm-empty">{{ 'sharedDocumentEmptyText'|trans }}</div>
+    {% else %}
+        {% for group in groups %}
+            {% if group.label is not null or grouping.value != 'none' %}
+                <h2 class="cm-shared__group">{{ group.label ?? ('sharedDocumentNoTopicLabel'|trans) }}</h2>
+            {% endif %}
+            <div class="cm-worktable">
+                <table class="cm-worktable__table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'sharedDocumentDocumentColumnLabel'|trans }}</th>
+                            {% if grouping.value != 'topic' %}
+                                <th>{{ 'sharedDocumentTopicFieldLabel'|trans }}</th>
+                            {% endif %}
+                            {% if grouping.value != 'teacher' %}
+                                <th>{{ 'sharedDocumentTeacherColumnLabel'|trans }}</th>
+                            {% endif %}
+                            <th>{{ 'sharedDocumentAvailableColumnLabel'|trans }}</th>
+                            <th class="cm-worktable__action"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for share in group.shares %}
+                            {% set node = share.libraryNode %}
+                            <tr>
+                                <td>
+                                    <span class="cm-flib__name">
+                                        <span class="cm-flib__ext cm-flib__ext--{{ file_library_family(node.name) }}">{{ node.extension|upper|slice(0, 4) ?: '?' }}</span>
+                                        <a href="{{ path('app_student_shared_document_open', {id: share.id}) }}">{{ node.name }}</a>
+                                    </span>
+                                </td>
+                                {% if grouping.value != 'topic' %}
+                                    <td>{{ share.topic ? share.topic.name : 'sharedDocumentNoTopicLabel'|trans }}</td>
+                                {% endif %}
+                                {% if grouping.value != 'teacher' %}
+                                    <td>{{ share.teacher.displayName }}</td>
+                                {% endif %}
+                                <td>{{ share.availableAt|date('d/m/Y') }}</td>
+                                <td class="cm-worktable__action">
+                                    <a class="cm-btn cm-btn--sm cm-btn--outline" href="{{ path('app_student_shared_document_open', {id: share.id}) }}">{{ 'sharedDocumentOpenAction'|trans }}</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endblock %}

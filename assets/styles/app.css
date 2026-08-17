@@ -7475,3 +7475,26 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
    is a link and not a copy - deleting the file from the library will remove it from the work too. */
 .cm-chip--library { background: var(--cm-gold-bg); color: var(--cm-gold-tx); border-color: transparent; }
 .cm-chip__note { margin-left: 8px; font-size: 11px; opacity: .85; }
+
+/* ---------- Lot 7 · Partager un document a une classe ---------- */
+/* The share form is a column of fields, not a card grid: each decision narrows the previous one,
+   and reading it top to bottom is reading the audience being built. The per-class blocks are
+   revealed by shared_document_controller.js, which also enables their fields - a hidden block must
+   not submit, so `hidden` alone would not do. */
+.cm-share { display: flex; flex-direction: column; gap: 20px; max-width: 620px; margin-bottom: 32px; }
+.cm-share__field { border: 0; padding: 0; margin: 0; }
+.cm-share__field .form-label { display: block; margin-bottom: 4px; font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-share__scope { display: flex; flex-direction: column; gap: 20px; }
+.cm-share__scope[hidden] { display: none; }
+.cm-share__help { margin: 0 0 8px; font-size: 12px; color: var(--cm-faint); }
+.cm-share__checks { display: flex; flex-wrap: wrap; gap: 6px 20px; }
+.cm-share__window { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; }
+.cm-share__window[hidden] { display: none; }
+.cm-share__window > div { flex: 1; min-width: 190px; }
+.cm-share__actions { display: flex; gap: 10px; }
+.cm-share__listtitle { margin: 0 0 12px; font: 600 15px var(--cm-font-title); color: var(--cm-ink); }
+
+/* The student list's headings - a matiere or a teacher, above the table of its own documents. The
+   flat list draws none, which is what makes it flat. */
+.cm-shared__group { margin: 24px 0 10px; font: 600 15px var(--cm-font-title); color: var(--cm-ink); }
+.cm-shared__group:first-of-type { margin-top: 0; }

@@ -11,6 +11,7 @@ use App\Entity\LessonLogAttachment;
 use App\Entity\LibraryResource;
 use App\Entity\MessageAttachment;
 use App\Entity\QuizQuestion;
+use App\Entity\SharedDocument;
 use App\Entity\SignupListAttachment;
 use App\Entity\VideoResourceFile;
 use App\Entity\WikiAttachment;
@@ -28,16 +29,20 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
  * The screen is what handles it - deletion goes through a modal that lists every usage by name, with
  * a link to each - which is why this class exists at all. Nothing is inferred and nothing is silent.
  *
- * ## Nine queries rather than one
+ * ## Ten queries rather than one
  *
  * There is no `file_library_link` table, deliberately: a polymorphic `(target_type, target_id)` row
  * reads well and lies, because nothing deletes it when its host is deleted, so the usage list slowly
- * fills with usages that no longer exist. Nine real foreign keys cannot drift - and nine indexed
+ * fills with usages that no longer exist. Ten real foreign keys cannot drift - and ten indexed
  * lookups on a single id are cheaper than the join a polymorphic table would need anyway.
+ *
+ * The tenth is App\Entity\SharedDocument, « Partager à une classe », and it belongs here for the
+ * reason the rule states: a class holding the document is a place the file is used, so it counts in
+ * the file's utilisations and it is one of the things the deletion modal has to name.
  *
  * ## What "removing the links" means
  *
- * For eight of the nine, it is deleting the attachment row: the file is gone, and an attachment that
+ * For nine of the ten, it is deleting the attachment row: the file is gone, and an attachment that
  * points at nothing is worse than an absent one. Two exceptions:
  *
  * - **`quiz_question`** keeps its row and loses its image - the question is the teacher's work, and
@@ -70,6 +75,16 @@ class FileLibraryLinks
     public function usagesOf(FileLibraryNode $node): array
     {
         $usages = [];
+
+        // First, as the teacher's own act rather than a link they made in passing - and the one
+        // whose « what » is a class, so it reads differently from the nine below.
+        foreach ($this->attachmentsOf($node, SharedDocument::class) as $row) {
+            $usages[] = [
+                'where' => 'fileLibraryUsageSharedDocumentLabel',
+                'what' => $row->getProgram()->getShortName(),
+                'url' => null === $node->getId() ? null : $this->urls->generate('app_file_library_node_share', ['nodeId' => $node->getId()]),
+            ];
+        }
 
         foreach ($this->attachmentsOf($node, AssignmentAttachment::class) as $row) {
             $assignment = $row->getAssignment();
@@ -164,6 +179,7 @@ class FileLibraryLinks
     public function removeLinksTo(FileLibraryNode $node): void
     {
         foreach ([
+            SharedDocument::class,
             AssignmentAttachment::class,
             LessonLogAttachment::class,
             MessageAttachment::class,
