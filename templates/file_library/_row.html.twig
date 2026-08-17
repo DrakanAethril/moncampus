@@ -55,6 +55,12 @@
             <button type="button" class="cm-flib__kebab" data-bs-toggle="dropdown" aria-expanded="false"
                     aria-label="{{ 'fileLibraryRowMenuLabel'|trans }}">⋮</button>
             <ul class="dropdown-menu dropdown-menu-end">
+                {# First entry of the menu, and the Vidéos tool's new front door: a video here creates
+                   the VideoResource and its file, and the wizard opens on a « à visionner ». For
+                   anything else it is a « à rendre » with the file already attached. #}
+                {% if node.type.value == 'file' %}
+                    <li><a class="dropdown-item" href="{{ path('app_assignment_new', {libraryNode: node.id}) }}">{{ 'fileLibraryCreateWorkAction'|trans }}</a></li>
+                {% endif %}
                 {% if previewable %}
                     <li><button type="button" class="dropdown-item" data-action="file-library#preview">{{ 'fileLibraryPreviewAction'|trans }}</button></li>
                 {% endif %}

@@ -119,6 +119,22 @@ class VideoResourceFile
         return $this->storageKey;
     }
 
+    /**
+     * The key changes exactly once in a file's life, and only for the deferred fork: a library file
+     * this video was built on is being deleted, so App\Service\FileLibraryVideoFork copies the object
+     * to a key the work owns and points the row at it (design/validated/file-library.md).
+     *
+     * It stays **non-null** through that, which is the point: there is no "media deleted" state to
+     * build in the player, the statistics screen or the mobile API, where `Api\WorkController` builds
+     * `'url' => playbackUrl($file->getStorageKey())` and must not answer null to a Flutter client.
+     */
+    public function setStorageKey(string $storageKey): static
+    {
+        $this->storageKey = $storageKey;
+
+        return $this;
+    }
+
     public function getPosterStorageKey(): ?string
     {
         return $this->posterStorageKey;
