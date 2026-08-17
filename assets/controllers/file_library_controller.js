@@ -428,6 +428,14 @@ export default class extends Controller {
         row.state.textContent = message;
     }
 
+    el(tag, className, text) {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text != null) node.textContent = text;
+
+        return node;
+    }
+
     parseJson(text) {
         try {
             const data = JSON.parse(text);
