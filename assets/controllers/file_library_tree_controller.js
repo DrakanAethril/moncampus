@@ -22,7 +22,25 @@ export default class extends Controller {
     connect() {
         this.dragged = null;
         this.dropTarget = null;
+
+        // **The drag starts outside this controller's element**, and that is the whole gesture: what
+        // is dragged is a row of the *table*, and what receives it is a folder of the rail. A
+        // `data-action` on the rail only ever sees events raised inside the rail, so the row's
+        // dragstart never reached it - the drop then found nothing being dragged and did nothing at
+        // all. Listening on the screen is what makes the one gesture this feature has work.
+        this.screen = this.element.closest('.cm-flib') ?? document;
+        this.screen.addEventListener('dragstart', this.onDragStart);
+        this.screen.addEventListener('dragend', this.onDragEnd);
     }
+
+    disconnect() {
+        this.screen.removeEventListener('dragstart', this.onDragStart);
+        this.screen.removeEventListener('dragend', this.onDragEnd);
+    }
+
+    onDragStart = (event) => this.dragStart(event);
+
+    onDragEnd = () => this.dragEnd();
 
     // ---- Folding ------------------------------------------------------------------------------
 
@@ -81,20 +99,12 @@ export default class extends Controller {
         const node = event.target.closest('.cm-flib__node');
         this.clearDropTarget();
 
-        if (!node || !this.dragged || node.dataset.nodeId === this.dragged) return;
+        if (!this.dragged || node?.dataset.nodeId === this.dragged) return;
 
         event.preventDefault();
-        await this.move(this.dragged, node.dataset.nodeId);
-    }
-
-    // Dropping onto the rail but outside any folder means the root, which is the only way back out of
-    // a folder without a "move to…" dialog this design does not have.
-    async dropOnRoot(event) {
-        if (event.target.closest('.cm-flib__node') || !this.dragged) return;
-
-        event.preventDefault();
-        this.clearDropTarget();
-        await this.move(this.dragged, '');
+        // Dropped on the rail but outside any folder: that means the root, which is the only way
+        // back out of a folder - this design has no "move to…" dialog.
+        await this.move(this.dragged, node?.dataset.nodeId ?? '');
     }
 
     async move(nodeId, parentId) {
