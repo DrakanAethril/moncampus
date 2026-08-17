@@ -150,33 +150,13 @@
                                     <span class="nav-link-title">{{ 'studentWorkNavLabel'|trans }}</span>
                                 </a>
                             </li>
-                            {# "Mes cours" reads what "Travail à faire" acts on, so it sits right
-                               after it: the two are the student's pair - what to do, and what to
-                               study it with. #}
-                            <li class="nav-item {{ current_route starts with 'app_my_courses' ? 'active' }}">
-                                <a class="nav-link" href="{{ path('app_my_courses') }}"{{ current_route starts with 'app_my_courses' ? ' aria-current="page"' }}>
-                                    <span class="nav-link-title">{{ 'courseSpaceNavLabel'|trans }}</span>
-                                </a>
-                            </li>
                         {% endif %}
-                        {% if is_pure_student %}
-                            {# The "Tools" entry of the School mail mockup (screen 3a): the external
-                               mailbox and the application tracking, student-only - these are their
-                               mails and their applications; staff see them through the class
-                               screens (1a/2a). Sits between "Travail à faire" and "Agenda", the
-                               student bar reading Accueil · Emploi du temps · Travail à faire ·
-                               Outils · Agenda · Support. #}
-                            {% set student_tools_is_active = current_route starts with 'app_school_mail' or current_route starts with 'app_training_' or current_route == 'app_my_job_applications' %}
-                            <li class="nav-item dropdown {{ student_tools_is_active ? 'active' }}">
-                                <a class="nav-link dropdown-toggle" href="#navbar-student-tools" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ student_tools_is_active ? ' aria-current="page"' }}>
-                                    <span class="nav-link-title">{{ 'studentToolsNavLabel'|trans }}</span>
-                                </a>
-                                <div class="dropdown-menu">
-                                    <a class="dropdown-item {{ current_route starts with 'app_school_mail' or current_route starts with 'app_training_' ? 'active' }}" href="{{ path('app_school_mail') }}">{{ 'schoolMailNavLabel'|trans }}</a>
-                                    <a class="dropdown-item {{ current_route == 'app_my_job_applications' ? 'active' }}" href="{{ path('app_my_job_applications') }}">{{ 'jobApplicationsNavLabel'|trans }}</a>
-                                </div>
-                            </li>
-                        {% endif %}
+                        {# The student bar stops here, at Accueil · Emploi du temps · Travail à faire,
+                           and everything else they read moved into "Ressources" further down
+                           (2026-08-17). Three entries left the top level in that move: "Mes cours",
+                           now "Séquences de l'année"; and the whole "Outils" dropdown, whose two
+                           entries - Courrier école and Candidatures - are resources like the rest.
+                           The bar had grown to seven items for the role that navigates least. #}
                         {% if not is_pure_student %}
                         {% for section in structure_nav_sections() %}
                             {% set section_school_year_groups = structure_nav_school_year_groups(section) %}
@@ -441,13 +421,29 @@
                            itself - the two app-download entries keep the ROLE_ADMIN gate they were
                            given by explicit product request, so a student sees "Ressources" with
                            the single entry they may use. #}
-                        {% set resources_is_active = current_route starts with 'app_resources_' or current_route starts with 'app_documentation' or current_route starts with 'app_wiki' %}
+                        {% set resources_is_active = current_route starts with 'app_resources_' or current_route starts with 'app_documentation' or current_route starts with 'app_wiki'
+                            or current_route starts with 'app_student_shared_document' or current_route starts with 'app_school_mail' or current_route starts with 'app_training_'
+                            or current_route == 'app_my_job_applications' or current_route starts with 'app_my_courses' %}
                         <li class="nav-item dropdown {{ resources_is_active ? 'active' }}">
                             <a class="nav-link dropdown-toggle" href="#navbar-resources" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ resources_is_active ? ' aria-current="page"' }}>
                                 <span class="nav-link-title">{{ 'resourcesNavLabel'|trans }}</span>
                             </a>
                             <div class="dropdown-menu">
-                                {# Wikis, first entry, unfolding into the three questions a user
+                                {# First entry, and the reason this dropdown became the student's main
+                                   door (2026-08-17): the documents their teachers put at the class's
+                                   disposal. Shown to students only - a teacher shares from their own
+                                   file library, and reads back through the file's utilisations. #}
+                                {% if is_granted('ROLE_STUDENT') and not is_staff() %}
+                                    <a class="dropdown-item {{ current_route starts with 'app_student_shared_document' ? 'active' }}" href="{{ path('app_student_shared_documents') }}">{{ 'sharedDocumentNavLabel'|trans }}</a>
+                                {% endif %}
+                                {# The two entries of the retired student "Outils" dropdown - their
+                                   mailbox and their applications. Still student-only: staff reach
+                                   both through the class screens, which is not the same screen. #}
+                                {% if is_pure_student %}
+                                    <a class="dropdown-item {{ current_route starts with 'app_school_mail' or current_route starts with 'app_training_' ? 'active' }}" href="{{ path('app_school_mail') }}">{{ 'schoolMailNavLabel'|trans }}</a>
+                                    <a class="dropdown-item {{ current_route == 'app_my_job_applications' ? 'active' }}" href="{{ path('app_my_job_applications') }}">{{ 'jobApplicationsNavLabel'|trans }}</a>
+                                {% endif %}
+                                {# Wikis, unfolding into the three questions a user
                                    actually asks. Same dropend shape as UFA > Formations and
                                    Gestion > Annuaire - Bootstrap disables Popper inside a .navbar,
                                    so placement is CSS-only and nav_submenu_placement_controller.js
@@ -470,6 +466,12 @@
                                             {% endif %}
                                         </div>
                                     </div>
+                                {% endif %}
+                                {# « Mes cours » under its real name: what the student reads there is
+                                   the year's séquences, and the old label promised a course space
+                                   that this screen is only one face of. #}
+                                {% if is_granted('ROLE_STUDENT') and not is_staff() %}
+                                    <a class="dropdown-item {{ current_route starts with 'app_my_courses' ? 'active' }}" href="{{ path('app_my_courses') }}">{{ 'courseSpaceNavLabel'|trans }}</a>
                                 {% endif %}
                                 <a class="dropdown-item {{ current_route starts with 'app_documentation' ? 'active' }}" href="{{ path('app_documentation') }}">{{ 'documentationNavLabel'|trans }}</a>
                                 {% if is_granted('ROLE_ADMIN') %}

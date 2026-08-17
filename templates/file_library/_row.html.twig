@@ -1,8 +1,8 @@
 {# One row of the table - a folder or a file, read the same way (mockup 1): the same columns, the
    size replaced by the file count on a folder.
 
-   The row menu has six entries at most, in this order: Créer un travail (lot 5), Aperçu, Télécharger,
-   Renommer, Remplacer, Supprimer. Two rules about it:
+   The row menu has seven entries at most, in this order: Partager à une classe (lot 7), Créer un
+   travail (lot 5), Aperçu, Télécharger, Renommer, Remplacer, Supprimer. Two rules about it:
 
      - **`Aperçu` is absent, not disabled**, when the file has no preview. A menu that shows what
        cannot be done teaches the reader to stop reading it;
@@ -55,9 +55,15 @@
             <button type="button" class="cm-flib__kebab" data-bs-toggle="dropdown" aria-expanded="false"
                     aria-label="{{ 'fileLibraryRowMenuLabel'|trans }}">⋮</button>
             <ul class="dropdown-menu dropdown-menu-end">
-                {# First entry of the menu, and the Vidéos tool's new front door: a video here creates
-                   the VideoResource and its file, and the wizard opens on a « à visionner ». For
-                   anything else it is a « à rendre » with the file already attached. #}
+                {# First entry, above « Créer un travail »: putting a document at a class's disposal
+                   asks nothing of the student, where a travail asks for something back - and the
+                   lighter of the two is the one reached first. #}
+                {% if node.type.value == 'file' %}
+                    <li><a class="dropdown-item" href="{{ path('app_file_library_node_share', {nodeId: node.id}) }}">{{ 'sharedDocumentShareAction'|trans }}</a></li>
+                {% endif %}
+                {# The Vidéos tool's front door too: a video here creates the VideoResource and its
+                   file, and the wizard opens on a « à visionner ». For anything else it is a « à
+                   rendre » with the file already attached. #}
                 {% if node.type.value == 'file' %}
                     <li><a class="dropdown-item" href="{{ path('app_assignment_new', {libraryNode: node.id}) }}">{{ 'fileLibraryCreateWorkAction'|trans }}</a></li>
                 {% endif %}

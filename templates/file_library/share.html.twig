@@ -1,0 +1,192 @@
+{% extends 'layout/app.html.twig' %}
+
+{# « Partager à une classe » - the screen behind the row menu's first entry.
+
+   Four decisions, in the order the teacher makes them: which class, who inside it, under which
+   matière, and for how long. The blocks below the class selector are rendered **once per class** and
+   revealed by the `shared-document` controller; the server re-checks every one of them against the
+   class that was actually submitted, so what the page holds is a convenience and never an authority.
+
+   The « Retirer » list at the bottom is the only way back out of a share, and it is on this screen
+   rather than in the usage panel on purpose: the panel is shared by ten kinds of link and says what
+   a deletion would break - it is not a place where things are undone one by one. #}
+
+{% block title %}{{ 'sharedDocumentShareAction'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'file_library/_breadcrumb.html.twig' with {
+        currentFolder: currentFolder,
+        ancestors: ancestors,
+        extra: [{label: 'sharedDocumentShareAction'|trans, url: path('app_file_library_node_share', {nodeId: node.id})}]
+    } %}
+{% endblock %}
+
+{% block page_title %}{{ 'sharedDocumentSharePageTitle'|trans({'%name%': node.name}) }}{% endblock %}
+
+{% block main %}
+    <div class="cm-flib">
+        {% include 'file_library/_rail.html.twig' with {rail: rail, quota: quota, currentFolder: currentFolder} %}
+
+        <div class="cm-flib__content">
+            {% if targets is empty %}
+                <p class="cm-flib__empty">{{ 'sharedDocumentNoProgramText'|trans }}</p>
+            {% else %}
+                <form method="post" action="{{ path('app_file_library_node_share_save', {nodeId: node.id}) }}"
+                      class="cm-share"
+                      data-controller="shared-document">
+                    <input type="hidden" name="_token" value="{{ csrf_token('shared_document') }}">
+
+                    <div class="cm-share__field">
+                        <label class="form-label" for="shared-document-program">{{ 'sharedDocumentProgramFieldLabel'|trans }}</label>
+                        {# Input, so a placeholder - the teacher chooses a class, they are not shown
+                           one already chosen for them. #}
+                        <select name="program" id="shared-document-program" class="form-select" required
+                                data-shared-document-target="program"
+                                data-action="change->shared-document#selectProgram">
+                            <option value="">{{ 'sharedDocumentProgramPlaceholder'|trans }}</option>
+                            {% for target in targets %}
+                                <option value="{{ target.program.id }}">{{ target.program.shortName }} — {{ target.program.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    {% for target in targets %}
+                        <div class="cm-share__scope" data-shared-document-target="scope" data-program-id="{{ target.program.id }}" hidden>
+                            {# Checkbox groups rather than a multi-select, per the repository's rule.
+                               Leaving a group empty is what targets the whole class - said in the
+                               help text, because a set of unticked boxes reads as "nobody". #}
+                            {% if target.options is not empty %}
+                                <fieldset class="cm-share__field">
+                                    <legend class="form-label">{{ 'sharedDocumentOptionsFieldLabel'|trans }}</legend>
+                                    <p class="cm-share__help">{{ 'sharedDocumentOptionsHelpText'|trans }}</p>
+                                    <div class="cm-share__checks">
+                                        {% for option in target.options %}
+                                            <label class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="options[]" value="{{ option.id }}" disabled>
+                                                <span class="form-check-label">{{ option.name }}</span>
+                                            </label>
+                                        {% endfor %}
+                                    </div>
+                                </fieldset>
+                            {% endif %}
+
+                            {% if target.modalities is not empty %}
+                                <fieldset class="cm-share__field">
+                                    <legend class="form-label">{{ 'sharedDocumentModalitiesFieldLabel'|trans }}</legend>
+                                    <p class="cm-share__help">{{ 'sharedDocumentModalitiesHelpText'|trans }}</p>
+                                    <div class="cm-share__checks">
+                                        {% for modality in target.modalities %}
+                                            <label class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="modalities[]" value="{{ modality.id }}" disabled>
+                                                <span class="form-check-label">{{ modality.name }}</span>
+                                            </label>
+                                        {% endfor %}
+                                    </div>
+                                </fieldset>
+                            {% endif %}
+
+                            <div class="cm-share__field">
+                                <label class="form-label" for="shared-document-topic-{{ target.program.id }}">{{ 'sharedDocumentTopicFieldLabel'|trans }}</label>
+                                <p class="cm-share__help">{{ 'sharedDocumentTopicHelpText'|trans }}</p>
+                                {# `required` rides along with `disabled`: a disabled field is barred
+                                   from constraint validation, so the eight hidden blocks stay silent
+                                   and only the revealed one insists. #}
+                                <select name="topic" id="shared-document-topic-{{ target.program.id }}" class="form-select" required disabled>
+                                    <option value="">{{ 'sharedDocumentTopicPlaceholder'|trans }}</option>
+                                    {% for topic in target.topics %}
+                                        <option value="{{ topic.id }}">{{ topic.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    {% endfor %}
+
+                    {# Unlimited is the default and it is the first radio: a document is normally put
+                       at a class's disposal and left there. #}
+                    <fieldset class="cm-share__field">
+                        <legend class="form-label">{{ 'sharedDocumentVisibilityFieldLabel'|trans }}</legend>
+                        <label class="form-check">
+                            <input class="form-check-input" type="radio" name="visibility" value="unlimited" checked
+                                   data-action="change->shared-document#toggleWindow">
+                            <span class="form-check-label">{{ 'sharedDocumentVisibilityUnlimitedLabel'|trans }}</span>
+                        </label>
+                        <label class="form-check">
+                            <input class="form-check-input" type="radio" name="visibility" value="window"
+                                   data-action="change->shared-document#toggleWindow">
+                            <span class="form-check-label">{{ 'sharedDocumentVisibilityWindowLabel'|trans }}</span>
+                        </label>
+
+                        <div class="cm-share__window" data-shared-document-target="window" hidden>
+                            <div>
+                                <label class="form-label" for="shared-document-from">{{ 'sharedDocumentVisibleFromFieldLabel'|trans }}</label>
+                                <input type="datetime-local" class="form-control" id="shared-document-from" name="visibleFrom">
+                            </div>
+                            <div>
+                                <label class="form-label" for="shared-document-until">{{ 'sharedDocumentVisibleUntilFieldLabel'|trans }}</label>
+                                <input type="datetime-local" class="form-control" id="shared-document-until" name="visibleUntil">
+                            </div>
+                            <p class="cm-share__help">{{ 'sharedDocumentWindowHelpText'|trans }}</p>
+                        </div>
+                    </fieldset>
+
+                    <div class="cm-share__actions">
+                        <a class="cm-btn cm-btn--outline" href="{{ currentFolder ? path('app_file_library_folder', {nodeId: currentFolder.id}) : path('app_file_library') }}">{{ 'cancelAction'|trans }}</a>
+                        <button type="submit" class="cm-btn cm-btn--primary">{{ 'sharedDocumentShareAction'|trans }}</button>
+                    </div>
+                </form>
+            {% endif %}
+
+            <h2 class="cm-share__listtitle">{{ 'sharedDocumentExistingTitle'|trans }}</h2>
+
+            {% if shares is empty %}
+                <p class="cm-flib__empty">{{ 'sharedDocumentNoneYetText'|trans }}</p>
+            {% else %}
+                <div class="table-responsive">
+                    <table class="cm-flib__table">
+                        <thead>
+                            <tr>
+                                <th>{{ 'sharedDocumentProgramFieldLabel'|trans }}</th>
+                                <th>{{ 'sharedDocumentTopicFieldLabel'|trans }}</th>
+                                <th>{{ 'sharedDocumentTargetColumnLabel'|trans }}</th>
+                                <th>{{ 'sharedDocumentVisibilityFieldLabel'|trans }}</th>
+                                <th><span class="visually-hidden">{{ 'sharedDocumentUnshareAction'|trans }}</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for share in shares %}
+                                <tr class="cm-flib__row">
+                                    <td>{{ share.program.shortName }}</td>
+                                    <td>{{ share.topic ? share.topic.name : 'sharedDocumentNoTopicLabel'|trans }}</td>
+                                    <td>
+                                        {% set chips = [] %}
+                                        {% for option in share.options %}{% set chips = chips|merge([option.name]) %}{% endfor %}
+                                        {% for modality in share.modalities %}{% set chips = chips|merge([modality.name]) %}{% endfor %}
+                                        {{ chips is empty ? 'sharedDocumentWholeClassLabel'|trans : chips|join(' · ') }}
+                                    </td>
+                                    <td>
+                                        {% if not share.hasWindow %}
+                                            {{ 'sharedDocumentVisibilityUnlimitedLabel'|trans }}
+                                        {% else %}
+                                            {{ share.visibleFrom ? share.visibleFrom|date('d/m/Y H:i') : '…' }}
+                                            &rarr;
+                                            {{ share.visibleUntil ? share.visibleUntil|date('d/m/Y H:i') : '…' }}
+                                        {% endif %}
+                                    </td>
+                                    <td class="cm-flib__menu">
+                                        <form method="post" action="{{ path('app_file_library_share_delete', {shareId: share.id}) }}">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('shared_document') }}">
+                                            <button type="submit" class="cm-btn cm-btn--sm cm-btn--danger"
+                                                    data-controller="confirm-submit"
+                                                    data-confirm-submit-message-value="{{ 'sharedDocumentUnshareConfirmText'|trans({'%program%': share.program.shortName}) }}"
+                                                    data-action="click->confirm-submit#confirm">{{ 'sharedDocumentUnshareAction'|trans }}</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

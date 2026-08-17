@@ -52,7 +52,12 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->assertScreens($this->student, [
             '/' => 200,
             '/student-work' => 200,
-            '/my/courses' => 200,
+            // « Séquences de l'année » hands over to the single formation this student belongs to
+            // rather than drawing a picker with one card in it (2026-08-17). The list still renders
+            // for a student straddling two, and for the empty state.
+            '/my/courses' => 302,
+            // « Documents partagés » - open to the role, empty until a teacher shares something.
+            '/my/shared-documents' => 200,
             '/my/applications' => 200,
             '/agenda' => 200,
             '/messages' => 200,
@@ -118,6 +123,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // The course-space index is the student's own list of programs; a teacher reaches the
             // same sequences from their program screens instead.
             '/my/courses' => 403,
+            // A teacher shares *from* their file library and reads the result back through the
+            // file's utilisations; the student list is not their screen.
+            '/my/shared-documents' => 403,
             '/timetable' => 200,
             '/assignments' => 200,
             '/progression' => 200,
