@@ -133,9 +133,10 @@ class DocumentationArticleType extends AbstractType
                 // it builds the constraint from this policy, which is the half that used to be
                 // forgotten at every call site.
                 'policy' => UploadPolicy::platform(),
-                // Course material, so the library tab belongs here - it arrives with the library
-                // itself (design/validated/file-library.md, lot 4).
-                'library' => false,
+                // Teacher-authored course material: the « Bibliothèque de fichiers » tab is offered
+                // here (design/validated/file-library.md, "The component"). A file picked there is a
+                // reference - it weighs once, and deleting it from the library removes it from here.
+                'library' => true,
             ]);
 
         // "Permanente" must win over whatever the two date inputs still hold - the mock leaves

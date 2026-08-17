@@ -7,6 +7,7 @@ namespace App\Controller\Documentation;
 use App\Entity\DocumentationArticle;
 use App\Entity\DocumentationArticleAttachment;
 use App\Entity\DocumentationTag;
+use App\Entity\FileLibraryNode;
 use App\Entity\Group;
 use App\Entity\User;
 use App\Form\DocumentationArticleType;
@@ -19,6 +20,8 @@ use App\Service\DocumentationTagResolver;
 use App\Service\FileUploadService;
 use App\Service\PostValue;
 use App\Service\QueryValue;
+use App\Service\StagedUpload;
+use App\Service\UploadIntake;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -63,6 +66,7 @@ class ArticleController extends AbstractController
         private readonly DocumentationAccess $access,
         private readonly DocumentationTagResolver $tagResolver,
         private readonly FileUploadService $uploads,
+        private readonly UploadIntake $intake,
     ) {
     }
 
@@ -291,25 +295,29 @@ class ArticleController extends AbstractController
         $position = \count($article->getAttachments());
 
         foreach ($files as $file) {
-            if (!$file instanceof UploadedFile) {
+            // The three shapes App\Service\UploadIntake takes: a staged upload (what the migrated
+            // field submits), a library node (what the Bibliothèque tab adds), and an UploadedFile
+            // for anything not yet migrated.
+            if (!$file instanceof StagedUpload && !$file instanceof FileLibraryNode && !$file instanceof UploadedFile) {
                 continue;
             }
 
-            $name = $file->getClientOriginalName();
-            $extension = $file->guessExtension() ?? pathinfo($name, \PATHINFO_EXTENSION);
+            $name = UploadIntake::originalName($file);
+            $extension = UploadIntake::extension($file);
             // A random storage name, the original one kept as the label: two articles joining
             // their own "convention.pdf" must not overwrite each other in the bucket.
-            $key = $this->uploads->upload(
+            $key = $this->intake->store(
+                $file,
                 self::UPLOAD_PREFIX,
                 '' === $extension ? bin2hex(random_bytes(16)) : \sprintf('%s.%s', bin2hex(random_bytes(16)), $extension),
-                $file,
             );
-            $size = $file->getSize();
+            $size = UploadIntake::size($file);
 
             $attachment = (new DocumentationArticleAttachment($name, $key))
-                ->setMimeType($file->getClientMimeType())
-                ->setSizeBytes(false === $size ? null : $size)
-                ->setPosition($position++);
+                ->setMimeType(UploadIntake::mimeType($file))
+                ->setSizeBytes(0 === $size ? null : $size)
+                ->setPosition($position++)
+                ->setLibraryNode(UploadIntake::libraryNodeOf($file));
 
             $article->addAttachment($attachment);
         }

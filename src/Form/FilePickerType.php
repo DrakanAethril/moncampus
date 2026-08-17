@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Form;
 
 use App\Form\DataTransformer\StagedUploadTransformer;
+use App\Repository\FileLibraryNodeRepository;
+use App\Security\Voter\FileLibraryVoter;
 use App\Service\StagedUploadStore;
 use App\Service\UploadPolicy;
 use App\Validator\AllowedUpload;
@@ -16,6 +18,7 @@ use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\FormView;
 use Symfony\Component\OptionsResolver\Options;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 use Symfony\Component\Validator\Constraints\All;
 
 /**
@@ -59,16 +62,26 @@ use Symfony\Component\Validator\Constraints\All;
  *
  * ## The `library` option
  *
- * Whether the "Bibliothèque de fichiers" tab is offered, for the fields that carry teacher-authored
- * course material. It arrives with the library itself; until then the option exists, defaults to
- * false, and the tab is not drawn - the component is deliberately useful before the library exists,
- * which is why this lot lands before it.
+ * Whether the "Bibliothèque de fichiers" tab is offered, and it is set on the fields that carry
+ * teacher-authored course material - supports, lesson-log documents, wiki and documentation
+ * attachments, message attachments, signup lists, séquence resources, quiz question images. It stays
+ * **false** on the student-side fields, on the import assistants (a CSV imported once is not course
+ * material) and on the avatar.
+ *
+ * The tab is also hidden, whatever the option says, for a user who has no library: the check is the
+ * Voter's `FILE_LIBRARY_LINK`, so who may link and who has a library are one answer.
+ *
+ * A file picked there is a **reference**: the row takes the node's own storage key and a foreign key
+ * back to it, so the file weighs once and correcting it in the library corrects it everywhere - and
+ * deleting it from the library removes it from here. That is the rule the chip's gold pill announces.
  */
 class FilePickerType extends AbstractType
 {
     public function __construct(
         private readonly StagedUploadStore $store,
         private readonly Security $security,
+        private readonly FileLibraryNodeRepository $libraryNodes,
+        private readonly AuthorizationCheckerInterface $authorization,
     ) {
     }
 
@@ -76,7 +89,7 @@ class FilePickerType extends AbstractType
     {
         $multiple = true === $options['multiple'];
 
-        $builder->addViewTransformer(new StagedUploadTransformer($this->store, $this->security, $multiple));
+        $builder->addViewTransformer(new StagedUploadTransformer($this->store, $this->security, $this->libraryNodes, $multiple));
     }
 
     public function buildView(FormView $view, FormInterface $form, array $options): void
@@ -84,7 +97,9 @@ class FilePickerType extends AbstractType
         $policy = $this->policyOf($options);
 
         $view->vars['multiple'] = true === $options['multiple'];
-        $view->vars['library'] = true === $options['library'];
+        // The tab is hidden - whatever the field says - for a user who has no library at all. A tab
+        // that opens on "you have no library" is a worse answer than an absent one.
+        $view->vars['library'] = true === $options['library'] && $this->authorization->isGranted(FileLibraryVoter::LINK);
         $view->vars['max_bytes'] = $policy->maxSizeInBytes();
         $view->vars['extensions'] = $policy->extensions();
         // The `accept` attribute of the native picker: a courtesy that decides what the file dialog

@@ -632,8 +632,10 @@ class LessonLogController extends AbstractController
                         self::ATTACHMENT_UPLOAD_PREFIX,
                         sprintf('%d-%d-%s.%s', $session->getId(), time(), bin2hex(random_bytes(4)), $extension),
                     );
-                    $attachment->setType(LessonLogAttachmentSourceType::Upload);
+                    $libraryNode = UploadIntake::libraryNodeOf($file);
+                    $attachment->setType(null === $libraryNode ? LessonLogAttachmentSourceType::Upload : LessonLogAttachmentSourceType::Library);
                     $attachment->setStorageKey($key);
+                    $attachment->setLibraryNode($libraryNode);
                 } else {
                     $attachment->setType(LessonLogAttachmentSourceType::Link);
                     $attachment->setUrl($url);

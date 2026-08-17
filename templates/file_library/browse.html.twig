@@ -35,6 +35,8 @@
          data-file-library-folder-url-value="{{ path('app_file_library_folder_new') }}"
          data-file-library-rename-url-template-value="{{ path('app_file_library_node_rename', {nodeId: '__NODE_ID__'}) }}"
          data-file-library-replace-url-template-value="{{ path('app_file_library_node_replace', {nodeId: '__NODE_ID__'}) }}"
+         data-file-library-usages-url-template-value="{{ path('app_file_library_node_usages', {nodeId: '__NODE_ID__'}) }}"
+         data-file-library-delete-url-template-value="{{ path('app_file_library_node_delete', {nodeId: '__NODE_ID__'}) }}"
          data-file-library-max-bytes-value="{{ maxBytes }}"
          data-file-library-stage-token-value="{{ csrf_token('staged-upload') }}"
          data-file-library-token-value="{{ csrf_token('file_library_node') }}"
@@ -44,6 +46,10 @@
              uploading: 'fileLibraryUploadingLabel'|trans,
              networkError: 'filePickerNetworkErrorMessage'|trans,
              replaceConfirm: 'fileLibraryReplaceConfirmText'|trans,
+             usagesTitle: 'fileLibraryUsagePanelTitle'|trans,
+             deleteEverywhere: 'fileLibraryDeleteEverywhereAction'|trans,
+             cancel: 'cancelAction'|trans,
+             close: 'closeAction'|trans,
          }|json_encode|e('html_attr') }}">
 
         {% include 'file_library/_rail.html.twig' with {rail: rail, quota: quota, currentFolder: currentFolder} %}
@@ -82,6 +88,23 @@
            name: nothing here is a form, the files leave on their own XHR. #}
         <input type="file" multiple hidden aria-hidden="true" tabindex="-1"
                data-file-library-target="input" data-action="change->file-library#selected">
+
+        {# The usage panel, and the deletion modal that is the same list with a button under it
+           (mockups 4 and 6). The rule it exists for: **a link is a reference**, so deleting a file
+           removes it from every assignment, message and page it was linked into - the modal lists
+           them by name, with a link to each, and nothing is inferred or silent. Since deletion became
+           deferred it also says the second half in one line: the links go now, the file goes to the
+           corbeille, the bytes go in thirty days. #}
+        <div class="cm-flib__usages" data-file-library-target="usages" hidden>
+            <div class="cm-flib__usages-box">
+                <div class="cm-flib__usages-head">
+                    <h2 class="cm-flib__usages-title" data-file-library-target="usagesTitle"></h2>
+                    <button type="button" class="cm-flib__viewer-close" data-action="file-library#closeUsages" aria-label="{{ 'closeAction'|trans }}">&times;</button>
+                </div>
+                <div class="cm-flib__usages-body" data-file-library-target="usagesBody"></div>
+                <div class="cm-flib__usages-foot" data-file-library-target="usagesFoot"></div>
+            </div>
+        </div>
 
         {# The full-frame viewer (mockup 3). With no grid view this is the only place a document is
            actually looked at, and a PDF in a 240px column is not looked at. #}

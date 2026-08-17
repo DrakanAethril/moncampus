@@ -597,7 +597,13 @@ class AssignmentController extends AbstractController
                 sprintf('%d-%s.%s', time(), bin2hex(random_bytes(4)), $extension),
             );
 
-            (new AssignmentAttachment($assignment, UploadIntake::originalName($file), AssignmentAttachmentSourceType::Upload))->setStorageKey($key);
+            $node = UploadIntake::libraryNodeOf($file);
+            // Library or Upload: the row reads the same either way - it carries its own storage key -
+            // and what the third case adds is *where it came from*, which is what the usage panel and
+            // the deletion modal both need to know.
+            (new AssignmentAttachment($assignment, UploadIntake::originalName($file), null === $node ? AssignmentAttachmentSourceType::Upload : AssignmentAttachmentSourceType::Library))
+                ->setStorageKey($key)
+                ->setLibraryNode($node);
         }
 
         foreach (preg_split('/\R/', FormValue::string($form, 'attachmentLinks')) ?: [] as $line) {

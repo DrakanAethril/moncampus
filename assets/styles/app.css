@@ -7426,3 +7426,47 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
     .cm-flib { grid-template-columns: minmax(0, 1fr); }
     .cm-flib__rail { position: static; max-height: none; }
 }
+
+/* --- The link: the picker's Bibliothèque tab, the usage panel, the deletion modal -------- */
+
+/* The tab strip's buttons are buttons now that one of them switches panes - reset to the tab's look
+   rather than the browser's. */
+.cm-filepick__tab { border: 0; background: none; cursor: pointer; }
+.cm-filepick__library { padding: 14px; border-top: 1px solid var(--cm-border-soft); }
+.cm-filepick__library-search { margin-bottom: 10px; }
+.cm-filepick__library-body { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 12px; max-height: 260px; }
+.cm-filepick__library-tree { overflow-y: auto; border-right: 1px solid var(--cm-border-soft); padding-right: 8px; }
+.cm-filepick__library-list { list-style: none; margin: 0; padding: 0; }
+.cm-filepick__library-folder { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 5px 6px; border-radius: 6px; font: 400 12.5px var(--cm-font-ui); color: var(--cm-text); cursor: pointer; }
+.cm-filepick__library-folder:hover { background: var(--cm-surface-alt); color: var(--cm-ink); }
+.cm-filepick__library-files { overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+.cm-filepick__library-file { display: flex; align-items: center; gap: 9px; width: 100%; text-align: left; border: 1px solid transparent; background: none; padding: 6px 8px; border-radius: 8px; cursor: pointer; }
+.cm-filepick__library-file:hover { background: var(--cm-surface-alt); border-color: var(--cm-border-soft); }
+.cm-filepick__library-file-name { flex: 1; min-width: 0; font: 600 12.5px var(--cm-font-ui); color: var(--cm-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-filepick__library-empty { margin: 8px 2px; font: 400 12.5px var(--cm-font-ui); color: var(--cm-faint); }
+
+/* The usage count is a button now: it opens the panel. It keeps the pill's look, because what it
+   shows is still a count. */
+.cm-flib__use { border: 1px solid var(--cm-border-soft); cursor: default; }
+button.cm-flib__use { cursor: pointer; }
+.cm-flib__use--n { background: var(--cm-blue-bg); color: var(--cm-blue-tx); border-color: transparent; }
+button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
+
+.cm-flib__usages { position: fixed; inset: 0; z-index: 1075; display: grid; place-items: center; background: rgba(18, 52, 77, .45); padding: 20px; }
+.cm-flib__usages-box { width: min(560px, 100%); max-height: 80vh; display: flex; flex-direction: column; background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: 14px; box-shadow: var(--cm-shadow-pop); overflow: hidden; }
+.cm-flib__usages-head { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--cm-border-soft); }
+.cm-flib__usages-title { flex: 1; min-width: 0; margin: 0; font: 600 18px/1.25 var(--cm-font-title); color: var(--cm-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-flib__usages-head .cm-flib__viewer-close { color: var(--cm-faint); }
+.cm-flib__usages-body { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 20px; font: 400 13.5px var(--cm-font-ui); color: var(--cm-text); }
+.cm-flib__usages-foot { display: flex; gap: 9px; justify-content: flex-end; padding: 14px 20px; border-top: 1px solid var(--cm-border-soft); background: var(--cm-surface-alt); }
+
+.cm-flib__uselist { list-style: none; margin: 0; padding: 0; }
+.cm-flib__uselist li { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--cm-border-soft); }
+.cm-flib__uselist li:last-child { border-bottom: 0; }
+.cm-flib__uselist .where { font: 600 10.5px/1 var(--cm-font-ui); letter-spacing: 0.08em; text-transform: uppercase; color: var(--cm-faint); min-width: 128px; }
+.cm-flib__uselist .what { color: var(--cm-ink); font-weight: 600; }
+.cm-flib__uselist a.what { color: var(--cm-brand-strong); text-decoration: none; }
+.cm-flib__uselist a.what:hover { text-decoration: underline; }
+/* One line, and only one - see the controller: the modal says the links go now and the bytes go in
+   thirty days, and anything more turns a confirmation into a lecture. */
+.cm-flib__usenotice { margin: 14px 0 0; padding: 10px 12px; border-radius: 8px; background: var(--cm-gold-bg); color: var(--cm-gold-tx); font-size: 12.5px; }

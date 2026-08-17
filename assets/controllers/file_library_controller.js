@@ -14,7 +14,8 @@ import { Controller } from '@hotwired/stimulus';
 // is how they come to disagree.
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
-    static targets = ['input', 'uploads', 'table', 'viewer', 'viewerBody', 'viewerName', 'viewerCount', 'viewerDownload'];
+    static targets = ['input', 'uploads', 'table', 'viewer', 'viewerBody', 'viewerName', 'viewerCount', 'viewerDownload',
+        'usages', 'usagesTitle', 'usagesBody', 'usagesFoot'];
 
     static values = {
         folderId: String,
@@ -23,6 +24,8 @@ export default class extends Controller {
         folderUrl: String,
         renameUrlTemplate: String,
         replaceUrlTemplate: String,
+        usagesUrlTemplate: String,
+        deleteUrlTemplate: String,
         maxBytes: Number,
         stageToken: String,
         token: String,
@@ -225,6 +228,88 @@ export default class extends Controller {
 
         document.body.appendChild(form);
         form.submit();
+    }
+
+    // ---- Usages, and the deletion that goes through them ---------------------------------------
+
+    // The panel: where this file is used, by name, with a link to each. Read-only.
+    usages(event) {
+        this.openUsages(event.currentTarget.closest('[data-node-id]'), false);
+    }
+
+    // The same list, with « Supprimer partout (11 utilisations) » under it. The teacher sees what
+    // they are about to remove before they remove it - which is the whole handling of the one danger
+    // the reference model has.
+    confirmDelete(event) {
+        this.openUsages(event.currentTarget.closest('[data-node-id]'), true);
+    }
+
+    async openUsages(row, deleting) {
+        const nodeId = row.dataset.nodeId;
+
+        this.usagesTitleTarget.textContent = row.dataset.nodeName;
+        this.usagesBodyTarget.textContent = '';
+        this.usagesFootTarget.replaceChildren();
+        this.usagesTarget.hidden = false;
+
+        let data;
+
+        try {
+            const response = await fetch(this.usagesUrlTemplateValue.replace('__NODE_ID__', nodeId), { headers: { Accept: 'application/json' } });
+            data = await response.json();
+        } catch {
+            this.usagesBodyTarget.textContent = this.labels.networkError;
+
+            return;
+        }
+
+        const list = document.createElement('ul');
+        list.className = 'cm-flib__uselist';
+
+        for (const usage of data.usages ?? []) {
+            const item = document.createElement('li');
+            item.appendChild(this.el('span', 'where', usage.where));
+
+            if (usage.url) {
+                const link = this.el('a', 'what', usage.what);
+                link.href = usage.url;
+                item.appendChild(link);
+            } else {
+                item.appendChild(this.el('span', 'what', usage.what));
+            }
+
+            list.appendChild(item);
+        }
+
+        this.usagesBodyTarget.replaceChildren(list);
+
+        if (!deleting) {
+            const close = this.el('button', 'cm-btn cm-btn--sm cm-btn--outline', this.labels.close);
+            close.type = 'button';
+            close.addEventListener('click', () => this.closeUsages());
+            this.usagesFootTarget.replaceChildren(close);
+
+            return;
+        }
+
+        // One line, and only one: since deletion became deferred this button means "the links go
+        // now, the file goes to the corbeille, the bytes go in thirty days". Anything more turns a
+        // confirmation into a lecture.
+        this.usagesBodyTarget.appendChild(this.el('p', 'cm-flib__usenotice', data.deleteNotice ?? ''));
+
+        const cancel = this.el('button', 'cm-btn cm-btn--sm cm-btn--outline', this.labels.cancel);
+        cancel.type = 'button';
+        cancel.addEventListener('click', () => this.closeUsages());
+
+        const confirm = this.el('button', 'cm-btn cm-btn--sm cm-btn--danger', `${this.labels.deleteEverywhere} (${data.count})`);
+        confirm.type = 'button';
+        confirm.addEventListener('click', () => this.post(this.deleteUrlTemplateValue.replace('__NODE_ID__', nodeId), {}));
+
+        this.usagesFootTarget.replaceChildren(cancel, confirm);
+    }
+
+    closeUsages() {
+        this.usagesTarget.hidden = true;
     }
 
     // ---- Preview ------------------------------------------------------------------------------

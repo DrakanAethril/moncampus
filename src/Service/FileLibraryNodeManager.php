@@ -32,6 +32,7 @@ class FileLibraryNodeManager
         private readonly FileLibraryNodeRepository $nodes,
         private readonly FileLibraryTree $tree,
         private readonly ObjectStore $objectStore,
+        private readonly FileLibraryLinks $links,
     ) {
     }
 
@@ -163,6 +164,11 @@ class FileLibraryNodeManager
             }
 
             $member->setDeletedAt($now);
+
+            // « Supprimer partout » - the links go **now**, and the bytes go in thirty days. That is
+            // the promise the modal makes, and this is the half of it the reader sees immediately:
+            // an attachment pointing at a file the teacher has deleted is worse than an absent one.
+            $this->links->removeLinksTo($member);
 
             // The object leaves the bucket in thirty days, not now: App\Service\ObjectStore is what
             // decides when, and this only says the file is gone from the teacher's point of view.

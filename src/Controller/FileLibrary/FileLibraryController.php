@@ -7,6 +7,7 @@ namespace App\Controller\FileLibrary;
 use App\Entity\FileLibraryNode;
 use App\Repository\FileLibraryNodeRepository;
 use App\Security\Voter\FileLibraryVoter;
+use App\Service\FileLibraryLinks;
 use App\Service\FileLibraryQuota;
 use App\Service\FileLibraryTree;
 use App\Service\FileLibraryUploadValidator;
@@ -40,6 +41,7 @@ class FileLibraryController extends AbstractController
         private readonly FileLibraryTree $tree,
         private readonly FileLibraryQuota $quota,
         private readonly FileLibraryUploadValidator $uploadValidator,
+        private readonly FileLibraryLinks $links,
     ) {
     }
 
@@ -133,6 +135,9 @@ class FileLibraryController extends AbstractController
                 // A folder's "taille" column is its file count - the same column, reading the one
                 // number that means something for a container.
                 'fileCount' => $node->isFolder() ? $this->nodes->countFilesUnder($node) : null,
+                // And a file's "utilisations" column is where it is linked. It is a link into the
+                // usage panel, and what turns « Supprimer » into « Supprimer partout ».
+                'usageCount' => $node->isFile() ? $this->links->countUsagesOf($node) : 0,
             ], $children),
             'rail' => $this->railTree($this->nodes, $this->tree, $owner),
             'quota' => $this->quotaBar($this->quota, $owner),

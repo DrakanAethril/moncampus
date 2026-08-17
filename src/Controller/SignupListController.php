@@ -366,7 +366,7 @@ class SignupListController extends AbstractController
         foreach ($files ?? [] as $file) {
             $extension = UploadIntake::extension($file);
             $key = $uploadIntake->store($file, self::ATTACHMENT_PREFIX, \sprintf('%s.%s', bin2hex(random_bytes(16)), $extension));
-            $entityManager->persist(new SignupListAttachment($signupList, $key, UploadIntake::originalName($file)));
+            $entityManager->persist((new SignupListAttachment($signupList, $key, UploadIntake::originalName($file)))->setLibraryNode(UploadIntake::libraryNodeOf($file)));
         }
     }
 

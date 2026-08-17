@@ -104,7 +104,8 @@ class WikiContentController extends AbstractController
                 (new WikiAttachment(UploadIntake::originalName($file), $key))
                     ->setMimeType(UploadIntake::mimeType($file))
                     ->setSizeBytes(UploadIntake::size($file))
-                    ->setPosition($position++),
+                    ->setPosition($position++)
+                    ->setLibraryNode(UploadIntake::libraryNodeOf($file)),
             );
             ++$accepted;
         }

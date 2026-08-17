@@ -169,9 +169,10 @@ class AssignmentWizardType extends AbstractType
                 // attaches a source file or a capture to a BTS SIO assignment, and refusing those
                 // would be a product decision design/validated/upload-policy.md did not take.
                 'policy' => UploadPolicy::platform(),
-                // The supports of a travail à faire are the very thing the library is for: the tab
-                // arrives with it (design/validated/file-library.md, lot 4).
-                'library' => false,
+                // Teacher-authored course material: the « Bibliothèque de fichiers » tab is offered
+                // here (design/validated/file-library.md, "The component"). A file picked there is a
+                // reference - it weighs once, and deleting it from the library removes it from here.
+                'library' => true,
             ])
             // The pasted links, one per line: the field stays hidden, it is the template's chips
             // that write it.

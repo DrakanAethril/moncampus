@@ -127,7 +127,8 @@ class FileLibraryNodeController extends AbstractController
      * The modal that lists every usage arrives with the link (lot 4) - there is nothing to list
      * until a file can be linked.
      */
-    #[Route(path: '/{nodeId}/delete', name: 'app_file_library_node_delete', requirements: ['nodeId' => '\d+'], methods: ['POST'])]
+    // No `\d+`, same reason as rename(): the deletion modal builds this address from a template.
+    #[Route(path: '/{nodeId}/delete', name: 'app_file_library_node_delete', methods: ['POST'])]
     public function delete(Request $request, int $nodeId): Response
     {
         $this->assertCsrf($request);
