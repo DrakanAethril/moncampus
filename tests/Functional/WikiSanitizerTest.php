@@ -90,6 +90,26 @@ class WikiSanitizerTest extends KernelTestCase
         }
     }
 
+    /**
+     * A long page comes back whole.
+     *
+     * The component truncates at 20 000 bytes unless told otherwise, mid-markup and without a word,
+     * and the FrameworkBundle only overrides that when the key is present - so this is a test of one
+     * line of YAML that is easy to lose in a merge and impossible to notice by reading. It was found
+     * on real pages of 17 973 and 19 064 bytes, both a single diagram short of losing their tail.
+     */
+    public function testALongPageIsNotTruncated(): void
+    {
+        $body = '<p>'.str_repeat('Le contenu d’une page de wiki avec des schémas. ', 3000).'</p>'
+            .'<p id="tail">La fin de la page</p>';
+
+        self::assertGreaterThan(20_000, \strlen($body), 'the fixture has to be past the default limit');
+
+        $html = $this->sanitizer()->sanitize($body);
+
+        self::assertStringContainsString('La fin de la page', $html);
+    }
+
     public function testAKatexFormulaSurvivesWithItsSourceAndItsMarkup(): void
     {
         $html = $this->sanitizer()->sanitize(
