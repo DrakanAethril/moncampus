@@ -6,6 +6,7 @@ namespace App\Service;
 
 use App\Entity\LessonSession;
 use App\Entity\SeanceInstance;
+use App\Enum\LessonLogSection;
 use App\Repository\ProgressionSeancePlacementRepository;
 use App\Repository\SeanceInstanceRepository;
 
@@ -40,5 +41,46 @@ class SeanceContentResolver
         return $this->placementRepository->findOneByLessonSession($session)
             ?->getProgressionSeance()
             ?->getSeanceInstance();
+    }
+
+    /**
+     * What the séance already says for each of the three parts of a cahier de texte - the text a
+     * teacher opening the créneau should not have to type again.
+     *
+     * The « pendant » part falls back on the objectives when no trace was written for the students:
+     * coarser, but better than an empty field. A part the séance says nothing about is absent from
+     * the map rather than present and empty, so a caller only has to test the key.
+     *
+     * @return array<string, string> keyed by LessonLogSection::value
+     */
+    public function defaultsFor(?SeanceInstance $seance): array
+    {
+        if (null === $seance) {
+            return [];
+        }
+
+        $candidates = [
+            LessonLogSection::Before->value => $seance->getAvantDescription(),
+            LessonLogSection::During->value => $seance->getCahierDeTexteDescription() ?: $seance->getObjectifs(),
+            LessonLogSection::After->value => $seance->getApresDescription(),
+        ];
+
+        $defaults = [];
+        foreach ($candidates as $section => $content) {
+            if (self::saysSomething($content)) {
+                $defaults[$section] = (string) $content;
+            }
+        }
+
+        return $defaults;
+    }
+
+    /**
+     * A rich-text field is empty as soon as it carries no words: HugeRTE leaves a `<p><br></p>`
+     * behind when the teacher clears it, and that is not content.
+     */
+    public static function saysSomething(?string $content): bool
+    {
+        return '' !== trim(strip_tags(str_replace('&nbsp;', ' ', (string) $content)));
     }
 }
