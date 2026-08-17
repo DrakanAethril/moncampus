@@ -28,8 +28,11 @@
 releases:
     - version: '2026.08.17.2'
       date: '2026-08-17'
-      summary: "Les schémas insérés dans une page de wiki s'affichent enfin tels qu'ils ont été composés : leurs couleurs, leurs polices et leur cadrage se perdaient à l'enregistrement. Une longue page n'est par ailleurs plus coupée en cours de route, et un schéma déjà posé se modifie d'un double-clic."
+      summary: "Les schémas insérés dans une page de wiki s'affichent enfin tels qu'ils ont été composés : leurs couleurs, leurs polices et leur cadrage se perdaient à l'enregistrement. Le cahier de texte propose par ailleurs, en un clic, le contenu que la séance prévoyait déjà."
       entries:
+          - type: nouveaute
+            title: 'Le cahier de texte reprend le contenu prévu par la séance'
+            detail: "Chaque partie — avant, pendant, après — propose en un clic le texte que la séance instanciée porte déjà, tant que l'éditeur est vide."
           - type: fix
             title: "Les schémas d'une page de wiki s'affichent comme à la composition"
             detail: "L'aperçu était juste et la page enregistrée fausse : certains schémas ressortaient entièrement noirs, les libellés décalés de leurs cases, les plus larges rognés au bord de la page. Les schémas des pages déjà écrites sont redessinés à la première ouverture de leur éditeur, sans rien avoir à refaire."
