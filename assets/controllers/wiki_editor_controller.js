@@ -1,6 +1,7 @@
 import { Controller } from '@hotwired/stimulus';
 import TomSelect from 'tom-select';
 import 'tom-select/dist/css/tom-select.bootstrap5.min.css';
+import { DIAGRAM_THEME, selfContainedSvg } from '../wiki/mermaid_svg.js';
 
 /**
  * The wiki's editor - a separate controller from hugerte_editor_controller.js on purpose.
@@ -18,6 +19,10 @@ import 'tom-select/dist/css/tom-select.bootstrap5.min.css';
  * source kept in a data- attribute so the author can edit it again. Reading a page and printing it
  * then cost nothing: no library runs on the read side, KaTeX needing only its stylesheet, which is
  * also why it works unchanged inside Gotenberg's Chromium.
+ *
+ * A Mermaid diagram goes through assets/wiki/mermaid_svg.js before being inserted, which is what
+ * makes it survive the trip to the database: read that file before touching anything about how a
+ * diagram is produced.
  */
 
 const SCRIPT_URL = '/hugerte/hugerte.min.js';
@@ -166,6 +171,10 @@ export default class extends Controller {
         });
 
         this.editor = editor;
+
+        // Repairs the diagrams of pages written before the styles were inlined. Deliberately not
+        // awaited: it pulls Mermaid in (3.4 MB) and must not hold up an editor whose page has none.
+        this.refreshStaleMermaidBlocks(editor).catch(() => {});
 
         // The last word before the page posts. Deliberately **synchronous** and without
         // preventDefault: it only rewrites the field the form is about to read, so none of the
@@ -405,23 +414,72 @@ export default class extends Controller {
             // Only on insertion: an empty paragraph after the block is what leaves somewhere to
             // type. Re-adding it on every edit would pile blank lines under the diagram.
             trailing: '<p></p>',
-            render: async (source) => {
-                await loadScript(MERMAID_URL, () => window.mermaid);
-                window.mermaid.initialize({
-                    startOnLoad: false,
-                    // htmlLabels:false is what lets the sanitizer refuse <foreignObject>
-                    // without losing every label: labels come back as <text> instead.
-                    htmlLabels: false,
-                    flowchart: { htmlLabels: false },
-                    securityLevel: 'strict',
-                    theme: isDarkTheme() ? 'dark' : 'default',
-                });
-
-                const { svg } = await window.mermaid.render(`mermaid-${Date.now()}`, source);
-
-                return `<div class="cm-mermaid" data-mermaid="${this.escapeAttribute(source)}">${svg}</div>`;
-            },
+            render: (source) => this.renderMermaid(source),
         });
+    }
+
+    /**
+     * Renders one diagram into the markup that is both shown and stored.
+     *
+     * `selfContainedSvg()` is not a detail: without it Mermaid's stylesheet - which is where a
+     * diagram's whole appearance lives - is thrown away by the sanitizer on the way to the database,
+     * and the author gets a right-looking preview and a wrong-looking page. See
+     * assets/wiki/mermaid_svg.js.
+     */
+    async renderMermaid(source) {
+        await loadScript(MERMAID_URL, () => window.mermaid);
+        window.mermaid.initialize({
+            startOnLoad: false,
+            // htmlLabels:false is what lets the sanitizer refuse <foreignObject>
+            // without losing every label: labels come back as <text> instead.
+            htmlLabels: false,
+            flowchart: { htmlLabels: false },
+            securityLevel: 'strict',
+            ...DIAGRAM_THEME,
+        });
+
+        const { svg } = await window.mermaid.render(`mermaid-${Date.now()}`, source);
+
+        return `<div class="cm-mermaid" data-mermaid="${this.escapeAttribute(source)}">${selfContainedSvg(svg)}</div>`;
+    }
+
+    /**
+     * Redraws the diagrams of pages written before the styles were inlined, when the editor opens.
+     *
+     * Their source is intact in `data-mermaid` - only the picture beside it is wrong - so re-running
+     * it through the current pipeline repairs the page, and the author has nothing to find or
+     * redo. Nothing is written until they save, which is also why this is not a migration: a page
+     * nobody edits keeps the diagram it has.
+     *
+     * The staleness test is the one thing the old markup cannot fake: a label with no font-size of
+     * its own. Mermaid used to set it in the stylesheet the sanitizer removed, so every diagram
+     * stored before this has bare `<text>` elements, and every one stored after carries it inline.
+     */
+    async refreshStaleMermaidBlocks(editor) {
+        const stale = [...editor.dom.select('[data-mermaid]')].filter(
+            (block) => !block.querySelector('svg') || !block.querySelector('text[style*="font-size"]'),
+        );
+
+        if (0 === stale.length) {
+            return;
+        }
+
+        for (const block of stale) {
+            try {
+                // Sequentially: Mermaid renders through a single shared container and interleaved
+                // renders come back with each other's geometry.
+                // eslint-disable-next-line no-await-in-loop
+                const html = await this.renderMermaid(block.getAttribute('data-mermaid'));
+                editor.dom.setOuterHTML(block, html);
+            } catch {
+                // A diagram whose source no longer parses keeps the picture it had: this runs on
+                // opening a page, and must never be what stops somebody editing its text.
+            }
+        }
+
+        this.markMermaidObjects(editor);
+        editor.save();
+        this.renderKatexIntoField();
     }
 
     /**

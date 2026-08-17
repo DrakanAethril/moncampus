@@ -78,10 +78,13 @@ framework:
             #
             #  1. **`<style>` cannot be allowed at all.** The component drops it unconditionally and
             #     `allow_elements` does not re-admit it. Mermaid emits its diagram's CSS as a
-            #     <style> block, so that block never survives - which is why the diagram is styled
-            #     by `.cm-mermaid` rules in assets/styles/app.css instead, built on --cm-* tokens.
-            #     That is better than Mermaid's own theme anyway: one appearance on screen, in dark
-            #     mode and in the PDF.
+            #     <style> block, so that block never survives - which is why the editor writes every
+            #     one of its declarations onto the elements themselves, as `style` attributes, before
+            #     saving (assets/wiki/mermaid_svg.js). A `style` attribute, unlike the element, comes
+            #     through whole: `url(#marker)` references, quoted font names and dash patterns
+            #     included, which WikiSanitizerTest pins. Restyling the diagram from app.css was
+            #     tried first and is what this replaces: it could only reach the classes of a
+            #     flowchart, and every other kind of diagram came out black, shifted or truncated.
             #  2. **SVG attribute names must be written lowercase here.** The HTML parser lowercases
             #     them (`viewBox` arrives as `viewbox`), so a camelCase entry matches nothing and the
             #     attribute is silently dropped - a diagram that loses `viewbox` loses its scaling.
