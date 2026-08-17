@@ -73,13 +73,12 @@
     .body .cm-callout { margin: 1em 0; padding: 2.5mm 3.5mm; border-left: 1pt solid #1B6BA8; background: #eef5fb; }
     .body .cm-callout--warning { border-left-color: #c9a04e; background: #f5e9cf; color: #7a5417; }
     .body .cm-callout--tip { border-left-color: #25543c; background: #e3ede6; color: #25543c; }
+    /* Nothing about the diagram's colours or type here on purpose: a stored diagram carries its own
+       in `style` attributes (assets/wiki/mermaid_svg.js), which is what makes it identical on screen
+       and in this Chromium - which has neither the app's stylesheet nor its fonts. Overriding the
+       font size here in particular used to move every label off the box Mermaid measured for it. */
     .body .cm-mermaid { text-align: center; margin: 1em 0; }
     .body .cm-mermaid svg { max-width: 100%; height: auto; }
-    .body .cm-mermaid .node rect, .body .cm-mermaid .node circle, .body .cm-mermaid .node polygon,
-    .body .cm-mermaid .node ellipse, .body .cm-mermaid .node path { fill: #eef5fb; stroke: #1B6BA8; stroke-width: 1px; }
-    .body .cm-mermaid text, .body .cm-mermaid .nodeLabel, .body .cm-mermaid .edgeLabel { fill: #1b2430; font-size: 12px; }
-    .body .cm-mermaid .edgePath path, .body .cm-mermaid .flowchart-link { stroke: #5b6c79; fill: none; }
-    .body .cm-mermaid marker path, .body .cm-mermaid .marker { fill: #5b6c79; stroke: #5b6c79; }
 
     /* pagebreak's marker, inserted by the editor, becomes a real page break here. */
     .body .cm-wiki-pagebreak { break-after: page; height: 0; border: 0; }
