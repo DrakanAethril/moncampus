@@ -17,7 +17,9 @@
        data-file-library-tree-move-url-template-value="{{ path('app_file_library_node_move', {nodeId: '__NODE_ID__'}) }}"
        data-file-library-tree-token-value="{{ csrf_token('file_library_node') }}"
        data-file-library-tree-refused-message-value="{{ 'fileLibraryMoveRefusedMessage'|trans }}"
-       data-action="dragstart->file-library-tree#dragStart dragend->file-library-tree#dragEnd dragover->file-library-tree#dragOver dragleave->file-library-tree#dragLeave drop->file-library-tree#drop">
+       {# dragstart/dragend are listened for on the whole screen by the controller itself: what is
+          dragged is a row of the table, which is outside this element (see the controller). #}
+       data-action="dragover->file-library-tree#dragOver dragleave->file-library-tree#dragLeave drop->file-library-tree#drop">
 
     {# Two lines, a 4px track, no heading: an ambient indicator, not a figure somebody comes to
        consult. It exists in exactly two places on the platform - here and on the admin's user
