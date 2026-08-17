@@ -220,6 +220,7 @@ class LessonLogController extends AbstractController
 
         $works = $this->worksBySection($assignmentRepository, $session);
         $sectionViews = $this->sectionViews($program, $log, $works);
+        $seanceInstance = $canEdit ? $seanceContentResolver->forLessonSession($session) : null;
 
         // Giving or editing an assignment happens in the wizard (design_handoff_creation_travail
         // 2a), mounted as a modal over this page from _lesson_log_works.html.twig: the séance no
@@ -253,7 +254,11 @@ class LessonLogController extends AbstractController
             'importHasContent' => $canEdit && $importer->hasContent($session),
             // Only offered when it exists - see design/validated/teaching-sequence-library.md's
             // "relationship to part A". Part A fully works without part C ever being built.
-            'seanceInstance' => $canEdit ? $seanceContentResolver->forLessonSession($session) : null,
+            'seanceInstance' => $seanceInstance,
+            // What that séance already says, part by part - offered next to each editor as a one
+            // click « reprendre », where the import menu only ever offered the whole séance at
+            // once. Absent keys are parts the séance says nothing about.
+            'seanceDefaults' => $seanceContentResolver->defaultsFor($seanceInstance),
         ]);
     }
 

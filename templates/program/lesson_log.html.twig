@@ -74,6 +74,20 @@
                     {% set field = {'before': form.travailAvantDescription, 'during': form.contenuRealise, 'after': form.travailApresDescription}[section.value] %}
                     {% if canEdit %}
                         {{ form_row(field, {label: false, attr: {class: 'd-none', 'data-controller': 'hugerte-editor', 'data-lesson-log-field': section.value}}) }}
+                        {# What the séance of the progression already says for this part. The button
+                           is the only way back to it once the editor holds something, so it hides
+                           itself as soon as the part is no longer empty rather than offering to
+                           overwrite what the teacher just wrote. #}
+                        {% if seanceDefaults[section.value] is defined %}
+                            <div class="cm-seance-default" hidden
+                                 data-controller="seance-default"
+                                 data-seance-default-field-value="{{ field.vars.id }}"
+                                 data-seance-default-content-value="{{ seanceDefaults[section.value]|e('html_attr') }}">
+                                <button type="button" class="cm-btn cm-btn--outline cm-btn--sm"
+                                        data-action="seance-default#paste">{{ 'lessonLogSeanceDefaultPasteAction'|trans }}</button>
+                                <span class="cm-seance-default__note">{{ 'lessonLogSeanceDefaultNote'|trans({'%seance%': seanceInstance.titre}) }}</span>
+                            </div>
+                        {% endif %}
                     {% else %}
                         {# The card may stay for a document that departs from its part: the text,
                            however, keeps quiet as long as the part is not published. #}
