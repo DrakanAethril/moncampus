@@ -6,6 +6,7 @@ namespace App\Service;
 
 use App\Entity\Assignment;
 use App\Entity\AudioRecording;
+use App\Entity\FileLibraryNode;
 use App\Entity\LessonSession;
 use App\Entity\Option;
 use App\Entity\Program;
@@ -44,6 +45,7 @@ final class AssignmentWizardContext
         public readonly string $mode,
         public readonly ?AudioRecording $audioRecording = null,
         public readonly ?VideoResource $videoResource = null,
+        public readonly ?FileLibraryNode $libraryNode = null,
     ) {
     }
 
@@ -123,6 +125,33 @@ final class AssignmentWizardContext
             $mode,
             null,
             $resource,
+        );
+    }
+
+    /**
+     * From a file of the teacher's library (design/validated/file-library.md, "Create a work from a
+     * file"): the wizard opens with the file **already attached**, and the class is still to choose -
+     * a library is personal and belongs to no class, which is the one thing this entry point cannot
+     * infer.
+     *
+     * The nature follows the file rather than being asked: a video is a *watching*, an audio file a
+     * *listening*, anything else a *to submit*. That is how the two media natures keep the only entry
+     * points they have ever had, now that the Vidéos tool has lost its front door.
+     */
+    public static function forLibraryNode(FileLibraryNode $node, string $returnUrl, string $mode = self::MODE_PAGE): self
+    {
+        return new self(
+            null,
+            [],
+            AssignmentAudienceType::Program,
+            null,
+            null,
+            null,
+            $returnUrl,
+            $mode,
+            null,
+            null,
+            $node,
         );
     }
 

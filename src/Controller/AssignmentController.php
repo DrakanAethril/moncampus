@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Entity\Assignment;
 use App\Entity\AssignmentAttachment;
 use App\Entity\AudioRecording;
+use App\Entity\FileLibraryNode;
 use App\Entity\LessonSession;
 use App\Entity\Option;
 use App\Entity\Program;
@@ -21,6 +22,7 @@ use App\Form\AssignmentWizardType;
 use App\Repository\AssignmentRepository;
 use App\Repository\AssignmentSubmissionRepository;
 use App\Repository\AudioRecordingRepository;
+use App\Repository\FileLibraryNodeRepository;
 use App\Repository\GroupBatchRepository;
 use App\Repository\LessonSessionRepository;
 use App\Repository\ProgramRepository;
@@ -28,11 +30,13 @@ use App\Repository\TopicRepository;
 use App\Repository\UserRepository;
 use App\Repository\VideoResourceRepository;
 use App\Security\StructureAccessChecker;
+use App\Security\Voter\FileLibraryVoter;
 use App\Service\AssignmentAudienceResolver;
 use App\Service\AssignmentNatureFields;
 use App\Service\AssignmentNatureRequirements;
 use App\Service\AssignmentProgressSummarizer;
 use App\Service\AssignmentWizardContext;
+use App\Service\FileLibraryWorkFactory;
 use App\Service\FileUploadService;
 use App\Service\FormValue;
 use App\Service\PostValue;
@@ -79,6 +83,8 @@ class AssignmentController extends AbstractController
         private readonly VideoResourceRepository $videoResourceRepository,
         private readonly AssignmentNatureRequirements $natureRequirements,
         private readonly AssignmentNatureFields $natureFields,
+        private readonly FileLibraryNodeRepository $libraryNodes,
+        private readonly FileLibraryWorkFactory $workFactory,
     ) {
     }
 
@@ -253,6 +259,19 @@ class AssignmentController extends AbstractController
                 // statistics screen. Same on the video side.
                 $context->audioRecording?->setAssignment($saved);
                 $context->videoResource?->setAssignment($saved);
+
+                if (null !== $context->libraryNode) {
+                    // The file is a **link**: the row carries the node's own storage key plus a
+                    // foreign key back to it.
+                    $this->workFactory->attach($saved, $context->libraryNode);
+
+                    // And a video opens the Vidéos tool's back door: the resource and its file are
+                    // created here, referencing the same object, so the cue-point editor and the
+                    // statistics screen are reached from the work exactly as they always were.
+                    if (AssignmentNature::Watching === $saved->getNature()) {
+                        $saved->setVideoResource($this->workFactory->createVideoResource($saved, $context->libraryNode, $this->currentUser()));
+                    }
+                }
             }
 
             $entityManager->flush();
@@ -427,6 +446,21 @@ class AssignmentController extends AbstractController
             }
         }
 
+        // From a file of the teacher's own library. The Voter is what makes "their own" true: a node
+        // id in a query string is not a permission.
+        $libraryNodeId = QueryValue::int($request, 'libraryNode');
+        if (0 !== $libraryNodeId) {
+            $node = $this->libraryNodes->find($libraryNodeId);
+
+            if ($node instanceof FileLibraryNode && $node->isFile() && !$node->isDeleted() && $this->isGranted(FileLibraryVoter::LINK, $node)) {
+                return AssignmentWizardContext::forLibraryNode(
+                    $node,
+                    $this->generateUrl('app_file_library'),
+                    $mode,
+                );
+            }
+        }
+
         $listUrl = $this->generateUrl('app_assignments');
         $programId = QueryValue::int($request, 'classe');
         foreach ($programs as $program) {
@@ -495,11 +529,19 @@ class AssignmentController extends AbstractController
         $assignment->setNature(match (true) {
             null !== $context->audioRecording => AssignmentNature::Listening,
             null !== $context->videoResource => AssignmentNature::Watching,
+            // A file of the library says what kind of work it is: a video is a watching, an audio
+            // file a listening, anything else a to-submit.
+            null !== $context->libraryNode => $this->workFactory->natureFor($context->libraryNode),
             default => AssignmentNature::ToSubmit,
         });
         $assignment->setAudioRecording($context->audioRecording);
         $assignment->setVideoResource($context->videoResource);
-        $assignment->setTitle($context->audioRecording?->getName() ?? $context->videoResource?->getName());
+        $assignment->setTitle(
+            $context->audioRecording?->getName()
+            ?? $context->videoResource?->getName()
+            // The file's name without its extension, which is what the teacher would have typed.
+            ?? (null === $context->libraryNode ? null : $this->workFactory->titleFor($context->libraryNode)),
+        );
         $assignment->setDueDate($this->defaultDueDate($context));
         $assignment->setLessonSession($context->lessonSession);
         $assignment->setLessonLogSection($context->lessonLogSection);

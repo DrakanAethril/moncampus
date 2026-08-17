@@ -33,6 +33,7 @@ class FileLibraryNodeManager
         private readonly FileLibraryTree $tree,
         private readonly ObjectStore $objectStore,
         private readonly FileLibraryLinks $links,
+        private readonly FileLibraryVideoFork $videoFork,
     ) {
     }
 
@@ -133,6 +134,11 @@ class FileLibraryNodeManager
     public function replace(FileLibraryNode $node, string $storageKey, string $originalName, string $mimeType, int $sizeBytes, User $by): void
     {
         $previousKey = $node->getStorageKey();
+        // The one exception of the link model, and the moment it triggers: a vidéo suivie built on
+        // this file keeps the cut its students were measured against, so the previous object is
+        // **kept** rather than deleted (App\Service\FileLibraryVideoFork). The library serves the new
+        // one everywhere else - which is « Remplacer » correcting the video everywhere too.
+        $keptByVideos = $this->videoFork->keepPreviousObjectFor($node);
 
         $node
             ->setStorageKey($storageKey)
@@ -140,7 +146,7 @@ class FileLibraryNodeManager
             ->setMimeType('' === $mimeType ? null : $mimeType)
             ->setSizeBytes($sizeBytes);
 
-        if (null !== $previousKey) {
+        if (null !== $previousKey && !\in_array($previousKey, $keptByVideos, true)) {
             $this->objectStore->scheduleDeletion($previousKey, 'file-library');
         }
 
@@ -161,6 +167,12 @@ class FileLibraryNodeManager
         foreach ($this->nodes->findSubtree($node) as $member) {
             if ($member->isDeleted()) {
                 continue;
+            }
+
+            // Before anything is scheduled: a vidéo suivie takes its own copy, so the class's
+            // viewing survives a file its teacher deleted (design/validated/file-library.md).
+            if ($member->isFile()) {
+                $this->videoFork->forkBeforeDeleting($member);
             }
 
             $member->setDeletedAt($now);
