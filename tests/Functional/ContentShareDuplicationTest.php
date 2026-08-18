@@ -38,22 +38,26 @@ use League\Flysystem\FilesystemOperator;
  */
 class ContentShareDuplicationTest extends FunctionalTestCase
 {
-
     public function testDuplicationCreatesTheTwoFoldersAndASecondObject(): void
     {
         $entityManager = static::getContainer()->get(EntityManagerInterface::class);
-        $author = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'dup.author');
-        $recipient = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'dup.recipient');
+        $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'dup.author');
+        $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'dup.recipient');
 
-        $sequence = $this->sequenceWithFiles($author);
+        $sequence = $this->sequenceWithFiles('dup.author');
+        $author = $this->user('dup.author');
+        $recipient = $this->user('dup.recipient');
 
         $copy = static::getContainer()->get(SequenceDuplicator::class)->duplicate($sequence, $recipient, null);
 
         // The séquence itself is the recipient's, and its content came across.
-        self::assertSame($recipient, $copy->getTeacher());
+        self::assertSame($recipient->getId(), $copy->getTeacher()?->getId());
         self::assertNotSame($sequence->getId(), $copy->getId());
         self::assertSame('Adressage IP', $copy->getTitre());
-        self::assertCount(1, $copy->getSeanceTemplates());
+        // Asserted through a query, not through the copy's own collection: Doctrine does not push a
+        // freshly persisted child into its parent's inverse side, and this codebase carries no adder
+        // for it - a controller reads the séquence back on the next request.
+        self::assertCount(1, $entityManager->getRepository(SeanceTemplate::class)->findBy(['sequenceTemplate' => $copy]));
 
         // The folder rule: one folder named after the séquence, one subfolder named after the séance.
         $folders = $this->nodesOf($recipient, FileLibraryNodeType::Folder);
@@ -96,7 +100,7 @@ class ContentShareDuplicationTest extends FunctionalTestCase
 
         // And the author's own library is exactly as it was: nothing of theirs was moved or renamed.
         self::assertSame([], $this->nodesOf($author, FileLibraryNodeType::Folder));
-        self::assertCount(1, $sequence->getSeanceTemplates());
+        self::assertCount(1, $entityManager->getRepository(SeanceTemplate::class)->findBy(['sequenceTemplate' => $sequence]));
     }
 
     /**
@@ -107,10 +111,11 @@ class ContentShareDuplicationTest extends FunctionalTestCase
     public function testAQuotaRefusalWritesNothingAtAll(): void
     {
         $entityManager = static::getContainer()->get(EntityManagerInterface::class);
-        $author = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'quota.author');
-        $recipient = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'quota.recipient');
+        $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'quota.author');
+        $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'quota.recipient');
 
-        $sequence = $this->sequenceWithFiles($author);
+        $sequence = $this->sequenceWithFiles('quota.author');
+        $recipient = $this->user('quota.recipient');
 
         // The duplication weighs 3 000 bytes (2 000 + 1 000); the recipient may hold 2 999.
         $recipient->setFileLibraryQuotaBytes(2999);
@@ -134,9 +139,10 @@ class ContentShareDuplicationTest extends FunctionalTestCase
      * A séquence with two supports on the séance's phase and the séquence itself, plus a link that
      * must weigh nothing.
      */
-    private function sequenceWithFiles(User $author): SequenceTemplate
+    private function sequenceWithFiles(string $authorUsername): SequenceTemplate
     {
         $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $author = $this->user($authorUsername);
 
         $sequence = new SequenceTemplate($author);
         $sequence->setTitre('Adressage IP');
@@ -164,7 +170,21 @@ class ContentShareDuplicationTest extends FunctionalTestCase
 
         $entityManager->flush();
 
-        return $sequence;
+        // Read back rather than kept: Doctrine does not push a freshly persisted child into its
+        // parent's inverse collection, so a séquence built in this unit of work would answer "no
+        // séance, no support" to the duplicator. A controller always has a séquence loaded from the
+        // database, and this is what that looks like.
+        $id = $sequence->getId();
+        $entityManager->clear();
+
+        return $entityManager->getRepository(SequenceTemplate::class)->find($id) ?? self::fail('The fixture séquence disappeared.');
+    }
+
+    private function user(string $username): User
+    {
+        return static::getContainer()->get(EntityManagerInterface::class)
+            ->getRepository(User::class)
+            ->findOneBy(['username' => $username]) ?? self::fail(\sprintf('No user "%s".', $username));
     }
 
     /** @param \Closure(LibraryResource): mixed $attach */
