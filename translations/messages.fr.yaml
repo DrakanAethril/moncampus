@@ -6237,3 +6237,28 @@ contentShareCreatedFlashMessage: 'Le partage est en place.'
 contentShareRevokedFlashMessage: "Le partage est retiré. Ce qui avait déjà été dupliqué reste chez ceux qui l'ont dupliqué."
 contentShareRestoredFlashMessage: 'Le partage est rétabli.'
 contentShareEmptyAudienceFlashMessage: "Ce partage ne désigne personne : choisissez au moins un collègue ou un groupe."
+contentShareDuplicateHeading: 'Dupliquer « %name% »'
+contentShareDuplicateBreadcrumbLabel: 'Dupliquer chez moi'
+contentShareDuplicateSubtitle: 'Partagée par %author% · séquence, %seances% séance(s)'
+contentShareDuplicateWhatHeading: 'Ce qui sera créé'
+contentShareDuplicateInLibraryHeading: 'Dans votre bibliothèque de séquences'
+contentShareDuplicateSeancesLabel: 'Séances'
+contentShareDuplicateSeancesValue: '%seances%, avec leurs %phases% phases'
+contentShareDuplicateTagsLabel: 'Étiquettes'
+contentShareDuplicateTagsValue: 'Reprises en texte, dans votre propre vocabulaire'
+contentShareDuplicateInFilesHeading: 'Dans votre bibliothèque de fichiers'
+contentShareDuplicateDestinationLabel: 'Dossier de destination'
+contentShareDuplicateDestinationRootLabel: 'Ma bibliothèque (racine)'
+contentShareDuplicateFileCountLabel: '{0}aucun fichier|{1}1 fichier|]1,Inf[%count% fichiers'
+contentShareDuplicateLinksNote: '{1}Un support est un lien : il ne pèse rien et ne crée pas de fichier.|]1,Inf[%count% supports sont des liens : ils ne pèsent rien et ne créent pas de fichier.'
+contentShareDuplicateNoFilesText: "Cette séquence ne porte aucun fichier : rien ne sera écrit dans votre bibliothèque de fichiers."
+contentShareDuplicateWeightHeading: 'Ce que ça pèse chez vous'
+contentShareDuplicateCopiedFilesLabel: 'Fichiers copiés'
+contentShareDuplicateWeightLabel: 'Poids'
+contentShareDuplicateQuotaAfterLabel: '%after% / %limit% — %percentAfter% %% après copie (%percentNow% %% aujourd''hui)'
+contentShareDuplicateSubmitAction: 'Dupliquer'
+contentShareDuplicateAuthorKeepsHisText: '%author% gardera la sienne, intacte.'
+contentShareDuplicateEmptyTrashAction: 'Vider ma corbeille'
+contentShareDuplicateOpenLibraryAction: 'Ouvrir ma bibliothèque'
+contentShareQuotaRefusalFlashMessage: "Il manque %missing%. Cette duplication demande %size% et il vous reste %remaining%. Rien ne sera écrit — ni la séquence, ni les dossiers, ni les premiers fichiers qui, eux, tiendraient."
+contentShareDuplicatedFlashMessage: "La copie est dans votre bibliothèque. Elle vous appartient : la modifier ne touchera pas l'original."

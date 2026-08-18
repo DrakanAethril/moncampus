@@ -20,11 +20,15 @@ use App\Repository\QuizTemplateRepository;
 use App\Repository\SeanceTemplateRepository;
 use App\Repository\SequenceTemplateRepository;
 use App\Repository\UserRepository;
+use App\Service\ByteSize;
 use App\Service\ContentShareAccess;
 use App\Service\ContentShareAudience;
 use App\Service\ContentShareComposer;
+use App\Service\ContentShareQuotaException;
+use App\Service\FileLibraryQuota;
 use App\Service\PostValue;
 use App\Service\QueryValue;
+use App\Service\SequenceDuplicator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -33,6 +37,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Outils > Partages, and the modal that feeds it - see
@@ -193,6 +198,120 @@ class ContentShareController extends AbstractController
         $this->entityManager->flush();
 
         return $this->redirectToRoute('app_shares');
+    }
+
+    /**
+     * « Dupliquer chez moi », the confirmation - **a whole screen and never a modal** as soon as
+     * files are involved, because three things have to be shown that a modal makes illegible: the
+     * folders that will be created, what it weighs, and what the quota will read afterwards.
+     *
+     * A GET that shows and a POST that writes, per this repository's rule for a "show me a result"
+     * form.
+     */
+    #[Route(path: '/shares/{id}/duplicate', name: 'app_shares_duplicate', methods: ['GET'], requirements: ['id' => '\d+'])]
+    public function duplicateConfirm(int $id, SequenceDuplicator $duplicator, FileLibraryNodeRepository $nodes, FileLibraryQuota $quota): Response
+    {
+        $share = $this->readableShareOrNotFound($id);
+        $recipient = $this->currentUser();
+        $sequence = $share->getSequenceTemplate() ?? throw $this->createNotFoundException();
+
+        $plan = $duplicator->plan($sequence);
+
+        $phaseCount = 0;
+
+        foreach ($sequence->getSeanceTemplates() as $seance) {
+            $phaseCount += $seance->getSeancePhaseTemplates()->count();
+        }
+
+        return $this->render('content_share/duplicate_sequence.html.twig', [
+            'share' => $share,
+            'sequence' => $sequence,
+            'plan' => $plan,
+            'phaseCount' => $phaseCount,
+            'folders' => $nodes->findFolders($recipient),
+            'quotaUsed' => $quota->usedBytes($recipient),
+            'quotaLimit' => $quota->limitFor($recipient),
+            'fits' => $quota->accepts($recipient, $plan['totalBytes']),
+            'remaining' => $quota->remainingBytes($recipient),
+        ]);
+    }
+
+    /**
+     * The write. All-or-nothing: the quota is asked once with the sum inside
+     * App\Service\SequenceDuplicator, and a refusal writes nothing at all - not the séquence, not
+     * the folders, not the first files that would have fitted.
+     *
+     * The redirect goes to the new copy in the recipient's own library, which is also the proof it
+     * worked.
+     */
+    #[Route(path: '/shares/{id}/duplicate', name: 'app_shares_duplicate_save', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function duplicate(
+        int $id,
+        Request $request,
+        SequenceDuplicator $duplicator,
+        FileLibraryNodeRepository $nodes,
+        TranslatorInterface $translator,
+    ): Response {
+        $share = $this->readableShareOrNotFound($id);
+        $this->assertCsrf($request, 'content_share_duplicate');
+
+        $recipient = $this->currentUser();
+        $sequence = $share->getSequenceTemplate() ?? throw $this->createNotFoundException();
+        $destination = $this->destinationFolder($request, $nodes, $recipient);
+
+        try {
+            $copy = $duplicator->duplicate($sequence, $recipient, $destination);
+        } catch (ContentShareQuotaException $refusal) {
+            // « Il manque 34 Mo » is actionable where « quota dépassé » is not - and nothing has been
+            // written, which is what the confirmation screen promised.
+            $this->addFlash('danger', $translator->trans('contentShareQuotaRefusalFlashMessage', [
+                '%missing%' => ByteSize::format($refusal->shortfallBytes()),
+                '%size%' => ByteSize::format($refusal->requiredBytes),
+                '%remaining%' => ByteSize::format($refusal->remainingBytes),
+            ]));
+
+            return $this->redirectToRoute('app_shares_duplicate', ['id' => $id]);
+        }
+
+        $share->markDuplicatedBy((int) $recipient->getId());
+        $this->entityManager->flush();
+
+        $this->addFlash('success', 'contentShareDuplicatedFlashMessage');
+
+        return $this->redirectToRoute('app_library_sequences_show', ['id' => $copy->getId()]);
+    }
+
+    /**
+     * Where the copies land - the folder the recipient picked, defaulting to their library root.
+     *
+     * A folder of somebody else's library is read as "no folder" rather than refused: the picker
+     * only ever offered the recipient's own, so a foreign id means a hand-edited request.
+     */
+    private function destinationFolder(Request $request, FileLibraryNodeRepository $nodes, User $recipient): ?FileLibraryNode
+    {
+        $folderId = PostValue::nullableInt($request, 'destination');
+
+        if (null === $folderId) {
+            return null;
+        }
+
+        $folder = $nodes->find($folderId);
+
+        return null !== $folder && $folder->isFolder() && !$folder->isDeleted() && $folder->getOwner()->getId() === $recipient->getId()
+            ? $folder
+            : null;
+    }
+
+    /** A share this person may read - the one door onto everything a duplication does. */
+    private function readableShareOrNotFound(int $id): ContentShare
+    {
+        $share = $this->shares->find($id) ?? throw $this->createNotFoundException();
+
+        if (!$this->audience->allows($share, $this->currentUser())) {
+            throw $this->createNotFoundException();
+        }
+
+        return $share;
     }
 
     /**
