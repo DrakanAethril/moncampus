@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Infrastructure;
 
 use App\Repository\ProxmoxHostRepository;
+use App\Repository\ProxmoxOperationRepository;
 use App\Service\Crypto\SecretBoxProvider;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,8 +27,11 @@ class HubController extends AbstractController
     use InfrastructureTrait;
 
     #[Route(path: '/infrastructure', name: 'app_infrastructure')]
-    public function index(ProxmoxHostRepository $hostRepository, SecretBoxProvider $secretBoxProvider): Response
-    {
+    public function index(
+        ProxmoxHostRepository $hostRepository,
+        ProxmoxOperationRepository $operationRepository,
+        SecretBoxProvider $secretBoxProvider,
+    ): Response {
         $hosts = $hostRepository->findOrdered();
 
         $reachable = 0;
@@ -58,6 +62,7 @@ class HubController extends AbstractController
             'unreachableHosts' => $unreachable,
             'guestCount' => $guests,
             'runningCount' => $running,
+            'operationCount' => $operationRepository->countAll(),
             'encryptionAvailable' => $secretBoxProvider->isAvailable(),
             'encryptionFailure' => $secretBoxProvider->unavailableReason(),
         ]);
