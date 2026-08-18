@@ -20,4 +20,20 @@ final readonly class FreeCell
         public string $value,
     ) {
     }
+
+    /** @return array{header: string, foldedHeader: string, value: string} */
+    public function toArray(): array
+    {
+        return ['header' => $this->header, 'foldedHeader' => $this->foldedHeader, 'value' => $this->value];
+    }
+
+    /** @param array<array-key, mixed> $data */
+    public static function fromArray(array $data): self
+    {
+        return new self(
+            \is_string($data['header'] ?? null) ? $data['header'] : '',
+            \is_string($data['foldedHeader'] ?? null) ? $data['foldedHeader'] : '',
+            \is_string($data['value'] ?? null) ? $data['value'] : '',
+        );
+    }
 }

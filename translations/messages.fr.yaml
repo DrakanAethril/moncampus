@@ -6068,3 +6068,79 @@ accountTypeStaffLeadLabel: 'personnel de direction'
 accountTypeTutorLabel: 'tuteur'
 accountTypeExternalLabel: 'externe'
 accountTypeUnknownLabel: 'de type inconnu'
+classImportButtonLabel: 'Importer une classe'
+classImportPageHeading: 'Importer une classe'
+classImportCheckPageHeading: 'Vérification'
+classImportStepDestinationLabel: 'Destination et fichier'
+classImportStepCheckLabel: 'Vérification'
+classImportStepRunLabel: 'Import et suivi'
+classImportProgramFieldLabel: 'Classe de destination'
+classImportProgramFieldHelpText: 'Les étudiants importés sont ajoutés à la liste des étudiants de cette formation.'
+classImportProgramPlaceholder: 'Choisir une classe…'
+classImportProgramRequiredMessage: 'Choisissez la classe de destination.'
+classImportAccountTypeFieldLabel: 'Type de compte'
+classImportAccountTypeImposedLabel: 'imposé'
+classImportGroupsFieldLabel: "Groupes de l'annuaire attribués à chaque compte créé"
+classImportGroupsFieldHelpText: "Pré-cochés d'après la classe choisie. Le groupe principal « student » est ajouté par l'annuaire, il n'est pas listé ici."
+classImportGroupsNotFromColumnsHint: "Les groupes de l'annuaire ne sont pas déduits des colonnes d'options du fichier : ce sont deux notions distinctes."
+classImportNoMailNoteText: "Aucun courriel n'est envoyé : ni validation d'adresse, ni invitation, ni mot de passe."
+classImportFileFieldLabel: 'Fichier (.csv)'
+classImportFileFieldHelpText: 'Liste de la classe, une ligne par étudiant. 2 Mo maximum, 300 lignes au plus.'
+classImportFileRequiredMessage: 'Choisissez un fichier à vérifier.'
+classImportExpectedColumnsTitle: 'Colonnes attendues'
+classImportExpectedColumnsHint: "L'ordre des colonnes est sans importance, la casse et les accents des en-têtes non plus."
+classImportColumnNameHeader: 'Colonne'
+classImportColumnRequiredHeader: 'Obligatoire'
+classImportColumnContentHeader: 'Contenu'
+classImportColumnRequiredColumnOnly: 'oui (la colonne)'
+classImportColumnLastnameContent: 'Nom de famille'
+classImportColumnFirstnameContent: 'Prénom'
+classImportColumnEmailContent: 'Adresse personnelle ; une case vide est admise'
+classImportColumnFreeName: 'colonnes libres'
+classImportColumnFreeContent: "Une option ou une modalité de la classe. L'en-tête tranche s'il dit « option » ou « modalite » ; sinon c'est la valeur qui tranche."
+classImportColumnsFreeFormHint: 'Les noms sont recapitalisés à la lecture, et montrés avant écriture.'
+classImportDownloadTemplateAction: 'Télécharger un modèle'
+classImportCheckFileAction: 'Vérifier le fichier'
+classImportCheckSubtitle: '%file% · %count% ligne(s) · destination %program%'
+classImportStatCreateLabel: 'Comptes à créer'
+classImportStatCreateHint: 'inconnus de la base'
+classImportStatDecideLabel: 'Décisions à prendre'
+classImportStatDecideHint: 'un nom déjà connu'
+classImportStatKnownLabel: 'Comptes existants'
+classImportStatKnownHint: 'rattachés ou déjà dans la classe'
+classImportStatBlockingLabel: 'Blocages'
+classImportStatBlockingHint: 'refusent tout le fichier'
+classImportBlockingSectionTitle: '%count% ligne(s) empêchent l''import'
+classImportBlockingSectionHint: "Le fichier entier est refusé tant qu'un blocage subsiste : un import à moitié écrit est l'état dont personne ne sait sortir. Corrigez le fichier et redéposez-le."
+classImportDecisionsSectionTitle: '%count% ligne(s) portent un nom déjà connu'
+classImportDecisionsSectionHint: "Un homonyme n'est pas forcément la même personne : deux étudiants de deux classes peuvent porter les mêmes nom et prénom. Rien n'est présélectionné — tranchez ligne par ligne, ou d'un coup pour les cas simples."
+classImportDecideAllAction: 'Les %count% lignes à candidat unique et actif : même personne'
+classImportWarningsSectionTitle: "%count% avertissement(s) — l'import reste possible"
+classImportRowsSectionTitle: 'Ligne par ligne'
+classImportLineLabel: 'Ligne %line%'
+classImportColumnLineHeader: 'Ligne'
+classImportColumnStudentHeader: 'Étudiant'
+classImportColumnFileEmailHeader: 'Adresse du fichier'
+classImportColumnValuesHeader: 'Options et modalités'
+classImportColumnOutcomeHeader: 'Ce qui sera fait'
+classImportFileWritesLabel: 'le fichier écrit « %raw% »'
+classImportCandidatesCountLabel: '%count% compte(s) portent déjà ce nom'
+classImportSamePersonAction: 'Même personne'
+classImportNamesakeAction: 'Homonyme, créer un compte'
+classImportExamineAction: 'Examiner'
+classImportAnotherFileAction: 'Changer de fichier'
+classImportDecisionPanelHint: "S'agit-il de la même personne physique ? Rien n'est présélectionné : un homonyme est fréquent d'une classe à l'autre."
+classImportReuseAccountLabel: 'Reprendre le compte %login%'
+classImportCreateNewAccountLabel: 'Créer un nouveau compte'
+classImportCreateNewAccountDetailText: "Un homonyme, pas la même personne. L'annuaire et le Courrier école numérotent déjà les homonymes."
+classImportAttachExplanationText: "Sera ajouté à %program%, avec les groupes cochés à l'étape 1. Adresse conservée."
+classImportReactivationWarningText: "Ne choisissez ceci que s'il s'agit bien de la même personne : le compte sera réactivé."
+classImportNotAStudentWarningText: "Ce compte n'est pas un compte étudiant ; le choisir bloquera l'import."
+classImportMatchingRuleNoteText: "Le rapprochement se fait sur le nom et le prénom seuls, accents et casse ignorés. L'adresse du fichier ne sert jamais à identifier quelqu'un : deux frères partagent parfois la même."
+classImportValidateDecisionAction: 'Valider la décision'
+classImportNoProgramLabel: 'aucune formation'
+classImportAccountActiveLabel: 'actif'
+classImportAccountInactiveLabel: 'désactivé'
+classImportNoContactEmailLabel: 'aucune adresse de contact'
+classImportCreatedOnLabel: 'créé le %date%'
+classImportSessionExpiredFlashMessage: "L'import a expiré : redéposez le fichier."

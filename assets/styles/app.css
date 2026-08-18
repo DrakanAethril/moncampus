@@ -7683,3 +7683,41 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-sum dt { color: var(--cm-muted); font-weight: 400; }
 .cm-sum dd { margin: 0; color: var(--cm-ink); font-weight: 600; }
 @media (max-width: 575.98px) { .cm-sum { grid-template-columns: 1fr; gap: 2px 0; } }
+
+/* ---------- Import d'une classe (Annuaire > Utilisateurs) ---------- */
+
+/* The three moves of the import, on all three screens. A wizard that does not say how far along it
+   is turns "vérification" into a step somebody might take for the end of the road. */
+.cm-steps {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    font-size: 12.5px; color: var(--cm-faint);
+}
+.cm-steps__step { display: inline-flex; align-items: center; gap: 6px; }
+.cm-steps__step b { color: var(--cm-faint); font-weight: 700; }
+.cm-steps__step--on { color: var(--cm-brand-strong); font-weight: 600; }
+.cm-steps__step--on b { color: var(--cm-brand-strong); }
+.cm-steps__step--done { color: var(--cm-green-tx); }
+.cm-steps__step--done b { color: var(--cm-green-tx); }
+.cm-steps__arrow { color: var(--cm-disabled); }
+
+/* A value the screen shows but nobody may change - here the account type, which a class import
+   never chooses. Drawn as a field so the eye reads it in the column of fields, dashed so the hand
+   does not try to type in it. */
+.cm-locked-value {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    border: 1px dashed var(--cm-border); border-radius: var(--cm-radius-sm);
+    background: var(--cm-surface-alt); color: var(--cm-muted);
+    padding: 9px 12px; font-size: 14px;
+}
+
+/* One answer among several, with room for the two or three lines that let an operator tell two
+   namesakes apart - a plain radio list has nowhere to put them. */
+.cm-choice {
+    display: flex; align-items: flex-start; gap: 10px;
+    border: 1px solid var(--cm-border); border-radius: var(--cm-radius-sm);
+    background: var(--cm-surface); padding: 11px 13px; cursor: pointer;
+}
+.cm-choice:hover { border-color: var(--cm-brand); }
+.cm-choice > span { display: flex; flex-direction: column; gap: 2px; }
+.cm-choice__title { color: var(--cm-ink); font-weight: 600; font-size: 13.5px; }
+.cm-choice__detail { color: var(--cm-muted); font-size: 12.5px; }
