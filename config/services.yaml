@@ -70,6 +70,13 @@ services:
             # nothing there.
             string $projectDir: '%kernel.project_dir%'
             string $ldapPasswordAesKey: '%env(AES_KEY)%'
+            # App\Service\Crypto\SecretBoxProvider only - the one place that turns this into a
+            # App\Service\Crypto\SecretBox. Deliberately not APP_SECRET: see .env.
+            string $proxmoxSecretKey: '%env(PROXMOX_SECRET_KEY)%'
+            # Where App\Service\Proxmox\ProxmoxTlsOptions materialises a cluster CA, since
+            # HttpClient's `cafile` option wants a path and there is no "here is the PEM" form.
+            # Under the cache dir because it is derived data: deleting it costs one file write.
+            string $proxmoxCaDir: '%kernel.cache_dir%/proxmox_ca'
             # "Tout le campus", the root of the documentation base's perimeter - the name of the
             # App\Entity\Group every other perimeter group hangs under in Paramètres > Groupes.
             # A name rather than an id so it survives a re-seeded database; if no group carries it,
@@ -159,6 +166,24 @@ services:
     App\Monolog\DiscordWebhookHandler:
         arguments:
             $httpClient: '@app.discord_alert_http_client'
+
+    # --- Console Proxmox --------------------------------------------------------------------
+    # Its own HTTP client, on the same reasoning as the Discord one above but for a different
+    # danger: these calls go to hypervisors that are routinely off. FrankenPHP runs in worker mode,
+    # so a request that hangs holds a worker for as long as it hangs - `timeout` alone only covers
+    # inactivity, and it is `max_duration` that caps the whole exchange. Without both, enough
+    # unreachable hosts starve the pool and take the entire application down with them. Neither
+    # value is negotiable; a slow hypervisor is a failed call, not a reason to wait.
+    app.proxmox_http_client:
+        class: Symfony\Contracts\HttpClient\HttpClientInterface
+        factory: ['Symfony\Component\HttpClient\HttpClient', 'create']
+        arguments:
+            $defaultOptions: { timeout: 6, max_duration: 20 }
+
+    App\Service\Proxmox\ProxmoxClientFactory:
+        arguments:
+            $proxmoxHttpClient: '@app.proxmox_http_client'
+            $proxmoxTicketCache: '@cache.proxmox_ticket'
 
     # --- Courrier école ---------------------------------------------------------------------
     # The Courrier école storage and queues live in *another AWS account* than the uploads above

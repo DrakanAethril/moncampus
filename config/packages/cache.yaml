@@ -15,5 +15,18 @@ framework:
         #app: cache.adapter.apcu
 
         # Namespaced pools use the above "app" backend by default
-        #pools:
-            #my.dedicated.cache: null
+        pools:
+            # Proxmox session tickets (App\Service\Proxmox\ProxmoxClient). Only hosts declared with
+            # a password credential land here: an API token is stateless and caches nothing.
+            #
+            # A pool of its own rather than a corner of cache.app, for two reasons. It holds live
+            # credentials, so it must be clearable on its own - `cache:pool:clear
+            # cache.proxmox_ticket` logs every host out without touching anything else. And its
+            # lifetime is dictated by Proxmox (two hours), not by us; entries are written with 100
+            # minutes and the default_lifetime below is only a backstop for a mis-set item.
+            #
+            # Nothing needs purging when a secret changes: the cache key carries a digest of the
+            # secret, so a rotated password simply misses.
+            cache.proxmox_ticket:
+                adapter: cache.app
+                default_lifetime: 6000

@@ -1,0 +1,206 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set heading = isEdit ? 'proxmoxHostEditHeading'|trans({'%host%': host.label}) : 'proxmoxHostNewHeading'|trans %}
+
+{% block title %}{{ heading }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
+        {label: 'infrastructureHostsNavLabel'|trans, url: path('app_infrastructure_hosts')},
+        {label: heading, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ heading }}{% endblock %}
+
+{% block main %}
+    {% include 'infrastructure/_localnav.html.twig' %}
+    {% include 'infrastructure/_encryption_banner.html.twig' %}
+
+    {{ form_start(form, {attr: {
+        'data-controller': 'proxmox-host-form',
+        'data-proxmox-host-form-token-value': csrf_token('infrastructure_action'),
+        'data-proxmox-host-form-test-url-value': path('app_infrastructure_hosts_test_connection'),
+        'data-proxmox-host-form-certificate-url-value': path('app_infrastructure_hosts_inspect_certificate'),
+        'data-proxmox-host-form-host-id-value': host ? host.id : 0,
+        'data-proxmox-host-form-running-message-value': 'proxmoxHostTestRunningText'|trans,
+        'data-proxmox-host-form-failed-message-value': 'proxmoxHostTestFailedText'|trans,
+        'data-proxmox-host-form-pool-missing-message-value': 'proxmoxHostPoolMissingText'|trans,
+        'data-proxmox-host-form-self-signed-message-value': 'proxmoxHostSelfSignedText'|trans,
+        'data-proxmox-host-form-expires-message-value': 'proxmoxHostExpiresText'|trans,
+    }}) }}
+    <div class="card" style="max-width: 860px;">
+
+        <fieldset class="cm-fieldset">
+            <legend class="cm-fieldset__legend">{{ 'proxmoxHostIdentificationLegend'|trans }}</legend>
+            <div class="row g-3">
+                <div class="col-md-5">{{ form_row(form.label) }}</div>
+                <div class="col-md-5">{{ form_row(form.hostname) }}</div>
+                <div class="col-md-2">{{ form_row(form.port) }}</div>
+            </div>
+        </fieldset>
+
+        <fieldset class="cm-fieldset">
+            <legend class="cm-fieldset__legend">{{ 'proxmoxHostOperateLegend'|trans }}</legend>
+
+            {# Said here rather than in the documentation, because this is where the mistake is
+               made: the everyday account must not carry VM.Allocate, which authorises creating
+               AND destroying - Proxmox has no separate privilege for the second. #}
+            <div class="cm-note mb-3">
+                <span class="cm-note__icon">i</span>
+                <span>{{ 'proxmoxHostOperateNote'|trans|raw }}</span>
+            </div>
+
+            <div class="row g-2 mb-3">
+                {% for choice in form.credentialKind %}
+                    <div class="col-md-6">
+                        <label class="cm-radiocard h-100">
+                            {{ form_widget(choice, {attr: {'data-action': 'proxmox-host-form#credentialKindChanged'}}) }}
+                            <span class="cm-radiocard__dot"></span>
+                            <span>
+                                <span class="cm-radiocard__title d-block">{{ choice.vars.label|trans }}</span>
+                                <span class="cm-radiocard__desc">{{ choice.vars.value == 'api_token' ? 'proxmoxCredentialApiTokenDescription'|trans : 'proxmoxCredentialPasswordDescription'|trans }}</span>
+                            </span>
+                        </label>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-5">{{ form_row(form.username) }}</div>
+                <div class="col-md-3">{{ form_row(form.realm) }}</div>
+                <div class="col-md-4" data-proxmox-host-form-target="tokenNameField">{{ form_row(form.tokenName) }}</div>
+            </div>
+            <div class="row g-3">
+                <div class="col-12">{{ form_row(form.secret) }}</div>
+            </div>
+        </fieldset>
+
+        <fieldset class="cm-fieldset">
+            <legend class="cm-fieldset__legend">
+                {{ 'proxmoxHostProvisionLegend'|trans }} <span>{{ 'proxmoxHostOptionalLabel'|trans }}</span>
+            </legend>
+
+            {# Deliberately does not hide the fields below when unticked: unticking does not remove
+               the credentials, and hiding them would conceal that a VM.Allocate account is still
+               declared on this host. #}
+            {{ form_row(form.allowCreate) }}
+
+            <div class="cm-note cm-note--gold my-3">
+                <span class="cm-note__icon">!</span>
+                <span>{{ 'proxmoxHostProvisionNote'|trans|raw }}</span>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-4">{{ form_row(form.provisionUsername) }}</div>
+                <div class="col-md-2">{{ form_row(form.provisionRealm) }}</div>
+                <div class="col-md-3">{{ form_row(form.provisionTokenName) }}</div>
+                <div class="col-md-3">{{ form_row(form.provisionSecret) }}</div>
+            </div>
+        </fieldset>
+
+        <fieldset class="cm-fieldset">
+            <legend class="cm-fieldset__legend">{{ 'proxmoxHostTlsLegend'|trans }}</legend>
+
+            <div class="row g-2 mb-3">
+                {% for choice in form.tlsMode %}
+                    <div class="col-md-3">
+                        <label class="cm-radiocard h-100">
+                            {{ form_widget(choice, {attr: {'data-action': 'proxmox-host-form#tlsModeChanged'}}) }}
+                            <span class="cm-radiocard__dot"></span>
+                            <span>
+                                <span class="cm-radiocard__title d-block"{{ choice.vars.value == 'insecure' ? ' style="color: var(--cm-action-danger);"'|raw }}>{{ choice.vars.label|trans }}</span>
+                                <span class="cm-radiocard__desc">{{ ('proxmoxTls' ~ choice.vars.value|replace({'_': ''})|title ~ 'Description')|trans }}</span>
+                            </span>
+                        </label>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div data-proxmox-host-form-target="caField">{{ form_row(form.tlsCaPem) }}</div>
+            <div data-proxmox-host-form-target="pinField">{{ form_row(form.tlsPinSha256, {attr: {readonly: true, 'data-proxmox-host-form-target': 'pinInput'}}) }}</div>
+
+            {# The two digests, together and named apart. This is the single remedy to the trap
+               that makes somebody paste the certificate fingerprint Proxmox displays into a field
+               that wants a public-key pin: the two are different hashes of different things, and
+               `pin-sha256` accepts only the second. Nothing here invites typing either by hand. #}
+            <button type="button" class="cm-btn cm-btn--outline cm-btn--sm mt-2" data-action="proxmox-host-form#inspectCertificate">
+                {{ 'proxmoxHostInspectCertificateAction'|trans }}
+            </button>
+            <div class="cm-note mt-3" data-proxmox-host-form-target="certificate" hidden>
+                <span class="cm-note__icon">i</span>
+                <span style="flex:1">
+                    <strong>{{ 'proxmoxHostCertificateTitle'|trans }}</strong>
+                    <span data-proxmox-host-form-target="certificateSubject"></span>
+                    <dl class="cm-fingerprint mt-2">
+                        <dt>{{ 'proxmoxHostCertificateFingerprintLabel'|trans }}</dt>
+                        <dd data-proxmox-host-form-target="certificateFingerprint"></dd>
+                        <dt>{{ 'proxmoxHostCertificatePinLabel'|trans }}</dt>
+                        <dd data-proxmox-host-form-target="certificatePin"></dd>
+                    </dl>
+                    <button type="button" class="cm-btn cm-btn--outline cm-btn--sm mt-2" data-action="proxmox-host-form#usePin">
+                        {{ 'proxmoxHostUsePinAction'|trans }}
+                    </button>
+                </span>
+            </div>
+        </fieldset>
+
+        <fieldset class="cm-fieldset">
+            <legend class="cm-fieldset__legend">{{ 'proxmoxHostScopeLegend'|trans }}</legend>
+
+            <div class="cm-note cm-note--gold mb-3">
+                <span class="cm-note__icon">!</span>
+                <span>{{ 'proxmoxHostScopeNote'|trans }}</span>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6">{{ form_row(form.managedPool) }}</div>
+                <div class="col-md-3">{{ form_row(form.vmidMin) }}</div>
+                <div class="col-md-3">{{ form_row(form.vmidMax) }}</div>
+            </div>
+
+            <label class="cm-field-label d-block mt-3 mb-2">{{ 'proxmoxHostAllowedActionsLabel'|trans }}</label>
+            <div class="row g-2">
+                <div class="col-md-6">{{ form_row(form.allowStart) }}</div>
+                <div class="col-md-6">{{ form_row(form.allowStop) }}</div>
+                <div class="col-md-6">
+                    {# Deliberately drawn, deliberately dead. Showing it disabled rather than
+                       omitting it answers "and if I want to delete a machine?" exactly where the
+                       question is asked - and it will never become a checkbox: the application
+                       stops machines, it never destroys them. #}
+                    <p class="cm-never mt-2">
+                        <input type="checkbox" disabled aria-disabled="true" tabindex="-1">
+                        <span>{{ 'proxmoxHostNeverDeleteLabel'|trans }} — <i>{{ 'proxmoxHostNeverDeleteReason'|trans }}</i></span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="row g-3 mt-1">
+                <div class="col-md-3">{{ form_row(form.maxGuests) }}</div>
+                <div class="col-md-3">{{ form_row(form.maxCores) }}</div>
+                <div class="col-md-3">{{ form_row(form.maxMemoryMib) }}</div>
+                <div class="col-md-3">{{ form_row(form.maxDiskGib) }}</div>
+            </div>
+        </fieldset>
+
+        <div class="cm-fieldset">
+            {# Tests the values in the form, before they are saved: testing a saved declaration
+               would mean storing a broken one first, every time somebody mistypes a password. A
+               plain button driven by fetch rather than a second submit - a nested <form> here is
+               one of the two bugs this repository keeps rediscovering. #}
+            <div class="cm-actionbar" style="margin-top: 0; border-top: 0; padding-top: 0;">
+                <button type="button" class="cm-btn cm-btn--outline" data-action="proxmox-host-form#testConnection" data-proxmox-host-form-target="testButton">
+                    {{ 'proxmoxHostTestAction'|trans }}
+                </button>
+                <span class="cm-actionbar__meta" data-proxmox-host-form-target="testResult"></span>
+                <div class="cm-actionbar__buttons">
+                    <a href="{{ path('app_infrastructure_hosts') }}" class="cm-btn cm-btn--outline">{{ 'cancelAction'|trans }}</a>
+                    <button type="submit" class="cm-btn cm-btn--primary">{{ 'submitSaveAction'|trans }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {{ form_end(form) }}
+{% endblock %}
