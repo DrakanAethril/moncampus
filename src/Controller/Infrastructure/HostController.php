@@ -80,7 +80,12 @@ class HostController extends AbstractController
         $host = null !== $id ? $this->findHostOrNotFound($repository, $id) : null;
         $isEdit = null !== $host;
 
-        $form = $this->createForm(ProxmoxHostType::class, $host);
+        // A blank host rather than null for the "new" case, so the form starts on the entity's own
+        // defaults: the API-token mode preselected (it is the recommended one and the form says
+        // so), the cluster-CA TLS mode, port 8006, and starting/stopping allowed. Bound to null,
+        // Symfony has no object to read those from - every radio would render unchecked, and the
+        // screen would open on a state the design never proposes.
+        $form = $this->createForm(ProxmoxHostType::class, $host ?? new ProxmoxHost('', '', ''));
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
