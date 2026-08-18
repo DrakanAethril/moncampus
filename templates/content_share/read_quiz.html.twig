@@ -1,0 +1,65 @@
+{% extends 'layout/app.html.twig' %}
+
+{# « Consulter » on a shared quiz (design/validated/content-sharing-between-teachers.md).
+
+   **A screen of its own, and here is why.** The rule is that reading gives the item *in full*,
+   read-only - "a séquence you are invited to duplicate is a séquence you must be able to read before
+   deciding". For a séquence that is its existing show screen, which already knows how to render
+   itself without the edit affordances. A quiz has no such screen: its two screens are editors, and
+   opening an editor a reader may not use teaches them to distrust the buttons. So the reader gets
+   the quiz laid out flat - the questions, their answers, and which ones are right. #}
+
+{% block title %}{{ quiz.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'contentSharePageHeading'|trans, url: path('app_shares')},
+        {label: quiz.name, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ quiz.name }}{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_shares_duplicate', {id: share.id}) }}" class="cm-btn cm-btn--primary">{{ 'contentShareDuplicateAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    <p class="text-secondary">
+        {{ 'contentShareReadSharedByLabel'|trans({'%author%': share.owner.displayName ?? share.owner.username}) }}
+        · {{ 'contentShareQuestionCountLabel'|trans({'%count%': quiz.questions|length}) }}
+    </p>
+
+    {% if quiz.subject or quiz.description %}
+        <div class="card mb-3">
+            <div class="card-body">
+                {% if quiz.subject %}<div class="cm-share__detail">{{ quiz.subject }}</div>{% endif %}
+                {% if quiz.description %}<p class="mb-0" style="white-space: pre-wrap;">{{ quiz.description }}</p>{% endif %}
+            </div>
+        </div>
+    {% endif %}
+
+    {% for question in quiz.questions %}
+        <div class="card mb-2">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start gap-3">
+                    <div class="fw-bold">{{ loop.index }}. {{ question.label|striptags }}</div>
+                    <span class="cm-badge cm-badge--gray">{{ question.type.value }}</span>
+                </div>
+                {% if question.answers is not empty %}
+                    <ul class="cm-share__answers">
+                        {% for answer in question.answers %}
+                            <li class="{{ answer.isCorrect ? 'cm-share__answer--right' }}">{{ answer.label|striptags }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                {% if question.explanation %}
+                    <div class="cm-share__detail">{{ question.explanation|striptags }}</div>
+                {% endif %}
+            </div>
+        </div>
+    {% else %}
+        <p class="text-secondary">{{ 'contentShareReadQuizEmptyText'|trans }}</p>
+    {% endfor %}
+{% endblock %}

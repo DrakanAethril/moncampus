@@ -1,0 +1,55 @@
+{% extends 'layout/app.html.twig' %}
+
+{# « Consulter » on a shared folder (design/validated/content-sharing-between-teachers.md).
+
+   **Not the author's own library screen**, and that is the point: App\Security\Voter\FileLibraryVoter
+   says once and for all that nobody reads a colleague's library, and opening its browse screen on a
+   shared folder would hand over the rail - every other folder they own - along with it. What is
+   shared is this folder, so this screen lists this folder and nothing else. #}
+
+{% block title %}{{ node.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'contentSharePageHeading'|trans, url: path('app_shares')},
+        {label: node.name, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ node.name }}{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_shares_duplicate', {id: share.id}) }}" class="cm-btn cm-btn--primary">{{ 'contentShareDuplicateAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    <p class="text-secondary">{{ 'contentShareReadSharedByLabel'|trans({'%author%': share.owner.displayName ?? share.owner.username}) }}</p>
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'fileLibraryNameColumnLabel'|trans }}</th>
+                        <th>{{ 'fileLibrarySizeColumnLabel'|trans }}</th>
+                        <th class="cm-actions"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr>
+                            <td style="padding-left: {{ 12 + row.depth * 20 }}px;">{{ row.node.name }}</td>
+                            <td>{{ row.node.folder ? 'contentShareFolderLabel'|trans : byte_size(row.node.sizeBytes) }}</td>
+                            <td class="cm-actions">
+                                {% if not row.node.folder %}
+                                    <a href="{{ path('app_shares_open', {id: share.id, node: row.node.id}) }}" class="cm-action--main">{{ 'fileLibraryDownloadAction'|trans }}</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

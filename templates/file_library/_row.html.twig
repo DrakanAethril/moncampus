@@ -61,6 +61,12 @@
                 {% if node.type.value == 'file' %}
                     <li><a class="dropdown-item" href="{{ path('app_file_library_node_share', {nodeId: node.id}) }}">{{ 'sharedDocumentShareAction'|trans }}</a></li>
                 {% endif %}
+                {# « Partager à un collègue » - a different verb and a different audience from the row
+                   above: that one puts a document at a class's disposal, this one hands the file to
+                   another teacher, who then duplicates it into their own library
+                   (design/validated/content-sharing-between-teachers.md). A folder carries it too,
+                   since a folder shares its subtree. #}
+                <li><a class="dropdown-item" href="{{ path('app_shares_new_file', {nodeId: node.id}) }}">{{ 'contentShareFileRowAction'|trans }}</a></li>
                 {# The Vidéos tool's front door too: a video here creates the VideoResource and its
                    file, and the wizard opens on a « à visionner ». For anything else it is a « à
                    rendre » with the file already attached. #}

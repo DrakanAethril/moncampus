@@ -1,0 +1,49 @@
+{% extends 'layout/app.html.twig' %}
+
+{# « Dupliquer chez moi » for a shared quiz.
+
+   **No quota block, and that is a decision rather than an omission**
+   (design/validated/content-sharing-between-teachers.md): a question's illustration is copied into a
+   fresh S3 object and given **no** library node - exactly like an image uploaded straight into a
+   question today. It keeps the recipient's library free of pictures they never filed, and it leaves
+   their quota untouched, which is coherent with the file library's own « the quota does not bound
+   the platform »: the quota measures the library, not every byte the application holds. #}
+
+{% block title %}{{ 'contentShareDuplicateHeading'|trans({'%name%': quiz.name}) }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'contentSharePageHeading'|trans, url: path('app_shares')},
+        {label: 'contentShareDuplicateBreadcrumbLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'contentShareDuplicateHeading'|trans({'%name%': quiz.name}) }}{% endblock %}
+
+{% block main %}
+    <p class="text-secondary">{{ 'contentShareReadSharedByLabel'|trans({'%author%': share.owner.displayName ?? share.owner.username}) }}</p>
+
+    <form method="post" action="{{ path('app_shares_duplicate_save', {id: share.id}) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('content_share_duplicate') }}">
+
+        <div class="card mb-3">
+            <div class="card-header"><h2 class="card-title">{{ 'contentShareDuplicateWhatHeading'|trans }}</h2></div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-3">{{ 'contentShareSubjectQuizLabel'|trans }}</dt>
+                    <dd class="col-9">{{ quiz.name }}</dd>
+                    <dt class="col-3">{{ 'contentShareDuplicateQuestionsLabel'|trans }}</dt>
+                    <dd class="col-9">{{ 'contentShareQuestionCountLabel'|trans({'%count%': quiz.questions|length}) }}</dd>
+                </dl>
+                <p class="cm-share__detail mt-3 mb-0">{{ 'contentShareDuplicateQuizImagesNote'|trans }}</p>
+            </div>
+        </div>
+
+        <div class="cm-actionbar">
+            <button type="submit" class="cm-btn cm-btn--primary">{{ 'contentShareDuplicateSubmitAction'|trans }}</button>
+            <a href="{{ path('app_shares') }}" class="cm-btn">{{ 'cancelAction'|trans }}</a>
+            <span class="cm-share__detail">{{ 'contentShareDuplicateAuthorKeepsHisText'|trans({'%author%': share.owner.displayName ?? share.owner.username}) }}</span>
+        </div>
+    </form>
+{% endblock %}

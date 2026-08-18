@@ -6262,3 +6262,21 @@ contentShareDuplicateEmptyTrashAction: 'Vider ma corbeille'
 contentShareDuplicateOpenLibraryAction: 'Ouvrir ma bibliothèque'
 contentShareQuotaRefusalFlashMessage: "Il manque %missing%. Cette duplication demande %size% et il vous reste %remaining%. Rien ne sera écrit — ni la séquence, ni les dossiers, ni les premiers fichiers qui, eux, tiendraient."
 contentShareDuplicatedFlashMessage: "La copie est dans votre bibliothèque. Elle vous appartient : la modifier ne touchera pas l'original."
+contentShareFileRowAction: 'Partager à un collègue'
+contentShareShareFolderHelpText: 'Le dossier et tout ce qu’il contient.'
+contentShareReadSharedByLabel: 'Partagé par %author%'
+contentShareReadQuizEmptyText: "Ce quiz ne porte encore aucune question."
+contentShareDuplicateQuestionsLabel: 'Questions'
+contentShareDuplicateQuizImagesNote: "Les illustrations des questions sont recopiées avec le quiz. Elles n’entrent pas dans votre bibliothèque de fichiers et ne pèsent pas sur votre quota, exactement comme une image déposée directement dans une question."
+contentShareDuplicateFoldersLabel: 'Dossiers'
+contentShareDuplicateShortAction: 'Dupliquer'
+contentShareQuotaRefusalFileFlashMessage: "Il manque %missing%. Cette copie demande %size% et il vous reste %remaining%. Rien ne sera écrit — ni les dossiers, ni les premiers fichiers qui, eux, tiendraient."
+contentShareCatalogSearchPlaceholder: 'Chercher dans le catalogue…'
+contentShareCatalogSearchAction: 'Chercher'
+contentShareCatalogAllTypesLabel: 'Tous les types'
+contentShareCatalogAllAuthorsLabel: 'Tous les auteurs'
+contentShareCatalogAuthorLabel: 'Auteur'
+contentShareCatalogTagsColumnLabel: "Étiquettes de l'auteur"
+contentShareCatalogPublishedColumnLabel: 'Publié'
+contentShareCatalogCountLabel: '{0}aucun contenu publié au catalogue|{1}1 contenu publié au catalogue|]1,Inf[%count% contenus publiés au catalogue'
+contentShareCatalogEmptyText: "Le catalogue est vide pour cette recherche. La recherche porte sur le titre, l'auteur et les étiquettes telles qu'elles sont écrites — pas sur une liste de facettes, puisque chaque enseignant nomme les siennes comme il l'entend."
