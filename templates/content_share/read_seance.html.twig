@@ -1,0 +1,63 @@
+{% extends 'layout/app.html.twig' %}
+
+{# « Consulter » on a séance shared **on its own**
+   (design/validated/content-sharing-between-teachers.md).
+
+   Its own screen rather than the library's séance page, and for the reason that decides every read
+   screen here: what was shared is **this séance**, not the séquence it happens to live in. Opening
+   the library's page would hand over the whole séquence - every other séance included - to somebody
+   who was given one. #}
+
+{% block title %}{{ seance.titre }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'contentSharePageHeading'|trans, url: path('app_shares')},
+        {label: seance.titre, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ seance.titre }}{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_shares_duplicate', {id: share.id}) }}" class="cm-btn cm-btn--primary">{{ 'contentShareDuplicateAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    <p class="text-secondary">
+        {{ 'contentShareReadSharedByLabel'|trans({'%author%': share.owner.displayName ?? share.owner.username}) }}
+        · {{ 'contentSharePhaseCountLabel'|trans({'%count%': seance.seancePhaseTemplates|length}) }}
+    </p>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-3">{{ 'seanceTemplateDureeFieldLabel'|trans }}</dt>
+                <dd class="col-9">{{ seance.duree ? seance.duree|round|duration_minutes : '—' }}</dd>
+                {% for field, label in {
+                    objectifs: 'seanceTemplateObjectifsFieldLabel',
+                    avantDescription: 'seanceTemplateAvantDescriptionFieldLabel',
+                    apresDescription: 'seanceTemplateApresDescriptionFieldLabel',
+                    materials: 'seanceTemplateMaterialsFieldLabel',
+                    watchPoints: 'seanceTemplateWatchPointsFieldLabel',
+                } %}
+                    {% if attribute(seance, field) %}
+                        <dt class="col-3">{{ label|trans }}</dt>
+                        <dd class="col-9" style="white-space: pre-wrap;">{{ attribute(seance, field) }}</dd>
+                    {% endif %}
+                {% endfor %}
+            </dl>
+        </div>
+    </div>
+
+    {% for phase in seance.seancePhaseTemplates %}
+        <div class="card mb-2">
+            <div class="card-body">
+                <div class="fw-bold">{{ loop.index }}. {{ phase.nom }}</div>
+                {% if phase.contenu %}<p class="mb-0 mt-1" style="white-space: pre-wrap;">{{ phase.contenu }}</p>{% endif %}
+                {% if phase.moyensSupports %}<div class="cm-share__detail">{{ phase.moyensSupports }}</div>{% endif %}
+            </div>
+        </div>
+    {% endfor %}
+{% endblock %}

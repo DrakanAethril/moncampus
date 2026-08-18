@@ -6280,3 +6280,13 @@ contentShareCatalogTagsColumnLabel: "Étiquettes de l'auteur"
 contentShareCatalogPublishedColumnLabel: 'Publié'
 contentShareCatalogCountLabel: '{0}aucun contenu publié au catalogue|{1}1 contenu publié au catalogue|]1,Inf[%count% contenus publiés au catalogue'
 contentShareCatalogEmptyText: "Le catalogue est vide pour cette recherche. La recherche porte sur le titre, l'auteur et les étiquettes telles qu'elles sont écrites — pas sur une liste de facettes, puisque chaque enseignant nomme les siennes comme il l'entend."
+contentShareDuplicateSeanceSubtitle: 'Séance partagée par %author%'
+contentShareDuplicateSeanceWhereText: "Une séance vit toujours dans une séquence. Dites laquelle : elle sera ajoutée en dernière position."
+contentShareDuplicateSeanceExistingLabel: 'Dans une séquence existante'
+contentShareDuplicateSeanceExistingHint: 'Choisissez laquelle ci-dessous'
+contentShareDuplicateSeanceNewLabel: 'Dans une nouvelle séquence'
+contentShareDuplicateSeanceNewHint: 'Elle portera le titre de la séance : « %name% »'
+contentShareDuplicateSeanceSequenceLabel: 'Séquence de destination'
+contentShareDuplicateSeanceSequencePlaceholder: 'Choisir une séquence…'
+contentShareDuplicateSeanceNoSequenceHint: "Votre bibliothèque ne contient encore aucune séquence : choisissez « Dans une nouvelle séquence »."
+contentShareDuplicateSeanceFilesText: '%count% support(s) · %size% — dossier « %folder% ».'

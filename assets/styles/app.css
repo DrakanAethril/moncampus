@@ -7900,3 +7900,14 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 }
 .cm-share__answer--right { color: var(--cm-positive-tx); font-weight: 600; }
 .cm-share__answer--right::before { content: '✓'; color: var(--cm-positive-tx); font-size: 11px; }
+
+/* The one sentence a screen that asks a question opens on. */
+.cm-share__notice {
+    background: var(--cm-blue-bg-soft);
+    border: 1px solid var(--cm-blue-bg);
+    border-radius: var(--cm-radius-sm);
+    color: var(--cm-blue-tx);
+    padding: 11px 13px;
+    font-size: 12.5px;
+    margin-bottom: 14px;
+}

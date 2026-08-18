@@ -59,6 +59,9 @@ class ContentShareController extends AbstractController
         private readonly ContentShareRepository $shares,
         private readonly ContentShareAudience $audience,
         private readonly EntityManagerInterface $entityManager,
+        // The recipient's own séquences: the list a lone séance is offered to land in, and the check
+        // that the one they submitted is theirs.
+        private readonly SequenceTemplateRepository $sequences,
     ) {
     }
 
@@ -314,6 +317,7 @@ class ContentShareController extends AbstractController
 
         return match ($share->getSubject()) {
             ContentShareSubject::Sequence => $this->confirmSequence($share, $recipient, $sequences, $nodes, $quota),
+            ContentShareSubject::Seance => $this->confirmSeance($share, $recipient, $sequences, $nodes, $quota),
             ContentShareSubject::Quiz => $this->confirmQuiz($share),
             ContentShareSubject::File => $this->confirmFile($share, $recipient, $files, $nodes, $quota),
             default => throw $this->createNotFoundException(),
@@ -355,6 +359,14 @@ class ContentShareController extends AbstractController
                 ContentShareSubject::Quiz => $this->generateUrl('app_library_quiz_questions', [
                     'id' => $quizzes->duplicate($share->getQuizTemplate() ?? throw $this->createNotFoundException(), $recipient, $recipient)->getId(),
                 ]),
+                ContentShareSubject::Seance => $this->generateUrl('app_library_seances_show', $this->seanceCopyParameters(
+                    $sequences->duplicateSeance(
+                        $share->getSeanceTemplate() ?? throw $this->createNotFoundException(),
+                        $recipient,
+                        $this->targetSequence($request, $recipient),
+                        $destination,
+                    ),
+                )),
                 ContentShareSubject::File => $this->fileLibraryUrl(
                     $files->duplicate($share->getLibraryNode() ?? throw $this->createNotFoundException(), $recipient, $destination),
                 ),
@@ -399,6 +411,10 @@ class ContentShareController extends AbstractController
                 'share' => $share,
                 'quiz' => $share->getQuizTemplate() ?? throw $this->createNotFoundException(),
             ]),
+            ContentShareSubject::Seance => $this->render('content_share/read_seance.html.twig', [
+                'share' => $share,
+                'seance' => $share->getSeanceTemplate() ?? throw $this->createNotFoundException(),
+            ]),
             ContentShareSubject::File => $this->openFile($share, $request, $fileUploads, $nodes),
             default => throw $this->createNotFoundException(),
         };
@@ -425,6 +441,57 @@ class ContentShareController extends AbstractController
             'fits' => $quota->accepts($recipient, $plan['totalBytes']),
             'remaining' => $quota->remainingBytes($recipient),
         ]);
+    }
+
+    /**
+     * The one screen that asks a question instead of guessing: a séance always lives in a séquence,
+     * so the recipient names one - or asks for a new one bearing the séance's own title.
+     */
+    private function confirmSeance(ContentShare $share, User $recipient, SequenceDuplicator $duplicator, FileLibraryNodeRepository $nodes, FileLibraryQuota $quota): Response
+    {
+        $seance = $share->getSeanceTemplate() ?? throw $this->createNotFoundException();
+        $plan = $duplicator->planSeance($seance);
+
+        return $this->render('content_share/duplicate_seance.html.twig', [
+            'share' => $share,
+            'seance' => $seance,
+            'plan' => $plan,
+            'sequences' => $this->sequences->findForTeacher($recipient),
+            'folders' => $nodes->findFolders($recipient),
+            'quotaUsed' => $quota->usedBytes($recipient),
+            'quotaLimit' => $quota->limitFor($recipient),
+            'fits' => $quota->accepts($recipient, $plan['totalBytes']),
+            'remaining' => $quota->remainingBytes($recipient),
+        ]);
+    }
+
+    /**
+     * The séquence a duplicated séance joins - null when the recipient asked for a new one, and null
+     * again when the id they submitted is not one of theirs. The picker only ever offered their own,
+     * so a foreign id means a hand-edited request; creating a fresh séquence is the safe answer, not
+     * writing into a colleague's.
+     */
+    private function targetSequence(Request $request, User $recipient): ?SequenceTemplate
+    {
+        if ('existing' !== PostValue::string($request, 'target', 'existing')) {
+            return null;
+        }
+
+        $sequenceId = PostValue::nullableInt($request, 'sequence');
+
+        if (null === $sequenceId) {
+            return null;
+        }
+
+        $sequence = $this->sequences->find($sequenceId);
+
+        return null !== $sequence && $sequence->getTeacher() === $recipient ? $sequence : null;
+    }
+
+    /** @return array{sequenceId: int|null, id: int|null} */
+    private function seanceCopyParameters(SeanceTemplate $copy): array
+    {
+        return ['sequenceId' => $copy->getSequenceTemplate()?->getId(), 'id' => $copy->getId()];
     }
 
     /** No quota block: a quiz's illustrations never enter the recipient's library, so nothing weighs. */

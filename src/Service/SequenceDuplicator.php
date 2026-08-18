@@ -17,6 +17,7 @@ use App\Enum\LibraryResourceSourceType;
 use App\Repository\LibraryBlocTagRepository;
 use App\Repository\LibraryNiveauTagRepository;
 use App\Repository\LibraryOptionTagRepository;
+use App\Repository\SeanceTemplateRepository;
 use App\Repository\SequenceTemplateRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -61,6 +62,7 @@ class SequenceDuplicator
         private readonly LibraryOptionTagRepository $optionTags,
         private readonly LibraryBlocTagRepository $blocTags,
         private readonly SequenceTemplateRepository $sequences,
+        private readonly SeanceTemplateRepository $seances,
     ) {
     }
 
@@ -153,6 +155,97 @@ class SequenceDuplicator
         $this->entityManager->flush();
 
         return $copy;
+    }
+
+    /**
+     * The same duplication, for **one séance shared on its own**
+     * (design/validated/content-sharing-between-teachers.md).
+     *
+     * A séance is a real thing teachers exchange, and it has one wrinkle worth designing rather than
+     * dodging: `SeanceTemplate::$sequenceTemplate` is `nullable: false`, so a lone séance cannot land
+     * in a library by itself. The screen therefore **asks where it goes** - into a séquence of the
+     * recipient's own, appended last, or into a new one bearing the séance's title. Nothing is
+     * guessed: a séance landing in a séquence the recipient did not choose is a séance they will be
+     * hunting for tomorrow.
+     *
+     * Its supports land in a single folder named after the séance, its phases' included - the same
+     * rule as a séquence's, one level shallower because there is one level less.
+     *
+     * @param SequenceTemplate|null $target the séquence it is appended to; null creates one named
+     *                                      after the séance
+     *
+     * @throws ContentShareQuotaException when it does not fit; nothing has been written
+     */
+    public function duplicateSeance(SeanceTemplate $source, User $recipient, ?SequenceTemplate $target, ?FileLibraryNode $destination): SeanceTemplate
+    {
+        $plan = $this->planSeance($source);
+
+        if (!$this->quota->accepts($recipient, $plan['totalBytes'])) {
+            throw new ContentShareQuotaException($plan['totalBytes'], $this->quota->remainingBytes($recipient));
+        }
+
+        return $this->entityManager->wrapInTransaction(function () use ($plan, $source, $recipient, $target, $destination): SeanceTemplate {
+            $nodeBySourceKey = $this->createFolderTree($plan, $recipient, $destination);
+
+            $sequence = $target;
+
+            if (null === $sequence) {
+                $sequence = new SequenceTemplate($recipient);
+                $sequence->setTitre($this->seanceFolderName($source));
+                $sequence->setOrder(\count($this->sequences->findForTeacher($recipient)) + 1);
+                $this->entityManager->persist($sequence);
+            }
+
+            $copy = $this->copySeance($source, $sequence);
+            // Appended last, which is what « elle sera ajoutée en dernière position » promises.
+            $copy->setOrdre($this->seances->count(['sequenceTemplate' => $sequence]) + 1);
+
+            foreach ($source->getLibraryResources() as $resource) {
+                $this->copyResource($resource, $recipient, $nodeBySourceKey, static fn (LibraryResource $new): mixed => $new->setSeanceTemplate($copy));
+            }
+
+            foreach ($source->getSeancePhaseTemplates() as $phase) {
+                $phaseCopy = $this->copyPhase($phase, $copy);
+
+                foreach ($phase->getLibraryResources() as $resource) {
+                    $this->copyResource($resource, $recipient, $nodeBySourceKey, static fn (LibraryResource $new): mixed => $new->setSeancePhaseTemplate($phaseCopy));
+                }
+            }
+
+            $this->entityManager->flush();
+
+            return $copy;
+        });
+    }
+
+    /**
+     * What a lone séance will create and weigh: **one** folder, named after the séance, holding its
+     * own supports and its phases'.
+     *
+     * It is the séquence planner called one level down - the séance plays the part of the séquence,
+     * and there is no sub-level left to make a folder of.
+     *
+     * @return DuplicationPlan
+     */
+    public function planSeance(SeanceTemplate $source): array
+    {
+        $resources = $this->describeAll($source->getLibraryResources());
+
+        foreach ($source->getSeancePhaseTemplates() as $phase) {
+            foreach ($phase->getLibraryResources() as $resource) {
+                $resources[] = $this->describe($resource);
+            }
+        }
+
+        return $this->planner->plan($this->seanceFolderName($source), $resources, []);
+    }
+
+    /** A séance with no title of its own still needs a name a reader can find tomorrow. */
+    private function seanceFolderName(SeanceTemplate $source): string
+    {
+        $title = trim((string) $source->getTitre());
+
+        return '' === $title ? \sprintf('Séance %d', $source->getOrdre()) : $title;
     }
 
     /**

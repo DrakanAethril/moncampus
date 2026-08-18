@@ -1,0 +1,103 @@
+{% extends 'layout/app.html.twig' %}
+
+{# « Dupliquer chez moi » for a séance shared on its own
+   (design/validated/content-sharing-between-teachers.md, mockup 8).
+
+   **The screen asks where the séance goes, and guesses nothing.** `SeanceTemplate::$sequenceTemplate`
+   is `nullable: false`, so a lone séance cannot land in a library by itself: either it joins a
+   séquence the recipient names - appended last - or a new one is created bearing its own title. A
+   séance landing in a séquence the recipient did not choose is a séance they will be hunting for
+   tomorrow.
+
+   The select carries a placeholder, per the repository's rule: a list used for **input** demands
+   one, a list used for consultation may start on its first entry. #}
+
+{% block title %}{{ 'contentShareDuplicateHeading'|trans({'%name%': seance.titre}) }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'contentSharePageHeading'|trans, url: path('app_shares')},
+        {label: 'contentShareDuplicateBreadcrumbLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'contentShareDuplicateHeading'|trans({'%name%': seance.titre}) }}{% endblock %}
+
+{% block main %}
+    <p class="text-secondary">{{ 'contentShareDuplicateSeanceSubtitle'|trans({'%author%': share.owner.displayName ?? share.owner.username}) }}</p>
+
+    <form method="post" action="{{ path('app_shares_duplicate_save', {id: share.id}) }}" data-controller="content-share-destination">
+        <input type="hidden" name="_token" value="{{ csrf_token('content_share_duplicate') }}">
+
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="cm-share__notice">{{ 'contentShareDuplicateSeanceWhereText'|trans }}</div>
+
+                <div class="cm-share__scopes mb-3">
+                    <label class="cm-share__scope">
+                        <input type="radio" name="target" value="existing" checked
+                               data-action="change->content-share-destination#targetChanged">
+                        <span class="cm-share__scope-title">{{ 'contentShareDuplicateSeanceExistingLabel'|trans }}</span>
+                        <span class="cm-share__scope-hint">{{ 'contentShareDuplicateSeanceExistingHint'|trans }}</span>
+                    </label>
+                    <label class="cm-share__scope">
+                        <input type="radio" name="target" value="new"
+                               data-action="change->content-share-destination#targetChanged">
+                        <span class="cm-share__scope-title">{{ 'contentShareDuplicateSeanceNewLabel'|trans }}</span>
+                        <span class="cm-share__scope-hint">{{ 'contentShareDuplicateSeanceNewHint'|trans({'%name%': seance.titre}) }}</span>
+                    </label>
+                </div>
+
+                <div class="mb-3" data-content-share-destination-target="existingPanel">
+                    <label class="form-label" for="content-share-sequence">{{ 'contentShareDuplicateSeanceSequenceLabel'|trans }}</label>
+                    <select id="content-share-sequence" name="sequence" class="form-select">
+                        <option value="">{{ 'contentShareDuplicateSeanceSequencePlaceholder'|trans }}</option>
+                        {% for sequence in sequences %}
+                            <option value="{{ sequence.id }}">{{ sequence.titre }}</option>
+                        {% endfor %}
+                    </select>
+                    {% if sequences is empty %}
+                        <span class="form-hint">{{ 'contentShareDuplicateSeanceNoSequenceHint'|trans }}</span>
+                    {% endif %}
+                </div>
+
+                {% if plan.fileCount > 0 %}
+                    <div class="mb-3">
+                        <label class="form-label" for="content-share-destination">{{ 'contentShareDuplicateDestinationLabel'|trans }}</label>
+                        <select id="content-share-destination" name="destination" class="form-select">
+                            <option value="">{{ 'contentShareDuplicateDestinationRootLabel'|trans }}</option>
+                            {% for folder in folders %}
+                                <option value="{{ folder.id }}">{{ folder.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <p class="cm-share__detail">
+                        {{ 'contentShareDuplicateSeanceFilesText'|trans({
+                            '%count%': plan.fileCount,
+                            '%size%': byte_size(plan.totalBytes),
+                            '%folder%': plan.folders[0].name,
+                        }) }}
+                    </p>
+
+                    {% if not fits %}
+                        <div class="alert alert-danger mt-3" role="alert">
+                            {{ 'contentShareQuotaRefusalFileFlashMessage'|trans({
+                                '%missing%': byte_size(plan.totalBytes - remaining),
+                                '%size%': byte_size(plan.totalBytes),
+                                '%remaining%': byte_size(remaining),
+                            }) }}
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="cm-actionbar">
+            <button type="submit" class="cm-btn cm-btn--primary"{{ fits ? '' : ' disabled' }}>{{ 'contentShareDuplicateSubmitAction'|trans }}</button>
+            <a href="{{ path('app_shares') }}" class="cm-btn">{{ 'cancelAction'|trans }}</a>
+            <span class="cm-share__detail">{{ 'contentShareDuplicateAuthorKeepsHisText'|trans({'%author%': share.owner.displayName ?? share.owner.username}) }}</span>
+        </div>
+    </form>
+{% endblock %}
