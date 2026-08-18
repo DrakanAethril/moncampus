@@ -369,9 +369,9 @@ class ContentShareController extends AbstractController
                 // A quiz weighs nothing in the recipient's library: its illustrations get a fresh S3
                 // object and **no** library node, exactly like an image uploaded straight into a
                 // question. So there is no quota question to ask here.
-                ContentShareSubject::Quiz => $this->generateUrl('app_library_quiz_questions', [
-                    'id' => $quizzes->duplicate($share->getQuizTemplate() ?? throw $this->createNotFoundException(), $recipient, $recipient)->getId(),
-                ]),
+                ContentShareSubject::Quiz => $this->quizCopyUrl(
+                    $quizzes->duplicate($share->getQuizTemplate() ?? throw $this->createNotFoundException(), $recipient, $recipient),
+                ),
                 ContentShareSubject::Seance => $this->generateUrl('app_library_seances_show', $this->seanceCopyParameters(
                     $sequences->duplicateSeance(
                         $share->getSeanceTemplate() ?? throw $this->createNotFoundException(),
@@ -661,6 +661,21 @@ class ContentShareController extends AbstractController
     private function isInside(FileLibraryNode $node, FileLibraryNode $ancestor): bool
     {
         return str_starts_with($node->getPath(), $ancestor->getPath().$ancestor->getId().'/');
+    }
+
+    /**
+     * Where the duplicated quiz landed.
+     *
+     * The flush is the point: App\Service\QuizTemplateDuplicator persists without flushing - the
+     * caller owns its unit of work, as everywhere here - so the copy has no id until this runs, and
+     * a route needs one. The other four duplicators flush inside their own transaction and hand back
+     * a row that already has its id.
+     */
+    private function quizCopyUrl(QuizTemplate $copy): string
+    {
+        $this->entityManager->flush();
+
+        return $this->generateUrl('app_library_quiz_questions', ['id' => $copy->getId()]);
     }
 
     /** Where a duplicated file or folder landed - its parent folder, or the library root. */
