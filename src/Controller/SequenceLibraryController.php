@@ -424,16 +424,33 @@ class SequenceLibraryController extends AbstractController
     }
 
     #[Route(path: '/library/sequences/{sequenceId}/sessions/{id}', name: 'app_library_seances_show')]
-    public function seanceShow(int $sequenceId, int $id, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
-    {
+    public function seanceShow(
+        int $sequenceId,
+        int $id,
+        SequenceTemplateRepository $sequenceRepository,
+        SeanceTemplateRepository $seanceRepository,
+        LibraryNiveauTagRepository $niveauTagRepository,
+        LibraryOptionTagRepository $optionTagRepository,
+        LibraryBlocTagRepository $blocTagRepository,
+        ContentShareRepository $shares,
+        ContentShareAudience $shareAudience,
+    ): Response {
         $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
         $seanceTemplate = $this->findSeanceOrNotFound($seanceRepository, $sequenceTemplate, $id);
         $canEdit = $this->isGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
+        // A séance is shared by its author alone - the séquence's owner, since a séance has no owner
+        // of its own. Staff do not hand it around on their behalf.
+        $canShare = $sequenceTemplate->getTeacher() === $this->currentUser();
+        $existingShares = $canShare ? $shares->findForSubject($seanceTemplate) : [];
 
         return $this->render('library/seance_show.html.twig', [
             'sequenceTemplate' => $sequenceTemplate,
             'seanceTemplate' => $seanceTemplate,
             'canEdit' => $canEdit,
+            'canShare' => $canShare,
+            'shares' => $existingShares,
+            'shareGroups' => $canShare ? $shareAudience->pickableGroups() : [],
+            'shareMemberCounts' => $this->shareMemberCounts($existingShares, $shareAudience),
             'resourceForm' => $canEdit ? $this->createForm(LibraryResourceType::class) : null,
             'tagOptions' => $this->libraryTagOptions($niveauTagRepository, $optionTagRepository, $blocTagRepository),
         ]);
