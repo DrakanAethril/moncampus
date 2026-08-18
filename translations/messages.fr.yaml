@@ -6255,7 +6255,7 @@ contentShareDuplicateNoFilesText: "Cette séquence ne porte aucun fichier : rien
 contentShareDuplicateWeightHeading: 'Ce que ça pèse chez vous'
 contentShareDuplicateCopiedFilesLabel: 'Fichiers copiés'
 contentShareDuplicateWeightLabel: 'Poids'
-contentShareDuplicateQuotaAfterLabel: '%after% / %limit% — %percentAfter% %% après copie (%percentNow% %% aujourd''hui)'
+contentShareDuplicateQuotaAfterLabel: '%after% / %limit% — %percentAfter% % après copie (%percentNow% % aujourd''hui)'
 contentShareDuplicateSubmitAction: 'Dupliquer'
 contentShareDuplicateAuthorKeepsHisText: '%author% gardera la sienne, intacte.'
 contentShareDuplicateEmptyTrashAction: 'Vider ma corbeille'

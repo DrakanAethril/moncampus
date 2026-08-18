@@ -5476,7 +5476,7 @@ contentShareDuplicateNoFilesText: 'This séquence carries no file: nothing will 
 contentShareDuplicateWeightHeading: 'What it weighs in your library'
 contentShareDuplicateCopiedFilesLabel: 'Files copied'
 contentShareDuplicateWeightLabel: 'Weight'
-contentShareDuplicateQuotaAfterLabel: '%after% / %limit% — %percentAfter% %% after the copy (%percentNow% %% today)'
+contentShareDuplicateQuotaAfterLabel: '%after% / %limit% — %percentAfter% % after the copy (%percentNow% % today)'
 contentShareDuplicateSubmitAction: 'Duplicate'
 contentShareDuplicateAuthorKeepsHisText: '%author% will keep theirs, untouched.'
 contentShareDuplicateEmptyTrashAction: 'Empty my trash'
