@@ -3843,6 +3843,13 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-inline-add { font: 600 12.5px var(--cm-font-ui); color: var(--cm-brand-strong); text-decoration: none; }
 .cm-inline-add:hover { text-decoration: underline; color: var(--cm-brand-strong); }
 
+/* « Reprendre le contenu de la séance », under an empty editor. The [hidden] rule is not
+   redundant: a display declaration on a class outranks the user agent's own [hidden] rule, so
+   without it the box would stay visible once the part is filled. */
+.cm-seance-default { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.cm-seance-default[hidden] { display: none; }
+.cm-seance-default__note { font-size: 12px; color: var(--cm-faint); }
+
 /* Assignments given on a part. */
 .cm-work-list { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
 .cm-work { display: flex; align-items: center; gap: 12px; border: 1px solid var(--cm-border-soft); border-radius: var(--cm-radius-sm); padding: 12px 14px; background: var(--cm-surface-soft); }
@@ -7207,26 +7214,25 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
 .cm-callout--warning { border-left-color: var(--cm-gold); background: var(--cm-gold-bg); color: var(--cm-gold-tx); }
 .cm-callout--tip { border-left-color: var(--cm-green-tx); background: var(--cm-green-bg); color: var(--cm-green-tx); }
 
-/* Mermaid stores its diagram as an SVG, and the sanitizer drops the <style> block Mermaid emits
-   with it - the html-sanitizer component refuses that element unconditionally, whatever
-   allow_elements says (measured; see App\Tests\Functional\WikiSanitizerTest). So the diagram is
-   styled here instead, by Mermaid's own class names.
+/* A stored diagram carries its own appearance, in `style` attributes written when it was inserted
+   (assets/wiki/mermaid_svg.js). There is deliberately **nothing about colour or type here**: the
+   sanitizer removes the <style> block Mermaid emits, so restyling by its class names is what this
+   used to attempt, and it only ever covered flowcharts - every other kind came out black, shifted
+   or truncated. Inline styles would win over these rules anyway.
 
-   That turns out better than keeping its theme: the diagram now follows --cm-* like everything
-   else, so one appearance holds on screen, in dark mode and in the PDF - which is exactly what the
-   design asks of the callouts just above. */
+   Layout stays, because it is about the page rather than the picture. */
 .cm-mermaid { margin: 1.2em 0; text-align: center; }
-.cm-mermaid svg { max-width: 100%; height: auto; font-family: var(--cm-font-ui); }
-.cm-mermaid .node rect, .cm-mermaid .node circle, .cm-mermaid .node ellipse,
-.cm-mermaid .node polygon, .cm-mermaid .node path { fill: var(--cm-blue-bg-soft); stroke: var(--cm-brand); stroke-width: 1px; }
-.cm-mermaid .cluster rect { fill: var(--cm-surface-alt); stroke: var(--cm-border); }
-.cm-mermaid .label, .cm-mermaid .nodeLabel, .cm-mermaid .edgeLabel, .cm-mermaid text { fill: var(--cm-ink); color: var(--cm-ink); font-size: 13px; }
-.cm-mermaid .edgeLabel rect { fill: var(--cm-surface); }
-.cm-mermaid .edgePath path, .cm-mermaid .flowchart-link, .cm-mermaid .messageLine0, .cm-mermaid .messageLine1 { stroke: var(--cm-muted); fill: none; stroke-width: 1.4px; }
-.cm-mermaid marker path, .cm-mermaid .marker { fill: var(--cm-muted); stroke: var(--cm-muted); }
-.cm-mermaid .actor { fill: var(--cm-blue-bg-soft); stroke: var(--cm-brand); }
-.cm-mermaid .section0, .cm-mermaid .section2 { fill: var(--cm-surface-alt); }
-.cm-mermaid .grid path { stroke: var(--cm-border); }
+.cm-mermaid svg { max-width: 100%; height: auto; }
+
+/* The diagram is drawn once, in the light palette, and those colours are inside the file - the way a
+   photograph's are. So dark mode gives it a light surface to sit on rather than trying to repaint
+   it, which is also what keeps screen and PDF showing the same picture. Without this the labels
+   Mermaid draws straight on the background - a sequence diagram's messages, a flowchart's edge
+   labels - are dark ink on a dark page, which is to say gone.
+
+   The surface goes on the <svg> and not on `.cm-mermaid`, which is a full-width block: painting the
+   block would draw a white band across the page instead of a card behind the picture. */
+[data-bs-theme="dark"] .cm-mermaid svg { background: #ffffff; border-radius: 10px; padding: 10px; }
 
 .cm-katex { display: inline-block; }
 
@@ -7498,3 +7504,182 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
    flat list draws none, which is what makes it flat. */
 .cm-shared__group { margin: 24px 0 10px; font: 600 15px var(--cm-font-title); color: var(--cm-ink); }
 .cm-shared__group:first-of-type { margin-top: 0; }
+
+/* ============================================================================================
+   Console Proxmox (/infrastructure)
+   ============================================================================================
+   Reference: the fourteen mockups of the "Console Proxmox" handoff, rendered in these very
+   tokens. Everything below is area-local furniture that had no equivalent yet - the buttons,
+   badges, notes, radio cards, steppers and action bars all come from the shared cm-* blocks
+   above and are not restated here.
+
+   The one piece that exists nowhere else in the application is the local navigation bar: this
+   area is deliberately absent from every menu, so that strip is the only way from one of its
+   screens to the next. It is not a variant of .cm-tabs - tabs switch views of one screen, this
+   moves between screens - and it sits directly under the page title on every one of them. */
+
+.cm-localnav {
+    display: flex; align-items: center; gap: 2px; flex-wrap: wrap;
+    padding: 0 4px; margin: 0 0 20px;
+    border-bottom: 1px solid var(--cm-border); background: var(--cm-surface);
+    border-radius: var(--cm-radius) var(--cm-radius) 0 0;
+}
+.cm-localnav__link {
+    padding: 10px 14px; font: 600 13.5px var(--cm-font-ui); color: var(--cm-muted);
+    text-decoration: none; white-space: nowrap;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.cm-localnav__link:hover { color: var(--cm-brand-strong); text-decoration: none; }
+.cm-localnav__link.is-active { color: var(--cm-brand-strong); border-bottom-color: var(--cm-brand); }
+/* "Aller à…" - the jump box that keeps a deep screen (a host's machines, one range's registry)
+   one click away instead of one remembered URL away. */
+.cm-localnav__goto { margin-left: auto; padding: 6px 8px; }
+
+/* ---------- Hub tiles ---------- */
+
+.cm-tilegrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 991.98px) { .cm-tilegrid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 575.98px) { .cm-tilegrid { grid-template-columns: 1fr; } }
+
+.cm-tile {
+    display: flex; flex-direction: column; gap: 3px;
+    padding: 15px 17px; border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
+    background: var(--cm-surface); text-decoration: none;
+}
+.cm-tile:hover { border-color: var(--cm-brand); text-decoration: none; }
+.cm-tile__title { font: 700 14px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-tile__desc { font-size: 12.5px; color: var(--cm-muted); line-height: 1.45; }
+.cm-tile__go { margin-top: auto; padding-top: 8px; font: 600 13px var(--cm-font-ui); color: var(--cm-brand-strong); }
+
+/* ---------- Host cards ---------- */
+/* Cards rather than a table, because a host carries a live state a row cannot show: a status
+   dot, a version, its credential mode, three counters and the age of the last check. That age
+   is not decoration - it is the admission that the dot reports the last known state and not the
+   current one, and it is why nothing here probes anything as the page renders. */
+
+.cm-hostgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 1199.98px) { .cm-hostgrid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 767.98px) { .cm-hostgrid { grid-template-columns: 1fr; } }
+
+.cm-host {
+    display: flex; flex-direction: column; overflow: hidden;
+    background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
+}
+.cm-host--inactive { opacity: .62; }
+.cm-host__top { display: flex; align-items: flex-start; gap: 10px; padding: 14px 16px 10px; }
+.cm-host__name { font: 500 16px var(--cm-font-title); color: var(--cm-ink); line-height: 1.2; }
+.cm-host__url { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11.5px; color: var(--cm-faint); margin-top: 3px; word-break: break-all; }
+.cm-host__body { padding: 0 16px 12px; }
+.cm-host__badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 9px; }
+.cm-host__meta { margin-top: 11px; font-size: 11.5px; color: var(--cm-faint); }
+.cm-host__meta b { color: var(--cm-muted); font-weight: 600; }
+.cm-host__foot {
+    margin-top: auto; display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+    padding: 9px 16px; background: var(--cm-surface-soft); border-top: 1px solid var(--cm-border-soft);
+}
+.cm-host__spacer { margin-left: auto; }
+
+.cm-host__kpis { display: flex; gap: 0; border-top: 1px solid var(--cm-border-faint); padding-top: 10px; margin-top: 4px; }
+.cm-host__kpi { flex: 1; }
+.cm-host__kpi-value { font: 600 19px var(--cm-font-ui); color: var(--cm-ink); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.cm-host__kpi-label { font-size: 10.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--cm-faint); margin-top: 2px; }
+
+/* ---------- Status dot ---------- */
+
+.cm-statusdot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
+.cm-statusdot--ok { background: var(--cm-positive-tx); }
+.cm-statusdot--down { background: var(--cm-red-tx); }
+.cm-statusdot--unknown { background: var(--cm-disabled); }
+.cm-statusdot--warn { background: var(--cm-warn-tx); }
+
+/* ---------- Inline text actions inside a card foot ---------- */
+
+.cm-linkaction { font: 600 13px var(--cm-font-ui); color: var(--cm-action-main); text-decoration: none; background: none; border: 0; padding: 0; cursor: pointer; }
+.cm-linkaction:hover { text-decoration: underline; }
+.cm-linkaction--danger { color: var(--cm-action-danger); }
+.cm-linkaction--positive { color: var(--cm-positive-tx); }
+
+/* ---------- Host form ---------- */
+/* One card, fieldsets separated by a rule, each headed by its own small caps legend. The four
+   sections are read in the order the decisions are made: who it is, how we log in, how we check
+   its certificate, and what we are allowed to do on it. */
+
+.cm-fieldset { border: 0; padding: 16px 18px; margin: 0; border-top: 1px solid var(--cm-border-faint); }
+.cm-fieldset:first-of-type { border-top: 0; }
+.cm-fieldset__legend {
+    float: none; width: auto; padding: 0; margin: 0 0 12px;
+    font: 700 11px var(--cm-font-ui); letter-spacing: .1em; text-transform: uppercase; color: var(--cm-brand);
+}
+.cm-fieldset__legend span { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--cm-faint); }
+.cm-fieldset[hidden] { display: none; }
+
+/* The two certificate digests, shown together and named apart - the only remedy to pasting a
+   certificate fingerprint into a field that wants a public-key pin. Monospaced and wrapping,
+   because both are long and both get compared character by character against a terminal. */
+.cm-fingerprint {
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11.5px; line-height: 1.6;
+    background: var(--cm-surface-alt); border: 1px solid var(--cm-border); border-radius: 7px;
+    padding: 9px 11px; color: var(--cm-text); word-break: break-all;
+}
+.cm-fingerprint dt { font-weight: 600; color: var(--cm-ink); }
+.cm-fingerprint dd { margin: 0 0 8px; }
+.cm-fingerprint dd:last-child { margin-bottom: 0; }
+
+/* The permission that will never be a permission. Drawn disabled rather than omitted so the
+   question "and if I do want to delete one?" is answered where it is asked. */
+.cm-never { display: flex; gap: 8px; align-items: flex-start; color: var(--cm-disabled); font-size: 13px; }
+.cm-never i { font-style: italic; }
+
+/* ---------- Console Proxmox · lot 2 : la liste des machines et le journal ---------- */
+
+/* A plain table rather than DataTables, and on purpose: the rows come from the hypervisor at
+   render time rather than from an AJAX endpoint, and DataTables rewrites the DOM it is given -
+   which is exactly what must not happen to rows carrying a Stimulus target that a poller writes
+   into. See the repository-wide rule about never binding a controller to an element DataTables
+   moves. */
+
+.cm-table { width: 100%; margin: 0; font-size: 13.5px; }
+.cm-table th {
+    text-align: left; padding: 9px 14px; white-space: nowrap;
+    font: 600 10.5px var(--cm-font-ui); letter-spacing: .08em; text-transform: uppercase;
+    color: var(--cm-faint); border-bottom: 1px solid var(--cm-border);
+}
+.cm-table td { padding: 10px 14px; border-bottom: 1px solid var(--cm-border-faint); vertical-align: middle; }
+.cm-table tbody tr:last-child td { border-bottom: 0; }
+
+/* Out of perimeter: dimmed, still legible, still counted. Never hidden - a machine that
+   disappears from the list reads as a machine that disappeared from the hypervisor. */
+.cm-row--out td { background: var(--cm-surface-alt); }
+.cm-row--out .cm-guest__name { color: var(--cm-muted); font-weight: 500; }
+
+.cm-mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; color: var(--cm-muted); }
+.cm-guest__name { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-guest__sub { font-size: 11.5px; color: var(--cm-faint); }
+.cm-guest__actions { display: flex; gap: 12px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+
+/* The resource bars. Deliberately unlabelled beyond their own caption: the number underneath is
+   the fact, the bar is only what makes a column of them scannable. */
+.cm-meter { height: 5px; border-radius: 3px; background: var(--cm-border-soft); overflow: hidden; width: 78px; }
+.cm-meter__fill { display: block; height: 100%; border-radius: 3px; background: var(--cm-brand); }
+.cm-meter__fill--high { background: var(--cm-warn-tx); }
+.cm-meter__text { font-size: 11px; color: var(--cm-faint); margin-top: 3px; font-variant-numeric: tabular-nums; }
+
+/* ---------- Console Proxmox · lot 3 : images, adresses, assistant de création ---------- */
+
+/* The two kinds of image, told apart by a badge rather than by their position in a list: a
+   template can be cloned in a second and an ISO means a manual installation, and that difference
+   decides what the creation wizard is able to do. */
+.cm-ico {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; border-radius: 7px; margin-right: 8px; vertical-align: middle;
+    font: 700 10px var(--cm-font-ui); letter-spacing: .02em;
+}
+.cm-ico--template { background: var(--cm-teal-bg); color: var(--cm-teal-tx); }
+.cm-ico--iso { background: var(--cm-gold-bg); color: var(--cm-gold-tx); }
+
+/* The summary of what is about to be created, or of what just was: a label column and a value
+   column, because every line is one fact and the eye should be able to run down either side. */
+.cm-sum { display: grid; grid-template-columns: 160px 1fr; gap: 7px 14px; font-size: 13px; margin: 0; }
+.cm-sum dt { color: var(--cm-muted); font-weight: 400; }
+.cm-sum dd { margin: 0; color: var(--cm-ink); font-weight: 600; }
+@media (max-width: 575.98px) { .cm-sum { grid-template-columns: 1fr; gap: 2px 0; } }

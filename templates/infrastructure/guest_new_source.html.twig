@@ -1,0 +1,110 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'proxmoxGuestNewHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
+        {label: 'infrastructureHostsNavLabel'|trans, url: path('app_infrastructure_hosts')},
+        {label: host.label, url: path('app_infrastructure_guests', {id: host.id})},
+        {label: 'proxmoxGuestNewHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'proxmoxGuestNewHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% include 'infrastructure/_localnav.html.twig' %}
+
+    {# GET, not POST: this form asks to be shown the next screen rather than to change anything,
+       and a POST handled by Turbo has to answer a redirect - answering 200 HTML leaves the browser
+       sitting on this page with nothing to show for it. #}
+    <form method="get" action="{{ path('app_infrastructure_guests_new_machine', {id: host.id}) }}" data-controller="proxmox-source-picker">
+        <div class="card" style="max-width: 820px;">
+            {% include 'infrastructure/_wizard_steps.html.twig' with {step: 1} %}
+
+            {% if failure %}
+                <div class="cm-fieldset">
+                    <div class="cm-note" style="border-left-color: var(--cm-red-tx); background: var(--cm-red-bg); color: var(--cm-red-tx);">
+                        <span class="cm-note__icon" style="background: var(--cm-red-tx);">!</span>
+                        <span>{{ failure }}</span>
+                    </div>
+                </div>
+            {% else %}
+                <fieldset class="cm-fieldset">
+                    <legend class="cm-fieldset__legend">{{ 'proxmoxWizardTemplateLegend'|trans }}</legend>
+                    <div class="row g-2">
+                        {% for template in templates %}
+                            <div class="col-md-6">
+                                <label class="cm-radiocard h-100">
+                                    <input type="radio" name="sourceVmid" value="{{ template.vmid }}" data-action="proxmox-source-picker#pick"{{ draft.sourceVmid == template.vmid ? ' checked' : (loop.first and not draft.isoVolumeId ? ' checked' : '') }}>
+                                    <span class="cm-radiocard__dot"></span>
+                                    <span>
+                                        <span class="cm-radiocard__title d-block">{{ template.name }}</span>
+                                        <span class="cm-radiocard__desc">
+                                            VMID {{ template.vmid }} · {{ template.node }} · {{ (template.maxDiskBytes / 1073741824)|number_format(0, ',', ' ') }} Gio
+                                        </span>
+                                    </span>
+                                </label>
+                            </div>
+                        {% else %}
+                            <p class="cm-guest__sub">{{ 'proxmoxNoTemplateText'|trans }}</p>
+                        {% endfor %}
+                    </div>
+
+                    {% if templates is not empty %}
+                        <label class="cm-field-label d-block mt-3">
+                            <input type="checkbox" name="linkedClone" value="1"{{ draft.linkedClone ? ' checked' }}>
+                            {{ 'proxmoxLinkedCloneLabel'|trans }}
+                        </label>
+                        {# Stated as consequences rather than as vocabulary: « clone lié » tells an
+                           administrator nothing, « the 24 machines will all stay on pve2 » does. #}
+                        <div class="cm-note mt-2">
+                            <span class="cm-note__icon">i</span>
+                            <span>{{ 'proxmoxLinkedCloneNote'|trans }}</span>
+                        </div>
+                    {% endif %}
+                </fieldset>
+
+                <fieldset class="cm-fieldset">
+                    <legend class="cm-fieldset__legend">{{ 'proxmoxWizardIsoLegend'|trans }}</legend>
+                    <div class="cm-note cm-note--gold mb-3">
+                        <span class="cm-note__icon">!</span>
+                        <span>{{ 'proxmoxIsoNoConfigNote'|trans }}</span>
+                    </div>
+                    <div class="row g-2">
+                        {% for iso in isos %}
+                            <div class="col-md-6">
+                                <label class="cm-radiocard h-100">
+                                    <input type="radio" name="sourceVmid" value="0" data-iso="{{ iso.volumeId }}" data-action="proxmox-source-picker#pick"{{ draft.isoVolumeId == iso.volumeId ? ' checked' }}>
+                                    <span class="cm-radiocard__dot"></span>
+                                    <span>
+                                        <span class="cm-radiocard__title d-block">{{ iso.filename }}</span>
+                                        <span class="cm-radiocard__desc">{{ iso.storage }} · {{ iso.node }} · {{ (iso.sizeBytes / 1073741824)|number_format(2, ',', ' ') }} Gio</span>
+                                    </span>
+                                </label>
+                            </div>
+                        {% else %}
+                            <p class="cm-guest__sub">{{ 'proxmoxNoIsoText'|trans }}</p>
+                        {% endfor %}
+                    </div>
+                    {# The chosen ISO travels in its own field: the radio group is shared with the
+                       templates so that exactly one source can be picked, and a volume id is not a
+                       VMID. #}
+                    <input type="hidden" name="isoVolumeId" value="{{ draft.isoVolumeId }}" data-proxmox-source-picker-target="isoVolumeId">
+                </fieldset>
+            {% endif %}
+
+            <div class="cm-fieldset">
+                <div class="cm-actionbar" style="margin-top: 0; border-top: 0; padding-top: 0;">
+                    <div class="cm-actionbar__buttons">
+                        <a href="{{ path('app_infrastructure_guests', {id: host.id}) }}" class="cm-btn cm-btn--outline">{{ 'cancelAction'|trans }}</a>
+                        <button type="submit" class="cm-btn cm-btn--primary">{{ 'proxmoxWizardNextAction'|trans }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+{% endblock %}

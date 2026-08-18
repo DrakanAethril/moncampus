@@ -17,3 +17,19 @@ framework:
             policy: sliding_window
             limit: 5
             interval: '1 hour'
+
+        # Guards the Proxmox console's creation wizard (App\Controller\Infrastructure\
+        # GuestCreationController), keyed by the administrator's own identifier - unlike the two
+        # above, everyone reaching this endpoint is authenticated and named, so there is nothing to
+        # gain from keying it by IP.
+        #
+        # Not there to stop an attacker: the whole area is ROLE_ADMIN and an admin who wanted to
+        # fill a hypervisor could do it in Proxmox directly. It is there because this is the one
+        # screen in the console that *creates* things, and a loop somewhere - a retried form, a
+        # script pointed at the wrong URL - should hit a ceiling rather than a storage quota. Thirty
+        # an hour is far above deploying a class's worth of machines by hand and far below anything
+        # that could run away.
+        proxmox_guest_creation:
+            policy: sliding_window
+            limit: 30
+            interval: '1 hour'

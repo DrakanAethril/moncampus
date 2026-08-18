@@ -1,0 +1,76 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'infrastructureAddressesNavLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
+        {label: 'infrastructureAddressesNavLabel'|trans, url: path('app_infrastructure_ip_ranges')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'infrastructureAddressesNavLabel'|trans }}{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_infrastructure_ip_ranges_new') }}" class="cm-btn cm-btn--primary">{{ 'ipRangeAddAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    {% include 'infrastructure/_localnav.html.twig' %}
+
+    {% if rows is empty %}
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <p class="mb-3">{{ 'ipRangeNoneText'|trans }}</p>
+                <a href="{{ path('app_infrastructure_ip_ranges_new') }}" class="cm-btn cm-btn--primary">{{ 'ipRangeAddAction'|trans }}</a>
+            </div>
+        </div>
+    {% else %}
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table cm-table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'ipRangeLabelFieldLabel'|trans }}</th>
+                            <th style="width:150px">{{ 'ipRangeCidrFieldLabel'|trans }}</th>
+                            <th style="width:150px">{{ 'ipRangeHostFieldLabel'|trans }}</th>
+                            <th style="width:140px">{{ 'ipRangeAttachmentLabel'|trans }}</th>
+                            <th style="width:200px">{{ 'ipRangeOccupancyLabel'|trans }}</th>
+                            <th style="width:150px">{{ 'ipRangeLastScanLabel'|trans }}</th>
+                            <th style="width:190px"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                            {% set range = row.range %}
+                            <tr class="{{ range.isActive ? '' : 'cm-row--out' }}">
+                                <td>
+                                    <a class="cm-guest__name" href="{{ path('app_infrastructure_ip_range', {id: range.id}) }}">{{ range.label }}</a>
+                                    {% if not range.isActive %}<span class="cm-badge cm-badge--gray ms-1">{{ 'proxmoxHostInactiveBadge'|trans }}</span>{% endif %}
+                                </td>
+                                <td class="cm-mono">{{ range.cidr }}</td>
+                                <td class="cm-guest__sub">{{ range.host ? range.host.label : '—' }}</td>
+                                <td class="cm-guest__sub">{{ range.bridge }}{% if range.vlan %} · VLAN {{ range.vlan }}{% endif %}</td>
+                                <td>
+                                    {% set percent = row.capacity > 0 ? (row.used / row.capacity * 100)|round : 0 %}
+                                    <div class="cm-meter" style="width:140px"><span class="cm-meter__fill{{ percent > 80 ? ' cm-meter__fill--high' }}" style="width: {{ percent }}%"></span></div>
+                                    <div class="cm-meter__text">{{ row.used }} / {{ row.capacity }} · <b>{{ 'ipRangeFreeCountText'|trans({'%count%': row.free}) }}</b></div>
+                                </td>
+                                <td class="cm-guest__sub">
+                                    {{ range.lastScanAt ? range.lastScanAt|date('d/m/Y H:i') : 'ipRangeNeverScannedText'|trans }}
+                                </td>
+                                <td>
+                                    <div class="cm-guest__actions">
+                                        <a class="cm-linkaction" href="{{ path('app_infrastructure_ip_range', {id: range.id}) }}">{{ 'ipRangeRegistryAction'|trans }}</a>
+                                        <a class="cm-linkaction" href="{{ path('app_infrastructure_ip_ranges_edit', {id: range.id}) }}">{{ 'proxmoxHostEditAction'|trans }}</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

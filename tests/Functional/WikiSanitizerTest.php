@@ -52,10 +52,64 @@ class WikiSanitizerTest extends KernelTestCase
         }
 
         // Mermaid's own <style> block never survives - the component drops the element
-        // unconditionally, whatever allow_elements says. That is why the diagram is styled by
-        // `.cm-mermaid` rules in app.css instead, and this assertion is here so nobody spends an
-        // afternoon trying to allow it again.
+        // unconditionally, whatever allow_elements says. This assertion is here so nobody spends an
+        // afternoon trying to allow it again; the test below is the other half of the answer.
         self::assertStringNotContainsString('<style', $html);
+    }
+
+    /**
+     * The one thing the whole diagram pipeline rests on, and the reason it was measured rather than
+     * assumed: a `style` **attribute** survives whole - `url(#marker)` references, quoted font names,
+     * dash patterns and all.
+     *
+     * Because the `<style>` element above cannot be kept, the editor writes every declaration Mermaid
+     * put in that stylesheet onto the elements themselves before saving (assets/wiki/mermaid_svg.js).
+     * If this ever stopped holding, stored diagrams would go back to being black shapes with shifted
+     * labels - and it would show on the page, not here, which is why it is pinned.
+     */
+    public function testAnInlineStyleSurvivesWholeIncludingMarkerReferences(): void
+    {
+        $html = $this->sanitizer()->sanitize(
+            '<div class="cm-mermaid" data-mermaid="graph TD; A--&gt;B;"><svg viewBox="0 0 200 100" style="max-width:min(100%, 200px);height:auto">'
+            .'<defs><marker id="arrow" viewBox="0 0 10 10" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:#5b6c79"/></marker></defs>'
+            .'<rect x="10" y="10" width="80" height="40" style="fill:#eef5fb;stroke:#1B6BA8;stroke-width:1px"/>'
+            .'<line x1="95" y1="30" x2="180" y2="30" style="stroke:#5b6c79;stroke-dasharray:4px, 3px;marker-end:url(#arrow)"/>'
+            .'<text x="20" y="35" style="fill:#1b2430;font-family:&quot;Source Sans 3&quot;, sans-serif;font-size:14px;text-anchor:start">A</text>'
+            .'</svg></div>',
+        );
+
+        foreach ([
+            'style="max-width:min(100%, 200px);height:auto"',
+            'style="fill:#eef5fb;stroke:#1B6BA8;stroke-width:1px"',
+            'marker-end:url(#arrow)',
+            'stroke-dasharray:4px, 3px',
+            // Re-encoded as &#34; on the way out - the quotes are kept, which is what matters: a
+            // font name with a space in it is meaningless without them.
+            'font-family:&#34;Source Sans 3&#34;, sans-serif',
+            'font-size:14px',
+        ] as $expected) {
+            self::assertStringContainsString($expected, $html, $expected.' should have survived');
+        }
+    }
+
+    /**
+     * A long page comes back whole.
+     *
+     * The component truncates at 20 000 bytes unless told otherwise, mid-markup and without a word,
+     * and the FrameworkBundle only overrides that when the key is present - so this is a test of one
+     * line of YAML that is easy to lose in a merge and impossible to notice by reading. It was found
+     * on real pages of 17 973 and 19 064 bytes, both a single diagram short of losing their tail.
+     */
+    public function testALongPageIsNotTruncated(): void
+    {
+        $body = '<p>'.str_repeat('Le contenu d’une page de wiki avec des schémas. ', 3000).'</p>'
+            .'<p id="tail">La fin de la page</p>';
+
+        self::assertGreaterThan(20_000, \strlen($body), 'the fixture has to be past the default limit');
+
+        $html = $this->sanitizer()->sanitize($body);
+
+        self::assertStringContainsString('La fin de la page', $html);
     }
 
     public function testAKatexFormulaSurvivesWithItsSourceAndItsMarkup(): void

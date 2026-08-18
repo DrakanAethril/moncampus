@@ -1,0 +1,42 @@
+{# The local navigation bar of the Proxmox console, on EVERY screen of the area.
+
+   This area is deliberately absent from the application's menus, so this strip is the only way
+   from one of its screens to the next: without it each one would be a dead end you leave by
+   retyping a URL. The rule it enforces is that every feature must be reachable by clicking from
+   /infrastructure - a screen you can only open by knowing its address is a bug here.
+
+   Not .cm-tabs: tabs switch between views of one screen, this moves between screens. `activeNav`
+   is the key of the current one, passed by every controller of the area.
+
+   « Machines » needs a host to point at, since there is no aggregated multi-host view by design.
+   It therefore takes the host currently being looked at, or the first declared one - and simply
+   does not appear while no host exists, rather than linking nowhere.
+
+   Entries appear as their screens are built; there is deliberately no disabled entry for a screen
+   that does not exist yet - a link that goes nowhere teaches nothing. #}
+{% set nav_host = host|default(null) ?: infrastructure_default_host() %}
+<nav class="cm-localnav" aria-label="{{ 'infrastructureLocalNavLabel'|trans }}">
+    <a href="{{ path('app_infrastructure') }}" class="cm-localnav__link{{ activeNav == 'overview' ? ' is-active' }}">{{ 'infrastructureOverviewNavLabel'|trans }}</a>
+    <a href="{{ path('app_infrastructure_hosts') }}" class="cm-localnav__link{{ activeNav == 'hosts' ? ' is-active' }}">{{ 'infrastructureHostsNavLabel'|trans }}</a>
+    {% if nav_host %}
+        <a href="{{ path('app_infrastructure_guests', {id: nav_host.id}) }}" class="cm-localnav__link{{ activeNav == 'guests' ? ' is-active' }}">{{ 'infrastructureGuestsNavLabel'|trans }}</a>
+        <a href="{{ path('app_infrastructure_images', {id: nav_host.id}) }}" class="cm-localnav__link{{ activeNav == 'images' ? ' is-active' }}">{{ 'infrastructureImagesNavLabel'|trans }}</a>
+    {% endif %}
+    <a href="{{ path('app_infrastructure_ip_ranges') }}" class="cm-localnav__link{{ activeNav == 'ip_ranges' ? ' is-active' }}">{{ 'infrastructureAddressesNavLabel'|trans }}</a>
+    <a href="{{ path('app_infrastructure_batches') }}" class="cm-localnav__link{{ activeNav == 'batches' ? ' is-active' }}">{{ 'infrastructureBatchesNavLabel'|trans }}</a>
+    <a href="{{ path('app_infrastructure_operations') }}" class="cm-localnav__link{{ activeNav == 'operations' ? ' is-active' }}">{{ 'infrastructureOperationsNavLabel'|trans }}</a>
+
+    {# « Aller à… » - the jump box, so a deep screen stays one click away rather than one
+       remembered URL away. It lists the declared hosts, which is what every deep screen hangs off. #}
+    {% set jump_hosts = infrastructure_hosts() %}
+    {% if jump_hosts|length > 1 %}
+        <span class="cm-localnav__goto">
+            <select class="cm-select cm-field--sm" data-controller="jump-to" data-action="change->jump-to#go" aria-label="{{ 'infrastructureGoToLabel'|trans }}">
+                <option value="">{{ 'infrastructureGoToLabel'|trans }}</option>
+                {% for jump in jump_hosts %}
+                    <option value="{{ path('app_infrastructure_guests', {id: jump.id}) }}">{{ jump.label }}</option>
+                {% endfor %}
+            </select>
+        </span>
+    {% endif %}
+</nav>

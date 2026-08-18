@@ -1,0 +1,99 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ batch.label }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
+        {label: 'infrastructureBatchesNavLabel'|trans, url: path('app_infrastructure_batches')},
+        {label: batch.label, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ batch.label }}{% endblock %}
+
+{% block main %}
+    {% include 'infrastructure/_localnav.html.twig' %}
+
+    <p class="cm-host__meta mb-3">
+        {{ batch.program ? batch.program.displayShortName : '—' }} ·
+        {{ batch.host ? batch.host.label : '—' }} ·
+        {{ batch.ipRange ? batch.ipRange.label : '—' }} ·
+        {{ 'proxmoxTemplateNameLabel'|trans }} {{ batch.templateVmid }} ·
+        {{ batch.cores }} {{ 'proxmoxGuestCoresLabel'|trans }} / {{ batch.memoryMib }} Mio / {{ batch.diskGib }} Gio
+        {% if batch.expiresAt %} · {{ 'vmBatchExpiresFieldLabel'|trans }} {{ batch.expiresAt|date('d/m/Y') }}{% endif %}
+    </p>
+
+    {% if batch.isExpired %}
+        {# Expired says nothing about the machines: the application destroys nothing, ever. It is a
+           note to a person, not a countdown. #}
+        <div class="cm-note cm-note--gold mb-3">
+            <span class="cm-note__icon">!</span>
+            <span>{{ 'vmBatchExpiredNote'|trans }}</span>
+        </div>
+    {% endif %}
+
+    <div class="card"
+         data-controller="vm-batch"
+         data-vm-batch-token-value="{{ csrf_token('infrastructure_action') }}"
+         data-vm-batch-deploy-url-value="{{ path('app_infrastructure_batch_deploy', {id: batch.id}) }}">
+
+        <div class="cm-actionbar" style="margin:0; padding: 12px 18px; border-bottom: 1px solid var(--cm-border-soft); background: var(--cm-surface-soft);">
+            {% for status, count in counts %}
+                <span class="cm-badge cm-badge--{{ status == 'created' or status == 'provisioned' ? 'green' : (status == 'failed' ? 'red' : 'gray') }}">{{ count }} {{ status }}</span>
+            {% endfor %}
+            <span class="cm-actionbar__meta ms-auto" data-vm-batch-target="progress">
+                {{ 'vmBatchRemainingMeta'|trans({'%count%': remaining}) }}
+            </span>
+            {% if remaining > 0 %}
+                {# Deployed in passes: twenty-four clones do not fit in one request, a batch is not
+                   atomic, and only the outstanding items are ever attempted - so pressing this
+                   twice is safe by construction. #}
+                <button type="button" class="cm-btn cm-btn--primary cm-btn--sm" data-action="vm-batch#deploy" data-vm-batch-target="button">
+                    {{ 'vmBatchDeployAction'|trans }}
+                </button>
+            {% endif %}
+        </div>
+
+        <div class="table-responsive">
+            <table class="table cm-table">
+                <thead>
+                    <tr>
+                        <th style="width:50px">#</th>
+                        <th>{{ 'vmBatchStudentLabel'|trans }}</th>
+                        <th style="width:170px">{{ 'proxmoxGuestMachineLabel'|trans }}</th>
+                        <th style="width:70px">VMID</th>
+                        <th style="width:140px">{{ 'proxmoxWizardIpFieldLabel'|trans }}</th>
+                        <th style="width:150px">{{ 'guestAccountLoginLabel'|trans }}</th>
+                        <th style="width:130px">{{ 'proxmoxGuestStatusLabel'|trans }}</th>
+                        <th style="width:140px"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in batch.items %}
+                        <tr>
+                            <td class="cm-guest__sub">{{ item.position }}</td>
+                            <td>{{ item.studentLabel }}</td>
+                            <td class="cm-mono">{{ item.guestName }}</td>
+                            <td class="cm-mono">{{ item.vmid ?? '—' }}</td>
+                            <td class="cm-mono">{{ item.ipAllocation ? item.ipAllocation.ip : '—' }}</td>
+                            <td class="cm-mono">{{ item.login }}</td>
+                            <td>
+                                <span class="cm-badge cm-badge--{{ item.status.badgeModifier }}">{{ item.status.labelKey|trans }}</span>
+                                {% if item.message %}<div class="cm-guest__sub">{{ item.message }}</div>{% endif %}
+                            </td>
+                            <td>
+                                <div class="cm-guest__actions">
+                                    {% if item.vmid and item.node and batch.host %}
+                                        <a class="cm-linkaction" href="{{ path('app_infrastructure_guest_accounts', {id: batch.host.id, node: item.node, vmid: item.vmid}) }}">{{ 'guestAccountsShortAction'|trans }}</a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

@@ -26,6 +26,26 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.08.18'
+      date: '2026-08-18'
+      summary: "Les schémas insérés dans une page de wiki s'affichent enfin tels qu'ils ont été composés : leurs couleurs, leurs polices et leur cadrage se perdaient à l'enregistrement. Le cahier de texte propose par ailleurs, en un clic, le contenu que la séance prévoyait déjà, et l'administration dispose d'un espace pour gérer les machines virtuelles pédagogiques."
+      entries:
+          - type: nouveaute
+            title: 'Le cahier de texte reprend le contenu prévu par la séance'
+            detail: "Chaque partie — avant, pendant, après — propose en un clic le texte que la séance instanciée porte déjà, tant que l'éditeur est vide."
+          - type: nouveaute
+            title: 'Gestion des machines virtuelles pédagogiques'
+            detail: "L'administration peut désormais déclarer les serveurs de virtualisation de l'établissement, voir et piloter les machines qui y tournent, et en déployer une par étudiant pour une classe."
+          - type: fix
+            title: "Les schémas d'une page de wiki s'affichent comme à la composition"
+            detail: "L'aperçu était juste et la page enregistrée fausse : certains schémas ressortaient entièrement noirs, les libellés décalés de leurs cases, les plus larges rognés au bord de la page. Les schémas des pages déjà écrites sont redessinés à la première ouverture de leur éditeur, sans rien avoir à refaire."
+          - type: fix
+            title: "Une longue page n'est plus coupée à l'enregistrement"
+            detail: "Au-delà d'environ 20 000 caractères, la fin d'une page de wiki disparaissait sans un mot. Les articles d'aide et de la base documentaire avaient exactement le même défaut."
+          - type: modification
+            title: 'Modifier un schéma déjà inséré dans un wiki'
+            detail: "Un clic sur le schéma fait apparaître « Modifier » et « Supprimer », un double-clic rouvre directement son code, prêt à être retouché. Il n'était jusqu'ici pas possible de revenir sur un schéma une fois posé."
+
     - version: '2026.08.17'
       date: '2026-08-17'
       summary: "La bibliothèque de fichiers arrive : chaque enseignant et chaque membre du personnel dispose d'un espace de dossiers où déposer son matériel une seule fois, puis le réutiliser partout — un travail, un message, un article, une séance — sans jamais le renvoyer. Elle apporte aussi le partage d'un document à une classe, que les étudiants retrouvent dans un menu nettement allégé."

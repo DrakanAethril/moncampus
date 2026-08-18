@@ -1,0 +1,105 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'infrastructureNavLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'infrastructureNavLabel'|trans }}{% endblock %}
+
+{% block main %}
+    {# The page an administrator bookmarks, since no menu leads here - so it has to be worth
+       opening on its own: the state of the hosts, the counters that decide whether there is
+       anything to do, and a door into each area. Every number below comes from the last recorded
+       check, never from a call made while this page renders. #}
+    {% include 'infrastructure/_localnav.html.twig' %}
+    {% include 'infrastructure/_encryption_banner.html.twig' %}
+
+    {% if hostCount == 0 %}
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <p class="mb-3">{{ 'infrastructureNoHostText'|trans }}</p>
+                <a href="{{ path('app_infrastructure_hosts_new') }}" class="cm-btn cm-btn--primary">{{ 'proxmoxHostAddAction'|trans }}</a>
+            </div>
+        </div>
+    {% else %}
+        {% for host in unreachableHosts %}
+            <div class="cm-note" style="border-left-color: var(--cm-red-tx); background: var(--cm-red-bg); color: var(--cm-red-tx); margin-bottom: 12px;">
+                <span class="cm-note__icon" style="background: var(--cm-red-tx);">!</span>
+                <span>
+                    <strong>{{ 'proxmoxHostUnreachableTitle'|trans({'%host%': host.label}) }}</strong>
+                    {{ host.lastCheckMessage }}
+                    <a href="{{ path('app_infrastructure_hosts') }}">{{ 'proxmoxHostSeeAction'|trans }}</a>
+                </span>
+            </div>
+        {% endfor %}
+
+        <div class="cm-statgrid mb-3">
+            <div class="cm-stat">
+                <span class="cm-stat__value">{{ reachableCount }} <span class="cm-stat__hint">/ {{ hostCount }}</span></span>
+                <span class="cm-stat__label">{{ 'infrastructureReachableHostsLabel'|trans }}</span>
+                {% if unreachableHosts is not empty %}
+                    <span class="cm-stat__hint" style="color: var(--cm-red-tx);">
+                        {{ 'infrastructureHostsDownHint'|trans({'%count%': unreachableHosts|length}) }}
+                    </span>
+                {% endif %}
+            </div>
+            <div class="cm-stat">
+                <span class="cm-stat__value">{{ guestCount }}</span>
+                <span class="cm-stat__label">{{ 'infrastructureGuestsLabel'|trans }}</span>
+                <span class="cm-stat__hint">{{ 'infrastructureRunningHint'|trans({'%count%': runningCount}) }}</span>
+            </div>
+            <div class="cm-stat">
+                <span class="cm-stat__value">{{ hostCount }}</span>
+                <span class="cm-stat__label">{{ 'infrastructureDeclaredHostsLabel'|trans }}</span>
+            </div>
+            <div class="cm-stat">
+                <span class="cm-stat__value">—</span>
+                <span class="cm-stat__label">{{ 'infrastructureGapsLabel'|trans }}</span>
+                <span class="cm-stat__hint">{{ 'infrastructureGapsNotYetHint'|trans }}</span>
+            </div>
+        </div>
+
+        <div class="cm-tilegrid">
+            <a href="{{ path('app_infrastructure_hosts') }}" class="cm-tile">
+                <span class="cm-tile__title">{{ 'infrastructureHostsTileTitle'|trans }}</span>
+                <span class="cm-tile__desc">{{ 'infrastructureHostsTileText'|trans }}</span>
+                <span class="cm-tile__go">{{ 'infrastructureHostsTileGo'|trans({'%count%': hostCount}) }} &rarr;</span>
+            </a>
+            {% set firstHost = infrastructure_default_host() %}
+            {% if firstHost %}
+                <a href="{{ path('app_infrastructure_guests', {id: firstHost.id}) }}" class="cm-tile">
+                    <span class="cm-tile__title">{{ 'infrastructureGuestsTileTitle'|trans }}</span>
+                    <span class="cm-tile__desc">{{ 'infrastructureGuestsTileText'|trans }}</span>
+                    <span class="cm-tile__go">{{ 'infrastructureGuestsTileGo'|trans({'%count%': guestCount}) }} &rarr;</span>
+                </a>
+            {% endif %}
+            {% if firstHost %}
+                <a href="{{ path('app_infrastructure_images', {id: firstHost.id}) }}" class="cm-tile">
+                    <span class="cm-tile__title">{{ 'infrastructureImagesTileTitle'|trans }}</span>
+                    <span class="cm-tile__desc">{{ 'infrastructureImagesTileText'|trans }}</span>
+                    <span class="cm-tile__go">{{ 'infrastructureImagesTileGo'|trans }} &rarr;</span>
+                </a>
+            {% endif %}
+            <a href="{{ path('app_infrastructure_ip_ranges') }}" class="cm-tile">
+                <span class="cm-tile__title">{{ 'infrastructureAddressesTileTitle'|trans }}</span>
+                <span class="cm-tile__desc">{{ 'infrastructureAddressesTileText'|trans }}</span>
+                <span class="cm-tile__go">{{ 'infrastructureAddressesTileGo'|trans({'%count%': rangeCount}) }} &rarr;</span>
+            </a>
+            <a href="{{ path('app_infrastructure_batches') }}" class="cm-tile">
+                <span class="cm-tile__title">{{ 'infrastructureBatchesTileTitle'|trans }}</span>
+                <span class="cm-tile__desc">{{ 'infrastructureBatchesTileText'|trans }}</span>
+                <span class="cm-tile__go">{{ 'infrastructureBatchesTileGo'|trans({'%count%': batchCount}) }} &rarr;</span>
+            </a>
+            <a href="{{ path('app_infrastructure_operations') }}" class="cm-tile">
+                <span class="cm-tile__title">{{ 'infrastructureOperationsTileTitle'|trans }}</span>
+                <span class="cm-tile__desc">{{ 'infrastructureOperationsTileText'|trans }}</span>
+                <span class="cm-tile__go">{{ 'infrastructureOperationsTileGo'|trans({'%count%': operationCount}) }} &rarr;</span>
+            </a>
+        </div>
+    {% endif %}
+{% endblock %}

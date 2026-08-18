@@ -41,6 +41,7 @@ class LessonLogImporter
         private readonly AssignmentSubmissionRepository $submissionRepository,
         private readonly AssignmentCompletionRepository $completionRepository,
         private readonly FileUploadService $fileUploadService,
+        private readonly SeanceContentResolver $seanceContentResolver,
     ) {
     }
 
@@ -147,10 +148,14 @@ class LessonLogImporter
             $targetLog->setCreatedBy($actor);
         }
 
+        // Same reading of the séance as the per-part « reprendre » button offers next to each
+        // editor: the rule of what a séance says about a part lives in one place only.
+        $defaults = $this->seanceContentResolver->defaultsFor($seance);
+
         $targetLog->setLastUpdatedBy($actor);
-        $targetLog->setTravailAvantDescription($seance->getAvantDescription());
-        $targetLog->setContenuRealise($seance->getCahierDeTexteDescription() ?: $seance->getObjectifs());
-        $targetLog->setTravailApresDescription($seance->getApresDescription());
+        $targetLog->setTravailAvantDescription($defaults[LessonLogSection::Before->value] ?? null);
+        $targetLog->setContenuRealise($defaults[LessonLogSection::During->value] ?? null);
+        $targetLog->setTravailApresDescription($defaults[LessonLogSection::After->value] ?? null);
 
         foreach ($targetLog->getAttachments() as $existing) {
             $this->entityManager->remove($existing);
