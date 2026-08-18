@@ -21,6 +21,7 @@ use Symfony\Component\Form\FormEvents;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Range;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Declaring a network MonCampus may hand addresses out of.
@@ -45,6 +46,9 @@ class IpRangeType extends AbstractType
         private readonly IpRangeCalculator $calculator,
         private readonly ProxmoxHostRepository $hostRepository,
         private readonly IpRangeRepository $rangeRepository,
+        // A FormError's message is rendered as it is given, never passed through the translator on
+        // the way out - so it has to arrive translated, the same way HostController does it.
+        private readonly TranslatorInterface $translator,
     ) {
     }
 
@@ -124,14 +128,14 @@ class IpRangeType extends AbstractType
         $cidr = $range->getCidr();
 
         if (!$this->calculator->isValidCidr($cidr)) {
-            $form->get('cidr')->addError(new FormError('ipRangeCidrInvalidError'));
+            $form->get('cidr')->addError(new FormError($this->translator->trans('ipRangeCidrInvalidError')));
 
             // Everything below is measured against the CIDR, so there is nothing further to say.
             return;
         }
 
         if (!$this->calculator->contains($cidr, $range->getGateway())) {
-            $form->get('gateway')->addError(new FormError('ipRangeGatewayOutsideError'));
+            $form->get('gateway')->addError(new FormError($this->translator->trans('ipRangeGatewayOutsideError')));
         }
 
         $this->validateWindow($form, $range, $cidr);
@@ -145,18 +149,18 @@ class IpRangeType extends AbstractType
 
         foreach (['firstUsable' => $first, 'lastUsable' => $last] as $field => $address) {
             if (!$this->calculator->isValidAddress($address)) {
-                $form->get($field)->addError(new FormError('ipRangeAddressInvalidError'));
+                $form->get($field)->addError(new FormError($this->translator->trans('ipRangeAddressInvalidError')));
 
                 return;
             }
 
             if (!$this->calculator->contains($cidr, $address)) {
-                $form->get($field)->addError(new FormError('ipRangeBoundOutsideError'));
+                $form->get($field)->addError(new FormError($this->translator->trans('ipRangeBoundOutsideError')));
             }
         }
 
         if (0 === $this->calculator->capacity($first, $last)) {
-            $form->get('lastUsable')->addError(new FormError('ipRangeWindowEmptyError'));
+            $form->get('lastUsable')->addError(new FormError($this->translator->trans('ipRangeWindowEmptyError')));
         }
 
         // The gateway inside the window is the mistake this whole pair of fields exists to prevent,
@@ -166,7 +170,7 @@ class IpRangeType extends AbstractType
         $to = $this->calculator->toLong($last);
 
         if (null !== $gateway && null !== $from && null !== $to && $gateway >= $from && $gateway <= $to) {
-            $form->get('firstUsable')->addError(new FormError('ipRangeGatewayInsideWindowError'));
+            $form->get('firstUsable')->addError(new FormError($this->translator->trans('ipRangeGatewayInsideWindowError')));
         }
     }
 
@@ -194,7 +198,7 @@ class IpRangeType extends AbstractType
                 continue;
             }
 
-            $form->get('cidr')->addError(new FormError('ipRangeOverlapError'));
+            $form->get('cidr')->addError(new FormError($this->translator->trans('ipRangeOverlapError')));
 
             return;
         }
