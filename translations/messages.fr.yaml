@@ -6290,3 +6290,19 @@ contentShareDuplicateSeanceSequenceLabel: 'Séquence de destination'
 contentShareDuplicateSeanceSequencePlaceholder: 'Choisir une séquence…'
 contentShareDuplicateSeanceNoSequenceHint: "Votre bibliothèque ne contient encore aucune séquence : choisissez « Dans une nouvelle séquence »."
 contentShareDuplicateSeanceFilesText: '%count% support(s) · %size% — dossier « %folder% ».'
+contentShareTrameAction: 'Partager la trame'
+contentShareTrameHeading: 'Reprendre la trame « %name% »'
+contentShareTrameSubmitAction: 'Créer ma progression'
+contentShareTrameWhatHeading: 'Ce qui sera repris'
+contentShareTrameActionColumnLabel: 'Ce qui se passe'
+contentShareTrameTopicLabel: 'Sur quelle matière'
+contentShareTrameTopicPlaceholder: 'Choisir une matière…'
+contentShareTrameTopicHelpText: "Seules vos matières sans progression sont proposées, classe par classe."
+contentShareTrameNoTopicText: "Toutes vos matières portent déjà une progression : il n'y a pas de place pour celle-ci. Une progression est unique par matière — libérez-en une, ou attendez l'année suivante."
+contentShareTrameNoDatesText: "Aucune date ne sera reprise. Les séances seront replacées sur votre emploi du temps, par le calcul habituel, dès la trame créée."
+contentShareTrameSummaryText: '%kept% séquence(s) reprises sur %total% · %files% fichier(s) · %size%'
+progressionTrameActionCopiedLabel: 'Copiée dans votre bibliothèque, puis instanciée'
+progressionTrameActionReusedLabel: 'Déjà instanciée pour cette classe — réutilisée'
+progressionTrameActionDetachedLabel: 'Modèle supprimé — copiée telle quelle, rien dans votre bibliothèque'
+progressionTrameActionSkippedLabel: 'Ignorée — déjà planifiée dans une autre progression de la classe'
+contentShareTrameCreatedFlashMessage: "La progression est créée et les séances sont replacées sur votre emploi du temps."

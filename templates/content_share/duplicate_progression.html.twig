@@ -1,0 +1,125 @@
+{% extends 'layout/app.html.twig' %}
+
+{# « Reprendre la trame » (design/validated/content-sharing-between-teachers.md, mockup 9).
+
+   **The four constraints of the model are shown before the click, line by line, and none of them is
+   an error**: a séquence whose template was deleted is copied as it stands, one the class already
+   has is reused, one another progression is already teaching is *ignored and named*, and a reader
+   with no free matière is told so up front rather than after filling the form in.
+
+   No date travels. The séances are replaced on the recipient's own timetable, by the ordinary
+   calculation, as soon as the trame exists. #}
+
+{% block title %}{{ 'contentShareTrameHeading'|trans({'%name%': progression.displayName}) }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'contentSharePageHeading'|trans, url: path('app_shares')},
+        {label: 'contentShareDuplicateBreadcrumbLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'contentShareTrameHeading'|trans({'%name%': progression.displayName}) }}{% endblock %}
+
+{% block main %}
+    <p class="text-secondary">
+        {{ 'contentShareReadSharedByLabel'|trans({'%author%': share.owner.displayName ?? share.owner.username}) }}
+        · {{ 'contentShareTrameDetailLabel'|trans({'%count%': analysis.lines|length}) }}
+    </p>
+
+    {% if topics is empty %}
+        {# Said up front, not after the form: Progression is a OneToOne on Topic, so a teacher whose
+           matières all carry one has nowhere to put this trame. #}
+        <div class="alert alert-warning" role="alert">{{ 'contentShareTrameNoTopicText'|trans }}</div>
+        <a href="{{ path('app_shares') }}" class="cm-btn">{{ 'cancelAction'|trans }}</a>
+    {% else %}
+        <form method="post" action="{{ path('app_shares_duplicate_save', {id: share.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('content_share_duplicate') }}">
+
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="mb-3" style="max-width: 520px;">
+                        <label class="form-label" for="content-share-topic">{{ 'contentShareTrameTopicLabel'|trans }}</label>
+                        {# One select rather than two: a class and a matière of another class is a
+                           pair the screen must not be able to produce, and every option here names
+                           both. A list used for input carries a placeholder, per the repo's rule. #}
+                        <select id="content-share-topic" name="topic" class="form-select" required>
+                            <option value="">{{ 'contentShareTrameTopicPlaceholder'|trans }}</option>
+                            {% for group in topics %}
+                                <optgroup label="{{ group.program }}">
+                                    {% for topic in group.topics %}
+                                        <option value="{{ topic.id }}">{{ topic.name }}</option>
+                                    {% endfor %}
+                                </optgroup>
+                            {% endfor %}
+                        </select>
+                        <span class="form-hint">{{ 'contentShareTrameTopicHelpText'|trans }}</span>
+                    </div>
+
+                    {% if analysis.fileCount > 0 %}
+                        <div class="mb-3" style="max-width: 520px;">
+                            <label class="form-label" for="content-share-destination">{{ 'contentShareDuplicateDestinationLabel'|trans }}</label>
+                            <select id="content-share-destination" name="destination" class="form-select">
+                                <option value="">{{ 'contentShareDuplicateDestinationRootLabel'|trans }}</option>
+                                {% for folder in folders %}
+                                    <option value="{{ folder.id }}">{{ folder.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header"><h2 class="card-title">{{ 'contentShareTrameWhatHeading'|trans }}</h2></div>
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table">
+                        <thead>
+                            <tr>
+                                <th>{{ 'contentShareSubjectSequenceLabel'|trans }}</th>
+                                <th>{{ 'contentShareDuplicateSeancesLabel'|trans }}</th>
+                                <th>{{ 'contentShareTrameActionColumnLabel'|trans }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for line in analysis.lines %}
+                                <tr class="{{ line.action.isSkipped ? 'cm-share__row--revoked' }}">
+                                    <td>{{ loop.index }} — {{ line.title }}</td>
+                                    <td>{{ line.seanceCount }}</td>
+                                    <td>{{ line.action.labelKey|trans }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-body">
+                    <p class="cm-share__notice mb-0">{{ 'contentShareTrameNoDatesText'|trans }}</p>
+                </div>
+            </div>
+
+            {% if not fits %}
+                <div class="alert alert-danger" role="alert">
+                    {{ 'contentShareQuotaRefusalFlashMessage'|trans({
+                        '%missing%': byte_size(analysis.totalBytes - remaining),
+                        '%size%': byte_size(analysis.totalBytes),
+                        '%remaining%': byte_size(remaining),
+                    }) }}
+                </div>
+            {% endif %}
+
+            <div class="cm-actionbar">
+                <button type="submit" class="cm-btn cm-btn--primary"{{ fits ? '' : ' disabled' }}>{{ 'contentShareTrameSubmitAction'|trans }}</button>
+                <a href="{{ path('app_shares') }}" class="cm-btn">{{ 'cancelAction'|trans }}</a>
+                <span class="cm-share__detail">
+                    {{ 'contentShareTrameSummaryText'|trans({
+                        '%kept%': analysis.keptCount,
+                        '%total%': analysis.lines|length,
+                        '%files%': analysis.fileCount,
+                        '%size%': byte_size(analysis.totalBytes),
+                    }) }}
+                </span>
+            </div>
+        </form>
+    {% endif %}
+{% endblock %}

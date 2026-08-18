@@ -125,6 +125,20 @@ class SequenceDuplicator
     }
 
     /**
+     * The same write with **the quota question already answered** - the one caller being the
+     * progression trame, which duplicates several séquences at once and therefore has to ask about
+     * their sum rather than about each of them in turn. Asking per séquence is the same mistake as
+     * asking per file, one level up: the third séquence would be refused after the first two had
+     * been written.
+     *
+     * Not for general use: everything else goes through duplicate(), which asks.
+     */
+    public function duplicateWithinBudget(SequenceTemplate $source, User $recipient, ?FileLibraryNode $destination): SequenceTemplate
+    {
+        return $this->write($this->plan($source), $source, $recipient, $destination);
+    }
+
+    /**
      * @param DuplicationPlan $plan
      */
     private function write(array $plan, SequenceTemplate $source, User $recipient, ?FileLibraryNode $destination): SequenceTemplate
