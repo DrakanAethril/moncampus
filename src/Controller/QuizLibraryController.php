@@ -10,6 +10,7 @@ use App\Entity\QuizQuestion;
 use App\Entity\QuizTemplate;
 use App\Entity\User;
 use App\Enum\BlankMode;
+use App\Enum\ContentShareScope;
 use App\Enum\MatchingSideKind;
 use App\Enum\QuestionDifficulty;
 use App\Enum\QuestionType;
@@ -19,11 +20,13 @@ use App\Enum\ZoneSupportKind;
 use App\Form\QuizLaunchType;
 use App\Form\QuizQuestionType;
 use App\Form\QuizTemplateSettingsType;
+use App\Repository\ContentShareRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\QuizQuestionRepository;
 use App\Repository\QuizTemplateRepository;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\QuizTemplateVoter;
+use App\Service\ContentShareAudience;
 use App\Service\FileUploadService;
 use App\Service\FormValue;
 use App\Service\MatchingImageStore;
@@ -33,6 +36,7 @@ use App\Service\QueryValue;
 use App\Service\QuizAnswerChecker;
 use App\Service\QuizInstantiationService;
 use App\Service\QuizQuestionCompleteness;
+use App\Service\QuizTemplateDuplicator;
 use App\Service\UploadIntake;
 use App\Util\NumericAnswerParser;
 use App\Util\NumericVariableParser;
@@ -112,11 +116,16 @@ class QuizLibraryController extends AbstractController
             'quizTemplate' => $template,
             'form' => $form,
             'isNew' => true,
+            // Nothing to share yet: the quiz does not exist until this form is saved.
+            'canShare' => false,
+            'shares' => [],
+            'shareGroups' => [],
+            'shareMemberCounts' => [],
         ]);
     }
 
     #[Route(path: '/library/quiz/{id}/duplicate', name: 'app_library_quiz_duplicate', methods: ['POST'])]
-    public function duplicate(int $id, Request $request, EntityManagerInterface $entityManager, QuizTemplateRepository $repository, FileUploadService $fileUploadService, MatchingImageStore $matchingImageStore, TranslatorInterface $translator): JsonResponse
+    public function duplicate(int $id, Request $request, EntityManagerInterface $entityManager, QuizTemplateRepository $repository, QuizTemplateDuplicator $duplicator, TranslatorInterface $translator): JsonResponse
     {
         $template = $this->findTemplateOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
@@ -125,51 +134,15 @@ class QuizLibraryController extends AbstractController
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        $copy = new QuizTemplate($template->getTeacher());
-        $copy->setName($translator->trans('quizTemplateDuplicateNameTemplate', ['%name%' => $template->getName()]));
-        $copy->setSubject($template->getSubject());
-        $copy->setDescription($template->getDescription());
-        $copy->setDefaultQuestionCount($template->getDefaultQuestionCount());
-        $copy->setDefaultSecondsPerQuestion($template->getDefaultSecondsPerQuestion());
-        $copy->setDefaultSameQuestionsForAll($template->isDefaultSameQuestionsForAll());
-        $copy->setDefaultQuestionOrderPerStudent($template->isDefaultQuestionOrderPerStudent());
-        $copy->setDefaultAnswerOrderPerStudent($template->isDefaultAnswerOrderPerStudent());
-        $copy->setCreatedBy($this->currentUser());
+        // The whole copy lives in App\Service\QuizTemplateDuplicator, because sharing needs the very
+        // same write for **another** owner - which is a parameter, not a second path.
+        $copy = $duplicator->duplicate(
+            $template,
+            $template->getTeacher() ?? $this->currentUser(),
+            $this->currentUser(),
+            $translator->trans('quizTemplateDuplicateNameTemplate', ['%name%' => $template->getName()]),
+        );
 
-        foreach ($template->getQuestions() as $question) {
-            $questionCopy = new QuizQuestion($copy);
-            $questionCopy->setType($question->getType());
-            $questionCopy->setDifficulty($question->getDifficulty());
-            $questionCopy->setLabel($question->getLabel());
-            $questionCopy->setOrderIndex($question->getOrderIndex());
-            $questionCopy->setBlanksConfig($question->getBlanksConfig());
-            $questionCopy->setZoneConfig($question->getZoneConfig());
-            $questionCopy->setMatchingConfig($matchingImageStore->copyImages($question->getMatchingConfig()));
-            $questionCopy->setNumericConfig($question->getNumericConfig());
-            $questionCopy->setPoints($question->getPoints());
-            $questionCopy->setExplanation($question->getExplanation());
-            // A copy of a question that is still waiting for its image waits for the same one:
-            // duplicating must not quietly turn an incomplete question into a complete-looking one.
-            $questionCopy->setExpectedMediaName($question->getExpectedMediaName());
-
-            if (null !== $question->getImageStorageKey()) {
-                $newKey = self::IMAGE_UPLOAD_PREFIX.bin2hex(random_bytes(16)).'.'.pathinfo($question->getImageStorageKey(), \PATHINFO_EXTENSION);
-                $fileUploadService->copy($question->getImageStorageKey(), $newKey);
-                $questionCopy->setImageStorageKey($newKey);
-            }
-
-            foreach ($question->getAnswers() as $answer) {
-                $answerCopy = new QuizAnswer($questionCopy);
-                $answerCopy->setLabel($answer->getLabel());
-                $answerCopy->setIsCorrect($answer->isCorrect());
-                $answerCopy->setOrderIndex($answer->getOrderIndex());
-                $questionCopy->addAnswer($answerCopy);
-            }
-
-            $copy->addQuestion($questionCopy);
-        }
-
-        $entityManager->persist($copy);
         $entityManager->flush();
 
         return $this->json(['redirectUrl' => $this->generateUrl('app_library_quiz_questions', ['id' => $copy->getId()])]);
@@ -201,8 +174,14 @@ class QuizLibraryController extends AbstractController
     }
 
     #[Route(path: '/library/quiz/{id}/settings', name: 'app_library_quiz_settings')]
-    public function settings(int $id, Request $request, EntityManagerInterface $entityManager, QuizTemplateRepository $repository): Response
-    {
+    public function settings(
+        int $id,
+        Request $request,
+        EntityManagerInterface $entityManager,
+        QuizTemplateRepository $repository,
+        ContentShareRepository $shares,
+        ContentShareAudience $shareAudience,
+    ): Response {
         $template = $this->findTemplateOrNotFound($repository, $id);
         $canEdit = $this->isGranted(QuizTemplateVoter::EDIT, $template);
         if (!$canEdit) {
@@ -222,10 +201,26 @@ class QuizLibraryController extends AbstractController
             return $this->redirectToRoute('app_library_quiz_settings', ['id' => $template->getId()]);
         }
 
+        // Sharing is an act of authorship: the owner, and **not** staff on their behalf - unlike
+        // EDIT above. See App\Service\ContentShareAccess.
+        $canShare = $template->getTeacher() === $this->currentUser();
+        $existingShares = $canShare ? $shares->findForSubject($template) : [];
+        $memberCounts = [];
+
+        foreach ($existingShares as $share) {
+            if (ContentShareScope::Group === $share->getScope()) {
+                $memberCounts[(int) $share->getId()] = $shareAudience->memberCount($share->getGroupIds());
+            }
+        }
+
         return $this->render('library/quiz_settings.html.twig', [
             'quizTemplate' => $template,
             'form' => $form,
             'isNew' => false,
+            'canShare' => $canShare,
+            'shares' => $existingShares,
+            'shareGroups' => $canShare ? $shareAudience->pickableGroups() : [],
+            'shareMemberCounts' => $memberCounts,
         ]);
     }
 

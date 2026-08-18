@@ -58,14 +58,15 @@
                                 </td>
                                 <td>{{ share.creationDate|date('d/m/Y') }}</td>
                                 <td class="cm-actions">
-                                    {% if share.sequenceTemplate %}
-                                        <a href="{{ path('app_library_sequences_show', {id: share.sequenceTemplate.id}) }}" class="cm-action--main">{{ 'contentShareConsultAction'|trans }}</a>
-                                        {# « Dupliquer chez moi » leaves once the author has withdrawn
-                                           the share: what was already duplicated stays, but nothing
-                                           new is taken from a share that no longer grants a read. #}
-                                        {% if not share.revoked %}
-                                            <a href="{{ path('app_shares_duplicate', {id: share.id}) }}" class="cm-action--main">{{ 'contentShareDuplicateAction'|trans }}</a>
-                                        {% endif %}
+                                    {# One « Consulter » for the five subjects: App\Controller\
+                                       ContentShareController::open() knows which screen each one
+                                       opens on, so this row does not have to. #}
+                                    <a href="{{ path('app_shares_open', {id: share.id}) }}" class="cm-action--main">{{ 'contentShareConsultAction'|trans }}</a>
+                                    {# « Dupliquer chez moi » leaves once the author has withdrawn the
+                                       share: what was already duplicated stays, but nothing new is
+                                       taken from a share that no longer grants a read. #}
+                                    {% if not share.revoked %}
+                                        <a href="{{ path('app_shares_duplicate', {id: share.id}) }}" class="cm-action--main">{{ 'contentShareDuplicateAction'|trans }}</a>
                                     {% endif %}
                                     {% if share.revoked %}
                                         {# « Masquer » - the reader's own way of closing a line, since the

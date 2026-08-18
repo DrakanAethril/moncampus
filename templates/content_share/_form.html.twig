@@ -1,0 +1,93 @@
+{# The share form itself, shared by the modal that opens from a séquence or a quiz and by the page a
+   file library row opens (design/validated/content-sharing-between-teachers.md, mockups 1 and 2).
+
+   Two gotchas of this repository meet exactly here, and both are handled rather than hoped away:
+
+   - **the CSRF token is read from the body**, never from a header (App\Controller\
+     ContentShareController::create() reads `_token` off the POST bag);
+   - **no nested `<form>`.** The « Retirer » buttons of « Partages en cours » are *siblings* of the
+     share form, not children of it, and the submit button reaches the form through the `form=`
+     attribute rather than by sitting inside it. A `<form>` inside a `<form>` is dropped by the
+     parser, which shows up as a button that silently does nothing.
+
+   The audience picker follows the repository's two form rules: people are picked with tomselect +
+   ajax and their tags sit under the field; groups are **checkboxes**, indented into the hierarchy,
+   rather than a `<select multiple>`. #}
+<form id="content-share-form" method="post" action="{{ path('app_shares_new') }}">
+    <input type="hidden" name="_token" value="{{ csrf_token('content_share') }}">
+    <input type="hidden" name="subjectType" value="{{ subjectType }}">
+    <input type="hidden" name="subjectId" value="{{ subjectId }}">
+
+    <div class="mb-3">
+        <span class="form-label">{{ 'contentShareScopeQuestionLabel'|trans }}</span>
+        <div class="cm-share__scopes">
+            {% for scope in ['users', 'group', 'catalog'] %}
+                <label class="cm-share__scope">
+                    <input type="radio" name="scope" value="{{ scope }}"{{ loop.first ? ' checked' }}
+                           data-action="change->content-share#scopeChanged">
+                    <span class="cm-share__scope-title">{{ ('contentShareScope' ~ scope|capitalize ~ 'Label')|trans }}</span>
+                    <span class="cm-share__scope-hint">{{ ('contentShareScope' ~ scope|capitalize ~ 'HelpText')|trans }}</span>
+                </label>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="mb-3" data-content-share-target="usersPanel">
+        <label class="form-label" for="content-share-users">{{ 'contentShareUsersFieldLabel'|trans }}</label>
+        <select id="content-share-users" name="users[]" multiple
+                data-controller="tom-select"
+                data-tom-select-url-value="{{ path('app_shares_user_search') }}"
+                data-tom-select-placeholder-value="{{ 'contentShareUsersPlaceholder'|trans }}"></select>
+        <span class="form-hint">{{ 'contentShareUsersHelpText'|trans }}</span>
+    </div>
+
+    <div class="mb-3" data-content-share-target="groupsPanel" hidden>
+        <span class="form-label">{{ 'contentShareGroupsFieldLabel'|trans }}</span>
+        {# A checkbox tree rather than a <select multiple>, per this app's form rule - and the
+           indentation is what makes « BTS SIO » read as the parent of the classes it will also
+           reach. #}
+        <div class="cm-share__grouptree">
+            {% for row in groups %}
+                <label class="cm-share__grouprow" style="padding-left: {{ row.depth * 18 }}px;">
+                    <input type="checkbox" name="groups[]" value="{{ row.group.id }}"
+                           data-action="change->content-share#groupsChanged">
+                    <span>{{ row.group.name }}</span>
+                </label>
+            {% endfor %}
+        </div>
+        <p class="cm-share__count" data-content-share-target="groupCount" hidden></p>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label" for="content-share-note">{{ 'contentShareNoteFieldLabel'|trans }}</label>
+        <textarea id="content-share-note" name="note" rows="2" class="form-control"
+                  placeholder="{{ 'contentShareNotePlaceholder'|trans }}"></textarea>
+    </div>
+
+    <p class="cm-share__rule">{{ 'contentShareRuleText'|trans }}</p>
+</form>
+
+{# Siblings of the form above, never children - see the header comment. #}
+{% if shares is not empty %}
+    <h3 class="cm-share__subtitle">{{ 'contentShareCurrentSharesHeading'|trans }}</h3>
+    <ul class="cm-share__list">
+        {% for share in shares %}
+            <li class="cm-share__item{{ share.revoked ? ' cm-share__row--revoked' }}">
+                <div>
+                    {% include 'content_share/_audience.html.twig' with {share: share, memberCount: memberCounts[share.id] ?? null} only %}
+                    <div class="cm-share__detail">
+                        {{ share.creationDate|date('d/m/Y') }}
+                        · {{ 'contentShareDuplicatedCountLabel'|trans({'%count%': share.duplicationCount}) }}
+                    </div>
+                </div>
+                <form method="post" action="{{ path(share.revoked ? 'app_shares_restore' : 'app_shares_revoke', {id: share.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('content_share_state') }}">
+                    <input type="hidden" name="fromSubject" value="1">
+                    <button type="submit" class="{{ share.revoked ? 'cm-action--positive' : 'cm-action--danger' }}">
+                        {{ (share.revoked ? 'contentShareRestoreAction' : 'contentShareRevokeAction')|trans }}
+                    </button>
+                </form>
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}

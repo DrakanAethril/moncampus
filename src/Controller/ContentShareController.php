@@ -23,11 +23,15 @@ use App\Repository\UserRepository;
 use App\Service\ByteSize;
 use App\Service\ContentShareAccess;
 use App\Service\ContentShareAudience;
+use App\Service\ContentShareCatalog;
 use App\Service\ContentShareComposer;
 use App\Service\ContentShareQuotaException;
+use App\Service\FileLibraryNodeDuplicator;
 use App\Service\FileLibraryQuota;
+use App\Service\FileUploadService;
 use App\Service\PostValue;
 use App\Service\QueryValue;
+use App\Service\QuizTemplateDuplicator;
 use App\Service\SequenceDuplicator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -101,6 +105,68 @@ class ContentShareController extends AbstractController
     }
 
     /**
+     * « Catalogue » - what colleagues published to the whole establishment.
+     *
+     * **The search is free text over the title, the author's name and the tag LABELS**, and there is
+     * deliberately no facet select built on Niveau / Option / Bloc: those are a private vocabulary
+     * per teacher (App\Entity\AbstractLibraryTag), so « SIO 1 », « sio1 » and « Première année » are
+     * three different rows meaning the same thing. A select built on the reader's own tags would
+     * silently hide every colleague's séquence whose label differs by a space; a free-text search
+     * that finds too much is recoverable, a filter that finds nothing looks like an empty catalogue.
+     *
+     * The two selects the screen does carry are not tags: a type is an enum this application owns,
+     * an author is a person. Both are the same word for everybody.
+     *
+     * Every filter is read through App\Service\QueryValue: a « Tous » option carries `value=""`, and
+     * InputBag::getInt() answers a **400** to the empty string.
+     */
+    #[Route(path: '/shares/catalog', name: 'app_shares_catalog', methods: ['GET'])]
+    public function catalog(Request $request, ContentShareCatalog $catalog): Response
+    {
+        $reader = $this->currentUser();
+        $shares = $this->audience->filterReadable($this->shares->findCatalogCandidates($reader), $reader);
+
+        $query = QueryValue::trimmed($request, 'q');
+        $type = ContentShareSubject::tryFrom(QueryValue::string($request, 'type'));
+        $authorId = QueryValue::nullableInt($request, 'author');
+
+        // The author list is built from the catalogue itself, before the filters narrow it: a select
+        // that loses its own selected entry the moment it is used is worse than no select.
+        $authors = [];
+
+        foreach ($shares as $share) {
+            $authors[(int) $share->getOwner()->getId()] = $share->getOwner();
+        }
+
+        $rows = [];
+
+        foreach ($shares as $share) {
+            if (null !== $type && $type !== $share->getSubject()) {
+                continue;
+            }
+
+            if (null !== $authorId && $authorId !== $share->getOwner()->getId()) {
+                continue;
+            }
+
+            if (!$catalog->matches($catalog->haystackOf($share), $query)) {
+                continue;
+            }
+
+            $rows[] = ['share' => $share, 'tags' => $catalog->tagLabelsOf($share)];
+        }
+
+        return $this->render('content_share/catalog.html.twig', [
+            'rows' => $rows,
+            'authors' => array_values($authors),
+            'query' => $query,
+            'type' => $type,
+            'authorId' => $authorId,
+            'currentTab' => 'catalog',
+        ]);
+    }
+
+    /**
      * The modal's submit. One endpoint for the five subjects, because the audience *is* the feature
      * and it is identical for all of them.
      *
@@ -148,6 +214,33 @@ class ContentShareController extends AbstractController
         }
 
         return $this->redirect($this->subjectUrl($subject));
+    }
+
+    /**
+     * « Partager à un collègue » on a file library row - the same form as the modal, as a page.
+     *
+     * A page and not a modal because a browse screen holds thirty rows, and thirty modals would be
+     * thirty copies of the group tree in one document.
+     */
+    #[Route(path: '/shares/new/file/{nodeId}', name: 'app_shares_new_file', methods: ['GET'], requirements: ['nodeId' => '\d+'])]
+    public function shareFile(int $nodeId, FileLibraryNodeRepository $nodes): Response
+    {
+        $node = $nodes->find($nodeId) ?? throw $this->createNotFoundException();
+        $owner = $this->currentUser();
+
+        // Only the owner shares, and only what is still in their library.
+        if ($node->getOwner()->getId() !== $owner->getId() || $node->isDeleted()) {
+            throw $this->createNotFoundException();
+        }
+
+        $existing = $this->shares->findForSubject($node);
+
+        return $this->render('content_share/share_file.html.twig', [
+            'node' => $node,
+            'groups' => $this->audience->pickableGroups(),
+            'shares' => $existing,
+            'memberCounts' => $this->memberCounts($existing),
+        ]);
     }
 
     /**
@@ -209,14 +302,112 @@ class ContentShareController extends AbstractController
      * form.
      */
     #[Route(path: '/shares/{id}/duplicate', name: 'app_shares_duplicate', methods: ['GET'], requirements: ['id' => '\d+'])]
-    public function duplicateConfirm(int $id, SequenceDuplicator $duplicator, FileLibraryNodeRepository $nodes, FileLibraryQuota $quota): Response
-    {
+    public function duplicateConfirm(
+        int $id,
+        SequenceDuplicator $sequences,
+        FileLibraryNodeDuplicator $files,
+        FileLibraryNodeRepository $nodes,
+        FileLibraryQuota $quota,
+    ): Response {
         $share = $this->readableShareOrNotFound($id);
         $recipient = $this->currentUser();
+
+        return match ($share->getSubject()) {
+            ContentShareSubject::Sequence => $this->confirmSequence($share, $recipient, $sequences, $nodes, $quota),
+            ContentShareSubject::Quiz => $this->confirmQuiz($share),
+            ContentShareSubject::File => $this->confirmFile($share, $recipient, $files, $nodes, $quota),
+            default => throw $this->createNotFoundException(),
+        };
+    }
+
+    /**
+     * The write. All-or-nothing wherever files are involved: the quota is asked once with the sum
+     * inside the duplicator, and a refusal writes nothing at all - not the séquence, not the
+     * folders, not the first files that would have fitted.
+     *
+     * The redirect goes to the new copy in the recipient's own library, which is also the proof it
+     * worked.
+     */
+    #[Route(path: '/shares/{id}/duplicate', name: 'app_shares_duplicate_save', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function duplicate(
+        int $id,
+        Request $request,
+        SequenceDuplicator $sequences,
+        QuizTemplateDuplicator $quizzes,
+        FileLibraryNodeDuplicator $files,
+        FileLibraryNodeRepository $nodes,
+        TranslatorInterface $translator,
+    ): Response {
+        $share = $this->readableShareOrNotFound($id);
+        $this->assertCsrf($request, 'content_share_duplicate');
+
+        $recipient = $this->currentUser();
+        $destination = $this->destinationFolder($request, $nodes, $recipient);
+
+        try {
+            $target = match ($share->getSubject()) {
+                ContentShareSubject::Sequence => $this->generateUrl('app_library_sequences_show', [
+                    'id' => $sequences->duplicate($share->getSequenceTemplate() ?? throw $this->createNotFoundException(), $recipient, $destination)->getId(),
+                ]),
+                // A quiz weighs nothing in the recipient's library: its illustrations get a fresh S3
+                // object and **no** library node, exactly like an image uploaded straight into a
+                // question. So there is no quota question to ask here.
+                ContentShareSubject::Quiz => $this->generateUrl('app_library_quiz_questions', [
+                    'id' => $quizzes->duplicate($share->getQuizTemplate() ?? throw $this->createNotFoundException(), $recipient, $recipient)->getId(),
+                ]),
+                ContentShareSubject::File => $this->fileLibraryUrl(
+                    $files->duplicate($share->getLibraryNode() ?? throw $this->createNotFoundException(), $recipient, $destination),
+                ),
+                default => throw $this->createNotFoundException(),
+            };
+        } catch (ContentShareQuotaException $refusal) {
+            // « Il manque 34 Mo » is actionable where « quota dépassé » is not - and nothing has been
+            // written, which is what the confirmation screen promised.
+            $this->addFlash('danger', $translator->trans('contentShareQuotaRefusalFlashMessage', [
+                '%missing%' => ByteSize::format($refusal->shortfallBytes()),
+                '%size%' => ByteSize::format($refusal->requiredBytes),
+                '%remaining%' => ByteSize::format($refusal->remainingBytes),
+            ]));
+
+            return $this->redirectToRoute('app_shares_duplicate', ['id' => $id]);
+        }
+
+        $share->markDuplicatedBy((int) $recipient->getId());
+        $this->entityManager->flush();
+
+        $this->addFlash('success', 'contentShareDuplicatedFlashMessage');
+
+        return $this->redirect($target);
+    }
+
+    /**
+     * « Consulter » - the item in full, read-only.
+     *
+     * Three of the five open their own show screen, which is already share-aware. The other two get
+     * a screen of their own here, and both for the same reason: a quiz has no read-only screen (its
+     * two screens are editors), and a folder's own screen is the author's whole library - rail
+     * included. What is shared is one item, so what opens is one item.
+     */
+    #[Route(path: '/shares/{id}/open', name: 'app_shares_open', methods: ['GET'], requirements: ['id' => '\d+'])]
+    public function open(int $id, Request $request, FileUploadService $fileUploads, FileLibraryNodeRepository $nodes): Response
+    {
+        $share = $this->readableShareOrNotFound($id);
+
+        return match ($share->getSubject()) {
+            ContentShareSubject::Sequence => $this->redirectToRoute('app_library_sequences_show', ['id' => $share->getSequenceTemplate()?->getId()]),
+            ContentShareSubject::Quiz => $this->render('content_share/read_quiz.html.twig', [
+                'share' => $share,
+                'quiz' => $share->getQuizTemplate() ?? throw $this->createNotFoundException(),
+            ]),
+            ContentShareSubject::File => $this->openFile($share, $request, $fileUploads, $nodes),
+            default => throw $this->createNotFoundException(),
+        };
+    }
+
+    private function confirmSequence(ContentShare $share, User $recipient, SequenceDuplicator $duplicator, FileLibraryNodeRepository $nodes, FileLibraryQuota $quota): Response
+    {
         $sequence = $share->getSequenceTemplate() ?? throw $this->createNotFoundException();
-
         $plan = $duplicator->plan($sequence);
-
         $phaseCount = 0;
 
         foreach ($sequence->getSeanceTemplates() as $seance) {
@@ -236,49 +427,81 @@ class ContentShareController extends AbstractController
         ]);
     }
 
+    /** No quota block: a quiz's illustrations never enter the recipient's library, so nothing weighs. */
+    private function confirmQuiz(ContentShare $share): Response
+    {
+        return $this->render('content_share/duplicate_quiz.html.twig', [
+            'share' => $share,
+            'quiz' => $share->getQuizTemplate() ?? throw $this->createNotFoundException(),
+        ]);
+    }
+
+    private function confirmFile(ContentShare $share, User $recipient, FileLibraryNodeDuplicator $duplicator, FileLibraryNodeRepository $nodes, FileLibraryQuota $quota): Response
+    {
+        $node = $share->getLibraryNode() ?? throw $this->createNotFoundException();
+        $plan = $duplicator->plan($node);
+
+        return $this->render('content_share/duplicate_file.html.twig', [
+            'share' => $share,
+            'node' => $node,
+            'plan' => $plan,
+            'folders' => $nodes->findFolders($recipient),
+            'quotaUsed' => $quota->usedBytes($recipient),
+            'quotaLimit' => $quota->limitFor($recipient),
+            'fits' => $quota->accepts($recipient, $plan['totalBytes']),
+            'remaining' => $quota->remainingBytes($recipient),
+        ]);
+    }
+
     /**
-     * The write. All-or-nothing: the quota is asked once with the sum inside
-     * App\Service\SequenceDuplicator, and a refusal writes nothing at all - not the séquence, not
-     * the folders, not the first files that would have fitted.
-     *
-     * The redirect goes to the new copy in the recipient's own library, which is also the proof it
-     * worked.
+     * A shared file hands over the CDN address, exactly as every other stored file of this
+     * application is served; a shared folder lists **its own** subtree, and its rows come back here
+     * with `?node=` to download one.
      */
-    #[Route(path: '/shares/{id}/duplicate', name: 'app_shares_duplicate_save', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function duplicate(
-        int $id,
-        Request $request,
-        SequenceDuplicator $duplicator,
-        FileLibraryNodeRepository $nodes,
-        TranslatorInterface $translator,
-    ): Response {
-        $share = $this->readableShareOrNotFound($id);
-        $this->assertCsrf($request, 'content_share_duplicate');
+    private function openFile(ContentShare $share, Request $request, FileUploadService $fileUploads, FileLibraryNodeRepository $nodes): Response
+    {
+        $shared = $share->getLibraryNode() ?? throw $this->createNotFoundException();
+        $wanted = QueryValue::nullableInt($request, 'node');
+        $node = null === $wanted ? $shared : $nodes->find($wanted) ?? throw $this->createNotFoundException();
 
-        $recipient = $this->currentUser();
-        $sequence = $share->getSequenceTemplate() ?? throw $this->createNotFoundException();
-        $destination = $this->destinationFolder($request, $nodes, $recipient);
-
-        try {
-            $copy = $duplicator->duplicate($sequence, $recipient, $destination);
-        } catch (ContentShareQuotaException $refusal) {
-            // « Il manque 34 Mo » is actionable where « quota dépassé » is not - and nothing has been
-            // written, which is what the confirmation screen promised.
-            $this->addFlash('danger', $translator->trans('contentShareQuotaRefusalFlashMessage', [
-                '%missing%' => ByteSize::format($refusal->shortfallBytes()),
-                '%size%' => ByteSize::format($refusal->requiredBytes),
-                '%remaining%' => ByteSize::format($refusal->remainingBytes),
-            ]));
-
-            return $this->redirectToRoute('app_shares_duplicate', ['id' => $id]);
+        // A node reached through a share must be **inside** what was shared. Without this the id in
+        // the query string would open any file of the author's library.
+        if ($node->getId() !== $shared->getId() && !$this->isInside($node, $shared)) {
+            throw $this->createNotFoundException();
         }
 
-        $share->markDuplicatedBy((int) $recipient->getId());
-        $this->entityManager->flush();
+        if ($node->isFile()) {
+            if ($node->isDeleted() || null === $node->getStorageKey()) {
+                throw $this->createNotFoundException();
+            }
 
-        $this->addFlash('success', 'contentShareDuplicatedFlashMessage');
+            return $this->redirect($fileUploads->url($node->getStorageKey()));
+        }
 
-        return $this->redirectToRoute('app_library_sequences_show', ['id' => $copy->getId()]);
+        $rows = [];
+
+        foreach ($nodes->findSubtree($shared) as $member) {
+            if ($member->getId() !== $shared->getId() && !$member->isDeleted()) {
+                $rows[] = ['node' => $member, 'depth' => $member->getDepth() - $shared->getDepth() - 1];
+            }
+        }
+
+        usort($rows, static fn (array $a, array $b): int => [$a['node']->getPath(), $a['node']->getName()] <=> [$b['node']->getPath(), $b['node']->getName()]);
+
+        return $this->render('content_share/read_folder.html.twig', ['share' => $share, 'node' => $shared, 'rows' => $rows]);
+    }
+
+    private function isInside(FileLibraryNode $node, FileLibraryNode $ancestor): bool
+    {
+        return str_starts_with($node->getPath(), $ancestor->getPath().$ancestor->getId().'/');
+    }
+
+    /** Where a duplicated file or folder landed - its parent folder, or the library root. */
+    private function fileLibraryUrl(FileLibraryNode $node): string
+    {
+        return null === $node->getParent()
+            ? $this->generateUrl('app_file_library')
+            : $this->generateUrl('app_file_library_folder', ['nodeId' => $node->getParent()->getId()]);
     }
 
     /**

@@ -1,0 +1,88 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Outils > Partages, onglet « Catalogue » (design/validated/content-sharing-between-teachers.md,
+   mockup 4): what colleagues published to the whole establishment.
+
+   **Look at the tags column.** « SIO 1 », « sio1 » and « Première année » name the same thing and
+   are three different rows in the database - Niveau, Option and Bloc are a private vocabulary per
+   teacher. Hence the rule: the catalogue searches the **label as text**, never the identifier, and
+   offers **no facet select built on the reader's own tags**. The two selects here are a type and an
+   author: an enum this application owns, and a person. Both are the same word for everybody.
+
+   The form is a GET, per the repository's rule for a "show me a result" form - a POST would have to
+   redirect under Turbo for nothing, and the result would not be a reloadable URL. #}
+
+{% block title %}{{ 'contentSharePageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'contentSharePageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'contentSharePageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% include 'content_share/_tabs.html.twig' with {currentTab: 'catalog'} %}
+
+    <div class="card cm-card--tabbed">
+        <div class="card-body border-bottom">
+            <form method="GET" action="{{ path('app_shares_catalog') }}" class="cm-share__filters">
+                <input type="search" name="q" class="form-control" value="{{ query }}"
+                       placeholder="{{ 'contentShareCatalogSearchPlaceholder'|trans }}"
+                       aria-label="{{ 'contentShareCatalogSearchPlaceholder'|trans }}">
+                <select name="type" class="form-select" aria-label="{{ 'contentShareTypeColumnLabel'|trans }}">
+                    <option value="">{{ 'contentShareCatalogAllTypesLabel'|trans }}</option>
+                    {% for case in ['sequence', 'seance', 'quiz', 'file', 'progression'] %}
+                        <option value="{{ case }}"{{ type and type.value == case ? ' selected' }}>{{ ('contentShareSubject' ~ case|capitalize ~ 'Label')|trans }}</option>
+                    {% endfor %}
+                </select>
+                <select name="author" class="form-select" aria-label="{{ 'contentShareCatalogAuthorLabel'|trans }}">
+                    <option value="">{{ 'contentShareCatalogAllAuthorsLabel'|trans }}</option>
+                    {% for author in authors %}
+                        <option value="{{ author.id }}"{{ authorId == author.id ? ' selected' }}>{{ author.displayName ?? author.username }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="cm-btn cm-btn--primary">{{ 'contentShareCatalogSearchAction'|trans }}</button>
+                <span class="cm-share__detail">{{ 'contentShareCatalogCountLabel'|trans({'%count%': rows|length}) }}</span>
+            </form>
+        </div>
+
+        {% if rows is empty %}
+            <div class="card-body text-secondary">{{ 'contentShareCatalogEmptyText'|trans }}</div>
+        {% else %}
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'contentShareContentColumnLabel'|trans }}</th>
+                            <th>{{ 'contentShareTypeColumnLabel'|trans }}</th>
+                            <th>{{ 'contentShareCatalogTagsColumnLabel'|trans }}</th>
+                            <th>{{ 'contentShareCatalogAuthorLabel'|trans }}</th>
+                            <th>{{ 'contentShareCatalogPublishedColumnLabel'|trans }}</th>
+                            <th class="cm-actions"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                            <tr>
+                                <td><span class="fw-bold">{{ row.share.subjectTitle }}</span></td>
+                                <td>{% include 'content_share/_subject.html.twig' with {share: row.share} only %}</td>
+                                <td>
+                                    {% for tag in row.tags %}<span class="cm-badge cm-badge--gray me-1">{{ tag }}</span>{% endfor %}
+                                </td>
+                                <td>{{ row.share.owner.displayName ?? row.share.owner.username }}</td>
+                                <td>{{ row.share.creationDate|date('d/m/Y') }}</td>
+                                <td class="cm-actions">
+                                    <a href="{{ path('app_shares_open', {id: row.share.id}) }}" class="cm-action--main">{{ 'contentShareConsultAction'|trans }}</a>
+                                    <a href="{{ path('app_shares_duplicate', {id: row.share.id}) }}" class="cm-action--main">{{ 'contentShareDuplicateShortAction'|trans }}</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
