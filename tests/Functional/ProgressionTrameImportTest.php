@@ -164,10 +164,12 @@ class ProgressionTrameImportTest extends FunctionalTestCase
         $entityManager = static::getContainer()->get(EntityManagerInterface::class);
 
         $group = new TopicGroup('Bloc de test '.$name, $program);
+        $group->setCreatedBy($teacher);
         $entityManager->persist($group);
 
         $topic = new Topic($name, $program, $group);
         $topic->setTeacher($teacher);
+        $topic->setCreatedBy($teacher);
         $entityManager->persist($topic);
 
         return $topic;
