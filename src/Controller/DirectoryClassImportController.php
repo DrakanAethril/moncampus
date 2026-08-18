@@ -1,0 +1,294 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Controller;
+
+use App\Entity\Program;
+use App\Form\ClassImportStartType;
+use App\Repository\ProgramRepository;
+use App\Service\ClassImport\ClassImportAnalysis;
+use App\Service\ClassImport\ClassImportAnalyzer;
+use App\Service\ClassImport\ClassImportContext;
+use App\Service\ClassImport\ClassImportContextFactory;
+use App\Service\ClassImport\ClassImportCsvReader;
+use App\Service\ClassImport\ClassImportFileException;
+use App\Service\ClassImport\StudentRow;
+use App\Service\FormValue;
+use App\Service\UploadIntake;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\FormError;
+use Symfony\Component\Form\FormInterface;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Translation\TranslatorInterface;
+
+/**
+ * « Annuaire > Utilisateurs > Importer une classe » - a list of students loaded into one class, in
+ * three deliberate moves: ① destination et fichier · ② vérification, validée par l'opérateur ·
+ * ③ import et suivi.
+ *
+ * The middle step is the feature. Nothing is written while it is on screen, and one blocking
+ * finding refuses the entire file rather than dropping the offending line: an import that
+ * half-wrote a class is the state nobody knows how to get out of.
+ *
+ * Reserved to ROLE_ADMIN, unlike the rest of the directory screens. Thirty accounts on one click
+ * are not at the scale of the one-account creation staff go on handling.
+ *
+ * The parsed rows live in the session between ② and ③ (never the uploaded file itself), together
+ * with the namesake decisions the operator has taken, and the analysis is replayed from them before
+ * anything is written - somebody may have created one of these accounts in the meantime.
+ */
+#[IsGranted('ROLE_ADMIN')]
+class DirectoryClassImportController extends AbstractController
+{
+    /** The parsed file waiting for its analysis to be confirmed. */
+    private const string ROWS_SESSION_KEY = 'class_import_rows';
+
+    /** The file's own name, kept only so every screen can say which file this is about. */
+    private const string FILE_SESSION_KEY = 'class_import_file';
+
+    /** The destination class and what step ① said should happen to the accounts it creates. */
+    private const string SETTINGS_SESSION_KEY = 'class_import_settings';
+
+    /** line => the account the operator recognised, or null for "namesake, create a new account". */
+    private const string DECISIONS_SESSION_KEY = 'class_import_decisions';
+
+    #[Route(path: '/directory/users/class-import', name: 'app_directory_class_import', methods: ['GET', 'POST'])]
+    public function start(
+        Request $request,
+        ClassImportCsvReader $reader,
+        UploadIntake $uploadIntake,
+        TranslatorInterface $translator,
+    ): Response {
+        $form = $this->createForm(ClassImportStartType::class);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $program = $form->get('program')->getData();
+            // The bytes are already in the bucket (the field stages them - see App\Form\
+            // FilePickerType), so they are fetched back rather than read off an upload.
+            $file = $uploadIntake->asLocalFile($form->get('file')->getData());
+
+            try {
+                if (!$program instanceof Program) {
+                    throw new ClassImportFileException('classImportProgramRequiredMessage');
+                }
+
+                $content = @file_get_contents($file->getPathname());
+                if (false === $content) {
+                    throw new ClassImportFileException('classImportFileEmptyMessage');
+                }
+
+                $rows = $reader->read($content);
+
+                $session = $request->getSession();
+                $session->set(self::ROWS_SESSION_KEY, array_map(static fn (StudentRow $row): array => $row->toArray(), $rows));
+                $session->set(self::FILE_SESSION_KEY, $file->getClientOriginalName());
+                $session->set(self::SETTINGS_SESSION_KEY, [
+                    'program' => $program->getId(),
+                    'groups' => $this->submittedGroups($form),
+                    'mustChangePassword' => FormValue::bool($form, 'mustChangePassword'),
+                ]);
+                // A new file starts from a blank slate: a decision taken about line 12 of the
+                // previous one says nothing about line 12 of this one.
+                $session->remove(self::DECISIONS_SESSION_KEY);
+
+                return $this->redirectToRoute('app_directory_class_import_check');
+            } catch (ClassImportFileException $exception) {
+                $form->addError(new FormError($translator->trans($exception->getMessageKey(), $exception->getParameters())));
+            }
+        }
+
+        return $this->render('directory/class_import/start.html.twig', ['form' => $form]);
+    }
+
+    #[Route(path: '/directory/users/class-import/check', name: 'app_directory_class_import_check', methods: ['GET'])]
+    public function check(
+        Request $request,
+        ClassImportAnalyzer $analyzer,
+        ClassImportContextFactory $contextFactory,
+        ProgramRepository $programRepository,
+    ): Response {
+        $prepared = $this->analyzeSession($request, $analyzer, $contextFactory, $programRepository);
+
+        if (null === $prepared) {
+            return $this->redirectToRoute('app_directory_class_import');
+        }
+
+        [$analysis, $context, $program] = $prepared;
+
+        return $this->render('directory/class_import/check.html.twig', [
+            'analysis' => $analysis,
+            'context' => $context,
+            'program' => $program,
+            'groups' => $this->sessionGroups($request),
+        ]);
+    }
+
+    /**
+     * One namesake line answered: an account id, or `new` for "not the same person, create one".
+     *
+     * A POST that redirects, as every POST handled by Turbo must - and the answer is kept in the
+     * session rather than in the URL, since the verification screen is rebuilt from scratch on
+     * every visit.
+     */
+    #[Route(path: '/directory/users/class-import/decide/{line}', name: 'app_directory_class_import_decide', requirements: ['line' => '\d+'], methods: ['POST'])]
+    public function decide(Request $request, int $line): Response
+    {
+        $this->assertValidFormToken('class_import_decide', $request);
+
+        $answer = $request->request->get('account');
+        $decisions = $this->sessionDecisions($request);
+
+        if ('new' === $answer) {
+            $decisions[$line] = null;
+        } elseif (\is_string($answer) && ctype_digit($answer)) {
+            $decisions[$line] = (int) $answer;
+        } else {
+            // "Je ne sais pas encore" - the line goes back to waiting rather than being answered
+            // badly, which is the whole point of never pre-selecting anything.
+            unset($decisions[$line]);
+        }
+
+        $request->getSession()->set(self::DECISIONS_SESSION_KEY, $decisions);
+
+        return $this->redirectToRoute('app_directory_class_import_check');
+    }
+
+    /**
+     * The one bulk answer: every line with a single active student namesake is the same person.
+     *
+     * It is what a whole promotion moving up a year produces, and it deliberately reaches nothing
+     * else - a disabled account (the answer would reactivate it) and an ambiguity (several
+     * namesakes) are read one by one.
+     */
+    #[Route(path: '/directory/users/class-import/decide-all', name: 'app_directory_class_import_decide_all', methods: ['POST'])]
+    public function decideAll(
+        Request $request,
+        ClassImportAnalyzer $analyzer,
+        ClassImportContextFactory $contextFactory,
+        ProgramRepository $programRepository,
+    ): Response {
+        $this->assertValidFormToken('class_import_decide_all', $request);
+
+        $prepared = $this->analyzeSession($request, $analyzer, $contextFactory, $programRepository);
+
+        if (null === $prepared) {
+            return $this->redirectToRoute('app_directory_class_import');
+        }
+
+        $decisions = $this->sessionDecisions($request);
+        foreach ($prepared[0]->obviousDecisions() as $line => $accountId) {
+            $decisions[$line] = $accountId;
+        }
+
+        $request->getSession()->set(self::DECISIONS_SESSION_KEY, $decisions);
+
+        return $this->redirectToRoute('app_directory_class_import_check');
+    }
+
+    /**
+     * The file a secretariat starts from. Carries a BOM so a double-click into Excel reads the
+     * accents rather than showing mojibake - the same file then comes back through
+     * App\Service\CsvTable, which strips it again.
+     */
+    #[Route(path: '/directory/users/class-import/template.csv', name: 'app_directory_class_import_template', methods: ['GET'])]
+    public function template(): Response
+    {
+        $csv = "\xEF\xBB\xBFnom;prenom;mail;option;modalite\r\n"
+            ."Dupont;Martin;martin.dupont@example.org;SLAM;Alternance\r\n";
+
+        $response = new Response($csv);
+        $response->headers->set('Content-Type', 'text/csv; charset=UTF-8');
+        $response->headers->set('Content-Disposition', 'attachment; filename="modele-import-classe.csv"');
+
+        return $response;
+    }
+
+    /**
+     * Null means "nothing usable in the session" - the caller sends the operator back to step ①.
+     *
+     * @return array{ClassImportAnalysis, ClassImportContext, Program}|null
+     */
+    private function analyzeSession(
+        Request $request,
+        ClassImportAnalyzer $analyzer,
+        ClassImportContextFactory $contextFactory,
+        ProgramRepository $programRepository,
+    ): ?array {
+        $session = $request->getSession();
+        $stored = $session->get(self::ROWS_SESSION_KEY);
+        $settings = $session->get(self::SETTINGS_SESSION_KEY);
+
+        if (!\is_array($stored) || [] === $stored || !\is_array($settings)) {
+            $this->addFlash('warning', 'classImportSessionExpiredFlashMessage');
+
+            return null;
+        }
+
+        $programId = $settings['program'] ?? null;
+        $program = \is_int($programId) ? $programRepository->find($programId) : null;
+
+        if (!$program instanceof Program) {
+            $this->addFlash('warning', 'classImportSessionExpiredFlashMessage');
+
+            return null;
+        }
+
+        $rows = array_values(array_map(
+            static fn (mixed $row): StudentRow => StudentRow::fromArray(\is_array($row) ? $row : []),
+            $stored,
+        ));
+
+        $fileName = $session->get(self::FILE_SESSION_KEY);
+        $context = $contextFactory->build($program, $rows);
+        $analysis = $analyzer->analyze($rows, $context, $this->sessionDecisions($request), \is_string($fileName) ? $fileName : '');
+
+        return [$analysis, $context, $program];
+    }
+
+    /** @return array<int, int|null> */
+    private function sessionDecisions(Request $request): array
+    {
+        $stored = $request->getSession()->get(self::DECISIONS_SESSION_KEY);
+        if (!\is_array($stored)) {
+            return [];
+        }
+
+        $decisions = [];
+        foreach ($stored as $line => $accountId) {
+            if (\is_int($line) && (null === $accountId || \is_int($accountId))) {
+                $decisions[$line] = $accountId;
+            }
+        }
+
+        return $decisions;
+    }
+
+    /** @return list<string> */
+    private function sessionGroups(Request $request): array
+    {
+        $settings = $request->getSession()->get(self::SETTINGS_SESSION_KEY);
+        $groups = \is_array($settings) ? ($settings['groups'] ?? null) : null;
+
+        return array_values(array_filter(\is_array($groups) ? $groups : [], \is_string(...)));
+    }
+
+    /** @return list<string> */
+    private function submittedGroups(FormInterface $form): array
+    {
+        $groups = $form->get('groups')->getData();
+
+        return array_values(array_filter(\is_array($groups) ? $groups : [], \is_string(...)));
+    }
+
+    private function assertValidFormToken(string $tokenId, Request $request): void
+    {
+        if (!$this->isCsrfTokenValid($tokenId, $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+    }
+}

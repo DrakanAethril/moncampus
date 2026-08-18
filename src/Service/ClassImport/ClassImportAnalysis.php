@@ -78,6 +78,31 @@ final readonly class ClassImportAnalysis
         return array_values(array_filter($this->students, static fn (AnalyzedStudent $student): bool => $student->action === $action));
     }
 
+    /** @return list<AnalyzedStudent> */
+    public function blockedStudents(): array
+    {
+        return $this->studentsWith(ClassImportAction::Blocked);
+    }
+
+    /** @return list<AnalyzedStudent> */
+    public function studentsWithWarnings(): array
+    {
+        return array_values(array_filter($this->students, static fn (AnalyzedStudent $student): bool => [] !== $student->warnings()));
+    }
+
+    /**
+     * The lines whose namesakes have to be read rather than answered in one click.
+     *
+     * @return list<AnalyzedStudent>
+     */
+    public function studentsToExamine(): array
+    {
+        return array_values(array_filter(
+            $this->students,
+            static fn (AnalyzedStudent $student): bool => [] !== $student->candidates && !$student->isObviousDecision(),
+        ));
+    }
+
     /**
      * The answers the header's bulk action would give - line => account id. Only the lines with a
      * single active student namesake; a disabled account or an ambiguity is never answered in bulk.

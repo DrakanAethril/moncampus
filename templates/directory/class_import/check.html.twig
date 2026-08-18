@@ -1,0 +1,276 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'classImportCheckPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'directoryNavLabel'|trans, url: path('app_directory_users')},
+        {label: 'directoryUsersNavLabel'|trans, url: path('app_directory_users')},
+        {label: 'classImportPageHeading'|trans, url: path('app_directory_class_import')},
+        {label: 'classImportCheckPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'classImportCheckPageHeading'|trans }}{% endblock %}
+
+{# A finding is a translation key plus its parameters; the ones whose value is itself a key (an
+   account type) are translated before being substituted. #}
+{% macro issue_list(issues) %}
+    <ul class="mb-0 ps-3">
+        {% for issue in issues %}
+            {% set parameters = issue.parameters %}
+            {% for name, key in issue.keyParameters %}
+                {% set parameters = parameters|merge({(name): key|trans}) %}
+            {% endfor %}
+            <li>
+                <span class="cm-badge {{ issue.severity.badgeClass }}">{{ issue.severity.labelKey|trans }}</span>
+                {{ issue.messageKey|trans(parameters) }}
+            </li>
+        {% endfor %}
+    </ul>
+{% endmacro %}
+
+{% macro candidate_summary(account) %}
+    {{ account.login }} — {{ account.programLabel ?: 'classImportNoProgramLabel'|trans }}
+    · {{ (account.active ? 'classImportAccountActiveLabel' : 'classImportAccountInactiveLabel')|trans }}
+    · {{ account.contactEmail ?: 'classImportNoContactEmailLabel'|trans }}
+    {%- if account.createdAt %} · {{ 'classImportCreatedOnLabel'|trans({'%date%': account.createdAt|date('d/m/Y')}) }}{% endif %}
+    {%- if not account.isStudent %} · {{ account.userTypeLabelKey|trans }}{% endif %}
+{% endmacro %}
+
+{% block main %}
+    {% import _self as helper %}
+
+    <p class="text-secondary">
+        {{ 'classImportCheckSubtitle'|trans({
+            '%file%': analysis.fileName,
+            '%count%': analysis.students|length,
+            '%program%': program.displayShortName,
+        }) }}
+    </p>
+
+    {% include 'directory/class_import/_steps.html.twig' with {step: 2} %}
+
+    <div class="cm-statgrid my-3">
+        <div class="cm-stat">
+            <span class="cm-stat__value">{{ analysis.createCount }}</span>
+            <span class="cm-stat__label">{{ 'classImportStatCreateLabel'|trans }}</span>
+            <span class="cm-stat__hint">{{ 'classImportStatCreateHint'|trans }}</span>
+        </div>
+        <div class="cm-stat">
+            <span class="cm-stat__value">{{ analysis.decideCount }}</span>
+            <span class="cm-stat__label">{{ 'classImportStatDecideLabel'|trans }}</span>
+            <span class="cm-stat__hint">{{ 'classImportStatDecideHint'|trans }}</span>
+        </div>
+        <div class="cm-stat">
+            <span class="cm-stat__value">{{ analysis.attachCount + analysis.updateCount }}</span>
+            <span class="cm-stat__label">{{ 'classImportStatKnownLabel'|trans }}</span>
+            <span class="cm-stat__hint">{{ 'classImportStatKnownHint'|trans }}</span>
+        </div>
+        <div class="cm-stat">
+            <span class="cm-stat__value {{ analysis.blockingCount > 0 ? 'cm-stat__value--danger' }}">{{ analysis.blockingCount }}</span>
+            <span class="cm-stat__label">{{ 'classImportStatBlockingLabel'|trans }}</span>
+            <span class="cm-stat__hint">{{ 'classImportStatBlockingHint'|trans }}</span>
+        </div>
+    </div>
+
+    {% if analysis.blockingCount > 0 %}
+        {# The whole file is refused, not only these lines: an import that half-wrote a class is
+           the state nobody knows how to get out of. #}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3 class="card-title">{{ 'classImportBlockingSectionTitle'|trans({'%count%': analysis.blockingCount}) }}</h3>
+            </div>
+            <div class="card-body">
+                <p>{{ 'classImportBlockingSectionHint'|trans }}</p>
+                <ul class="mb-0">
+                    {% for student in analysis.blockedStudents %}
+                        <li class="mb-2">
+                            <strong>{{ 'classImportLineLabel'|trans({'%line%': student.line}) }}</strong>
+                            — {{ student.displayName ?: student.rawDisplayName }}
+                            {{ helper.issue_list(student.blockingIssues) }}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if analysis.decideCount > 0 %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3 class="card-title">{{ 'classImportDecisionsSectionTitle'|trans({'%count%': analysis.decideCount}) }}</h3>
+            </div>
+            <div class="card-body">
+                <p class="mb-2">{{ 'classImportDecisionsSectionHint'|trans }}</p>
+                {% if analysis.obviousDecisions is not empty %}
+                    {# The case a whole promotion moving up a year produces. It reaches nothing else:
+                       a disabled account and an ambiguity are read one by one. #}
+                    <form method="post" action="{{ path('app_directory_class_import_decide_all') }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('class_import_decide_all') }}">
+                        <button type="submit" class="btn btn-outline-primary">
+                            {{ 'classImportDecideAllAction'|trans({'%count%': analysis.obviousDecisions|length}) }}
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+
+    {% if analysis.warningCount > 0 %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3 class="card-title">{{ 'classImportWarningsSectionTitle'|trans({'%count%': analysis.warningCount}) }}</h3>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    {% for student in analysis.studentsWithWarnings %}
+                        <li class="mb-2">
+                            <strong>{{ 'classImportLineLabel'|trans({'%line%': student.line}) }}</strong>
+                            — {{ student.displayName ?: student.rawDisplayName }}
+                            {{ helper.issue_list(student.warnings) }}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">{{ 'classImportRowsSectionTitle'|trans }}</h3>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'classImportColumnLineHeader'|trans }}</th>
+                        <th>{{ 'classImportColumnStudentHeader'|trans }}</th>
+                        <th>{{ 'classImportColumnFileEmailHeader'|trans }}</th>
+                        <th>{{ 'classImportColumnValuesHeader'|trans }}</th>
+                        <th>{{ 'classImportColumnOutcomeHeader'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in analysis.students %}
+                        <tr>
+                            <td class="text-secondary">{{ student.line }}</td>
+                            <td>
+                                <div class="fw-medium">{{ student.displayName ?: '—' }}</div>
+                                {% if student.nameWasNormalized %}
+                                    {# Shown before anything is written: the directory takes these
+                                       over read-only afterwards. #}
+                                    <div class="text-secondary small">{{ 'classImportFileWritesLabel'|trans({'%raw%': student.rawDisplayName}) }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="text-secondary">{{ student.email ?: '—' }}</td>
+                            <td>
+                                {% for value in student.valuesToAdd %}
+                                    <span class="cm-badge cm-badge--gray">{{ value.label }}</span>
+                                {% else %}
+                                    <span class="text-secondary">—</span>
+                                {% endfor %}
+                            </td>
+                            <td>
+                                <span class="cm-badge {{ student.action.badgeClass }}">{{ student.action.labelKey|trans }}</span>
+                                {% if student.account %}
+                                    <div class="text-secondary small mt-1">{{ helper.candidate_summary(student.account) }}</div>
+                                {% endif %}
+                                {% if student.candidates is not empty %}
+                                    <div class="text-secondary small mt-1">
+                                        {{ 'classImportCandidatesCountLabel'|trans({'%count%': student.candidates|length}) }}
+                                    </div>
+                                    <div class="d-flex gap-2 flex-wrap mt-2">
+                                        {% if student.isObviousDecision %}
+                                            {# One active student namesake: a click is enough, but a
+                                               click there must be - nothing is pre-selected. #}
+                                            <form method="post" action="{{ path('app_directory_class_import_decide', {line: student.line}) }}">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('class_import_decide') }}">
+                                                <input type="hidden" name="account" value="{{ student.candidates[0].id }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-primary">{{ 'classImportSamePersonAction'|trans }}</button>
+                                            </form>
+                                            <form method="post" action="{{ path('app_directory_class_import_decide', {line: student.line}) }}">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('class_import_decide') }}">
+                                                <input type="hidden" name="account" value="new">
+                                                <button type="submit" class="btn btn-sm btn-outline-primary">{{ 'classImportNamesakeAction'|trans }}</button>
+                                            </form>
+                                        {% else %}
+                                            {# A disabled account (the answer reactivates it) or several
+                                               namesakes: there is something to read, so it is read. #}
+                                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#class-import-decision-{{ student.line }}">
+                                                {{ 'classImportExamineAction'|trans }}
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer">
+            <div class="cm-actionbar">
+                <div class="cm-actionbar__buttons">
+                    <a href="{{ path('app_directory_class_import') }}" class="btn btn-link">{{ 'classImportAnotherFileAction'|trans }}</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Outside every form on purpose: a form inside a form is silently dropped by the browser. #}
+    {% for student in analysis.studentsToExamine %}
+        <div class="modal" id="class-import-decision-{{ student.line }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <form method="post" action="{{ path('app_directory_class_import_decide', {line: student.line}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('class_import_decide') }}">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                {{ 'classImportLineLabel'|trans({'%line%': student.line}) }} — {{ student.displayName }}
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'cancelAction'|trans }}"></button>
+                        </div>
+                        <div class="modal-body d-flex flex-column gap-2">
+                            <p class="text-secondary mb-0">{{ 'classImportDecisionPanelHint'|trans }}</p>
+
+                            {% for candidate in student.candidates %}
+                                <label class="cm-choice">
+                                    <input class="form-check-input" type="radio" name="account" value="{{ candidate.id }}" required>
+                                    <span>
+                                        <span class="cm-choice__title">{{ 'classImportReuseAccountLabel'|trans({'%login%': candidate.login}) }}</span>
+                                        <span class="cm-choice__detail">{{ helper.candidate_summary(candidate) }}</span>
+                                        {% if not candidate.active %}
+                                            <span class="cm-choice__detail text-danger">{{ 'classImportReactivationWarningText'|trans }}</span>
+                                        {% elseif not candidate.isStudent %}
+                                            <span class="cm-choice__detail text-danger">{{ 'classImportNotAStudentWarningText'|trans }}</span>
+                                        {% else %}
+                                            <span class="cm-choice__detail">{{ 'classImportAttachExplanationText'|trans({'%program%': program.displayShortName}) }}</span>
+                                        {% endif %}
+                                    </span>
+                                </label>
+                            {% endfor %}
+
+                            <label class="cm-choice">
+                                <input class="form-check-input" type="radio" name="account" value="new" required>
+                                <span>
+                                    <span class="cm-choice__title">{{ 'classImportCreateNewAccountLabel'|trans }}</span>
+                                    <span class="cm-choice__detail">{{ 'classImportCreateNewAccountDetailText'|trans }}</span>
+                                </span>
+                            </label>
+
+                            <div class="cm-note">
+                                <span class="cm-note__icon">i</span>
+                                <div>{{ 'classImportMatchingRuleNoteText'|trans }}</div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-link" data-bs-dismiss="modal">{{ 'cancelAction'|trans }}</button>
+                            <button type="submit" class="btn btn-primary">{{ 'classImportValidateDecisionAction'|trans }}</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% endblock %}

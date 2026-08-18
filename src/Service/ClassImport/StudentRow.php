@@ -22,4 +22,38 @@ final readonly class StudentRow
         public array $freeCells,
     ) {
     }
+
+    /**
+     * The rows live in the session between the verification screen and the writing - never the
+     * uploaded file itself, which has served its purpose the moment it has been read.
+     *
+     * @return array{line: int, lastname: string, firstname: string, email: string, freeCells: list<array{header: string, foldedHeader: string, value: string}>}
+     */
+    public function toArray(): array
+    {
+        return [
+            'line' => $this->line,
+            'lastname' => $this->lastname,
+            'firstname' => $this->firstname,
+            'email' => $this->email,
+            'freeCells' => array_map(static fn (FreeCell $cell): array => $cell->toArray(), $this->freeCells),
+        ];
+    }
+
+    /** @param array<array-key, mixed> $data */
+    public static function fromArray(array $data): self
+    {
+        $cells = \is_array($data['freeCells'] ?? null) ? $data['freeCells'] : [];
+
+        return new self(
+            \is_int($data['line'] ?? null) ? $data['line'] : 0,
+            \is_string($data['lastname'] ?? null) ? $data['lastname'] : '',
+            \is_string($data['firstname'] ?? null) ? $data['firstname'] : '',
+            \is_string($data['email'] ?? null) ? $data['email'] : '',
+            array_values(array_map(
+                static fn (mixed $cell): FreeCell => FreeCell::fromArray(\is_array($cell) ? $cell : []),
+                $cells,
+            )),
+        );
+    }
 }
