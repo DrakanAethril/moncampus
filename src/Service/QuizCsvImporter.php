@@ -79,20 +79,6 @@ final class QuizCsvImporter
     // export, a CSV of something else entirely) is refused before it becomes a session payload.
     public const int MAX_QUESTIONS = 500;
 
-    private const array DELIMITERS = [';', ',', "\t", '|'];
-
-    // Deliberately not iconv('ASCII//TRANSLIT'), whose output depends on the runtime's locale -
-    // header matching must behave the same in the container, in CI and on a dev Mac.
-    private const array ACCENTS = [
-        'à' => 'a', 'á' => 'a', 'â' => 'a', 'ä' => 'a', 'ã' => 'a',
-        'ç' => 'c',
-        'è' => 'e', 'é' => 'e', 'ê' => 'e', 'ë' => 'e',
-        'ì' => 'i', 'í' => 'i', 'î' => 'i', 'ï' => 'i',
-        'ò' => 'o', 'ó' => 'o', 'ô' => 'o', 'ö' => 'o', 'õ' => 'o',
-        'ù' => 'u', 'ú' => 'u', 'û' => 'u', 'ü' => 'u',
-        'ÿ' => 'y', 'ñ' => 'n',
-    ];
-
     /** Normalized header spelling => canonical column name. */
     private const array COLUMN_ALIASES = [
         'sequence' => 'sequence',
@@ -545,49 +531,11 @@ final class QuizCsvImporter
             throw new QuizCsvImportException('quizImportErrorEmptyFileMessage');
         }
 
-        if (str_starts_with($content, "\xEF\xBB\xBF")) {
-            $content = substr($content, 3);
-        }
-
-        if (!mb_check_encoding($content, 'UTF-8')) {
-            $content = mb_convert_encoding($content, 'UTF-8', 'Windows-1252');
-        }
-
-        $stream = fopen('php://temp', 'r+');
-        if (false === $stream) {
+        try {
+            return CsvTable::fromContent($content)->rows();
+        } catch (\RuntimeException) {
             throw new QuizCsvImportException('quizImportErrorUnreadableMessage');
         }
-
-        fwrite($stream, $content);
-        rewind($stream);
-
-        $rows = [];
-        $delimiter = $this->detectDelimiter($content);
-        // Escape character explicitly disabled: a backslash inside a statement (a Windows path, a
-        // regex) is content, not an escape, and only doubled quotes delimit-escape a quote here.
-        while (false !== ($row = fgetcsv($stream, 0, $delimiter, '"', ''))) {
-            $rows[] = $row;
-        }
-        fclose($stream);
-
-        return $rows;
-    }
-
-    private function detectDelimiter(string $content): string
-    {
-        $firstLine = preg_split('/\r\n|\r|\n/', $content, 2)[0] ?? '';
-        $best = ';';
-        $bestCount = 0;
-
-        foreach (self::DELIMITERS as $delimiter) {
-            $count = substr_count($firstLine, $delimiter);
-            if ($count > $bestCount) {
-                $best = $delimiter;
-                $bestCount = $count;
-            }
-        }
-
-        return $best;
     }
 
     /**
@@ -737,8 +685,6 @@ final class QuizCsvImporter
 
     private function normalize(string $value): string
     {
-        $value = strtr(mb_strtolower(trim($value)), self::ACCENTS);
-
-        return trim((string) preg_replace('/[^a-z0-9]+/', '_', $value), '_');
+        return CsvTable::fold($value);
     }
 }
