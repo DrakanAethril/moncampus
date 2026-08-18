@@ -22,4 +22,4 @@ when@test:
         storages:
             uploads.storage:
                 local:
-                    location: '%kernel.cache_dir%/uploads'
+                    directory: '%kernel.cache_dir%/uploads'
