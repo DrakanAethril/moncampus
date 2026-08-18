@@ -42,7 +42,15 @@
                     <dt class="col-3">{{ 'contentShareSubjectSequenceLabel'|trans }}</dt>
                     <dd class="col-9">{{ sequence.titre }}</dd>
                     <dt class="col-3">{{ 'contentShareDuplicateSeancesLabel'|trans }}</dt>
-                    <dd class="col-9">{{ 'contentShareDuplicateSeancesValue'|trans({'%seances%': sequence.seanceTemplates|length, '%phases%': phaseCount}) }}</dd>
+                    {# The phases are named only when there are any: « 1, avec leurs 0 phases » is a
+                       sentence written by a template rather than by somebody. #}
+                    <dd class="col-9">
+                        {% if phaseCount > 0 %}
+                            {{ 'contentShareDuplicateSeancesValue'|trans({'%seances%': sequence.seanceTemplates|length, '%phases%': phaseCount}) }}
+                        {% else %}
+                            {{ sequence.seanceTemplates|length }}
+                        {% endif %}
+                    </dd>
                     <dt class="col-3">{{ 'contentShareDuplicateTagsLabel'|trans }}</dt>
                     <dd class="col-9">{{ 'contentShareDuplicateTagsValue'|trans }}</dd>
                 </dl>
