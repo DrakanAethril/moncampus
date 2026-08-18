@@ -4,21 +4,31 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Entity\LdapManageUser;
 use App\Entity\Program;
+use App\Entity\StudentImportBatchLine;
+use App\Entity\User;
 use App\Form\ClassImportStartType;
 use App\Repository\ProgramRepository;
+use App\Repository\StudentImportBatchLineRepository;
+use App\Repository\StudentImportBatchRepository;
 use App\Service\ClassImport\ClassImportAnalysis;
 use App\Service\ClassImport\ClassImportAnalyzer;
 use App\Service\ClassImport\ClassImportContext;
 use App\Service\ClassImport\ClassImportContextFactory;
 use App\Service\ClassImport\ClassImportCsvReader;
+use App\Service\ClassImport\ClassImportExecutor;
 use App\Service\ClassImport\ClassImportFileException;
+use App\Service\ClassImport\ClassImportNotExecutableException;
 use App\Service\ClassImport\StudentRow;
 use App\Service\FormValue;
+use App\Service\QueueStateFormatter;
 use App\Service\UploadIntake;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -188,6 +198,184 @@ class DirectoryClassImportController extends AbstractController
         $request->getSession()->set(self::DECISIONS_SESSION_KEY, $decisions);
 
         return $this->redirectToRoute('app_directory_class_import_check');
+    }
+
+    /**
+     * ③ - the only writing move, and the only one that is not idempotent.
+     *
+     * The analysis is rebuilt from the parked rows rather than trusted from what the operator was
+     * shown: between the two screens somebody may have created one of these accounts, or removed
+     * the one that was chosen. If the verdict has moved, the import is refused and the
+     * verification screen is shown again.
+     */
+    #[Route(path: '/directory/users/class-import/confirm', name: 'app_directory_class_import_confirm', methods: ['POST'])]
+    public function confirm(
+        Request $request,
+        ClassImportAnalyzer $analyzer,
+        ClassImportContextFactory $contextFactory,
+        ProgramRepository $programRepository,
+        ClassImportExecutor $executor,
+    ): Response {
+        $this->assertValidFormToken('class_import_confirm', $request);
+
+        // The checkbox carries `required`, but a required attribute is a browser courtesy - the
+        // operator's explicit "cette analyse correspond au fichier" is the only thing standing
+        // between a spreadsheet and thirty accounts, so it is checked here too.
+        if (null === $request->request->get('confirmed')) {
+            $this->addFlash('warning', 'classImportNotConfirmedFlashMessage');
+
+            return $this->redirectToRoute('app_directory_class_import_check');
+        }
+
+        $prepared = $this->analyzeSession($request, $analyzer, $contextFactory, $programRepository);
+
+        if (null === $prepared) {
+            return $this->redirectToRoute('app_directory_class_import');
+        }
+
+        [$analysis, , $program] = $prepared;
+
+        /** @var User $operator */
+        $operator = $this->getUser();
+        $settings = $request->getSession()->get(self::SETTINGS_SESSION_KEY);
+        $mustChangePassword = \is_array($settings) && true === ($settings['mustChangePassword'] ?? null);
+
+        try {
+            $batch = $executor->execute($analysis, $program, $operator, $this->sessionGroups($request), $mustChangePassword);
+        } catch (ClassImportNotExecutableException) {
+            $this->addFlash('danger', 'classImportNoLongerImportableFlashMessage');
+
+            return $this->redirectToRoute('app_directory_class_import_check');
+        }
+
+        $session = $request->getSession();
+        $session->remove(self::ROWS_SESSION_KEY);
+        $session->remove(self::FILE_SESSION_KEY);
+        $session->remove(self::SETTINGS_SESSION_KEY);
+        $session->remove(self::DECISIONS_SESSION_KEY);
+
+        return $this->redirectToRoute('app_directory_class_import_batch', ['id' => $batch->getId()]);
+    }
+
+    /**
+     * The follow-up screen: a page like any other, revisitable, linked from « Imports récents ».
+     *
+     * What it says about the directory is read live off the queue rows, never stored - nothing to
+     * synchronise, therefore nothing that can fall out of sync.
+     *
+     * The `\d+` requirement is not optional: without it `check`, `confirm` and `template.csv` all
+     * fall into this route.
+     */
+    #[Route(path: '/directory/users/class-import/{id}', name: 'app_directory_class_import_batch', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function batch(StudentImportBatchRepository $batches, QueueStateFormatter $formatter, int $id): Response
+    {
+        $batch = $batches->find($id);
+
+        if (null === $batch) {
+            throw $this->createNotFoundException();
+        }
+
+        return $this->render('directory/class_import/batch.html.twig', [
+            'batch' => $batch,
+            // The 0..3 the directory script writes, named once rather than per line - the same
+            // wording the rest of Annuaire uses for the same states.
+            'stateLabels' => array_map($formatter->label(...), [0, 1, 2, 3]),
+            'stateClasses' => array_map($formatter->cssClass(...), [0, 1, 2, 3]),
+        ]);
+    }
+
+    /**
+     * What the polling controller asks for every five seconds while a line is still waiting. Small
+     * on purpose: the page is already rendered, only the states move.
+     */
+    #[Route(path: '/directory/users/class-import/{id}/status.json', name: 'app_directory_class_import_batch_status', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function batchStatus(StudentImportBatchRepository $batches, QueueStateFormatter $formatter, int $id): JsonResponse
+    {
+        $batch = $batches->find($id);
+
+        if (null === $batch) {
+            throw $this->createNotFoundException();
+        }
+
+        $lines = [];
+        $pending = 0;
+
+        foreach ($batch->getLines() as $line) {
+            $state = $line->getDirectoryState();
+            if (0 === $state || 1 === $state) {
+                ++$pending;
+            }
+
+            $lines[] = [
+                'id' => $line->getId(),
+                'state' => $state,
+                'label' => null === $state ? null : $formatter->label($state),
+                'cssClass' => null === $state ? null : $formatter->cssClass($state),
+                'log' => $line->getLdapRequest()?->getLog(),
+                'retryable' => $line->isRetryable(),
+            ];
+        }
+
+        return $this->json(['pending' => $pending, 'lines' => $lines]);
+    }
+
+    /**
+     * Queues a failed creation again - a NEW row carrying the same login, which the User already
+     * reserves, rather than the old one reset: create_user.sh uses the queue row's id as the
+     * uidNumber, so a retry has to be a new id. Without consequence as long as the previous
+     * creation really failed, which it did by construction: `samba-tool user create` is the
+     * script's first command and its failure exits 1.
+     */
+    #[Route(path: '/directory/users/class-import/{id}/retry/{lineId}', name: 'app_directory_class_import_retry', requirements: ['id' => '\d+', 'lineId' => '\d+'], methods: ['POST'])]
+    public function retry(
+        Request $request,
+        StudentImportBatchLineRepository $lines,
+        EntityManagerInterface $entityManager,
+        int $id,
+        int $lineId,
+    ): Response {
+        $this->assertValidFormToken('class_import_retry', $request);
+
+        $line = $lines->find($lineId);
+
+        if (null === $line || $line->getBatch()?->getId() !== $id) {
+            throw $this->createNotFoundException();
+        }
+
+        if (!$line->isRetryable()) {
+            $this->addFlash('warning', 'classImportRetryNotFailedFlashMessage');
+
+            return $this->redirectToRoute('app_directory_class_import_batch', ['id' => $id]);
+        }
+
+        $this->requeue($line, $entityManager);
+        $entityManager->flush();
+
+        $this->addFlash('success', 'classImportRetryQueuedFlashMessage');
+
+        return $this->redirectToRoute('app_directory_class_import_batch', ['id' => $id]);
+    }
+
+    private function requeue(StudentImportBatchLine $line, EntityManagerInterface $entityManager): void
+    {
+        $previous = $line->getLdapRequest();
+        $user = $line->getUser();
+
+        if (null === $previous || null === $user) {
+            return;
+        }
+
+        /** @var User $operator */
+        $operator = $this->getUser();
+
+        $queued = new LdapManageUser($previous->getFirstname(), $previous->getLastname(), $previous->getUserType(), 'account_create');
+        $queued->setUserGroups($previous->getUserGroups());
+        $queued->setLogin($previous->getLogin());
+        $queued->setUser($user);
+        $queued->setAddedBy($operator->getUsername());
+
+        $entityManager->persist($queued);
+        $line->setLdapRequest($queued);
     }
 
     /**
