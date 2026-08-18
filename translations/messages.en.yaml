@@ -5254,3 +5254,8 @@ vmBatchProgressLabel: 'Progress'
 vmBatchOpenAction: 'Open'
 vmBatchDeployAction: 'Deploy'
 vmBatchRemainingMeta: '%count% machine(s) remaining'
+
+# Class import (Directory > Users)
+classImportFileEmptyMessage: 'The file holds no student.'
+classImportFileMissingColumnMessage: 'The "%column%" column is missing from the file.'
+classImportFileTooManyRowsMessage: 'The file holds more than %max% rows: that is no longer a class.'
