@@ -6,10 +6,12 @@ namespace App\Controller;
 
 use App\Entity\ContentShare;
 use App\Entity\FileLibraryNode;
+use App\Entity\Program;
 use App\Entity\Progression;
 use App\Entity\QuizTemplate;
 use App\Entity\SeanceTemplate;
 use App\Entity\SequenceTemplate;
+use App\Entity\Topic;
 use App\Entity\User;
 use App\Enum\ContentShareScope;
 use App\Enum\ContentShareSubject;
@@ -17,8 +19,10 @@ use App\Repository\ContentShareRepository;
 use App\Repository\FileLibraryNodeRepository;
 use App\Repository\ProgressionRepository;
 use App\Repository\QuizTemplateRepository;
+use App\Repository\SchoolYearRepository;
 use App\Repository\SeanceTemplateRepository;
 use App\Repository\SequenceTemplateRepository;
+use App\Repository\TopicRepository;
 use App\Repository\UserRepository;
 use App\Service\ByteSize;
 use App\Service\ContentShareAccess;
@@ -30,6 +34,7 @@ use App\Service\FileLibraryNodeDuplicator;
 use App\Service\FileLibraryQuota;
 use App\Service\FileUploadService;
 use App\Service\PostValue;
+use App\Service\ProgressionTrameImporter;
 use App\Service\QueryValue;
 use App\Service\QuizTemplateDuplicator;
 use App\Service\SequenceDuplicator;
@@ -309,8 +314,12 @@ class ContentShareController extends AbstractController
         int $id,
         SequenceDuplicator $sequences,
         FileLibraryNodeDuplicator $files,
+        ProgressionTrameImporter $trames,
         FileLibraryNodeRepository $nodes,
         FileLibraryQuota $quota,
+        TopicRepository $topics,
+        ProgressionRepository $progressions,
+        SchoolYearRepository $schoolYears,
     ): Response {
         $share = $this->readableShareOrNotFound($id);
         $recipient = $this->currentUser();
@@ -320,7 +329,7 @@ class ContentShareController extends AbstractController
             ContentShareSubject::Seance => $this->confirmSeance($share, $recipient, $sequences, $nodes, $quota),
             ContentShareSubject::Quiz => $this->confirmQuiz($share),
             ContentShareSubject::File => $this->confirmFile($share, $recipient, $files, $nodes, $quota),
-            default => throw $this->createNotFoundException(),
+            ContentShareSubject::Progression => $this->confirmProgression($share, $recipient, $trames, $nodes, $quota, $topics, $progressions, $schoolYears),
         };
     }
 
@@ -339,7 +348,11 @@ class ContentShareController extends AbstractController
         SequenceDuplicator $sequences,
         QuizTemplateDuplicator $quizzes,
         FileLibraryNodeDuplicator $files,
+        ProgressionTrameImporter $trames,
         FileLibraryNodeRepository $nodes,
+        TopicRepository $topics,
+        ProgressionRepository $progressions,
+        SchoolYearRepository $schoolYears,
         TranslatorInterface $translator,
     ): Response {
         $share = $this->readableShareOrNotFound($id);
@@ -370,7 +383,14 @@ class ContentShareController extends AbstractController
                 ContentShareSubject::File => $this->fileLibraryUrl(
                     $files->duplicate($share->getLibraryNode() ?? throw $this->createNotFoundException(), $recipient, $destination),
                 ),
-                default => throw $this->createNotFoundException(),
+                ContentShareSubject::Progression => $this->generateUrl('app_progression_show', [
+                    'id' => $trames->import(
+                        $share->getProgression() ?? throw $this->createNotFoundException(),
+                        $recipient,
+                        $this->pickedTopic($request, $recipient, $topics, $progressions, $schoolYears),
+                        $destination,
+                    )->getId(),
+                ]),
             };
         } catch (ContentShareQuotaException $refusal) {
             // « Il manque 34 Mo » is actionable where « quota dépassé » is not - and nothing has been
@@ -416,7 +436,10 @@ class ContentShareController extends AbstractController
                 'seance' => $share->getSeanceTemplate() ?? throw $this->createNotFoundException(),
             ]),
             ContentShareSubject::File => $this->openFile($share, $request, $fileUploads, $nodes),
-            default => throw $this->createNotFoundException(),
+            ContentShareSubject::Progression => $this->render('content_share/read_progression.html.twig', [
+                'share' => $share,
+                'progression' => $share->getProgression() ?? throw $this->createNotFoundException(),
+            ]),
         };
     }
 
@@ -518,6 +541,83 @@ class ContentShareController extends AbstractController
             'fits' => $quota->accepts($recipient, $plan['totalBytes']),
             'remaining' => $quota->remainingBytes($recipient),
         ]);
+    }
+
+    /**
+     * « Reprendre la trame » - the heaviest of the five, and the one that shows its constraints
+     * before the click rather than after it.
+     */
+    private function confirmProgression(ContentShare $share, User $recipient, ProgressionTrameImporter $importer, FileLibraryNodeRepository $nodes, FileLibraryQuota $quota, TopicRepository $topics, ProgressionRepository $progressions, SchoolYearRepository $schoolYears): Response
+    {
+        $progression = $share->getProgression() ?? throw $this->createNotFoundException();
+        $free = $this->freeTopics($recipient, $topics, $progressions, $schoolYears);
+
+        // Analysed against the first class offered, so the screen can name what will happen line by
+        // line before the recipient has chosen. It is re-analysed at the write, against the class
+        // they actually picked.
+        $program = $free[0]['program'] ?? null;
+        $analysis = null === $program
+            ? ['lines' => [], 'keptCount' => 0, 'fileCount' => 0, 'totalBytes' => 0]
+            : $importer->analyse($progression, $program);
+
+        return $this->render('content_share/duplicate_progression.html.twig', [
+            'share' => $share,
+            'progression' => $progression,
+            'analysis' => $analysis,
+            'topics' => array_map(static fn (array $group): array => ['program' => $group['program']->getDisplayShortName(), 'topics' => $group['topics']], $free),
+            'folders' => $nodes->findFolders($recipient),
+            'fits' => $quota->accepts($recipient, $analysis['totalBytes']),
+            'remaining' => $quota->remainingBytes($recipient),
+        ]);
+    }
+
+    /**
+     * The matières the trame may land on: the recipient's own, in a school year that is running, and
+     * **without a progression already** - `Progression` is a `OneToOne` on `Topic`.
+     *
+     * Grouped by formation so one select can answer « pour quelle classe » and « sur quelle matière »
+     * at once: two selects can produce a pair that does not exist, and this one cannot.
+     *
+     * @return list<array{program: Program, topics: list<Topic>}>
+     */
+    private function freeTopics(User $recipient, TopicRepository $topics, ProgressionRepository $progressions, SchoolYearRepository $schoolYears): array
+    {
+        $schoolYear = $schoolYears->findCurrentOrMostRecent();
+
+        if (null === $schoolYear) {
+            return [];
+        }
+
+        $byProgram = [];
+
+        foreach ($topics->findForTeacherInSchoolYear($recipient, $schoolYear) as $topic) {
+            $program = $topic->getProgram();
+
+            if (null === $program || null !== $progressions->findOneForTopic($topic)) {
+                continue;
+            }
+
+            $byProgram[(int) $program->getId()] ??= ['program' => $program, 'topics' => []];
+            $byProgram[(int) $program->getId()]['topics'][] = $topic;
+        }
+
+        return array_values($byProgram);
+    }
+
+    /** The matière the recipient picked - refused rather than guessed when it is not one of theirs. */
+    private function pickedTopic(Request $request, User $recipient, TopicRepository $topics, ProgressionRepository $progressions, SchoolYearRepository $schoolYears): Topic
+    {
+        $topicId = PostValue::nullableInt($request, 'topic');
+
+        foreach ($this->freeTopics($recipient, $topics, $progressions, $schoolYears) as $group) {
+            foreach ($group['topics'] as $topic) {
+                if ($topic->getId() === $topicId) {
+                    return $topic;
+                }
+            }
+        }
+
+        throw $this->createNotFoundException();
     }
 
     /**

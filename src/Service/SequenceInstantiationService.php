@@ -66,6 +66,110 @@ class SequenceInstantiationService
         return $sequenceInstance;
     }
 
+    /**
+     * The same frozen copy, taken from **another class's instance** rather than from a library
+     * template - the one branch the progression trame needs when the séquence's template has been
+     * deleted since (design/validated/content-sharing-between-teachers.md).
+     *
+     * A SequenceInstance holds its own copy of every text field, so the class-level content survives
+     * its template's deletion; what is lost is only the *library* origin, and the copy says so by
+     * carrying no source template at all. Its resources are duplicated exactly as instantiateSequence()
+     * duplicates a template's: a real second S3 object each, never a pointer at the author's.
+     */
+    public function instantiateFromInstance(SequenceInstance $source, Program $program, User $createdBy): SequenceInstance
+    {
+        $copy = new SequenceInstance($program, $createdBy);
+        $copy->setTitre($source->getTitre());
+        $copy->setCapacitesAttendues($source->getCapacitesAttendues());
+        $copy->setPreRequis($source->getPreRequis());
+        $copy->setObjectifs($source->getObjectifs());
+        $copy->setTransversalites($source->getTransversalites());
+        $copy->setSituationProblematique($source->getSituationProblematique());
+        $copy->setSupportsGeneraux($source->getSupportsGeneraux());
+        $copy->setDifferentiation($source->getDifferentiation());
+        $copy->setWatchPoints($source->getWatchPoints());
+
+        $this->entityManager->persist($copy);
+
+        $this->duplicateResourceInstances(
+            $source->getLibraryResourceInstances(),
+            static fn (LibraryResourceInstance $duplicate): mixed => $duplicate->setSequenceInstance($copy),
+        );
+
+        foreach ($source->getSeanceInstances() as $seanceInstance) {
+            $seanceCopy = new SeanceInstance($program, $createdBy);
+            $seanceCopy->setSourceTemplate($seanceInstance->getSourceTemplate());
+            $seanceCopy->setOrdre($seanceInstance->getOrdre());
+            $seanceCopy->setTitre($seanceInstance->getTitre());
+            $seanceCopy->setDuree($seanceInstance->getDuree());
+            $seanceCopy->setEvaluationNature($seanceInstance->getEvaluationNature());
+            $seanceCopy->setObjectifs($seanceInstance->getObjectifs());
+            $seanceCopy->setAvantDescription($seanceInstance->getAvantDescription());
+            $seanceCopy->setApresDescription($seanceInstance->getApresDescription());
+            $seanceCopy->setMaterials($seanceInstance->getMaterials());
+            $seanceCopy->setWatchPoints($seanceInstance->getWatchPoints());
+            $seanceCopy->setCahierDeTexteDescription($seanceInstance->getCahierDeTexteDescription());
+            $seanceCopy->setSequenceInstance($copy);
+            $this->entityManager->persist($seanceCopy);
+
+            $this->duplicateResourceInstances(
+                $seanceInstance->getLibraryResourceInstances(),
+                static fn (LibraryResourceInstance $duplicate): mixed => $duplicate->setSeanceInstance($seanceCopy),
+            );
+
+            foreach ($seanceInstance->getSeancePhaseInstances() as $phaseInstance) {
+                $phaseCopy = new SeancePhaseInstance($seanceCopy);
+                $phaseCopy->setOrdre($phaseInstance->getOrdre());
+                $phaseCopy->setNom($phaseInstance->getNom());
+                $phaseCopy->setDuree($phaseInstance->getDuree());
+                $phaseCopy->setContenu($phaseInstance->getContenu());
+                $phaseCopy->setObjectifs($phaseInstance->getObjectifs());
+                $phaseCopy->setEnseignant($phaseInstance->getEnseignant());
+                $phaseCopy->setEtudiant($phaseInstance->getEtudiant());
+                $phaseCopy->setMoyensSupports($phaseInstance->getMoyensSupports());
+                $phaseCopy->setDifficultes($phaseInstance->getDifficultes());
+                $this->entityManager->persist($phaseCopy);
+
+                $this->duplicateResourceInstances(
+                    $phaseInstance->getLibraryResourceInstances(),
+                    static fn (LibraryResourceInstance $duplicate): mixed => $duplicate->setSeancePhaseInstance($phaseCopy),
+                );
+            }
+        }
+
+        $this->entityManager->flush();
+
+        return $copy;
+    }
+
+    /**
+     * The instance-layer twin of duplicateLibraryResources(): an Upload gets a real second object of
+     * its own, a Link is a string.
+     *
+     * @param iterable<LibraryResourceInstance>                $sourceResources
+     * @param \Closure(LibraryResourceInstance): mixed         $attach
+     */
+    private function duplicateResourceInstances(iterable $sourceResources, \Closure $attach): void
+    {
+        foreach ($sourceResources as $resource) {
+            $duplicate = new LibraryResourceInstance((string) $resource->getLabel());
+            $duplicate->setType($resource->getType());
+
+            if (LibraryResourceSourceType::Upload === $resource->getType()) {
+                $sourceKey = (string) $resource->getStorageKey();
+                $extension = pathinfo($sourceKey, \PATHINFO_EXTENSION);
+                $newKey = self::RESOURCE_UPLOAD_PREFIX.\sprintf('%d-%s%s', $resource->getId(), bin2hex(random_bytes(4)), '' !== $extension ? '.'.$extension : '');
+                $this->fileUploadService->copy($sourceKey, $newKey);
+                $duplicate->setStorageKey($newKey);
+            } else {
+                $duplicate->setUrl($resource->getUrl());
+            }
+
+            $attach($duplicate);
+            $this->entityManager->persist($duplicate);
+        }
+    }
+
     private function buildSeanceInstance(SeanceTemplate $template, Program $program, User $createdBy): SeanceInstance
     {
         $seanceInstance = new SeanceInstance($program, $createdBy);
