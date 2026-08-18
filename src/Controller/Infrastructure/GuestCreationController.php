@@ -25,6 +25,7 @@ use App\Service\Proxmox\ProxmoxInventory;
 use App\Service\Proxmox\ProxmoxScope;
 use App\Service\Proxmox\ProxmoxScopeGuard;
 use App\Service\Proxmox\ProxmoxUnavailableException;
+use App\Service\QueryValue;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\HttpFoundation\Request;
@@ -41,10 +42,17 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * configured at all, and step 2 changes shape to say so instead of showing fields that would do
  * nothing.
  *
- * The address is **reserved at step 2**, not at the end. Two administrators filling in the wizard at
- * the same time would otherwise both be shown "the next free one is .57" and both create a machine
- * with it. The reservation is what makes the offer true; an abandoned wizard's reservation is freed
- * by `app:proxmox:scan-addresses` after half an hour.
+ * The choice made at step 1 travels **in the URL**, not in the session, and that is worth stating:
+ * the obvious shape - POST the source, render step 2 - is the shape Turbo refuses. A POST handled by
+ * Turbo has to answer a redirect; answering 200 HTML leaves the browser sitting on the previous page
+ * with no error anywhere, which is exactly what happened here before. Step 1 is a "show me the next
+ * screen" form, so it is a GET, and step 2 carries what it was given into the confirmation as hidden
+ * fields. The wizard is bookmarkable as a side effect.
+ *
+ * The address is reserved at the **confirmation**, in one transaction with the creation, and
+ * released the moment anything fails - so an abandoned wizard holds nothing at all. What the earlier
+ * steps show is an *offer* ("the next free one is .57"), which is why the field says so rather than
+ * claiming the address is already yours.
  *
  * Rate-limited, because this is the one screen in the area that *creates* things and a mistyped
  * loop somewhere should not be able to fill a hypervisor.
@@ -53,8 +61,6 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 class GuestCreationController extends AbstractController
 {
     use InfrastructureTrait;
-
-    private const string SESSION_KEY = 'infrastructure.guest_creation';
 
     public function __construct(
         private readonly TranslatorInterface $translator,
@@ -97,15 +103,19 @@ class GuestCreationController extends AbstractController
             'templates' => $templates,
             'isos' => $isos,
             'failure' => $failure,
-            'draft' => $this->draft($request, $host),
+            'draft' => $this->draft($request),
         ]);
     }
 
     /**
-     * Step 2 - the machine. This is where the address is reserved, so arriving here is what makes
-     * the offered address true rather than a guess.
+     * Step 2 - the machine. A GET: it shows a result rather than changing anything, and reaching it
+     * by POST is what Turbo refuses to render.
+     *
+     * The address shown here is an *offer* - the next free one at this instant. It is reserved at
+     * the confirmation, in one transaction with the creation, so walking away from this screen
+     * holds nothing.
      */
-    #[Route(path: '/infrastructure/hosts/{id}/guests/new/machine', name: 'app_infrastructure_guests_new_machine', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
+    #[Route(path: '/infrastructure/hosts/{id}/guests/new/machine', name: 'app_infrastructure_guests_new_machine', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function machine(
         Request $request,
         ProxmoxHostRepository $repository,
@@ -113,7 +123,6 @@ class GuestCreationController extends AbstractController
         IpAllocationRepository $allocations,
         ProxmoxClientFactory $clientFactory,
         ProxmoxInventory $inventory,
-        IpAllocator $allocator,
         IpRangeCalculator $calculator,
         GuestNetworkConfigurator $configurator,
         int $id,
@@ -121,16 +130,9 @@ class GuestCreationController extends AbstractController
         $host = $this->findHostOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(ProxmoxHostVoter::PROVISION, $host);
 
-        $draft = $this->draft($request, $host);
+        $draft = $this->draft($request);
 
-        if ($request->isMethod('POST')) {
-            $draft['sourceVmid'] = $request->request->getInt('sourceVmid') ?: null;
-            $draft['isoVolumeId'] = (string) $request->request->get('isoVolumeId', '');
-            $draft['linkedClone'] = null !== $request->request->get('linkedClone');
-            $this->saveDraft($request, $draft);
-        }
-
-        if (null === $draft['sourceVmid'] && '' === (string) $draft['isoVolumeId']) {
+        if (null === $draft['sourceVmid'] && '' === $draft['isoVolumeId']) {
             return $this->redirectToRoute('app_infrastructure_guests_new', ['id' => $id]);
         }
 
@@ -198,7 +200,7 @@ class GuestCreationController extends AbstractController
             return $this->redirectToRoute('app_infrastructure_guests_new_machine', ['id' => $id]);
         }
 
-        $draft = $this->draft($request, $host);
+        $draft = $this->draftFromRequestBody($request);
         $range = $ranges->find($request->request->getInt('rangeId'));
 
         if (!$range instanceof IpRange) {
@@ -226,8 +228,8 @@ class GuestCreationController extends AbstractController
             range: $range,
             ip: $allocation->getIp(),
             sourceVmid: $draft['sourceVmid'],
-            linkedClone: (bool) $draft['linkedClone'],
-            isoVolumeId: '' !== (string) $draft['isoVolumeId'] ? (string) $draft['isoVolumeId'] : null,
+            linkedClone: $draft['linkedClone'],
+            isoVolumeId: '' !== $draft['isoVolumeId'] ? $draft['isoVolumeId'] : null,
             startAfterCreation: null !== $request->request->get('startAfterCreation'),
             postInstallScript: null,
         );
@@ -242,7 +244,6 @@ class GuestCreationController extends AbstractController
             return $this->redirectToRoute('app_infrastructure_guests_new_machine', ['id' => $id]);
         }
 
-        $request->getSession()->remove(self::SESSION_KEY);
         $this->addFlash('success', 'proxmoxGuestCreatedFlashMessage');
 
         return $this->render('infrastructure/guest_new_done.html.twig', [
@@ -329,24 +330,40 @@ class GuestCreationController extends AbstractController
         return null;
     }
 
-    /** @return array{sourceVmid: int|null, isoVolumeId: string, linkedClone: bool} */
-    private function draft(Request $request, ProxmoxHost $host): array
+    /**
+     * What step 1 chose, read off the query string.
+     *
+     * Through QueryValue rather than InputBag: `?sourceVmid=` is exactly what an ISO choice
+     * submits, and InputBag::getInt() answers a 400 to the empty string rather than a default.
+     *
+     * @return array{sourceVmid: int|null, isoVolumeId: string, linkedClone: bool}
+     */
+    private function draft(Request $request): array
     {
-        $stored = $request->getSession()->get(self::SESSION_KEY);
-        // The same typed reading a JSON body gets: a session entry is only as trustworthy as
-        // whatever put it there, and this one carries a VMID that ends up in a URL.
-        $payload = JsonRequestPayload::fromArray(\is_array($stored) ? $stored : []);
+        $vmid = QueryValue::nullableInt($request, 'sourceVmid');
 
         return [
-            'sourceVmid' => $payload->int('sourceVmid'),
-            'isoVolumeId' => $payload->string('isoVolumeId'),
-            'linkedClone' => $payload->bool('linkedClone'),
+            // 0 is what the shared radio group submits for an ISO - a source, but not a VMID.
+            'sourceVmid' => null !== $vmid && $vmid > 0 ? $vmid : null,
+            'isoVolumeId' => QueryValue::trimmed($request, 'isoVolumeId'),
+            'linkedClone' => QueryValue::bool($request, 'linkedClone'),
         ];
     }
 
-    /** @param array{sourceVmid: int|null, isoVolumeId: string, linkedClone: bool} $draft */
-    private function saveDraft(Request $request, array $draft): void
+    /**
+     * The same three values on their way back from step 2, where they rode as hidden fields.
+     *
+     * @return array{sourceVmid: int|null, isoVolumeId: string, linkedClone: bool}
+     */
+    private function draftFromRequestBody(Request $request): array
     {
-        $request->getSession()->set(self::SESSION_KEY, $draft);
+        $payload = JsonRequestPayload::fromArray($request->request->all());
+        $vmid = $payload->int('sourceVmid');
+
+        return [
+            'sourceVmid' => null !== $vmid && $vmid > 0 ? $vmid : null,
+            'isoVolumeId' => $payload->string('isoVolumeId'),
+            'linkedClone' => '' !== $payload->string('linkedClone'),
+        ];
     }
 }

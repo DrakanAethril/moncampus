@@ -19,6 +19,11 @@
 
     <form method="post" action="{{ path('app_infrastructure_guests_new_confirm', {id: host.id}) }}">
         <input type="hidden" name="_token" value="{{ csrf_token('infrastructure_action') }}">
+        {# What step 1 chose, carried into the confirmation. It arrived in the query string; it
+           leaves in the body, because this form does change something. #}
+        <input type="hidden" name="sourceVmid" value="{{ draft.sourceVmid }}">
+        <input type="hidden" name="isoVolumeId" value="{{ draft.isoVolumeId }}">
+        <input type="hidden" name="linkedClone" value="{{ draft.linkedClone ? '1' : '' }}">
 
         <div class="card" style="max-width: 860px;">
             {% include 'infrastructure/_wizard_steps.html.twig' with {step: 2} %}
@@ -33,7 +38,7 @@
                                 '%vmid%': template.vmid,
                                 '%disk%': (template.maxDiskBytes / 1073741824)|number_format(0, ',', ' '),
                             }) }}
-                            <a href="{{ path('app_infrastructure_guests_new', {id: host.id}) }}">{{ 'proxmoxWizardChangeSourceAction'|trans }}</a>
+                            <a href="{{ path('app_infrastructure_guests_new', {id: host.id, sourceVmid: draft.sourceVmid, isoVolumeId: draft.isoVolumeId, linkedClone: draft.linkedClone ? 1 : null}) }}">{{ 'proxmoxWizardChangeSourceAction'|trans }}</a>
                         </span>
                     </div>
                 {% else %}
@@ -41,7 +46,7 @@
                         <span class="cm-note__icon">!</span>
                         <span>
                             {{ 'proxmoxWizardIsoSourceText'|trans({'%iso%': draft.isoVolumeId}) }}
-                            <a href="{{ path('app_infrastructure_guests_new', {id: host.id}) }}">{{ 'proxmoxWizardChangeSourceAction'|trans }}</a>
+                            <a href="{{ path('app_infrastructure_guests_new', {id: host.id, sourceVmid: draft.sourceVmid, isoVolumeId: draft.isoVolumeId, linkedClone: draft.linkedClone ? 1 : null}) }}">{{ 'proxmoxWizardChangeSourceAction'|trans }}</a>
                         </span>
                     </div>
                 {% endif %}
@@ -182,7 +187,7 @@
 
             <div class="cm-fieldset">
                 <div class="cm-actionbar" style="margin-top: 0; border-top: 0; padding-top: 0;">
-                    <a href="{{ path('app_infrastructure_guests_new', {id: host.id}) }}" class="cm-btn cm-btn--outline">{{ 'proxmoxWizardBackAction'|trans }}</a>
+                    <a href="{{ path('app_infrastructure_guests_new', {id: host.id, sourceVmid: draft.sourceVmid, isoVolumeId: draft.isoVolumeId, linkedClone: draft.linkedClone ? 1 : null}) }}" class="cm-btn cm-btn--outline">{{ 'proxmoxWizardBackAction'|trans }}</a>
                     <div class="cm-actionbar__buttons">
                         <a href="{{ path('app_infrastructure_guests', {id: host.id}) }}" class="cm-btn cm-btn--outline">{{ 'cancelAction'|trans }}</a>
                         <button type="submit" class="cm-btn cm-btn--primary"{{ ranges is empty ? ' disabled' }}>{{ 'proxmoxWizardCreateAction'|trans }}</button>
