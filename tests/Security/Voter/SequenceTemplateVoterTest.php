@@ -8,21 +8,26 @@ use App\Entity\SequenceTemplate;
 use App\Entity\User;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\SequenceTemplateVoter;
+use App\Service\ContentShareAudience;
 
 /**
  * A sequence in the library belongs to its author; staff may edit any.
  *
  * Two independent doors - staff, or ownership - so both are pinned, along with the case where
- * neither applies.
+ * neither applies. VIEW adds a third, and only to VIEW: a colleague the séquence was shared with
+ * reads it and never edits it (design/validated/content-sharing-between-teachers.md).
  */
 class SequenceTemplateVoterTest extends VoterTestCase
 {
-    private function voter(bool $isStaff): SequenceTemplateVoter
+    private function voter(bool $isStaff, bool $isShared = false): SequenceTemplateVoter
     {
         $checker = $this->createStub(StructureAccessChecker::class);
         $checker->method('isStaff')->willReturn($isStaff);
 
-        return new SequenceTemplateVoter($checker);
+        $audience = $this->createStub(ContentShareAudience::class);
+        $audience->method('isSharedWith')->willReturn($isShared);
+
+        return new SequenceTemplateVoter($checker, $audience);
     }
 
     private function subject(?User $owner): SequenceTemplate
@@ -57,9 +62,27 @@ class SequenceTemplateVoterTest extends VoterTestCase
         $this->assertDenied($this->voter(false), null, $this->subject($owner), SequenceTemplateVoter::EDIT);
     }
 
+    public function testAColleagueItWasSharedWithReadsItButNeverEditsIt(): void
+    {
+        $owner = $this->user(['ROLE_USER', 'ROLE_TEACHER'], 'owner');
+        $reader = $this->user(['ROLE_USER', 'ROLE_TEACHER'], 'reader');
+
+        $this->assertGranted($this->voter(false, true), $reader, $this->subject($owner), SequenceTemplateVoter::VIEW);
+        $this->assertDenied($this->voter(false, true), $reader, $this->subject($owner), SequenceTemplateVoter::EDIT);
+    }
+
+    public function testAColleagueWithoutAShareReadsNothing(): void
+    {
+        $owner = $this->user(['ROLE_USER', 'ROLE_TEACHER'], 'owner');
+        $other = $this->user(['ROLE_USER', 'ROLE_TEACHER'], 'other');
+
+        $this->assertDenied($this->voter(false, false), $other, $this->subject($owner), SequenceTemplateVoter::VIEW);
+    }
+
     public function testForeignAttributesAndSubjectsAreLeftAlone(): void
     {
         $this->assertAbstains($this->voter(true), $this->user(), $this->subject(null), 'SOMETHING_ELSE');
         $this->assertAbstains($this->voter(true), $this->user(), new \stdClass(), SequenceTemplateVoter::EDIT);
+        $this->assertAbstains($this->voter(true), $this->user(), new \stdClass(), SequenceTemplateVoter::VIEW);
     }
 }

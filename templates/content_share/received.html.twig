@@ -1,0 +1,80 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Outils > Partages, onglet « Reçus » (design/validated/content-sharing-between-teachers.md,
+   mockup 3): what colleagues addressed to me, newest first.
+
+   The fourth row of the mockup is the one that carries the design: **a withdrawn share does not
+   disappear from the list**, it greys and names itself. What vanishes without a word from a list a
+   colleague was working from is exactly what must not happen - and if they had already duplicated
+   it, their copy is still theirs. #}
+
+{% block title %}{{ 'contentSharePageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'contentSharePageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'contentSharePageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% include 'content_share/_tabs.html.twig' with {currentTab: 'received', receivedCount: receivedCount} %}
+
+    <div class="card cm-card--tabbed">
+        {% if shares is empty %}
+            <div class="card-body text-secondary">{{ 'contentShareReceivedEmptyText'|trans }}</div>
+        {% else %}
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'contentShareContentColumnLabel'|trans }}</th>
+                            <th>{{ 'contentShareTypeColumnLabel'|trans }}</th>
+                            <th>{{ 'contentShareFromColumnLabel'|trans }}</th>
+                            <th>{{ 'contentShareScopeColumnLabel'|trans }}</th>
+                            <th>{{ 'contentShareReceivedColumnLabel'|trans }}</th>
+                            <th class="cm-actions"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for share in shares %}
+                            <tr class="{{ share.revoked ? 'cm-share__row--revoked' }}">
+                                <td>
+                                    <span class="fw-bold">{{ share.subjectTitle }}</span>
+                                    {% if share.note %}
+                                        <div class="cm-share__note">« {{ share.note }} »</div>
+                                    {% endif %}
+                                </td>
+                                <td>{% include 'content_share/_subject.html.twig' with {share: share} only %}</td>
+                                <td>{{ share.owner.displayName ?? share.owner.username }}</td>
+                                <td>
+                                    {% if share.revoked %}
+                                        <span class="cm-badge cm-badge--gray">{{ 'contentShareRevokedByAuthorLabel'|trans }}</span>
+                                    {% else %}
+                                        {{ share.scope.labelKey|trans }}
+                                    {% endif %}
+                                </td>
+                                <td>{{ share.creationDate|date('d/m/Y') }}</td>
+                                <td class="cm-actions">
+                                    {% if share.sequenceTemplate %}
+                                        <a href="{{ path('app_library_sequences_show', {id: share.sequenceTemplate.id}) }}" class="cm-action--main">{{ 'contentShareConsultAction'|trans }}</a>
+                                    {% endif %}
+                                    {% if share.revoked %}
+                                        {# « Masquer » - the reader's own way of closing a line, since the
+                                           author's withdrawal deliberately does not close it for them. #}
+                                        <form method="post" action="{{ path('app_shares_dismiss', {id: share.id}) }}" class="d-inline">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('content_share_state') }}">
+                                            <button type="submit" class="cm-action--neutral">{{ 'contentShareDismissAction'|trans }}</button>
+                                        </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

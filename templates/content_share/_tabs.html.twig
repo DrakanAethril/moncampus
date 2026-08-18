@@ -1,0 +1,20 @@
+{# The tabs of Outils > Partages (design/validated/content-sharing-between-teachers.md,
+   "Screens and routes"). « Reçus » carries its count; the others do not - a badge on « Mes
+   partages » would only tell its author what they already know.
+
+   « Catalogue » arrives with lot 3, since a catalogue of a single type is not a catalogue.
+
+   `currentTab` is 'received' or 'mine'; `receivedCount` is optional. #}
+{% set share_tabs = [
+    {
+        url: path('app_shares'),
+        label: 'contentShareReceivedTabLabel'|trans ~ (receivedCount is defined and receivedCount > 0 ? ' (' ~ receivedCount ~ ')' : ''),
+        active: currentTab == 'received',
+    },
+    {
+        url: path('app_shares_mine'),
+        label: 'contentShareMineTabLabel'|trans,
+        active: currentTab == 'mine',
+    },
+] %}
+{% include '_tabs.html.twig' with {tabs: share_tabs} %}

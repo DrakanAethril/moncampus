@@ -1,0 +1,21 @@
+{# The « Type » cell of every share list: the badge and, under it, what the item weighs in its own
+   units - « 6 séances · 9 supports », « 24 questions », « PDF · 2,4 Mo ».
+
+   The sub-line is read off the item itself rather than stored on the share: a séquence that gained
+   a séance since it was shared has gained it here too, and a share row that claimed otherwise would
+   be lying about something the reader can check in one click. #}
+{% set subject = share.subject %}
+<span class="cm-badge {{ subject.badgeClass }}">{{ subject.labelKey|trans }}</span>
+<div class="cm-share__detail">
+    {% if subject.value == 'sequence' and share.sequenceTemplate %}
+        {{ 'contentShareSeanceCountLabel'|trans({'%count%': share.sequenceTemplate.seanceTemplates|length}) }}
+    {% elseif subject.value == 'seance' and share.seanceTemplate %}
+        {{ 'contentSharePhaseCountLabel'|trans({'%count%': share.seanceTemplate.seancePhaseTemplates|length}) }}
+    {% elseif subject.value == 'quiz' and share.quizTemplate %}
+        {{ 'contentShareQuestionCountLabel'|trans({'%count%': share.quizTemplate.questions|length}) }}
+    {% elseif subject.value == 'file' and share.libraryNode %}
+        {{ share.libraryNode.folder ? 'contentShareFolderLabel'|trans : byte_size(share.libraryNode.sizeBytes) }}
+    {% elseif subject.value == 'progression' and share.progression %}
+        {{ 'contentShareTrameDetailLabel'|trans({'%count%': share.progression.sequences|length}) }}
+    {% endif %}
+</div>

@@ -6178,3 +6178,62 @@ classImportBatchOpenRecordAction: 'Voir la fiche'
 classImportBatchRefreshAction: 'Actualiser'
 classImportBatchStillReachableHint: "Cet import reste consultable depuis « Imports récents »."
 classImportBatchFinishAction: 'Terminer'
+
+# --- Partage de contenu entre enseignants (design/validated/content-sharing-between-teachers.md) ---
+contentShareNavLabel: 'Partages'
+contentSharePageHeading: 'Partages'
+contentShareReceivedTabLabel: 'Reçus'
+contentShareCatalogTabLabel: 'Catalogue'
+contentShareMineTabLabel: 'Mes partages'
+contentShareReceivedEmptyText: "Rien ne vous a encore été partagé. Ce que vos collègues vous enverront apparaîtra ici."
+contentShareMineEmptyText: "Vous n'avez encore rien partagé. Le bouton « Partager » se trouve sur la séquence, la séance, le quiz, le fichier ou la progression concernée."
+contentShareContentColumnLabel: 'Contenu'
+contentShareTypeColumnLabel: 'Type'
+contentShareFromColumnLabel: 'De'
+contentShareToColumnLabel: 'À qui'
+contentShareScopeColumnLabel: 'Portée'
+contentShareReceivedColumnLabel: 'Reçu'
+contentShareSinceColumnLabel: 'Depuis'
+contentShareDuplicatedColumnLabel: 'Dupliqué'
+contentShareSubjectSequenceLabel: 'Séquence'
+contentShareSubjectSeanceLabel: 'Séance'
+contentShareSubjectQuizLabel: 'Quiz'
+contentShareSubjectFileLabel: 'Fichier'
+contentShareSubjectProgressionLabel: 'Progression'
+contentShareSeanceCountLabel: '{0}aucune séance|{1}1 séance|]1,Inf[%count% séances'
+contentSharePhaseCountLabel: '{0}aucune phase|{1}1 phase|]1,Inf[%count% phases'
+contentShareQuestionCountLabel: '{0}aucune question|{1}1 question|]1,Inf[%count% questions'
+contentShareFolderLabel: 'Dossier'
+contentShareTrameDetailLabel: '{0}aucune séquence · sans les créneaux|{1}1 séquence · sans les créneaux|]1,Inf[%count% séquences · sans les créneaux'
+contentShareScopeUsersLabel: 'Des collègues'
+contentShareScopeUsersHelpText: 'Nommément'
+contentShareScopeGroupLabel: 'Une équipe'
+contentShareScopeGroupHelpText: 'Un groupe et ses sous-groupes'
+contentShareScopeCatalogLabel: 'Le catalogue'
+contentShareScopeCatalogHelpText: "Tout l'établissement"
+contentShareScopeQuestionLabel: 'À qui ?'
+contentShareUsersFieldLabel: 'Enseignants et personnel'
+contentShareUsersPlaceholder: 'Chercher un nom…'
+contentShareUsersHelpText: "Les tuteurs, les intervenants externes et les étudiants ne peuvent pas recevoir de partage."
+contentShareGroupsFieldLabel: 'Équipes'
+contentShareGroupResolvedCountLabel: 'Ce partage sera visible de %count% personne(s) — le groupe et ses sous-groupes.'
+contentShareGroupMemberCountLabel: '{0}aucune personne|{1}1 personne|]1,Inf[%count% personnes'
+contentShareNoteFieldLabel: 'Un mot, pour dire pourquoi'
+contentShareNotePlaceholder: "Facultatif — « la version refaite après le retour de janvier »"
+contentShareRuleText: "Ils pourront lire le contenu en entier, et le dupliquer chez eux. Leur copie leur appartiendra : la modifier ne touchera pas la vôtre, et retirer ce partage ne la leur enlèvera pas."
+contentShareModalTitle: 'Partager « %name% »'
+contentShareCurrentSharesHeading: 'Partages en cours'
+contentShareAction: 'Partager'
+contentShareSubmitAction: 'Partager'
+contentShareConsultAction: 'Consulter'
+contentShareDuplicateAction: 'Dupliquer chez moi'
+contentShareRevokeAction: 'Retirer'
+contentShareRestoreAction: 'Rétablir'
+contentShareDismissAction: 'Masquer'
+contentShareRevokedByAuthorLabel: "Retiré par l'auteur"
+contentShareRevokedOnLabel: 'Retiré le %date%'
+contentShareDuplicatedCountLabel: '{0}jamais dupliqué|{1}1 fois|]1,Inf[%count% fois'
+contentShareCreatedFlashMessage: 'Le partage est en place.'
+contentShareRevokedFlashMessage: "Le partage est retiré. Ce qui avait déjà été dupliqué reste chez ceux qui l'ont dupliqué."
+contentShareRestoredFlashMessage: 'Le partage est rétabli.'
+contentShareEmptyAudienceFlashMessage: "Ce partage ne désigne personne : choisissez au moins un collègue ou un groupe."

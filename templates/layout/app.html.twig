@@ -332,7 +332,8 @@
                                 or current_route starts with 'app_audio_recording'
                                 or current_route starts with 'app_progression'
                                 or current_route starts with 'app_library_'
-                                or current_route starts with 'app_file_library' %}
+                                or current_route starts with 'app_file_library'
+                                or current_route starts with 'app_shares' %}
                             <li class="nav-item dropdown {{ tools_is_active ? 'active' }}">
                                 <a class="nav-link dropdown-toggle" href="#navbar-tools" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ tools_is_active ? ' aria-current="page"' }}>
                                     <span class="nav-link-title">{{ 'toolsNavLabel'|trans }}</span>
@@ -361,6 +362,13 @@
                                        gains a back door: « Créer un travail » on a video of the
                                        library. Existing resources stay reachable by their routes,
                                        from the work and from Travail à faire. #}
+                                    {# « Partages », sibling of the three libraries and placed right
+                                       after them, because that is where a duplicate lands
+                                       (design/validated/content-sharing-between-teachers.md). Like
+                                       them it needs no condition of its own: this menu is already
+                                       gated on ROLE_TEACHER or isStaff(), which is exactly who may
+                                       read or write a share. #}
+                                    <a class="dropdown-item {{ current_route starts with 'app_shares' ? 'active' }}" href="{{ path('app_shares') }}">{{ 'contentShareNavLabel'|trans }}</a>
                                     <a class="dropdown-item {{ current_route starts with 'app_audio_recording' ? 'active' }}" href="{{ path('app_audio_recordings') }}">{{ 'audioRecordingsNavLabel'|trans }}</a>
                                     <div class="dropdown-divider"></div>
                                     <h6 class="dropdown-header">{{ 'toolsGroupFollowStudentsLabel'|trans }}</h6>
