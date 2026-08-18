@@ -1,0 +1,70 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Outils > Partages, onglet « Mes partages » (design/validated/content-sharing-between-teachers.md,
+   mockup 5).
+
+   **One row per share, not per content**: the same séquence given by name and given to a team is two
+   rows, because they are withdrawn separately. The « Dupliqué » column is the first reason a
+   revocation is a date rather than a DELETE - it speaks about the past, and a deleted row would have
+   nothing to say about it. #}
+
+{% block title %}{{ 'contentSharePageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'contentSharePageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'contentSharePageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% include 'content_share/_tabs.html.twig' with {currentTab: 'mine'} %}
+
+    <div class="card cm-card--tabbed">
+        {% if shares is empty %}
+            <div class="card-body text-secondary">{{ 'contentShareMineEmptyText'|trans }}</div>
+        {% else %}
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'contentShareContentColumnLabel'|trans }}</th>
+                            <th>{{ 'contentShareTypeColumnLabel'|trans }}</th>
+                            <th>{{ 'contentShareToColumnLabel'|trans }}</th>
+                            <th>{{ 'contentShareSinceColumnLabel'|trans }}</th>
+                            <th>{{ 'contentShareDuplicatedColumnLabel'|trans }}</th>
+                            <th class="cm-actions"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for share in shares %}
+                            <tr class="{{ share.revoked ? 'cm-share__row--revoked' }}">
+                                <td><span class="fw-bold">{{ share.subjectTitle }}</span></td>
+                                <td>{% include 'content_share/_subject.html.twig' with {share: share} only %}</td>
+                                <td>{% include 'content_share/_audience.html.twig' with {share: share, memberCount: memberCounts[share.id] ?? null} only %}</td>
+                                <td>{{ share.creationDate|date('d/m/Y') }}</td>
+                                <td>
+                                    {% if share.revoked %}
+                                        {{ 'contentShareRevokedOnLabel'|trans({'%date%': share.revokedAt|date('d/m/Y')}) }}
+                                    {% else %}
+                                        {{ 'contentShareDuplicatedCountLabel'|trans({'%count%': share.duplicationCount}) }}
+                                    {% endif %}
+                                </td>
+                                <td class="cm-actions">
+                                    <form method="post" action="{{ path(share.revoked ? 'app_shares_restore' : 'app_shares_revoke', {id: share.id}) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('content_share_state') }}">
+                                        <button type="submit" class="{{ share.revoked ? 'cm-action--positive' : 'cm-action--danger' }}">
+                                            {{ (share.revoked ? 'contentShareRestoreAction' : 'contentShareRevokeAction')|trans }}
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

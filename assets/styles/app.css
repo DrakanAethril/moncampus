@@ -7721,3 +7721,120 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-choice > span { display: flex; flex-direction: column; gap: 2px; }
 .cm-choice__title { color: var(--cm-ink); font-weight: 600; font-size: 13.5px; }
 .cm-choice__detail { color: var(--cm-muted); font-size: 12.5px; }
+
+/* ==========================================================================
+   Partage de contenu entre enseignants
+   design/validated/content-sharing-between-teachers.md
+   ========================================================================== */
+
+/* The line under a title or a badge that says what the item weighs in its own units - « 6 séances
+   · 9 supports », « 24 questions ». Small and muted on purpose: it answers a question the reader
+   has not asked yet. */
+.cm-share__detail {
+    color: var(--cm-faint);
+    font-size: 12.5px;
+    margin-top: 3px;
+}
+
+/* « la version refaite après le retour de janvier » - the author's own word, and the only free text
+   of the whole feature. */
+.cm-share__note {
+    color: var(--cm-muted);
+    font-size: 12.5px;
+    font-style: italic;
+    margin-top: 3px;
+}
+
+/* A withdrawn share does NOT leave the list: it greys and names itself. Vanishing without a word
+   from a list a colleague was working from is the behaviour this avoids - and what they had already
+   duplicated is still theirs. */
+.cm-share__row--revoked { background: var(--cm-border-faint); }
+.cm-share__row--revoked td:first-child { color: var(--cm-muted); }
+
+/* --- the modal ---------------------------------------------------------- */
+
+.cm-share__scopes { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.cm-share__scope {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: start;
+    gap: 3px 9px;
+    flex: 1 1 160px;
+    border: 1.5px solid var(--cm-border);
+    border-radius: var(--cm-radius-sm);
+    background: var(--cm-surface);
+    padding: 11px 13px;
+    cursor: pointer;
+}
+.cm-share__scope:hover { border-color: var(--cm-brand); }
+.cm-share__scope:has(input:checked) { border-color: var(--cm-brand); background: var(--cm-blue-bg-soft); }
+.cm-share__scope input { grid-row: 1 / span 2; margin-top: 3px; }
+.cm-share__scope-title { color: var(--cm-ink); font-weight: 600; font-size: 13px; }
+.cm-share__scope-hint { color: var(--cm-muted); font-size: 11.5px; }
+
+/* The group tree is a checkbox list, per this app's form rule - never a <select multiple>. The
+   indentation is what makes « BTS SIO » read as the parent of the classes it will also reach. */
+.cm-share__grouptree {
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid var(--cm-border);
+    border-radius: var(--cm-radius-sm);
+    background: var(--cm-surface);
+    padding: 8px 10px;
+}
+.cm-share__grouprow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 3px 0;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+/* « Ce partage sera visible de 87 personnes » - measured, and said before the submit. */
+.cm-share__count {
+    margin: 8px 0 0;
+    color: var(--cm-blue-tx);
+    background: var(--cm-blue-bg);
+    border-radius: var(--cm-radius-sm);
+    padding: 8px 11px;
+    font-size: 12.5px;
+}
+
+/* The two sentences the whole feature turns on, stated where the decision is made. */
+.cm-share__rule {
+    margin: 0;
+    color: var(--cm-muted);
+    font-size: 12.5px;
+    line-height: 1.5;
+}
+
+.cm-share__subtitle {
+    margin: 22px 0 8px;
+    font-size: 11px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--cm-faint);
+    font-weight: 700;
+}
+
+.cm-share__list { list-style: none; margin: 0; padding: 0; }
+
+.cm-share__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-top: 1px solid var(--cm-border-soft);
+    padding: 9px 0;
+    font-size: 13px;
+}
+.cm-share__item form { margin: 0; }
+.cm-share__item button {
+    background: none;
+    border: 0;
+    padding: 0;
+    font-size: 13px;
+    font-weight: 600;
+}
