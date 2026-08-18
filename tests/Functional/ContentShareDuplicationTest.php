@@ -15,7 +15,6 @@ use App\Enum\LibraryResourceSourceType;
 use App\Service\ContentShareQuotaException;
 use App\Service\SequenceDuplicator;
 use Doctrine\ORM\EntityManagerInterface;
-use League\Flysystem\FilesystemOperator;
 
 /**
  * « Un partage donne à lire ; une duplication donne à posséder », pinned against a real database -
@@ -77,7 +76,6 @@ class ContentShareDuplicationTest extends FunctionalTestCase
 
         // The object really is there, and it really is a second one.
         $storage = static::getContainer()->get('uploads.storage');
-        self::assertInstanceOf(FilesystemOperator::class, $storage);
 
         foreach ($files as $file) {
             self::assertTrue($storage->fileExists((string) $file->getStorageKey()));
@@ -212,7 +210,6 @@ class ContentShareDuplicationTest extends FunctionalTestCase
         // The object the copy will read. Without it the duplication would fail on a missing source,
         // which is a different test than this one.
         $storage = static::getContainer()->get('uploads.storage');
-        self::assertInstanceOf(FilesystemOperator::class, $storage);
         $storage->write('library-resources/'.$name, str_repeat('x', $bytes));
     }
 
