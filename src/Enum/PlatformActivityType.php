@@ -24,6 +24,20 @@ enum PlatformActivityType: string
      */
     case SchoolMailUnlinkedDeleted = 'school_mail_unlinked_deleted';
 
+    /**
+     * A machine was created on a Proxmox host (the console at /infrastructure). Logged here as well
+     * as in App\Entity\ProxmoxOperation because the two answer different questions: the operations
+     * log is the story of one hypervisor, this is the story of what people did on the platform.
+     */
+    case ProxmoxGuestCreated = 'proxmox_guest_created';
+
+    /**
+     * A post-installation script was run inside a machine. This one is the reason the pair exists:
+     * it is arbitrary command execution as root, and while it grants an administrator no power they
+     * did not already hold, an act of that shape gets recorded where acts are recorded.
+     */
+    case ProxmoxPostInstallRun = 'proxmox_post_install_run';
+
     /** Placeholder disponible : %user%. */
     public function messageKey(): string
     {
@@ -31,6 +45,8 @@ enum PlatformActivityType: string
             self::LoginPassword => 'platformActivityLoginPasswordText',
             self::LoginMagicLink => 'platformActivityLoginMagicLinkText',
             self::SchoolMailUnlinkedDeleted => 'platformActivitySchoolMailUnlinkedDeletedText',
+            self::ProxmoxGuestCreated => 'platformActivityProxmoxGuestCreatedText',
+            self::ProxmoxPostInstallRun => 'platformActivityProxmoxPostInstallRunText',
         };
     }
 }

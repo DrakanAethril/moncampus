@@ -7,6 +7,7 @@ namespace App\Controller\Infrastructure;
 use App\Repository\IpRangeRepository;
 use App\Repository\ProxmoxHostRepository;
 use App\Repository\ProxmoxOperationRepository;
+use App\Repository\VmBatchRepository;
 use App\Service\Crypto\SecretBoxProvider;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -32,6 +33,7 @@ class HubController extends AbstractController
         ProxmoxHostRepository $hostRepository,
         ProxmoxOperationRepository $operationRepository,
         IpRangeRepository $rangeRepository,
+        VmBatchRepository $batchRepository,
         SecretBoxProvider $secretBoxProvider,
     ): Response {
         $hosts = $hostRepository->findOrdered();
@@ -66,6 +68,7 @@ class HubController extends AbstractController
             'runningCount' => $running,
             'operationCount' => $operationRepository->countAll(),
             'rangeCount' => $rangeRepository->countActive(),
+            'batchCount' => $batchRepository->countActive(),
             'encryptionAvailable' => $secretBoxProvider->isAvailable(),
             'encryptionFailure' => $secretBoxProvider->unavailableReason(),
         ]);

@@ -134,6 +134,30 @@ class IpAllocationRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
+    /**
+     * The address a machine is holding, by VMID.
+     *
+     * This is how anything that needs to *reach* a machine finds it: Proxmox stores no address that
+     * MonCampus can query cheaply per guest, and the registry does. A machine created by hand has
+     * no row here until the scan adopts one, which is correct - nothing here knows how to reach it
+     * either.
+     */
+    public function findAddressForVmid(int $vmid): ?string
+    {
+        /** @var list<array{ip: string}> $rows */
+        $rows = $this->createQueryBuilder('a')
+            ->select('a.ip')
+            ->andWhere('a.vmid = :vmid')
+            ->andWhere('a.status != :released')
+            ->setParameter('vmid', $vmid)
+            ->setParameter('released', IpAllocationStatus::Released)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getArrayResult();
+
+        return $rows[0]['ip'] ?? null;
+    }
+
     public function countLive(IpRange $range): int
     {
         return (int) $this->createQueryBuilder('a')

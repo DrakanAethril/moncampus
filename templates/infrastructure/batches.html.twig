@@ -1,0 +1,78 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'infrastructureBatchesNavLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
+        {label: 'infrastructureBatchesNavLabel'|trans, url: path('app_infrastructure_batches')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'infrastructureBatchesNavLabel'|trans }}{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_infrastructure_batches_new') }}" class="cm-btn cm-btn--primary">{{ 'vmBatchAddAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    {% include 'infrastructure/_localnav.html.twig' %}
+
+    {% if rows is empty %}
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <p class="mb-3">{{ 'vmBatchNoneText'|trans }}</p>
+                <a href="{{ path('app_infrastructure_batches_new') }}" class="cm-btn cm-btn--primary">{{ 'vmBatchAddAction'|trans }}</a>
+            </div>
+        </div>
+    {% else %}
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table cm-table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'vmBatchLabelFieldLabel'|trans }}</th>
+                            <th style="width:160px">{{ 'vmBatchProgramFieldLabel'|trans }}</th>
+                            <th style="width:150px">{{ 'proxmoxOperationHostLabel'|trans }}</th>
+                            <th style="width:230px">{{ 'vmBatchProgressLabel'|trans }}</th>
+                            <th style="width:130px">{{ 'vmBatchExpiresFieldLabel'|trans }}</th>
+                            <th style="width:120px"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                            {% set batch = row.batch %}
+                            <tr class="{{ batch.isActive ? '' : 'cm-row--out' }}">
+                                <td>
+                                    <a class="cm-guest__name" href="{{ path('app_infrastructure_batch', {id: batch.id}) }}">{{ batch.label }}</a>
+                                    <div class="cm-guest__sub">{{ batch.shape.labelKey|trans }}</div>
+                                </td>
+                                <td class="cm-guest__sub">{{ batch.program ? batch.program.displayShortName : '—' }}</td>
+                                <td class="cm-guest__sub">{{ batch.host ? batch.host.label : '—' }}</td>
+                                <td>
+                                    {% for status, count in row.counts %}
+                                        <span class="cm-badge cm-badge--{{ status == 'created' or status == 'provisioned' ? 'green' : (status == 'failed' ? 'red' : 'gray') }}">{{ count }} {{ status }}</span>
+                                    {% else %}
+                                        <span class="cm-guest__sub">—</span>
+                                    {% endfor %}
+                                </td>
+                                <td class="cm-guest__sub">
+                                    {% if batch.expiresAt %}
+                                        {{ batch.expiresAt|date('d/m/Y') }}
+                                        {% if batch.isExpired %}<span class="cm-badge cm-badge--gold">{{ 'vmBatchExpiredBadge'|trans }}</span>{% endif %}
+                                    {% else %}—{% endif %}
+                                </td>
+                                <td>
+                                    <div class="cm-guest__actions">
+                                        <a class="cm-linkaction" href="{{ path('app_infrastructure_batch', {id: batch.id}) }}">{{ 'vmBatchOpenAction'|trans }}</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

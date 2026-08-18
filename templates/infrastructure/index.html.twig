@@ -90,6 +90,11 @@
                 <span class="cm-tile__desc">{{ 'infrastructureAddressesTileText'|trans }}</span>
                 <span class="cm-tile__go">{{ 'infrastructureAddressesTileGo'|trans({'%count%': rangeCount}) }} &rarr;</span>
             </a>
+            <a href="{{ path('app_infrastructure_batches') }}" class="cm-tile">
+                <span class="cm-tile__title">{{ 'infrastructureBatchesTileTitle'|trans }}</span>
+                <span class="cm-tile__desc">{{ 'infrastructureBatchesTileText'|trans }}</span>
+                <span class="cm-tile__go">{{ 'infrastructureBatchesTileGo'|trans({'%count%': batchCount}) }} &rarr;</span>
+            </a>
             <a href="{{ path('app_infrastructure_operations') }}" class="cm-tile">
                 <span class="cm-tile__title">{{ 'infrastructureOperationsTileTitle'|trans }}</span>
                 <span class="cm-tile__desc">{{ 'infrastructureOperationsTileText'|trans }}</span>
