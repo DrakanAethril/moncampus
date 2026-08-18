@@ -10,6 +10,7 @@ use App\Entity\ProxmoxHost;
 use App\Repository\IpAllocationRepository;
 use App\Repository\IpRangeRepository;
 use App\Repository\ProxmoxHostRepository;
+use App\Repository\ProxmoxOperationRepository;
 use App\Security\Voter\ProxmoxHostVoter;
 use App\Service\JsonRequestPayload;
 use App\Service\Network\AddressUnavailableException;
@@ -246,12 +247,45 @@ class GuestCreationController extends AbstractController
 
         $this->addFlash('success', 'proxmoxGuestCreatedFlashMessage');
 
+        // Redirect rather than render: a POST handled by Turbo has to answer a redirect, and the
+        // result page has to survive a refresh without creating a second machine anyway.
+        return $this->redirectToRoute('app_infrastructure_guests_new_done', [
+            'id' => $id,
+            'operationId' => $operation->getId(),
+        ]);
+    }
+
+    /**
+     * What was created, and how it is going. Reached only by redirect from the confirmation, and
+     * built from the *operation* rather than from what was asked for - so it describes what
+     * actually happened, and stays readable when somebody comes back to the URL an hour later.
+     */
+    #[Route(
+        path: '/infrastructure/hosts/{id}/guests/new/done/{operationId}',
+        name: 'app_infrastructure_guests_new_done',
+        requirements: ['id' => '\d+', 'operationId' => '\d+'],
+    )]
+    public function done(
+        ProxmoxHostRepository $repository,
+        ProxmoxOperationRepository $operations,
+        IpAllocationRepository $allocations,
+        int $id,
+        int $operationId,
+    ): Response {
+        $host = $this->findHostOrNotFound($repository, $id);
+        $this->denyAccessUnlessGranted(ProxmoxHostVoter::VIEW, $host);
+
+        $operation = $operations->find($operationId) ?? throw $this->createNotFoundException();
+
+        if ($operation->getHost()?->getId() !== $host->getId()) {
+            throw $this->createNotFoundException();
+        }
+
         return $this->render('infrastructure/guest_new_done.html.twig', [
             'activeNav' => 'guests',
             'host' => $host,
-            'request' => $creationRequest,
             'operation' => $operation,
-            'allocation' => $allocation,
+            'allocation' => $allocations->findOneByOperation($operation),
         ]);
     }
 

@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\IpAllocation;
 use App\Entity\IpRange;
+use App\Entity\ProxmoxOperation;
 use App\Enum\IpAllocationOrigin;
 use App\Enum\IpAllocationStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -117,6 +118,20 @@ class IpAllocationRepository extends ServiceEntityRepository
             ->setParameter('before', $before)
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * The address a creation took. Used by the "what was created" screen, which is built from the
+     * operation rather than from what was asked for - so it says what actually happened.
+     */
+    public function findOneByOperation(ProxmoxOperation $operation): ?IpAllocation
+    {
+        return $this->createQueryBuilder('a')
+            ->andWhere('a.operation = :operation')
+            ->setParameter('operation', $operation)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 
     public function countLive(IpRange $range): int

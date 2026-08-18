@@ -17,6 +17,8 @@
 {% block main %}
     {% include 'infrastructure/_localnav.html.twig' %}
 
+    {# Built from the operation rather than from what was asked for, so it describes what actually
+       happened - and stays readable when somebody comes back to this URL an hour later. #}
     <div class="card" style="max-width: 760px;"
          data-controller="proxmox-guests"
          data-proxmox-guests-token-value="{{ csrf_token('infrastructure_action') }}"
@@ -27,31 +29,36 @@
             <div class="cm-note">
                 <span class="cm-note__icon">i</span>
                 <span>
-                    {{ 'proxmoxGuestCreatedText'|trans({'%name%': request.hostname, '%vmid%': request.vmid}) }}
-                    {# Followed for as long as it takes, the same way the machines list follows a
-                       power action: Proxmox answers a clone with a task id and expects to be asked. #}
-                    <span data-proxmox-guests-target="pending" data-status-url="{{ path('app_infrastructure_operation_status', {id: operation.id}) }}">…</span>
+                    {{ 'proxmoxGuestCreatedText'|trans({'%name%': operation.guestName, '%vmid%': operation.vmid}) }}
+                    {% if operation.status.isSettled %}
+                        <span class="cm-badge cm-badge--{{ operation.status.badgeModifier }}">{{ operation.status.labelKey|trans }}</span>
+                        {% if operation.message %}<div class="cm-guest__sub mt-1">{{ operation.message }}</div>{% endif %}
+                    {% else %}
+                        {# Followed for as long as it takes, the same way the machines list follows a
+                           power action: Proxmox answers a clone with a task id and expects to be asked. #}
+                        <span data-proxmox-guests-target="pending" data-status-url="{{ path('app_infrastructure_operation_status', {id: operation.id}) }}">…</span>
+                    {% endif %}
                 </span>
             </div>
         </div>
 
         <div class="cm-fieldset">
-            <legend class="cm-fieldset__legend">{{ 'proxmoxWizardSummaryStep'|trans }}</legend>
             <dl class="cm-sum">
-                <dt>{{ 'proxmoxWizardNameFieldLabel'|trans }}</dt><dd>{{ request.hostname }}</dd>
-                <dt>VMID</dt><dd class="cm-mono">{{ request.vmid }}</dd>
-                <dt>{{ 'proxmoxGuestNodeLabel'|trans }}</dt><dd>{{ request.node }}</dd>
-                <dt>{{ 'proxmoxWizardResourcesLegend'|trans }}</dt>
-                <dd>{{ request.cores }} {{ 'proxmoxGuestCoresLabel'|trans }} · {{ request.memoryMib }} Mio · {{ request.diskGib }} Gio</dd>
-                <dt>{{ 'proxmoxWizardRangeFieldLabel'|trans }}</dt><dd>{{ request.range.label }}</dd>
-                <dt>{{ 'proxmoxWizardIpFieldLabel'|trans }}</dt>
-                <dd class="cm-mono">{{ request.ip }}/{{ request.range.prefixLength }} · {{ request.range.gateway }}</dd>
+                <dt>{{ 'proxmoxWizardNameFieldLabel'|trans }}</dt><dd>{{ operation.guestName }}</dd>
+                <dt>VMID</dt><dd class="cm-mono">{{ operation.vmid }}</dd>
+                <dt>{{ 'proxmoxGuestNodeLabel'|trans }}</dt><dd>{{ operation.node }}</dd>
+                <dt>{{ 'proxmoxOperationActionLabel'|trans }}</dt><dd>{{ operation.action.labelKey|trans }}</dd>
+                {% if allocation %}
+                    <dt>{{ 'proxmoxWizardRangeFieldLabel'|trans }}</dt><dd>{{ allocation.range.label }}</dd>
+                    <dt>{{ 'proxmoxWizardIpFieldLabel'|trans }}</dt>
+                    <dd class="cm-mono">{{ allocation.ip }}/{{ allocation.range.prefixLength }} · {{ allocation.range.gateway }}</dd>
+                {% endif %}
             </dl>
         </div>
 
-        {% if not request.isConfigurable %}
-            {# MonCampus always allocates, and configures when it can. Here it cannot - so it says
-               so, and sets out the values to type rather than showing fields that would do nothing. #}
+        {% if allocation and operation.action.value == 'create' %}
+            {# MonCampus always allocates, and configures when it can. From an ISO it cannot - so it
+               says so, and sets out the values to type rather than showing fields that do nothing. #}
             <div class="cm-fieldset">
                 <div class="cm-note cm-note--gold">
                     <span class="cm-note__icon">!</span>
@@ -59,9 +66,9 @@
                         <strong>{{ 'proxmoxWizardIsoManualTitle'|trans }}</strong>
                         {{ 'proxmoxWizardIsoManualText'|trans }}
                         <div class="cm-fingerprint mt-2">
-                            {{ 'proxmoxWizardIpFieldLabel'|trans }} : <b>{{ request.ip }}/{{ request.range.prefixLength }}</b>
-                            &nbsp;·&nbsp; {{ 'ipRangeGatewayFieldLabel'|trans }} : <b>{{ request.range.gateway }}</b>
-                            &nbsp;·&nbsp; {{ 'proxmoxWizardNameFieldLabel'|trans }} : <b>{{ request.hostname }}</b>
+                            {{ 'proxmoxWizardIpFieldLabel'|trans }} : <b>{{ allocation.ip }}/{{ allocation.range.prefixLength }}</b>
+                            &nbsp;·&nbsp; {{ 'ipRangeGatewayFieldLabel'|trans }} : <b>{{ allocation.range.gateway }}</b>
+                            &nbsp;·&nbsp; {{ 'proxmoxWizardNameFieldLabel'|trans }} : <b>{{ operation.guestName }}</b>
                         </div>
                     </span>
                 </div>
@@ -71,7 +78,9 @@
         <div class="cm-fieldset">
             <div class="cm-actionbar" style="margin-top: 0; border-top: 0; padding-top: 0;">
                 <div class="cm-actionbar__buttons">
-                    <a href="{{ path('app_infrastructure_ip_range', {id: request.range.id}) }}" class="cm-btn cm-btn--outline">{{ 'ipRangeRegistryAction'|trans }}</a>
+                    {% if allocation %}
+                        <a href="{{ path('app_infrastructure_ip_range', {id: allocation.range.id}) }}" class="cm-btn cm-btn--outline">{{ 'ipRangeRegistryAction'|trans }}</a>
+                    {% endif %}
                     <a href="{{ path('app_infrastructure_guests', {id: host.id}) }}" class="cm-btn cm-btn--primary">{{ 'proxmoxWizardBackToMachinesAction'|trans }}</a>
                 </div>
             </div>
