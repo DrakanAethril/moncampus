@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Infrastructure;
 
+use App\Repository\IpRangeRepository;
 use App\Repository\ProxmoxHostRepository;
 use App\Repository\ProxmoxOperationRepository;
 use App\Service\Crypto\SecretBoxProvider;
@@ -30,6 +31,7 @@ class HubController extends AbstractController
     public function index(
         ProxmoxHostRepository $hostRepository,
         ProxmoxOperationRepository $operationRepository,
+        IpRangeRepository $rangeRepository,
         SecretBoxProvider $secretBoxProvider,
     ): Response {
         $hosts = $hostRepository->findOrdered();
@@ -63,6 +65,7 @@ class HubController extends AbstractController
             'guestCount' => $guests,
             'runningCount' => $running,
             'operationCount' => $operationRepository->countAll(),
+            'rangeCount' => $rangeRepository->countActive(),
             'encryptionAvailable' => $secretBoxProvider->isAvailable(),
             'encryptionFailure' => $secretBoxProvider->unavailableReason(),
         ]);

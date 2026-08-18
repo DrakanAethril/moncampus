@@ -1,0 +1,73 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set heading = isEdit ? 'ipRangeEditHeading'|trans({'%range%': range.label}) : 'ipRangeNewHeading'|trans %}
+
+{% block title %}{{ heading }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
+        {label: 'infrastructureAddressesNavLabel'|trans, url: path('app_infrastructure_ip_ranges')},
+        {label: heading, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ heading }}{% endblock %}
+
+{% block main %}
+    {% include 'infrastructure/_localnav.html.twig' %}
+
+    {{ form_start(form) }}
+    <div class="card" style="max-width: 820px;">
+        <fieldset class="cm-fieldset">
+            <legend class="cm-fieldset__legend">{{ 'proxmoxHostIdentificationLegend'|trans }}</legend>
+            <div class="row g-3">
+                <div class="col-md-7">{{ form_row(form.label) }}</div>
+                <div class="col-md-5">{{ form_row(form.host) }}</div>
+            </div>
+        </fieldset>
+
+        <fieldset class="cm-fieldset">
+            <legend class="cm-fieldset__legend">{{ 'ipRangeAddressingLegend'|trans }}</legend>
+            <div class="row g-3">
+                <div class="col-md-3">{{ form_row(form.cidr) }}</div>
+                <div class="col-md-3">{{ form_row(form.gateway) }}</div>
+                <div class="col-md-3">{{ form_row(form.firstUsable) }}</div>
+                <div class="col-md-3">{{ form_row(form.lastUsable) }}</div>
+            </div>
+            {# The most useful pair of fields on the screen, and the note says why: without them the
+               console would eventually hand out the gateway. #}
+            <div class="cm-note">
+                <span class="cm-note__icon">i</span>
+                <span>{{ 'ipRangeWindowNote'|trans }}</span>
+            </div>
+        </fieldset>
+
+        <fieldset class="cm-fieldset">
+            <legend class="cm-fieldset__legend">{{ 'ipRangeAttachmentLegend'|trans }}</legend>
+            <div class="row g-3">
+                <div class="col-md-4">{{ form_row(form.bridge) }}</div>
+                <div class="col-md-3">{{ form_row(form.vlan) }}</div>
+                <div class="col-md-5">{{ form_row(form.note) }}</div>
+            </div>
+            <div class="cm-note cm-note--gold">
+                <span class="cm-note__icon">!</span>
+                <span>{{ 'ipRangeAttachmentNote'|trans }}</span>
+            </div>
+        </fieldset>
+
+        <div class="cm-fieldset">
+            <div class="cm-actionbar" style="margin-top: 0; border-top: 0; padding-top: 0;">
+                {# On a fresh range this is almost always what is wanted: a newly declared network
+                   already contains machines, and the register is wrong until it has been read. #}
+                <button type="submit" name="scan" value="1" class="cm-btn cm-btn--outline">{{ 'ipRangeSaveAndScanAction'|trans }}</button>
+                <div class="cm-actionbar__buttons">
+                    <a href="{{ path('app_infrastructure_ip_ranges') }}" class="cm-btn cm-btn--outline">{{ 'cancelAction'|trans }}</a>
+                    <button type="submit" class="cm-btn cm-btn--primary">{{ 'submitSaveAction'|trans }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {{ form_end(form) }}
+{% endblock %}

@@ -1,0 +1,19 @@
+{# The three numbered steps of the creation wizard.
+
+   Numbered because here the order genuinely carries information: the source decides what step 2 is
+   able to offer. A clone of a cloud-init template can be named and addressed before it first boots;
+   an ISO installation cannot be configured at all, and step 2 changes shape accordingly. #}
+<div class="cm-stepper">
+    <div class="cm-stepper__steps">
+        {% for index, name in ['proxmoxWizardSourceStep', 'proxmoxWizardMachineStep', 'proxmoxWizardSummaryStep'] %}
+            {% set position = index + 1 %}
+            <div class="cm-stepper__step">
+                <span class="cm-stepper__step-circle {{ position < step ? 'cm-stepper__step-circle--done' : (position == step ? 'cm-stepper__step-circle--current' : 'cm-stepper__step-circle--future') }}">
+                    {{ position < step ? '✓' : position }}
+                </span>
+                <span class="cm-stepper__step-name">{{ name|trans }}</span>
+            </div>
+            {% if not loop.last %}<span class="cm-stepper__rule {{ position < step ? 'cm-stepper__rule--done' }}"></span>{% endif %}
+        {% endfor %}
+    </div>
+</div>

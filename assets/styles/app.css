@@ -7663,3 +7663,23 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-meter__fill { display: block; height: 100%; border-radius: 3px; background: var(--cm-brand); }
 .cm-meter__fill--high { background: var(--cm-warn-tx); }
 .cm-meter__text { font-size: 11px; color: var(--cm-faint); margin-top: 3px; font-variant-numeric: tabular-nums; }
+
+/* ---------- Console Proxmox · lot 3 : images, adresses, assistant de création ---------- */
+
+/* The two kinds of image, told apart by a badge rather than by their position in a list: a
+   template can be cloned in a second and an ISO means a manual installation, and that difference
+   decides what the creation wizard is able to do. */
+.cm-ico {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; border-radius: 7px; margin-right: 8px; vertical-align: middle;
+    font: 700 10px var(--cm-font-ui); letter-spacing: .02em;
+}
+.cm-ico--template { background: var(--cm-teal-bg); color: var(--cm-teal-tx); }
+.cm-ico--iso { background: var(--cm-gold-bg); color: var(--cm-gold-tx); }
+
+/* The summary of what is about to be created, or of what just was: a label column and a value
+   column, because every line is one fact and the eye should be able to run down either side. */
+.cm-sum { display: grid; grid-template-columns: 160px 1fr; gap: 7px 14px; font-size: 13px; margin: 0; }
+.cm-sum dt { color: var(--cm-muted); font-weight: 400; }
+.cm-sum dd { margin: 0; color: var(--cm-ink); font-weight: 600; }
+@media (max-width: 575.98px) { .cm-sum { grid-template-columns: 1fr; gap: 2px 0; } }
