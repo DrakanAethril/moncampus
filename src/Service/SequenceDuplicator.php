@@ -114,6 +114,19 @@ class SequenceDuplicator
             throw new ContentShareQuotaException($plan['totalBytes'], $this->quota->remainingBytes($recipient));
         }
 
+        // One transaction around the whole write. Folders have to be flushed before they can be a
+        // parent - a materialized path is built from the parent's id - so the write is several
+        // flushes, and the transaction is what keeps them one all-or-nothing gesture. A failure
+        // part-way rolls the rows back and leaves orphan objects in the bucket, which is what
+        // App\Command\PurgeUploadsCommand already handles.
+        return $this->entityManager->wrapInTransaction(fn (): SequenceTemplate => $this->write($plan, $source, $recipient, $destination));
+    }
+
+    /**
+     * @param DuplicationPlan $plan
+     */
+    private function write(array $plan, SequenceTemplate $source, User $recipient, ?FileLibraryNode $destination): SequenceTemplate
+    {
         $nodeBySourceKey = $this->createFolderTree($plan, $recipient, $destination);
         $copy = $this->copySequence($source, $recipient);
 
@@ -159,10 +172,23 @@ class SequenceDuplicator
         $folders = [];
         $nodeBySourceKey = [];
 
-        foreach ($plan['folders'] as $index => $planned) {
-            $parent = null === $planned['parentIndex'] ? $destination : $folders[$planned['parentIndex']];
-            $folders[$index] = $this->nodes->createFolder($recipient, $parent, $planned['name']);
+        // Depth by depth, and flushed between the two: a folder's materialized path is built from
+        // its parent's **id**, so a parent that has never been flushed would give its children the
+        // path '//' and no sibling-name check at all.
+        foreach ([true, false] as $roots) {
+            foreach ($plan['folders'] as $index => $planned) {
+                if ($roots !== (null === $planned['parentIndex'])) {
+                    continue;
+                }
 
+                $parent = null === $planned['parentIndex'] ? $destination : $folders[$planned['parentIndex']];
+                $folders[$index] = $this->nodes->createFolder($recipient, $parent, $planned['name']);
+            }
+
+            $this->entityManager->flush();
+        }
+
+        foreach ($plan['folders'] as $index => $planned) {
             foreach ($planned['files'] as $file) {
                 $sourceKey = (string) $file['storageKey'];
 
