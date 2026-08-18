@@ -1,0 +1,154 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'guestAccountsHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
+        {label: 'infrastructureHostsNavLabel'|trans, url: path('app_infrastructure_hosts')},
+        {label: host.label, url: path('app_infrastructure_guests', {id: host.id})},
+        {label: 'guestAccountsHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'guestAccountsHeading'|trans({'%vmid%': vmid}) }}{% endblock %}
+
+{% block main %}
+    {% include 'infrastructure/_localnav.html.twig' %}
+
+    <p class="cm-host__meta mb-3">
+        {{ host.label }} · {{ node }} · VMID {{ vmid }}
+        {% if ip %} · <span class="cm-mono">{{ ip }}</span>{% endif %}
+    </p>
+
+    {% if not hasKey %}
+        {# Nothing here works without it, and saying "unreachable" without saying why would send an
+           administrator looking for a network problem. #}
+        <div class="cm-note cm-note--gold mb-3">
+            <span class="cm-note__icon">!</span>
+            <span>{{ 'guestAccountNoPlatformKeyText'|trans }}</span>
+        </div>
+    {% elseif failure %}
+        <div class="cm-note mb-3" style="border-left-color: var(--cm-red-tx); background: var(--cm-red-bg); color: var(--cm-red-tx);">
+            <span class="cm-note__icon" style="background: var(--cm-red-tx);">!</span>
+            <span><strong>{{ 'guestAccountUnreachableTitle'|trans }}</strong> {{ failure }}</span>
+        </div>
+    {% endif %}
+
+    <div data-controller="guest-accounts"
+         data-guest-accounts-token-value="{{ csrf_token('infrastructure_action') }}"
+         data-guest-accounts-apply-url-value="{{ path('app_infrastructure_guest_accounts_apply', {id: host.id, node: node, vmid: vmid}) }}"
+         data-guest-accounts-declare-url-value="{{ path('app_infrastructure_guest_accounts_declare', {id: host.id, node: node, vmid: vmid}) }}"
+         data-guest-accounts-remove-url-value="{{ path('app_infrastructure_guest_accounts_remove', {id: host.id, node: node, vmid: vmid}) }}"
+         data-guest-accounts-keep-url-value="{{ path('app_infrastructure_guest_accounts_keep', {id: host.id, node: node, vmid: vmid}) }}"
+         data-guest-accounts-reset-url-value="{{ path('app_infrastructure_guest_accounts_reset', {id: host.id, node: node, vmid: vmid}) }}"
+         data-guest-accounts-remove-confirm-value="{{ 'guestAccountRemoveConfirmText'|trans }}"
+         data-guest-accounts-password-title-value="{{ 'guestAccountPasswordsTitle'|trans }}"
+         data-guest-accounts-password-warning-value="{{ 'guestAccountPasswordsWarningText'|trans }}">
+
+        {% if plan %}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h3 class="card-title cm-condition-heading">{{ 'guestAccountPlanTitle'|trans }}</h3>
+                    <span class="cm-actionbar__meta ms-auto">
+                        {{ 'guestAccountPlanMeta'|trans({
+                            '%create%': plan.createCount,
+                            '%unchanged%': plan.unchanged|length,
+                            '%remove%': plan.removeCount,
+                        }) }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    {% if plan.isEmpty %}
+                        <p class="cm-guest__sub mb-0">{{ 'guestAccountNothingToDoText'|trans }}</p>
+                    {% else %}
+                        {% if plan.toCreate is not empty %}
+                            <p class="mb-2">
+                                <strong>{{ 'guestAccountToCreateLabel'|trans }} :</strong>
+                                {% for account in plan.toCreate %}<span class="cm-badge cm-badge--gold">{{ account.login }}</span> {% endfor %}
+                            </p>
+                        {% endif %}
+                        {% if plan.toRemove is not empty %}
+                            <p class="mb-2">
+                                <strong>{{ 'guestAccountToRemoveLabel'|trans }} :</strong>
+                                {% for login in plan.toRemove %}<span class="cm-badge cm-badge--red">{{ login }}</span> {% endfor %}
+                            </p>
+                            {# Proposed, never performed: deleting a home directory is a decision. #}
+                            <p class="cm-guest__sub mb-0">{{ 'guestAccountRemovalIsManualText'|trans }}</p>
+                        {% endif %}
+                    {% endif %}
+                </div>
+                {% if plan.toCreate is not empty %}
+                    <div class="cm-actionbar" style="margin:0; padding: 12px 18px; border-top: 1px solid var(--cm-border-soft); background: var(--cm-surface-soft);">
+                        {# The warning comes BEFORE the action, not after: the passwords are shown
+                           once and are never recoverable. #}
+                        <span class="cm-actionbar__meta">{{ 'guestAccountPasswordsWarningText'|trans }}</span>
+                        <div class="cm-actionbar__buttons">
+                            <button type="button" class="cm-btn cm-btn--primary" data-action="guest-accounts#apply">{{ 'guestAccountApplyAction'|trans }}</button>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        {# Where the passwords land, once. Made to be printed or read out - and never fetched again. #}
+        <div class="card mb-3" data-guest-accounts-target="passwords" hidden>
+            <div class="card-header"><h3 class="card-title cm-condition-heading">{{ 'guestAccountPasswordsTitle'|trans }}</h3></div>
+            <div class="card-body">
+                <div class="cm-note cm-note--gold mb-3">
+                    <span class="cm-note__icon">!</span>
+                    <span>{{ 'guestAccountPasswordsWarningText'|trans }}</span>
+                </div>
+                <table class="table cm-table" data-guest-accounts-target="passwordTable"></table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title cm-condition-heading">{{ 'guestAccountListTitle'|trans }}</h3>
+                <div class="ms-auto d-flex gap-2 align-items-center">
+                    <input type="text" class="cm-input cm-field--sm" placeholder="{{ 'guestAccountLoginPlaceholder'|trans }}" data-guest-accounts-target="newLogin">
+                    <label class="cm-field-label"><input type="checkbox" data-guest-accounts-target="newSudo"> sudo</label>
+                    <button type="button" class="cm-btn cm-btn--outline cm-btn--sm" data-action="guest-accounts#declare">{{ 'guestAccountDeclareAction'|trans }}</button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table cm-table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'guestAccountLoginLabel'|trans }}</th>
+                            <th>{{ 'guestAccountPersonLabel'|trans }}</th>
+                            <th style="width:80px">sudo</th>
+                            <th style="width:130px">{{ 'proxmoxGuestStatusLabel'|trans }}</th>
+                            <th style="width:120px">{{ 'ipRegistryOriginLabel'|trans }}</th>
+                            <th style="width:230px"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for account in accounts %}
+                            <tr>
+                                <td class="cm-mono">{{ account.login }}</td>
+                                <td>{{ account.displayName ?? '—' }}</td>
+                                <td class="cm-guest__sub">{{ account.sudo ? 'oui' : '—' }}</td>
+                                <td><span class="cm-badge cm-badge--{{ account.state.badgeModifier }}">{{ account.state.labelKey|trans }}</span></td>
+                                <td><span class="cm-badge cm-badge--{{ account.origin.badgeModifier }}">{{ account.origin.labelKey|trans }}</span></td>
+                                <td>
+                                    <div class="cm-guest__actions">
+                                        <button type="button" class="cm-linkaction" data-action="guest-accounts#reset" data-login="{{ account.login }}">{{ 'guestAccountResetAction'|trans }}</button>
+                                        {% if account.state.value == 'to_remove' %}
+                                            <button type="button" class="cm-linkaction" data-action="guest-accounts#keep" data-login="{{ account.login }}">{{ 'guestAccountKeepAction'|trans }}</button>
+                                        {% endif %}
+                                        <button type="button" class="cm-linkaction cm-linkaction--danger" data-action="guest-accounts#remove" data-login="{{ account.login }}">{{ 'guestAccountRemoveAction'|trans }}</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="6" class="text-center py-4 cm-guest__sub">{{ 'guestAccountNoneText'|trans }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,230 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'vmBatchNewHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
+        {label: 'infrastructureBatchesNavLabel'|trans, url: path('app_infrastructure_batches')},
+        {label: 'vmBatchNewHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'vmBatchNewHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% include 'infrastructure/_localnav.html.twig' %}
+
+    {# The choices are a GET - "show me who this would deploy to" changes nothing, and the preview
+       below has to move as the filters move. Only the last form creates anything. #}
+    <form method="get" class="card mb-3" style="max-width: 900px;">
+        <fieldset class="cm-fieldset">
+            <legend class="cm-fieldset__legend">{{ 'vmBatchWhoLegend'|trans }}</legend>
+            <div class="row g-3">
+                <div class="col-md-5">
+                    <label class="cm-field-label" for="programId">{{ 'vmBatchProgramFieldLabel'|trans }}</label>
+                    <select id="programId" name="programId" class="cm-select w-100">
+                        <option value="">{{ 'vmBatchProgramPlaceholder'|trans }}</option>
+                        {% for p in programs %}
+                            <option value="{{ p.id }}"{{ program and program.id == p.id ? ' selected' }}>{{ p.displayShortName }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="cm-field-label" for="hostId">{{ 'proxmoxOperationHostLabel'|trans }}</label>
+                    <select id="hostId" name="hostId" class="cm-select w-100">
+                        {% for h in hosts %}
+                            <option value="{{ h.id }}"{{ host and host.id == h.id ? ' selected' }}>{{ h.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="cm-field-label" for="namePattern">{{ 'vmBatchNamePatternFieldLabel'|trans }}</label>
+                    <input id="namePattern" name="namePattern" class="cm-input w-100 cm-mono" value="{{ namePattern }}">
+                    <div class="cm-guest__sub mt-1">{{ 'vmBatchNamePatternHelp'|trans }}</div>
+                </div>
+            </div>
+
+            {% if program %}
+                {# Checkbox groups rather than a multi-select, and the filters apply to the STUDENT:
+                   a program offers SISR, and which students take it is a per-student fact. Ticking
+                   nothing means the whole class. #}
+                <div class="row g-3 mt-1">
+                    <div class="col-md-6">
+                        <label class="cm-field-label d-block mb-1">{{ 'vmBatchOptionsFieldLabel'|trans }}</label>
+                        {% for option in program.options %}
+                            <label class="cm-field-label d-block">
+                                <input type="checkbox" name="options[]" value="{{ option.id }}"{{ option.id in filters.options ? ' checked' }}>
+                                {{ option.name }}
+                            </label>
+                        {% else %}
+                            <p class="cm-guest__sub">{{ 'vmBatchNoOptionText'|trans }}</p>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="cm-field-label d-block mb-1">{{ 'vmBatchModalitiesFieldLabel'|trans }}</label>
+                        {% for modality in program.modalities %}
+                            <label class="cm-field-label d-block">
+                                <input type="checkbox" name="modalities[]" value="{{ modality.id }}"{{ modality.id in filters.modalities ? ' checked' }}>
+                                {{ modality.name }}
+                            </label>
+                        {% else %}
+                            <p class="cm-guest__sub">{{ 'vmBatchNoModalityText'|trans }}</p>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="cm-note mt-3">
+                    <span class="cm-note__icon">i</span>
+                    <span>{{ 'vmBatchFilterNote'|trans }}</span>
+                </div>
+            {% endif %}
+        </fieldset>
+
+        <div class="cm-fieldset">
+            <div class="cm-actionbar" style="margin-top:0; border-top:0; padding-top:0;">
+                <span class="cm-actionbar__meta">
+                    {% if program %}{{ 'vmBatchSelectionMeta'|trans({'%selected%': selected|length, '%total%': members|length}) }}{% endif %}
+                </span>
+                <div class="cm-actionbar__buttons">
+                    <button type="submit" class="cm-btn cm-btn--outline">{{ 'vmBatchPreviewAction'|trans }}</button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    {% if failure %}
+        <div class="cm-note mb-3" style="border-left-color: var(--cm-red-tx); background: var(--cm-red-bg); color: var(--cm-red-tx);">
+            <span class="cm-note__icon" style="background: var(--cm-red-tx);">!</span>
+            <span>{{ failure }}</span>
+        </div>
+    {% endif %}
+
+    {% if program and selected is not empty and host %}
+        <form method="post" action="{{ path('app_infrastructure_batches_create') }}" class="card" style="max-width: 900px;">
+            <input type="hidden" name="_token" value="{{ csrf_token('infrastructure_action') }}">
+            <input type="hidden" name="programId" value="{{ program.id }}">
+            <input type="hidden" name="hostId" value="{{ host.id }}">
+            <input type="hidden" name="namePattern" value="{{ namePattern }}">
+            {% for id in filters.options %}<input type="hidden" name="options[]" value="{{ id }}">{% endfor %}
+            {% for id in filters.modalities %}<input type="hidden" name="modalities[]" value="{{ id }}">{% endfor %}
+
+            <fieldset class="cm-fieldset">
+                <legend class="cm-fieldset__legend">{{ 'vmBatchMachineLegend'|trans }}</legend>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="cm-field-label" for="label">{{ 'vmBatchLabelFieldLabel'|trans }}</label>
+                        <input id="label" name="label" class="cm-input w-100" required value="{{ program.displayShortName }} — {{ 'vmBatchDefaultLabelSuffix'|trans }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="cm-field-label" for="templateVmid">{{ 'proxmoxTemplateNameLabel'|trans }}</label>
+                        <select id="templateVmid" name="templateVmid" class="cm-select w-100" required>
+                            {% for template in templates %}
+                                <option value="{{ template.vmid }}">{{ template.name }} ({{ template.vmid }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="cm-field-label" for="node">{{ 'proxmoxGuestNodeLabel'|trans }}</label>
+                        <select id="node" name="node" class="cm-select w-100" required>
+                            {% for n in nodes %}<option value="{{ n.name }}">{{ n.name }}</option>{% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="row g-3 mt-1">
+                    <div class="col-md-2">
+                        <label class="cm-field-label" for="cores">{{ 'proxmoxWizardCoresFieldLabel'|trans }}</label>
+                        <input id="cores" name="cores" type="number" min="1" class="cm-input w-100" value="2">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="cm-field-label" for="memoryMib">{{ 'proxmoxWizardMemoryFieldLabel'|trans }}</label>
+                        <input id="memoryMib" name="memoryMib" type="number" min="128" step="128" class="cm-input w-100" value="2048">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="cm-field-label" for="diskGib">{{ 'proxmoxWizardDiskFieldLabel'|trans }}</label>
+                        <input id="diskGib" name="diskGib" type="number" min="1" class="cm-input w-100" value="16">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="cm-field-label" for="rangeId">{{ 'proxmoxWizardRangeFieldLabel'|trans }}</label>
+                        <select id="rangeId" name="rangeId" class="cm-select w-100" required>
+                            {% for r in ranges %}<option value="{{ r.id }}">{{ r.label }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="cm-field-label" for="expiresAt">{{ 'vmBatchExpiresFieldLabel'|trans }}</label>
+                        <input id="expiresAt" name="expiresAt" type="date" class="cm-input w-100">
+                    </div>
+                </div>
+                <div class="row g-3 mt-1">
+                    <div class="col-md-6">
+                        <label class="cm-field-label d-block"><input type="checkbox" name="linkedClone" value="1"> {{ 'proxmoxLinkedCloneLabel'|trans }}</label>
+                        <label class="cm-field-label d-block"><input type="checkbox" name="grantSudo" value="1" checked> {{ 'vmBatchGrantSudoLabel'|trans }}</label>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="cm-fieldset">
+                <legend class="cm-fieldset__legend">
+                    {{ 'vmBatchPostInstallLegend'|trans }} <span>{{ 'proxmoxHostOptionalLabel'|trans }}</span>
+                </legend>
+                <textarea name="postInstallScript" class="cm-input w-100 cm-mono" rows="6" placeholder="#!/bin/bash&#10;apt-get update -qq"></textarea>
+                {# The two things that make a script fail are said where it is written, not in a
+                   documentation somebody reads after the failure. #}
+                <div class="cm-guest__sub mt-1">{{ 'vmBatchPostInstallHelp'|trans }}</div>
+                <div class="cm-note cm-note--gold mt-2">
+                    <span class="cm-note__icon">!</span>
+                    <span>{{ 'vmBatchPostInstallWarning'|trans }}</span>
+                </div>
+            </fieldset>
+
+            <fieldset class="cm-fieldset">
+                <legend class="cm-fieldset__legend">{{ 'vmBatchPlanLegend'|trans }}</legend>
+
+                {% if shortBy > 0 %}
+                    {# Said before the button: it means some students would silently get nothing. #}
+                    <div class="cm-note cm-note--gold mb-3">
+                        <span class="cm-note__icon">!</span>
+                        <span>{{ 'vmBatchShortByText'|trans({'%count%': shortBy}) }}</span>
+                    </div>
+                {% endif %}
+
+                <div class="table-responsive">
+                    <table class="table cm-table">
+                        <thead>
+                            <tr>
+                                <th style="width:50px">#</th>
+                                <th>{{ 'vmBatchStudentLabel'|trans }}</th>
+                                <th style="width:180px">{{ 'proxmoxGuestMachineLabel'|trans }}</th>
+                                <th style="width:80px">VMID</th>
+                                <th style="width:180px">{{ 'guestAccountLoginLabel'|trans }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in plan %}
+                                <tr>
+                                    <td class="cm-guest__sub">{{ row.position }}</td>
+                                    <td>{{ row.studentLabel }}</td>
+                                    <td class="cm-mono">{{ row.guestName }}</td>
+                                    <td class="cm-mono">{{ row.vmid }}</td>
+                                    <td class="cm-mono">{{ row.login }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </fieldset>
+
+            <div class="cm-fieldset">
+                <div class="cm-actionbar" style="margin-top:0; border-top:0; padding-top:0;">
+                    <span class="cm-actionbar__meta">{{ 'vmBatchCreateMeta'|trans({'%count%': plan|length}) }}</span>
+                    <div class="cm-actionbar__buttons">
+                        <a href="{{ path('app_infrastructure_batches') }}" class="cm-btn cm-btn--outline">{{ 'cancelAction'|trans }}</a>
+                        <button type="submit" class="cm-btn cm-btn--primary">{{ 'vmBatchCreateAction'|trans }}</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    {% elseif program %}
+        <div class="card"><div class="card-body text-center py-4 cm-guest__sub">{{ 'vmBatchNobodySelectedText'|trans }}</div></div>
+    {% endif %}
+{% endblock %}
