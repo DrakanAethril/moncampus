@@ -1,0 +1,126 @@
+{% extends 'layout/app.html.twig' %}
+
+{# « Dupliquer chez moi », la confirmation (design/validated/content-sharing-between-teachers.md,
+   mockups 6 and 7).
+
+   **A whole screen and never a modal**, as soon as files are involved: three things have to be shown
+   that a modal makes illegible - the folders that will be created, what it weighs, and what the
+   quota will read afterwards.
+
+   The second mockup is the one that carries the rule: when it does not fit, **nothing is written** -
+   not the séquence, not the folders, not the first files that would have fitted - and the refusal
+   names the shortfall, because « il manque 34 Mo » is actionable where « quota dépassé » is not. #}
+
+{% block title %}{{ 'contentShareDuplicateHeading'|trans({'%name%': sequence.titre}) }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'contentSharePageHeading'|trans, url: path('app_shares')},
+        {label: 'contentShareDuplicateBreadcrumbLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'contentShareDuplicateHeading'|trans({'%name%': sequence.titre}) }}{% endblock %}
+
+{% block main %}
+    <p class="text-secondary">
+        {{ 'contentShareDuplicateSubtitle'|trans({
+            '%author%': share.owner.displayName ?? share.owner.username,
+            '%seances%': sequence.seanceTemplates|length,
+        }) }}
+    </p>
+
+    <form method="post" action="{{ path('app_shares_duplicate_save', {id: share.id}) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('content_share_duplicate') }}">
+
+        <div class="card mb-3">
+            <div class="card-header"><h2 class="card-title">{{ 'contentShareDuplicateWhatHeading'|trans }}</h2></div>
+            <div class="card-body">
+                <h3 class="cm-share__subtitle">{{ 'contentShareDuplicateInLibraryHeading'|trans }}</h3>
+                <dl class="row mb-3">
+                    <dt class="col-3">{{ 'contentShareSubjectSequenceLabel'|trans }}</dt>
+                    <dd class="col-9">{{ sequence.titre }}</dd>
+                    <dt class="col-3">{{ 'contentShareDuplicateSeancesLabel'|trans }}</dt>
+                    <dd class="col-9">{{ 'contentShareDuplicateSeancesValue'|trans({'%seances%': sequence.seanceTemplates|length, '%phases%': phaseCount}) }}</dd>
+                    <dt class="col-3">{{ 'contentShareDuplicateTagsLabel'|trans }}</dt>
+                    <dd class="col-9">{{ 'contentShareDuplicateTagsValue'|trans }}</dd>
+                </dl>
+
+                {% if plan.folders is not empty %}
+                    <h3 class="cm-share__subtitle">{{ 'contentShareDuplicateInFilesHeading'|trans }}</h3>
+                    <div class="mb-3">
+                        <label class="form-label" for="content-share-destination">{{ 'contentShareDuplicateDestinationLabel'|trans }}</label>
+                        {# A select used for consultation may start on its first entry, and this one
+                           does: « Ma bibliothèque » is a real answer - the library root, the default
+                           the design names - not an empty placeholder. #}
+                        <select id="content-share-destination" name="destination" class="form-select">
+                            <option value="">{{ 'contentShareDuplicateDestinationRootLabel'|trans }}</option>
+                            {% for folder in folders %}
+                                <option value="{{ folder.id }}">{{ folder.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <pre class="cm-share__tree">{% for folder in plan.folders %}{{ folder.parentIndex is null ? '' : '└── ' }}{{ folder.name }}/{{ folder.files is empty ? '' : ('   ' ~ 'contentShareDuplicateFileCountLabel'|trans({'%count%': folder.files|length}) ~ ' · ' ~ byte_size(folder.files|reduce((sum, file) => sum + file.bytes, 0))) }}
+{% endfor %}</pre>
+
+                    {% if plan.linkCount > 0 %}
+                        <p class="cm-share__detail">{{ 'contentShareDuplicateLinksNote'|trans({'%count%': plan.linkCount}) }}</p>
+                    {% endif %}
+                {% else %}
+                    <p class="cm-share__detail">{{ 'contentShareDuplicateNoFilesText'|trans }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if plan.fileCount > 0 %}
+            <div class="card mb-3">
+                <div class="card-header"><h2 class="card-title">{{ 'contentShareDuplicateWeightHeading'|trans }}</h2></div>
+                <div class="card-body">
+                    {% if fits %}
+                        <dl class="row mb-3">
+                            <dt class="col-3">{{ 'contentShareDuplicateCopiedFilesLabel'|trans }}</dt>
+                            <dd class="col-9">{{ plan.fileCount }}</dd>
+                            <dt class="col-3">{{ 'contentShareDuplicateWeightLabel'|trans }}</dt>
+                            <dd class="col-9">{{ byte_size(plan.totalBytes) }}</dd>
+                        </dl>
+                        {% set after = quotaUsed + plan.totalBytes %}
+                        <div class="cm-share__quota">
+                            <div class="cm-share__quota-track">
+                                <div class="cm-share__quota-fill" style="width: {{ min(100, (after / max(quotaLimit, 1) * 100)|round) }}%"></div>
+                            </div>
+                            <p class="cm-share__detail">
+                                {{ 'contentShareDuplicateQuotaAfterLabel'|trans({
+                                    '%after%': byte_size(after),
+                                    '%limit%': byte_size(quotaLimit),
+                                    '%percentAfter%': (after / max(quotaLimit, 1) * 100)|round,
+                                    '%percentNow%': (quotaUsed / max(quotaLimit, 1) * 100)|round,
+                                }) }}
+                            </p>
+                        </div>
+                    {% else %}
+                        {# The refusal is global, and it says so in the same breath as the figures. #}
+                        <div class="alert alert-danger" role="alert">
+                            {{ 'contentShareQuotaRefusalFlashMessage'|trans({
+                                '%missing%': byte_size(plan.totalBytes - remaining),
+                                '%size%': byte_size(plan.totalBytes),
+                                '%remaining%': byte_size(remaining),
+                            }) }}
+                        </div>
+                        <p class="cm-share__detail">
+                            <a href="{{ path('app_file_library_trash') }}">{{ 'contentShareDuplicateEmptyTrashAction'|trans }}</a>
+                            · <a href="{{ path('app_file_library') }}">{{ 'contentShareDuplicateOpenLibraryAction'|trans }}</a>
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="cm-actionbar">
+            <button type="submit" class="cm-btn cm-btn--primary"{{ fits ? '' : ' disabled' }}>{{ 'contentShareDuplicateSubmitAction'|trans }}</button>
+            <a href="{{ path('app_shares') }}" class="cm-btn">{{ 'cancelAction'|trans }}</a>
+            <span class="cm-share__detail">{{ 'contentShareDuplicateAuthorKeepsHisText'|trans({'%author%': share.owner.displayName ?? share.owner.username}) }}</span>
+        </div>
+    </form>
+{% endblock %}

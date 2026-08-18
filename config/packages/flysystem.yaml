@@ -11,3 +11,15 @@ flysystem:
                 client: 'Aws\S3\S3Client'
                 bucket: '%env(AWS_S3_BUCKET)%'
                 prefix: '%env(AWS_S3_PREFIX)%'
+
+# A directory under var/cache instead of a bucket. The development environment points at the **real**
+# S3 (scoped by AWS_S3_PREFIX=dev/), so a test that copies or writes an object would reach it - and a
+# test suite that writes into production's bucket is a test suite nobody dares run. Local here means
+# the copies a duplication makes are still real copies, which is what
+# tests/Functional/ContentShareDuplicationTest.php asserts on.
+when@test:
+    flysystem:
+        storages:
+            uploads.storage:
+                local:
+                    location: '%kernel.cache_dir%/uploads'

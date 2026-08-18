@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use League\Flysystem\FilesystemException;
 use League\Flysystem\FilesystemOperator;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
@@ -125,6 +126,35 @@ class FileUploadService
     public function copy(string $sourceKey, string $destinationKey): void
     {
         $this->uploadsStorage->copy($sourceKey, $destinationKey);
+    }
+
+    /**
+     * What an object already in the bucket weighs.
+     *
+     * Needed by the one caller that has to answer « ce que ça pèse chez vous » about files it did
+     * not upload: a LibraryResource written before the file library existed carries a storage key
+     * and no size, so the only place the byte count lives is S3 itself
+     * (design/validated/content-sharing-between-teachers.md). An object that has since disappeared
+     * answers 0 rather than throwing - a confirmation screen that 500s over a stale row is worse
+     * than one that under-counts a file the copy will fail on anyway.
+     */
+    public function size(string $key): int
+    {
+        try {
+            return $this->uploadsStorage->fileSize($key);
+        } catch (FilesystemException) {
+            return 0;
+        }
+    }
+
+    /** The stored object's MIME type, or an empty string when the bucket cannot say - see size(). */
+    public function mimeType(string $key): string
+    {
+        try {
+            return $this->uploadsStorage->mimeType($key);
+        } catch (FilesystemException) {
+            return '';
+        }
     }
 
     /**

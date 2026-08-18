@@ -7838,3 +7838,32 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
     font-size: 13px;
     font-weight: 600;
 }
+
+/* The folder tree the confirmation screen draws before writing anything - the one place a reader
+   sees the « <séquence>/<séance>/ » rule as a shape rather than as a sentence. */
+.cm-share__tree {
+    background: var(--cm-surface-alt);
+    border: 1px solid var(--cm-border);
+    border-radius: var(--cm-radius-sm);
+    padding: 12px 14px;
+    margin: 0 0 12px;
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: var(--cm-ink);
+    overflow-x: auto;
+}
+
+/* The recipient's quota as it will stand after the copy. Drawn even when it fits: the honest cost of
+   a file that now weighs twice is a number, not a feeling. */
+.cm-share__quota { max-width: 420px; }
+.cm-share__quota-track {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--cm-border-soft);
+    overflow: hidden;
+}
+.cm-share__quota-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--cm-brand);
+}
