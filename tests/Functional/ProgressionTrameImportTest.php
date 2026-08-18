@@ -80,14 +80,18 @@ class ProgressionTrameImportTest extends FunctionalTestCase
     }
 
     /**
-     * A progression of three séquences, one per branch the model can take:
+     * A progression of three séquences, one per branch the model can take - and **two classes**,
+     * because that is what the feature is for: the author planned their year for one, the recipient
+     * takes the shape of it for theirs.
      *
-     * 1. an ordinary one - its template is still there and the class has no instance of it;
+     * 1. an ordinary one - its template is still there and the recipient's class has no instance of
+     *    it;
      * 2. one whose template has been deleted since - it can only be copied instance to instance;
-     * 3. one another progression of the class is already teaching - skipped, and named.
+     * 3. one whose template the recipient's class **already** carries, in another progression -
+     *    skipped, and named. A SequenceInstance is planned once for the whole class.
      *
-     * @return array{int, int, int, int} the source progression, the class, the recipient's free
-     *                                   matière, and the recipient
+     * @return array{int, int, int, int} the source progression, the recipient's class, their free
+     *                                   matière, and themselves
      */
     private function trameFixture(string $prefix): array
     {
@@ -95,31 +99,45 @@ class ProgressionTrameImportTest extends FunctionalTestCase
 
         $author = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], $prefix.'.author');
         $recipient = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], $prefix.'.recipient');
-        $program = $this->createProgram([], [$author, $recipient], $author);
+        $authorProgram = $this->createProgram([], [$author], $author);
+        $recipientProgram = $this->createProgram([], [$recipient], $recipient);
 
-        $progression = new Progression($this->topic($program, $author, 'Réseaux (auteur)'), $author);
+        $progression = new Progression($this->topic($authorProgram, $author, 'Réseaux (auteur)'), $author);
         $entityManager->persist($progression);
 
-        $this->sequenceLine($progression, $author, $program, 'Le modèle OSI', withTemplate: true, alreadyPlanned: false);
-        $this->sequenceLine($progression, $author, $program, 'Commutation', withTemplate: false, alreadyPlanned: false);
-        $this->sequenceLine($progression, $author, $program, 'Routage statique', withTemplate: true, alreadyPlanned: true);
+        $this->sequenceLine($progression, $author, $authorProgram, 'Le modèle OSI', withTemplate: true);
+        $this->sequenceLine($progression, $author, $authorProgram, 'Commutation', withTemplate: false);
+        $planned = $this->sequenceLine($progression, $author, $authorProgram, 'Routage statique', withTemplate: true);
 
-        $recipientTopic = $this->topic($program, $recipient, 'Réseaux (destinataire)');
+        // The third case, on the recipient's own class: the very same template is already
+        // instantiated there and carried by another progression of that class.
+        $alreadyThere = new SequenceInstance($recipientProgram, $recipient);
+        $alreadyThere->setTitre('Routage statique');
+        $alreadyThere->setSourceTemplate($planned);
+        $entityManager->persist($alreadyThere);
+
+        $other = new Progression($this->topic($recipientProgram, $recipient, 'Routage (autre matière)'), $recipient);
+        $entityManager->persist($other);
+        $entityManager->persist(new ProgressionSequence($other, $alreadyThere));
+
+        $recipientTopic = $this->topic($recipientProgram, $recipient, 'Réseaux (destinataire)');
 
         $entityManager->flush();
 
-        $ids = [(int) $progression->getId(), (int) $program->getId(), (int) $recipientTopic->getId(), (int) $recipient->getId()];
+        $ids = [(int) $progression->getId(), (int) $recipientProgram->getId(), (int) $recipientTopic->getId(), (int) $recipient->getId()];
         $entityManager->clear();
 
         return $ids;
     }
 
-    private function sequenceLine(Progression $progression, User $author, Program $program, string $title, bool $withTemplate, bool $alreadyPlanned): void
+    /** @return SequenceTemplate|null the template the line was built on, when it has one */
+    private function sequenceLine(Progression $progression, User $author, Program $program, string $title, bool $withTemplate): ?SequenceTemplate
     {
         $entityManager = static::getContainer()->get(EntityManagerInterface::class);
 
         $instance = new SequenceInstance($program, $author);
         $instance->setTitre($title);
+        $template = null;
 
         if ($withTemplate) {
             $template = new SequenceTemplate($author);
@@ -150,13 +168,7 @@ class ProgressionTrameImportTest extends FunctionalTestCase
             $entityManager->persist($seance);
         }
 
-        // The third case: the very same instance is already carried by another progression of this
-        // class - which is what ProgressionSequenceAvailability refuses, once for the whole class.
-        if ($alreadyPlanned) {
-            $other = new Progression($this->topic($program, $author, $title.' (autre)'), $author);
-            $entityManager->persist($other);
-            $entityManager->persist(new ProgressionSequence($other, $instance));
-        }
+        return $template;
     }
 
     private function topic(Program $program, User $teacher, string $name): Topic
