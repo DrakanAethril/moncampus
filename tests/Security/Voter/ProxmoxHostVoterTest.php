@@ -6,7 +6,6 @@ namespace App\Tests\Security\Voter;
 
 use App\Entity\ProxmoxHost;
 use App\Security\Voter\ProxmoxHostVoter;
-use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 
 /**
  * Three attributes over a hypervisor, and each one is a different question:
@@ -22,12 +21,13 @@ use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
  */
 class ProxmoxHostVoterTest extends VoterTestCase
 {
-    private function voter(bool $isAdmin): ProxmoxHostVoter
+    // The voter reads the role off the User, never through AuthorizationCheckerInterface - asking
+    // the authorization checker from inside a Voter re-enters the access-decision manager and the
+    // inner question answers "no" whatever the roles say. There is therefore nothing to inject,
+    // and the role now comes from the user each test builds.
+    private function voter(): ProxmoxHostVoter
     {
-        $checker = $this->createStub(AuthorizationCheckerInterface::class);
-        $checker->method('isGranted')->willReturn($isAdmin);
-
-        return new ProxmoxHostVoter($checker);
+        return new ProxmoxHostVoter();
     }
 
     private function host(
@@ -60,7 +60,7 @@ class ProxmoxHostVoterTest extends VoterTestCase
 
     public function testAnAdminReadsPilotsAndCreates(): void
     {
-        $voter = $this->voter(true);
+        $voter = $this->voter();
         $admin = $this->user(['ROLE_USER', 'ROLE_ADMIN'], 'admin');
         $host = $this->host(allowCreate: true, hasProvisionCredentials: true);
 
@@ -71,7 +71,7 @@ class ProxmoxHostVoterTest extends VoterTestCase
 
     public function testEverybodyElseIsRefusedOnAllThree(): void
     {
-        $voter = $this->voter(false);
+        $voter = $this->voter();
         $host = $this->host(allowCreate: true, hasProvisionCredentials: true);
 
         foreach ([
@@ -92,12 +92,12 @@ class ProxmoxHostVoterTest extends VoterTestCase
 
     public function testAnAnonymousVisitorIsRefused(): void
     {
-        $this->assertDenied($this->voter(false), null, $this->host(), ProxmoxHostVoter::VIEW);
+        $this->assertDenied($this->voter(), null, $this->host(), ProxmoxHostVoter::VIEW);
     }
 
     public function testADeactivatedHostStillReadsButIsNoLongerDriven(): void
     {
-        $voter = $this->voter(true);
+        $voter = $this->voter();
         $admin = $this->user(['ROLE_USER', 'ROLE_ADMIN'], 'admin');
         $host = $this->host(active: false, allowCreate: true, hasProvisionCredentials: true);
 
@@ -108,7 +108,7 @@ class ProxmoxHostVoterTest extends VoterTestCase
 
     public function testAHostThatAllowsNoPowerActionIsNotOperated(): void
     {
-        $voter = $this->voter(true);
+        $voter = $this->voter();
         $admin = $this->user(['ROLE_USER', 'ROLE_ADMIN'], 'admin');
 
         $this->assertDenied($voter, $admin, $this->host(allowStart: false, allowStop: false), ProxmoxHostVoter::OPERATE);
@@ -117,7 +117,7 @@ class ProxmoxHostVoterTest extends VoterTestCase
 
     public function testTickingCreateWithoutAProvisioningAccountGrantsNothing(): void
     {
-        $voter = $this->voter(true);
+        $voter = $this->voter();
         $admin = $this->user(['ROLE_USER', 'ROLE_ADMIN'], 'admin');
 
         $this->assertDenied(
@@ -132,7 +132,7 @@ class ProxmoxHostVoterTest extends VoterTestCase
     public function testAProvisioningAccountWithoutTheFlagGrantsNothingEither(): void
     {
         $this->assertDenied(
-            $this->voter(true),
+            $this->voter(),
             $this->user(['ROLE_USER', 'ROLE_ADMIN'], 'admin'),
             $this->host(allowCreate: false, hasProvisionCredentials: true),
             ProxmoxHostVoter::PROVISION,
@@ -141,7 +141,7 @@ class ProxmoxHostVoterTest extends VoterTestCase
 
     public function testTheVoterStaysOutOfOtherDecisions(): void
     {
-        $voter = $this->voter(true);
+        $voter = $this->voter();
         $admin = $this->user(['ROLE_USER', 'ROLE_ADMIN'], 'admin');
 
         $this->assertAbstains($voter, $admin, $this->host(), 'PROXMOX_HOST_DESTROY');

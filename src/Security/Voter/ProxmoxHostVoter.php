@@ -7,7 +7,6 @@ namespace App\Security\Voter;
 use App\Entity\ProxmoxHost;
 use App\Entity\User;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
-use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Vote;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
@@ -35,10 +34,6 @@ class ProxmoxHostVoter extends Voter
     public const string OPERATE = 'PROXMOX_HOST_OPERATE';
     public const string PROVISION = 'PROXMOX_HOST_PROVISION';
 
-    public function __construct(private readonly AuthorizationCheckerInterface $authorizationChecker)
-    {
-    }
-
     protected function supports(string $attribute, mixed $subject): bool
     {
         return \in_array($attribute, [self::VIEW, self::OPERATE, self::PROVISION], true) && $subject instanceof ProxmoxHost;
@@ -48,8 +43,14 @@ class ProxmoxHostVoter extends Voter
     {
         /** @var ProxmoxHost $host */
         $host = $subject;
+        $user = $token->getUser();
 
-        if (!$token->getUser() instanceof User || !$this->authorizationChecker->isGranted('ROLE_ADMIN')) {
+        // The role is read off the user, the way every other Voter in this repository reads one -
+        // never through AuthorizationCheckerInterface. Asking the authorization checker from inside
+        // a Voter re-enters the access-decision manager while it is already deciding, and the inner
+        // question answers "no" whatever the roles are: the buttons of the machines list all
+        // vanished, silently, on an account holding ROLE_ADMIN.
+        if (!$user instanceof User || !\in_array('ROLE_ADMIN', $user->getRoles(), true)) {
             return false;
         }
 
