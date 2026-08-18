@@ -210,13 +210,40 @@
             </table>
         </div>
         <div class="card-footer">
-            <div class="cm-actionbar">
-                <div class="cm-actionbar__buttons">
-                    <a href="{{ path('app_directory_class_import') }}" class="btn btn-link">{{ 'classImportAnotherFileAction'|trans }}</a>
+            <form method="post" action="{{ path('app_directory_class_import_confirm') }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('class_import_confirm') }}">
+                {% if analysis.importable %}
+                    <label class="form-check">
+                        <input class="form-check-input" type="checkbox" name="confirmed" value="1" required>
+                        <span class="form-check-label">{{ 'classImportConfirmCheckboxLabel'|trans({'%file%': analysis.fileName}) }}</span>
+                    </label>
+                {% else %}
+                    <div class="cm-note cm-note--gold">
+                        <span class="cm-note__icon">!</span>
+                        <div>
+                            {% if analysis.blockingCount > 0 %}
+                                {{ 'classImportCannotImportBlockingText'|trans }}
+                            {% elseif analysis.decideCount > 0 %}
+                                {{ 'classImportCannotImportDecisionsText'|trans }}
+                            {% else %}
+                                {{ 'classImportCannotImportNothingText'|trans }}
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+                <div class="cm-actionbar">
+                    <div class="cm-actionbar__buttons">
+                        <a href="{{ path('app_directory_class_import') }}" class="btn btn-link">{{ 'classImportAnotherFileAction'|trans }}</a>
+                        <button type="submit" class="btn btn-primary" {{ analysis.importable ? '' : 'disabled' }}>
+                            {{ 'classImportRunAction'|trans({'%count%': analysis.writingCount}) }}
+                        </button>
+                    </div>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
+    {# The analysis is replayed just before the writing, in case the database moved in between. #}
+    <p class="text-secondary small mt-2">{{ 'classImportReplayNoteText'|trans }}</p>
 
     {# Outside every form on purpose: a form inside a form is silently dropped by the browser. #}
     {% for student in analysis.studentsToExamine %}

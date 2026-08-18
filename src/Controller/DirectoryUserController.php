@@ -13,6 +13,7 @@ use App\Form\LdapManageUserType;
 use App\Form\UserProfileType;
 use App\Repository\GroupRepository;
 use App\Repository\LdapManageUserRepository;
+use App\Repository\StudentImportBatchRepository;
 use App\Repository\UserRepository;
 use App\Security\Voter\FileLibraryVoter;
 use App\Service\ByteSize;
@@ -42,9 +43,13 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 class DirectoryUserController extends AbstractController
 {
     #[Route(path: '/directory/users', name: 'app_directory_users')]
-    public function index(): Response
+    public function index(StudentImportBatchRepository $importBatches): Response
     {
-        return $this->render('directory/users.html.twig');
+        return $this->render('directory/users.html.twig', [
+            // Only administrators reach the class import, and the template hides the menu for
+            // anyone else - the query is cheap enough not to be worth a second branch here.
+            'recentImports' => $this->isGranted('ROLE_ADMIN') ? $importBatches->findRecent() : [],
+        ]);
     }
 
     // Creates the User row immediately (not just the ldap_manage_user request) so the account is

@@ -6144,3 +6144,37 @@ classImportAccountInactiveLabel: 'désactivé'
 classImportNoContactEmailLabel: 'aucune adresse de contact'
 classImportCreatedOnLabel: 'créé le %date%'
 classImportSessionExpiredFlashMessage: "L'import a expiré : redéposez le fichier."
+classImportConfirmCheckboxLabel: 'Cette analyse correspond bien au fichier %file% que je viens de déposer.'
+classImportRunAction: 'Importer %count% ligne(s)'
+classImportCannotImportBlockingText: "Un blocage subsiste : corrigez le fichier et redéposez-le."
+classImportCannotImportDecisionsText: "Une décision reste à prendre sur au moins une ligne."
+classImportCannotImportNothingText: "Ce fichier n'écrirait rien : tout y est déjà en base."
+classImportReplayNoteText: "L'analyse est rejouée juste avant l'écriture, au cas où la base aurait bougé entre-temps ; si un verdict a changé, l'import est refusé et cet écran réaffiché."
+classImportNotConfirmedFlashMessage: "Cochez la case de confirmation avant d'importer."
+classImportNoLongerImportableFlashMessage: "L'import a été refusé : la base a bougé depuis la vérification. Relisez l'analyse."
+classImportRetryQueuedFlashMessage: 'La création a été redemandée à l''annuaire.'
+classImportRetryNotFailedFlashMessage: "Cette ligne n'est pas en échec : rien à relancer."
+classImportRecentLabel: 'Imports récents (%count%)'
+classImportBatchPageHeading: 'Import du %date%'
+classImportBatchBreadcrumbLabel: 'Import du %date%'
+classImportBatchSubtitle: '%file% · %count% ligne(s) importées par %operator% à %time%'
+classImportBatchPendingTitle: "%count% compte(s) attendent encore l'annuaire"
+classImportBatchPendingText: "Les étudiants sont déjà dans la classe et leurs fiches sont utilisables. Il leur manque le compte de session et le mot de passe, que le serveur crée à son passage suivant — il passe toutes les minutes. Cette page se met à jour toute seule."
+classImportBatchStatCreatedLabel: "Créés dans l'annuaire"
+classImportBatchStatCreatedHint: 'connexion possible'
+classImportBatchStatPendingLabel: 'En attente'
+classImportBatchStatPendingHint: 'file non encore traitée'
+classImportBatchStatFailedLabel: 'En échec'
+classImportBatchStatFailedHint: 'à relancer'
+classImportBatchStatNoneLabel: 'Sans création'
+classImportBatchStatNoneHint: 'comptes déjà existants'
+classImportBatchLinesSectionTitle: "Comptes de l'import"
+classImportBatchColumnLoginHeader: 'Identifiant'
+classImportBatchColumnDoneHeader: 'Ce qui a été fait'
+classImportBatchColumnDirectoryHeader: 'Annuaire'
+classImportBatchNotApplicableLabel: 'Sans objet'
+classImportBatchRetryAction: 'Relancer'
+classImportBatchOpenRecordAction: 'Voir la fiche'
+classImportBatchRefreshAction: 'Actualiser'
+classImportBatchStillReachableHint: "Cet import reste consultable depuis « Imports récents »."
+classImportBatchFinishAction: 'Terminer'
