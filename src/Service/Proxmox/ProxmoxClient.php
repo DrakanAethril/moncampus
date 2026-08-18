@@ -95,6 +95,79 @@ class ProxmoxClient
     }
 
     /**
+     * The configuration of many guests at once, keyed by VMID.
+     *
+     * `/cluster/resources` lists every machine in one call but carries no IP, so learning where the
+     * addresses are means one `/config` per guest - twenty-eight round trips on a modest host. In
+     * sequence that is a scan nobody runs twice.
+     *
+     * So every request is fired first and the answers are consumed as they arrive: HttpClient's
+     * `request()` returns immediately and only reading a response blocks, and `stream()` hands them
+     * back in completion order. The cost becomes the slowest single call rather than their sum.
+     *
+     * A guest whose configuration cannot be read is skipped rather than fatal - one machine
+     * mid-migration must not cost the whole scan.
+     *
+     * @param list<ProxmoxGuest> $guests
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function configurations(array $guests): array
+    {
+        if ([] === $guests) {
+            return [];
+        }
+
+        $pending = [];
+        foreach ($guests as $guest) {
+            $url = \sprintf(
+                '%s/api2/json/nodes/%s/%s/%d/config',
+                $this->baseUrl,
+                rawurlencode($guest->node),
+                $guest->endpointSegment(),
+                $guest->vmid,
+            );
+
+            try {
+                $options = $this->tlsOptions;
+                $options['headers'] = $this->headers('GET');
+
+                // Nothing has been sent yet in any meaningful sense: this only queues the call.
+                $pending[$guest->vmid] = $this->httpClient->request('GET', $url, $options);
+            } catch (HttpClientExceptionInterface) {
+                continue;
+            }
+        }
+
+        $configurations = [];
+
+        foreach ($this->httpClient->stream($pending) as $response => $chunk) {
+            try {
+                if (!$chunk->isLast()) {
+                    continue;
+                }
+
+                if (200 !== $response->getStatusCode()) {
+                    continue;
+                }
+
+                $vmid = array_search($response, $pending, true);
+
+                if (!\is_int($vmid)) {
+                    continue;
+                }
+
+                $configurations[$vmid] = ProxmoxResponse::fromJson($response->getContent(false))->row();
+            } catch (HttpClientExceptionInterface|ProxmoxUnavailableException) {
+                // One unreadable guest, not one failed scan.
+                continue;
+            }
+        }
+
+        return $configurations;
+    }
+
+    /**
      * @param array{query?: array<string, scalar>, body?: array<string, scalar>} $payload
      */
     private function request(string $method, string $path, array $payload): ProxmoxResponse

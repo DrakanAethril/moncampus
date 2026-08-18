@@ -1,0 +1,175 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ range.label }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
+        {label: 'infrastructureAddressesNavLabel'|trans, url: path('app_infrastructure_ip_ranges')},
+        {label: range.label, url: path('app_infrastructure_ip_range', {id: range.id})},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ range.label }}{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_infrastructure_ip_ranges_edit', {id: range.id}) }}" class="cm-btn cm-btn--outline">{{ 'proxmoxHostEditAction'|trans }}</a>
+    <a href="{{ path('app_infrastructure_ip_range', {id: range.id, scan: 1}) }}" class="cm-btn cm-btn--primary">{{ 'ipRangeRescanAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    {% include 'infrastructure/_localnav.html.twig' %}
+
+    <p class="cm-host__meta cm-mono mb-3">
+        {{ range.cidr }} · {{ 'ipRangeGatewayFieldLabel'|trans|lower }} {{ range.gateway }} · {{ range.bridge }}{% if range.vlan %} · VLAN {{ range.vlan }}{% endif %}
+        · {{ range.firstUsable }} → {{ range.lastUsable }}
+    </p>
+
+    <div data-controller="ip-registry"
+         data-ip-registry-token-value="{{ csrf_token('infrastructure_action') }}"
+         data-ip-registry-adopt-url-value="{{ path('app_infrastructure_ip_range_adopt', {id: range.id}) }}"
+         data-ip-registry-release-url-value="{{ path('app_infrastructure_ip_range_release', {id: range.id}) }}"
+         data-ip-registry-release-confirm-value="{{ 'ipAllocationReleaseConfirmText'|trans }}">
+
+        {# The gaps first and the register second, and the order is the whole point of the screen:
+           what somebody needs on arriving is not the state of the register, it is the ways in which
+           it is wrong. #}
+        {% if report %}
+            {% if report.failure %}
+                <div class="cm-note mb-3" style="border-left-color: var(--cm-red-tx); background: var(--cm-red-bg); color: var(--cm-red-tx);">
+                    <span class="cm-note__icon" style="background: var(--cm-red-tx);">!</span>
+                    <span><strong>{{ 'ipRangeScanFailedTitle'|trans }}</strong> {{ report.failure }}</span>
+                </div>
+            {% else %}
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h3 class="card-title cm-condition-heading">{{ 'ipRangeGapsTitle'|trans }}</h3>
+                        {% if report.gaps is not empty %}
+                            <span class="cm-badge cm-badge--gold ms-2">{{ report.gaps|length }}</span>
+                        {% endif %}
+                        <span class="cm-actionbar__meta ms-auto">{{ 'ipRangeScanMeta'|trans({'%guests%': report.guestsRead}) }}</span>
+                    </div>
+                    {% if report.gaps is empty %}
+                        <div class="card-body text-center py-4 cm-guest__sub">{{ 'ipRangeNoGapText'|trans }}</div>
+                    {% else %}
+                        <div class="table-responsive">
+                            <table class="table cm-table">
+                                <tbody>
+                                    {% for gap in report.gaps %}
+                                        <tr>
+                                            <td style="width:130px"><span class="cm-badge cm-badge--{{ gap.badgeModifier }}">{{ gap.labelKey|trans }}</span></td>
+                                            <td style="width:130px" class="cm-mono">{{ gap.ip }}</td>
+                                            <td>
+                                                {% if gap.kind == 'conflict' %}
+                                                    {{ 'ipGapConflictText'|trans }}
+                                                    {% for guest in gap.guests %}<b>{{ guest.guestName }}</b> ({{ guest.vmid }}){{ not loop.last ? ' · ' }}{% endfor %}
+                                                {% elseif gap.kind == 'discovered' %}
+                                                    {{ 'ipGapDiscoveredText'|trans({'%guest%': gap.guests[0].guestName, '%vmid%': gap.guests[0].vmid}) }}
+                                                {% elseif gap.kind == 'orphan' %}
+                                                    {{ 'ipGapOrphanText'|trans({'%guest%': gap.registeredHostname ?? '—', '%vmid%': gap.registeredVmid ?? '—'}) }}
+                                                {% else %}
+                                                    {{ 'ipGapMovedText'|trans({'%was%': gap.registeredVmid ?? '—', '%now%': gap.guests[0].vmid}) }}
+                                                {% endif %}
+                                            </td>
+                                            <td style="width:200px">
+                                                <div class="cm-guest__actions">
+                                                    {% if gap.kind == 'discovered' %}
+                                                        <button type="button" class="cm-linkaction cm-linkaction--positive" data-action="ip-registry#adopt" data-ip="{{ gap.ip }}">{{ 'ipGapAdoptAction'|trans }}</button>
+                                                    {% elseif gap.kind == 'orphan' %}
+                                                        <button type="button" class="cm-linkaction cm-linkaction--danger" data-action="ip-registry#release" data-ip="{{ gap.ip }}">{{ 'ipGapReleaseAction'|trans }}</button>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="cm-actionbar" style="margin:0; padding: 12px 18px; border-top: 1px solid var(--cm-border-soft); background: var(--cm-surface-soft);">
+                            <button type="button" class="cm-btn cm-btn--outline cm-btn--sm" data-action="ip-registry#adoptAll">{{ 'ipGapAdoptAllAction'|trans }}</button>
+                            {# Said plainly, because « Libérer » on a screen full of virtual machines
+                               reads like something that might destroy one. #}
+                            <span class="cm-actionbar__meta ms-auto">{{ 'ipGapNoProxmoxWriteNote'|trans }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="cm-note mb-3">
+                <span class="cm-note__icon">i</span>
+                <span>
+                    {{ 'ipRangeNotScannedNote'|trans }}
+                    <a href="{{ path('app_infrastructure_ip_range', {id: range.id, scan: 1}) }}">{{ 'ipRangeRescanAction'|trans }}</a>
+                </span>
+            </div>
+        {% endif %}
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title cm-condition-heading">{{ 'ipRangeRegistryTitle'|trans }}</h3>
+                <div class="ms-auto d-flex align-items-center gap-3">
+                    {% set percent = capacity > 0 ? (used / capacity * 100)|round : 0 %}
+                    <div class="cm-meter" style="width:180px"><span class="cm-meter__fill{{ percent > 80 ? ' cm-meter__fill--high' }}" style="width: {{ percent }}%"></span></div>
+                    <span class="cm-guest__sub">{{ used }} / {{ capacity }} · <b>{{ 'ipRangeFreeCountText'|trans({'%count%': free}) }}</b></span>
+                </div>
+            </div>
+
+            <form method="get" class="cm-actionbar" style="margin:0; padding: 12px 18px; border-top: 1px solid var(--cm-border-soft); background: var(--cm-surface-soft);">
+                <input type="search" name="q" value="{{ filters.q }}" class="cm-input cm-field--md" placeholder="{{ 'ipRegistrySearchPlaceholder'|trans }}">
+                <label class="cm-field-label" for="filter-status">{{ 'proxmoxGuestStatusLabel'|trans }}</label>
+                <select id="filter-status" name="status" class="cm-select cm-field--sm">
+                    <option value="">{{ 'proxmoxFilterAllLabel'|trans }}</option>
+                    {% for case in statuses %}
+                        <option value="{{ case.value }}"{{ filters.status == case.value ? ' selected' }}>{{ case.labelKey|trans }}</option>
+                    {% endfor %}
+                </select>
+                <label class="cm-field-label" for="filter-origin">{{ 'ipRegistryOriginLabel'|trans }}</label>
+                <select id="filter-origin" name="origin" class="cm-select cm-field--sm">
+                    <option value="">{{ 'proxmoxFilterAllLabel'|trans }}</option>
+                    {% for case in origins %}
+                        <option value="{{ case.value }}"{{ filters.origin == case.value ? ' selected' }}>{{ case.labelKey|trans }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="cm-btn cm-btn--outline cm-btn--sm ms-auto">{{ 'proxmoxGuestRefreshAction'|trans }}</button>
+            </form>
+
+            <div class="table-responsive">
+                <table class="table cm-table">
+                    <thead>
+                        <tr>
+                            <th style="width:130px">{{ 'ipRegistryAddressLabel'|trans }}</th>
+                            <th>{{ 'proxmoxGuestMachineLabel'|trans }}</th>
+                            <th style="width:70px">VMID</th>
+                            <th style="width:160px">MAC</th>
+                            <th style="width:130px">{{ 'proxmoxGuestStatusLabel'|trans }}</th>
+                            <th style="width:120px">{{ 'ipRegistryOriginLabel'|trans }}</th>
+                            <th style="width:120px"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for allocation in allocations %}
+                            <tr class="{{ allocation.isLive ? '' : 'cm-row--out' }}">
+                                <td class="cm-mono" style="color: var(--cm-ink); font-weight: 600;">{{ allocation.ip }}</td>
+                                <td><span class="cm-guest__name">{{ allocation.hostname ?? '—' }}</span></td>
+                                <td class="cm-mono">{{ allocation.vmid ?? '—' }}</td>
+                                <td class="cm-mono">{{ allocation.macAddress ?? '—' }}</td>
+                                <td><span class="cm-badge cm-badge--{{ allocation.status.badgeModifier }}">{{ allocation.status.labelKey|trans }}</span></td>
+                                <td><span class="cm-badge cm-badge--{{ allocation.origin.badgeModifier }}">{{ allocation.origin.labelKey|trans }}</span></td>
+                                <td>
+                                    <div class="cm-guest__actions">
+                                        {% if allocation.isLive %}
+                                            <button type="button" class="cm-linkaction cm-linkaction--danger" data-action="ip-registry#release" data-ip="{{ allocation.ip }}">{{ 'ipGapReleaseAction'|trans }}</button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="7" class="text-center py-4 cm-guest__sub">{{ 'ipRegistryEmptyText'|trans }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,129 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'infrastructureImagesNavLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
+        {label: 'infrastructureHostsNavLabel'|trans, url: path('app_infrastructure_hosts')},
+        {label: host.label, url: path('app_infrastructure_guests', {id: host.id})},
+        {label: 'infrastructureImagesNavLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'infrastructureImagesNavLabel'|trans }}{% endblock %}
+
+{% block main %}
+    {% include 'infrastructure/_localnav.html.twig' %}
+
+    <p class="cm-host__meta mb-3">{{ host.label }} · {{ host.displayAddress }}</p>
+
+    {% if failure %}
+        <div class="cm-note" style="border-left-color: var(--cm-red-tx); background: var(--cm-red-bg); color: var(--cm-red-tx);">
+            <span class="cm-note__icon" style="background: var(--cm-red-tx);">!</span>
+            <span><strong>{{ 'proxmoxGuestsUnreachableTitle'|trans }}</strong> {{ failure }}</span>
+        </div>
+    {% else %}
+        {# Two halves, and they cost very different things. Templates are free - they are the rows
+           of /cluster/resources whose `template` flag is set, so they arrive with the machine list.
+           ISOs are files on storages, which nothing in the cluster listing knows about, so each
+           storage advertising `iso` content has to be asked in turn. #}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3 class="card-title cm-condition-heading">{{ 'proxmoxTemplatesTitle'|trans }}</h3>
+                <span class="cm-badge cm-badge--teal ms-2">{{ templates|length }}</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table cm-table">
+                    <thead>
+                        <tr>
+                            <th style="width:70px">VMID</th>
+                            <th>{{ 'proxmoxTemplateNameLabel'|trans }}</th>
+                            <th style="width:90px">{{ 'proxmoxGuestNodeLabel'|trans }}</th>
+                            <th style="width:110px">{{ 'proxmoxGuestCpuLabel'|trans }}</th>
+                            <th style="width:110px">{{ 'proxmoxGuestMemoryLabel'|trans }}</th>
+                            <th style="width:100px">{{ 'proxmoxGuestDiskLabel'|trans }}</th>
+                            <th style="width:200px"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for template in templates %}
+                            <tr>
+                                <td class="cm-mono">{{ template.vmid }}</td>
+                                <td>
+                                    <span class="cm-ico cm-ico--template">TPL</span>
+                                    <span class="cm-guest__name">{{ template.name }}</span>
+                                </td>
+                                <td class="cm-guest__sub">{{ template.node }}</td>
+                                <td class="cm-guest__sub">{{ template.maxCpu }} {{ 'proxmoxGuestCoresLabel'|trans }}</td>
+                                <td class="cm-guest__sub">{{ (template.maxMemoryBytes / 1073741824)|number_format(1, ',', ' ') }} Gio</td>
+                                <td class="cm-guest__sub">{{ (template.maxDiskBytes / 1073741824)|number_format(0, ',', ' ') }} Gio</td>
+                                <td>
+                                    <div class="cm-guest__actions">
+                                        {% if canCreate %}
+                                            <a class="cm-linkaction" href="{{ path('app_infrastructure_guests_new', {id: host.id, source: template.vmid}) }}">{{ 'proxmoxCreateFromTemplateAction'|trans }}</a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="7" class="text-center py-4 cm-guest__sub">{{ 'proxmoxNoTemplateText'|trans }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title cm-condition-heading">{{ 'proxmoxIsosTitle'|trans }}</h3>
+                <span class="cm-badge cm-badge--gold ms-2">{{ isos|length }}</span>
+            </div>
+            {# The note the fleet's reality makes necessary: there is no Windows template, so every
+               Windows machine is an ISO install, so "I reserve the address but cannot configure the
+               machine" is not an edge case - it is half the fleet. #}
+            <div class="card-body pb-0">
+                <div class="cm-note cm-note--gold">
+                    <span class="cm-note__icon">!</span>
+                    <span>{{ 'proxmoxIsoNoConfigNote'|trans }}</span>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table cm-table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'proxmoxIsoFileLabel'|trans }}</th>
+                            <th style="width:110px">{{ 'proxmoxGuestNodeLabel'|trans }}</th>
+                            <th style="width:130px">{{ 'proxmoxIsoStorageLabel'|trans }}</th>
+                            <th style="width:110px">{{ 'proxmoxIsoSizeLabel'|trans }}</th>
+                            <th style="width:200px"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for iso in isos %}
+                            <tr>
+                                <td>
+                                    <span class="cm-ico cm-ico--iso">ISO</span>
+                                    <span class="cm-guest__name">{{ iso.filename }}</span>
+                                </td>
+                                <td class="cm-guest__sub">{{ iso.node }}</td>
+                                <td class="cm-guest__sub">{{ iso.storage }}</td>
+                                <td class="cm-guest__sub">{{ (iso.sizeBytes / 1073741824)|number_format(2, ',', ' ') }} Gio</td>
+                                <td>
+                                    <div class="cm-guest__actions">
+                                        {% if canCreate %}
+                                            <a class="cm-linkaction" href="{{ path('app_infrastructure_guests_new', {id: host.id, iso: iso.volumeId}) }}">{{ 'proxmoxCreateFromIsoAction'|trans }}</a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="5" class="text-center py-4 cm-guest__sub">{{ 'proxmoxNoIsoText'|trans }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

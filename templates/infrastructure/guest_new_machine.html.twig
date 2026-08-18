@@ -1,0 +1,194 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'proxmoxGuestNewHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
+        {label: 'infrastructureHostsNavLabel'|trans, url: path('app_infrastructure_hosts')},
+        {label: host.label, url: path('app_infrastructure_guests', {id: host.id})},
+        {label: 'proxmoxGuestNewHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'proxmoxGuestNewHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% include 'infrastructure/_localnav.html.twig' %}
+
+    <form method="post" action="{{ path('app_infrastructure_guests_new_confirm', {id: host.id}) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('infrastructure_action') }}">
+
+        <div class="card" style="max-width: 860px;">
+            {% include 'infrastructure/_wizard_steps.html.twig' with {step: 2} %}
+
+            <div class="cm-fieldset">
+                {% if template %}
+                    <div class="cm-note">
+                        <span class="cm-note__icon">i</span>
+                        <span>
+                            {{ (draft.linkedClone ? 'proxmoxWizardLinkedSourceText' : 'proxmoxWizardFullSourceText')|trans({
+                                '%template%': template.name,
+                                '%vmid%': template.vmid,
+                                '%disk%': (template.maxDiskBytes / 1073741824)|number_format(0, ',', ' '),
+                            }) }}
+                            <a href="{{ path('app_infrastructure_guests_new', {id: host.id}) }}">{{ 'proxmoxWizardChangeSourceAction'|trans }}</a>
+                        </span>
+                    </div>
+                {% else %}
+                    <div class="cm-note cm-note--gold">
+                        <span class="cm-note__icon">!</span>
+                        <span>
+                            {{ 'proxmoxWizardIsoSourceText'|trans({'%iso%': draft.isoVolumeId}) }}
+                            <a href="{{ path('app_infrastructure_guests_new', {id: host.id}) }}">{{ 'proxmoxWizardChangeSourceAction'|trans }}</a>
+                        </span>
+                    </div>
+                {% endif %}
+            </div>
+
+            <fieldset class="cm-fieldset">
+                <legend class="cm-fieldset__legend">{{ 'proxmoxWizardIdentityLegend'|trans }}</legend>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="cm-field-label" for="hostname">{{ 'proxmoxWizardNameFieldLabel'|trans }}</label>
+                        <input id="hostname" name="hostname" class="cm-input w-100" required value="{{ suggestedHostname }}"
+                               pattern="[a-z0-9]([a-z0-9-]*[a-z0-9])?" maxlength="63">
+                        {# One field, hostname rules. A QEMU machine has no hostname option at all -
+                           Proxmox derives cloud-init's local-hostname from the VM name - so this
+                           single value has to satisfy the stricter of the two rule sets. #}
+                        <div class="cm-guest__sub mt-1">{{ 'proxmoxWizardNameHelp'|trans }}</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="cm-field-label" for="vmid">VMID</label>
+                        <input id="vmid" name="vmid" type="number" class="cm-input w-100" required value="{{ suggestedVmid }}"
+                               min="{{ host.vmidMin ?? 100 }}" max="{{ host.vmidMax ?? 999999999 }}">
+                        <div class="cm-guest__sub mt-1">
+                            {% if host.vmidMin and host.vmidMax %}
+                                {{ 'proxmoxWizardVmidHelp'|trans({'%min%': host.vmidMin, '%max%': host.vmidMax}) }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="cm-field-label" for="node">{{ 'proxmoxGuestNodeLabel'|trans }}</label>
+                        <select id="node" name="node" class="cm-select w-100" required>
+                            {% for node in nodes %}
+                                <option value="{{ node.name }}">{{ node.name }} — {{ (100 - node.memoryPercent)|round }} % {{ 'proxmoxWizardFreeRamText'|trans }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="cm-fieldset">
+                <legend class="cm-fieldset__legend">{{ 'proxmoxWizardResourcesLegend'|trans }}</legend>
+                {# Every ceiling is written under its own field, before the mistake: a « maximum 8 »
+                   under Cœurs is worth more than an error message after validation. #}
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="cm-field-label" for="cores">{{ 'proxmoxWizardCoresFieldLabel'|trans }}</label>
+                        <input id="cores" name="cores" type="number" min="1" {% if scope.maxCores %}max="{{ scope.maxCores }}"{% endif %} class="cm-input w-100" required value="{{ template ? template.maxCpu : 2 }}">
+                        {% if scope.maxCores %}<div class="cm-guest__sub mt-1">{{ 'proxmoxWizardMaxText'|trans({'%max%': scope.maxCores}) }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="cm-field-label" for="memoryMib">{{ 'proxmoxWizardMemoryFieldLabel'|trans }}</label>
+                        <input id="memoryMib" name="memoryMib" type="number" min="128" step="128" {% if scope.maxMemoryMib %}max="{{ scope.maxMemoryMib }}"{% endif %} class="cm-input w-100" required value="{{ template ? (template.maxMemoryBytes / 1048576)|round : 2048 }}">
+                        {% if scope.maxMemoryMib %}<div class="cm-guest__sub mt-1">{{ 'proxmoxWizardMaxText'|trans({'%max%': scope.maxMemoryMib}) }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="cm-field-label" for="diskGib">{{ 'proxmoxWizardDiskFieldLabel'|trans }}</label>
+                        <input id="diskGib" name="diskGib" type="number" min="1" {% if scope.maxDiskGib %}max="{{ scope.maxDiskGib }}"{% endif %} class="cm-input w-100" required value="{{ template ? (template.maxDiskBytes / 1073741824)|round : 16 }}">
+                        {% if scope.maxDiskGib %}<div class="cm-guest__sub mt-1">{{ 'proxmoxWizardMaxText'|trans({'%max%': scope.maxDiskGib}) }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="cm-field-label" for="storage">{{ 'proxmoxWizardStorageFieldLabel'|trans }}</label>
+                        <select id="storage" name="storage" class="cm-select w-100" required>
+                            {% for storage in storages %}
+                                {% if 'images' in storage.content|default('') %}
+                                    <option value="{{ storage.storage }}">{{ storage.storage }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="cm-fieldset">
+                <legend class="cm-fieldset__legend">{{ 'proxmoxWizardAddressingLegend'|trans }}</legend>
+
+                {% if ranges is empty %}
+                    <div class="cm-note cm-note--gold">
+                        <span class="cm-note__icon">!</span>
+                        <span>
+                            {{ 'proxmoxWizardNoRangeText'|trans }}
+                            <a href="{{ path('app_infrastructure_ip_ranges_new') }}">{{ 'ipRangeAddAction'|trans }}</a>
+                        </span>
+                    </div>
+                {% else %}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="cm-field-label" for="rangeId">{{ 'proxmoxWizardRangeFieldLabel'|trans }}</label>
+                            <select id="rangeId" name="rangeId" class="cm-select w-100" required>
+                                {% for r in ranges %}
+                                    {% set summary = rangeSummaries[r.id] %}
+                                    <option value="{{ r.id }}">{{ r.label }} — {{ r.summary }} ({{ 'ipRangeFreeCountText'|trans({'%count%': summary.free}) }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="cm-field-label" for="ip">{{ 'proxmoxWizardIpFieldLabel'|trans }}</label>
+                            <input id="ip" name="ip" class="cm-input cm-mono w-100" placeholder="{{ rangeSummaries[ranges[0].id].next ?? '' }}">
+                            {# Left blank the allocator takes the next free one; typed, that exact
+                               address is reserved or refused. Nothing is taken until the summary is
+                               confirmed. #}
+                            <div class="cm-guest__sub mt-1">{{ 'proxmoxWizardIpHelp'|trans }}</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="cm-field-label" for="pool">{{ 'proxmoxWizardPoolFieldLabel'|trans }}</label>
+                            <input id="pool" class="cm-input w-100" value="{{ host.managedPool ?? '—' }}" disabled>
+                            {# Disabled and shown, not hidden: the perimeter decides, and one should
+                               see that it is deciding. #}
+                            <div class="cm-guest__sub mt-1">{{ 'proxmoxWizardPoolHelp'|trans }}</div>
+                        </div>
+                    </div>
+
+                    {% if template %}
+                        <div class="cm-note mt-3">
+                            <span class="cm-note__icon">i</span>
+                            <span>{{ 'proxmoxWizardCloudInitNote'|trans }}</span>
+                        </div>
+                        <label class="cm-field-label d-block mt-3">
+                            <input type="checkbox" name="startAfterCreation" value="1" checked>
+                            {{ 'proxmoxWizardStartAfterLabel'|trans }}
+                        </label>
+                    {% else %}
+                        {# The one place in the feature where the screen admits it is giving somebody
+                           work to do by hand - so the three values to copy are pulled out of the
+                           sentence and set where they can be read off a second screen. #}
+                        <div class="cm-note cm-note--gold mt-3">
+                            <span class="cm-note__icon">!</span>
+                            <span>
+                                <strong>{{ 'proxmoxWizardIsoManualTitle'|trans }}</strong>
+                                {{ 'proxmoxWizardIsoManualText'|trans }}
+                                <div class="cm-fingerprint mt-2">
+                                    {{ 'proxmoxWizardIpFieldLabel'|trans }} : <b data-manual-ip>{{ rangeSummaries[ranges[0].id].next ?? '' }}</b>/{{ ranges[0].prefixLength }}
+                                    &nbsp;·&nbsp; {{ 'ipRangeGatewayFieldLabel'|trans }} : <b>{{ ranges[0].gateway }}</b>
+                                </div>
+                            </span>
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </fieldset>
+
+            <div class="cm-fieldset">
+                <div class="cm-actionbar" style="margin-top: 0; border-top: 0; padding-top: 0;">
+                    <a href="{{ path('app_infrastructure_guests_new', {id: host.id}) }}" class="cm-btn cm-btn--outline">{{ 'proxmoxWizardBackAction'|trans }}</a>
+                    <div class="cm-actionbar__buttons">
+                        <a href="{{ path('app_infrastructure_guests', {id: host.id}) }}" class="cm-btn cm-btn--outline">{{ 'cancelAction'|trans }}</a>
+                        <button type="submit" class="cm-btn cm-btn--primary"{{ ranges is empty ? ' disabled' }}>{{ 'proxmoxWizardCreateAction'|trans }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+{% endblock %}

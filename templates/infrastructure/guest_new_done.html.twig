@@ -1,0 +1,80 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'proxmoxGuestCreatedHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
+        {label: 'infrastructureHostsNavLabel'|trans, url: path('app_infrastructure_hosts')},
+        {label: host.label, url: path('app_infrastructure_guests', {id: host.id})},
+        {label: 'proxmoxGuestCreatedHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'proxmoxGuestCreatedHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% include 'infrastructure/_localnav.html.twig' %}
+
+    <div class="card" style="max-width: 760px;"
+         data-controller="proxmox-guests"
+         data-proxmox-guests-token-value="{{ csrf_token('infrastructure_action') }}"
+         data-proxmox-guests-confirm-stop-value="">
+        {% include 'infrastructure/_wizard_steps.html.twig' with {step: 3} %}
+
+        <div class="cm-fieldset">
+            <div class="cm-note">
+                <span class="cm-note__icon">i</span>
+                <span>
+                    {{ 'proxmoxGuestCreatedText'|trans({'%name%': request.hostname, '%vmid%': request.vmid}) }}
+                    {# Followed for as long as it takes, the same way the machines list follows a
+                       power action: Proxmox answers a clone with a task id and expects to be asked. #}
+                    <span data-proxmox-guests-target="pending" data-status-url="{{ path('app_infrastructure_operation_status', {id: operation.id}) }}">…</span>
+                </span>
+            </div>
+        </div>
+
+        <div class="cm-fieldset">
+            <legend class="cm-fieldset__legend">{{ 'proxmoxWizardSummaryStep'|trans }}</legend>
+            <dl class="cm-sum">
+                <dt>{{ 'proxmoxWizardNameFieldLabel'|trans }}</dt><dd>{{ request.hostname }}</dd>
+                <dt>VMID</dt><dd class="cm-mono">{{ request.vmid }}</dd>
+                <dt>{{ 'proxmoxGuestNodeLabel'|trans }}</dt><dd>{{ request.node }}</dd>
+                <dt>{{ 'proxmoxWizardResourcesLegend'|trans }}</dt>
+                <dd>{{ request.cores }} {{ 'proxmoxGuestCoresLabel'|trans }} · {{ request.memoryMib }} Mio · {{ request.diskGib }} Gio</dd>
+                <dt>{{ 'proxmoxWizardRangeFieldLabel'|trans }}</dt><dd>{{ request.range.label }}</dd>
+                <dt>{{ 'proxmoxWizardIpFieldLabel'|trans }}</dt>
+                <dd class="cm-mono">{{ request.ip }}/{{ request.range.prefixLength }} · {{ request.range.gateway }}</dd>
+            </dl>
+        </div>
+
+        {% if not request.isConfigurable %}
+            {# MonCampus always allocates, and configures when it can. Here it cannot - so it says
+               so, and sets out the values to type rather than showing fields that would do nothing. #}
+            <div class="cm-fieldset">
+                <div class="cm-note cm-note--gold">
+                    <span class="cm-note__icon">!</span>
+                    <span>
+                        <strong>{{ 'proxmoxWizardIsoManualTitle'|trans }}</strong>
+                        {{ 'proxmoxWizardIsoManualText'|trans }}
+                        <div class="cm-fingerprint mt-2">
+                            {{ 'proxmoxWizardIpFieldLabel'|trans }} : <b>{{ request.ip }}/{{ request.range.prefixLength }}</b>
+                            &nbsp;·&nbsp; {{ 'ipRangeGatewayFieldLabel'|trans }} : <b>{{ request.range.gateway }}</b>
+                            &nbsp;·&nbsp; {{ 'proxmoxWizardNameFieldLabel'|trans }} : <b>{{ request.hostname }}</b>
+                        </div>
+                    </span>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="cm-fieldset">
+            <div class="cm-actionbar" style="margin-top: 0; border-top: 0; padding-top: 0;">
+                <div class="cm-actionbar__buttons">
+                    <a href="{{ path('app_infrastructure_ip_range', {id: request.range.id}) }}" class="cm-btn cm-btn--outline">{{ 'ipRangeRegistryAction'|trans }}</a>
+                    <a href="{{ path('app_infrastructure_guests', {id: host.id}) }}" class="cm-btn cm-btn--primary">{{ 'proxmoxWizardBackToMachinesAction'|trans }}</a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -360,6 +360,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/infrastructure/hosts',
             '/infrastructure/hosts/new',
             '/infrastructure/operations',
+            '/infrastructure/ip-ranges',
+            '/infrastructure/ip-ranges/new',
         ];
 
         $this->assertScreens($this->admin, array_fill_keys($screens, 200));

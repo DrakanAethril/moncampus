@@ -62,6 +62,66 @@ class ProxmoxInventory
     }
 
     /**
+     * The storages of one node, as `GET /nodes/{n}/storage` reports them.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function storages(ProxmoxClient $client, string $node): array
+    {
+        return $client->get('/nodes/'.rawurlencode($node).'/storage')->rows();
+    }
+
+    /**
+     * Every ISO the host can install from, across its nodes and their storages.
+     *
+     * Unlike the templates, these genuinely need their own calls: an ISO is a file on a storage,
+     * not a guest, so nothing in `/cluster/resources` knows about it. Only storages that advertise
+     * `iso` content are asked, which is what keeps the count of calls down to the handful that can
+     * answer.
+     *
+     * @param list<ProxmoxNode> $nodes
+     *
+     * @return list<ProxmoxStorageItem>
+     */
+    public function isoImages(ProxmoxClient $client, array $nodes): array
+    {
+        $images = [];
+
+        foreach ($nodes as $node) {
+            if (!$node->isOnline()) {
+                continue;
+            }
+
+            foreach ($this->storages($client, $node->name) as $storage) {
+                $read = ProxmoxResponse::of($storage);
+                $name = $read->string('storage');
+
+                if ('' === $name || !str_contains($read->string('content'), 'iso')) {
+                    continue;
+                }
+
+                try {
+                    $rows = $client->get(
+                        \sprintf('/nodes/%s/storage/%s/content', rawurlencode($node->name), rawurlencode($name)),
+                        ['content' => 'iso'],
+                    )->rows();
+                } catch (ProxmoxUnavailableException) {
+                    // A storage that is declared but offline is not a reason to show no ISO at all.
+                    continue;
+                }
+
+                foreach ($rows as $row) {
+                    $images[] = ProxmoxStorageItem::fromRow($row, $node->name, $name);
+                }
+            }
+        }
+
+        usort($images, static fn (ProxmoxStorageItem $a, ProxmoxStorageItem $b): int => strnatcasecmp($a->filename, $b->filename));
+
+        return $images;
+    }
+
+    /**
      * @param list<ProxmoxGuest> $guests
      *
      * @return array{nodes: int|null, guests: int, running: int} the snapshot recorded on the host
