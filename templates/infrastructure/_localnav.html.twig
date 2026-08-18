@@ -1,0 +1,16 @@
+{# The local navigation bar of the Proxmox console, on EVERY screen of the area.
+
+   This area is deliberately absent from the application's menus, so this strip is the only way
+   from one of its screens to the next: without it each one would be a dead end you leave by
+   retyping a URL. The rule it enforces is that every feature must be reachable by clicking from
+   /infrastructure - a screen you can only open by knowing its address is a bug here.
+
+   Not .cm-tabs: tabs switch between views of one screen, this moves between screens. `activeNav`
+   is the key of the current one, passed by every controller of the area.
+
+   Entries appear as their screens are built; there is deliberately no disabled entry for a screen
+   that does not exist yet - a link that goes nowhere teaches nothing. #}
+<nav class="cm-localnav" aria-label="{{ 'infrastructureLocalNavLabel'|trans }}">
+    <a href="{{ path('app_infrastructure') }}" class="cm-localnav__link{{ activeNav == 'overview' ? ' is-active' }}">{{ 'infrastructureOverviewNavLabel'|trans }}</a>
+    <a href="{{ path('app_infrastructure_hosts') }}" class="cm-localnav__link{{ activeNav == 'hosts' ? ' is-active' }}">{{ 'infrastructureHostsNavLabel'|trans }}</a>
+</nav>

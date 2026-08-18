@@ -1,0 +1,138 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'infrastructureHostsNavLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
+        {label: 'infrastructureHostsNavLabel'|trans, url: path('app_infrastructure_hosts')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'infrastructureHostsNavLabel'|trans }}{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_infrastructure_hosts_new') }}" class="cm-btn cm-btn--primary">{{ 'proxmoxHostAddAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    {% include 'infrastructure/_localnav.html.twig' %}
+    {% include 'infrastructure/_encryption_banner.html.twig' %}
+
+    {# Cards, not a table: a host carries a live state - a dot, a version, its credential mode,
+       three counters - that a row cannot show. And "tested 4 minutes ago" is the point of the
+       footer: the dot reports the LAST KNOWN state, not the current one, because sounding out
+       every hypervisor to draw this page would make it as slow as the worst of them.
+
+       The card of a host with no provisioning credentials simply has no creation action. Not a
+       greyed one: there is nothing to enable. #}
+    {% if hosts is empty %}
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <p class="mb-3">{{ 'infrastructureNoHostText'|trans }}</p>
+                <a href="{{ path('app_infrastructure_hosts_new') }}" class="cm-btn cm-btn--primary">{{ 'proxmoxHostAddAction'|trans }}</a>
+            </div>
+        </div>
+    {% else %}
+        <div class="cm-hostgrid"
+             data-controller="proxmox-host-list"
+             data-proxmox-host-list-token-value="{{ csrf_token('infrastructure_action') }}">
+            {% for host in hosts %}
+                {% set state = host.lastCheckOk is null ? 'unknown' : (host.lastCheckOk ? 'ok' : 'down') %}
+                <article class="cm-host{{ host.isActive ? '' : ' cm-host--inactive' }}"
+                         data-proxmox-host-list-target="card"
+                         data-host-id="{{ host.id }}">
+                    <div class="cm-host__top">
+                        <span class="cm-statusdot cm-statusdot--{{ state }}" style="margin-top:7px"
+                              data-proxmox-host-list-target="dot"
+                              title="{{ ('proxmoxHostState' ~ state|title ~ 'Label')|trans }}"></span>
+                        <div style="flex:1">
+                            <div class="cm-host__name">{{ host.label }}</div>
+                            <div class="cm-host__url">{{ host.displayAddress }}</div>
+                        </div>
+                    </div>
+                    <div class="cm-host__body">
+                        <div class="cm-host__badges">
+                            {% if not host.isActive %}
+                                <span class="cm-badge cm-badge--gray">{{ 'proxmoxHostInactiveBadge'|trans }}</span>
+                            {% elseif state == 'ok' %}
+                                <span class="cm-badge cm-badge--green" data-proxmox-host-list-target="stateBadge">{{ 'proxmoxHostReachableBadge'|trans }}</span>
+                            {% elseif state == 'down' %}
+                                <span class="cm-badge cm-badge--red" data-proxmox-host-list-target="stateBadge">{{ 'proxmoxHostUnreachableBadge'|trans }}</span>
+                            {% else %}
+                                <span class="cm-badge cm-badge--gray" data-proxmox-host-list-target="stateBadge">{{ 'proxmoxHostNeverCheckedBadge'|trans }}</span>
+                            {% endif %}
+                            {% if host.pveVersion %}
+                                <span class="cm-badge cm-badge--blue">PVE {{ host.pveVersion }}</span>
+                            {% endif %}
+                            <span class="cm-badge cm-badge--teal">{{ host.credentialKind.labelKey|trans }}</span>
+                            {% if not host.tlsMode.isVerified %}
+                                {# Permanent, and red: an unverified hypervisor connection is a
+                                   standing state of the installation, not a transient warning. #}
+                                <span class="cm-badge cm-badge--red">{{ 'proxmoxHostTlsUnverifiedBadge'|trans }}</span>
+                            {% endif %}
+                            {% if not host.canCreateGuests %}
+                                <span class="cm-badge cm-badge--gray">{{ 'proxmoxHostReadOnlyBadge'|trans }}</span>
+                            {% endif %}
+                        </div>
+
+                        {% if state == 'down' %}
+                            <div class="cm-note" style="border-left-color: var(--cm-red-tx); background: var(--cm-red-bg); color: var(--cm-red-tx); margin:0;">
+                                <span>{{ host.lastCheckMessage }}</span>
+                            </div>
+                        {% elseif state == 'ok' %}
+                            <div class="cm-host__kpis">
+                                <div class="cm-host__kpi">
+                                    <div class="cm-host__kpi-value" data-proxmox-host-list-target="nodeCount">{{ host.lastNodeCount ?? '—' }}</div>
+                                    <div class="cm-host__kpi-label">{{ 'proxmoxHostNodesLabel'|trans }}</div>
+                                </div>
+                                <div class="cm-host__kpi">
+                                    <div class="cm-host__kpi-value" data-proxmox-host-list-target="guestCount">{{ host.lastGuestCount ?? '—' }}</div>
+                                    <div class="cm-host__kpi-label">{{ 'proxmoxHostGuestsLabel'|trans }}</div>
+                                </div>
+                                <div class="cm-host__kpi">
+                                    <div class="cm-host__kpi-value" data-proxmox-host-list-target="runningCount">{{ host.lastRunningCount ?? '—' }}</div>
+                                    <div class="cm-host__kpi-label">{{ 'proxmoxHostRunningLabel'|trans }}</div>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <div class="cm-host__meta">
+                            {% if host.managedPool %}
+                                {{ 'proxmoxHostPoolMeta'|trans }} <b>{{ host.managedPool }}</b>
+                            {% else %}
+                                {{ 'proxmoxHostNoPoolMeta'|trans }}
+                            {% endif %}
+                            {% if host.vmidMin and host.vmidMax %} · VMID {{ host.vmidMin }}–{{ host.vmidMax }}{% endif %}
+                            ·
+                            <span data-proxmox-host-list-target="checkedAt">
+                                {% if host.lastCheckAt %}
+                                    {{ 'proxmoxHostCheckedAtMeta'|trans({'%when%': host.lastCheckAt|date('d/m/Y H:i')}) }}
+                                {% else %}
+                                    {{ 'proxmoxHostNeverCheckedMeta'|trans }}
+                                {% endif %}
+                            </span>
+                        </div>
+
+                        <p class="cm-host__meta" data-proxmox-host-list-target="feedback" hidden></p>
+                    </div>
+                    <div class="cm-host__foot">
+                        <button type="button" class="cm-linkaction"
+                                data-action="proxmox-host-list#check"
+                                data-url="{{ path('app_infrastructure_hosts_check', {id: host.id}) }}">
+                            {{ 'proxmoxHostCheckAction'|trans }}
+                        </button>
+                        <a class="cm-linkaction" href="{{ path('app_infrastructure_hosts_edit', {id: host.id}) }}">{{ 'proxmoxHostEditAction'|trans }}</a>
+                        <button type="button" class="cm-linkaction {{ host.isActive ? 'cm-linkaction--danger' : 'cm-linkaction--positive' }} cm-host__spacer"
+                                data-action="proxmox-host-list#toggleActive"
+                                data-url="{{ path('app_infrastructure_hosts_deactivate', {id: host.id}) }}"
+                                data-confirm="{{ (host.isActive ? 'proxmoxHostDeactivateConfirmText' : 'proxmoxHostReactivateConfirmText')|trans({'%host%': host.label}) }}">
+                            {{ (host.isActive ? 'proxmoxHostDeactivateAction' : 'proxmoxHostReactivateAction')|trans }}
+                        </button>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}

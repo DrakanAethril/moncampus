@@ -1,0 +1,16 @@
+{# Shown whenever PROXMOX_SECRET_KEY is missing or badly sized.
+
+   A blank key does not empty the console, it makes every stored secret unreadable - and the state
+   worth fearing is the silent one, where the screens look merely empty and an administrator
+   concludes there is nothing declared. Same reasoning as `app:antivirus:check`, whose whole reason
+   for existing is that a blank DSN disables scanning without saying so. #}
+{% if not encryptionAvailable %}
+    <div class="cm-note" style="border-left-color: var(--cm-red-tx); background: var(--cm-red-bg); color: var(--cm-red-tx); margin-bottom: 16px;">
+        <span class="cm-note__icon" style="background: var(--cm-red-tx);">!</span>
+        <span>
+            <strong>{{ 'proxmoxEncryptionUnavailableTitle'|trans }}</strong>
+            {{ 'proxmoxEncryptionUnavailableText'|trans }}
+            {% if encryptionFailure %}<br><code>{{ encryptionFailure }}</code>{% endif %}
+        </span>
+    </div>
+{% endif %}

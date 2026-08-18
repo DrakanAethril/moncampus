@@ -222,8 +222,38 @@ services:
     volumes:
       - clamav_db:/var/lib/clamav
 
+  # Stand-in Proxmox VE API for the console at /infrastructure, reachable from the php container at
+  # https://proxmox-mock:8006 - see docker/proxmox-mock/README.md for the credentials to paste into
+  # « Déclarer un hôte ».
+  #
+  # There is no real Proxmox here and there cannot be: Proxmox VE is a bare-metal hypervisor, not
+  # an image. What the console needs to be developed against is not a hypervisor but *something
+  # that speaks /api2/json*, so that is what this serves - over TLS, with a small inventory whose
+  # machines really do start and stop and whose tasks really do take a couple of seconds. Same
+  # spirit as Mailpit standing in for SMTP and MinIO for S3.
+  #
+  # Plain python:3.13-slim with a bind-mounted script: no image to build, no dependency to install,
+  # and the file is readable by anyone wondering what a payload actually looks like. It is
+  # deliberately NOT a Proxmox emulator - anything unimplemented answers 501 saying so.
+  #
+  # No port is published: nothing outside the compose network has any business reaching it, and the
+  # console talks to it from inside the php container anyway.
+  proxmox-mock:
+    image: python:3.13-slim
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/srv/entrypoint.sh"]
+    environment:
+      MOCK_HOSTNAME: proxmox-mock
+    volumes:
+      - ./docker/proxmox-mock:/srv:ro
+      - proxmox_mock_certs:/certs
+
 volumes:
   database_data:
   ldap_data:
   minio_data:
   clamav_db:
+  # Named rather than anonymous so the generated CA - and therefore the PEM pasted into a declared
+  # host - survives a `docker compose restart`. A `down -v` regenerates it, which is the moment to
+  # re-paste it.
+  proxmox_mock_certs:

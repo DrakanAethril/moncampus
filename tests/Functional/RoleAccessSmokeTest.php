@@ -343,6 +343,35 @@ class RoleAccessSmokeTest extends FunctionalTestCase
     }
 
     /**
+     * The Proxmox console. Asserted on its own rather than folded into the tables above, and it is
+     * the one place in this file that is genuinely load-bearing rather than merely useful.
+     *
+     * /infrastructure appears in no menu at all - that is a frozen decision of its design, so no
+     * screen anywhere links to it and nobody would notice by clicking that a role had gained
+     * access. This table is the only thing that would. It also pins **staff**, who are not in the
+     * fixtures above: they reach /settings and /directory, and the natural mistake when widening
+     * this area later is to let them in here too. They must not - starting and stopping a
+     * hypervisor's machines is not administrative work.
+     */
+    public function testInfrastructureIsAdminOnly(): void
+    {
+        $screens = [
+            '/infrastructure',
+            '/infrastructure/hosts',
+            '/infrastructure/hosts/new',
+        ];
+
+        $this->assertScreens($this->admin, array_fill_keys($screens, 200));
+
+        $staff = $this->createUser(['ROLE_USER', 'ROLE_STAFF'], 'smoke.staff');
+        $staffLead = $this->createUser(['ROLE_USER', 'ROLE_STAFF-LEAD'], 'smoke.stafflead');
+
+        foreach ([$this->student, $this->teacher, $this->tutor, $staff, $staffLead] as $user) {
+            $this->assertScreens($user, array_fill_keys($screens, 403));
+        }
+    }
+
+    /**
      * @param array<string, int> $expectations path => expected status code
      */
     private function assertScreens(User $user, array $expectations): void

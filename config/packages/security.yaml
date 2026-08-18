@@ -70,6 +70,14 @@ security:
         # kernel and must stay public: it's fetched directly by iOS (via itms-services://), not by
         # a logged-in browser. Only the listing pages that link to these (11a/11b) require login.
         - { path: ^/downloads, roles: PUBLIC_ACCESS }
+        # The Proxmox console. Admin-only, and stricter than /settings on purpose: staff have no
+        # business starting or stopping a hypervisor's machines. Must sit above the '^/,
+        # roles: ROLE_USER' catch-all like every other rule here - a rule placed after it never
+        # applies, and #[IsGranted] on the controller cannot tighten what access_control already
+        # allowed. This is the whole door: there is no link to /infrastructure anywhere in the
+        # menus, so nothing but this line and App\Security\Voter\ProxmoxHostVoter stands between a
+        # curious URL and a hypervisor.
+        - { path: ^/infrastructure, roles: ROLE_ADMIN }
         - { path: ^/directory, roles: [ROLE_ADMIN, ROLE_STAFF, 'ROLE_STAFF-LEAD'] }
         - { path: ^/settings, roles: [ROLE_ADMIN, ROLE_STAFF, 'ROLE_STAFF-LEAD'] }
         - { path: ^/, roles: ROLE_USER }
