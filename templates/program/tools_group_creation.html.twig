@@ -142,7 +142,6 @@
                             </button>
                         </div>
                         <div class="cm-grp-toolbar__row">
-                            <button type="button" class="btn btn-outline-secondary btn-sm" data-action="click->group-creation#sendMessage">{{ 'programToolsSendMessageButtonLabel'|trans }}</button>
                             <button type="button" class="btn btn-outline-secondary btn-sm" data-action="click->group-creation#exportPdf">{{ 'programToolsExportPdfButtonLabel'|trans }}</button>
                             {# Enabled only while the on-screen groups ARE a saved lot: sharing hands
                                over a database row, not the screen, so there has to be a row. #}
@@ -210,19 +209,14 @@
 
             <div class="cm-grp-toast" data-group-creation-target="toast" hidden></div>
 
-            {# Real (non-AJAX) form submissions for PDF export / send-to-messaging - see
-               ProgramToolsController::exportGroupsPdf()/sendGroupsToMessaging()'s docblocks for
-               why these aren't fetch() calls: the browser handles the file download / redirect
-               natively, and the payload is built client-side from whatever's on screen right now. #}
+            {# A real (non-AJAX) form submission for the PDF export - see
+               ProgramToolsController::exportGroupsPdf()'s docblock for why this isn't a fetch()
+               call: the browser handles the file download natively, and the payload is built
+               client-side from whatever's on screen right now. #}
             <form method="post" action="{{ path('app_program_tools_group_creation_pdf', {id: program.id}) }}" data-group-creation-target="pdfForm" hidden>
                 <input type="hidden" name="_token" value="{{ csrf_token('program_group_creation') }}">
                 <input type="hidden" name="groups" data-group-creation-target="pdfFormGroups">
                 <input type="hidden" name="lotName" data-group-creation-target="pdfFormLotName">
-            </form>
-            <form method="post" action="{{ path('app_program_tools_group_creation_send_message', {id: program.id}) }}" data-group-creation-target="messageForm" hidden>
-                <input type="hidden" name="_token" value="{{ csrf_token('program_group_creation') }}">
-                <input type="hidden" name="groups" data-group-creation-target="messageFormGroups">
-                <input type="hidden" name="lotName" data-group-creation-target="messageFormLotName">
             </form>
         </div>
     {% endif %}

@@ -18,7 +18,6 @@ use App\Service\GotenbergUnavailableException;
 use App\Service\GroupCreationRequest;
 use App\Service\GroupCreationService;
 use App\Service\JsonRequestPayload;
-use App\Service\PostValue;
 use App\Service\UnsatisfiableGroupConstraintsException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -198,7 +197,7 @@ class ProgramToolsController extends AbstractController
         $payload = JsonRequestPayload::fromRequest($request);
         $name = trim($payload->string('name'));
         if ('' === $name) {
-            $name = 'Lot du '.(new \DateTimeImmutable())->format('d/m/Y');
+            $name = (new \DateTimeImmutable())->format('d/m/Y');
         }
 
         $groups = $payload->intLists('groups');
@@ -320,43 +319,6 @@ class ProgramToolsController extends AbstractController
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, \sprintf('%s.pdf', $filename)),
         ]);
-    }
-
-    // Also a real form POST, not AJAX - stages the composition in the session for
-    // MessageController::compose() to pick up as initial form data, then redirects there so the
-    // teacher reviews/edits before actually sending (never auto-sent) - see that action's
-    // docblock.
-    #[Route(path: '/programs/{id}/tools/group-creation/send-message', name: 'app_program_tools_group_creation_send_message', methods: ['POST'])]
-    public function sendGroupsToMessaging(int $id, Request $request, ProgramRepository $repository, StructureAccessChecker $accessChecker): Response
-    {
-        $program = $this->findForTeacherOrStaff($id, $repository, $accessChecker);
-        $this->assertCsrf($request->request->get('_token'));
-
-        // Unlike the other two actions this one is a form POST, so the groups travel as a JSON
-        // string in a field rather than as the request body.
-        $groups = JsonRequestPayload::listFromJson(PostValue::string($request, 'groups', '[]'));
-        $lotName = trim(PostValue::string($request, 'lotName'));
-        if ([] === $groups) {
-            throw $this->createNotFoundException();
-        }
-
-        $subject = '' !== $lotName
-            ? \sprintf('Groupes — %s — %s', $program->getDisplayShortName(), $lotName)
-            : \sprintf('Groupes — %s', $program->getDisplayShortName());
-
-        $bodyParts = [];
-        foreach ($groups as $group) {
-            $title = htmlspecialchars($group->string('title'), \ENT_QUOTES);
-            $memberNames = array_map(
-                static fn (JsonRequestPayload $member): string => htmlspecialchars($member->string('name'), \ENT_QUOTES),
-                $group->objects('members'),
-            );
-            $bodyParts[] = \sprintf('<p><strong>%s</strong><br>%s</p>', $title, implode('<br>', $memberNames));
-        }
-
-        $request->getSession()->set('pending_message_draft', ['subject' => $subject, 'body' => implode('', $bodyParts)]);
-
-        return $this->redirectToRoute('app_messages_new');
     }
 
     private function findForTeacherOrStaff(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker): Program
