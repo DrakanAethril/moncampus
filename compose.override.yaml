@@ -35,6 +35,17 @@ services:
             watch ./translations/**/*.yaml
         }
       MERCURE_EXTRA_DIRECTIVES: demo
+      # Credentials for the `composer install` that frankenphp/docker-entrypoint.sh runs when it
+      # finds vendor/ empty - which on CI is every single run, vendor/ being gitignored. Left empty
+      # on a developer's machine (Composer ignores a falsy COMPOSER_AUTH, no warning), and filled
+      # in by .github/workflows/ci.yaml with the workflow's own GITHUB_TOKEN.
+      #
+      # Anonymous dist downloads go to api.github.com under a rate limit shared by every runner on
+      # that IP, and `--prefer-dist` forbids Composer from falling back to source ("Source fallback
+      # is disabled. Not trying alternative sources."), so one 504 fails the whole job before a
+      # single check has run - the stack never boots. Seen 2026-08-19 on run 32252498576, where
+      # symfony/twig-bundle's zipball answered HTTP 504 and a plain re-run went green.
+      COMPOSER_AUTH: "${COMPOSER_AUTH:-}"
       # See https://xdebug.org/docs/all_settings#mode
       XDEBUG_MODE: "${XDEBUG_MODE:-develop}"
       APP_ENV: "${APP_ENV:-dev}"
