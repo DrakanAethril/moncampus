@@ -22,9 +22,12 @@
              data-group-creation-students-value="{{ students|json_encode }}"
              data-group-creation-options-value="{{ program.options|map(o => {id: o.id, shortName: o.shortName, color: o.color})|json_encode }}"
              data-group-creation-lots-value="{{ lots|json_encode }}"
+             data-group-creation-shared-lots-value="{{ sharedLots|json_encode }}"
+             data-group-creation-shareable-teachers-value="{{ shareableTeachers|json_encode }}"
              data-group-creation-generate-url-value="{{ path('app_program_tools_group_creation_generate', {id: program.id}) }}"
              data-group-creation-save-lot-url-value="{{ path('app_program_tools_group_creation_save_lot', {id: program.id}) }}"
              data-group-creation-delete-lot-url-value="{{ path('app_program_tools_group_creation_delete_lot', {id: program.id, lotId: '__LOT_ID__'}) }}"
+             data-group-creation-share-lot-url-value="{{ path('app_program_tools_group_creation_share_lot', {id: program.id, lotId: '__LOT_ID__'}) }}"
              data-group-creation-csrf-token-value="{{ csrf_token('program_group_creation') }}"
              data-group-creation-labels-value="{{ {
                  perGroupUnit: 'programToolsPerGroupUnitLabel'|trans,
@@ -44,6 +47,12 @@
                  lockLabel: 'programToolsLockLabel'|trans,
                  loadLotTitle: 'programToolsLoadLotTitle'|trans,
                  deleteLotTitle: 'programToolsDeleteLotTitle'|trans,
+                 shareLotBody: 'programToolsShareLotModalBody'|trans,
+                 sharedLotOwnerTitle: 'programToolsSharedLotOwnerTitle'|trans,
+                 sharedCountBadge: 'programToolsSharedCountBadgeLabel'|trans,
+                 lotSharedToast: 'programToolsLotSharedToast'|trans,
+                 lotUnsharedToast: 'programToolsLotUnsharedToast'|trans,
+                 shareLotUnsavedMessage: 'programToolsShareLotUnsavedMessage'|trans,
                  lotSavedToast: 'programToolsLotSavedToast'|trans,
                  lotDeletedToast: 'programToolsLotDeletedToast'|trans,
                  deleteLotConfirmBody: 'programToolsDeleteLotConfirmBody'|trans,
@@ -51,8 +60,15 @@
              }|json_encode }}">
 
             <div class="cm-grp-lots" data-group-creation-target="lotsBar"{{ lots is empty ? ' hidden' }}>
-                <span class="cm-grp-lots__label">{{ 'programToolsSavedLotsLabel'|trans }}</span>
+                <span class="cm-grp-lots__label">{{ 'programToolsMyGroupsLabel'|trans }}</span>
                 <div class="cm-grp-lots__chips" data-group-creation-target="lotsChips"></div>
+            </div>
+
+            {# Only ever shown when a colleague has actually shared something: an empty second
+               banner would read as a feature the teacher is missing out on. #}
+            <div class="cm-grp-lots" data-group-creation-target="sharedLotsBar"{{ sharedLots is empty ? ' hidden' }}>
+                <span class="cm-grp-lots__label">{{ 'programToolsSharedGroupsLabel'|trans }}</span>
+                <div class="cm-grp-lots__chips" data-group-creation-target="sharedLotsChips"></div>
             </div>
 
             <div class="cm-grp-layout">
@@ -128,6 +144,9 @@
                         <div class="cm-grp-toolbar__row">
                             <button type="button" class="btn btn-outline-secondary btn-sm" data-action="click->group-creation#sendMessage">{{ 'programToolsSendMessageButtonLabel'|trans }}</button>
                             <button type="button" class="btn btn-outline-secondary btn-sm" data-action="click->group-creation#exportPdf">{{ 'programToolsExportPdfButtonLabel'|trans }}</button>
+                            {# Enabled only while the on-screen groups ARE a saved lot: sharing hands
+                               over a database row, not the screen, so there has to be a row. #}
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-group-creation-target="shareButton" data-action="click->group-creation#openShareModal" disabled>{{ 'programToolsShareLotButtonLabel'|trans }}</button>
                             <span class="cm-grp-toolbar__spacer"></span>
                             <span class="cm-draw-option__label">{{ 'programToolsNameFormatFieldLabel'|trans }}</span>
                             <select class="form-select form-select-sm" style="width: auto;" data-group-creation-target="nameFormatSelect" data-action="change->group-creation#setNameFormat">
@@ -159,6 +178,32 @@
                     <div class="cm-grp-modal__actions">
                         <button type="button" class="btn btn-outline-secondary btn-sm" data-action="click->group-creation#cancelDeleteLot">{{ 'cancelAction'|trans }}</button>
                         <button type="button" class="btn btn-danger btn-sm" data-action="click->group-creation#confirmDeleteLot">{{ 'programToolsDeleteLotAction'|trans }}</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cm-grp-modal-backdrop" data-group-creation-target="shareModal" hidden>
+                <div class="cm-grp-modal">
+                    <div class="cm-grp-modal__title">{{ 'programToolsShareLotModalTitle'|trans }}</div>
+                    <div class="cm-grp-modal__body" data-group-creation-target="shareModalBody"></div>
+                    {% if shareableTeachers is empty %}
+                        <div class="cm-grp-share-empty">{{ 'programToolsShareLotNoTeacherMessage'|trans }}</div>
+                    {% else %}
+                        <div class="cm-grp-share-list" data-group-creation-target="shareList">
+                            {% for candidate in shareableTeachers %}
+                                <label class="cm-grp-share-item">
+                                    <input type="checkbox" class="form-check-input" value="{{ candidate.id }}" data-group-creation-target="shareCheckbox">
+                                    <span>{{ candidate.name }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                        <div class="cm-grp-hint">{{ 'programToolsShareLotHintLabel'|trans }}</div>
+                    {% endif %}
+                    <div class="cm-grp-modal__actions">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-action="click->group-creation#cancelShare">{{ 'cancelAction'|trans }}</button>
+                        {% if shareableTeachers is not empty %}
+                            <button type="button" class="btn btn-primary btn-sm" data-action="click->group-creation#confirmShare">{{ 'programToolsShareLotConfirmAction'|trans }}</button>
+                        {% endif %}
                     </div>
                 </div>
             </div>
