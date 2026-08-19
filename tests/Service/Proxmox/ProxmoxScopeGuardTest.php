@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Service\Proxmox;
 
 use App\Enum\ProxmoxAction;
+use App\Service\Proxmox\ProxmoxGuest;
 use App\Service\Proxmox\ProxmoxScope;
 use App\Service\Proxmox\ProxmoxScopeGuard;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -209,5 +210,37 @@ class ProxmoxScopeGuardTest extends TestCase
 
         self::assertNull($guard->quotaRefusal($this->scope(maxGuests: 24), 2, 1024, 10, 0, requested: 24));
         self::assertSame('proxmoxRefusalTooManyGuests', $guard->quotaRefusal($this->scope(maxGuests: 24), 2, 1024, 10, 0, requested: 25));
+    }
+
+    // --- counting what the ceiling weighs ------------------------------------------------------
+
+    private function guest(int $vmid, ?string $pool): ProxmoxGuest
+    {
+        return new ProxmoxGuest($vmid, 'vm-'.$vmid, 'pve', ProxmoxGuest::TYPE_QEMU, 'running', false, $pool, 2, 0.0, 2048, 512, 34359738368, 3600, null);
+    }
+
+    public function testTheCountWeighedAgainstTheCeilingIsTheOneInsideThePerimeter(): void
+    {
+        // The same three rules as covers(), applied to a list: a machine in another pool and a
+        // machine outside the range are both real machines on the hypervisor, and neither of them
+        // consumes this host's ceiling.
+        $guests = [
+            $this->guest(204, 'moncampus'),
+            $this->guest(205, 'moncampus'),
+            $this->guest(206, 'infra'),
+            $this->guest(401, 'moncampus'),
+            $this->guest(207, null),
+        ];
+
+        self::assertSame(2, $this->guard()->countCovered($this->scope(), $guests));
+    }
+
+    public function testAnUndeclaredPerimeterCountsEverything(): void
+    {
+        // "No pool and no range" is not "nothing is in scope" - it is a host whose perimeter is the
+        // whole hypervisor, and the ceiling then weighs every machine on it.
+        $guests = [$this->guest(204, 'moncampus'), $this->guest(9001, 'infra'), $this->guest(3, null)];
+
+        self::assertSame(3, $this->guard()->countCovered($this->scope(pool: null, min: null, max: null), $guests));
     }
 }
