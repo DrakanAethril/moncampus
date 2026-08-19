@@ -6333,3 +6333,6 @@ progressionRailUnusedCoAnimatedHint: 'Les séquences instanciées pour cette cla
 progressionRailUnusedCreatedByLabel: 'créée par %name%'
 progressionCoAnimationUncoveredGroupFlag: 'Groupe non couvert : %groups%'
 progressionPickerUncoveredGroupWarning: "Un seul groupe sélectionné. Le groupe %groups% n'aura pas cette séance. C'est peut-être voulu — sinon, cochez aussi son créneau."
+lessonLogImportTwinLabel: 'Le cahier de texte de %name%'
+lessonLogImportTwinMeta: 'Même heure, groupe %groups% · les textes seulement'
+lessonLogImportTwinFlashMessage: 'Repris du cahier de %name%. Les trois textes ont été recopiés. Ses documents et ses travaux à faire ne suivent pas : ils lui appartiennent.'

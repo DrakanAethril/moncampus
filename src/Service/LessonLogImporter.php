@@ -46,8 +46,12 @@ class LessonLogImporter
     }
 
     /**
-     * The séances offered for import for a given séance, in the mockup's order of priority: the same
-     * lesson to another group this year, then the previous year.
+     * The séances offered for import for a given séance, in the mockup's order of priority: the
+     * TWIN créneau first, then the same lesson to another group this year, then the previous year.
+     *
+     * The twin leads because it is the closest thing there is - the same lesson, to the other half
+     * of the same class, happening at the same hour (App\Service\LessonLogTwinRule). The other two
+     * are the same lesson somewhere else, which is a weaker claim.
      *
      * « The same lesson » is recognised by the matière name: two groups each have their own Topic,
      * carrying the same label, and that is the only link between them the model offers.
@@ -60,14 +64,23 @@ class LessonLogImporter
     {
         $candidates = $this->lessonSessionRepository->findComparableFilledSessions($session);
 
+        $twins = [];
         $sameYear = [];
         $previousYears = [];
         foreach ($candidates as $candidate) {
+            if (LessonLogTwinRule::isTwinOf($session, $candidate)) {
+                $twins[] = $candidate;
+                continue;
+            }
+
             $isSameYear = $candidate->getProgram()?->getSchoolYear()?->getId() === $session->getProgram()?->getSchoolYear()?->getId();
             $isSameYear ? $sameYear[] = $candidate : $previousYears[] = $candidate;
         }
 
         $suggestions = [];
+        if ([] !== $twins) {
+            $suggestions[] = ['session' => $twins[0], 'kind' => 'twin'];
+        }
         if ([] !== $sameYear) {
             $suggestions[] = ['session' => $sameYear[0], 'kind' => 'otherGroup'];
         }
@@ -85,9 +98,27 @@ class LessonLogImporter
     }
 
     /**
-     * Copies $source's cahier de texte onto $target: the three texts, the documents, the
-     * assignments. What already exists on the target is not overwritten but completed - a text
-     * already entered stays, documents and assignments are added.
+     * Copies $source's cahier de texte onto $target: the three texts, and - only between séances of
+     * the SAME teacher - the documents and the assignments. What already exists on the target is not
+     * overwritten but completed: a text already entered stays, documents and assignments are added.
+     *
+     * The three texts always travel. The other two stop at the teacher boundary, and neither is a
+     * precaution (design/validated/co-animation.md):
+     *
+     *  - a **document** carries a library_node_id belonging to the SOURCE teacher's library. Copying
+     *    the row would leave a colleague's administrative record pointing at a file they do not own,
+     *    and FileLibraryLinks deletes attachment rows when the file goes - so the author's own
+     *    cleanup would silently empty the co-animator's cahier de texte. An administrative record
+     *    must not lose a document without anyone being told. The tempting middle ("reference the
+     *    same node, the file weighs once") is rejected for that same cascade: the rule holds inside
+     *    one library, and this crosses two.
+     *  - an **assignment** carries its own audience and collects its own student productions.
+     *    Copying one onto the twin créneau would either target the wrong group or double every
+     *    student's board row - StudentWorkBoard produces one row per expected production, and two
+     *    assignments for the same work is two rows.
+     *
+     * One condition, both callers correct: the existing case (a teacher's own two classes, one
+     * library, one audience) keeps copying all three.
      */
     public function import(LessonSession $source, LessonSession $target, User $actor): void
     {
@@ -114,14 +145,20 @@ class LessonLogImporter
             }
         }
 
-        foreach ($sourceLog->getAttachments() as $attachment) {
-            $this->entityManager->persist($this->copyAttachment($attachment, $targetLog));
+        $sameTeacher = null !== $source->getTeacher() && $source->getTeacher() === $target->getTeacher();
+
+        if ($sameTeacher) {
+            foreach ($sourceLog->getAttachments() as $attachment) {
+                $this->entityManager->persist($this->copyAttachment($attachment, $targetLog));
+            }
         }
 
         $this->entityManager->persist($targetLog);
 
-        foreach ($this->assignmentRepository->findForLessonSession($source) as $work) {
-            $this->entityManager->persist($this->copyWork($work, $source, $target, $actor));
+        if ($sameTeacher) {
+            foreach ($this->assignmentRepository->findForLessonSession($source) as $work) {
+                $this->entityManager->persist($this->copyWork($work, $source, $target, $actor));
+            }
         }
 
         $this->entityManager->flush();

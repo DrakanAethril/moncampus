@@ -560,11 +560,17 @@ class LessonLogController extends AbstractController
 
     /**
      * Take back another séance's cahier de texte (mockup 2a). The source séance must be comparable
-     * - same matière, another program - and the teacher must be able to edit the target; they need
-     * not, on the other hand, be able to edit the source, which they only read.
+     * - the same matière, in another program, or on this class's TWIN créneau
+     * (design/validated/co-animation.md) - and the teacher must be able to edit the target; they
+     * need not, on the other hand, be able to edit the source, which they only read.
+     *
+     * Nothing about the authorisation moved when the twin was added, and that is the point: the
+     * route already re-checked the posted sourceId against LessonLogImporter::browsableFor() rather
+     * than trusting it, so widening the finder widened the route consistently. That guard is why
+     * this is a one-line feature.
      */
     #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/import/{sourceId}', name: 'app_program_timetable_session_log_import', methods: ['POST'], requirements: ['sourceId' => '\d+'])]
-    public function importFromSession(int $id, int $sessionId, int $sourceId, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogImporter $importer): Response
+    public function importFromSession(int $id, int $sessionId, int $sourceId, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogImporter $importer, TranslatorInterface $translator): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
@@ -589,7 +595,18 @@ class LessonLogController extends AbstractController
 
         $importer->import($source, $session, $this->currentUser());
 
-        $this->addFlash('success', 'lessonLogImportedFlashMessage');
+        // Between two teachers, only the three texts travelled. Saying so here rather than nowhere:
+        // a teacher who notices the missing documents an hour later reads it as a bug, and an
+        // administrative record that quietly arrives incomplete is worse than one that says what it
+        // is missing.
+        $sourceTeacher = $source->getTeacher();
+        if (null !== $sourceTeacher && $sourceTeacher !== $session->getTeacher()) {
+            $this->addFlash('success', $translator->trans('lessonLogImportTwinFlashMessage', [
+                '%name%' => $sourceTeacher->getDisplayName() ?? $sourceTeacher->getUsername(),
+            ]));
+        } else {
+            $this->addFlash('success', 'lessonLogImportedFlashMessage');
+        }
 
         return $this->redirectToRoute('app_program_timetable_session_log', ['id' => $program->getId(), 'sessionId' => $session->getId()]);
     }

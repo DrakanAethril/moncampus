@@ -5554,3 +5554,6 @@ progressionRailUnusedCoAnimatedHint: 'The sequences instantiated for this class 
 progressionRailUnusedCreatedByLabel: 'created by %name%'
 progressionCoAnimationUncoveredGroupFlag: 'Group not covered: %groups%'
 progressionPickerUncoveredGroupWarning: 'Only one group selected. Group %groups% will not get this session. That may be intended — otherwise, tick its slot too.'
+lessonLogImportTwinLabel: "%name%'s lesson log"
+lessonLogImportTwinMeta: 'Same hour, group %groups% · the texts only'
+lessonLogImportTwinFlashMessage: "Taken from %name%'s log. The three texts were copied. Their documents and assignments do not follow: they belong to them."
