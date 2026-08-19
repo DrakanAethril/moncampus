@@ -42,6 +42,7 @@ class GuestNetworkConfigurator
         ?int $vlan,
         ?string $sshKey = null,
         ?string $cloudInitUser = null,
+        ?string $existingNet0 = null,
     ): array {
         $this->assertHostname($hostname);
         $this->assertAddress($ip, $gateway);
@@ -50,7 +51,7 @@ class GuestNetworkConfigurator
             // Both the VM name and, through it, the guest's hostname - see the class docblock.
             'name' => $hostname,
             'ipconfig0' => \sprintf('ip=%s/%d,gw=%s', $ip, $prefixLength, $gateway),
-            'net0' => $this->interfaceString('virtio', $bridge, $vlan),
+            'net0' => $this->interfaceString('virtio', $bridge, $vlan, $existingNet0),
         ];
 
         if (null !== $cloudInitUser && '' !== $cloudInitUser) {
@@ -125,12 +126,89 @@ class GuestNetworkConfigurator
         return '' !== $slug ? $slug : 'vm';
     }
 
-    private function interfaceString(string $model, string $bridge, ?int $vlan): string
+    /**
+     * The `net0` to write, **merged into the card the machine already has** rather than replacing
+     * it.
+     *
+     * The distinction is the whole point of this method. A clone inherits its template's card, and
+     * that card carries options MonCampus knows nothing about: `firewall=1`, an MTU, a queue count,
+     * a rate limit, and the MAC address Proxmox assigned it. Rewriting `net0` from the two values
+     * this application does care about - the bridge and the VLAN - drops every one of them, and
+     * drops them **silently**: the machine is created, it boots, it has network, and nothing
+     * anywhere says its firewall flag was turned off along the way. Only the bridge and the VLAN
+     * are the range's business; everything else is the template's, and stays.
+     *
+     * The NIC model is part of what stays. `$model` is therefore only used when there is no card to
+     * merge into - forcing `virtio` onto a template deliberately built with `e1000` would swap a
+     * driver under a guest that may not have the other one.
+     */
+    private function interfaceString(string $model, string $bridge, ?int $vlan, ?string $existing): string
     {
-        $net = \sprintf('%s,bridge=%s', $model, $bridge);
+        if (null === $existing || '' === trim($existing)) {
+            $net = \sprintf('%s,bridge=%s', $model, $bridge);
 
-        // `tag=` with no value is not "no tag" - Proxmox refuses it outright.
-        return null !== $vlan ? $net.',tag='.$vlan : $net;
+            // `tag=` with no value is not "no tag" - Proxmox refuses it outright.
+            return null !== $vlan ? $net.',tag='.$vlan : $net;
+        }
+
+        $options = $this->parseInterface($existing);
+        $options['bridge'] = $bridge;
+
+        // Removed then re-added rather than overwritten: a range that declares no VLAN means the
+        // card must carry none, and an inherited `tag` has to go rather than be blanked - `tag=`
+        // with an empty value is refused, and leaving the template's tag would silently put the
+        // machine on the wrong VLAN.
+        unset($options['tag']);
+
+        if (null !== $vlan) {
+            $options['tag'] = (string) $vlan;
+        }
+
+        return $this->buildInterface($options);
+    }
+
+    /**
+     * A Proxmox network string as an ordered map. The first pair is the NIC model and its MAC
+     * (`virtio=BC:24:11:66:51:BD`), the rest are plain options; a bare word with no `=` is kept as
+     * a valueless flag rather than dropped.
+     *
+     * @return array<string, string|null>
+     */
+    private function parseInterface(string $net): array
+    {
+        $options = [];
+
+        foreach (explode(',', $net) as $part) {
+            $part = trim($part);
+
+            if ('' === $part) {
+                continue;
+            }
+
+            $separator = strpos($part, '=');
+
+            if (false === $separator) {
+                $options[$part] = null;
+
+                continue;
+            }
+
+            $options[substr($part, 0, $separator)] = substr($part, $separator + 1);
+        }
+
+        return $options;
+    }
+
+    /** @param array<string, string|null> $options */
+    private function buildInterface(array $options): string
+    {
+        $parts = [];
+
+        foreach ($options as $key => $value) {
+            $parts[] = null === $value ? $key : $key.'='.$value;
+        }
+
+        return implode(',', $parts);
     }
 
     private function assertHostname(string $hostname): void

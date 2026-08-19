@@ -132,6 +132,13 @@ class GuestCreator
 
         $client = $this->clientFactory->provision($host);
         $range = $request->range;
+        $path = \sprintf('/nodes/%s/qemu/%d/config', rawurlencode($request->node), $request->vmid);
+
+        // Read before write, so the card can be merged rather than replaced: the clone inherits the
+        // template's `net0`, which may carry a firewall flag, an MTU or a rate limit that this
+        // application knows nothing about and would otherwise drop without a word. Costs one call,
+        // on the path that is already several.
+        $existingNet0 = $client->get($path)->nullableString('net0');
 
         $parameters = $this->configurator->qemuParameters(
             $request->hostname,
@@ -141,9 +148,10 @@ class GuestCreator
             $range->getBridge(),
             $range->getVlan(),
             $sshKey,
+            existingNet0: $existingNet0,
         );
 
-        $client->put(\sprintf('/nodes/%s/qemu/%d/config', rawurlencode($request->node), $request->vmid), $parameters);
+        $client->put($path, $parameters);
 
         // Only now: cloud-init writes its configuration at the first boot and never again, so a
         // machine started before this PUT comes up as a copy of the template, for good.

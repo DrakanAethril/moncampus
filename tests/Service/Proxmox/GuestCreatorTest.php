@@ -57,10 +57,15 @@ class GuestCreatorTest extends TestCase
         return $host;
     }
 
-    /** Never read by anything under test here - the quota is weighed before the address is touched. */
     private function range(): IpRange
     {
-        return new IpRange('salle', $this->host(null), '10.30.0.0/24', '10.30.0.254', '10.30.0.1', '10.30.0.253');
+        $range = new IpRange('salle', $this->host(null), '10.30.0.0/24', '10.30.0.254', '10.30.0.1', '10.30.0.253');
+
+        // Not part of the constructor, and a typed property with no default is uninitialized rather
+        // than null - getBridge() raises before it is set.
+        $range->setBridge('vmbr1')->setVlan(40);
+
+        return $range;
     }
 
     private function request(): GuestCreationRequest
@@ -124,7 +129,9 @@ class GuestCreatorTest extends TestCase
             new ProxmoxInventory(),
             $tracker,
             $this->createStub(IpAllocator::class),
-            $this->createStub(GuestNetworkConfigurator::class),
+            // The real one: it is pure, and the payload it builds is precisely what the wiring
+            // tests below are about.
+            new GuestNetworkConfigurator(),
             $locks,
         );
     }
@@ -184,6 +191,35 @@ class GuestCreatorTest extends TestCase
         } catch (\Throwable) {
             // The imitated client answers nothing to the clone, which fails - after the quota.
         }
+    }
+
+    public function testConfiguringAMachineMergesItsCardInsteadOfRewritingIt(): void
+    {
+        // Same lesson as the ceiling above, one method further along: the merge itself is covered by
+        // GuestNetworkConfiguratorTest, and would go on passing if this class stopped reading the
+        // card and handing it over. So what is asserted here is the reading and the passing.
+        $client = $this->createMock(ProxmoxClient::class);
+
+        $client->expects(self::once())
+            ->method('get')
+            ->with('/nodes/pve/qemu/250/config')
+            ->willReturn(ProxmoxResponse::fromData(['net0' => 'virtio=BC:24:11:66:51:BD,bridge=vmbr0,firewall=1,tag=300']));
+
+        $client->expects(self::once())
+            ->method('put')
+            ->with('/nodes/pve/qemu/250/config', self::callback(static function (array $parameters): bool {
+                // The range's bridge and VLAN win; the template's MAC and firewall flag survive.
+                self::assertSame('virtio=BC:24:11:66:51:BD,bridge=vmbr1,firewall=1,tag=40', $parameters['net0']);
+                self::assertSame('poste-01', $parameters['name']);
+
+                return true;
+            }))
+            // ProxmoxResponse is final, so PHPUnit cannot invent one: the PUT's answer has to be
+            // handed over explicitly.
+            ->willReturn(ProxmoxResponse::fromData(null));
+
+        $this->creator($client, $this->createStub(ProxmoxOperationTracker::class))
+            ->configureAndStart($this->host(null), $this->request());
     }
 
     public function testAHostWithNoCeilingNeverAsksTheHypervisorToCount(): void
