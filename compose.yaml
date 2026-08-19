@@ -37,7 +37,7 @@ services:
 
   # Renders the Livret Alternant booklet to PDF (App\Service\GotenbergClient) - internal-network
   # only (no `ports:`), reachable from `php` at GOTENBERG_URL above. Runs in dev and prod alike, no
-  # secrets/dev-only tooling needed, unlike database/openldap/minio in compose.override.yaml.
+  # secrets/dev-only tooling needed, unlike database/openldap in compose.override.yaml.
   gotenberg:
     image: gotenberg/gotenberg:8.16
     restart: unless-stopped

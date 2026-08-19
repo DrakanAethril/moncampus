@@ -139,8 +139,7 @@ services:
 
     # S3 client backing the "uploads.storage" Flysystem storage (config/packages/flysystem.yaml) -
     # built via a factory, not a plain argument array, so the endpoint/path-style options can be
-    # omitted entirely for real AWS in production while dev points them at the local MinIO
-    # container - see App\Service\S3ClientFactory.
+    # omitted entirely for real AWS rather than sent empty - see App\Service\S3ClientFactory.
     Aws\S3\S3Client:
         factory: ['App\Service\S3ClientFactory', 'create']
         arguments:

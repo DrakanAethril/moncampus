@@ -79,8 +79,9 @@ worker mode, static files) and is driven by env vars rather than edited; see `do
   rendering (Livret Alternant export).
 - `compose.override.yaml` — dev overlay, auto-applied: builds `frankenphp_dev`, bind-mounts the repo,
   enables Xdebug. Also hosts the dev-only stand-ins: `database` (MySQL), `mailer` (Mailpit),
-  `phpmyadmin`, `openldap` (reachable from `php` at `ldap://openldap:1389`), and `minio` +
-  `minio-init` (S3 stand-in for uploads).
+  `phpmyadmin` and `openldap` (reachable from `php` at `ldap://openldap:1389`). Uploads have no
+  stand-in: dev writes to the real S3 bucket under the `dev/` prefix, and the test environment
+  swaps the storage for a directory under `var/cache`.
 - `compose.prod.yaml` — prod overlay: `frankenphp_prod` target, secrets injected from the environment.
 - `.devcontainer/compose.devcontainer.yaml` — extra overlay for VS Code Dev Containers.
 
@@ -194,7 +195,7 @@ Prefer these over re-implementing:
   `AbstractStructureNode` and the standalone structure entities.
 - `App\Entity\AbstractStructureNode` — shared base of Section/Track/Cohort/Option/Modality.
 - `App\Service\FileUploadService` / `flysystem` `uploads.storage` — never write to the filesystem
-  directly; uploads go to S3 (MinIO in dev), URLs are built by the `file_url` Twig function.
+  directly; uploads go to S3, URLs are built by the `file_url` Twig function.
 - Twig helpers in `src/Twig/`: `is_staff`, `is_program_teacher`, `file_url`, `avatar_url`,
   `visibility_allows`, `structure_nav_*`, `student_nav_*`, `ufa_nav_*`, `unread_message_thread_count`.
 
@@ -243,7 +244,7 @@ inline in a controller.
 
 | Service | Purpose | Env |
 |---|---|---|
-| AWS S3 | Uploads (attachments, audio, PDFs) — MinIO in dev | `AWS_S3_*`, `AWS_CLOUDFRONT_DOMAIN` |
+| AWS S3 | Uploads (attachments, audio, PDFs) — dev shares the bucket under `AWS_S3_PREFIX=dev/` | `AWS_S3_*`, `AWS_CLOUDFRONT_DOMAIN` |
 | AWS SES + S3 + SQS | Courrier école, inbound and outbound. **Separate AWS account** from the uploads bucket | `AWS_MAIL_*`, `AWS_SES_*`, `MAIL_STUDENT_DOMAIN` |
 | Gotenberg | HTML→PDF (Livret Alternant) | `GOTENBERG_URL` |
 | Mercure | Turbo streams + live quiz SSE | `MERCURE_URL`, `MERCURE_PUBLIC_URL` |

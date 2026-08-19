@@ -4283,7 +4283,7 @@ technicalServiceDatabaseText: 'MySQL 8. Le schéma évolue exclusivement par mig
 technicalServiceLdapTerm: 'Annuaire'
 technicalServiceLdapText: "LDAP, source de vérité des comptes et des groupes. L'application n'y écrit jamais directement : elle dépose des demandes de provisionnement qu'un script externe traite."
 technicalServiceStorageTerm: 'Stockage objet'
-technicalServiceStorageText: "Amazon S3 pour les pièces jointes, les enregistrements audio et les PDF, avec un CDN devant. En développement, un serveur MinIO local parle le même protocole : le code est identique."
+technicalServiceStorageText: "Amazon S3 pour les pièces jointes, les enregistrements audio et les PDF, avec un CDN devant. Le développement écrit dans le même stockage, sous un préfixe qui lui est réservé : le code est identique d'un environnement à l'autre."
 technicalServiceAntivirusTerm: 'Analyse antivirale'
 technicalServiceAntivirusText: "ClamAV, dans son propre conteneur. L'application ne lui donne pas un chemin de fichier — les deux conteneurs ne partagent aucun disque — mais lui envoie les octets sur une connexion réseau et lit son verdict. Sa base de signatures, quelques centaines de méga-octets, est conservée dans un volume pour qu'une mise en production ne la retélécharge pas : le temps de ce téléchargement, tous les dépôts seraient refusés. En développement et en intégration continue, le service n'est pas démarré et l'analyse est simplement désactivée."
 technicalServiceMailTerm: 'Courrier'
