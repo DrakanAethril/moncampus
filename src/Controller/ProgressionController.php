@@ -26,6 +26,7 @@ use App\Repository\SchoolYearRepository;
 use App\Repository\SequenceInstanceRepository;
 use App\Repository\TopicRepository;
 use App\Repository\UserRepository;
+use App\Security\StructureAccessChecker;
 use App\Security\Voter\ProgressionVoter;
 use App\Service\ContentShareAudience;
 use App\Service\GotenbergUnavailableException;
@@ -81,6 +82,7 @@ class ProgressionController extends AbstractController
         private readonly ProgressionEvaluationSelector $evaluationSelector,
         private readonly ProgressionSequenceAvailability $sequenceAvailability,
         private readonly ProgressionTeacherRoster $teacherRoster,
+        private readonly StructureAccessChecker $accessChecker,
     ) {
     }
 
@@ -493,6 +495,13 @@ class ProgressionController extends AbstractController
      * theirs or a colleague's, is not in this block any more (ProgressionSequenceAvailability) and is
      * refused here too. Deleting those is the admin screen's job (/programs/{id}/sequences), which is
      * ROLE_ADMIN precisely because it reaches the whole class's pool.
+     *
+     * "Their own" is asked HERE rather than left to ProgressionSequenceAvailability, because since
+     * co-animation that service answers for the whole plan: its pool is the owner's instantiations
+     * plus every co-animator's, so that both may PLAN either. Destroying a colleague's frozen copy
+     * is not the same gesture, and it is on the far side of the line this design draws - a
+     * co-animator does not rewrite what the class is taught (design/validated/co-animation.md, "the
+     * arbitrable point"). So the rail's ✕ stays with whoever instantiated the copy, and with staff.
      */
     #[Route(path: '/progression/{id}/sequence-instances/{sequenceInstanceId}/remove', name: 'app_progression_sequence_instance_remove', methods: ['POST'], requirements: ['id' => '\d+', 'sequenceInstanceId' => '\d+'])]
     public function removeSequenceInstance(int $id, int $sequenceInstanceId, Request $request, SequenceInstanceRemover $remover): Response
@@ -508,6 +517,10 @@ class ProgressionController extends AbstractController
         // Re-checked against the progression rather than trusted from the id, same as addSequence().
         if (!$this->sequenceAvailability->isAvailable($progression, $instance)) {
             throw $this->createNotFoundException();
+        }
+
+        if ($instance->getCreatedBy() !== $this->currentUser() && !$this->accessChecker->isStaff()) {
+            throw $this->createAccessDeniedException();
         }
 
         $remover->remove($instance);

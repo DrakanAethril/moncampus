@@ -170,7 +170,16 @@ class Progression
      */
     public function getTeachers(): array
     {
-        $teachers = null === $this->teacher ? [] : [$this->teacher];
+        // No owner, no teachers - and returning before touching $coTeachers is deliberate: an
+        // entity built without its constructor leaves a typed collection *uninitialized* rather
+        // than null (the trap this repository records against
+        // RemoveDefaultValueFromAssignedPropertyRector), and reading it would raise instead of
+        // answering the empty list the caller expects.
+        if (null === $this->teacher) {
+            return [];
+        }
+
+        $teachers = [$this->teacher];
 
         foreach ($this->coTeachers as $coTeacher) {
             $teachers[] = $coTeacher;
