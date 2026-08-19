@@ -103,7 +103,16 @@ jobs:
       # No composer install step follows on purpose: vendor/ is gitignored, so the checkout has
       # none, and frankenphp/docker-entrypoint.sh runs `composer install` itself when it finds the
       # directory empty. `--wait` therefore already returns with dependencies in place.
+      #
+      # COMPOSER_AUTH is that install's only reason to need anything from outside: it authenticates
+      # the dist downloads, which otherwise hit api.github.com anonymously under a rate limit shared
+      # by every runner on the same IP. This is not a repository secret and does not break the
+      # workflow's self-contained rule - GITHUB_TOKEN is minted per run by Actions itself, and
+      # `permissions: contents: read` above is all a public zipball needs. It is only read by
+      # compose.override.yaml's php service, so it is set on this step rather than on the job.
       - name: Start services
+        env:
+          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ github.token }}"}}'
         run: docker compose up --wait --no-build --scale phpmyadmin=0
 
       # The stack answering at all is itself a check - it is what catches a service that no longer
