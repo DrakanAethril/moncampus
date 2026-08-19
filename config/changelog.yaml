@@ -26,6 +26,26 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.08.19'
+      date: '2026-08-19'
+      summary: "Les enseignants peuvent désormais se transmettre leur travail : une séquence, une séance, un quiz, un fichier ou un dossier se partage en lecture à un collègue, à une équipe ou à toute une classe, et se reprend d'un clic pour devenir vraiment le sien. L'administration dispose par ailleurs de la création des comptes d'une classe entière à partir d'un fichier, vérifiée ligne par ligne avant la moindre écriture."
+      entries:
+          - type: nouveaute
+            title: 'Partager un contenu à un collègue'
+            detail: "Une séquence, une séance, un quiz, un fichier ou un dossier se partage en lecture, à une ou plusieurs personnes, à une équipe ou à une classe. Un écran réunit ce que l'on a reçu et ce que l'on a partagé, et un partage se retire quand on veut."
+          - type: nouveaute
+            title: "Reprendre chez soi un contenu partagé"
+            detail: "La reprise fait une vraie copie, qui vous appartient et que vous modifiez sans toucher à l'original : les séances, les phases, les questions et les fichiers suivent, rangés dans des dossiers à leur nom. Les placements dans l'emploi du temps, eux, sont recalculés sur le vôtre — aucune date ne voyage."
+          - type: nouveaute
+            title: 'Un catalogue des contenus partagés'
+            detail: "Tout ce qui a été partagé largement se retrouve au même endroit, cherchable par mot-clé et par étiquette, avec un filtre par type de contenu et par auteur."
+          - type: nouveaute
+            title: "Créer les comptes d'une classe entière à partir d'un fichier"
+            detail: "Un modèle de fichier à remplir, puis un récapitulatif qui annonce ligne par ligne ce qui sera créé, rattaché ou laissé de côté avant que rien ne soit écrit. Les homonymes sont toujours soumis à la personne qui importe, jamais tranchés à sa place, et un écran de suivi montre l'avancement des comptes une fois l'import lancé."
+          - type: interne
+            title: "La suite de tests n'écrit plus dans le stockage distant"
+            detail: "Les tests qui déposent des fichiers travaillent désormais dans un dossier local jeté après coup."
+
     - version: '2026.08.18'
       date: '2026-08-18'
       summary: "Les schémas insérés dans une page de wiki s'affichent enfin tels qu'ils ont été composés : leurs couleurs, leurs polices et leur cadrage se perdaient à l'enregistrement. Le cahier de texte propose par ailleurs, en un clic, le contenu que la séance prévoyait déjà, et l'administration dispose d'un espace pour gérer les machines virtuelles pédagogiques."
