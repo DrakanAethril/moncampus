@@ -169,14 +169,41 @@ class ProxmoxClientTest extends TestCase
         $client->post('/nodes/pve1/qemu');
     }
 
-    public function testATransportFailureBecomesAProxmoxUnavailableException(): void
+    public function testATransportFailureCarriesBothMessages(): void
     {
         // `error` is how MockHttpClient reproduces an unreachable host - which is the ordinary
-        // state of a hypervisor that is off, not an edge case.
+        // state of a hypervisor that is off, not an edge case. A blocked port looks like this: no
+        // HTTP status, no body, just curl giving up.
+        //
+        // The developer needs the verb and the path; the administrator needs the address and
+        // something to go and check. Sending the first to the screen is what production did on
+        // 2026-08-19, and "Idle timeout reached for https://…" tells nobody to look at a firewall.
         $client = $this->client($this->token(), new MockResponse('', ['error' => 'Connection timed out']));
 
-        $this->expectException(ProxmoxUnavailableException::class);
-        $client->version();
+        try {
+            $client->version();
+            self::fail('An unreachable host must not answer.');
+        } catch (ProxmoxUnavailableException $exception) {
+            self::assertStringContainsString('GET /version failed', $exception->getMessage());
+            self::assertSame('proxmoxHostUnreachableError', $exception->userMessageKey());
+            self::assertSame(['%address%' => 'https://pve.example.lan:8006'], $exception->userMessageParameters());
+        }
+    }
+
+    public function testARefusedStatusStaysWithoutAKeyAndKeepsWhatProxmoxSaid(): void
+    {
+        // The counterpart: an answered 403 is not a reachability problem, and dressing it up as
+        // "host unreachable" would send an administrator to check a firewall that is working. No
+        // key, so the caller falls back to what the hypervisor itself replied.
+        $client = $this->client($this->token(), new MockResponse('{"errors":{"pool":"Permission check failed"}}', ['http_code' => 403]));
+
+        try {
+            $client->version();
+            self::fail('A 403 must not answer.');
+        } catch (ProxmoxUnavailableException $exception) {
+            self::assertNull($exception->userMessageKey());
+            self::assertStringContainsString('403', $exception->getMessage());
+        }
     }
 
     public function testABodyThatIsNotAProxmoxEnvelopeIsRejected(): void

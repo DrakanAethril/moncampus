@@ -4942,6 +4942,10 @@ proxmoxTestNoSecretMessage: 'Enter a secret to test the connection.'
 proxmoxHostCreatedFlashMessage: 'Proxmox host declared.'
 proxmoxHostUpdatedFlashMessage: 'Proxmox host updated.'
 proxmoxCheckPoolMissingWarning: 'Pool “%pool%” does not exist on this host: the scope is empty.'
+proxmoxCheckIncompleteWarning: 'The host answered too slowly for the additional checks to be completed.'
+proxmoxHostUnreachableError: 'Host unreachable at %address%. Check the address and the port, and that the flow is open from this server.'
+proxmoxHostTlsHandshakeError: 'The secure connection to %address% did not complete. The port answers but did not finish the TLS negotiation: check that it is the Proxmox interface port.'
+proxmoxHostTooSlowError: 'The host took more than %seconds% seconds to answer: the test was stopped rather than hold the platform up.'
 proxmoxCheckProvisionFailedWarning: 'The provisioning account is not answering: %reason%'
 
 # --- Proxmox console - batch 2: seeing and driving ---------------------------------------------

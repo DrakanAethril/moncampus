@@ -169,15 +169,28 @@ services:
     # --- Console Proxmox --------------------------------------------------------------------
     # Its own HTTP client, on the same reasoning as the Discord one above but for a different
     # danger: these calls go to hypervisors that are routinely off. FrankenPHP runs in worker mode,
-    # so a request that hangs holds a worker for as long as it hangs - `timeout` alone only covers
-    # inactivity, and it is `max_duration` that caps the whole exchange. Without both, enough
-    # unreachable hosts starve the pool and take the entire application down with them. Neither
-    # value is negotiable; a slow hypervisor is a failed call, not a reason to wait.
+    # so a request that hangs holds a worker for as long as it hangs. Enough unreachable hosts
+    # starve the pool and take the entire application down with them; a slow hypervisor is a failed
+    # call, not a reason to wait.
+    #
+    # **Three options, and each covers a phase the others do not.** `timeout` is the *idle* timeout,
+    # enforced by Symfony in PHP-land - it is not a connection timeout, and reading it as one is how
+    # the first version of this block came to have no bound at all on the phase that matters most
+    # here. CurlHttpClient maps `max_duration` to CURLOPT_TIMEOUT_MS and `max_connect_duration` to
+    # CURLOPT_CONNECTTIMEOUT_MS; without the latter, a firewalled port falls back to curl's own
+    # default of **300 seconds** to connect.
+    #
+    # The numbers are chosen against PHP's `max_execution_time` of 30 s, not out of taste. A screen
+    # may chain a handful of calls, so a single call has to cost a small fraction of the budget:
+    # at 8 s apiece, three consecutive failures still answer well inside it. Raising them means
+    # re-checking that arithmetic - the production incident of 2026-08-19 was two calls at 20 s
+    # against a blocked port, and a fatal MaxExecutionTimeError is not catchable, so the screen
+    # showed nothing and Discord got the alert instead.
     app.proxmox_http_client:
         class: Symfony\Contracts\HttpClient\HttpClientInterface
         factory: ['Symfony\Component\HttpClient\HttpClient', 'create']
         arguments:
-            $defaultOptions: { timeout: 6, max_duration: 20 }
+            $defaultOptions: { timeout: 5, max_duration: 8, max_connect_duration: 4 }
 
     App\Service\Proxmox\ProxmoxClientFactory:
         arguments:
