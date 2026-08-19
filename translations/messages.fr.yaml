@@ -5720,6 +5720,10 @@ proxmoxTestNoSecretMessage: 'Renseignez un secret pour tester la connexion.'
 proxmoxHostCreatedFlashMessage: 'Hôte Proxmox déclaré.'
 proxmoxHostUpdatedFlashMessage: 'Hôte Proxmox mis à jour.'
 proxmoxCheckPoolMissingWarning: 'Le pool « %pool% » n’existe pas sur cet hôte : le périmètre est vide.'
+proxmoxCheckIncompleteWarning: 'L’hôte a répondu trop lentement pour que les vérifications complémentaires soient menées à leur terme.'
+proxmoxHostUnreachableError: 'Hôte injoignable à l’adresse %address%. Vérifiez l’adresse et le port, et que le flux est bien ouvert depuis ce serveur.'
+proxmoxHostTlsHandshakeError: 'La connexion sécurisée avec %address% n’a pas abouti. Le port répond mais n’a pas terminé la négociation TLS : vérifiez qu’il s’agit bien du port de l’interface Proxmox.'
+proxmoxHostTooSlowError: 'L’hôte a mis plus de %seconds% secondes à répondre : le test a été interrompu pour ne pas bloquer la plateforme.'
 proxmoxCheckProvisionFailedWarning: 'Le compte de provisionnement ne répond pas : %reason%'
 
 # --- Console Proxmox - lot 2 : voir et piloter ------------------------------------------------

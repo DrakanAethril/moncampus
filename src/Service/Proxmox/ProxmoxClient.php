@@ -193,7 +193,10 @@ class ProxmoxClient
             $content = $response->getContent(false);
             $status = $response->getStatusCode();
         } catch (HttpClientExceptionInterface $exception) {
-            throw new ProxmoxUnavailableException(\sprintf('%s %s failed: %s', $method, $path, $exception->getMessage()), previous: $exception);
+            // The developer's message names the verb and the path; the administrator's names the
+            // address and the port, because "is 8006 open from this server?" is the question they
+            // can actually act on. See ProxmoxUnavailableException for why there are two.
+            throw ProxmoxUnavailableException::unreachable($this->baseUrl, \sprintf('%s %s failed: %s', $method, $path, $exception->getMessage()), $exception);
         }
 
         if ($status >= 400) {
@@ -256,7 +259,7 @@ class ProxmoxClient
             $content = $response->getContent(false);
             $status = $response->getStatusCode();
         } catch (HttpClientExceptionInterface $exception) {
-            throw new ProxmoxUnavailableException(\sprintf('Could not obtain a ticket: %s', $exception->getMessage()), previous: $exception);
+            throw ProxmoxUnavailableException::unreachable($this->baseUrl, \sprintf('Could not obtain a ticket: %s', $exception->getMessage()), $exception);
         }
 
         if ($status >= 400) {
