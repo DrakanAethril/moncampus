@@ -29,14 +29,15 @@
                 <li><a class="dropdown-item" href="{{ path('app_library_sequences_export', {id: sequenceTemplate.id}) }}">{{ 'sequenceExportActionLabel'|trans }}</a></li>
             </ul>
         </div>
+        {# « Partager » hangs on canShare and not on canEdit: sharing is an act of authorship, so a
+           staff member reading a colleague's séquence does not get to hand it around on their behalf
+           (design/validated/content-sharing-between-teachers.md). canShare is the narrower of the
+           two, so sitting inside canEdit costs nobody the button. #}
+        {% if canShare %}
+            <button type="button" class="btn btn-outline-secondary ms-2" data-bs-toggle="modal" data-bs-target="#content-share-modal">{{ 'contentShareAction'|trans }}</button>
+        {% endif %}
         <a href="{{ path('app_library_sequences_edit', {id: sequenceTemplate.id}) }}" class="btn btn-outline-secondary ms-2">{{ 'editActionLabel'|trans }}</a>
         <a href="{{ path('app_library_sequences_instantiate', {id: sequenceTemplate.id}) }}" class="btn btn-primary ms-2">{{ 'sequenceInstantiateAction'|trans }}</a>
-    {% endif %}
-    {# « Partager » hangs on canShare and not on canEdit: sharing is an act of authorship, so a staff
-       member reading a colleague's séquence does not get to hand it around on their behalf
-       (design/validated/content-sharing-between-teachers.md). #}
-    {% if canShare %}
-        <button type="button" class="btn btn-outline-secondary ms-2" data-bs-toggle="modal" data-bs-target="#content-share-modal">{{ 'contentShareAction'|trans }}</button>
     {% endif %}
 {% endblock %}
 
