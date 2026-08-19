@@ -154,49 +154,6 @@ services:
       retries: 5
       start_period: 30s
 
-  # Local S3-compatible storage stand-in, dev-only (never built/started in prod). S3 API
-  # reachable from the php container at http://minio:9000 (AWS_S3_ENDPOINT) and from the host/
-  # browser at http://localhost:9000 (AWS_S3_PUBLIC_ENDPOINT - fixed port, not random, so that
-  # value in .env stays correct); web console at localhost:9001 (login with
-  # AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY from .env, default minioadmin/minioadmin).
-  minio:
-    image: minio/minio
-    restart: unless-stopped
-    command: server /data --console-address ":9001"
-    # Injects MINIO_ROOT_USER/MINIO_ROOT_PASSWORD directly (must match AWS_ACCESS_KEY_ID/
-    # AWS_SECRET_ACCESS_KEY - see .env.dev.local's comment on why both are spelled out there,
-    # since env_file can't rename a var the way docker-compose ${} substitution could).
-    env_file:
-      - .env.dev.local
-    volumes:
-      - minio_data:/data
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-
-  # One-off: creates the dev bucket on first boot, since MinIO doesn't auto-create it, and makes
-  # it anonymously readable. Real environments never expose the bucket directly (CloudFront +
-  # Origin Access Control does - see App\Service\FileUploadService); this dev-only bucket has no
-  # real user data, and public-read is what makes AWS_S3_PUBLIC_ENDPOINT URLs actually load in a
-  # browser without standing up a local CDN. Retries until the API is reachable instead of
-  # depending on a healthcheck, since not every minio image variant ships the tooling a
-  # healthcheck would need. Safe to re-run (both commands are no-ops once already applied).
-  minio-init:
-    image: minio/mc
-    depends_on:
-      - minio
-    # Injects AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY/AWS_S3_BUCKET, expanded below by the
-    # container's own shell at runtime ($VAR, not docker-compose ${} substitution at parse time -
-    # see compose.yaml's comment on why these are never defaulted there).
-    env_file:
-      - .env.dev.local
-    entrypoint: >
-      /bin/sh -c "
-      until mc alias set local http://minio:9000 $$AWS_ACCESS_KEY_ID $$AWS_SECRET_ACCESS_KEY; do sleep 1; done &&
-      mc mb --ignore-existing local/$$AWS_S3_BUCKET &&
-      mc anonymous set download local/$$AWS_S3_BUCKET
-      "
-
   # Virus scanning, OPT-IN in dev (App\Service\AntivirusScanner). Start it with
   #
   #   docker compose --profile antivirus up -d clamav
@@ -230,7 +187,7 @@ services:
   # an image. What the console needs to be developed against is not a hypervisor but *something
   # that speaks /api2/json*, so that is what this serves - over TLS, with a small inventory whose
   # machines really do start and stop and whose tasks really do take a couple of seconds. Same
-  # spirit as Mailpit standing in for SMTP and MinIO for S3.
+  # spirit as Mailpit standing in for SMTP.
   #
   # Plain python:3.13-slim with a bind-mounted script: no image to build, no dependency to install,
   # and the file is readable by anyone wondering what a payload actually looks like. It is
@@ -251,7 +208,6 @@ services:
 volumes:
   database_data:
   ldap_data:
-  minio_data:
   clamav_db:
   # Named rather than anonymous so the generated CA - and therefore the PEM pasted into a declared
   # host - survives a `docker compose restart`. A `down -v` regenerates it, which is the moment to

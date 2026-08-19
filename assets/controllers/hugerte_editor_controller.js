@@ -142,7 +142,7 @@ export default class extends Controller {
             // would affect any same-origin link anybody pastes into any of these editors. Off, so
             // what is inserted is what is stored.
             //
-            // Cross-origin URLs (the uploaded images, which come from CloudFront or MinIO) were
+            // Cross-origin URLs (the uploaded images, which come from CloudFront) were
             // never converted anyway, so nothing about the image button changes.
             convert_urls: false,
             ...(this.imageValue ? this.imageOptions() : {}),
