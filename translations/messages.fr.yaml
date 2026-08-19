@@ -3517,6 +3517,8 @@ studentJobApplicationsSentKindLabel: 'Envoi'
 studentJobApplicationsReplyKindLabel: 'Réponse'
 studentJobApplicationsNoMailLabel: 'Aucun mail sur cette démarche.'
 studentJobApplicationsEmptyLabel: "Cet étudiant n'a aucune démarche."
+studentJobApplicationsUnattachedTitle: 'Mails hors démarche'
+studentJobApplicationsUnattachedHint: "Reçus dans la boîte de l'étudiant sans avoir pu être rattachés à une démarche. Ils comptent dans le suivi de la classe."
 studentJobApplicationsNotesTitle: "Notes d'accompagnement"
 studentJobApplicationsNotesTeamOnlyLabel: 'Équipe uniquement'
 studentJobApplicationsNotesEmptyLabel: 'Aucune note pour le moment.'

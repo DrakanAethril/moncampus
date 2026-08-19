@@ -90,24 +90,7 @@
 
                         <div class="cm-sheet__mails">
                             {% for message in application.emailMessages %}
-                                <div class="cm-sheet__mail">
-                                    <div class="cm-sheet__mail-head">
-                                        <span class="cm-sheet__mail-kind">
-                                            {{ (message.direction.value == 'inbound' ? 'studentJobApplicationsReplyKindLabel' : 'studentJobApplicationsSentKindLabel')|trans }}
-                                        </span>
-                                        <span class="cm-sheet__mail-subject">{{ message.subject ?: ('schoolMailNoSubjectLabel'|trans) }}</span>
-                                        {% for attachment in message.attachments %}
-                                            <a class="cm-sheet__mail-tag" href="{{ path('app_school_mail_attachment', {id: attachment.id}) }}">{{ attachment.filename }}</a>
-                                        {% endfor %}
-                                        <span class="cm-sheet__mail-date">{{ (message.messageDate ?? message.createdAt)|date('d/m · H:i') }}</span>
-                                    </div>
-                                    <div class="cm-sheet__mail-addresses">
-                                        {{ 'schoolMailFromLabel'|trans }} {{ message.fromAddress }} ·
-                                        {{ 'schoolMailToLabel'|trans }} {{ message.toAddresses|join(', ') }}
-                                    </div>
-                                    {# Text, never the sender's HTML: this body comes from outside. #}
-                                    <div class="cm-sheet__mail-body">{{ (message.textBody ?: message.htmlBody|striptags)|nl2br }}</div>
-                                </div>
+                                {% include 'job_application/_mail.html.twig' with {message: message} only %}
                             {% else %}
                                 <p class="cm-compose__hint">{{ 'studentJobApplicationsNoMailLabel'|trans }}</p>
                             {% endfor %}
@@ -117,6 +100,26 @@
                     <div class="card-body text-secondary">{{ 'studentJobApplicationsEmptyLabel'|trans }}</div>
                 {% endfor %}
             </div>
+
+            {# The mails the class tracking counts and no démarche holds: a reply whose In-Reply-To
+               matched nothing, or one rattached to this student without a démarche being picked.
+               Shown only when there are any - an empty box would suggest a problem where there is
+               none - and after the démarches, which stay the reading order of the screen. #}
+            {% if unattachedMails is not empty %}
+                <div class="card mt-3">
+                    <div class="cm-jobapp-head">
+                        <span class="cm-jobapp-head__title">{{ 'studentJobApplicationsUnattachedTitle'|trans }}</span>
+                        <span class="cm-jobapp-head__count">{{ 'jobApplicationMailCountLabel'|trans({'%count%': unattachedMails|length}) }}</span>
+                        <span class="cm-jobapp-head__filters cm-compose__hint">{{ 'studentJobApplicationsUnattachedHint'|trans }}</span>
+                    </div>
+
+                    <div class="cm-sheet__mails">
+                        {% for message in unattachedMails %}
+                            {% include 'job_application/_mail.html.twig' with {message: message} only %}
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
         </div>
 
         <aside class="cm-sheet__side">
