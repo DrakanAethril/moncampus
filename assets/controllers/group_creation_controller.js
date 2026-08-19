@@ -20,7 +20,6 @@ export default class extends Controller {
         'fullscreen', 'fullscreenTitle', 'fullscreenGrid',
         'confirmModal', 'confirmModalBody', 'toast',
         'pdfForm', 'pdfFormGroups', 'pdfFormLotName',
-        'messageForm', 'messageFormGroups', 'messageFormLotName',
     ];
 
     static values = {
@@ -816,7 +815,7 @@ export default class extends Controller {
         }
     }
 
-    // ---------- Export / messaging (real form submits - see the two hidden <form> elements) ----------
+    // ---------- Export (a real form submit - see the hidden <form> element) ----------
 
     exportPdf() {
         if (!this.groups) return;
@@ -824,14 +823,6 @@ export default class extends Controller {
         this.pdfFormGroupsTarget.value = JSON.stringify(this.serializeGroupsForExport());
         this.pdfFormLotNameTarget.value = this.lotNameInputTarget.value.trim();
         this.pdfFormTarget.submit();
-    }
-
-    sendMessage() {
-        if (!this.groups) return;
-
-        this.messageFormGroupsTarget.value = JSON.stringify(this.serializeGroupsForExport());
-        this.messageFormLotNameTarget.value = this.lotNameInputTarget.value.trim();
-        this.messageFormTarget.submit();
     }
 
     serializeGroupsForExport() {

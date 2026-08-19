@@ -21,7 +21,6 @@ use App\Repository\UserRepository;
 use App\Security\Voter\MessageThreadVoter;
 use App\Service\AudienceResolver;
 use App\Service\FormValue;
-use App\Service\JsonRequestPayload;
 use App\Service\MessageAudienceMerger;
 use App\Service\MessageEmailNotifier;
 use App\Service\MessageThreadRecipientSyncer;
@@ -167,17 +166,6 @@ class MessageController extends AbstractController
             }
         }
 
-        // Consumed exactly once, from wherever staged it (currently only
-        // ProgramToolsController::sendGroupsToMessaging(), the Création de groupes tool's
-        // "Envoyer par messagerie" action) - a redirect-and-prefill rather than composing the
-        // message itself server-side, so the teacher always reviews/edits before it actually
-        // sends. session::remove() both reads and clears the key, so a subsequent visit to this
-        // same route (including the very POST that submits this form) never reapplies it.
-        $pendingDraft = $request->getSession()->remove('pending_message_draft');
-        // Staged by ProgramToolsController::sendGroupsToMessaging() and read once - it has been
-        // through the session, so neither key is guaranteed to be there or to be a string.
-        $draft = JsonRequestPayload::fromArray(\is_array($pendingDraft) ? $pendingDraft : []);
-
         $thread = new MessageThread($sender);
         // The audience set has #[Assert\Count(min: 1)] (App\Entity\AudienceTargetableTrait) -
         // real assignment only happens in applyComposedAudience() below, AFTER the form's own
@@ -187,9 +175,6 @@ class MessageController extends AbstractController
         // audience was actually picked - this value is always overwritten with the real one once
         // validation passes.
         $thread->setAudienceTypes([MessageAudienceType::Manual]);
-        if (!$draft->isEmpty()) {
-            $thread->setSubject($draft->string('subject'));
-        }
         if (null !== $lockedRecipient) {
             $thread->setAudienceTypes([MessageAudienceType::Manual])->addManualRecipient($lockedRecipient);
 
@@ -213,9 +198,6 @@ class MessageController extends AbstractController
             'programs' => $allowedPrograms,
             'lockedRecipient' => $lockedRecipient,
         ]);
-        if (!$draft->isEmpty()) {
-            $form->get('body')->setData($draft->string('body'));
-        }
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {

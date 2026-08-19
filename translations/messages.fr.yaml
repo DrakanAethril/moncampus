@@ -2240,7 +2240,6 @@ programToolsDeleteLotAction: 'Supprimer'
 programToolsFullscreenTitleFallback: 'Groupes — %program%'
 programToolsLotNamePlaceholder: 'Nom des groupes (ex. TP réseau — S2)'
 programToolsSaveLotButtonLabel: 'Enregistrer les groupes'
-programToolsSendMessageButtonLabel: 'Envoyer par messagerie'
 programToolsExportPdfButtonLabel: 'Exporter en PDF'
 programToolsDndHintLabel: "Glissez-déposez un élève d'un groupe à l'autre pour ajuster. Verrouillez un groupe pour le préserver lors d'un rebrassage."
 programToolsEmptyStateLabel: 'Réglez les paramètres à gauche puis cliquez sur « Créer les groupes ».'
