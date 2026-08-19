@@ -87,8 +87,14 @@ class ProgressionCoAnimationCheck
      * Keyed on the Option's id and never on its label: two Options may share a short name, and
      * covering one must not silence the other. The labels are only what comes back out.
      *
-     * @param array<string, string> $offered group key => short name, from the matière's créneaux
-     * @param list<string|null>     $covered one entry per placement; null is a whole-class delivery
+     * The keys are typed array-key rather than string although both sides build them with a (string)
+     * cast: PHP normalises a numeric-string key back to an int the moment it enters an array, so an
+     * Option id lands as 5 and never as '5'. Promising string here would be a docblock that no call
+     * can satisfy - which is exactly what it was, and what the test caught. The comparison is
+     * unaffected: array_flip() normalises the covered side the same way.
+     *
+     * @param array<array-key, string> $offered group key => short name, from the matière's créneaux
+     * @param list<string|null>        $covered one entry per placement; null is a whole-class delivery
      *
      * @return list<string>
      */
@@ -116,7 +122,8 @@ class ProgressionCoAnimationCheck
      * Read off ProgressionSlotPool::forSequence(), so the séquence's own "Créneaux utilisés" apply:
      * a cycle de TP restricted to group créneaux does not get asked about a whole-class one.
      *
-     * @return array<string, string> group key => short name
+     * @return array<array-key, string> group key => short name - see uncovered() on why the key
+     *                                   type is not string despite the cast
      */
     private function offeredGroups(ProgressionSequence $sequence): array
     {
