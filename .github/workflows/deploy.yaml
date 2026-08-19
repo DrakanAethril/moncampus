@@ -121,7 +121,21 @@ jobs:
       # server - it's gitignored (holds SERVER_NAME/HTTP_PORT/HTTPS_PORT/HTTP3_PORT/
       # CADDY_MERCURE_PUBLIC_URL, environment-specific but not secret) so `git pull` never places
       # or updates it; copy it there manually once (or whenever it changes) via scp/rsync.
+      #
+      # Bounded like the apt step above, but against a different failure and with far more room.
+      # The fourteen successful deploys from 2026-08-11 to 2026-08-19 took between 7.5 and 10.3
+      # minutes, median 9.1: the spread is tight because the work is always the same rebuild plus
+      # migrations. Twenty minutes is therefore about twice the worst case ever measured - long
+      # enough that a merely large release never trips it, short enough that a dead connection
+      # stops costing the runner the 6-hour job default.
+      #
+      # Note what the bound does and does not do: it ends the *waiting*, not deploy-prod.sh, which
+      # runs on the server and may well finish on its own afterwards. That asymmetry is why it sits
+      # so far above the measured range. The concurrency comment at the top of this file is right
+      # that an in-flight `docker compose up` on the server should not be interrupted, so this must
+      # only ever fire on a connection that is genuinely stuck - never on a deploy still working.
       - name: Deploy over SSH
+        timeout-minutes: 20
         env:
           DEPLOY_USER: ${{ secrets.BEAUP_DEPLOY_USER }}
           DEPLOY_HOST: ${{ secrets.BEAUP_DEPLOY_HOST }}
