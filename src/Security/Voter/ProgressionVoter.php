@@ -11,10 +11,15 @@ use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Vote;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
-// A progression is one teacher's own planning of their own matière - only its owning teacher, or
-// staff, may open or edit it. Same shape as SequenceTemplateVoter, and for the same reason: the
-// Program-visibility check the rest of the app uses would let every colleague of the class in,
-// which is not what "mes progressions" means.
+// A progression is one teacher's own planning of their own matière - only its owning teacher, a
+// co-animator named on it, or staff, may open or edit it. Same shape as SequenceTemplateVoter, and
+// for the same reason: the Program-visibility check the rest of the app uses would let every
+// colleague of the class in, which is not what "mes progressions" means.
+//
+// The co-animation door stays as narrow as the other two on purpose (see
+// design/validated/co-animation.md): it is a link named on THIS progression, not a property of the
+// class. A colleague who teaches the same class and was never named on the plan is still refused,
+// which is the difference between naming a second formateur and opening the matière.
 class ProgressionVoter extends Voter
 {
     public const string EDIT = 'PROGRESSION_EDIT';
@@ -38,6 +43,8 @@ class ProgressionVoter extends Voter
             return false;
         }
 
-        return $this->accessChecker->isStaff() || $progression->getTeacher() === $user;
+        return $this->accessChecker->isStaff()
+            || $progression->getTeacher() === $user
+            || $progression->isCoTeacher($user);
     }
 }

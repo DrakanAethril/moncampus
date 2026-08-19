@@ -118,6 +118,10 @@
         </div>
 
         <aside class="cm-prog-rail">
+            {# First card of the rail: who delivers this matière. It leads because on a co-animated
+               progression it is the answer to "why is somebody else's séquence in my plan", and on
+               a solo one it is a single row that costs nothing to read. #}
+            {% include 'progression/_co_animation.html.twig' %}
             <div class="card">
                 {# The design's rail card also carried a completeness gauge; it was dropped as not
                    pulling its weight, leaving the D/F/S counters as the card's whole content. #}
@@ -172,6 +176,10 @@
             </div>
         </aside>
     </div>
+
+    {% if canAddCoTeacher %}
+        {% include 'progression/_co_animation_modal.html.twig' %}
+    {% endif %}
 
     {% if canShare %}
         {% include 'content_share/_modal.html.twig' with {

@@ -1,0 +1,50 @@
+{# The « Co-animation » block of screen 2a — design/validated/co-animation.md.
+
+   Every row is measured off the timetable: the group and the room next to a name come from the
+   créneaux that teacher actually holds on this matière, never from a stored field. So a formateur
+   named here but holding no créneau shows their name alone, which is the honest rendering of a
+   matière whose emploi du temps has moved on.
+
+   Each action is its own <form>. The block sits among the progression's other cards and none of
+   them wraps it, so nothing is nested — the bug class this repository keeps meeting on small
+   actions placed inside an existing form. #}
+<div class="card">
+    <div class="card-body">
+        <h3 class="card-title">{{ 'progressionCoAnimationTitle'|trans }}</h3>
+        <p class="cm-prog-rail__hint">{{ 'progressionCoAnimationTeacherCountLabel'|trans({'%count%': roster|length}) }}</p>
+
+        {% for row in roster %}
+            <div class="cm-prog-rail__item">
+                <span class="cm-prog-rail__item-body">
+                    <span class="cm-prog-rail__item-title">{{ row.teacher.displayName ?? row.teacher.username }}</span>
+                    <span class="cm-prog-rail__item-meta">
+                        {{ (row.isOwner ? 'progressionCoAnimationOwnerRoleLabel' : 'progressionCoAnimationCoTeacherRoleLabel')|trans }}
+                        {% if row.groups is not empty %} · {{ 'progressionCoAnimationGroupsLabel'|trans({'%groups%': row.groups|join(', ')}) }}{% endif %}
+                        {% if row.rooms is not empty %} · {{ 'progressionCoAnimationRoomsLabel'|trans({'%rooms%': row.rooms|join(', ')}) }}{% endif %}
+                    </span>
+                </span>
+                {% if not row.isOwner %}
+                    <form method="post" action="{{ path('app_progression_co_teacher_remove', {id: progression.id, teacherId: row.teacher.id}) }}"
+                          onsubmit="return confirm('{{ 'progressionCoAnimationRemoveConfirm'|trans({'%name%': row.teacher.displayName ?? row.teacher.username})|e('js') }}')">
+                        <input type="hidden" name="_token" value="{{ csrf_token('progression_co_teacher_remove') }}">
+                        <button type="submit" class="cm-prog-row__remove"
+                                aria-label="{{ 'progressionCoAnimationRemoveAction'|trans }}"
+                                title="{{ 'progressionCoAnimationRemoveAction'|trans }}">✕</button>
+                    </form>
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        {% if canAddCoTeacher %}
+            <button type="button" class="cm-btn cm-btn--outline cm-btn--sm mt-2"
+                    data-bs-toggle="modal" data-bs-target="#progression-co-teacher-modal">+ {{ 'progressionCoAnimationAddAction'|trans }}</button>
+        {% endif %}
+
+        {% if progression.coAnimated %}
+            {# Said here rather than in the help centre: the question « et nos cahiers de texte ? »
+               is asked the moment a second name appears, and the answer is a decision of the
+               design, not an omission. #}
+            <p class="cm-prog-rail__hint mt-2">{{ 'progressionCoAnimationHelpText'|trans }}</p>
+        {% endif %}
+    </div>
+</div>

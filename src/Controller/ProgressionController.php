@@ -25,6 +25,7 @@ use App\Repository\ProgressionSequenceRepository;
 use App\Repository\SchoolYearRepository;
 use App\Repository\SequenceInstanceRepository;
 use App\Repository\TopicRepository;
+use App\Repository\UserRepository;
 use App\Security\Voter\ProgressionVoter;
 use App\Service\ContentShareAudience;
 use App\Service\GotenbergUnavailableException;
@@ -37,6 +38,7 @@ use App\Service\ProgressionPlacementService;
 use App\Service\ProgressionQualiopiExporter;
 use App\Service\ProgressionSequenceAvailability;
 use App\Service\ProgressionSlotPool;
+use App\Service\ProgressionTeacherRoster;
 use App\Service\QueryValue;
 use App\Service\SequenceInstanceRemover;
 use App\Util\DurationFormatter;
@@ -78,6 +80,7 @@ class ProgressionController extends AbstractController
         private readonly ProgressionCalendarBuilder $calendarBuilder,
         private readonly ProgressionEvaluationSelector $evaluationSelector,
         private readonly ProgressionSequenceAvailability $sequenceAvailability,
+        private readonly ProgressionTeacherRoster $teacherRoster,
     ) {
     }
 
@@ -133,12 +136,22 @@ class ProgressionController extends AbstractController
 
         $rows = [];
 
+        // One créneau query for the whole list rather than one per row - the chip names the other
+        // formateur and the group the viewer holds, both of which are read off the timetable.
+        $rosters = $this->teacherRoster->forProgressions($progressions);
+        $viewer = $this->currentUser();
+
         foreach ($progressions as $progression) {
+            $roster = $rosters[(int) $progression->getId()] ?? [];
+
             $rows[] = [
                 'progression' => $progression,
                 'cohort' => $progression->getProgram()?->getCohort(),
                 'topic' => $progression->getTopic(),
                 'counts' => $progression->getEvaluationCountsByNature(),
+                'coAnimated' => $progression->isCoAnimated(),
+                'otherTeachers' => $this->teacherNames($roster, $viewer),
+                'ownGroups' => $this->ownGroups($roster, $viewer),
             ];
         }
 
@@ -156,6 +169,7 @@ class ProgressionController extends AbstractController
             'chips' => $chips,
             'selectedCohort' => $cohortFilter,
             'total' => \count($progressions),
+            'coAnimatedTotal' => \count(array_filter($progressions, static fn (Progression $p): bool => $p->isCoAnimated())),
         ]);
     }
 
@@ -235,6 +249,10 @@ class ProgressionController extends AbstractController
 
         return $this->render('progression/show.html.twig', [
             'progression' => $progression,
+            // The « Co-animation » block: one row per formateur, each with the group and the room
+            // their créneaux say they hold. Measured, never stored.
+            'roster' => $this->teacherRoster->forProgression($progression),
+            'canAddCoTeacher' => [] !== $this->teacherRoster->candidates($progression),
             'sequences' => $sequenceRepository->findOrderedForProgression($progression),
             'availableSequenceInstances' => $this->sequenceAvailability->forProgression($progression),
             'counts' => $progression->getEvaluationCountsByNature(),
@@ -277,6 +295,94 @@ class ProgressionController extends AbstractController
         return new Response($pdf, 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $name),
+        ]);
+    }
+
+    /**
+     * Naming a second formateur on this plan - the whole of the co-animation feature's write side.
+     *
+     * The posted id is re-checked against the candidate list rather than trusted: the picker is
+     * restricted to teachers who actually hold créneaux of this matière for this class, and a
+     * hand-built POST must not be able to name somebody who is not there.
+     */
+    #[Route(path: '/progression/{id}/co-teachers/add', name: 'app_progression_co_teacher_add', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function addCoTeacher(int $id, Request $request): Response
+    {
+        $progression = $this->findOrDeny($id);
+
+        if (!$this->isCsrfTokenValid('progression_co_teacher_add', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $wanted = PostValue::nullableInt($request, 'teacher');
+        $picked = null;
+
+        foreach ($this->teacherRoster->candidates($progression) as $candidate) {
+            if ((int) $candidate->getId() === $wanted) {
+                $picked = $candidate;
+                break;
+            }
+        }
+
+        if (null === $picked) {
+            $this->addFlash('danger', 'progressionCoTeacherUnknownFlashMessage');
+
+            return $this->redirectToRoute('app_progression_show', ['id' => $progression->getId()]);
+        }
+
+        $progression->addCoTeacher($picked);
+        $this->entityManager->flush();
+
+        $this->addFlash('success', 'progressionCoTeacherAddedFlashMessage');
+
+        // A POST handled by Turbo must redirect.
+        return $this->redirectToRoute('app_progression_show', ['id' => $progression->getId()]);
+    }
+
+    /**
+     * Removing a co-animator takes back the right to edit the plan and nothing else: the séances
+     * they placed stay placed, because a placement is a fact of the timetable rather than a
+     * property of who wrote it, and unplacing them would silently empty a class's year.
+     */
+    #[Route(path: '/progression/{id}/co-teachers/{teacherId}/remove', name: 'app_progression_co_teacher_remove', methods: ['POST'], requirements: ['id' => '\d+', 'teacherId' => '\d+'])]
+    public function removeCoTeacher(int $id, int $teacherId, Request $request, UserRepository $users): Response
+    {
+        $progression = $this->findOrDeny($id);
+
+        if (!$this->isCsrfTokenValid('progression_co_teacher_remove', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $teacher = $users->find($teacherId);
+        if ($teacher instanceof User && $progression->isCoTeacher($teacher)) {
+            $progression->removeCoTeacher($teacher);
+            $this->entityManager->flush();
+            $this->addFlash('success', 'progressionCoTeacherRemovedFlashMessage');
+        }
+
+        // A co-animator may remove themselves, and then loses the screen they are standing on - so
+        // the redirect goes to the list rather than back to a progression they can no longer open,
+        // which would answer 403 to the gesture that just succeeded.
+        return $this->isGranted(ProgressionVoter::EDIT, $progression)
+            ? $this->redirectToRoute('app_progression_show', ['id' => $progression->getId()])
+            : $this->redirectToRoute('app_progression_manage');
+    }
+
+    /**
+     * The co-animator picker - tomselect + ajax, per the repository's rule that picking Users
+     * always goes through one.
+     */
+    #[Route(path: '/progression/{id}/co-teachers/search', name: 'app_progression_co_teacher_search', methods: ['GET'], requirements: ['id' => '\d+'])]
+    public function coTeacherSearch(int $id, Request $request): JsonResponse
+    {
+        $progression = $this->findOrDeny($id);
+
+        return $this->json([
+            'results' => array_map(static fn (User $user): array => [
+                'id' => $user->getId(),
+                'text' => $user->getDisplayName() ?? $user->getUsername(),
+            ], $this->teacherRoster->candidates($progression, QueryValue::trimmed($request, 'q'))),
+            'pagination' => ['more' => false],
         ]);
     }
 
@@ -1134,6 +1240,47 @@ class ProgressionController extends AbstractController
         if (!$this->isCsrfTokenValid($tokenId, $request->headers->get('X-CSRF-Token'))) {
             throw $this->createAccessDeniedException();
         }
+    }
+
+    /**
+     * The other formateurs' names, for the 3a chip - « co-animée avec Sophie Marchand ».
+     *
+     * @param list<array{teacher: User, isOwner: bool, groups: list<string>, rooms: list<string>, slotCount: int}> $roster
+     *
+     * @return list<string>
+     */
+    private function teacherNames(array $roster, User $viewer): array
+    {
+        $names = [];
+
+        foreach ($roster as $row) {
+            if ($row['teacher'] !== $viewer) {
+                $names[] = $row['teacher']->getDisplayName() ?? $row['teacher']->getUsername();
+            }
+        }
+
+        return $names;
+    }
+
+    /**
+     * « vous tenez le groupe 2 » - the groups the viewer's own créneaux of this matière carry.
+     *
+     * Empty for staff reading somebody else's row, and empty for a teacher holding the whole class:
+     * the phrase only earns its place when the class is actually split.
+     *
+     * @param list<array{teacher: User, isOwner: bool, groups: list<string>, rooms: list<string>, slotCount: int}> $roster
+     *
+     * @return list<string>
+     */
+    private function ownGroups(array $roster, User $viewer): array
+    {
+        foreach ($roster as $row) {
+            if ($row['teacher'] === $viewer) {
+                return $row['groups'];
+            }
+        }
+
+        return [];
     }
 
     private function findOrDeny(int $id): Progression
