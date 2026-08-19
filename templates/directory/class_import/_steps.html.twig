@@ -1,0 +1,14 @@
+{# The three moves of the import, shown on all three screens so the operator always knows where
+   they are and what is still ahead. `step` is 1, 2 or 3. #}
+<div class="cm-steps">
+    {% for index, label in {
+        1: 'classImportStepDestinationLabel',
+        2: 'classImportStepCheckLabel',
+        3: 'classImportStepRunLabel',
+    } %}
+        {% if not loop.first %}<span class="cm-steps__arrow" aria-hidden="true">→</span>{% endif %}
+        <span class="cm-steps__step{{ index == step ? ' cm-steps__step--on' }}{{ index < step ? ' cm-steps__step--done' }}">
+            <b>{{ index < step ? '✓' : index }}</b> {{ label|trans }}
+        </span>
+    {% endfor %}
+</div>

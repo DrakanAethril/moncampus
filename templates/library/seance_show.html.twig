@@ -19,6 +19,11 @@
         </div>
         <a href="{{ path('app_library_seances_edit', {sequenceId: sequenceTemplate.id, id: seanceTemplate.id}) }}" class="btn btn-outline-secondary ms-2">{{ 'editActionLabel'|trans }}</a>
     {% endif %}
+    {# A séance alone is a real thing teachers exchange, so it carries its own « Partager » - and its
+       own audience, separate from the séquence's (design/validated/content-sharing-between-teachers.md). #}
+    {% if canShare %}
+        <button type="button" class="btn btn-outline-secondary ms-2" data-bs-toggle="modal" data-bs-target="#content-share-modal">{{ 'contentShareAction'|trans }}</button>
+    {% endif %}
 {% endblock %}
 
 {% block main %}
@@ -130,5 +135,17 @@
             <input type="hidden" name="_token" value="{{ csrf_token('library_seances_remove') }}">
             <button type="submit" class="btn btn-ghost-danger">{{ 'removeActionLabel'|trans }}</button>
         </form>
+    {% endif %}
+
+    {% if canShare %}
+        {% include 'content_share/_modal.html.twig' with {
+            subjectType: 'seance',
+            subjectId: seanceTemplate.id,
+            subjectTitle: seanceTemplate.titre,
+            subjectDetail: 'contentSharePhaseCountLabel'|trans({'%count%': seanceTemplate.seancePhaseTemplates|length}),
+            groups: shareGroups,
+            shares: shares,
+            memberCounts: shareMemberCounts,
+        } only %}
     {% endif %}
 {% endblock %}

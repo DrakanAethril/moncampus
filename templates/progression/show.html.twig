@@ -16,6 +16,15 @@
     {% if schoolYear %}<span class="text-secondary fs-4 fw-normal ms-2">— {{ schoolYear.startDate|date('Y') }}-{{ schoolYear.endDate|date('Y') }}</span>{% endif %}
 {% endblock %}
 
+{% block page_actions %}
+    {# « Partager la trame », and the label is deliberately not « Partager »: what travels is the
+       order and the durations, never the créneaux - a date is a property of a timetable, and a
+       colleague's timetable is not yours (design/validated/content-sharing-between-teachers.md). #}
+    {% if canShare %}
+        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#content-share-modal">{{ 'contentShareTrameAction'|trans }}</button>
+    {% endif %}
+{% endblock %}
+
 {% block main %}
     <div class="cm-prog-layout">
         <div class="card">
@@ -163,4 +172,16 @@
             </div>
         </aside>
     </div>
+
+    {% if canShare %}
+        {% include 'content_share/_modal.html.twig' with {
+            subjectType: 'progression',
+            subjectId: progression.id,
+            subjectTitle: progression.displayName,
+            subjectDetail: 'contentShareTrameDetailLabel'|trans({'%count%': progression.sequences|length}),
+            groups: shareGroups,
+            shares: shares,
+            memberCounts: shareMemberCounts,
+        } only %}
+    {% endif %}
 {% endblock %}

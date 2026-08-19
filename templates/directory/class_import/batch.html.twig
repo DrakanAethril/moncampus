@@ -1,0 +1,147 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'classImportBatchPageHeading'|trans({'%date%': batch.importedAt|date('d/m/Y')}) }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'directoryNavLabel'|trans, url: path('app_directory_users')},
+        {label: 'directoryUsersNavLabel'|trans, url: path('app_directory_users')},
+        {label: 'classImportPageHeading'|trans, url: path('app_directory_class_import')},
+        {label: 'classImportBatchBreadcrumbLabel'|trans({'%date%': batch.importedAt|date('d/m/Y')}), url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}
+    {{ 'classImportBatchPageHeading'|trans({'%date%': batch.importedAt|date('d/m/Y')}) }} — {{ batch.program.displayShortName }}
+{% endblock %}
+
+{% block main %}
+    {% set lines = batch.lines %}
+    {% set pending = lines|filter(l => l.directoryState in [0, 1])|length %}
+    {% set created = lines|filter(l => l.directoryState == 2)|length %}
+    {% set failed = lines|filter(l => l.directoryState == 3)|length %}
+    {% set notApplicable = lines|filter(l => l.directoryState is null)|length %}
+
+    <p class="text-secondary">
+        {{ 'classImportBatchSubtitle'|trans({
+            '%file%': batch.fileName,
+            '%count%': lines|length,
+            '%operator%': batch.importedBy ? (batch.importedBy.displayName ?? batch.importedBy.username) : '—',
+            '%time%': batch.importedAt|date('H:i'),
+        }) }}
+    </p>
+
+    {% include 'directory/class_import/_steps.html.twig' with {step: 3} %}
+
+    <div data-controller="class-import-status"
+         data-class-import-status-url-value="{{ path('app_directory_class_import_batch_status', {id: batch.id}) }}"
+         data-class-import-status-pending-value="{{ pending }}">
+
+        {% if pending > 0 %}
+            {# The students are already in the class and their records are usable; what is missing
+               is the session account, which the server creates on its next pass. #}
+            <div class="cm-note mt-3" data-class-import-status-target="pendingNote">
+                <span class="cm-note__icon">i</span>
+                <div>
+                    <strong>{{ 'classImportBatchPendingTitle'|trans({'%count%': pending}) }}</strong><br>
+                    {{ 'classImportBatchPendingText'|trans }}
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="cm-statgrid my-3">
+            <div class="cm-stat">
+                <span class="cm-stat__value" data-class-import-status-target="createdCount">{{ created }}</span>
+                <span class="cm-stat__label">{{ 'classImportBatchStatCreatedLabel'|trans }}</span>
+                <span class="cm-stat__hint">{{ 'classImportBatchStatCreatedHint'|trans }}</span>
+            </div>
+            <div class="cm-stat">
+                <span class="cm-stat__value" data-class-import-status-target="pendingCount">{{ pending }}</span>
+                <span class="cm-stat__label">{{ 'classImportBatchStatPendingLabel'|trans }}</span>
+                <span class="cm-stat__hint">{{ 'classImportBatchStatPendingHint'|trans }}</span>
+            </div>
+            <div class="cm-stat">
+                <span class="cm-stat__value {{ failed > 0 ? 'cm-stat__value--danger' }}" data-class-import-status-target="failedCount">{{ failed }}</span>
+                <span class="cm-stat__label">{{ 'classImportBatchStatFailedLabel'|trans }}</span>
+                <span class="cm-stat__hint">{{ 'classImportBatchStatFailedHint'|trans }}</span>
+            </div>
+            <div class="cm-stat">
+                <span class="cm-stat__value">{{ notApplicable }}</span>
+                <span class="cm-stat__label">{{ 'classImportBatchStatNoneLabel'|trans }}</span>
+                <span class="cm-stat__hint">{{ 'classImportBatchStatNoneHint'|trans }}</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">{{ 'classImportBatchLinesSectionTitle'|trans }}</h3>
+                <div class="ms-auto d-flex align-items-center gap-2">
+                    <span class="text-secondary small" data-class-import-status-target="refreshed"></span>
+                    <a href="{{ app.request.requestUri }}" class="btn btn-outline-secondary btn-sm">{{ 'classImportBatchRefreshAction'|trans }}</a>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'classImportColumnStudentHeader'|trans }}</th>
+                            <th>{{ 'classImportBatchColumnLoginHeader'|trans }}</th>
+                            <th>{{ 'classImportBatchColumnDoneHeader'|trans }}</th>
+                            <th>{{ 'classImportBatchColumnDirectoryHeader'|trans }}</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for line in lines %}
+                            <tr data-class-import-status-line="{{ line.id }}">
+                                <td>{{ line.user ? (line.user.displayName ?? line.user.username) : '—' }}</td>
+                                <td class="text-secondary">{{ line.user ? line.user.username : '—' }}</td>
+                                <td><span class="cm-badge {{ line.action.badgeClass }}">{{ line.action.labelKey|trans }}</span></td>
+                                <td>
+                                    {% if line.directoryState is null %}
+                                        {# Not "pending": there is nothing to wait for. An attached
+                                           account already exists in the directory, and a
+                                           demonstration account never gets one. #}
+                                        <span class="cm-badge cm-badge--gray">{{ 'classImportBatchNotApplicableLabel'|trans }}</span>
+                                    {% else %}
+                                        <span class="badge {{ stateClasses[line.directoryState] }}" data-class-import-status-target="state">
+                                            {{ stateLabels[line.directoryState] }}
+                                        </span>
+                                    {% endif %}
+                                    <div class="text-secondary small font-monospace mt-1" data-class-import-status-target="log">
+                                        {{- line.ldapRequest and line.directoryState == 3 ? line.ldapRequest.log -}}
+                                    </div>
+                                </td>
+                                <td class="text-end">
+                                    {# Rendered for every queued line, hidden until it actually
+                                       fails: the polling reply carries no CSRF token, so the form
+                                       has to already be in the page for the retry to appear
+                                       without a reload. #}
+                                    {% if line.ldapRequest %}
+                                        <span data-class-import-status-target="retry" class="{{ line.retryable ? '' : 'd-none' }}">
+                                            <form method="post" action="{{ path('app_directory_class_import_retry', {id: batch.id, lineId: line.id}) }}">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('class_import_retry') }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">{{ 'classImportBatchRetryAction'|trans }}</button>
+                                            </form>
+                                        </span>
+                                    {% endif %}
+                                    {% if line.user %}
+                                        <a href="{{ path('app_directory_users_edit', {id: line.user.id}) }}" class="btn btn-sm btn-link">{{ 'classImportBatchOpenRecordAction'|trans }}</a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer">
+                <span class="text-secondary small">{{ 'classImportBatchStillReachableHint'|trans }}</span>
+                <div class="cm-actionbar">
+                    <div class="cm-actionbar__buttons">
+                        <a href="{{ path('app_directory_users') }}" class="btn btn-primary">{{ 'classImportBatchFinishAction'|trans }}</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

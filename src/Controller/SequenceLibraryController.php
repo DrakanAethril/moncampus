@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Entity\ContentShare;
 use App\Entity\LibraryBlocTag;
 use App\Entity\LibraryNiveauTag;
 use App\Entity\LibraryOptionTag;
@@ -13,12 +14,14 @@ use App\Entity\SeancePhaseTemplate;
 use App\Entity\SeanceTemplate;
 use App\Entity\SequenceTemplate;
 use App\Entity\User;
+use App\Enum\ContentShareScope;
 use App\Enum\LibraryResourceSourceType;
 use App\Form\LibraryResourceType;
 use App\Form\SeancePhaseTemplateType;
 use App\Form\SeanceTemplateType;
 use App\Form\SequenceInstantiateType;
 use App\Form\SequenceTemplateType;
+use App\Repository\ContentShareRepository;
 use App\Repository\LibraryBlocTagRepository;
 use App\Repository\LibraryNiveauTagRepository;
 use App\Repository\LibraryOptionTagRepository;
@@ -29,6 +32,7 @@ use App\Repository\SeanceTemplateRepository;
 use App\Repository\SequenceInstanceRepository;
 use App\Repository\SequenceTemplateRepository;
 use App\Security\Voter\SequenceTemplateVoter;
+use App\Service\ContentShareAudience;
 use App\Service\FileUploadService;
 use App\Service\FormValue;
 use App\Service\JsonRequestPayload;
@@ -153,20 +157,56 @@ class SequenceLibraryController extends AbstractController
     // assistant lives in its own controller (App\Controller\SequenceImportController) and its
     // '/library/sequences/assistant' would otherwise arrive as {id} = "assistant".
     #[Route(path: '/library/sequences/{id}', name: 'app_library_sequences_show', requirements: ['id' => '\d+'])]
-    public function show(int $id, SequenceTemplateRepository $repository, SequenceQuizBoard $quizBoard, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
-    {
+    public function show(
+        int $id,
+        SequenceTemplateRepository $repository,
+        SequenceQuizBoard $quizBoard,
+        LibraryNiveauTagRepository $niveauTagRepository,
+        LibraryOptionTagRepository $optionTagRepository,
+        LibraryBlocTagRepository $blocTagRepository,
+        ContentShareRepository $shares,
+        ContentShareAudience $shareAudience,
+    ): Response {
         // Fetch-joined rather than found: the quiz card reads two collections of quizzes on two levels
         // for every séance (SequenceTemplateRepository::findWithQuizzes()).
         $sequenceTemplate = $this->findSequenceOrNotFound($repository, $id, $repository->findWithQuizzes($id));
         $canEdit = $this->isGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
+        // Sharing is an act of authorship: the owner, and **not** staff on their behalf - unlike
+        // EDIT just above. See App\Service\ContentShareAccess.
+        $canShare = $sequenceTemplate->getTeacher() === $this->currentUser();
+        $existingShares = $canShare ? $shares->findForSubject($sequenceTemplate) : [];
 
         return $this->render('library/sequence_show.html.twig', [
             'sequenceTemplate' => $sequenceTemplate,
             'canEdit' => $canEdit,
+            'canShare' => $canShare,
+            'shares' => $existingShares,
+            'shareGroups' => $canShare ? $shareAudience->pickableGroups() : [],
+            'shareMemberCounts' => $this->shareMemberCounts($existingShares, $shareAudience),
             'quizBoard' => $quizBoard->forSequence($sequenceTemplate),
             'resourceForm' => $canEdit ? $this->createForm(LibraryResourceType::class) : null,
             'tagOptions' => $this->libraryTagOptions($niveauTagRepository, $optionTagRepository, $blocTagRepository),
         ]);
+    }
+
+    /**
+     * The resolved size of every `group` share of the modal's list - « Équipe SIO — 11 personnes ».
+     *
+     * @param list<ContentShare> $shares
+     *
+     * @return array<int, int>
+     */
+    private function shareMemberCounts(array $shares, ContentShareAudience $audience): array
+    {
+        $counts = [];
+
+        foreach ($shares as $share) {
+            if (ContentShareScope::Group === $share->getScope()) {
+                $counts[(int) $share->getId()] = $audience->memberCount($share->getGroupIds());
+            }
+        }
+
+        return $counts;
     }
 
     /**
@@ -384,16 +424,33 @@ class SequenceLibraryController extends AbstractController
     }
 
     #[Route(path: '/library/sequences/{sequenceId}/sessions/{id}', name: 'app_library_seances_show')]
-    public function seanceShow(int $sequenceId, int $id, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
-    {
+    public function seanceShow(
+        int $sequenceId,
+        int $id,
+        SequenceTemplateRepository $sequenceRepository,
+        SeanceTemplateRepository $seanceRepository,
+        LibraryNiveauTagRepository $niveauTagRepository,
+        LibraryOptionTagRepository $optionTagRepository,
+        LibraryBlocTagRepository $blocTagRepository,
+        ContentShareRepository $shares,
+        ContentShareAudience $shareAudience,
+    ): Response {
         $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
         $seanceTemplate = $this->findSeanceOrNotFound($seanceRepository, $sequenceTemplate, $id);
         $canEdit = $this->isGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
+        // A séance is shared by its author alone - the séquence's owner, since a séance has no owner
+        // of its own. Staff do not hand it around on their behalf.
+        $canShare = $sequenceTemplate->getTeacher() === $this->currentUser();
+        $existingShares = $canShare ? $shares->findForSubject($seanceTemplate) : [];
 
         return $this->render('library/seance_show.html.twig', [
             'sequenceTemplate' => $sequenceTemplate,
             'seanceTemplate' => $seanceTemplate,
             'canEdit' => $canEdit,
+            'canShare' => $canShare,
+            'shares' => $existingShares,
+            'shareGroups' => $canShare ? $shareAudience->pickableGroups() : [],
+            'shareMemberCounts' => $this->shareMemberCounts($existingShares, $shareAudience),
             'resourceForm' => $canEdit ? $this->createForm(LibraryResourceType::class) : null,
             'tagOptions' => $this->libraryTagOptions($niveauTagRepository, $optionTagRepository, $blocTagRepository),
         ]);
@@ -730,11 +787,18 @@ class SequenceLibraryController extends AbstractController
      * @param ?SequenceTemplate $preloaded a row a caller already fetched with the joins it needs, so a
      *                                     screen that reads collections does not pay for them one by one
      */
+    /**
+     * The door onto one séquence - its owner, staff, **or a colleague it was shared with**
+     * (design/validated/content-sharing-between-teachers.md). VIEW is deliberately the widest thing
+     * this helper grants: every action that writes calls denyAccessUnlessGranted(EDIT) of its own
+     * right after, so a reader reaches the show screens, the export and the review prompt, and
+     * nothing else.
+     */
     private function findSequenceOrNotFound(SequenceTemplateRepository $repository, int $id, ?SequenceTemplate $preloaded = null): SequenceTemplate
     {
         $sequenceTemplate = $preloaded ?? $repository->find($id) ?? throw $this->createNotFoundException();
 
-        if ($sequenceTemplate->getTeacher() !== $this->currentUser() && !$this->isGranted('ROLE_ADMIN') && !$this->isGranted('ROLE_STAFF') && !$this->isGranted('ROLE_STAFF-LEAD')) {
+        if (!$this->isGranted(SequenceTemplateVoter::VIEW, $sequenceTemplate)) {
             throw $this->createNotFoundException();
         }
 

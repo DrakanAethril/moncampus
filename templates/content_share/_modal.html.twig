@@ -1,0 +1,43 @@
+{# The share modal (design/validated/content-sharing-between-teachers.md, mockups 1 and 2).
+
+   **The same form opens from the five items** - séquence, séance, quiz, fichier, progression - so
+   this file is modal chrome around `content_share/_form.html.twig` and nothing else. A file library
+   row opens the same form as a page instead, because a browse screen holds thirty rows and thirty
+   modals is thirty copies of the group tree.
+
+   The footer's « Partager » reaches the form through the `form=` attribute rather than by sitting
+   inside it: the « Retirer » buttons under the form carry forms of their own, and a `<form>` inside
+   a `<form>` is dropped by the parser. #}
+<div class="modal fade" id="content-share-modal" tabindex="-1" aria-hidden="true" aria-labelledby="content-share-modal-title">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content"
+             data-controller="content-share"
+             data-content-share-count-url-value="{{ path('app_shares_group_count') }}"
+             data-content-share-count-label-value="{{ 'contentShareGroupResolvedCountLabel'|trans({'%count%': '__COUNT__'})|e('html_attr') }}">
+            <div class="modal-header">
+                <div>
+                    <h2 class="modal-title" id="content-share-modal-title">{{ 'contentShareModalTitle'|trans({'%name%': subjectTitle}) }}</h2>
+                    {% if subjectDetail is defined and subjectDetail %}
+                        <div class="cm-share__detail">{{ subjectDetail }}</div>
+                    {% endif %}
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'cancelAction'|trans }}"></button>
+            </div>
+
+            <div class="modal-body">
+                {% include 'content_share/_form.html.twig' with {
+                    subjectType: subjectType,
+                    subjectId: subjectId,
+                    groups: groups,
+                    shares: shares,
+                    memberCounts: memberCounts,
+                } only %}
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="cm-btn" data-bs-dismiss="modal">{{ 'cancelAction'|trans }}</button>
+                <button type="submit" form="content-share-form" class="cm-btn cm-btn--primary">{{ 'contentShareSubmitAction'|trans }}</button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,16 @@
+{# Who one share reaches, in one cell: the names for a `users` scope, the groups and their resolved
+   size for a `group` one, and the plain word for the catalogue.
+
+   The count next to a group is **measured** (App\Service\ContentShareAudience::memberCount()), never
+   estimated - the same figure the picker states before the submit, for the same reason: the
+   hierarchy's root is « campus », so a small-looking pick can reach the whole establishment. #}
+{% if share.scope.value == 'users' %}
+    {% for user in share.users %}{{ user.displayName ?? user.username }}{{ not loop.last ? ', ' }}{% endfor %}
+{% elseif share.scope.value == 'group' %}
+    {% for group in share.groups %}{{ group.name }}{{ not loop.last ? ', ' }}{% endfor %}
+    {% if memberCount is defined and memberCount is not null %}
+        <span class="cm-share__detail">{{ 'contentShareGroupMemberCountLabel'|trans({'%count%': memberCount}) }}</span>
+    {% endif %}
+{% else %}
+    {{ 'contentShareScopeCatalogLabel'|trans }}
+{% endif %}

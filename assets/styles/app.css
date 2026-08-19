@@ -7683,3 +7683,231 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-sum dt { color: var(--cm-muted); font-weight: 400; }
 .cm-sum dd { margin: 0; color: var(--cm-ink); font-weight: 600; }
 @media (max-width: 575.98px) { .cm-sum { grid-template-columns: 1fr; gap: 2px 0; } }
+
+/* ---------- Import d'une classe (Annuaire > Utilisateurs) ---------- */
+
+/* The three moves of the import, on all three screens. A wizard that does not say how far along it
+   is turns "vérification" into a step somebody might take for the end of the road. */
+.cm-steps {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    font-size: 12.5px; color: var(--cm-faint);
+}
+.cm-steps__step { display: inline-flex; align-items: center; gap: 6px; }
+.cm-steps__step b { color: var(--cm-faint); font-weight: 700; }
+.cm-steps__step--on { color: var(--cm-brand-strong); font-weight: 600; }
+.cm-steps__step--on b { color: var(--cm-brand-strong); }
+.cm-steps__step--done { color: var(--cm-green-tx); }
+.cm-steps__step--done b { color: var(--cm-green-tx); }
+.cm-steps__arrow { color: var(--cm-disabled); }
+
+/* A value the screen shows but nobody may change - here the account type, which a class import
+   never chooses. Drawn as a field so the eye reads it in the column of fields, dashed so the hand
+   does not try to type in it. */
+.cm-locked-value {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    border: 1px dashed var(--cm-border); border-radius: var(--cm-radius-sm);
+    background: var(--cm-surface-alt); color: var(--cm-muted);
+    padding: 9px 12px; font-size: 14px;
+}
+
+/* One answer among several, with room for the two or three lines that let an operator tell two
+   namesakes apart - a plain radio list has nowhere to put them. */
+.cm-choice {
+    display: flex; align-items: flex-start; gap: 10px;
+    border: 1px solid var(--cm-border); border-radius: var(--cm-radius-sm);
+    background: var(--cm-surface); padding: 11px 13px; cursor: pointer;
+}
+.cm-choice:hover { border-color: var(--cm-brand); }
+.cm-choice > span { display: flex; flex-direction: column; gap: 2px; }
+.cm-choice__title { color: var(--cm-ink); font-weight: 600; font-size: 13.5px; }
+.cm-choice__detail { color: var(--cm-muted); font-size: 12.5px; }
+
+/* ==========================================================================
+   Partage de contenu entre enseignants
+   design/validated/content-sharing-between-teachers.md
+   ========================================================================== */
+
+/* The line under a title or a badge that says what the item weighs in its own units - « 6 séances
+   · 9 supports », « 24 questions ». Small and muted on purpose: it answers a question the reader
+   has not asked yet. */
+.cm-share__detail {
+    color: var(--cm-faint);
+    font-size: 12.5px;
+    margin-top: 3px;
+}
+
+/* « la version refaite après le retour de janvier » - the author's own word, and the only free text
+   of the whole feature. */
+.cm-share__note {
+    color: var(--cm-muted);
+    font-size: 12.5px;
+    font-style: italic;
+    margin-top: 3px;
+}
+
+/* A withdrawn share does NOT leave the list: it greys and names itself. Vanishing without a word
+   from a list a colleague was working from is the behaviour this avoids - and what they had already
+   duplicated is still theirs. */
+.cm-share__row--revoked { background: var(--cm-border-faint); }
+.cm-share__row--revoked td:first-child { color: var(--cm-muted); }
+
+/* --- the modal ---------------------------------------------------------- */
+
+.cm-share__scopes { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.cm-share__scope {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: start;
+    gap: 3px 9px;
+    flex: 1 1 160px;
+    border: 1.5px solid var(--cm-border);
+    border-radius: var(--cm-radius-sm);
+    background: var(--cm-surface);
+    padding: 11px 13px;
+    cursor: pointer;
+}
+.cm-share__scope:hover { border-color: var(--cm-brand); }
+.cm-share__scope:has(input:checked) { border-color: var(--cm-brand); background: var(--cm-blue-bg-soft); }
+.cm-share__scope input { grid-row: 1 / span 2; margin-top: 3px; }
+.cm-share__scope-title { color: var(--cm-ink); font-weight: 600; font-size: 13px; }
+.cm-share__scope-hint { color: var(--cm-muted); font-size: 11.5px; }
+
+/* The group tree is a checkbox list, per this app's form rule - never a <select multiple>. The
+   indentation is what makes « BTS SIO » read as the parent of the classes it will also reach. */
+.cm-share__grouptree {
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid var(--cm-border);
+    border-radius: var(--cm-radius-sm);
+    background: var(--cm-surface);
+    padding: 8px 10px;
+}
+.cm-share__grouprow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 3px 0;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+/* « Ce partage sera visible de 87 personnes » - measured, and said before the submit. */
+.cm-share__count {
+    margin: 8px 0 0;
+    color: var(--cm-blue-tx);
+    background: var(--cm-blue-bg);
+    border-radius: var(--cm-radius-sm);
+    padding: 8px 11px;
+    font-size: 12.5px;
+}
+
+/* The two sentences the whole feature turns on, stated where the decision is made. */
+.cm-share__rule {
+    margin: 0;
+    color: var(--cm-muted);
+    font-size: 12.5px;
+    line-height: 1.5;
+}
+
+.cm-share__subtitle {
+    margin: 22px 0 8px;
+    font-size: 11px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--cm-faint);
+    font-weight: 700;
+}
+
+.cm-share__list { list-style: none; margin: 0; padding: 0; }
+
+.cm-share__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-top: 1px solid var(--cm-border-soft);
+    padding: 9px 0;
+    font-size: 13px;
+}
+.cm-share__item form { margin: 0; }
+.cm-share__item button {
+    background: none;
+    border: 0;
+    padding: 0;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* The folder tree the confirmation screen draws before writing anything - the one place a reader
+   sees the « <séquence>/<séance>/ » rule as a shape rather than as a sentence. */
+.cm-share__tree {
+    background: var(--cm-surface-alt);
+    border: 1px solid var(--cm-border);
+    border-radius: var(--cm-radius-sm);
+    padding: 12px 14px;
+    margin: 0 0 12px;
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: var(--cm-ink);
+    overflow-x: auto;
+}
+
+/* The recipient's quota as it will stand after the copy. Drawn even when it fits: the honest cost of
+   a file that now weighs twice is a number, not a feeling. */
+.cm-share__quota { max-width: 420px; }
+.cm-share__quota-track {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--cm-border-soft);
+    overflow: hidden;
+}
+.cm-share__quota-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--cm-brand);
+}
+
+/* The catalogue's filter row: a free-text search, a type, an author. Deliberately no facet select
+   built on Niveau/Option/Bloc - those are a private vocabulary per teacher, and a select built on
+   the reader's own would hide every colleague's séquence whose label differs by a space. */
+.cm-share__filters {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.cm-share__filters input[type="search"] { flex: 1 1 240px; min-width: 200px; }
+.cm-share__filters select { flex: 0 0 auto; width: auto; }
+
+/* A shared quiz read flat: the questions, their answers, and which ones are right. */
+.cm-share__answers {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+    font-size: 13px;
+}
+.cm-share__answers li {
+    padding: 2px 0 2px 18px;
+    position: relative;
+    color: var(--cm-muted);
+}
+.cm-share__answers li::before {
+    content: '·';
+    position: absolute;
+    left: 6px;
+    color: var(--cm-faint);
+}
+.cm-share__answer--right { color: var(--cm-positive-tx); font-weight: 600; }
+.cm-share__answer--right::before { content: '✓'; color: var(--cm-positive-tx); font-size: 11px; }
+
+/* The one sentence a screen that asks a question opens on. */
+.cm-share__notice {
+    background: var(--cm-blue-bg-soft);
+    border: 1px solid var(--cm-blue-bg);
+    border-radius: var(--cm-radius-sm);
+    color: var(--cm-blue-tx);
+    padding: 11px 13px;
+    font-size: 12.5px;
+    margin-bottom: 14px;
+}

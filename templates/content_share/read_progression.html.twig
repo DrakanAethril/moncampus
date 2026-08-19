@@ -1,0 +1,48 @@
+{% extends 'layout/app.html.twig' %}
+
+{# « Consulter » on a shared progression trame
+   (design/validated/content-sharing-between-teachers.md).
+
+   What was shared is **the trame**, not the progression: the order, the durations and the
+   evaluations, and deliberately none of the dates. So this screen shows exactly that, and the
+   author's own progression screen - which is all calendar - stays theirs. #}
+
+{% block title %}{{ progression.displayName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'contentSharePageHeading'|trans, url: path('app_shares')},
+        {label: progression.displayName, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ progression.displayName }}{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_shares_duplicate', {id: share.id}) }}" class="cm-btn cm-btn--primary">{{ 'contentShareTrameSubmitAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    <p class="text-secondary">
+        {{ 'contentShareReadSharedByLabel'|trans({'%author%': share.owner.displayName ?? share.owner.username}) }}
+        · {{ 'contentShareTrameDetailLabel'|trans({'%count%': progression.sequences|length}) }}
+    </p>
+
+    {% for sequence in progression.sequences %}
+        <div class="card mb-2">
+            <div class="card-body">
+                <div class="fw-bold">{{ loop.index }} — {{ sequence.sequenceInstance ? sequence.sequenceInstance.titre : '—' }}</div>
+                <ul class="cm-share__answers">
+                    {% for seance in sequence.seances %}
+                        <li>
+                            {{ seance.title }}
+                            {% if seance.plannedMinutes %}<span class="cm-share__detail">· {{ seance.plannedMinutes|duration_minutes }}</span>{% endif %}
+                            {% if seance.evaluationNature %}<span class="cm-badge cm-badge--gold ms-1">{{ seance.evaluationNature.labelKey|trans }}</span>{% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    {% endfor %}
+{% endblock %}

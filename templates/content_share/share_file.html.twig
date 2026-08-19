@@ -1,0 +1,44 @@
+{% extends 'layout/app.html.twig' %}
+
+{# « Partager à un collègue » on a file or a folder of the library
+   (design/validated/content-sharing-between-teachers.md, "The share action, on the items
+   themselves").
+
+   A page rather than the modal the other items open, for one reason: a browse screen holds thirty
+   rows, and thirty modals would be thirty copies of the group tree in one document. The form is the
+   very same partial. #}
+
+{% block title %}{{ 'contentShareModalTitle'|trans({'%name%': node.name}) }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'fileLibraryNavLabel'|trans, url: path('app_file_library')},
+        {label: 'contentShareAction'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'contentShareModalTitle'|trans({'%name%': node.name}) }}{% endblock %}
+
+{% block main %}
+    <div class="card"
+         data-controller="content-share"
+         data-content-share-count-url-value="{{ path('app_shares_group_count') }}"
+         data-content-share-count-label-value="{{ 'contentShareGroupResolvedCountLabel'|trans({'%count%': '__COUNT__'})|e('html_attr') }}">
+        <div class="card-body">
+            <p class="cm-share__detail">{{ node.folder ? 'contentShareShareFolderHelpText'|trans : byte_size(node.sizeBytes) }}</p>
+
+            {% include 'content_share/_form.html.twig' with {
+                subjectType: 'file',
+                subjectId: node.id,
+                groups: groups,
+                shares: shares,
+                memberCounts: memberCounts,
+            } only %}
+        </div>
+        <div class="cm-actionbar">
+            <button type="submit" form="content-share-form" class="cm-btn cm-btn--primary">{{ 'contentShareSubmitAction'|trans }}</button>
+            <a href="{{ path('app_file_library') }}" class="cm-btn">{{ 'cancelAction'|trans }}</a>
+        </div>
+    </div>
+{% endblock %}

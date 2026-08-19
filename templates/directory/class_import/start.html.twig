@@ -1,0 +1,115 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'classImportPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'directoryNavLabel'|trans, url: path('app_directory_users')},
+        {label: 'directoryUsersNavLabel'|trans, url: path('app_directory_users')},
+        {label: 'classImportPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'classImportPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% include 'directory/class_import/_steps.html.twig' with {step: 1} %}
+
+    <div class="card mt-3" data-controller="class-import-groups">
+        <div class="card-body">
+            {{ form_start(form) }}
+            {{ form_errors(form) }}
+
+            <div class="row g-4 align-items-start">
+                <div class="col-12 col-lg-6 d-flex flex-column gap-3">
+                    <div data-class-import-groups-target="program">
+                        {{ form_row(form.program) }}
+                    </div>
+
+                    <div class="field">
+                        <span class="form-label">{{ 'classImportAccountTypeFieldLabel'|trans }}</span>
+                        {# Not a field: this is a class import, not a user import. Shown all the
+                           same, because « étudiant » is a decision the operator should see. #}
+                        <div class="cm-locked-value">
+                            <span>{{ 'accountTypeStudentLabel'|trans|capitalize }}</span>
+                            <span class="text-secondary small">{{ 'classImportAccountTypeImposedLabel'|trans }}</span>
+                        </div>
+                    </div>
+
+                    {{ form_row(form.mustChangePassword) }}
+
+                    <div class="cm-note">
+                        <span class="cm-note__icon">i</span>
+                        <div>{{ 'classImportNoMailNoteText'|trans }}</div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-lg-6 d-flex flex-column gap-2">
+                    {{ form_row(form.groups) }}
+                    <p class="text-secondary small mb-0">{{ 'classImportGroupsNotFromColumnsHint'|trans }}</p>
+                </div>
+            </div>
+
+            <hr>
+
+            <div class="row g-4 align-items-start">
+                <div class="col-12 col-lg-6">
+                    {{ form_row(form.file) }}
+                </div>
+                <div class="col-12 col-lg-6">
+                    <div class="cm-subhead">
+                        <div class="cm-subhead__title">{{ 'classImportExpectedColumnsTitle'|trans }}</div>
+                        <div class="cm-subhead__hint">{{ 'classImportExpectedColumnsHint'|trans }}</div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-vcenter">
+                            <thead>
+                                <tr>
+                                    <th>{{ 'classImportColumnNameHeader'|trans }}</th>
+                                    <th>{{ 'classImportColumnRequiredHeader'|trans }}</th>
+                                    <th>{{ 'classImportColumnContentHeader'|trans }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>nom</code></td>
+                                    <td>{{ 'yesLabel'|trans }}</td>
+                                    <td>{{ 'classImportColumnLastnameContent'|trans }}</td>
+                                </tr>
+                                <tr>
+                                    <td><code>prenom</code></td>
+                                    <td>{{ 'yesLabel'|trans }}</td>
+                                    <td>{{ 'classImportColumnFirstnameContent'|trans }}</td>
+                                </tr>
+                                <tr>
+                                    <td><code>mail</code></td>
+                                    <td>{{ 'classImportColumnRequiredColumnOnly'|trans }}</td>
+                                    <td>{{ 'classImportColumnEmailContent'|trans }}</td>
+                                </tr>
+                                <tr>
+                                    <td>{{ 'classImportColumnFreeName'|trans }}</td>
+                                    <td>{{ 'noLabel'|trans }}</td>
+                                    <td>{{ 'classImportColumnFreeContent'|trans }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="text-secondary small">
+                        {{ 'classImportColumnsFreeFormHint'|trans }}
+                        <a href="{{ path('app_directory_class_import_template') }}">{{ 'classImportDownloadTemplateAction'|trans }}</a>
+                    </p>
+                </div>
+            </div>
+
+            <div class="cm-actionbar">
+                <div class="cm-actionbar__buttons">
+                    <a href="{{ path('app_directory_users') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    <button type="submit" class="btn btn-primary">{{ 'classImportCheckFileAction'|trans }}</button>
+                </div>
+            </div>
+
+            {{ form_rest(form) }}
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}

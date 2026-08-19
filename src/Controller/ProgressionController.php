@@ -13,9 +13,11 @@ use App\Entity\SchoolYear;
 use App\Entity\SequenceInstance;
 use App\Entity\Topic;
 use App\Entity\User;
+use App\Enum\ContentShareScope;
 use App\Enum\EvaluationNature;
 use App\Enum\ProgressionSlotComposition;
 use App\Enum\ProgressionSlotTopicScope;
+use App\Repository\ContentShareRepository;
 use App\Repository\LessonSessionRepository;
 use App\Repository\ProgressionRepository;
 use App\Repository\ProgressionSeanceRepository;
@@ -24,6 +26,7 @@ use App\Repository\SchoolYearRepository;
 use App\Repository\SequenceInstanceRepository;
 use App\Repository\TopicRepository;
 use App\Security\Voter\ProgressionVoter;
+use App\Service\ContentShareAudience;
 use App\Service\GotenbergUnavailableException;
 use App\Service\JsonRequestPayload;
 use App\Service\PostValue;
@@ -211,9 +214,24 @@ class ProgressionController extends AbstractController
 
     // 5a - the progression itself: the ordered list of its séquences.
     #[Route(path: '/progression/{id}', name: 'app_progression_show', requirements: ['id' => '\d+'])]
-    public function show(int $id, ProgressionSequenceRepository $sequenceRepository): Response
-    {
+    public function show(
+        int $id,
+        ProgressionSequenceRepository $sequenceRepository,
+        ContentShareRepository $shares,
+        ContentShareAudience $shareAudience,
+    ): Response {
         $progression = $this->findOrDeny($id);
+        // « Partager la trame » is the author's own gesture, and not staff's on their behalf - the
+        // same asymmetry as everywhere else in this feature.
+        $canShare = $progression->getTeacher() === $this->currentUser();
+        $existingShares = $canShare ? $shares->findForSubject($progression) : [];
+        $memberCounts = [];
+
+        foreach ($existingShares as $share) {
+            if (ContentShareScope::Group === $share->getScope()) {
+                $memberCounts[(int) $share->getId()] = $shareAudience->memberCount($share->getGroupIds());
+            }
+        }
 
         return $this->render('progression/show.html.twig', [
             'progression' => $progression,
@@ -222,6 +240,10 @@ class ProgressionController extends AbstractController
             'counts' => $progression->getEvaluationCountsByNature(),
             'outOfSequenceEvaluations' => $this->evaluationSelector->outOfSequence($progression->getTopic()?->getEvaluations() ?? []),
             'currentMonthKey' => (new \DateTimeImmutable('today'))->format('Y-m'),
+            'canShare' => $canShare,
+            'shares' => $existingShares,
+            'shareGroups' => $canShare ? $shareAudience->pickableGroups() : [],
+            'shareMemberCounts' => $memberCounts,
         ]);
     }
 

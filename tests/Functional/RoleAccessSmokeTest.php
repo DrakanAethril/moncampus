@@ -106,6 +106,11 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/progression' => 403,
             '/library/sequences' => 403,
             '/library/sequences/assistant' => 403,
+            // Outils > Partages. A student is never a reader of a share, under any scope, and
+            // neither is a tutor - the door says so once and ContentShareAccess says it again.
+            '/shares' => 403,
+            '/shares/mine' => 403,
+            '/shares/catalog' => 403,
             '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,
@@ -131,6 +136,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/progression' => 200,
             '/library/sequences' => 200,
             '/library/sequences/assistant' => 200,
+            '/shares' => 200,
+            '/shares/mine' => 200,
+            '/shares/catalog' => 200,
             '/agenda' => 200,
             '/messages' => 200,
             '/tickets' => 200,
@@ -211,6 +219,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/progression' => 200,
             '/library/sequences' => 200,
             '/library/sequences/assistant' => 200,
+            '/shares' => 200,
+            '/shares/mine' => 200,
+            '/shares/catalog' => 200,
             '/agenda' => 200,
             '/messages' => 200,
             '/tickets' => 200,
@@ -322,6 +333,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/progression' => 403,
             '/library/sequences' => 403,
             '/library/sequences/assistant' => 403,
+            '/shares' => 403,
+            '/shares/mine' => 403,
+            '/shares/catalog' => 403,
             '/tools/quiz-live' => 403,
             '/tools/job-search-tracking' => 403,
             '/tools/quiz' => 403,
@@ -373,6 +387,45 @@ class RoleAccessSmokeTest extends FunctionalTestCase
 
         foreach ([$this->student, $this->teacher, $this->tutor, $staff, $staffLead] as $user) {
             $this->assertScreens($user, array_fill_keys($screens, 403));
+        }
+    }
+
+    /**
+     * The class import. Asserted on its own for the same reason as the Proxmox console above: the
+     * rest of Annuaire is open to staff, and this one screen is not.
+     *
+     * That asymmetry is the whole point and the easiest thing to undo by accident - widening the
+     * directory area later, or folding this controller's #[IsGranted] into the one the other
+     * directory screens share, would hand thirty accounts on a click to a role that is meant to
+     * go on creating them one at a time. Nothing in the interface would show it: the button is
+     * rendered under the same condition, so it would simply appear.
+     *
+     * The batch route is pinned with an id nobody holds: an admin must get a 404 (the route exists
+     * and its \d+ requirement keeps `check`, `confirm` and `template.csv` out of it), and everybody
+     * else a 403 - refused before the controller ever looks for the row.
+     */
+    public function testClassImportIsAdminOnly(): void
+    {
+        $this->assertScreens($this->admin, [
+            '/directory/users/class-import' => 200,
+            '/directory/users/class-import/template.csv' => 200,
+            // Nothing parked in the session yet: back to step ① rather than an empty analysis.
+            '/directory/users/class-import/check' => 302,
+            '/directory/users/class-import/999999' => 404,
+        ]);
+
+        $staff = $this->createUser(['ROLE_USER', 'ROLE_STAFF'], 'smoke.import.staff');
+        $staffLead = $this->createUser(['ROLE_USER', 'ROLE_STAFF-LEAD'], 'smoke.import.stafflead');
+
+        $refused = [
+            '/directory/users/class-import' => 403,
+            '/directory/users/class-import/template.csv' => 403,
+            '/directory/users/class-import/check' => 403,
+            '/directory/users/class-import/999999' => 403,
+        ];
+
+        foreach ([$this->student, $this->teacher, $this->tutor, $staff, $staffLead] as $user) {
+            $this->assertScreens($user, $refused);
         }
     }
 

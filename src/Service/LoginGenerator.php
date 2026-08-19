@@ -30,18 +30,26 @@ class LoginGenerator
     ) {
     }
 
-    public function generate(string $firstname, string $lastname): string
+    /**
+     * @param list<string> $reservedLogins logins the same run has already handed out but has not
+     *                                     flushed yet - the two queries below can only see what the
+     *                                     database holds, and a class routinely carries two students
+     *                                     whose names fold to the same base ("Martin Dupont" and
+     *                                     "Marie Dupont" are both mdupont). Empty for the one-account
+     *                                     screen, which has nothing pending.
+     */
+    public function generate(string $firstname, string $lastname, array $reservedLogins = []): string
     {
         $base = $this->cleanNamePart($firstname, 1).$this->cleanNamePart($lastname);
 
-        if (!$this->loginTaken($base)) {
+        if (!$this->loginTaken($base, $reservedLogins)) {
             return $base;
         }
 
         for ($i = 1; $i <= 99; ++$i) {
             $candidate = $base.sprintf('%02d', $i);
 
-            if (!$this->loginTaken($candidate)) {
+            if (!$this->loginTaken($candidate, $reservedLogins)) {
                 return $candidate;
             }
         }
@@ -57,14 +65,20 @@ class LoginGenerator
         return null !== $maxLength ? mb_substr($clean, 0, $maxLength) : $clean;
     }
 
-    // Races between two concurrent creations are possible here (this check then a later insert
-    // aren't atomic) - App\Controller\DirectoryUserController::new() retries generation on a
-    // unique-constraint failure at flush time instead of trying to lock around this check, since
-    // that's the simplest way to close the gap given how rarely two staff create an account in
-    // the same instant.
-    private function loginTaken(string $login): bool
+    // Races between two concurrent creations remain possible here (this check and the later insert
+    // aren't atomic): two staff members creating an account in the same instant, or two imports of
+    // the same class, would both be handed the same base and the second flush would fail on
+    // User::$username's unique constraint. Deliberately not locked around: the collision window is
+    // a few milliseconds twice a year, the failure is loud (the whole write is refused, nothing is
+    // half-written) and retrying costs one click.
+    //
+    // $reservedLogins closes the other, far likelier collision - the one inside a single run, which
+    // no query can see.
+    /** @param list<string> $reservedLogins */
+    private function loginTaken(string $login, array $reservedLogins): bool
     {
-        return null !== $this->userRepository->findOneBy(['username' => $login])
+        return \in_array($login, $reservedLogins, true)
+            || null !== $this->userRepository->findOneBy(['username' => $login])
             || $this->ldapManageUserRepository->loginExists($login);
     }
 }

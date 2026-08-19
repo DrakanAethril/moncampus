@@ -13,6 +13,7 @@ use App\Form\LdapManageUserType;
 use App\Form\UserProfileType;
 use App\Repository\GroupRepository;
 use App\Repository\LdapManageUserRepository;
+use App\Repository\StudentImportBatchRepository;
 use App\Repository\UserRepository;
 use App\Security\Voter\FileLibraryVoter;
 use App\Service\ByteSize;
@@ -21,10 +22,10 @@ use App\Service\DataTableParams;
 use App\Service\FileLibraryQuota;
 use App\Service\FormValue;
 use App\Service\LdapManageUserRoleResolver;
-use App\Service\LoginGenerator;
+use App\Service\NewAccountRequest;
 use App\Service\QueueStateFormatter;
+use App\Service\StudentAccountFactory;
 use App\Service\StudentMailAliasValidator;
-use App\Service\StudentMailProvisioner;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -42,9 +43,13 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 class DirectoryUserController extends AbstractController
 {
     #[Route(path: '/directory/users', name: 'app_directory_users')]
-    public function index(): Response
+    public function index(StudentImportBatchRepository $importBatches): Response
     {
-        return $this->render('directory/users.html.twig');
+        return $this->render('directory/users.html.twig', [
+            // Only administrators reach the class import, and the template hides the menu for
+            // anyone else - the query is cheap enough not to be worth a second branch here.
+            'recentImports' => $this->isGranted('ROLE_ADMIN') ? $importBatches->findRecent() : [],
+        ]);
     }
 
     // Creates the User row immediately (not just the ldap_manage_user request) so the account is
@@ -59,10 +64,7 @@ class DirectoryUserController extends AbstractController
         EntityManagerInterface $entityManager,
         GroupRepository $groupRepository,
         UserRepository $userRepository,
-        LoginGenerator $loginGenerator,
-        LdapManageUserRoleResolver $roleResolver,
-        ContactEmailVerifier $contactEmailVerifier,
-        StudentMailProvisioner $mailProvisioner,
+        StudentAccountFactory $accountFactory,
         TranslatorInterface $translator,
     ): Response {
         // Only account creation is supported from this form; password-change requests go through
@@ -84,54 +86,29 @@ class DirectoryUserController extends AbstractController
             } else {
                 /** @var User $currentUser */
                 $currentUser = $this->getUser();
-                $ldapUser->setAddedBy($currentUser->getUsername());
 
-                $login = $loginGenerator->generate($ldapUser->getFirstname(), $ldapUser->getLastname());
+                // Every field of the account is set by App\Service\StudentAccountFactory, which the
+                // class import calls too - the two paths create the same account or one of them is
+                // a bug nobody sees. The queue row built by the form is only read here, never
+                // persisted: the factory builds its own.
+                $account = $accountFactory->create(new NewAccountRequest(
+                    firstname: $ldapUser->getFirstname(),
+                    lastname: $ldapUser->getLastname(),
+                    userType: $ldapUser->getUserType(),
+                    addedBy: $currentUser->getUsername(),
+                    groups: array_values(array_filter(explode('|', $ldapUser->getUserGroups()))),
+                    contactEmail: FormValue::trimmed($form, 'contactEmail'),
+                    phoneNumber: FormValue::trimmed($form, 'phoneNumber'),
+                    mustChangePassword: FormValue::bool($form, 'mustChangePassword'),
+                    testUser: FormValue::bool($form, 'testUser'),
+                ));
 
-                // LDAP-synced fields (email, firstname, lastname, roles) are pre-filled here to
-                // what the account's first real LDAP login will set them to anyway (see
-                // App\Security\LdapUserMapper) - not left blank/placeholder in the meantime.
-                // DOMAIN matches create_user.sh's own "--mail=$login@$DOMAIN" in the ldap-manage
-                // Scripts project.
-                $user = new User($login);
-                $user->setEmail($login.'@beaupeyrat.lan');
-                $user->setFirstname($ldapUser->getFirstname());
-                $user->setLastname($ldapUser->getLastname());
-                $user->setRoles($roleResolver->resolve($ldapUser));
-                $user->setContactEmail($contactEmail);
-                $user->setPhoneNumber($form->get('phoneNumber')->getData());
-                $user->setMustChangePassword($form->get('mustChangePassword')->getData());
-                $user->setTestUser((bool) $form->get('testUser')->getData());
-                // Staff creating the account is trusted outright - no confirmation mail, see
-                // ContactEmailVerifier's docblock.
-                $contactEmailVerifier->markVerifiedByStaff($user);
-
-                // Also set on the queue row itself, not just the User - manage_user.php's
-                // getUserLine() now reads this column directly instead of generating it (see that
-                // Scripts-project function's docblock), so leaving it null here would hand it an
-                // empty login to pass to create_user.sh.
-                $ldapUser->setLogin($login);
-                $ldapUser->setUser($user);
-
-                $entityManager->persist($user);
-                $entityManager->persist($ldapUser);
-
-                // A student leaves this screen with their School mail addresses already composed,
-                // the same ones App\Command\BackfillStudentMailAliasesCommand would have given them
-                // later - reception being catch-all, an address only exists once the row does, so
-                // waiting for the backfill meant mail to a brand-new student falling into the "to
-                // be linked" queue in the meantime.
-                if ('student' === $ldapUser->getUserType()) {
-                    try {
-                        $mailProvisioner->provisionFor($user);
-                    } catch (\RuntimeException $exception) {
-                        // A civil status that transliterates to nothing (or a hundredth namesake)
-                        // is no reason to refuse the account: it is created without an address, and
-                        // staff are told to give it one by hand from the edit screen's "Adresses
-                        // Courrier école" section. The login itself never fails this way
-                        // (App\Service\LoginGenerator falls back rather than throwing).
-                        $this->addFlash('warning', 'userMailAliasNotProvisionedFlashMessage');
-                    }
+                if ($account->schoolMailFailed) {
+                    // A civil status that transliterates to nothing (or a hundredth namesake) is no
+                    // reason to refuse the account: it is created without an address, and staff are
+                    // told to give it one by hand from the edit screen's "Adresses Courrier école"
+                    // section.
+                    $this->addFlash('warning', 'userMailAliasNotProvisionedFlashMessage');
                 }
 
                 $entityManager->flush();
