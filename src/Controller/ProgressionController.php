@@ -34,6 +34,7 @@ use App\Service\JsonRequestPayload;
 use App\Service\PostValue;
 use App\Service\ProgressionBuilder;
 use App\Service\ProgressionCalendarBuilder;
+use App\Service\ProgressionCoAnimationCheck;
 use App\Service\ProgressionEvaluationSelector;
 use App\Service\ProgressionPlacementService;
 use App\Service\ProgressionQualiopiExporter;
@@ -83,6 +84,7 @@ class ProgressionController extends AbstractController
         private readonly ProgressionSequenceAvailability $sequenceAvailability,
         private readonly ProgressionTeacherRoster $teacherRoster,
         private readonly StructureAccessChecker $accessChecker,
+        private readonly ProgressionCoAnimationCheck $coAnimationCheck,
     ) {
     }
 
@@ -409,6 +411,10 @@ class ProgressionController extends AbstractController
             // more than one with this class - offering to restrict a list of one is noise.
             'slot_compositions' => ProgressionSlotComposition::cases(),
             'candidateTopics' => $this->slotPool->candidateTopics($progression),
+            // « Groupe non couvert : G2 », keyed by séance id. Measured off the placements and the
+            // matière's créneaux at every display - a column would be wrong the first time one of
+            // those créneaux moved.
+            'uncoveredGroups' => $this->coAnimationCheck->uncoveredGroupsBySequence($sequence),
         ]);
     }
 
@@ -732,11 +738,22 @@ class ProgressionController extends AbstractController
         // JavaScript would suffix itself: a créneau is measured in decimal hours and a séance in
         // minutes, and re-deriving that split client-side is exactly how the two units got mixed up
         // in the first place.
+        // The teacher's name, and the group, are shipped only when the progression is co-animated:
+        // on a solo plan every pill would carry the same name, which is noise. On a co-animated one
+        // they are the only thing telling two créneaux of the same day and hour apart, and picking
+        // the wrong one is otherwise invisible.
+        $coAnimated = $progression->isCoAnimated();
+
         $slots = array_map(
-            static function (LessonSession $session) use ($taken): array {
+            static function (LessonSession $session) use ($taken, $coAnimated): array {
                 $id = (int) $session->getId();
                 $start = $session->getStartHour();
                 $end = $session->getEndHour();
+                $teacher = $session->getTeacher();
+                $groups = [];
+                foreach ($session->getOptions() as $option) {
+                    $groups[] = $option->getShortName();
+                }
 
                 return [
                     'id' => $id,
@@ -746,6 +763,8 @@ class ProgressionController extends AbstractController
                     'room' => $session->getClassRoom()?->getName(),
                     'duration' => DurationFormatter::minutes((int) round(60 * (float) ($session->getLength() ?? '0'))),
                     'takenBy' => $taken[$id] ?? null,
+                    'teacher' => $coAnimated && null !== $teacher ? ($teacher->getDisplayName() ?? $teacher->getUsername()) : null,
+                    'group' => $coAnimated && [] !== $groups ? implode(', ', $groups) : null,
                 ];
             },
             $this->slotPool->forSequence($sequence),
@@ -759,6 +778,9 @@ class ProgressionController extends AbstractController
             ],
             'selected' => $selected,
             'slots' => $slots,
+            // What the picker warns about before the submit: the groups this séance would still
+            // not reach with the créneaux currently checked.
+            'uncoveredGroups' => $this->coAnimationCheck->uncoveredGroups($seance),
         ]);
     }
 

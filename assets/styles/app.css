@@ -3633,6 +3633,12 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 /* Co-animation: a statement of fact rather than a state to act on, hence the neutral blue
    next to the ok/warn/danger tones the séquence statuses use. */
 .cm-prog-chip-status--info   { background: var(--cm-blue-bg);  color: var(--cm-blue-tx); }
+/* Co-animation: the teacher holding a créneau, printed on the pill. Not cosmetic - two créneaux on
+   the same day at the same hour are otherwise the same pill twice, and picking the wrong one is
+   invisible. */
+.cm-prog-slot__who { font: 600 11px var(--cm-font-ui); color: var(--cm-blue-tx); }
+.cm-prog-picker__slot-who { display: block; font: 600 11.5px var(--cm-font-ui); color: var(--cm-blue-tx); margin-top: 2px; }
+.cm-prog-picker__warning { margin: 0 18px 10px; padding: 9px 12px; border-radius: var(--cm-radius-sm); background: var(--cm-gold-bg); color: var(--cm-gold-tx); font-size: 12.5px; }
 
 .cm-prog-tag {
   display: inline-flex; padding: 2px 8px; border-radius: 999px; margin-left: 4px;

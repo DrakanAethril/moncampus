@@ -87,6 +87,9 @@
                                                 data-seance-id="{{ seance.id }}">
                                             📅 {{ session.day|date('d/m') }} · {{ session.startHour|date('H:i') }} – {{ session.endHour|date('H:i') }}{% if session.classRoom %} · {{ session.classRoom.name }}{% endif %}
                                         </button>
+                                        {% if progression.coAnimated and session.teacher %}
+                                            <span class="cm-prog-slot__who">{{ session.teacher.displayName ?? session.teacher.username }}</span>
+                                        {% endif %}
                                         {% if placement.hasDrifted %}
                                             <span class="cm-prog-slot__flag">{{ 'progressionCardToReassociateFlag'|trans }}</span>
                                         {% endif %}
@@ -112,6 +115,14 @@
                                     <button type="submit" class="cm-prog-pill">{{ 'progressionFitToSlotAction'|trans({'%duration%': (firstSession.length * 60)|round|duration_minutes}) }}</button>
                                 </form>
                             {% endif %}
+                        {% endif %}
+
+                        {# « Groupe non couvert : G2 » - measured, never stored (see
+                           App\Service\ProgressionCoAnimationCheck). It sits next to the status chip
+                           rather than replacing it: the séance IS placed, which is what the status
+                           says; what it does not say is that half the class will not see it. #}
+                        {% if uncoveredGroups[seance.id] is defined %}
+                            <span class="cm-prog-chip-status cm-prog-chip-status--warn">{{ 'progressionCoAnimationUncoveredGroupFlag'|trans({'%groups%': uncoveredGroups[seance.id]|join(', ')}) }}</span>
                         {% endif %}
 
                         <span class="cm-prog-chip-status cm-prog-chip-status--{{ status.tone }}">{{ status.labelKey|trans }}</span>

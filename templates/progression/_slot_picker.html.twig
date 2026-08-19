@@ -22,6 +22,13 @@
 
         <div class="cm-prog-picker__body" data-progression-placement-target="slots"></div>
 
+        {# « Un seul groupe sélectionné. Le groupe 2 n'aura pas cette séance. » - computed from the
+           boxes actually ticked, so it answers before the submit rather than after. It is a
+           warning and never a block: covering one group only is a legitimate thing to plan, it
+           just must not happen by accident (design/validated/co-animation.md). #}
+        <p class="cm-prog-picker__warning" data-progression-placement-target="coverage"
+           data-template="{{ 'progressionPickerUncoveredGroupWarning'|trans({'%groups%': '%groups%'})|e('html_attr') }}" hidden></p>
+
         {# Only meaningful once at least two créneaux are checked - "si ≥2 cochés, choix radio". #}
         <div class="cm-prog-picker__mode" data-progression-placement-target="mode" hidden>
             <span class="cm-prog-picker__legend" data-progression-placement-target="modeLegend" data-template="{{ 'progressionPickerModeLegend'|trans({'%count%': '%count%'})|e('html_attr') }}"></span>
