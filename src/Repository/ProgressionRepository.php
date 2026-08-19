@@ -31,6 +31,11 @@ class ProgressionRepository extends ServiceEntityRepository
      * Fetch-joins the whole read path - the list shows an hour volume and D/F/S counters, so every
      * row would otherwise trigger a topic + program + cohort + evaluations lookup.
      *
+     * Owner OR co-animator, deliberately: a co-animated progression *appears* in both teachers'
+     * own lists rather than merely being reachable by both. Without that, the co-animator holds
+     * ProgressionVoter::EDIT on a screen they have no link to - the half-shipped feature this
+     * design names explicitly, and the list every other lot is reached through.
+     *
      * @return list<Progression>
      */
     public function findForTeacher(User $teacher, ?SchoolYear $schoolYear = null): array
@@ -41,7 +46,8 @@ class ProgressionRepository extends ServiceEntityRepository
             ->innerJoin('t.program', 'pr')
             ->innerJoin('pr.cohort', 'c')
             ->leftJoin('t.evaluations', 'e')
-            ->where('p.teacher = :teacher')
+            ->leftJoin('p.coTeachers', 'ct')
+            ->where('p.teacher = :teacher OR ct = :teacher')
             ->setParameter('teacher', $teacher)
             ->orderBy('c.name', 'ASC')
             ->addOrderBy('t.name', 'ASC');
@@ -57,6 +63,9 @@ class ProgressionRepository extends ServiceEntityRepository
      * Everything the annual/month calendars (4a/4b) need in one query: the progressions of this
      * teacher for a school year, down to their placements' créneaux.
      *
+     * Widened to co-animators for the same reason as findForTeacher() above - a plan a teacher may
+     * edit but never sees in their own calendar is a plan they will not keep.
+     *
      * @return list<Progression>
      */
     public function findForTeacherWithPlacements(User $teacher, SchoolYear $schoolYear): array
@@ -71,7 +80,8 @@ class ProgressionRepository extends ServiceEntityRepository
             ->leftJoin('s.seances', 'se')
             ->leftJoin('se.placements', 'pl')
             ->leftJoin('pl.lessonSession', 'ls')
-            ->where('p.teacher = :teacher')
+            ->leftJoin('p.coTeachers', 'ct')
+            ->where('p.teacher = :teacher OR ct = :teacher')
             ->andWhere('pr.schoolYear = :schoolYear')
             ->setParameter('teacher', $teacher)
             ->setParameter('schoolYear', $schoolYear)

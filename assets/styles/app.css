@@ -3630,6 +3630,9 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-prog-chip-status--warn   { background: var(--cm-gold-bg);  color: var(--cm-gold-tx); }
 .cm-prog-chip-status--danger { background: var(--cm-red-bg);   color: var(--cm-red-tx); }
 .cm-prog-chip-status--muted  { background: var(--cm-border-soft); color: var(--cm-faint); }
+/* Co-animation: a statement of fact rather than a state to act on, hence the neutral blue
+   next to the ok/warn/danger tones the séquence statuses use. */
+.cm-prog-chip-status--info   { background: var(--cm-blue-bg);  color: var(--cm-blue-tx); }
 
 .cm-prog-tag {
   display: inline-flex; padding: 2px 8px; border-radius: 999px; margin-left: 4px;
