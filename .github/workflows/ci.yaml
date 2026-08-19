@@ -97,11 +97,33 @@ jobs:
       # phpmyadmin is a human's tool and nothing here talks to it; every other service is either
       # required by the app at boot or cheap enough not to bother excluding.
       #
+      # minio-init is held back for a different reason, and it is not an optimisation: it is a
+      # one-shot container, and `up --wait` returns 1 with `container ... exited (0)` whenever a
+      # container it is monitoring finishes before the wait does. It creates the bucket in a
+      # couple of seconds while php takes over a minute to report healthy (its entrypoint runs
+      # `composer install` first), so the exit lands in the middle of the wait almost every time -
+      # two of the four runs of 2026-08-19 died there, on a step that had checked nothing yet.
+      # A healthcheck would only move the race, which is why compose.override.yaml deliberately
+      # gives it none; keeping it out of the wait removes the race instead. Nothing declares
+      # `depends_on: minio-init`, so nothing starts without it.
+      #
       # No composer install step follows on purpose: vendor/ is gitignored, so the checkout has
       # none, and frankenphp/docker-entrypoint.sh runs `composer install` itself when it finds the
       # directory empty. `--wait` therefore already returns with dependencies in place.
       - name: Start services
-        run: docker compose up --wait --no-build --scale phpmyadmin=0
+        run: docker compose up --wait --no-build --scale phpmyadmin=0 --scale minio-init=0
+
+      # The bucket, now that nothing is waiting on it. `run` executes the same entrypoint in the
+      # foreground and hands back its exit code, so a MinIO that never came up fails here, by
+      # name, instead of turning up later as a puzzling upload error inside a test.
+      #
+      # Bounded for the same reason the deploy workflow bounds its apt step: the entrypoint waits
+      # for the MinIO API with an unbounded `until ... sleep 1` loop. The step above has already
+      # waited for minio to report healthy, so two minutes is generous; what it buys is that a
+      # MinIO which never answers ends the run rather than holding the runner.
+      - name: Create the MinIO bucket
+        timeout-minutes: 2
+        run: docker compose run --rm --no-deps -T minio-init
 
       # The stack answering at all is itself a check - it is what catches a service that no longer
       # boots. A redirect to /login is the expected answer for an anonymous request.

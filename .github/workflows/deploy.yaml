@@ -56,7 +56,14 @@ jobs:
           APP_URL: ${{ vars.BEAUP_APP_URL }}
         run: python3 .github/scripts/announce_release.py --phase start
 
+      # Bounded on purpose. This normally takes seconds, but it reaches an apt mirror, and on
+      # 2026-08-19 that mirror stopped answering: the step sat there silently for 33 minutes and
+      # would have held the runner for the 6-hour job default, with `concurrency: deploy-production`
+      # and cancel-in-progress: false leaving every later deploy queued behind it. It took a hand
+      # on the Cancel button to free it. A bounded step fails instead, which fires the Discord
+      # failure notice below and lets the run simply be replayed.
       - name: Install OpenVPN
+        timeout-minutes: 5
         run: sudo apt-get update && sudo apt-get install -y openvpn openvpn-systemd-resolved iputils-ping
 
       # PLACEHOLDER: paste the full contents of your .ovpn client profile as the secret value
