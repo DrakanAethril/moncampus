@@ -10,6 +10,7 @@ use App\Entity\ProgressionSeancePlacement;
 use App\Entity\ProgressionSequence;
 use App\Entity\SeancePhaseInstance;
 use App\Enum\EvaluationNature;
+use App\Enum\ProgressionDeliveryKind;
 
 /**
  * Assembles the "Progression pédagogique" export - the document a teacher hands an auditor to
@@ -41,10 +42,18 @@ use App\Enum\EvaluationNature;
  * learner hours everywhere, and the duplication is named where it happens - on the créneau detail
  * of the séance concerned ("redispensée le … au groupe …"), which is where an auditor asks about it.
  *
+ * **Co-animation changes no volume, and that is the evidence rather than a coincidence.** A séance
+ * given simultaneously to two groups by two teachers is still received once by each apprenant, so
+ * the max-across-groups rule above already counted it right - co-animation is the case that rule
+ * was written for. What co-animation DOES change is the wording: a delivery to another group by
+ * ANOTHER teacher is not "redispensée … sur un créneau distinct", and printing that sentence would
+ * put a false statement in an audit file. Hence ProgressionDeliveryKind, the teacher on every
+ * DeliveryRow, and the per-séquence mark below - all wording, no arithmetic.
+ *
  * @phpstan-type PhaseRow array{name: string, minutes: int|null, contenu: string|null, objectifs: string|null, teacher: string|null, student: string|null, means: string|null}
- * @phpstan-type DeliveryRow array{date: \DateTimeImmutable|null, start: string|null, end: string|null, room: string|null, group: string|null, groupKey: string, minutes: int}
- * @phpstan-type SeanceRow array{title: string, deliveries: list<DeliveryRow>, proposals: list<DeliveryRow>, redeliveries: list<DeliveryRow>, plannedMinutes: int, learnerMinutes: int, nature: EvaluationNature|null, objectifs: string|null, materials: string|null, phases: list<PhaseRow>, sequenceInstanceId: int|null, seanceInstanceId: int|null}
- * @phpstan-type SequenceRow array{title: string, position: int, seanceCount: int, objectifs: string|null, capacites: string|null, preRequis: string|null, transversalites: string|null, situation: string|null, supports: string|null, differentiation: string|null, firstDay: \DateTimeImmutable|null, lastDay: \DateTimeImmutable|null, plannedMinutes: int, learnerMinutes: int, seances: list<SeanceRow>, unplacedCount: int}
+ * @phpstan-type DeliveryRow array{date: \DateTimeImmutable|null, start: string|null, end: string|null, room: string|null, group: string|null, groupKey: string, minutes: int, teacher: string|null, teacherId: int|null, kind: ProgressionDeliveryKind}
+ * @phpstan-type SeanceRow array{title: string, deliveries: list<DeliveryRow>, proposals: list<DeliveryRow>, redeliveries: list<DeliveryRow>, coDeliveries: list<DeliveryRow>, plannedMinutes: int, learnerMinutes: int, nature: EvaluationNature|null, objectifs: string|null, materials: string|null, phases: list<PhaseRow>, sequenceInstanceId: int|null, seanceInstanceId: int|null}
+ * @phpstan-type SequenceRow array{title: string, position: int, seanceCount: int, objectifs: string|null, capacites: string|null, preRequis: string|null, transversalites: string|null, situation: string|null, supports: string|null, differentiation: string|null, firstDay: \DateTimeImmutable|null, lastDay: \DateTimeImmutable|null, plannedMinutes: int, learnerMinutes: int, seances: list<SeanceRow>, unplacedCount: int, deliveredBy: list<string>, coAnimated: bool}
  */
 class ProgressionQualiopiBuilder
 {
@@ -57,6 +66,8 @@ class ProgressionQualiopiBuilder
      *     seanceCount: int,
      *     placedSeanceCount: int,
      *     perGroupSeanceCount: int,
+     *     coAnimatedSeanceCount: int,
+     *     redeliveredSeanceCount: int,
      *     firstDay: \DateTimeImmutable|null,
      *     lastDay: \DateTimeImmutable|null,
      *     evaluationCounts: array<string, int>,
@@ -76,6 +87,8 @@ class ProgressionQualiopiBuilder
         $evaluationRows = [];
         $means = [];
         $perGroupSeanceCount = 0;
+        $coAnimatedSeanceCount = 0;
+        $redeliveredSeanceCount = 0;
 
         foreach ($this->orderedSequences($progression) as $position => $sequence) {
             $instance = $sequence->getSequenceInstance();
@@ -121,8 +134,18 @@ class ProgressionQualiopiBuilder
                 }
 
                 ++$placedSeanceCount;
-                if ([] !== $row['redeliveries']) {
+                // Counted in two sentences, because an auditor asks a different question of each:
+                // "given twice by one formateur" and "given at once by two" are different facts.
+                // A séance can carry both (three groups, two of them the titulaire's), so these are
+                // deliberately not exclusive and their sum may exceed $perGroupSeanceCount.
+                if ([] !== $row['redeliveries'] || [] !== $row['coDeliveries']) {
                     ++$perGroupSeanceCount;
+                }
+                if ([] !== $row['coDeliveries']) {
+                    ++$coAnimatedSeanceCount;
+                }
+                if ([] !== $row['redeliveries']) {
+                    ++$redeliveredSeanceCount;
                 }
 
                 foreach ($row['deliveries'] as $delivery) {
@@ -181,6 +204,12 @@ class ProgressionQualiopiBuilder
                 'learnerMinutes' => $sequenceLearner,
                 'seances' => $seanceRows,
                 'unplacedCount' => $unplaced,
+                // Computed from THIS séquence's deliveries, never inherited from the progression: a
+                // co-animated matière may perfectly well hold a séquence the titulaire runs alone
+                // with the whole class, and marking that one would be a false statement of the same
+                // family as the "redispensée" one above.
+                'deliveredBy' => $this->deliveredBy($seanceRows),
+                'coAnimated' => $this->isCoAnimated($seanceRows),
             ];
         }
 
@@ -212,6 +241,8 @@ class ProgressionQualiopiBuilder
             'firstDay' => $firstDay,
             'lastDay' => $lastDay,
             'perGroupSeanceCount' => $perGroupSeanceCount,
+            'coAnimatedSeanceCount' => $coAnimatedSeanceCount,
+            'redeliveredSeanceCount' => $redeliveredSeanceCount,
             'evaluationCounts' => $this->countByNature($evaluationRows),
             'evaluationRows' => $evaluationRows,
             'methodSummary' => $this->distinctMeans($means),
@@ -351,7 +382,8 @@ class ProgressionQualiopiBuilder
             'title' => $seance->getTitle(),
             'deliveries' => $deliveries,
             'proposals' => $this->deliveryRows($proposals),
-            'redeliveries' => $this->redeliveries($deliveries),
+            'redeliveries' => $this->ofKind($deliveries, ProgressionDeliveryKind::Redelivery),
+            'coDeliveries' => $this->ofKind($deliveries, ProgressionDeliveryKind::CoDelivery),
             'plannedMinutes' => $seance->getPlannedMinutesOrZero(),
             'learnerMinutes' => $this->learnerMinutes($deliveries),
             'nature' => $seance->getEvaluationNature(),
@@ -378,6 +410,9 @@ class ProgressionQualiopiBuilder
         foreach ($placements as $placement) {
             $session = $placement->getLessonSession();
             $option = $placement->getOption();
+            // The teacher of the CRÉNEAU, not of the progression: a delivery is given by whoever
+            // holds the slot, which is the whole reason co-animation needs no field of its own.
+            $teacher = $session?->getTeacher();
 
             $rows[] = [
                 'date' => $session?->getDay(),
@@ -389,10 +424,25 @@ class ProgressionQualiopiBuilder
                 // label, and the volume below is decided by this key.
                 'groupKey' => null === $option ? '' : (string) $option->getId(),
                 'minutes' => $placement->getDurationMinutes(),
+                'teacher' => null === $teacher ? null : ($teacher->getDisplayName() ?? $teacher->getUsername()),
+                'teacherId' => $teacher?->getId(),
+                // Filled in below, once the rows are in the chronological order the rule reads.
+                'kind' => ProgressionDeliveryKind::Primary,
             ];
         }
 
         usort($rows, static fn (array $a, array $b): int => [$a['date']?->format('Y-m-d') ?? '9999', $a['start'] ?? '99:99'] <=> [$b['date']?->format('Y-m-d') ?? '9999', $b['start'] ?? '99:99']);
+
+        // Chronological, so that "the first delivery" is the one that happened first and the others
+        // read as re-given or co-given relative to it.
+        $kinds = ProgressionDeliveryKind::classify(array_map(
+            static fn (array $row): array => ['group' => $row['groupKey'], 'teacher' => $row['teacherId']],
+            $rows,
+        ));
+
+        foreach ($kinds as $index => $kind) {
+            $rows[$index]['kind'] = $kind;
+        }
 
         return $rows;
     }
@@ -430,35 +480,68 @@ class ProgressionQualiopiBuilder
     }
 
     /**
-     * The deliveries that re-give the séance to another groupe - everything scoped to a groupe other
-     * than the first delivery's. These are the ones the détail names ("redispensée le … au groupe
-     * …"), and the reason a learner volume is smaller than the face-à-face it took.
+     * The deliveries of one kind - what the détail cell names in its own words.
      *
-     * A second créneau for the SAME groupe is not one of these: nothing was re-given, the séance
-     * simply spans two slots, and its apprenants received both.
+     * The split between « redispensée » (another groupe, the SAME formateur, on a distinct créneau)
+     * and « co-animée » (another groupe, ANOTHER formateur, simultaneously) is
+     * App\Enum\ProgressionDeliveryKind's, and it is the one place the rule lives. A second créneau
+     * for the SAME groupe is neither: nothing was re-given, the séance simply spans two slots and
+     * its apprenants received both.
      *
      * @param list<DeliveryRow> $deliveries
      *
      * @return list<DeliveryRow>
      */
-    private function redeliveries(array $deliveries): array
+    private function ofKind(array $deliveries, ProgressionDeliveryKind $kind): array
     {
-        $reference = null;
-        foreach ($deliveries as $delivery) {
-            if ('' !== $delivery['groupKey']) {
-                $reference = $delivery['groupKey'];
-                break;
+        return array_values(array_filter(
+            $deliveries,
+            static fn (array $delivery): bool => $delivery['kind'] === $kind,
+        ));
+    }
+
+    /**
+     * The formateurs who actually delivered this séquence, in the order they first appear - what
+     * the « Co-animée avec … » mark names.
+     *
+     * @param list<SeanceRow> $seances
+     *
+     * @return list<string>
+     */
+    private function deliveredBy(array $seances): array
+    {
+        $names = [];
+
+        foreach ($seances as $seance) {
+            foreach ($seance['deliveries'] as $delivery) {
+                if (null !== $delivery['teacher'] && !\in_array($delivery['teacher'], $names, true)) {
+                    $names[] = $delivery['teacher'];
+                }
             }
         }
 
-        if (null === $reference) {
-            return [];
+        return $names;
+    }
+
+    /**
+     * Is THIS séquence co-animated? Read from its own deliveries, never inherited from the
+     * progression.
+     *
+     * The distinction is the whole point of computing it here: a co-animated matière may hold a
+     * séquence the titulaire runs alone with the whole class, and marking that one « Co-animée »
+     * would be a false statement of exactly the family this lot exists to remove.
+     *
+     * @param list<SeanceRow> $seances
+     */
+    private function isCoAnimated(array $seances): bool
+    {
+        foreach ($seances as $seance) {
+            if ([] !== $seance['coDeliveries']) {
+                return true;
+            }
         }
 
-        return array_values(array_filter(
-            $deliveries,
-            static fn (array $delivery): bool => '' !== $delivery['groupKey'] && $delivery['groupKey'] !== $reference,
-        ));
+        return false;
     }
 
     /** @return list<PhaseRow> */

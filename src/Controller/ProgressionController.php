@@ -283,7 +283,7 @@ class ProgressionController extends AbstractController
         $progression = $this->findOrDeny($id);
 
         try {
-            $pdf = $exporter->export($progression, $this->renderView(...), new \DateTimeImmutable('today'));
+            $pdf = $exporter->export($progression, $this->renderView(...), new \DateTimeImmutable('today'), $this->currentUser());
         } catch (GotenbergUnavailableException) {
             $this->addFlash('danger', 'progressionExportPdfFailedFlashMessage');
 
