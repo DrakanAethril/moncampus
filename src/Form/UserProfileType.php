@@ -82,6 +82,21 @@ class UserProfileType extends AbstractType
             ])
         ;
 
+        // The file-library quota, when this account has a library at all and the person editing is
+        // an administrator. It used to be a card of its own with its own <form> and its own POST
+        // route, which put a second « Enregistrer » at the foot of the screen and made the form's
+        // own one read as missing; it is a field of this account like any other. Unmapped because
+        // what the admin types is a size ("2 Go"), not the bigint the column holds - App\Service\ByteSize
+        // does that conversion and the controller is what calls it, an unreadable size having to
+        // refuse the whole submission rather than quietly fall back to the platform default.
+        if ($options['fileLibraryQuotaEditable']) {
+            $builder->add('fileLibraryQuota', TextType::class, [
+                'mapped' => false,
+                'required' => false,
+                'label' => 'fileLibraryQuotaFieldLabel',
+            ]);
+        }
+
         // School mail addresses only exist for students: for any other account type the field is
         // not added at all, rather than rendered hidden - a collection with allow_delete would wipe
         // the rows missing from the POST if it were present without being displayed.
@@ -129,5 +144,11 @@ class UserProfileType extends AbstractType
         // see the emailAliases field above.
         $resolver->setDefault('emailAliasesEditable', false);
         $resolver->setAllowedTypes('emailAliasesEditable', 'bool');
+        // Whether the quota field is offered: the account has a library at all
+        // (App\Security\Voter\FileLibraryVoter::hasLibrary()) and the person editing is an
+        // administrator - staff reach this screen too, and the quota has always been the
+        // administrator's alone (design/validated/file-library.md).
+        $resolver->setDefault('fileLibraryQuotaEditable', false);
+        $resolver->setAllowedTypes('fileLibraryQuotaEditable', 'bool');
     }
 }
