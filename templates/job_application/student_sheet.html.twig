@@ -110,7 +110,12 @@
                     <div class="cm-jobapp-head">
                         <span class="cm-jobapp-head__title">{{ 'studentJobApplicationsUnattachedTitle'|trans }}</span>
                         <span class="cm-jobapp-head__count">{{ 'jobApplicationMailCountLabel'|trans({'%count%': unattachedMails|length}) }}</span>
-                        <span class="cm-jobapp-head__filters cm-compose__hint">{{ 'studentJobApplicationsUnattachedHint'|trans }}</span>
+                    </div>
+
+                    {# Under the head rather than inside it: cm-jobapp-head lays its items out in a
+                       flex row, and a sentence this long there squeezes the title onto two lines. #}
+                    <div class="card-body py-2">
+                        <p class="cm-compose__hint mb-0">{{ 'studentJobApplicationsUnattachedHint'|trans }}</p>
                     </div>
 
                     <div class="cm-sheet__mails">
