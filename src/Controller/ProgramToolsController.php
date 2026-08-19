@@ -198,7 +198,7 @@ class ProgramToolsController extends AbstractController
         $payload = JsonRequestPayload::fromRequest($request);
         $name = trim($payload->string('name'));
         if ('' === $name) {
-            $name = 'Lot du '.(new \DateTimeImmutable())->format('d/m/Y');
+            $name = (new \DateTimeImmutable())->format('d/m/Y');
         }
 
         $groups = $payload->intLists('groups');
