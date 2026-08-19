@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Entity\JobSearchNote;
 use App\Entity\User;
+use App\Repository\EmailMessageRepository;
 use App\Repository\JobApplicationRepository;
 use App\Repository\JobSearchNoteRepository;
 use App\Repository\JobSearchRepository;
@@ -36,6 +37,7 @@ class StudentJobApplicationController extends AbstractController
         private readonly UserRepository $userRepository,
         private readonly ProgramRepository $programRepository,
         private readonly JobApplicationRepository $applicationRepository,
+        private readonly EmailMessageRepository $messageRepository,
         private readonly JobSearchRepository $searchRepository,
         private readonly JobSearchNoteRepository $noteRepository,
         private readonly JobApplicationSummaryBuilder $summaryBuilder,
@@ -78,6 +80,11 @@ class StudentJobApplicationController extends AbstractController
             'program' => $this->visibleProgramFor($student),
             'rows' => $rows,
             'counters' => $counters,
+            // Mails owned by the student but by no démarche. Without them the sheet contradicts the
+            // tracking screen it is opened from: that one counts every mail of the student, this one
+            // only ever listed those a démarche holds, so a reply nothing could be attached to
+            // showed up as a figure leading to an empty page.
+            'unattachedMails' => $this->messageRepository->findWithoutApplicationForStudent($student),
             'notes' => $this->noteRepository->findForStudent($student),
             'closedSearch' => $this->searchRepository->findOneBy(['student' => $student]),
         ]);
