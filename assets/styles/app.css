@@ -1597,6 +1597,14 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-grp-lot-chip__load:hover { background: var(--cm-blue-bg); }
 .cm-grp-lot-chip__del { color: var(--cm-red-tx); cursor: pointer; padding: 6px 11px 5px 9px; border: 0; border-left: 1px solid var(--cm-border-soft); background: none; display: inline-flex; align-items: center; }
 .cm-grp-lot-chip__del:hover { background: var(--cm-red-bg); }
+.cm-grp-lot-chip__shared { font: 600 10.5px var(--cm-font-ui); color: var(--cm-faint); padding: 0 9px 0 2px; letter-spacing: .2px; }
+.cm-grp-lot-chip--shared { border-style: dashed; }
+.cm-grp-lot-chip--shared .cm-grp-lot-chip__load { color: var(--cm-ink); }
+.cm-grp-lot-chip__owner { font: 600 10.5px var(--cm-font-ui); color: var(--cm-faint); padding: 0 11px 0 2px; text-transform: uppercase; letter-spacing: .3px; }
+.cm-grp-share-list { display: flex; flex-direction: column; gap: 2px; max-height: 260px; overflow-y: auto; }
+.cm-grp-share-item { display: flex; align-items: center; gap: 9px; padding: 6px 8px; border-radius: 8px; font: 500 13.5px var(--cm-font-ui); color: var(--cm-ink); cursor: pointer; }
+.cm-grp-share-item:hover { background: var(--cm-surface-alt); }
+.cm-grp-share-empty { font-size: 13px; color: var(--cm-muted); }
 
 .cm-grp-layout { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 18px; align-items: start; }
 @media (max-width: 900px) { .cm-grp-layout { grid-template-columns: 1fr; } }

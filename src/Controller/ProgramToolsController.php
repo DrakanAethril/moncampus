@@ -77,24 +77,46 @@ class ProgramToolsController extends AbstractController
         $program = $this->findForTeacherOrStaff($id, $repository, $accessChecker);
         $roster = $this->buildRoster($program, $studentOptionRepository);
 
+        $teacher = $this->currentUser();
+
         $lots = array_map(
-            fn (GroupBatch $lot): array => [
-                'id' => $lot->getId(),
-                'name' => $lot->getName(),
-                // Hydrated against the CURRENT roster - a student who's since left the Program is
-                // simply dropped from the reloaded lot rather than erroring.
-                'groups' => array_map(
-                    static fn (array $ids): array => array_values(array_filter(array_map(static fn (int $sid): ?array => $roster[$sid] ?? null, $ids))),
-                    $lot->getGroups(),
-                ),
+            fn (GroupBatch $lot): array => $this->lotPayload($lot, $roster) + [
+                'sharedWith' => array_values(array_map(
+                    static fn (User $recipient): int => $recipient->getId(),
+                    $lot->getSharedTeachers()->toArray(),
+                )),
             ],
-            $groupBatchRepository->findAllForTeacherAndProgram($this->currentUser(), $program),
+            $groupBatchRepository->findAllForTeacherAndProgram($teacher, $program),
         );
+
+        // The second banner, "Groupes partagés avec moi" - read-only copies of a colleague's lot,
+        // which is why they carry their owner's name and not the sharing controls.
+        $sharedLots = array_map(
+            fn (GroupBatch $lot): array => $this->lotPayload($lot, $roster) + [
+                'ownerName' => $lot->getTeacher()->getDisplayName() ?? $lot->getTeacher()->getUsername(),
+            ],
+            $groupBatchRepository->findAllSharedWithTeacherForProgram($teacher, $program),
+        );
+
+        // Recipients are the Program's own teachers minus oneself - never the whole directory, so
+        // this needs no search field, just the checkbox list the app uses everywhere else.
+        $shareableTeachers = array_values(array_map(
+            static fn (User $candidate): array => [
+                'id' => $candidate->getId(),
+                'name' => $candidate->getDisplayName() ?? $candidate->getUsername(),
+            ],
+            array_filter(
+                $this->sortedByName($program->getTeachers()->toArray()),
+                static fn (User $candidate): bool => $candidate !== $teacher,
+            ),
+        ));
 
         return $this->render('program/tools_group_creation.html.twig', [
             'program' => $program,
             'students' => array_values($roster),
             'lots' => $lots,
+            'sharedLots' => $sharedLots,
+            'shareableTeachers' => $shareableTeachers,
         ]);
     }
 
@@ -223,6 +245,43 @@ class ProgramToolsController extends AbstractController
         return $this->json(['success' => true]);
     }
 
+    // Opening a saved lot to colleagues who teach the same class. The whole recipient list travels
+    // at once and replaces the previous one, so unticking everybody (a legitimate state) un-shares
+    // the lot rather than being mistaken for "nothing to do". findOneForTeacherAndProgram() scopes
+    // to the OWNER, which is what forbids re-sharing a lot somebody shared with you.
+    #[Route(path: '/programs/{id}/tools/group-creation/batches/{lotId}/share', name: 'app_program_tools_group_creation_share_lot', methods: ['POST'])]
+    public function shareLot(int $id, int $lotId, Request $request, ProgramRepository $repository, StructureAccessChecker $accessChecker, GroupBatchRepository $groupBatchRepository, EntityManagerInterface $entityManager): JsonResponse
+    {
+        $program = $this->findForTeacherOrStaff($id, $repository, $accessChecker);
+        $this->assertCsrf($request->headers->get('X-CSRF-Token'));
+
+        $teacher = $this->currentUser();
+        $lot = $groupBatchRepository->findOneForTeacherAndProgram($lotId, $teacher, $program) ?? throw $this->createNotFoundException();
+
+        // Re-checked against the Program's teachers rather than trusted: the checkbox list is a
+        // convenience, never the control (same reflex as ContentShareComposer's re-reading of ids).
+        $requestedIds = JsonRequestPayload::fromRequest($request)->ids('teacherIds');
+        $recipients = array_filter(
+            $program->getTeachers()->toArray(),
+            static fn (User $candidate): bool => $candidate !== $teacher && \in_array($candidate->getId(), $requestedIds, true),
+        );
+
+        foreach ($lot->getSharedTeachers()->toArray() as $current) {
+            if (!\in_array($current, $recipients, true)) {
+                $lot->removeSharedTeacher($current);
+            }
+        }
+        foreach ($recipients as $recipient) {
+            $lot->addSharedTeacher($recipient);
+        }
+
+        $entityManager->flush();
+
+        return $this->json([
+            'sharedWith' => array_values(array_map(static fn (User $recipient): int => $recipient->getId(), $lot->getSharedTeachers()->toArray())),
+        ]);
+    }
+
     // A real (non-fetch) form POST, not AJAX - lets the browser handle the file download itself
     // via Content-Disposition, same pattern as EcoParcoursController::pdf(). $request->request's
     // "groups"/"lotName" fields are built client-side from whatever's currently on screen (see
@@ -317,6 +376,27 @@ class ProgramToolsController extends AbstractController
         $user = $this->getUser();
 
         return $user;
+    }
+
+    /**
+     * The on-screen shape of a saved lot, shared by both banners.
+     *
+     * @param array<int, array{id: int, name: string, optionId: ?int, optionIds: list<int>}> $roster
+     *
+     * @return array{id: ?int, name: string, groups: list<list<array{id: int, name: string, optionId: ?int, optionIds: list<int>}>>}
+     */
+    private function lotPayload(GroupBatch $lot, array $roster): array
+    {
+        return [
+            'id' => $lot->getId(),
+            'name' => $lot->getName(),
+            // Hydrated against the CURRENT roster - a student who's since left the Program is
+            // simply dropped from the reloaded lot rather than erroring.
+            'groups' => array_map(
+                static fn (array $ids): array => array_values(array_filter(array_map(static fn (int $sid): ?array => $roster[$sid] ?? null, $ids))),
+                $lot->getGroups(),
+            ),
+        ];
     }
 
     /** @return array<int, array{id: int, name: string, optionId: ?int, optionIds: list<int>}> */

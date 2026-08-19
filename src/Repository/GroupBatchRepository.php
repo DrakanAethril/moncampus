@@ -57,6 +57,29 @@ class GroupBatchRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * The lots of this Program that OTHER teachers have shared with $teacher - the "Groupes
+     * partagés avec moi" banner. Deliberately kept apart from findAllForTeacherAndProgram() rather
+     * than folded into it with an OR: the two banners are two lists on screen, the shared one is
+     * read-only, and the assignment wizard (findAllForTeacherAndPrograms) must keep offering the
+     * teacher's own lots only.
+     *
+     * @return list<GroupBatch>
+     */
+    public function findAllSharedWithTeacherForProgram(User $teacher, Program $program): array
+    {
+        return $this->createQueryBuilder('b')
+            ->innerJoin('b.sharedTeachers', 's')
+            ->andWhere('s = :teacher')
+            ->andWhere('b.program = :program')
+            ->andWhere('b.teacher != :teacher')
+            ->setParameter('teacher', $teacher)
+            ->setParameter('program', $program)
+            ->orderBy('b.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
     public function findOneForTeacherAndProgram(int $id, User $teacher, Program $program): ?GroupBatch
     {
         return $this->createQueryBuilder('b')
