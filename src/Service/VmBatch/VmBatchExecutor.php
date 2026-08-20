@@ -19,6 +19,7 @@ use App\Service\Guest\GuestUnreachableException;
 use App\Service\Guest\PlatformKeyProvider;
 use App\Service\Guest\PlatformKeyUnavailableException;
 use App\Service\Guest\PostInstallRunner;
+use App\Service\Guest\UnixLogin;
 use App\Service\Network\AddressUnavailableException;
 use App\Service\Network\IpAllocator;
 use App\Service\Network\RangeExhaustedException;
@@ -83,6 +84,7 @@ class VmBatchExecutor
         private readonly GuestShellFactory $shellFactory,
         private readonly PlatformKeyProvider $keyProvider,
         private readonly PostInstallRunner $postInstall,
+        private readonly UnixLogin $unixLogin,
         private readonly EntityManagerInterface $entityManager,
     ) {
     }
@@ -263,6 +265,19 @@ class VmBatchExecutor
             return $this->fail($item, 'The machine has no address to be reached at.');
         }
 
+        // A login the platform holds and useradd would refuse must stop the machine here, loudly.
+        // GuestAccountSyncer skips such an account with a `continue` - which on this path would mean
+        // a student standing in front of a machine that has no account for them, and nothing
+        // anywhere saying why.
+        $unusable = $this->unusableLogins($item);
+
+        if ([] !== $unusable) {
+            return $this->fail($item, \sprintf(
+                'These platform logins cannot be Unix accounts: %s. A login must be lowercase letters, digits and hyphens, start with a letter and be at most 32 characters.',
+                implode(', ', $unusable),
+            ));
+        }
+
         // Declared first and every time: re-running this after a member was added to the machine
         // creates the missing account and leaves the others alone.
         $this->declareAccounts($batch, $item, $host, $item->getNode() ?? $batch->getNode(), $vmid);
@@ -312,6 +327,20 @@ class VmBatchExecutor
         $this->entityManager->flush();
 
         return self::PROGRESSED;
+    }
+
+    /** @return list<string> */
+    private function unusableLogins(VmBatchItem $item): array
+    {
+        $unusable = [];
+
+        foreach ($this->accountsFor($item) as $planned) {
+            if (!$this->unixLogin->isValid($planned['login'])) {
+                $unusable[] = $planned['login'];
+            }
+        }
+
+        return $unusable;
     }
 
     private function declareAccounts(VmBatch $batch, VmBatchItem $item, ProxmoxHost $host, string $node, int $vmid): void
