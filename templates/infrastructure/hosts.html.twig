@@ -28,13 +28,16 @@
        The card of a host with no provisioning credentials simply has no creation action. Not a
        greyed one: there is nothing to enable. #}
     {% if hosts is empty %}
-        <div class="card">
+        <div class="card cm-card--tabbed">
             <div class="card-body text-center py-5">
                 <p class="mb-3">{{ 'infrastructureNoHostText'|trans }}</p>
                 <a href="{{ path('app_infrastructure_hosts_new') }}" class="cm-btn cm-btn--primary">{{ 'proxmoxHostAddAction'|trans }}</a>
             </div>
         </div>
     {% else %}
+        {# Cards rather than a card, so the tab row's inset has to be asked for - see
+           .cm-tabbed-content. #}
+        <div class="cm-tabbed-content">
         <div class="cm-hostgrid"
              data-controller="proxmox-host-list"
              data-proxmox-host-list-token-value="{{ csrf_token('infrastructure_action') }}">
@@ -133,6 +136,7 @@
                     </div>
                 </article>
             {% endfor %}
+        </div>
         </div>
     {% endif %}
 {% endblock %}

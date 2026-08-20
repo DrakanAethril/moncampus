@@ -1270,6 +1270,11 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
    the row so it lines up with the tab labels rather than the row's cross-axis center. */
 .cm-tabs__action { margin-left: auto; padding-bottom: 8px; }
 .cm-card--tabbed { border-top: 0; border-radius: 0 0 var(--cm-radius) var(--cm-radius); padding: 26px; }
+/* Content that hangs off a tab row without a card of its own - a grid of stat tiles, of link tiles,
+   of host cards. It takes the same inset .cm-card--tabbed gives a table, so a screen made of tiles
+   lines up with a screen made of rows instead of butting against the tabs. Bottom padding is left
+   to the content, which already carries its own margin between blocks. */
+.cm-tabbed-content { padding: 26px 26px 0; }
 
 /* ---------- Breadcrumb + page head (sub-pages only, never menu root pages) ----------
    Every segment (including the current page) is a real <a href>. */

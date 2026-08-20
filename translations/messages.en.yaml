@@ -4974,7 +4974,6 @@ proxmoxCheckProvisionFailedWarning: 'The provisioning account is not answering: 
 # --- Proxmox console - batch 2: seeing and driving ---------------------------------------------
 infrastructureGuestsNavLabel: 'Machines'
 infrastructureOperationsNavLabel: 'Operations log'
-infrastructureOperationsSubtitle: 'Everything MonCampus asked a Proxmox host to do, and what it answered.'
 infrastructureGoToLabel: 'Go to…'
 infrastructureGuestsTileTitle: 'Machines'
 infrastructureGuestsTileText: 'List, start, shut down cleanly, force off, reboot.'
