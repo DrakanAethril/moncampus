@@ -26,6 +26,14 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.08.20.2'
+      date: '2026-08-20'
+      summary: "Correctif sur les machines virtuelles pédagogiques : le déploiement d'un ensemble de machines n'allait pas jusqu'au bout, faute de pouvoir constater que la première étape avait réussi."
+      entries:
+          - type: fix
+            title: 'Le déploiement des machines virtuelles pédagogiques aboutit'
+            detail: "La création était bien lancée sur le serveur de virtualisation, mais son suivi n'en obtenait pas le résultat et la machine restait en attente jusqu'à être déclarée en échec."
+
     - version: '2026.08.20'
       date: '2026-08-20'
       summary: "Une progression peut désormais être menée à deux : un second enseignant y est nommé, planifie ses propres séquences et reprend le cahier de texte du créneau tenu au même moment. Les groupes enregistrés, eux, se partagent entre enseignants d'une même classe et servent de point de départ à la création d'un wiki par groupe."
