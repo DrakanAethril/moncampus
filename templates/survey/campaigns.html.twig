@@ -22,10 +22,39 @@
 
     <div class="card cm-card--tabbed">
         <div class="card-body">
-            {# The table of launched waves lands with the launch itself: no campaign can exist
-               before App\Service\Survey\SurveyLauncher does. #}
-            <p class="fw-semibold mb-1">{{ 'surveyCampaignsEmptyTitle'|trans }}</p>
-            <p class="text-secondary mb-0">{{ 'surveyCampaignsEmptyText'|trans }}</p>
+            {% set launched = series|reduce((carry, s) => carry + s.campaigns|filter(c => c.isLaunched)|length, 0) %}
+            {% if launched == 0 %}
+                <p class="fw-semibold mb-1">{{ 'surveyCampaignsEmptyTitle'|trans }}</p>
+                <p class="text-secondary mb-0">{{ 'surveyCampaignsEmptyText'|trans }}</p>
+            {% else %}
+                <div class="table-responsive">
+                    <table class="table cm-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>{{ 'surveyCampaignColumnLabel'|trans }}</th>
+                                <th>{{ 'surveyTargetColumnLabel'|trans }}</th>
+                                <th>{{ 'surveyResponsesColumnLabel'|trans }}</th>
+                                <th>{{ 'surveyStateColumnLabel'|trans }}</th>
+                                <th>{{ 'surveyClosesColumnLabel'|trans }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for oneSeries in series %}
+                                {% set waves = oneSeries.campaigns|filter(c => c.isLaunched)|sort((a, b) => b.waveNumber <=> a.waveNumber) %}
+                                {% set waveCount = waves|length %}
+                                {% for campaign in waves %}
+                                    {% include 'survey/_campaign_row.html.twig' with {
+                                        campaign: campaign,
+                                        series: oneSeries,
+                                        waveCount: waveCount,
+                                        rate: rates[campaign.id]|default({targeted: 0, responded: 0}),
+                                    } only %}
+                                {% endfor %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
         </div>
     </div>
 {% endblock %}

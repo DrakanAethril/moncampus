@@ -68,6 +68,8 @@
         </div>
     {% endif %}
 
+    {% include 'home/_pending_surveys_card.html.twig' %}
+
     {% if admin is defined %}
         <div class="cm-role-switch">
             {% for role in admin.availableRoles %}

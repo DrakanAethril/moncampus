@@ -1,0 +1,29 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ campaign.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'mySurveysPageHeading'|trans, url: path('app_my_surveys')},
+        {label: campaign.name, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ campaign.name }}{% endblock %}
+
+{% block main %}
+    {# Saying so rather than answering 403: « j'ai déjà répondu ? » is a legitimate thing to come
+       and check, and on an anonymous campaign this page is the only thing that can answer it - the
+       response itself carries no name. #}
+    <div class="card">
+        <div class="card-body">
+            <p class="fw-semibold mb-1">{{ 'surveyAlreadyAnsweredTitle'|trans }}</p>
+            <p class="text-secondary mb-3">
+                {{ 'surveyAlreadyAnsweredText'|trans({'%date%': target.respondedAt|date('d/m/Y')}) }}
+                {% if campaign.anonymous %} {{ 'surveyAlreadyAnsweredAnonymousText'|trans }}{% endif %}
+            </p>
+            <a href="{{ path('app_my_surveys') }}" class="btn btn-outline-secondary">{{ 'mySurveysBackActionLabel'|trans }}</a>
+        </div>
+    </div>
+{% endblock %}

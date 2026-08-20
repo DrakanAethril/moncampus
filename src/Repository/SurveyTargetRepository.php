@@ -173,4 +173,38 @@ class SurveyTargetRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * When this student answered each of the given campaigns - the batch reading
+     * App\Service\StudentWorkBoard needs, so that a board holding ten survey assignments still
+     * costs one query rather than ten.
+     *
+     * @param list<SurveyCampaign> $campaigns
+     *
+     * @return array<int, \DateTimeImmutable> campaign id => the moment it was answered
+     */
+    public function findRespondedDatesForUser(array $campaigns, User $user): array
+    {
+        if ([] === $campaigns) {
+            return [];
+        }
+
+        /** @var list<array{campaignId: int, respondedAt: \DateTimeImmutable}> $rows */
+        $rows = $this->createQueryBuilder('t')
+            ->select('IDENTITY(t.campaign) AS campaignId', 't.respondedAt')
+            ->where('t.campaign IN (:campaigns)')
+            ->andWhere('t.user = :user')
+            ->andWhere('t.respondedAt IS NOT NULL')
+            ->setParameter('campaigns', $campaigns)
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getResult();
+
+        $dates = [];
+        foreach ($rows as $row) {
+            $dates[$row['campaignId']] = $row['respondedAt'];
+        }
+
+        return $dates;
+    }
 }

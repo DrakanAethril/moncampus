@@ -47,6 +47,7 @@
                                     <td class="text-secondary">{{ (template.lastUpdatedDate ?? template.creationDate)|date('d/m/Y') }}</td>
                                     <td>
                                         <div class="cm-actionbar cm-actionbar--inline justify-content-end">
+                                            <a class="cm-action cm-action--positive" href="{{ path('app_survey_launch', {id: template.id}) }}">{{ 'surveyLaunchCampaignActionLabel'|trans }}</a>
                                             <a class="cm-action cm-action--neutral" href="{{ path('app_survey_template_edit', {id: template.id}) }}">{{ 'editActionLabel'|trans }}</a>
                                             <form method="post" action="{{ path('app_survey_template_duplicate', {id: template.id}) }}">
                                                 <input type="hidden" name="_token" value="{{ csrf_token('survey_template_duplicate') }}">

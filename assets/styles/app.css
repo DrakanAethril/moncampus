@@ -8034,3 +8034,37 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-survey-answers { display: flex; flex-direction: column; gap: 6px; }
 .cm-survey-answers .cm-answer-row { display: flex; align-items: center; gap: 8px; }
 .cm-survey-answers__rank { flex: none; width: 52px; font: 500 11.5px var(--cm-font-ui); color: var(--cm-faint); }
+
+/* ---------- The respondent's screen ---------- */
+
+/* An intertitle structures the reading of the survey - and of its results - without ever being
+   answered or counted. */
+.cm-survey-section {
+    margin: 8px 0 0;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--cm-border);
+    font-family: var(--cm-font-display);
+    font-size: 16px;
+}
+
+.cm-survey-question { display: flex; flex-direction: column; gap: 10px; }
+.cm-survey-question.is-missing { border-left: 3px solid var(--cm-red-tx); padding-left: 10px; }
+.cm-survey-question__head { display: flex; gap: 10px; align-items: baseline; }
+.cm-survey-question__number { flex: none; font: 600 12px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-survey-question__label { font-size: 14px; }
+.cm-survey-choices { display: flex; flex-direction: column; gap: 4px; padding-left: 30px; }
+
+/* The ranking question. Two arrows per row *beside* the drag handle, never instead of it: the
+   ranking has to be doable from the keyboard as much as with the mouse. */
+.cm-survey-order { display: flex; flex-direction: column; gap: 6px; padding-left: 30px; }
+.cm-survey-order__row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--cm-border); border-radius: 8px;
+    background: var(--cm-surface);
+    cursor: grab;
+}
+.cm-survey-order__row.is-dragging { opacity: .5; }
+.cm-survey-order__rank { flex: none; width: 18px; font: 600 12px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-survey-order__label { flex: 1; font-size: 13.5px; }
+.cm-survey-order__handle { flex: none; color: var(--cm-border); letter-spacing: -2px; }

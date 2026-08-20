@@ -84,6 +84,12 @@
                 {# A watching, unlike a listening, has a screen of its own: the bar that says what was
                    credited and what was skipped past does not fit in the panel, and it is the point. #}
                 <a class="cm-tw-btn cm-tw-btn--primary" href="{{ path('app_student_work_video', {assignmentId: assignment.id}) }}">{{ 'studentWorkWatchAction'|trans }}</a>
+            {% elseif assignment.nature.expectsSurvey and assignment.surveyCampaign %}
+                {# A survey has a screen of its own, « Mes sondages », because the anonymity notice
+                   has to be read before the first question. And it deliberately has no « marquer
+                   comme fait » beside it: only the response settles it, or the response rate would
+                   lie (design/validated/surveys.md §7.7). #}
+                <a class="cm-tw-btn cm-tw-btn--primary" href="{{ path('app_survey_respond', {id: assignment.surveyCampaign.id}) }}">{{ 'studentWorkSurveyAnswerAction'|trans }}</a>
             {% elseif assignment.nature.expectsSelfDeclaration %}
                 {% include 'student/_work_done_form.html.twig' with {assignment: assignment, undo: false} %}
             {% endif %}

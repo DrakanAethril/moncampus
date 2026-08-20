@@ -1,0 +1,68 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ campaign.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'mySurveysPageHeading'|trans, url: path('app_my_surveys')},
+        {label: campaign.name, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ campaign.name }}{% endblock %}
+
+{% block main %}
+    <p class="text-secondary mb-3">
+        {{ 'surveyRespondSubtitleText'|trans({'%count%': answerableCount}) }}
+        {%- if campaign.closesAt %} · {{ 'surveyRespondDeadlineText'|trans({'%date%': campaign.closesAt|date('d/m/Y')}) }}{% endif %}
+    </p>
+
+    {# The promise, made before the first question and in full - it is the only reason a satisfaction
+       survey gets honest answers. The last sentence is editorial and irreplaceable: nothing
+       technical can stop a verbatim from naming its author (§7.14). #}
+    {% if campaign.anonymous %}
+        <div class="cm-note mb-3">
+            <span class="cm-note__icon">i</span>
+            <div>{{ 'surveyAnonymousNoticeText'|trans }}</div>
+        </div>
+    {% else %}
+        <div class="cm-note mb-3">
+            <span class="cm-note__icon">i</span>
+            <div>{{ 'surveyNominativeNoticeText'|trans }}</div>
+        </div>
+    {% endif %}
+
+    {% if campaign.description %}
+        <div class="card mb-3"><div class="card-body">{{ campaign.description|nl2br }}</div></div>
+    {% endif %}
+
+    <form method="post" action="{{ path('app_survey_respond', {id: campaign.id}) }}"
+          data-controller="survey-respond"
+          data-survey-respond-answered-label-value="{{ 'surveyRespondProgressText'|trans({'%done%': '%done%', '%count%': '%count%'}) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('survey_respond') }}">
+
+        <div class="card">
+            <div class="card-body d-flex flex-column gap-4">
+                {% set number = 0 %}
+                {% for question in questions %}
+                    {% if question.type.isAnswerable %}{% set number = number + 1 %}{% endif %}
+                    {% include 'survey/_respond_question.html.twig' with {
+                        question: question,
+                        number: number,
+                        total: answerableCount,
+                        given: given[question.id]|default({answerIds: [], freeText: ''}),
+                        isMissing: missing is defined and question.id in missing,
+                    } only %}
+                {% endfor %}
+            </div>
+            <div class="card-footer d-flex align-items-center gap-3">
+                <span class="text-secondary small" data-survey-respond-target="progress"></span>
+                <div class="ms-auto d-flex gap-2">
+                    <button type="submit" name="intent" value="draft" class="btn btn-link">{{ 'surveySaveDraftActionLabel'|trans }}</button>
+                    <button type="submit" name="intent" value="submit" class="btn btn-primary">{{ 'surveySubmitActionLabel'|trans }}</button>
+                </div>
+            </div>
+        </div>
+    </form>
+{% endblock %}

@@ -73,6 +73,22 @@ enum SurveyQuestionType: string
         return self::Multiple === $this;
     }
 
+    /**
+     * What the respondent reads under the statement when the author wrote no instruction of their
+     * own - « une seule réponse », « plusieurs réponses possibles », « glissez les lignes, ou
+     * utilisez les flèches ». It is the only way somebody answering knows what the question expects,
+     * so it is never left blank on a type that takes an answer.
+     */
+    public function respondHintKey(): ?string
+    {
+        return match ($this) {
+            self::Unique => 'surveyRespondHintUnique',
+            self::Multiple => 'surveyRespondHintMultiple',
+            self::Ordre => 'surveyRespondHintOrdre',
+            self::Commentaire, self::Titre => null,
+        };
+    }
+
     public function labelKey(): string
     {
         return match ($this) {
