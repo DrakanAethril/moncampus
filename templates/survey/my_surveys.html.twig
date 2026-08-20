@@ -1,0 +1,65 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'mySurveysPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'mySurveysPageHeading'|trans, url: path('app_my_surveys')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'mySurveysPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {# Open to every role on purpose: a student reaches a survey through their travail à faire, but
+       teachers, staff and tutors have none - this screen and the home card are their only door. #}
+    <div class="card mb-3">
+        <div class="card-header"><h3 class="card-title">{{ 'mySurveysPendingCardTitle'|trans }}</h3></div>
+        <div class="card-body">
+            {% if pending is empty %}
+                <p class="text-secondary mb-0">{{ 'mySurveysPendingEmptyText'|trans }}</p>
+            {% else %}
+                <div class="d-flex flex-column gap-2">
+                    {% for target in pending %}
+                        <a class="cm-survey-line" href="{{ path('app_survey_respond', {id: target.campaign.id}) }}">
+                            <div class="cm-survey-line__body">
+                                <div class="cm-survey-line__head">
+                                    <span class="cm-survey-line__label fw-semibold">{{ target.campaign.name }}</span>
+                                </div>
+                                <div class="cm-survey-line__meta">
+                                    <span class="cm-badge {{ target.campaign.anonymous ? 'cm-badge--teal' : 'cm-badge--gray' }}">
+                                        {{- target.campaign.anonymous ? 'surveyAnonymousLabel'|trans : 'surveyNominativeLabel'|trans -}}
+                                    </span>
+                                    <span class="text-secondary">
+                                        {{- 'surveyRespondSubtitleText'|trans({'%count%': target.campaign.answerableQuestionCount}) -}}
+                                        {%- if target.campaign.closesAt %} · {{ 'surveyRespondDeadlineText'|trans({'%date%': target.campaign.closesAt|date('d/m/Y')}) }}{% endif -%}
+                                    </span>
+                                </div>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h3 class="card-title">{{ 'mySurveysAnsweredCardTitle'|trans }}</h3></div>
+        <div class="card-body">
+            {% if answered is empty %}
+                <p class="text-secondary mb-0">{{ 'mySurveysAnsweredEmptyText'|trans }}</p>
+            {% else %}
+                <ul class="list-unstyled mb-0 d-flex flex-column gap-2">
+                    {% for target in answered %}
+                        <li class="d-flex align-items-center gap-2">
+                            <span class="cm-badge cm-badge--green">{{ 'surveyAnsweredBadgeLabel'|trans }}</span>
+                            <span>{{ target.campaign.name }}</span>
+                            <span class="text-secondary small ms-auto">{{ target.respondedAt|date('d/m/Y') }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

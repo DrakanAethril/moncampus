@@ -25,6 +25,7 @@ use App\Repository\AssignmentSubmissionRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\QuizAttemptRepository;
 use App\Repository\SelfAssessmentRepository;
+use App\Repository\SurveyTargetRepository;
 use App\Service\AccessConditionGate;
 use App\Service\AccessConditionVerdict;
 use App\Service\AccessConditionVerdictMap;
@@ -419,6 +420,11 @@ class StudentWorkBoardTest extends TestCase
                 : ['assignment:'.$assignment->getId() => new AccessConditionVerdict(false, [], $this->lockReasons)],
         ));
 
+        // A survey's proof of completion is survey_target.responded_at, read in one batch. None of
+        // the assignments below is a survey, so the stub answers with nothing.
+        $surveyTargets = $this->createStub(SurveyTargetRepository::class);
+        $surveyTargets->method('findRespondedDatesForUser')->willReturn([]);
+
         return new StudentWorkBoard(
             $programRepository,
             $assignmentRepository,
@@ -431,6 +437,7 @@ class StudentWorkBoardTest extends TestCase
             $listenTracker,
             $watchTracker,
             $accessGate,
+            $surveyTargets,
         );
     }
 }

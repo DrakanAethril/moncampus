@@ -108,12 +108,12 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tools/file-library/search' => 403,
             '/library/quiz/import/assistant' => 403,
             // Outils > Sondages is the author's side: a student answers a survey, never writes one.
-            // Their own door, « Mes sondages », is a different screen entirely
-            // (design/validated/surveys.md §8).
             '/surveys' => 403,
             '/surveys/templates' => 403,
             '/surveys/campaigns' => 403,
             '/surveys/templates/new' => 403,
+            // Their own door - open to every account, and empty until a campaign aims at them.
+            '/my-surveys' => 200,
             '/progression' => 403,
             '/library/sequences' => 403,
             '/library/sequences/assistant' => 403,
@@ -156,6 +156,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/surveys/templates' => 200,
             '/surveys/campaigns' => 200,
             '/surveys/templates/new' => 200,
+            // Also a respondent: a teacher aimed at by a satisfaction survey has no travail à
+            // faire, so this screen and the home card are their only door (§7.9).
+            '/my-surveys' => 200,
             '/agenda' => 200,
             '/messages' => 200,
             '/tickets' => 200,
@@ -245,6 +248,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/surveys/templates' => 200,
             '/surveys/campaigns' => 200,
             '/surveys/templates/new' => 200,
+            // Also a respondent: a teacher aimed at by a satisfaction survey has no travail à
+            // faire, so this screen and the home card are their only door (§7.9).
+            '/my-surveys' => 200,
             '/agenda' => 200,
             '/messages' => 200,
             '/tickets' => 200,
@@ -358,6 +364,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/library/sequences/assistant' => 403,
             // A tutor may be *targeted* by a survey - « Mes sondages » is their door, and their
             // only one (design/validated/surveys.md §11). The author's side is shut.
+            '/my-surveys' => 200,
             '/surveys' => 403,
             '/surveys/templates' => 403,
             '/surveys/campaigns' => 403,

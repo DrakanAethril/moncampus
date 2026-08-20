@@ -21,6 +21,7 @@ use App\Repository\PlatformActivityRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\QuizLiveSessionRepository;
 use App\Repository\RoomRepository;
+use App\Repository\SurveyTargetRepository;
 use App\Repository\TicketRepository;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\AudienceTargetableVoter;
@@ -72,6 +73,7 @@ class HomeController extends AbstractController
         private readonly RoomRepository $roomRepository,
         private readonly StudentAlternanceProgramResolver $alternanceProgramResolver,
         private readonly TranslatorInterface $translator,
+        private readonly SurveyTargetRepository $surveyTargetRepository,
     ) {
     }
 
@@ -96,6 +98,10 @@ class HomeController extends AbstractController
             'today' => $today,
             'now' => $now,
             'events' => $this->buildEvents($user),
+            // Every role, on purpose: a survey reaches a student through their travail à faire, but
+            // teachers, staff and tutors have none at all - this card and « Mes sondages » are
+            // their only door (design/validated/surveys.md §8).
+            'pendingSurveys' => $this->surveyTargetRepository->findPendingForUser($user),
         ];
 
         if ($isAdmin) {

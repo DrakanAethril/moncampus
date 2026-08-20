@@ -17,6 +17,7 @@ use App\Repository\AssignmentSubmissionRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\QuizAttemptRepository;
 use App\Repository\SelfAssessmentRepository;
+use App\Repository\SurveyTargetRepository;
 
 /**
  * Reads where every assignment stands for one student, in a handful of queries rather than one per
@@ -40,6 +41,7 @@ class StudentWorkBoard
         private readonly AudioListenTracker $listenTracker,
         private readonly VideoWatchTracker $watchTracker,
         private readonly AccessConditionGate $accessGate,
+        private readonly SurveyTargetRepository $surveyTargetRepository,
     ) {
     }
 
@@ -86,6 +88,17 @@ class StudentWorkBoard
         }
         $attempts = $this->attemptRepository->findConcludedByInstanceForStudent(array_values($instances), $student);
 
+        // The proof a survey was done is survey_target.responded_at and nothing else - there is no
+        // « marquer comme fait » on this nature, deliberately (AssignmentNature::Survey is excluded
+        // from expectsSelfDeclaration()). Read in one batch, like the quiz attempts above.
+        $campaigns = [];
+        foreach ($assignments as $assignment) {
+            if (null !== $assignment->getSurveyCampaign()) {
+                $campaigns[(int) $assignment->getSurveyCampaign()->getId()] = $assignment->getSurveyCampaign();
+            }
+        }
+        $surveyDates = $this->surveyTargetRepository->findRespondedDatesForUser(array_values($campaigns), $student);
+
         $items = [];
         foreach ($assignments as $assignment) {
             $id = $assignment->getId();
@@ -95,7 +108,7 @@ class StudentWorkBoard
             $dismissedProductionIds = array_flip(array_filter($dismissedHere, static fn (?int $productionId): bool => null !== $productionId));
 
             $expectations = $this->expectationsOf($assignment, $submissions[$id] ?? [], $now, \in_array(null, $dismissedHere, true), $dismissedProductionIds);
-            $finishedAt = $this->finishedAt($assignment, $student, $expectations, $attempts, $doneDates, $validationDates);
+            $finishedAt = $this->finishedAt($assignment, $student, $expectations, $attempts, $doneDates, $validationDates, $surveyDates);
             $item = $this->itemOf($assignment, $expectations, $finishedAt, \in_array(null, $dismissedHere, true), $now);
 
             if (null !== $item) {
@@ -251,7 +264,7 @@ class StudentWorkBoard
      * @param array<int, \DateTimeImmutable>   $doneDates
      * @param array<int, \DateTimeImmutable>   $validationDates
      */
-    private function finishedAt(Assignment $assignment, User $student, array $expectations, array $attempts, array $doneDates, array $validationDates): ?\DateTimeImmutable
+    private function finishedAt(Assignment $assignment, User $student, array $expectations, array $attempts, array $doneDates, array $validationDates, array $surveyDates = []): ?\DateTimeImmutable
     {
         if ($assignment->expectsSubmission()) {
             $dates = [];
@@ -294,6 +307,13 @@ class StudentWorkBoard
         // to close a video nobody played.
         if (null !== $assignment->getVideoResource()) {
             return $this->watchTracker->completedAt($assignment->getVideoResource(), $student);
+        }
+
+        // And the same rule again on a survey: the proof is the response itself, recorded on the
+        // frozen target. Nothing declares a survey done - a declaration would close it without
+        // answering it, and the response rate would lie for good (surveys.md §7.7).
+        if (null !== $assignment->getSurveyCampaign()) {
+            return $surveyDates[(int) $assignment->getSurveyCampaign()->getId()] ?? null;
         }
 
         return $doneDates[$assignment->getId()] ?? null;

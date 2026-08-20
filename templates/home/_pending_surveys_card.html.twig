@@ -1,0 +1,24 @@
+{# « Sondage en attente » - shown to every role, because it is the only door for the audiences that
+   have no travail à faire: teachers, staff and tutors (design/validated/surveys.md §8).
+
+   It says how many questions and by when, and nothing about the content: a card that summarised
+   the survey would be read instead of it. #}
+{% if pendingSurveys is defined and pendingSurveys is not empty %}
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <span class="cm-badge cm-badge--purple">{{ 'homePendingSurveyBadgeLabel'|trans }}</span>
+                <div class="flex-fill">
+                    {% set first = pendingSurveys|first %}
+                    <div class="fw-semibold">{{ first.campaign.name }}</div>
+                    <div class="text-secondary small">
+                        {{- 'surveyRespondSubtitleText'|trans({'%count%': first.campaign.answerableQuestionCount}) -}}
+                        {%- if first.campaign.closesAt %} · {{ 'surveyRespondDeadlineText'|trans({'%date%': first.campaign.closesAt|date('d/m/Y')}) }}{% endif -%}
+                        {%- if pendingSurveys|length > 1 %} · {{ 'homePendingSurveyOthersText'|trans({'%count%': pendingSurveys|length - 1}) }}{% endif -%}
+                    </div>
+                </div>
+                <a href="{{ path('app_survey_respond', {id: first.campaign.id}) }}" class="btn btn-primary">{{ 'homeAnswerSurveyActionLabel'|trans }}</a>
+            </div>
+        </div>
+    </div>
+{% endif %}

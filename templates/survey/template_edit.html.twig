@@ -17,6 +17,7 @@
         <input type="hidden" name="_token" value="{{ csrf_token('survey_template_duplicate') }}">
         <button type="submit" class="btn btn-outline-secondary">{{ 'surveyDuplicateActionLabel'|trans }}</button>
     </form>
+    <a href="{{ path('app_survey_launch', {id: surveyTemplate.id}) }}" class="btn btn-primary">{{ 'surveyLaunchCampaignActionLabel'|trans }}</a>
 {% endblock %}
 
 {% block main %}

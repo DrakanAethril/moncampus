@@ -1,0 +1,77 @@
+{# One line of the survey, as the respondent sees it.
+
+   An intertitle is a section heading and nothing else: it takes no number, asks nothing, and
+   records nothing. The « une seule réponse » / « plusieurs réponses possibles » / « glissez les
+   lignes, ou utilisez les flèches » wordings are the ones the mockups carry, and they are the only
+   way a respondent knows what the question expects of them. #}
+{% if question.type.value == 'titre' %}
+    <h3 class="cm-survey-section">{{ question.label }}</h3>
+{% else %}
+    <div class="cm-survey-question{{ isMissing ? ' is-missing' }}" data-survey-respond-target="question">
+        <div class="cm-survey-question__head">
+            <span class="cm-survey-question__number">Q{{ number }}</span>
+            <div>
+                <div class="cm-survey-question__label">
+                    {{ question.label }}{% if question.required %} <span class="text-danger">*</span>{% endif %}
+                </div>
+                {% set hint = question.helpText ?: (question.type.respondHintKey ? question.type.respondHintKey|trans : null) %}
+                {% if hint %}<div class="text-secondary small">{{ hint }}</div>{% endif %}
+            </div>
+        </div>
+
+        {% if question.type.value == 'unique' %}
+            <div class="cm-survey-choices">
+                {% for answer in question.answers %}
+                    <label class="form-check">
+                        <input type="radio" class="form-check-input" name="question_{{ question.id }}[]"
+                               value="{{ answer.id }}" {{ answer.id in given.answerIds ? 'checked' }}
+                               data-action="change->survey-respond#answered">
+                        <span class="form-check-label">{{ answer.label }}</span>
+                    </label>
+                {% endfor %}
+            </div>
+        {% elseif question.type.value == 'multiple' %}
+            <div class="cm-survey-choices">
+                {% for answer in question.answers %}
+                    <label class="form-check">
+                        <input type="checkbox" class="form-check-input" name="question_{{ question.id }}[]"
+                               value="{{ answer.id }}" {{ answer.id in given.answerIds ? 'checked' }}
+                               data-action="change->survey-respond#answered">
+                        <span class="form-check-label">{{ answer.label }}</span>
+                    </label>
+                {% endfor %}
+            </div>
+        {% elseif question.type.value == 'ordre' %}
+            {# The controller sits on the container, never on the rows: a DOM-rewriting library
+               moves the rows, and a controller bound to one would be torn off with it. Two arrows
+               per row beside the drag handle, so the ranking is doable from the keyboard (§7.12). #}
+            <div class="cm-survey-order" data-controller="survey-order" data-survey-respond-target="orderContainer">
+                {% set ordered = given.answerIds|length > 0
+                    ? given.answerIds|map(id => question.answers|filter(a => a.id == id)|first)|filter(a => a is not null)
+                    : question.answers|filter(a => true) %}
+                {% for answer in ordered %}
+                    <div class="cm-survey-order__row" draggable="true"
+                         data-survey-order-target="row"
+                         data-action="dragstart->survey-order#dragStart dragover->survey-order#dragOver drop->survey-order#drop dragend->survey-order#dragEnd">
+                        <span class="cm-survey-order__rank" data-survey-order-target="rank">{{ loop.index }}</span>
+                        <span class="cm-survey-order__label">{{ answer.label }}</span>
+                        <input type="hidden" name="question_{{ question.id }}[]" value="{{ answer.id }}">
+                        <button type="button" class="cm-answer-move" data-action="click->survey-order#moveUp" aria-label="{{ 'moveUpActionLabel'|trans }}">▲</button>
+                        <button type="button" class="cm-answer-move" data-action="click->survey-order#moveDown" aria-label="{{ 'moveDownActionLabel'|trans }}">▼</button>
+                        <span class="cm-survey-order__handle" aria-hidden="true">⋮⋮</span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% elseif question.type.value == 'commentaire' %}
+            {# 2 000 characters, and the counter is shown: a silent truncation is a bug, and this
+               repository has already paid for one on the wiki diagram input. #}
+            <div data-controller="character-counter" data-character-counter-max-value="2000">
+                <textarea name="question_{{ question.id }}" class="form-control" rows="4" maxlength="2000"
+                          data-character-counter-target="input"
+                          data-action="input->character-counter#count change->survey-respond#answered">{{ given.freeText }}</textarea>
+                <div class="text-secondary small mt-1 text-end" data-character-counter-target="output"
+                     data-template="{{ 'surveyCharacterCountText'|trans({'%count%': '%count%', '%max%': '%max%'}) }}"></div>
+            </div>
+        {% endif %}
+    </div>
+{% endif %}
