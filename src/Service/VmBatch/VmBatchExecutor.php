@@ -311,6 +311,9 @@ class VmBatchExecutor
         }
 
         $item->appendInstallLog(VmInstallStep::Configured, \sprintf('%s / %s', $item->getGuestName(), $allocation->getIp()));
+        // Named because it is what every later session logs in as: a machine nobody can reach is
+        // answered by this line and the next one together.
+        $item->appendInstallLog(VmInstallStep::AccountNamed, $host->getGuestLoginUser());
         // Named one by one: « I cannot log in » is answered by this line and nothing else.
         $item->appendInstallLog(VmInstallStep::KeysInstalled, [] === $keys ? null : implode(', ', $keys));
 

@@ -140,22 +140,30 @@ class ProxmoxHost
     private bool $allowCreate = false;
 
     /**
-     * The account MonCampus opens an SSH session with on the machines of this host.
+     * The account MonCampus **creates on** each machine and then logs into.
      *
-     * A property of the *image* rather than of the hypervisor, but the host is the object there is
-     * to hang it on, and a fleet is built from one image family. Cloud images matter here: Debian
-     * and Ubuntu enable cloud-init's `disable_root`, which puts the keys into root's
-     * authorized_keys behind a forced command that prints « log in as debian instead » and exits -
-     * so root *accepts* the key and then runs nothing at all. Naming the image's own account
-     * (`debian`, `ubuntu`) is what makes the session usable; everything is then elevated with sudo,
-     * see App\Service\Guest\GuestCommandLine.
+     * One name for both halves, because they are the same account: it is handed to cloud-init as
+     * `ciuser` when the machine is configured, which is what brings it into existence with the SSH
+     * keys already in place, and it is the account every later session opens with.
      *
-     * Defaults to root, which is what this application did before the setting existed.
+     * That is why it is not the image's own default user. A template need not have one at all, and
+     * when it does, its name is whatever the image happens to call it - `debian`, `ubuntu`, or
+     * something a hand-built template never created. Root is worse still: Debian and Ubuntu cloud
+     * images enable cloud-init's `disable_root`, which puts the keys into root's authorized_keys
+     * behind a forced command printing « log in as debian instead » before exiting, so root
+     * *accepts* the key and then runs nothing at all. Naming an account MonCampus owns depends on
+     * none of that.
+     *
+     * Everything it runs is elevated with sudo - see App\Service\Guest\GuestCommandLine.
+     *
+     * It only reaches a machine through cloud-init, which runs **at first boot and never again**:
+     * a machine created before this account was named keeps whatever it was built with, and the
+     * setting is what such a host can be pointed back at.
      */
-    #[ORM\Column(name: 'guest_login_user', length: 32, options: ['default' => 'root'])]
+    #[ORM\Column(name: 'guest_login_user', length: 32, options: ['default' => 'moncampus'])]
     #[Assert\NotBlank]
     #[Assert\Regex(pattern: '/^[a-z_][a-z0-9_-]{0,31}$/', message: 'proxmoxHostGuestLoginUserInvalidMessage')]
-    private string $guestLoginUser = 'root';
+    private string $guestLoginUser = 'moncampus';
 
     #[ORM\Column(name: 'max_guests', nullable: true)]
     #[Assert\Positive]
