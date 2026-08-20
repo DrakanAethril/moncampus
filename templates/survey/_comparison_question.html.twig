@@ -1,0 +1,62 @@
+{# One question across the waves - grouped bars, one bar per wave, in a single hue with three steps
+   of lightness. The delta beside each bar is the movement in points against the previous wave; the
+   first wave has none, because « +8 pts » only means something against something.
+
+   A question whose shape changed between two waves is not aligned at all: it is greyed out, said to
+   be « modifiée entre les vagues — non comparable », and left out of the deltas - while every other
+   question keeps aligning (§7.1). #}
+<div class="card mb-3 {{ question.comparable ? '' : 'cm-comparison--off' }}">
+    <div class="card-header">
+        <h3 class="card-title">{{ question.label }}</h3>
+        <div class="card-actions text-secondary small">
+            {% if not question.comparable %}
+                <span class="cm-badge cm-badge--gray">{{ 'surveyIncomparableBadgeLabel'|trans }}</span>
+            {% elseif question.isScale %}
+                {% set averages = [] %}
+                {% for wave in waves %}
+                    {% set data = question.byWave[wave.waveNumber]|default(null) %}
+                    {% if data and data.average is not null %}{% set averages = averages|merge([data.average|number_format(2, ',', ' ')]) %}{% endif %}
+                {% endfor %}
+                {% if averages|length > 1 %}{{ 'surveyAverageTrajectoryText'|trans({'%values%': averages|join(' → ')}) }}{% endif %}
+            {% endif %}
+        </div>
+    </div>
+    <div class="card-body">
+        {% if not question.comparable %}
+            <p class="text-secondary mb-2">{{ 'surveyIncomparableExplanationText'|trans }}</p>
+            <div class="cm-actionbar cm-actionbar--inline">
+                {% for wave in waves %}
+                    <a class="cm-action cm-action--neutral" href="{{ path('app_survey_campaign', {id: wave.id}) }}">{{ 'surveyViewWaveActionLabel'|trans({'%number%': wave.waveNumber}) }}</a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="d-flex flex-column gap-3">
+                {% for label in question.answers %}
+                    <div>
+                        <div class="cm-comparison__answer">{{ label }}</div>
+                        {% set previous = null %}
+                        {% for wave in waves %}
+                            {% set data = question.byWave[wave.waveNumber]|default(null) %}
+                            {% if data %}
+                                {% set percent = data.percents[loop.parent.loop.index0]|default(0) %}
+                                <div class="cm-result__row">
+                                    <span class="cm-comparison__wave">V{{ wave.waveNumber }}</span>
+                                    <span class="cm-result__bar"><span class="cm-result__fill cm-wave--{{ loop.index0 % 3 }}" style="width: {{ percent|round }}%"></span></span>
+                                    <span class="cm-result__value">
+                                        <strong>{{ percent|round }} %</strong>
+                                        {%- if previous is not null %}
+                                            {% set delta = percent - previous %}
+                                            <span class="{{ delta > 0 ? 'text-success' : (delta < 0 ? 'text-danger' : 'text-secondary') }}">
+                                                {{- delta > 0 ? '+' : '' }}{{ delta|round }} pts</span>
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                {% set previous = percent %}
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>
