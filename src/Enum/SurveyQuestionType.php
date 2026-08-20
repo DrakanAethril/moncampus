@@ -84,6 +84,16 @@ enum SurveyQuestionType: string
         };
     }
 
+    /** Mockup palette: the two choice types blue, Ordre amber, the two others neutral. */
+    public function badgeClass(): string
+    {
+        return match ($this) {
+            self::Unique, self::Multiple => 'cm-badge--blue',
+            self::Ordre => 'cm-badge--gold',
+            self::Commentaire, self::Titre => 'cm-badge--gray',
+        };
+    }
+
     public function hintKey(): string
     {
         return match ($this) {

@@ -1,0 +1,31 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'surveyNewButtonLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'surveysPageHeading'|trans, url: path('app_surveys')},
+        {label: 'surveyNewButtonLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'surveyNewButtonLabel'|trans }}{% endblock %}
+
+{% block main %}
+    {# Deferred creation, like « + Nouveau quiz »: nothing is written until this form is submitted. #}
+    <div class="card">
+        <div class="card-body" style="max-width: 640px;">
+            {{ form_start(form) }}
+            {{ form_errors(form) }}
+            {{ form_row(form.name) }}
+            {{ form_row(form.subject) }}
+            {{ form_row(form.description) }}
+            <div class="cm-actionbar justify-content-end mt-3">
+                <a href="{{ path('app_surveys_templates') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                <button type="submit" class="btn btn-primary">{{ 'surveyTemplateCreateSubmitLabel'|trans }}</button>
+            </div>
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}

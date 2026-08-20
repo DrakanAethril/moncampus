@@ -107,6 +107,13 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tools/file-library/trash' => 403,
             '/tools/file-library/search' => 403,
             '/library/quiz/import/assistant' => 403,
+            // Outils > Sondages is the author's side: a student answers a survey, never writes one.
+            // Their own door, « Mes sondages », is a different screen entirely
+            // (design/validated/surveys.md §8).
+            '/surveys' => 403,
+            '/surveys/templates' => 403,
+            '/surveys/campaigns' => 403,
+            '/surveys/templates/new' => 403,
             '/progression' => 403,
             '/library/sequences' => 403,
             '/library/sequences/assistant' => 403,
@@ -143,6 +150,12 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/shares' => 200,
             '/shares/mine' => 200,
             '/shares/catalog' => 200,
+            // Outils > Sondages - one entry serving teachers and staff alike, since the menu it
+            // sits in is already gated on exactly those two.
+            '/surveys' => 302,
+            '/surveys/templates' => 200,
+            '/surveys/campaigns' => 200,
+            '/surveys/templates/new' => 200,
             '/agenda' => 200,
             '/messages' => 200,
             '/tickets' => 200,
@@ -226,6 +239,12 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/shares' => 200,
             '/shares/mine' => 200,
             '/shares/catalog' => 200,
+            // Outils > Sondages - one entry serving teachers and staff alike, since the menu it
+            // sits in is already gated on exactly those two.
+            '/surveys' => 302,
+            '/surveys/templates' => 200,
+            '/surveys/campaigns' => 200,
+            '/surveys/templates/new' => 200,
             '/agenda' => 200,
             '/messages' => 200,
             '/tickets' => 200,
@@ -337,6 +356,12 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/progression' => 403,
             '/library/sequences' => 403,
             '/library/sequences/assistant' => 403,
+            // A tutor may be *targeted* by a survey - « Mes sondages » is their door, and their
+            // only one (design/validated/surveys.md §11). The author's side is shut.
+            '/surveys' => 403,
+            '/surveys/templates' => 403,
+            '/surveys/campaigns' => 403,
+            '/surveys/templates/new' => 403,
             '/shares' => 403,
             '/shares/mine' => 403,
             '/shares/catalog' => 403,
