@@ -85,6 +85,17 @@ class VmBatchItem
     #[ORM\Column(length: 20, enumType: VmBatchItemStatus::class)]
     private VmBatchItemStatus $status = VmBatchItemStatus::Planned;
 
+    /**
+     * When a pass last took this item in hand - whether or not it moved.
+     *
+     * It exists to make the queue fair rather than to measure anything: a pass takes the items that
+     * have gone longest without a turn, so five machines waiting on a boot cannot keep the sixth
+     * from ever starting. Null means never attempted, and MySQL sorts nulls first in ASC, which is
+     * the order wanted - a machine that has not begun goes before one that is merely slow.
+     */
+    #[ORM\Column(name: 'last_attempt_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $lastAttemptAt = null;
+
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $message = null;
 
@@ -210,6 +221,19 @@ class VmBatchItem
     {
         $this->status = $status;
         $this->message = $message;
+
+        return $this;
+    }
+
+    public function getLastAttemptAt(): ?\DateTimeImmutable
+    {
+        return $this->lastAttemptAt;
+    }
+
+    /** Stamped by the executor at the start of every attempt - see App\Service\VmBatch\VmBatchExecutor. */
+    public function markAttempted(): static
+    {
+        $this->lastAttemptAt = new \DateTimeImmutable();
 
         return $this;
     }

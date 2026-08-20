@@ -68,6 +68,22 @@ class VmBatchExecutor
     /** How many machines one pass attempts. Chosen so a pass finishes inside a request. */
     public const int BATCH_SIZE = 5;
 
+    /**
+     * How long a pass may spend before it stops starting new steps, in seconds.
+     *
+     * Chosen against PHP's `max_execution_time` of 30 seconds and not against the network. Five
+     * machines that have been started but do not answer yet are the ordinary first minute of a
+     * deployment, and each of them costs its own connection attempt: without a ceiling here the
+     * pass is killed by the engine rather than returning, which is not a failure it can record -
+     * it writes nothing at all. And since a pass always takes the *first* five resumable items, a
+     * pass that never returns means the sixth machine onwards never starts.
+     *
+     * Fifteen leaves room for the step already under way to finish inside the limit, every
+     * individual call being bounded on its own (ProxmoxClient's transport bounds, GuestSshSession's
+     * connect budget).
+     */
+    private const float PASS_BUDGET_SECONDS = 15.0;
+
     private const string PROGRESSED = 'progressed';
     private const string WAITING = 'waiting';
     private const string FAILED = 'failed';
@@ -84,6 +100,8 @@ class VmBatchExecutor
         private readonly PostInstallRunner $postInstall,
         private readonly UnixLogin $unixLogin,
         private readonly EntityManagerInterface $entityManager,
+        // Injectable so a test can pin the guard without waiting for a real budget to run out.
+        private readonly float $passBudgetSeconds = self::PASS_BUDGET_SECONDS,
     ) {
     }
 
@@ -93,6 +111,16 @@ class VmBatchExecutor
      * `progressed` is what tells the screen whether to keep going or to slow down: a pass where
      * everything is merely waiting on a booting machine has moved nothing, and hammering the server
      * over it would be pure noise.
+     *
+     * **A pass also stops when its budget is spent**, and what it has not reached is a wait rather
+     * than a failure: the screen simply comes back for it. See PASS_BUDGET_SECONDS for why a pass
+     * that overruns is worse than a pass that does less.
+     *
+     * **Which items a pass takes is a matter of turns, not of position.** An item that is merely
+     * waiting stays resumable, and a failed one is deliberately re-attempted, so choosing the first
+     * BATCH_SIZE by position meant five machines that could not progress held every slot and the
+     * sixth never started - the batch read as stuck at five. The repository now hands over the
+     * items that have gone longest without a turn, never-attempted ones first.
      *
      * @return array{attempted: int, progressed: int, waiting: int, failed: int, remaining: int}
      */
@@ -105,7 +133,21 @@ class VmBatchExecutor
         $waiting = 0;
         $failed = 0;
 
+        $startedAt = microtime(true);
+
         foreach ($pass as $item) {
+            // Checked before the step, never during: the steps are individually bounded, and
+            // stopping between two of them leaves the queue exactly as it was.
+            if (microtime(true) - $startedAt >= $this->passBudgetSeconds) {
+                ++$waiting;
+
+                continue;
+            }
+
+            // Stamped before the step, so an item that fails or throws still loses its turn: the
+            // whole point is that no item can be picked twice while another has never been picked.
+            $item->markAttempted();
+
             match ($this->advance($batch, $item, $requestedBy)) {
                 self::PROGRESSED => ++$progressed,
                 self::WAITING => ++$waiting,
