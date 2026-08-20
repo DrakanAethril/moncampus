@@ -15,7 +15,7 @@
 {% block page_title %}{{ 'proxmoxGuestNewHeading'|trans }}{% endblock %}
 
 {% block main %}
-    {% include 'infrastructure/_localnav.html.twig' %}
+    {% include 'infrastructure/_tabs.html.twig' %}
 
     {# GET, not POST: this form asks to be shown the next screen rather than to change anything,
        and a POST handled by Turbo has to answer a redirect - answering 200 HTML leaves the browser
@@ -26,8 +26,8 @@
 
             {% if failure %}
                 <div class="cm-fieldset">
-                    <div class="cm-note" style="border-left-color: var(--cm-red-tx); background: var(--cm-red-bg); color: var(--cm-red-tx);">
-                        <span class="cm-note__icon" style="background: var(--cm-red-tx);">!</span>
+                    <div class="cm-note cm-note--danger">
+                        <span class="cm-note__icon">!</span>
                         <span>{{ failure }}</span>
                     </div>
                 </div>

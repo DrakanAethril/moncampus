@@ -11,7 +11,7 @@ use Twig\TwigFunction;
 
 /**
  * Feeds the Proxmox console's local navigation bar
- * (templates/infrastructure/_localnav.html.twig).
+ * (templates/infrastructure/_tabs.html.twig).
  *
  * That bar is not a convenience: /infrastructure appears in no menu of the application, so it is
  * the only way from one screen of the area to the next, and the rule it enforces is that every

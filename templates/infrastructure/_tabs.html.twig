@@ -1,0 +1,40 @@
+{# The tab row of the Proxmox console, on EVERY screen of the area.
+
+   This area is deliberately absent from the application's menus, so this strip is the only way from
+   one of its screens to the next: without it each one would be a dead end you leave by retyping a
+   URL. The rule it enforces is that every feature must be reachable by clicking from
+   /infrastructure - a screen you can only open by knowing its address is a bug here.
+
+   It used to be a shape of its own (`cm-localnav`), on the argument that tabs switch between views
+   of one screen while this moves between screens. That distinction is not one the application makes
+   anywhere else: Paramètres > Pédagogique, Partages and UFA all tab between separate routes through
+   the shared partial. So this uses the same one, and the card that follows carries
+   .cm-card--tabbed so it fuses with the active tab.
+
+   « Machines » needs a host to point at, since there is no aggregated multi-host view by design. It
+   therefore takes the host currently being looked at, or the first declared one - and simply does
+   not appear while no host exists, rather than linking nowhere.
+
+   Entries appear as their screens are built; there is deliberately no disabled entry for a screen
+   that does not exist yet - a link that goes nowhere teaches nothing. #}
+{% set nav_host = host|default(null) ?: infrastructure_default_host() %}
+{% set infrastructure_tabs = [
+    {url: path('app_infrastructure'), label: 'infrastructureOverviewNavLabel'|trans, active: activeNav == 'overview'},
+    {url: path('app_infrastructure_hosts'), label: 'infrastructureHostsNavLabel'|trans, active: activeNav == 'hosts'},
+] %}
+{% if nav_host %}
+    {% set infrastructure_tabs = infrastructure_tabs|merge([
+        {url: path('app_infrastructure_guests', {id: nav_host.id}), label: 'infrastructureGuestsNavLabel'|trans, active: activeNav == 'guests'},
+        {url: path('app_infrastructure_images', {id: nav_host.id}), label: 'infrastructureImagesNavLabel'|trans, active: activeNav == 'images'},
+    ]) %}
+{% endif %}
+{% set infrastructure_tabs = infrastructure_tabs|merge([
+    {url: path('app_infrastructure_ip_ranges'), label: 'infrastructureAddressesNavLabel'|trans, active: activeNav == 'ip_ranges'},
+    {url: path('app_infrastructure_batches'), label: 'infrastructureBatchesNavLabel'|trans, active: activeNav == 'batches'},
+    {url: path('app_infrastructure_operations'), label: 'infrastructureOperationsNavLabel'|trans, active: activeNav == 'operations'},
+]) %}
+
+{% include '_tabs.html.twig' with {
+    tabs: infrastructure_tabs,
+    tabs_action: infrastructure_hosts()|length > 1 ? 'infrastructure/_tabs_goto.html.twig' : null,
+} %}

@@ -15,7 +15,7 @@
 {% block page_title %}{{ 'proxmoxGuestNewHeading'|trans }}{% endblock %}
 
 {% block main %}
-    {% include 'infrastructure/_localnav.html.twig' %}
+    {% include 'infrastructure/_tabs.html.twig' %}
 
     <form method="post" action="{{ path('app_infrastructure_guests_new_confirm', {id: host.id}) }}">
         <input type="hidden" name="_token" value="{{ csrf_token('infrastructure_action') }}">

@@ -17,11 +17,10 @@
 {% endblock %}
 
 {% block main %}
-    {% include 'infrastructure/_localnav.html.twig' %}
-
     <p class="cm-host__meta mb-3">{{ 'infrastructureOperationsSubtitle'|trans }}</p>
+    {% include 'infrastructure/_tabs.html.twig' %}
 
-    <div class="card">
+    <div class="card cm-card--tabbed">
         <form method="get" class="cm-actionbar" style="margin: 0; padding: 12px 18px; border-top: 0; border-bottom: 1px solid var(--cm-border-soft); background: var(--cm-surface-soft);">
             <input type="search" name="q" value="{{ filters.q }}" class="cm-input cm-field--md" placeholder="{{ 'proxmoxOperationSearchPlaceholder'|trans }}">
 
@@ -54,15 +53,15 @@
         </form>
 
         <div class="table-responsive">
-            <table class="table cm-table">
+            <table class="table table-vcenter card-table">
                 <thead>
                     <tr>
-                        <th style="width:140px">{{ 'proxmoxOperationWhenLabel'|trans }}</th>
-                        <th style="width:120px">{{ 'proxmoxOperationActionLabel'|trans }}</th>
+                        <th>{{ 'proxmoxOperationWhenLabel'|trans }}</th>
+                        <th>{{ 'proxmoxOperationActionLabel'|trans }}</th>
                         <th>{{ 'proxmoxGuestMachineLabel'|trans }}</th>
-                        <th style="width:160px">{{ 'proxmoxOperationHostLabel'|trans }}</th>
-                        <th style="width:150px">{{ 'proxmoxOperationAuthorLabel'|trans }}</th>
-                        <th style="width:130px">{{ 'proxmoxOperationResultLabel'|trans }}</th>
+                        <th>{{ 'proxmoxOperationHostLabel'|trans }}</th>
+                        <th>{{ 'proxmoxOperationAuthorLabel'|trans }}</th>
+                        <th>{{ 'proxmoxOperationResultLabel'|trans }}</th>
                         <th>{{ 'proxmoxOperationDetailLabel'|trans }}</th>
                     </tr>
                 </thead>

@@ -5198,7 +5198,7 @@ proxmoxCreationRateLimitedMessage: 'Too many creations requested in a row. Try a
 # --- Proxmox console - batch 4: accounts, post-installation, batches ---------------------------
 infrastructureBatchesNavLabel: 'Batches'
 infrastructureBatchesTileTitle: 'Batches'
-infrastructureBatchesTileText: 'Deploy one machine per student, with their account.'
+infrastructureBatchesTileText: 'Deploy one machine per student, or one per group with an account for each member.'
 infrastructureBatchesTileGo: '%count% batch(es)'
 
 platformActivityProxmoxGuestCreatedText: '%user% created a virtual machine'

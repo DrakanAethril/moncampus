@@ -15,13 +15,12 @@
 {% block page_title %}{{ 'infrastructureImagesNavLabel'|trans }}{% endblock %}
 
 {% block main %}
-    {% include 'infrastructure/_localnav.html.twig' %}
-
     <p class="cm-host__meta mb-3">{{ host.label }} · {{ host.displayAddress }}</p>
+    {% include 'infrastructure/_tabs.html.twig' %}
 
     {% if failure %}
-        <div class="cm-note" style="border-left-color: var(--cm-red-tx); background: var(--cm-red-bg); color: var(--cm-red-tx);">
-            <span class="cm-note__icon" style="background: var(--cm-red-tx);">!</span>
+        <div class="cm-note cm-note--danger">
+            <span class="cm-note__icon">!</span>
             <span><strong>{{ 'proxmoxGuestsUnreachableTitle'|trans }}</strong> {{ failure }}</span>
         </div>
     {% else %}
@@ -29,22 +28,22 @@
            of /cluster/resources whose `template` flag is set, so they arrive with the machine list.
            ISOs are files on storages, which nothing in the cluster listing knows about, so each
            storage advertising `iso` content has to be asked in turn. #}
-        <div class="card mb-3">
+        <div class="card cm-card--tabbed mb-3">
             <div class="card-header">
                 <h3 class="card-title cm-condition-heading">{{ 'proxmoxTemplatesTitle'|trans }}</h3>
                 <span class="cm-badge cm-badge--teal ms-2">{{ templates|length }}</span>
             </div>
             <div class="table-responsive">
-                <table class="table cm-table">
+                <table class="table table-vcenter card-table">
                     <thead>
                         <tr>
-                            <th style="width:70px">VMID</th>
+                            <th>VMID</th>
                             <th>{{ 'proxmoxTemplateNameLabel'|trans }}</th>
-                            <th style="width:90px">{{ 'proxmoxGuestNodeLabel'|trans }}</th>
-                            <th style="width:110px">{{ 'proxmoxGuestCpuLabel'|trans }}</th>
-                            <th style="width:110px">{{ 'proxmoxGuestMemoryLabel'|trans }}</th>
-                            <th style="width:100px">{{ 'proxmoxGuestDiskLabel'|trans }}</th>
-                            <th style="width:200px"></th>
+                            <th>{{ 'proxmoxGuestNodeLabel'|trans }}</th>
+                            <th>{{ 'proxmoxGuestCpuLabel'|trans }}</th>
+                            <th>{{ 'proxmoxGuestMemoryLabel'|trans }}</th>
+                            <th>{{ 'proxmoxGuestDiskLabel'|trans }}</th>
+                            <th class="cm-actions"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -59,12 +58,10 @@
                                 <td class="cm-guest__sub">{{ template.maxCpu }} {{ 'proxmoxGuestCoresLabel'|trans }}</td>
                                 <td class="cm-guest__sub">{{ (template.maxMemoryBytes / 1073741824)|number_format(1, ',', ' ') }} Gio</td>
                                 <td class="cm-guest__sub">{{ (template.maxDiskBytes / 1073741824)|number_format(0, ',', ' ') }} Gio</td>
-                                <td>
-                                    <div class="cm-guest__actions">
+                                <td class="cm-actions">
                                         {% if canCreate %}
-                                            <a class="cm-linkaction" href="{{ path('app_infrastructure_guests_new', {id: host.id, source: template.vmid}) }}">{{ 'proxmoxCreateFromTemplateAction'|trans }}</a>
+                                            <a href="{{ path('app_infrastructure_guests_new', {id: host.id, source: template.vmid}) }}">{{ 'proxmoxCreateFromTemplateAction'|trans }}</a>
                                         {% endif %}
-                                    </div>
                                 </td>
                             </tr>
                         {% else %}
@@ -90,14 +87,14 @@
                 </div>
             </div>
             <div class="table-responsive">
-                <table class="table cm-table">
+                <table class="table table-vcenter card-table">
                     <thead>
                         <tr>
                             <th>{{ 'proxmoxIsoFileLabel'|trans }}</th>
-                            <th style="width:110px">{{ 'proxmoxGuestNodeLabel'|trans }}</th>
-                            <th style="width:130px">{{ 'proxmoxIsoStorageLabel'|trans }}</th>
-                            <th style="width:110px">{{ 'proxmoxIsoSizeLabel'|trans }}</th>
-                            <th style="width:200px"></th>
+                            <th>{{ 'proxmoxGuestNodeLabel'|trans }}</th>
+                            <th>{{ 'proxmoxIsoStorageLabel'|trans }}</th>
+                            <th>{{ 'proxmoxIsoSizeLabel'|trans }}</th>
+                            <th class="cm-actions"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -110,12 +107,10 @@
                                 <td class="cm-guest__sub">{{ iso.node }}</td>
                                 <td class="cm-guest__sub">{{ iso.storage }}</td>
                                 <td class="cm-guest__sub">{{ (iso.sizeBytes / 1073741824)|number_format(2, ',', ' ') }} Gio</td>
-                                <td>
-                                    <div class="cm-guest__actions">
+                                <td class="cm-actions">
                                         {% if canCreate %}
-                                            <a class="cm-linkaction" href="{{ path('app_infrastructure_guests_new', {id: host.id, iso: iso.volumeId}) }}">{{ 'proxmoxCreateFromIsoAction'|trans }}</a>
+                                            <a href="{{ path('app_infrastructure_guests_new', {id: host.id, iso: iso.volumeId}) }}">{{ 'proxmoxCreateFromIsoAction'|trans }}</a>
                                         {% endif %}
-                                    </div>
                                 </td>
                             </tr>
                         {% else %}

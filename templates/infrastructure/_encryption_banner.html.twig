@@ -5,8 +5,8 @@
    concludes there is nothing declared. Same reasoning as `app:antivirus:check`, whose whole reason
    for existing is that a blank DSN disables scanning without saying so. #}
 {% if not encryptionAvailable %}
-    <div class="cm-note" style="border-left-color: var(--cm-red-tx); background: var(--cm-red-bg); color: var(--cm-red-tx); margin-bottom: 16px;">
-        <span class="cm-note__icon" style="background: var(--cm-red-tx);">!</span>
+    <div class="cm-note cm-note--danger mb-3">
+        <span class="cm-note__icon">!</span>
         <span>
             <strong>{{ 'proxmoxEncryptionUnavailableTitle'|trans }}</strong>
             {{ 'proxmoxEncryptionUnavailableText'|trans }}
