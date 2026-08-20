@@ -11,6 +11,7 @@ use App\Entity\VmBatchItem;
 use App\Enum\GuestAccountOrigin;
 use App\Enum\ProxmoxOperationStatus;
 use App\Enum\VmBatchItemStatus;
+use App\Enum\VmInstallStep;
 use App\Repository\UserRepository;
 use App\Repository\VmBatchItemRepository;
 use App\Service\Guest\GuestAccountService;
@@ -65,8 +66,15 @@ use Doctrine\ORM\EntityManagerInterface;
  */
 class VmBatchExecutor
 {
-    /** How many machines one pass attempts. Chosen so a pass finishes inside a request. */
-    public const int BATCH_SIZE = 5;
+    /**
+     * How many machines one pass attempts.
+     *
+     * One, deliberately: a machine at a time is what an administrator watching the screen can follow,
+     * and what leaves the hypervisor a chance to finish one clone before being asked for the next.
+     * Since the pass takes whoever has waited longest rather than the first by position, one per pass
+     * still advances the whole batch - it just does it in turn rather than five abreast.
+     */
+    public const int BATCH_SIZE = 1;
 
     /**
      * How long a pass may spend before it stops starting new steps, in seconds.
@@ -221,16 +229,23 @@ class VmBatchExecutor
             // hold the addresses of the machines it never created.
             $allocation = $this->allocator->reserveNext($range, hostname: $item->getGuestName());
         } catch (RangeExhaustedException|AddressUnavailableException $exception) {
+            $item->appendInstallLog(VmInstallStep::AddressUnavailable, $exception->getMessage(), ok: false);
+
             return $this->fail($item, $exception->getMessage());
         }
+
+        $item->appendInstallLog(VmInstallStep::AddressReserved, $allocation->getIp());
 
         try {
             $operation = $this->creator->create($host, $this->requestFor($batch, $item, $allocation->getIp()), $allocation, $requestedBy);
         } catch (ProxmoxUnavailableException $exception) {
             // The creator has already released the address - a batch must not lose one per failure.
+            $item->appendInstallLog(VmInstallStep::CloneFailed, $exception->getMessage(), ok: false);
+
             return $this->fail($item, $exception->getMessage());
         }
 
+        $item->appendInstallLog(VmInstallStep::CloneRequested, \sprintf('%d → %d', $batch->getTemplateVmid(), $item->getVmid() ?? 0));
         $item->setNode($batch->getNode());
         $item->setIpAllocation($allocation);
         $item->setOperation($operation);
@@ -266,11 +281,17 @@ class VmBatchExecutor
         }
 
         if (ProxmoxOperationStatus::Succeeded !== $operation->getStatus()) {
-            return match ($operation->getStatus()) {
-                ProxmoxOperationStatus::Failed, ProxmoxOperationStatus::Unknown => $this->fail($item, $operation->getMessage() ?? 'The creation task did not succeed.'),
-                default => $this->wait($item, null),
-            };
+            if (\in_array($operation->getStatus(), [ProxmoxOperationStatus::Failed, ProxmoxOperationStatus::Unknown], true)) {
+                $message = $operation->getMessage() ?? 'The creation task did not succeed.';
+                $item->appendInstallLog(VmInstallStep::CloneFailed, $message, ok: false);
+
+                return $this->fail($item, $message);
+            }
+
+            return $this->wait($item, null);
         }
+
+        $item->appendInstallLog(VmInstallStep::CloneFinished);
 
         $allocation = $item->getIpAllocation();
 
@@ -278,10 +299,22 @@ class VmBatchExecutor
             return $this->fail($item, 'The machine was created without an address.');
         }
 
+        $request = $this->requestFor($batch, $item, $allocation->getIp());
+
         try {
-            $this->creator->configureAndStart($host, $this->requestFor($batch, $item, $allocation->getIp()));
+            $keys = $this->creator->configureAndStart($host, $request);
         } catch (ProxmoxUnavailableException $exception) {
+            $item->appendInstallLog(VmInstallStep::ConfigurationFailed, $exception->getMessage(), ok: false);
+
             return $this->fail($item, $exception->getMessage());
+        }
+
+        $item->appendInstallLog(VmInstallStep::Configured, \sprintf('%s / %s', $item->getGuestName(), $allocation->getIp()));
+        // Named one by one: « I cannot log in » is answered by this line and nothing else.
+        $item->appendInstallLog(VmInstallStep::KeysInstalled, [] === $keys ? null : implode(', ', $keys));
+
+        if ($request->startAfterCreation) {
+            $item->appendInstallLog(VmInstallStep::StartRequested);
         }
 
         $item->setStatus(VmBatchItemStatus::Created);
@@ -326,7 +359,12 @@ class VmBatchExecutor
 
         try {
             $shell = $this->shellFactory->open($allocation->getIp());
+            $item->appendInstallLog(VmInstallStep::Reachable, $allocation->getIp());
         } catch (GuestUnreachableException $exception) {
+            // Recorded rather than only counted: this is the line somebody reads when a machine
+            // never comes up, and the hypervisor's or SSH's own words are what points at the cause.
+            $item->appendInstallLog(VmInstallStep::Unreachable, $exception->getMessage(), ok: false);
+
             return $this->wait($item, $exception->getMessage());
         } catch (PlatformKeyUnavailableException $exception) {
             // Not a wait: no platform key means no machine will ever be reachable, and saying
@@ -340,6 +378,7 @@ class VmBatchExecutor
             // Only the logins are kept, and only to hand them to the post-installation script.
             $applied = $this->accounts->apply($shell, $host, $item->getNode() ?? $batch->getNode(), $vmid, $item->getGuestName(), $plan, $requestedBy, readAloud: false);
             $logins = array_keys($applied['passwords']);
+            $item->appendInstallLog(VmInstallStep::AccountsApplied, [] === $logins ? null : implode(', ', $logins));
 
             $script = $batch->getPostInstallScript();
 
@@ -356,10 +395,13 @@ class VmBatchExecutor
                     $requestedBy,
                     $batch->getLabel(),
                 );
+                $item->appendInstallLog(VmInstallStep::PostInstallRun);
             }
         } catch (GuestUnreachableException $exception) {
             // Lost mid-way: the machine answered and then stopped. Still a wait - the next pass
             // finds the accounts it already created and only does what is left.
+            $item->appendInstallLog(VmInstallStep::AccountsFailed, $exception->getMessage(), ok: false);
+
             return $this->wait($item, $exception->getMessage());
         } finally {
             $shell->disconnect();
