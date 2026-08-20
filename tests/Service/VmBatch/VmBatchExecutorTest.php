@@ -25,6 +25,7 @@ use App\Service\Guest\GuestUnreachableException;
 use App\Service\Guest\PlatformKeyProvider;
 use App\Service\Guest\PlatformKeyUnavailableException;
 use App\Service\Guest\PostInstallRunner;
+use App\Service\Guest\UnixLogin;
 use App\Service\Network\IpAllocator;
 use App\Service\Proxmox\GuestCreator;
 use App\Service\Proxmox\ProxmoxClient;
@@ -197,6 +198,24 @@ class VmBatchExecutorTest extends TestCase
         self::assertStringNotContainsString('Sup3rSecretThrowaway', json_encode($result, \JSON_THROW_ON_ERROR));
     }
 
+    public function testALoginUseraddWouldRefuseStopsTheMachineInsteadOfBeingSkipped(): void
+    {
+        // The platform login is taken as it stands, and a directory can hold things Unix cannot.
+        // GuestAccountSyncer would `continue` past this one, leaving a student with no account and
+        // nothing anywhere saying so - which is precisely what must not happen.
+        [$batch, $item] = $this->batchWithItem(VmBatchItemStatus::Created, [
+            ['userId' => 1, 'label' => 'Marie Dupont', 'login' => 'Marie.Dupont@school.fr'],
+        ]);
+        $item->setIpAllocation($this->allocation());
+        $item->setVmid(210);
+
+        $result = $this->deployOnce($batch, $item);
+
+        self::assertSame(VmBatchItemStatus::Failed, $item->getStatus());
+        self::assertSame(1, $result['failed']);
+        self::assertStringContainsString('Marie.Dupont@school.fr', (string) $item->getMessage());
+    }
+
     public function testThePostInstallScriptRunsOnlyWhenThereIsOne(): void
     {
         [$batch, $item] = $this->batchWithItem(VmBatchItemStatus::Created);
@@ -231,6 +250,7 @@ class VmBatchExecutorTest extends TestCase
             $this->shells,
             $this->createStub(PlatformKeyProvider::class),
             $this->postInstall,
+            new UnixLogin(),
             $this->createStub(EntityManagerInterface::class),
         );
 
@@ -245,12 +265,16 @@ class VmBatchExecutorTest extends TestCase
         return $factory;
     }
 
-    /** @return array{VmBatch, VmBatchItem} */
-    private function batchWithItem(VmBatchItemStatus $status): array
+    /**
+     * @param list<array{userId: int, label: string, login: string}> $groupMembers
+     *
+     * @return array{VmBatch, VmBatchItem}
+     */
+    private function batchWithItem(VmBatchItemStatus $status, array $groupMembers = []): array
     {
         $program = new Program('SIO-2 2026-2027', 'SIO-2', $this->createStub(Cohort::class), $this->createStub(SchoolYear::class));
         $batch = new VmBatch('TP', $program, $this->createStub(ProxmoxHost::class), $this->createStub(IpRange::class), 9000, 'pve');
-        $item = new VmBatchItem($batch, 'Groupe 1', 'tp-01', 'groupe-1', 1);
+        $item = new VmBatchItem($batch, 'Groupe 1', 'tp-01', 'groupe-1', 1, $groupMembers);
         $item->setStatus($status);
         $batch->addItem($item);
 
