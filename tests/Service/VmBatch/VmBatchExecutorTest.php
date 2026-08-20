@@ -23,7 +23,6 @@ use App\Service\Guest\GuestAccountService;
 use App\Service\Guest\GuestShell;
 use App\Service\Guest\GuestShellFactory;
 use App\Service\Guest\GuestUnreachableException;
-use App\Service\Guest\PlatformKeyProvider;
 use App\Service\Guest\PlatformKeyUnavailableException;
 use App\Service\Guest\PostInstallRunner;
 use App\Service\Guest\UnixLogin;
@@ -275,7 +274,6 @@ class VmBatchExecutorTest extends TestCase
             $this->tracker,
             $this->clientFactory(),
             $this->shells,
-            $this->createStub(PlatformKeyProvider::class),
             $this->postInstall,
             new UnixLogin(),
             $this->createStub(EntityManagerInterface::class),

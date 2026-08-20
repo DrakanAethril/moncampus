@@ -150,12 +150,65 @@
         </div>
     {% endset %}
 
+    {# Administrators only: their keys are the ones installed on the machines the application
+       creates, so the card would promise nothing to anybody else. #}
+    {% if is_granted('ROLE_ADMIN') %}
+        {% set ssh_keys_card %}
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">{{ 'sshKeysCardTitle'|trans }}</h2>
+                </div>
+                <div class="card-body">
+                    <p class="text-secondary">{{ 'sshKeysCardHelp'|trans }}</p>
+
+                    {% if sshKeys is empty %}
+                        <p class="text-secondary mb-3">{{ 'sshKeysEmptyLabel'|trans }}</p>
+                    {% else %}
+                        <div class="list-group list-group-flush mb-3">
+                            {% for key in sshKeys %}
+                                <div class="list-group-item d-flex align-items-center gap-3 px-0">
+                                    <div class="flex-fill text-truncate">
+                                        <div class="fw-medium">{{ key.label }}</div>
+                                        {# The fingerprint rather than the key: it is what identifies
+                                           it at a glance, and it is what `ssh-keygen -lf` prints on
+                                           the owner's own machine. #}
+                                        <div class="text-secondary font-monospace small text-truncate">{{ key.fingerprint }}</div>
+                                    </div>
+                                    <form method="post" action="{{ path('app_profile_ssh_key_delete', {id: key.id}) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('profile_ssh_key_delete') }}">
+                                        <button type="submit" class="btn btn-link p-0 text-danger">{{ 'sshKeyRemoveAction'|trans }}</button>
+                                    </form>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <form method="post" action="{{ path('app_profile_ssh_key_add') }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('profile_ssh_key_add') }}">
+                        <div class="mb-3">
+                            <label class="form-label" for="ssh-key-label">{{ 'sshKeyLabelLabel'|trans }}</label>
+                            <input type="text" class="form-control" id="ssh-key-label" name="label" maxlength="120" required
+                                   placeholder="{{ 'sshKeyLabelPlaceholder'|trans }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="ssh-key-value">{{ 'sshKeyValueLabel'|trans }}</label>
+                            <textarea class="form-control font-monospace" id="ssh-key-value" name="publicKey" rows="3" required
+                                      placeholder="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">{{ 'sshKeyAddAction'|trans }}</button>
+                    </form>
+                </div>
+            </div>
+        {% endset %}
+    {% endif %}
+
     <div class="row g-3 mt-0">
         {% if can_use_messaging %}
             <div class="col-lg-6">
                 <div class="row g-3">
                     <div class="col-12">{{ contact_email_card }}</div>
                     <div class="col-12">{{ change_password_card }}</div>
+                    {% if is_granted('ROLE_ADMIN') %}<div class="col-12">{{ ssh_keys_card }}</div>{% endif %}
                 </div>
             </div>
             <div class="col-lg-6">
@@ -180,6 +233,7 @@
         {% else %}
             <div class="col-lg-6">{{ contact_email_card }}</div>
             <div class="col-lg-6">{{ change_password_card }}</div>
+            {% if is_granted('ROLE_ADMIN') %}<div class="col-lg-6">{{ ssh_keys_card }}</div>{% endif %}
         {% endif %}
     </div>
 {% endblock %}

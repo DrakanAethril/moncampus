@@ -16,7 +16,6 @@ use App\Repository\VmBatchItemRepository;
 use App\Service\Guest\GuestAccountService;
 use App\Service\Guest\GuestShellFactory;
 use App\Service\Guest\GuestUnreachableException;
-use App\Service\Guest\PlatformKeyProvider;
 use App\Service\Guest\PlatformKeyUnavailableException;
 use App\Service\Guest\PostInstallRunner;
 use App\Service\Guest\UnixLogin;
@@ -82,7 +81,6 @@ class VmBatchExecutor
         private readonly ProxmoxOperationTracker $tracker,
         private readonly ProxmoxClientFactory $clientFactory,
         private readonly GuestShellFactory $shellFactory,
-        private readonly PlatformKeyProvider $keyProvider,
         private readonly PostInstallRunner $postInstall,
         private readonly UnixLogin $unixLogin,
         private readonly EntityManagerInterface $entityManager,
@@ -239,7 +237,7 @@ class VmBatchExecutor
         }
 
         try {
-            $this->creator->configureAndStart($host, $this->requestFor($batch, $item, $allocation->getIp()), $this->keyProvider->publicKey());
+            $this->creator->configureAndStart($host, $this->requestFor($batch, $item, $allocation->getIp()));
         } catch (ProxmoxUnavailableException $exception) {
             return $this->fail($item, $exception->getMessage());
         }

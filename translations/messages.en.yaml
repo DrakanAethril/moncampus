@@ -5597,3 +5597,15 @@ progressionPickerUncoveredGroupWarning: 'Only one group selected. Group %groups%
 lessonLogImportTwinLabel: "%name%'s lesson log"
 lessonLogImportTwinMeta: 'Same hour, group %groups% · the texts only'
 lessonLogImportTwinFlashMessage: "Taken from %name%'s log. The three texts were copied. Their documents and assignments do not follow: they belong to them."
+sshKeysCardTitle: 'SSH keys'
+sshKeysCardHelp: 'Your public keys are installed on the virtual machines created afterwards, so you can log into them. Machines that already exist are left untouched.'
+sshKeysEmptyLabel: 'You have not registered any key.'
+sshKeyLabelLabel: 'Name'
+sshKeyLabelPlaceholder: 'Laptop, office desktop…'
+sshKeyValueLabel: 'Public key'
+sshKeyAddAction: 'Add the key'
+sshKeyRemoveAction: 'Remove'
+sshKeyAddedFlashMessage: 'The key has been added.'
+sshKeyRemovedFlashMessage: 'The key has been removed.'
+sshKeyInvalidFlashMessage: 'This public key cannot be read. Paste the whole line from the .pub file, starting with “ssh-ed25519” or “ssh-rsa”.'
+sshKeyLabelRequiredFlashMessage: 'Give the key a name.'

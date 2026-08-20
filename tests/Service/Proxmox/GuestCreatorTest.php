@@ -7,6 +7,7 @@ namespace App\Tests\Service\Proxmox;
 use App\Entity\IpAllocation;
 use App\Entity\IpRange;
 use App\Entity\ProxmoxHost;
+use App\Service\Guest\GuestAuthorizedKeys;
 use App\Service\Network\GuestNetworkConfigurator;
 use App\Service\Network\IpAllocator;
 use App\Service\Proxmox\GuestCreationRequest;
@@ -19,6 +20,7 @@ use App\Service\Proxmox\ProxmoxResponse;
 use App\Service\Proxmox\ProxmoxScopeGuard;
 use App\Service\Proxmox\ProxmoxUnavailableException;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Lock\LockFactory;
 use Symfony\Component\Lock\SharedLockInterface;
@@ -111,7 +113,7 @@ class GuestCreatorTest extends TestCase
         ];
     }
 
-    private function creator(ProxmoxClient $client, ProxmoxOperationTracker $tracker): GuestCreator
+    private function creator(ProxmoxClient $client, ProxmoxOperationTracker $tracker, ?GuestAuthorizedKeys $authorizedKeys = null): GuestCreator
     {
         $factory = $this->createStub(ProxmoxClientFactory::class);
         $factory->method('provision')->willReturn($client);
@@ -132,6 +134,7 @@ class GuestCreatorTest extends TestCase
             // The real one: it is pure, and the payload it builds is precisely what the wiring
             // tests below are about.
             new GuestNetworkConfigurator(),
+            $authorizedKeys ?? $this->authorizedKeys(),
             $locks,
         );
     }
@@ -222,6 +225,35 @@ class GuestCreatorTest extends TestCase
             ->configureAndStart($this->host(null), $this->request());
     }
 
+    /**
+     * The same lesson once more, and the reason this one is worth its lines: GuestAuthorizedKeysTest
+     * settles *which* keys, and would go on passing if this class stopped asking for them at all.
+     * What is asserted here is that it asks, and that what comes back reaches the payload.
+     *
+     * URL-encoded because Proxmox demands it of `sshkeys` - a key pasted raw is refused with
+     * nothing useful said - which also means the newline between two keys travels as %0A.
+     */
+    public function testEveryAuthorizedKeyReachesTheMachineBeingConfigured(): void
+    {
+        $client = $this->createMock(ProxmoxClient::class);
+        $client->method('get')->willReturn(ProxmoxResponse::fromData(['net0' => 'virtio,bridge=vmbr0']));
+
+        $keys = $this->createStub(GuestAuthorizedKeys::class);
+        $keys->method('forNewGuest')->willReturn("ssh-ed25519 AAAAplatform\nssh-ed25519 AAAAmarie");
+
+        $client->expects(self::once())
+            ->method('put')
+            ->with('/nodes/pve/qemu/250/config', self::callback(static function (array $parameters): bool {
+                self::assertSame(rawurlencode("ssh-ed25519 AAAAplatform\nssh-ed25519 AAAAmarie"), $parameters['sshkeys']);
+
+                return true;
+            }))
+            ->willReturn(ProxmoxResponse::fromData(null));
+
+        $this->creator($client, $this->createStub(ProxmoxOperationTracker::class), $keys)
+            ->configureAndStart($this->host(null), $this->request());
+    }
+
     public function testAHostWithNoCeilingNeverAsksTheHypervisorToCount(): void
     {
         // The reading costs a round trip to a hypervisor that may be slow or unreachable. A host
@@ -235,5 +267,17 @@ class GuestCreatorTest extends TestCase
                 ->create($this->host(null), $this->request(), new IpAllocation($this->range(), '10.30.0.10'), null);
         } catch (\Throwable) {
         }
+    }
+
+    /**
+     * Stubbed rather than real: what keys a machine is created with is GuestAuthorizedKeysTest's
+     * subject, and this file is about the calls GuestCreator makes to the hypervisor.
+     */
+    private function authorizedKeys(): GuestAuthorizedKeys&Stub
+    {
+        $keys = $this->createStub(GuestAuthorizedKeys::class);
+        $keys->method('forNewGuest')->willReturn('ssh-ed25519 AAAAplatform');
+
+        return $keys;
     }
 }
