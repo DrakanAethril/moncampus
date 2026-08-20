@@ -158,6 +158,16 @@ class Assignment implements AccessConditionHost
     private ?VideoResource $videoResource = null;
 
     /**
+     * The survey campaign this assignment asks to answer, for the Survey nature - and only it.
+     * Exactly the shape of $quizInstance above: the assignment names the object the student opens,
+     * and nothing about the response lives here - the proof of completion is
+     * survey_target.responded_at, read by App\Service\StudentWorkBoard.
+     */
+    #[ORM\ManyToOne(targetEntity: SurveyCampaign::class)]
+    #[ORM\JoinColumn(name: 'survey_campaign_id', nullable: true, onDelete: 'SET NULL')]
+    private ?SurveyCampaign $surveyCampaign = null;
+
+    /**
      * The gradebook evaluation the student must estimate, for the SelfAssessment nature - and only
      * it. Same shape as $quizInstance above: the assignment designates the object the student opens,
      * without owning it.
@@ -559,6 +569,18 @@ class Assignment implements AccessConditionHost
     public function setVideoResource(?VideoResource $videoResource): static
     {
         $this->videoResource = $videoResource;
+
+        return $this;
+    }
+
+    public function getSurveyCampaign(): ?SurveyCampaign
+    {
+        return $this->surveyCampaign;
+    }
+
+    public function setSurveyCampaign(?SurveyCampaign $surveyCampaign): static
+    {
+        $this->surveyCampaign = $surveyCampaign;
 
         return $this;
     }

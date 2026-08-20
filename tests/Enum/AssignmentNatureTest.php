@@ -61,4 +61,41 @@ class AssignmentNatureTest extends TestCase
             }
         }
     }
+
+    /**
+     * The single most expensive trap of design/validated/surveys.md (§7.7): without this exclusion
+     * the student gets a « Marquer comme fait » button that closes the survey without answering it,
+     * and the response rate - the one number a survey exists for - lies for good.
+     *
+     * One line of production code, and this is the test that protects it.
+     */
+    public function testASurveyIsNeverSettledByADeclaration(): void
+    {
+        $survey = AssignmentNature::Survey;
+
+        self::assertTrue($survey->expectsSurvey());
+        self::assertFalse($survey->expectsSelfDeclaration(), 'the proof of a survey is the response, never a declaration');
+        self::assertFalse($survey->expectsSubmission());
+        self::assertFalse($survey->expectsSelfAssessment());
+        self::assertFalse($survey->expectsListening());
+        self::assertFalse($survey->expectsWatching());
+    }
+
+    public function testNoOtherNatureClaimsToBeASurvey(): void
+    {
+        foreach (AssignmentNature::cases() as $nature) {
+            if (AssignmentNature::Survey !== $nature) {
+                self::assertFalse($nature->expectsSurvey(), $nature->value);
+            }
+        }
+    }
+
+    /**
+     * A survey campaign is launched from Outils > Sondages, which opens the wizard with the nature
+     * already set - same shape as Listening/Watching, and the same reason to keep it off the grid.
+     */
+    public function testSurveyIsNeverOfferedOnTheGrid(): void
+    {
+        self::assertNotContains(AssignmentNature::Survey, AssignmentNature::forLessonLog());
+    }
 }
