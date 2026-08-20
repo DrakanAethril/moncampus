@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service\VmBatch;
 
+use App\Entity\GroupBatch;
 use App\Entity\Program;
 use App\Entity\User;
 use App\Repository\ProgramStudentModalityRepository;
@@ -50,6 +51,47 @@ class BatchMemberResolver
         usort($members, static fn (BatchMember $a, BatchMember $b): int => strnatcasecmp($a->displayName, $b->displayName));
 
         return $members;
+    }
+
+    /**
+     * The groups of a saved set, each flattened into the same BatchMember values - what a PerGroup
+     * batch plans from.
+     *
+     * **Empty groups are kept in the list**, so the caller still sees the set's own numbering; the
+     * planner is what drops them. And a student who has left the class since the set was saved
+     * simply does not resolve and falls out, exactly as the group-creation screen drops them when
+     * it reloads a set: the set is a frozen list of ids, the class is not.
+     *
+     * @param string $groupTitleTemplate carries %n%, e.g. "Groupe %n%"
+     *
+     * @return list<array{label: string, members: list<BatchMember>}>
+     */
+    public function forGroupBatch(GroupBatch $groupBatch, string $groupTitleTemplate): array
+    {
+        $byId = [];
+
+        foreach ($this->forProgram($groupBatch->getProgram()) as $member) {
+            $byId[$member->userId] = $member;
+        }
+
+        $groups = [];
+
+        foreach ($groupBatch->getGroups() as $index => $memberIds) {
+            $members = [];
+
+            foreach ($memberIds as $memberId) {
+                if (isset($byId[$memberId])) {
+                    $members[] = $byId[$memberId];
+                }
+            }
+
+            $groups[] = [
+                'label' => str_replace('%n%', (string) ($index + 1), $groupTitleTemplate),
+                'members' => $members,
+            ];
+        }
+
+        return $groups;
     }
 
     /**

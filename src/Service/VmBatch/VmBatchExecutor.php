@@ -9,6 +9,7 @@ use App\Entity\VmBatch;
 use App\Entity\VmBatchItem;
 use App\Enum\GuestAccountOrigin;
 use App\Enum\VmBatchItemStatus;
+use App\Repository\UserRepository;
 use App\Repository\VmBatchItemRepository;
 use App\Service\Guest\GuestAccountService;
 use App\Service\Network\AddressUnavailableException;
@@ -45,6 +46,7 @@ class VmBatchExecutor
         private readonly IpAllocator $allocator,
         private readonly GuestAccountService $accounts,
         private readonly VmBatchItemRepository $items,
+        private readonly UserRepository $users,
         private readonly EntityManagerInterface $entityManager,
     ) {
     }
@@ -136,20 +138,55 @@ class VmBatchExecutor
 
         // Recorded, not created: the machine is still being cloned. The accounts are laid down once
         // it answers, which is the whole reason the order is fixed.
-        $account = $this->accounts->declare(
-            $host,
-            $request->node,
-            $request->vmid,
-            $item->getLogin(),
-            GuestAccountOrigin::Member,
-            $batch->isGrantSudo(),
-            $item->getStudent(),
-            $item->getStudentLabel(),
-        );
-        $account->setBatch($batch);
+        //
+        // One account on a per-student machine, one per member on a per-group one - the loop is the
+        // only thing that separates the two shapes here, because GuestAccount is keyed on
+        // (host, node, vmid, login) and so already accepts several accounts on the same machine.
+        foreach ($this->accountsFor($item) as $planned) {
+            $account = $this->accounts->declare(
+                $host,
+                $request->node,
+                $request->vmid,
+                $planned['login'],
+                GuestAccountOrigin::Member,
+                $batch->isGrantSudo(),
+                $planned['user'],
+                $planned['label'],
+            );
+            $account->setBatch($batch);
+        }
 
         $this->entityManager->flush();
 
         return true;
+    }
+
+    /**
+     * Who gets an account on this machine.
+     *
+     * The per-group members are read from the item's own snapshot rather than from the set of
+     * groups it came from: the set may have been deleted or re-saved since the plan, and the
+     * machines must carry the accounts that were announced when the plan was shown. The user is
+     * looked up by id only to attach a live account when there still is one - a member whose
+     * account has since gone still gets their Unix login, under the name the plan recorded.
+     *
+     * @return list<array{login: string, label: string, user: ?User}>
+     */
+    private function accountsFor(VmBatchItem $item): array
+    {
+        $members = $item->getGroupMembers();
+
+        if ([] === $members) {
+            return [['login' => $item->getLogin(), 'label' => $item->getStudentLabel(), 'user' => $item->getStudent()]];
+        }
+
+        return array_map(
+            fn (array $member): array => [
+                'login' => $member['login'],
+                'label' => $member['label'],
+                'user' => $this->users->find($member['userId']),
+            ],
+            $members,
+        );
     }
 }
