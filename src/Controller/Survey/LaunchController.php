@@ -82,7 +82,7 @@ class LaunchController extends AbstractController
 
             $this->addFlash('success', 'surveyLaunchedFlashMessage');
 
-            return $this->redirectToRoute('app_surveys_campaigns');
+            return $this->redirectToRoute('app_survey_campaign', ['id' => $campaign->getId()]);
         }
 
         return $this->render('survey/launch.html.twig', [

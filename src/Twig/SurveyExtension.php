@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Twig;
 
 use App\Entity\SurveyCampaign;
+use App\Entity\SurveyCampaignQuestion;
+use App\Entity\SurveyResponse;
 use App\Enum\MessageAudienceType;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Extension\AbstractExtension;
@@ -30,6 +32,7 @@ class SurveyExtension extends AbstractExtension
     {
         return [
             new TwigFunction('survey_audience_summary', $this->audienceSummary(...)),
+            new TwigFunction('survey_answer_summary', $this->answerSummary(...)),
         ];
     }
 
@@ -61,5 +64,35 @@ class SurveyExtension extends AbstractExtension
         $parts = array_values(array_filter($parts, static fn (string $part): bool => '' !== $part));
 
         return [] === $parts ? $this->translator->trans('surveyAudienceNobodyLabel') : implode(' · ', $parts);
+    }
+
+    /**
+     * What one response said to one question, in one cell of the detail table.
+     *
+     * The picks are joined in the order they were stored - which for a ranking question *is* the
+     * rank the respondent gave them, so the first name in the cell is their first choice. A
+     * question that was seen and skipped reads as an em dash, not as an empty cell: the difference
+     * between « passée » and « jamais atteinte » is the whole reason the row exists.
+     */
+    public function answerSummary(SurveyResponse $response, SurveyCampaignQuestion $question): string
+    {
+        $answer = $response->answerFor($question);
+
+        if (null === $answer) {
+            return '—';
+        }
+
+        if (!$question->getType()->hasAnswers()) {
+            $text = trim((string) $answer->getFreeText());
+
+            return '' === $text ? '—' : $text;
+        }
+
+        $labels = [];
+        foreach ($answer->getSelected() as $selected) {
+            $labels[] = $selected->getCampaignAnswer()?->getLabel() ?? '';
+        }
+
+        return [] === $labels ? '—' : implode(' · ', $labels);
     }
 }

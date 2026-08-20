@@ -1,0 +1,38 @@
+{% extends 'survey/_results_shell.html.twig' %}
+
+{% block results_body %}
+    {# By name, even on an anonymous campaign: knowing *that* somebody has not answered says nothing
+       about what their answers would have been. It is what a reminder is made of. #}
+    {% if pending is empty %}
+        <p class="fw-semibold mb-1">{{ 'surveyEveryoneAnsweredTitle'|trans }}</p>
+        <p class="text-secondary mb-0">{{ 'surveyEveryoneAnsweredText'|trans }}</p>
+    {% else %}
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <span class="text-secondary">{{ 'surveyPendingCountText'|trans({'%count%': pending|length}) }}</span>
+            {% if campaign.isOpenNow %}
+                <form method="post" action="{{ path('app_survey_campaign_remind', {id: campaign.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('survey_remind') }}">
+                    <button type="submit" class="btn btn-outline-primary">{{ 'surveyRemindAllActionLabel'|trans({'%count%': pending|length}) }}</button>
+                </form>
+            {% endif %}
+        </div>
+        <div class="table-responsive">
+            <table class="table cm-table align-middle">
+                <thead>
+                    <tr>
+                        <th>{{ 'surveyPendingPersonColumnLabel'|trans }}</th>
+                        <th>{{ 'surveyPendingRemindedColumnLabel'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for target in pending %}
+                        <tr>
+                            <td>{{ target.user.displayName ?: target.user.username }}</td>
+                            <td class="text-secondary">{{ target.remindedAt ? target.remindedAt|date('d/m/Y') : '—' }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+{% endblock %}
