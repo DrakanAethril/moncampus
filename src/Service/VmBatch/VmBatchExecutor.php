@@ -15,6 +15,7 @@ use App\Enum\VmInstallStep;
 use App\Repository\UserRepository;
 use App\Repository\VmBatchItemRepository;
 use App\Service\Guest\GuestAccountService;
+use App\Service\Guest\GuestCommandFailedException;
 use App\Service\Guest\GuestShellFactory;
 use App\Service\Guest\GuestUnreachableException;
 use App\Service\Guest\PlatformKeyUnavailableException;
@@ -358,7 +359,7 @@ class VmBatchExecutor
         $this->declareAccounts($batch, $item, $host, $item->getNode() ?? $batch->getNode(), $vmid);
 
         try {
-            $shell = $this->shellFactory->open($allocation->getIp());
+            $shell = $this->shellFactory->open($allocation->getIp(), $host->getGuestLoginUser());
             $item->appendInstallLog(VmInstallStep::Reachable, $allocation->getIp());
         } catch (GuestUnreachableException $exception) {
             // Recorded rather than only counted: this is the line somebody reads when a machine
@@ -397,6 +398,12 @@ class VmBatchExecutor
                 );
                 $item->appendInstallLog(VmInstallStep::PostInstallRun);
             }
+        } catch (GuestCommandFailedException $exception) {
+            // The machine answered and said no. Unlike being unreachable, trying again next pass
+            // will not help: this is a failure, and the log carries the machine's own words.
+            $item->appendInstallLog(VmInstallStep::AccountsFailed, $exception->getMessage(), ok: false);
+
+            return $this->fail($item, $exception->getMessage());
         } catch (GuestUnreachableException $exception) {
             // Lost mid-way: the machine answered and then stopped. Still a wait - the next pass
             // finds the accounts it already created and only does what is left.

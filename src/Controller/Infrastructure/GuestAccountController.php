@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Controller\Infrastructure;
 
+use App\Entity\ProxmoxHost;
 use App\Enum\GuestAccountOrigin;
 use App\Repository\GuestAccountRepository;
 use App\Repository\IpAllocationRepository;
 use App\Repository\ProxmoxHostRepository;
 use App\Security\Voter\ProxmoxHostVoter;
 use App\Service\Guest\GuestAccountService;
+use App\Service\Guest\GuestCommandFailedException;
 use App\Service\Guest\GuestShell;
 use App\Service\Guest\GuestShellFactory;
 use App\Service\Guest\GuestUnreachableException;
@@ -72,11 +74,11 @@ class GuestAccountController extends AbstractController
 
         if (null !== $keyProvider->activeKey() && null !== $ip) {
             try {
-                $shell = $shellFactory->open($ip);
+                $shell = $shellFactory->open($ip, $host->getGuestLoginUser());
                 // Read on opening: what makes this a difference rather than a list of intentions.
                 $plan = $service->refresh($shell, $host, $node, $vmid);
                 $shell->disconnect();
-            } catch (GuestUnreachableException|PlatformKeyUnavailableException $exception) {
+            } catch (GuestUnreachableException|GuestCommandFailedException|PlatformKeyUnavailableException $exception) {
                 $failure = $exception->getMessage();
             }
         }
@@ -117,11 +119,11 @@ class GuestAccountController extends AbstractController
         $this->denyAccessUnlessGranted(ProxmoxHostVoter::OPERATE, $host);
 
         try {
-            $shell = $this->shellFor($shellFactory, $allocations, $vmid);
+            $shell = $this->shellFor($shellFactory, $allocations, $host, $vmid);
             $plan = $service->refresh($shell, $host, $node, $vmid);
             $applied = $service->apply($shell, $host, $node, $vmid, \sprintf('vm-%d', $vmid), $plan, $this->currentUser());
             $shell->disconnect();
-        } catch (GuestUnreachableException|PlatformKeyUnavailableException $exception) {
+        } catch (GuestUnreachableException|GuestCommandFailedException|PlatformKeyUnavailableException $exception) {
             return $this->json(['ok' => false, 'message' => $exception->getMessage()]);
         }
 
@@ -187,10 +189,10 @@ class GuestAccountController extends AbstractController
         $login = JsonRequestPayload::fromRequest($request)->string('login');
 
         try {
-            $shell = $this->shellFor($shellFactory, $allocations, $vmid);
+            $shell = $this->shellFor($shellFactory, $allocations, $host, $vmid);
             $service->remove($shell, $host, $node, $vmid, $login);
             $shell->disconnect();
-        } catch (GuestUnreachableException|PlatformKeyUnavailableException|\InvalidArgumentException $exception) {
+        } catch (GuestUnreachableException|GuestCommandFailedException|PlatformKeyUnavailableException|\InvalidArgumentException $exception) {
             return $this->json(['ok' => false, 'message' => $exception->getMessage()]);
         }
 
@@ -247,10 +249,10 @@ class GuestAccountController extends AbstractController
         $login = JsonRequestPayload::fromRequest($request)->string('login');
 
         try {
-            $shell = $this->shellFor($shellFactory, $allocations, $vmid);
+            $shell = $this->shellFor($shellFactory, $allocations, $host, $vmid);
             $password = $service->resetPassword($shell, $login);
             $shell->disconnect();
-        } catch (GuestUnreachableException|PlatformKeyUnavailableException|\InvalidArgumentException $exception) {
+        } catch (GuestUnreachableException|GuestCommandFailedException|PlatformKeyUnavailableException|\InvalidArgumentException $exception) {
             return $this->json(['ok' => false, 'message' => $exception->getMessage()]);
         }
 
@@ -258,7 +260,7 @@ class GuestAccountController extends AbstractController
     }
 
     /** @throws GuestUnreachableException|PlatformKeyUnavailableException */
-    private function shellFor(GuestShellFactory $shellFactory, IpAllocationRepository $allocations, int $vmid): GuestShell
+    private function shellFor(GuestShellFactory $shellFactory, IpAllocationRepository $allocations, ProxmoxHost $host, int $vmid): GuestShell
     {
         $ip = $allocations->findAddressForVmid($vmid);
 
@@ -268,6 +270,6 @@ class GuestAccountController extends AbstractController
             throw new GuestUnreachableException('No address is recorded for this machine - scan its range first.');
         }
 
-        return $shellFactory->open($ip);
+        return $shellFactory->open($ip, $host->getGuestLoginUser());
     }
 }

@@ -139,6 +139,24 @@ class ProxmoxHost
     #[ORM\Column(name: 'allow_create')]
     private bool $allowCreate = false;
 
+    /**
+     * The account MonCampus opens an SSH session with on the machines of this host.
+     *
+     * A property of the *image* rather than of the hypervisor, but the host is the object there is
+     * to hang it on, and a fleet is built from one image family. Cloud images matter here: Debian
+     * and Ubuntu enable cloud-init's `disable_root`, which puts the keys into root's
+     * authorized_keys behind a forced command that prints « log in as debian instead » and exits -
+     * so root *accepts* the key and then runs nothing at all. Naming the image's own account
+     * (`debian`, `ubuntu`) is what makes the session usable; everything is then elevated with sudo,
+     * see App\Service\Guest\GuestCommandLine.
+     *
+     * Defaults to root, which is what this application did before the setting existed.
+     */
+    #[ORM\Column(name: 'guest_login_user', length: 32, options: ['default' => 'root'])]
+    #[Assert\NotBlank]
+    #[Assert\Regex(pattern: '/^[a-z_][a-z0-9_-]{0,31}$/', message: 'proxmoxHostGuestLoginUserInvalidMessage')]
+    private string $guestLoginUser = 'root';
+
     #[ORM\Column(name: 'max_guests', nullable: true)]
     #[Assert\Positive]
     private ?int $maxGuests = null;
@@ -521,6 +539,18 @@ class ProxmoxHost
     public function setAllowCreate(bool $allowCreate): static
     {
         $this->allowCreate = $allowCreate;
+
+        return $this;
+    }
+
+    public function getGuestLoginUser(): string
+    {
+        return $this->guestLoginUser;
+    }
+
+    public function setGuestLoginUser(string $guestLoginUser): static
+    {
+        $this->guestLoginUser = $guestLoginUser;
 
         return $this;
     }
