@@ -17,12 +17,15 @@
 {% block main %}
     {% include 'infrastructure/_tabs.html.twig' %}
 
+    <div class="cm-tabbed-content">
+
     {# GET, not POST: this form asks to be shown the next screen rather than to change anything,
        and a POST handled by Turbo has to answer a redirect - answering 200 HTML leaves the browser
        sitting on this page with nothing to show for it. #}
+    {% include 'infrastructure/_wizard_steps.html.twig' with {step: 1} %}
+
     <form method="get" action="{{ path('app_infrastructure_guests_new_machine', {id: host.id}) }}" data-controller="proxmox-source-picker">
-        <div class="card" style="max-width: 820px;">
-            {% include 'infrastructure/_wizard_steps.html.twig' with {step: 1} %}
+        <div class="card">
 
             {% if failure %}
                 <div class="cm-fieldset">
@@ -106,5 +109,5 @@
             </div>
         </div>
     </form>
-
+    </div>
 {% endblock %}

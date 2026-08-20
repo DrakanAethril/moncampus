@@ -17,6 +17,10 @@
 {% block main %}
     {% include 'infrastructure/_tabs.html.twig' %}
 
+    <div class="cm-tabbed-content">
+
+    {% include 'infrastructure/_wizard_steps.html.twig' with {step: 2} %}
+
     <form method="post" action="{{ path('app_infrastructure_guests_new_confirm', {id: host.id}) }}">
         <input type="hidden" name="_token" value="{{ csrf_token('infrastructure_action') }}">
         {# What step 1 chose, carried into the confirmation. It arrived in the query string; it
@@ -25,8 +29,7 @@
         <input type="hidden" name="isoVolumeId" value="{{ draft.isoVolumeId }}">
         <input type="hidden" name="linkedClone" value="{{ draft.linkedClone ? '1' : '' }}">
 
-        <div class="card" style="max-width: 860px;">
-            {% include 'infrastructure/_wizard_steps.html.twig' with {step: 2} %}
+        <div class="card">
 
             <div class="cm-fieldset">
                 {% if template %}
@@ -196,4 +199,5 @@
             </div>
         </div>
     </form>
+    </div>
 {% endblock %}
