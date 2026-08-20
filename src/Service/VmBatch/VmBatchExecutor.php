@@ -313,7 +313,7 @@ class VmBatchExecutor
         $item->appendInstallLog(VmInstallStep::Configured, \sprintf('%s / %s', $item->getGuestName(), $allocation->getIp()));
         // Named because it is what every later session logs in as: a machine nobody can reach is
         // answered by this line and the next one together.
-        $item->appendInstallLog(VmInstallStep::AccountNamed, $host->getGuestLoginUser());
+        $item->appendInstallLog(VmInstallStep::AccountNamed, GuestShellFactory::SERVICE_ACCOUNT);
         // Named one by one: « I cannot log in » is answered by this line and nothing else.
         $item->appendInstallLog(VmInstallStep::KeysInstalled, [] === $keys ? null : implode(', ', $keys));
 
@@ -362,7 +362,7 @@ class VmBatchExecutor
         $this->declareAccounts($batch, $item, $host, $item->getNode() ?? $batch->getNode(), $vmid);
 
         try {
-            $shell = $this->shellFactory->open($allocation->getIp(), $host->getGuestLoginUser());
+            $shell = $this->shellFactory->open($allocation->getIp());
             $item->appendInstallLog(VmInstallStep::Reachable, $allocation->getIp());
         } catch (GuestUnreachableException $exception) {
             // Recorded rather than only counted: this is the line somebody reads when a machine
