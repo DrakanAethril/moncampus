@@ -374,6 +374,9 @@ class WorkController extends AbstractController
                 default => 'open',
             },
             'quizInstanceId' => $quizInstance?->getId(),
+            // The campaign a Survey work asks to answer - the counterpart of quizInstanceId, and
+            // what lets the phone's sheet open the passation rather than merely name it.
+            'surveyCampaignId' => $assignment->getSurveyCampaign()?->getId(),
             'questionCount' => $quizInstance?->getQuestionCount(),
             // Shown next to the question count when the teacher set a target ("objectif 70 %") -
             // there is no per-instance attempt limit in the model, so the row never claims one.
