@@ -1,0 +1,95 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ series.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'surveysPageHeading'|trans, url: path('app_surveys')},
+        {label: series.name, url: path('app_survey_series', {id: series.id})},
+        {label: 'surveyCompareWavesActionLabel'|trans, url: path('app_survey_series', {id: series.id})},
+        {label: 'surveyIndividualComparisonActionLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'surveyIndividualPageHeading'|trans({'%name%': series.name}) }}{% endblock %}
+
+{% block main %}
+    {% if refusal is not null %}
+        {# It refuses, it does not hide: the screen says why it can show nothing - and that holds
+           for an administrator too, since anonymity is a property of the data and not a permission
+           anybody could lift (§7.15). #}
+        <div class="cm-note cm-note--danger">
+            <span class="cm-note__icon">!</span>
+            <div>{{ refusal.messageKey|trans }}</div>
+        </div>
+        <a href="{{ path('app_survey_series', {id: series.id}) }}" class="btn btn-outline-secondary mt-3">{{ 'surveyBackToComparisonActionLabel'|trans }}</a>
+    {% else %}
+        <p class="text-secondary mb-3">
+            {{ 'surveyIndividualSubtitleText'|trans({
+                '%first%': first.creationDate|date('m/Y'),
+                '%second%': second.creationDate|date('m/Y'),
+            }) }}
+        </p>
+
+        <div class="cm-note mb-3">
+            <span class="cm-note__icon">i</span>
+            <div>{{ 'surveyIndividualSharedTargetNoteText'|trans({'%count%': rows|length}) }}</div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">{{ question ? question.label : '' }}</h3>
+                <div class="card-actions">
+                    <form method="get" class="d-flex gap-2 align-items-center">
+                        {# A GET form: it shows a result rather than writing anything, and a POST
+                           handled by Turbo would have to redirect. #}
+                        <select name="question" class="form-select form-select-sm" style="width: auto;"
+                                data-controller="auto-submit" data-action="change->auto-submit#submit">
+                            {% for one in questions %}
+                                <option value="{{ one.comparisonKey }}" {{ question and one.comparisonKey == question.comparisonKey ? 'selected' }}>
+                                    Q{{ loop.index }} — {{ one.label|length > 40 ? one.label|slice(0, 38) ~ '…' : one.label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table cm-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>{{ 'surveyStudentColumnLabel'|trans }}</th>
+                                <th>{{ first.creationDate|date('m/Y') }}</th>
+                                <th>{{ second.creationDate|date('m/Y') }}</th>
+                                <th class="text-end">{{ 'surveyMovementColumnLabel'|trans }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in rows %}
+                                <tr>
+                                    <td>{{ row.user.displayName ?: row.user.username }}</td>
+                                    <td class="text-secondary">{{ row.first ?? '—' }}</td>
+                                    <td class="text-secondary">{{ row.second ?? '—' }}</td>
+                                    <td class="text-end">
+                                        {%- if row.movement is null -%}
+                                            <span class="text-secondary">—</span>
+                                        {%- elseif row.movement > 0 -%}
+                                            <span class="text-success">+{{ row.movement }}</span>
+                                        {%- elseif row.movement < 0 -%}
+                                            <span class="text-danger">−{{ row.movement|abs }}</span>
+                                        {%- else -%}
+                                            <span class="text-secondary">=</span>
+                                        {%- endif -%}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-secondary small mt-3 mb-0">{{ 'surveyIndividualCautionNoteText'|trans }}</p>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

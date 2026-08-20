@@ -8102,3 +8102,23 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-verbatim { border-left: 2px solid var(--cm-border); padding-left: 10px; }
 .cm-verbatim__key { font: 600 11px var(--cm-font-ui); color: var(--cm-faint); }
 .cm-verbatim__text { margin: 3px 0 0; font-size: 13px; line-height: 1.6; }
+
+/* ---------- Comparing the waves of a series ----------
+   One hue in three steps of lightness - light = the oldest wave, dark = the most recent. Time is an
+   ordered quantity: a categorical palette would present three waves as three categories with no
+   order between them, which is precisely what they are not. Ramp validated in surveys.md §9
+   (monotonic in lightness, steps ≥ 0.06, single hue within 7°). */
+.cm-wave--0 { background: #8bb8d8; }
+.cm-wave--1 { background: #3d84b8; }
+.cm-wave--2 { background: #12507e; }
+
+.cm-wave-legend { display: flex; gap: 12px; font-size: 11.5px; color: var(--cm-muted); }
+.cm-wave-key { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 4px; }
+
+.cm-comparison__answer { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.cm-comparison__wave { flex: 0 0 30px; font: 600 11.5px var(--cm-font-ui); color: var(--cm-faint); }
+
+/* A question that changed between two waves is shown, greyed, saying so - never silently dropped
+   and never aligned against a different question. */
+.cm-comparison--off { opacity: .72; }
+.cm-comparison--off .card-title { color: var(--cm-muted); }

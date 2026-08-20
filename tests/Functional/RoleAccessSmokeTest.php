@@ -166,6 +166,11 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/surveys/campaigns/999999/responses' => 404,
             '/surveys/campaigns/999999/pending' => 404,
             '/surveys/campaigns/999999/export' => 404,
+            '/surveys/campaigns/999999/replay' => 404,
+            // The series screens, including the individual comparison - reachable only from the
+            // wave comparison, never from the menu, but a route all the same (§7.15).
+            '/surveys/series/999999' => 404,
+            '/surveys/series/999999/individual' => 404,
             '/agenda' => 200,
             '/messages' => 200,
             '/tickets' => 200,
@@ -265,6 +270,11 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/surveys/campaigns/999999/responses' => 404,
             '/surveys/campaigns/999999/pending' => 404,
             '/surveys/campaigns/999999/export' => 404,
+            '/surveys/campaigns/999999/replay' => 404,
+            // The series screens, including the individual comparison - reachable only from the
+            // wave comparison, never from the menu, but a route all the same (§7.15).
+            '/surveys/series/999999' => 404,
+            '/surveys/series/999999/individual' => 404,
             '/agenda' => 200,
             '/messages' => 200,
             '/tickets' => 200,

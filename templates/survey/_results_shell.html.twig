@@ -18,6 +18,8 @@
     <a href="{{ path('app_survey_campaign_export', {id: campaign.id}) }}" class="btn btn-outline-secondary">{{ 'surveyExportCsvActionLabel'|trans }}</a>
     {% if campaign.series.campaigns|length > 1 %}
         <a href="{{ path('app_survey_series', {id: campaign.series.id}) }}" class="btn btn-primary">{{ 'surveyCompareWavesActionLabel'|trans }}</a>
+    {% else %}
+        <a href="{{ path('app_survey_replay', {id: campaign.id}) }}" class="btn btn-primary">{{ 'surveyReplayActionLabel'|trans({'%number%': 2}) }}</a>
     {% endif %}
 {% endblock %}
 

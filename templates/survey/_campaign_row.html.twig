@@ -35,6 +35,13 @@
     <td>
         <div class="cm-actionbar cm-actionbar--inline justify-content-end">
             <a class="cm-action cm-action--neutral" href="{{ path('app_survey_campaign', {id: campaign.id}) }}">{{ 'surveyResultsActionLabel'|trans }}</a>
+            {% if waveCount > 1 %}
+                <a class="cm-action cm-action--neutral" href="{{ path('app_survey_series', {id: series.id}) }}">{{ 'surveyCompareWavesActionLabel'|trans }}</a>
+            {% elseif not campaign.isOpenNow %}
+                {# « Rejouer » offered once a wave has closed: replaying an open campaign would put
+                   two waves of the same series in front of the same people at once. #}
+                <a class="cm-action cm-action--positive" href="{{ path('app_survey_replay', {id: campaign.id}) }}">{{ 'surveyReplayActionLabel'|trans({'%number%': waveCount + 1}) }}</a>
+            {% endif %}
             {% set pending = rate.targeted - rate.responded %}
             {% if pending > 0 and campaign.isOpenNow %}
                 {# The reminder carries the number of people still to answer, never a bare « Relancer ». #}

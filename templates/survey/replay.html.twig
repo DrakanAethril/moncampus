@@ -1,0 +1,53 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'surveyReplayPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'surveysPageHeading'|trans, url: path('app_surveys')},
+        {label: campaign.name, url: path('app_survey_campaign', {id: campaign.id})},
+        {label: 'surveyReplayPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'surveyReplayPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card" style="max-width: 700px;">
+        <div class="card-body">
+            {# What a replay copies, said before it happens: the questions and the audience
+               *definition*, word for word. Not the frozen target - a replay six months later must
+               reach the class as it stands then. #}
+            <div class="cm-note mb-3">
+                <span class="cm-note__icon">i</span>
+                <div>{{ 'surveyReplayNoteText'|trans({
+                    '%number%': wave.waveNumber,
+                    '%audience%': survey_audience_summary(campaign),
+                    '%count%': campaign.answerableQuestionCount,
+                }) }}</div>
+            </div>
+
+            {% if campaign.anonymous %}
+                <p class="text-secondary">{{ 'surveyReplayAnonymousNoteText'|trans }}</p>
+            {% endif %}
+
+            <form method="post">
+                <input type="hidden" name="_token" value="{{ csrf_token('survey_replay') }}">
+                <div class="mb-3">
+                    <label class="form-label" for="replay-name">{{ 'surveyCampaignNameFieldLabel'|trans }}</label>
+                    <input type="text" class="form-control" id="replay-name" name="name" value="{{ wave.name }}" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="replay-closes">{{ 'surveyClosesAtFieldLabel'|trans }}</label>
+                    <input type="datetime-local" class="form-control" id="replay-closes" name="closesAt">
+                    <small class="form-hint">{{ 'surveyClosesAtFieldHelpText'|trans }}</small>
+                </div>
+                <div class="cm-actionbar justify-content-end">
+                    <a href="{{ path('app_survey_campaign', {id: campaign.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    <button type="submit" class="btn btn-primary">{{ 'surveyReplaySubmitLabel'|trans({'%number%': wave.waveNumber}) }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}
