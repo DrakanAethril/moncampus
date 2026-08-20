@@ -31,6 +31,7 @@ enum AssignmentNature: string
     case SelfAssessment = 'self_assessment';
     case Listening = 'listening';
     case Watching = 'watching';
+    case Survey = 'survey';
 
     /**
      * The types offered when creating an assignment from a séance, in the mockup's order.
@@ -55,6 +56,7 @@ enum AssignmentNature: string
             self::SelfAssessment => 'assignmentNatureSelfAssessmentLabel',
             self::Listening => 'assignmentNatureListeningLabel',
             self::Watching => 'assignmentNatureWatchingLabel',
+            self::Survey => 'assignmentNatureSurveyLabel',
         };
     }
 
@@ -72,6 +74,7 @@ enum AssignmentNature: string
             self::SelfAssessment => 'assignmentNatureSelfAssessmentHint',
             self::Listening => 'assignmentNatureListeningHint',
             self::Watching => 'assignmentNatureWatchingHint',
+            self::Survey => 'assignmentNatureSurveyHint',
         };
     }
 
@@ -86,6 +89,7 @@ enum AssignmentNature: string
             self::SelfAssessment => 'cm-badge--blue',
             self::Listening => 'cm-badge--teal',
             self::Watching => 'cm-badge--teal',
+            self::Survey => 'cm-badge--purple',
             self::ToPrepare, self::ToRead, self::Exercices, self::Autre => 'cm-badge--gray',
         };
     }
@@ -101,7 +105,7 @@ enum AssignmentNature: string
      */
     public function expectsSelfDeclaration(): bool
     {
-        return !\in_array($this, [self::ToSubmit, self::Quiz, self::SelfAssessment, self::Listening, self::Watching], true);
+        return !\in_array($this, [self::ToSubmit, self::Quiz, self::SelfAssessment, self::Listening, self::Watching, self::Survey], true);
     }
 
     // The self-assessment has its own proof of completion - the submitted estimate - as submissions
@@ -129,5 +133,17 @@ enum AssignmentNature: string
     public function expectsWatching(): bool
     {
         return self::Watching === $this;
+    }
+
+    /**
+     * A survey carries its own proof of completion too - the response itself, recorded on
+     * survey_target.responded_at - hence its exclusion from expectsSelfDeclaration() above. That
+     * exclusion is the single most expensive trap of design/validated/surveys.md (§7.7): without
+     * it the student gets a « Marquer comme fait » button that closes the survey without answering
+     * it, and the response rate lies for good.
+     */
+    public function expectsSurvey(): bool
+    {
+        return self::Survey === $this;
     }
 }
