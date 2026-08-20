@@ -42,9 +42,31 @@ class VmBatchItem
     #[ORM\Column(name: 'guest_name', length: 64)]
     private string $guestName;
 
-    /** The Unix login the student gets on their own machine. */
+    /**
+     * The Unix login the student gets on their own machine.
+     *
+     * On a PerGroup batch there is no single one - the machine carries one account per member, held
+     * by $groupMembers below - and this holds the group's slug instead, which is what the name
+     * pattern's `{login}` renders to. Nothing ever creates an account from it in that shape.
+     */
     #[ORM\Column(length: 32)]
     private string $login;
+
+    /**
+     * On a PerGroup batch, who shares this machine and under which login - a frozen snapshot taken
+     * when the batch was planned, the same way $studentLabel is one.
+     *
+     * A snapshot rather than a join table on purpose: the set of groups it came from is itself a
+     * snapshot (App\Entity\GroupBatch), the logins are computed from names that may change, and a
+     * plan somebody read on screen must still describe the machines that were built. `userId` is
+     * only used to link the account back to a live account when there still is one.
+     *
+     * Empty on a PerStudent batch, where $student and $login already say everything.
+     *
+     * @var list<array{userId: int, label: string, login: string}>
+     */
+    #[ORM\Column(name: 'group_members', type: Types::JSON)]
+    private array $groupMembers = [];
 
     #[ORM\Column(nullable: true)]
     private ?int $vmid = null;
@@ -70,13 +92,21 @@ class VmBatchItem
     #[ORM\Column]
     private int $position = 0;
 
-    public function __construct(VmBatch $batch, string $studentLabel, string $guestName, string $login, int $position)
+    /** @param list<array{userId: int, label: string, login: string}> $groupMembers */
+    public function __construct(VmBatch $batch, string $studentLabel, string $guestName, string $login, int $position, array $groupMembers = [])
     {
         $this->batch = $batch;
         $this->studentLabel = $studentLabel;
         $this->guestName = $guestName;
         $this->login = $login;
         $this->position = $position;
+        $this->groupMembers = $groupMembers;
+    }
+
+    /** @return list<array{userId: int, label: string, login: string}> */
+    public function getGroupMembers(): array
+    {
+        return $this->groupMembers;
     }
 
     public function getId(): ?int

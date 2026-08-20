@@ -8,6 +8,7 @@ use App\Entity\Program;
 use App\Entity\User;
 use App\Entity\Wiki;
 use App\Enum\WikiType;
+use App\Repository\GroupBatchRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\UserRepository;
 use App\Repository\WikiNodeRepository;
@@ -16,6 +17,7 @@ use App\Security\Voter\WikiVoter;
 use App\Service\PostValue;
 use App\Service\WikiAccess;
 use App\Service\WikiAudienceScope;
+use App\Service\WikiGroupProvisioner;
 use App\Service\WikiNodeManager;
 use App\Service\WikiTree;
 use Doctrine\ORM\EntityManagerInterface;
@@ -57,11 +59,13 @@ class WikiSettingsController extends AbstractController
         private readonly WikiRepository $wikis,
         private readonly WikiNodeRepository $nodes,
         private readonly ProgramRepository $programs,
+        private readonly GroupBatchRepository $groupBatches,
         private readonly UserRepository $users,
         private readonly WikiTree $tree,
         private readonly WikiAccess $access,
         private readonly WikiAudienceScope $scope,
         private readonly WikiNodeManager $nodeManager,
+        private readonly WikiGroupProvisioner $groupProvisioner,
         private readonly TranslatorInterface $translator,
     ) {
     }
@@ -87,6 +91,16 @@ class WikiSettingsController extends AbstractController
                 return $this->redirectToRoute('app_wiki_new');
             }
 
+            // Targeting a saved set of groups makes this form create N wikis instead of one - see
+            // createFromGroups(). The members/classes pickers are not read at all in that mode:
+            // the groups ARE the audience, and silently merging both would produce wikis whose
+            // membership nobody could predict from the screen.
+            $groupBatchId = PostValue::int($request, 'groupBatch');
+
+            if ($groupBatchId > 0) {
+                return $this->createFromGroups($groupBatchId, $title, $user);
+            }
+
             $wiki = new Wiki($title, WikiType::Shared, $user);
             $this->applyAudience($wiki, $request, $user);
 
@@ -110,8 +124,75 @@ class WikiSettingsController extends AbstractController
             'wiki' => null,
             'canManage' => true,
             'assignablePrograms' => $this->scope->assignablePrograms($user),
+            'groupBatchChoices' => $this->groupBatchChoices($user),
             'hasStudentAudience' => false,
         ]);
+    }
+
+    /**
+     * The set picker's options, grouped by class so a teacher of three classes reads a browsable
+     * list rather than a flat one. Built here rather than in Twig: the template would otherwise
+     * have to walk entities to count groups and sort classes.
+     *
+     * @return list<array{label: string, batches: list<array{id: int, name: string, groupCount: int}>}>
+     */
+    private function groupBatchChoices(User $user): array
+    {
+        $byProgram = [];
+
+        foreach ($this->scope->targetableGroupBatches($user) as $batch) {
+            $label = $batch->getProgram()->getDisplayShortName();
+            $byProgram[$label][] = [
+                'id' => (int) $batch->getId(),
+                'name' => $batch->getName(),
+                // An empty group produces no wiki, so the count on screen must be the number of
+                // wikis this set would actually create - see GroupWikiPlanner.
+                'groupCount' => \count(array_filter($batch->getGroups(), static fn (array $ids): bool => [] !== $ids)),
+            ];
+        }
+
+        ksort($byProgram);
+
+        return array_map(
+            static fn (string $label, array $batches): array => ['label' => $label, 'batches' => $batches],
+            array_keys($byProgram),
+            array_values($byProgram),
+        );
+    }
+
+    /**
+     * One shared wiki per group of a saved set - the "Un wiki par groupe" target of the creation
+     * form.
+     *
+     * Open to teachers, not just staff: composing groups and giving each of them a place to write
+     * is the same person's job. What bounds it is the set itself - WikiAudienceScope::mayTarget()
+     * re-reads whether this composer owns it or has been shared it, because the picker is a
+     * convenience and never the control.
+     *
+     * Nothing here refuses a set that has already been used: running it again is how a class gets
+     * a second family of wikis for a second project.
+     */
+    private function createFromGroups(int $groupBatchId, string $titlePrefix, User $user): Response
+    {
+        $batch = $this->groupBatches->find($groupBatchId);
+
+        if (null === $batch || !$this->scope->mayTarget($user, $batch)) {
+            $this->addFlash('danger', 'wikiGroupBatchUnavailableFlashMessage');
+
+            return $this->redirectToRoute('app_wiki_new');
+        }
+
+        $wikis = $this->groupProvisioner->provision($batch, $titlePrefix, $user);
+
+        if ([] === $wikis) {
+            $this->addFlash('danger', 'wikiGroupBatchEmptyFlashMessage');
+
+            return $this->redirectToRoute('app_wiki_new');
+        }
+
+        $this->addFlash('success', $this->translator->trans('wikiGroupWikisCreatedFlashMessage', ['%count%' => \count($wikis)]));
+
+        return $this->redirectToRoute('app_wiki_shared');
     }
 
     /**

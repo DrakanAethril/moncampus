@@ -61,6 +61,15 @@ class VmBatch
     #[ORM\Column(length: 20, enumType: VmBatchShape::class)]
     private VmBatchShape $shape = VmBatchShape::PerStudent;
 
+    // The saved set of groups a PerGroup batch was planned from - NULL for a PerStudent one, which
+    // targets the class roster instead. Nothing is unique about the link: the same set may be
+    // turned into machines again next term, and the earlier batch is not touched. SET NULL rather
+    // than CASCADE because deleting the set must not delete a batch whose machines exist - the plan
+    // it produced lives on in the items, which carry their own snapshot of who is on each machine.
+    #[ORM\ManyToOne(targetEntity: GroupBatch::class)]
+    #[ORM\JoinColumn(name: 'group_batch_id', nullable: true, onDelete: 'SET NULL')]
+    private ?GroupBatch $groupBatch = null;
+
     #[ORM\ManyToOne(targetEntity: ProxmoxHost::class)]
     #[ORM\JoinColumn(name: 'host_id', nullable: false)]
     private ?ProxmoxHost $host = null;
@@ -220,6 +229,25 @@ class VmBatch
     public function getShape(): VmBatchShape
     {
         return $this->shape;
+    }
+
+    public function setShape(VmBatchShape $shape): static
+    {
+        $this->shape = $shape;
+
+        return $this;
+    }
+
+    public function getGroupBatch(): ?GroupBatch
+    {
+        return $this->groupBatch;
+    }
+
+    public function setGroupBatch(?GroupBatch $groupBatch): static
+    {
+        $this->groupBatch = $groupBatch;
+
+        return $this;
     }
 
     public function getHost(): ?ProxmoxHost

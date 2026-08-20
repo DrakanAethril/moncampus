@@ -98,6 +98,70 @@ class VmBatchPlanner
         return $rows;
     }
 
+    /**
+     * One row per machine, when the machines are groups rather than students.
+     *
+     * The differences with plan() above are the ones that matter for the shape: a row carries the
+     * whole group instead of one person, and the number in the name is the group's own number in
+     * the set - never its rank among the machines actually built. A group everybody has been
+     * dragged out of gets no machine, and if that is group 2, the third group still comes out as
+     * `tp-03`: the admin is reading the same numbers on the group-creation screen.
+     *
+     * `{login}` has no single value here, so it renders the group's slug. The machine's own `login`
+     * is that slug too - it names the machine, and never becomes an account.
+     *
+     * @param list<array{label: string, members: list<BatchMember>}> $groups    in set order, empty groups included
+     * @param list<int>                                             $usedVmids VMIDs already taken on the host
+     *
+     * @return list<array{groupLabel: string, slug: string, members: list<array{userId: int, label: string, login: string}>, guestName: string, vmid: int, position: int}>
+     */
+    public function planGroups(array $groups, string $namePattern, int $vmidMin, int $vmidMax, array $usedVmids): array
+    {
+        $taken = array_flip($usedVmids);
+        $names = [];
+        $rows = [];
+        $vmid = $vmidMin;
+
+        foreach ($groups as $index => $group) {
+            if ([] === $group['members']) {
+                continue;
+            }
+
+            while (isset($taken[$vmid]) && $vmid <= $vmidMax) {
+                ++$vmid;
+            }
+
+            if ($vmid > $vmidMax) {
+                break;
+            }
+
+            $slug = $this->configurator->suggestHostname($group['label']);
+            $name = $this->uniqueName($this->name($namePattern, $index + 1, $slug), $names);
+            $names[$name] = true;
+
+            $rows[] = [
+                'groupLabel' => $group['label'],
+                'slug' => $slug,
+                'members' => array_map(
+                    static fn (BatchMember $member): array => [
+                        'userId' => $member->userId,
+                        'label' => $member->displayName,
+                        'login' => $member->login,
+                    ],
+                    $group['members'],
+                ),
+                'guestName' => $name,
+                'vmid' => $vmid,
+                'position' => $index + 1,
+            ];
+
+            $taken[$vmid] = true;
+            ++$vmid;
+        }
+
+        return $rows;
+    }
+
     private function name(string $pattern, int $index, string $login): string
     {
         $rendered = str_replace(

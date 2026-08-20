@@ -46,7 +46,35 @@
                 </div>
             </div>
 
-            {% if program %}
+            {# The shape is part of "who", not of "what machine": it decides whether a machine is a
+               student's or a group's, which is the same question as who gets an account on it. #}
+            <div class="row g-3 mt-0">
+                <div class="col-md-5">
+                    <label class="cm-field-label" for="shape">{{ 'vmBatchShapeFieldLabel'|trans }}</label>
+                    <select id="shape" name="shape" class="cm-select w-100">
+                        {% for case in shapes %}
+                            <option value="{{ case.value }}"{{ shape.value == case.value ? ' selected' }}>{{ case.labelKey|trans }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="cm-guest__sub mt-1">{{ shape.descriptionKey|trans }}</div>
+                </div>
+                {% if program %}
+                    <div class="col-md-7">
+                        <label class="cm-field-label" for="groupBatchId">{{ 'vmBatchGroupBatchFieldLabel'|trans }}</label>
+                        <select id="groupBatchId" name="groupBatchId" class="cm-select w-100"{{ targetableGroupBatches is empty ? ' disabled' }}>
+                            <option value="">{{ 'vmBatchGroupBatchPlaceholder'|trans }}</option>
+                            {% for candidate in targetableGroupBatches %}
+                                <option value="{{ candidate.id }}"{{ groupBatch and groupBatch.id == candidate.id ? ' selected' }}>{{ candidate.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="cm-guest__sub mt-1">
+                            {{ (targetableGroupBatches is empty ? 'vmBatchNoGroupBatchHelp' : 'vmBatchGroupBatchHelp')|trans }}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            {% if program and shape.value != 'per_group' %}
                 {# Checkbox groups rather than a multi-select, and the filters apply to the STUDENT:
                    a program offers SISR, and which students take it is a per-student fact. Ticking
                    nothing means the whole class. #}
@@ -100,11 +128,16 @@
         </div>
     {% endif %}
 
-    {% if program and selected is not empty and host %}
+    {% set perGroup = shape.value == 'per_group' %}
+    {% set rows = perGroup ? groupPlan : plan %}
+
+    {% if program and host and rows is not empty %}
         <form method="post" action="{{ path('app_infrastructure_batches_create') }}" class="card" style="max-width: 900px;">
             <input type="hidden" name="_token" value="{{ csrf_token('infrastructure_action') }}">
             <input type="hidden" name="programId" value="{{ program.id }}">
             <input type="hidden" name="hostId" value="{{ host.id }}">
+            <input type="hidden" name="shape" value="{{ shape.value }}">
+            {% if perGroup %}<input type="hidden" name="groupBatchId" value="{{ groupBatch.id }}">{% endif %}
             <input type="hidden" name="namePattern" value="{{ namePattern }}">
             {% for id in filters.options %}<input type="hidden" name="options[]" value="{{ id }}">{% endfor %}
             {% for id in filters.modalities %}<input type="hidden" name="modalities[]" value="{{ id }}">{% endfor %}
@@ -193,20 +226,29 @@
                         <thead>
                             <tr>
                                 <th style="width:50px">#</th>
-                                <th>{{ 'vmBatchStudentLabel'|trans }}</th>
+                                <th>{{ (perGroup ? 'vmBatchGroupColumnLabel' : 'vmBatchStudentLabel')|trans }}</th>
                                 <th style="width:180px">{{ 'proxmoxGuestMachineLabel'|trans }}</th>
                                 <th style="width:80px">VMID</th>
-                                <th style="width:180px">{{ 'guestAccountLoginLabel'|trans }}</th>
+                                <th>{{ (perGroup ? 'vmBatchGroupAccountsColumnLabel' : 'guestAccountLoginLabel')|trans }}</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for row in plan %}
+                            {% for row in rows %}
                                 <tr>
                                     <td class="cm-guest__sub">{{ row.position }}</td>
-                                    <td>{{ row.studentLabel }}</td>
+                                    <td>{{ perGroup ? row.groupLabel : row.studentLabel }}</td>
                                     <td class="cm-mono">{{ row.guestName }}</td>
                                     <td class="cm-mono">{{ row.vmid }}</td>
-                                    <td class="cm-mono">{{ row.login }}</td>
+                                    <td class="cm-mono">
+                                        {%- if perGroup -%}
+                                            {# Every member of the group gets their own account on that
+                                               one machine - the shape's whole point, so it is spelled
+                                               out before anything is created rather than discovered. #}
+                                            {% for member in row.members %}{{ member.login }}{{ not loop.last ? ', ' }}{% endfor %}
+                                        {%- else -%}
+                                            {{ row.login }}
+                                        {%- endif -%}
+                                    </td>
                                 </tr>
                             {% endfor %}
                         </tbody>
@@ -216,7 +258,7 @@
 
             <div class="cm-fieldset">
                 <div class="cm-actionbar" style="margin-top:0; border-top:0; padding-top:0;">
-                    <span class="cm-actionbar__meta">{{ 'vmBatchCreateMeta'|trans({'%count%': plan|length}) }}</span>
+                    <span class="cm-actionbar__meta">{{ (perGroup ? 'vmBatchCreateGroupMeta' : 'vmBatchCreateMeta')|trans({'%count%': rows|length}) }}</span>
                     <div class="cm-actionbar__buttons">
                         <a href="{{ path('app_infrastructure_batches') }}" class="cm-btn cm-btn--outline">{{ 'cancelAction'|trans }}</a>
                         <button type="submit" class="cm-btn cm-btn--primary">{{ 'vmBatchCreateAction'|trans }}</button>

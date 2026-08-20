@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Controller\Infrastructure;
 
+use App\Entity\GroupBatch;
 use App\Entity\IpRange;
 use App\Entity\Program;
 use App\Entity\ProxmoxHost;
 use App\Entity\User;
 use App\Entity\VmBatch;
 use App\Entity\VmBatchItem;
+use App\Enum\VmBatchShape;
+use App\Repository\GroupBatchRepository;
 use App\Repository\IpRangeRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\ProxmoxHostRepository;
@@ -31,6 +34,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Deploying one machine per student of a class.
@@ -82,6 +86,8 @@ class VmBatchController extends AbstractController
         ProxmoxInventory $inventory,
         BatchMemberResolver $resolver,
         VmBatchPlanner $planner,
+        GroupBatchRepository $groupBatches,
+        TranslatorInterface $translator,
     ): Response {
         $program = $this->programFrom($request, $programs);
         $host = $this->hostFrom($request, $hosts);
@@ -90,7 +96,17 @@ class VmBatchController extends AbstractController
         $modalityIds = QueryValue::intList($request, 'modalities');
         $namePattern = QueryValue::trimmed($request, 'namePattern') ?: 'tp-{index}';
 
-        $members = null !== $program ? $resolver->forProgram($program) : [];
+        $shape = VmBatchShape::tryFrom(QueryValue::string($request, 'shape')) ?? VmBatchShape::PerStudent;
+        $targetableGroupBatches = $this->targetableGroupBatches($program, $groupBatches);
+        $groupBatch = $this->groupBatchFrom($request, $targetableGroupBatches);
+
+        // No set named yet is not an empty set: the plan below simply has nothing to lay out, and
+        // the screen asks for the set rather than showing zero machines as though there were none.
+        $groups = null !== $groupBatch && VmBatchShape::PerGroup === $shape
+            ? $resolver->forGroupBatch($groupBatch, $translator->trans('programToolsGroupTitleTemplateLabel'))
+            : [];
+
+        $members = null !== $program && VmBatchShape::PerStudent === $shape ? $resolver->forProgram($program) : [];
         $selected = $planner->select($members, $optionIds, $modalityIds);
 
         $templates = [];
@@ -112,9 +128,26 @@ class VmBatchController extends AbstractController
 
         // Shown in full before anything is created: twenty-four machines is not a shape to discover
         // afterwards.
-        $plan = null !== $host
-            ? $planner->plan($selected, $namePattern, $host->getVmidMin() ?? 100, $host->getVmidMax() ?? 999999, $usedVmids)
-            : [];
+        $plan = [];
+        $groupPlan = [];
+
+        if (null !== $host) {
+            $min = $host->getVmidMin() ?? 100;
+            $max = $host->getVmidMax() ?? 999999;
+
+            if (VmBatchShape::PerGroup === $shape) {
+                $groupPlan = $planner->planGroups($groups, $namePattern, $min, $max, $usedVmids);
+            } else {
+                $plan = $planner->plan($selected, $namePattern, $min, $max, $usedVmids);
+            }
+        }
+
+        // How many machines the shape asks for, whichever shape it is - the "not enough VMIDs"
+        // notice below has to count the same things on both sides.
+        $wanted = VmBatchShape::PerGroup === $shape
+            ? \count(array_filter($groups, static fn (array $group): bool => [] !== $group['members']))
+            : \count($selected);
+        $planned = VmBatchShape::PerGroup === $shape ? \count($groupPlan) : \count($plan);
 
         return $this->render('infrastructure/batch_new.html.twig', [
             'activeNav' => 'batches',
@@ -128,12 +161,17 @@ class VmBatchController extends AbstractController
             'members' => $members,
             'selected' => $selected,
             'plan' => $plan,
+            'groupPlan' => $groupPlan,
+            'shape' => $shape,
+            'shapes' => VmBatchShape::cases(),
+            'targetableGroupBatches' => $targetableGroupBatches,
+            'groupBatch' => $groupBatch,
             'namePattern' => $namePattern,
             'filters' => ['options' => $optionIds, 'modalities' => $modalityIds],
             'failure' => $failure,
             // Not enough VMIDs for the whole class is a fact worth stating before the button, not
             // after: it means some students would silently get nothing.
-            'shortBy' => max(0, \count($selected) - \count($plan)),
+            'shortBy' => max(0, $wanted - $planned),
         ]);
     }
 
@@ -147,6 +185,8 @@ class VmBatchController extends AbstractController
         VmBatchPlanner $planner,
         ProxmoxClientFactory $clientFactory,
         ProxmoxInventory $inventory,
+        GroupBatchRepository $groupBatches,
+        TranslatorInterface $translator,
         EntityManagerInterface $entityManager,
     ): Response {
         if (!$this->isCsrfTokenValid('infrastructure_action', (string) $request->request->get('_token'))) {
@@ -165,6 +205,20 @@ class VmBatchController extends AbstractController
 
         $this->denyAccessUnlessGranted(ProxmoxHostVoter::PROVISION, $host);
 
+        $shape = VmBatchShape::tryFrom((string) $request->request->get('shape', '')) ?? VmBatchShape::PerStudent;
+        // Re-read against what this admin may actually target, never trusted from the posted id -
+        // the picker is a convenience, the same posture the wiki side takes.
+        $groupBatch = $this->matchGroupBatch(
+            $request->request->getInt('groupBatchId'),
+            $this->targetableGroupBatches($program, $groupBatches),
+        );
+
+        if (VmBatchShape::PerGroup === $shape && null === $groupBatch) {
+            $this->addFlash('error', 'vmBatchGroupBatchUnavailableMessage');
+
+            return $this->redirectToRoute('app_infrastructure_batches_new');
+        }
+
         $batch = new VmBatch(
             (string) $request->request->get('label', ''),
             $program,
@@ -174,6 +228,8 @@ class VmBatchController extends AbstractController
             (string) $request->request->get('node', ''),
         );
         $batch->setCreatedBy($this->currentUser());
+        $batch->setShape($shape);
+        $batch->setGroupBatch(VmBatchShape::PerGroup === $shape ? $groupBatch : null);
         $batch->setCores($request->request->getInt('cores', 2));
         $batch->setMemoryMib($request->request->getInt('memoryMib', 2048));
         $batch->setDiskGib($request->request->getInt('diskGib', 16));
@@ -216,11 +272,36 @@ class VmBatchController extends AbstractController
             // each VMID again at creation time, and the hypervisor has the last word anyway.
         }
 
-        $members = $planner->select($resolver->forProgram($program), $optionIds, $modalityIds);
-        $rows = $planner->plan($members, $batch->getNamePattern(), $host->getVmidMin() ?? 100, $host->getVmidMax() ?? 999999, $usedVmids);
+        $min = $host->getVmidMin() ?? 100;
+        $max = $host->getVmidMax() ?? 999999;
+
+        if (VmBatchShape::PerGroup === $shape) {
+            // Non-null here: the guard above returned when this shape named no set.
+            $groups = $resolver->forGroupBatch($groupBatch, $translator->trans('programToolsGroupTitleTemplateLabel'));
+            $rows = array_map(
+                // One machine per group: the group's own label stands where a student's name would,
+                // its slug where their login would, and the members travel as the item's snapshot.
+                static fn (array $row): array => [
+                    'studentLabel' => $row['groupLabel'],
+                    'guestName' => $row['guestName'],
+                    'login' => $row['slug'],
+                    'position' => $row['position'],
+                    'vmid' => $row['vmid'],
+                    'userId' => 0,
+                    'members' => $row['members'],
+                ],
+                $planner->planGroups($groups, $batch->getNamePattern(), $min, $max, $usedVmids),
+            );
+        } else {
+            $members = $planner->select($resolver->forProgram($program), $optionIds, $modalityIds);
+            $rows = array_map(
+                static fn (array $row): array => $row + ['members' => []],
+                $planner->plan($members, $batch->getNamePattern(), $min, $max, $usedVmids),
+            );
+        }
 
         foreach ($rows as $row) {
-            $item = new VmBatchItem($batch, $row['studentLabel'], $row['guestName'], $row['login'], $row['position']);
+            $item = new VmBatchItem($batch, $row['studentLabel'], $row['guestName'], $row['login'], $row['position'], $row['members']);
             $item->setVmid($row['vmid']);
             $item->setNode($batch->getNode());
             $item->setStudent($this->studentWithId($program, $row['userId']));
@@ -288,6 +369,51 @@ class VmBatchController extends AbstractController
         foreach ($program->getStudents() as $student) {
             if ($student->getId() === $userId) {
                 return $student;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The saved sets of groups this admin may turn into machines, for the class being planned.
+     *
+     * The rule is the group tool's own and gets no override here: one sees the sets one saved, plus
+     * the sets a colleague shared. An admin who teaches nothing therefore targets nothing, and the
+     * wizard says so rather than offering every set in the school - being an admin says what one may
+     * *deploy*, never which groups of which class are the right ones.
+     *
+     * @return list<GroupBatch>
+     */
+    private function targetableGroupBatches(?Program $program, GroupBatchRepository $groupBatches): array
+    {
+        if (!$program instanceof Program) {
+            return [];
+        }
+
+        return $groupBatches->findAllReadableForTeacherAndPrograms($this->currentUser(), [$program]);
+    }
+
+    /**
+     * @param list<GroupBatch> $targetable
+     */
+    private function groupBatchFrom(Request $request, array $targetable): ?GroupBatch
+    {
+        return $this->matchGroupBatch(QueryValue::int($request, 'groupBatchId'), $targetable);
+    }
+
+    /**
+     * @param list<GroupBatch> $targetable
+     */
+    private function matchGroupBatch(int $id, array $targetable): ?GroupBatch
+    {
+        if ($id <= 0) {
+            return null;
+        }
+
+        foreach ($targetable as $candidate) {
+            if ($candidate->getId() === $id) {
+                return $candidate;
             }
         }
 

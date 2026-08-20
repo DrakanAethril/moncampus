@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Entity\GroupBatch;
 use App\Entity\Program;
 use App\Entity\User;
+use App\Repository\GroupBatchRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\UserRepository;
 use App\Security\StructureAccessChecker;
@@ -34,6 +36,7 @@ class WikiAudienceScope
 {
     public function __construct(
         private readonly ProgramRepository $programs,
+        private readonly GroupBatchRepository $groupBatches,
         private readonly UserRepository $users,
         private readonly StructureAccessChecker $accessChecker,
         private readonly WikiAccess $access,
@@ -48,6 +51,41 @@ class WikiAudienceScope
         }
 
         return $this->programs->findAllForTeacher($composer);
+    }
+
+    /**
+     * The saved sets of groups this composer may turn into wikis: the ones they saved themselves,
+     * plus the ones a colleague shared with them. Nothing else.
+     *
+     * **Staff and admins get no bypass here**, unlike everywhere else in this class - and that is
+     * the point rather than an oversight. A set of groups belongs to the teacher who composed it;
+     * being staff says nothing about which groups of which class are the right ones to turn into
+     * wikis. So a staff member or an admin who does not also teach targets nothing at all, and the
+     * screen tells them so instead of offering every set in the school.
+     *
+     * @return list<GroupBatch>
+     */
+    public function targetableGroupBatches(User $composer): array
+    {
+        return $this->groupBatches->findAllReadableForTeacherAndPrograms(
+            $composer,
+            $this->assignablePrograms($composer),
+        );
+    }
+
+    /**
+     * Re-read at save rather than trusted from the picker - the same posture the member and program
+     * checks above take.
+     */
+    public function mayTarget(User $composer, GroupBatch $batch): bool
+    {
+        foreach ($this->targetableGroupBatches($composer) as $candidate) {
+            if ($candidate->getId() === $batch->getId()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function mayAssign(User $composer, Program $program): bool

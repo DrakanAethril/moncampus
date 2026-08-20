@@ -5311,6 +5311,16 @@ wikiHomePageTitle: 'Accueil'
 wikiHomePageWelcomeText: 'Bienvenue dans votre wiki. Cette page est la porte d’entrée : renommez-la, écrivez dedans, et ajoutez des pages dans le rail de gauche.'
 wikiPersonalCreatedFlashMessage: 'Votre wiki personnel a été créé.'
 wikiCreatedFlashMessage: 'Le wiki a été créé.'
+wikiTargetLabel: 'Que faut-il créer ?'
+wikiTargetAudienceLabel: 'Un wiki, dont je compose les membres'
+wikiTargetGroupsLabel: 'Un wiki par groupe, depuis des groupes enregistrés'
+wikiGroupBatchLabel: 'Groupes enregistrés'
+wikiGroupBatchPlaceholder: 'Choisir des groupes…'
+wikiGroupBatchCountLabel: '{1}1 groupe|]1,Inf[%count% groupes'
+wikiGroupBatchHelpText: "Un wiki sera créé pour chaque groupe, avec les élèves de ce groupe pour membres ; le titre saisi ci-dessus leur sert de préfixe. Vous pouvez recommencer plus tard sur les mêmes groupes : de nouveaux wikis seront créés, les précédents ne sont pas touchés."
+wikiGroupBatchUnavailableFlashMessage: "Ces groupes ne sont plus disponibles. Ils ont peut-être été supprimés ou le partage a été retiré."
+wikiGroupBatchEmptyFlashMessage: "Ces groupes ne contiennent aucun élève : aucun wiki n'a été créé."
+wikiGroupWikisCreatedFlashMessage: '{1}1 wiki a été créé.|]1,Inf[%count% wikis ont été créés.'
 wikiDeletedFlashMessage: 'Le wiki a été supprimé.'
 wikiSettingsSavedFlashMessage: 'Les paramètres du wiki ont été enregistrés.'
 wikiPageSavedFlashMessage: 'La page a été enregistrée.'
@@ -6006,6 +6016,17 @@ guestAccountPasswordsWarningText: 'Ces mots de passe ne sont enregistrés nulle 
 
 vmBatchPerStudentLabel: 'Une machine par étudiant'
 vmBatchPerStudentDescription: 'Chaque étudiant de la classe reçoit sa propre machine, avec son compte.'
+vmBatchPerGroupLabel: 'Une machine par groupe'
+vmBatchPerGroupDescription: "Chaque groupe reçoit une machine, avec un compte par membre du groupe. Les groupes remplacent la liste de la classe : les filtres option et modalité ne s'appliquent pas."
+vmBatchShapeFieldLabel: 'Forme du lot'
+vmBatchGroupBatchFieldLabel: 'Groupes enregistrés'
+vmBatchGroupBatchPlaceholder: 'Choisir des groupes…'
+vmBatchGroupBatchHelp: "Nécessaire pour une machine par groupe. Vous pouvez repartir des mêmes groupes plus tard : un nouveau lot sera créé, les machines existantes ne sont pas touchées."
+vmBatchNoGroupBatchHelp: "Aucun ensemble de groupes disponible pour cette classe : vous ne voyez que ceux que vous avez enregistrés et ceux qu'un collègue vous a partagés."
+vmBatchGroupBatchUnavailableMessage: "Ces groupes ne sont plus disponibles. Aucun lot n'a été créé."
+vmBatchGroupColumnLabel: 'Groupe'
+vmBatchGroupAccountsColumnLabel: 'Comptes sur la machine'
+vmBatchCreateGroupMeta: '%count% machine(s) seront prévues, une par groupe, puis déployées par vagues.'
 vmBatchItemPlannedLabel: 'Prévue'
 vmBatchItemCreatingLabel: 'En cours'
 vmBatchItemCreatedLabel: 'Créée'

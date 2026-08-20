@@ -80,6 +80,46 @@ class GroupBatchRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * What a teacher may target: the sets they saved, plus the ones a colleague shared with them.
+     * The union is done in PHP rather than with an OR over the join, because an inner join on
+     * sharedTeachers cannot express "or has no share at all" without turning into a left join whose
+     * DISTINCT then fights the ordering.
+     *
+     * @param list<Program> $programs
+     *
+     * @return list<GroupBatch>
+     */
+    public function findAllReadableForTeacherAndPrograms(User $teacher, array $programs): array
+    {
+        if ([] === $programs) {
+            return [];
+        }
+
+        $owned = $this->createQueryBuilder('b')
+            ->andWhere('b.teacher = :teacher')
+            ->andWhere('b.program IN (:programs)')
+            ->setParameter('teacher', $teacher)
+            ->setParameter('programs', $programs)
+            ->getQuery()
+            ->getResult();
+
+        $shared = $this->createQueryBuilder('b')
+            ->innerJoin('b.sharedTeachers', 's')
+            ->andWhere('s = :teacher')
+            ->andWhere('b.teacher != :teacher')
+            ->andWhere('b.program IN (:programs)')
+            ->setParameter('teacher', $teacher)
+            ->setParameter('programs', $programs)
+            ->getQuery()
+            ->getResult();
+
+        $all = array_merge($owned, $shared);
+        usort($all, static fn (GroupBatch $a, GroupBatch $b): int => $b->getCreatedAt() <=> $a->getCreatedAt());
+
+        return $all;
+    }
+
     public function findOneForTeacherAndProgram(int $id, User $teacher, Program $program): ?GroupBatch
     {
         return $this->createQueryBuilder('b')
