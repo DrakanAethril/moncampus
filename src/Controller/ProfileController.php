@@ -6,13 +6,16 @@ namespace App\Controller;
 
 use App\Entity\LdapManagePassword;
 use App\Entity\User;
+use App\Entity\UserSshKey;
 use App\Form\AvatarUploadType;
 use App\Form\ChangePasswordType;
 use App\Form\ContactEmailType;
 use App\Form\MessagingPreferencesType;
 use App\Repository\LdapManagePasswordRepository;
+use App\Repository\UserSshKeyRepository;
 use App\Service\ContactEmailVerifier;
 use App\Service\FileUploadService;
+use App\Service\Guest\SshPublicKey;
 use App\Service\JsonRequestPayload;
 use App\Service\QueueStateFormatter;
 use App\Service\StagedUpload;
@@ -33,13 +36,16 @@ class ProfileController extends AbstractController
     private const string AVATAR_PREFIX = 'avatars/';
 
     #[Route(path: '/profile', name: 'app_profile')]
-    public function index(LdapManagePasswordRepository $passwordRequestRepository, QueueStateFormatter $stateFormatter): Response
+    public function index(LdapManagePasswordRepository $passwordRequestRepository, QueueStateFormatter $stateFormatter, UserSshKeyRepository $sshKeys): Response
     {
         $user = $this->currentUser();
         $passwordRequest = $passwordRequestRepository->findMostRecentForUser($user);
 
         return $this->render('profile/index.html.twig', [
             'user' => $user,
+            // Only administrators are shown the card, and only their keys are installed - so the
+            // query is not worth making for anybody else.
+            'sshKeys' => $this->isGranted('ROLE_ADMIN') ? $sshKeys->findForUser($user) : [],
             'avatarForm' => $this->createForm(AvatarUploadType::class),
             'contactEmailForm' => $this->createForm(ContactEmailType::class, $user),
             'messagingPreferencesForm' => $this->createForm(MessagingPreferencesType::class, $user),
@@ -205,6 +211,68 @@ class ProfileController extends AbstractController
             $entityManager->flush();
             $this->addFlash('success', 'contactEmailCancelledFlashMessage');
         }
+
+        return $this->redirectToRoute('app_profile');
+    }
+
+    /**
+     * Adds one public key to the administrator's own account.
+     *
+     * Reserved to administrators because that is who the keys are for: only theirs are installed on
+     * the machines this application creates (App\Service\Guest\GuestAuthorizedKeys), so offering
+     * the field to anyone else would be offering an empty gesture.
+     *
+     * The key is refused here rather than at the far end. A malformed line reaches a machine's
+     * authorized_keys, where sshd skips it without a word - the owner simply cannot log in, and
+     * nothing anywhere says why.
+     */
+    #[Route(path: '/profile/ssh-keys', name: 'app_profile_ssh_key_add', methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN')]
+    public function addSshKey(Request $request, EntityManagerInterface $entityManager): Response
+    {
+        if (!$this->isCsrfTokenValid('profile_ssh_key_add', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $label = trim((string) $request->request->get('label', ''));
+        $key = SshPublicKey::tryParse((string) $request->request->get('publicKey', ''));
+
+        if ('' === $label || null === $key) {
+            $this->addFlash('error', null === $key ? 'sshKeyInvalidFlashMessage' : 'sshKeyLabelRequiredFlashMessage');
+
+            return $this->redirectToRoute('app_profile');
+        }
+
+        $entityManager->persist(new UserSshKey($this->currentUser(), $label, $key->toStorage(), $key->fingerprint()));
+        $entityManager->flush();
+        $this->addFlash('success', 'sshKeyAddedFlashMessage');
+
+        return $this->redirectToRoute('app_profile');
+    }
+
+    /**
+     * Removes one of the administrator's own keys.
+     *
+     * Their own, checked here rather than trusted from the URL: the identifier comes from the page,
+     * and a page is not an authority on whose row it names.
+     */
+    #[Route(path: '/profile/ssh-keys/{id}/delete', name: 'app_profile_ssh_key_delete', requirements: ['id' => '\d+'], methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN')]
+    public function deleteSshKey(Request $request, EntityManagerInterface $entityManager, UserSshKeyRepository $keys, int $id): Response
+    {
+        if (!$this->isCsrfTokenValid('profile_ssh_key_delete', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $key = $keys->find($id);
+
+        if (null === $key || $key->getUser() !== $this->currentUser()) {
+            throw $this->createNotFoundException();
+        }
+
+        $entityManager->remove($key);
+        $entityManager->flush();
+        $this->addFlash('success', 'sshKeyRemovedFlashMessage');
 
         return $this->redirectToRoute('app_profile');
     }
