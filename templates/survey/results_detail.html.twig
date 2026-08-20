@@ -1,0 +1,58 @@
+{% extends 'survey/_results_shell.html.twig' %}
+
+{% block results_body %}
+    {% if campaign.anonymous %}
+        {# Said before the table rather than after: the reader has to know that the order they are
+           about to read is drawn at random, or they will read it as the order of arrival. #}
+        <div class="cm-note cm-note--gold mb-3">
+            <span class="cm-note__icon">!</span>
+            <div>{{ 'surveyAnonymousDetailNoticeText'|trans }}</div>
+        </div>
+    {% endif %}
+
+    {% if not disclosable %}
+        <div class="cm-note">
+            <span class="cm-note__icon">i</span>
+            <div>{{ 'surveyAnonymousThresholdText'|trans({'%count%': rate.responded, '%targeted%': rate.targeted, '%threshold%': threshold}) }}</div>
+        </div>
+    {% elseif responses is empty %}
+        <p class="text-secondary mb-0">{{ 'surveyNoResponseYetText'|trans }}</p>
+    {% else %}
+        <div class="table-responsive">
+            <table class="table cm-table align-middle">
+                <thead>
+                    <tr>
+                        <th>{{ campaign.anonymous ? 'surveyResponseColumnLabel'|trans : 'surveyRespondentColumnLabel'|trans }}</th>
+                        {% for question in questions %}
+                            {# Short headers: a full statement would make the table unreadable. #}
+                            <th>Q{{ loop.index }} — {{ question.label|length > 28 ? question.label|slice(0, 26) ~ '…' : question.label }}</th>
+                        {% endfor %}
+                        {# No « Répondu » column on an anonymous campaign: the timestamps exist in the
+                           database - one wants to know whether a draft is lying around - but they
+                           never leave the aggregate (§7.3). #}
+                        {% if not campaign.anonymous %}<th>{{ 'surveyRespondedColumnLabel'|trans }}</th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for response in responses %}
+                        <tr>
+                            <td>
+                                {%- if campaign.anonymous -%}
+                                    <span class="cm-verbatim__key">{{ response.shortDisplayKey }}</span>
+                                {%- else -%}
+                                    {{ response.respondent ? (response.respondent.displayName ?: response.respondent.username) : '—' }}
+                                {%- endif -%}
+                            </td>
+                            {% for question in questions %}
+                                <td class="text-secondary">{{ survey_answer_summary(response, question) }}</td>
+                            {% endfor %}
+                            {% if not campaign.anonymous %}
+                                <td class="text-secondary">{{ response.submittedAt ? response.submittedAt|date('d/m/Y H:i') : '—' }}</td>
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+{% endblock %}

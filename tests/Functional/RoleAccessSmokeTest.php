@@ -159,6 +159,13 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // Also a respondent: a teacher aimed at by a satisfaction survey has no travail à
             // faire, so this screen and the home card are their only door (§7.9).
             '/my-surveys' => 200,
+            // The results screens hang off a campaign id, so an empty database answers 404 rather
+            // than 403 - the door itself is pinned by SurveyVoterTest. What matters here is that
+            // they are *reachable*: a 403 would mean the role lost access.
+            '/surveys/campaigns/999999' => 404,
+            '/surveys/campaigns/999999/responses' => 404,
+            '/surveys/campaigns/999999/pending' => 404,
+            '/surveys/campaigns/999999/export' => 404,
             '/agenda' => 200,
             '/messages' => 200,
             '/tickets' => 200,
@@ -251,6 +258,13 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // Also a respondent: a teacher aimed at by a satisfaction survey has no travail à
             // faire, so this screen and the home card are their only door (§7.9).
             '/my-surveys' => 200,
+            // The results screens hang off a campaign id, so an empty database answers 404 rather
+            // than 403 - the door itself is pinned by SurveyVoterTest. What matters here is that
+            // they are *reachable*: a 403 would mean the role lost access.
+            '/surveys/campaigns/999999' => 404,
+            '/surveys/campaigns/999999/responses' => 404,
+            '/surveys/campaigns/999999/pending' => 404,
+            '/surveys/campaigns/999999/export' => 404,
             '/agenda' => 200,
             '/messages' => 200,
             '/tickets' => 200,

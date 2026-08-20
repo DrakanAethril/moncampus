@@ -8068,3 +8068,37 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-survey-order__rank { flex: none; width: 18px; font: 600 12px var(--cm-font-ui); color: var(--cm-faint); }
 .cm-survey-order__label { flex: 1; font-size: 13.5px; }
 .cm-survey-order__handle { flex: none; color: var(--cm-border); letter-spacing: -2px; }
+
+/* ---------- The results screen ---------- */
+
+.cm-result { display: flex; flex-direction: column; gap: 10px; }
+.cm-result__head { display: flex; gap: 10px; align-items: baseline; }
+.cm-result__number { flex: none; font: 600 12px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-result__label { font-size: 14px; font-weight: 600; }
+.cm-result__bars { display: flex; flex-direction: column; gap: 6px; padding-left: 30px; }
+.cm-result__row { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.cm-result__answer { flex: 0 0 40%; }
+.cm-result__bar { flex: 1; height: 10px; border-radius: 5px; background: var(--cm-bg); overflow: hidden; }
+.cm-result__fill { display: block; height: 100%; background: var(--cm-brand); border-radius: 5px; }
+.cm-result__value { flex: 0 0 92px; text-align: right; color: var(--cm-muted); font-size: 12.5px; }
+
+/* « Lecture en pôles » - the diverging bar of a scale question. One hue in five steps of
+   lightness, the low pole at the left end and the high at the right: a categorical palette would
+   present an ordered scale as five unordered categories, which is exactly what it is not. */
+.cm-result__poles { padding-left: 30px; }
+.cm-result__poles-title { font: 600 10.5px var(--cm-font-ui); letter-spacing: .06em; text-transform: uppercase; color: var(--cm-faint); margin-bottom: 5px; }
+.cm-diverging { display: flex; height: 16px; border-radius: 4px; overflow: hidden; background: var(--cm-bg); }
+.cm-diverging__seg { display: block; height: 100%; }
+.cm-diverging__legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; font-size: 11.5px; color: var(--cm-muted); }
+.cm-diverging__key { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 4px; vertical-align: 0; }
+.cm-diverging__seg--0 { background: #b8342f; }
+.cm-diverging__seg--1 { background: #d98b6a; }
+.cm-diverging__seg--2 { background: #b9bcc0; }
+.cm-diverging__seg--3 { background: #6fa3c4; }
+.cm-diverging__seg--4 { background: #12507e; }
+
+/* The verbatims. Given to be read, and nothing else - no word cloud, no sentiment, no summary. */
+.cm-verbatims { display: flex; flex-direction: column; gap: 10px; padding-left: 30px; }
+.cm-verbatim { border-left: 2px solid var(--cm-border); padding-left: 10px; }
+.cm-verbatim__key { font: 600 11px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-verbatim__text { margin: 3px 0 0; font-size: 13px; line-height: 1.6; }

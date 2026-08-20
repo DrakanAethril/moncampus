@@ -1,0 +1,23 @@
+{# The summary banner every results tab opens on: the response rate, always shown - it is the one
+   number a survey exists for, and it says nothing about the content, so no threshold hides it. #}
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <div class="flex-fill" style="min-width: 220px;">
+                <div class="d-flex align-items-baseline justify-content-between mb-1">
+                    <span class="fw-semibold">{{ 'surveyResponseRatePercentText'|trans({'%percent%': rate.percent|round}) }}</span>
+                    <span class="text-secondary small">{{ 'surveyRespondentsOnTargetedText'|trans({'%responded%': rate.responded, '%targeted%': rate.targeted}) }}</span>
+                </div>
+                <div class="progress" style="height: 8px;">
+                    <div class="progress-bar" style="width: {{ rate.targeted > 0 ? (rate.responded * 100 / rate.targeted)|round : 0 }}%"></div>
+                </div>
+            </div>
+            <div class="d-flex gap-4">
+                <div><div class="fw-semibold fs-3">{{ rate.targeted }}</div><div class="text-secondary small">{{ 'surveyKpiTargetedLabel'|trans }}</div></div>
+                <div><div class="fw-semibold fs-3">{{ rate.responded }}</div><div class="text-secondary small">{{ 'surveyKpiRespondentsLabel'|trans }}</div></div>
+                <div><div class="fw-semibold fs-3">{{ rate.targeted - rate.responded }}</div><div class="text-secondary small">{{ 'surveyKpiPendingLabel'|trans }}</div></div>
+                <div><div class="fw-semibold fs-3">{{ campaign.answerableQuestionCount }}</div><div class="text-secondary small">{{ 'surveyKpiQuestionsLabel'|trans }}</div></div>
+            </div>
+        </div>
+    </div>
+</div>

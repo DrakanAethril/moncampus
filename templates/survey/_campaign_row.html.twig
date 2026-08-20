@@ -6,7 +6,7 @@
    class roster - the two differ the moment an option or a manual pick is involved. #}
 <tr>
     <td>
-        <span class="fw-semibold">{{ campaign.name }}</span>
+        <a class="fw-semibold" href="{{ path('app_survey_campaign', {id: campaign.id}) }}">{{ campaign.name }}</a>
         <div class="text-secondary small mt-1 d-flex align-items-center gap-2">
             <span class="cm-badge {{ waveCount > 1 ? 'cm-badge--teal' : 'cm-badge--gray' }}">
                 {{- waveCount > 1
@@ -32,4 +32,14 @@
     </td>
     <td><span class="cm-badge {{ campaign.state.badgeClass }}">{{ campaign.state.labelKey|trans }}</span></td>
     <td class="text-secondary">{{ campaign.closesAt ? campaign.closesAt|date('d/m/Y H:i') : 'surveyNoDeadlineText'|trans }}</td>
+    <td>
+        <div class="cm-actionbar cm-actionbar--inline justify-content-end">
+            <a class="cm-action cm-action--neutral" href="{{ path('app_survey_campaign', {id: campaign.id}) }}">{{ 'surveyResultsActionLabel'|trans }}</a>
+            {% set pending = rate.targeted - rate.responded %}
+            {% if pending > 0 and campaign.isOpenNow %}
+                {# The reminder carries the number of people still to answer, never a bare « Relancer ». #}
+                <a class="cm-action cm-action--warning" href="{{ path('app_survey_campaign_pending', {id: campaign.id}) }}">{{ 'surveyRemindActionLabel'|trans({'%count%': pending}) }}</a>
+            {% endif %}
+        </div>
+    </td>
 </tr>
