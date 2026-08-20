@@ -50,9 +50,15 @@ enum VmBatchItemStatus: string
         };
     }
 
-    /** Whether resuming the batch should try this item again. */
+    /**
+     * Whether resuming the batch has anything left to do about this item.
+     *
+     * Every status but Provisioned qualifies, because a pass advances an item by one step rather
+     * than finishing it: a machine still being cloned, or booted but not answering yet, is
+     * outstanding work exactly like one that was never started. Only Provisioned is done.
+     */
     public function isResumable(): bool
     {
-        return \in_array($this, [self::Planned, self::Failed], true);
+        return self::Provisioned !== $this;
     }
 }
