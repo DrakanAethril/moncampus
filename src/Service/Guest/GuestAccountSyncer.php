@@ -154,7 +154,7 @@ class GuestAccountSyncer
                 : $this->passwordGenerator->generateStrong();
 
             foreach ($this->createCommands($account, $password, $publicKey) as $command) {
-                $shell->run($command);
+                self::mustSucceed($command, $shell->run($command));
             }
 
             $passwords[$account->login] = $password;
@@ -175,7 +175,11 @@ class GuestAccountSyncer
             throw new \InvalidArgumentException(\sprintf('"%s" is not a valid login.', $login));
         }
 
-        return $shell->run(\sprintf('userdel --remove %s', escapeshellarg($login)));
+        $command = \sprintf('userdel --remove %s', escapeshellarg($login));
+        $result = $shell->run($command);
+        self::mustSucceed($command, $result);
+
+        return $result;
     }
 
     /**
@@ -193,7 +197,8 @@ class GuestAccountSyncer
         }
 
         $password = $this->passwordGenerator->generate();
-        $shell->run($this->setPasswordCommand($login, $password));
+        $command = $this->setPasswordCommand($login, $password);
+        self::mustSucceed($command, $shell->run($command));
 
         return $password;
     }
@@ -237,5 +242,22 @@ class GuestAccountSyncer
     private function setPasswordCommand(string $login, #[\SensitiveParameter] string $password): string
     {
         return \sprintf('printf %%s %s | chpasswd', escapeshellarg($login.':'.$password));
+    }
+
+    /**
+     * Every command sent here is one whose whole point is its effect: an account created, a password
+     * set, a key installed. A refusal must therefore stop the caller rather than be counted as done.
+     *
+     * An *undetermined* result is not a refusal - see App\Service\Guest\GuestCommandResult. The
+     * session ending before the verdict comes back is what a machine that reboots does, and treating
+     * it as an error would have administrators chasing something that did not happen.
+     *
+     * @throws GuestCommandFailedException
+     */
+    private static function mustSucceed(string $command, GuestCommandResult $result): void
+    {
+        if (!$result->isUndetermined() && !$result->isSuccess()) {
+            throw GuestCommandFailedException::of($command, $result);
+        }
     }
 }

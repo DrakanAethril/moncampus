@@ -162,6 +162,11 @@ class ProxmoxHostType extends AbstractType
                 'label' => 'proxmoxHostAllowStopFieldLabel',
                 'required' => false,
             ])
+            ->add('guestLoginUser', TextType::class, [
+                'label' => 'proxmoxHostGuestLoginUserFieldLabel',
+                'help' => 'proxmoxHostGuestLoginUserFieldHelp',
+                'required' => true,
+            ])
             ->add('maxGuests', IntegerType::class, [
                 'label' => 'proxmoxHostMaxGuestsFieldLabel',
                 'required' => false,
