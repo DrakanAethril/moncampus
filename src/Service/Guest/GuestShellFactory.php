@@ -13,6 +13,11 @@ namespace App\Service\Guest;
  * first) is how those machines are still reachable, and it is what makes
  * `app:proxmox:rotate-platform-key` safe to run on a fleet that is never entirely awake.
  *
+ * The set is small on purpose, and has to stay small: every key is a full connection attempt, and
+ * against a machine that does not answer each one is paid to the end of its budget. That is why
+ * "usable" excludes retired keys - see PlatformSshKeyRepository::findUsable(). In the steady state
+ * this loop runs once, and twice for the length of a rotation.
+ *
  * The account MonCampus logs in as is the one cloud-init laid down. That is not a decision this
  * class makes - it is decided by the template - so it is a parameter and not a constant.
  */
