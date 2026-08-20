@@ -9,6 +9,7 @@ use App\Entity\ProxmoxHost;
 use App\Entity\ProxmoxOperation;
 use App\Entity\User;
 use App\Enum\ProxmoxAction;
+use App\Service\Guest\GuestAuthorizedKeys;
 use App\Service\Network\GuestNetworkConfigurator;
 use App\Service\Network\IpAllocator;
 use Symfony\Component\Lock\LockFactory;
@@ -47,6 +48,7 @@ class GuestCreator
         private readonly ProxmoxOperationTracker $tracker,
         private readonly IpAllocator $allocator,
         private readonly GuestNetworkConfigurator $configurator,
+        private readonly GuestAuthorizedKeys $authorizedKeys,
         private readonly LockFactory $lockFactory,
     ) {
     }
@@ -123,11 +125,18 @@ class GuestCreator
      *
      * Separate from create() because the two are separated by a wait - the clone is a task with a
      * UPID, and writing into a guest that is still being copied is refused.
+     *
+     * The keys are asked for here rather than handed in, so that no caller can create a machine
+     * without them - see App\Service\Guest\GuestAuthorizedKeys for what the set is and why it is
+     * read now rather than kept.
+     *
+     * @return list<string> who each installed key belongs to, for the machine's installation log -
+     *                      empty for a machine that has no cloud-init drive to write into
      */
-    public function configureAndStart(ProxmoxHost $host, GuestCreationRequest $request, ?string $sshKey = null): void
+    public function configureAndStart(ProxmoxHost $host, GuestCreationRequest $request): array
     {
         if (!$request->isConfigurable()) {
-            return;
+            return [];
         }
 
         $client = $this->clientFactory->provision($host);
@@ -139,6 +148,7 @@ class GuestCreator
         // application knows nothing about and would otherwise drop without a word. Costs one call,
         // on the path that is already several.
         $existingNet0 = $client->get($path)->nullableString('net0');
+        $keys = $this->authorizedKeys->forNewGuest();
 
         $parameters = $this->configurator->qemuParameters(
             $request->hostname,
@@ -147,7 +157,7 @@ class GuestCreator
             $range->getGateway(),
             $range->getBridge(),
             $range->getVlan(),
-            $sshKey,
+            $keys->material,
             existingNet0: $existingNet0,
         );
 
@@ -158,6 +168,8 @@ class GuestCreator
         if ($request->startAfterCreation) {
             $client->post(\sprintf('/nodes/%s/qemu/%d/status/start', rawurlencode($request->node), $request->vmid));
         }
+
+        return $keys->descriptors;
     }
 
     /**

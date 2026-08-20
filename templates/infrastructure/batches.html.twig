@@ -65,6 +65,13 @@
                                 </td>
                                 <td class="cm-actions">
                                         <a href="{{ path('app_infrastructure_batch', {id: batch.id}) }}">{{ 'vmBatchOpenAction'|trans }}</a>
+                                        {# The plan goes; the machines it created stay on the hypervisor.
+                                           This application does not destroy machines at all. #}
+                                        <form method="post" action="{{ path('app_infrastructure_batch_remove', {id: batch.id}) }}"
+                                              onsubmit="return confirm('{{ 'vmBatchRemoveConfirmText'|trans|e('js') }}')">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('infrastructure_action') }}">
+                                            <button type="submit" class="cm-action--danger">{{ 'vmBatchRemoveAction'|trans }}</button>
+                                        </form>
                                 </td>
                             </tr>
                         {% endfor %}

@@ -11,6 +11,7 @@ use App\Entity\ProxmoxHost;
 use App\Entity\User;
 use App\Entity\VmBatch;
 use App\Entity\VmBatchItem;
+use App\Enum\VmBatchItemStatus;
 use App\Enum\VmBatchShape;
 use App\Repository\GroupBatchRepository;
 use App\Repository\IpRangeRepository;
@@ -348,6 +349,75 @@ class VmBatchController extends AbstractController
         $this->denyAccessUnlessGranted(ProxmoxHostVoter::PROVISION, $host);
 
         return $this->json(['ok' => true, ...$executor->run($batch, $this->currentUser())]);
+    }
+
+    /**
+     * Takes a machine out of a batch before it exists.
+     *
+     * Only a planned one: from the moment a clone has been asked for, the row is the only record of
+     * a machine that exists on the hypervisor - its address, its task, its accounts - and deleting
+     * it would leave that machine with nothing pointing at it. **Nothing here ever destroys a
+     * machine**; that is not something this application does at all.
+     */
+    #[Route(path: '/infrastructure/batches/{id}/items/{itemId}/remove', name: 'app_infrastructure_batch_item_remove', requirements: ['id' => '\d+', 'itemId' => '\d+'], methods: ['POST'])]
+    public function removeItem(Request $request, VmBatchRepository $batches, VmBatchItemRepository $items, EntityManagerInterface $entityManager, int $id, int $itemId): Response
+    {
+        // Read from the BODY, not the header: these two are ordinary form posts, while
+        // assertValidInfrastructureToken() serves the fetch-driven actions of this area.
+        if (!$this->isCsrfTokenValid('infrastructure_action', (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $batch = $batches->find($id) ?? throw $this->createNotFoundException();
+        $item = $items->find($itemId);
+
+        // Its own batch, checked rather than trusted from the URL.
+        if (null === $item || $item->getBatch()?->getId() !== $batch->getId()) {
+            throw $this->createNotFoundException();
+        }
+
+        if (VmBatchItemStatus::Planned !== $item->getStatus()) {
+            $this->addFlash('error', 'vmBatchItemNotRemovableFlashMessage');
+
+            return $this->redirectToRoute('app_infrastructure_batch', ['id' => $id]);
+        }
+
+        $entityManager->remove($item);
+        $entityManager->flush();
+        $this->addFlash('success', 'vmBatchItemRemovedFlashMessage');
+
+        return $this->redirectToRoute('app_infrastructure_batch', ['id' => $id]);
+    }
+
+    /**
+     * Removes the batch itself - the plan and its record, never the machines.
+     *
+     * The machines it created go on running on the hypervisor, untouched and unreachable from here
+     * afterwards; the screen says so before asking. The accounts already placed keep their rows and
+     * simply lose the batch they belonged to (`ON DELETE SET NULL`), because they describe accounts
+     * that exist on real machines and outlive the plan that put them there.
+     */
+    #[Route(path: '/infrastructure/batches/{id}/remove', name: 'app_infrastructure_batch_remove', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function remove(Request $request, VmBatchRepository $batches, EntityManagerInterface $entityManager, int $id): Response
+    {
+        // Read from the BODY, not the header: these two are ordinary form posts, while
+        // assertValidInfrastructureToken() serves the fetch-driven actions of this area.
+        if (!$this->isCsrfTokenValid('infrastructure_action', (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $batch = $batches->find($id) ?? throw $this->createNotFoundException();
+        $host = $batch->getHost();
+
+        if (null !== $host) {
+            $this->denyAccessUnlessGranted(ProxmoxHostVoter::PROVISION, $host);
+        }
+
+        $entityManager->remove($batch);
+        $entityManager->flush();
+        $this->addFlash('success', 'vmBatchRemovedFlashMessage');
+
+        return $this->redirectToRoute('app_infrastructure_batches');
     }
 
     private function programFrom(Request $request, ProgramRepository $programs): ?Program

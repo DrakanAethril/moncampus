@@ -26,6 +26,34 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.08.20.3'
+      date: '2026-08-20'
+      summary: "Les administrateurs peuvent enregistrer leurs clés SSH publiques sur leur profil : les machines virtuelles pédagogiques créées ensuite les acceptent. Le déploiement d'un ensemble de machines se suit désormais machine par machine, avec le détail de ce qui a été fait et de ce qui a échoué."
+      entries:
+          - type: nouveaute
+            title: 'Enregistrer ses clés SSH publiques sur son profil'
+            detail: "Réservé à l'administration. Chaque clé est vérifiée à la saisie et porte le nom qu'on lui donne ; les machines virtuelles créées ensuite l'acceptent, celles qui existent déjà ne sont pas modifiées."
+          - type: nouveaute
+            title: 'Un journal détaillé pour chaque machine virtuelle installée'
+            detail: "Chaque étape et son résultat, de l'adresse attribuée jusqu'aux comptes créés, en passant par les clés installées, nommées une par une. Un échec y est consigné avec sa raison exacte."
+          - type: modification
+            title: 'Les machines virtuelles se déploient une par une'
+            detail: "Plus lisible à suivre, et le serveur de virtualisation finit une machine avant qu'on lui en demande une autre."
+          - type: modification
+            title: 'Retirer une machine prévue, ou supprimer un ensemble entier'
+            detail: "Une machine ne peut être retirée que tant qu'elle n'a pas été lancée. Supprimer un ensemble efface son suivi : les machines déjà créées, elles, continuent de tourner."
+          - type: modification
+            title: 'Les comptes d’une machine sont accessibles depuis la liste des machines'
+          - type: fix
+            title: "Un déploiement ne reste plus bloqué sur ses premières machines"
+            detail: "Les machines suivantes ne démarraient jamais tant que les premières n'avaient pas abouti. Chacune a maintenant son tour."
+          - type: fix
+            title: "Les écrans qui interrogent une machine répondent au lieu d'expirer"
+            detail: "Une machine qui ne répond pas encore bloquait la page une minute entière avant de tomber en erreur ; elle est désormais signalée comme injoignable, avec la raison."
+          - type: modification
+            title: "Une machine virtuelle créée à l'unité est menée jusqu'au bout"
+            detail: "Elle reçoit son nom, son adresse et ses clés, puis démarre si on l'a demandé — ce qui n'était fait que pour les ensembles de machines."
+
     - version: '2026.08.20.2'
       date: '2026-08-20'
       summary: "Correctif sur les machines virtuelles pédagogiques : le déploiement d'un ensemble de machines n'allait pas jusqu'au bout, faute de pouvoir constater que la première étape avait réussi."

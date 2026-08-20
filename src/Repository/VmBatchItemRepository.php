@@ -36,7 +36,12 @@ class VmBatchItemRepository extends ServiceEntityRepository
                 VmBatchItemStatus::cases(),
                 static fn (VmBatchItemStatus $status): bool => $status->isResumable(),
             )))
-            ->orderBy('i.position', 'ASC')
+            // Turns, not position. A waiting item stays resumable and a failed one is re-attempted
+            // on purpose, so ordering by position let five machines that could not progress hold
+            // every slot of every pass while the sixth never began. Nulls sort first in ASC, which
+            // is what is wanted: a machine that has never been attempted goes before a slow one.
+            ->orderBy('i.lastAttemptAt', 'ASC')
+            ->addOrderBy('i.position', 'ASC')
             ->getQuery()
             ->getResult();
     }

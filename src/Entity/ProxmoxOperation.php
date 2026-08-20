@@ -95,6 +95,27 @@ class ProxmoxOperation
     #[ORM\Column(name: 'settled_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $settledAt = null;
 
+    /**
+     * Whether somebody is expected to finish this machine once the clone lands - configuration,
+     * then the start if it was asked for.
+     *
+     * Only a creation ever carries it, and only the creation wizard sets it: a batch drives its own
+     * machines through App\Service\VmBatch\VmBatchExecutor and must not be configured twice. The
+     * wizard has nothing of the sort - it answers a redirect the moment Proxmox accepts the clone -
+     * so what finishes the job is whoever is watching the operation. See
+     * App\Service\Proxmox\GuestCreationCompleter.
+     */
+    #[ORM\Column(name: 'completion_requested', options: ['default' => false])]
+    private bool $completionRequested = false;
+
+    /** The wizard's « démarrer après la création » box, kept because the start happens much later. */
+    #[ORM\Column(name: 'start_after_creation', options: ['default' => false])]
+    private bool $startAfterCreation = false;
+
+    /** Set once the machine has been configured, so two pollers at once do it only once. */
+    #[ORM\Column(name: 'configured_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $configuredAt = null;
+
     public function __construct(ProxmoxHost $host, ProxmoxAction $action, ?User $requestedBy)
     {
         $this->host = $host;
@@ -164,6 +185,37 @@ class ProxmoxOperation
     public function getUpid(): ?string
     {
         return $this->upid;
+    }
+
+    /** The wizard, saying it will not be there to finish the job itself. */
+    public function requestCompletion(bool $startAfterCreation): static
+    {
+        $this->completionRequested = true;
+        $this->startAfterCreation = $startAfterCreation;
+
+        return $this;
+    }
+
+    public function isCompletionRequested(): bool
+    {
+        return $this->completionRequested;
+    }
+
+    public function wantsStartAfterCreation(): bool
+    {
+        return $this->startAfterCreation;
+    }
+
+    public function getConfiguredAt(): ?\DateTimeImmutable
+    {
+        return $this->configuredAt;
+    }
+
+    public function markConfigured(): static
+    {
+        $this->configuredAt = new \DateTimeImmutable();
+
+        return $this;
     }
 
     /** Proxmox accepted the request and handed back a task id: the operation is now under way. */

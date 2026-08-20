@@ -23,7 +23,6 @@ use App\Service\Guest\GuestAccountService;
 use App\Service\Guest\GuestShell;
 use App\Service\Guest\GuestShellFactory;
 use App\Service\Guest\GuestUnreachableException;
-use App\Service\Guest\PlatformKeyProvider;
 use App\Service\Guest\PlatformKeyUnavailableException;
 use App\Service\Guest\PostInstallRunner;
 use App\Service\Guest\UnixLogin;
@@ -160,6 +159,35 @@ class VmBatchExecutorTest extends TestCase
         self::assertSame(1, $result['failed']);
     }
 
+    /**
+     * A pass must answer inside PHP's `max_execution_time`, whatever the machines are doing.
+     *
+     * This is the shape that reached production: five machines cloned and started, none of them
+     * answering SSH yet, and every pass spending its whole budget on the first of them before the
+     * engine killed the request at thirty seconds. A fatal error is not caught, so the pass wrote
+     * nothing - and because a pass always takes the *first* five resumable items, the sixth machine
+     * onwards could never begin. The batch looked stuck at five for ever.
+     *
+     * The budget is checked before a step is begun rather than during it: the steps are already
+     * bounded individually, and stopping between two of them is what makes the remainder a wait
+     * instead of a loss.
+     */
+    public function testAPassStopsWhenItsBudgetIsSpentInsteadOfBeingKilled(): void
+    {
+        [$batch, $item] = $this->batchWithItem(VmBatchItemStatus::Planned);
+        $creator = $this->createMock(GuestCreator::class);
+        $creator->expects(self::never())->method('create');
+        $this->creator = $creator;
+
+        // Nothing is attempted at all with no budget, which is the guard reduced to its extreme -
+        // and the only value that makes the assertion independent of how fast the machine is.
+        $result = $this->deployOnce($batch, $item, budgetSeconds: 0.0);
+
+        self::assertSame(VmBatchItemStatus::Planned, $item->getStatus(), 'an item nobody got to must keep its place in the queue');
+        self::assertSame(1, $result['waiting']);
+        self::assertSame(0, $result['failed'], 'running out of budget is not a failure');
+    }
+
     public function testAMachineThatDoesNotAnswerYetIsAWaitAndNotAFailure(): void
     {
         [$batch, $item] = $this->batchWithItem(VmBatchItemStatus::Created);
@@ -172,6 +200,30 @@ class VmBatchExecutorTest extends TestCase
         self::assertSame(VmBatchItemStatus::Created, $item->getStatus());
         self::assertSame(1, $result['waiting']);
         self::assertSame(0, $result['failed']);
+    }
+
+    /**
+     * Every item a pass takes in hand loses its turn, whatever came of it.
+     *
+     * This is half of the fix for a batch that read as stuck at five: a pass takes the items that
+     * have gone longest without a turn, and this stamp is what that order is built on. It is set
+     * before the step rather than after, so an item that fails - and a failed item is deliberately
+     * re-attempted here - still goes to the back of the queue instead of holding its slot for ever.
+     * The other half is the ordering itself, in App\Tests\Functional\VmBatchTurnsTest.
+     */
+    public function testAnAttemptedItemLosesItsTurnEvenWhenItDoesNotProgress(): void
+    {
+        [$batch, $item] = $this->batchWithItem(VmBatchItemStatus::Created);
+        $item->setIpAllocation($this->allocation());
+        $item->setVmid(210);
+        $this->shells->method('open')->willThrowException(new GuestUnreachableException('no route'));
+
+        self::assertNull($item->getLastAttemptAt());
+
+        $result = $this->deployOnce($batch, $item);
+
+        self::assertSame(1, $result['waiting'], 'a machine that does not answer yet is still only waiting');
+        self::assertNotNull($item->getLastAttemptAt(), 'a waiting item must not keep its turn');
     }
 
     public function testAMissingPlatformKeyFailsRatherThanWaitsForEver(): void
@@ -259,7 +311,7 @@ class VmBatchExecutorTest extends TestCase
     }
 
     /** @return array{attempted: int, progressed: int, waiting: int, failed: int, remaining: int} */
-    private function deployOnce(VmBatch $batch, VmBatchItem $item): array
+    private function deployOnce(VmBatch $batch, VmBatchItem $item, float $budgetSeconds = 60.0): array
     {
         // First call returns the outstanding item, the second (after the pass) recounts what is left.
         $this->items->method('findResumable')->willReturnCallback(
@@ -275,10 +327,10 @@ class VmBatchExecutorTest extends TestCase
             $this->tracker,
             $this->clientFactory(),
             $this->shells,
-            $this->createStub(PlatformKeyProvider::class),
             $this->postInstall,
             new UnixLogin(),
             $this->createStub(EntityManagerInterface::class),
+            $budgetSeconds,
         );
 
         return $executor->run($batch, null);

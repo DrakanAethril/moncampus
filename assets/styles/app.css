@@ -7921,3 +7921,61 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
     font-size: 12.5px;
     margin-bottom: 14px;
 }
+
+/* Installation log of one machine in a batch: a folded narrative under its row. Read top to bottom
+   when a machine will not let anybody in, so the step and its detail sit on one line and a refusal
+   is coloured rather than merely worded. */
+.cm-installlog__row > td {
+    padding-top: 0;
+    background: var(--cm-surface-soft);
+}
+
+.cm-installlog > summary {
+    cursor: pointer;
+    color: var(--cm-muted);
+    font-size: 0.85rem;
+    padding: 4px 0;
+}
+
+.cm-installlog__list {
+    list-style: none;
+    margin: 4px 0 8px;
+    padding: 0;
+}
+
+.cm-installlog__entry {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: baseline;
+    padding: 3px 0;
+    border-bottom: 1px solid var(--cm-border-soft);
+    font-size: 0.85rem;
+}
+
+.cm-installlog__entry:last-child {
+    border-bottom: 0;
+}
+
+.cm-installlog__at {
+    color: var(--cm-faint);
+    flex: 0 0 auto;
+}
+
+.cm-installlog__step {
+    flex: 0 0 auto;
+    font-weight: 500;
+}
+
+/* The detail is the part that gets long - an SSH refusal, a hypervisor's own words - so it takes
+   the remaining width and wraps rather than stretching the table. */
+.cm-installlog__detail {
+    flex: 1 1 240px;
+    color: var(--cm-muted);
+    word-break: break-word;
+}
+
+.cm-installlog__entry--ko .cm-installlog__step,
+.cm-installlog__entry--ko .cm-installlog__detail {
+    color: var(--cm-red-tx);
+}
