@@ -29,6 +29,20 @@ namespace App\Service\Guest;
  */
 class GuestShellFactory
 {
+    /**
+     * The account MonCampus creates on every machine it installs, and the only one it logs in with.
+     *
+     * A constant and not a setting: it is handed to cloud-init as `ciuser` when a machine is
+     * configured, so naming it is what brings it into existence - the same name on both sides by
+     * construction. A configurable name could only ever describe machines this application did not
+     * create, and it does not manage any.
+     *
+     * Not root, and not the image's default user either: a template need not have one, its name
+     * varies by image, and root is the account cloud-init deliberately neuters. Everything this
+     * account runs is elevated with sudo - see App\Service\Guest\GuestCommandLine.
+     */
+    public const string SERVICE_ACCOUNT = 'moncampus';
+
     public function __construct(private readonly PlatformKeyProvider $keyProvider)
     {
     }
@@ -37,7 +51,7 @@ class GuestShellFactory
      * @throws PlatformKeyUnavailableException when no key exists at all
      * @throws GuestUnreachableException       when no key opens a session
      */
-    public function open(string $ip, string $username = 'root', int $port = 22): GuestShell
+    public function open(string $ip, string $username = self::SERVICE_ACCOUNT, int $port = 22): GuestShell
     {
         $keys = $this->keyProvider->usableKeys();
 

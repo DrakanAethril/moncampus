@@ -139,32 +139,6 @@ class ProxmoxHost
     #[ORM\Column(name: 'allow_create')]
     private bool $allowCreate = false;
 
-    /**
-     * The account MonCampus **creates on** each machine and then logs into.
-     *
-     * One name for both halves, because they are the same account: it is handed to cloud-init as
-     * `ciuser` when the machine is configured, which is what brings it into existence with the SSH
-     * keys already in place, and it is the account every later session opens with.
-     *
-     * That is why it is not the image's own default user. A template need not have one at all, and
-     * when it does, its name is whatever the image happens to call it - `debian`, `ubuntu`, or
-     * something a hand-built template never created. Root is worse still: Debian and Ubuntu cloud
-     * images enable cloud-init's `disable_root`, which puts the keys into root's authorized_keys
-     * behind a forced command printing « log in as debian instead » before exiting, so root
-     * *accepts* the key and then runs nothing at all. Naming an account MonCampus owns depends on
-     * none of that.
-     *
-     * Everything it runs is elevated with sudo - see App\Service\Guest\GuestCommandLine.
-     *
-     * It only reaches a machine through cloud-init, which runs **at first boot and never again**:
-     * a machine created before this account was named keeps whatever it was built with, and the
-     * setting is what such a host can be pointed back at.
-     */
-    #[ORM\Column(name: 'guest_login_user', length: 32, options: ['default' => 'moncampus'])]
-    #[Assert\NotBlank]
-    #[Assert\Regex(pattern: '/^[a-z_][a-z0-9_-]{0,31}$/', message: 'proxmoxHostGuestLoginUserInvalidMessage')]
-    private string $guestLoginUser = 'moncampus';
-
     #[ORM\Column(name: 'max_guests', nullable: true)]
     #[Assert\Positive]
     private ?int $maxGuests = null;
@@ -547,18 +521,6 @@ class ProxmoxHost
     public function setAllowCreate(bool $allowCreate): static
     {
         $this->allowCreate = $allowCreate;
-
-        return $this;
-    }
-
-    public function getGuestLoginUser(): string
-    {
-        return $this->guestLoginUser;
-    }
-
-    public function setGuestLoginUser(string $guestLoginUser): static
-    {
-        $this->guestLoginUser = $guestLoginUser;
 
         return $this;
     }

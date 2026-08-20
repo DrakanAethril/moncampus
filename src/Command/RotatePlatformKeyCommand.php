@@ -114,10 +114,10 @@ class RotatePlatformKeyCommand extends Command
         $unreachable = [];
 
         foreach ($this->machines() as $machine) {
-            [$ip, $label, $loginUser] = $machine;
+            [$ip, $label] = $machine;
 
             try {
-                $shell = $this->shellFactory->open($ip, $loginUser);
+                $shell = $this->shellFactory->open($ip);
                 // Appended, then deduplicated: running this twice must not double the line.
                 $shell->run(\sprintf(
                     'printf %%s %s >> /root/.ssh/authorized_keys && sort -u -o /root/.ssh/authorized_keys /root/.ssh/authorized_keys',
@@ -159,10 +159,10 @@ class RotatePlatformKeyCommand extends Command
         $cleaned = 0;
 
         foreach ($this->machines() as $machine) {
-            [$ip, $label, $loginUser] = $machine;
+            [$ip, $label] = $machine;
 
             try {
-                $shell = $this->shellFactory->open($ip, $loginUser);
+                $shell = $this->shellFactory->open($ip);
 
                 foreach ($old as $key) {
                     $shell->run(\sprintf(
@@ -199,7 +199,7 @@ class RotatePlatformKeyCommand extends Command
      * reach. A machine created by hand in Proxmox has no account row here and no platform key on
      * it either, so it is correctly absent.
      *
-     * @return list<array{0: string, 1: string, 2: string}> [ip, label, login user]
+     * @return list<array{0: string, 1: string}> [ip, label]
      */
     private function machines(): array
     {
@@ -222,9 +222,7 @@ class RotatePlatformKeyCommand extends Command
             }
 
             $seen[$key] = true;
-            // The login account travels with the address: a fleet can hold machines from two image
-            // families, and root is only right for one of them.
-            $machines[] = [$ip, \sprintf('%s (%d)', $account->getHost()?->getLabel() ?? '—', $account->getVmid()), $account->getHost()?->getGuestLoginUser() ?? 'root'];
+            $machines[] = [$ip, \sprintf('%s (%d)', $account->getHost()?->getLabel() ?? '—', $account->getVmid())];
         }
 
         return $machines;
