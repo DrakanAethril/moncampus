@@ -49,6 +49,9 @@ class ProgressionQualiopiBuilderTest extends TestCase
 
         $schoolYear = new SchoolYear(new \DateTimeImmutable('2026-09-01'), new \DateTimeImmutable('2027-06-30'));
         $this->teacher = new User('teacher');
+        // An id, because the export tells a redelivery from a co-delivery by comparing the teachers
+        // of the two créneaux - two teacherless slots would read as "we do not know who".
+        $this->setId($this->teacher, $this->nextId++);
         $this->program = new Program('SIO-2 2026-2027', 'SIO-2', new Cohort('SIO-2', new Track('SIO', new Section('BTS'))), $schoolYear);
         $this->topic = new Topic('Cybersécurité', $this->program, new TopicGroup('Bloc 1', $this->program));
     }
@@ -345,13 +348,170 @@ class ProgressionQualiopiBuilderTest extends TestCase
         return $instance;
     }
 
-    private function slot(string $day): LessonSession
+    /**
+     * A créneau names its teacher, as every imported one does - and the export now reads it to tell
+     * a redelivery (the same formateur, twice) from a co-delivery (two formateurs, at once). Slots
+     * default to the progression's own teacher, which is the ordinary case; a co-animated one is
+     * built by passing the colleague.
+     */
+    // --- Co-animation (design/validated/co-animation.md, lot 5) --------------------------------
+    //
+    // These are the three the design calls out as "the ones that would ship a false document", plus
+    // the guard on the whole decision.
+
+    public function testACoAnimatedSeancePrintsCoAnimatedAndNeverRedispensed(): void
+    {
+        // Two groups at the same hour, two formateurs, two rooms. Nothing is re-given later and the
+        // créneau is not distinct, so « redispensée … sur un créneau distinct » would be false.
+        $progression = new Progression($this->topic, $this->teacher);
+        $colleague = $this->colleague();
+        $progression->addCoTeacher($colleague);
+
+        $sequence = $this->sequence($progression, 'Analyse de risques');
+        $seance = new ProgressionSeance($sequence, 'Cartographier les actifs');
+        $seance->setPlannedMinutes(120);
+        $seance->setSeanceInstance($this->seanceInstance('Cartographier les actifs'));
+
+        foreach ([[$this->teacher, 'SLAM'], [$colleague, 'SISR']] as [$teacher, $optionName]) {
+            $placement = new ProgressionSeancePlacement($seance, $this->slot('2026-09-01', $teacher));
+            $placement->setDurationMinutes(120);
+            $placement->setOption($this->option($optionName));
+            $placement->setConfirmed(true);
+        }
+
+        $data = $this->builder->build($progression);
+        $row = $data['sequences'][0]['seances'][0];
+
+        self::assertSame([], $row['redeliveries'], 'nothing was re-given: the two deliveries are simultaneous');
+        self::assertCount(1, $row['coDeliveries']);
+        self::assertSame('SISR', $row['coDeliveries'][0]['group']);
+        self::assertSame('colleague', $row['coDeliveries'][0]['teacher']);
+
+        self::assertSame(1, $data['coAnimatedSeanceCount']);
+        self::assertSame(0, $data['redeliveredSeanceCount']);
+        self::assertTrue($data['sequences'][0]['coAnimated']);
+        self::assertSame(['teacher', 'colleague'], $data['sequences'][0]['deliveredBy']);
+    }
+
+    public function testTheSameTeacherTwiceStillPrintsRedispensed(): void
+    {
+        // « Redispensée » keeps its meaning exactly where it is true, and the séance's own row says
+        // so even inside a progression that carries a co-animator.
+        $progression = new Progression($this->topic, $this->teacher);
+        $progression->addCoTeacher($this->colleague());
+
+        $sequence = $this->sequence($progression, 'Politique de mots de passe');
+        $seance = new ProgressionSeance($sequence, 'Politique de mots de passe');
+        $seance->setPlannedMinutes(60);
+        $seance->setSeanceInstance($this->seanceInstance('Politique de mots de passe'));
+
+        foreach ([['2026-09-01', 'SLAM'], ['2026-09-02', 'SISR']] as [$day, $optionName]) {
+            $placement = new ProgressionSeancePlacement($seance, $this->slot($day));
+            $placement->setDurationMinutes(60);
+            $placement->setOption($this->option($optionName));
+            $placement->setConfirmed(true);
+        }
+
+        $data = $this->builder->build($progression);
+        $row = $data['sequences'][0]['seances'][0];
+
+        self::assertCount(1, $row['redeliveries']);
+        self::assertSame([], $row['coDeliveries']);
+        self::assertSame(1, $data['redeliveredSeanceCount']);
+        self::assertSame(0, $data['coAnimatedSeanceCount']);
+    }
+
+    public function testAWholeClassSequenceInsideACoAnimatedProgressionCarriesNoMark(): void
+    {
+        // The mark is computed per séquence from its deliveries and NEVER inherited: a co-animated
+        // matière holds very well a séquence the titulaire runs alone with the whole class, and
+        // marking it would be a false statement of the same family as the one above.
+        $progression = new Progression($this->topic, $this->teacher);
+        $progression->addCoTeacher($this->colleague());
+
+        $solo = $this->sequence($progression, 'Sensibilisation des utilisateurs');
+        $this->placedSeance($solo, 'Ingénierie sociale', 120, '2026-09-01');
+
+        $data = $this->builder->build($progression);
+
+        self::assertFalse($data['sequences'][0]['coAnimated'], 'the progression is co-animated; this séquence is not');
+        self::assertSame([], $data['sequences'][0]['seances'][0]['coDeliveries']);
+        self::assertSame(0, $data['coAnimatedSeanceCount']);
+    }
+
+    public function testAddingACoAnimatorAndTheirPlacementsChangesNoVolume(): void
+    {
+        // THE guard on the whole design. Every printed volume is a learner volume, and a séance
+        // given at once to two groups is received once by each apprenant - so co-animation is not
+        // an exception to that rule, it is the case it was written for. That the totals need not
+        // move is the evidence the reading was right.
+        $before = $this->builder->build($this->progressionWithOneGroupDelivery());
+        $after = $this->builder->build($this->progressionWithOneGroupDelivery(coAnimated: true));
+
+        self::assertSame($before['totalLearnerMinutes'], $after['totalLearnerMinutes']);
+        self::assertSame($before['totalPlannedMinutes'], $after['totalPlannedMinutes']);
+        self::assertSame($before['seanceCount'], $after['seanceCount']);
+        self::assertSame($before['placedSeanceCount'], $after['placedSeanceCount']);
+        self::assertSame(
+            $before['sequences'][0]['learnerMinutes'],
+            $after['sequences'][0]['learnerMinutes'],
+        );
+        self::assertSame(
+            $before['sequences'][0]['seances'][0]['learnerMinutes'],
+            $after['sequences'][0]['seances'][0]['learnerMinutes'],
+        );
+
+        // Only the wording moved.
+        self::assertFalse($before['sequences'][0]['coAnimated']);
+        self::assertTrue($after['sequences'][0]['coAnimated']);
+    }
+
+    /**
+     * One séance delivered to SLAM by the titulaire - and, when asked, also to SISR by a colleague.
+     * The second delivery is what a co-animator adds, and it must add no minute to anybody's total.
+     */
+    private function progressionWithOneGroupDelivery(bool $coAnimated = false): Progression
+    {
+        $progression = new Progression($this->topic, $this->teacher);
+        $sequence = $this->sequence($progression, 'Analyse de risques');
+        $seance = new ProgressionSeance($sequence, 'Cartographier les actifs');
+        $seance->setPlannedMinutes(120);
+        $seance->setSeanceInstance($this->seanceInstance('Cartographier les actifs'));
+
+        $first = new ProgressionSeancePlacement($seance, $this->slot('2026-09-01'));
+        $first->setDurationMinutes(120);
+        $first->setOption($this->option('SLAM'));
+        $first->setConfirmed(true);
+
+        if ($coAnimated) {
+            $colleague = $this->colleague();
+            $progression->addCoTeacher($colleague);
+
+            $second = new ProgressionSeancePlacement($seance, $this->slot('2026-09-01', $colleague));
+            $second->setDurationMinutes(120);
+            $second->setOption($this->option('SISR'));
+            $second->setConfirmed(true);
+        }
+
+        return $progression;
+    }
+
+    private function colleague(): User
+    {
+        $colleague = new User('colleague');
+        $this->setId($colleague, $this->nextId++);
+
+        return $colleague;
+    }
+
+    private function slot(string $day, ?User $teacher = null): LessonSession
     {
         $session = new LessonSession($this->program);
         $session->setDay(new \DateTimeImmutable($day));
         $session->setStartHour(new \DateTimeImmutable($day.' 08:00'));
         $session->setEndHour(new \DateTimeImmutable($day.' 10:00'));
         $session->setTopic($this->topic);
+        $session->setTeacher($teacher ?? $this->teacher);
         $this->setId($session, $this->nextId++);
 
         return $session;

@@ -16,6 +16,7 @@ use App\Service\JsonRequestPayload;
 use App\Service\Proxmox\ProxmoxCertificateInspector;
 use App\Service\Proxmox\ProxmoxCheckWarning;
 use App\Service\Proxmox\ProxmoxClientFactory;
+use App\Service\Proxmox\ProxmoxFailureMessage;
 use App\Service\Proxmox\ProxmoxHostChecker;
 use App\Service\Proxmox\ProxmoxSecretWriter;
 use App\Service\Proxmox\ProxmoxUnavailableException;
@@ -50,8 +51,10 @@ class HostController extends AbstractController
 {
     use InfrastructureTrait;
 
-    public function __construct(private readonly TranslatorInterface $translator)
-    {
+    public function __construct(
+        private readonly TranslatorInterface $translator,
+        private readonly ProxmoxFailureMessage $failureMessage,
+    ) {
     }
 
     #[Route(path: '/infrastructure/hosts', name: 'app_infrastructure_hosts')]
@@ -226,7 +229,7 @@ class HostController extends AbstractController
             // 200 with ok:false, not a 4xx: an unreachable hypervisor is an ordinary answer to
             // "can you reach it?", and the screen renders it as a message rather than as a broken
             // request.
-            return $this->json(['ok' => false, 'message' => $exception->getMessage()]);
+            return $this->json(['ok' => false, 'message' => $this->failureMessage->readable($exception)]);
         }
     }
 
@@ -245,7 +248,7 @@ class HostController extends AbstractController
         try {
             $certificate = $inspector->inspect($payload->string('hostname'), $payload->int('port') ?? ProxmoxHost::DEFAULT_PORT);
         } catch (ProxmoxUnavailableException $exception) {
-            return $this->json(['ok' => false, 'message' => $exception->getMessage()]);
+            return $this->json(['ok' => false, 'message' => $this->failureMessage->readable($exception)]);
         }
 
         return $this->json([

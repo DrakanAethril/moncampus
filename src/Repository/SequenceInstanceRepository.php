@@ -45,11 +45,33 @@ class SequenceInstanceRepository extends ServiceEntityRepository
      */
     public function findForProgramCreatedBy(Program $program, User $creator): array
     {
+        return $this->findForProgramCreatedByAny($program, [$creator]);
+    }
+
+    /**
+     * The same list for SEVERAL creators at once - what a co-animated progression needs, since it
+     * carries séquences instantiated by either of its two teachers
+     * (design/validated/co-animation.md, lot 2).
+     *
+     * Deliberately only widens WHOSE copies are offered. How many times one of them may be planned
+     * is a different rule, it lives in ProgressionSequenceAvailability, and it does not move: an
+     * instantiated séquence is still planned once for the whole class.
+     *
+     * @param list<User> $creators
+     *
+     * @return list<SequenceInstance>
+     */
+    public function findForProgramCreatedByAny(Program $program, array $creators): array
+    {
+        if ([] === $creators) {
+            return [];
+        }
+
         return $this->createQueryBuilder('s')
             ->where('s.program = :program')
-            ->andWhere('s.createdBy = :creator')
+            ->andWhere('s.createdBy IN (:creators)')
             ->setParameter('program', $program)
-            ->setParameter('creator', $creator)
+            ->setParameter('creators', $creators)
             ->orderBy('s.creationDate', 'DESC')
             ->getQuery()
             ->getResult();

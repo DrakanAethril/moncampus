@@ -61,6 +61,44 @@
                            value="{{ isNew ? '' : wiki.title }}">
                 </div>
 
+                {# Creation only, and only when this composer actually has sets to target: turning
+                   groups into wikis is a shape the form takes, not a second screen. The audience
+                   pickers below are then disabled rather than merely hidden, so the browser stops
+                   submitting them - the two modes must never half-mix. #}
+                {% if isNew and groupBatchChoices is not empty %}
+                    <div class="mb-3" data-controller="wiki-target">
+                        <span class="form-label">{{ 'wikiTargetLabel'|trans }}</span>
+                        <div class="cm-wiki-settings__checks">
+                            <label class="cm-wiki-settings__check">
+                                <input type="radio" name="target" value="audience" checked data-action="change->wiki-target#choose" data-wiki-target-mode-param="audience">
+                                <span>{{ 'wikiTargetAudienceLabel'|trans }}</span>
+                            </label>
+                            <label class="cm-wiki-settings__check">
+                                <input type="radio" name="target" value="groups" data-action="change->wiki-target#choose" data-wiki-target-mode-param="groups">
+                                <span>{{ 'wikiTargetGroupsLabel'|trans }}</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div data-wiki-target-panel="groups" hidden>
+                        <div class="mb-3">
+                            <label class="form-label" for="wiki-group-batch">{{ 'wikiGroupBatchLabel'|trans }}</label>
+                            <select class="form-select" id="wiki-group-batch" name="groupBatch" disabled>
+                                <option value="">{{ 'wikiGroupBatchPlaceholder'|trans }}</option>
+                                {% for choice in groupBatchChoices %}
+                                    <optgroup label="{{ choice.label }}">
+                                        {% for batch in choice.batches %}
+                                            <option value="{{ batch.id }}">{{ batch.name }} ({{ 'wikiGroupBatchCountLabel'|trans({'%count%': batch.groupCount}) }})</option>
+                                        {% endfor %}
+                                    </optgroup>
+                                {% endfor %}
+                            </select>
+                            <span class="form-hint">{{ 'wikiGroupBatchHelpText'|trans }}</span>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div data-wiki-target-panel="audience">
                 {% if isNew or not wiki.personal %}
                     <div class="mb-3">
                         <label class="form-label" for="wiki-members">{{ 'wikiMembersLabel'|trans }}</label>
@@ -97,6 +135,7 @@
                         <span class="form-hint">{{ 'wikiAudienceWarningText'|trans }}</span>
                     </div>
                 {% endif %}
+                </div>
 
                 <div class="cm-wiki__editor-actions">
                     <button type="submit" class="cm-btn cm-btn--primary">{{ 'submitSaveAction'|trans }}</button>

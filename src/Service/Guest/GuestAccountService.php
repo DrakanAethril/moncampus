@@ -103,11 +103,12 @@ class GuestAccountService
         string $guestName,
         AccountPlan $plan,
         ?User $requestedBy,
+        bool $readAloud = true,
     ): array {
         $operation = $this->tracker->begin($host, ProxmoxAction::Provision, $requestedBy, $node, $vmid, $guestName, 'qemu');
 
         try {
-            $passwords = $this->syncer->apply($shell, $plan, $this->keyProvider->publicKey());
+            $passwords = $this->syncer->apply($shell, $plan, $this->keyProvider->publicKey(), $readAloud);
         } catch (GuestUnreachableException $exception) {
             $this->tracker->failed($operation, $exception->getMessage());
 

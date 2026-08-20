@@ -1,0 +1,43 @@
+{# « Ajouter un co-animateur ». The two notes below the field are not decoration: they state
+   exactly what the gesture gives and what it does not, because the séquence-editing question is
+   deliberately left un-arbitrated (design/validated/co-animation.md, "the arbitrable point") and
+   the screen must not let anyone believe otherwise. #}
+<div class="modal fade" id="progression-co-teacher-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" action="{{ path('app_progression_co_teacher_add', {id: progression.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('progression_co_teacher_add') }}">
+
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title">{{ 'progressionCoAnimationAddAction'|trans }}</h5>
+                        <div class="text-secondary">{{ progression.displayName }}</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'progressionPickerCloseLabel'|trans }}"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label required" for="progression-co-teacher">{{ 'progressionCoAnimationTeacherFieldLabel'|trans }}</label>
+                        {# tomselect + ajax, this repository's rule for picking Users. The endpoint
+                           only ever answers teachers holding créneaux of this matière for this
+                           class, so the list cannot name somebody who is not actually there. #}
+                        <select id="progression-co-teacher" name="teacher"
+                                data-controller="tom-select"
+                                data-tom-select-url-value="{{ path('app_progression_co_teacher_search', {id: progression.id}) }}"
+                                data-tom-select-placeholder-value="{{ 'progressionCoAnimationTeacherPlaceholder'|trans }}"></select>
+                        <span class="form-hint">{{ 'progressionCoAnimationTeacherHelpText'|trans }}</span>
+                    </div>
+
+                    <div class="alert alert-info" role="note">{{ 'progressionCoAnimationGrantsHelpText'|trans }}</div>
+                    <div class="alert alert-warning" role="note">{{ 'progressionCoAnimationWithholdsHelpText'|trans }}</div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="cm-btn cm-btn--outline" data-bs-dismiss="modal">{{ 'cancelAction'|trans }}</button>
+                    <button type="submit" class="cm-btn cm-btn--primary">{{ 'addActionLabel'|trans }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

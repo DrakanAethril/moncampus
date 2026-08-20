@@ -62,12 +62,12 @@ its own mobile app; runners take part with no account at all.
 | Auth        | `symfony/ldap` with JIT provisioning; LexikJWT for the mobile API; magic links       |
 | Front end   | Twig, Stimulus + Turbo, DataTables; a `cm-*` design system layered over Tabler       |
 | Real time   | Mercure (Turbo streams, live quiz sessions)                                          |
-| Storage     | Amazon S3 via Flysystem (MinIO in dev)                                               |
+| Storage     | Amazon S3 via Flysystem                                                              |
 | Mail        | Amazon SES for delivery, S3 + SQS for inbound capture                                |
 | PDF         | Gotenberg                                                                            |
 | Analytics   | Matomo, consent-gated                                                                |
 | i18n        | French (default) and English, locale persisted per user                              |
-| Local dev   | Docker Compose, with `openldap`, MinIO, Mailpit and phpMyAdmin stand-ins             |
+| Local dev   | Docker Compose, with `openldap`, Mailpit and phpMyAdmin stand-ins                    |
 
 ## Getting started
 

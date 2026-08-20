@@ -50,12 +50,35 @@ class Progression
     #[ORM\OrderBy(['position' => 'ASC'])]
     private Collection $sequences;
 
+    /**
+     * Co-animation: the OTHER teachers who deliver this matière to this class, and who may
+     * therefore edit the plan - see design/validated/co-animation.md.
+     *
+     * The whole schema change of that feature is this join table, and it is deliberately here
+     * rather than on the Topic: who *teaches* a matière is already derivable from the timetable
+     * (TopicRepository::findTaughtByTeacherInProgram() reads it straight from the créneaux), so
+     * storing it again would be a second truth to keep correct. What the timetable cannot derive
+     * is who may modify the plan, and that is the one new fact.
+     *
+     * $teacher above stays the owner and stays the authority for the séquence pool and the créneau
+     * pool - a co-teacher must see exactly the same lists as the owner, which is what the existing
+     * "the progression's teacher, not whoever is looking" rule already gives for free.
+     *
+     * @var Collection<int, User>
+     */
+    #[ORM\ManyToMany(targetEntity: User::class)]
+    #[ORM\JoinTable(name: 'progression_co_teacher')]
+    #[ORM\JoinColumn(name: 'progression_id', onDelete: 'CASCADE')]
+    #[ORM\InverseJoinColumn(name: 'teacher_id', onDelete: 'CASCADE')]
+    private Collection $coTeachers;
+
     public function __construct(Topic $topic, User $teacher)
     {
         $this->topic = $topic;
         $this->teacher = $teacher;
         $this->creationDate = new \DateTimeImmutable();
         $this->sequences = new ArrayCollection();
+        $this->coTeachers = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -103,6 +126,66 @@ class Progression
         $this->sequences->removeElement($sequence);
 
         return $this;
+    }
+
+    /** @return Collection<int, User> */
+    public function getCoTeachers(): Collection
+    {
+        return $this->coTeachers;
+    }
+
+    public function addCoTeacher(User $teacher): static
+    {
+        // The owner is never also a co-teacher: they already hold every right the link grants, and
+        // a row naming them would print the same person twice on the cover of the export.
+        if ($teacher !== $this->teacher && !$this->coTeachers->contains($teacher)) {
+            $this->coTeachers->add($teacher);
+        }
+
+        return $this;
+    }
+
+    public function removeCoTeacher(User $teacher): static
+    {
+        $this->coTeachers->removeElement($teacher);
+
+        return $this;
+    }
+
+    public function isCoTeacher(User $teacher): bool
+    {
+        return $this->coTeachers->contains($teacher);
+    }
+
+    public function isCoAnimated(): bool
+    {
+        return !$this->coTeachers->isEmpty();
+    }
+
+    /**
+     * Everybody entitled to edit this plan, owner first - the order the export's « Formateurs »
+     * rows and the 2a block both print.
+     *
+     * @return list<User>
+     */
+    public function getTeachers(): array
+    {
+        // No owner, no teachers - and returning before touching $coTeachers is deliberate: an
+        // entity built without its constructor leaves a typed collection *uninitialized* rather
+        // than null (the trap this repository records against
+        // RemoveDefaultValueFromAssignedPropertyRector), and reading it would raise instead of
+        // answering the empty list the caller expects.
+        if (null === $this->teacher) {
+            return [];
+        }
+
+        $teachers = [$this->teacher];
+
+        foreach ($this->coTeachers as $coTeacher) {
+            $teachers[] = $coTeacher;
+        }
+
+        return $teachers;
     }
 
     // "Cybersécurité × SIO-2" - the breadcrumb's last segment on screens 5a/2a.

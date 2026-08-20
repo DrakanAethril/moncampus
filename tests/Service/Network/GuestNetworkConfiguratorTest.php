@@ -136,6 +136,85 @@ class GuestNetworkConfiguratorTest extends TestCase
         $this->configurator()->qemuParameters('srv-web-07', 'not-an-ip', 24, '10.30.20.1', 'vmbr0', null);
     }
 
+    // --- merging into the card the machine already has -----------------------------------------
+
+    public function testTheTemplatesOwnCardOptionsSurviveTheConfiguration(): void
+    {
+        // The card a clone inherits from template 9001, as `qm config` prints it. Only the bridge
+        // and the VLAN are the range's business; the MAC and the firewall flag are the template's,
+        // and rewriting net0 from scratch is what used to drop them - silently, on a machine that
+        // boots and has network, so nothing ever pointed at it.
+        $parameters = $this->configurator()->qemuParameters(
+            hostname: 'poste-01',
+            ip: '10.30.20.57',
+            prefixLength: 24,
+            gateway: '10.30.20.1',
+            bridge: 'vmbr1',
+            vlan: 40,
+            existingNet0: 'virtio=BC:24:11:66:51:BD,bridge=vmbr0,firewall=1,tag=300',
+        );
+
+        self::assertSame('virtio=BC:24:11:66:51:BD,bridge=vmbr1,firewall=1,tag=40', $parameters['net0']);
+    }
+
+    public function testAnOptionThisApplicationHasNeverHeardOfIsKept(): void
+    {
+        // The point is not the firewall flag in particular: anything the template carries and this
+        // code does not model has to come through untouched.
+        $parameters = $this->configurator()->qemuParameters(
+            'poste-01', '10.30.20.57', 24, '10.30.20.1', 'vmbr0', 10,
+            existingNet0: 'virtio=AA:BB:CC:DD:EE:FF,bridge=vmbr0,mtu=9000,queues=4,rate=125,link_down=1',
+        );
+
+        foreach (['mtu=9000', 'queues=4', 'rate=125', 'link_down=1', 'AA:BB:CC:DD:EE:FF'] as $kept) {
+            self::assertStringContainsString($kept, $parameters['net0']);
+        }
+    }
+
+    public function testTheNicModelOfTheTemplateIsNotSwappedForVirtio(): void
+    {
+        // A template deliberately built on e1000 has a guest with that driver and possibly not the
+        // other one. Forcing virtio here would leave it without a network card at all.
+        $parameters = $this->configurator()->qemuParameters(
+            'poste-01', '10.30.20.57', 24, '10.30.20.1', 'vmbr0', null,
+            existingNet0: 'e1000=AA:BB:CC:DD:EE:FF,bridge=vmbr9',
+        );
+
+        self::assertStringStartsWith('e1000=AA:BB:CC:DD:EE:FF', $parameters['net0']);
+    }
+
+    public function testARangeWithNoVlanStripsTheTagTheTemplateCarried(): void
+    {
+        // Not "leave the template's tag alone": that would put the machine on a VLAN the range
+        // never declared. And not `tag=` either, which Proxmox refuses outright.
+        $parameters = $this->configurator()->qemuParameters(
+            'poste-01', '10.30.20.57', 24, '10.30.20.1', 'vmbr0', null,
+            existingNet0: 'virtio=AA:BB:CC:DD:EE:FF,bridge=vmbr0,tag=300,firewall=1',
+        );
+
+        self::assertSame('virtio=AA:BB:CC:DD:EE:FF,bridge=vmbr0,firewall=1', $parameters['net0']);
+    }
+
+    public function testACardWithNoBridgeAtAllGetsOne(): void
+    {
+        $parameters = $this->configurator()->qemuParameters(
+            'poste-01', '10.30.20.57', 24, '10.30.20.1', 'vmbr2', 7,
+            existingNet0: 'virtio=AA:BB:CC:DD:EE:FF,firewall=1',
+        );
+
+        self::assertSame('virtio=AA:BB:CC:DD:EE:FF,firewall=1,bridge=vmbr2,tag=7', $parameters['net0']);
+    }
+
+    public function testNothingToMergeIntoStillBuildsACardFromScratch(): void
+    {
+        // The ISO path and any caller that has no card to read keep the previous behaviour exactly,
+        // which is what makes this change safe to apply everywhere.
+        $configurator = $this->configurator();
+
+        self::assertSame('virtio,bridge=vmbr0,tag=20', $configurator->qemuParameters('poste-01', '10.30.20.57', 24, '10.30.20.1', 'vmbr0', 20, existingNet0: null)['net0']);
+        self::assertSame('virtio,bridge=vmbr0,tag=20', $configurator->qemuParameters('poste-01', '10.30.20.57', 24, '10.30.20.1', 'vmbr0', 20, existingNet0: '   ')['net0']);
+    }
+
     public function testASuggestionTurnsAHumanNameIntoAUsableHostname(): void
     {
         $configurator = $this->configurator();

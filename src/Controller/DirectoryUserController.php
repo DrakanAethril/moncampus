@@ -199,18 +199,36 @@ class DirectoryUserController extends AbstractController
             ? $user->getEmailAliases()->filter(static fn ($alias) => !$alias->getOrigin()->isManageable())->toArray()
             : [];
 
+        // The quota is the administrator's alone, and only means anything for an account that has a
+        // library at all - a student has none. Staff also reach this screen, and see the usage bar
+        // without the field (see the template).
+        $hasLibrary = $libraryVoter->hasLibrary($user);
+        $quotaEditable = $hasLibrary && $this->isGranted('ROLE_ADMIN');
+
         $form = $this->createForm(UserProfileType::class, $user, [
             'adGroupNames' => $adGroupNames,
             'emailAliasesEditable' => $isStudent,
+            'fileLibraryQuotaEditable' => $quotaEditable,
         ]);
+        // The field shows the override and nothing else: an empty box means "the platform default",
+        // which is what the help text under it says.
+        if ($quotaEditable) {
+            $form->get('fileLibraryQuota')->setData(
+                null === $user->getFileLibraryQuotaBytes() ? '' : ByteSize::format($user->getFileLibraryQuotaBytes()),
+            );
+        }
         $form->handleRequest($request);
 
         // The addresses are checked alongside the form's own validation, and a refusal blocks the
         // whole screen from saving: an address turned down as a duplicate is not a detail to pass
         // over in silence while everything else goes through.
         $aliasesAccepted = !$isStudent || !$form->isSubmitted() || $this->applyEmailAliases($form, $user, $aliasValidator, $translator, $lockedAliases);
+        // Same rule for the quota: a size nobody can read stops the submission on the field rather
+        // than being dropped in silence, which on a nullable column would read as "back to the
+        // platform default".
+        $quotaAccepted = !$quotaEditable || !$form->isSubmitted() || $this->applyFileLibraryQuota($form, $user, $translator);
 
-        if ($form->isSubmitted() && $form->isValid() && $aliasesAccepted) {
+        if ($form->isSubmitted() && $form->isValid() && $aliasesAccepted && $quotaAccepted) {
             $newEmail = $user->getContactEmail();
 
             // Unlike ProfileController::updateContactEmail() (self-service), staff setting this
@@ -253,20 +271,56 @@ class DirectoryUserController extends AbstractController
                 // error to put in front of staff.
                 'error' => 3 === $ldapManageUser->getState() && null !== $ldapAddLog && '' !== trim($ldapAddLog) ? trim($ldapAddLog) : null,
             ],
-            // The file-library quota card, and only for an account that has a library at all - a
-            // student has none, and an empty card would invite the question of why
-            // (design/validated/file-library.md, "The admin quota field").
-            'fileLibraryQuota' => $libraryVoter->hasLibrary($user) ? [
+            // The file-library section, and only for an account that has a library at all - a
+            // student has none, and an empty section would invite the question of why
+            // (design/validated/file-library.md, "The admin quota field"). The number itself is a
+            // field of the form above; what is left here is the usage the screen displays.
+            'fileLibraryQuota' => $hasLibrary ? [
                 'usedLabel' => ByteSize::format($libraryQuota->usedBytes($user)),
                 'limitLabel' => ByteSize::format($libraryQuota->limitFor($user)),
                 'percent' => $libraryQuota->usedPercent($user),
                 'level' => $libraryQuota->level($user),
-                // The field shows the override and nothing else: an empty box means "the platform
-                // default", which is what the help text under it says.
-                'override' => null === $user->getFileLibraryQuotaBytes() ? '' : ByteSize::format($user->getFileLibraryQuotaBytes()),
                 'defaultLabel' => ByteSize::format($libraryQuota->defaultBytes()),
             ] : null,
         ]);
+    }
+
+    /**
+     * Takes over what edit()'s "Bibliothèque de fichiers" section submitted: the size an admin
+     * typed, read into the bigint the column holds.
+     *
+     * Empty clears the override back to NULL - which is not zero, it is "whatever the platform
+     * currently says". That is the whole reason the column is nullable, and it is why an
+     * unreadable size cannot be treated as empty: lowering somebody's quota to the default by
+     * typo is not something to do silently.
+     *
+     * Lowering it below what the teacher already stores deletes nothing: the bar reads 118 %, in
+     * red, and uploads are refused until they free space. Any other behaviour would mean deleting
+     * somebody's files as a side effect of an administrative edit.
+     *
+     * @return bool false when the size could not be read, the error being then hung on the field
+     */
+    private function applyFileLibraryQuota(FormInterface $form, User $user, TranslatorInterface $translator): bool
+    {
+        $typed = FormValue::trimmed($form, 'fileLibraryQuota');
+
+        if ('' === $typed) {
+            $user->setFileLibraryQuotaBytes(null);
+
+            return true;
+        }
+
+        $bytes = ByteSize::parse($typed);
+
+        if (null === $bytes) {
+            $form->get('fileLibraryQuota')->addError(new FormError($translator->trans('fileLibraryQuotaInvalidMessage')));
+
+            return false;
+        }
+
+        $user->setFileLibraryQuotaBytes($bytes);
+
+        return true;
     }
 
     /**

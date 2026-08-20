@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\Progression;
+use App\Entity\User;
 
 /**
  * Renders templates/progression/qualiopi_export.html.twig and converts it to PDF via Gotenberg -
@@ -20,16 +21,24 @@ class ProgressionQualiopiExporter
     public function __construct(
         private readonly ProgressionQualiopiBuilder $builder,
         private readonly GotenbergClient $gotenbergClient,
+        private readonly ProgressionTeacherRoster $teacherRoster,
     ) {
     }
 
     /**
-     * @param \Closure(string, array<string, mixed>): string $renderView bound to the calling
-     *                                                                  controller's renderView()
+     * There is ONE document and not two, whichever teacher of a co-animated matière presses the
+     * button: what an auditor is handed must not depend on that. So the cover names every formateur
+     * with the group they hold, and adds an « Établi par » row saying who produced this copy - which
+     * is what lets a single document be exported by either of them without either appearing to be
+     * the sole formateur.
+     *
+     * @param \Closure(string, array<string, mixed>): string $renderView  bound to the calling
+     *                                                                   controller's renderView()
+     * @param User|null                                     $generatedBy who pressed the button
      *
      * @return non-empty-string raw PDF bytes
      */
-    public function export(Progression $progression, \Closure $renderView, \DateTimeImmutable $generatedAt): string
+    public function export(Progression $progression, \Closure $renderView, \DateTimeImmutable $generatedAt, ?User $generatedBy = null): string
     {
         $data = $this->builder->build($progression);
         $progressionTitle = sprintf(
@@ -45,6 +54,10 @@ class ProgressionQualiopiExporter
                 // the one thing that would make two exports of an unchanged progression differ,
                 // which is exactly what a test wants to hold still.
                 'generatedAt' => $generatedAt,
+                // One row per formateur, each with the group and the room their créneaux say they
+                // hold - measured off the timetable, never stored.
+                'roster' => $this->teacherRoster->forProgression($progression),
+                'generatedBy' => $generatedBy,
             ]),
             // The running footer is Chromium's, not the document's - see GotenbergPageSetup. The
             // bottom margin is the taller one because it has to hold that band; the others are the

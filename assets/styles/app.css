@@ -1270,6 +1270,11 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
    the row so it lines up with the tab labels rather than the row's cross-axis center. */
 .cm-tabs__action { margin-left: auto; padding-bottom: 8px; }
 .cm-card--tabbed { border-top: 0; border-radius: 0 0 var(--cm-radius) var(--cm-radius); padding: 26px; }
+/* Content that hangs off a tab row without a card of its own - a grid of stat tiles, of link tiles,
+   of host cards. It takes the same inset .cm-card--tabbed gives a table, so a screen made of tiles
+   lines up with a screen made of rows instead of butting against the tabs. Bottom padding is left
+   to the content, which already carries its own margin between blocks. */
+.cm-tabbed-content { padding: 26px 26px 0; }
 
 /* ---------- Breadcrumb + page head (sub-pages only, never menu root pages) ----------
    Every segment (including the current page) is a real <a href>. */
@@ -1597,6 +1602,14 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-grp-lot-chip__load:hover { background: var(--cm-blue-bg); }
 .cm-grp-lot-chip__del { color: var(--cm-red-tx); cursor: pointer; padding: 6px 11px 5px 9px; border: 0; border-left: 1px solid var(--cm-border-soft); background: none; display: inline-flex; align-items: center; }
 .cm-grp-lot-chip__del:hover { background: var(--cm-red-bg); }
+.cm-grp-lot-chip__shared { font: 600 10.5px var(--cm-font-ui); color: var(--cm-faint); padding: 0 9px 0 2px; letter-spacing: .2px; }
+.cm-grp-lot-chip--shared { border-style: dashed; }
+.cm-grp-lot-chip--shared .cm-grp-lot-chip__load { color: var(--cm-ink); }
+.cm-grp-lot-chip__owner { font: 600 10.5px var(--cm-font-ui); color: var(--cm-faint); padding: 0 11px 0 2px; text-transform: uppercase; letter-spacing: .3px; }
+.cm-grp-share-list { display: flex; flex-direction: column; gap: 2px; max-height: 260px; overflow-y: auto; }
+.cm-grp-share-item { display: flex; align-items: center; gap: 9px; padding: 6px 8px; border-radius: 8px; font: 500 13.5px var(--cm-font-ui); color: var(--cm-ink); cursor: pointer; }
+.cm-grp-share-item:hover { background: var(--cm-surface-alt); }
+.cm-grp-share-empty { font-size: 13px; color: var(--cm-muted); }
 
 .cm-grp-layout { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 18px; align-items: start; }
 @media (max-width: 900px) { .cm-grp-layout { grid-template-columns: 1fr; } }
@@ -2031,6 +2044,12 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     background: var(--cm-gold-bg); border-color: color-mix(in srgb, var(--cm-gold) 45%, var(--cm-border));
     border-left-color: var(--cm-gold); color: var(--cm-gold-tx);
 }
+.cm-note--danger {
+    border-left-color: var(--cm-red-tx);
+    background: var(--cm-red-bg);
+    color: var(--cm-red-tx);
+}
+.cm-note--danger .cm-note__icon { background: var(--cm-red-tx); }
 
 /* ---------- App download hero banner (Ressources > Application mobile/e-CO) ---------- */
 .cm-app-hero {
@@ -3630,6 +3649,15 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-prog-chip-status--warn   { background: var(--cm-gold-bg);  color: var(--cm-gold-tx); }
 .cm-prog-chip-status--danger { background: var(--cm-red-bg);   color: var(--cm-red-tx); }
 .cm-prog-chip-status--muted  { background: var(--cm-border-soft); color: var(--cm-faint); }
+/* Co-animation: a statement of fact rather than a state to act on, hence the neutral blue
+   next to the ok/warn/danger tones the séquence statuses use. */
+.cm-prog-chip-status--info   { background: var(--cm-blue-bg);  color: var(--cm-blue-tx); }
+/* Co-animation: the teacher holding a créneau, printed on the pill. Not cosmetic - two créneaux on
+   the same day at the same hour are otherwise the same pill twice, and picking the wrong one is
+   invisible. */
+.cm-prog-slot__who { font: 600 11px var(--cm-font-ui); color: var(--cm-blue-tx); }
+.cm-prog-picker__slot-who { display: block; font: 600 11.5px var(--cm-font-ui); color: var(--cm-blue-tx); margin-top: 2px; }
+.cm-prog-picker__warning { margin: 0 18px 10px; padding: 9px 12px; border-radius: var(--cm-radius-sm); background: var(--cm-gold-bg); color: var(--cm-gold-tx); font-size: 12.5px; }
 
 .cm-prog-tag {
   display: inline-flex; padding: 2px 8px; border-radius: 999px; margin-left: 4px;
@@ -7513,27 +7541,12 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
    badges, notes, radio cards, steppers and action bars all come from the shared cm-* blocks
    above and are not restated here.
 
-   The one piece that exists nowhere else in the application is the local navigation bar: this
-   area is deliberately absent from every menu, so that strip is the only way from one of its
-   screens to the next. It is not a variant of .cm-tabs - tabs switch views of one screen, this
-   moves between screens - and it sits directly under the page title on every one of them. */
+   Navigation between the screens of the area used to be a shape of its own (.cm-localnav), on the
+   argument that tabs switch views of one screen while that strip moved between screens. The
+   application makes no such distinction anywhere else - Paramètres, Partages and UFA all tab
+   between separate routes - so the area now uses .cm-tabs like everything else, and that block is
+   gone. */
 
-.cm-localnav {
-    display: flex; align-items: center; gap: 2px; flex-wrap: wrap;
-    padding: 0 4px; margin: 0 0 20px;
-    border-bottom: 1px solid var(--cm-border); background: var(--cm-surface);
-    border-radius: var(--cm-radius) var(--cm-radius) 0 0;
-}
-.cm-localnav__link {
-    padding: 10px 14px; font: 600 13.5px var(--cm-font-ui); color: var(--cm-muted);
-    text-decoration: none; white-space: nowrap;
-    border-bottom: 2px solid transparent; margin-bottom: -1px;
-}
-.cm-localnav__link:hover { color: var(--cm-brand-strong); text-decoration: none; }
-.cm-localnav__link.is-active { color: var(--cm-brand-strong); border-bottom-color: var(--cm-brand); }
-/* "Aller à…" - the jump box that keeps a deep screen (a host's machines, one range's registry)
-   one click away instead of one remembered URL away. */
-.cm-localnav__goto { margin-left: auto; padding: 6px 8px; }
 
 /* ---------- Hub tiles ---------- */
 
@@ -7558,6 +7571,11 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
    current one, and it is why nothing here probes anything as the page renders. */
 
 .cm-hostgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+/* The dot sits on the first line of the name rather than on the block's centre. */
+.cm-host .cm-statusdot { margin-top: 7px; }
+.cm-host__ident { flex: 1; min-width: 0; }
+/* Inside a card the note is the block, so it carries no margin of its own. */
+.cm-host__alert { margin: 0; }
 @media (max-width: 1199.98px) { .cm-hostgrid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 767.98px) { .cm-hostgrid { grid-template-columns: 1fr; } }
 
@@ -7573,11 +7591,15 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-host__badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 9px; }
 .cm-host__meta { margin-top: 11px; font-size: 11.5px; color: var(--cm-faint); }
 .cm-host__meta b { color: var(--cm-muted); font-weight: 600; }
+/* The footer is a .cm-actions row, so the spacing between actions comes from there; this only
+   places the row and gives it its band. */
 .cm-host__foot {
-    margin-top: auto; display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+    margin-top: auto; display: flex; align-items: center; flex-wrap: wrap;
     padding: 9px 16px; background: var(--cm-surface-soft); border-top: 1px solid var(--cm-border-soft);
 }
-.cm-host__spacer { margin-left: auto; }
+/* Two classes rather than one, to beat .cm-actions > *:not(:first-child)'s own margin-left - which
+   would otherwise pin the last action next to its neighbour instead of at the far end. */
+.cm-host__foot .cm-host__spacer { margin-left: auto; }
 
 .cm-host__kpis { display: flex; gap: 0; border-top: 1px solid var(--cm-border-faint); padding-top: 10px; margin-top: 4px; }
 .cm-host__kpi { flex: 1; }
@@ -7594,10 +7616,6 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 
 /* ---------- Inline text actions inside a card foot ---------- */
 
-.cm-linkaction { font: 600 13px var(--cm-font-ui); color: var(--cm-action-main); text-decoration: none; background: none; border: 0; padding: 0; cursor: pointer; }
-.cm-linkaction:hover { text-decoration: underline; }
-.cm-linkaction--danger { color: var(--cm-action-danger); }
-.cm-linkaction--positive { color: var(--cm-positive-tx); }
 
 /* ---------- Host form ---------- */
 /* One card, fieldsets separated by a rule, each headed by its own small caps legend. The four
@@ -7638,14 +7656,6 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
    into. See the repository-wide rule about never binding a controller to an element DataTables
    moves. */
 
-.cm-table { width: 100%; margin: 0; font-size: 13.5px; }
-.cm-table th {
-    text-align: left; padding: 9px 14px; white-space: nowrap;
-    font: 600 10.5px var(--cm-font-ui); letter-spacing: .08em; text-transform: uppercase;
-    color: var(--cm-faint); border-bottom: 1px solid var(--cm-border);
-}
-.cm-table td { padding: 10px 14px; border-bottom: 1px solid var(--cm-border-faint); vertical-align: middle; }
-.cm-table tbody tr:last-child td { border-bottom: 0; }
 
 /* Out of perimeter: dimmed, still legible, still counted. Never hidden - a machine that
    disappears from the list reads as a machine that disappeared from the hypervisor. */

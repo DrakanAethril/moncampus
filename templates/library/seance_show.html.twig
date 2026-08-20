@@ -17,12 +17,14 @@
                 <li><a class="dropdown-item" href="{{ path('app_library_quiz_assistant', {seance: seanceTemplate.id, live: 1}) }}">{{ 'librarySequenceQuizLiveActionLabel'|trans }}</a></li>
             </ul>
         </div>
+        {# A séance alone is a real thing teachers exchange, so it carries its own « Partager » - and
+           its own audience, separate from the séquence's
+           (design/validated/content-sharing-between-teachers.md). canShare is the narrower of the
+           two, so sitting inside canEdit costs nobody the button. #}
+        {% if canShare %}
+            <button type="button" class="btn btn-outline-secondary ms-2" data-bs-toggle="modal" data-bs-target="#content-share-modal">{{ 'contentShareAction'|trans }}</button>
+        {% endif %}
         <a href="{{ path('app_library_seances_edit', {sequenceId: sequenceTemplate.id, id: seanceTemplate.id}) }}" class="btn btn-outline-secondary ms-2">{{ 'editActionLabel'|trans }}</a>
-    {% endif %}
-    {# A séance alone is a real thing teachers exchange, so it carries its own « Partager » - and its
-       own audience, separate from the séquence's (design/validated/content-sharing-between-teachers.md). #}
-    {% if canShare %}
-        <button type="button" class="btn btn-outline-secondary ms-2" data-bs-toggle="modal" data-bs-target="#content-share-modal">{{ 'contentShareAction'|trans }}</button>
     {% endif %}
 {% endblock %}
 

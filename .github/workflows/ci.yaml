@@ -3,7 +3,7 @@
 # the same one a developer runs - because this app has no host-side PHP: every check is a
 # `docker compose exec php ...`, exactly as documented in CLAUDE.md.
 #
-# Deliberately needs no repository secrets. The stack is entirely self-contained (MySQL, MinIO,
+# Deliberately needs no repository secrets. The stack is entirely self-contained (MySQL,
 # Mailpit, OpenLDAP, Gotenberg), and the one file it needs that git does not carry -
 # .env.dev.local - is generated below from its own tracked template with throwaway values. Only
 # deploy.yaml holds secrets, and only because it has to reach the school's network.
@@ -62,10 +62,8 @@ jobs:
           LDAP_SEARCH_PASSWORD=ci_ldap_search_password
           LDAP_ADMIN_PASSWORD=ci_ldap_admin_password
           AES_KEY=ci_aes_key_0123456789abcdef0123
-          AWS_ACCESS_KEY_ID=ci_minio_access_key
-          AWS_SECRET_ACCESS_KEY=ci_minio_secret_key
-          MINIO_ROOT_USER=ci_minio_access_key
-          MINIO_ROOT_PASSWORD=ci_minio_secret_key
+          AWS_ACCESS_KEY_ID=ci_unused
+          AWS_SECRET_ACCESS_KEY=ci_unused
           AWS_MAIL_ACCESS_KEY_ID=ci_unused
           AWS_MAIL_SECRET_ACCESS_KEY=ci_unused
           ENVFILE
@@ -97,10 +95,24 @@ jobs:
       # phpmyadmin is a human's tool and nothing here talks to it; every other service is either
       # required by the app at boot or cheap enough not to bother excluding.
       #
+      # Nothing in this workflow reaches the uploads bucket: the checks below either never touch
+      # storage, or run under APP_ENV=test, which swaps it for a directory under var/cache (see
+      # config/packages/flysystem.yaml). That is why no S3 stand-in is started and no credentials
+      # are needed - the workflow stays secret-free.
+      #
       # No composer install step follows on purpose: vendor/ is gitignored, so the checkout has
       # none, and frankenphp/docker-entrypoint.sh runs `composer install` itself when it finds the
       # directory empty. `--wait` therefore already returns with dependencies in place.
+      #
+      # COMPOSER_AUTH is that install's only reason to need anything from outside: it authenticates
+      # the dist downloads, which otherwise hit api.github.com anonymously under a rate limit shared
+      # by every runner on the same IP. This is not a repository secret and does not break the
+      # workflow's self-contained rule - GITHUB_TOKEN is minted per run by Actions itself, and
+      # `permissions: contents: read` above is all a public zipball needs. It is only read by
+      # compose.override.yaml's php service, so it is set on this step rather than on the job.
       - name: Start services
+        env:
+          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ github.token }}"}}'
         run: docker compose up --wait --no-build --scale phpmyadmin=0
 
       # The stack answering at all is itself a check - it is what catches a service that no longer

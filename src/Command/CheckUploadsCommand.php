@@ -46,8 +46,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * Exit code 0 only when all three prefixes accept a write, a read, a delete and answer "gone"
  * afterwards; anything else names the operation and the key it failed on.
  *
- * In dev this runs against MinIO, which allows everything: a green run here says the code is right,
- * not that production's IAM is. Only a run on the production host answers that.
+ * In dev this runs against the real bucket under the dev/ prefix, with dev's own credentials: a
+ * green run here says the code is right and that those credentials may write there, not that
+ * production's IAM is. Only a run on the production host answers that.
  */
 #[AsCommand(
     name: 'app:uploads:check',

@@ -2188,7 +2188,8 @@ programToolsDrawnWordPluralLabel: 'tirés'
 programToolsNoStudentsMessage: "Cette classe n'a pas d'étudiant."
 programToolsGroupCreationNavLabel: 'Création de groupes'
 programToolsGroupCreationPageHeading: 'Création de groupes'
-programToolsSavedLotsLabel: 'Lots enregistrés'
+programToolsMyGroupsLabel: 'Mes groupes'
+programToolsSharedGroupsLabel: 'Groupes partagés avec moi'
 programToolsDistributionLabel: 'Répartition'
 programToolsModeSizeLabel: 'Par taille'
 programToolsModeCountLabel: 'Par nombre'
@@ -2218,17 +2219,27 @@ programToolsGroupWordSingularLabel: 'groupe'
 programToolsGroupWordPluralLabel: 'groupes'
 programToolsLockLabel: 'verrouiller'
 programToolsLockedLabel: 'verrouillé'
-programToolsLoadLotTitle: 'Réafficher ce lot'
-programToolsDeleteLotTitle: 'Supprimer ce lot'
-programToolsLotSavedToast: 'Lot « %name% » enregistré'
-programToolsLotDeletedToast: 'Lot « %name% » supprimé'
-programToolsDeleteLotConfirmTitle: 'Supprimer ce lot ?'
-programToolsDeleteLotConfirmBody: "Le lot « %name% » sera définitivement supprimé. Les groupes affichés à l'écran ne sont pas modifiés."
+programToolsLoadLotTitle: 'Réafficher ces groupes'
+programToolsDeleteLotTitle: 'Supprimer ces groupes'
+programToolsLotSavedToast: 'Groupes « %name% » enregistrés'
+programToolsLotDeletedToast: 'Groupes « %name% » supprimés'
+programToolsDeleteLotConfirmTitle: 'Supprimer ces groupes ?'
+programToolsDeleteLotConfirmBody: "Les groupes « %name% » seront définitivement supprimés. Ceux qui sont affichés à l'écran ne sont pas modifiés."
+programToolsShareLotButtonLabel: 'Partager'
+programToolsShareLotModalTitle: 'Partager ces groupes'
+programToolsShareLotModalBody: 'Choisissez les enseignants de la classe qui pourront consulter les groupes « %name% ».'
+programToolsShareLotHintLabel: "Les enseignants choisis verront ces groupes dans « Groupes partagés avec moi ». Ils pourront les ouvrir, mais ni les renommer ni les supprimer."
+programToolsShareLotNoTeacherMessage: "Aucun autre enseignant n'est rattaché à cette classe pour le moment."
+programToolsShareLotConfirmAction: 'Partager'
+programToolsShareLotUnsavedMessage: 'Enregistrez les groupes pour pouvoir les partager.'
+programToolsSharedLotOwnerTitle: 'Partagé par %name%'
+programToolsSharedCountBadgeLabel: '%count% partage(s)'
+programToolsLotSharedToast: 'Groupes « %name% » partagés avec %count% enseignant(s)'
+programToolsLotUnsharedToast: 'Groupes « %name% » : partage retiré'
 programToolsDeleteLotAction: 'Supprimer'
 programToolsFullscreenTitleFallback: 'Groupes — %program%'
-programToolsLotNamePlaceholder: 'Nom du lot (ex. TP réseau — S2)'
-programToolsSaveLotButtonLabel: 'Enregistrer le lot'
-programToolsSendMessageButtonLabel: 'Envoyer par messagerie'
+programToolsLotNamePlaceholder: 'Nom des groupes (ex. TP réseau — S2)'
+programToolsSaveLotButtonLabel: 'Enregistrer les groupes'
 programToolsExportPdfButtonLabel: 'Exporter en PDF'
 programToolsDndHintLabel: "Glissez-déposez un élève d'un groupe à l'autre pour ajuster. Verrouillez un groupe pour le préserver lors d'un rebrassage."
 programToolsEmptyStateLabel: 'Réglez les paramètres à gauche puis cliquez sur « Créer les groupes ».'
@@ -3517,6 +3528,8 @@ studentJobApplicationsSentKindLabel: 'Envoi'
 studentJobApplicationsReplyKindLabel: 'Réponse'
 studentJobApplicationsNoMailLabel: 'Aucun mail sur cette démarche.'
 studentJobApplicationsEmptyLabel: "Cet étudiant n'a aucune démarche."
+studentJobApplicationsUnattachedTitle: 'Mails hors démarche'
+studentJobApplicationsUnattachedHint: "Reçus dans la boîte de l'étudiant sans avoir pu être rattachés à une démarche. Ils comptent dans le suivi de la classe."
 studentJobApplicationsNotesTitle: "Notes d'accompagnement"
 studentJobApplicationsNotesTeamOnlyLabel: 'Équipe uniquement'
 studentJobApplicationsNotesEmptyLabel: 'Aucune note pour le moment.'
@@ -3704,7 +3717,7 @@ assignmentStateHiddenLabel: 'masqué'
 
 assignmentAudienceWholeClassLabel: 'toute la classe'
 assignmentAudienceSelectedStudentsLabel: '{1}1 élève désigné|]1,Inf[%count% élèves désignés'
-assignmentAudienceGroupBatchLabel: 'lot %name%, un dépôt par groupe'
+assignmentAudienceGroupBatchLabel: 'groupes « %name% », un dépôt par groupe'
 assignmentAudienceGroupsShortLabel: 'groupes'
 assignmentAudienceSelectionShortLabel: 'sélection'
 assignmentAudienceTypeGroupBatchLabel: 'Par groupes'
@@ -3745,8 +3758,8 @@ assignmentWizardAudienceFieldLabel: 'Au sein de la classe'
 assignmentWizardOptionsFieldLabel: 'Options'
 assignmentWizardStudentSearchPlaceholder: 'Rechercher un étudiant…'
 assignmentWizardSelectedCountLabel: '%count% sélectionnés'
-assignmentWizardGroupBatchFieldLabel: 'Lot de groupes'
-assignmentWizardGroupBatchPlaceholder: 'Choisir un lot…'
+assignmentWizardGroupBatchFieldLabel: 'Groupes enregistrés'
+assignmentWizardGroupBatchPlaceholder: 'Choisir des groupes…'
 assignmentWizardGroupBatchOriginHint: "créé avec l'outil Création de groupes"
 assignmentWizardGroupLabel: 'Groupe'
 assignmentWizardGroupSubmissionNote: 'Un seul membre dépose pour son groupe ; la note du rendu alimente le carnet pour tous les membres.'
@@ -4283,7 +4296,7 @@ technicalServiceDatabaseText: 'MySQL 8. Le schéma évolue exclusivement par mig
 technicalServiceLdapTerm: 'Annuaire'
 technicalServiceLdapText: "LDAP, source de vérité des comptes et des groupes. L'application n'y écrit jamais directement : elle dépose des demandes de provisionnement qu'un script externe traite."
 technicalServiceStorageTerm: 'Stockage objet'
-technicalServiceStorageText: "Amazon S3 pour les pièces jointes, les enregistrements audio et les PDF, avec un CDN devant. En développement, un serveur MinIO local parle le même protocole : le code est identique."
+technicalServiceStorageText: "Amazon S3 pour les pièces jointes, les enregistrements audio et les PDF, avec un CDN devant. Le développement écrit dans le même stockage, sous un préfixe qui lui est réservé : le code est identique d'un environnement à l'autre."
 technicalServiceAntivirusTerm: 'Analyse antivirale'
 technicalServiceAntivirusText: "ClamAV, dans son propre conteneur. L'application ne lui donne pas un chemin de fichier — les deux conteneurs ne partagent aucun disque — mais lui envoie les octets sur une connexion réseau et lit son verdict. Sa base de signatures, quelques centaines de méga-octets, est conservée dans un volume pour qu'une mise en production ne la retélécharge pas : le temps de ce téléchargement, tous les dépôts seraient refusés. En développement et en intégration continue, le service n'est pas démarré et l'analyse est simplement désactivée."
 technicalServiceMailTerm: 'Courrier'
@@ -5298,6 +5311,16 @@ wikiHomePageTitle: 'Accueil'
 wikiHomePageWelcomeText: 'Bienvenue dans votre wiki. Cette page est la porte d’entrée : renommez-la, écrivez dedans, et ajoutez des pages dans le rail de gauche.'
 wikiPersonalCreatedFlashMessage: 'Votre wiki personnel a été créé.'
 wikiCreatedFlashMessage: 'Le wiki a été créé.'
+wikiTargetLabel: 'Que faut-il créer ?'
+wikiTargetAudienceLabel: 'Un wiki, dont je compose les membres'
+wikiTargetGroupsLabel: 'Un wiki par groupe, depuis des groupes enregistrés'
+wikiGroupBatchLabel: 'Groupes enregistrés'
+wikiGroupBatchPlaceholder: 'Choisir des groupes…'
+wikiGroupBatchCountLabel: '{1}1 groupe|]1,Inf[%count% groupes'
+wikiGroupBatchHelpText: "Un wiki sera créé pour chaque groupe, avec les élèves de ce groupe pour membres ; le titre saisi ci-dessus leur sert de préfixe. Vous pouvez recommencer plus tard sur les mêmes groupes : de nouveaux wikis seront créés, les précédents ne sont pas touchés."
+wikiGroupBatchUnavailableFlashMessage: "Ces groupes ne sont plus disponibles. Ils ont peut-être été supprimés ou le partage a été retiré."
+wikiGroupBatchEmptyFlashMessage: "Ces groupes ne contiennent aucun élève : aucun wiki n'a été créé."
+wikiGroupWikisCreatedFlashMessage: '{1}1 wiki a été créé.|]1,Inf[%count% wikis ont été créés.'
 wikiDeletedFlashMessage: 'Le wiki a été supprimé.'
 wikiSettingsSavedFlashMessage: 'Les paramètres du wiki ont été enregistrés.'
 wikiPageSavedFlashMessage: 'La page a été enregistrée.'
@@ -5526,7 +5549,6 @@ fileLibraryQuotaCardTitle: 'Bibliothèque de fichiers'
 fileLibraryQuotaFieldLabel: 'Quota'
 fileLibraryQuotaFieldHelpText: 'Vide = valeur par défaut de la plateforme (%default%).'
 fileLibraryQuotaUsageLabel: '%used% utilisés sur %limit%'
-fileLibraryQuotaSavedFlashMessage: 'Quota enregistré.'
 fileLibraryQuotaInvalidMessage: 'Quota illisible : écrivez par exemple « 2 Go » ou « 2500 Mo ».'
 filePickerFromLibraryLabel: 'Depuis la bibliothèque'
 filePickerLibraryEmptyText: 'Aucun fichier dans ce dossier.'
@@ -5721,12 +5743,15 @@ proxmoxTestNoSecretMessage: 'Renseignez un secret pour tester la connexion.'
 proxmoxHostCreatedFlashMessage: 'Hôte Proxmox déclaré.'
 proxmoxHostUpdatedFlashMessage: 'Hôte Proxmox mis à jour.'
 proxmoxCheckPoolMissingWarning: 'Le pool « %pool% » n’existe pas sur cet hôte : le périmètre est vide.'
+proxmoxCheckIncompleteWarning: 'L’hôte a répondu trop lentement pour que les vérifications complémentaires soient menées à leur terme.'
+proxmoxHostUnreachableError: 'Hôte injoignable à l’adresse %address%. Vérifiez l’adresse et le port, et que le flux est bien ouvert depuis ce serveur.'
+proxmoxHostTlsHandshakeError: 'La connexion sécurisée avec %address% n’a pas abouti. Le port répond mais n’a pas terminé la négociation TLS : vérifiez qu’il s’agit bien du port de l’interface Proxmox.'
+proxmoxHostTooSlowError: 'L’hôte a mis plus de %seconds% secondes à répondre : le test a été interrompu pour ne pas bloquer la plateforme.'
 proxmoxCheckProvisionFailedWarning: 'Le compte de provisionnement ne répond pas : %reason%'
 
 # --- Console Proxmox - lot 2 : voir et piloter ------------------------------------------------
 infrastructureGuestsNavLabel: 'Machines'
 infrastructureOperationsNavLabel: 'Journal des opérations'
-infrastructureOperationsSubtitle: 'Tout ce que MonCampus a demandé à un hôte Proxmox, et ce qu’il a répondu.'
 infrastructureGoToLabel: 'Aller à…'
 infrastructureGuestsTileTitle: 'Machines'
 infrastructureGuestsTileText: 'Lister, démarrer, arrêter proprement, forcer l’arrêt, redémarrer.'
@@ -5951,7 +5976,7 @@ proxmoxCreationRateLimitedMessage: 'Trop de créations demandées coup sur coup.
 # --- Console Proxmox - lot 4 : comptes, post-installation, lots ---------------------------------
 infrastructureBatchesNavLabel: 'Lots'
 infrastructureBatchesTileTitle: 'Lots'
-infrastructureBatchesTileText: 'Déployer une machine par étudiant, avec son compte.'
+infrastructureBatchesTileText: 'Déployer une machine par étudiant, ou une par groupe avec un compte par membre.'
 infrastructureBatchesTileGo: '%count% lot(s)'
 
 platformActivityProxmoxGuestCreatedText: '%user% a créé une machine virtuelle'
@@ -5990,6 +6015,17 @@ guestAccountPasswordsWarningText: 'Ces mots de passe ne sont enregistrés nulle 
 
 vmBatchPerStudentLabel: 'Une machine par étudiant'
 vmBatchPerStudentDescription: 'Chaque étudiant de la classe reçoit sa propre machine, avec son compte.'
+vmBatchPerGroupLabel: 'Une machine par groupe'
+vmBatchPerGroupDescription: "Chaque groupe reçoit une machine, avec un compte par membre du groupe. Les groupes remplacent la liste de la classe : les filtres option et modalité ne s'appliquent pas."
+vmBatchShapeFieldLabel: 'Forme du lot'
+vmBatchGroupBatchFieldLabel: 'Groupes enregistrés'
+vmBatchGroupBatchPlaceholder: 'Choisir des groupes…'
+vmBatchGroupBatchHelp: "Nécessaire pour une machine par groupe. Vous pouvez repartir des mêmes groupes plus tard : un nouveau lot sera créé, les machines existantes ne sont pas touchées."
+vmBatchNoGroupBatchHelp: "Aucun ensemble de groupes disponible pour cette classe : vous ne voyez que ceux que vous avez enregistrés et ceux qu'un collègue vous a partagés."
+vmBatchGroupBatchUnavailableMessage: "Ces groupes ne sont plus disponibles. Aucun lot n'a été créé."
+vmBatchGroupColumnLabel: 'Groupe'
+vmBatchGroupAccountsColumnLabel: 'Comptes sur la machine'
+vmBatchCreateGroupMeta: '%count% machine(s) seront prévues, une par groupe, puis déployées par vagues.'
 vmBatchItemPlannedLabel: 'Prévue'
 vmBatchItemCreatingLabel: 'En cours'
 vmBatchItemCreatedLabel: 'Créée'
@@ -6033,6 +6069,10 @@ vmBatchProgressLabel: 'Avancement'
 vmBatchOpenAction: 'Ouvrir'
 vmBatchDeployAction: 'Déployer'
 vmBatchRemainingMeta: '%count% machine(s) restantes'
+vmBatchDeployProgressLabel: '%progressed% machine(s) avancée(s) — %remaining% restante(s)'
+vmBatchDeployWaitingLabel: '%waiting% machine(s) en attente de réponse — %remaining% restante(s)'
+vmBatchDeployStalledLabel: "Plus rien ne bouge. Les machines ne répondent pas ; reprenez le déploiement plus tard ou vérifiez le réseau."
+vmBatchItemWaitingNote: 'En attente'
 
 # Import d'une classe (Annuaire > Utilisateurs)
 classImportFileEmptyMessage: "Le fichier ne contient aucun étudiant."
@@ -6306,3 +6346,33 @@ progressionTrameActionReusedLabel: 'Déjà instanciée pour cette classe — ré
 progressionTrameActionDetachedLabel: 'Modèle supprimé — copiée telle quelle, rien dans votre bibliothèque'
 progressionTrameActionSkippedLabel: 'Ignorée — déjà planifiée dans une autre progression de la classe'
 contentShareTrameCreatedFlashMessage: "La progression est créée et les séances sont replacées sur votre emploi du temps."
+# --- Co-animation (design/validated/co-animation.md) -------------------------------------------
+progressionCoAnimationTitle: 'Co-animation'
+progressionCoAnimationTeacherCountLabel: '%count% enseignant(s)'
+progressionCoAnimationOwnerRoleLabel: 'Titulaire de la matière'
+progressionCoAnimationCoTeacherRoleLabel: 'Co-animateur'
+progressionCoAnimationGroupsLabel: 'groupe %groups%'
+progressionCoAnimationRoomsLabel: 'salle %rooms%'
+progressionCoAnimationAddAction: 'Ajouter un co-animateur'
+progressionCoAnimationRemoveAction: 'Retirer'
+progressionCoAnimationRemoveConfirm: 'Retirer %name% de cette progression ? Les séances déjà placées restent en place.'
+progressionCoAnimationHelpText: 'Vous planifiez ensemble et chacun livre son groupe. Les cahiers de texte restent séparés — un cahier de texte est le registre de ce que vous avez fait avec votre groupe.'
+progressionCoAnimationTeacherFieldLabel: 'Enseignant'
+progressionCoAnimationTeacherPlaceholder: 'Choisir un enseignant…'
+progressionCoAnimationTeacherHelpText: 'Seuls les enseignants qui tiennent des créneaux de cette matière pour cette classe sont proposés.'
+progressionCoAnimationGrantsHelpText: 'Il pourra ouvrir et modifier cette progression, y placer des séances et y ajouter ses propres séquences.'
+progressionCoAnimationWithholdsHelpText: 'Il ne pourra ni réécrire le contenu des séquences de la classe, ni décider quand les étudiants les voient : cela reste à qui les a instanciées. Pour une version modifiable à lui, partagez-lui le modèle.'
+progressionCoTeacherAddedFlashMessage: 'Co-animateur ajouté.'
+progressionCoTeacherRemovedFlashMessage: 'Co-animateur retiré.'
+progressionCoTeacherUnknownFlashMessage: "Cet enseignant ne tient aucun créneau de cette matière pour cette classe : il n'a pas été ajouté."
+progressionCoAnimatedChipLabel: 'Co-animée'
+progressionCoAnimatedWithLabel: 'avec %names%'
+progressionCoAnimatedOwnGroupLabel: 'vous tenez le groupe %groups%'
+progressionCoAnimatedCountLabel: 'dont %count% co-animée(s)'
+progressionRailUnusedCoAnimatedHint: 'Les séquences instanciées pour cette classe par vous ou votre co-animateur, pas encore ajoutées à la progression.'
+progressionRailUnusedCreatedByLabel: 'créée par %name%'
+progressionCoAnimationUncoveredGroupFlag: 'Groupe non couvert : %groups%'
+progressionPickerUncoveredGroupWarning: "Un seul groupe sélectionné. Le groupe %groups% n'aura pas cette séance. C'est peut-être voulu — sinon, cochez aussi son créneau."
+lessonLogImportTwinLabel: 'Le cahier de texte de %name%'
+lessonLogImportTwinMeta: 'Même heure, groupe %groups% · les textes seulement'
+lessonLogImportTwinFlashMessage: 'Repris du cahier de %name%. Les trois textes ont été recopiés. Ses documents et ses travaux à faire ne suivent pas : ils lui appartiennent.'

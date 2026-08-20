@@ -13,7 +13,7 @@ import { Controller } from '@hotwired/stimulus';
  */
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
-    static targets = ['dialog', 'form', 'title', 'subtitle', 'slots', 'mode', 'modeLegend', 'submit'];
+    static targets = ['dialog', 'form', 'title', 'subtitle', 'slots', 'mode', 'modeLegend', 'submit', 'coverage'];
     static values = { slotsUrl: String, associateUrl: String };
 
     openPicker(event) {
@@ -80,6 +80,21 @@ export default class extends Controller {
         meta.textContent = slot.takenBy ? `${slot.duration} · ${slot.takenBy}` : slot.duration;
 
         body.append(line, meta);
+
+        // Only sent for a co-animated progression, and the reason it matters is geometric: two
+        // créneaux on the same day at the same hour are otherwise the same pill twice, so picking
+        // the wrong group is invisible. The server decides whether to send it (slots()).
+        if (slot.group || slot.teacher) {
+            const who = document.createElement('span');
+            who.className = 'cm-prog-picker__slot-who';
+            who.textContent = [slot.group, slot.teacher].filter(Boolean).join(' · ');
+            body.append(who);
+        }
+
+        // Kept on the input so refresh() can read the coverage back off the checked boxes without
+        // holding a second copy of the payload.
+        input.dataset.group = slot.group || '';
+
         label.append(input, body);
 
         return label;
@@ -97,6 +112,37 @@ export default class extends Controller {
             ? this.submitTarget.dataset.template.replace('%count%', String(count))
             : this.submitTarget.textContent;
         this.submitTarget.disabled = count === 0;
+
+        this.refreshCoverage();
+    }
+
+    /**
+     * The groups on offer that no ticked créneau reaches. Same rule as the server's
+     * App\Service\ProgressionCoAnimationCheck, and deliberately the same two silences: nothing
+     * ticked says nothing (the séance is simply unplaced), and a ticked whole-class créneau covers
+     * everybody.
+     */
+    refreshCoverage() {
+        if (!this.hasCoverageTarget) {
+            return;
+        }
+
+        const boxes = Array.from(this.slotsTarget.querySelectorAll('input[type="checkbox"]'));
+        const offered = new Set(boxes.map((box) => box.dataset.group).filter(Boolean));
+        const ticked = boxes.filter((box) => box.checked);
+
+        const wholeClassTicked = ticked.some((box) => !box.dataset.group);
+        const covered = new Set(ticked.map((box) => box.dataset.group).filter(Boolean));
+        const missing = ticked.length === 0 || wholeClassTicked
+            ? []
+            : [...offered].filter((group) => !covered.has(group));
+
+        this.coverageTarget.hidden = missing.length === 0;
+        if (missing.length > 0) {
+            this.coverageTarget.textContent = this.coverageTarget.dataset.template
+                ? this.coverageTarget.dataset.template.replace('%groups%', missing.join(', '))
+                : '';
+        }
     }
 
     checked() {

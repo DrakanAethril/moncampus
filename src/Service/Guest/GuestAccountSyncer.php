@@ -133,7 +133,14 @@ class GuestAccountSyncer
      *
      * @throws GuestUnreachableException
      */
-    public function apply(GuestShell $shell, AccountPlan $plan, ?string $publicKey = null): array
+    /**
+     * @param bool $readAloud whether the passwords are going to be shown to somebody. True for the
+     *                        machine's own Comptes screen, which prints them once to be handed out;
+     *                        false for batch provisioning, where nothing ever displays them, and a
+     *                        password built to survive being spoken across a room would only be
+     *                        weaker for no gain.
+     */
+    public function apply(GuestShell $shell, AccountPlan $plan, ?string $publicKey = null, bool $readAloud = true): array
     {
         $passwords = [];
 
@@ -142,7 +149,9 @@ class GuestAccountSyncer
                 continue;
             }
 
-            $password = $this->passwordGenerator->generate();
+            $password = $readAloud
+                ? $this->passwordGenerator->generate()
+                : $this->passwordGenerator->generateStrong();
 
             foreach ($this->createCommands($account, $password, $publicKey) as $command) {
                 $shell->run($command);

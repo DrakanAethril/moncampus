@@ -18,9 +18,12 @@ namespace App\Service\Proxmox;
  */
 class ProxmoxCertificateInspector
 {
-    private const int TIMEOUT_SECONDS = 6;
+    private const int CONNECT_TIMEOUT_SECONDS = 4;
+    private const int HANDSHAKE_TIMEOUT_SECONDS = 4;
 
-    /** @throws ProxmoxUnavailableException when the socket cannot be opened or the certificate cannot be read */
+    /**
+     * @throws ProxmoxUnavailableException when the socket cannot be opened or the certificate cannot be read
+     */
     public function inspect(string $hostname, int $port): ProxmoxCertificate
     {
         $context = stream_context_create(['ssl' => [
@@ -33,17 +36,35 @@ class ProxmoxCertificateInspector
             'SNI_enabled' => true,
         ]]);
 
+        // **Plain TCP first, TLS second, and not `ssl://` in one call.** The `$timeout` argument of
+        // stream_socket_client() bounds the *connection* only: with an `ssl://` address the
+        // handshake happens inside the same call and falls back to `default_socket_timeout`, 60
+        // seconds by default - past PHP's own 30-second execution limit, so the process is killed
+        // by a fatal MaxExecutionTimeError that no catch block can turn into a message. That is
+        // what production answered on 2026-08-19 against a host whose port accepted the connection
+        // and then went quiet. Connecting in the clear, arming stream_set_timeout() and only then
+        // enabling crypto puts a bound on the half that was unbounded.
         $stream = @stream_socket_client(
-            \sprintf('ssl://%s:%d', $hostname, $port),
+            \sprintf('tcp://%s:%d', $hostname, $port),
             $errorCode,
             $errorMessage,
-            self::TIMEOUT_SECONDS,
+            self::CONNECT_TIMEOUT_SECONDS,
             \STREAM_CLIENT_CONNECT,
             $context,
         );
 
+        $address = \sprintf('%s:%d', $hostname, $port);
+
         if (false === $stream) {
-            throw new ProxmoxUnavailableException(\sprintf('Could not open a TLS connection to %s:%d%s', $hostname, $port, '' !== (string) $errorMessage ? ' - '.$errorMessage : ''));
+            throw ProxmoxUnavailableException::unreachable($address, \sprintf('Could not connect to %s%s', $address, '' !== (string) $errorMessage ? ' - '.$errorMessage : ''));
+        }
+
+        stream_set_timeout($stream, self::HANDSHAKE_TIMEOUT_SECONDS);
+
+        if (true !== @stream_socket_enable_crypto($stream, true, \STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+            fclose($stream);
+
+            throw ProxmoxUnavailableException::tlsHandshakeFailed($address);
         }
 
         try {

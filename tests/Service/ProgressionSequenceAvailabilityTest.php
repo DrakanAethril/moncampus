@@ -96,6 +96,49 @@ class ProgressionSequenceAvailabilityTest extends TestCase
         self::assertTrue($this->availability([], [])->isAvailable($progression, $instance));
     }
 
+    public function testTheCoAnimatorsOwnInstancesReachTheSharedPool(): void
+    {
+        // Lot 2 of design/validated/co-animation.md: the séquence pool follows the progression's
+        // teachers, plural. Without this a séquence the co-animator instantiated from their own
+        // template is invisible in the plan they are entitled to edit.
+        $program = $this->program();
+        $owner = new User('owner');
+        $coTeacher = new User('co');
+        $progression = $this->progression($program, $owner, $coTeacher);
+        $theirs = $this->instance(1, $program, $coTeacher);
+
+        $availability = $this->availability([$theirs], []);
+
+        self::assertSame([$theirs], $availability->forProgression($progression));
+        self::assertTrue($availability->isAvailable($progression, $theirs));
+    }
+
+    public function testAnInstanceAlreadyPlannedInTheClassStaysRefusedToTheCoAnimator(): void
+    {
+        // The rule lot 2 must NOT loosen: an instantiated séquence is planned once for the whole
+        // class. Widening the pool to a second teacher widens WHOSE copies are offered, never how
+        // many times one of them may be planned.
+        $program = $this->program();
+        $owner = new User('owner');
+        $coTeacher = new User('co');
+        $progression = $this->progression($program, $owner, $coTeacher);
+        $plannedElsewhere = $this->instance(1, $program, $coTeacher);
+
+        $availability = $this->availability([$plannedElsewhere], [1]);
+
+        self::assertSame([], $availability->forProgression($progression));
+        self::assertFalse($availability->isAvailable($progression, $plannedElsewhere));
+    }
+
+    public function testAnInstanceOfATeacherNamedOnNothingStaysRefused(): void
+    {
+        $program = $this->program();
+        $progression = $this->progression($program, new User('owner'), new User('co'));
+        $strangers = $this->instance(1, $program, new User('stranger'));
+
+        self::assertFalse($this->availability([], [])->isAvailable($progression, $strangers));
+    }
+
     /**
      * @param list<SequenceInstance> $instances
      * @param list<int>              $plannedIds
@@ -103,7 +146,7 @@ class ProgressionSequenceAvailabilityTest extends TestCase
     private function availability(array $instances, array $plannedIds): ProgressionSequenceAvailability
     {
         $instanceRepository = $this->createStub(SequenceInstanceRepository::class);
-        $instanceRepository->method('findForProgramCreatedBy')->willReturn($instances);
+        $instanceRepository->method('findForProgramCreatedByAny')->willReturn($instances);
 
         $sequenceRepository = $this->createStub(ProgressionSequenceRepository::class);
         $sequenceRepository->method('findPlannedInstanceIdsForProgram')->willReturn($plannedIds);
@@ -127,7 +170,7 @@ class ProgressionSequenceAvailabilityTest extends TestCase
         return $instance;
     }
 
-    private function progression(Program $program, User $teacher): Progression
+    private function progression(Program $program, User $teacher, ?User $coTeacher = null): Progression
     {
         // Both entities are built without their constructors: a Program registers itself in
         // collections a bare test object doesn't have, and the progression only ever reads its
@@ -135,6 +178,11 @@ class ProgressionSequenceAvailabilityTest extends TestCase
         $topic = (new \ReflectionClass(Topic::class))->newInstanceWithoutConstructor();
         (new \ReflectionProperty($topic, 'program'))->setValue($topic, $program);
 
-        return new Progression($topic, $teacher);
+        $progression = new Progression($topic, $teacher);
+        if (null !== $coTeacher) {
+            $progression->addCoTeacher($coTeacher);
+        }
+
+        return $progression;
     }
 }

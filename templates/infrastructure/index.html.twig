@@ -16,20 +16,23 @@
        opening on its own: the state of the hosts, the counters that decide whether there is
        anything to do, and a door into each area. Every number below comes from the last recorded
        check, never from a call made while this page renders. #}
-    {% include 'infrastructure/_localnav.html.twig' %}
     {% include 'infrastructure/_encryption_banner.html.twig' %}
+    {% include 'infrastructure/_tabs.html.twig' %}
 
     {% if hostCount == 0 %}
-        <div class="card">
+        <div class="card cm-card--tabbed">
             <div class="card-body text-center py-5">
                 <p class="mb-3">{{ 'infrastructureNoHostText'|trans }}</p>
                 <a href="{{ path('app_infrastructure_hosts_new') }}" class="cm-btn cm-btn--primary">{{ 'proxmoxHostAddAction'|trans }}</a>
             </div>
         </div>
     {% else %}
+        {# Not a card, so it does not get .cm-card--tabbed's inset for free - and without it the
+           tiles butt straight against the tab row. See .cm-tabbed-content. #}
+        <div class="cm-tabbed-content">
         {% for host in unreachableHosts %}
-            <div class="cm-note" style="border-left-color: var(--cm-red-tx); background: var(--cm-red-bg); color: var(--cm-red-tx); margin-bottom: 12px;">
-                <span class="cm-note__icon" style="background: var(--cm-red-tx);">!</span>
+            <div class="cm-note cm-note--danger mb-2">
+                <span class="cm-note__icon">!</span>
                 <span>
                     <strong>{{ 'proxmoxHostUnreachableTitle'|trans({'%host%': host.label}) }}</strong>
                     {{ host.lastCheckMessage }}
@@ -100,6 +103,7 @@
                 <span class="cm-tile__desc">{{ 'infrastructureOperationsTileText'|trans }}</span>
                 <span class="cm-tile__go">{{ 'infrastructureOperationsTileGo'|trans({'%count%': operationCount}) }} &rarr;</span>
             </a>
+        </div>
         </div>
     {% endif %}
 {% endblock %}

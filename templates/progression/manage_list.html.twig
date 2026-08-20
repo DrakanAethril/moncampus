@@ -22,6 +22,9 @@
     <div class="cm-prog-chips">
         <span class="cm-prog-chips__label">{{ 'progressionFilterClassesLabel'|trans }} :</span>
         <a href="{{ path('app_progression_manage') }}" class="cm-prog-chip{{ selectedCohort is null or selectedCohort == '' ? ' is-active' }}">{{ 'progressionFilterAllLabel'|trans }} · {{ total }}</a>
+        {% if coAnimatedTotal > 0 %}
+            <span class="cm-prog-chips__label">{{ 'progressionCoAnimatedCountLabel'|trans({'%count%': coAnimatedTotal}) }}</span>
+        {% endif %}
         {% for chip in chips %}
             <a href="{{ path('app_progression_manage', {cohort: chip.id}) }}" class="cm-prog-chip{{ selectedCohort == chip.id ? ' is-active' }}">{{ chip.label }} · {{ chip.count }}</a>
         {% endfor %}
@@ -44,7 +47,19 @@
                         {% set hasEvaluation = counts.diagnostic + counts.formative + counts.summative > 0 %}
                         <tr>
                             <td class="fw-bold">{{ row.cohort ? row.cohort.name : '—' }}</td>
-                            <td>{{ row.topic ? row.topic.name : '—' }}</td>
+                            <td>
+                                {{ row.topic ? row.topic.name : '—' }}
+                                {# The row is in this list because the viewer owns it OR is named on
+                                   it as a co-animator, and those two look identical without a mark:
+                                   the chip names the colleague, and the group the viewer holds. #}
+                                {% if row.coAnimated %}
+                                    <span class="cm-prog-chip-status cm-prog-chip-status--info">{{ 'progressionCoAnimatedChipLabel'|trans }}</span>
+                                    <span class="d-block text-secondary small">
+                                        {% if row.otherTeachers is not empty %}{{ 'progressionCoAnimatedWithLabel'|trans({'%names%': row.otherTeachers|join(', ')}) }}{% endif %}
+                                        {% if row.ownGroups is not empty %} · {{ 'progressionCoAnimatedOwnGroupLabel'|trans({'%groups%': row.ownGroups|join(', ')}) }}{% endif %}
+                                    </span>
+                                {% endif %}
+                            </td>
                             <td>
                                 {% if hasEvaluation %}
                                     <span class="cm-prog-dfs">{{ counts.diagnostic }} · {{ counts.formative }} · {{ counts.summative }}</span>

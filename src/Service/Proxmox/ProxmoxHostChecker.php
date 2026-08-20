@@ -24,9 +24,17 @@ use Doctrine\ORM\EntityManagerInterface;
  */
 class ProxmoxHostChecker
 {
+    /**
+     * How long the whole sequence may take, weighed against PHP's `max_execution_time` of 30 s and
+     * against the client's own per-call ceiling: a call started at the last moment still has to
+     * finish inside the process's budget. Raising one of the two means re-checking the other.
+     */
+    private const float BUDGET_SECONDS = 15.0;
+
     public function __construct(
         private readonly ProxmoxClientFactory $clientFactory,
         private readonly ProxmoxInventory $inventory,
+        private readonly ProxmoxFailureMessage $failureMessage,
         private readonly EntityManagerInterface $entityManager,
     ) {
     }
@@ -53,11 +61,21 @@ class ProxmoxHostChecker
 
     private function run(ProxmoxHost $host): ProxmoxCheckResult
     {
+        // A budget for the whole sequence, not for each call. Bounding the calls one by one is not
+        // enough: five of them at the client's own ceiling would still add up past PHP's
+        // `max_execution_time`, and a fatal MaxExecutionTimeError cannot be caught, so the screen
+        // would show nothing at all while Discord collected the alert. Checked between calls rather
+        // than during one, which is the client's job.
+        $deadline = microtime(true) + self::BUDGET_SECONDS;
+
         try {
             $client = $this->clientFactory->operate($host);
             $version = $client->version()->string('version', '?');
 
+            $this->assertWithinBudget($deadline);
             $nodes = $this->inventory->nodes($client);
+
+            $this->assertWithinBudget($deadline);
             $guests = $this->inventory->guests($client);
             $summary = $this->inventory->summarise($guests, \count($nodes));
 
@@ -68,21 +86,52 @@ class ProxmoxHostChecker
                 $summary['nodes'],
                 $summary['guests'],
                 $summary['running'],
-                $this->warnings($host, $client),
+                $this->warnings($host, $client, $deadline),
             );
         } catch (ProxmoxUnavailableException $exception) {
-            return ProxmoxCheckResult::failure($exception->getMessage());
+            // The readable half, not getMessage(): this string is stored on the host and printed
+            // raw by the hosts list and the hub, so it is what an administrator reads.
+            return ProxmoxCheckResult::failure($this->failureMessage->readable($exception));
         }
     }
 
-    /** @return list<ProxmoxCheckWarning> */
-    private function warnings(ProxmoxHost $host, ProxmoxClient $client): array
+    /**
+     * @throws ProxmoxUnavailableException when there is no time left to start another call
+     */
+    private function assertWithinBudget(float $deadline): void
+    {
+        if (microtime(true) >= $deadline) {
+            throw ProxmoxUnavailableException::tooSlow((int) self::BUDGET_SECONDS);
+        }
+    }
+
+    /**
+     * The two extra questions, asked only if there is budget left for them.
+     *
+     * They are genuinely optional: the host has already answered, the badge is already green, and
+     * both of these say "reachable but misdeclared" rather than "broken". Spending the last of the
+     * budget on them would risk turning a successful check into a blank screen, which is a far
+     * worse trade than a missing warning.
+     *
+     * @return list<ProxmoxCheckWarning>
+     */
+    private function warnings(ProxmoxHost $host, ProxmoxClient $client, float $deadline): array
     {
         $warnings = [];
         $pool = $host->getManagedPool();
 
+        if (microtime(true) >= $deadline) {
+            return [new ProxmoxCheckWarning('proxmoxCheckIncompleteWarning', [])];
+        }
+
         if (null !== $pool && '' !== $pool && !$client->poolExists($pool)) {
             $warnings[] = new ProxmoxCheckWarning('proxmoxCheckPoolMissingWarning', ['%pool%' => $pool]);
+        }
+
+        if (microtime(true) >= $deadline) {
+            $warnings[] = new ProxmoxCheckWarning('proxmoxCheckIncompleteWarning', []);
+
+            return $warnings;
         }
 
         if ($host->hasProvisionCredentials()) {

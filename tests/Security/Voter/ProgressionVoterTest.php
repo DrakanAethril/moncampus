@@ -10,10 +10,11 @@ use App\Security\StructureAccessChecker;
 use App\Security\Voter\ProgressionVoter;
 
 /**
- * A progression is edited by staff or by the teacher who owns it.
+ * A progression is edited by staff, by the teacher who owns it, or by a co-animator named on it.
  *
- * Two independent doors - staff, or ownership - so both are pinned, along with the case where
- * neither applies.
+ * Three independent doors, so all three are pinned - along with the case that says the third one
+ * is a door and not a corridor: another teacher of the same class, who is neither owner nor
+ * co-animator, still gets nothing.
  */
 class ProgressionVoterTest extends VoterTestCase
 {
@@ -25,10 +26,13 @@ class ProgressionVoterTest extends VoterTestCase
         return new ProgressionVoter($checker);
     }
 
-    private function subject(?User $owner): Progression
+    private function subject(?User $owner, ?User $coTeacher = null): Progression
     {
         $subject = $this->createStub(Progression::class);
         $subject->method('getTeacher')->willReturn($owner);
+        $subject->method('isCoTeacher')->willReturnCallback(
+            static fn (User $user): bool => null !== $coTeacher && $user === $coTeacher,
+        );
 
         return $subject;
     }
@@ -48,12 +52,24 @@ class ProgressionVoterTest extends VoterTestCase
         $this->assertGranted($this->voter(true), $staff, $this->subject($owner), ProgressionVoter::EDIT);
     }
 
+    public function testCoTeacherEditsTheSharedPlan(): void
+    {
+        $owner = $this->user(['ROLE_USER', 'ROLE_TEACHER'], 'owner');
+        $coTeacher = $this->user(['ROLE_USER', 'ROLE_TEACHER'], 'co');
+
+        $this->assertGranted($this->voter(false), $coTeacher, $this->subject($owner, $coTeacher), ProgressionVoter::EDIT);
+    }
+
     public function testAnotherTeacherIsDenied(): void
     {
         $owner = $this->user(['ROLE_USER', 'ROLE_TEACHER'], 'owner');
+        $coTeacher = $this->user(['ROLE_USER', 'ROLE_TEACHER'], 'co');
         $other = $this->user(['ROLE_USER', 'ROLE_TEACHER'], 'other');
 
         $this->assertDenied($this->voter(false), $other, $this->subject($owner), ProgressionVoter::EDIT);
+        // The co-animation link is per progression, never per class: a colleague teaching the same
+        // class stays out of a plan nobody named them on.
+        $this->assertDenied($this->voter(false), $other, $this->subject($owner, $coTeacher), ProgressionVoter::EDIT);
         $this->assertDenied($this->voter(false), null, $this->subject($owner), ProgressionVoter::EDIT);
     }
 

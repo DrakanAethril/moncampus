@@ -12,6 +12,12 @@
 {% set schoolYear = program ? program.schoolYear : null %}
 {% set yearLabel = schoolYear and schoolYear.startDate and schoolYear.endDate ? schoolYear.startDate|date('Y') ~ '–' ~ schoolYear.endDate|date('Y') : '' %}
 {% set teacherName = progression.teacher ? (progression.teacher.displayName ?? progression.teacher.username) : '—' %}
+{# Co-animation: the cover names EVERY formateur, with the group their créneaux say they hold. Read
+   from the roster the exporter passes in, which measures it off the timetable rather than storing
+   it — so a créneau that moves rooms next week moves the document with it. #}
+{% set roster = roster|default([]) %}
+{% set coAnimated = roster|length > 1 %}
+{% set teacherNames = roster|map(r => r.teacher.displayName ?? r.teacher.username) %}
 {% set programLabel = program ? program.displayShortName : '—' %}
 {# The programme's short name IS the cohort's name on most formations, and the cover printed it
    twice ("SIO1 — SIO1"). The cohort is named only when it says something the short name does not -
@@ -102,6 +108,11 @@
     .qp-muted { color: #8a93a3; }
     .qp-note { border: 0.5pt solid #b9c8da; background: #f7fafd; padding: 2.5mm 3mm; font-size: 8pt; color: #55637a; break-inside: avoid; }
     .qp-redelivery { display: block; margin-top: 0.8mm; font-size: 7.5pt; color: #55637a; font-style: italic; }
+    /* The « Co-animée » mark on a séquence head. Print colours only - no background image and no
+       web font, the document has no origin of its own. */
+    .qp-coanim { display: inline-block; margin-left: 2.5mm; padding: 0.3mm 1.6mm; border-radius: 0.8mm;
+                 background: #1F4E79; color: #fff; font-size: 6.5pt; font-weight: 700;
+                 letter-spacing: 0.04em; text-transform: uppercase; vertical-align: 0.6mm; }
     h2.qp-h2, h3.qp-h3 { break-after: avoid; }
     .qp-break { break-before: page; }
 </style>
@@ -113,7 +124,7 @@
     <div class="qp-cover__kicker">Progression pédagogique{{ yearLabel ? ' · ' ~ yearLabel }}</div>
     <h1 class="qp-cover__title">{{ topic ? topic.name : '—' }}</h1>
     <div class="qp-cover__sub">{{ programLabel }}{% if cohortLabel %} — {{ cohortLabel }}{% endif %}</div>
-    <div class="qp-cover__teacher">{{ teacherName }}</div>
+    <div class="qp-cover__teacher">{{ coAnimated ? teacherNames|join(' et ') : teacherName }}</div>
 </div>
 
 <table class="qp-id">
@@ -121,13 +132,29 @@
     <tr><th>Année scolaire</th><td>{{ yearLabel ?: '—' }}</td></tr>
     <tr><th>Formation</th><td>{{ program ? program.name : '—' }}</td></tr>
     <tr><th>Matière</th><td>{{ topic ? topic.name : '—' }}</td></tr>
-    <tr><th>Formateur</th><td>{{ teacherName }}</td></tr>
+    {% if coAnimated %}
+        <tr><th>Formateurs</th><td>
+            {% for row in roster %}
+                {{ row.teacher.displayName ?? row.teacher.username }}{% if row.groups is not empty %} — groupe {{ row.groups|join(', ') }}{% endif %}
+                {%- if not loop.last %}<br>{% endif %}
+            {% endfor %}
+        </td></tr>
+    {% else %}
+        <tr><th>Formateur</th><td>{{ teacherName }}</td></tr>
+    {% endif %}
     <tr><th>Période couverte</th><td>
         {% if data.firstDay %}{{ data.firstDay|date('d/m/Y') }} → {{ data.lastDay ? data.lastDay|date('d/m/Y') : '—' }}{% else %}<span class="qp-muted">aucune séance encore placée à l’emploi du temps</span>{% endif %}
     </td></tr>
     {# Both figures are learner volumes, so they are comparable - see ProgressionQualiopiBuilder. #}
     <tr><th>Volume horaire</th><td>{{ data.totalLearnerMinutes|duration_minutes }} placés à l’emploi du temps sur {{ data.totalPlannedMinutes|duration_minutes }} prévus <span class="qp-muted">(heures reçues par un apprenant)</span></td></tr>
     <tr><th>Date d’édition</th><td>{{ generatedAt|date('d/m/Y') }}</td></tr>
+    {# There is one document, not two: both formateurs export the same one, and it is right that
+       they do — what an auditor is handed must not depend on who pressed the button. This row is
+       what lets that single document be produced by either of them without either appearing to be
+       the sole formateur. #}
+    {% if coAnimated and generatedBy is defined and generatedBy %}
+        <tr><th>Établi par</th><td>{{ generatedBy.displayName ?? generatedBy.username }}, le {{ generatedAt|date('d/m/Y') }}</td></tr>
+    {% endif %}
 </table>
 
 <div class="qp-note" style="margin-top: 5mm;">
@@ -174,14 +201,31 @@
 {# The document counts ONE thing, and says which. A séance split by group is given twice by the
    trainer, but each learner only receives one of them: it is the hours received that are counted
    here, and the splitting is named slot by slot in the detailed progression. #}
+{# Two sentences and not one, because an auditor asks a different question of each situation:
+   « données en même temps par deux formateurs » and « redonnées plus tard par le même » are
+   different facts, and the single old sentence asserted the second of BOTH — which was false for a
+   co-animated séance, in an audit file. The conclusion is unchanged and stays where it was. #}
 {% if data.perGroupSeanceCount > 0 %}
     <div class="qp-note">
         <strong>Une lecture unique : les heures reçues par un apprenant.</strong>
-        {{ data.perGroupSeanceCount }} séance{{ data.perGroupSeanceCount > 1 ? 's' }} de cette progression
-        {{ data.perGroupSeanceCount > 1 ? 'sont dédoublées' : 'est dédoublée' }} par groupe : elle{{ data.perGroupSeanceCount > 1 ? 's' }}
-        {{ data.perGroupSeanceCount > 1 ? 'sont redispensées' : 'est redispensée' }} à l’autre groupe sur un créneau distinct.
-        Ces redispensations sont détaillées au § 2, sur le créneau concerné ; elles ne sont comptées
-        qu’une fois dans les volumes ci-dessus, puisqu’un apprenant n’assiste qu’à celle de son groupe.
+        {% if data.coAnimatedSeanceCount > 0 %}
+            {{ data.coAnimatedSeanceCount }} séance{{ data.coAnimatedSeanceCount > 1 ? 's' }} de cette progression
+            {{ data.coAnimatedSeanceCount > 1 ? 'sont co-animées' : 'est co-animée' }} :
+            elle{{ data.coAnimatedSeanceCount > 1 ? 's sont données' : ' est donnée' }} simultanément aux deux groupes,
+            dans deux salles, par les formateurs nommés ci-dessus.
+        {% endif %}
+        {% if data.redeliveredSeanceCount > 0 %}
+            {{ data.redeliveredSeanceCount }} séance{{ data.redeliveredSeanceCount > 1 ? 's' }}
+            {{ data.redeliveredSeanceCount > 1 ? 'sont redispensées' : 'est redispensée' }} :
+            le même formateur {{ data.redeliveredSeanceCount > 1 ? 'les donne' : 'la donne' }} une seconde fois
+            à l’autre groupe, sur un créneau distinct.
+        {% endif %}
+        {% if data.coAnimatedSeanceCount == 0 and data.redeliveredSeanceCount == 0 %}
+            {{ data.perGroupSeanceCount }} séance{{ data.perGroupSeanceCount > 1 ? 's' }} de cette progression
+            {{ data.perGroupSeanceCount > 1 ? 'sont données' : 'est donnée' }} par groupe.
+        {% endif %}
+        Dans tous les cas, la séance n’est comptée qu’une fois dans les volumes ci-dessus, puisqu’un
+        apprenant n’assiste qu’à celle de son groupe. Le détail figure au § 2, sur le créneau concerné.
     </div>
 {% endif %}
 
@@ -197,8 +241,13 @@
 {% for sequence in data.sequences %}
     <div class="qp-seq">
         <div class="qp-seq__head">
-            <div class="qp-seq__title">{{ sequence.position }}. {{ sequence.title }}</div>
+            {# Computed from THIS séquence's deliveries and never inherited from the progression: a
+               co-animated matière holds very well a séquence the titulaire runs alone with the whole
+               class, and marking that one would be a false statement of the same family as the one
+               § 1 used to print. #}
+            <div class="qp-seq__title">{{ sequence.position }}. {{ sequence.title }}{% if sequence.coAnimated %}<span class="qp-coanim">Co-animée</span>{% endif %}</div>
             <div class="qp-seq__meta">
+                {% if sequence.deliveredBy is not empty %}{{ sequence.deliveredBy|join(' et ') }} · {% endif %}
                 {% if sequence.firstDay %}{{ sequence.firstDay|date('d/m/Y') }} → {{ sequence.lastDay ? sequence.lastDay|date('d/m/Y') : '…' }} · {% endif %}
                 {{ sequence.learnerMinutes|duration_minutes }} placés sur {{ sequence.plannedMinutes|duration_minutes }} prévus par apprenant
             </div>
@@ -242,6 +291,9 @@
                             {% if delivery.start %}· {{ delivery.start }}{% if delivery.end %}–{{ delivery.end }}{% endif %}{% endif %}
                             · <strong>{{ delivery.group ?: 'classe entière' }}</strong>
                             {% if delivery.room %}<span class="qp-muted">· {{ delivery.room }}</span>{% endif %}
+                            {# Two lines at the same hour with two different rooms are otherwise
+                               unreadable — the same reason the placement picker needs the name. #}
+                            {% if delivery.teacher %}<span class="qp-muted">· {{ delivery.teacher }}</span>{% endif %}
                             {% if not loop.last %}<br>{% endif %}
                         {% else %}
                             <span class="qp-muted">non placée à l’emploi du temps</span>
@@ -259,6 +311,8 @@
                         {% endif %}
                         {# Says in words why two créneaux carry one volume - the question an auditor
                            asks of this exact cell. #}
+                        {# « Redispensée » is kept for what it describes: the SAME formateur giving the
+                           séance a second time, on a distinct créneau. #}
                         {% if seance.redeliveries is not empty %}
                             <span class="qp-redelivery">
                                 Séance par groupe, redispensée
@@ -266,6 +320,19 @@
                                     {{ ' ' }}le {{ redelivery.date ? redelivery.date|date('d/m/Y') : '—' }}{% if redelivery.start %} à {{ redelivery.start }}{% endif %}
                                     au groupe {{ redelivery.group ?: '—' }}{% if not loop.last %},{% endif %}
                                 {%- endfor %} : comptée une fois, un apprenant n’assistant qu’à celle de son groupe.
+                            </span>
+                        {% endif %}
+                        {# And a co-delivery gets its own sentence, because nothing is redispensed and
+                           the créneau is not distinct: the two deliveries are simultaneous, in two
+                           rooms, by two formateurs. #}
+                        {% if seance.coDeliveries is not empty %}
+                            <span class="qp-redelivery">
+                                Séance co-animée : donnée simultanément
+                                {%- for coDelivery in seance.coDeliveries %}
+                                    {{ ' ' }}au groupe {{ coDelivery.group ?: '—' }}
+                                    {%- if coDelivery.teacher %} par {{ coDelivery.teacher }}{% endif %}
+                                    {%- if coDelivery.room %}, en {{ coDelivery.room }}{% endif %}{% if not loop.last %},{% endif %}
+                                {%- endfor %} — comptée une fois, un apprenant n’assistant qu’à celle de son groupe.
                             </span>
                         {% endif %}
                     </td>

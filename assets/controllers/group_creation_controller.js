@@ -15,20 +15,23 @@ export default class extends Controller {
         'pairASelect', 'pairBSelect', 'pairChips',
         'error', 'reshuffleBtn', 'summary', 'nameFormatSelect',
         'toolbar', 'lotNameInput', 'grid', 'dndHint', 'emptyState',
-        'lotsBar', 'lotsChips',
+        'lotsBar', 'lotsChips', 'sharedLotsBar', 'sharedLotsChips',
+        'shareButton', 'shareModal', 'shareModalBody', 'shareList', 'shareCheckbox',
         'fullscreen', 'fullscreenTitle', 'fullscreenGrid',
         'confirmModal', 'confirmModalBody', 'toast',
         'pdfForm', 'pdfFormGroups', 'pdfFormLotName',
-        'messageForm', 'messageFormGroups', 'messageFormLotName',
     ];
 
     static values = {
         students: Array,
         options: Array,
         lots: Array,
+        sharedLots: Array,
+        shareableTeachers: Array,
         generateUrl: String,
         saveLotUrl: String,
         deleteLotUrl: String,
+        shareLotUrl: String,
         csrfToken: String,
         labels: Object,
     };
@@ -45,7 +48,12 @@ export default class extends Controller {
         this.lockedIndices = new Set();
         this.dragId = null;
         this.lots = [...this.lotsValue];
+        this.sharedLots = [...this.sharedLotsValue];
         this.pendingDeleteLotId = null;
+        // Which saved lot the grid is currently showing, or null when it shows something that has
+        // no database row yet (a fresh draw, an edited lot, a colleague's read-only lot). Sharing
+        // hands over the row, so this is exactly what gates the "Partager" button.
+        this.currentLotId = null;
         // Shortened names by default: the group cards are read from across a room, and a class
         // knows its own first names. Applies to the cards, the fullscreen view and the exports -
         // NOT to the absent/pair pickers below, where a surname is what tells two "Célia L." apart.
@@ -68,6 +76,7 @@ export default class extends Controller {
         this.renderSummary();
         this.renderGroups();
         this.renderLotsBar();
+        this.renderSharedLotsBar();
         this.setActiveSegment(this.modeSizeBtnTarget, true);
         this.setActiveSegment(this.modeCountBtnTarget, false);
         this.setActiveSegment(this.mixiteFreeBtnTarget, true);
@@ -393,6 +402,7 @@ export default class extends Controller {
         if (!rebrasser) {
             this.lockedIndices = new Set();
         }
+        this.setCurrentLot(null);
         this.renderGroups();
         this.renderSummary();
     }
@@ -515,6 +525,8 @@ export default class extends Controller {
         const [member] = this.groups[fromIndex].splice(memberIndex, 1);
         this.groups[targetIndex].push(member);
         this.dragId = null;
+        // The grid no longer matches the saved row, so it is not that lot any more until re-saved.
+        this.setCurrentLot(null);
         this.renderGroups();
     }
 
@@ -536,6 +548,16 @@ export default class extends Controller {
             load.addEventListener('click', () => this.loadLot(lot));
             chip.appendChild(load);
 
+            // A lot the teacher has opened to colleagues says so on its own chip - otherwise the
+            // only way to find out is to re-open the share modal.
+            const recipientCount = lot.sharedWith?.length ?? 0;
+            if (recipientCount > 0) {
+                const badge = document.createElement('span');
+                badge.className = 'cm-grp-lot-chip__shared';
+                badge.textContent = this.labelsValue.sharedCountBadge.replace('%count%', recipientCount);
+                chip.appendChild(badge);
+            }
+
             const del = document.createElement('button');
             del.type = 'button';
             del.className = 'cm-grp-lot-chip__del';
@@ -548,11 +570,105 @@ export default class extends Controller {
         }
     }
 
-    loadLot(lot) {
+    // The second banner - a colleague's lot, loadable and re-savable under one's own name, but
+    // never renamed, re-shared or deleted from here: those all act on the owner's row.
+    renderSharedLotsBar() {
+        this.sharedLotsBarTarget.hidden = this.sharedLots.length === 0;
+        this.sharedLotsChipsTarget.replaceChildren();
+
+        for (const lot of this.sharedLots) {
+            const chip = document.createElement('span');
+            chip.className = 'cm-grp-lot-chip cm-grp-lot-chip--shared';
+
+            const load = document.createElement('button');
+            load.type = 'button';
+            load.className = 'cm-grp-lot-chip__load';
+            load.title = this.labelsValue.sharedLotOwnerTitle.replace('%name%', lot.ownerName);
+            load.textContent = lot.name;
+            load.addEventListener('click', () => this.loadLot(lot, false));
+            chip.appendChild(load);
+
+            const owner = document.createElement('span');
+            owner.className = 'cm-grp-lot-chip__owner';
+            owner.textContent = lot.ownerName;
+            chip.appendChild(owner);
+
+            this.sharedLotsChipsTarget.appendChild(chip);
+        }
+    }
+
+    loadLot(lot, owned = true) {
         this.groups = lot.groups.map((group) => group.map((student) => ({ ...student, optionId: student.optionIds?.[0] ?? student.optionId ?? null })));
         this.lockedIndices = new Set();
         this.lotNameInputTarget.value = lot.name;
+        this.setCurrentLot(owned ? lot.id : null);
         this.renderGroups();
+    }
+
+    setCurrentLot(lotId) {
+        this.currentLotId = lotId;
+        if (this.hasShareButtonTarget) {
+            this.shareButtonTarget.disabled = lotId === null;
+            this.shareButtonTarget.title = lotId === null ? this.labelsValue.shareLotUnsavedMessage : '';
+        }
+    }
+
+    ownedLot(lotId) {
+        return this.lots.find((lot) => lot.id === lotId) ?? null;
+    }
+
+    // ---------- Partage ----------
+
+    openShareModal() {
+        const lot = this.ownedLot(this.currentLotId);
+        if (!lot) return;
+
+        this.shareModalBodyTarget.innerHTML = this.labelsValue.shareLotBody.replace('%name%', `<b>${this.escapeHtml(lot.name)}</b>`);
+        const shared = new Set(lot.sharedWith ?? []);
+        for (const checkbox of this.shareCheckboxTargets) {
+            checkbox.checked = shared.has(Number(checkbox.value));
+        }
+        this.shareModalTarget.hidden = false;
+    }
+
+    cancelShare() {
+        this.shareModalTarget.hidden = true;
+    }
+
+    async confirmShare() {
+        const lot = this.ownedLot(this.currentLotId);
+        if (!lot) return;
+
+        const teacherIds = this.shareCheckboxTargets.filter((checkbox) => checkbox.checked).map((checkbox) => Number(checkbox.value));
+        const url = this.shareLotUrlValue.replace('__LOT_ID__', String(lot.id));
+
+        let response;
+        try {
+            response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': this.csrfTokenValue },
+                body: JSON.stringify({ teacherIds }),
+            });
+        } catch (e) {
+            response = null;
+        }
+
+        this.shareModalTarget.hidden = true;
+
+        const data = response ? await response.json().catch(() => null) : null;
+        if (!response || !response.ok || !data) {
+            this.renderError(this.labelsValue.networkErrorMessage);
+
+            return;
+        }
+
+        lot.sharedWith = data.sharedWith;
+        this.renderLotsBar();
+        // Unticking everybody is a deliberate action too, and deserves its own confirmation rather
+        // than a "partagé à 0 enseignant" that reads like a failure.
+        this.showToast(data.sharedWith.length === 0
+            ? this.labelsValue.lotUnsharedToast.replace('%name%', lot.name)
+            : this.labelsValue.lotSharedToast.replace('%name%', lot.name).replace('%count%', data.sharedWith.length));
     }
 
     async saveLot() {
@@ -580,13 +696,16 @@ export default class extends Controller {
         }
 
         const existingIndex = this.lots.findIndex((lot) => lot.id === data.id);
-        const savedLot = { id: data.id, name: data.name, groups: this.groups };
+        // Overwriting a lot by re-using its name keeps its recipients: the row is the same row, and
+        // the server never touched the share table here.
+        const savedLot = { id: data.id, name: data.name, groups: this.groups, sharedWith: existingIndex === -1 ? [] : (this.lots[existingIndex].sharedWith ?? []) };
         if (existingIndex === -1) {
             this.lots.push(savedLot);
         } else {
             this.lots[existingIndex] = savedLot;
         }
         this.lotNameInputTarget.value = data.name;
+        this.setCurrentLot(data.id);
         this.renderLotsBar();
         this.showToast(this.labelsValue.lotSavedToast.replace('%name%', data.name));
     }
@@ -628,6 +747,9 @@ export default class extends Controller {
 
         const deletedLot = this.lots.find((lot) => lot.id === lotId);
         this.lots = this.lots.filter((lot) => lot.id !== lotId);
+        if (this.currentLotId === lotId) {
+            this.setCurrentLot(null);
+        }
         this.renderLotsBar();
         if (deletedLot) {
             this.showToast(this.labelsValue.lotDeletedToast.replace('%name%', deletedLot.name));
@@ -693,7 +815,7 @@ export default class extends Controller {
         }
     }
 
-    // ---------- Export / messaging (real form submits - see the two hidden <form> elements) ----------
+    // ---------- Export (a real form submit - see the hidden <form> element) ----------
 
     exportPdf() {
         if (!this.groups) return;
@@ -701,14 +823,6 @@ export default class extends Controller {
         this.pdfFormGroupsTarget.value = JSON.stringify(this.serializeGroupsForExport());
         this.pdfFormLotNameTarget.value = this.lotNameInputTarget.value.trim();
         this.pdfFormTarget.submit();
-    }
-
-    sendMessage() {
-        if (!this.groups) return;
-
-        this.messageFormGroupsTarget.value = JSON.stringify(this.serializeGroupsForExport());
-        this.messageFormLotNameTarget.value = this.lotNameInputTarget.value.trim();
-        this.messageFormTarget.submit();
     }
 
     serializeGroupsForExport() {

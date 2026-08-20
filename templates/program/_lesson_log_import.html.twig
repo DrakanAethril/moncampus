@@ -17,12 +17,30 @@
         {% endif %}
 
         {% for suggestion in suggestions %}
-            {% include 'program/_lesson_log_import_row.html.twig' with {
-                label: {'otherGroup': 'lessonLogImportOtherGroupLabel', 'previousYear': 'lessonLogImportPreviousYearLabel'}[suggestion.kind]|trans,
-                meta: suggestion.session.program.displayShortName ~ ' — ' ~ suggestion.session.displayName ~ ' · ' ~ suggestion.session.day|date('d/m/Y'),
-                url: path('app_program_timetable_session_log_import', {id: program.id, sessionId: session.id, sourceId: suggestion.session.id}),
-                confirmMessage: hasContent ? 'lessonLogImportSessionConfirmMessage'|trans : null
-            } %}
+            {# The twin names its teacher, because that is the only thing telling it apart: two
+               créneaux of the same matière at the same hour of the same class are otherwise the
+               same line twice. Its meta also says what will NOT travel — the documents and the
+               travaux belong to the colleague, and the menu is where that is worth reading, not
+               the flash afterwards. #}
+            {% if suggestion.kind == 'twin' %}
+                {% set twinTeacher = suggestion.session.teacher %}
+                {% include 'program/_lesson_log_import_row.html.twig' with {
+                    label: 'lessonLogImportTwinLabel'|trans({'%name%': twinTeacher ? (twinTeacher.displayName ?? twinTeacher.username) : ''}),
+                    meta: 'lessonLogImportTwinMeta'|trans({
+                        '%groups%': suggestion.session.options|map(o => o.shortName)|join(', '),
+                        '%time%': suggestion.session.startHour|date('H:i'),
+                    }),
+                    url: path('app_program_timetable_session_log_import', {id: program.id, sessionId: session.id, sourceId: suggestion.session.id}),
+                    confirmMessage: hasContent ? 'lessonLogImportSessionConfirmMessage'|trans : null
+                } %}
+            {% else %}
+                {% include 'program/_lesson_log_import_row.html.twig' with {
+                    label: {'otherGroup': 'lessonLogImportOtherGroupLabel', 'previousYear': 'lessonLogImportPreviousYearLabel'}[suggestion.kind]|trans,
+                    meta: suggestion.session.program.displayShortName ~ ' — ' ~ suggestion.session.displayName ~ ' · ' ~ suggestion.session.day|date('d/m/Y'),
+                    url: path('app_program_timetable_session_log_import', {id: program.id, sessionId: session.id, sourceId: suggestion.session.id}),
+                    confirmMessage: hasContent ? 'lessonLogImportSessionConfirmMessage'|trans : null
+                } %}
+            {% endif %}
         {% endfor %}
 
         {% set suggestedIds = suggestions|map(x => x.session.id) %}

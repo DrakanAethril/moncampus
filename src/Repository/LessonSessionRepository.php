@@ -443,16 +443,48 @@ class LessonSessionRepository extends ServiceEntityRepository
 
     /**
      * The séances comparable to this one whose cahier de texte says something: the same lesson,
-     * elsewhere - to another group this year, or in previous years.
+     * elsewhere - to another group this year, in previous years, or **on the twin créneau**.
      *
      * « The same lesson » is recognised by the matière name: each program has its own Topic, and two
      * groups following the same lesson have two homonymous Topics. It is the only link the model
      * offers between them, for want of a shared matière reference framework.
      *
-     * The most recent first, the current séance and its own program excluded.
+     * The current séance's own program used to be excluded outright, which cut out exactly one
+     * case: the twin créneau - same class, same matière, same hour, another teacher, another group,
+     * another room. That is co-animation, and its cahier de texte is the one most worth taking back
+     * (design/validated/co-animation.md). So the exclusion now reads "another program, OR the same
+     * program at the same hour with a different teacher".
+     *
+     * The twin is DEFINED, not configured: no pairing table and no column, so an emploi du temps
+     * that changes next week changes the answer by itself. App\Service\LessonLogTwinRule states
+     * the same rule in one place for the callers that have to name it, and this WHERE is its SQL
+     * form - hours compared on the hour columns, never through $length, which is decimal hours
+     * against the séances' minutes.
+     *
+     * The most recent first, the current séance always excluded.
      *
      * @return list<LessonSession>
      */
+    /**
+     * The SQL form of App\Service\LessonLogTwinRule, or null when this créneau cannot have a twin
+     * at all - an unknown day, hour or teacher answers "no twin" rather than matching loosely.
+     */
+    private function twinConditions(LessonSession $session): ?string
+    {
+        if (null === $session->getDay() || null === $session->getStartHour() || null === $session->getEndHour() || null === $session->getTeacher()) {
+            return null;
+        }
+
+        return 'l.day = :day'
+            // [start, end) overlap: two créneaux that merely touch are consecutive, not
+            // simultaneous.
+            .' AND l.startHour < :end AND l.endHour > :start'
+            .' AND l.teacher IS NOT NULL AND l.teacher != :teacher'
+            // A co-animated matière is split by construction, so a whole-class créneau is not a
+            // twin of anything.
+            .' AND SIZE(l.options) > 0';
+    }
+
     public function findComparableFilledSessions(LessonSession $session, int $limit = 20): array
     {
         $topicName = $session->getTopic()?->getName();
@@ -460,14 +492,13 @@ class LessonSessionRepository extends ServiceEntityRepository
             return [];
         }
 
-        return $this->createQueryBuilder('l')
+        $builder = $this->createQueryBuilder('l')
             ->addSelect('p', 'tp')
             ->innerJoin('l.program', 'p')
             ->innerJoin('l.topic', 'tp')
             ->innerJoin(LessonLog::class, 'log', \Doctrine\ORM\Query\Expr\Join::WITH, 'log.lessonSession = l')
             ->where('tp.name = :topicName')
             ->andWhere('l.id != :session')
-            ->andWhere('p.id != :program')
             // An empty cahier de texte has nothing to give: at least one of the three parts must say
             // something.
             ->andWhere("COALESCE(log.contenuRealise, '') != '' OR COALESCE(log.travailAvantDescription, '') != '' OR COALESCE(log.travailApresDescription, '') != ''")
@@ -475,8 +506,21 @@ class LessonSessionRepository extends ServiceEntityRepository
             ->setParameter('session', $session->getId())
             ->setParameter('program', $session->getProgram()->getId())
             ->orderBy('l.day', 'DESC')
-            ->setMaxResults($limit)
-            ->getQuery()
-            ->getResult();
+            ->setMaxResults($limit);
+
+        $twin = $this->twinConditions($session);
+
+        if (null === $twin) {
+            $builder->andWhere('p.id != :program');
+        } else {
+            $builder
+                ->andWhere('p.id != :program OR ('.$twin.')')
+                ->setParameter('day', $session->getDay())
+                ->setParameter('start', $session->getStartHour())
+                ->setParameter('end', $session->getEndHour())
+                ->setParameter('teacher', $session->getTeacher());
+        }
+
+        return $builder->getQuery()->getResult();
     }
 }

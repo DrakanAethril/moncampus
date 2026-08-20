@@ -1,0 +1,22 @@
+{# One mail, as the staff sheet (screen 2a) shows it: read-only, no reply ever written from here.
+
+   Shared by the mails of a démarche and by those attached to none, so that the two blocks cannot
+   drift apart - they are the same object seen from two places. #}
+<div class="cm-sheet__mail">
+    <div class="cm-sheet__mail-head">
+        <span class="cm-sheet__mail-kind">
+            {{ (message.direction.value == 'inbound' ? 'studentJobApplicationsReplyKindLabel' : 'studentJobApplicationsSentKindLabel')|trans }}
+        </span>
+        <span class="cm-sheet__mail-subject">{{ message.subject ?: ('schoolMailNoSubjectLabel'|trans) }}</span>
+        {% for attachment in message.attachments %}
+            <a class="cm-sheet__mail-tag" href="{{ path('app_school_mail_attachment', {id: attachment.id}) }}">{{ attachment.filename }}</a>
+        {% endfor %}
+        <span class="cm-sheet__mail-date">{{ (message.messageDate ?? message.createdAt)|date('d/m · H:i') }}</span>
+    </div>
+    <div class="cm-sheet__mail-addresses">
+        {{ 'schoolMailFromLabel'|trans }} {{ message.fromAddress }} ·
+        {{ 'schoolMailToLabel'|trans }} {{ message.toAddresses|join(', ') }}
+    </div>
+    {# Text, never the sender's HTML: this body comes from outside. #}
+    <div class="cm-sheet__mail-body">{{ (message.textBody ?: message.htmlBody|striptags)|nl2br }}</div>
+</div>

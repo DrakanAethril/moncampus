@@ -16,7 +16,9 @@
 {% block page_title %}{{ heading }}{% endblock %}
 
 {% block main %}
-    {% include 'infrastructure/_localnav.html.twig' %}
+    {% include 'infrastructure/_tabs.html.twig' %}
+
+    <div class="cm-tabbed-content">
     {% include 'infrastructure/_encryption_banner.html.twig' %}
 
     {{ form_start(form, {attr: {
@@ -31,7 +33,7 @@
         'data-proxmox-host-form-self-signed-message-value': 'proxmoxHostSelfSignedText'|trans,
         'data-proxmox-host-form-expires-message-value': 'proxmoxHostExpiresText'|trans,
     }}) }}
-    <div class="card" style="max-width: 860px;">
+    <div class="card">
 
         <fieldset class="cm-fieldset">
             <legend class="cm-fieldset__legend">{{ 'proxmoxHostIdentificationLegend'|trans }}</legend>
@@ -203,4 +205,5 @@
         </div>
     </div>
     {{ form_end(form) }}
+    </div>
 {% endblock %}

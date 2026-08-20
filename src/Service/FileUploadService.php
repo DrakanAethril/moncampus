@@ -16,8 +16,8 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
  *
  * Delivery is via CloudFront, not this app: the bucket is never made public, and CloudFront's
  * Origin Access Control is what's allowed to read it. url() just builds the CloudFront URL - no
- * signing, no byte-proxying - falling back to a direct MinIO URL only in local dev when no
- * CloudFront domain is configured.
+ * signing, no byte-proxying - falling back to a direct bucket URL only where no CloudFront domain
+ * is configured.
  */
 class FileUploadService
 {
@@ -175,9 +175,9 @@ class FileUploadService
             return sprintf('https://%s/%s', $this->awsCloudfrontDomain, $key);
         }
 
-        // Local dev without a CloudFront domain configured (plain MinIO) - direct bucket URL via
-        // the browser-facing endpoint (not AWS_S3_ENDPOINT, which is the internal Docker-network
-        // address PHP uses for S3 API calls and isn't reachable from a browser on the host).
+        // No CloudFront domain configured - direct bucket URL via the browser-facing endpoint
+        // (AWS_S3_PUBLIC_ENDPOINT, not AWS_S3_ENDPOINT: the latter is the address PHP itself calls,
+        // which for an S3-compatible stand-in is not the one a browser can reach).
         return sprintf('%s/%s/%s', rtrim($this->awsS3PublicEndpoint, '/'), $this->awsS3Bucket, $key);
     }
 }

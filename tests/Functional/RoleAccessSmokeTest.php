@@ -5,7 +5,11 @@ declare(strict_types=1);
 namespace App\Tests\Functional;
 
 use App\Entity\Program;
+use App\Entity\Progression;
+use App\Entity\Topic;
+use App\Entity\TopicGroup;
 use App\Entity\User;
+use Doctrine\ORM\EntityManagerInterface;
 
 /**
  * One HTTP request per (role, main screen), asserting what the app answers.
@@ -367,6 +371,74 @@ class RoleAccessSmokeTest extends FunctionalTestCase
      * this area later is to let them in here too. They must not - starting and stopping a
      * hypervisor's machines is not administrative work.
      */
+    /**
+     * Co-animation: the second formateur named on a progression reaches the same screens as its
+     * owner, the PDF export included (design/validated/co-animation.md).
+     *
+     * The paths are built rather than listed in the tables above because they carry the
+     * progression's id, but they go through the same assertScreens() helper - a co-animator whose
+     * right stops one screen short of the export is precisely the half-shipped state this design
+     * warns about, and only an HTTP request says whether it happened.
+     *
+     * The export's expected code is read off the OWNER rather than hard-coded, so the assertion
+     * stays about co-animation: whether Gotenberg answers in this environment is not what is being
+     * pinned here - that the two teachers get the same answer is.
+     */
+    public function testCoAnimatorReachesTheSharedProgression(): void
+    {
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+
+        $coTeacher = $this->createUser(['ROLE_USER', 'ROLE_TEACHER', 'ROLE_CAMPUS'], 'smoke.coteacher');
+        $this->program->addTeacher($coTeacher);
+
+        // A Topic needs its group: topic_group_id is NOT NULL, which is the timetable import's own
+        // shape (a matière belongs to a "groupe de matières" of the class).
+        $topicGroup = new TopicGroup('Groupe de matières de test', $this->program);
+        $topicGroup->setCreatedBy($this->admin);
+        $entityManager->persist($topicGroup);
+
+        $topic = new Topic('Matière co-animée', $this->program, $topicGroup);
+        $topic->setTeacher($this->teacher);
+        $topic->setCreatedBy($this->admin);
+        $entityManager->persist($topic);
+
+        $progression = new Progression($topic, $this->teacher);
+        $progression->addCoTeacher($coTeacher);
+        $entityManager->persist($progression);
+        $entityManager->flush();
+
+        $show = '/progression/'.$progression->getId();
+        $export = $show.'/export.pdf';
+
+        $this->client->loginUser($this->teacher);
+        $this->client->request('GET', $export);
+        $ownerExportCode = $this->client->getResponse()->getStatusCode();
+
+        $this->assertScreens($this->teacher, [
+            '/progression/management' => 200,
+            $show => 200,
+            $export => $ownerExportCode,
+        ]);
+
+        $this->assertScreens($coTeacher, [
+            '/progression/management' => 200,
+            $show => 200,
+            $export => $ownerExportCode,
+        ]);
+
+        // The door is a link on this progression, never a property of the class: a colleague who
+        // teaches the same class and was named on nothing still gets nothing.
+        $stranger = $this->createUser(['ROLE_USER', 'ROLE_TEACHER', 'ROLE_CAMPUS'], 'smoke.otherteacher');
+        $this->program->addTeacher($stranger);
+        $entityManager->flush();
+
+        $this->assertScreens($stranger, [
+            '/progression/management' => 200,
+            $show => 403,
+            $export => 403,
+        ]);
+    }
+
     public function testInfrastructureIsAdminOnly(): void
     {
         $screens = [

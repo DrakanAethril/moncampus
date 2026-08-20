@@ -302,6 +302,33 @@ class EmailMessageRepository extends ServiceEntityRepository
         return $counts;
     }
 
+    /**
+     * The mails of a student that belong to no démarche - what the staff sheet (screen 2a) would
+     * otherwise show nowhere, while the class tracking (1a) goes on counting them.
+     *
+     * Only an inbound mail lands here in practice: composing makes naming the démarche blocking, so
+     * an outbound one always has it. A reply whose In-Reply-To matches nothing does not, nor does a
+     * mail an admin attached to a student from screen 5a without picking a démarche.
+     *
+     * Binned mails are included, exactly as they are inside a démarche: tidying one's own mailbox
+     * does not erase what was exchanged (see SchoolMailController::delete).
+     *
+     * @return list<EmailMessage>
+     */
+    public function findWithoutApplicationForStudent(User $student): array
+    {
+        return $this->createQueryBuilder('m')
+            ->addSelect('att')
+            ->leftJoin('m.attachments', 'att')
+            ->andWhere('m.student = :student')
+            ->andWhere('m.jobApplication IS NULL')
+            ->setParameter('student', $student)
+            ->orderBy('m.messageDate', 'DESC')
+            ->addOrderBy('m.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
     private function folderQueryBuilder(
         User $student,
         EmailDirection $direction,

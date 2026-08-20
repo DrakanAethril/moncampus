@@ -15,8 +15,6 @@
 {% block page_title %}{{ host.label }}{% endblock %}
 
 {% block main %}
-    {% include 'infrastructure/_localnav.html.twig' %}
-
     <p class="cm-host__meta mb-3">
         <span class="cm-statusdot cm-statusdot--{{ host.lastCheckOk is null ? 'unknown' : (host.lastCheckOk ? 'ok' : 'down') }}"></span>
         {{ host.displayAddress }}
@@ -24,17 +22,18 @@
         {% if host.managedPool %} · pool <b>{{ host.managedPool }}</b>{% endif %}
         {% if host.vmidMin and host.vmidMax %} · VMID {{ host.vmidMin }}–{{ host.vmidMax }}{% endif %}
     </p>
+    {% include 'infrastructure/_tabs.html.twig' %}
 
     {% if failure %}
         {# The machine list is the one screen that reads the hypervisor as it renders - somebody is
            about to press "stop" on one of these rows, and a stale list would be worse than an
            error. So a host that has gone away says so here rather than showing an empty table. #}
-        <div class="cm-note" style="border-left-color: var(--cm-red-tx); background: var(--cm-red-bg); color: var(--cm-red-tx);">
-            <span class="cm-note__icon" style="background: var(--cm-red-tx);">!</span>
+        <div class="cm-note cm-note--danger">
+            <span class="cm-note__icon">!</span>
             <span><strong>{{ 'proxmoxGuestsUnreachableTitle'|trans }}</strong> {{ failure }}</span>
         </div>
     {% else %}
-        <div class="card"
+        <div class="card cm-card--tabbed"
              data-controller="proxmox-guests"
              data-proxmox-guests-token-value="{{ csrf_token('infrastructure_action') }}"
              data-proxmox-guests-confirm-stop-value="{{ 'proxmoxGuestForceConfirmText'|trans }}">
@@ -73,18 +72,18 @@
             </form>
 
             <div class="table-responsive">
-                <table class="table cm-table">
+                <table class="table table-vcenter card-table">
                     <thead>
                         <tr>
-                            <th style="width:70px">VMID</th>
+                            <th>VMID</th>
                             <th>{{ 'proxmoxGuestMachineLabel'|trans }}</th>
-                            <th style="width:90px">{{ 'proxmoxGuestNodeLabel'|trans }}</th>
-                            <th style="width:120px">{{ 'proxmoxGuestStatusLabel'|trans }}</th>
-                            <th style="width:110px">{{ 'proxmoxGuestCpuLabel'|trans }}</th>
-                            <th style="width:130px">{{ 'proxmoxGuestMemoryLabel'|trans }}</th>
-                            <th style="width:90px">{{ 'proxmoxGuestDiskLabel'|trans }}</th>
-                            <th style="width:100px">{{ 'proxmoxGuestUptimeLabel'|trans }}</th>
-                            <th style="width:250px"></th>
+                            <th>{{ 'proxmoxGuestNodeLabel'|trans }}</th>
+                            <th>{{ 'proxmoxGuestStatusLabel'|trans }}</th>
+                            <th>{{ 'proxmoxGuestCpuLabel'|trans }}</th>
+                            <th>{{ 'proxmoxGuestMemoryLabel'|trans }}</th>
+                            <th>{{ 'proxmoxGuestDiskLabel'|trans }}</th>
+                            <th>{{ 'proxmoxGuestUptimeLabel'|trans }}</th>
+                            <th class="cm-actions"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -136,8 +135,10 @@
                                 </td>
                                 <td class="cm-guest__sub">{{ (guest.maxDiskBytes / 1073741824)|number_format(0, ',', ' ') }} Gio</td>
                                 <td class="cm-guest__sub">{{ guest.uptimeSeconds ? (guest.uptimeSeconds // 86400) ~ ' j ' ~ ((guest.uptimeSeconds % 86400) // 3600) ~ ' h' : '—' }}</td>
-                                <td>
-                                    <div class="cm-guest__actions" data-proxmox-guests-target="actions">
+                                {# The Stimulus target sits on the cell itself: run() replaces its
+                                   innerHTML while a power action is in flight, and the cell is what
+                                   lays the buttons out now that .cm-actions does it. #}
+                                <td class="cm-actions" data-proxmox-guests-target="actions">
                                         {% if not row.inScope %}
                                             {# Visible, counted, and untouchable. Hiding it would make an
                                                administrator think the machine had vanished from Proxmox. #}
@@ -159,22 +160,21 @@
                                                ACPI request and a power cut must not be choosable by accident. #}
                                             {% if guest.isRunning %}
                                                 {% if row.canStop %}
-                                                    <button type="button" class="cm-linkaction" data-action="proxmox-guests#run"
+                                                    <button type="button" data-action="proxmox-guests#run"
                                                             data-url="{{ path('app_infrastructure_guests_power', {id: host.id, node: guest.node, vmid: guest.vmid, action: 'shutdown'}) }}">{{ 'proxmoxGuestShutdownAction'|trans }}</button>
-                                                    <button type="button" class="cm-linkaction cm-linkaction--danger" data-action="proxmox-guests#run"
+                                                    <button type="button" class="cm-action--danger" data-action="proxmox-guests#run"
                                                             data-confirm="1"
                                                             data-url="{{ path('app_infrastructure_guests_power', {id: host.id, node: guest.node, vmid: guest.vmid, action: 'stop'}) }}">{{ 'proxmoxGuestForceAction'|trans }}</button>
                                                 {% endif %}
                                                 {% if row.canStart %}
-                                                    <button type="button" class="cm-linkaction" data-action="proxmox-guests#run"
+                                                    <button type="button" data-action="proxmox-guests#run"
                                                             data-url="{{ path('app_infrastructure_guests_power', {id: host.id, node: guest.node, vmid: guest.vmid, action: 'reboot'}) }}">{{ 'proxmoxGuestRebootAction'|trans }}</button>
                                                 {% endif %}
                                             {% elseif row.canStart %}
-                                                <button type="button" class="cm-linkaction cm-linkaction--positive" data-action="proxmox-guests#run"
+                                                <button type="button" class="cm-action--positive" data-action="proxmox-guests#run"
                                                         data-url="{{ path('app_infrastructure_guests_power', {id: host.id, node: guest.node, vmid: guest.vmid, action: 'start'}) }}">{{ 'proxmoxGuestStartAction'|trans }}</button>
                                             {% endif %}
                                         {% endif %}
-                                    </div>
                                 </td>
                             </tr>
                         {% else %}

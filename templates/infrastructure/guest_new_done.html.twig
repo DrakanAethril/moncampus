@@ -15,16 +15,18 @@
 {% block page_title %}{{ 'proxmoxGuestCreatedHeading'|trans }}{% endblock %}
 
 {% block main %}
-    {% include 'infrastructure/_localnav.html.twig' %}
+    {% include 'infrastructure/_tabs.html.twig' %}
+
+    <div class="cm-tabbed-content">
 
     {# Built from the operation rather than from what was asked for, so it describes what actually
        happened - and stays readable when somebody comes back to this URL an hour later. #}
-    <div class="card" style="max-width: 760px;"
+    {% include 'infrastructure/_wizard_steps.html.twig' with {step: 3} %}
+
+    <div class="card"
          data-controller="proxmox-guests"
          data-proxmox-guests-token-value="{{ csrf_token('infrastructure_action') }}"
          data-proxmox-guests-confirm-stop-value="">
-        {% include 'infrastructure/_wizard_steps.html.twig' with {step: 3} %}
-
         <div class="cm-fieldset">
             <div class="cm-note">
                 <span class="cm-note__icon">i</span>
@@ -85,5 +87,6 @@
                 </div>
             </div>
         </div>
+    </div>
     </div>
 {% endblock %}

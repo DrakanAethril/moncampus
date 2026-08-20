@@ -26,6 +26,53 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.08.20'
+      date: '2026-08-20'
+      summary: "Une progression peut désormais être menée à deux : un second enseignant y est nommé, planifie ses propres séquences et reprend le cahier de texte du créneau tenu au même moment. Les groupes enregistrés, eux, se partagent entre enseignants d'une même classe et servent de point de départ à la création d'un wiki par groupe."
+      entries:
+          - type: nouveaute
+            title: 'Co-animer une progression à deux enseignants'
+            detail: "Une progression peut nommer un second enseignant : il la retrouve dans ses progressions, y planifie ses propres séquences, et le vivier de séquences réunit celles des deux. L'écran signale au passage le groupe qu'une séance laisserait de côté."
+          - type: nouveaute
+            title: 'Reprendre le cahier de texte du créneau tenu au même moment'
+            detail: "Quand la même classe est prise à la même heure par deux enseignants, chacun peut reprendre les textes que l'autre a déjà saisis."
+          - type: modification
+            title: "L'export d'une progression distingue une séance co-animée"
+            detail: "Une séance donnée à deux n'est plus décrite comme redispensée sur un créneau distinct, ce qui était faux. Le document nomme les deux formateurs avec le groupe de chacun et indique qui l'a établi."
+          - type: nouveaute
+            title: 'Partager ses groupes avec les enseignants de la classe'
+            detail: "Un ensemble de groupes enregistré s'ouvre à un ou plusieurs collègues de la classe, qui le retrouvent sous « Groupes partagés avec moi ». Le partage se retire aussi simplement."
+          - type: nouveaute
+            title: 'Créer un wiki par groupe'
+            detail: "Plutôt que de composer une audience à la main, on désigne un ensemble de groupes enregistré : chaque groupe reçoit son wiki, avec ses membres. Relancer l'opération crée une nouvelle série sans toucher à la précédente."
+          - type: modification
+            title: "L'outil de création de groupes parle de « groupes »"
+            detail: "Le mot « lot » disparaît des écrans, du travail à faire compris. L'envoi des groupes par messagerie, lui, est retiré."
+          - type: modification
+            title: 'Les machines virtuelles pédagogiques se déploient par groupe'
+            detail: "L'administration peut partir d'un ensemble de groupes enregistré : une machine par groupe, avec un compte par membre. Le déploiement mène désormais chaque machine jusqu'à la création de ces comptes."
+          - type: fix
+            title: "Les mails sans démarche s'affichent sur la fiche de recherche d'un étudiant"
+            detail: "Le compteur de la page de suivi d'une classe pouvait mener à une liste vide : les mails qu'aucune démarche ne détient sont maintenant listés à part, en lecture seule."
+          - type: modification
+            title: "Le quota de bibliothèque se règle depuis la fiche de l'utilisateur"
+            detail: "Il occupait une carte à part avec son propre bouton d'enregistrement, qui faisait passer celui de la fiche pour disparu. C'est désormais un champ du compte comme un autre, réservé aux administrateurs."
+          - type: fix
+            title: "Le bouton Partager retrouve sa place sur les fiches de séquence et de séance"
+          - type: fix
+            title: 'Trois correctifs sur les machines virtuelles pédagogiques'
+            detail: "Un serveur injoignable est signalé tout de suite, avec ce qu'il faut aller vérifier, au lieu d'une longue attente muette. Le nombre maximum de machines déclaré sur un serveur est réellement appliqué. Une machine créée conserve les réglages réseau de son modèle."
+          - type: modification
+            title: "L'espace des machines virtuelles adopte la charte de l'application"
+            detail: "Onglets, cartes, tableaux et assistant de création sont ceux du reste de la plateforme."
+          - type: interne
+            title: "Intégration continue et déploiement : bornes de temps et téléchargements authentifiés"
+            detail: "Trois étapes réseau pouvaient immobiliser une exécution pendant des heures sans rien vérifier ; elles sont désormais bornées et échouent proprement."
+          - type: interne
+            title: "Retrait du stockage de secours de l'environnement de développement"
+          - type: interne
+            title: "Correction d'une annotation refusée par l'analyse statique"
+
     - version: '2026.08.19'
       date: '2026-08-19'
       summary: "Les enseignants peuvent désormais se transmettre leur travail : une séquence, une séance, un quiz, un fichier ou un dossier se partage en lecture à un collègue, à une équipe ou à toute une classe, et se reprend d'un clic pour devenir vraiment le sien. L'administration dispose par ailleurs de la création des comptes d'une classe entière à partir d'un fichier, vérifiée ligne par ligne avant la moindre écriture."

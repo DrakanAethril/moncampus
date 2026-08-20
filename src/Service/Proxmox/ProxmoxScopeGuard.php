@@ -48,6 +48,26 @@ class ProxmoxScopeGuard
         return null === $scope->vmidMax || $vmid <= $scope->vmidMax;
     }
 
+    /**
+     * How many of these guests the perimeter covers - the number `quotaRefusal()` weighs against
+     * `maxGuests`. It lives here rather than in the caller because "what counts towards the
+     * ceiling" is the same question as "what is inside the perimeter", and answering it in two
+     * places is how the two drift apart.
+     *
+     * Templates are the caller's business: hand it the result of
+     * App\Service\Proxmox\ProxmoxInventory::machines(), which is the one place that says a template
+     * is not a machine.
+     *
+     * @param list<ProxmoxGuest> $guests
+     */
+    public function countCovered(ProxmoxScope $scope, array $guests): int
+    {
+        return \count(array_filter(
+            $guests,
+            fn (ProxmoxGuest $guest): bool => $this->covers($scope, $guest->vmid, $guest->pool),
+        ));
+    }
+
     public function allows(ProxmoxScope $scope, ProxmoxAction $action, int $vmid, ?string $pool): bool
     {
         return null === $this->refusal($scope, $action, $vmid, $pool);

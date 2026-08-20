@@ -17,8 +17,8 @@
 {% endblock %}
 
 {% block main %}
-    {% include 'infrastructure/_localnav.html.twig' %}
     {% include 'infrastructure/_encryption_banner.html.twig' %}
+    {% include 'infrastructure/_tabs.html.twig' %}
 
     {# Cards, not a table: a host carries a live state - a dot, a version, its credential mode,
        three counters - that a row cannot show. And "tested 4 minutes ago" is the point of the
@@ -28,13 +28,16 @@
        The card of a host with no provisioning credentials simply has no creation action. Not a
        greyed one: there is nothing to enable. #}
     {% if hosts is empty %}
-        <div class="card">
+        <div class="card cm-card--tabbed">
             <div class="card-body text-center py-5">
                 <p class="mb-3">{{ 'infrastructureNoHostText'|trans }}</p>
                 <a href="{{ path('app_infrastructure_hosts_new') }}" class="cm-btn cm-btn--primary">{{ 'proxmoxHostAddAction'|trans }}</a>
             </div>
         </div>
     {% else %}
+        {# Cards rather than a card, so the tab row's inset has to be asked for - see
+           .cm-tabbed-content. #}
+        <div class="cm-tabbed-content">
         <div class="cm-hostgrid"
              data-controller="proxmox-host-list"
              data-proxmox-host-list-token-value="{{ csrf_token('infrastructure_action') }}">
@@ -44,10 +47,10 @@
                          data-proxmox-host-list-target="card"
                          data-host-id="{{ host.id }}">
                     <div class="cm-host__top">
-                        <span class="cm-statusdot cm-statusdot--{{ state }}" style="margin-top:7px"
+                        <span class="cm-statusdot cm-statusdot--{{ state }}"
                               data-proxmox-host-list-target="dot"
                               title="{{ ('proxmoxHostState' ~ state|title ~ 'Label')|trans }}"></span>
-                        <div style="flex:1">
+                        <div class="cm-host__ident">
                             <div class="cm-host__name">{{ host.label }}</div>
                             <div class="cm-host__url">{{ host.displayAddress }}</div>
                         </div>
@@ -78,7 +81,7 @@
                         </div>
 
                         {% if state == 'down' %}
-                            <div class="cm-note" style="border-left-color: var(--cm-red-tx); background: var(--cm-red-bg); color: var(--cm-red-tx); margin:0;">
+                            <div class="cm-note cm-note--danger cm-host__alert">
                                 <span>{{ host.lastCheckMessage }}</span>
                             </div>
                         {% elseif state == 'ok' %}
@@ -117,14 +120,14 @@
 
                         <p class="cm-host__meta" data-proxmox-host-list-target="feedback" hidden></p>
                     </div>
-                    <div class="cm-host__foot">
-                        <button type="button" class="cm-linkaction"
+                    <div class="cm-host__foot cm-actions">
+                        <button type="button"
                                 data-action="proxmox-host-list#check"
                                 data-url="{{ path('app_infrastructure_hosts_check', {id: host.id}) }}">
                             {{ 'proxmoxHostCheckAction'|trans }}
                         </button>
-                        <a class="cm-linkaction" href="{{ path('app_infrastructure_hosts_edit', {id: host.id}) }}">{{ 'proxmoxHostEditAction'|trans }}</a>
-                        <button type="button" class="cm-linkaction {{ host.isActive ? 'cm-linkaction--danger' : 'cm-linkaction--positive' }} cm-host__spacer"
+                        <a href="{{ path('app_infrastructure_hosts_edit', {id: host.id}) }}">{{ 'proxmoxHostEditAction'|trans }}</a>
+                        <button type="button" class="{{ host.isActive ? 'cm-action--danger' : 'cm-action--positive' }} cm-host__spacer"
                                 data-action="proxmox-host-list#toggleActive"
                                 data-url="{{ path('app_infrastructure_hosts_deactivate', {id: host.id}) }}"
                                 data-confirm="{{ (host.isActive ? 'proxmoxHostDeactivateConfirmText' : 'proxmoxHostReactivateConfirmText')|trans({'%host%': host.label}) }}">
@@ -133,6 +136,7 @@
                     </div>
                 </article>
             {% endfor %}
+        </div>
         </div>
     {% endif %}
 {% endblock %}

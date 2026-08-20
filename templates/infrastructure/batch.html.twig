@@ -14,8 +14,6 @@
 {% block page_title %}{{ batch.label }}{% endblock %}
 
 {% block main %}
-    {% include 'infrastructure/_localnav.html.twig' %}
-
     <p class="cm-host__meta mb-3">
         {{ batch.program ? batch.program.displayShortName : '—' }} ·
         {{ batch.host ? batch.host.label : '—' }} ·
@@ -24,6 +22,7 @@
         {{ batch.cores }} {{ 'proxmoxGuestCoresLabel'|trans }} / {{ batch.memoryMib }} Mio / {{ batch.diskGib }} Gio
         {% if batch.expiresAt %} · {{ 'vmBatchExpiresFieldLabel'|trans }} {{ batch.expiresAt|date('d/m/Y') }}{% endif %}
     </p>
+    {% include 'infrastructure/_tabs.html.twig' %}
 
     {% if batch.isExpired %}
         {# Expired says nothing about the machines: the application destroys nothing, ever. It is a
@@ -34,10 +33,15 @@
         </div>
     {% endif %}
 
-    <div class="card"
+    <div class="card cm-card--tabbed"
          data-controller="vm-batch"
          data-vm-batch-token-value="{{ csrf_token('infrastructure_action') }}"
-         data-vm-batch-deploy-url-value="{{ path('app_infrastructure_batch_deploy', {id: batch.id}) }}">
+         data-vm-batch-deploy-url-value="{{ path('app_infrastructure_batch_deploy', {id: batch.id}) }}"
+         data-vm-batch-labels-value="{{ {
+             progress: 'vmBatchDeployProgressLabel'|trans,
+             waiting: 'vmBatchDeployWaitingLabel'|trans,
+             stalled: 'vmBatchDeployStalledLabel'|trans,
+         }|json_encode }}">
 
         <div class="cm-actionbar" style="margin:0; padding: 12px 18px; border-bottom: 1px solid var(--cm-border-soft); background: var(--cm-surface-soft);">
             {% for status, count in counts %}
@@ -57,17 +61,17 @@
         </div>
 
         <div class="table-responsive">
-            <table class="table cm-table">
+            <table class="table table-vcenter card-table">
                 <thead>
                     <tr>
-                        <th style="width:50px">#</th>
+                        <th>#</th>
                         <th>{{ 'vmBatchStudentLabel'|trans }}</th>
-                        <th style="width:170px">{{ 'proxmoxGuestMachineLabel'|trans }}</th>
-                        <th style="width:70px">VMID</th>
-                        <th style="width:140px">{{ 'proxmoxWizardIpFieldLabel'|trans }}</th>
-                        <th style="width:150px">{{ 'guestAccountLoginLabel'|trans }}</th>
-                        <th style="width:130px">{{ 'proxmoxGuestStatusLabel'|trans }}</th>
-                        <th style="width:140px"></th>
+                        <th>{{ 'proxmoxGuestMachineLabel'|trans }}</th>
+                        <th>VMID</th>
+                        <th>{{ 'proxmoxWizardIpFieldLabel'|trans }}</th>
+                        <th>{{ 'guestAccountLoginLabel'|trans }}</th>
+                        <th>{{ 'proxmoxGuestStatusLabel'|trans }}</th>
+                        <th class="cm-actions"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -83,13 +87,11 @@
                                 <span class="cm-badge cm-badge--{{ item.status.badgeModifier }}">{{ item.status.labelKey|trans }}</span>
                                 {% if item.message %}<div class="cm-guest__sub">{{ item.message }}</div>{% endif %}
                             </td>
-                            <td>
-                                <div class="cm-guest__actions">
+                            <td class="cm-actions">
                                     {% if item.vmid and item.node and batch.host %}
-                                        <a class="cm-linkaction" href="{{ path('app_infrastructure_guest_accounts', {id: batch.host.id, node: item.node, vmid: item.vmid}) }}">{{ 'guestAccountsShortAction'|trans }}</a>
+                                        <a href="{{ path('app_infrastructure_guest_accounts', {id: batch.host.id, node: item.node, vmid: item.vmid}) }}">{{ 'guestAccountsShortAction'|trans }}</a>
                                     {% endif %}
-                                </div>
-                            </td>
+                                </td>
                         </tr>
                     {% endfor %}
                 </tbody>

@@ -22,10 +22,16 @@ use App\Repository\SequenceInstanceRepository;
  * disappeared from the progression that had planned it and went on being offered by the others, and
  * their rail still called it non affectée.
  *
- * Narrowed to the progression's own teacher rather than to whoever is looking: the class's pool is
- * shared between its teachers (see SequenceInstanceRepository::findForProgramCreatedBy()), and a
+ * Narrowed to the progression's own teachers rather than to whoever is looking: the class's pool is
+ * shared between its teachers (see SequenceInstanceRepository::findForProgramCreatedByAny()), and a
  * staff member opening someone else's progression through ProgressionVoter's bypass has to see that
  * teacher's séquences - their own would be an empty list on a class they don't teach.
+ *
+ * "Teachers", plural, since co-animation: a progression's pool is its owner's instantiations plus
+ * those of every co-animator named on it (design/validated/co-animation.md, lot 2). That widening
+ * is about WHOSE copies are offered and nothing else - the once-per-class rule above is untouched,
+ * and a séquence the co-animator instantiated but another progression already plans stays out of
+ * both lists.
  */
 class ProgressionSequenceAvailability
 {
@@ -39,22 +45,37 @@ class ProgressionSequenceAvailability
     public function forProgression(Progression $progression): array
     {
         $program = $progression->getProgram();
-        $teacher = $progression->getTeacher();
+        $teachers = $progression->getTeachers();
 
-        if (null === $program || null === $teacher) {
+        if (null === $program || [] === $teachers) {
             return [];
         }
 
-        return $this->forTeacher($program, $teacher);
+        return $this->forTeachers($program, $teachers);
     }
 
-    /** @return list<SequenceInstance> */
+    /**
+     * The pool of ONE teacher - what the creation screen asks, where there is no progression yet
+     * and therefore no co-animator to widen it with.
+     *
+     * @return list<SequenceInstance>
+     */
     public function forTeacher(Program $program, User $teacher): array
+    {
+        return $this->forTeachers($program, [$teacher]);
+    }
+
+    /**
+     * @param list<User> $teachers
+     *
+     * @return list<SequenceInstance>
+     */
+    public function forTeachers(Program $program, array $teachers): array
     {
         $planned = array_flip($this->progressionSequenceRepository->findPlannedInstanceIdsForProgram($program));
 
         return array_values(array_filter(
-            $this->sequenceInstanceRepository->findForProgramCreatedBy($program, $teacher),
+            $this->sequenceInstanceRepository->findForProgramCreatedByAny($program, $teachers),
             static fn (SequenceInstance $instance): bool => !isset($planned[(int) $instance->getId()]),
         ));
     }
@@ -68,11 +89,16 @@ class ProgressionSequenceAvailability
      */
     public function isAvailable(Progression $progression, SequenceInstance $instance): bool
     {
-        $teacher = $progression->getTeacher();
+        $creator = $instance->getCreatedBy();
 
-        return null !== $teacher
+        // Read against the same set the lists are built from. A write side narrower than its list
+        // would refuse a séquence the screen just offered, which is the mirror of the bug this
+        // class was written for.
+        $belongsToATeacherOfThePlan = null !== $creator
+            && \in_array($creator, $progression->getTeachers(), true);
+
+        return $belongsToATeacherOfThePlan
             && $instance->getProgram() === $progression->getProgram()
-            && $instance->getCreatedBy() === $teacher
             && !$this->progressionSequenceRepository->isInstancePlanned($instance);
     }
 }

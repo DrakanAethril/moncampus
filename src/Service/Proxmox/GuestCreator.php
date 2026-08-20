@@ -43,6 +43,7 @@ class GuestCreator
     public function __construct(
         private readonly ProxmoxClientFactory $clientFactory,
         private readonly ProxmoxScopeGuard $scopeGuard,
+        private readonly ProxmoxInventory $inventory,
         private readonly ProxmoxOperationTracker $tracker,
         private readonly IpAllocator $allocator,
         private readonly GuestNetworkConfigurator $configurator,
@@ -63,7 +64,13 @@ class GuestCreator
             throw new ProxmoxUnavailableException($refusal);
         }
 
-        $quota = $this->scopeGuard->quotaRefusal($scope, $request->cores, $request->memoryMib, $request->diskGib, 0);
+        $quota = $this->scopeGuard->quotaRefusal(
+            $scope,
+            $request->cores,
+            $request->memoryMib,
+            $request->diskGib,
+            $this->countExistingGuests($host, $scope),
+        );
 
         if (null !== $quota) {
             throw new ProxmoxUnavailableException($quota);
@@ -125,6 +132,13 @@ class GuestCreator
 
         $client = $this->clientFactory->provision($host);
         $range = $request->range;
+        $path = \sprintf('/nodes/%s/qemu/%d/config', rawurlencode($request->node), $request->vmid);
+
+        // Read before write, so the card can be merged rather than replaced: the clone inherits the
+        // template's `net0`, which may carry a firewall flag, an MTU or a rate limit that this
+        // application knows nothing about and would otherwise drop without a word. Costs one call,
+        // on the path that is already several.
+        $existingNet0 = $client->get($path)->nullableString('net0');
 
         $parameters = $this->configurator->qemuParameters(
             $request->hostname,
@@ -134,15 +148,41 @@ class GuestCreator
             $range->getBridge(),
             $range->getVlan(),
             $sshKey,
+            existingNet0: $existingNet0,
         );
 
-        $client->put(\sprintf('/nodes/%s/qemu/%d/config', rawurlencode($request->node), $request->vmid), $parameters);
+        $client->put($path, $parameters);
 
         // Only now: cloud-init writes its configuration at the first boot and never again, so a
         // machine started before this PUT comes up as a copy of the template, for good.
         if ($request->startAfterCreation) {
             $client->post(\sprintf('/nodes/%s/qemu/%d/status/start', rawurlencode($request->node), $request->vmid));
         }
+    }
+
+    /**
+     * How many machines the perimeter already holds, read from the hypervisor rather than from the
+     * list the wizard displayed: a ceiling has to be weighed against what is true at the moment of
+     * creation, and the screen the administrator is looking at may be several minutes old.
+     *
+     * Costs one call, and only when a ceiling is actually declared - a host that names no "machines
+     * maximum" pays nothing for a limit it does not have. The reading goes through the provisioning
+     * account rather than the operating one: it is the account that is about to create, so a
+     * perimeter it cannot see is a creation it could not perform either.
+     *
+     * @throws ProxmoxUnavailableException when the host cannot be reached, which is deliberate -
+     *                                     creating blind under an unverified ceiling would defeat
+     *                                     the point of declaring one
+     */
+    private function countExistingGuests(ProxmoxHost $host, ProxmoxScope $scope): int
+    {
+        if (null === $scope->maxGuests) {
+            return 0;
+        }
+
+        $guests = $this->inventory->guests($this->clientFactory->provision($host));
+
+        return $this->scopeGuard->countCovered($scope, $this->inventory->machines($guests));
     }
 
     private function clone(ProxmoxClient $client, ProxmoxHost $host, GuestCreationRequest $request): ?string

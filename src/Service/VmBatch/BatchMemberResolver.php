@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Service\VmBatch;
 
+use App\Entity\GroupBatch;
 use App\Entity\Program;
 use App\Entity\User;
 use App\Repository\ProgramStudentModalityRepository;
 use App\Repository\ProgramStudentOptionRepository;
-use App\Service\Guest\UnixLogin;
 
 /**
  * Reads a class out of the database and flattens it into the plain values
@@ -26,7 +26,6 @@ class BatchMemberResolver
     public function __construct(
         private readonly ProgramStudentOptionRepository $studentOptions,
         private readonly ProgramStudentModalityRepository $studentModalities,
-        private readonly UnixLogin $unixLogin,
     ) {
     }
 
@@ -53,24 +52,63 @@ class BatchMemberResolver
     }
 
     /**
-     * The login a student gets on their machine.
+     * The groups of a saved set, each flattened into the same BatchMember values - what a PerGroup
+     * batch plans from.
      *
-     * Computed from the name rather than from the LDAP username on purpose: the username is what
-     * the school's directory decided, and it is sometimes a number. `marie-dupont` is what a
-     * student can be told over the noise of a classroom.
+     * **Empty groups are kept in the list**, so the caller still sees the set's own numbering; the
+     * planner is what drops them. And a student who has left the class since the set was saved
+     * simply does not resolve and falls out, exactly as the group-creation screen drops them when
+     * it reloads a set: the set is a frozen list of ids, the class is not.
+     *
+     * @param string $groupTitleTemplate carries %n%, e.g. "Groupe %n%"
+     *
+     * @return list<array{label: string, members: list<BatchMember>}>
+     */
+    public function forGroupBatch(GroupBatch $groupBatch, string $groupTitleTemplate): array
+    {
+        $byId = [];
+
+        foreach ($this->forProgram($groupBatch->getProgram()) as $member) {
+            $byId[$member->userId] = $member;
+        }
+
+        $groups = [];
+
+        foreach ($groupBatch->getGroups() as $index => $memberIds) {
+            $members = [];
+
+            foreach ($memberIds as $memberId) {
+                if (isset($byId[$memberId])) {
+                    $members[] = $byId[$memberId];
+                }
+            }
+
+            $groups[] = [
+                'label' => str_replace('%n%', (string) ($index + 1), $groupTitleTemplate),
+                'members' => $members,
+            ];
+        }
+
+        return $groups;
+    }
+
+    /**
+     * The login a student gets on their machine: **the one they already have on the platform**, read
+     * as it stands and not derived from anything.
+     *
+     * This used to be built from their name (`marie-dupont`), on the argument that it is easier to
+     * say out loud. It is not what a login is for. The platform username is what the student already
+     * types to sign in, and it is unique by construction where two students with the same name are
+     * not - which on a per-group machine, where several accounts sit side by side, is the difference
+     * between two accounts and two people sharing one.
+     *
+     * Taken verbatim: a login the directory holds and MonCampus rewrote would be a third identifier
+     * for the same person. What a directory can hold and useradd cannot is checked before the
+     * machines are built, by VmBatchExecutor - never silently dropped.
      */
     private function loginFor(User $student): string
     {
-        $firstname = $student->getFirstname();
-        $lastname = $student->getLastname();
-
-        if (null !== $firstname && null !== $lastname && '' !== $firstname && '' !== $lastname) {
-            return $this->unixLogin->fromName($firstname, $lastname);
-        }
-
-        // No usable name: fall back to the directory username, normalised the same way, so the
-        // result is still a login rather than whatever the directory holds.
-        return $this->unixLogin->fromName($student->getUsername(), '');
+        return $student->getUsername();
     }
 
     /** @return list<int> */
