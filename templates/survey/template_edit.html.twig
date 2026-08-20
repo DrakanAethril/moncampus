@@ -1,0 +1,103 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ surveyTemplate.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'surveysPageHeading'|trans, url: path('app_surveys')},
+        {label: surveyTemplate.name, url: path('app_survey_template_edit', {id: surveyTemplate.id})},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ surveyTemplate.name }}{% endblock %}
+
+{% block page_actions %}
+    <form method="post" action="{{ path('app_survey_template_duplicate', {id: surveyTemplate.id}) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('survey_template_duplicate') }}">
+        <button type="submit" class="btn btn-outline-secondary">{{ 'surveyDuplicateActionLabel'|trans }}</button>
+    </form>
+{% endblock %}
+
+{% block main %}
+    <p class="text-secondary mb-3">
+        {{ 'surveyTemplateSubtitleText'|trans({'%count%': answerableCount}) }}
+        {%- if surveyTemplate.lastUpdatedDate %} · {{ 'surveyTemplateLastUpdatedText'|trans({'%date%': surveyTemplate.lastUpdatedDate|date('d/m/Y')}) }}{% endif %}
+    </p>
+
+    <div class="row g-3">
+        <div class="col-12 col-lg-7">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ 'surveyQuestionsCardTitle'|trans }}</h3>
+                    <div class="card-actions">
+                        {# The type is chosen when the line is added rather than after: an intertitle
+                           and a scale have nothing in common to fill in, and a "new question" of the
+                           wrong type is a line to delete. #}
+                        <form method="post" action="{{ path('app_survey_question_new', {id: surveyTemplate.id}) }}" class="d-flex gap-2 align-items-center">
+                            <input type="hidden" name="_token" value="{{ csrf_token('survey_question_new') }}">
+                            <select name="type" class="form-select form-select-sm" style="width: auto;" aria-label="{{ 'surveyQuestionTypeFieldLabel'|trans }}">
+                                {% for type in question_types %}
+                                    <option value="{{ type.value }}">{{ type.labelKey|trans }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn btn-sm btn-outline-primary">{{ 'surveyAddQuestionActionLabel'|trans }}</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if questions is empty %}
+                        <p class="text-secondary mb-0">{{ 'surveyQuestionsEmptyText'|trans }}</p>
+                    {% else %}
+                        <div class="cm-survey-lines">
+                            {% set number = 0 %}
+                            {% for question in questions %}
+                                {% if question.type.isAnswerable %}{% set number = number + 1 %}{% endif %}
+                                {% include 'survey/_question_line.html.twig' with {
+                                    surveyTemplate: surveyTemplate,
+                                    question: question,
+                                    number: number,
+                                    isSelected: selectedQuestion is not null and selectedQuestion.id == question.id,
+                                    isFirst: loop.first,
+                                    isLast: loop.last,
+                                } only %}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header"><h3 class="card-title">{{ 'surveyTemplateSettingsCardTitle'|trans }}</h3></div>
+                <div class="card-body">
+                    {{ form_start(settingsForm) }}
+                    {{ form_errors(settingsForm) }}
+                    {{ form_row(settingsForm.name) }}
+                    {{ form_row(settingsForm.subject) }}
+                    {{ form_row(settingsForm.description) }}
+                    <div class="cm-actionbar justify-content-end mt-3">
+                        <button type="submit" class="btn btn-primary">{{ 'surveyTemplateSaveActionLabel'|trans }}</button>
+                    </div>
+                    {{ form_end(settingsForm) }}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-5">
+            {% if selectedQuestion is null %}
+                <div class="card"><div class="card-body">
+                    <p class="text-secondary mb-0">{{ 'surveyQuestionNoneSelectedText'|trans }}</p>
+                </div></div>
+            {% else %}
+                {% include 'survey/_question_editor.html.twig' with {
+                    surveyTemplate: surveyTemplate,
+                    question: selectedQuestion,
+                    questionNumber: selectedQuestionNumber,
+                    form: questionForm,
+                } only %}
+            {% endif %}
+        </div>
+    </div>
+
+    <p class="text-secondary mt-3 mb-0 small">{{ 'surveyTemplateOwnershipNoteText'|trans }}</p>
+{% endblock %}

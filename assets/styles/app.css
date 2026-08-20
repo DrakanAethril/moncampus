@@ -1269,6 +1269,19 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 /* Tab-row action button ("+ Ajouter...", "Exporter") - right-aligned, bottom-anchored within
    the row so it lines up with the tab labels rather than the row's cross-axis center. */
 .cm-tabs__action { margin-left: auto; padding-bottom: 8px; }
+/* The count some tabs carry beside their label - « Campagnes 9 ». Inherits the tab's own color so
+   it reads as part of the label rather than as a separate badge, and turns brand-colored with it. */
+.cm-tabs__count {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: color-mix(in srgb, currentColor 12%, transparent);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 18px;
+    vertical-align: 1px;
+}
 .cm-card--tabbed { border-top: 0; border-radius: 0 0 var(--cm-radius) var(--cm-radius); padding: 26px; }
 /* Content that hangs off a tab row without a card of its own - a grid of stat tiles, of link tiles,
    of host cards. It takes the same inset .cm-card--tabbed gives a table, so a screen made of tiles
@@ -7979,3 +7992,45 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-installlog__entry--ko .cm-installlog__detail {
     color: var(--cm-red-tx);
 }
+
+/* ==========================================================================
+   Sondages (.cm-survey-*) - design/validated/surveys.md, écran « éditeur ».
+   ========================================================================== */
+
+/* The ordered list of a survey's lines. A line is a question, a free-text comment or an
+   intertitle; the intertitle carries no number and is drawn as a section rather than as a row,
+   because it is not something one answers. */
+.cm-survey-lines { display: flex; flex-direction: column; gap: 6px; }
+
+.cm-survey-line {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1px solid var(--cm-border);
+    border-radius: 10px;
+    background: var(--cm-surface);
+}
+.cm-survey-line:hover { border-color: color-mix(in srgb, var(--cm-brand) 40%, var(--cm-border)); }
+.cm-survey-line.is-selected {
+    border-color: var(--cm-brand);
+    box-shadow: inset 3px 0 0 var(--cm-brand);
+}
+/* An intertitle structures the reading of the survey, so it reads as a heading in the list too. */
+.cm-survey-line--titre { background: color-mix(in srgb, var(--cm-brand) 5%, var(--cm-surface)); }
+.cm-survey-line--titre .cm-survey-line__label { font-family: var(--cm-font-display); font-size: 14.5px; }
+
+.cm-survey-line__body { flex: 1; min-width: 0; text-decoration: none; color: inherit; }
+.cm-survey-line__body:hover { color: inherit; }
+.cm-survey-line__head { display: flex; align-items: baseline; gap: 8px; }
+.cm-survey-line__number { flex: none; font: 600 12px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-survey-line__label { font-size: 13.5px; }
+.cm-survey-line__meta { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 12px; }
+.cm-survey-line__controls { flex: none; display: flex; align-items: center; gap: 2px; }
+.cm-survey-line__controls form { display: inline; }
+
+/* The proposed answers of the editor's right-hand panel. The rank is shown rather than left to be
+   counted: on a question flagged « échelle » it IS the value, 0 being the low pole. */
+.cm-survey-answers { display: flex; flex-direction: column; gap: 6px; }
+.cm-survey-answers .cm-answer-row { display: flex; align-items: center; gap: 8px; }
+.cm-survey-answers__rank { flex: none; width: 52px; font: 500 11.5px var(--cm-font-ui); color: var(--cm-faint); }

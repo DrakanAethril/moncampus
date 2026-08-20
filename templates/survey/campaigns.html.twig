@@ -1,0 +1,31 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'surveysPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'surveysPageHeading'|trans, url: path('app_surveys')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'surveysPageHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_survey_template_new') }}" class="btn btn-primary">{{ 'surveyNewButtonLabel'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    {% include 'survey/_page_head.html.twig' %}
+
+    {% include '_tabs.html.twig' with {tabs: tabs|map(t => {url: t.url, label: t.label|trans, active: t.active, count: t.count})} %}
+
+    <div class="card cm-card--tabbed">
+        <div class="card-body">
+            {# The table of launched waves lands with the launch itself: no campaign can exist
+               before App\Service\Survey\SurveyLauncher does. #}
+            <p class="fw-semibold mb-1">{{ 'surveyCampaignsEmptyTitle'|trans }}</p>
+            <p class="text-secondary mb-0">{{ 'surveyCampaignsEmptyText'|trans }}</p>
+        </div>
+    </div>
+{% endblock %}

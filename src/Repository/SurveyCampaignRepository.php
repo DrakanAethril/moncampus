@@ -86,4 +86,42 @@ class SurveyCampaignRepository extends ServiceEntityRepository
 
         return $campaign;
     }
+
+    /** How many launched waves the tab badge shows - every one for staff, one's own otherwise. */
+    public function countLaunched(?User $owner): int
+    {
+        $qb = $this->createQueryBuilder('c')
+            ->select('COUNT(c.id)')
+            ->where('c.targetFrozenAt IS NOT NULL');
+
+        if (null !== $owner) {
+            $qb->andWhere('c.createdBy = :owner')->setParameter('owner', $owner);
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /**
+     * The subtitle of the index: how many campaigns are open right now, and how many of those still
+     * have somebody to remind.
+     *
+     * @return list<SurveyCampaign>
+     */
+    public function findOpenFor(?User $owner, ?\DateTimeImmutable $now = null): array
+    {
+        $now ??= new \DateTimeImmutable();
+
+        $qb = $this->createQueryBuilder('c')
+            ->where('c.targetFrozenAt IS NOT NULL')
+            ->andWhere('c.closedAt IS NULL')
+            ->andWhere('c.opensAt IS NULL OR c.opensAt <= :now')
+            ->andWhere('c.closesAt IS NULL OR c.closesAt >= :now')
+            ->setParameter('now', $now);
+
+        if (null !== $owner) {
+            $qb->andWhere('c.createdBy = :owner')->setParameter('owner', $owner);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
 }

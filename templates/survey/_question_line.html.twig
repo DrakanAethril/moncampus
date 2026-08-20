@@ -1,0 +1,46 @@
+{# One line of the editor's list: its number, its statement, and what it claims about itself.
+   An intertitle carries no number - it is a line in the ordering and nothing else (§7.13). #}
+<div class="cm-survey-line{{ isSelected ? ' is-selected' }}{{ question.type.value == 'titre' ? ' cm-survey-line--titre' }}">
+    <a class="cm-survey-line__body" href="{{ path('app_survey_template_edit', {id: surveyTemplate.id, question: question.id}) }}">
+        <div class="cm-survey-line__head">
+            {% if question.type.isAnswerable %}
+                <span class="cm-survey-line__number">Q{{ number }}</span>
+            {% endif %}
+            <span class="cm-survey-line__label">{{ question.label|default('surveyQuestionUntitledText'|trans) }}</span>
+        </div>
+        <div class="cm-survey-line__meta">
+            <span class="cm-badge {{ question.type.badgeClass }}">{{ question.type.labelKey|trans }}</span>
+            {% if question.type.supportsScale and question.isScale %}
+                <span class="cm-badge cm-badge--teal">{{ 'surveyQuestionScaleBadgeLabel'|trans }}</span>
+            {% endif %}
+            <span class="text-secondary">
+                {%- if question.type.isAnswerable -%}
+                    {{ question.required ? 'surveyQuestionRequiredText'|trans : 'surveyQuestionOptionalText'|trans }}
+                {%- endif -%}
+                {%- if question.type.supportsChoiceBounds and question.maxChoices %} · {{ 'surveyQuestionMaxChoicesText'|trans({'%count%': question.maxChoices}) }}{% endif -%}
+                {%- if question.type.value == 'ordre' %} · {{ 'surveyQuestionItemCountText'|trans({'%count%': question.answers|length}) }}{% endif -%}
+                {%- if question.type.value == 'commentaire' %} · {{ 'surveyQuestionFreeTextMaxLengthText'|trans({'%count%': 2000}) }}{% endif -%}
+            </span>
+        </div>
+    </a>
+    <div class="cm-survey-line__controls">
+        {# Up/down buttons beside the drag handle, never instead of it: the order must be reachable
+           from the keyboard, the very rule the respondent's "Ordre" question follows (§7.12). #}
+        <form method="post" action="{{ path('app_survey_question_move', {id: surveyTemplate.id, questionId: question.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('survey_question_move') }}">
+            <input type="hidden" name="direction" value="up">
+            <button type="submit" class="cm-answer-move" {{ isFirst ? 'disabled' }} aria-label="{{ 'moveUpActionLabel'|trans }}" title="{{ 'moveUpActionLabel'|trans }}">▲</button>
+        </form>
+        <form method="post" action="{{ path('app_survey_question_move', {id: surveyTemplate.id, questionId: question.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('survey_question_move') }}">
+            <input type="hidden" name="direction" value="down">
+            <button type="submit" class="cm-answer-move" {{ isLast ? 'disabled' }} aria-label="{{ 'moveDownActionLabel'|trans }}" title="{{ 'moveDownActionLabel'|trans }}">▼</button>
+        </form>
+        <form method="post" action="{{ path('app_survey_question_remove', {id: surveyTemplate.id, questionId: question.id}) }}"
+              data-controller="confirm-submit"
+              data-confirm-submit-message-value="{{ 'surveyQuestionRemoveConfirmMessage'|trans }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('survey_question_remove') }}">
+            <button type="submit" class="cm-answer-remove" aria-label="{{ 'removeActionLabel'|trans }}" title="{{ 'removeActionLabel'|trans }}">✕</button>
+        </form>
+    </div>
+</div>

@@ -36,4 +36,14 @@ class SurveyTemplateRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    public function countForOwner(User $owner): int
+    {
+        return (int) $this->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->where('t.owner = :owner')
+            ->setParameter('owner', $owner)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }
