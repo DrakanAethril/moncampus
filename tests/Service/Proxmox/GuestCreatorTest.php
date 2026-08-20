@@ -7,6 +7,7 @@ namespace App\Tests\Service\Proxmox;
 use App\Entity\IpAllocation;
 use App\Entity\IpRange;
 use App\Entity\ProxmoxHost;
+use App\Service\Guest\AuthorizedKeySet;
 use App\Service\Guest\GuestAuthorizedKeys;
 use App\Service\Network\GuestNetworkConfigurator;
 use App\Service\Network\IpAllocator;
@@ -239,7 +240,10 @@ class GuestCreatorTest extends TestCase
         $client->method('get')->willReturn(ProxmoxResponse::fromData(['net0' => 'virtio,bridge=vmbr0']));
 
         $keys = $this->createStub(GuestAuthorizedKeys::class);
-        $keys->method('forNewGuest')->willReturn("ssh-ed25519 AAAAplatform\nssh-ed25519 AAAAmarie");
+        $keys->method('forNewGuest')->willReturn(new AuthorizedKeySet(
+            "ssh-ed25519 AAAAplatform\nssh-ed25519 AAAAmarie",
+            ['MonCampus', 'Marie Dupont — Portable'],
+        ));
 
         $client->expects(self::once())
             ->method('put')
@@ -276,7 +280,7 @@ class GuestCreatorTest extends TestCase
     private function authorizedKeys(): GuestAuthorizedKeys&Stub
     {
         $keys = $this->createStub(GuestAuthorizedKeys::class);
-        $keys->method('forNewGuest')->willReturn('ssh-ed25519 AAAAplatform');
+        $keys->method('forNewGuest')->willReturn(new AuthorizedKeySet('ssh-ed25519 AAAAplatform', ['MonCampus']));
 
         return $keys;
     }

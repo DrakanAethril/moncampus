@@ -91,8 +91,38 @@
                                     {% if item.vmid and item.node and batch.host %}
                                         <a href="{{ path('app_infrastructure_guest_accounts', {id: batch.host.id, node: item.node, vmid: item.vmid}) }}">{{ 'guestAccountsShortAction'|trans }}</a>
                                     {% endif %}
+                                    {# Only while it is still a plan: once a clone has been asked for, this
+                                       row is the only thing pointing at a machine that exists. #}
+                                    {% if item.status.value == 'planned' %}
+                                        <form method="post" action="{{ path('app_infrastructure_batch_item_remove', {id: batch.id, itemId: item.id}) }}">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('infrastructure_action') }}">
+                                            <button type="submit" class="cm-action--danger">{{ 'vmBatchItemRemoveAction'|trans }}</button>
+                                        </form>
+                                    {% endif %}
                                 </td>
                         </tr>
+                        {# A row of its own rather than a column: the log is a narrative, it is read
+                           in full or not at all, and folded away it costs the table nothing. #}
+                        {% if item.installLogEntries is not empty %}
+                            <tr class="cm-installlog__row">
+                                <td colspan="8">
+                                    <details class="cm-installlog">
+                                        <summary>{{ 'vmInstallLogToggleAction'|trans({'%count%': item.installLogEntries|length}) }}</summary>
+                                        <ol class="cm-installlog__list">
+                                            {% for entry in item.installLogEntries %}
+                                                <li class="cm-installlog__entry{{ entry.ok ? '' : ' cm-installlog__entry--ko' }}">
+                                                    <span class="cm-installlog__at cm-mono">{{ entry.at|date('d/m H:i:s') }}</span>
+                                                    <span class="cm-installlog__step">{{ entry.step.labelKey|trans }}</span>
+                                                    {% if entry.detail %}
+                                                        <span class="cm-installlog__detail cm-mono">{{ entry.detail }}</span>
+                                                    {% endif %}
+                                                </li>
+                                            {% endfor %}
+                                        </ol>
+                                    </details>
+                                </td>
+                            </tr>
+                        {% endif %}
                     {% endfor %}
                 </tbody>
             </table>

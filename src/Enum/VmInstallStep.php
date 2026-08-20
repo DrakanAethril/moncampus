@@ -1,0 +1,54 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Enum;
+
+/**
+ * The steps a machine's installation log can record, as a closed list.
+ *
+ * Codes rather than sentences: what is stored is what happened, and how it is worded belongs in the
+ * translations with everything else this application says. It also means the wording can be fixed
+ * afterwards without rewriting rows - a log is written once and read months later.
+ *
+ * The list is deliberately the chain the design fixes, in order, plus the ways each link can refuse:
+ * clone → configure → start → answer → accounts → post-installation.
+ */
+enum VmInstallStep: string
+{
+    /** An address was taken out of the range for this machine. */
+    case AddressReserved = 'addressReserved';
+
+    /** The range had nothing left to give. */
+    case AddressUnavailable = 'addressUnavailable';
+
+    case CloneRequested = 'cloneRequested';
+    case CloneFinished = 'cloneFinished';
+    case CloneFailed = 'cloneFailed';
+
+    /** Name, address and keys written into the cloud-init drive. */
+    case Configured = 'configured';
+
+    /** Which keys went in, named one by one - the answer to "why can I not log in". */
+    case KeysInstalled = 'keysInstalled';
+
+    case ConfigurationFailed = 'configurationFailed';
+    case StartRequested = 'startRequested';
+
+    /** The machine answered SSH: everything after this point is happening inside it. */
+    case Reachable = 'reachable';
+
+    /** It did not answer - with the reason, which is the whole point of recording it. */
+    case Unreachable = 'unreachable';
+
+    case AccountsApplied = 'accountsApplied';
+    case AccountsFailed = 'accountsFailed';
+    case PostInstallRun = 'postInstallRun';
+    case PostInstallFailed = 'postInstallFailed';
+
+    /** The label key the screen shows - the French wording lives in the translations. */
+    public function labelKey(): string
+    {
+        return 'vmInstallStep'.ucfirst($this->value).'Label';
+    }
+}

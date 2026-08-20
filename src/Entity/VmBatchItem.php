@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\VmBatchItemStatus;
+use App\Enum\VmInstallStep;
 use App\Repository\VmBatchItemRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
@@ -22,6 +23,9 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'idx_vm_batch_item_batch', columns: ['batch_id'])]
 class VmBatchItem
 {
+    /** Enough for the whole story of a machine, and a ceiling on a batch retried all afternoon. */
+    private const int MAX_INSTALL_LOG_ENTRIES = 200;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -95,6 +99,22 @@ class VmBatchItem
      */
     #[ORM\Column(name: 'last_attempt_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $lastAttemptAt = null;
+
+    /**
+     * What was done to this machine, step by step, as a JSON array in one column.
+     *
+     * One column and not a table because it is a narrative, never a thing to query: it is read by a
+     * human, in order, about one machine, when that machine will not let them in. A table would buy
+     * indexes nobody would use and a join on every screen that lists a batch.
+     *
+     * Each entry carries a step *code* rather than a sentence - the wording belongs in the
+     * translations, next to every other thing this application says - plus a free `detail` for what
+     * only the moment knows: the address given, the keys installed, or the hypervisor's own words
+     * when something was refused. Those last ones stay exactly as they arrived; a diagnostic message
+     * that has been through a translator is a diagnostic message nobody can search for.
+     */
+    #[ORM\Column(name: 'install_log', type: Types::TEXT, nullable: true)]
+    private ?string $installLog = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $message = null;
@@ -223,6 +243,76 @@ class VmBatchItem
         $this->message = $message;
 
         return $this;
+    }
+
+    /**
+     * Adds one line to the machine's story.
+     *
+     * @param VmInstallStep $step   what happened, translated only when it is shown
+     * @param ?string       $detail what only this moment knows, kept verbatim
+     */
+    public function appendInstallLog(VmInstallStep $step, ?string $detail = null, bool $ok = true): static
+    {
+        $entries = $this->getInstallLogEntries();
+        $entries[] = [
+            'at' => (new \DateTimeImmutable())->format(\DATE_ATOM),
+            'step' => $step->value,
+            'detail' => $detail,
+            'ok' => $ok,
+        ];
+
+        // A batch that is retried for an hour would otherwise grow this column without limit. The
+        // tail is what matters when something is stuck, so the oldest lines are the ones dropped.
+        $this->installLog = json_encode(\array_slice($entries, -self::MAX_INSTALL_LOG_ENTRIES));
+
+        return $this;
+    }
+
+    /**
+     * The story, oldest first, ready to be shown: the step is the enum and not its code, so the
+     * screen never has to rebuild a translation key by hand.
+     *
+     * @return list<array{at: string, step: VmInstallStep, detail: ?string, ok: bool}>
+     */
+    public function getInstallLogEntries(): array
+    {
+        if (null === $this->installLog || '' === $this->installLog) {
+            return [];
+        }
+
+        $decoded = json_decode($this->installLog, true);
+
+        if (!\is_array($decoded)) {
+            return [];
+        }
+
+        $entries = [];
+
+        foreach ($decoded as $entry) {
+            // Read defensively rather than trusted: the column is written by this class alone, but a
+            // half-written row must degrade to a shorter story and never to a broken screen.
+            if (!\is_array($entry) || !\is_string($entry['step'] ?? null) || !\is_string($entry['at'] ?? null)) {
+                continue;
+            }
+
+            $step = VmInstallStep::tryFrom($entry['step']);
+
+            // A code this version no longer knows is dropped rather than shown raw: the log is read
+            // by a human, and a bare identifier tells them nothing the missing line would not.
+            if (null === $step) {
+                continue;
+            }
+
+            $detail = $entry['detail'] ?? null;
+            $entries[] = [
+                'at' => $entry['at'],
+                'step' => $step,
+                'detail' => \is_string($detail) ? $detail : null,
+                'ok' => true === ($entry['ok'] ?? null),
+            ];
+        }
+
+        return $entries;
     }
 
     public function getLastAttemptAt(): ?\DateTimeImmutable

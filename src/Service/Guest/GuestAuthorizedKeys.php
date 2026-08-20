@@ -33,12 +33,16 @@ class GuestAuthorizedKeys
     }
 
     /**
-     * The keys as cloud-init wants them, one per line, or null when there are none at all - which
-     * is what the configurator reads to leave the parameter out entirely.
+     * The keys to install, and who each of them belongs to.
+     *
+     * Both halves come out of the same reading on purpose: the descriptors end up in a machine's
+     * installation log, where their whole value is being able to say « these are the keys that
+     * machine actually got ». Read twice, they could disagree with what was written.
      */
-    public function forNewGuest(): ?string
+    public function forNewGuest(): AuthorizedKeySet
     {
         $candidates = [];
+        $owners = [];
 
         foreach ($this->repository->findAllWithOwners() as $key) {
             $owner = $key->getUser();
@@ -47,11 +51,21 @@ class GuestAuthorizedKeys
                 'active' => null === $owner->getInactiveDate(),
                 'key' => $key->getPublicKey(),
             ];
+            // Keyed by the material, because select() returns keys and not rows - it is a rule on
+            // strings, and giving it entities to keep the labels would be the wrong trade.
+            $owners[trim($key->getPublicKey())] = ($owner->getDisplayName() ?? $owner->getUsername()).' — '.$key->getLabel();
         }
 
-        $keys = self::select($this->keyProvider->publicKey(), $candidates);
+        $platformKey = $this->keyProvider->publicKey();
+        $keys = self::select($platformKey, $candidates);
+        $descriptors = [];
 
-        return [] === $keys ? null : implode("\n", $keys);
+        foreach ($keys as $key) {
+            // The platform's own key has no owner row and no label: it is named for what it is.
+            $descriptors[] = $owners[$key] ?? 'MonCampus';
+        }
+
+        return new AuthorizedKeySet([] === $keys ? null : implode("\n", $keys), $descriptors);
     }
 
     /**

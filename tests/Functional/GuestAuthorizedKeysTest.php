@@ -33,9 +33,16 @@ class GuestAuthorizedKeysTest extends FunctionalTestCase
 
         $keys = static::getContainer()->get(GuestAuthorizedKeys::class)->forNewGuest();
 
-        self::assertNotNull($keys);
-        self::assertStringContainsString('ssh-ed25519 AAAAadmin', $keys, "the administrator's key must reach the machine");
-        self::assertStringNotContainsString('ssh-ed25519 AAAAteacher', $keys, 'only administrators hand out access');
+        self::assertNotNull($keys->material);
+        self::assertStringContainsString('ssh-ed25519 AAAAadmin', $keys->material, "the administrator's key must reach the machine");
+        self::assertStringNotContainsString('ssh-ed25519 AAAAteacher', $keys->material, 'only administrators hand out access');
+        // The log of a machine names its keys one by one, and that is what makes it worth reading.
+        self::assertNotEmpty(array_filter(
+            $keys->descriptors,
+            static fn (string $descriptor): bool => str_contains($descriptor, 'Portable'),
+        ), 'the key must be named by its owner and its label');
+        // No platform key is asserted here: the test database is empty and none has been generated,
+        // which is itself the right answer - the set is what exists, not what ought to.
     }
 
     /** Deactivated, so the next machine created stops carrying the key - see the unit test. */
@@ -50,6 +57,6 @@ class GuestAuthorizedKeysTest extends FunctionalTestCase
 
         $keys = static::getContainer()->get(GuestAuthorizedKeys::class)->forNewGuest();
 
-        self::assertStringNotContainsString('ssh-ed25519 AAAAgone', $keys ?? '');
+        self::assertStringNotContainsString('ssh-ed25519 AAAAgone', $keys->material ?? '');
     }
 }
