@@ -20,9 +20,29 @@ namespace App\Service\Guest;
  *
  * The account MonCampus logs in as is the one cloud-init laid down. That is not a decision this
  * class makes - it is decided by the template - so it is a parameter and not a constant.
+ *
+ * **A key that is accepted is not a session that works.** Cloud images routinely put the keys into
+ * root's authorized_keys behind a forced command that prints "log in as debian instead" and exits;
+ * the login then succeeds and nothing runs. Every session opened here is proved with
+ * App\Service\Guest\GuestShellProbe before it is handed over, so that state is an error naming
+ * the machine's own answer rather than a silent hour.
  */
 class GuestShellFactory
 {
+    /**
+     * The account MonCampus creates on every machine it installs, and the only one it logs in with.
+     *
+     * A constant and not a setting: it is handed to cloud-init as `ciuser` when a machine is
+     * configured, so naming it is what brings it into existence - the same name on both sides by
+     * construction. A configurable name could only ever describe machines this application did not
+     * create, and it does not manage any.
+     *
+     * Not root, and not the image's default user either: a template need not have one, its name
+     * varies by image, and root is the account cloud-init deliberately neuters. Everything this
+     * account runs is elevated with sudo - see App\Service\Guest\GuestCommandLine.
+     */
+    public const string SERVICE_ACCOUNT = 'moncampus';
+
     public function __construct(private readonly PlatformKeyProvider $keyProvider)
     {
     }
@@ -31,7 +51,7 @@ class GuestShellFactory
      * @throws PlatformKeyUnavailableException when no key exists at all
      * @throws GuestUnreachableException       when no key opens a session
      */
-    public function open(string $ip, string $username = 'root', int $port = 22): GuestShell
+    public function open(string $ip, string $username = self::SERVICE_ACCOUNT, int $port = 22): GuestShell
     {
         $keys = $this->keyProvider->usableKeys();
 
@@ -45,15 +65,26 @@ class GuestShellFactory
             $session = new GuestSshSession($ip, $username, $this->keyProvider->privateKey($key), $port);
 
             try {
-                // Cheapest possible proof that the key opens the door - and it also warms the
-                // connection the caller is about to use.
-                $session->run('true');
-
-                return $session;
+                // Not `true`: a session can open and still run nothing at all. The marker is the
+                // proof - see App\Service\Guest\GuestShellProbe.
+                $result = $session->run(GuestShellProbe::command());
             } catch (GuestUnreachableException $exception) {
                 $session->disconnect();
                 $lastFailure = $exception;
+
+                continue;
             }
+
+            if (GuestShellProbe::provesCommandsRun($result->output)) {
+                return $session;
+            }
+
+            // Thrown out of the loop rather than treated as a key that did not fit: the door opened,
+            // so another key cannot help. Trying them all would only pay the ten-second sleep of a
+            // forced command once per key.
+            $session->disconnect();
+
+            throw GuestUnreachableException::shellRunsNothing($username, $ip, GuestShellProbe::describe($result->output));
         }
 
         throw $lastFailure;

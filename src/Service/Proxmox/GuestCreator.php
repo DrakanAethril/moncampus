@@ -10,6 +10,7 @@ use App\Entity\ProxmoxOperation;
 use App\Entity\User;
 use App\Enum\ProxmoxAction;
 use App\Service\Guest\GuestAuthorizedKeys;
+use App\Service\Guest\GuestShellFactory;
 use App\Service\Network\GuestNetworkConfigurator;
 use App\Service\Network\IpAllocator;
 use Symfony\Component\Lock\LockFactory;
@@ -158,6 +159,10 @@ class GuestCreator
             $range->getBridge(),
             $range->getVlan(),
             $keys->material,
+            // The account is created here rather than borrowed from the image: naming it in
+            // cloud-init is what makes it exist, and it is the same constant every session logs in
+            // with.
+            cloudInitUser: GuestShellFactory::SERVICE_ACCOUNT,
             existingNet0: $existingNet0,
         );
 

@@ -15,6 +15,7 @@ use App\Enum\VmInstallStep;
 use App\Repository\UserRepository;
 use App\Repository\VmBatchItemRepository;
 use App\Service\Guest\GuestAccountService;
+use App\Service\Guest\GuestCommandFailedException;
 use App\Service\Guest\GuestShellFactory;
 use App\Service\Guest\GuestUnreachableException;
 use App\Service\Guest\PlatformKeyUnavailableException;
@@ -310,6 +311,9 @@ class VmBatchExecutor
         }
 
         $item->appendInstallLog(VmInstallStep::Configured, \sprintf('%s / %s', $item->getGuestName(), $allocation->getIp()));
+        // Named because it is what every later session logs in as: a machine nobody can reach is
+        // answered by this line and the next one together.
+        $item->appendInstallLog(VmInstallStep::AccountNamed, GuestShellFactory::SERVICE_ACCOUNT);
         // Named one by one: « I cannot log in » is answered by this line and nothing else.
         $item->appendInstallLog(VmInstallStep::KeysInstalled, [] === $keys ? null : implode(', ', $keys));
 
@@ -397,6 +401,12 @@ class VmBatchExecutor
                 );
                 $item->appendInstallLog(VmInstallStep::PostInstallRun);
             }
+        } catch (GuestCommandFailedException $exception) {
+            // The machine answered and said no. Unlike being unreachable, trying again next pass
+            // will not help: this is a failure, and the log carries the machine's own words.
+            $item->appendInstallLog(VmInstallStep::AccountsFailed, $exception->getMessage(), ok: false);
+
+            return $this->fail($item, $exception->getMessage());
         } catch (GuestUnreachableException $exception) {
             // Lost mid-way: the machine answered and then stopped. Still a wait - the next pass
             // finds the accounts it already created and only does what is left.

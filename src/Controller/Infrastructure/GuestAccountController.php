@@ -10,6 +10,7 @@ use App\Repository\IpAllocationRepository;
 use App\Repository\ProxmoxHostRepository;
 use App\Security\Voter\ProxmoxHostVoter;
 use App\Service\Guest\GuestAccountService;
+use App\Service\Guest\GuestCommandFailedException;
 use App\Service\Guest\GuestShell;
 use App\Service\Guest\GuestShellFactory;
 use App\Service\Guest\GuestUnreachableException;
@@ -76,7 +77,7 @@ class GuestAccountController extends AbstractController
                 // Read on opening: what makes this a difference rather than a list of intentions.
                 $plan = $service->refresh($shell, $host, $node, $vmid);
                 $shell->disconnect();
-            } catch (GuestUnreachableException|PlatformKeyUnavailableException $exception) {
+            } catch (GuestUnreachableException|GuestCommandFailedException|PlatformKeyUnavailableException $exception) {
                 $failure = $exception->getMessage();
             }
         }
@@ -121,7 +122,7 @@ class GuestAccountController extends AbstractController
             $plan = $service->refresh($shell, $host, $node, $vmid);
             $applied = $service->apply($shell, $host, $node, $vmid, \sprintf('vm-%d', $vmid), $plan, $this->currentUser());
             $shell->disconnect();
-        } catch (GuestUnreachableException|PlatformKeyUnavailableException $exception) {
+        } catch (GuestUnreachableException|GuestCommandFailedException|PlatformKeyUnavailableException $exception) {
             return $this->json(['ok' => false, 'message' => $exception->getMessage()]);
         }
 
@@ -190,7 +191,7 @@ class GuestAccountController extends AbstractController
             $shell = $this->shellFor($shellFactory, $allocations, $vmid);
             $service->remove($shell, $host, $node, $vmid, $login);
             $shell->disconnect();
-        } catch (GuestUnreachableException|PlatformKeyUnavailableException|\InvalidArgumentException $exception) {
+        } catch (GuestUnreachableException|GuestCommandFailedException|PlatformKeyUnavailableException|\InvalidArgumentException $exception) {
             return $this->json(['ok' => false, 'message' => $exception->getMessage()]);
         }
 
@@ -250,7 +251,7 @@ class GuestAccountController extends AbstractController
             $shell = $this->shellFor($shellFactory, $allocations, $vmid);
             $password = $service->resetPassword($shell, $login);
             $shell->disconnect();
-        } catch (GuestUnreachableException|PlatformKeyUnavailableException|\InvalidArgumentException $exception) {
+        } catch (GuestUnreachableException|GuestCommandFailedException|PlatformKeyUnavailableException|\InvalidArgumentException $exception) {
             return $this->json(['ok' => false, 'message' => $exception->getMessage()]);
         }
 

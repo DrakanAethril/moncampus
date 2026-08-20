@@ -62,11 +62,9 @@ class GuestSshSession implements GuestShell
     {
         $ssh = $this->connection();
 
-        // stdin closed and the frontend told not to ask: the two ways an unattended command turns
-        // into a hang rather than a failure.
-        $guarded = \sprintf('DEBIAN_FRONTEND=noninteractive %s < /dev/null 2>&1', $command);
-
-        $output = $ssh->exec($guarded);
+        // Wrapping - and elevation, when this session is not root's - is GuestCommandLine's, in
+        // one place: a command someone forgot to elevate fails silently into an output nobody reads.
+        $output = $ssh->exec(GuestCommandLine::build($command, $this->username));
 
         if (!\is_string($output)) {
             // The session went away mid-command - a script that reboots does exactly this. Not a

@@ -249,6 +249,9 @@ class GuestCreatorTest extends TestCase
             ->method('put')
             ->with('/nodes/pve/qemu/250/config', self::callback(static function (array $parameters): bool {
                 self::assertSame(rawurlencode("ssh-ed25519 AAAAplatform\nssh-ed25519 AAAAmarie"), $parameters['sshkeys']);
+                // The account is created by naming it here: without ciuser the keys land on
+                // whatever the image calls its default user, which a template need not have.
+                self::assertSame('moncampus', $parameters['ciuser']);
 
                 return true;
             }))

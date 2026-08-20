@@ -7,6 +7,7 @@ namespace App\Tests\Service\Guest;
 use App\Enum\GuestAccountOrigin;
 use App\Service\Guest\DesiredAccount;
 use App\Service\Guest\GuestAccountSyncer;
+use App\Service\Guest\GuestCommandFailedException;
 use App\Service\Guest\GuestCommandResult;
 use App\Service\Guest\GuestShell;
 use App\Service\Guest\PasswordGenerator;
@@ -254,6 +255,36 @@ class GuestAccountSyncerTest extends TestCase
         self::assertSame([], $this->syncer()->existingLogins($shell, []));
         self::assertSame([], $shell->commands);
     }
+
+    /**
+     * The silence that cost a day: `useradd` came back non-zero, its message went into an output
+     * nobody read, and the batch went on to report the account as created. Nothing anywhere said
+     * the machine was empty.
+     */
+    public function testACommandTheMachineRefusesIsRaisedRatherThanIgnored(): void
+    {
+        $shell = new RecordingShell(failingNeedle: 'useradd');
+
+        $this->expectException(GuestCommandFailedException::class);
+        // The machine's own words: they name the cause far better than anything said on its behalf.
+        $this->expectExceptionMessageMatches('/cannot open \/etc\/passwd/');
+
+        $this->syncer()->apply($shell, $this->syncer()->plan($this->desired('marie-dupont'), []));
+    }
+
+    /**
+     * A session that ends before the verdict comes back is not a failure - see GuestCommandResult.
+     * A post-installation script that reboots does exactly this, and treating it as an error would
+     * have administrators chasing a problem that does not exist.
+     */
+    public function testACommandWhoseVerdictNeverCameBackIsNotAFailure(): void
+    {
+        $shell = new RecordingShell(failingNeedle: 'useradd', undetermined: true);
+
+        $passwords = $this->syncer()->apply($shell, $this->syncer()->plan($this->desired('marie-dupont'), []));
+
+        self::assertArrayHasKey('marie-dupont', $passwords);
+    }
 }
 
 /**
@@ -265,13 +296,26 @@ class RecordingShell implements GuestShell
     /** @var list<string> */
     public array $commands = [];
 
-    public function __construct(private readonly string $output = '')
-    {
+    /**
+     * @param ?string $failingNeedle a command containing this refuses, the way a real machine does:
+     *                                a message on the output and a non-zero status
+     * @param bool    $undetermined   the refusal comes back with no status at all, as a machine that
+     *                                reboots mid-command does
+     */
+    public function __construct(
+        private readonly string $output = '',
+        private readonly ?string $failingNeedle = null,
+        private readonly bool $undetermined = false,
+    ) {
     }
 
     public function run(string $command): GuestCommandResult
     {
         $this->commands[] = $command;
+
+        if (null !== $this->failingNeedle && str_contains($command, $this->failingNeedle)) {
+            return new GuestCommandResult('useradd: cannot open /etc/passwd', $this->undetermined ? null : 1);
+        }
 
         return new GuestCommandResult($this->output, 0);
     }

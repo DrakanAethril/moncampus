@@ -29,6 +29,9 @@ enum VmInstallStep: string
     /** Name, address and keys written into the cloud-init drive. */
     case Configured = 'configured';
 
+    /** The account MonCampus created for itself, and therefore the one it will log in with. */
+    case AccountNamed = 'accountNamed';
+
     /** Which keys went in, named one by one - the answer to "why can I not log in". */
     case KeysInstalled = 'keysInstalled';
 
