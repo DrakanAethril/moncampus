@@ -217,7 +217,9 @@ class VmBatchExecutor
         }
 
         try {
-            $operation = $this->tracker->resolve($operation, $this->clientFactory->operate($host));
+            // The clone was opened by the provisioning account, so it is the one that may ask how
+            // it went: Proxmox answers 403 (Sys.Audit) to an account reading another's task.
+            $operation = $this->tracker->resolve($operation, $this->clientFactory->forAction($host, $operation->getAction()));
         } catch (ProxmoxUnavailableException $exception) {
             // The hypervisor being unreachable says nothing about the task - keep waiting.
             return $this->wait($item, $exception->getMessage());
