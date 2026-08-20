@@ -13,6 +13,7 @@ use App\Entity\ProxmoxOperation;
 use App\Entity\SchoolYear;
 use App\Entity\VmBatch;
 use App\Entity\VmBatchItem;
+use App\Enum\ProxmoxAction;
 use App\Enum\ProxmoxOperationStatus;
 use App\Enum\VmBatchItemStatus;
 use App\Repository\UserRepository;
@@ -57,6 +58,7 @@ class VmBatchExecutorTest extends TestCase
     private ProxmoxOperationTracker&Stub $tracker;
     private GuestShellFactory&Stub $shells;
     private PostInstallRunner&Stub $postInstall;
+    private ?ProxmoxClientFactory $clientFactory = null;
 
     // Stubs by default and mocks only where a test actually asserts an interaction: phpunit.dist.xml
     // sets failOnNotice, and a mock nobody sets an expectation on is a notice.
@@ -69,6 +71,7 @@ class VmBatchExecutorTest extends TestCase
         $this->tracker = $this->createStub(ProxmoxOperationTracker::class);
         $this->shells = $this->createStub(GuestShellFactory::class);
         $this->postInstall = $this->createStub(PostInstallRunner::class);
+        $this->clientFactory = null;
     }
 
     public function testAPlannedMachineIsCloned(): void
@@ -116,6 +119,30 @@ class VmBatchExecutorTest extends TestCase
 
         self::assertSame(VmBatchItemStatus::Created, $item->getStatus());
         self::assertSame(1, $result['progressed']);
+    }
+
+    /**
+     * The defect this pins is not a crash but a demand for a privilege: the clone task belongs to
+     * the provisioning account, and Proxmox answers `HTTP 403 (/nodes/<node>, Sys.Audit)` to an
+     * account asking about someone else's task. Polling it with the everyday client is what reached
+     * production, and it is invisible to every other test here because they all double the tracker.
+     */
+    public function testACloneTaskIsPolledWithTheAccountThatOpenedIt(): void
+    {
+        [$batch, $item] = $this->batchWithItem(VmBatchItemStatus::Creating);
+        $item->setOperation($this->operation(ProxmoxOperationStatus::Succeeded));
+        $item->setIpAllocation($this->allocation());
+        $this->tracker->method('resolve')->willReturnArgument(0);
+
+        $factory = $this->createMock(ProxmoxClientFactory::class);
+        $factory->expects(self::once())
+            ->method('forAction')
+            ->with(self::anything(), ProxmoxAction::Clone)
+            ->willReturn($this->createStub(ProxmoxClient::class));
+        $factory->expects(self::never())->method('operate');
+        $this->clientFactory = $factory;
+
+        $this->deployOnce($batch, $item);
     }
 
     public function testACloneThatProxmoxReportedAsFailedIsNotRetriedOnItsOwn(): void
@@ -257,10 +284,14 @@ class VmBatchExecutorTest extends TestCase
         return $executor->run($batch, null);
     }
 
-    private function clientFactory(): ProxmoxClientFactory&Stub
+    private function clientFactory(): ProxmoxClientFactory
     {
+        if (null !== $this->clientFactory) {
+            return $this->clientFactory;
+        }
+
         $factory = $this->createStub(ProxmoxClientFactory::class);
-        $factory->method('operate')->willReturn($this->createStub(ProxmoxClient::class));
+        $factory->method('forAction')->willReturn($this->createStub(ProxmoxClient::class));
 
         return $factory;
     }
@@ -289,10 +320,13 @@ class VmBatchExecutorTest extends TestCase
         return $allocation;
     }
 
-    private function operation(ProxmoxOperationStatus $status): ProxmoxOperation&Stub
+    private function operation(ProxmoxOperationStatus $status, ProxmoxAction $action = ProxmoxAction::Clone): ProxmoxOperation&Stub
     {
         $operation = $this->createStub(ProxmoxOperation::class);
         $operation->method('getStatus')->willReturn($status);
+        // Clone by default: every operation a batch opens is a creation, and the action is what
+        // settle() reads to know which account owns the task it is about to poll.
+        $operation->method('getAction')->willReturn($action);
 
         return $operation;
     }
