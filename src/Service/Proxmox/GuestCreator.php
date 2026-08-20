@@ -158,6 +158,10 @@ class GuestCreator
             $range->getBridge(),
             $range->getVlan(),
             $keys->material,
+            // The account is created here rather than borrowed from the image: naming it in
+            // cloud-init is what makes it exist, and it is the same one this application then logs
+            // in with. See ProxmoxHost::$guestLoginUser.
+            cloudInitUser: $host->getGuestLoginUser(),
             existingNet0: $existingNet0,
         );
 
