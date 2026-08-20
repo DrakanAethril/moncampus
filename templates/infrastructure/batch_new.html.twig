@@ -16,9 +16,11 @@
 {% block main %}
     {% include 'infrastructure/_tabs.html.twig' %}
 
+    <div class="cm-tabbed-content">
+
     {# The choices are a GET - "show me who this would deploy to" changes nothing, and the preview
        below has to move as the filters move. Only the last form creates anything. #}
-    <form method="get" class="card mb-3" style="max-width: 900px;">
+    <form method="get" class="card mb-3">
         <fieldset class="cm-fieldset">
             <legend class="cm-fieldset__legend">{{ 'vmBatchWhoLegend'|trans }}</legend>
             <div class="row g-3">
@@ -132,7 +134,7 @@
     {% set rows = perGroup ? groupPlan : plan %}
 
     {% if program and host and rows is not empty %}
-        <form method="post" action="{{ path('app_infrastructure_batches_create') }}" class="card" style="max-width: 900px;">
+        <form method="post" action="{{ path('app_infrastructure_batches_create') }}" class="card">
             <input type="hidden" name="_token" value="{{ csrf_token('infrastructure_action') }}">
             <input type="hidden" name="programId" value="{{ program.id }}">
             <input type="hidden" name="hostId" value="{{ host.id }}">
@@ -269,4 +271,5 @@
     {% elseif program %}
         <div class="card"><div class="card-body text-center py-4 cm-guest__sub">{{ 'vmBatchNobodySelectedText'|trans }}</div></div>
     {% endif %}
+    </div>
 {% endblock %}

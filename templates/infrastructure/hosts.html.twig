@@ -47,10 +47,10 @@
                          data-proxmox-host-list-target="card"
                          data-host-id="{{ host.id }}">
                     <div class="cm-host__top">
-                        <span class="cm-statusdot cm-statusdot--{{ state }}" style="margin-top:7px"
+                        <span class="cm-statusdot cm-statusdot--{{ state }}"
                               data-proxmox-host-list-target="dot"
                               title="{{ ('proxmoxHostState' ~ state|title ~ 'Label')|trans }}"></span>
-                        <div style="flex:1">
+                        <div class="cm-host__ident">
                             <div class="cm-host__name">{{ host.label }}</div>
                             <div class="cm-host__url">{{ host.displayAddress }}</div>
                         </div>
@@ -81,7 +81,7 @@
                         </div>
 
                         {% if state == 'down' %}
-                            <div class="cm-note cm-note--danger" style="margin:0;">
+                            <div class="cm-note cm-note--danger cm-host__alert">
                                 <span>{{ host.lastCheckMessage }}</span>
                             </div>
                         {% elseif state == 'ok' %}
@@ -120,14 +120,14 @@
 
                         <p class="cm-host__meta" data-proxmox-host-list-target="feedback" hidden></p>
                     </div>
-                    <div class="cm-host__foot">
-                        <button type="button" class="cm-linkaction"
+                    <div class="cm-host__foot cm-actions">
+                        <button type="button"
                                 data-action="proxmox-host-list#check"
                                 data-url="{{ path('app_infrastructure_hosts_check', {id: host.id}) }}">
                             {{ 'proxmoxHostCheckAction'|trans }}
                         </button>
-                        <a class="cm-linkaction" href="{{ path('app_infrastructure_hosts_edit', {id: host.id}) }}">{{ 'proxmoxHostEditAction'|trans }}</a>
-                        <button type="button" class="cm-linkaction {{ host.isActive ? 'cm-linkaction--danger' : 'cm-linkaction--positive' }} cm-host__spacer"
+                        <a href="{{ path('app_infrastructure_hosts_edit', {id: host.id}) }}">{{ 'proxmoxHostEditAction'|trans }}</a>
+                        <button type="button" class="{{ host.isActive ? 'cm-action--danger' : 'cm-action--positive' }} cm-host__spacer"
                                 data-action="proxmox-host-list#toggleActive"
                                 data-url="{{ path('app_infrastructure_hosts_deactivate', {id: host.id}) }}"
                                 data-confirm="{{ (host.isActive ? 'proxmoxHostDeactivateConfirmText' : 'proxmoxHostReactivateConfirmText')|trans({'%host%': host.label}) }}">
