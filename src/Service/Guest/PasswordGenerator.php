@@ -26,6 +26,35 @@ class PasswordGenerator
     private const string CONSONANTS = 'bcdfghjkmnprstvwxyz';
     private const string VOWELS = 'aeouy';
 
+    /**
+     * The alphabet of a password nobody will ever type from memory or read out - so it drops the
+     * readability constraint above and keeps only entropy. Ambiguous glyphs stay excluded anyway:
+     * a temporary password still ends up copied by hand once in a while, in a support session.
+     */
+    private const string STRONG_ALPHABET = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+    /**
+     * A password for an account nobody is going to be told about.
+     *
+     * Used by the batch provisioning, where the account is created and its password immediately
+     * forgotten by everything: it is never shown, never stored, never returned to a browser. The
+     * account is reachable only through the platform SSH key until somebody sets a real password
+     * on it, which is deliberate - see App\Service\VmBatch\VmBatchExecutor.
+     *
+     * 32 characters over a 56-glyph alphabet is roughly 185 bits, far past anything that matters
+     * here; the point is simply that guessing it is not a way in.
+     */
+    public function generateStrong(int $length = 32): string
+    {
+        $password = '';
+
+        for ($i = 0; $i < $length; ++$i) {
+            $password .= self::STRONG_ALPHABET[random_int(0, \strlen(self::STRONG_ALPHABET) - 1)];
+        }
+
+        return $password;
+    }
+
     public function generate(int $syllables = 3): string
     {
         $parts = [];

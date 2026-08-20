@@ -5291,6 +5291,10 @@ vmBatchProgressLabel: 'Progress'
 vmBatchOpenAction: 'Open'
 vmBatchDeployAction: 'Deploy'
 vmBatchRemainingMeta: '%count% machine(s) remaining'
+vmBatchDeployProgressLabel: '%progressed% machine(s) advanced — %remaining% left'
+vmBatchDeployWaitingLabel: '%waiting% machine(s) waiting to answer — %remaining% left'
+vmBatchDeployStalledLabel: 'Nothing is moving any more. The machines are not answering; resume the deployment later or check the network.'
+vmBatchItemWaitingNote: 'Waiting'
 
 # Class import (Directory > Users)
 classImportFileEmptyMessage: 'The file holds no student.'

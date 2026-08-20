@@ -37,7 +37,12 @@
     <div class="card"
          data-controller="vm-batch"
          data-vm-batch-token-value="{{ csrf_token('infrastructure_action') }}"
-         data-vm-batch-deploy-url-value="{{ path('app_infrastructure_batch_deploy', {id: batch.id}) }}">
+         data-vm-batch-deploy-url-value="{{ path('app_infrastructure_batch_deploy', {id: batch.id}) }}"
+         data-vm-batch-labels-value="{{ {
+             progress: 'vmBatchDeployProgressLabel'|trans,
+             waiting: 'vmBatchDeployWaitingLabel'|trans,
+             stalled: 'vmBatchDeployStalledLabel'|trans,
+         }|json_encode }}">
 
         <div class="cm-actionbar" style="margin:0; padding: 12px 18px; border-bottom: 1px solid var(--cm-border-soft); background: var(--cm-surface-soft);">
             {% for status, count in counts %}

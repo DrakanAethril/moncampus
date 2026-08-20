@@ -6070,6 +6070,10 @@ vmBatchProgressLabel: 'Avancement'
 vmBatchOpenAction: 'Ouvrir'
 vmBatchDeployAction: 'Déployer'
 vmBatchRemainingMeta: '%count% machine(s) restantes'
+vmBatchDeployProgressLabel: '%progressed% machine(s) avancée(s) — %remaining% restante(s)'
+vmBatchDeployWaitingLabel: '%waiting% machine(s) en attente de réponse — %remaining% restante(s)'
+vmBatchDeployStalledLabel: "Plus rien ne bouge. Les machines ne répondent pas ; reprenez le déploiement plus tard ou vérifiez le réseau."
+vmBatchItemWaitingNote: 'En attente'
 
 # Import d'une classe (Annuaire > Utilisateurs)
 classImportFileEmptyMessage: "Le fichier ne contient aucun étudiant."

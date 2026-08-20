@@ -32,7 +32,10 @@ class VmBatchItemRepository extends ServiceEntityRepository
             ->andWhere('i.batch = :batch')
             ->andWhere('i.status IN (:statuses)')
             ->setParameter('batch', $batch)
-            ->setParameter('statuses', [VmBatchItemStatus::Planned, VmBatchItemStatus::Failed])
+            ->setParameter('statuses', array_values(array_filter(
+                VmBatchItemStatus::cases(),
+                static fn (VmBatchItemStatus $status): bool => $status->isResumable(),
+            )))
             ->orderBy('i.position', 'ASC')
             ->getQuery()
             ->getResult();
