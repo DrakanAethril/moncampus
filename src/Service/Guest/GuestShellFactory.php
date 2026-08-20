@@ -20,6 +20,12 @@ namespace App\Service\Guest;
  *
  * The account MonCampus logs in as is the one cloud-init laid down. That is not a decision this
  * class makes - it is decided by the template - so it is a parameter and not a constant.
+ *
+ * **A key that is accepted is not a session that works.** Cloud images routinely put the keys into
+ * root's authorized_keys behind a forced command that prints "log in as debian instead" and exits;
+ * the login then succeeds and nothing runs. Every session opened here is proved with
+ * App\Service\Guest\GuestShellProbe before it is handed over, so that state is an error naming
+ * the machine's own answer rather than a silent hour.
  */
 class GuestShellFactory
 {
@@ -45,15 +51,31 @@ class GuestShellFactory
             $session = new GuestSshSession($ip, $username, $this->keyProvider->privateKey($key), $port);
 
             try {
-                // Cheapest possible proof that the key opens the door - and it also warms the
-                // connection the caller is about to use.
-                $session->run('true');
-
-                return $session;
+                // Not `true`: a session can open and still run nothing at all. The marker is the
+                // proof - see App\Service\Guest\GuestShellProbe.
+                $result = $session->run(GuestShellProbe::command());
             } catch (GuestUnreachableException $exception) {
                 $session->disconnect();
                 $lastFailure = $exception;
+
+                continue;
             }
+
+            if (GuestShellProbe::provesCommandsRun($result->output)) {
+                return $session;
+            }
+
+            // Thrown out of the loop rather than treated as a key that did not fit: the door opened,
+            // so another key cannot help. Trying them all would only pay the ten-second sleep of a
+            // forced command once per key.
+            $session->disconnect();
+
+            throw new GuestUnreachableException(\sprintf(
+                '%s@%s accepted the platform key but runs no commands - %s',
+                $username,
+                $ip,
+                GuestShellProbe::describe($result->output),
+            ));
         }
 
         throw $lastFailure;
