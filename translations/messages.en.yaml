@@ -4903,6 +4903,7 @@ proxmoxHostNeverCheckedMeta: 'never tested'
 proxmoxHostIdentificationLegend: 'Identification'
 proxmoxHostOperateLegend: 'Access — operating'
 proxmoxHostProvisionLegend: 'Access — provisioning'
+proxmoxHostGuestAccessLegend: 'Access — machines'
 proxmoxHostTlsLegend: 'TLS certificate'
 proxmoxHostScopeLegend: 'Scope'
 

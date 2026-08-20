@@ -5681,6 +5681,7 @@ proxmoxHostNeverCheckedMeta: 'jamais testé'
 proxmoxHostIdentificationLegend: 'Identification'
 proxmoxHostOperateLegend: 'Accès — opération'
 proxmoxHostProvisionLegend: 'Accès — provisionnement'
+proxmoxHostGuestAccessLegend: 'Accès — machines'
 proxmoxHostTlsLegend: 'Certificat TLS'
 proxmoxHostScopeLegend: 'Périmètre'
 

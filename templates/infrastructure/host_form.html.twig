@@ -103,6 +103,17 @@
             </div>
         </fieldset>
 
+        {# The third access, and the one that is not a Proxmox account at all: the two above talk to
+           the hypervisor's API, this one is a Unix account inside the machines it creates. Rendered
+           here rather than left to form_end()'s form_rest(), which drops it below the buttons. #}
+        <fieldset class="cm-fieldset">
+            <legend class="cm-fieldset__legend">{{ 'proxmoxHostGuestAccessLegend'|trans }}</legend>
+
+            <div class="row g-3">
+                <div class="col-md-6">{{ form_row(form.guestLoginUser) }}</div>
+            </div>
+        </fieldset>
+
         <fieldset class="cm-fieldset">
             <legend class="cm-fieldset__legend">{{ 'proxmoxHostTlsLegend'|trans }}</legend>
 
