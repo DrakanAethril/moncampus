@@ -41,6 +41,12 @@ class PlatformSshKeyRepository extends ServiceEntityRepository
     public function findUsable(): array
     {
         return $this->createQueryBuilder('k')
+            // A retired key is one that has already been scrubbed from every machine - the rotation
+            // command only stamps it once that has succeeded everywhere. Trying it can therefore
+            // only cost a connection that cannot succeed, and the cost is paid in full against a
+            // machine that does not answer: without this, opening a session pays the connect budget
+            // once per key ever generated.
+            ->andWhere('k.retiredAt IS NULL')
             ->orderBy('k.active', 'DESC')
             ->addOrderBy('k.creationDate', 'DESC')
             ->getQuery()
