@@ -14,7 +14,7 @@
 {% block page_title %}{{ 'vmBatchNewHeading'|trans }}{% endblock %}
 
 {% block main %}
-    {% include 'infrastructure/_localnav.html.twig' %}
+    {% include 'infrastructure/_tabs.html.twig' %}
 
     {# The choices are a GET - "show me who this would deploy to" changes nothing, and the preview
        below has to move as the filters move. Only the last form creates anything. #}
@@ -122,8 +122,8 @@
     </form>
 
     {% if failure %}
-        <div class="cm-note mb-3" style="border-left-color: var(--cm-red-tx); background: var(--cm-red-bg); color: var(--cm-red-tx);">
-            <span class="cm-note__icon" style="background: var(--cm-red-tx);">!</span>
+        <div class="cm-note cm-note--danger mb-3">
+            <span class="cm-note__icon">!</span>
             <span>{{ failure }}</span>
         </div>
     {% endif %}
@@ -222,13 +222,13 @@
                 {% endif %}
 
                 <div class="table-responsive">
-                    <table class="table cm-table">
+                    <table class="table table-vcenter card-table">
                         <thead>
                             <tr>
-                                <th style="width:50px">#</th>
+                                <th>#</th>
                                 <th>{{ (perGroup ? 'vmBatchGroupColumnLabel' : 'vmBatchStudentLabel')|trans }}</th>
-                                <th style="width:180px">{{ 'proxmoxGuestMachineLabel'|trans }}</th>
-                                <th style="width:80px">VMID</th>
+                                <th>{{ 'proxmoxGuestMachineLabel'|trans }}</th>
+                                <th>VMID</th>
                                 <th>{{ (perGroup ? 'vmBatchGroupAccountsColumnLabel' : 'guestAccountLoginLabel')|trans }}</th>
                             </tr>
                         </thead>

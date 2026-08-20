@@ -19,12 +19,11 @@
 {% endblock %}
 
 {% block main %}
-    {% include 'infrastructure/_localnav.html.twig' %}
-
     <p class="cm-host__meta cm-mono mb-3">
         {{ range.cidr }} · {{ 'ipRangeGatewayFieldLabel'|trans|lower }} {{ range.gateway }} · {{ range.bridge }}{% if range.vlan %} · VLAN {{ range.vlan }}{% endif %}
         · {{ range.firstUsable }} → {{ range.lastUsable }}
     </p>
+    {% include 'infrastructure/_tabs.html.twig' %}
 
     <div data-controller="ip-registry"
          data-ip-registry-token-value="{{ csrf_token('infrastructure_action') }}"
@@ -37,12 +36,12 @@
            it is wrong. #}
         {% if report %}
             {% if report.failure %}
-                <div class="cm-note mb-3" style="border-left-color: var(--cm-red-tx); background: var(--cm-red-bg); color: var(--cm-red-tx);">
-                    <span class="cm-note__icon" style="background: var(--cm-red-tx);">!</span>
+                <div class="cm-note cm-note--danger mb-3">
+                    <span class="cm-note__icon">!</span>
                     <span><strong>{{ 'ipRangeScanFailedTitle'|trans }}</strong> {{ report.failure }}</span>
                 </div>
             {% else %}
-                <div class="card mb-3">
+                <div class="card cm-card--tabbed mb-3">
                     <div class="card-header">
                         <h3 class="card-title cm-condition-heading">{{ 'ipRangeGapsTitle'|trans }}</h3>
                         {% if report.gaps is not empty %}
@@ -54,7 +53,7 @@
                         <div class="card-body text-center py-4 cm-guest__sub">{{ 'ipRangeNoGapText'|trans }}</div>
                     {% else %}
                         <div class="table-responsive">
-                            <table class="table cm-table">
+                            <table class="table table-vcenter card-table">
                                 <tbody>
                                     {% for gap in report.gaps %}
                                         <tr>
@@ -73,13 +72,13 @@
                                                 {% endif %}
                                             </td>
                                             <td style="width:200px">
-                                                <div class="cm-guest__actions">
+                                                
                                                     {% if gap.kind == 'discovered' %}
-                                                        <button type="button" class="cm-linkaction cm-linkaction--positive" data-action="ip-registry#adopt" data-ip="{{ gap.ip }}">{{ 'ipGapAdoptAction'|trans }}</button>
+                                                        <button type="button" class="cm-action--positive" data-action="ip-registry#adopt" data-ip="{{ gap.ip }}">{{ 'ipGapAdoptAction'|trans }}</button>
                                                     {% elseif gap.kind == 'orphan' %}
-                                                        <button type="button" class="cm-linkaction cm-linkaction--danger" data-action="ip-registry#release" data-ip="{{ gap.ip }}">{{ 'ipGapReleaseAction'|trans }}</button>
+                                                        <button type="button" class="cm-action--danger" data-action="ip-registry#release" data-ip="{{ gap.ip }}">{{ 'ipGapReleaseAction'|trans }}</button>
                                                     {% endif %}
-                                                </div>
+                                                
                                             </td>
                                         </tr>
                                     {% endfor %}
@@ -135,16 +134,16 @@
             </form>
 
             <div class="table-responsive">
-                <table class="table cm-table">
+                <table class="table table-vcenter card-table">
                     <thead>
                         <tr>
-                            <th style="width:130px">{{ 'ipRegistryAddressLabel'|trans }}</th>
+                            <th>{{ 'ipRegistryAddressLabel'|trans }}</th>
                             <th>{{ 'proxmoxGuestMachineLabel'|trans }}</th>
-                            <th style="width:70px">VMID</th>
-                            <th style="width:160px">MAC</th>
-                            <th style="width:130px">{{ 'proxmoxGuestStatusLabel'|trans }}</th>
-                            <th style="width:120px">{{ 'ipRegistryOriginLabel'|trans }}</th>
-                            <th style="width:120px"></th>
+                            <th>VMID</th>
+                            <th>MAC</th>
+                            <th>{{ 'proxmoxGuestStatusLabel'|trans }}</th>
+                            <th>{{ 'ipRegistryOriginLabel'|trans }}</th>
+                            <th class="cm-actions"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -156,12 +155,10 @@
                                 <td class="cm-mono">{{ allocation.macAddress ?? '—' }}</td>
                                 <td><span class="cm-badge cm-badge--{{ allocation.status.badgeModifier }}">{{ allocation.status.labelKey|trans }}</span></td>
                                 <td><span class="cm-badge cm-badge--{{ allocation.origin.badgeModifier }}">{{ allocation.origin.labelKey|trans }}</span></td>
-                                <td>
-                                    <div class="cm-guest__actions">
+                                <td class="cm-actions">
                                         {% if allocation.isLive %}
-                                            <button type="button" class="cm-linkaction cm-linkaction--danger" data-action="ip-registry#release" data-ip="{{ allocation.ip }}">{{ 'ipGapReleaseAction'|trans }}</button>
+                                            <button type="button" class="cm-action--danger" data-action="ip-registry#release" data-ip="{{ allocation.ip }}">{{ 'ipGapReleaseAction'|trans }}</button>
                                         {% endif %}
-                                    </div>
                                 </td>
                             </tr>
                         {% else %}

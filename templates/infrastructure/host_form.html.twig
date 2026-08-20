@@ -16,7 +16,7 @@
 {% block page_title %}{{ heading }}{% endblock %}
 
 {% block main %}
-    {% include 'infrastructure/_localnav.html.twig' %}
+    {% include 'infrastructure/_tabs.html.twig' %}
     {% include 'infrastructure/_encryption_banner.html.twig' %}
 
     {{ form_start(form, {attr: {

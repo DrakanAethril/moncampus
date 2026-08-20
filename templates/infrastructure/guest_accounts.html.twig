@@ -15,12 +15,11 @@
 {% block page_title %}{{ 'guestAccountsHeading'|trans({'%vmid%': vmid}) }}{% endblock %}
 
 {% block main %}
-    {% include 'infrastructure/_localnav.html.twig' %}
-
     <p class="cm-host__meta mb-3">
         {{ host.label }} · {{ node }} · VMID {{ vmid }}
         {% if ip %} · <span class="cm-mono">{{ ip }}</span>{% endif %}
     </p>
+    {% include 'infrastructure/_tabs.html.twig' %}
 
     {% if not hasKey %}
         {# Nothing here works without it, and saying "unreachable" without saying why would send an
@@ -30,8 +29,8 @@
             <span>{{ 'guestAccountNoPlatformKeyText'|trans }}</span>
         </div>
     {% elseif failure %}
-        <div class="cm-note mb-3" style="border-left-color: var(--cm-red-tx); background: var(--cm-red-bg); color: var(--cm-red-tx);">
-            <span class="cm-note__icon" style="background: var(--cm-red-tx);">!</span>
+        <div class="cm-note cm-note--danger mb-3">
+            <span class="cm-note__icon">!</span>
             <span><strong>{{ 'guestAccountUnreachableTitle'|trans }}</strong> {{ failure }}</span>
         </div>
     {% endif %}
@@ -48,7 +47,7 @@
          data-guest-accounts-password-warning-value="{{ 'guestAccountPasswordsWarningText'|trans }}">
 
         {% if plan %}
-            <div class="card mb-3">
+            <div class="card cm-card--tabbed mb-3">
                 <div class="card-header">
                     <h3 class="card-title cm-condition-heading">{{ 'guestAccountPlanTitle'|trans }}</h3>
                     <span class="cm-actionbar__meta ms-auto">
@@ -100,7 +99,7 @@
                     <span class="cm-note__icon">!</span>
                     <span>{{ 'guestAccountPasswordsWarningText'|trans }}</span>
                 </div>
-                <table class="table cm-table" data-guest-accounts-target="passwordTable"></table>
+                <table class="table table-vcenter card-table" data-guest-accounts-target="passwordTable"></table>
             </div>
         </div>
 
@@ -114,15 +113,15 @@
                 </div>
             </div>
             <div class="table-responsive">
-                <table class="table cm-table">
+                <table class="table table-vcenter card-table">
                     <thead>
                         <tr>
                             <th>{{ 'guestAccountLoginLabel'|trans }}</th>
                             <th>{{ 'guestAccountPersonLabel'|trans }}</th>
-                            <th style="width:80px">sudo</th>
-                            <th style="width:130px">{{ 'proxmoxGuestStatusLabel'|trans }}</th>
-                            <th style="width:120px">{{ 'ipRegistryOriginLabel'|trans }}</th>
-                            <th style="width:230px"></th>
+                            <th>sudo</th>
+                            <th>{{ 'proxmoxGuestStatusLabel'|trans }}</th>
+                            <th>{{ 'ipRegistryOriginLabel'|trans }}</th>
+                            <th class="cm-actions"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -133,14 +132,12 @@
                                 <td class="cm-guest__sub">{{ account.sudo ? 'oui' : '—' }}</td>
                                 <td><span class="cm-badge cm-badge--{{ account.state.badgeModifier }}">{{ account.state.labelKey|trans }}</span></td>
                                 <td><span class="cm-badge cm-badge--{{ account.origin.badgeModifier }}">{{ account.origin.labelKey|trans }}</span></td>
-                                <td>
-                                    <div class="cm-guest__actions">
-                                        <button type="button" class="cm-linkaction" data-action="guest-accounts#reset" data-login="{{ account.login }}">{{ 'guestAccountResetAction'|trans }}</button>
+                                <td class="cm-actions">
+                                        <button type="button" data-action="guest-accounts#reset" data-login="{{ account.login }}">{{ 'guestAccountResetAction'|trans }}</button>
                                         {% if account.state.value == 'to_remove' %}
-                                            <button type="button" class="cm-linkaction" data-action="guest-accounts#keep" data-login="{{ account.login }}">{{ 'guestAccountKeepAction'|trans }}</button>
+                                            <button type="button" data-action="guest-accounts#keep" data-login="{{ account.login }}">{{ 'guestAccountKeepAction'|trans }}</button>
                                         {% endif %}
-                                        <button type="button" class="cm-linkaction cm-linkaction--danger" data-action="guest-accounts#remove" data-login="{{ account.login }}">{{ 'guestAccountRemoveAction'|trans }}</button>
-                                    </div>
+                                        <button type="button" class="cm-action--danger" data-action="guest-accounts#remove" data-login="{{ account.login }}">{{ 'guestAccountRemoveAction'|trans }}</button>
                                 </td>
                             </tr>
                         {% else %}

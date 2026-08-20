@@ -15,7 +15,7 @@
 {% block page_title %}{{ 'proxmoxGuestCreatedHeading'|trans }}{% endblock %}
 
 {% block main %}
-    {% include 'infrastructure/_localnav.html.twig' %}
+    {% include 'infrastructure/_tabs.html.twig' %}
 
     {# Built from the operation rather than from what was asked for, so it describes what actually
        happened - and stays readable when somebody comes back to this URL an hour later. #}

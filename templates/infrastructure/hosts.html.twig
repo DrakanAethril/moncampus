@@ -17,8 +17,8 @@
 {% endblock %}
 
 {% block main %}
-    {% include 'infrastructure/_localnav.html.twig' %}
     {% include 'infrastructure/_encryption_banner.html.twig' %}
+    {% include 'infrastructure/_tabs.html.twig' %}
 
     {# Cards, not a table: a host carries a live state - a dot, a version, its credential mode,
        three counters - that a row cannot show. And "tested 4 minutes ago" is the point of the
@@ -78,7 +78,7 @@
                         </div>
 
                         {% if state == 'down' %}
-                            <div class="cm-note" style="border-left-color: var(--cm-red-tx); background: var(--cm-red-bg); color: var(--cm-red-tx); margin:0;">
+                            <div class="cm-note cm-note--danger" style="margin:0;">
                                 <span>{{ host.lastCheckMessage }}</span>
                             </div>
                         {% elseif state == 'ok' %}

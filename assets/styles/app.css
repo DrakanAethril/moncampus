@@ -2039,6 +2039,12 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     background: var(--cm-gold-bg); border-color: color-mix(in srgb, var(--cm-gold) 45%, var(--cm-border));
     border-left-color: var(--cm-gold); color: var(--cm-gold-tx);
 }
+.cm-note--danger {
+    border-left-color: var(--cm-red-tx);
+    background: var(--cm-red-bg);
+    color: var(--cm-red-tx);
+}
+.cm-note--danger .cm-note__icon { background: var(--cm-red-tx); }
 
 /* ---------- App download hero banner (Ressources > Application mobile/e-CO) ---------- */
 .cm-app-hero {
@@ -7530,27 +7536,12 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
    badges, notes, radio cards, steppers and action bars all come from the shared cm-* blocks
    above and are not restated here.
 
-   The one piece that exists nowhere else in the application is the local navigation bar: this
-   area is deliberately absent from every menu, so that strip is the only way from one of its
-   screens to the next. It is not a variant of .cm-tabs - tabs switch views of one screen, this
-   moves between screens - and it sits directly under the page title on every one of them. */
+   Navigation between the screens of the area used to be a shape of its own (.cm-localnav), on the
+   argument that tabs switch views of one screen while that strip moved between screens. The
+   application makes no such distinction anywhere else - Paramètres, Partages and UFA all tab
+   between separate routes - so the area now uses .cm-tabs like everything else, and that block is
+   gone. */
 
-.cm-localnav {
-    display: flex; align-items: center; gap: 2px; flex-wrap: wrap;
-    padding: 0 4px; margin: 0 0 20px;
-    border-bottom: 1px solid var(--cm-border); background: var(--cm-surface);
-    border-radius: var(--cm-radius) var(--cm-radius) 0 0;
-}
-.cm-localnav__link {
-    padding: 10px 14px; font: 600 13.5px var(--cm-font-ui); color: var(--cm-muted);
-    text-decoration: none; white-space: nowrap;
-    border-bottom: 2px solid transparent; margin-bottom: -1px;
-}
-.cm-localnav__link:hover { color: var(--cm-brand-strong); text-decoration: none; }
-.cm-localnav__link.is-active { color: var(--cm-brand-strong); border-bottom-color: var(--cm-brand); }
-/* "Aller à…" - the jump box that keeps a deep screen (a host's machines, one range's registry)
-   one click away instead of one remembered URL away. */
-.cm-localnav__goto { margin-left: auto; padding: 6px 8px; }
 
 /* ---------- Hub tiles ---------- */
 
@@ -7655,14 +7646,6 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
    into. See the repository-wide rule about never binding a controller to an element DataTables
    moves. */
 
-.cm-table { width: 100%; margin: 0; font-size: 13.5px; }
-.cm-table th {
-    text-align: left; padding: 9px 14px; white-space: nowrap;
-    font: 600 10.5px var(--cm-font-ui); letter-spacing: .08em; text-transform: uppercase;
-    color: var(--cm-faint); border-bottom: 1px solid var(--cm-border);
-}
-.cm-table td { padding: 10px 14px; border-bottom: 1px solid var(--cm-border-faint); vertical-align: middle; }
-.cm-table tbody tr:last-child td { border-bottom: 0; }
 
 /* Out of perimeter: dimmed, still legible, still counted. Never hidden - a machine that
    disappears from the list reads as a machine that disappeared from the hypervisor. */

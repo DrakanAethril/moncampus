@@ -5977,7 +5977,7 @@ proxmoxCreationRateLimitedMessage: 'Trop de créations demandées coup sur coup.
 # --- Console Proxmox - lot 4 : comptes, post-installation, lots ---------------------------------
 infrastructureBatchesNavLabel: 'Lots'
 infrastructureBatchesTileTitle: 'Lots'
-infrastructureBatchesTileText: 'Déployer une machine par étudiant, avec son compte.'
+infrastructureBatchesTileText: 'Déployer une machine par étudiant, ou une par groupe avec un compte par membre.'
 infrastructureBatchesTileGo: '%count% lot(s)'
 
 platformActivityProxmoxGuestCreatedText: '%user% a créé une machine virtuelle'
