@@ -90,7 +90,9 @@ class OperationController extends AbstractController
 
         if (!$operation->getStatus()->isSettled() && null !== $host) {
             try {
-                $tracker->resolve($operation, $clientFactory->operate($host));
+                // By action, not by convenience: a creation task belongs to the provisioning
+                // account, and Proxmox charges Sys.Audit for reading another account's task.
+                $tracker->resolve($operation, $clientFactory->forAction($host, $operation->getAction()));
             } catch (ProxmoxUnavailableException) {
                 // Left as it is: the tracker decides when an unreachable host turns into `unknown`,
                 // and it is a matter of elapsed time, not of one failed poll.

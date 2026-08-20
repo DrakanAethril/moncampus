@@ -23,6 +23,11 @@ use Doctrine\ORM\EntityManagerInterface;
  * that is correct: `status` says whether the task is over, and only once it is does `exitstatus`
  * say how. A task that is still running is not a failure, and neither is a host that stopped
  * answering - the latter settles to `unknown`, which is a first-class outcome here.
+ *
+ * The client is the caller's to choose, and it must be the one that **opened** the task: Proxmox
+ * reads back your own tasks for free and charges `Sys.Audit` on `/nodes/<node>` for anybody else's.
+ * App\Service\Proxmox\ProxmoxClientFactory::forAction() is what answers that, from the row's own
+ * action.
  */
 class ProxmoxOperationTracker
 {

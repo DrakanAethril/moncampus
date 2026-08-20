@@ -79,6 +79,33 @@ enum ProxmoxAction: string
         };
     }
 
+    /**
+     * Which of the host's two service accounts issues this action - and therefore **owns the task**
+     * Proxmox opens for it.
+     *
+     * Not a permission rule: it does not say who may do the thing, it says who did it. Proxmox lets
+     * an account read the status of its *own* tasks with no privilege at all, and answers HTTP 403
+     * `(/nodes/<node>, Sys.Audit)` for anyone else's. So asking the everyday account how a creation
+     * went would force `Sys.Audit` onto the very credentials this design keeps as small as it can -
+     * which is what reached production on the first batch deployed there.
+     *
+     * Provision and PostInstall never touch the Proxmox API - they act inside a machine over SSH -
+     * so they open no task and could answer either way. They answer "everyday" because that is the
+     * account a host is guaranteed to have: provision() throws on a host that carries no second
+     * credential set, and an action that opens no task must not be able to fail for the want of
+     * credentials it does not use.
+     *
+     * The match is exhaustive on purpose: a new action must state which account issues it rather
+     * than inherit an answer from a default arm.
+     */
+    public function usesProvisioningAccount(): bool
+    {
+        return match ($this) {
+            self::Clone, self::Create => true,
+            self::Start, self::Shutdown, self::Stop, self::Reboot, self::Provision, self::PostInstall => false,
+        };
+    }
+
     /** The badge colour the journal gives it - power actions read as neutral, creation as notable. */
     public function badgeModifier(): string
     {
