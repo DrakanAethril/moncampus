@@ -5752,7 +5752,6 @@ proxmoxCheckProvisionFailedWarning: 'Le compte de provisionnement ne répond pas
 # --- Console Proxmox - lot 2 : voir et piloter ------------------------------------------------
 infrastructureGuestsNavLabel: 'Machines'
 infrastructureOperationsNavLabel: 'Journal des opérations'
-infrastructureOperationsSubtitle: 'Tout ce que MonCampus a demandé à un hôte Proxmox, et ce qu’il a répondu.'
 infrastructureGoToLabel: 'Aller à…'
 infrastructureGuestsTileTitle: 'Machines'
 infrastructureGuestsTileText: 'Lister, démarrer, arrêter proprement, forcer l’arrêt, redémarrer.'

@@ -27,6 +27,9 @@
             </div>
         </div>
     {% else %}
+        {# Not a card, so it does not get .cm-card--tabbed's inset for free - and without it the
+           tiles butt straight against the tab row. See .cm-tabbed-content. #}
+        <div class="cm-tabbed-content">
         {% for host in unreachableHosts %}
             <div class="cm-note cm-note--danger mb-2">
                 <span class="cm-note__icon">!</span>
@@ -100,6 +103,7 @@
                 <span class="cm-tile__desc">{{ 'infrastructureOperationsTileText'|trans }}</span>
                 <span class="cm-tile__go">{{ 'infrastructureOperationsTileGo'|trans({'%count%': operationCount}) }} &rarr;</span>
             </a>
+        </div>
         </div>
     {% endif %}
 {% endblock %}
