@@ -70,12 +70,7 @@ class GuestShellFactory
             // forced command once per key.
             $session->disconnect();
 
-            throw new GuestUnreachableException(\sprintf(
-                '%s@%s accepted the platform key but runs no commands - %s',
-                $username,
-                $ip,
-                GuestShellProbe::describe($result->output),
-            ));
+            throw GuestUnreachableException::shellRunsNothing($username, $ip, GuestShellProbe::describe($result->output));
         }
 
         throw $lastFailure;
