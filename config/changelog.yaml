@@ -26,6 +26,19 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.08.20.4'
+      date: '2026-08-20'
+      summary: "Correctif sur l'installation des machines virtuelles pédagogiques : une machine fraîchement créée n'était en réalité pas exploitable, et rien ne le signalait. Elle l'est désormais, et tout ce qui échoue en cours d'installation est rapporté avec sa cause."
+      entries:
+          - type: fix
+            title: "L'installation d'une machine virtuelle va jusqu'au bout"
+            detail: "Les machines étaient bien créées mais restaient inutilisables, sans que rien ne l'indique : les comptes qu'elles devaient recevoir n'y étaient jamais posés."
+          - type: fix
+            title: 'Une installation qui échoue le dit, au lieu de passer pour réussie'
+            detail: "Une opération refusée par la machine est signalée avec les mots de la machine elle-même, et apparaît dans le journal de l'installation."
+          - type: interne
+            title: "Simplification du paramétrage des serveurs de virtualisation"
+
     - version: '2026.08.20.3'
       date: '2026-08-20'
       summary: "Les administrateurs peuvent enregistrer leurs clés SSH publiques sur leur profil : les machines virtuelles pédagogiques créées ensuite les acceptent. Le déploiement d'un ensemble de machines se suit désormais machine par machine, avec le détail de ce qui a été fait et de ce qui a échoué."
