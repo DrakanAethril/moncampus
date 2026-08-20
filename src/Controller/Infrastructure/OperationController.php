@@ -9,6 +9,7 @@ use App\Enum\ProxmoxAction;
 use App\Enum\ProxmoxOperationStatus;
 use App\Repository\ProxmoxHostRepository;
 use App\Repository\ProxmoxOperationRepository;
+use App\Service\Proxmox\GuestCreationCompleter;
 use App\Service\Proxmox\ProxmoxClientFactory;
 use App\Service\Proxmox\ProxmoxOperationTracker;
 use App\Service\Proxmox\ProxmoxUnavailableException;
@@ -83,6 +84,7 @@ class OperationController extends AbstractController
         ProxmoxOperationRepository $repository,
         ProxmoxClientFactory $clientFactory,
         ProxmoxOperationTracker $tracker,
+        GuestCreationCompleter $completer,
         int $id,
     ): JsonResponse {
         $operation = $repository->find($id) ?? throw $this->createNotFoundException();
@@ -97,6 +99,14 @@ class OperationController extends AbstractController
                 // Left as it is: the tracker decides when an unreachable host turns into `unknown`,
                 // and it is a matter of elapsed time, not of one failed poll.
             }
+        }
+
+        if (null !== $host) {
+            // A machine the creation wizard started is finished here, because the wizard is long
+            // gone by the time Proxmox has copied the disk. Does nothing for anything else, and
+            // records its own failures rather than raising: this route answers a status, and it
+            // must go on answering one.
+            $completer->completeIfReady($operation, $host);
         }
 
         return $this->json([

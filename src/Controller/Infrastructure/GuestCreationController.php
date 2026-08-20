@@ -27,6 +27,7 @@ use App\Service\Proxmox\ProxmoxScope;
 use App\Service\Proxmox\ProxmoxScopeGuard;
 use App\Service\Proxmox\ProxmoxUnavailableException;
 use App\Service\QueryValue;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\HttpFoundation\Request;
@@ -185,6 +186,7 @@ class GuestCreationController extends AbstractController
         IpAllocator $allocator,
         GuestCreator $creator,
         ProxmoxScopeGuard $scopeGuard,
+        EntityManagerInterface $entityManager,
         int $id,
     ): Response {
         $host = $this->findHostOrNotFound($repository, $id);
@@ -244,6 +246,12 @@ class GuestCreationController extends AbstractController
 
             return $this->redirectToRoute('app_infrastructure_guests_new_machine', ['id' => $id]);
         }
+
+        // The wizard stops here - it answers a redirect while Proxmox is still copying the disk.
+        // Nothing of it is running when the clone lands, so the machine is finished by whoever
+        // watches the operation next: see App\Service\Proxmox\GuestCreationCompleter.
+        $operation->requestCompletion($creationRequest->startAfterCreation);
+        $entityManager->flush();
 
         $this->addFlash('success', 'proxmoxGuestCreatedFlashMessage');
 
