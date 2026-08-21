@@ -158,7 +158,7 @@ class GuestAccountController extends AbstractController
             return $this->json(['ok' => false, 'message' => 'guestAccountInvalidLoginMessage']);
         }
 
-        $service->declare($host, $node, $vmid, $login, GuestAccountOrigin::Fixed, $payload->bool('sudo'));
+        $service->declare($host, $node, $vmid, $login, GuestAccountOrigin::Fixed);
 
         return $this->json(['ok' => true]);
     }

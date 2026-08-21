@@ -42,7 +42,7 @@ class GuestAccountSyncerTest extends TestCase
     private function desired(string ...$logins): array
     {
         return array_map(
-            static fn (string $login): DesiredAccount => new DesiredAccount($login, GuestAccountOrigin::Member, sudo: true),
+            static fn (string $login): DesiredAccount => new DesiredAccount($login, GuestAccountOrigin::Member),
             $logins,
         );
     }
@@ -130,7 +130,7 @@ class GuestAccountSyncerTest extends TestCase
     public function testAFixedAccountThatIsStillWantedIsUnchanged(): void
     {
         $plan = $this->syncer()->plan(
-            [new DesiredAccount('prof', GuestAccountOrigin::Fixed, sudo: true)],
+            [new DesiredAccount('prof', GuestAccountOrigin::Fixed)],
             ['prof' => GuestAccountOrigin::Fixed],
         );
 
@@ -278,14 +278,18 @@ class GuestAccountSyncerTest extends TestCase
     }
 
     /**
+     * Every account, with no setting anywhere to say otherwise: these are the machines of a
+     * practical class, the person in front of one is the only person on it, and an account that
+     * cannot install a package cannot do the exercise.
+     *
      * Being in the `sudo` group is what *allows* sudo; on Debian it also means being asked for a
      * password. These accounts have one generated, sent to the machine and forgotten on the spot -
-     * nobody knows it - so without this rule sudo is allowed and unusable at the same time.
+     * nobody knows it - so without the rule sudo would be allowed and unusable at the same time.
      */
-    public function testAnAccountGrantedSudoGetsItWithoutBeingAskedForAPassword(): void
+    public function testEveryAccountCanAdministerItsOwnMachineWithoutBeingAskedForAPassword(): void
     {
         $shell = new RecordingShell();
-        $this->syncer()->apply($shell, $this->syncer()->plan([new DesiredAccount('marie-dupont', GuestAccountOrigin::Member, sudo: true)], []));
+        $this->syncer()->apply($shell, $this->syncer()->plan([new DesiredAccount('marie-dupont', GuestAccountOrigin::Member)], []));
 
         $rule = implode("\n", $shell->commands);
 
@@ -301,7 +305,7 @@ class GuestAccountSyncerTest extends TestCase
     public function testTheSudoersRuleIsJudgedByVisudoBeforeItIsInstalled(): void
     {
         $shell = new RecordingShell();
-        $this->syncer()->apply($shell, $this->syncer()->plan([new DesiredAccount('marie-dupont', GuestAccountOrigin::Member, sudo: true)], []));
+        $this->syncer()->apply($shell, $this->syncer()->plan([new DesiredAccount('marie-dupont', GuestAccountOrigin::Member)], []));
 
         $sudoers = array_values(array_filter($shell->commands, static fn (string $c): bool => str_contains($c, 'sudoers.d')));
 
@@ -318,7 +322,6 @@ class GuestAccountSyncerTest extends TestCase
     public function testEveryAccountJoinsTheDockerGroup(): void
     {
         $shell = new RecordingShell();
-        // No sudo: the docker group is not a privilege this application ties to that one.
         $this->syncer()->apply($shell, $this->syncer()->plan([new DesiredAccount('marie-dupont', GuestAccountOrigin::Member)], []));
 
         $docker = array_values(array_filter($shell->commands, static fn (string $c): bool => str_contains($c, 'docker')));

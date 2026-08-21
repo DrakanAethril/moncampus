@@ -18,7 +18,6 @@ final readonly class DesiredAccount
     public function __construct(
         public string $login,
         public GuestAccountOrigin $origin,
-        public bool $sudo = false,
         public string $shell = '/bin/bash',
         public ?int $userId = null,
         public ?string $displayName = null,

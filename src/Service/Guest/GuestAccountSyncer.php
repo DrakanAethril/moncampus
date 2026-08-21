@@ -229,13 +229,16 @@ class GuestAccountSyncer
             $this->setPasswordCommand($account->login, $password),
         ];
 
-        if ($account->sudo) {
-            // Both group names, because Debian calls it sudo and RHEL calls it wheel, and a failed
-            // usermod on the group that does not exist costs nothing.
-            $commands[] = \sprintf('usermod -aG sudo %s || usermod -aG wheel %s', $login, $login);
-            $commands[] = $this->passwordlessSudoCommand($account->login);
-        }
-
+        // Every account this application creates administers the machine it is on, without
+        // exception: these are the machines of a practical class, the person in front of one is the
+        // only person on it, and an account that cannot install a package is an account that cannot
+        // do the exercise. There is deliberately no setting for it - a per-machine or per-account
+        // toggle only ever produced a machine somebody could not work on, discovered in the room.
+        //
+        // Both group names, because Debian calls it sudo and RHEL calls it wheel, and a failed
+        // usermod on the group that does not exist costs nothing.
+        $commands[] = \sprintf('usermod -aG sudo %s || usermod -aG wheel %s', $login, $login);
+        $commands[] = $this->passwordlessSudoCommand($account->login);
         $commands[] = $this->dockerGroupCommand($account->login);
 
         if (null !== $publicKey && '' !== $publicKey) {

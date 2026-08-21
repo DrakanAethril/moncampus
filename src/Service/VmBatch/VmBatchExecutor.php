@@ -585,7 +585,6 @@ class VmBatchExecutor
                 $vmid,
                 $planned['login'],
                 GuestAccountOrigin::Member,
-                $batch->isGrantSudo(),
                 $planned['user'],
                 $planned['label'],
             );

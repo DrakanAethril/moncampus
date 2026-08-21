@@ -27,11 +27,19 @@ export default class extends Controller {
         token: String,
         deployUrl: String,
         labels: Object,
+        autoRefresh: Boolean,
     };
 
     // Long enough that a booting machine gets somewhere between two polls, short enough that the
     // screen still feels alive.
     static IDLE_PAUSE_MS = 5000;
+
+    // How often a page showing a deployment in progress reloads itself.
+    //
+    // The work is done on the server - a pass advances a machine whether or not anybody is looking
+    // at this page - so this is a *view* refreshing, not a loop driving anything. Which is why it
+    // may simply reload: there is nothing here to lose.
+    static REFRESH_MS = 5000;
 
     // How many passes in a row may fail to answer before the loop gives up.
     //
@@ -49,7 +57,19 @@ export default class extends Controller {
     // something resets the count, so this is only ever reached by a batch that is genuinely stuck.
     static MAX_IDLE_PASSES = 180;
 
+    connect() {
+        this.#scheduleRefresh();
+    }
+
+    disconnect() {
+        this.#cancelRefresh();
+    }
+
     async deploy() {
+        // This tab is about to drive the deployment itself and reloads at the end of its own loop;
+        // a reload landing in the middle would abandon it exactly where the batch screen used to be
+        // found stuck.
+        this.#cancelRefresh();
         this.buttonTarget.disabled = true;
 
         try {
@@ -101,6 +121,21 @@ export default class extends Controller {
         } finally {
             // Reloaded rather than patched: every row's status, VMID and address just moved.
             window.location.reload();
+        }
+    }
+
+    #scheduleRefresh() {
+        if (!this.autoRefreshValue) {
+            return;
+        }
+
+        this.refreshTimer = window.setTimeout(() => window.location.reload(), this.constructor.REFRESH_MS);
+    }
+
+    #cancelRefresh() {
+        if (this.refreshTimer) {
+            window.clearTimeout(this.refreshTimer);
+            this.refreshTimer = null;
         }
     }
 
