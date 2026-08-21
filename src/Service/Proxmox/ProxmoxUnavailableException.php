@@ -51,6 +51,17 @@ class ProxmoxUnavailableException extends \RuntimeException
         return new self(\sprintf('The TLS handshake with %s did not complete.', $address), userMessageKey: 'proxmoxHostTlsHandshakeError', userMessageParameters: ['%address%' => $address]);
     }
 
+    /**
+     * The host answered and refused the identity. `$reason` is what Proxmox itself said about it -
+     * `401 invalid token value!`, `401 no such user ('svc@pve')` - and it is the whole point of
+     * this constructor: a bare "HTTP 401" names none of the four things an administrator could
+     * have got wrong, and sends them looking through all of them.
+     */
+    public static function authenticationRefused(string $developerMessage, string $userMessageKey, string $reason): self
+    {
+        return new self($developerMessage, userMessageKey: $userMessageKey, userMessageParameters: ['%reason%' => $reason]);
+    }
+
     /** The host is answering, just far too slowly to finish inside the request's budget. */
     public static function tooSlow(int $seconds): self
     {
