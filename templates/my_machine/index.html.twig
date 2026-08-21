@@ -3,6 +3,10 @@
 {% block title %}{{ 'myMachinesHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
+    {# Two segments, not three. The handoff draws « Accueil › Infrastructure › Mes machines
+       virtuelles », but nothing navigates through Infrastructure to reach this screen - that whole
+       area is ROLE_ADMIN and this page exists for the students and teachers who are not. Depth
+       follows navigation, and this one hangs off the menu directly. #}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
         {label: 'myMachinesHeading'|trans, url: path('app_my_machines')},
@@ -18,61 +22,96 @@
             <span>{{ 'myMachinesNoneText'|trans }}</span>
         </div>
     {% else %}
-        <div data-controller="my-machines"
+        {# A machine on its way between two states is the one thing this page cannot know on its
+           own: the hypervisor finishes in its own time. So the screen re-reads itself while any
+           card is amber, and stops as soon as none is. #}
+        {% set transitioning = machines|filter(m => m.isTransitioning)|length > 0 %}
+        <div class="cm-vmgrid"
+             data-controller="my-machines"
              data-my-machines-token-value="{{ csrf_token('my_machines_action') }}"
              data-my-machines-working-message-value="{{ 'myMachineWorkingMessage'|trans }}"
-             data-my-machines-failed-message-value="{{ 'myMachineFailedMessage'|trans }}">
+             data-my-machines-failed-message-value="{{ 'myMachineFailedMessage'|trans }}"
+             data-my-machines-min-length-value="12"
+             data-my-machines-auto-refresh-value="{{ transitioning ? 'true' : 'false' }}">
             {% for machine in machines %}
                 {% set account = machine.account %}
-                <div class="card mb-3">
-                    <div class="card-header">
-                        <h3 class="card-title cm-condition-heading">{{ machine.name }}</h3>
-                        <span class="cm-badge cm-badge--{{ machine.isKnown ? (machine.isRunning ? 'green' : 'gray') : 'gold' }} ms-auto">
-                            {{ (machine.isKnown ? (machine.isRunning ? 'proxmoxGuestRunningLabel' : 'proxmoxGuestStoppedLabel') : 'myMachineUnknownStateLabel')|trans }}
-                        </span>
-                    </div>
-                    <div class="card-body">
-                        <dl class="row mb-0">
-                            {% if machine.batchLabel %}
-                                <dt class="col-sm-3 cm-guest__sub">{{ 'vmBatchLabelFieldLabel'|trans }}</dt>
-                                <dd class="col-sm-9">{{ machine.batchLabel }}</dd>
-                            {% endif %}
-                            <dt class="col-sm-3 cm-guest__sub">{{ 'proxmoxWizardIpFieldLabel'|trans }}</dt>
-                            <dd class="col-sm-9 cm-mono">{{ machine.ip ?? '—' }}</dd>
-                            <dt class="col-sm-3 cm-guest__sub">{{ 'guestAccountLoginLabel'|trans }}</dt>
-                            <dd class="col-sm-9 cm-mono">{{ account.login }}</dd>
-                        </dl>
+                {% set busy = machine.isTransitioning %}
+                {% set off = machine.isKnown and not machine.isRunning and not busy %}
+                <div class="cm-vmcard{{ busy ? ' cm-vmcard--busy' : (off ? ' cm-vmcard--off') }}"
+                     data-my-machines-target="card" data-account="{{ account.id }}">
 
-                        {# The password is the reason this screen exists: the account is born with
-                           one nobody knows, so until its owner sets one they cannot log in. #}
-                        <form class="cm-fieldset mt-3" data-action="my-machines#changePassword"
-                              data-url="{{ path('app_my_machines_password', {id: account.id}) }}">
-                            <label class="cm-field-label" for="password-{{ account.id }}">{{ 'myMachinePasswordFieldLabel'|trans }}</label>
-                            <div class="d-flex gap-2 align-items-start">
-                                <input id="password-{{ account.id }}" type="password" name="password" class="cm-input"
-                                       autocomplete="new-password" minlength="12" required
-                                       placeholder="{{ 'myMachinePasswordPlaceholder'|trans }}">
-                                <button type="submit" class="cm-btn cm-btn--outline">{{ 'myMachinePasswordAction'|trans }}</button>
-                            </div>
-                            <div class="cm-guest__sub mt-1">{{ 'myMachinePasswordHelpText'|trans }}</div>
-                        </form>
+                    <div class="cm-vmcard__head">
+                        <span class="cm-vmcard__icon">
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <rect x="2.5" y="4" width="19" height="13" rx="2.5"></rect>
+                                <path d="M8 21h8M12 17v4"></path>
+                            </svg>
+                        </span>
+                        <span class="cm-vmcard__name">{{ machine.name }}</span>
+                        {% if busy %}
+                            <span class="cm-vmcard__status cm-vmcard__status--busy">{{ (machine.isStarting ? 'myMachineStartingLabel' : 'myMachineStoppingLabel')|trans }}</span>
+                        {% elseif not machine.isKnown %}
+                            <span class="cm-vmcard__status cm-vmcard__status--unknown">{{ 'myMachineUnknownStateLabel'|trans }}</span>
+                        {% elseif machine.isRunning %}
+                            <span class="cm-vmcard__status">{{ 'proxmoxGuestRunningLabel'|trans }}</span>
+                        {% else %}
+                            <span class="cm-vmcard__status cm-vmcard__status--off">{{ 'proxmoxGuestStoppedLabel'|trans }}</span>
+                        {% endif %}
                     </div>
-                    <div class="cm-actionbar">
-                        <span class="cm-actionbar__meta" data-my-machines-target="message" data-account="{{ account.id }}"></span>
-                        <div class="cm-actionbar__buttons">
-                            <button type="button" class="cm-btn cm-btn--outline cm-btn--sm"
-                                    data-action="my-machines#power" data-account="{{ account.id }}"
-                                    data-url="{{ path('app_my_machines_power', {id: account.id, action: 'start'}) }}"
-                                    {{ machine.isKnown and machine.isRunning ? 'disabled' }}>
-                                {{ 'proxmoxGuestStartAction'|trans }}
-                            </button>
-                            <button type="button" class="cm-btn cm-btn--outline cm-btn--sm"
-                                    data-action="my-machines#power" data-account="{{ account.id }}"
-                                    data-url="{{ path('app_my_machines_power', {id: account.id, action: 'shutdown'}) }}"
-                                    {{ machine.isKnown and not machine.isRunning ? 'disabled' }}>
-                                {{ 'proxmoxGuestShutdownAction'|trans }}
-                            </button>
+
+                    <div class="cm-vmcard__specs">
+                        <span class="cm-vmcard__label">{{ 'proxmoxWizardIpFieldLabel'|trans }}</span>
+                        <span class="cm-vmcard__value cm-vmcard__value--mono">{{ machine.ip ?? '—' }}</span>
+                        <span class="cm-vmcard__label">{{ 'myMachineRamLabel'|trans }}</span>
+                        <span class="cm-vmcard__value">{{ machine.memoryBytes ? (machine.memoryBytes / 1073741824)|round ~ ' ' ~ 'myMachineGigabyteUnit'|trans : '—' }}</span>
+                        <span class="cm-vmcard__label">{{ 'myMachineDiskLabel'|trans }}</span>
+                        <span class="cm-vmcard__value">{{ machine.diskBytes ? (machine.diskBytes / 1073741824)|round ~ ' ' ~ 'myMachineGigabyteUnit'|trans : '—' }}</span>
+                        {# Every account registered on the machine, not the reader's own: a machine
+                           of a practical class is shared, and this is the same list the
+                           administration's « Comptes » screen shows. #}
+                        <span class="cm-vmcard__label">{{ 'myMachineAccountsLabel'|trans }}</span>
+                        <span class="cm-vmcard__value cm-vmcard__value--mono">{{ machine.accounts|join(', ') }}</span>
+                    </div>
+
+                    {# The password is the reason this screen exists: the account is born with one
+                       nobody knows, so until its owner sets one they cannot log in. #}
+                    {% set canSetPassword = machine.acceptsPassword %}
+                    <form class="cm-vmcard__pw{{ canSetPassword ? '' : ' cm-vmcard__pw--off' }}"
+                          data-action="my-machines#changePassword"
+                          data-url="{{ path('app_my_machines_password', {id: account.id}) }}">
+                        <label class="cm-vmcard__pwlabel" for="password-{{ account.id }}">{{ 'myMachinePasswordFieldLabel'|trans }}</label>
+                        <div class="cm-vmcard__pwrow">
+                            <input id="password-{{ account.id }}" type="password" name="password" class="cm-vmcard__input"
+                                   autocomplete="new-password" minlength="12" required
+                                   data-my-machines-target="password"
+                                   data-action="input->my-machines#validate"
+                                   {{ canSetPassword ? '' : 'disabled' }}
+                                   placeholder="{{ 'myMachinePasswordPlaceholder'|trans }}">
+                            {# Inactive until the twelve characters are there, which is what the
+                               placeholder announces - the reference carries the constraint on the
+                               field itself rather than in a grey line underneath. #}
+                            <button type="submit" class="cm-vmcard__btn" data-my-machines-target="submit" disabled>{{ 'myMachinePasswordAction'|trans }}</button>
                         </div>
+                    </form>
+
+                    <div class="cm-vmcard__foot">
+                        <span class="cm-vmcard__note" data-my-machines-target="message" data-account="{{ account.id }}"></span>
+                        <span class="cm-vmcard__actions">
+                            {% if machine.isKnown and not machine.isRunning and not machine.isStarting %}
+                                <button type="button" class="cm-vmcard__start"
+                                        data-action="my-machines#power" data-account="{{ account.id }}"
+                                        data-url="{{ path('app_my_machines_power', {id: account.id, action: 'start'}) }}">
+                                    {{ 'proxmoxGuestStartAction'|trans }}
+                                </button>
+                            {% else %}
+                                <button type="button" class="cm-vmcard__stop"
+                                        data-action="my-machines#power" data-account="{{ account.id }}"
+                                        data-url="{{ path('app_my_machines_power', {id: account.id, action: 'shutdown'}) }}"
+                                        {{ machine.isKnown and not machine.isStopping ? '' : 'disabled' }}>
+                                    {{ 'proxmoxGuestShutdownAction'|trans }}
+                                </button>
+                            {% endif %}
+                        </span>
                     </div>
                 </div>
             {% endfor %}
