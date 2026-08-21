@@ -1,0 +1,103 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'consoleSessionsNavLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
+        {label: 'consoleSessionsNavLabel'|trans, url: path('app_infrastructure_console_sessions')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'consoleSessionsNavLabel'|trans }}{% endblock %}
+
+{% block main %}
+    {% include 'infrastructure/_tabs.html.twig' %}
+
+    <div class="card cm-card--tabbed">
+        {# GET, jamais POST : un formulaire « montre-moi » se relit dans son URL, se met en favori et
+           se recharge. Turbo n'a rien à rediriger. #}
+        <form method="get" class="cm-actionbar" style="margin: 0; padding: 12px 18px; border-top: 0; border-bottom: 1px solid var(--cm-border-soft); background: var(--cm-surface-soft);">
+            <label class="cm-field-label" for="filter-vmid">{{ 'consoleSessionMachineLabel'|trans }}</label>
+            <select id="filter-vmid" name="vmid" class="cm-select cm-field--sm">
+                <option value="">{{ 'proxmoxFilterAllLabel'|trans }}</option>
+                {% for vmid, name in machines %}
+                    <option value="{{ vmid }}"{{ filters.vmid == vmid ? ' selected' }}>{{ name }}</option>
+                {% endfor %}
+            </select>
+
+            <label class="cm-field-label" for="filter-user">{{ 'consoleSessionOpenedByLabel'|trans }}</label>
+            <select id="filter-user" name="user" class="cm-select cm-field--sm">
+                <option value="">{{ 'proxmoxFilterAllLabel'|trans }}</option>
+                {% for person in people %}
+                    <option value="{{ person.id }}"{{ filters.user == person.id ? ' selected' }}>{{ person.displayName ?? person.username }}</option>
+                {% endfor %}
+            </select>
+
+            <label class="cm-field-label" for="filter-days">{{ 'consoleSessionSinceLabel'|trans }}</label>
+            <select id="filter-days" name="days" class="cm-select cm-field--sm">
+                {% for choice in [1, 7, 30, 90] %}
+                    <option value="{{ choice }}"{{ filters.days == choice ? ' selected' }}>{{ 'consoleSessionDaysOption'|trans({'%count%': choice}) }}</option>
+                {% endfor %}
+            </select>
+
+            <button type="submit" class="cm-btn cm-btn--outline cm-btn--sm">{{ 'proxmoxGuestRefreshAction'|trans }}</button>
+
+            {# La rétention est dite là où on lit le journal : un écran qui montre sept jours sans
+               dire ce qu'il advient du reste laisse croire que tout est gardé. #}
+            <span class="cm-actionbar__meta" style="margin-left:auto">{{ 'consoleSessionRetentionText'|trans({'%days%': retentionDays}) }}</span>
+        </form>
+
+        {% if sessions is empty %}
+            <div style="padding: 18px 22px"><p class="cm-guest__sub" style="margin:0">{{ 'consoleSessionsEmptyText'|trans }}</p></div>
+        {% else %}
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'consoleSessionOpenedAtLabel'|trans }}</th>
+                            <th>{{ 'consoleSessionMachineLabel'|trans }}</th>
+                            <th>{{ 'consoleSessionOpenedByLabel'|trans }}</th>
+                            <th>{{ 'consoleSessionIdentityLabel'|trans }}</th>
+                            <th>{{ 'consoleSessionDurationLabel'|trans }}</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for session in sessions %}
+                            {% set who = session.openedBy %}
+                            <tr>
+                                <td class="cm-guest__sub">{{ session.openedAt|date('d/m H:i') }}</td>
+                                <td>
+                                    <span class="cm-guest__name">{{ session.guestName ?? 'VM ' ~ session.vmid }}</span>
+                                    <span class="cm-mono cm-guest__sub">· {{ session.vmid }}</span>
+                                </td>
+                                <td>{{ who ? (who.displayName ?? who.username) : '—' }}</td>
+                                {# « moncampus → mdupont » dit tout d'un coup d'œil : la session a
+                                   commencé sur le compte de plateforme et a pris une autre identité
+                                   en cours de route. #}
+                                <td class="cm-guest__sub">
+                                    {{ session.unixUser == 'moncampus' ? 'moncampus' : 'moncampus → ' ~ session.unixUser }}
+                                </td>
+                                <td class="cm-guest__sub">
+                                    {% if session.isOpen %}
+                                        {{ 'consoleSessionOngoingLabel'|trans }}
+                                    {% else %}
+                                        {{ 'consoleSessionMinutesLabel'|trans({'%count%': session.durationMinutes}) }}
+                                    {% endif %}
+                                </td>
+                                <td class="cm-actions">
+                                    <a class="cm-action cm-action--main" href="{{ path('app_infrastructure_console_session', {id: session.id}) }}">{{ 'consoleTranscriptAction'|trans }}</a>
+                                    {% if session.transcriptTruncated %}
+                                        <span class="cm-badge cm-badge--gold">{{ 'consoleTranscriptTruncatedBadge'|trans }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

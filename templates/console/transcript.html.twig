@@ -1,0 +1,63 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set machine_name = session.guestName ?? 'VM ' ~ session.vmid %}
+
+{% block title %}{{ 'consoleTranscriptHeading'|trans({'%name%': machine_name}) }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
+        {label: 'consoleSessionsNavLabel'|trans, url: path('app_infrastructure_console_sessions')},
+        {label: machine_name, url: app.request.pathInfo},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'consoleTranscriptHeading'|trans({'%name%': machine_name}) }}{% endblock %}
+
+{% block main %}
+    {% include 'infrastructure/_tabs.html.twig' %}
+
+    <div class="card cm-card--tabbed">
+        <div style="padding: 18px 22px">
+            <dl class="cm-sum">
+                <dt>{{ 'consoleSessionOpenedAtLabel'|trans }}</dt>
+                <dd>{{ session.openedAt|date('d/m/Y H:i') }}</dd>
+                <dt>{{ 'consoleSessionOpenedByLabel'|trans }}</dt>
+                <dd>{{ session.openedBy ? (session.openedBy.displayName ?? session.openedBy.username) : '—' }}</dd>
+                <dt>{{ 'consoleSessionMachineLabel'|trans }}</dt>
+                <dd>{{ machine_name }} · {{ session.ip }}</dd>
+                <dt>{{ 'consoleSessionIdentityLabel'|trans }}</dt>
+                <dd>{{ session.unixUser == 'moncampus' ? 'moncampus' : 'moncampus → ' ~ session.unixUser }}</dd>
+                <dt>{{ 'consoleSessionDurationLabel'|trans }}</dt>
+                <dd>
+                    {% if session.isOpen %}
+                        {{ 'consoleSessionOngoingLabel'|trans }}
+                    {% else %}
+                        {{ 'consoleSessionMinutesLabel'|trans({'%count%': session.durationMinutes}) }}
+                    {% endif %}
+                </dd>
+            </dl>
+
+            {# La règle d'enregistrement, dite là où on lit la trace : un mot de passe tapé à une
+               invite sudo n'apparaît pas à l'écran, donc il n'est pas ici. #}
+            <div class="cm-note">
+                <span class="cm-note__icon">i</span>
+                <span>{{ 'consoleTranscriptRuleText'|trans }}</span>
+            </div>
+
+            {% if session.transcriptTruncated %}
+                <div class="cm-note cm-note--gold">
+                    <span class="cm-note__icon">!</span>
+                    <span>{{ 'consoleTranscriptTruncatedText'|trans({'%size%': 256}) }}</span>
+                </div>
+            {% endif %}
+        </div>
+
+        {% if session.transcript %}
+            <pre class="cm-console__transcript">{{ session.transcript }}</pre>
+        {% else %}
+            <div style="padding: 18px 22px"><p class="cm-guest__sub" style="margin:0">{{ 'consoleTranscriptEmptyText'|trans }}</p></div>
+        {% endif %}
+    </div>
+{% endblock %}

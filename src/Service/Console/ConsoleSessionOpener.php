@@ -8,9 +8,11 @@ use App\Entity\ConsoleSession;
 use App\Entity\GuestAccount;
 use App\Entity\ProxmoxHost;
 use App\Entity\User;
+use App\Enum\ProxmoxAction;
 use App\Repository\ConsoleSessionRepository;
 use App\Repository\IpAllocationRepository;
 use App\Repository\VmBatchItemRepository;
+use App\Service\Proxmox\ProxmoxOperationTracker;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -39,6 +41,7 @@ class ConsoleSessionOpener
         private readonly ConsoleSessionRepository $sessions,
         private readonly IpAllocationRepository $allocations,
         private readonly VmBatchItemRepository $items,
+        private readonly ProxmoxOperationTracker $tracker,
         private readonly EntityManagerInterface $entityManager,
         private readonly int $consoleMaxSessions,
     ) {
@@ -105,9 +108,17 @@ class ConsoleSessionOpener
         }
 
         $session = new ConsoleSession($host, $node, $vmid, $ip, $openedBy, ConsoleIdentity::PLATFORM_ACCOUNT);
-        $session->setGuestName($this->nameOf($host, $vmid));
+        $name = $this->nameOf($host, $vmid);
+        $session->setGuestName($name);
 
         $this->entityManager->persist($session);
+        $this->entityManager->flush();
+
+        // In the operations journal, at the same place as a start or a shutdown: it is the same
+        // question - who asked what of which machine - and a console is the most far-reaching of
+        // the answers, since it opens on an account that has sudo. Written at the opening rather
+        // than at the closing, because a console that was opened and then went wrong still happened.
+        $this->tracker->begin($host, ProxmoxAction::Console, $openedBy, $node, $vmid, $name)->markSucceeded();
         $this->entityManager->flush();
 
         return $session;
