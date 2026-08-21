@@ -63,9 +63,9 @@
                         <span class="cm-vmcard__label">{{ 'proxmoxWizardIpFieldLabel'|trans }}</span>
                         <span class="cm-vmcard__value cm-vmcard__value--mono">{{ machine.ip ?? '—' }}</span>
                         <span class="cm-vmcard__label">{{ 'myMachineRamLabel'|trans }}</span>
-                        <span class="cm-vmcard__value">{{ machine.memoryBytes ? (machine.memoryBytes / 1073741824)|round ~ ' ' ~ 'myMachineGigabyteUnit'|trans : '—' }}</span>
+                        <span class="cm-vmcard__value">{{ machine.memoryBytes ? (machine.memoryBytes / 1073741824)|round ~ ' ' ~ 'myMachineGibibyteUnit'|trans : '—' }}</span>
                         <span class="cm-vmcard__label">{{ 'myMachineDiskLabel'|trans }}</span>
-                        <span class="cm-vmcard__value">{{ machine.diskBytes ? (machine.diskBytes / 1073741824)|round ~ ' ' ~ 'myMachineGigabyteUnit'|trans : '—' }}</span>
+                        <span class="cm-vmcard__value">{{ machine.diskBytes ? (machine.diskBytes / 1073741824)|round ~ ' ' ~ 'myMachineGibibyteUnit'|trans : '—' }}</span>
                         {# Every account registered on the machine, not the reader's own: a machine
                            of a practical class is shared, and this is the same list the
                            administration's « Comptes » screen shows. #}
