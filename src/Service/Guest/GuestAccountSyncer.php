@@ -110,7 +110,20 @@ class GuestAccountSyncer
         }
 
         $safe = array_map(static fn (string $login): string => escapeshellarg($login), $logins);
-        $result = $shell->run(\sprintf('for u in %s; do getent passwd "$u" >/dev/null && echo "$u"; done', implode(' ', $safe)));
+        // `if … then … fi` rather than `&&`: the loop's exit status is the last iteration's, so
+        // with `&&` a last login that simply does not exist made the whole command look failed -
+        // and nothing could then tell that apart from a command that never ran. Written this way
+        // the status means what it says, which is what makes the check below worth making.
+        $command = \sprintf(
+            'for u in %s; do if getent passwd "$u" >/dev/null 2>&1; then echo "$u"; fi; done',
+            implode(' ', $safe),
+        );
+        $result = $shell->run($command);
+
+        // A probe that finds nothing and a probe that never ran read identically - an empty list -
+        // and the second is how every declared account came to show as permanently « à créer ».
+        // The verdict is asked for rather than assumed.
+        self::mustSucceed($command, $result);
 
         $found = [];
         foreach (explode("\n", $result->output) as $line) {

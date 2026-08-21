@@ -248,6 +248,35 @@ class GuestAccountSyncerTest extends TestCase
         self::assertSame(['marie-dupont'], $this->syncer()->existingLogins($shell, ['marie-dupont']));
     }
 
+    /**
+     * The defect this pins is the one that made the Comptes screen list the same six accounts as
+     * declared *and* as still to create, on a machine that had them all.
+     *
+     * A probe that finds nothing and a probe that never ran both answer an empty list, so the
+     * screen could not tell them apart - and the loop's own exit status used to be meaningless
+     * anyway (it is the last iteration's, so a last login that simply does not exist made a
+     * perfectly good probe look failed). Written with `if … fi` the status says what it says, and
+     * asking for it is what turns a silent nothing into a refusal somebody reads.
+     */
+    public function testAProbeThatCouldNotRunIsRaisedRatherThanReadAsAnEmptyMachine(): void
+    {
+        $shell = new RecordingShell(failingNeedle: 'getent');
+
+        $this->expectException(GuestCommandFailedException::class);
+
+        $this->syncer()->existingLogins($shell, ['marie-dupont']);
+    }
+
+    public function testTheProbeAsksAboutEachLoginWithoutItsOwnStatusDependingOnTheLastOne(): void
+    {
+        $shell = $this->shell("marie-dupont\n");
+        $this->syncer()->existingLogins($shell, ['marie-dupont', 'absent']);
+
+        // `if … fi` and not `&&`: see the test above for what the difference buys.
+        self::assertStringContainsString('if getent passwd', $shell->commands[0]);
+        self::assertStringNotContainsString('&& echo', $shell->commands[0]);
+    }
+
     public function testAskingAboutNobodyRunsNothing(): void
     {
         $shell = $this->shell();
