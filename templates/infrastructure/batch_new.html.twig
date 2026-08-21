@@ -26,7 +26,8 @@
             <div class="row g-3">
                 <div class="col-md-5">
                     <label class="cm-field-label" for="programId">{{ 'vmBatchProgramFieldLabel'|trans }}</label>
-                    <select id="programId" name="programId" class="cm-select w-100">
+                    <select id="programId" name="programId" class="cm-select w-100"
+                            data-controller="auto-submit" data-action="change->auto-submit#submit">
                         <option value="">{{ 'vmBatchProgramPlaceholder'|trans }}</option>
                         {% for p in programs %}
                             <option value="{{ p.id }}"{{ program and program.id == p.id ? ' selected' }}>{{ p.displayShortName }}</option>
@@ -53,14 +54,18 @@
             <div class="row g-3 mt-0">
                 <div class="col-md-5">
                     <label class="cm-field-label" for="shape">{{ 'vmBatchShapeFieldLabel'|trans }}</label>
-                    <select id="shape" name="shape" class="cm-select w-100">
+                    {# Submitting on change is what makes the fields below *exist*: which of them
+                       are shown is decided server-side by the shape, so before this the only way
+                       to reveal them was to press « Prévisualiser » first. #}
+                    <select id="shape" name="shape" class="cm-select w-100"
+                            data-controller="auto-submit" data-action="change->auto-submit#submit">
                         {% for case in shapes %}
                             <option value="{{ case.value }}"{{ shape.value == case.value ? ' selected' }}>{{ case.labelKey|trans }}</option>
                         {% endfor %}
                     </select>
                     <div class="cm-guest__sub mt-1">{{ shape.descriptionKey|trans }}</div>
                 </div>
-                {% if program %}
+                {% if program and shape.value == 'per_group' %}
                     <div class="col-md-7">
                         <label class="cm-field-label" for="groupBatchId">{{ 'vmBatchGroupBatchFieldLabel'|trans }}</label>
                         <select id="groupBatchId" name="groupBatchId" class="cm-select w-100"{{ targetableGroupBatches is empty ? ' disabled' }}>
@@ -76,7 +81,26 @@
                 {% endif %}
             </div>
 
-            {% if program and shape.value != 'per_group' %}
+            {% if program and shape.value == 'for_accounts' %}
+                <div class="row g-3 mt-1">
+                    <div class="col-md-8">
+                        <label class="cm-field-label" for="batch-users">{{ 'vmBatchAccountsFieldLabel'|trans }}</label>
+                        {# Server-rendered <option selected> for what is already chosen: the search
+                           is an ajax one, so nothing else would survive the reload a preview is. #}
+                        <select id="batch-users" name="users[]" multiple
+                                data-controller="tom-select"
+                                data-tom-select-url-value="{{ path('app_infrastructure_batches_user_search') }}"
+                                data-tom-select-placeholder-value="{{ 'vmBatchAccountsPlaceholder'|trans }}">
+                            {% for user in chosenUsers %}
+                                <option value="{{ user.id }}" selected>{{ user.displayName ?? user.username }} ({{ user.username }})</option>
+                            {% endfor %}
+                        </select>
+                        <div class="cm-guest__sub mt-1">{{ 'vmBatchAccountsHelpText'|trans }}</div>
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if program and shape.value == 'per_student' %}
                 {# Checkbox groups rather than a multi-select, and the filters apply to the STUDENT:
                    a program offers SISR, and which students take it is a per-student fact. Ticking
                    nothing means the whole class. #}
@@ -130,7 +154,9 @@
         </div>
     {% endif %}
 
-    {% set perGroup = shape.value == 'per_group' %}
+    {# A machine carrying several accounts, whichever shape produced it: the preview table below
+       reads the same rows for a group of a set and for a handful of people picked by hand. #}
+    {% set perGroup = shape.isMultiAccount %}
     {% set rows = perGroup ? groupPlan : plan %}
 
     {% if program and host and rows is not empty %}
@@ -139,10 +165,11 @@
             <input type="hidden" name="programId" value="{{ program.id }}">
             <input type="hidden" name="hostId" value="{{ host.id }}">
             <input type="hidden" name="shape" value="{{ shape.value }}">
-            {% if perGroup %}<input type="hidden" name="groupBatchId" value="{{ groupBatch.id }}">{% endif %}
+            {% if shape.value == 'per_group' %}<input type="hidden" name="groupBatchId" value="{{ groupBatch.id }}">{% endif %}
             <input type="hidden" name="namePattern" value="{{ namePattern }}">
             {% for id in filters.options %}<input type="hidden" name="options[]" value="{{ id }}">{% endfor %}
             {% for id in filters.modalities %}<input type="hidden" name="modalities[]" value="{{ id }}">{% endfor %}
+            {% for user in chosenUsers %}<input type="hidden" name="users[]" value="{{ user.id }}">{% endfor %}
 
             <fieldset class="cm-fieldset">
                 <legend class="cm-fieldset__legend">{{ 'vmBatchMachineLegend'|trans }}</legend>

@@ -6020,6 +6020,12 @@ vmBatchPerStudentLabel: 'Une machine par étudiant'
 vmBatchPerStudentDescription: 'Chaque étudiant de la classe reçoit sa propre machine, avec son compte.'
 vmBatchPerGroupLabel: 'Une machine par groupe'
 vmBatchPerGroupDescription: "Chaque groupe reçoit une machine, avec un compte par membre du groupe. Les groupes remplacent la liste de la classe : les filtres option et modalité ne s'appliquent pas."
+vmBatchForAccountsLabel: 'Une machine pour des comptes choisis'
+vmBatchForAccountsDescription: "Une seule machine, portant un compte pour chaque personne choisie. C'est aussi la façon de créer une machine pour une seule personne : il suffit de n'en choisir qu'une."
+vmBatchAccountsFieldLabel: 'Comptes de la machine'
+vmBatchAccountsPlaceholder: 'Rechercher un étudiant ou un enseignant…'
+vmBatchAccountsHelpText: 'Étudiants et enseignants actifs. Chaque personne choisie reçoit son propre compte sur la machine, avec son identifiant de la plateforme.'
+vmBatchNoChosenAccountMessage: 'Choisissez au moins un compte pour cette machine.'
 vmBatchShapeFieldLabel: 'Forme du lot'
 vmBatchGroupBatchFieldLabel: 'Groupes enregistrés'
 vmBatchGroupBatchPlaceholder: 'Choisir des groupes…'

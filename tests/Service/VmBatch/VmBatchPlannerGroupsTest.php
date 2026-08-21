@@ -71,6 +71,23 @@ class VmBatchPlannerGroupsTest extends TestCase
         self::assertSame('groupe-1', $rows[0]['slug']);
     }
 
+    /**
+     * A group may name its own slug rather than have one derived from its label. « Groupe 3 » slugs
+     * perfectly well; a machine labelled with the three names of the people on it does not, and the
+     * name of a machine is its hostname.
+     */
+    public function testAGroupThatNamesItsOwnSlugKeepsIt(): void
+    {
+        $group = $this->group('Célia L., Ana R.', ['Célia L.', 'Ana R.']) + ['slug' => 'poste'];
+
+        $rows = (new VmBatchPlanner())->planGroups([$group], 'tp-{login}', 100, 999, []);
+
+        self::assertSame('poste', $rows[0]['slug']);
+        self::assertSame('tp-poste', $rows[0]['guestName']);
+        // The label is untouched: it is what the screen shows, and it is not a hostname.
+        self::assertSame('Célia L., Ana R.', $rows[0]['groupLabel']);
+    }
+
     public function testVmidsAlreadyTakenAreSkipped(): void
     {
         $rows = (new VmBatchPlanner())->planGroups([
