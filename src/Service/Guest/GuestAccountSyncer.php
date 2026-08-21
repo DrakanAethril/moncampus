@@ -31,6 +31,16 @@ use App\Enum\GuestAccountOrigin;
  */
 class GuestAccountSyncer
 {
+    /**
+     * The shortest password somebody may choose for themselves.
+     *
+     * Twelve rather than eight: these accounts are reachable over SSH on a school network, they are
+     * never locked out after failed attempts, and the person choosing is choosing for a machine
+     * they will use for months. Length is the only requirement - a composition rule would buy less
+     * and produce `Azerty1!` on every machine of the room.
+     */
+    private const int MIN_PASSWORD_LENGTH = 12;
+
     public function __construct(
         private readonly PasswordGenerator $passwordGenerator,
         private readonly UnixLogin $unixLogin,
@@ -214,6 +224,34 @@ class GuestAccountSyncer
         self::mustSucceed($command, $shell->run($command));
 
         return $password;
+    }
+
+    /**
+     * Sets a password its owner chose, on an account they hold.
+     *
+     * The counterpart of resetPassword() above, which invents one: this is what a student uses to
+     * pick their own, and it is the reason the accounts a batch creates are usable at all - they
+     * are born with a password that is generated, sent to the machine and forgotten on the spot,
+     * so until somebody sets one nobody can log in by password.
+     *
+     * Refused rather than sanitised: a newline would end the line chpasswd reads and turn the rest
+     * of the password into a command, and a password nobody can be sure of is not one to write.
+     *
+     * @throws \InvalidArgumentException when the login or the password is not one
+     * @throws GuestUnreachableException
+     */
+    public function setPassword(GuestShell $shell, string $login, #[\SensitiveParameter] string $password): void
+    {
+        if (!$this->unixLogin->isValid($login)) {
+            throw new \InvalidArgumentException(\sprintf('"%s" is not a valid login.', $login));
+        }
+
+        if (1 !== preg_match('/^[^\r\n\0]{'.self::MIN_PASSWORD_LENGTH.',128}$/u', $password)) {
+            throw new \InvalidArgumentException('guestAccountPasswordTooShortMessage');
+        }
+
+        $command = $this->setPasswordCommand($login, $password);
+        self::mustSucceed($command, $shell->run($command));
     }
 
     /**

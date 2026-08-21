@@ -461,6 +461,7 @@ class VmBatch
         return null;
     }
 
+    /** @return Collection<int, VmBatchItem> */
     public function getItems(): Collection
     {
         return $this->items;
