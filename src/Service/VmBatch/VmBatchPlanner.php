@@ -110,7 +110,11 @@ class VmBatchPlanner
      * `{login}` has no single value here, so it renders the group's slug. The machine's own `login`
      * is that slug too - it names the machine, and never becomes an account.
      *
-     * @param list<array{label: string, members: list<BatchMember>}> $groups    in set order, empty groups included
+     * A group may carry its own `slug` rather than have one derived from its label. Groups of a set
+     * are called « Groupe 3 » and slug perfectly well; a machine named after the people on it does
+     * not, and its label is three names long - see BatchMemberResolver::forUsers().
+     *
+     * @param list<array{label: string, slug?: string, members: list<BatchMember>}> $groups    in set order, empty groups included
      * @param list<int>                                             $usedVmids VMIDs already taken on the host
      *
      * @return list<array{groupLabel: string, slug: string, members: list<array{userId: int, label: string, login: string}>, guestName: string, vmid: int, position: int}>
@@ -135,7 +139,7 @@ class VmBatchPlanner
                 break;
             }
 
-            $slug = $this->configurator->suggestHostname($group['label']);
+            $slug = $this->configurator->suggestHostname($group['slug'] ?? $group['label']);
             $name = $this->uniqueName($this->name($namePattern, $index + 1, $slug), $names);
             $names[$name] = true;
 

@@ -17,6 +17,7 @@ use App\Repository\GroupBatchRepository;
 use App\Repository\IpRangeRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\ProxmoxHostRepository;
+use App\Repository\UserRepository;
 use App\Repository\VmBatchItemRepository;
 use App\Repository\VmBatchRepository;
 use App\Security\Voter\ProxmoxHostVoter;
@@ -57,6 +58,16 @@ class VmBatchController extends AbstractController
     use InfrastructureTrait;
 
     /**
+     * Who may hold an account on a machine built here.
+     *
+     * Students and teachers, and deliberately nothing else: a tutor is somebody's employer and an
+     * external account is a guest of the platform - neither has business holding a Unix login on a
+     * classroom machine. Named once because the picker offers this list and the reading back
+     * enforces it, and the two drifting apart is how a picker stops being a rule.
+     */
+    private const array ACCOUNT_ROLES = ['ROLE_STUDENT', 'ROLE_TEACHER'];
+
+    /**
      * How long one deployment pass may run, in seconds. See deploy() for why the default is not
      * enough and why overrunning it is worse than being slow.
      */
@@ -94,6 +105,7 @@ class VmBatchController extends AbstractController
         BatchMemberResolver $resolver,
         VmBatchPlanner $planner,
         GroupBatchRepository $groupBatches,
+        UserRepository $users,
         TranslatorInterface $translator,
     ): Response {
         $program = $this->programFrom($request, $programs);
@@ -107,11 +119,19 @@ class VmBatchController extends AbstractController
         $targetableGroupBatches = $this->targetableGroupBatches($program, $groupBatches);
         $groupBatch = $this->groupBatchFrom($request, $targetableGroupBatches);
 
+        $chosenUsers = VmBatchShape::ForAccounts === $shape
+            ? $this->chosenUsers(QueryValue::intList($request, 'users'), $users)
+            : [];
+
         // No set named yet is not an empty set: the plan below simply has nothing to lay out, and
         // the screen asks for the set rather than showing zero machines as though there were none.
-        $groups = null !== $groupBatch && VmBatchShape::PerGroup === $shape
-            ? $resolver->forGroupBatch($groupBatch, $translator->trans('programToolsGroupTitleTemplateLabel'))
-            : [];
+        $groups = match ($shape) {
+            VmBatchShape::PerGroup => null !== $groupBatch
+                ? $resolver->forGroupBatch($groupBatch, $translator->trans('programToolsGroupTitleTemplateLabel'))
+                : [],
+            VmBatchShape::ForAccounts => $resolver->forUsers($chosenUsers),
+            VmBatchShape::PerStudent => [],
+        };
 
         $members = null !== $program && VmBatchShape::PerStudent === $shape ? $resolver->forProgram($program) : [];
         $selected = $planner->select($members, $optionIds, $modalityIds);
@@ -142,7 +162,7 @@ class VmBatchController extends AbstractController
             $min = $host->getVmidMin() ?? 100;
             $max = $host->getVmidMax() ?? 999999;
 
-            if (VmBatchShape::PerGroup === $shape) {
+            if ($shape->isMultiAccount()) {
                 $groupPlan = $planner->planGroups($groups, $namePattern, $min, $max, $usedVmids);
             } else {
                 $plan = $planner->plan($selected, $namePattern, $min, $max, $usedVmids);
@@ -151,10 +171,10 @@ class VmBatchController extends AbstractController
 
         // How many machines the shape asks for, whichever shape it is - the "not enough VMIDs"
         // notice below has to count the same things on both sides.
-        $wanted = VmBatchShape::PerGroup === $shape
+        $wanted = $shape->isMultiAccount()
             ? \count(array_filter($groups, static fn (array $group): bool => [] !== $group['members']))
             : \count($selected);
-        $planned = VmBatchShape::PerGroup === $shape ? \count($groupPlan) : \count($plan);
+        $planned = $shape->isMultiAccount() ? \count($groupPlan) : \count($plan);
 
         return $this->render('infrastructure/batch_new.html.twig', [
             'activeNav' => 'batches',
@@ -173,6 +193,7 @@ class VmBatchController extends AbstractController
             'shapes' => VmBatchShape::cases(),
             'targetableGroupBatches' => $targetableGroupBatches,
             'groupBatch' => $groupBatch,
+            'chosenUsers' => $chosenUsers,
             'namePattern' => $namePattern,
             'filters' => ['options' => $optionIds, 'modalities' => $modalityIds],
             'failure' => $failure,
@@ -193,6 +214,7 @@ class VmBatchController extends AbstractController
         ProxmoxClientFactory $clientFactory,
         ProxmoxInventory $inventory,
         GroupBatchRepository $groupBatches,
+        UserRepository $users,
         TranslatorInterface $translator,
         EntityManagerInterface $entityManager,
     ): Response {
@@ -222,6 +244,18 @@ class VmBatchController extends AbstractController
 
         if (VmBatchShape::PerGroup === $shape && null === $groupBatch) {
             $this->addFlash('error', 'vmBatchGroupBatchUnavailableMessage');
+
+            return $this->redirectToRoute('app_infrastructure_batches_new');
+        }
+
+        // Re-read from the ids and re-filtered on the roles, exactly like the set above: a picker
+        // is a convenience, never the authority on who may end up with an account on a machine.
+        $chosenUsers = VmBatchShape::ForAccounts === $shape
+            ? $this->chosenUsers(array_map(intval(...), (array) $request->request->all('users')), $users)
+            : [];
+
+        if (VmBatchShape::ForAccounts === $shape && [] === $chosenUsers) {
+            $this->addFlash('error', 'vmBatchNoChosenAccountMessage');
 
             return $this->redirectToRoute('app_infrastructure_batches_new');
         }
@@ -281,9 +315,11 @@ class VmBatchController extends AbstractController
         $min = $host->getVmidMin() ?? 100;
         $max = $host->getVmidMax() ?? 999999;
 
-        if (VmBatchShape::PerGroup === $shape) {
-            // Non-null here: the guard above returned when this shape named no set.
-            $groups = $resolver->forGroupBatch($groupBatch, $translator->trans('programToolsGroupTitleTemplateLabel'));
+        if ($shape->isMultiAccount()) {
+            // Non-null on the PerGroup side: the guard above returned when that shape named no set.
+            $groups = VmBatchShape::ForAccounts === $shape
+                ? $resolver->forUsers($chosenUsers)
+                : $resolver->forGroupBatch($groupBatch, $translator->trans('programToolsGroupTitleTemplateLabel'));
             $rows = array_map(
                 // One machine per group: the group's own label stands where a student's name would,
                 // its slug where their login would, and the members travel as the item's snapshot.
@@ -469,6 +505,52 @@ class VmBatchController extends AbstractController
      *
      * @return list<GroupBatch>
      */
+    /**
+     * The people picker of the ForAccounts shape - tomselect + ajax, per the repository's rule that
+     * picking Users always goes through one.
+     *
+     * Students and teachers, active only. Nobody else is offered because nobody else is what these
+     * machines are for: a tutor or an external account has no business holding a Unix login on a
+     * classroom machine, and offering them would make that mistake one click away.
+     */
+    #[Route(path: '/infrastructure/batches/users/search', name: 'app_infrastructure_batches_user_search', methods: ['GET'])]
+    public function userSearch(Request $request, UserRepository $users): JsonResponse
+    {
+        $limit = 20;
+        $candidates = \array_slice($users->findActiveMatchingAnyRole(self::ACCOUNT_ROLES, [], QueryValue::trimmed($request, 'q')), 0, $limit);
+
+        return $this->json([
+            'results' => array_map(static fn (User $user): array => [
+                'id' => $user->getId(),
+                'text' => \sprintf('%s (%s)', $user->getDisplayName() ?? $user->getUsername(), $user->getUsername()),
+            ], $candidates),
+            'pagination' => ['more' => \count($candidates) === $limit],
+        ]);
+    }
+
+    /**
+     * The picked accounts, read back from ids.
+     *
+     * Filtered against the same roles the picker offers rather than trusted: the ids arrive in a
+     * query string, and « one machine for these three » must not become a way to put a Unix account
+     * on a classroom machine for somebody the screen would never have proposed.
+     *
+     * @param list<int> $ids
+     *
+     * @return list<User>
+     */
+    private function chosenUsers(array $ids, UserRepository $users): array
+    {
+        if ([] === $ids) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $users->findBy(['id' => $ids]),
+            static fn (User $user): bool => null === $user->getInactiveDate() && [] !== array_intersect(self::ACCOUNT_ROLES, $user->getRoles()),
+        ));
+    }
+
     private function targetableGroupBatches(?Program $program, GroupBatchRepository $groupBatches): array
     {
         if (!$program instanceof Program) {
