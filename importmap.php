@@ -53,4 +53,7 @@ return [
     'sortablejs' => ['version' => '1.15.7'],
     'leaflet' => ['version' => '1.9.4'],
     'leaflet/dist/leaflet.min.css' => ['version' => '1.9.4', 'type' => 'css'],
+    '@xterm/xterm' => ['version' => '6.0.0'],
+    '@xterm/addon-fit' => ['version' => '0.11.0'],
+    '@xterm/xterm/css/xterm.min.css' => ['version' => '6.0.0', 'type' => 'css'],
 ];

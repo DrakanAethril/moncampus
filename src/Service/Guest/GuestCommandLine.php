@@ -48,4 +48,22 @@ final class GuestCommandLine
 
         return $line.' < /dev/null 2>&1';
     }
+
+    /**
+     * The same command, run as **the account the session logged in with**, with nothing added.
+     *
+     * The console is the one thing in this application that is not administrative by nature. It
+     * opens on `moncampus` - the only account whose credentials the platform holds - and that
+     * account elevates with `sudo` when the person typing decides to, exactly as they would in any
+     * terminal. Sending its `tmux` down build() would put the shell inside a root session, and the
+     * prompt would then say `root@` while the design says `moncampus@`.
+     *
+     * stderr is deliberately **not** folded in either: what comes back here is a screen, and a
+     * diagnostic printed into the middle of it would corrupt the very bytes the browser renders.
+     * The closed stdin stays, for the same reason it exists on build() - nothing may stop to ask.
+     */
+    public static function buildAsSelf(string $command): string
+    {
+        return \sprintf('/bin/sh -c %s < /dev/null', escapeshellarg($command));
+    }
 }

@@ -567,7 +567,12 @@
                 </div>
             {% endblock %}
             <div class="page-body">
-                <div class="container-xl">
+                {# The one screen that needs the whole window rather than the reading column is the
+                   machine console: a terminal is measured in columns, and a 1 200 px column would
+                   cap it at about 130 of them whatever the screen. Overridable rather than a second
+                   layout, so that every other screen keeps container-xl by simply not saying
+                   anything - see templates/console/index.html.twig. #}
+                <div class="{% block page_body_container %}container-xl{% endblock %}">
                     {% for label, messages in app.flashes %}
                         {% for message in messages %}
                             <div class="alert alert-{{ label == 'error' ? 'danger' : label }} alert-dismissible" role="alert">

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\ProxmoxHost;
 use App\Entity\VmBatch;
 use App\Entity\VmBatchItem;
 use App\Enum\VmBatchItemStatus;
@@ -18,6 +19,28 @@ class VmBatchItemRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, VmBatchItem::class);
+    }
+
+    /**
+     * The batch row that describes one machine, found from the machine rather than from its batch.
+     *
+     * Which is the direction the console needs: it is handed (host, node, vmid) and has to answer
+     * « where does this machine live and what is it called », without knowing - or caring - which
+     * deployment produced it. Scoped by the batch's host rather than by VMID alone, because a VMID
+     * is only unique within a cluster.
+     */
+    public function findOneForMachine(ProxmoxHost $host, int $vmid): ?VmBatchItem
+    {
+        return $this->createQueryBuilder('i')
+            ->join('i.batch', 'b')
+            ->andWhere('b.host = :host')
+            ->andWhere('i.vmid = :vmid')
+            ->setParameter('host', $host)
+            ->setParameter('vmid', $vmid)
+            ->orderBy('i.id', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 
     /**

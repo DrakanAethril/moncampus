@@ -73,6 +73,10 @@ services:
             # App\Service\Crypto\SecretBoxProvider only - the one place that turns this into a
             # App\Service\Crypto\SecretBox. Deliberately not APP_SECRET: see .env.
             string $proxmoxSecretKey: '%env(PROXMOX_SECRET_KEY)%'
+            # How many machine consoles may be open at once - App\Service\Console\ConsoleSessionOpener.
+            # A ceiling and not a tuning knob: each open console holds one FrankenPHP worker for the
+            # length of its exchange. See .env.
+            int $consoleMaxSessions: '%env(int:CONSOLE_MAX_SESSIONS)%'
             # Where App\Service\Proxmox\ProxmoxTlsOptions materialises a cluster CA, since
             # HttpClient's `cafile` option wants a path and there is no "here is the PEM" form.
             # Under the cache dir because it is derived data: deleting it costs one file write.

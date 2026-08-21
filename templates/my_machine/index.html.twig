@@ -95,6 +95,21 @@
                     </form>
 
                     <div class="cm-vmcard__foot">
+                        {# Le bouton « Console », à gauche du pied et volontairement à l'opposé
+                           d'« Arrêter » : ce n'est pas une action de puissance et il ne doit jamais
+                           se cliquer par ricochet. Sur une machine éteinte il est éteint lui aussi,
+                           et c'est « Démarrer », juste à côté, qui le rallume.
+
+                           La carte d'un étudiant n'a pas ce bouton — mais ce niveau ne compte pas :
+                           masquer n'est pas refuser, et c'est GuestConsoleVoter qui refuse. #}
+                        {% if is_granted(constant('App\\Security\\Voter\\GuestConsoleVoter::CONSOLE'), account) %}
+                            <a class="cm-vmcard__console{{ machine.isRunning ? '' : ' cm-vmcard__console--off' }}"
+                               href="{{ path('app_console', {id: account.id}) }}"
+                               {{ machine.isRunning ? '' : 'aria-disabled="true"' }}>
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-5-6-5"></path><path d="M12 19h8"></path></svg>
+                                {{ 'consoleActionLabel'|trans }}
+                            </a>
+                        {% endif %}
                         <span class="cm-vmcard__note" data-my-machines-target="message" data-account="{{ account.id }}"></span>
                         <span class="cm-vmcard__actions">
                             {% if machine.isKnown and not machine.isRunning and not machine.isStarting %}
