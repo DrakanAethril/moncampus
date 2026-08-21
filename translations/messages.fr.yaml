@@ -6828,3 +6828,6 @@ consoleWallUnknownLabel: 'injoignable'
 consoleWallIdleLabel: 'aucune console ouverte'
 consoleWallJustNowLabel: "à l'instant"
 consoleSessionBroadcastsLabel: 'Diffusions'
+consoleLessonLogAction: 'Cahier de texte'
+consoleLessonLogIntroText: 'Commandes passées en séance sur %machine% :'
+consoleLessonLogNoSlotMessage: 'Aucune séance de cette formation n''est inscrite à votre emploi du temps aujourd''hui : choisissez le créneau à remplir.'

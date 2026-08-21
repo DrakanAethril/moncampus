@@ -223,6 +223,11 @@
                 {{ 'consoleSearchAction'|trans }} <span class="cm-console__key">Ctrl F</span>
             </button>
 
+            {# Le geste qui termine une séance : le cahier de texte du jour, déjà rempli. #}
+            {% if batchLabel %}
+                <a class="cm-console__chip" href="{{ path('app_console_lesson_log', {id: session.id}) }}">{{ 'consoleLessonLogAction'|trans }}</a>
+            {% endif %}
+
             <a class="cm-console__chip" href="{{ path('app_console_snippets') }}">{{ 'consoleSnippetsAction'|trans }}</a>
 
             <button type="button" class="cm-console__chip" data-action="console#fullscreen">

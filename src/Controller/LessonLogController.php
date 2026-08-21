@@ -30,6 +30,7 @@ use App\Repository\ProgressionSeancePlacementRepository;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\LessonLogVoter;
 use App\Service\AssignmentAudienceResolver;
+use App\Service\Console\ConsoleLessonLogDraft;
 use App\Service\FileUploadService;
 use App\Service\LessonLogBoard;
 use App\Service\LessonLogImporter;
@@ -185,7 +186,7 @@ class LessonLogController extends AbstractController
      * the week travels in through the URL.
      */
     #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log', name: 'app_program_timetable_session_log', methods: ['GET', 'POST'])]
-    public function show(int $id, int $sessionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, AssignmentRepository $assignmentRepository, ProgressionSeancePlacementRepository $placementRepository, AssignmentCompletionRepository $completionRepository, AssignmentViewRepository $viewRepository, LessonLogAttachmentViewRepository $attachmentViewRepository, ProgramStudentOptionRepository $studentOptionRepository, AssignmentAudienceResolver $audienceResolver, LessonLogImporter $importer, SeanceContentResolver $seanceContentResolver): Response
+    public function show(int $id, int $sessionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, AssignmentRepository $assignmentRepository, ProgressionSeancePlacementRepository $placementRepository, AssignmentCompletionRepository $completionRepository, AssignmentViewRepository $viewRepository, LessonLogAttachmentViewRepository $attachmentViewRepository, ProgramStudentOptionRepository $studentOptionRepository, AssignmentAudienceResolver $audienceResolver, LessonLogImporter $importer, SeanceContentResolver $seanceContentResolver, ConsoleLessonLogDraft $consoleImporter): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $session = $this->findLessonSessionOrNotFound($lessonSessionRepository, $program, $sessionId);
@@ -197,6 +198,14 @@ class LessonLogController extends AbstractController
 
         if ($isNew) {
             $log = new LessonLog($session);
+            // « Coller dans le cahier de texte », depuis une console de machine : ce que la classe
+            // a fait est proposé ici plutôt que recopié à la main. Uniquement sur un cahier encore
+            // vide, et uniquement en proposition - rien n'est enregistré tant que la personne n'a
+            // pas validé le formulaire, exactement comme une frappe au clavier.
+            $log->setContenuRealise($consoleImporter->contentFor(
+                QueryValue::nullableInt($request, 'console'),
+                $this->currentUser(),
+            ));
         }
 
         // Disabling the parent form cascades to every child field (core Symfony Form behavior),
