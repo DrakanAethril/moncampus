@@ -147,8 +147,11 @@ class GuestCreator
         // Read before write, so the card can be merged rather than replaced: the clone inherits the
         // template's `net0`, which may carry a firewall flag, an MTU or a rate limit that this
         // application knows nothing about and would otherwise drop without a word. Costs one call,
-        // on the path that is already several.
-        $existingNet0 = $client->get($path)->nullableString('net0');
+        // on the path that is already several - and the same row answers the question below.
+        $configuration = $client->get($path)->row();
+        $this->assertCloudInitDrive($configuration, $request->vmid);
+
+        $existingNet0 = \is_string($configuration['net0'] ?? null) ? $configuration['net0'] : null;
         $keys = $this->authorizedKeys->forNewGuest();
 
         $parameters = $this->configurator->qemuParameters(
@@ -175,6 +178,36 @@ class GuestCreator
         }
 
         return $keys->descriptors;
+    }
+
+    /**
+     * Refuses a machine that has nowhere to read its configuration from.
+     *
+     * `ipconfig0`, `ciuser` and `sshkeys` are cloud-init parameters: Proxmox accepts them on any
+     * VM and applies them only through the cloud-init drive. A template cloned without one
+     * therefore takes the whole configuration **without a single error** and boots with the
+     * template's address, the template's hostname and no account at all - which is exactly what a
+     * machine looks like when somebody starts it by hand to find out what went wrong. Nothing
+     * downstream can diagnose it either: the address is right in Proxmox's configuration, the
+     * machine simply never read it.
+     *
+     * So it is asked here, once, on the row already fetched. `local-lvm:vm-9000-cloudinit,media=cdrom`
+     * is what a drive looks like; its bus varies (ide2 by convention, but nothing enforces that),
+     * so the values are what is searched rather than the keys.
+     *
+     * @param array<string, mixed> $configuration
+     *
+     * @throws ProxmoxUnavailableException
+     */
+    private function assertCloudInitDrive(array $configuration, int $vmid): void
+    {
+        foreach ($configuration as $value) {
+            if (\is_string($value) && str_contains($value, 'cloudinit')) {
+                return;
+            }
+        }
+
+        throw new ProxmoxUnavailableException(\sprintf('VM %d has no cloud-init drive: its address, hostname and account would be written and never read.', $vmid), userMessageKey: 'proxmoxNoCloudInitDriveError', userMessageParameters: ['%vmid%' => (string) $vmid]);
     }
 
     /**

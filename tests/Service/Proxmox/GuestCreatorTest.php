@@ -42,6 +42,12 @@ use Symfony\Component\Lock\SharedLockInterface;
  */
 class GuestCreatorTest extends TestCase
 {
+    /** What a cloud-init drive looks like in a VM's configuration - the bus varies, the word does not. */
+    private const string CLOUD_INIT_DRIVE = 'local-lvm:vm-9000-cloudinit,media=cdrom';
+
+    /** A template that can actually take a configuration: a network card and somewhere to read from. */
+    private const array TEMPLATE_CONFIG = ['net0' => 'virtio,bridge=vmbr0', 'ide2' => self::CLOUD_INIT_DRIVE];
+
     private function host(?int $maxGuests): ProxmoxHost
     {
         $host = new ProxmoxHost('campus', '192.0.2.10', 'svc');
@@ -197,6 +203,30 @@ class GuestCreatorTest extends TestCase
         }
     }
 
+    /**
+     * The silent failure this exists to end. `ipconfig0`, `ciuser` and `sshkeys` are accepted by
+     * Proxmox on any VM and applied only through the cloud-init drive, so a template cloned without
+     * one takes the whole configuration without a single error and boots with the template's
+     * address and no account - which is exactly what a machine looks like when somebody starts it
+     * by hand to find out what went wrong. Nothing downstream can tell: the address is right in
+     * Proxmox's own configuration, the machine simply never read it.
+     */
+    public function testATemplateWithNoCloudInitDriveIsRefusedRatherThanConfiguredIntoTheVoid(): void
+    {
+        $client = $this->createMock(ProxmoxClient::class);
+        $client->method('get')->willReturn(ProxmoxResponse::fromData(['net0' => 'virtio,bridge=vmbr0']));
+        $client->expects(self::never())->method('put');
+
+        try {
+            $this->creator($client, $this->createStub(ProxmoxOperationTracker::class))
+                ->configureAndStart($this->host(null), $this->request());
+            self::fail('A machine that cannot read its configuration must not be configured.');
+        } catch (ProxmoxUnavailableException $exception) {
+            self::assertSame('proxmoxNoCloudInitDriveError', $exception->userMessageKey());
+            self::assertSame(['%vmid%' => '250'], $exception->userMessageParameters());
+        }
+    }
+
     public function testConfiguringAMachineMergesItsCardInsteadOfRewritingIt(): void
     {
         // Same lesson as the ceiling above, one method further along: the merge itself is covered by
@@ -207,7 +237,10 @@ class GuestCreatorTest extends TestCase
         $client->expects(self::once())
             ->method('get')
             ->with('/nodes/pve/qemu/250/config')
-            ->willReturn(ProxmoxResponse::fromData(['net0' => 'virtio=BC:24:11:66:51:BD,bridge=vmbr0,firewall=1,tag=300']));
+            ->willReturn(ProxmoxResponse::fromData([
+                'net0' => 'virtio=BC:24:11:66:51:BD,bridge=vmbr0,firewall=1,tag=300',
+                'ide2' => self::CLOUD_INIT_DRIVE,
+            ]));
 
         $client->expects(self::once())
             ->method('put')
@@ -237,7 +270,7 @@ class GuestCreatorTest extends TestCase
     public function testEveryAuthorizedKeyReachesTheMachineBeingConfigured(): void
     {
         $client = $this->createMock(ProxmoxClient::class);
-        $client->method('get')->willReturn(ProxmoxResponse::fromData(['net0' => 'virtio,bridge=vmbr0']));
+        $client->method('get')->willReturn(ProxmoxResponse::fromData(self::TEMPLATE_CONFIG));
 
         $keys = $this->createStub(GuestAuthorizedKeys::class);
         $keys->method('forNewGuest')->willReturn(new AuthorizedKeySet(
@@ -273,7 +306,7 @@ class GuestCreatorTest extends TestCase
         $client = $this->createMock(ProxmoxClient::class);
         $client->method('get')->willReturnCallback(static fn (string $path): ProxmoxResponse => str_ends_with($path, '/status/current')
             ? ProxmoxResponse::fromData(['status' => 'running'])
-            : ProxmoxResponse::fromData(['net0' => 'virtio,bridge=vmbr0']));
+            : ProxmoxResponse::fromData(self::TEMPLATE_CONFIG));
         $client->method('put')->willReturn(ProxmoxResponse::fromData(null));
 
         $client->expects(self::once())
@@ -290,7 +323,7 @@ class GuestCreatorTest extends TestCase
         $client = $this->createMock(ProxmoxClient::class);
         $client->method('get')->willReturnCallback(static fn (string $path): ProxmoxResponse => str_ends_with($path, '/status/current')
             ? ProxmoxResponse::fromData(['status' => 'stopped'])
-            : ProxmoxResponse::fromData(['net0' => 'virtio,bridge=vmbr0']));
+            : ProxmoxResponse::fromData(self::TEMPLATE_CONFIG));
         $client->method('put')->willReturn(ProxmoxResponse::fromData(null));
 
         $client->expects(self::once())

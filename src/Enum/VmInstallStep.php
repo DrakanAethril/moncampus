@@ -44,6 +44,16 @@ enum VmInstallStep: string
     /** It did not answer - with the reason, which is the whole point of recording it. */
     case Unreachable = 'unreachable';
 
+    /**
+     * A step that could not be taken *yet*, and why.
+     *
+     * Written only when the reason changes, so a machine polled for an hour carries one line rather
+     * than seven hundred. It exists because the log used to stop at « clonage demandé » whatever the
+     * cause - a hypervisor that had stopped answering, a provisioning account being refused - and
+     * the reader had no way to tell a slow clone from a broken one.
+     */
+    case Waiting = 'waiting';
+
     case AccountsApplied = 'accountsApplied';
     case AccountsFailed = 'accountsFailed';
     case PostInstallRun = 'postInstallRun';

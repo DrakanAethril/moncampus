@@ -33,6 +33,15 @@ export default class extends Controller {
     // screen still feels alive.
     static IDLE_PAUSE_MS = 5000;
 
+    // How many passes in a row may fail to answer before the loop gives up.
+    //
+    // Not one. A pass is a POST that talks to a hypervisor and to a machine over SSH, so a single
+    // 502, a reload of the worker or one timeout is an ordinary event - and treating it as the end
+    // of the deployment left the class exactly where the batch screen shows it stuck: a machine
+    // cloned, never configured, and nothing pressing again. The retries are spaced by the same
+    // idle pause as anything else.
+    static MAX_FAILED_PASSES = 3;
+
     // ~15 minutes of nothing moving at all, counted in passes of IDLE_PAUSE_MS. It has to outlast a
     // clone, not a boot: the hypervisor copies a template's disk in its own time, and a batch that
     // is abandoned mid-clone leaves machines cloned but never configured - no address, no account -
@@ -47,14 +56,25 @@ export default class extends Controller {
             let remaining = Infinity;
             let blocked = 0;
             let idlePasses = 0;
+            let failedPasses = 0;
 
             while (remaining > blocked) {
                 const answer = await this.#pass();
 
                 if (!answer?.ok) {
-                    this.progressTarget.textContent = answer?.message ?? '⚠';
-                    return;
+                    // A refusal the server states (`ok: false` with a message) is final - it is a
+                    // batch that names no host, and pressing again cannot fix that. A pass that did
+                    // not answer at all is not: retry it.
+                    if (answer?.message || ++failedPasses >= this.constructor.MAX_FAILED_PASSES) {
+                        this.progressTarget.textContent = answer?.message ?? this.labelsValue.stalled ?? '⚠';
+                        return;
+                    }
+
+                    await new Promise((resolve) => setTimeout(resolve, this.constructor.IDLE_PAUSE_MS));
+                    continue;
                 }
+
+                failedPasses = 0;
 
                 remaining = answer.remaining;
                 blocked = answer.blocked ?? 0;

@@ -39,12 +39,11 @@ use Doctrine\ORM\EntityManagerInterface;
  * failure marks its own item and the loop continues - and "resume" then means something, because
  * the failed and the never-started items are distinguishable from the created ones.
  *
- * A ceiling on how many are launched in one pass, because a browser request is what triggers this
- * and twenty-four clones in one request is a request that times out. The screen resumes; pressing
- * it twice is safe by construction. And a second ceiling on how many clones are **in flight** at
- * once, which is not the same thing at all: one clone per pass, pressed as fast as the screen can
- * press, is still twenty-four simultaneous disk copies on the hypervisor - see
- * MAX_CLONES_IN_FLIGHT.
+ * A ceiling on how many are launched in one pass, because a request is what triggers this and
+ * twenty-four clones in one request is a request that times out. Pressing again is safe by
+ * construction. And a second ceiling on how many machines are **under way** at once, which is not
+ * the same thing at all: one item per pass, pressed as fast as the caller can press, is still
+ * twenty-four machines being built at the same time - see MAX_IN_FLIGHT.
  *
  * **A pass advances each item by one step, it does not finish it.** The order the design fixes and
  * does not bend is clone → configure → start → reachable → accounts → post-installation, and three
@@ -78,27 +77,38 @@ class VmBatchExecutor
      * one per pass still advances the whole batch - it just does it in turn rather than five
      * abreast.
      *
-     * It says nothing about how many clones run at once, which is MAX_CLONES_IN_FLIGHT's job and
-     * used to be nobody's - see there.
+     * It says nothing about how many machines are being built at once, which is MAX_IN_FLIGHT's
+     * job - see there.
      */
     public const int BATCH_SIZE = 1;
 
     /**
-     * How many machines may be waiting on their clone at the same time.
+     * How many machines may be under way at once - **under way meaning anywhere between the clone
+     * request and the last line of the post-installation script**, not merely being cloned.
      *
-     * **This is the ceiling BATCH_SIZE was believed to be and never was.** One item per pass does
-     * not mean one clone at a time: a pass takes whoever has waited longest and a machine that has
-     * never been attempted has waited for ever, so twenty-four never-attempted items were twenty-
-     * four clones fired back to back, each pass returning `progressed` and the screen pressing
-     * again immediately. A class deployed that way asks the hypervisor to copy every disk at once -
-     * and once every clone is competing with twenty-three others, none of them lands quickly, the
-     * screen sees nothing move, and it gives up on the whole batch before the first machine is
-     * ready to be configured.
+     * One. The previous ceiling counted only the machines waiting on a clone, so the moment one
+     * left that phase - cloned, configured, started, and still a minute away from answering on SSH
+     * - the next clone was fired. Three or four machines were therefore always in the air at
+     * different phases, which is exactly what "one at a time" was meant to prevent: a class deployed
+     * that way asks the hypervisor to copy several disks while several others boot, nothing lands
+     * quickly, and the screen gives up before the first machine is ready.
      *
-     * Two rather than one because a clone is mostly waiting on storage, and because a single one in
-     * flight would idle the hypervisor between two passes of the poller.
+     * A **failed** machine is deliberately not counted. It is not going to finish on its own, and
+     * counting it would let one refusal hold the twenty-three that were doing fine - the very thing
+     * a non-atomic batch exists to avoid. It stays in the queue and is re-attempted, in its turn.
      */
-    public const int MAX_CLONES_IN_FLIGHT = 2;
+    public const int MAX_IN_FLIGHT = 1;
+
+    /**
+     * How long a machine may sit between "started" and "answers on SSH" before the batch gives up
+     * on it, in seconds.
+     *
+     * A boot takes a minute, so not answering is a wait and not a failure - but nothing said when a
+     * minute had become an afternoon, and provision() would have waited for ever. With one machine
+     * deployed at a time, for ever means the whole class stops behind it. Fifteen minutes is well
+     * past any real boot and well short of a lesson.
+     */
+    private const int MAX_BOOT_WAIT_SECONDS = 900;
 
     /**
      * How long a pass may spend before it stops starting new steps, in seconds.
@@ -209,10 +219,15 @@ class VmBatchExecutor
     /**
      * The outstanding items a pass may actually take, in the order it should take them.
      *
-     * Everything is eligible until MAX_CLONES_IN_FLIGHT machines are already waiting on a clone;
-     * from there the pass may only advance one of those, never start another. The batch does not
-     * stall for it - the items it skips are the ones that have not begun, and they begin as soon as
-     * a clone lands.
+     * Everything is eligible until MAX_IN_FLIGHT machines are already under way; from there the
+     * pass may only advance one of those, never begin another. The batch does not stall for it -
+     * the items it skips are the ones that have not begun, and they begin as soon as the machine
+     * ahead of them is installed.
+     *
+     * What "begin another" means is read from the phase rather than from the status, and that is
+     * the whole subtlety: an item that failed before its clone ever left is back on `Planned`, so
+     * re-attempting it *is* starting a machine and has to wait its turn like any other. An item
+     * that failed further along is not - advancing it costs the hypervisor nothing new.
      *
      * @param list<VmBatchItem> $outstanding
      *
@@ -223,12 +238,13 @@ class VmBatchExecutor
         $inFlight = 0;
 
         foreach ($outstanding as $item) {
-            if (VmBatchItemStatus::Creating === $this->phaseOf($item)) {
+            // The real status, not the phase: a failed machine is not under way, it is stopped.
+            if (\in_array($item->getStatus(), [VmBatchItemStatus::Creating, VmBatchItemStatus::Created], true)) {
                 ++$inFlight;
             }
         }
 
-        if ($inFlight < self::MAX_CLONES_IN_FLIGHT) {
+        if ($inFlight < self::MAX_IN_FLIGHT) {
             return $outstanding;
         }
 
@@ -443,6 +459,17 @@ class VmBatchExecutor
             // never comes up, and the hypervisor's or SSH's own words are what points at the cause.
             $item->appendInstallLog(VmInstallStep::Unreachable, $exception->getMessage(), ok: false);
 
+            // Past the ceiling it stops being a boot and becomes a machine that will not come up.
+            // Left as a wait it would hold the whole batch behind it, one machine at a time being
+            // the rule - so it is failed, and the next machine starts.
+            if ($item->phaseDurationSeconds() > self::MAX_BOOT_WAIT_SECONDS) {
+                return $this->fail($item, \sprintf(
+                    'The machine did not answer within %d minutes of being started: %s',
+                    intdiv(self::MAX_BOOT_WAIT_SECONDS, 60),
+                    $exception->getMessage(),
+                ));
+            }
+
             return $this->wait($item, $exception->getMessage());
         } catch (PlatformKeyUnavailableException $exception) {
             // Not a wait: no platform key means no machine will ever be reachable, and saying
@@ -568,6 +595,13 @@ class VmBatchExecutor
      */
     private function wait(VmBatchItem $item, ?string $message): string
     {
+        // Only when it changes, and only when there is one: a clone that is simply still running
+        // says nothing, and a hypervisor that has stopped answering says the same thing on every
+        // pass. Without this the log stopped at « clonage demandé » no matter what was wrong.
+        if (null !== $message && $message !== $item->getMessage()) {
+            $item->appendInstallLog(VmInstallStep::Waiting, $message);
+        }
+
         $item->setStatus($item->getStatus(), $message);
         $this->entityManager->flush();
 

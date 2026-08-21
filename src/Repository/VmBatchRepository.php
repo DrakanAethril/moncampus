@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\VmBatch;
+use App\Enum\VmBatchItemStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -16,6 +17,31 @@ class VmBatchRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, VmBatch::class);
+    }
+
+    /**
+     * The batches a deployment has been started on and that are not finished.
+     *
+     * **"Started" is the whole safety of this method.** It is what the console driver reads, and a
+     * driver that took every batch with unfinished items would deploy machines nobody asked for -
+     * a batch that is planned and never launched is a plan, not an instruction. So a batch
+     * qualifies only once at least one of its machines has left `planned`, which no code path
+     * reaches without somebody pressing « Déployer ».
+     *
+     * @return list<VmBatch>
+     */
+    public function findLive(): array
+    {
+        return $this->createQueryBuilder('b')
+            ->leftJoin('b.host', 'h')->addSelect('h')
+            ->andWhere('b.inactiveDate IS NULL')
+            ->andWhere('EXISTS (SELECT begun.id FROM App\\Entity\\VmBatchItem begun WHERE begun.batch = b AND begun.status != :planned)')
+            ->andWhere('EXISTS (SELECT unfinished.id FROM App\\Entity\\VmBatchItem unfinished WHERE unfinished.batch = b AND unfinished.status != :provisioned)')
+            ->setParameter('planned', VmBatchItemStatus::Planned)
+            ->setParameter('provisioned', VmBatchItemStatus::Provisioned)
+            ->orderBy('b.creationDate', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 
     /** @return list<VmBatch> */
