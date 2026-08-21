@@ -25,8 +25,8 @@ use Symfony\Component\Lock\LockFactory;
  *
  * Configuring after starting is configuring nothing: cloud-init applies its configuration at the
  * *first* boot and never again. A machine started before it was named comes up with the template's
- * hostname and the template's addressing, and no amount of later PUTs changes that - it would take
- * a second reboot nobody asked for.
+ * hostname and the template's addressing, and no later PUT changes that on its own - only another
+ * boot does, which is what bringUp() is for when it finds the machine already running.
  *
  * Two failure rules, both of which exist because getting them wrong is silent:
  *
@@ -171,10 +171,35 @@ class GuestCreator
         // Only now: cloud-init writes its configuration at the first boot and never again, so a
         // machine started before this PUT comes up as a copy of the template, for good.
         if ($request->startAfterCreation) {
-            $client->post(\sprintf('/nodes/%s/qemu/%d/status/start', rawurlencode($request->node), $request->vmid));
+            $this->bringUp($client, $request);
         }
 
         return $keys->descriptors;
+    }
+
+    /**
+     * Starts the machine - or restarts it if somebody has already started it by hand.
+     *
+     * **`start` on a running machine is a refusal, not a no-op**, and the refusal lands after the
+     * configuration has been written: the caller records a failure for a machine that is in fact
+     * configured, and stops there. Worse, the machine that was started by hand booted *before* the
+     * cloud-init drive was written, so it is running with the template's address and none of the
+     * accounts - which is precisely the state somebody starts a stuck machine by hand to get out
+     * of.
+     *
+     * Restarting is therefore the only thing that makes the configuration just written take effect:
+     * cloud-init reads its drive at boot, and the boot that mattered has already happened. Nothing
+     * of value can be lost - at this point in the chain the machine has no identity, no account and
+     * nobody on it.
+     *
+     * @throws ProxmoxUnavailableException
+     */
+    private function bringUp(ProxmoxClient $client, GuestCreationRequest $request): void
+    {
+        $path = \sprintf('/nodes/%s/qemu/%d/status', rawurlencode($request->node), $request->vmid);
+        $running = 'running' === $client->get($path.'/current')->nullableString('status');
+
+        $client->post($path.($running ? '/reboot' : '/start'));
     }
 
     /**

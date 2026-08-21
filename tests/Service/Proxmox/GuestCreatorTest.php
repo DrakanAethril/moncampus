@@ -71,7 +71,7 @@ class GuestCreatorTest extends TestCase
         return $range;
     }
 
-    private function request(): GuestCreationRequest
+    private function request(bool $startAfterCreation = false): GuestCreationRequest
     {
         return new GuestCreationRequest(
             hostname: 'poste-01',
@@ -86,7 +86,7 @@ class GuestCreatorTest extends TestCase
             sourceVmid: 9001,
             linkedClone: true,
             isoVolumeId: null,
-            startAfterCreation: false,
+            startAfterCreation: $startAfterCreation,
         );
     }
 
@@ -259,6 +259,47 @@ class GuestCreatorTest extends TestCase
 
         $this->creator($client, $this->createStub(ProxmoxOperationTracker::class), $keys)
             ->configureAndStart($this->host(null), $this->request());
+    }
+
+    /**
+     * `start` on a machine that is already running is a refusal, and it lands *after* the
+     * configuration has been written - so the caller records a failure for a machine it has in fact
+     * just configured, and goes no further. The machine somebody started by hand is also the one
+     * that booted before its cloud-init drive existed: it is running with the template's address
+     * and no account, and only another boot can change that.
+     */
+    public function testAMachineSomebodyAlreadyStartedIsRestartedRatherThanStarted(): void
+    {
+        $client = $this->createMock(ProxmoxClient::class);
+        $client->method('get')->willReturnCallback(static fn (string $path): ProxmoxResponse => str_ends_with($path, '/status/current')
+            ? ProxmoxResponse::fromData(['status' => 'running'])
+            : ProxmoxResponse::fromData(['net0' => 'virtio,bridge=vmbr0']));
+        $client->method('put')->willReturn(ProxmoxResponse::fromData(null));
+
+        $client->expects(self::once())
+            ->method('post')
+            ->with('/nodes/pve/qemu/250/status/reboot')
+            ->willReturn(ProxmoxResponse::fromData(null));
+
+        $this->creator($client, $this->createStub(ProxmoxOperationTracker::class))
+            ->configureAndStart($this->host(null), $this->request(startAfterCreation: true));
+    }
+
+    public function testAMachineStillStoppedIsSimplyStarted(): void
+    {
+        $client = $this->createMock(ProxmoxClient::class);
+        $client->method('get')->willReturnCallback(static fn (string $path): ProxmoxResponse => str_ends_with($path, '/status/current')
+            ? ProxmoxResponse::fromData(['status' => 'stopped'])
+            : ProxmoxResponse::fromData(['net0' => 'virtio,bridge=vmbr0']));
+        $client->method('put')->willReturn(ProxmoxResponse::fromData(null));
+
+        $client->expects(self::once())
+            ->method('post')
+            ->with('/nodes/pve/qemu/250/status/start')
+            ->willReturn(ProxmoxResponse::fromData(null));
+
+        $this->creator($client, $this->createStub(ProxmoxOperationTracker::class))
+            ->configureAndStart($this->host(null), $this->request(startAfterCreation: true));
     }
 
     public function testAHostWithNoCeilingNeverAsksTheHypervisorToCount(): void
