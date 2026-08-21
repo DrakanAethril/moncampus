@@ -93,6 +93,74 @@ class BatchMemberResolver
     }
 
     /**
+     * People picked by hand, flattened into the single group a ForAccounts batch plans from.
+     *
+     * One group and not one per person: the shape is *one machine* carrying an account for each
+     * name on it. Picking three people therefore builds one machine with three accounts, which is
+     * the difference with PerStudent and the reason this is not a filter over a class.
+     *
+     * No option or modality ids: these accounts are not read out of a program, so there is nothing
+     * to narrow them by - and an empty list is what the planner's filters already read as "not
+     * concerned" rather than as "nobody".
+     *
+     * The label is the names, because it is what the batch screen shows in the machine's row and
+     * "who is this machine for" is the only question that row answers. The slug is kept apart from
+     * it: a hostname built out of three names is unreadable, and the machine's name is a hostname.
+     *
+     * @param list<User> $users
+     *
+     * @return list<array{label: string, slug: string, members: list<BatchMember>}>
+     */
+    public function forUsers(array $users): array
+    {
+        $members = $this->membersOf($users);
+
+        if ([] === $members) {
+            return [];
+        }
+
+        $names = array_map(static fn (BatchMember $member): string => $member->displayName, $members);
+        $label = implode(', ', $names);
+
+        return [[
+            // 180 is the column the label lands in; cut on a whole name rather than mid-word.
+            'label' => mb_strlen($label) > 170 ? mb_substr($label, 0, 169).'…' : $label,
+            // One account: the person's own login names their machine, which is what somebody
+            // asking for a single machine expects. Several: no name is more the machine's than
+            // another, so the pattern's `{login}` falls back to a neutral word.
+            'slug' => 1 === \count($members) ? $members[0]->login : 'poste',
+            'members' => $members,
+        ]];
+    }
+
+    /**
+     * People picked by hand, as plain members - no group, no machine of their own.
+     *
+     * This is what the teachers added to a batch are: they get an account on **every** machine of
+     * the batch and add none to it, so they are members over and over rather than a group once.
+     *
+     * @param list<User> $users
+     *
+     * @return list<BatchMember>
+     */
+    public function membersOf(array $users): array
+    {
+        $members = [];
+
+        foreach ($users as $user) {
+            $members[] = new BatchMember(
+                $user->getId() ?? 0,
+                $user->getDisplayName() ?? $user->getUsername(),
+                $this->loginFor($user),
+            );
+        }
+
+        usort($members, static fn (BatchMember $a, BatchMember $b): int => strnatcasecmp($a->displayName, $b->displayName));
+
+        return $members;
+    }
+
+    /**
      * The login a student gets on their machine: **the one they already have on the platform**, read
      * as it stands and not derived from anything.
      *

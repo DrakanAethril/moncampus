@@ -16,12 +16,15 @@ use App\Entity\VmBatchItem;
 use App\Enum\ProxmoxAction;
 use App\Enum\ProxmoxOperationStatus;
 use App\Enum\VmBatchItemStatus;
+use App\Enum\VmInstallStep;
 use App\Repository\UserRepository;
 use App\Repository\VmBatchItemRepository;
 use App\Service\Guest\AccountPlan;
 use App\Service\Guest\GuestAccountService;
+use App\Service\Guest\GuestCommandFailedException;
 use App\Service\Guest\GuestShell;
 use App\Service\Guest\GuestShellFactory;
+use App\Service\Guest\GuestTimeSync;
 use App\Service\Guest\GuestUnreachableException;
 use App\Service\Guest\PlatformKeyUnavailableException;
 use App\Service\Guest\PostInstallRunner;
@@ -31,6 +34,7 @@ use App\Service\Proxmox\GuestCreator;
 use App\Service\Proxmox\ProxmoxClient;
 use App\Service\Proxmox\ProxmoxClientFactory;
 use App\Service\Proxmox\ProxmoxOperationTracker;
+use App\Service\Proxmox\ProxmoxUnavailableException;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
@@ -57,6 +61,9 @@ class VmBatchExecutorTest extends TestCase
     private ProxmoxOperationTracker&Stub $tracker;
     private GuestShellFactory&Stub $shells;
     private PostInstallRunner&Stub $postInstall;
+
+    /** Left unset by default: the real one only builds a command, and no shell here executes it. */
+    private ?GuestTimeSync $timeSync = null;
     private ?ProxmoxClientFactory $clientFactory = null;
 
     // Stubs by default and mocks only where a test actually asserts an interaction: phpunit.dist.xml
@@ -260,6 +267,79 @@ class VmBatchExecutorTest extends TestCase
         self::assertSame(0, $result['remaining']);
     }
 
+    public function testTheClockIsPointedAtTheGatewayOfItsOwnRange(): void
+    {
+        [$batch, $item] = $this->batchOnGateway('10.30.20.254');
+
+        $timeSync = $this->createMock(GuestTimeSync::class);
+        $timeSync->expects(self::once())->method('configure')->with(self::anything(), '10.30.20.254');
+        $this->timeSync = $timeSync;
+
+        $this->deployOnce($batch, $item);
+
+        $steps = array_map(static fn (array $entry): VmInstallStep => $entry['step'], $item->getInstallLogEntries());
+
+        self::assertContains(VmInstallStep::TimeSyncConfigured, $steps);
+        self::assertSame(VmBatchItemStatus::Provisioned, $item->getStatus());
+    }
+
+    /**
+     * Red in the log, and the machine still finishes. A clock nothing sets is a real problem and
+     * says so, but it is not one that should hold a whole class behind a template missing a
+     * package - one machine at a time being the rule.
+     */
+    public function testAClockThatCannotBeSetIsRecordedWithoutFailingTheMachine(): void
+    {
+        [$batch, $item] = $this->batchOnGateway('10.30.20.254');
+
+        $timeSync = $this->createStub(GuestTimeSync::class);
+        $timeSync->method('configure')->willThrowException(
+            new GuestCommandFailedException('chrony is not installed on this machine: no chrony.conf found.'),
+        );
+        $this->timeSync = $timeSync;
+
+        $result = $this->deployOnce($batch, $item);
+
+        $failed = array_values(array_filter(
+            $item->getInstallLogEntries(),
+            static fn (array $entry): bool => VmInstallStep::TimeSyncFailed === $entry['step'],
+        ));
+
+        self::assertCount(1, $failed);
+        self::assertFalse($failed[0]['ok']);
+        self::assertStringContainsString('chrony', (string) $failed[0]['detail']);
+        self::assertSame(VmBatchItemStatus::Provisioned, $item->getStatus());
+        self::assertSame(1, $result['progressed']);
+    }
+
+    /**
+     * A machine that is up, answering, and whose accounts are already in line - so the only thing
+     * a pass has left to do is the clock.
+     *
+     * @return array{VmBatch, VmBatchItem}
+     */
+    private function batchOnGateway(string $gateway): array
+    {
+        $range = $this->createStub(IpRange::class);
+        $range->method('getGateway')->willReturn($gateway);
+
+        $program = new Program('SIO-2 2026-2027', 'SIO-2', $this->createStub(Cohort::class), $this->createStub(SchoolYear::class));
+        $batch = new VmBatch('TP', $program, $this->createStub(ProxmoxHost::class), $range, 9000, 'pve');
+        $item = new VmBatchItem($batch, 'Groupe 1', 'tp-01', 'groupe-1', 1);
+        $item->setStatus(VmBatchItemStatus::Created);
+        $item->setIpAllocation($this->allocation());
+        $item->setVmid(210);
+        $batch->addItem($item);
+
+        $this->shells->method('open')->willReturn($this->createStub(GuestShell::class));
+        $accounts = $this->createStub(GuestAccountService::class);
+        $accounts->method('refresh')->willReturn(new AccountPlan([], [], [], []));
+        $accounts->method('apply')->willReturn(['operation' => $this->operation(ProxmoxOperationStatus::Succeeded), 'passwords' => []]);
+        $this->accounts = $accounts;
+
+        return [$batch, $item];
+    }
+
     public function testNothingTheExecutorReturnsCarriesAPassword(): void
     {
         [$batch, $item] = $this->batchWithItem(VmBatchItemStatus::Created);
@@ -320,15 +400,12 @@ class VmBatchExecutorTest extends TestCase
      * after that, the screen sees nothing move and gives up on the batch, and the machines are left
      * cloned and never configured: template address, no account.
      */
-    public function testAPassStartsNoNewCloneWhileTheHypervisorIsAlreadyCopyingTwo(): void
+    public function testAPassStartsNoNewMachineWhileOneIsStillBeingCloned(): void
     {
         $batch = $this->batch();
-        $inFlight = [$this->item($batch, VmBatchItemStatus::Creating, 1), $this->item($batch, VmBatchItemStatus::Creating, 2)];
-        $planned = $this->item($batch, VmBatchItemStatus::Planned, 3);
-
-        foreach ($inFlight as $item) {
-            $item->setOperation($this->operation(ProxmoxOperationStatus::Running));
-        }
+        $creating = $this->item($batch, VmBatchItemStatus::Creating, 1);
+        $creating->setOperation($this->operation(ProxmoxOperationStatus::Running));
+        $planned = $this->item($batch, VmBatchItemStatus::Planned, 2);
 
         $this->tracker->method('resolve')->willReturnArgument(0);
         $creator = $this->createMock(GuestCreator::class);
@@ -337,17 +414,46 @@ class VmBatchExecutorTest extends TestCase
 
         // Ordered as the repository orders them: never attempted first, which is exactly what used
         // to hand the pass to the planned machine.
-        $result = $this->deployList($batch, [$planned, ...$inFlight]);
+        $result = $this->deployList($batch, [$planned, $creating]);
 
         self::assertSame(VmBatchItemStatus::Planned, $planned->getStatus());
         self::assertSame(1, $result['attempted']);
     }
 
-    public function testAPassStartsACloneAgainAsSoonAsOneHasLanded(): void
+    /**
+     * The defect the deployments of August showed, and the one every earlier test missed: a machine
+     * that has been cloned, configured and started is *not* finished - it is a minute away from
+     * answering on SSH, and everything that matters (its accounts, the post-installation script)
+     * happens after that. Counting only the clones as "in flight" meant the next machine was
+     * launched the moment the previous one left that phase, so three or four were always being
+     * built at once - which is exactly what "une par une" was asked to prevent.
+     */
+    public function testAPassStartsNoNewMachineWhileOneIsBootingEither(): void
     {
         $batch = $this->batch();
-        $creating = $this->item($batch, VmBatchItemStatus::Creating, 1);
-        $creating->setOperation($this->operation(ProxmoxOperationStatus::Running));
+        $booting = $this->item($batch, VmBatchItemStatus::Created, 1);
+        $booting->setIpAllocation($this->allocation());
+        $planned = $this->item($batch, VmBatchItemStatus::Planned, 2);
+
+        $shells = $this->createStub(GuestShellFactory::class);
+        $shells->method('open')->willThrowException(new GuestUnreachableException('Connection refused'));
+        $this->shells = $shells;
+
+        $creator = $this->createMock(GuestCreator::class);
+        $creator->expects(self::never())->method('create');
+        $this->creator = $creator;
+
+        $result = $this->deployList($batch, [$planned, $booting]);
+
+        self::assertSame(VmBatchItemStatus::Planned, $planned->getStatus());
+        self::assertSame(1, $result['attempted']);
+    }
+
+    public function testAPassStartsAMachineAgainOnlyOnceTheOneAheadIsInstalled(): void
+    {
+        $batch = $this->batch();
+        // Provisioned is not resumable, so the queue holds nothing but the planned machine.
+        $this->item($batch, VmBatchItemStatus::Provisioned, 1);
         $planned = $this->item($batch, VmBatchItemStatus::Planned, 2);
 
         $this->allocator = $this->createStub(IpAllocator::class);
@@ -356,10 +462,81 @@ class VmBatchExecutorTest extends TestCase
         $creator->expects(self::once())->method('create')->willReturn($this->operation(ProxmoxOperationStatus::Running));
         $this->creator = $creator;
 
-        $result = $this->deployList($batch, [$planned, $creating]);
+        $result = $this->deployList($batch, [$planned]);
 
         self::assertSame(VmBatchItemStatus::Creating, $planned->getStatus());
         self::assertSame(1, $result['progressed']);
+    }
+
+    /**
+     * The other half of the rule. A refused machine is not going to finish on its own, and holding
+     * the twenty-three that were doing fine behind it is the very thing a non-atomic batch exists
+     * to avoid - so it does not count as one being built.
+     */
+    public function testARefusedMachineDoesNotHoldTheQueueBehindIt(): void
+    {
+        $batch = $this->batch();
+        // Failed with no operation at all: its clone never left, so its phase is Planned again.
+        $refused = $this->item($batch, VmBatchItemStatus::Failed, 1);
+        $planned = $this->item($batch, VmBatchItemStatus::Planned, 2);
+
+        $this->allocator = $this->createStub(IpAllocator::class);
+        $this->allocator->method('reserveNext')->willReturn($this->createStub(IpAllocation::class));
+        $creator = $this->createMock(GuestCreator::class);
+        $creator->expects(self::once())->method('create')->willReturn($this->operation(ProxmoxOperationStatus::Running));
+        $this->creator = $creator;
+
+        $this->deployList($batch, [$planned, $refused]);
+
+        self::assertSame(VmBatchItemStatus::Creating, $planned->getStatus());
+    }
+
+    /**
+     * A boot takes a minute; an afternoon is not a boot. Left as a wait it held the whole class
+     * behind one machine, one at a time being the rule.
+     */
+    public function testAMachineThatNeverAnswersIsFailedRatherThanWaitedOnForEver(): void
+    {
+        [$batch, $item] = $this->batchWithItem(VmBatchItemStatus::Created);
+        $item->setIpAllocation($this->allocation());
+        $item->setVmid(9001);
+
+        // Entered the phase well before the ceiling: the property is stamped by setStatus(), so
+        // rewinding it is how a test reaches an afternoon without waiting for one.
+        $reflection = new \ReflectionProperty(VmBatchItem::class, 'phaseSince');
+        $reflection->setValue($item, new \DateTimeImmutable('-2 hours'));
+
+        $shells = $this->createStub(GuestShellFactory::class);
+        $shells->method('open')->willThrowException(new GuestUnreachableException('No route to host'));
+        $this->shells = $shells;
+
+        $result = $this->deployOnce($batch, $item);
+
+        self::assertSame(VmBatchItemStatus::Failed, $item->getStatus());
+        self::assertSame(1, $result['failed']);
+    }
+
+    public function testAWaitWritesItsReasonIntoTheInstallationLogOnce(): void
+    {
+        [$batch, $item] = $this->batchWithItem(VmBatchItemStatus::Creating);
+        $item->setOperation($this->operation(ProxmoxOperationStatus::Running));
+
+        // The stall the batches of August showed: the poll itself refused, pass after pass, and the
+        // log stopped at « clonage demandé » saying nothing about why.
+        $factory = $this->createStub(ProxmoxClientFactory::class);
+        $factory->method('forAction')->willThrowException(new ProxmoxUnavailableException('The provisioning account is refused.'));
+        $this->clientFactory = $factory;
+
+        $this->deployOnce($batch, $item);
+        $this->deployOnce($batch, $item);
+
+        $waits = array_values(array_filter(
+            $item->getInstallLogEntries(),
+            static fn (array $entry): bool => VmInstallStep::Waiting === $entry['step'],
+        ));
+
+        self::assertCount(1, $waits, 'the same reason on every pass must be written once');
+        self::assertSame('The provisioning account is refused.', $waits[0]['detail']);
     }
 
     public function testWhatIsLeftDistinguishesTheSlowFromTheRefused(): void
@@ -398,6 +575,7 @@ class VmBatchExecutorTest extends TestCase
             $this->clientFactory(),
             $this->shells,
             $this->postInstall,
+            $this->timeSync ?? new GuestTimeSync(),
             new UnixLogin(),
             $this->createStub(EntityManagerInterface::class),
             $budgetSeconds,
@@ -447,6 +625,7 @@ class VmBatchExecutorTest extends TestCase
             $this->clientFactory(),
             $this->shells,
             $this->postInstall,
+            $this->timeSync ?? new GuestTimeSync(),
             new UnixLogin(),
             $this->createStub(EntityManagerInterface::class),
             60.0,

@@ -42,7 +42,7 @@ class GuestAccountSyncerTest extends TestCase
     private function desired(string ...$logins): array
     {
         return array_map(
-            static fn (string $login): DesiredAccount => new DesiredAccount($login, GuestAccountOrigin::Member, sudo: true),
+            static fn (string $login): DesiredAccount => new DesiredAccount($login, GuestAccountOrigin::Member),
             $logins,
         );
     }
@@ -130,7 +130,7 @@ class GuestAccountSyncerTest extends TestCase
     public function testAFixedAccountThatIsStillWantedIsUnchanged(): void
     {
         $plan = $this->syncer()->plan(
-            [new DesiredAccount('prof', GuestAccountOrigin::Fixed, sudo: true)],
+            [new DesiredAccount('prof', GuestAccountOrigin::Fixed)],
             ['prof' => GuestAccountOrigin::Fixed],
         );
 
@@ -246,6 +246,128 @@ class GuestAccountSyncerTest extends TestCase
         $shell = $this->shell("marie-dupont\nroot\n");
 
         self::assertSame(['marie-dupont'], $this->syncer()->existingLogins($shell, ['marie-dupont']));
+    }
+
+    /**
+     * The defect this pins is the one that made the Comptes screen list the same six accounts as
+     * declared *and* as still to create, on a machine that had them all.
+     *
+     * A probe that finds nothing and a probe that never ran both answer an empty list, so the
+     * screen could not tell them apart - and the loop's own exit status used to be meaningless
+     * anyway (it is the last iteration's, so a last login that simply does not exist made a
+     * perfectly good probe look failed). Written with `if … fi` the status says what it says, and
+     * asking for it is what turns a silent nothing into a refusal somebody reads.
+     */
+    public function testAProbeThatCouldNotRunIsRaisedRatherThanReadAsAnEmptyMachine(): void
+    {
+        $shell = new RecordingShell(failingNeedle: 'getent');
+
+        $this->expectException(GuestCommandFailedException::class);
+
+        $this->syncer()->existingLogins($shell, ['marie-dupont']);
+    }
+
+    public function testTheProbeAsksAboutEachLoginWithoutItsOwnStatusDependingOnTheLastOne(): void
+    {
+        $shell = $this->shell("marie-dupont\n");
+        $this->syncer()->existingLogins($shell, ['marie-dupont', 'absent']);
+
+        // `if … fi` and not `&&`: see the test above for what the difference buys.
+        self::assertStringContainsString('if getent passwd', $shell->commands[0]);
+        self::assertStringNotContainsString('&& echo', $shell->commands[0]);
+    }
+
+    /**
+     * Every account, with no setting anywhere to say otherwise: these are the machines of a
+     * practical class, the person in front of one is the only person on it, and an account that
+     * cannot install a package cannot do the exercise.
+     *
+     * Being in the `sudo` group is what *allows* sudo; on Debian it also means being asked for a
+     * password. These accounts have one generated, sent to the machine and forgotten on the spot -
+     * nobody knows it - so without the rule sudo would be allowed and unusable at the same time.
+     */
+    public function testEveryAccountCanAdministerItsOwnMachineWithoutBeingAskedForAPassword(): void
+    {
+        $shell = new RecordingShell();
+        $this->syncer()->apply($shell, $this->syncer()->plan([new DesiredAccount('marie-dupont', GuestAccountOrigin::Member)], []));
+
+        $rule = implode("\n", $shell->commands);
+
+        self::assertStringContainsString('marie-dupont ALL=(ALL) NOPASSWD:ALL', $rule);
+        self::assertStringContainsString('/etc/sudoers.d/90-moncampus-marie-dupont', $rule);
+    }
+
+    /**
+     * A malformed file in `/etc/sudoers.d` does not break itself, it breaks sudo entirely - on a
+     * machine whose only administrative way in is sudo. So it is judged before it lands, and a
+     * refusal leaves the machine as it was.
+     */
+    public function testTheSudoersRuleIsJudgedByVisudoBeforeItIsInstalled(): void
+    {
+        $shell = new RecordingShell();
+        $this->syncer()->apply($shell, $this->syncer()->plan([new DesiredAccount('marie-dupont', GuestAccountOrigin::Member)], []));
+
+        $sudoers = array_values(array_filter($shell->commands, static fn (string $c): bool => str_contains($c, 'sudoers.d')));
+
+        self::assertCount(1, $sudoers);
+        self::assertStringContainsString('visudo -c -f', $sudoers[0]);
+        // Judged on a temporary file, then installed: the order is the whole protection.
+        self::assertLessThan(
+            strpos($sudoers[0], 'install -m 440'),
+            strpos($sudoers[0], 'visudo -c -f'),
+            'the rule must be validated before it reaches /etc/sudoers.d',
+        );
+    }
+
+    public function testEveryAccountJoinsTheDockerGroup(): void
+    {
+        $shell = new RecordingShell();
+        $this->syncer()->apply($shell, $this->syncer()->plan([new DesiredAccount('marie-dupont', GuestAccountOrigin::Member)], []));
+
+        $docker = array_values(array_filter($shell->commands, static fn (string $c): bool => str_contains($c, 'docker')));
+
+        self::assertCount(1, $docker);
+        self::assertStringContainsString("usermod -aG docker 'marie-dupont'", $docker[0]);
+        // Created when missing rather than the membership being skipped: Docker's own packaging
+        // adopts a group that already holds the name, so the order of installs stops mattering.
+        self::assertStringContainsString('groupadd docker', $docker[0]);
+    }
+
+    /**
+     * The password its owner chooses - the reason « Mes machines virtuelles » exists. The accounts a
+     * batch creates are born with one that is generated, sent to the machine and forgotten on the
+     * spot, so until somebody sets one, the account exists and nobody can log into it.
+     */
+    public function testSomebodyCanSetTheirOwnPassword(): void
+    {
+        $shell = new RecordingShell();
+
+        $this->syncer()->setPassword($shell, 'marie-dupont', 'un-mot-de-passe-assez-long');
+
+        self::assertCount(1, $shell->commands);
+        self::assertStringContainsString('chpasswd', $shell->commands[0]);
+        // On stdin, never in the command line: these machines have several people logged into them
+        // and a process list is public.
+        self::assertStringContainsString("printf %s 'marie-dupont:un-mot-de-passe-assez-long' | chpasswd", $shell->commands[0]);
+    }
+
+    /**
+     * A newline would end the line chpasswd reads and turn the rest into something else entirely,
+     * and a password too short is one nobody should be able to choose for a machine reachable over
+     * SSH with no lockout. Refused before anything is sent.
+     */
+    public function testAPasswordThatIsNotOneIsRefusedBeforeItIsSent(): void
+    {
+        foreach (['court', "long-mais-avec\nun-retour", ''] as $candidate) {
+            $shell = new RecordingShell();
+
+            try {
+                $this->syncer()->setPassword($shell, 'marie-dupont', $candidate);
+                self::fail('A password that is not one must be refused.');
+            } catch (\InvalidArgumentException) {
+                self::assertSame([], $shell->commands, 'nothing may reach the machine');
+            }
+        }
     }
 
     public function testAskingAboutNobodyRunsNothing(): void

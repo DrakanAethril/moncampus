@@ -56,6 +56,20 @@ class SecretBox
     }
 
     /**
+     * A short, stable name for the key in use, revealing nothing about it.
+     *
+     * It answers one question that is otherwise unanswerable from outside: **is this the same key
+     * as before the deploy?** A key that is regenerated rather than carried over makes every sealed
+     * secret in the database unreadable at once, and the only symptom is an administrator retyping
+     * every token. Domain-separated and truncated, so the digest is of no use to anybody who
+     * obtains it.
+     */
+    public function keyFingerprint(): string
+    {
+        return substr(hash('sha256', 'moncampus.proxmox.key.fingerprint|'.$this->key), 0, 12);
+    }
+
+    /**
      * @return non-empty-string the envelope to store, safe to log in the sense that it reveals
      *                          nothing, but never meant to be shown either
      */

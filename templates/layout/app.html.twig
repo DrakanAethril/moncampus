@@ -63,6 +63,14 @@
                             {% if is_granted('ROLE_TEACHER') %}
                                 <a href="{{ path('app_teacher_timetable') }}" class="dropdown-item">{{ 'teacherTimetableNavLabel'|trans }}</a>
                             {% endif %}
+                            {# « Mes machines virtuelles » for a teacher who is not an administrator:
+                               an administrator reaches every machine through Infrastructure, and two
+                               doors to two different screens is how somebody ends up on the wrong
+                               one. Students read the same entry from the Ressources dropdown, which
+                               is their whole navigation. Shown only to somebody who has a machine. #}
+                            {% if is_granted('ROLE_TEACHER') and not is_granted('ROLE_ADMIN') and has_virtual_machines(app.user) %}
+                                <a href="{{ path('app_my_machines') }}" class="dropdown-item">{{ 'myMachinesNavLabel'|trans }}</a>
+                            {% endif %}
                             {# Séquences/Séances, Progression pédagogique and Quiz used to sit here.
                                They moved to the top bar's "Outils" menu (design_handoff_menu_outils,
                                "Migration depuis la section Profil") and are deliberately NOT left

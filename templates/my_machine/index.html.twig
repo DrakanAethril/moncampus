@@ -1,0 +1,81 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'myMachinesHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'myMachinesHeading'|trans, url: path('app_my_machines')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'myMachinesHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% if machines is empty %}
+        <div class="cm-note">
+            <span class="cm-note__icon">i</span>
+            <span>{{ 'myMachinesNoneText'|trans }}</span>
+        </div>
+    {% else %}
+        <div data-controller="my-machines"
+             data-my-machines-token-value="{{ csrf_token('my_machines_action') }}"
+             data-my-machines-working-message-value="{{ 'myMachineWorkingMessage'|trans }}"
+             data-my-machines-failed-message-value="{{ 'myMachineFailedMessage'|trans }}">
+            {% for machine in machines %}
+                {% set account = machine.account %}
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h3 class="card-title cm-condition-heading">{{ machine.name }}</h3>
+                        <span class="cm-badge cm-badge--{{ machine.isKnown ? (machine.isRunning ? 'green' : 'gray') : 'gold' }} ms-auto">
+                            {{ (machine.isKnown ? (machine.isRunning ? 'proxmoxGuestRunningLabel' : 'proxmoxGuestStoppedLabel') : 'myMachineUnknownStateLabel')|trans }}
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            {% if machine.batchLabel %}
+                                <dt class="col-sm-3 cm-guest__sub">{{ 'vmBatchLabelFieldLabel'|trans }}</dt>
+                                <dd class="col-sm-9">{{ machine.batchLabel }}</dd>
+                            {% endif %}
+                            <dt class="col-sm-3 cm-guest__sub">{{ 'proxmoxWizardIpFieldLabel'|trans }}</dt>
+                            <dd class="col-sm-9 cm-mono">{{ machine.ip ?? '—' }}</dd>
+                            <dt class="col-sm-3 cm-guest__sub">{{ 'guestAccountLoginLabel'|trans }}</dt>
+                            <dd class="col-sm-9 cm-mono">{{ account.login }}</dd>
+                        </dl>
+
+                        {# The password is the reason this screen exists: the account is born with
+                           one nobody knows, so until its owner sets one they cannot log in. #}
+                        <form class="cm-fieldset mt-3" data-action="my-machines#changePassword"
+                              data-url="{{ path('app_my_machines_password', {id: account.id}) }}">
+                            <label class="cm-field-label" for="password-{{ account.id }}">{{ 'myMachinePasswordFieldLabel'|trans }}</label>
+                            <div class="d-flex gap-2 align-items-start">
+                                <input id="password-{{ account.id }}" type="password" name="password" class="cm-input"
+                                       autocomplete="new-password" minlength="12" required
+                                       placeholder="{{ 'myMachinePasswordPlaceholder'|trans }}">
+                                <button type="submit" class="cm-btn cm-btn--outline">{{ 'myMachinePasswordAction'|trans }}</button>
+                            </div>
+                            <div class="cm-guest__sub mt-1">{{ 'myMachinePasswordHelpText'|trans }}</div>
+                        </form>
+                    </div>
+                    <div class="cm-actionbar">
+                        <span class="cm-actionbar__meta" data-my-machines-target="message" data-account="{{ account.id }}"></span>
+                        <div class="cm-actionbar__buttons">
+                            <button type="button" class="cm-btn cm-btn--outline cm-btn--sm"
+                                    data-action="my-machines#power" data-account="{{ account.id }}"
+                                    data-url="{{ path('app_my_machines_power', {id: account.id, action: 'start'}) }}"
+                                    {{ machine.isKnown and machine.isRunning ? 'disabled' }}>
+                                {{ 'proxmoxGuestStartAction'|trans }}
+                            </button>
+                            <button type="button" class="cm-btn cm-btn--outline cm-btn--sm"
+                                    data-action="my-machines#power" data-account="{{ account.id }}"
+                                    data-url="{{ path('app_my_machines_power', {id: account.id, action: 'shutdown'}) }}"
+                                    {{ machine.isKnown and not machine.isRunning ? 'disabled' }}>
+                                {{ 'proxmoxGuestShutdownAction'|trans }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}

@@ -71,6 +71,61 @@ class VmBatchPlannerGroupsTest extends TestCase
         self::assertSame('groupe-1', $rows[0]['slug']);
     }
 
+    /**
+     * A group may name its own slug rather than have one derived from its label. « Groupe 3 » slugs
+     * perfectly well; a machine labelled with the three names of the people on it does not, and the
+     * name of a machine is its hostname.
+     */
+    public function testAGroupThatNamesItsOwnSlugKeepsIt(): void
+    {
+        $group = $this->group('Célia L., Ana R.', ['Célia L.', 'Ana R.']) + ['slug' => 'poste'];
+
+        $rows = (new VmBatchPlanner())->planGroups([$group], 'tp-{login}', 100, 999, []);
+
+        self::assertSame('poste', $rows[0]['slug']);
+        self::assertSame('tp-poste', $rows[0]['guestName']);
+        // The label is untouched: it is what the screen shows, and it is not a hostname.
+        self::assertSame('Célia L., Ana R.', $rows[0]['groupLabel']);
+    }
+
+    /**
+     * A teacher named on a batch gets an account on every machine and **adds none**: the count of
+     * machines is the count of groups, before and after.
+     */
+    public function testANamedTeacherLandsOnEveryMachineWithoutAddingOne(): void
+    {
+        $teacher = new BatchMember(90, 'M. Roux', 'p.roux');
+
+        $rows = (new VmBatchPlanner())->planGroups([
+            $this->group('Groupe 1', ['Célia L.']),
+            $this->group('Groupe 2', ['Ana R.']),
+        ], 'tp-{index}', 100, 999, [], [$teacher]);
+
+        self::assertCount(2, $rows, 'the teacher adds no machine');
+
+        foreach ($rows as $row) {
+            self::assertContains('p.roux', array_column($row['members'], 'login'));
+        }
+    }
+
+    /**
+     * A teacher may also be a member of one of the groups. Two entries for the same person is one
+     * `useradd` that fails on the second, and the whole machine fails with it.
+     */
+    public function testSomebodyOnBothSidesGetsOneAccountAndNotTwo(): void
+    {
+        $rows = (new VmBatchPlanner())->planGroups(
+            [$this->group('Groupe 1', ['Célia L.'])],
+            'tp-{index}',
+            100,
+            999,
+            [],
+            [new BatchMember(90, 'Célia L.', 'celia-l')],
+        );
+
+        self::assertSame(['celia-l'], array_column($rows[0]['members'], 'login'));
+    }
+
     public function testVmidsAlreadyTakenAreSkipped(): void
     {
         $rows = (new VmBatchPlanner())->planGroups([

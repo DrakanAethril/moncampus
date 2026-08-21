@@ -28,6 +28,13 @@
         {# The two entries of the retired student "Outils" dropdown - their mailbox and their
            applications. Still student-only: staff reach both through the class screens, which is
            not the same screen. #}
+        {# Only for somebody who actually has one: an entry leading to « aucune machine » for every
+           student of the school is an entry they learn to ignore. Students read it here; a teacher
+           who is not an administrator reads the same screen from the profile menu, that menu being
+           where their own account's things live. #}
+        {% if is_pure_student and has_virtual_machines(app.user) %}
+            <a class="dropdown-item {{ current_route starts with 'app_my_machines' ? 'active' }}" href="{{ path('app_my_machines') }}">{{ 'myMachinesNavLabel'|trans }}</a>
+        {% endif %}
         {% if is_pure_student %}
             <a class="dropdown-item {{ current_route starts with 'app_school_mail' or current_route starts with 'app_training_' ? 'active' }}" href="{{ path('app_school_mail') }}">{{ 'schoolMailNavLabel'|trans }}</a>
             <a class="dropdown-item {{ current_route == 'app_my_job_applications' ? 'active' }}" href="{{ path('app_my_job_applications') }}">{{ 'jobApplicationsNavLabel'|trans }}</a>

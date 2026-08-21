@@ -60,9 +60,6 @@ class GuestAccount
     #[ORM\Column(name: 'display_name', length: 180, nullable: true)]
     private ?string $displayName = null;
 
-    #[ORM\Column]
-    private bool $sudo = false;
-
     #[ORM\Column(length: 64)]
     private string $shell = '/bin/bash';
 
@@ -137,18 +134,6 @@ class GuestAccount
     public function setDisplayName(?string $displayName): static
     {
         $this->displayName = $displayName;
-
-        return $this;
-    }
-
-    public function isSudo(): bool
-    {
-        return $this->sudo;
-    }
-
-    public function setSudo(bool $sudo): static
-    {
-        $this->sudo = $sudo;
 
         return $this;
     }

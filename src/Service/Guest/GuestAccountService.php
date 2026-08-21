@@ -73,7 +73,6 @@ class GuestAccountService
                 $desired[] = new DesiredAccount(
                     $account->getLogin(),
                     $account->getOrigin(),
-                    $account->isSudo(),
                     $account->getShell(),
                     $account->getUser()?->getId(),
                     $account->getDisplayName(),
@@ -139,7 +138,6 @@ class GuestAccountService
         int $vmid,
         string $login,
         GuestAccountOrigin $origin,
-        bool $sudo,
         ?User $user = null,
         ?string $displayName = null,
     ): GuestAccount {
@@ -151,7 +149,6 @@ class GuestAccountService
 
         $account = new GuestAccount($host, $node, $vmid, $login);
         $account->setOrigin($origin);
-        $account->setSudo($sudo);
 
         if (null !== $user) {
             $account->setUser($user);
@@ -213,5 +210,40 @@ class GuestAccountService
     public function resetPassword(GuestShell $shell, string $login): string
     {
         return $this->syncer->resetPassword($shell, $login);
+    }
+
+    /**
+     * A password its owner chose, set on their own account and recorded as having happened.
+     *
+     * The operation row is what an administrator sees later: it names the machine and the login and
+     * says a password was changed. It does not carry the password, and nothing else here does
+     * either - the value reaches the machine and this method forgets it.
+     *
+     * @throws \InvalidArgumentException when the password is not one
+     * @throws GuestUnreachableException
+     */
+    public function setPassword(
+        GuestShell $shell,
+        ProxmoxHost $host,
+        string $node,
+        int $vmid,
+        string $login,
+        #[\SensitiveParameter] string $password,
+        ?User $requestedBy,
+    ): void {
+        // Validated before the row is opened: a password that is refused never happened, and a log
+        // saying otherwise is worse than no log.
+        $operation = $this->tracker->begin($host, ProxmoxAction::Provision, $requestedBy, $node, $vmid, null, 'qemu');
+
+        try {
+            $this->syncer->setPassword($shell, $login, $password);
+        } catch (GuestUnreachableException|\InvalidArgumentException $exception) {
+            $this->tracker->failed($operation, $exception->getMessage());
+
+            throw $exception;
+        }
+
+        $operation->markSucceeded(\sprintf('mot de passe changé pour %s', $login));
+        $this->entityManager->flush();
     }
 }

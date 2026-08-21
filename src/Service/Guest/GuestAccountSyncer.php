@@ -31,6 +31,16 @@ use App\Enum\GuestAccountOrigin;
  */
 class GuestAccountSyncer
 {
+    /**
+     * The shortest password somebody may choose for themselves.
+     *
+     * Twelve rather than eight: these accounts are reachable over SSH on a school network, they are
+     * never locked out after failed attempts, and the person choosing is choosing for a machine
+     * they will use for months. Length is the only requirement - a composition rule would buy less
+     * and produce `Azerty1!` on every machine of the room.
+     */
+    private const int MIN_PASSWORD_LENGTH = 12;
+
     public function __construct(
         private readonly PasswordGenerator $passwordGenerator,
         private readonly UnixLogin $unixLogin,
@@ -110,7 +120,20 @@ class GuestAccountSyncer
         }
 
         $safe = array_map(static fn (string $login): string => escapeshellarg($login), $logins);
-        $result = $shell->run(\sprintf('for u in %s; do getent passwd "$u" >/dev/null && echo "$u"; done', implode(' ', $safe)));
+        // `if … then … fi` rather than `&&`: the loop's exit status is the last iteration's, so
+        // with `&&` a last login that simply does not exist made the whole command look failed -
+        // and nothing could then tell that apart from a command that never ran. Written this way
+        // the status means what it says, which is what makes the check below worth making.
+        $command = \sprintf(
+            'for u in %s; do if getent passwd "$u" >/dev/null 2>&1; then echo "$u"; fi; done',
+            implode(' ', $safe),
+        );
+        $result = $shell->run($command);
+
+        // A probe that finds nothing and a probe that never ran read identically - an empty list -
+        // and the second is how every declared account came to show as permanently « à créer ».
+        // The verdict is asked for rather than assumed.
+        self::mustSucceed($command, $result);
 
         $found = [];
         foreach (explode("\n", $result->output) as $line) {
@@ -204,6 +227,34 @@ class GuestAccountSyncer
     }
 
     /**
+     * Sets a password its owner chose, on an account they hold.
+     *
+     * The counterpart of resetPassword() above, which invents one: this is what a student uses to
+     * pick their own, and it is the reason the accounts a batch creates are usable at all - they
+     * are born with a password that is generated, sent to the machine and forgotten on the spot,
+     * so until somebody sets one nobody can log in by password.
+     *
+     * Refused rather than sanitised: a newline would end the line chpasswd reads and turn the rest
+     * of the password into a command, and a password nobody can be sure of is not one to write.
+     *
+     * @throws \InvalidArgumentException when the login or the password is not one
+     * @throws GuestUnreachableException
+     */
+    public function setPassword(GuestShell $shell, string $login, #[\SensitiveParameter] string $password): void
+    {
+        if (!$this->unixLogin->isValid($login)) {
+            throw new \InvalidArgumentException(\sprintf('"%s" is not a valid login.', $login));
+        }
+
+        if (1 !== preg_match('/^[^\r\n\0]{'.self::MIN_PASSWORD_LENGTH.',128}$/u', $password)) {
+            throw new \InvalidArgumentException('guestAccountPasswordTooShortMessage');
+        }
+
+        $command = $this->setPasswordCommand($login, $password);
+        self::mustSucceed($command, $shell->run($command));
+    }
+
+    /**
      * @return list<string>
      */
     private function createCommands(DesiredAccount $account, string $password, ?string $publicKey): array
@@ -216,11 +267,17 @@ class GuestAccountSyncer
             $this->setPasswordCommand($account->login, $password),
         ];
 
-        if ($account->sudo) {
-            // Both group names, because Debian calls it sudo and RHEL calls it wheel, and a failed
-            // usermod on the group that does not exist costs nothing.
-            $commands[] = \sprintf('usermod -aG sudo %s || usermod -aG wheel %s', $login, $login);
-        }
+        // Every account this application creates administers the machine it is on, without
+        // exception: these are the machines of a practical class, the person in front of one is the
+        // only person on it, and an account that cannot install a package is an account that cannot
+        // do the exercise. There is deliberately no setting for it - a per-machine or per-account
+        // toggle only ever produced a machine somebody could not work on, discovered in the room.
+        //
+        // Both group names, because Debian calls it sudo and RHEL calls it wheel, and a failed
+        // usermod on the group that does not exist costs nothing.
+        $commands[] = \sprintf('usermod -aG sudo %s || usermod -aG wheel %s', $login, $login);
+        $commands[] = $this->passwordlessSudoCommand($account->login);
+        $commands[] = $this->dockerGroupCommand($account->login);
 
         if (null !== $publicKey && '' !== $publicKey) {
             $commands[] = \sprintf(
@@ -232,6 +289,50 @@ class GuestAccountSyncer
         }
 
         return $commands;
+    }
+
+    /**
+     * Passwordless sudo for an account that has been granted sudo at all.
+     *
+     * The group membership above is what *allows* sudo; on a Debian machine it also means being
+     * asked for a password. These accounts have one generated, sent to the machine and forgotten on
+     * the spot - nobody knows it, so being asked for it makes sudo unusable rather than safer.
+     *
+     * **Validated before it lands.** A malformed file in `/etc/sudoers.d` does not break itself, it
+     * breaks sudo *entirely* - on a machine whose only administrative way in is sudo. So it is
+     * written to a temporary file, `visudo -c` judges that file, and only a file that passes is
+     * installed. A refusal leaves the machine exactly as it was.
+     *
+     * `install -m 440` rather than a redirection plus chmod: it is one step, and it is the mode
+     * sudo insists on. The name carries no dot, which `/etc/sudoers.d` would silently ignore.
+     */
+    private function passwordlessSudoCommand(string $login): string
+    {
+        $file = \sprintf('/etc/sudoers.d/90-moncampus-%s', $login);
+        $rule = \sprintf('%s ALL=(ALL) NOPASSWD:ALL', $login);
+
+        return \sprintf(
+            'tmp=$(mktemp) && printf \'%%s\\n\' %s > "$tmp" && visudo -c -f "$tmp" >/dev/null && install -m 440 -o root -g root "$tmp" %s && rm -f "$tmp"',
+            escapeshellarg($rule),
+            escapeshellarg($file),
+        );
+    }
+
+    /**
+     * The account joins `docker`, so the student can drive the daemon without sudo for every call.
+     *
+     * The group is created when it is missing rather than the membership being skipped. Docker's
+     * own packaging creates `docker` only if nothing holds the name, so a group made here is the
+     * one it will adopt - which means the order stops mattering: a machine that gets Docker after
+     * its accounts still has its students in the group, where a `getent || skip` would have left
+     * them out with nothing saying so.
+     */
+    private function dockerGroupCommand(string $login): string
+    {
+        return \sprintf(
+            'if ! getent group docker >/dev/null 2>&1; then groupadd docker; fi; usermod -aG docker %s',
+            escapeshellarg($login),
+        );
     }
 
     /**

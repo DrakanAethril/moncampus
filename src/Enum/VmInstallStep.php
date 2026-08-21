@@ -44,8 +44,28 @@ enum VmInstallStep: string
     /** It did not answer - with the reason, which is the whole point of recording it. */
     case Unreachable = 'unreachable';
 
+    /**
+     * A step that could not be taken *yet*, and why.
+     *
+     * Written only when the reason changes, so a machine polled for an hour carries one line rather
+     * than seven hundred. It exists because the log used to stop at « clonage demandé » whatever the
+     * cause - a hypervisor that had stopped answering, a provisioning account being refused - and
+     * the reader had no way to tell a slow clone from a broken one.
+     */
+    case Waiting = 'waiting';
+
     case AccountsApplied = 'accountsApplied';
     case AccountsFailed = 'accountsFailed';
+
+    /** The clock was pointed at the VLAN's gateway - with the address, which is what gets checked. */
+    case TimeSyncConfigured = 'timeSyncConfigured';
+
+    /**
+     * It was not, and why. Not fatal on its own: a machine whose clock is wrong is still a machine
+     * the students can use, and failing it would hold the whole class behind a template problem.
+     * Red in the log rather than silent, which is the difference that matters.
+     */
+    case TimeSyncFailed = 'timeSyncFailed';
     case PostInstallRun = 'postInstallRun';
     case PostInstallFailed = 'postInstallFailed';
 

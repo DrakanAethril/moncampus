@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\VmBatchItemStatus;
 use App\Enum\VmBatchShape;
 use App\Repository\VmBatchRepository;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -114,9 +115,6 @@ class VmBatch
     private ?string $postInstallScript = null;
 
     /** Whether each student's account gets sudo on their own machine. */
-    #[ORM\Column(name: 'grant_sudo')]
-    private bool $grantSudo = true;
-
     #[ORM\Column(name: 'expires_at', type: Types::DATE_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $expiresAt = null;
 
@@ -382,18 +380,6 @@ class VmBatch
         return $this;
     }
 
-    public function isGrantSudo(): bool
-    {
-        return $this->grantSudo;
-    }
-
-    public function setGrantSudo(bool $grantSudo): static
-    {
-        $this->grantSudo = $grantSudo;
-
-        return $this;
-    }
-
     public function getExpiresAt(): ?\DateTimeImmutable
     {
         return $this->expiresAt;
@@ -422,6 +408,57 @@ class VmBatch
     public function isExpired(): bool
     {
         return null !== $this->expiresAt && $this->expiresAt < new \DateTimeImmutable('today');
+    }
+
+    /** @return Collection<int, VmBatchItem> */
+    /**
+     * Whether a deployment is under way on this batch - which is what the screen reads to decide
+     * whether to keep refreshing itself while somebody watches.
+     *
+     * Two conditions, and the second is what keeps the page alive **between** two machines: with
+     * one machine deployed at a time there are moments when nothing is in flight at all and the
+     * next has simply not been picked up yet, and a screen that stopped there would look finished
+     * while the class was still being built.
+     *
+     * A batch whose remainder is nothing but refusals stops qualifying, and that is deliberate:
+     * nothing will visibly move until somebody looks at it, and a page refreshing for ever over a
+     * failure is noise rather than information.
+     */
+    public function isDeploymentUnderWay(): bool
+    {
+        $begun = false;
+        $planned = false;
+
+        foreach ($this->items as $item) {
+            if (\in_array($item->getStatus(), [VmBatchItemStatus::Creating, VmBatchItemStatus::Created], true)) {
+                return true;
+            }
+
+            if (VmBatchItemStatus::Planned === $item->getStatus()) {
+                $planned = true;
+            } else {
+                $begun = true;
+            }
+        }
+
+        return $begun && $planned;
+    }
+
+    /**
+     * The machine a reader is most likely to be asking about: the first one that is not finished.
+     *
+     * Its installation log is the one the screen unfolds, so that arriving on a batch being
+     * deployed shows what is happening rather than a row of closed triangles.
+     */
+    public function firstUnfinishedItem(): ?VmBatchItem
+    {
+        foreach ($this->items as $item) {
+            if (VmBatchItemStatus::Provisioned !== $item->getStatus()) {
+                return $item;
+            }
+        }
+
+        return null;
     }
 
     /** @return Collection<int, VmBatchItem> */

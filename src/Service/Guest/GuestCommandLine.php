@@ -13,6 +13,15 @@ namespace App\Service\Guest;
  * is folded into the output because the output is what gets recorded, and a diagnostic that went to
  * stderr is exactly the one worth keeping.
  *
+ * **The variable is exported as a statement of its own, and the command always goes through
+ * `/bin/sh -c`.** A `VAR=value cmd` prefix is only valid in front of a *simple* command: written in
+ * front of a `for`, an `if` or a `while`, the shell answers `Syntax error: "do" unexpected` and the
+ * command never runs at all. That is not a theoretical shape - the account probe is a `for` loop,
+ * and with the prefix in front of it every machine answered "none of these accounts exist", which
+ * read on screen as every declared account being permanently « à créer ». The failure is silent
+ * twice over: the loop's own exit status is meaningless (it is the last iteration's), and a probe
+ * that finds nothing looks exactly like a machine that has nothing.
+ *
  * **Elevation is decided here and nowhere else.** Everything this application runs inside a guest is
  * administrative, so the question is never which commands to elevate but only whether elevation is
  * needed at all: as root it is not, as anybody else it always is. Deciding per call site would mean
@@ -26,12 +35,15 @@ final class GuestCommandLine
 {
     public static function build(string $command, string $username): string
     {
-        $inner = \sprintf('DEBIAN_FRONTEND=noninteractive %s', $command);
+        $inner = \sprintf('export DEBIAN_FRONTEND=noninteractive; %s', $command);
 
         // Handed to a shell rather than to sudo directly: these commands carry loops, pipes,
         // redirections and a heredoc holding an entire script, none of which sudo would interpret.
+        // Root goes through the same shell rather than straight down the session, so that one form
+        // is parsed one way - the root path used to be the raw string, which put the assignment
+        // prefix back in front of whatever the caller wrote.
         $line = 'root' === $username
-            ? $inner
+            ? \sprintf('/bin/sh -c %s', escapeshellarg($inner))
             : \sprintf('sudo -n /bin/sh -c %s', escapeshellarg($inner));
 
         return $line.' < /dev/null 2>&1';
