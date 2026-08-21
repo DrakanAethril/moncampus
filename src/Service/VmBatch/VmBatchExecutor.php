@@ -41,7 +41,10 @@ use Doctrine\ORM\EntityManagerInterface;
  *
  * A ceiling on how many are launched in one pass, because a browser request is what triggers this
  * and twenty-four clones in one request is a request that times out. The screen resumes; pressing
- * it twice is safe by construction.
+ * it twice is safe by construction. And a second ceiling on how many clones are **in flight** at
+ * once, which is not the same thing at all: one clone per pass, pressed as fast as the screen can
+ * press, is still twenty-four simultaneous disk copies on the hypervisor - see
+ * MAX_CLONES_IN_FLIGHT.
  *
  * **A pass advances each item by one step, it does not finish it.** The order the design fixes and
  * does not bend is clone → configure → start → reachable → accounts → post-installation, and three
@@ -70,12 +73,32 @@ class VmBatchExecutor
     /**
      * How many machines one pass attempts.
      *
-     * One, deliberately: a machine at a time is what an administrator watching the screen can follow,
-     * and what leaves the hypervisor a chance to finish one clone before being asked for the next.
-     * Since the pass takes whoever has waited longest rather than the first by position, one per pass
-     * still advances the whole batch - it just does it in turn rather than five abreast.
+     * One, deliberately: a machine at a time is what an administrator watching the screen can
+     * follow. Since the pass takes whoever has waited longest rather than the first by position,
+     * one per pass still advances the whole batch - it just does it in turn rather than five
+     * abreast.
+     *
+     * It says nothing about how many clones run at once, which is MAX_CLONES_IN_FLIGHT's job and
+     * used to be nobody's - see there.
      */
     public const int BATCH_SIZE = 1;
+
+    /**
+     * How many machines may be waiting on their clone at the same time.
+     *
+     * **This is the ceiling BATCH_SIZE was believed to be and never was.** One item per pass does
+     * not mean one clone at a time: a pass takes whoever has waited longest and a machine that has
+     * never been attempted has waited for ever, so twenty-four never-attempted items were twenty-
+     * four clones fired back to back, each pass returning `progressed` and the screen pressing
+     * again immediately. A class deployed that way asks the hypervisor to copy every disk at once -
+     * and once every clone is competing with twenty-three others, none of them lands quickly, the
+     * screen sees nothing move, and it gives up on the whole batch before the first machine is
+     * ready to be configured.
+     *
+     * Two rather than one because a clone is mostly waiting on storage, and because a single one in
+     * flight would idle the hypervisor between two passes of the poller.
+     */
+    public const int MAX_CLONES_IN_FLIGHT = 2;
 
     /**
      * How long a pass may spend before it stops starting new steps, in seconds.
@@ -131,12 +154,12 @@ class VmBatchExecutor
      * sixth never started - the batch read as stuck at five. The repository now hands over the
      * items that have gone longest without a turn, never-attempted ones first.
      *
-     * @return array{attempted: int, progressed: int, waiting: int, failed: int, remaining: int}
+     * @return array{attempted: int, progressed: int, waiting: int, failed: int, remaining: int, blocked: int}
      */
     public function run(VmBatch $batch, ?User $requestedBy): array
     {
         $outstanding = $this->items->findResumable($batch);
-        $pass = \array_slice($outstanding, 0, self::BATCH_SIZE);
+        $pass = \array_slice($this->eligible($outstanding), 0, self::BATCH_SIZE);
 
         $progressed = 0;
         $waiting = 0;
@@ -164,13 +187,55 @@ class VmBatchExecutor
             };
         }
 
+        $remaining = $this->items->findResumable($batch);
+
         return [
             'attempted' => \count($pass),
             'progressed' => $progressed,
             'waiting' => $waiting,
             'failed' => $failed,
-            'remaining' => \count($this->items->findResumable($batch)),
+            'remaining' => \count($remaining),
+            // What is left that pressing again will not move on its own. The screen needs the two
+            // numbers side by side: it must keep going while machines are merely slow, and stop
+            // once everything still outstanding has refused - without one failure ending the pass
+            // for the twenty-three machines that were doing fine.
+            'blocked' => \count(array_filter(
+                $remaining,
+                static fn (VmBatchItem $item): bool => VmBatchItemStatus::Failed === $item->getStatus(),
+            )),
         ];
+    }
+
+    /**
+     * The outstanding items a pass may actually take, in the order it should take them.
+     *
+     * Everything is eligible until MAX_CLONES_IN_FLIGHT machines are already waiting on a clone;
+     * from there the pass may only advance one of those, never start another. The batch does not
+     * stall for it - the items it skips are the ones that have not begun, and they begin as soon as
+     * a clone lands.
+     *
+     * @param list<VmBatchItem> $outstanding
+     *
+     * @return list<VmBatchItem>
+     */
+    private function eligible(array $outstanding): array
+    {
+        $inFlight = 0;
+
+        foreach ($outstanding as $item) {
+            if (VmBatchItemStatus::Creating === $this->phaseOf($item)) {
+                ++$inFlight;
+            }
+        }
+
+        if ($inFlight < self::MAX_CLONES_IN_FLIGHT) {
+            return $outstanding;
+        }
+
+        return array_values(array_filter(
+            $outstanding,
+            fn (VmBatchItem $item): bool => VmBatchItemStatus::Planned !== $this->phaseOf($item),
+        ));
     }
 
     /**
@@ -293,6 +358,11 @@ class VmBatchExecutor
         }
 
         $item->appendInstallLog(VmInstallStep::CloneFinished);
+        // Flushed on its own, before anything else is attempted: the configuration that follows is
+        // where this pass is most likely to break, and a line written but never flushed is a log
+        // that stops at « clonage demandé » while the machine has in fact been cloned. What the
+        // reader needs first is to know which half of the step failed.
+        $this->entityManager->flush();
 
         $allocation = $item->getIpAllocation();
 
@@ -304,7 +374,11 @@ class VmBatchExecutor
 
         try {
             $keys = $this->creator->configureAndStart($host, $request);
-        } catch (ProxmoxUnavailableException $exception) {
+        } catch (ProxmoxUnavailableException|\InvalidArgumentException $exception) {
+            // \InvalidArgumentException covers what the configurator refuses before any call goes
+            // out - a name that cannot be a hostname, an address that is not IPv4. Left to
+            // propagate it would answer the pass with a 500, which the screen shows as a bare
+            // warning and which writes nothing at all on the machine it concerns.
             $item->appendInstallLog(VmInstallStep::ConfigurationFailed, $exception->getMessage(), ok: false);
 
             return $this->fail($item, $exception->getMessage());

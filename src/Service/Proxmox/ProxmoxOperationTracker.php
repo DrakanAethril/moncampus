@@ -32,11 +32,16 @@ use Doctrine\ORM\EntityManagerInterface;
 class ProxmoxOperationTracker
 {
     /**
-     * Beyond this, a task nobody could reach a verdict on is closed as unknown rather than left
-     * polling for ever. Five minutes is the ceiling the design gives the Stimulus poller, so a row
-     * outliving it has outlived the screen that was watching it.
+     * The shortest of the per-action ceilings, and the only thing this class still holds as a
+     * number: it is the age below which no row can possibly be stale, which is what lets
+     * settleStale() narrow the query before weighing each row against its own ceiling.
+     *
+     * The ceiling itself belongs to the action - see App\Enum\ProxmoxAction::maxTaskDurationSeconds().
+     * A single five-minute value used to cover clones as well as power actions, and a clone of a
+     * class's worth of machines is routinely longer than that: it declared healthy tasks `unknown`,
+     * and an `unknown` creation fails the machine it belongs to for good.
      */
-    private const int STALE_AFTER_SECONDS = 300;
+    private const int MIN_STALE_AFTER_SECONDS = 300;
 
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
@@ -98,7 +103,7 @@ class ProxmoxOperationTracker
         $upid = $operation->getUpid();
         $node = $operation->getNode();
 
-        if ($operation->getStatus()->isSettled() || null === $upid || null === $node) {
+        if (null === $upid || null === $node || !$this->isWorthAsking($operation)) {
             return $operation;
         }
 
@@ -120,7 +125,10 @@ class ProxmoxOperationTracker
 
         if (!$task->isFinished()) {
             if ($this->isStale($operation)) {
-                $operation->markUnknown('The task was still running after five minutes and is no longer followed.');
+                $operation->markUnknown(\sprintf(
+                    'The task was still running after %d seconds and is no longer followed.',
+                    $operation->getAction()->maxTaskDurationSeconds(),
+                ));
                 $this->entityManager->flush();
             }
 
@@ -144,25 +152,50 @@ class ProxmoxOperationTracker
      */
     public function settleStale(): int
     {
-        $stale = $this->repository->findStale(new \DateTimeImmutable(\sprintf('-%d seconds', self::STALE_AFTER_SECONDS)));
+        $candidates = $this->repository->findStale(new \DateTimeImmutable(\sprintf('-%d seconds', self::MIN_STALE_AFTER_SECONDS)));
+        $settled = 0;
 
-        foreach ($stale as $operation) {
+        foreach ($candidates as $operation) {
+            // Weighed against its own action's ceiling, never against the query's: the query only
+            // narrows the rows worth looking at. Closing a clone here because a *start* would have
+            // been overdue is what made merely opening this screen kill a class being deployed.
+            if (!$this->isStale($operation)) {
+                continue;
+            }
+
             $operation->markUnknown(
                 ProxmoxOperationStatus::Pending === $operation->getStatus()
                     ? 'The request never reached the host, or its answer never came back.'
-                    : 'The task was no longer followed after five minutes.',
+                    : 'The task was no longer followed after its expected duration.',
             );
+            ++$settled;
         }
 
-        if ([] !== $stale) {
+        if ($settled > 0) {
             $this->entityManager->flush();
         }
 
-        return \count($stale);
+        return $settled;
+    }
+
+    /**
+     * Whether asking the host about this row can still tell us anything new.
+     *
+     * A settled row is normally the end of the story - except `unknown`, which is not a verdict but
+     * the absence of one. **That is the difference between a batch that recovers and one that is
+     * dead**: a clone declared unknown because nobody was watching long enough is very often a
+     * clone that finished perfectly, and Proxmox still holds its task status. Refusing to ask again
+     * froze the machine on a phase it could never leave - never configured, never started - while
+     * the answer sat one GET away.
+     */
+    private function isWorthAsking(ProxmoxOperation $operation): bool
+    {
+        return !$operation->getStatus()->isSettled()
+            || ProxmoxOperationStatus::Unknown === $operation->getStatus();
     }
 
     private function isStale(ProxmoxOperation $operation): bool
     {
-        return $operation->durationSeconds() > self::STALE_AFTER_SECONDS;
+        return $operation->durationSeconds() > $operation->getAction()->maxTaskDurationSeconds();
     }
 }
