@@ -140,21 +140,99 @@ class ProxmoxClientTest extends TestCase
         self::assertContains('Cookie: PVEAuthCookie=PVE:ticket', $this->headersOf(0));
     }
 
-    public function testARefusedTicketBecomesAProxmoxUnavailableException(): void
+    public function testARefusedTicketCarriesWhatProxmoxSaidAboutIt(): void
     {
-        $client = $this->client($this->password(), new MockResponse('', ['http_code' => 401]));
+        $client = $this->client($this->password(), new MockResponse('{"data":null}', [
+            'http_code' => 401,
+            'response_headers' => ["HTTP/1.1 401 no such user ('svc-moncampus@pve')"],
+        ]));
 
-        $this->expectException(ProxmoxUnavailableException::class);
-        $this->expectExceptionMessageMatches('/username, the realm and the password/');
-        $client->version();
+        try {
+            $client->version();
+            self::fail('A refused ticket must not answer.');
+        } catch (ProxmoxUnavailableException $exception) {
+            self::assertSame('proxmoxAuthenticationRefusedPasswordError', $exception->userMessageKey());
+            self::assertSame(['%reason%' => "401 no such user ('svc-moncampus@pve')"], $exception->userMessageParameters());
+        }
     }
 
-    public function testA401OnAnOrdinaryCallBecomesAProxmoxUnavailableException(): void
+    public function testA401OnAnOrdinaryCallNamesTheTokenAndTheReasonPhrase(): void
     {
-        $client = $this->client($this->token(), new MockResponse('{"data":null}', ['http_code' => 401]));
+        // What a real pveproxy answers: an empty envelope, and the reason in the status line -
+        // which is why statusPhrase() digs it out of `response_headers` rather than reading the
+        // body and giving up.
+        $client = $this->client($this->token(), new MockResponse('{"data":null}', [
+            'http_code' => 401,
+            'response_headers' => ['HTTP/1.1 401 invalid token value!'],
+        ]));
 
-        $this->expectException(ProxmoxUnavailableException::class);
-        $client->version();
+        try {
+            $client->version();
+            self::fail('A refused token must not answer.');
+        } catch (ProxmoxUnavailableException $exception) {
+            self::assertSame('proxmoxAuthenticationRefusedTokenError', $exception->userMessageKey());
+            self::assertSame(['%reason%' => '401 invalid token value!'], $exception->userMessageParameters());
+            self::assertStringContainsString('GET /version answered HTTP 401', $exception->getMessage());
+        }
+    }
+
+    public function testABodyThatSaysSomethingWinsOverAGenericStatusLine(): void
+    {
+        $client = $this->client($this->token(), new MockResponse('{"data":null,"message":"authentication failure"}', [
+            'http_code' => 401,
+            'response_headers' => ['HTTP/1.1 401 Unauthorized'],
+        ]));
+
+        try {
+            $client->version();
+            self::fail('A refused token must not answer.');
+        } catch (ProxmoxUnavailableException $exception) {
+            self::assertSame(['%reason%' => '401 authentication failure'], $exception->userMessageParameters());
+        }
+    }
+
+    public function testACachedTicketRefusedByProxmoxIsDroppedAndTheCallReplayedOnce(): void
+    {
+        // The 100-minute failure: a ticket the cache still believes in and Proxmox no longer
+        // honours - it rebooted, or its authentication key was rotated. Without the replay, every
+        // call answers 401 until the entry expires, on credentials that are perfectly correct.
+        $cache = new ArrayAdapter();
+        $cache->save($cache->getItem('test-key')->set(['ticket' => 'PVE:stale', 'csrf' => 'CSRF:stale']));
+
+        $client = $this->client($this->password(), [
+            new MockResponse('{"data":null}', ['http_code' => 401]),
+            new MockResponse('{"data":{"ticket":"PVE:fresh","CSRFPreventionToken":"CSRF:fresh"}}'),
+            new MockResponse('{"data":{"version":"8.3.2"}}'),
+        ], $cache);
+
+        self::assertSame('8.3.2', $client->version()->string('version'));
+        self::assertCount(3, $this->calls, 'the refused call, one login, the replay');
+        self::assertContains('Cookie: PVEAuthCookie=PVE:stale', $this->headersOf(0));
+        self::assertContains('Cookie: PVEAuthCookie=PVE:fresh', $this->headersOf(2));
+        self::assertSame(
+            ['ticket' => 'PVE:fresh', 'csrf' => 'CSRF:fresh'],
+            $cache->getItem('test-key')->get(),
+            'the stale entry must be replaced, not merely bypassed for this one client',
+        );
+    }
+
+    public function testATicketMintedSecondsAgoIsNotMintedAgain(): void
+    {
+        // The other half of the rule: a 401 on a *fresh* ticket is a real refusal. Replaying it
+        // would double every failed call and still fail.
+        $client = $this->client($this->password(), [
+            new MockResponse('{"data":{"ticket":"PVE:fresh","CSRFPreventionToken":"CSRF:fresh"}}'),
+            new MockResponse('{"data":null}', ['http_code' => 401]),
+        ]);
+
+        try {
+            $client->version();
+            self::fail('A refused call must not answer.');
+        } catch (ProxmoxUnavailableException) {
+            // The count below is the assertion; the exception is only how it gets there.
+        }
+
+        self::assertCount(2, $this->calls, 'one login and one refusal, no second login');
     }
 
     public function testProxmoxOwnWordingIsCarriedIntoTheMessage(): void

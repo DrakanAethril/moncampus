@@ -5748,6 +5748,8 @@ proxmoxHostUnreachableError: 'Hôte injoignable à l’adresse %address%. Vérif
 proxmoxHostTlsHandshakeError: 'La connexion sécurisée avec %address% n’a pas abouti. Le port répond mais n’a pas terminé la négociation TLS : vérifiez qu’il s’agit bien du port de l’interface Proxmox.'
 proxmoxHostTooSlowError: 'L’hôte a mis plus de %seconds% secondes à répondre : le test a été interrompu pour ne pas bloquer la plateforme.'
 proxmoxCheckProvisionFailedWarning: 'Le compte de provisionnement ne répond pas : %reason%'
+proxmoxAuthenticationRefusedTokenError: 'Proxmox a refusé l’authentification (%reason%). Vérifiez le compte et son domaine, l’identifiant du token et son secret : un utilisateur recréé perd tous ses tokens, et le secret n’est affiché qu’à la création.'
+proxmoxAuthenticationRefusedPasswordError: 'Proxmox a refusé l’authentification (%reason%). Vérifiez le compte, son domaine et son mot de passe.'
 
 # --- Console Proxmox - lot 2 : voir et piloter ------------------------------------------------
 infrastructureGuestsNavLabel: 'Machines'

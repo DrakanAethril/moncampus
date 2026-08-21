@@ -4970,6 +4970,8 @@ proxmoxHostUnreachableError: 'Host unreachable at %address%. Check the address a
 proxmoxHostTlsHandshakeError: 'The secure connection to %address% did not complete. The port answers but did not finish the TLS negotiation: check that it is the Proxmox interface port.'
 proxmoxHostTooSlowError: 'The host took more than %seconds% seconds to answer: the test was stopped rather than hold the platform up.'
 proxmoxCheckProvisionFailedWarning: 'The provisioning account is not answering: %reason%'
+proxmoxAuthenticationRefusedTokenError: 'Proxmox refused the authentication (%reason%). Check the account and its realm, the token id and its secret: a recreated user loses every token it had, and the secret is only shown once, at creation.'
+proxmoxAuthenticationRefusedPasswordError: 'Proxmox refused the authentication (%reason%). Check the account, its realm and its password.'
 
 # --- Proxmox console - batch 2: seeing and driving ---------------------------------------------
 infrastructureGuestsNavLabel: 'Machines'
