@@ -8,6 +8,7 @@ use App\Entity\ConsoleSession;
 use App\Entity\GuestAccount;
 use App\Entity\ProxmoxHost;
 use App\Repository\ConsoleSessionRepository;
+use App\Repository\GuestAccountRepository;
 use App\Service\Guest\PlatformKeyUnavailableException;
 use App\Service\Proxmox\ProxmoxClientFactory;
 use App\Service\Proxmox\ProxmoxGuest;
@@ -36,6 +37,7 @@ class ConsoleScreen
 {
     public function __construct(
         private readonly ConsoleSessionRepository $sessions,
+        private readonly GuestAccountRepository $accounts,
         private readonly ProxmoxClientFactory $clientFactory,
         private readonly ProxmoxInventory $inventory,
         private readonly TranslatorInterface $translator,
@@ -55,6 +57,32 @@ class ConsoleScreen
             'batchLabel' => $account->getBatch()?->getLabel(),
             'fromAdmin' => false,
         ];
+    }
+
+    /**
+     * The logins declared on this machine - what « Devenir… » offers.
+     *
+     * Read from the accounts the platform created rather than from the machine's /etc/passwd: the
+     * list is already known, it is the same one the card shows, and it excludes the system accounts
+     * nobody means when they say « devenir un étudiant ».
+     *
+     * @return list<array{login: string, name: ?string}>
+     */
+    public function accountsOn(ConsoleSession $session): array
+    {
+        $host = $session->getHost();
+
+        if (null === $host) {
+            return [];
+        }
+
+        $logins = [];
+
+        foreach ($this->accounts->findForMachine($host, $session->getNode(), $session->getVmid()) as $account) {
+            $logins[] = ['login' => $account->getLogin(), 'name' => $account->getDisplayName()];
+        }
+
+        return $logins;
     }
 
     /**
@@ -160,6 +188,7 @@ class ConsoleScreen
             // closing the tab stops nothing, and somebody who is not told relaunches what is
             // already running.
             'resumedMinutes' => $session->openMinutes() >= 1 ? $session->openMinutes() : null,
+            'machineAccounts' => $this->accountsOn($session),
         ];
     }
 

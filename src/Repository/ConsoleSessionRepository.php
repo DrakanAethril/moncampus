@@ -63,6 +63,32 @@ class ConsoleSessionRepository extends ServiceEntityRepository
     }
 
     /**
+     * Every session ever opened on one machine, oldest first.
+     *
+     * What the palette reads its « déjà passées sur cette machine » from: the transcripts are
+     * already there, and a prompt line in one is a command somebody typed. Nothing extra is
+     * recorded to make this work - which matters, since the one thing this feature must never do is
+     * record keystrokes.
+     *
+     * @return list<ConsoleSession>
+     */
+    public function findForMachine(ProxmoxHost $host, string $node, int $vmid, int $limit = 20): array
+    {
+        return $this->createQueryBuilder('s')
+            ->andWhere('s.host = :host')
+            ->andWhere('s.node = :node')
+            ->andWhere('s.vmid = :vmid')
+            ->andWhere('s.transcript IS NOT NULL')
+            ->setParameter('host', $host)
+            ->setParameter('node', $node)
+            ->setParameter('vmid', $vmid)
+            ->orderBy('s.openedAt', 'ASC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Retention: sessions opened before this date, and the transcripts they carry.
      *
      * Deleted rather than emptied of their transcript: a row that says a console was opened three

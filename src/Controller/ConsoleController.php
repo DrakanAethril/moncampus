@@ -5,18 +5,27 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\ConsoleSession;
+use App\Entity\ConsoleSnippet;
 use App\Entity\User;
 use App\Repository\ConsoleSessionRepository;
+use App\Repository\FileLibraryNodeRepository;
 use App\Repository\GuestAccountRepository;
 use App\Security\Voter\GuestConsoleVoter;
 use App\Service\Console\ConsoleAddressUnknownException;
+use App\Service\Console\ConsoleFileRefusedException;
+use App\Service\Console\ConsoleFileTooLargeException;
+use App\Service\Console\ConsoleHarvest;
+use App\Service\Console\ConsoleIdentity;
 use App\Service\Console\ConsoleLimitReachedException;
 use App\Service\Console\ConsoleNotReadyException;
+use App\Service\Console\ConsolePalette;
 use App\Service\Console\ConsoleScreen;
 use App\Service\Console\ConsoleSessionOpener;
 use App\Service\Console\ConsoleTranscript;
 use App\Service\Console\ConsoleUnavailableException;
+use App\Service\Console\GuestFileDrop;
 use App\Service\Console\GuestPty;
+use App\Service\FileUploadService;
 use App\Service\Guest\GuestShellFactory;
 use App\Service\Guest\GuestUnreachableException;
 use App\Service\Guest\PlatformKeyUnavailableException;
@@ -24,6 +33,7 @@ use App\Service\JsonRequestPayload;
 use App\Service\QueryValue;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -161,6 +171,255 @@ class ConsoleController extends AbstractController
         $entityManager->flush();
 
         return $this->json($screen->pane($session, $pane));
+    }
+
+    /**
+     * `Ctrl+K`: the command palette, its three sources merged and labelled.
+     *
+     * A GET answering JSON, and no session write: the palette is a reading, and it is re-read at
+     * every keystroke in its field.
+     */
+    #[Route(path: '/console/sessions/{id}/palette', name: 'app_console_palette', requirements: ['id' => '\\d+'], methods: ['GET'])]
+    public function palette(
+        Request $request,
+        ConsoleSessionRepository $sessions,
+        ConsolePalette $palette,
+        int $id,
+    ): JsonResponse {
+        $session = $this->ownSessionUnchecked($sessions, $id);
+
+        return $this->json($palette->build($this->currentUser(), $session, QueryValue::trimmed($request, 'q')));
+    }
+
+    /**
+     * « Enregistrer comme extrait » - the last command that went past, kept.
+     *
+     * This is how a personal library fills up: from the console, in one gesture, at the moment the
+     * command proved useful. A form nobody opens is a library that stays empty.
+     */
+    #[Route(path: '/console/sessions/{id}/snippet', name: 'app_console_snippet_add', requirements: ['id' => '\\d+'], methods: ['POST'])]
+    public function addSnippet(
+        Request $request,
+        ConsoleSessionRepository $sessions,
+        EntityManagerInterface $entityManager,
+        int $id,
+    ): JsonResponse {
+        $this->ownSession($request, $sessions, $id);
+        $payload = JsonRequestPayload::fromRequest($request);
+        $command = trim($payload->string('command'));
+        $label = trim($payload->string('label'));
+
+        if ('' === $command) {
+            return $this->json(['ok' => false, 'message' => $this->translator->trans('consoleSnippetEmptyMessage')]);
+        }
+
+        $user = $this->currentUser();
+        $snippet = new ConsoleSnippet($user, '' === $label ? mb_substr($command, 0, 120) : mb_substr($label, 0, 120), $command);
+        $snippet->setCreatedBy($user);
+        $entityManager->persist($snippet);
+        $entityManager->flush();
+
+        return $this->json(['ok' => true, 'message' => $this->translator->trans('consoleSnippetSavedMessage')]);
+    }
+
+    /**
+     * « Devenir » one of the machine's accounts.
+     *
+     * `sudo -iu <login>`: their `$HOME`, their rights, their `.bashrc` - so their problem gets
+     * *reproduced* rather than imagined. The login is checked against the accounts declared on the
+     * machine and never taken as given: this route types into a root-capable shell.
+     */
+    #[Route(path: '/console/sessions/{id}/become/{login}', name: 'app_console_become', requirements: ['id' => '\\d+', 'login' => '[a-z0-9_.-]{1,32}'], methods: ['POST'])]
+    public function become(
+        Request $request,
+        ConsoleSessionRepository $sessions,
+        GuestAccountRepository $accounts,
+        GuestShellFactory $shellFactory,
+        GuestPty $pty,
+        EntityManagerInterface $entityManager,
+        int $id,
+        string $login,
+    ): JsonResponse {
+        $session = $this->ownSession($request, $sessions, $id);
+        $host = $session->getHost();
+
+        // The declared accounts of *this* machine, and nothing else. A login that is not one of
+        // them is not a typo to be forgiven - it is somebody trying a name.
+        $known = null !== $host
+            ? $accounts->findOneForMachine($host, $session->getNode(), $session->getVmid(), $login)
+            : null;
+
+        if (null === $known && ConsoleIdentity::PLATFORM_ACCOUNT !== $login) {
+            throw $this->createNotFoundException();
+        }
+
+        try {
+            $shell = $shellFactory->open($session->getIp(), timeoutSeconds: GuestPty::COMMAND_TIMEOUT_SECONDS);
+        } catch (GuestUnreachableException|PlatformKeyUnavailableException) {
+            return $this->json(['ok' => false, 'message' => $this->translator->trans('consoleMachineBootingMessage')]);
+        }
+
+        try {
+            // Back to the platform account is an `exit`, not a second `sudo`: stacking a login shell
+            // on a login shell is how somebody ends up three deep without knowing it.
+            $pty->sendLine($shell, ConsoleIdentity::PLATFORM_ACCOUNT === $login ? 'exit' : \sprintf('sudo -iu %s', $login));
+        } finally {
+            $shell->disconnect();
+        }
+
+        $session->setUnixUser($login);
+        $entityManager->flush();
+
+        return $this->json(['ok' => true, 'unixUser' => $login]);
+    }
+
+    /**
+     * A file onto the machine: from the reader's computer, or from their file library.
+     *
+     * Both land in the console's current directory, through `base64` on the session that is already
+     * open - no port, no service, no second authentication path.
+     */
+    #[Route(path: '/console/sessions/{id}/file', name: 'app_console_file_send', requirements: ['id' => '\\d+'], methods: ['POST'])]
+    public function sendFile(
+        Request $request,
+        ConsoleSessionRepository $sessions,
+        FileLibraryNodeRepository $nodes,
+        FileUploadService $uploads,
+        GuestShellFactory $shellFactory,
+        GuestFileDrop $drop,
+        int $id,
+    ): JsonResponse {
+        $session = $this->ownSession($request, $sessions, $id);
+        $uploaded = $request->files->get('file');
+        $nodeId = QueryValue::nullableInt($request, 'node') ?? (int) $request->request->get('node');
+
+        if ($uploaded instanceof UploadedFile) {
+            $name = $uploaded->getClientOriginalName();
+            $contents = (string) file_get_contents($uploaded->getPathname());
+        } else {
+            $node = $nodes->find($nodeId);
+            $key = $node?->getStorageKey();
+
+            // Their own library only. The library is owner-scoped, and a console is not a way
+            // around that.
+            if (null === $node || null === $key || $node->getOwner()->getId() !== $this->currentUser()->getId()) {
+                throw $this->createNotFoundException();
+            }
+
+            $name = $node->getOriginalName() ?? $node->getName();
+            $contents = $uploads->read($key);
+        }
+
+        try {
+            $shell = $shellFactory->open($session->getIp(), timeoutSeconds: GuestPty::INSTALL_TIMEOUT_SECONDS);
+        } catch (GuestUnreachableException|PlatformKeyUnavailableException) {
+            return $this->json(['ok' => false, 'message' => $this->translator->trans('consoleMachineBootingMessage')]);
+        }
+
+        try {
+            $path = $drop->send($shell, $name, $contents);
+        } catch (ConsoleFileTooLargeException|ConsoleFileRefusedException $exception) {
+            return $this->json(['ok' => false, 'message' => $this->translator->trans($exception->getMessage())]);
+        } finally {
+            $shell->disconnect();
+        }
+
+        return $this->json([
+            'ok' => true,
+            'message' => $this->translator->trans('consoleFileSentMessage', ['%name%' => GuestFileDrop::safeName($name), '%path%' => $path]),
+        ]);
+    }
+
+    /**
+     * A file off the machine, into the reader's file library.
+     *
+     * The way a piece of work gets picked up off a machine without a USB stick. It lands in the
+     * reader's own library - the library is owner-scoped, and this feature does not invent a second
+     * ownership rule - inside a folder named after the batch, so a class's harvest stays together.
+     */
+    #[Route(path: '/console/sessions/{id}/fetch', name: 'app_console_file_fetch', requirements: ['id' => '\\d+'], methods: ['POST'])]
+    public function fetchFile(
+        Request $request,
+        ConsoleSessionRepository $sessions,
+        GuestShellFactory $shellFactory,
+        GuestFileDrop $drop,
+        ConsoleHarvest $harvest,
+        int $id,
+    ): JsonResponse {
+        $session = $this->ownSession($request, $sessions, $id);
+        $path = trim(JsonRequestPayload::fromRequest($request)->string('path'));
+
+        if ('' === $path || !str_starts_with($path, '/')) {
+            return $this->json(['ok' => false, 'message' => $this->translator->trans('consoleFetchPathMessage')]);
+        }
+
+        try {
+            $shell = $shellFactory->open($session->getIp(), timeoutSeconds: GuestPty::INSTALL_TIMEOUT_SECONDS);
+        } catch (GuestUnreachableException|PlatformKeyUnavailableException) {
+            return $this->json(['ok' => false, 'message' => $this->translator->trans('consoleMachineBootingMessage')]);
+        }
+
+        try {
+            $contents = $drop->fetch($shell, $path);
+        } catch (ConsoleFileTooLargeException|ConsoleFileRefusedException $exception) {
+            return $this->json(['ok' => false, 'message' => $this->translator->trans($exception->getMessage())]);
+        } finally {
+            $shell->disconnect();
+        }
+
+        $node = $harvest->store($this->currentUser(), $session, basename($path), $contents);
+
+        return $this->json([
+            'ok' => true,
+            'message' => $this->translator->trans('consoleFileFetchedMessage', ['%name%' => $node->getName(), '%folder%' => $node->getParent()?->getName() ?? '']),
+        ]);
+    }
+
+    /**
+     * `Ctrl+F`: searching what has already scrolled past, in the machine's own scrollback.
+     *
+     * Read from tmux rather than from the transcript: the scrollback holds three thousand lines of
+     * *this* session as the machine has them, which is more and fresher than what has been folded
+     * into a record.
+     */
+    #[Route(path: '/console/sessions/{id}/search', name: 'app_console_search', requirements: ['id' => '\\d+'], methods: ['POST'])]
+    public function search(
+        Request $request,
+        ConsoleSessionRepository $sessions,
+        GuestShellFactory $shellFactory,
+        GuestPty $pty,
+        int $id,
+    ): JsonResponse {
+        $session = $this->ownSession($request, $sessions, $id);
+        $needle = trim(JsonRequestPayload::fromRequest($request)->string('q'));
+
+        if ('' === $needle) {
+            return $this->json(['ok' => true, 'matches' => []]);
+        }
+
+        try {
+            $shell = $shellFactory->open($session->getIp(), timeoutSeconds: GuestPty::COMMAND_TIMEOUT_SECONDS);
+        } catch (GuestUnreachableException|PlatformKeyUnavailableException) {
+            return $this->json(['ok' => false, 'message' => $this->translator->trans('consoleMachineBootingMessage')]);
+        }
+
+        try {
+            $history = $pty->history($shell, 3000);
+        } finally {
+            $shell->disconnect();
+        }
+
+        $matches = [];
+
+        foreach (explode("\n", $history) as $number => $line) {
+            if (str_contains(mb_strtolower($line), mb_strtolower($needle))) {
+                $matches[] = ['line' => $number + 1, 'text' => mb_substr(rtrim($line), 0, 300)];
+            }
+        }
+
+        // Newest first: what somebody is looking for in three thousand lines is almost always what
+        // has just gone past.
+        return $this->json(['ok' => true, 'matches' => \array_slice(array_reverse($matches), 0, 60)]);
     }
 
     /**

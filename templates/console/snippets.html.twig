@@ -1,0 +1,97 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'consoleSnippetsHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'consoleSnippetsHeading'|trans, url: path('app_console_snippets')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'consoleSnippetsHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="cm-note">
+        <span class="cm-note__icon">i</span>
+        <span>{{ 'consoleSnippetsIntroText'|trans }}</span>
+    </div>
+
+    <div class="card mb-3">
+        {# POST puis redirection : Turbo l'exige, et un formulaire d'écriture se relit sur son écran. #}
+        <form method="post" action="{{ path('app_console_snippets_new') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('console_snippets') }}">
+            <fieldset class="cm-fieldset">
+                <legend class="cm-fieldset__legend">{{ 'consoleSnippetNewHeading'|trans }}</legend>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label" for="snippet-label">{{ 'consoleSnippetLabelField'|trans }}</label>
+                        <input id="snippet-label" name="label" class="cm-input" maxlength="120" placeholder="{{ 'consoleSnippetLabelPlaceholder'|trans }}">
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label" for="snippet-command">{{ 'consoleSnippetCommandField'|trans }}</label>
+                        <input id="snippet-command" name="command" class="cm-input" required placeholder="sudo systemctl restart {service}">
+                    </div>
+                </div>
+                <label class="cm-snippet__check">
+                    <input type="checkbox" name="shared" value="1">
+                    <span>{{ 'consoleSnippetSharedField'|trans }}</span>
+                </label>
+                <p class="cm-hint">{{ 'consoleSnippetTokensHelp'|trans }}</p>
+            </fieldset>
+            <div class="cm-fieldset">
+                <div class="cm-actionbar" style="margin-top: 0; border-top: 0; padding-top: 0;">
+                    <div class="cm-actionbar__buttons">
+                        <button type="submit" class="cm-btn cm-btn--primary">{{ 'consoleSnippetSaveAction'|trans }}</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="card mb-3">
+        <fieldset class="cm-fieldset">
+            <legend class="cm-fieldset__legend">{{ 'consoleSnippetsMineHeading'|trans }}</legend>
+            {% if snippets is empty %}
+                <p class="cm-hint" style="margin:0">{{ 'consoleSnippetsEmptyText'|trans }}</p>
+            {% else %}
+                {% for snippet in snippets %}
+                    {# Un seul <form> par ligne, et les deux boutons dedans : un <form> imbriqué et un
+                       jeton lu au mauvais endroit sont les deux classes de bug que ce dépôt
+                       retrouve régulièrement sur les petites actions d'une liste. #}
+                    <form method="post" action="{{ path('app_console_snippets_update', {id: snippet.id}) }}" class="cm-snippet">
+                        <input type="hidden" name="_token" value="{{ csrf_token('console_snippets') }}">
+                        <input name="label" class="cm-input cm-snippet__label" value="{{ snippet.label }}" maxlength="120" aria-label="{{ 'consoleSnippetLabelField'|trans }}">
+                        <input name="command" class="cm-input cm-snippet__command" value="{{ snippet.command }}" aria-label="{{ 'consoleSnippetCommandField'|trans }}">
+                        <label class="cm-snippet__check">
+                            <input type="checkbox" name="shared" value="1"{{ snippet.shared ? ' checked' }}>
+                            <span>{{ 'consoleSnippetSharedShort'|trans }}</span>
+                        </label>
+                        <span class="cm-hint cm-snippet__uses">{{ snippet.useCount }}×</span>
+                        <button type="submit" class="cm-btn cm-btn--outline cm-btn--sm">{{ 'consoleSnippetSaveAction'|trans }}</button>
+                        <button type="submit" name="delete" value="1" class="cm-btn cm-btn--sm cm-snippet__delete">{{ 'consoleSnippetDeleteAction'|trans }}</button>
+                    </form>
+                {% endfor %}
+            {% endif %}
+        </fieldset>
+    </div>
+
+    {% if shared is not empty %}
+        <div class="card">
+            <fieldset class="cm-fieldset">
+                <legend class="cm-fieldset__legend">{{ 'consoleSnippetsSharedHeading'|trans }}</legend>
+                <table class="table table-vcenter card-table">
+                    <tbody>
+                        {% for snippet in shared %}
+                            <tr>
+                                <td class="cm-guest__name" style="width: 260px">{{ snippet.label }}</td>
+                                <td class="cm-mono cm-guest__sub">{{ snippet.command }}</td>
+                                <td class="cm-guest__sub" style="width: 180px">{{ snippet.owner ? (snippet.owner.displayName ?? snippet.owner.username) : '' }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </fieldset>
+        </div>
+    {% endif %}
+{% endblock %}
