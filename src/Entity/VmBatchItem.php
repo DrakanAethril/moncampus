@@ -119,6 +119,18 @@ class VmBatchItem
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $message = null;
 
+    /**
+     * When this machine entered the phase it is on - stamped by setStatus(), and only when the
+     * status actually changes, so a pass that merely re-states a wait does not reset it.
+     *
+     * It is what bounds a wait. A machine that has been started and never answers is otherwise
+     * waited on for ever: `provision()` calls that a wait rather than a failure, correctly, since
+     * a boot takes a minute - but nothing said when a minute had become an afternoon, and with one
+     * machine deployed at a time that single machine holds the whole class behind it.
+     */
+    #[ORM\Column(name: 'phase_since', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $phaseSince = null;
+
     /** Deployment order, which is also the order of the `{index}` in the name pattern. */
     #[ORM\Column]
     private int $position = 0;
@@ -239,10 +251,29 @@ class VmBatchItem
 
     public function setStatus(VmBatchItemStatus $status, ?string $message = null): static
     {
+        if ($status !== $this->status || null === $this->phaseSince) {
+            $this->phaseSince = new \DateTimeImmutable();
+        }
+
         $this->status = $status;
         $this->message = $message;
 
         return $this;
+    }
+
+    public function getPhaseSince(): ?\DateTimeImmutable
+    {
+        return $this->phaseSince;
+    }
+
+    /** How long this machine has been on its current phase, in seconds. */
+    public function phaseDurationSeconds(): int
+    {
+        if (null === $this->phaseSince) {
+            return 0;
+        }
+
+        return max(0, time() - $this->phaseSince->getTimestamp());
     }
 
     /**

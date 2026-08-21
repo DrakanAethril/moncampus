@@ -4972,6 +4972,7 @@ proxmoxHostTooSlowError: 'The host took more than %seconds% seconds to answer: t
 proxmoxCheckProvisionFailedWarning: 'The provisioning account is not answering: %reason%'
 proxmoxAuthenticationRefusedTokenError: 'Proxmox refused the authentication (%reason%). Check the account and its realm, the token id and its secret: a recreated user loses every token it had, and the secret is only shown once, at creation.'
 proxmoxAuthenticationRefusedPasswordError: 'Proxmox refused the authentication (%reason%). Check the account, its realm and its password.'
+proxmoxNoCloudInitDriveError: 'The cloned template (VM %vmid%) has no cloud-init drive. Without one, the address, the name and the account are written into the configuration and never read: the machine boots with the template’s address and no account. Add a cloud-init drive to the template, then start again.'
 
 # --- Proxmox console - batch 2: seeing and driving ---------------------------------------------
 infrastructureGuestsNavLabel: 'Machines'
@@ -5629,6 +5630,7 @@ vmInstallStepConfigurationFailedLabel: 'Configuration failed'
 vmInstallStepStartRequestedLabel: 'Start requested'
 vmInstallStepReachableLabel: 'Machine reachable'
 vmInstallStepUnreachableLabel: 'Machine unreachable'
+vmInstallStepWaitingLabel: 'Waiting'
 vmInstallStepAccountsAppliedLabel: 'Accounts created'
 vmInstallStepAccountsFailedLabel: 'Accounts failed'
 vmInstallStepPostInstallRunLabel: 'Post-installation run'

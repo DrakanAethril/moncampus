@@ -5750,6 +5750,7 @@ proxmoxHostTooSlowError: 'L’hôte a mis plus de %seconds% secondes à répondr
 proxmoxCheckProvisionFailedWarning: 'Le compte de provisionnement ne répond pas : %reason%'
 proxmoxAuthenticationRefusedTokenError: 'Proxmox a refusé l’authentification (%reason%). Vérifiez le compte et son domaine, l’identifiant du token et son secret : un utilisateur recréé perd tous ses tokens, et le secret n’est affiché qu’à la création.'
 proxmoxAuthenticationRefusedPasswordError: 'Proxmox a refusé l’authentification (%reason%). Vérifiez le compte, son domaine et son mot de passe.'
+proxmoxNoCloudInitDriveError: 'Le modèle cloné (VM %vmid%) n’a pas de lecteur cloud-init. Sans lui, l’adresse, le nom et le compte sont écrits dans la configuration et ne sont jamais lus : la machine démarre avec l’adresse du modèle et aucun compte. Ajoutez un lecteur cloud-init au modèle, puis relancez.'
 
 # --- Console Proxmox - lot 2 : voir et piloter ------------------------------------------------
 infrastructureGuestsNavLabel: 'Machines'
@@ -6408,6 +6409,7 @@ vmInstallStepConfigurationFailedLabel: 'Configuration en échec'
 vmInstallStepStartRequestedLabel: 'Démarrage demandé'
 vmInstallStepReachableLabel: 'Machine joignable'
 vmInstallStepUnreachableLabel: 'Machine injoignable'
+vmInstallStepWaitingLabel: 'En attente'
 vmInstallStepAccountsAppliedLabel: 'Comptes créés'
 vmInstallStepAccountsFailedLabel: 'Comptes en échec'
 vmInstallStepPostInstallRunLabel: 'Post-installation exécutée'

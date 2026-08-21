@@ -66,6 +66,8 @@ Application commands (`src/Command/`), all cron-driven in production:
 | `app:purge-platform-activity` | Retention on `PlatformActivity` |
 | `app:antivirus:check` | **Diagnostic, not cron.** Scans a clean file and the EICAR test string through the configured `ANTIVIRUS_DSN`; exits non-zero unless uploads are genuinely being refused. The state it exists for is the silent one — a blank DSN disables scanning without announcing it anywhere |
 | `app:help:sync-content` | Creates the missing help sections/articles from `App\Help\HelpContentCatalog`; never overwrites what an admin has edited (`--refresh` also rewrites the untouched ones). Run it once after a deploy that adds catalogue entries |
+| `app:vm-batch:advance` | Continues every VM deployment already under way, one machine per pass. **Cron every minute.** It is what makes a deployment survive the browser tab that started it — without it the batch screen's own loop is the only thing pressing, and a closed tab leaves machines cloned and never configured. It never *starts* a deployment: a batch whose machines are all still `planned` is a plan, not an instruction |
+| `app:proxmox:secrets` | **Diagnostic, not cron.** Says whether the sealed Proxmox secrets still open, and prints a fingerprint of the `PROXMOX_SECRET_KEY` in use. Run it before and after a deploy: a fingerprint that changes means the key is not being carried across releases, which makes every stored token unreadable at once and looks, from the screen, exactly like Proxmox refusing them |
 | `app:seed-dev-*`, `app:dev:*`, `app:configure-dev-programs` | **Dev-machine only.** Populate/inject into the local database. These must never be relied on in staging or production. |
 
 ## Runtime architecture (Docker layer)
