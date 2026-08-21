@@ -158,6 +158,45 @@ class IpAllocationRepository extends ServiceEntityRepository
         return $rows[0]['ip'] ?? null;
     }
 
+    /**
+     * The addresses of several machines at once, keyed by VMID.
+     *
+     * The plural of findAddressForVmid(), for « Mes machines virtuelles »: a machine declared
+     * outside a batch has no item to carry its address, so the registry is the only place it is
+     * written - and asking machine by machine would put a query inside the loop.
+     *
+     * @param list<int> $vmids
+     *
+     * @return array<int, string>
+     */
+    public function findAddressesForVmids(array $vmids): array
+    {
+        if ([] === $vmids) {
+            return [];
+        }
+
+        /** @var list<array{ip: string, vmid: int}> $rows */
+        $rows = $this->createQueryBuilder('a')
+            ->select('a.ip AS ip', 'a.vmid AS vmid')
+            ->andWhere('a.vmid IN (:vmids)')
+            ->andWhere('a.status != :released')
+            ->setParameter('vmids', $vmids)
+            ->setParameter('released', IpAllocationStatus::Released)
+            ->orderBy('a.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $byVmid = [];
+
+        foreach ($rows as $row) {
+            // First wins, like the singular's setMaxResults(1): a machine with two live
+            // allocations is a registry to repair, not a card to draw twice.
+            $byVmid[$row['vmid']] ??= $row['ip'];
+        }
+
+        return $byVmid;
+    }
+
     public function countLive(IpRange $range): int
     {
         return (int) $this->createQueryBuilder('a')

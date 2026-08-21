@@ -46,6 +46,46 @@ class GuestAccountRepository extends ServiceEntityRepository
         return $this->findOneBy(['host' => $host, 'node' => $node, 'vmid' => $vmid, 'login' => $login]);
     }
 
+    /**
+     * The logins declared on several machines of one host at once, keyed by `node/vmid`.
+     *
+     * The plural of findForMachine(), and it exists for « Mes machines virtuelles »: that screen
+     * shows *every* account registered on a machine, not only the reader's own, so asking machine
+     * by machine would put a query inside the loop over a class's worth of them. Scalars rather
+     * than entities - the screen prints logins and nothing more.
+     *
+     * @param list<int> $vmids
+     *
+     * @return array<string, list<string>>
+     */
+    public function findLoginsOnMachines(ProxmoxHost $host, array $vmids): array
+    {
+        if ([] === $vmids) {
+            return [];
+        }
+
+        /** @var list<array{node: string, vmid: int, login: string}> $rows */
+        $rows = $this->createQueryBuilder('a')
+            ->select('a.node AS node', 'a.vmid AS vmid', 'a.login AS login')
+            ->andWhere('a.host = :host')
+            ->andWhere('a.vmid IN (:vmids)')
+            ->setParameter('host', $host)
+            ->setParameter('vmids', $vmids)
+            ->orderBy('a.login', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $byMachine = [];
+
+        foreach ($rows as $row) {
+            // The VMID is filtered in SQL and the node sorted out here: a VMID is unique per
+            // cluster, so the pair only ever narrows a set that is already the right one.
+            $byMachine[\sprintf('%s/%d', $row['node'], $row['vmid'])][] = $row['login'];
+        }
+
+        return $byMachine;
+    }
+
     /** @return list<GuestAccount> */
     /**
      * Whether this person holds an account on any machine at all.

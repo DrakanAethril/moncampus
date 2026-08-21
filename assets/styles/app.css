@@ -86,6 +86,19 @@
        (side panel and its overlay). */
     --cm-topbar-h: 90px;
 
+    /* « Mes machines virtuelles »: the reference's own values, kept exact rather than
+       rounded onto a neighbouring token - see the .cm-vm* block further down. */
+    --cm-vm-soft: #fbfdfe;
+    --cm-vm-dim: #a4b1bc;
+    --cm-vm-off-bd: #e6ecf1;
+    --cm-vm-off-bg: #f7f9fb;
+    --cm-vm-ok-tx: #1f7a54;
+    --cm-vm-ok-bg: #e7f4ee;
+    --cm-vm-gold-tx: #8a6a1f;
+    --cm-vm-gold-bg: #fdf6e8;
+    --cm-vm-stop-tx: #a8443a;
+    --cm-vm-stop-bd: #e2ccc8;
+    --cm-vm-stop-bg: #fdf4f3;
     --cm-radius: 10px;
     --cm-radius-sm: 8px;
     --cm-shadow-pop: 0 12px 28px rgba(18, 52, 77, .18);
@@ -163,6 +176,17 @@
     --cm-purple-bg: #2e2440; --cm-purple-tx: #bda6d8;
     --cm-teal-bg: #1d3340;   --cm-teal-tx: #93bdd2;
     --cm-warn-tx: #d99a55;
+    --cm-vm-soft: #1e2833;
+    --cm-vm-dim: #6b7f8e;
+    --cm-vm-off-bd: #2b3946;
+    --cm-vm-off-bg: #202b36;
+    --cm-vm-ok-tx: #4caf7a;
+    --cm-vm-ok-bg: #1b3329;
+    --cm-vm-gold-tx: #d9b46a;
+    --cm-vm-gold-bg: #33291a;
+    --cm-vm-stop-tx: #d98f7f;
+    --cm-vm-stop-bd: #4a3330;
+    --cm-vm-stop-bg: #2e2321;
     --cm-positive-tx: #4caf7a;
     --cm-action-main: #74b0da;
     --cm-action-danger: #d98f7f;
@@ -1172,6 +1196,20 @@ td.cm-actions, .cm-actions {
    row to the next ("Courses" on an e-CO parcours that isn't ready yet). Carried by a <span>, never
    by a link: there is nothing to click. */
 .cm-actions .cm-action--off      { color: var(--cm-disabled); }
+
+/* The whole of a row's actions folded into one field (machines list). Tighter than a form select
+   because it lives inside a table row, and left to size itself on its widest entry so the column
+   does not jump between a machine that is running and one that is not. */
+.cm-select--action { padding: 4px 7px; font-size: 12px; }
+/* Under the select rather than beside it, which is what lets an operation in flight report itself
+   without taking the actions away. Qualified with the element so it beats the inline-block and the
+   14px gap that .cm-actions gives every child. */
+td.cm-actions .cm-actions__note {
+    display: block;
+    margin-left: 0;
+    margin-top: 4px;
+    white-space: normal;
+}
 
 /* ---------- RowGroup extension: group / subtotal / grand-total rows (tour 2, 2e) ----------
    Selectors are qualified with "table.dataTable" (rather than a bare "tr.cm-dt-*") to out-
@@ -8018,7 +8056,7 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 }
 /* An intertitle structures the reading of the survey, so it reads as a heading in the list too. */
 .cm-survey-line--titre { background: color-mix(in srgb, var(--cm-brand) 5%, var(--cm-surface)); }
-.cm-survey-line--titre .cm-survey-line__label { font-family: var(--cm-font-display); font-size: 14.5px; }
+.cm-survey-line--titre .cm-survey-line__label { font-family: var(--cm-font-title); font-size: 14.5px; }
 
 .cm-survey-line__body { flex: 1; min-width: 0; text-decoration: none; color: inherit; }
 .cm-survey-line__body:hover { color: inherit; }
@@ -8043,7 +8081,7 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
     margin: 8px 0 0;
     padding-bottom: 6px;
     border-bottom: 1px solid var(--cm-border);
-    font-family: var(--cm-font-display);
+    font-family: var(--cm-font-title);
     font-size: 16px;
 }
 
@@ -8122,3 +8160,142 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
    and never aligned against a different question. */
 .cm-comparison--off { opacity: .72; }
 .cm-comparison--off .card-title { color: var(--cm-muted); }
+
+/* ==========================================================================
+   « Mes machines virtuelles » (.cm-vm*) - design/design_handoff_infrastructure
+   The card is the reference's, to the pixel: every length, radius and colour
+   below is read off Infrastructure.dc.html rather than approximated from the
+   app's own scale. Where a value happens to equal an existing --cm-* token it
+   uses the token; where it does not, it gets a --cm-vm-* of its own, declared
+   twice like every other token here so the screen still has a dark face.
+   The page chrome around it - navbar, breadcrumb, title - stays the app's, as
+   the project's own navigation and breadcrumb rules outrank a créa.
+   ========================================================================== */
+.cm-vmgrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(430px, 1fr));
+    gap: 14px;
+    align-items: start;
+}
+
+.cm-vmcard {
+    background: var(--cm-surface);
+    border: 1px solid var(--cm-border);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 1. Header ------------------------------------------------------------- */
+.cm-vmcard__head {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 13px 18px;
+    border-bottom: 1px solid var(--cm-border-soft);
+}
+.cm-vmcard__icon {
+    width: 32px; height: 32px; border-radius: 9px;
+    display: grid; place-items: center; flex: none;
+    background: var(--cm-blue-bg-soft); color: var(--cm-brand-strong);
+}
+.cm-vmcard--off .cm-vmcard__icon { background: var(--cm-bg); color: var(--cm-faint); }
+.cm-vmcard--busy .cm-vmcard__icon { background: var(--cm-vm-gold-bg); color: var(--cm-vm-gold-tx); }
+.cm-vmcard__name { font: 600 15px var(--cm-font-title); color: var(--cm-ink); }
+
+.cm-vmcard__status {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 4px 11px 4px 9px;
+    border-radius: 999px;
+    font: 600 11.5px var(--cm-font-ui);
+    background: var(--cm-vm-ok-bg); color: var(--cm-vm-ok-tx);
+}
+.cm-vmcard__status::before {
+    content: ''; width: 7px; height: 7px; border-radius: 50%;
+    background: currentColor; flex: none;
+}
+.cm-vmcard__status--off { background: var(--cm-bg); color: var(--cm-muted); }
+/* The dot of the stopped pill is lighter than its text, the one place the two
+   part company - hence the override rather than currentColor. */
+.cm-vmcard__status--off::before { background: var(--cm-vm-dim); }
+.cm-vmcard__status--busy { background: var(--cm-vm-gold-bg); color: var(--cm-vm-gold-tx); }
+.cm-vmcard__status--busy::before { background: var(--cm-gold); }
+.cm-vmcard__status--unknown { background: var(--cm-bg); color: var(--cm-muted); }
+.cm-vmcard__status--unknown::before { background: var(--cm-vm-dim); }
+
+/* 2. Specifications ------------------------------------------------------ */
+.cm-vmcard__specs {
+    padding: 15px 18px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 9px 22px;
+    align-items: center;
+    border-bottom: 1px solid var(--cm-border-soft);
+}
+.cm-vmcard__label { font: 600 11.5px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-vmcard__value { font-size: 13px; color: var(--cm-text); }
+.cm-vmcard__value--mono { font: 500 13px ui-monospace, Menlo, monospace; color: var(--cm-ink); }
+/* A machine that is off has nothing to say about itself: the reference dims
+   every value at once rather than marking them one by one. */
+.cm-vmcard--off .cm-vmcard__value,
+.cm-vmcard--off .cm-vmcard__value--mono { color: var(--cm-faint); }
+
+/* 3. Password ------------------------------------------------------------ */
+.cm-vmcard__pw { padding: 15px 18px; display: flex; flex-direction: column; gap: 9px; }
+.cm-vmcard__pw--off { opacity: .55; }
+.cm-vmcard__pwlabel { font: 600 12px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-vmcard__pwrow { display: flex; gap: 9px; }
+.cm-vmcard__input {
+    flex: 1; min-width: 0;
+    border: 1px solid var(--cm-border); border-radius: 8px;
+    padding: 9px 12px;
+    background: var(--cm-vm-soft); color: var(--cm-ink);
+    font: 400 13px var(--cm-font-ui); outline: none;
+}
+.cm-vmcard__input::placeholder { color: var(--cm-vm-dim); }
+.cm-vmcard__input:focus { border-color: var(--cm-brand); }
+.cm-vmcard__input:disabled { border-color: var(--cm-vm-off-bd); background: var(--cm-vm-off-bg); }
+
+.cm-vmcard__btn {
+    flex: none;
+    border: 1px solid var(--cm-border); background: var(--cm-surface);
+    color: var(--cm-brand-strong); border-radius: 8px;
+    padding: 9px 16px; font: 600 12.5px var(--cm-font-ui); cursor: pointer;
+}
+.cm-vmcard__btn:hover:not(:disabled) { background: var(--cm-bg); }
+.cm-vmcard__btn:disabled {
+    border-color: var(--cm-vm-off-bd); background: var(--cm-vm-off-bg);
+    color: var(--cm-vm-dim); cursor: default;
+}
+
+/* 4. Footer -------------------------------------------------------------- */
+.cm-vmcard__foot {
+    margin-top: auto;
+    padding: 12px 18px;
+    border-top: 1px solid var(--cm-border-soft);
+    background: var(--cm-vm-soft);
+    display: flex; align-items: center; gap: 10px;
+}
+.cm-vmcard__note {
+    display: inline-flex; align-items: center; gap: 7px;
+    font: 600 12px var(--cm-font-ui); color: var(--cm-vm-ok-tx);
+}
+.cm-vmcard__note--ko { color: var(--cm-vm-stop-tx); }
+.cm-vmcard__note--wait { color: var(--cm-muted); }
+.cm-vmcard__note:empty { display: none; }
+.cm-vmcard__actions { margin-left: auto; display: flex; gap: 8px; }
+
+.cm-vmcard__stop {
+    border: 1px solid var(--cm-vm-stop-bd); background: var(--cm-surface);
+    color: var(--cm-vm-stop-tx); border-radius: 8px;
+    padding: 8px 14px; font: 600 12.5px var(--cm-font-ui); cursor: pointer;
+}
+.cm-vmcard__stop:hover:not(:disabled) { background: var(--cm-vm-stop-bg); }
+.cm-vmcard__start {
+    border: 0; background: var(--cm-brand); color: #fff; border-radius: 8px;
+    padding: 9px 16px; font: 600 12.5px var(--cm-font-ui); cursor: pointer;
+}
+.cm-vmcard__start:hover:not(:disabled) { background: var(--cm-brand-strong); }
+.cm-vmcard__stop:disabled, .cm-vmcard__start:disabled { opacity: .55; cursor: default; }

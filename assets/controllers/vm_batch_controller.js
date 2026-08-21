@@ -34,11 +34,12 @@ export default class extends Controller {
     // screen still feels alive.
     static IDLE_PAUSE_MS = 5000;
 
-    // How often a page showing a deployment in progress reloads itself.
+    // How often a page showing a deployment in progress brings its view up to date.
     //
     // The work is done on the server - a pass advances a machine whether or not anybody is looking
-    // at this page - so this is a *view* refreshing, not a loop driving anything. Which is why it
-    // may simply reload: there is nothing here to lose.
+    // at this page - so this is a *view* refreshing, not a loop driving anything. A tab that is only
+    // watching may simply reload, having nothing to lose; the tab that is driving the deployment
+    // swaps the card in place instead, on the same beat.
     static REFRESH_MS = 5000;
 
     // How many passes in a row may fail to answer before the loop gives up.
@@ -63,13 +64,16 @@ export default class extends Controller {
 
     disconnect() {
         this.#cancelRefresh();
+        this.#stopLiveRefresh();
     }
 
     async deploy() {
-        // This tab is about to drive the deployment itself and reloads at the end of its own loop;
-        // a reload landing in the middle would abandon it exactly where the batch screen used to be
-        // found stuck.
+        // This tab is about to drive the deployment itself, so it must not reload: a reload landing
+        // in the middle would abandon the loop exactly where the batch screen used to be found
+        // stuck. The view still has to move - a deployment nobody can see advance reads as a frozen
+        // screen - so the card refreshes *in place* instead, which the loop survives.
         this.#cancelRefresh();
+        this.#startLiveRefresh();
         this.buttonTarget.disabled = true;
 
         try {
@@ -98,7 +102,8 @@ export default class extends Controller {
 
                 remaining = answer.remaining;
                 blocked = answer.blocked ?? 0;
-                this.progressTarget.textContent = this.#progressLabel(answer);
+                this.lastProgressLabel = this.#progressLabel(answer);
+                this.progressTarget.textContent = this.lastProgressLabel;
 
                 if (remaining === 0 || remaining <= blocked) {
                     // Either everything is done, or everything still outstanding has refused. The
@@ -119,6 +124,7 @@ export default class extends Controller {
                 await new Promise((resolve) => setTimeout(resolve, this.constructor.IDLE_PAUSE_MS));
             }
         } finally {
+            this.#stopLiveRefresh();
             // Reloaded rather than patched: every row's status, VMID and address just moved.
             window.location.reload();
         }
@@ -136,6 +142,73 @@ export default class extends Controller {
         if (this.refreshTimer) {
             window.clearTimeout(this.refreshTimer);
             this.refreshTimer = null;
+        }
+    }
+
+    /**
+     * The same view refresh as `#scheduleRefresh()`, for the tab that is driving the deployment.
+     *
+     * It cannot reload - that would kill the loop pressing the server - so it re-fetches this very
+     * page and swaps the card's contents. What the server renders is the whole truth of the batch:
+     * the status badges, every row's VMID and address, and the install log of the machine being
+     * worked on. Only the element carrying the controller survives, which is what keeps the loop
+     * and its `this` alive across a swap.
+     */
+    #startLiveRefresh() {
+        if (this.liveTimer) {
+            return;
+        }
+
+        this.liveTimer = window.setInterval(() => this.#refreshInPlace(), this.constructor.REFRESH_MS);
+    }
+
+    #stopLiveRefresh() {
+        if (this.liveTimer) {
+            window.clearInterval(this.liveTimer);
+            this.liveTimer = null;
+        }
+    }
+
+    async #refreshInPlace() {
+        // A pass can take longer than the refresh interval, and so can this fetch: without the
+        // guard two answers could land out of order and show a state older than the one on screen.
+        if (this.refreshing) {
+            return;
+        }
+
+        this.refreshing = true;
+
+        try {
+            const response = await fetch(window.location.href, { headers: { Accept: 'text/html' } });
+
+            if (!response.ok) {
+                return;
+            }
+
+            const fresh = new DOMParser()
+                .parseFromString(await response.text(), 'text/html')
+                .querySelector('[data-controller~="vm-batch"]');
+
+            if (!fresh) {
+                return;
+            }
+
+            this.element.innerHTML = fresh.innerHTML;
+
+            // The swap brought back a fresh button and a server-rendered count. This tab is still
+            // deploying, so both have to say so again.
+            if (this.hasButtonTarget) {
+                this.buttonTarget.disabled = true;
+            }
+
+            if (this.lastProgressLabel && this.hasProgressTarget) {
+                this.progressTarget.textContent = this.lastProgressLabel;
+            }
+        } catch {
+            // A refresh that fails is a refresh missed, nothing more - the next one is in five
+            // seconds, and the deployment itself is not driven from here.
+        } finally {
+            this.refreshing = false;
         }
     }
 
