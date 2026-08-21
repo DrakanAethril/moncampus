@@ -12,7 +12,7 @@ namespace App\Enum;
  * afterwards without rewriting rows - a log is written once and read months later.
  *
  * The list is deliberately the chain the design fixes, in order, plus the ways each link can refuse:
- * clone → configure → start → answer → accounts → post-installation.
+ * clone → configure → start → answer → accounts → post-installation → shutdown.
  */
 enum VmInstallStep: string
 {
@@ -68,6 +68,21 @@ enum VmInstallStep: string
     case TimeSyncFailed = 'timeSyncFailed';
     case PostInstallRun = 'postInstallRun';
     case PostInstallFailed = 'postInstallFailed';
+
+    /**
+     * The machine was asked to shut down, once everything was installed on it.
+     *
+     * The last link of the chain, and the one that surprises: a machine is built switched off. It
+     * is its user who starts it from « Mes machines virtuelles » - a class's worth of machines
+     * running all night because somebody built them in the afternoon is the state this avoids.
+     */
+    case ShutdownRequested = 'shutdownRequested';
+
+    /**
+     * It was not - and the machine is left running rather than the batch failed. Everything that
+     * was asked for is on it; being switched on is not a defect its user cannot fix in one click.
+     */
+    case ShutdownFailed = 'shutdownFailed';
 
     /** The label key the screen shows - the French wording lives in the translations. */
     public function labelKey(): string
