@@ -54,6 +54,28 @@
             {% endif %}
         </div>
 
+        {% if broadcasts is not empty %}
+            <fieldset class="cm-fieldset">
+                <legend class="cm-fieldset__legend">{{ 'consoleSessionBroadcastsLabel'|trans }}</legend>
+                {# Ce qui est parti d'ici vers plusieurs machines à la fois, avec le compte de celles
+                   qui ont répondu et de celles qui n'étaient pas là. #}
+                <table class="table table-vcenter card-table">
+                    <tbody>
+                        {% for broadcast in broadcasts %}
+                            <tr>
+                                <td class="cm-guest__sub" style="width: 130px">{{ broadcast.sentAt|date('d/m H:i') }}</td>
+                                <td class="cm-mono">{{ broadcast.command }}</td>
+                                <td class="cm-guest__sub" style="width: 220px">
+                                    {{ 'consoleBroadcastDoneCount'|trans({'%count%': broadcast.countDone}) }}
+                                    · {{ 'consoleBroadcastRefusedCount'|trans({'%count%': broadcast.countRefused}) }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </fieldset>
+        {% endif %}
+
         {% if session.transcript %}
             <pre class="cm-console__transcript">{{ session.transcript }}</pre>
         {% else %}

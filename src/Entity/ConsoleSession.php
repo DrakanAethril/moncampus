@@ -106,6 +106,17 @@ class ConsoleSession
     #[ORM\Column(name: 'transcript_truncated', options: ['default' => false])]
     private bool $transcriptTruncated = false;
 
+    /**
+     * When the broadcast was armed, or null.
+     *
+     * **Armed explicitly, never by default, and disarmed on its own.** Sending a line to the
+     * twenty-four machines of a class is the function that saves the most time and breaks the
+     * fastest, so the frame turns copper while it is armed and it lets go by itself after ten
+     * minutes without a send: a console found still armed the next morning is a trap.
+     */
+    #[ORM\Column(name: 'broadcast_armed_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $broadcastArmedAt = null;
+
     public function __construct(ProxmoxHost $host, string $node, int $vmid, string $ip, User $openedBy, string $unixUser)
     {
         $this->host = $host;
@@ -184,8 +195,20 @@ class ConsoleSession
         return $this->unixUser;
     }
 
+    /**
+     * Taking another account's identity, which **disarms the broadcast without being asked**.
+     *
+     * What would go out is no longer the same command from one machine to the next: `sudo -iu` put
+     * this session in one student's home with one student's rights, and the other machines have
+     * neither. Written here rather than at the call site so that no future second call site can
+     * forget it.
+     */
     public function setUnixUser(string $unixUser): static
     {
+        if ($unixUser !== $this->unixUser) {
+            $this->broadcastArmedAt = null;
+        }
+
         $this->unixUser = $unixUser;
 
         return $this;
@@ -260,6 +283,48 @@ class ConsoleSession
         }
 
         return max(0, (int) floor(($this->closedAt->getTimestamp() - $this->openedAt->getTimestamp()) / 60));
+    }
+
+    /** After this without a send, an armed broadcast lets go of its own accord. */
+    public const int BROADCAST_ARMED_MINUTES = 10;
+
+    public function isBroadcastArmed(?\DateTimeImmutable $now = null): bool
+    {
+        if (null === $this->broadcastArmedAt) {
+            return false;
+        }
+
+        $now ??= new \DateTimeImmutable();
+
+        return $this->broadcastArmedAt > $now->modify(\sprintf('-%d minutes', self::BROADCAST_ARMED_MINUTES));
+    }
+
+    /** How many minutes of arming are left, for the status bar to count down. */
+    public function broadcastMinutesLeft(?\DateTimeImmutable $now = null): int
+    {
+        if (!$this->isBroadcastArmed($now)) {
+            return 0;
+        }
+
+        $now ??= new \DateTimeImmutable();
+        $expiry = ($this->broadcastArmedAt ?? $now)->modify(\sprintf('+%d minutes', self::BROADCAST_ARMED_MINUTES));
+
+        return max(0, (int) ceil(($expiry->getTimestamp() - $now->getTimestamp()) / 60));
+    }
+
+    /** Arming, and re-arming on each send so the countdown restarts from the last one. */
+    public function armBroadcast(): static
+    {
+        $this->broadcastArmedAt = new \DateTimeImmutable();
+
+        return $this;
+    }
+
+    public function disarmBroadcast(): static
+    {
+        $this->broadcastArmedAt = null;
+
+        return $this;
     }
 
     /** Nobody has typed for a quarter of an hour: this is a laptop that was shut, not a console. */

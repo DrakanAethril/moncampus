@@ -61,6 +61,7 @@
                             <th>{{ 'consoleSessionOpenedByLabel'|trans }}</th>
                             <th>{{ 'consoleSessionIdentityLabel'|trans }}</th>
                             <th>{{ 'consoleSessionDurationLabel'|trans }}</th>
+                            <th>{{ 'consoleSessionBroadcastsLabel'|trans }}</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -87,6 +88,8 @@
                                         {{ 'consoleSessionMinutesLabel'|trans({'%count%': session.durationMinutes}) }}
                                     {% endif %}
                                 </td>
+                                {# La seule chose faite *ici* qui a eu un effet *ailleurs*. #}
+                                <td class="cm-guest__sub">{{ broadcasts[session.id] ?? '—' }}</td>
                                 <td class="cm-actions">
                                     <a class="cm-action cm-action--main" href="{{ path('app_infrastructure_console_session', {id: session.id}) }}">{{ 'consoleTranscriptAction'|trans }}</a>
                                     {% if session.transcriptTruncated %}

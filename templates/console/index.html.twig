@@ -47,12 +47,22 @@
          data-console-file-url-value="{{ path('app_console_file_send', {id: session.id}) }}"
          data-console-fetch-url-value="{{ path('app_console_file_fetch', {id: session.id}) }}"
          data-console-search-url-value="{{ path('app_console_search', {id: session.id}) }}"
+         data-console-arm-url-value="{{ path('app_console_arm', {id: session.id}) }}"
+         data-console-broadcast-url-value="{{ path('app_console_broadcast', {id: session.id}) }}"
+         data-console-armed-value="{{ session.isBroadcastArmed ? 'true' : 'false' }}"
+         data-console-armed-machines-value="{{ broadcastMachines }}"
+         data-confirm-text="{{ 'consoleBroadcastConfirmText'|trans({'%count%': '%count%', '%command%': '%command%'}) }}"
+         data-disarm-text="{{ 'consoleBroadcastCountdownText'|trans({'%minutes%': '%minutes%'}) }}"
          data-console-platform-account-value="moncampus"
          data-sending-text="{{ 'consoleFileSendingMessage'|trans }}"
          data-became-text="{{ 'consoleBecameMessage'|trans({'%login%': '%login%'}) }}"
          data-action="dragover->console#dragOver dragleave->console#dragLeave drop->console#dropFile">
 
         <div class="cm-console__status">
+            {# Armée, la barre d'état nomme le lot et le nombre : « diffusion — lot X (8 machines) ». #}
+            <span class="cm-console__armband" data-console-target="armBand"{{ session.isBroadcastArmed ? '' : ' hidden' }}>
+                {{ 'consoleBroadcastArmedLabel'|trans({'%label%': batchLabel ?? '', '%count%': broadcastMachines}) }}
+            </span>
             <span class="cm-console__name">{{ machineName }}</span>
             <span class="cm-console__dim">{{ ip }}</span>
             <span class="cm-console__sep">·</span>
@@ -71,6 +81,7 @@
                         {{ 'consoleAlsoConnectedLabel'|trans({'%name%': who.displayName ?? who.username}) }}
                     </span>
                 {% endfor %}
+                <span class="cm-console__dim" data-console-target="armCountdown"></span>
                 <span class="cm-console__dim" data-console-target="size">—</span>
                 <span class="cm-console__live" data-console-target="state" data-state="opening">{{ 'consoleOpeningLabel'|trans }}</span>
             </span>
@@ -137,10 +148,40 @@
             </div>
         </div>
 
+        {# Ce qui est envoyé est **une ligne complète**, pas des frappes : on ne diffuse pas une
+           session interactive, on diffuse une commande. #}
+        <div class="cm-console__bcast" data-console-target="broadcast"{{ session.isBroadcastArmed ? '' : ' hidden' }}>
+            <label for="broadcast-line">{{ 'consoleBroadcastLineLabel'|trans }}</label>
+            <input id="broadcast-line" type="text" data-console-target="broadcastInput"
+                   data-action="keydown->console#sendBroadcast" autocomplete="off"
+                   placeholder="{{ 'consoleBroadcastPlaceholder'|trans }}">
+            <button type="button" class="cm-console__chip cm-console__chip--on" data-action="console#sendBroadcast">
+                {{ 'consoleBroadcastSendAction'|trans }}
+            </button>
+        </div>
+
+        <div class="cm-console__bresult" data-console-target="broadcastResult" hidden>
+            <div class="cm-console__bhead">
+                <b data-console-summary></b>
+                <span class="cm-console__bcmd" data-console-command></span>
+            </div>
+            <div class="cm-console__blist" data-console-target="broadcastList"></div>
+        </div>
+
         <div class="cm-console__acts">
             <button type="button" class="cm-console__chip cm-console__chip--pri" data-action="console#openPalette">
                 {{ 'consolePaletteAction'|trans }} <span class="cm-console__key">Ctrl K</span>
             </button>
+
+            {# La diffusion ne s'offre que là où elle a un sens : une console d'administrateur sur une
+               machine hors lot n'a aucun lot à qui diffuser. #}
+            {% if broadcastMachines > 0 %}
+                <button type="button" class="cm-console__chip{{ session.isBroadcastArmed ? ' cm-console__chip--on' }}"
+                        data-console-target="armChip" data-action="console#toggleArm">
+                    {{ 'consoleBroadcastAction'|trans }} <span class="cm-console__key">Ctrl ⌥ B</span>
+                </button>
+                <a class="cm-console__chip" href="{{ path('app_console_wall', {id: session.guestAccount.batch.id}) }}">{{ 'consoleWallAction'|trans }}</a>
+            {% endif %}
 
             {# « Devenir » : la liste des comptes de la machine est déjà connue, un clic suffit. #}
             <span class="cm-console__menuwrap">

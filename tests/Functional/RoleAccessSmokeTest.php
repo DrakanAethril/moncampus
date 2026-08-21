@@ -44,6 +44,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
     private Program $program;
     private int $studentAccountId;
     private int $teacherAccountId;
+    private int $batchId;
 
     protected function setUp(): void
     {
@@ -89,6 +90,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
 
         $entityManager->flush();
 
+        $this->batchId = $batch->getId() ?? 0;
         $accounts = $entityManager->getRepository(GuestAccount::class)->findBy(['batch' => $batch]);
 
         foreach ($accounts as $account) {
@@ -658,6 +660,23 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->assertScreens($this->admin, ['/console/snippets' => 200]);
         $this->assertScreens($this->student, ['/console/snippets' => 403]);
         $this->assertScreens($this->tutor, ['/console/snippets' => 403]);
+    }
+
+    /**
+     * Le mur de consoles : la classe entière, en lecture seule.
+     *
+     * Il suit les deux portes de la console sans en inventer une troisième — enseignant de la
+     * formation du lot, ou administrateur — et rien d'autre. Un étudiant du lot n'y entre pas : ce
+     * qu'il verrait, c'est l'écran de ses camarades.
+     */
+    public function testTheConsoleWallFollowsTheSameTwoDoors(): void
+    {
+        $wall = '/console/batch/'.$this->batchId;
+
+        $this->assertScreens($this->teacher, [$wall => 200]);
+        $this->assertScreens($this->admin, [$wall => 200]);
+        $this->assertScreens($this->student, [$wall => 403]);
+        $this->assertScreens($this->tutor, [$wall => 403]);
     }
 
     private function assertScreens(User $user, array $expectations): void

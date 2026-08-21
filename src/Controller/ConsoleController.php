@@ -12,6 +12,8 @@ use App\Repository\FileLibraryNodeRepository;
 use App\Repository\GuestAccountRepository;
 use App\Security\Voter\GuestConsoleVoter;
 use App\Service\Console\ConsoleAddressUnknownException;
+use App\Service\Console\ConsoleBroadcaster;
+use App\Service\Console\ConsoleBroadcastRefusedException;
 use App\Service\Console\ConsoleFileRefusedException;
 use App\Service\Console\ConsoleFileTooLargeException;
 use App\Service\Console\ConsoleHarvest;
@@ -420,6 +422,95 @@ class ConsoleController extends AbstractController
         // Newest first: what somebody is looking for in three thousand lines is almost always what
         // has just gone past.
         return $this->json(['ok' => true, 'matches' => \array_slice(array_reverse($matches), 0, 60)]);
+    }
+
+    /**
+     * Arming and disarming the broadcast.
+     *
+     * Armed explicitly and never by default: the frame turns copper, the status bar names the batch
+     * and the number of machines, and nothing goes out without a confirmation that names that
+     * number. It lets go by itself after ten minutes without a send - a console found still armed
+     * the next morning is a trap.
+     */
+    #[Route(path: '/console/sessions/{id}/arm', name: 'app_console_arm', requirements: ['id' => '\\d+'], methods: ['POST'])]
+    public function arm(
+        Request $request,
+        ConsoleSessionRepository $sessions,
+        ConsoleBroadcaster $broadcaster,
+        EntityManagerInterface $entityManager,
+        int $id,
+    ): JsonResponse {
+        $session = $this->ownSession($request, $sessions, $id);
+
+        if ($session->isBroadcastArmed()) {
+            $session->disarmBroadcast();
+            $entityManager->flush();
+
+            return $this->json(['ok' => true, 'armed' => false]);
+        }
+
+        try {
+            $machines = $broadcaster->machinesOf($session);
+        } catch (ConsoleBroadcastRefusedException $exception) {
+            return $this->json(['ok' => false, 'message' => $this->translator->trans($exception->getMessage())]);
+        }
+
+        $session->armBroadcast();
+        $entityManager->flush();
+
+        return $this->json([
+            'ok' => true,
+            'armed' => true,
+            'machines' => \count($machines),
+            'batch' => $broadcaster->batchOf($session)->getLabel(),
+            'minutesLeft' => $session->broadcastMinutesLeft(),
+        ]);
+    }
+
+    /**
+     * One line, every machine of the batch.
+     *
+     * The function that justifies the screen, and the one that breaks the fastest - hence the arming
+     * above, the confirmation that names the number, and this row in the journal.
+     */
+    #[Route(path: '/console/sessions/{id}/broadcast', name: 'app_console_broadcast', requirements: ['id' => '\\d+'], methods: ['POST'])]
+    public function broadcast(
+        Request $request,
+        ConsoleSessionRepository $sessions,
+        ConsoleBroadcaster $broadcaster,
+        int $id,
+    ): JsonResponse {
+        $session = $this->ownSession($request, $sessions, $id);
+
+        // Armed, and still armed: ten minutes without a send and the console has let go. Checked
+        // here and not only in the browser - a stale tab is exactly the case this guards.
+        if (!$session->isBroadcastArmed()) {
+            return $this->json(['ok' => false, 'message' => $this->translator->trans('consoleBroadcastNotArmedMessage')]);
+        }
+
+        $request->getSession()->save();
+
+        try {
+            $sent = $broadcaster->send($session, JsonRequestPayload::fromRequest($request)->string('command'), $this->currentUser());
+        } catch (ConsoleBroadcastRefusedException $exception) {
+            return $this->json(['ok' => false, 'message' => $this->translator->trans($exception->getMessage())]);
+        }
+
+        return $this->json([
+            'ok' => true,
+            'command' => $sent->getCommand(),
+            'done' => $sent->countDone(),
+            'refused' => $sent->countRefused(),
+            // Composé ici et non dans le navigateur : « 1 injoignables » est ce qu'on obtient en
+            // recollant des morceaux côté JS, et l'accord se décide dans les traductions.
+            'summary' => \sprintf(
+                '%s · %s',
+                $this->translator->trans('consoleBroadcastDoneCount', ['%count%' => $sent->countDone()]),
+                $this->translator->trans('consoleBroadcastRefusedCount', ['%count%' => $sent->countRefused()]),
+            ),
+            'results' => $sent->getResults(),
+            'minutesLeft' => $session->broadcastMinutesLeft(),
+        ]);
     }
 
     /**

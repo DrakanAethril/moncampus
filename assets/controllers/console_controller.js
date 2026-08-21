@@ -26,6 +26,7 @@ export default class extends Controller {
         'screen', 'state', 'size', 'overlay', 'overlayText',
         'palette', 'paletteInput', 'paletteList', 'notice', 'noticeText',
         'become', 'becomeChip', 'identity', 'fileMenu', 'fileInput', 'search', 'searchInput', 'searchList',
+        'armChip', 'armBand', 'armCountdown', 'broadcast', 'broadcastInput', 'broadcastResult', 'broadcastList',
     ];
 
     static values = {
@@ -40,7 +41,11 @@ export default class extends Controller {
         fileUrl: String,
         fetchUrl: String,
         searchUrl: String,
+        armUrl: String,
+        broadcastUrl: String,
         platformAccount: String,
+        armed: Boolean,
+        armedMachines: Number,
     };
 
     connect() {
@@ -93,6 +98,13 @@ export default class extends Controller {
                 return false;
             }
 
+            if (event.ctrlKey && event.altKey && (event.key === 'b' || event.key === 'B')) {
+                event.preventDefault();
+                this.toggleArm();
+
+                return false;
+            }
+
             if (event.ctrlKey && event.altKey && (event.key === 'f' || event.key === 'F')) {
                 event.preventDefault();
                 this.fullscreen();
@@ -105,6 +117,8 @@ export default class extends Controller {
 
         this.lastCommand = '';
         this.pendingIdentity = null;
+        this.armedMachines = this.armedMachinesValue || 0;
+        this.paintArmed(this.armedValue);
         this.terminal.focus();
         this.pump();
     }
@@ -537,6 +551,12 @@ export default class extends Controller {
             // simple de casser la machine de quelqu'un d'autre.
             this.pendingIdentity = answer.unixUser ?? login;
             this.showIdentity(this.pendingIdentity);
+
+            // Devenir quelqu'un désarme la diffusion, côté serveur comme ici : ce qu'on enverrait ne
+            // serait plus la même commande d'une machine à l'autre.
+            if (this.pendingIdentity !== this.platformAccountValue) {
+                this.paintArmed(false);
+            }
             this.notify(this.element.dataset.becameText?.replace('%login%', login) ?? login);
 
             if (this.hasBecomeChipTarget) {
@@ -665,6 +685,126 @@ export default class extends Controller {
             row.className = 'cm-console__searchrow';
             row.textContent = this.searchListTarget.dataset.consoleNoMatch ?? '';
             this.searchListTarget.append(row);
+        }
+    }
+
+    // ------------------------------------------------------------- diffusion
+
+    /**
+     * Armer, ou désarmer. Le cadre passe au cuivre tant que c'est armé.
+     *
+     * Une console armée qu'on prend pour une console ordinaire, c'est une commande de démonstration
+     * envoyée à vingt-quatre machines. Il n'y a aucun autre endroit dans l'application où le cadre
+     * d'un écran change de couleur, et c'est fait pour.
+     */
+    async toggleArm() {
+        const answer = await this.post(this.armUrlValue, {});
+
+        if (!answer?.ok) {
+            this.notify(answer?.message ?? this.lostTextValue);
+
+            return;
+        }
+
+        this.armedMachines = answer.machines ?? this.armedMachines;
+        this.paintArmed(answer.armed, answer.batch, answer.minutesLeft);
+
+        if (answer.armed) {
+            this.broadcastInputTarget.focus();
+        } else {
+            this.terminal.focus();
+        }
+    }
+
+    paintArmed(armed, batch, minutesLeft) {
+        this.armed = Boolean(armed);
+        this.element.classList.toggle('is-armed', this.armed);
+
+        if (this.hasBroadcastTarget) {
+            this.broadcastTarget.hidden = !this.armed;
+        }
+
+        if (this.hasArmChipTarget) {
+            this.armChipTarget.classList.toggle('cm-console__chip--on', this.armed);
+        }
+
+        if (this.hasArmBandTarget) {
+            this.armBandTarget.hidden = !this.armed;
+
+            if (this.armed && batch) {
+                this.armBandTarget.dataset.batch = batch;
+            }
+        }
+
+        if (this.hasArmCountdownTarget && this.armed && minutesLeft) {
+            this.armCountdownTarget.textContent = (this.element.dataset.disarmText ?? '')
+                .replace('%minutes%', String(minutesLeft));
+        }
+    }
+
+    /**
+     * Rien ne part sans une confirmation qui **nomme le nombre**. « Envoyer à 8 machines ? », pas
+     * « Confirmer ? ».
+     */
+    async sendBroadcast(event) {
+        if (event.type === 'keydown' && event.key !== 'Enter') {
+            return;
+        }
+
+        event.preventDefault();
+        const command = this.broadcastInputTarget.value.trim();
+
+        if (command === '') {
+            return;
+        }
+
+        const question = (this.element.dataset.confirmText ?? '')
+            .replace('%count%', String(this.armedMachines))
+            .replace('%command%', command);
+
+        if (!window.confirm(question)) {
+            return;
+        }
+
+        const answer = await this.post(this.broadcastUrlValue, { command });
+
+        if (!answer?.ok) {
+            this.notify(answer?.message ?? this.lostTextValue);
+
+            return;
+        }
+
+        this.broadcastInputTarget.value = '';
+        this.paintResults(answer);
+    }
+
+    /**
+     * Le bandeau de résultat : « 7 exécutées · 1 injoignable », puis la liste machine par machine.
+     *
+     * Une machine éteinte n'est pas un échec de la diffusion : c'est une machine éteinte, et c'est
+     * dit comme tel, avec son nom. Le bandeau ne se résume jamais à « 7 / 8 ».
+     */
+    paintResults(answer) {
+        if (!this.hasBroadcastResultTarget) {
+            return;
+        }
+
+        this.broadcastResultTarget.hidden = false;
+        this.broadcastResultTarget.querySelector('[data-console-summary]').textContent = answer.summary ?? '';
+        this.broadcastResultTarget.querySelector('[data-console-command]').textContent = answer.command;
+
+        this.broadcastListTarget.innerHTML = '';
+
+        for (const result of answer.results ?? []) {
+            const row = document.createElement('span');
+            row.className = result.ok ? 'is-ok' : 'is-ko';
+            row.textContent = result.ok ? result.name : `${result.name} — ${result.message ?? ''}`;
+            this.broadcastListTarget.append(row);
+        }
+
+        if (answer.minutesLeft && this.hasArmCountdownTarget) {
+            this.armCountdownTarget.textContent = (this.element.dataset.disarmText ?? '')
+                .replace('%minutes%', String(answer.minutesLeft));
         }
     }
 
