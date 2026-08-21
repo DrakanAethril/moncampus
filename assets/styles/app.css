@@ -8471,3 +8471,17 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 }
 .cm-vmcard__console:hover { color: #fff; filter: brightness(1.15); }
 .cm-vmcard__console--off { opacity: .4; pointer-events: none; }
+
+/* La transcription d'une session : du texte, lu dans un champ, jamais des couleurs. */
+.cm-console__transcript {
+    margin: 0;
+    padding: 16px 22px;
+    max-height: 60vh;
+    overflow: auto;
+    background: var(--cm-console-pane);
+    color: var(--cm-console-tx);
+    font: 12.5px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    white-space: pre-wrap;
+    word-break: break-word;
+    border-top: 1px solid var(--cm-border-soft);
+}

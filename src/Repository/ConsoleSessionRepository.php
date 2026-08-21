@@ -63,6 +63,57 @@ class ConsoleSessionRepository extends ServiceEntityRepository
     }
 
     /**
+     * Retention: sessions opened before this date, and the transcripts they carry.
+     *
+     * Deleted rather than emptied of their transcript: a row that says a console was opened three
+     * months ago and shows nothing is a row nobody can do anything with, and the operations journal
+     * already carries the fact that it happened (ProxmoxAction::Console).
+     */
+    public function deleteOlderThan(\DateTimeImmutable $threshold): int
+    {
+        return (int) $this->createQueryBuilder('s')
+            ->delete()
+            ->andWhere('s.openedAt < :threshold')
+            ->setParameter('threshold', $threshold)
+            ->getQuery()
+            ->execute();
+    }
+
+    public function countOlderThan(\DateTimeImmutable $threshold): int
+    {
+        return (int) $this->createQueryBuilder('s')
+            ->select('COUNT(s.id)')
+            ->andWhere('s.openedAt < :threshold')
+            ->setParameter('threshold', $threshold)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * The journal: every session, newest first, filtered the way the screen filters.
+     *
+     * @return list<ConsoleSession>
+     */
+    public function findForJournal(?int $vmid, ?int $userId, \DateTimeImmutable $since, int $limit = 200): array
+    {
+        $builder = $this->createQueryBuilder('s')
+            ->andWhere('s.openedAt >= :since')
+            ->setParameter('since', $since)
+            ->orderBy('s.openedAt', 'DESC')
+            ->setMaxResults($limit);
+
+        if (null !== $vmid) {
+            $builder->andWhere('s.vmid = :vmid')->setParameter('vmid', $vmid);
+        }
+
+        if (null !== $userId) {
+            $builder->andWhere('IDENTITY(s.openedBy) = :user')->setParameter('user', $userId);
+        }
+
+        return $builder->getQuery()->getResult();
+    }
+
+    /**
      * The other people on this same machine right now - « Anne Dubois est aussi connectée ».
      *
      * Asked of the rows rather than of tmux: two clients on one session is the design, and knowing

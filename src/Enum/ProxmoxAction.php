@@ -42,6 +42,17 @@ enum ProxmoxAction: string
     /** A post-installation script was run over SSH (batch 4). */
     case PostInstall = 'postinstall';
 
+    /**
+     * Somebody opened a terminal on a machine.
+     *
+     * Here rather than in a journal of its own, so that opening a console shows up in the operations
+     * log at the same place as a start or a shutdown: it is the same question - who asked what of
+     * which machine - and a console is the most far-reaching of the answers, since it opens on an
+     * account that has sudo. It touches no Proxmox API at all, which is what the three answers
+     * below say.
+     */
+    case Console = 'console';
+
     public function labelKey(): string
     {
         return match ($this) {
@@ -52,6 +63,7 @@ enum ProxmoxAction: string
             self::Clone => 'proxmoxActionCloneLabel',
             self::Create => 'proxmoxActionCreateLabel',
             self::Provision => 'proxmoxActionProvisionLabel',
+            self::Console => 'proxmoxActionConsoleLabel',
             self::PostInstall => 'proxmoxActionPostInstallLabel',
         };
     }
@@ -75,7 +87,7 @@ enum ProxmoxAction: string
             self::Clone, self::Create => 'create',
             // Guest accounts and post-installation touch the inside of a machine, not the
             // hypervisor: no Proxmox permission gates them, only the host being in scope.
-            self::Provision, self::PostInstall => 'none',
+            self::Provision, self::PostInstall, self::Console => 'none',
         };
     }
 
@@ -102,7 +114,7 @@ enum ProxmoxAction: string
     {
         return match ($this) {
             self::Clone, self::Create => true,
-            self::Start, self::Shutdown, self::Stop, self::Reboot, self::Provision, self::PostInstall => false,
+            self::Start, self::Shutdown, self::Stop, self::Reboot, self::Provision, self::PostInstall, self::Console => false,
         };
     }
 
@@ -131,6 +143,9 @@ enum ProxmoxAction: string
             // These open no Proxmox task at all - they act inside the machine over SSH - so the
             // value is only ever used to close a row that was written and never settled.
             self::Provision, self::PostInstall => 300,
+            // A console opens no task either, and the row is settled the moment it is written: it
+            // records an opening, not something anybody is waiting on.
+            self::Console => 300,
         };
     }
 
@@ -141,6 +156,7 @@ enum ProxmoxAction: string
             self::Start, self::Shutdown, self::Stop, self::Reboot => 'gray',
             self::Clone, self::Create => 'blue',
             self::Provision => 'teal',
+            self::Console => 'gold',
             self::PostInstall => 'purple',
         };
     }

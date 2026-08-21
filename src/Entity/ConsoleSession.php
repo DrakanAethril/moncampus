@@ -84,6 +84,28 @@ class ConsoleSession
     #[ORM\Column(name: 'closed_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $closedAt = null;
 
+    /**
+     * What was on the screen, as text.
+     *
+     * **The panel, never the keystrokes.** A password typed at a `sudo` prompt does not appear on
+     * the screen, so it is exactly what this does not hold - see App\Service\Console\ConsoleTranscript.
+     */
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $transcript = null;
+
+    /**
+     * How much of the transcript has scrolled off the screen and can no longer change.
+     *
+     * An integer rather than a second copy of the last screen kept somewhere: everything past this
+     * offset *is* the last screen, and the next exchange compares against it.
+     */
+    #[ORM\Column(name: 'transcript_stable_length', options: ['default' => 0])]
+    private int $transcriptStableLength = 0;
+
+    /** The beginning was cut at 256 KiB, and the screen says so rather than pretending otherwise. */
+    #[ORM\Column(name: 'transcript_truncated', options: ['default' => false])]
+    private bool $transcriptTruncated = false;
+
     public function __construct(ProxmoxHost $host, string $node, int $vmid, string $ip, User $openedBy, string $unixUser)
     {
         $this->host = $host;
@@ -203,6 +225,41 @@ class ConsoleSession
         $this->closedAt ??= new \DateTimeImmutable();
 
         return $this;
+    }
+
+    public function getTranscript(): ?string
+    {
+        return $this->transcript;
+    }
+
+    public function getTranscriptStableLength(): int
+    {
+        return $this->transcriptStableLength;
+    }
+
+    public function isTranscriptTruncated(): bool
+    {
+        return $this->transcriptTruncated;
+    }
+
+    /** Written as one act, because the three values only mean anything together. */
+    public function recordTranscript(string $transcript, int $stableLength, bool $truncated): static
+    {
+        $this->transcript = '' === $transcript ? null : $transcript;
+        $this->transcriptStableLength = $stableLength;
+        $this->transcriptTruncated = $truncated;
+
+        return $this;
+    }
+
+    /** How long the session lasted, or null while it is still open. */
+    public function durationMinutes(): ?int
+    {
+        if (null === $this->closedAt) {
+            return null;
+        }
+
+        return max(0, (int) floor(($this->closedAt->getTimestamp() - $this->openedAt->getTimestamp()) / 60));
     }
 
     /** Nobody has typed for a quarter of an hour: this is a laptop that was shut, not a console. */

@@ -571,6 +571,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/infrastructure/ip-ranges/new',
             '/infrastructure/batches',
             '/infrastructure/batches/new',
+            // Le journal des consoles : la trace d'une porte qui ouvre un shell root-capable, donc
+            // aussi fermée que le reste de l'espace - et pas même ouverte au personnel.
+            '/infrastructure/console-sessions',
         ];
 
         $this->assertScreens($this->admin, array_fill_keys($screens, 200));

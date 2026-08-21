@@ -14,6 +14,7 @@ use App\Service\Console\ConsoleLimitReachedException;
 use App\Service\Console\ConsoleNotReadyException;
 use App\Service\Console\ConsoleScreen;
 use App\Service\Console\ConsoleSessionOpener;
+use App\Service\Console\ConsoleTranscript;
 use App\Service\Console\ConsoleUnavailableException;
 use App\Service\Console\GuestPty;
 use App\Service\Guest\GuestShellFactory;
@@ -98,6 +99,7 @@ class ConsoleController extends AbstractController
         GuestShellFactory $shellFactory,
         GuestPty $pty,
         ConsoleScreen $screen,
+        ConsoleTranscript $transcript,
         EntityManagerInterface $entityManager,
         int $id,
     ): JsonResponse {
@@ -145,6 +147,17 @@ class ConsoleController extends AbstractController
         }
 
         $session->touch();
+
+        // The panel, never the keystrokes. The screen that just came back is folded into what the
+        // session leaves behind; what is still on screen stays rewritable until it scrolls off.
+        $recorded = $transcript->record(
+            $session->getTranscript() ?? '',
+            $session->getTranscriptStableLength(),
+            $pane,
+            $session->isTranscriptTruncated(),
+        );
+        $session->recordTranscript($recorded->text, $recorded->stableLength, $recorded->truncated);
+
         $entityManager->flush();
 
         return $this->json($screen->pane($session, $pane));
