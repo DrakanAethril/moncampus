@@ -136,6 +136,13 @@ class VmBatchController extends AbstractController
         $members = null !== $program && VmBatchShape::PerStudent === $shape ? $resolver->forProgram($program) : [];
         $selected = $planner->select($members, $optionIds, $modalityIds);
 
+        // The teachers a batch names get an account on every one of its machines and add none - see
+        // candidateTeachers() for who may be named at all, which is not the same list on the two
+        // shapes.
+        $candidateTeachers = $this->candidateTeachers($program, $shape, $groupBatch);
+        $chosenTeachers = $this->chosenTeachers(QueryValue::intList($request, 'teachers'), $candidateTeachers);
+        $everyMachine = $resolver->membersOf($chosenTeachers);
+
         $templates = [];
         $nodes = [];
         $usedVmids = [];
@@ -163,9 +170,9 @@ class VmBatchController extends AbstractController
             $max = $host->getVmidMax() ?? 999999;
 
             if ($shape->isMultiAccount()) {
-                $groupPlan = $planner->planGroups($groups, $namePattern, $min, $max, $usedVmids);
+                $groupPlan = $planner->planGroups($groups, $namePattern, $min, $max, $usedVmids, $everyMachine);
             } else {
-                $plan = $planner->plan($selected, $namePattern, $min, $max, $usedVmids);
+                $plan = $planner->plan($selected, $namePattern, $min, $max, $usedVmids, $everyMachine);
             }
         }
 
@@ -194,6 +201,8 @@ class VmBatchController extends AbstractController
             'targetableGroupBatches' => $targetableGroupBatches,
             'groupBatch' => $groupBatch,
             'chosenUsers' => $chosenUsers,
+            'candidateTeachers' => $candidateTeachers,
+            'chosenTeacherIds' => array_map(static fn (User $teacher): int => $teacher->getId() ?? 0, $chosenTeachers),
             'namePattern' => $namePattern,
             'filters' => ['options' => $optionIds, 'modalities' => $modalityIds],
             'failure' => $failure,
@@ -253,6 +262,11 @@ class VmBatchController extends AbstractController
         $chosenUsers = VmBatchShape::ForAccounts === $shape
             ? $this->chosenUsers(array_map(intval(...), (array) $request->request->all('users')), $users)
             : [];
+
+        $everyMachine = $resolver->membersOf($this->chosenTeachers(
+            array_map(intval(...), (array) $request->request->all('teachers')),
+            $this->candidateTeachers($program, $shape, $groupBatch),
+        ));
 
         if (VmBatchShape::ForAccounts === $shape && [] === $chosenUsers) {
             $this->addFlash('error', 'vmBatchNoChosenAccountMessage');
@@ -332,14 +346,11 @@ class VmBatchController extends AbstractController
                     'userId' => 0,
                     'members' => $row['members'],
                 ],
-                $planner->planGroups($groups, $batch->getNamePattern(), $min, $max, $usedVmids),
+                $planner->planGroups($groups, $batch->getNamePattern(), $min, $max, $usedVmids, $everyMachine),
             );
         } else {
             $members = $planner->select($resolver->forProgram($program), $optionIds, $modalityIds);
-            $rows = array_map(
-                static fn (array $row): array => $row + ['members' => []],
-                $planner->plan($members, $batch->getNamePattern(), $min, $max, $usedVmids),
-            );
+            $rows = $planner->plan($members, $batch->getNamePattern(), $min, $max, $usedVmids, $everyMachine);
         }
 
         foreach ($rows as $row) {
@@ -526,6 +537,79 @@ class VmBatchController extends AbstractController
             ], $candidates),
             'pagination' => ['more' => \count($candidates) === $limit],
         ]);
+    }
+
+    /**
+     * The teachers a batch may name, which is not the same list on the two shapes.
+     *
+     * On a **per-class** batch, the teachers of that class. On a **per-group** one, only those of
+     * them who own the saved set or had it shared with them - a set is somebody's piece of work,
+     * and a batch built on it should not put an account on every machine for a colleague who has
+     * never seen it.
+     *
+     * Administrators are excluded from both, and not as a security measure: they already reach
+     * every machine through this very area, so an account for them on twenty-four machines is
+     * twenty-four accounts nobody asked for. The shape that names people one by one has its own
+     * picker and needs none of this.
+     *
+     * @return list<User>
+     */
+    private function candidateTeachers(?Program $program, VmBatchShape $shape, ?GroupBatch $groupBatch): array
+    {
+        if (null === $program || VmBatchShape::ForAccounts === $shape) {
+            return [];
+        }
+
+        $teachers = array_values(array_filter(
+            $program->getTeachers()->toArray(),
+            static fn (User $teacher): bool => !\in_array('ROLE_ADMIN', $teacher->getRoles(), true),
+        ));
+
+        if (VmBatchShape::PerGroup === $shape) {
+            if (null === $groupBatch) {
+                return [];
+            }
+
+            $allowed = [$groupBatch->getTeacher()->getId(), ...array_map(
+                static fn (User $shared): ?int => $shared->getId(),
+                $groupBatch->getSharedTeachers()->toArray(),
+            )];
+
+            $teachers = array_values(array_filter(
+                $teachers,
+                static fn (User $teacher): bool => \in_array($teacher->getId(), $allowed, true),
+            ));
+        }
+
+        usort($teachers, static fn (User $a, User $b): int => strnatcasecmp(
+            $a->getDisplayName() ?? $a->getUsername(),
+            $b->getDisplayName() ?? $b->getUsername(),
+        ));
+
+        return $teachers;
+    }
+
+    /**
+     * The named teachers, kept only if the screen would have offered them.
+     *
+     * Read back against the candidates rather than from the ids alone: the ids arrive in a query
+     * string, and naming a teacher is putting an account for them on every machine of a class.
+     *
+     * @param list<int>  $ids
+     * @param list<User> $candidates
+     *
+     * @return list<User>
+     */
+    private function chosenTeachers(array $ids, array $candidates): array
+    {
+        if ([] === $ids) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $candidates,
+            static fn (User $teacher): bool => \in_array($teacher->getId(), $ids, true),
+        ));
     }
 
     /**

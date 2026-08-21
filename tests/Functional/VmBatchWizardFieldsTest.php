@@ -89,10 +89,109 @@ class VmBatchWizardFieldsTest extends FunctionalTestCase
         self::assertStringNotContainsString($tutor->getUsername(), $joined);
     }
 
-    /** @param array<string, mixed> $query */
-    private function wizard(array $query): \Symfony\Component\DomCrawler\Crawler
+    /**
+     * Who a per-class batch may name: the teachers of that class, and never an administrator - who
+     * already reaches every machine through this very area, so an account for them on twenty-four
+     * of them is twenty-four nobody asked for.
+     */
+    public function testAPerClassBatchOffersTheClassesOwnNonAdminTeachers(): void
     {
-        $this->client->loginUser($this->createUser(['ROLE_ADMIN'], 'wizard.viewer'));
+        $teacher = $this->createUser(['ROLE_TEACHER'], 'p.roux');
+        $adminTeacher = $this->createUser(['ROLE_TEACHER', 'ROLE_ADMIN'], 'la.direction');
+        $outsider = $this->createUser(['ROLE_TEACHER'], 'ailleurs');
+        $program = $this->createProgram([], [$teacher, $adminTeacher]);
+
+        $crawler = $this->wizard(['programId' => $program->getId(), 'shape' => 'per_student']);
+
+        $offered = $crawler->filter('input[name="teachers[]"]')->extract(['value']);
+
+        self::assertContains((string) $teacher->getId(), $offered);
+        self::assertNotContains((string) $adminTeacher->getId(), $offered);
+        self::assertNotContains((string) $outsider->getId(), $offered);
+    }
+
+    /**
+     * A saved set is somebody's piece of work: a batch built on it must not put an account on every
+     * machine for a colleague who has never seen it.
+     */
+    public function testAPerGroupBatchOffersOnlyTheSetsAuthorAndThoseItWasSharedWith(): void
+    {
+        $author = $this->createUser(['ROLE_TEACHER'], 'p.roux');
+        $shared = $this->createUser(['ROLE_TEACHER'], 'a.blanc');
+        $stranger = $this->createUser(['ROLE_TEACHER'], 'c.noir');
+        $program = $this->createProgram([], [$author, $shared, $stranger]);
+
+        // The administrator building the batch only ever sees sets that are readable by them -
+        // their own or shared with them - which is why they are on this one too. Being an
+        // administrator, they are not themselves offered as a teacher below.
+        $builder = $this->createUser(['ROLE_ADMIN'], 'wizard.viewer');
+
+        $entityManager = static::getContainer()->get(\Doctrine\ORM\EntityManagerInterface::class);
+        $set = new \App\Entity\GroupBatch($program, $author, 'Groupes du TP', [[1], [2]]);
+        $set->addSharedTeacher($shared);
+        $set->addSharedTeacher($builder);
+        $entityManager->persist($set);
+        $entityManager->flush();
+
+        $crawler = $this->wizard([
+            'programId' => $program->getId(),
+            'shape' => 'per_group',
+            'groupBatchId' => $set->getId(),
+        ], $builder);
+
+        $offered = $crawler->filter('input[name="teachers[]"]')->extract(['value']);
+
+        self::assertContains((string) $author->getId(), $offered);
+        self::assertContains((string) $shared->getId(), $offered);
+        // In the class, but the set is not theirs.
+        self::assertNotContains((string) $stranger->getId(), $offered);
+    }
+
+    /**
+     * The whole chain, on the screen: a teacher ticked before the preview appears in the accounts of
+     * **every** machine, and adds none. This is what the person pressing « Créer » is agreeing to,
+     * so it has to be readable there rather than discovered on the machines afterwards.
+     */
+    public function testATickedTeacherShowsUpOnEveryMachineOfThePreview(): void
+    {
+        $entityManager = static::getContainer()->get(\Doctrine\ORM\EntityManagerInterface::class);
+        $author = $this->createUser(['ROLE_ADMIN'], 'wizard.viewer');
+        $teacher = $this->createUser(['ROLE_TEACHER'], 'p.roux');
+        $program = $this->createProgram(
+            [$this->createUser(['ROLE_STUDENT'], 'celia.l'), $this->createUser(['ROLE_STUDENT'], 'ana.r')],
+            [$teacher],
+            $author,
+        );
+
+        $host = new \App\Entity\ProxmoxHost('campus', '192.0.2.10', 'svc');
+        $host->setPort(8006)->setSecretCipher('sealed')->setCreatedBy($author);
+        $entityManager->persist($host);
+        $entityManager->flush();
+
+        $crawler = $this->wizard([
+            'programId' => $program->getId(),
+            'hostId' => $host->getId(),
+            'shape' => 'per_student',
+            'teachers' => [$teacher->getId()],
+        ], $author);
+
+        $accounts = $crawler->filter('table tbody tr td:last-child')->each(static fn ($cell): string => $cell->text());
+
+        self::assertCount(2, $accounts, 'a named teacher adds no machine');
+
+        foreach ($accounts as $cell) {
+            self::assertStringContainsString('p.roux', $cell);
+        }
+
+        // And the student is still on their own machine, which naming a teacher must not displace.
+        self::assertStringContainsString('celia.l', implode(' ', $accounts));
+        self::assertStringContainsString('ana.r', implode(' ', $accounts));
+    }
+
+    /** @param array<string, mixed> $query */
+    private function wizard(array $query, ?\App\Entity\User $as = null): \Symfony\Component\DomCrawler\Crawler
+    {
+        $this->client->loginUser($as ?? $this->createUser(['ROLE_ADMIN'], 'wizard.viewer'));
 
         $crawler = $this->client->request('GET', '/infrastructure/batches/new', $query);
 
