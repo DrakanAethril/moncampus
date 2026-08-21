@@ -14,8 +14,10 @@ import { Controller } from '@hotwired/stimulus';
  * hammering the server, and only gives up once nothing has moved for long enough that a person
  * should look at it.
  *
- * A failure stops the loop rather than retrying for ever: the batch is not atomic, the successes
- * stand, and whatever refused will refuse again until somebody looks at it.
+ * A failure stops the loop only once there is nothing left but failures. The batch is not atomic,
+ * so one machine the hypervisor refused must not end the pass for the twenty-three that were doing
+ * fine - which is what stopping on the first `failed` did, and it is why a batch could come back
+ * with one refusal and twenty-three machines cloned and never configured.
  */
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
@@ -31,17 +33,22 @@ export default class extends Controller {
     // screen still feels alive.
     static IDLE_PAUSE_MS = 5000;
 
-    // ~5 minutes of nothing moving at all. A machine that has not answered by then is not slow.
-    static MAX_IDLE_PASSES = 60;
+    // ~15 minutes of nothing moving at all, counted in passes of IDLE_PAUSE_MS. It has to outlast a
+    // clone, not a boot: the hypervisor copies a template's disk in its own time, and a batch that
+    // is abandoned mid-clone leaves machines cloned but never configured - no address, no account -
+    // which is exactly what they look like when nobody notices for a week. Any pass that moves
+    // something resets the count, so this is only ever reached by a batch that is genuinely stuck.
+    static MAX_IDLE_PASSES = 180;
 
     async deploy() {
         this.buttonTarget.disabled = true;
 
         try {
             let remaining = Infinity;
+            let blocked = 0;
             let idlePasses = 0;
 
-            while (remaining > 0) {
+            while (remaining > blocked) {
                 const answer = await this.#pass();
 
                 if (!answer?.ok) {
@@ -50,10 +57,12 @@ export default class extends Controller {
                 }
 
                 remaining = answer.remaining;
+                blocked = answer.blocked ?? 0;
                 this.progressTarget.textContent = this.#progressLabel(answer);
 
-                if (answer.failed > 0 || remaining === 0) {
-                    // The successes stand; whatever refused will refuse again until somebody looks.
+                if (remaining === 0 || remaining <= blocked) {
+                    // Either everything is done, or everything still outstanding has refused. The
+                    // successes stand, and what refused will refuse again until somebody looks.
                     break;
                 }
 

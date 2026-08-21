@@ -1,0 +1,77 @@
+{# The right-hand panel: one line of the survey, edited.
+
+   The fields out of scope are hidden by the Stimulus controller rather than removed, and they are
+   never emptied - switching a question back to a choice type therefore finds its answers where it
+   left them, which is the very convention AudienceTargetable states for $programs. #}
+<div class="card" data-controller="survey-question-editor"
+     data-survey-question-editor-type-value="{{ question.type.value }}">
+    <div class="card-header">
+        <h3 class="card-title">
+            {% if questionNumber is not null %}Q{{ questionNumber }} · {% endif %}{{ 'surveyQuestionEditorCardTitle'|trans }}
+        </h3>
+    </div>
+    <div class="card-body">
+        {{ form_start(form, {action: path('app_survey_question_save', {id: surveyTemplate.id, questionId: question.id})}) }}
+        {{ form_errors(form) }}
+
+        <div data-survey-question-editor-target="typeField">
+            {{ form_row(form.type, {attr: {'data-action': 'change->survey-question-editor#typeChanged'}}) }}
+        </div>
+
+        {# An intertitle is not a statement, so the field says so - passing null here would fall
+           back on the humanised property name rather than on the form's own label. #}
+        {% if question.type.value == 'titre' %}
+            {{ form_row(form.label, {label: 'surveyQuestionTitreLabelFieldLabel'}) }}
+        {% else %}
+            {{ form_row(form.label) }}
+        {% endif %}
+
+        {# An intertitle asks nothing, so it carries none of what follows. #}
+        <div data-survey-question-editor-target="answerable">
+            {{ form_row(form.helpText) }}
+            {{ form_row(form.required) }}
+        </div>
+
+        <div data-survey-question-editor-target="scale">
+            {{ form_row(form.isScale) }}
+        </div>
+
+        <div class="row g-2" data-survey-question-editor-target="bounds">
+            <div class="col-6">{{ form_row(form.minChoices) }}</div>
+            <div class="col-6">{{ form_row(form.maxChoices) }}</div>
+        </div>
+
+        <div data-survey-question-editor-target="answers">
+            <label class="form-label">{{ 'surveyQuestionAnswersFieldLabel'|trans }}</label>
+            {# One hint per type, carried as data so the controller never holds French text. #}
+            <p class="text-secondary small mb-2" data-survey-question-editor-target="answersHint"
+               data-hint-unique="{{ 'surveyQuestionAnswersHintUnique'|trans }}"
+               data-hint-multiple="{{ 'surveyQuestionAnswersHintMultiple'|trans }}"
+               data-hint-ordre="{{ 'surveyQuestionAnswersHintOrdre'|trans }}"></p>
+            <div class="cm-survey-answers" data-survey-question-editor-target="answerList">
+                {% for answer in question.answers %}
+                    <div class="cm-answer-row" data-survey-question-editor-target="answerRow">
+                        <span class="cm-survey-answers__rank" data-survey-question-editor-target="rank"
+                              data-template="{{ 'surveyQuestionAnswerRankText'|trans({'%rank%': '%rank%'}) }}">{{ 'surveyQuestionAnswerRankText'|trans({'%rank%': answer.orderIndex}) }}</span>
+                        <input type="text" name="answers[]" class="form-control form-control-sm" value="{{ answer.label }}" maxlength="500">
+                        <button type="button" class="cm-answer-remove" data-action="click->survey-question-editor#removeAnswer" aria-label="{{ 'removeActionLabel'|trans }}">✕</button>
+                    </div>
+                {% endfor %}
+            </div>
+            <template data-survey-question-editor-target="answerTemplate">
+                <div class="cm-answer-row" data-survey-question-editor-target="answerRow">
+                    <span class="cm-survey-answers__rank" data-survey-question-editor-target="rank"
+                          data-template="{{ 'surveyQuestionAnswerRankText'|trans({'%rank%': '%rank%'}) }}"></span>
+                    <input type="text" name="answers[]" class="form-control form-control-sm" maxlength="500">
+                    <button type="button" class="cm-answer-remove" data-action="click->survey-question-editor#removeAnswer" aria-label="{{ 'removeActionLabel'|trans }}">✕</button>
+                </div>
+            </template>
+            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" data-action="click->survey-question-editor#addAnswer">{{ 'surveyAddAnswerActionLabel'|trans }}</button>
+        </div>
+
+        <div class="cm-actionbar justify-content-end mt-3">
+            <button type="submit" class="btn btn-primary">{{ 'surveyQuestionSaveActionLabel'|trans }}</button>
+        </div>
+        {{ form_end(form) }}
+    </div>
+</div>

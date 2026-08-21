@@ -1,0 +1,93 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'surveyLaunchPageHeading'|trans({'%name%': surveyTemplate.name}) }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'surveysPageHeading'|trans, url: path('app_surveys')},
+        {label: surveyTemplate.name, url: path('app_survey_template_edit', {id: surveyTemplate.id})},
+        {label: 'surveyLaunchCampaignActionLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'surveyLaunchPageHeading'|trans({'%name%': surveyTemplate.name}) }}{% endblock %}
+
+{% block main %}
+    <p class="text-secondary mb-3">{{ 'surveyLaunchSubtitleText'|trans({'%count%': answerableCount}) }}</p>
+
+    <div class="card" data-controller="survey-launch"
+         data-survey-launch-preview-url-value="{{ path('app_survey_launch_preview', {id: surveyTemplate.id}) }}">
+        <div class="card-body">
+            {{ form_start(form, {attr: {'data-survey-launch-target': 'form'}}) }}
+            {{ form_errors(form) }}
+
+            <fieldset class="mb-4">
+                <legend class="cm-subhead__title">{{ 'surveyLaunchTargetLegend'|trans }}</legend>
+                {{ form_row(form.name) }}
+                {{ form_row(form.audienceTypes, {attr: {'data-action': 'change->survey-launch#audienceChanged'}}) }}
+                <div class="row g-3">
+                    <div class="col-12 col-md-7" data-survey-launch-target="programs">
+                        {{ form_row(form.programs, {attr: {'data-action': 'change->survey-launch#audienceChanged'}}) }}
+                    </div>
+                    <div class="col-12 col-md-5" data-survey-launch-target="includes">
+                        {{ form_row(form.includeStudents, {attr: {'data-action': 'change->survey-launch#audienceChanged'}}) }}
+                        {{ form_row(form.includeTeachers, {attr: {'data-action': 'change->survey-launch#audienceChanged'}}) }}
+                    </div>
+                </div>
+                <div class="cm-note">
+                    <span class="cm-note__icon">i</span>
+                    <div>
+                        <strong data-survey-launch-target="count">{{ 'surveyTargetPeopleCountText'|trans({'%count%': 0}) }}</strong>
+                        {{ 'surveyTargetFrozenNoteText'|trans }}
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="mb-4">
+                <legend class="cm-subhead__title">{{ 'surveyLaunchAnonymityLegend'|trans }}</legend>
+                {{ form_row(form.anonymous) }}
+                {# Red, and said in full: the choice is shown to the respondent before they answer,
+                   and cannot be taken back afterwards - not even by an administrator. #}
+                <div class="cm-note cm-note--danger">
+                    <span class="cm-note__icon">!</span>
+                    <div>{{ 'surveyAnonymityIrreversibleNoteText'|trans }}</div>
+                </div>
+            </fieldset>
+
+            <fieldset class="mb-4">
+                <legend class="cm-subhead__title">{{ 'surveyLaunchScheduleLegend'|trans }}</legend>
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">{{ form_row(form.opensAt) }}</div>
+                    <div class="col-12 col-md-6">{{ form_row(form.closesAt) }}</div>
+                </div>
+            </fieldset>
+
+            {# Absent, not disabled, when no class is aimed at: Assignment.program_id is NOT NULL,
+               so a campaign aiming at « tous les enseignants » has no travail à faire and must not
+               try to have one (§7.9). #}
+            <fieldset class="mb-4" data-survey-launch-target="assignments">
+                <legend class="cm-subhead__title">{{ 'surveyLaunchAssignmentLegend'|trans }}</legend>
+                <label class="form-check">
+                    <input type="checkbox" class="form-check-input" name="createAssignments" value="yes" checked>
+                    <span class="form-check-label">{{ 'surveyCreateAssignmentFieldLabel'|trans }}</span>
+                </label>
+                <label class="form-check">
+                    <input type="checkbox" class="form-check-input" name="assignmentMandatory" value="yes">
+                    <span class="form-check-label">{{ 'surveyAssignmentMandatoryFieldLabel'|trans }}</span>
+                </label>
+                {{ form_row(form.resultsVisibleToRespondents) }}
+                <div class="cm-note cm-note--gold">
+                    <span class="cm-note__icon">!</span>
+                    <div>{{ 'surveyNeverGradedNoteText'|trans }}</div>
+                </div>
+            </fieldset>
+
+            <div class="cm-actionbar justify-content-end">
+                <a href="{{ path('app_survey_template_edit', {id: surveyTemplate.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                <button type="submit" class="btn btn-primary" data-survey-launch-target="submit">{{ 'surveyLaunchSubmitLabel'|trans({'%count%': 0}) }}</button>
+            </div>
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}

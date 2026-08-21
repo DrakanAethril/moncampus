@@ -1,0 +1,95 @@
+{# One question's results.
+
+   Three rules, from §9 and §7.5, and each of them is a way of not lying:
+
+    - **the bars follow the order of the answers, never their popularity.** That order carries
+      meaning - above all on a scale - and sorting by value destroys it;
+    - **a multiple choice sums above 100 %, and the screen says so.** Without the mention, a reader
+      concludes the arithmetic is broken;
+    - **a ranking has no percentage at all.** An average rank reads; twelve position bars do not. #}
+<div class="cm-result">
+    <div class="cm-result__head">
+        <span class="cm-result__number">Q{{ number }}</span>
+        <div>
+            <div class="cm-result__label">{{ question.label }}</div>
+            <div class="text-secondary small">
+                <span class="cm-badge {{ question.type.badgeClass }}">{{ question.type.labelKey|trans }}</span>
+                {% if question.isScale and question.type.supportsScale %}<span class="cm-badge cm-badge--teal">{{ 'surveyQuestionScaleBadgeLabel'|trans }}</span>{% endif %}
+                {{ 'surveyResultAnsweredOnTargetedText'|trans({'%answered%': result.answered, '%targeted%': result.targeted}) }}
+                {%- if result.scaleAverage is not null %} · <strong>{{ 'surveyResultScaleAverageText'|trans({'%average%': result.scaleAverage|number_format(2, ',', ' '), '%max%': result.scaleMax}) }}</strong>{% endif %}
+                {%- if result.sumsAboveOneHundred %} · <span class="text-warning">{{ 'surveyResultMultipleMentionText'|trans }}</span>{% endif %}
+                {%- if question.type.value == 'ordre' %} · {{ 'surveyResultRankMentionText'|trans }}{% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if question.type.value == 'ordre' %}
+        {# Ordered by average rank, the most urgent first - the collective ranking, which is what
+           the question asked for. #}
+        <div class="cm-result__bars">
+            {% for answerId in result.rankedAnswerIds %}
+                {% set answer = question.answers|filter(a => a.id == answerId)|first %}
+                {% if answer %}
+                    <div class="cm-result__row">
+                        <span class="cm-result__answer">{{ loop.index }}. {{ answer.label }}</span>
+                        <span class="cm-result__value">{{ 'surveyResultAverageRankText'|trans({'%rank%': result.averageRankFor(answerId)|number_format(1, ',', ' ')}) }}</span>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% elseif question.type.hasAnswers %}
+        <div class="cm-result__bars">
+            {% for answer in question.answers %}
+                <div class="cm-result__row">
+                    <span class="cm-result__answer">{{ answer.label }}</span>
+                    <span class="cm-result__bar"><span class="cm-result__fill" style="width: {{ result.percentFor(answer.id)|round }}%"></span></span>
+                    <span class="cm-result__value"><strong>{{ result.percentFor(answer.id)|round }} %</strong> · {{ result.countFor(answer.id) }}</span>
+                </div>
+            {% endfor %}
+        </div>
+
+        {% if question.isScale and question.type.supportsScale and result.answered > 0 %}
+            {# « Lecture en pôles » - one hue, the low pole at one end and the high at the other,
+               never a rainbow and never a tint at the midpoint. #}
+            <div class="cm-result__poles">
+                <div class="cm-result__poles-title">{{ 'surveyResultPolesTitle'|trans }}</div>
+                {# The five lightness steps are spread over however many answers the scale has:
+                   with three of them the poles must still land on the two ends, or the *high* pole
+                   comes out neutral grey - which reads as « personne n'est d'accord ». #}
+                {% set steps = question.answers|length > 1 ? question.answers|length - 1 : 1 %}
+                <div class="cm-diverging">
+                    {% for answer in question.answers %}
+                        {% set share = result.percentFor(answer.id) %}
+                        {% if share > 0 %}
+                            <span class="cm-diverging__seg cm-diverging__seg--{{ (loop.index0 * 4 / steps)|round }}"
+                                  style="width: {{ share|round }}%"
+                                  title="{{ answer.label }} — {{ share|round }} %"></span>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <div class="cm-diverging__legend">
+                    {% for answer in question.answers %}
+                        <span><span class="cm-diverging__key cm-diverging__seg--{{ (loop.index0 * 4 / steps)|round }}"></span>{{ answer.label }} {{ result.percentFor(answer.id)|round }} %</span>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    {% else %}
+        {# A comment is not counted and not compared: it is read. No word cloud, no sentiment, no
+           automatic summary - a word cloud gives the illusion of having read (§7.14). #}
+        {% if verbatims is empty %}
+            <p class="text-secondary small mb-0">{{ 'surveyResultNoVerbatimText'|trans }}</p>
+        {% else %}
+            <div class="cm-verbatims">
+                {% for verbatim in verbatims %}
+                    <div class="cm-verbatim">
+                        <span class="cm-verbatim__key">
+                            {{- anonymous ? 'surveyVerbatimKeyLabel'|trans({'%key%': verbatim.key}) : verbatim.respondent -}}
+                        </span>
+                        <p class="cm-verbatim__text">{{ verbatim.text }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endif %}
+</div>

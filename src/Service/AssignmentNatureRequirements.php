@@ -10,10 +10,10 @@ use App\Enum\AssignmentNature;
 /**
  * What a travail à faire must carry before it can be saved.
  *
- * Two of the natures point at something else in the app and are meaningless without it: a quiz
- * assignment without its QuizInstance, or a self-assessment without the Evaluation it is an
- * estimate of, would both be a row a student can open and not do. A class is required whatever the
- * nature.
+ * Three of the natures point at something else in the app and are meaningless without it: a quiz
+ * assignment without its QuizInstance, a self-assessment without the Evaluation it is an estimate
+ * of, or a survey without the SurveyCampaign it asks to answer, would all be a row a student can
+ * open and not do. A class is required whatever the nature.
  *
  * The wizard already blocks all three in the browser - this is the server-side net for a request
  * that did not come from the screen, which is exactly why it is worth a test rather than a click.
@@ -39,6 +39,10 @@ final class AssignmentNatureRequirements
 
         if (AssignmentNature::SelfAssessment === $assignment->getNature() && null === $assignment->getEvaluation()) {
             $missing['evaluation'] = 'assignmentWizardEvaluationRequiredMessage';
+        }
+
+        if (AssignmentNature::Survey === $assignment->getNature() && null === $assignment->getSurveyCampaign()) {
+            $missing['surveyCampaign'] = 'assignmentWizardSurveyRequiredMessage';
         }
 
         if (null === $assignment->getProgram()) {

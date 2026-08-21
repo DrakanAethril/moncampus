@@ -56,6 +56,12 @@ class VmBatchController extends AbstractController
 {
     use InfrastructureTrait;
 
+    /**
+     * How long one deployment pass may run, in seconds. See deploy() for why the default is not
+     * enough and why overrunning it is worse than being slow.
+     */
+    private const int PASS_TIME_LIMIT_SECONDS = 120;
+
     #[Route(path: '/infrastructure/batches', name: 'app_infrastructure_batches')]
     public function index(VmBatchRepository $batches, VmBatchItemRepository $items): Response
     {
@@ -333,11 +339,20 @@ class VmBatchController extends AbstractController
     /**
      * One pass of the deployment. Answers what it did and what is left, so the screen can offer to
      * press again - which is safe by construction, since only the outstanding items are attempted.
+     *
+     * **A pass needs more than the default thirty seconds, and asking for it is not optional.** One
+     * step of one machine chains up to five bounded Proxmox calls, and the accounts step opens an
+     * SSH session and runs the batch's post-installation script inside the guest. A
+     * MaxExecutionTimeError is fatal and not catchable: the pass would write nothing at all - no
+     * status, no installation log line - and the screen would show a bare warning for a machine
+     * that had in fact been cloned. Two minutes is what makes the slow cases *recorded* failures
+     * rather than silent ones.
      */
     #[Route(path: '/infrastructure/batches/{id}/deploy', name: 'app_infrastructure_batch_deploy', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function deploy(Request $request, VmBatchRepository $batches, VmBatchExecutor $executor, int $id): JsonResponse
     {
         $this->assertValidInfrastructureToken($request);
+        set_time_limit(self::PASS_TIME_LIMIT_SECONDS);
 
         $batch = $batches->find($id) ?? throw $this->createNotFoundException();
         $host = $batch->getHost();

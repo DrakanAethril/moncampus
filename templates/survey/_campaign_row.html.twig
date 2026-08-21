@@ -1,0 +1,52 @@
+{# One launched wave. Its second line says which wave of which series it is, because two campaigns
+   are comparable only when they belong to the same series - and this is where one sees it.
+
+   The response rate is a column and not something behind a click: it is the one number somebody
+   comes looking for every day a campaign is open. Its denominator is the frozen target, never the
+   class roster - the two differ the moment an option or a manual pick is involved. #}
+<tr>
+    <td>
+        <a class="fw-semibold" href="{{ path('app_survey_campaign', {id: campaign.id}) }}">{{ campaign.name }}</a>
+        <div class="text-secondary small mt-1 d-flex align-items-center gap-2">
+            <span class="cm-badge {{ waveCount > 1 ? 'cm-badge--teal' : 'cm-badge--gray' }}">
+                {{- waveCount > 1
+                    ? 'surveyWaveOfCountLabel'|trans({'%number%': campaign.waveNumber, '%count%': waveCount})
+                    : 'surveySingleWaveLabel'|trans -}}
+            </span>
+            <span>{{ campaign.anonymous ? 'surveyAnonymousLabel'|trans : 'surveyNominativeLabel'|trans }}</span>
+        </div>
+    </td>
+    <td>
+        <div>{{ survey_audience_summary(campaign) }}</div>
+        <div class="text-secondary small">{{ 'surveyTargetedPeopleCountText'|trans({'%count%': rate.targeted}) }}</div>
+    </td>
+    <td>
+        {% set percent = rate.targeted > 0 ? (rate.responded * 100 / rate.targeted)|round : 0 %}
+        <div class="d-flex align-items-center gap-2">
+            <div class="progress" style="width: 110px; height: 6px;">
+                <div class="progress-bar" style="width: {{ percent }}%"></div>
+            </div>
+            <span class="fw-semibold">{{ percent }} %</span>
+        </div>
+        <div class="text-secondary small">{{ rate.responded }} / {{ rate.targeted }}</div>
+    </td>
+    <td><span class="cm-badge {{ campaign.state.badgeClass }}">{{ campaign.state.labelKey|trans }}</span></td>
+    <td class="text-secondary">{{ campaign.closesAt ? campaign.closesAt|date('d/m/Y H:i') : 'surveyNoDeadlineText'|trans }}</td>
+    <td>
+        <div class="cm-actionbar cm-actionbar--inline justify-content-end">
+            <a class="cm-action cm-action--neutral" href="{{ path('app_survey_campaign', {id: campaign.id}) }}">{{ 'surveyResultsActionLabel'|trans }}</a>
+            {% if waveCount > 1 %}
+                <a class="cm-action cm-action--neutral" href="{{ path('app_survey_series', {id: series.id}) }}">{{ 'surveyCompareWavesActionLabel'|trans }}</a>
+            {% elseif not campaign.isOpenNow %}
+                {# « Rejouer » offered once a wave has closed: replaying an open campaign would put
+                   two waves of the same series in front of the same people at once. #}
+                <a class="cm-action cm-action--positive" href="{{ path('app_survey_replay', {id: campaign.id}) }}">{{ 'surveyReplayActionLabel'|trans({'%number%': waveCount + 1}) }}</a>
+            {% endif %}
+            {% set pending = rate.targeted - rate.responded %}
+            {% if pending > 0 and campaign.isOpenNow %}
+                {# The reminder carries the number of people still to answer, never a bare « Relancer ». #}
+                <a class="cm-action cm-action--warning" href="{{ path('app_survey_campaign_pending', {id: campaign.id}) }}">{{ 'surveyRemindActionLabel'|trans({'%count%': pending}) }}</a>
+            {% endif %}
+        </div>
+    </td>
+</tr>

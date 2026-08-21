@@ -311,6 +311,76 @@ class VmBatchExecutorTest extends TestCase
     }
 
     /** @return array{attempted: int, progressed: int, waiting: int, failed: int, remaining: int} */
+    /**
+     * The defect this pins is the one that made a whole class fail at once, and it is invisible in
+     * every single-item test above: BATCH_SIZE limits how many machines a *pass* touches, not how
+     * many clones are running. A pass that starts a clone reports progress, the screen presses
+     * again immediately, and the next never-attempted item is the one with the longest wait - so
+     * twenty-four machines became twenty-four simultaneous disk copies. None of them lands quickly
+     * after that, the screen sees nothing move and gives up on the batch, and the machines are left
+     * cloned and never configured: template address, no account.
+     */
+    public function testAPassStartsNoNewCloneWhileTheHypervisorIsAlreadyCopyingTwo(): void
+    {
+        $batch = $this->batch();
+        $inFlight = [$this->item($batch, VmBatchItemStatus::Creating, 1), $this->item($batch, VmBatchItemStatus::Creating, 2)];
+        $planned = $this->item($batch, VmBatchItemStatus::Planned, 3);
+
+        foreach ($inFlight as $item) {
+            $item->setOperation($this->operation(ProxmoxOperationStatus::Running));
+        }
+
+        $this->tracker->method('resolve')->willReturnArgument(0);
+        $creator = $this->createMock(GuestCreator::class);
+        $creator->expects(self::never())->method('create');
+        $this->creator = $creator;
+
+        // Ordered as the repository orders them: never attempted first, which is exactly what used
+        // to hand the pass to the planned machine.
+        $result = $this->deployList($batch, [$planned, ...$inFlight]);
+
+        self::assertSame(VmBatchItemStatus::Planned, $planned->getStatus());
+        self::assertSame(1, $result['attempted']);
+    }
+
+    public function testAPassStartsACloneAgainAsSoonAsOneHasLanded(): void
+    {
+        $batch = $this->batch();
+        $creating = $this->item($batch, VmBatchItemStatus::Creating, 1);
+        $creating->setOperation($this->operation(ProxmoxOperationStatus::Running));
+        $planned = $this->item($batch, VmBatchItemStatus::Planned, 2);
+
+        $this->allocator = $this->createStub(IpAllocator::class);
+        $this->allocator->method('reserveNext')->willReturn($this->createStub(IpAllocation::class));
+        $creator = $this->createMock(GuestCreator::class);
+        $creator->expects(self::once())->method('create')->willReturn($this->operation(ProxmoxOperationStatus::Running));
+        $this->creator = $creator;
+
+        $result = $this->deployList($batch, [$planned, $creating]);
+
+        self::assertSame(VmBatchItemStatus::Creating, $planned->getStatus());
+        self::assertSame(1, $result['progressed']);
+    }
+
+    public function testWhatIsLeftDistinguishesTheSlowFromTheRefused(): void
+    {
+        // The screen loops while machines are merely slow and stops once everything outstanding has
+        // refused. Reporting only "remaining" made one refusal end the pass for every other machine.
+        $batch = $this->batch();
+        $refused = $this->item($batch, VmBatchItemStatus::Failed, 1);
+        $slow = $this->item($batch, VmBatchItemStatus::Created, 2);
+        $slow->setIpAllocation($this->allocation());
+
+        $shells = $this->createStub(GuestShellFactory::class);
+        $shells->method('open')->willThrowException(new GuestUnreachableException('No route to host'));
+        $this->shells = $shells;
+
+        $result = $this->deployList($batch, [$slow, $refused]);
+
+        self::assertSame(2, $result['remaining']);
+        self::assertSame(1, $result['blocked']);
+    }
+
     private function deployOnce(VmBatch $batch, VmBatchItem $item, float $budgetSeconds = 60.0): array
     {
         // First call returns the outstanding item, the second (after the pass) recounts what is left.
@@ -349,10 +419,59 @@ class VmBatchExecutorTest extends TestCase
     }
 
     /**
-     * @param list<array{userId: int, label: string, login: string}> $groupMembers
-     *
      * @return array{VmBatch, VmBatchItem}
      */
+    /**
+     * A pass over a batch of several machines, in the order the repository would hand them over.
+     *
+     * @param list<VmBatchItem> $items
+     *
+     * @return array{attempted: int, progressed: int, waiting: int, failed: int, remaining: int, blocked: int}
+     */
+    private function deployList(VmBatch $batch, array $items): array
+    {
+        $this->items->method('findResumable')->willReturnCallback(
+            static fn (): array => array_values(array_filter(
+                $items,
+                static fn (VmBatchItem $item): bool => $item->getStatus()->isResumable(),
+            )),
+        );
+
+        $executor = new \App\Service\VmBatch\VmBatchExecutor(
+            $this->creator,
+            $this->allocator,
+            $this->accounts,
+            $this->items,
+            $this->createStub(UserRepository::class),
+            $this->tracker,
+            $this->clientFactory(),
+            $this->shells,
+            $this->postInstall,
+            new UnixLogin(),
+            $this->createStub(EntityManagerInterface::class),
+            60.0,
+        );
+
+        return $executor->run($batch, null);
+    }
+
+    private function batch(): VmBatch
+    {
+        $program = new Program('SIO-2 2026-2027', 'SIO-2', $this->createStub(Cohort::class), $this->createStub(SchoolYear::class));
+
+        return new VmBatch('TP', $program, $this->createStub(ProxmoxHost::class), $this->createStub(IpRange::class), 9000, 'pve');
+    }
+
+    private function item(VmBatch $batch, VmBatchItemStatus $status, int $position): VmBatchItem
+    {
+        $item = new VmBatchItem($batch, \sprintf('Groupe %d', $position), \sprintf('tp-%02d', $position), \sprintf('groupe-%d', $position), $position);
+        $item->setStatus($status);
+        $item->setVmid(9000 + $position);
+        $batch->addItem($item);
+
+        return $item;
+    }
+
     private function batchWithItem(VmBatchItemStatus $status, array $groupMembers = []): array
     {
         $program = new Program('SIO-2 2026-2027', 'SIO-2', $this->createStub(Cohort::class), $this->createStub(SchoolYear::class));

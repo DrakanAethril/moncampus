@@ -106,6 +106,34 @@ enum ProxmoxAction: string
         };
     }
 
+    /**
+     * How long a task of this kind may legitimately still be running before MonCampus stops
+     * believing it, in seconds.
+     *
+     * **A ceiling per action, because one number cannot serve both ends of this list.** A start
+     * that has not finished in five minutes is a start that will not finish; a full clone of a
+     * hundred-gigabyte template onto a busy datastore takes as long as the copy takes, and several
+     * of them run at once when a class is deployed. The single five-minute ceiling that used to
+     * cover both is what declared perfectly healthy clones `unknown` - and an `unknown` creation
+     * fails its machine, which is then never configured and never started: the machine exists on
+     * the hypervisor as a bare copy of the template, with the template's address and no account.
+     *
+     * The number is not a timeout on anything - nothing is cancelled and nothing is retried. It
+     * only says when a row nobody can reach a verdict on stops being followed.
+     */
+    public function maxTaskDurationSeconds(): int
+    {
+        return match ($this) {
+            // The copy itself. Bounded only so a row cannot poll for ever.
+            self::Clone, self::Create => 3600,
+            // Power actions answer in seconds; one that has not in five minutes is stuck.
+            self::Start, self::Shutdown, self::Stop, self::Reboot => 300,
+            // These open no Proxmox task at all - they act inside the machine over SSH - so the
+            // value is only ever used to close a row that was written and never settled.
+            self::Provision, self::PostInstall => 300,
+        };
+    }
+
     /** The badge colour the journal gives it - power actions read as neutral, creation as notable. */
     public function badgeModifier(): string
     {

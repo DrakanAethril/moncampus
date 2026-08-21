@@ -107,6 +107,13 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tools/file-library/trash' => 403,
             '/tools/file-library/search' => 403,
             '/library/quiz/import/assistant' => 403,
+            // Outils > Sondages is the author's side: a student answers a survey, never writes one.
+            '/surveys' => 403,
+            '/surveys/templates' => 403,
+            '/surveys/campaigns' => 403,
+            '/surveys/templates/new' => 403,
+            // Their own door - open to every account, and empty until a campaign aims at them.
+            '/my-surveys' => 200,
             '/progression' => 403,
             '/library/sequences' => 403,
             '/library/sequences/assistant' => 403,
@@ -143,6 +150,27 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/shares' => 200,
             '/shares/mine' => 200,
             '/shares/catalog' => 200,
+            // Outils > Sondages - one entry serving teachers and staff alike, since the menu it
+            // sits in is already gated on exactly those two.
+            '/surveys' => 302,
+            '/surveys/templates' => 200,
+            '/surveys/campaigns' => 200,
+            '/surveys/templates/new' => 200,
+            // Also a respondent: a teacher aimed at by a satisfaction survey has no travail à
+            // faire, so this screen and the home card are their only door (§7.9).
+            '/my-surveys' => 200,
+            // The results screens hang off a campaign id, so an empty database answers 404 rather
+            // than 403 - the door itself is pinned by SurveyVoterTest. What matters here is that
+            // they are *reachable*: a 403 would mean the role lost access.
+            '/surveys/campaigns/999999' => 404,
+            '/surveys/campaigns/999999/responses' => 404,
+            '/surveys/campaigns/999999/pending' => 404,
+            '/surveys/campaigns/999999/export' => 404,
+            '/surveys/campaigns/999999/replay' => 404,
+            // The series screens, including the individual comparison - reachable only from the
+            // wave comparison, never from the menu, but a route all the same (§7.15).
+            '/surveys/series/999999' => 404,
+            '/surveys/series/999999/individual' => 404,
             '/agenda' => 200,
             '/messages' => 200,
             '/tickets' => 200,
@@ -226,6 +254,27 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/shares' => 200,
             '/shares/mine' => 200,
             '/shares/catalog' => 200,
+            // Outils > Sondages - one entry serving teachers and staff alike, since the menu it
+            // sits in is already gated on exactly those two.
+            '/surveys' => 302,
+            '/surveys/templates' => 200,
+            '/surveys/campaigns' => 200,
+            '/surveys/templates/new' => 200,
+            // Also a respondent: a teacher aimed at by a satisfaction survey has no travail à
+            // faire, so this screen and the home card are their only door (§7.9).
+            '/my-surveys' => 200,
+            // The results screens hang off a campaign id, so an empty database answers 404 rather
+            // than 403 - the door itself is pinned by SurveyVoterTest. What matters here is that
+            // they are *reachable*: a 403 would mean the role lost access.
+            '/surveys/campaigns/999999' => 404,
+            '/surveys/campaigns/999999/responses' => 404,
+            '/surveys/campaigns/999999/pending' => 404,
+            '/surveys/campaigns/999999/export' => 404,
+            '/surveys/campaigns/999999/replay' => 404,
+            // The series screens, including the individual comparison - reachable only from the
+            // wave comparison, never from the menu, but a route all the same (§7.15).
+            '/surveys/series/999999' => 404,
+            '/surveys/series/999999/individual' => 404,
             '/agenda' => 200,
             '/messages' => 200,
             '/tickets' => 200,
@@ -337,6 +386,13 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/progression' => 403,
             '/library/sequences' => 403,
             '/library/sequences/assistant' => 403,
+            // A tutor may be *targeted* by a survey - « Mes sondages » is their door, and their
+            // only one (design/validated/surveys.md §11). The author's side is shut.
+            '/my-surveys' => 200,
+            '/surveys' => 403,
+            '/surveys/templates' => 403,
+            '/surveys/campaigns' => 403,
+            '/surveys/templates/new' => 403,
             '/shares' => 403,
             '/shares/mine' => 403,
             '/shares/catalog' => 403,

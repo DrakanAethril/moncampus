@@ -1,0 +1,7 @@
+{# The index subtitle both tabs share - « 3 campagnes ouvertes · 1 en attente de relance ».
+   Two counts and nothing else: the response rate is what one comes looking for every day while a
+   campaign is open, so it stays in the table's own column rather than being summarised here. #}
+<p class="text-secondary mb-3">
+    {{ 'surveysOpenCampaignsCountText'|trans({'%count%': headline.open}) }}
+    {%- if headline.awaitingReminder > 0 %} · {{ 'surveysAwaitingReminderCountText'|trans({'%count%': headline.awaitingReminder}) }}{% endif %}
+</p>

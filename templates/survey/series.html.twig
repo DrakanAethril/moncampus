@@ -1,0 +1,96 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ series.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'surveysPageHeading'|trans, url: path('app_surveys')},
+        {label: series.name, url: path('app_survey_series', {id: series.id})},
+        {label: 'surveyCompareWavesActionLabel'|trans, url: path('app_survey_series', {id: series.id})},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ series.name }}{% endblock %}
+
+{% block page_actions %}
+    {% if waves|length > 0 %}
+        {% set last = waves|last %}
+        <a href="{{ path('app_survey_replay', {id: last.id}) }}" class="btn btn-primary">{{ 'surveyReplayActionLabel'|trans({'%number%': waves|length + 1}) }}</a>
+    {% endif %}
+{% endblock %}
+
+{% block main %}
+    <p class="text-secondary mb-3">
+        {{ 'surveyWavesCountText'|trans({'%count%': waves|length}) }}
+        · {{ waves|first and waves|first.anonymous ? 'surveyAnonymousLabel'|trans : 'surveyNominativeLabel'|trans }}
+    </p>
+
+    {# The waves and their colours. One hue in three steps of lightness, light = oldest, dark =
+       newest: time is an ordered quantity, and a categorical palette would present three waves as
+       three unordered categories. #}
+    <div class="card mb-3">
+        <div class="card-header">
+            <h3 class="card-title">{{ 'surveyWavesCardTitle'|trans }}</h3>
+            <div class="card-actions cm-wave-legend">
+                {% for wave in waves %}
+                    <span><span class="cm-wave-key cm-wave--{{ loop.index0 % 3 }}"></span>V{{ wave.waveNumber }} · {{ wave.creationDate|date('m/Y') }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table cm-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>{{ 'surveyWaveColumnLabel'|trans }}</th>
+                            <th>{{ 'surveyPeriodColumnLabel'|trans }}</th>
+                            <th class="text-end">{{ 'surveyTargetColumnLabel'|trans }}</th>
+                            <th class="text-end">{{ 'surveyKpiRespondentsLabel'|trans }}</th>
+                            <th class="text-end">{{ 'surveyRateColumnLabel'|trans }}</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for wave in waves %}
+                            {% set rate = rates[wave.waveNumber]|default({targeted: 0, responded: 0}) %}
+                            <tr>
+                                <td><span class="cm-badge cm-badge--blue">V{{ wave.waveNumber }}</span></td>
+                                <td>{{ wave.creationDate|date('d/m/Y') }}</td>
+                                <td class="text-end">{{ rate.targeted }}</td>
+                                <td class="text-end">{{ rate.responded }}</td>
+                                <td class="text-end fw-semibold">{{ rate.targeted > 0 ? (rate.responded * 100 / rate.targeted)|round : 0 }} %</td>
+                                <td class="text-end"><a class="cm-action cm-action--neutral" href="{{ path('app_survey_campaign', {id: wave.id}) }}">{{ 'surveyResultsActionLabel'|trans }}</a></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if waves|length >= 2 and not (waves|first.anonymous) and not (waves|last.anonymous) %}
+                {# The one door to the individual comparison - never the menu (§7.15). #}
+                <a href="{{ path('app_survey_series_individual', {id: series.id}) }}" class="btn btn-outline-secondary mt-2">{{ 'surveyIndividualComparisonActionLabel'|trans }}</a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if comparison.needsCurve %}
+        <div class="cm-note mb-3">
+            <span class="cm-note__icon">i</span>
+            <div>{{ 'surveyTooManyWavesNoteText'|trans({'%max%': maxStacked}) }}</div>
+        </div>
+    {% endif %}
+
+    {% if comparison.questions is empty %}
+        <div class="card"><div class="card-body">
+            <p class="text-secondary mb-0">{{ 'surveyNothingToCompareText'|trans }}</p>
+        </div></div>
+    {% else %}
+        {% for question in comparison.questions %}
+            {% include 'survey/_comparison_question.html.twig' with {
+                question: question,
+                waves: waves,
+                needsCurve: comparison.needsCurve,
+            } only %}
+        {% endfor %}
+    {% endif %}
+{% endblock %}

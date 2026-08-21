@@ -1,0 +1,34 @@
+{% extends 'survey/_results_shell.html.twig' %}
+
+{% block results_body %}
+    {# The threshold. Under three responses an anonymous campaign shows no distribution at all: on
+       a target of four people, a two-bar histogram points at somebody (§7.6). #}
+    {% if not disclosable %}
+        <div class="cm-note">
+            <span class="cm-note__icon">i</span>
+            <div>{{ 'surveyAnonymousThresholdText'|trans({'%count%': rate.responded, '%targeted%': rate.targeted, '%threshold%': threshold}) }}</div>
+        </div>
+    {% elseif campaign.answerableQuestions is empty %}
+        <p class="text-secondary mb-0">{{ 'surveyResultsNoQuestionText'|trans }}</p>
+    {% else %}
+        <div class="d-flex flex-column gap-4">
+            {% set number = 0 %}
+            {% for question in campaign.questions %}
+                {% if question.type.value == 'titre' %}
+                    {# An intertitle structures the reading of the results as it structured the
+                       passation - a section, and never a figure. #}
+                    <h3 class="cm-survey-section">{{ question.label }}</h3>
+                {% else %}
+                    {% set number = number + 1 %}
+                    {% include 'survey/_result_question.html.twig' with {
+                        question: question,
+                        number: number,
+                        result: results[question.id],
+                        verbatims: verbatims[question.id]|default([]),
+                        anonymous: campaign.anonymous,
+                    } only %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}
