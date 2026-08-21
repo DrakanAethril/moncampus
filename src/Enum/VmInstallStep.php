@@ -56,6 +56,16 @@ enum VmInstallStep: string
 
     case AccountsApplied = 'accountsApplied';
     case AccountsFailed = 'accountsFailed';
+
+    /** The clock was pointed at the VLAN's gateway - with the address, which is what gets checked. */
+    case TimeSyncConfigured = 'timeSyncConfigured';
+
+    /**
+     * It was not, and why. Not fatal on its own: a machine whose clock is wrong is still a machine
+     * the students can use, and failing it would hold the whole class behind a template problem.
+     * Red in the log rather than silent, which is the difference that matters.
+     */
+    case TimeSyncFailed = 'timeSyncFailed';
     case PostInstallRun = 'postInstallRun';
     case PostInstallFailed = 'postInstallFailed';
 
