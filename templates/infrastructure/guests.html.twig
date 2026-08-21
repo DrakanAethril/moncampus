@@ -34,7 +34,7 @@
         </div>
     {% else %}
         <div class="card cm-card--tabbed"
-             data-controller="proxmox-guests"
+             data-controller="proxmox-guests copy-value"
              data-proxmox-guests-token-value="{{ csrf_token('infrastructure_action') }}"
              data-proxmox-guests-confirm-stop-value="{{ 'proxmoxGuestForceConfirmText'|trans }}">
             <form method="get" class="cm-actionbar" style="margin: 0; padding: 12px 18px; border-top: 0; border-bottom: 1px solid var(--cm-border-soft); background: var(--cm-surface-soft);">
@@ -96,10 +96,30 @@
                                 <td class="cm-mono">{{ guest.vmid }}</td>
                                 <td>
                                     <div class="cm-guest__name">{{ guest.name }}</div>
-                                    <div class="cm-guest__sub">
-                                        {{ guest.isContainer ? 'LXC' : 'QEMU' }}
-                                        {%- if guest.template %} · <span style="color: var(--cm-teal-tx)">{{ 'proxmoxGuestTemplateLabel'|trans }}</span>{% endif %}
-                                        {%- if guest.pool %} · pool <i>{{ guest.pool }}</i>{% endif %}
+                                    {# The address rather than the type and the pool: those two are
+                                       already a filter and a line of the host header, whereas the
+                                       address is what somebody reading this row is about to type
+                                       somewhere else - hence the copy button next to it. #}
+                                    {% set ip = addresses[guest.vmid]|default(null) %}
+                                    <div class="cm-guest__sub cm-guest__ip">
+                                        {% if ip %}
+                                            <span class="cm-mono">{{ ip }}</span>
+                                            <button type="button" class="cm-copybtn"
+                                                    data-action="click->copy-value#copy"
+                                                    data-copy-value-text-param="{{ ip }}"
+                                                    title="{{ 'proxmoxGuestIpCopyAction'|trans }}"
+                                                    aria-label="{{ 'proxmoxGuestIpCopyAction'|trans }}">
+                                                <svg class="cm-copybtn__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                    <rect x="8" y="8" width="12" height="12" rx="2"></rect>
+                                                    <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path>
+                                                </svg>
+                                                <svg class="cm-copybtn__icon cm-copybtn__icon--done" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                    <path d="M5 12l5 5L20 7"></path>
+                                                </svg>
+                                            </button>
+                                        {% else %}
+                                            <span class="cm-mono">—</span>
+                                        {% endif %}
                                     </div>
                                 </td>
                                 <td class="cm-guest__sub">{{ guest.node }}</td>

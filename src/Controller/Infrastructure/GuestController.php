@@ -6,6 +6,7 @@ namespace App\Controller\Infrastructure;
 
 use App\Entity\ProxmoxHost;
 use App\Enum\ProxmoxAction;
+use App\Repository\IpAllocationRepository;
 use App\Repository\ProxmoxHostRepository;
 use App\Repository\ProxmoxOperationRepository;
 use App\Security\Voter\ProxmoxHostVoter;
@@ -59,6 +60,7 @@ class GuestController extends AbstractController
         ProxmoxInventory $inventory,
         ProxmoxScopeGuard $scopeGuard,
         ProxmoxOperationRepository $operations,
+        IpAllocationRepository $allocations,
         int $id,
     ): Response {
         $host = $this->findHostOrNotFound($repository, $id);
@@ -114,6 +116,13 @@ class GuestController extends AbstractController
             // One query for the whole page rather than one per row - the machines list is the only
             // screen where an operation in flight has to show up next to its machine.
             'liveOperations' => $operations->findUnsettledByVmid($host),
+            // One query for the whole list, like the operations above: the address a machine holds
+            // is the one thing on this screen the hypervisor does not know - it lives in the
+            // address registry, keyed by VMID.
+            'addresses' => $allocations->findAddressesForVmids(array_map(
+                static fn (array $row): int => $row['guest']->vmid,
+                $rows,
+            )),
             'canOperate' => $this->isGranted(ProxmoxHostVoter::OPERATE, $host),
         ]);
     }

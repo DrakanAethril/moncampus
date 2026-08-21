@@ -7718,6 +7718,21 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-guest__sub { font-size: 11.5px; color: var(--cm-faint); }
 .cm-guest__actions { display: flex; gap: 12px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
 
+/* The address of a machine, with its copy button. The button keeps the row's height: it is sized
+   on the sub-line rather than on a control, and only its icon reacts. */
+.cm-guest__ip { display: inline-flex; align-items: center; gap: 4px; }
+.cm-guest__ip .cm-mono { font-size: 12px; }
+.cm-copybtn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px; padding: 0;
+    border: 0; border-radius: 5px; background: transparent;
+    color: var(--cm-faint); cursor: pointer; line-height: 0;
+}
+.cm-copybtn:hover { background: var(--cm-surface-soft); color: var(--cm-ink); }
+.cm-copybtn__icon--done,
+.cm-copybtn--done .cm-copybtn__icon { display: none; }
+.cm-copybtn--done .cm-copybtn__icon--done { display: block; color: var(--cm-green-tx); }
+
 /* The resource bars. Deliberately unlabelled beyond their own caption: the number underneath is
    the fact, the bar is only what makes a column of them scannable. */
 .cm-meter { height: 5px; border-radius: 3px; background: var(--cm-border-soft); overflow: hidden; width: 78px; }
