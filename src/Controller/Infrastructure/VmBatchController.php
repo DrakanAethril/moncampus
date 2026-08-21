@@ -242,7 +242,6 @@ class VmBatchController extends AbstractController
         $batch->setDiskGib($request->request->getInt('diskGib', 16));
         $batch->setStorage((string) $request->request->get('storage', 'local-lvm'));
         $batch->setLinkedClone(null !== $request->request->get('linkedClone'));
-        $batch->setGrantSudo(null !== $request->request->get('grantSudo'));
         $batch->setNamePattern((string) $request->request->get('namePattern', 'tp-{index}'));
         $batch->setPostInstallScript($this->nullIfBlank((string) $request->request->get('postInstallScript', '')));
 

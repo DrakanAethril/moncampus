@@ -108,7 +108,6 @@
                 <h3 class="card-title cm-condition-heading">{{ 'guestAccountListTitle'|trans }}</h3>
                 <div class="ms-auto d-flex gap-2 align-items-center">
                     <input type="text" class="cm-input cm-field--sm" placeholder="{{ 'guestAccountLoginPlaceholder'|trans }}" data-guest-accounts-target="newLogin">
-                    <label class="cm-field-label"><input type="checkbox" data-guest-accounts-target="newSudo"> sudo</label>
                     <button type="button" class="cm-btn cm-btn--outline cm-btn--sm" data-action="guest-accounts#declare">{{ 'guestAccountDeclareAction'|trans }}</button>
                 </div>
             </div>
@@ -118,7 +117,6 @@
                         <tr>
                             <th>{{ 'guestAccountLoginLabel'|trans }}</th>
                             <th>{{ 'guestAccountPersonLabel'|trans }}</th>
-                            <th>sudo</th>
                             <th>{{ 'proxmoxGuestStatusLabel'|trans }}</th>
                             <th>{{ 'ipRegistryOriginLabel'|trans }}</th>
                             <th class="cm-actions"></th>
@@ -129,7 +127,6 @@
                             <tr>
                                 <td class="cm-mono">{{ account.login }}</td>
                                 <td>{{ account.displayName ?? '—' }}</td>
-                                <td class="cm-guest__sub">{{ account.sudo ? 'oui' : '—' }}</td>
                                 <td><span class="cm-badge cm-badge--{{ account.state.badgeModifier }}">{{ account.state.labelKey|trans }}</span></td>
                                 <td><span class="cm-badge cm-badge--{{ account.origin.badgeModifier }}">{{ account.origin.labelKey|trans }}</span></td>
                                 <td class="cm-actions">
@@ -141,7 +138,7 @@
                                 </td>
                             </tr>
                         {% else %}
-                            <tr><td colspan="6" class="text-center py-4 cm-guest__sub">{{ 'guestAccountNoneText'|trans }}</td></tr>
+                            <tr><td colspan="5" class="text-center py-4 cm-guest__sub">{{ 'guestAccountNoneText'|trans }}</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>

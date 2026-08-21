@@ -73,7 +73,6 @@ class GuestAccountService
                 $desired[] = new DesiredAccount(
                     $account->getLogin(),
                     $account->getOrigin(),
-                    $account->isSudo(),
                     $account->getShell(),
                     $account->getUser()?->getId(),
                     $account->getDisplayName(),
@@ -139,7 +138,6 @@ class GuestAccountService
         int $vmid,
         string $login,
         GuestAccountOrigin $origin,
-        bool $sudo,
         ?User $user = null,
         ?string $displayName = null,
     ): GuestAccount {
@@ -151,7 +149,6 @@ class GuestAccountService
 
         $account = new GuestAccount($host, $node, $vmid, $login);
         $account->setOrigin($origin);
-        $account->setSudo($sudo);
 
         if (null !== $user) {
             $account->setUser($user);

@@ -37,6 +37,9 @@
          data-controller="vm-batch"
          data-vm-batch-token-value="{{ csrf_token('infrastructure_action') }}"
          data-vm-batch-deploy-url-value="{{ path('app_infrastructure_batch_deploy', {id: batch.id}) }}"
+         {# The page reloads itself while machines are being built, so somebody watching a class
+            deploy sees it advance without pressing anything. #}
+         data-vm-batch-auto-refresh-value="{{ batch.isDeploymentUnderWay ? 'true' : 'false' }}"
          data-vm-batch-labels-value="{{ {
              progress: 'vmBatchDeployProgressLabel'|trans,
              waiting: 'vmBatchDeployWaitingLabel'|trans,
@@ -106,7 +109,10 @@
                         {% if item.installLogEntries is not empty %}
                             <tr class="cm-installlog__row">
                                 <td colspan="8">
-                                    <details class="cm-installlog">
+                                    {# Unfolded on the machine being worked on: arriving on a batch
+                                       mid-deployment should show what is happening rather than a
+                                       column of closed triangles. #}
+                                    <details class="cm-installlog"{{ batch.firstUnfinishedItem is same as(item) ? ' open' : '' }}>
                                         <summary>{{ 'vmInstallLogToggleAction'|trans({'%count%': item.installLogEntries|length}) }}</summary>
                                         <ol class="cm-installlog__list">
                                             {% for entry in item.installLogEntries %}

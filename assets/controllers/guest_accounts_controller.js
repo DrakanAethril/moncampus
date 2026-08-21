@@ -11,7 +11,7 @@ import { Controller } from '@hotwired/stimulus';
  */
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
-    static targets = ['passwords', 'passwordTable', 'newLogin', 'newSudo'];
+    static targets = ['passwords', 'passwordTable', 'newLogin'];
 
     static values = {
         token: String,
@@ -42,7 +42,7 @@ export default class extends Controller {
             return;
         }
 
-        const answer = await this.#post(this.declareUrlValue, { login, sudo: this.newSudoTarget.checked });
+        const answer = await this.#post(this.declareUrlValue, { login });
 
         if (answer?.ok) {
             window.location.reload();
