@@ -104,6 +104,16 @@ class ConsoleController extends AbstractController
         $session = $this->ownSession($request, $sessions, $id);
         $payload = JsonRequestPayload::fromRequest($request);
 
+        // **The session lock is released here, and this is not an optimisation.** PHP holds an
+        // exclusive lock on the session file for the whole of a request, and this one deliberately
+        // lasts up to eight seconds. A keystroke during that wait aborts the request in the
+        // browser - but aborting a fetch does not stop the server, so the abandoned request keeps
+        // the lock to the end of its own budget and the keystroke that replaced it *queues behind
+        // it*. Measured before this line: a keystroke echoed in 7.2 s at the median instead of
+        // 300 ms, with the two numbers alternating exactly as the lock was free or held. Nothing
+        // below writes to the session, so closing it costs nothing.
+        $request->getSession()->save();
+
         try {
             // The short ceiling is the console's, and the reason GuestShellFactory::open() takes
             // one at all: an exchange must hand the worker back in ten seconds, not in five
