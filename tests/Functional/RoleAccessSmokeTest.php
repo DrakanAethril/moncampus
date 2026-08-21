@@ -66,6 +66,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/agenda' => 200,
             '/messages' => 200,
             '/tickets' => 200,
+            // « Mes machines virtuelles » - open to every authenticated role and empty
+            // until somebody holds an account on one; what may be *done* to a machine is the
+            // GuestAccountVoter's answer, one machine at a time.
+            '/my/machines' => 200,
             '/profile' => 200,
             '/about' => 200,
             '/help' => 200,
@@ -174,6 +178,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/agenda' => 200,
             '/messages' => 200,
             '/tickets' => 200,
+            // « Mes machines virtuelles » - open to every authenticated role and empty
+            // until somebody holds an account on one; what may be *done* to a machine is the
+            // GuestAccountVoter's answer, one machine at a time.
+            '/my/machines' => 200,
             '/profile' => 200,
             '/about' => 200,
             '/help' => 200,
@@ -278,6 +286,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/agenda' => 200,
             '/messages' => 200,
             '/tickets' => 200,
+            // « Mes machines virtuelles » - open to every authenticated role and empty
+            // until somebody holds an account on one; what may be *done* to a machine is the
+            // GuestAccountVoter's answer, one machine at a time.
+            '/my/machines' => 200,
             '/profile' => 200,
             '/about' => 200,
             '/help' => 200,
@@ -357,6 +369,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/agenda' => 200,
             '/messages' => 200,
             '/tickets' => 200,
+            // « Mes machines virtuelles » - open to every authenticated role and empty
+            // until somebody holds an account on one; what may be *done* to a machine is the
+            // GuestAccountVoter's answer, one machine at a time.
+            '/my/machines' => 200,
             '/profile' => 200,
             '/about' => 200,
             // Open to every account, and empty for anyone no article is addressed to: there is

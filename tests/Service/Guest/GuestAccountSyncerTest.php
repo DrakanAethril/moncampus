@@ -333,6 +333,43 @@ class GuestAccountSyncerTest extends TestCase
         self::assertStringContainsString('groupadd docker', $docker[0]);
     }
 
+    /**
+     * The password its owner chooses - the reason « Mes machines virtuelles » exists. The accounts a
+     * batch creates are born with one that is generated, sent to the machine and forgotten on the
+     * spot, so until somebody sets one, the account exists and nobody can log into it.
+     */
+    public function testSomebodyCanSetTheirOwnPassword(): void
+    {
+        $shell = new RecordingShell();
+
+        $this->syncer()->setPassword($shell, 'marie-dupont', 'un-mot-de-passe-assez-long');
+
+        self::assertCount(1, $shell->commands);
+        self::assertStringContainsString('chpasswd', $shell->commands[0]);
+        // On stdin, never in the command line: these machines have several people logged into them
+        // and a process list is public.
+        self::assertStringContainsString("printf %s 'marie-dupont:un-mot-de-passe-assez-long' | chpasswd", $shell->commands[0]);
+    }
+
+    /**
+     * A newline would end the line chpasswd reads and turn the rest into something else entirely,
+     * and a password too short is one nobody should be able to choose for a machine reachable over
+     * SSH with no lockout. Refused before anything is sent.
+     */
+    public function testAPasswordThatIsNotOneIsRefusedBeforeItIsSent(): void
+    {
+        foreach (['court', "long-mais-avec\nun-retour", ''] as $candidate) {
+            $shell = new RecordingShell();
+
+            try {
+                $this->syncer()->setPassword($shell, 'marie-dupont', $candidate);
+                self::fail('A password that is not one must be refused.');
+            } catch (\InvalidArgumentException) {
+                self::assertSame([], $shell->commands, 'nothing may reach the machine');
+            }
+        }
+    }
+
     public function testAskingAboutNobodyRunsNothing(): void
     {
         $shell = $this->shell();
