@@ -26,6 +26,19 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.08.21.3'
+      date: '2026-08-21'
+      summary: "Les machines virtuelles de chacun s'affichent désormais en fiches : l'état, les caractéristiques, les comptes ouverts sur la machine et le choix du mot de passe au même endroit. Côté installation, l'écran d'un déploiement se met à jour dès le premier clic et les actions d'une machine tiennent dans une seule liste."
+      entries:
+          - type: modification
+            title: 'Mes machines virtuelles présentées en fiches'
+            detail: "Une fiche par machine à la place d'un long bloc : son état d'un coup d'œil, son adresse, sa mémoire et son disque, la liste des comptes ouverts dessus, et le choix de son mot de passe. Une machine allumée, éteinte ou en cours de démarrage se distingue immédiatement, et le mot de passe ne se saisit que lorsque la machine peut le recevoir."
+          - type: modification
+            title: "Les actions d'une machine tiennent dans une seule liste"
+            detail: "Comptes, démarrage, arrêt, redémarrage et arrêt forcé se choisissent au même endroit, au bout de la ligne. L'arrêt forcé y reste éloigné de l'arrêt ordinaire et demande toujours confirmation : l'un coupe le courant, l'autre laisse la machine se fermer proprement."
+          - type: fix
+            title: "L'écran d'une installation se met à jour dès le premier clic"
+            detail: "Il fallait recharger la page une fois pour voir les machines avancer ; l'écran restait figé jusque-là."
     - version: '2026.08.21.2'
       date: '2026-08-21'
       summary: "Les étudiants et les enseignants retrouvent désormais les machines virtuelles qui leur sont destinées : ils les démarrent, les arrêtent et y choisissent leur mot de passe. Côté installation, les machines se construisent réellement une par une, un déploiement se poursuit sans qu'on reste devant l'écran, et plusieurs pannes qui ne disaient pas leur nom sont corrigées."
