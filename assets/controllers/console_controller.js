@@ -129,12 +129,27 @@ export default class extends Controller {
         window.removeEventListener('pagehide', this.onLeave);
         this.inflight?.abort();
         this.release();
-        this.terminal?.dispose();
+
+        // Détaché **avant** d'être détruit : la boucle d'échange et le redimensionnement peuvent
+        // encore se réveiller une fois, et ils doivent alors ne rien trouver plutôt que de peindre
+        // dans un terminal détruit.
+        const terminal = this.terminal;
+        this.terminal = null;
+        this.fit = null;
+
+        try {
+            terminal?.dispose();
+        } catch (error) {
+            // Turbo a retiré le nœud du document avant que xterm.js n'ait fini de le lâcher, et
+            // xterm lit alors le `style` d'un élément qui n'est plus là. Rien à réparer : l'écran
+            // qu'on quitte n'existe plus. Sans ce filet, chaque départ d'une console laissait une
+            // erreur dans la console du navigateur.
+        }
     }
 
     /** Un tour de boucle = un échange long. Elle ne s'arrête qu'en quittant l'écran. */
     async pump() {
-        while (this.running) {
+        while (this.running && this.terminal) {
             const keys = this.pending.splice(0, this.pending.length).join('');
             const controller = new AbortController();
             this.inflight = controller;
@@ -195,6 +210,10 @@ export default class extends Controller {
     }
 
     paint(answer) {
+        if (!this.terminal) {
+            return;
+        }
+
         this.digest = answer.digest;
 
         if (answer.columns && answer.rows && (answer.columns !== this.terminal.cols || answer.rows !== this.terminal.rows)) {
@@ -280,6 +299,10 @@ export default class extends Controller {
     }
 
     resize() {
+        if (!this.terminal) {
+            return;
+        }
+
         this.fit?.fit();
         // Rien à envoyer : la mesure part avec le prochain échange, qui suit de moins de huit
         // secondes. Une requête de redimensionnement séparée serait une poignée de main de plus

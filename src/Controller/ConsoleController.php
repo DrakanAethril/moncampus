@@ -10,6 +10,7 @@ use App\Entity\User;
 use App\Repository\ConsoleSessionRepository;
 use App\Repository\FileLibraryNodeRepository;
 use App\Repository\GuestAccountRepository;
+use App\Repository\LessonSessionRepository;
 use App\Security\Voter\GuestConsoleVoter;
 use App\Service\Console\ConsoleAddressUnknownException;
 use App\Service\Console\ConsoleBroadcaster;
@@ -27,6 +28,7 @@ use App\Service\Console\ConsoleTranscript;
 use App\Service\Console\ConsoleUnavailableException;
 use App\Service\Console\GuestFileDrop;
 use App\Service\Console\GuestPty;
+use App\Service\Console\GuestShellPool;
 use App\Service\FileUploadService;
 use App\Service\Guest\GuestShellFactory;
 use App\Service\Guest\GuestUnreachableException;
@@ -67,8 +69,10 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 #[IsGranted('ROLE_USER')]
 class ConsoleController extends AbstractController
 {
-    public function __construct(private readonly TranslatorInterface $translator)
-    {
+    public function __construct(
+        private readonly TranslatorInterface $translator,
+        private readonly int $consoleMaxSessions,
+    ) {
     }
 
     /**
@@ -108,7 +112,7 @@ class ConsoleController extends AbstractController
     public function exchange(
         Request $request,
         ConsoleSessionRepository $sessions,
-        GuestShellFactory $shellFactory,
+        GuestShellPool $pool,
         GuestPty $pty,
         ConsoleScreen $screen,
         ConsoleTranscript $transcript,
@@ -129,10 +133,20 @@ class ConsoleController extends AbstractController
         $request->getSession()->save();
 
         try {
+            // Borrowed from the pool rather than opened: the SSH handshake *is* the keystroke echo
+            // latency, and the worker survives between two exchanges. A miss costs one handshake
+            // and nothing else - the state of a console lives in the machine's tmux.
+            //
             // The short ceiling is the console's, and the reason GuestShellFactory::open() takes
             // one at all: an exchange must hand the worker back in ten seconds, not in five
             // minutes nobody is waiting through.
-            $shell = $shellFactory->open($session->getIp(), timeoutSeconds: GuestPty::COMMAND_TIMEOUT_SECONDS);
+            $shell = $pool->acquire(
+                (int) $session->getId(),
+                (int) $this->currentUser()->getId(),
+                $session->getIp(),
+                GuestPty::COMMAND_TIMEOUT_SECONDS,
+                $this->consoleMaxSessions,
+            );
         } catch (GuestUnreachableException|PlatformKeyUnavailableException $exception) {
             return $this->json($screen->unreachable($session, $exception));
         }
@@ -514,6 +528,51 @@ class ConsoleController extends AbstractController
     }
 
     /**
+     * « Coller dans le cahier de texte » : le geste qui termine une séance.
+     *
+     * Ce que la classe a fait est écrit là où on l'écrit d'habitude, sans recopie. Rien de neuf
+     * n'est dessiné - c'est **le cahier de texte du jour, ouvert pré-rempli** - et ce qui est
+     * proposé n'est pas la transcription mais **les commandes**: un cahier de texte se lit, et
+     * quatre écrans de sortie d'apt ne s'y lisent pas.
+     *
+     * Le créneau est celui d'aujourd'hui, pour la formation du lot, et enseigné par la personne qui
+     * demande. À défaut, l'écran du cahier de texte de la formation, qui est l'endroit d'où l'on
+     * choisit une séance.
+     */
+    #[Route(path: '/console/sessions/{id}/lesson-log', name: 'app_console_lesson_log', requirements: ['id' => '\\d+'], methods: ['GET'])]
+    public function toLessonLog(
+        Request $request,
+        ConsoleSessionRepository $sessions,
+        LessonSessionRepository $lessonSessions,
+        int $id,
+    ): Response {
+        $session = $this->ownSessionUnchecked($sessions, $id);
+        $program = $session->getGuestAccount()?->getBatch()?->getProgram();
+
+        if (null === $program) {
+            throw $this->createNotFoundException();
+        }
+
+        $today = new \DateTimeImmutable('today');
+
+        foreach ($lessonSessions->findForTeacherOnDayMatchingTestMode($this->currentUser(), $today) as $slot) {
+            if ($slot->getProgram()?->getId() === $program->getId()) {
+                return $this->redirectToRoute('app_program_timetable_session_log', [
+                    'id' => $program->getId(),
+                    'sessionId' => $slot->getId(),
+                    // Read by App\Controller\LessonLogController, and only when the log is still
+                    // empty: the point is to save the typing, never to overwrite what somebody wrote.
+                    'console' => $session->getId(),
+                ]);
+            }
+        }
+
+        $this->addFlash('info', 'consoleLessonLogNoSlotMessage');
+
+        return $this->redirectToRoute('app_program_lesson_logs', ['id' => $program->getId()]);
+    }
+
+    /**
      * Ends the trace when the tab goes away - a `sendBeacon`, which is why it answers no content.
      *
      * Nothing is killed inside the machine, deliberately: that is the entire point of the design.
@@ -524,6 +583,7 @@ class ConsoleController extends AbstractController
         Request $request,
         ConsoleSessionRepository $sessions,
         ConsoleSessionOpener $opener,
+        GuestShellPool $pool,
         int $id,
     ): Response {
         // `sendBeacon` carries no header, so the token travels in the query here and only here.
@@ -533,7 +593,11 @@ class ConsoleController extends AbstractController
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        $opener->close($this->ownSessionUnchecked($sessions, $id));
+        $session = $this->ownSessionUnchecked($sessions, $id);
+        // The row is closed *and* the connection given up: a console nobody is looking at must not
+        // keep a file descriptor open on a machine for the next minute.
+        $pool->release((int) $session->getId(), (int) $this->currentUser()->getId(), $session->getIp());
+        $opener->close($session);
 
         return new Response(status: Response::HTTP_NO_CONTENT);
     }
