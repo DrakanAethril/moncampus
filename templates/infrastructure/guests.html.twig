@@ -177,6 +177,15 @@
                                                same gesture as opening the list. #}
                                             <option value="">{{ 'proxmoxGuestActionPlaceholder'|trans }}</option>
                                             {% if is_granted('ROLE_ADMIN') %}
+                                                {# En tête de liste : « Console » est une *navigation*,
+                                                   les actions de puissance en dessous sont des *ordres*.
+                                                   Offerte quel que soit l'état de la machine - l'écran
+                                                   dit « éteinte » et donne le geste suivant, ce qui vaut
+                                                   mieux que de faire disparaître l'entrée. Absente sur un
+                                                   modèle et hors périmètre, exactement là où les actions
+                                                   de puissance le sont déjà. #}
+                                                <option value="{{ path('app_infrastructure_guest_console', {id: host.id, node: guest.node, vmid: guest.vmid}) }}"
+                                                        data-method="navigate">{{ 'consoleActionLabel'|trans }}</option>
                                                 {# Navigation rather than a POST, and offered whatever the
                                                    machine is doing: reaching the accounts of a machine has
                                                    nothing to do with whether it is running. #}

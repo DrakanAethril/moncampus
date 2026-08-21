@@ -19,9 +19,11 @@ use App\Enum\VmBatchItemStatus;
 use App\Enum\VmInstallStep;
 use App\Repository\UserRepository;
 use App\Repository\VmBatchItemRepository;
+use App\Service\Console\GuestPty;
 use App\Service\Guest\AccountPlan;
 use App\Service\Guest\GuestAccountService;
 use App\Service\Guest\GuestCommandFailedException;
+use App\Service\Guest\GuestCommandResult;
 use App\Service\Guest\GuestShell;
 use App\Service\Guest\GuestShellFactory;
 use App\Service\Guest\GuestTimeSync;
@@ -265,7 +267,7 @@ class VmBatchExecutorTest extends TestCase
         [$batch, $item] = $this->batchWithItem(VmBatchItemStatus::Created);
         $item->setIpAllocation($this->allocation());
         $item->setVmid(210);
-        $this->shells->method('open')->willReturn($this->createStub(GuestShell::class));
+        $this->shells->method('open')->willReturn($this->guestShell());
         $accounts = $this->createMock(GuestAccountService::class);
         $accounts->method('refresh')->willReturn(new AccountPlan([], [], [], []));
         $this->accounts = $accounts;
@@ -391,7 +393,7 @@ class VmBatchExecutorTest extends TestCase
         $item->setIpAllocation($this->allocation());
         $item->setVmid(210);
 
-        $this->shells->method('open')->willReturn($this->createStub(GuestShell::class));
+        $this->shells->method('open')->willReturn($this->guestShell());
         $accounts = $this->createStub(GuestAccountService::class);
         $accounts->method('refresh')->willReturn(new AccountPlan([], [], [], []));
         $accounts->method('apply')->willReturn(['operation' => $this->operation(ProxmoxOperationStatus::Succeeded), 'passwords' => []]);
@@ -419,7 +421,7 @@ class VmBatchExecutorTest extends TestCase
         $item->setVmid(210);
         $batch->addItem($item);
 
-        $this->shells->method('open')->willReturn($this->createStub(GuestShell::class));
+        $this->shells->method('open')->willReturn($this->guestShell());
         $accounts = $this->createStub(GuestAccountService::class);
         $accounts->method('refresh')->willReturn(new AccountPlan([], [], [], []));
         $accounts->method('apply')->willReturn(['operation' => $this->operation(ProxmoxOperationStatus::Succeeded), 'passwords' => []]);
@@ -433,7 +435,7 @@ class VmBatchExecutorTest extends TestCase
         [$batch, $item] = $this->batchWithItem(VmBatchItemStatus::Created);
         $item->setIpAllocation($this->allocation());
         $item->setVmid(210);
-        $this->shells->method('open')->willReturn($this->createStub(GuestShell::class));
+        $this->shells->method('open')->willReturn($this->guestShell());
         $this->accounts->method('refresh')->willReturn(new AccountPlan([], [], [], []));
         $this->accounts->method('apply')->willReturn([
             'operation' => $this->operation(ProxmoxOperationStatus::Succeeded),
@@ -468,7 +470,7 @@ class VmBatchExecutorTest extends TestCase
         [$batch, $item] = $this->batchWithItem(VmBatchItemStatus::Created);
         $item->setIpAllocation($this->allocation());
         $item->setVmid(210);
-        $this->shells->method('open')->willReturn($this->createStub(GuestShell::class));
+        $this->shells->method('open')->willReturn($this->guestShell());
         $this->accounts->method('refresh')->willReturn(new AccountPlan([], [], [], []));
         $this->accounts->method('apply')->willReturn(['operation' => $this->operation(ProxmoxOperationStatus::Succeeded), 'passwords' => []]);
         $postInstall = $this->createMock(PostInstallRunner::class);
@@ -667,11 +669,27 @@ class VmBatchExecutorTest extends TestCase
             $this->postInstall,
             $this->timeSync ?? new GuestTimeSync(),
             new UnixLogin(),
+            new GuestPty(),
             $this->createStub(EntityManagerInterface::class),
             $budgetSeconds,
         );
 
         return $executor->run($batch, null);
+    }
+
+    /**
+     * A machine that answers « tmux est là ».
+     *
+     * A bare stub cannot: GuestCommandResult is final, so PHPUnit has nothing to hand back from
+     * runAsSelf() - and the console-preparation step of a pass calls it on every machine.
+     */
+    private function guestShell(): GuestShell
+    {
+        $shell = $this->createStub(GuestShell::class);
+        $shell->method('runAsSelf')->willReturn(new GuestCommandResult('ready', 0));
+        $shell->method('run')->willReturn(new GuestCommandResult('', 0));
+
+        return $shell;
     }
 
     private function clientFactory(): ProxmoxClientFactory
@@ -719,6 +737,7 @@ class VmBatchExecutorTest extends TestCase
             $this->postInstall,
             $this->timeSync ?? new GuestTimeSync(),
             new UnixLogin(),
+            new GuestPty(),
             $this->createStub(EntityManagerInterface::class),
             60.0,
         );

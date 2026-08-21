@@ -15,6 +15,8 @@ use App\Enum\VmBatchItemStatus;
 use App\Enum\VmInstallStep;
 use App\Repository\UserRepository;
 use App\Repository\VmBatchItemRepository;
+use App\Service\Console\GuestPty;
+use App\Service\Console\TmuxCommandLine;
 use App\Service\Guest\GuestAccountService;
 use App\Service\Guest\GuestCommandFailedException;
 use App\Service\Guest\GuestShell;
@@ -154,6 +156,7 @@ class VmBatchExecutor
         private readonly PostInstallRunner $postInstall,
         private readonly GuestTimeSync $timeSync,
         private readonly UnixLogin $unixLogin,
+        private readonly GuestPty $pty,
         private readonly EntityManagerInterface $entityManager,
         // Injectable so a test can pin the guard without waiting for a real budget to run out.
         private readonly float $passBudgetSeconds = self::PASS_BUDGET_SECONDS,
@@ -502,6 +505,11 @@ class VmBatchExecutor
             // certificate or writes a dated file wants the clock already right.
             $this->configureTimeSync($item, $shell, $batch);
 
+            // And before the script for the same reason: apt is available, the clock is right, and
+            // the machine is already open in front of us. Every machine the platform builds is
+            // delivered with a console ready to open.
+            $this->prepareConsole($item, $shell);
+
             $script = $batch->getPostInstallScript();
 
             if (null !== $script && '' !== trim($script)) {
@@ -627,6 +635,39 @@ class VmBatchExecutor
         } catch (GuestCommandFailedException|\InvalidArgumentException $exception) {
             $item->appendInstallLog(VmInstallStep::TimeSyncFailed, $exception->getMessage(), ok: false);
         }
+    }
+
+    /**
+     * Puts tmux on the machine, so that the first console opened on it opens straight away.
+     *
+     * Recorded, never fatal - the same rule as the clock above. A machine without tmux is a machine
+     * the students use exactly as before; the console is a teacher's tool and not a condition of
+     * the install, and failing a whole class over it would be the wrong trade. Machines built
+     * before this step existed install it by themselves at the first opening
+     * (App\Service\Console\GuestPty::ensure()), so nothing has to be swept over the fleet.
+     *
+     * @throws GuestUnreachableException deliberately not caught: the machine going away mid-step is
+     *                                   the caller's business, not this step's
+     */
+    private function prepareConsole(VmBatchItem $item, GuestShell $shell): void
+    {
+        if ($this->pty->isPresent($shell)) {
+            $item->appendInstallLog(VmInstallStep::ConsoleReady, TmuxCommandLine::SESSION);
+
+            return;
+        }
+
+        $result = $shell->run(TmuxCommandLine::install());
+
+        if ($this->pty->isPresent($shell)) {
+            $item->appendInstallLog(VmInstallStep::ConsoleReady, TmuxCommandLine::SESSION);
+
+            return;
+        }
+
+        // The machine's own last words, bounded: an apt failure is worth reading, and a whole apt
+        // transcript in an install log is not.
+        $item->appendInstallLog(VmInstallStep::ConsoleUnavailable, mb_substr(trim($result->output), -400), ok: false);
     }
 
     /** @return list<string> */

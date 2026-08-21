@@ -29,6 +29,16 @@ interface GuestShell
      */
     public function run(string $command): GuestCommandResult;
 
+    /**
+     * Runs one command as the account this session logged in with, without elevating it.
+     *
+     * Only the console uses this, and it is the reason it exists: a pseudo-terminal opened through
+     * `sudo` is a root shell, and this application's console is deliberately `moncampus`'s.
+     *
+     * @throws GuestUnreachableException when the machine cannot be reached or refuses the key
+     */
+    public function runAsSelf(string $command): GuestCommandResult;
+
     /** Closes the connection. Idempotent. */
     public function disconnect(): void;
 }

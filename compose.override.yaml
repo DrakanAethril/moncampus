@@ -216,6 +216,23 @@ services:
       - ./docker/proxmox-mock:/srv:ro
       - proxmox_mock_certs:/certs
 
+  # Machine invitée de développement : une porte SSH qui accepte la clé de plateforme, et un shell
+  # derrière. C'est tout ce dont la console des machines a besoin pour être vérifiée - même esprit
+  # que proxmox-mock pour l'API Proxmox, ou Mailpit pour SMTP. Voir docker/guest-mock/README.md.
+  #
+  # Volontairement **sans tmux** : c'est ce qui fait passer pour de vrai le chemin de réparation de
+  # la console (tmux absent -> installé -> session ouverte).
+  #
+  # Aucun port publié : seul le conteneur php a affaire à elle, et il l'atteint sur guest-mock:22.
+  guest-mock:
+    image: debian:13-slim
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/srv/entrypoint.sh"]
+    volumes:
+      - ./docker/guest-mock:/srv:ro
+      - ./docker/guest-mock:/keys:ro
+      - guest_mock_state:/var/lib/guest-mock
+
 volumes:
   database_data:
   ldap_data:
@@ -224,3 +241,5 @@ volumes:
   # host - survives a `docker compose restart`. A `down -v` regenerates it, which is the moment to
   # re-paste it.
   proxmox_mock_certs:
+  # Pour que l'installation d'openssh ne soit pas refaite à chaque redémarrage du conteneur.
+  guest_mock_state:

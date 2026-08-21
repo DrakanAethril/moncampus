@@ -1,0 +1,101 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'consoleHeading'|trans({'%name%': machineName}) }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {# La profondeur suit la navigation, pas l'URL : l'enseignant vient de sa carte, l'administrateur
+       vient de la liste des machines de l'hôte. Deux portes, deux fils. #}
+    {% if fromAdmin %}
+        {% include '_breadcrumb.html.twig' with {segments: [
+            {label: 'homeNavLabel'|trans, url: path('app_home')},
+            {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
+            {label: 'infrastructureHostsNavLabel'|trans, url: path('app_infrastructure_hosts')},
+            {label: host.label, url: path('app_infrastructure_guests', {id: host.id})},
+            {label: 'infrastructureGuestsNavLabel'|trans, url: path('app_infrastructure_guests', {id: host.id})},
+            {label: machineName, url: app.request.pathInfo},
+        ]} %}
+    {% else %}
+        {% include '_breadcrumb.html.twig' with {segments: [
+            {label: 'homeNavLabel'|trans, url: path('app_home')},
+            {label: 'myMachinesHeading'|trans, url: path('app_my_machines')},
+            {label: machineName, url: app.request.pathInfo},
+        ]} %}
+    {% endif %}
+{% endblock %}
+
+{% block page_title %}{{ machineName }}{% endblock %}
+
+{# L'écran sort de la colonne de lecture : un terminal se mesure en colonnes, et une colonne de
+   1 200 px le plafonnerait à cent trente quel que soit l'écran. Gouttière de 24 px, min-width de
+   1 024 px, défilement horizontal en dessous. #}
+{% block page_body_container %}cm-console-bleed{% endblock %}
+
+{% block main %}
+    <div class="cm-console"
+         data-controller="console"
+         data-console-exchange-url-value="{{ path('app_console_exchange', {id: session.id}) }}"
+         data-console-close-url-value="{{ path('app_console_close', {id: session.id}) }}"
+         data-console-token-value="{{ csrf_token('console_exchange') }}"
+         data-console-connected-text-value="{{ 'consoleConnectedLabel'|trans }}"
+         data-console-lost-text-value="{{ 'consoleLostLabel'|trans }}">
+
+        <div class="cm-console__status">
+            <span class="cm-console__name">{{ machineName }}</span>
+            <span class="cm-console__dim">{{ ip }}</span>
+            <span class="cm-console__sep">·</span>
+            {# Sous quelle identité on parle. Vert tant que c'est le compte de plateforme ; il
+               changera de couleur et de nom dès qu'on deviendra quelqu'un d'autre. #}
+            <span class="cm-console__id">{{ unixUser }}@{{ machineName }}</span>
+            {% if batchLabel %}
+                <span class="cm-console__sep">·</span>
+                <span class="cm-console__dim">{{ 'consoleBatchLabel'|trans({'%label%': batchLabel}) }}</span>
+            {% endif %}
+            <span class="cm-console__right">
+                {% for other in others %}
+                    {% set who = other.openedBy %}
+                    <span class="cm-console__with">
+                        <span class="cm-console__ava">{{ (who.displayName ?? who.username)|slice(0, 2)|upper }}</span>
+                        {{ 'consoleAlsoConnectedLabel'|trans({'%name%': who.displayName ?? who.username}) }}
+                    </span>
+                {% endfor %}
+                <span class="cm-console__dim" data-console-target="size">—</span>
+                <span class="cm-console__live" data-console-target="state" data-state="opening">{{ 'consoleOpeningLabel'|trans }}</span>
+            </span>
+        </div>
+
+        {# Fermer l'onglet n'arrête rien : c'est la conséquence directe du tmux, et il faut le dire,
+           sinon la personne relance ce qui tourne déjà. #}
+        {% if resumedMinutes %}
+            <div class="cm-console__resume">
+                {{ 'consoleResumedText'|trans({'%minutes%': resumedMinutes})|raw }}
+            </div>
+        {% endif %}
+
+        <div class="cm-console__pane">
+            <div class="cm-console__screen" data-console-target="screen"></div>
+            <div class="cm-console__overlay" data-console-target="overlay" hidden>
+                <p class="cm-console__overlaytext" data-console-target="overlayText"></p>
+                {% if not fromAdmin and account is not null %}
+                    {# « Éteinte » porte le bouton Démarrer, au même endroit que sur la carte : deux
+                       de ces écrans donnent le geste suivant au lieu de l'erreur. #}
+                    <a class="cm-btn cm-btn--primary" href="{{ path('app_my_machines') }}">{{ 'consoleGoToMachinesAction'|trans }}</a>
+                {% elseif fromAdmin %}
+                    <a class="cm-btn cm-btn--primary" href="{{ path('app_infrastructure_guests', {id: host.id}) }}">{{ 'consoleBackToGuestsAction'|trans }}</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="cm-console__acts">
+            <button type="button" class="cm-console__chip" data-action="console#fullscreen">
+                {{ 'consoleFullscreenAction'|trans }} <span class="cm-console__key">Ctrl ⌥ F</span>
+            </button>
+            <span class="cm-console__right">
+                <span class="cm-console__zoom">
+                    <button type="button" data-action="console#zoomOut" aria-label="{{ 'consoleZoomOutAction'|trans }}">A−</button>
+                    <button type="button" data-action="console#zoomIn" aria-label="{{ 'consoleZoomInAction'|trans }}">A+</button>
+                </span>
+                <a class="cm-console__chip" href="{{ fromAdmin ? path('app_infrastructure_guests', {id: host.id}) : path('app_my_machines') }}">{{ 'consoleCloseAction'|trans }}</a>
+            </span>
+        </div>
+    </div>
+{% endblock %}
