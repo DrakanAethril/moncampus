@@ -22,7 +22,11 @@ import '@xterm/xterm/css/xterm.min.css';
  *     lignes se coupent au mauvais endroit.
  */
 export default class extends Controller {
-    static targets = ['screen', 'state', 'size', 'overlay', 'overlayText'];
+    static targets = [
+        'screen', 'state', 'size', 'overlay', 'overlayText',
+        'palette', 'paletteInput', 'paletteList', 'notice', 'noticeText',
+        'become', 'becomeChip', 'identity', 'fileMenu', 'fileInput', 'search', 'searchInput', 'searchList',
+    ];
 
     static values = {
         exchangeUrl: String,
@@ -30,6 +34,13 @@ export default class extends Controller {
         token: String,
         connectedText: String,
         lostText: String,
+        paletteUrl: String,
+        snippetUrl: String,
+        becomeUrl: String,
+        fileUrl: String,
+        fetchUrl: String,
+        searchUrl: String,
+        platformAccount: String,
     };
 
     connect() {
@@ -67,6 +78,33 @@ export default class extends Controller {
         this.onLeave = () => this.release();
         window.addEventListener('pagehide', this.onLeave);
 
+        // Trois raccourcis, et pas un de plus : Ctrl+K, Ctrl+Alt+B, Ctrl+Alt+F. Tout le reste
+        // appartient au terminal — Ctrl+C, Ctrl+D, Ctrl+L, Ctrl+R compris. Un raccourci de
+        // plateforme qui vole une touche du shell est un défaut, pas un arbitrage.
+        this.terminal.attachCustomKeyEventHandler((event) => {
+            if (event.type !== 'keydown') {
+                return true;
+            }
+
+            if (event.ctrlKey && !event.altKey && event.key === 'k') {
+                event.preventDefault();
+                this.openPalette();
+
+                return false;
+            }
+
+            if (event.ctrlKey && event.altKey && (event.key === 'f' || event.key === 'F')) {
+                event.preventDefault();
+                this.fullscreen();
+
+                return false;
+            }
+
+            return true;
+        });
+
+        this.lastCommand = '';
+        this.pendingIdentity = null;
         this.terminal.focus();
         this.pump();
     }
@@ -154,6 +192,33 @@ export default class extends Controller {
 
         // Repeint entier : chaque échange rend l'écran complet, jamais un delta. Le curseur est
         // reposé après, parce qu'il n'est pas dans le texte du panneau.
+        // La dernière commande passée, retenue pour « enregistrer comme extrait ». Elle est lue
+        // dans **l'écran**, jamais dans les frappes : c'est la même règle que la transcription, et
+        // un mot de passe tapé à une invite sudo n'est pas à l'écran.
+        const prompts = String(answer.pane ?? '')
+            // Les séquences ANSI d'abord : le panneau arrive colorié, et une invite qui commence par
+            // un « \u001b[1;32m » ne ressemble à une invite pour personne.
+            .replace(/\u001b\][^\u0007\u001b]*(?:\u0007|\u001b\\)|\u001b\[[0-9;?]*[ -/]*[@-~]|\u001b[@-Z\\-_]/g, '')
+            .split('\n')
+            .map((line) => /^[\w.-]+@[\w.-]+:[^\n]*?[$#]\s+(\S.*)$/.exec(line))
+            .filter(Boolean);
+
+        if (prompts.length > 0) {
+            this.lastCommand = prompts[prompts.length - 1][1].trim();
+        }
+
+        // Une réponse partie **avant** le changement d'identité rapporte encore l'ancienne, jusqu'à
+        // huit secondes après. Tant que l'identité annoncée n'est pas celle qu'on vient de prendre,
+        // la barre d'état garde celle que la personne a demandée.
+        if (answer.unixUser) {
+            if (this.pendingIdentity && answer.unixUser !== this.pendingIdentity) {
+                // rien : la réponse est plus vieille que le geste
+            } else {
+                this.pendingIdentity = null;
+                this.showIdentity(answer.unixUser);
+            }
+        }
+
         const screen = String(answer.pane ?? '').split('\n').join('\r\n');
         const home = '\u001b[0m\u001b[H\u001b[2J';
         const cursor = `\u001b[${(answer.cursorY ?? 0) + 1};${(answer.cursorX ?? 0) + 1}H`;
@@ -285,6 +350,361 @@ export default class extends Controller {
         if (this.hasOverlayTarget) {
             this.overlayTarget.hidden = true;
         }
+    }
+
+    // ---------------------------------------------------------------- palette
+
+    /**
+     * Ctrl+K. Trois sources fusionnées et étiquetées : les extraits de la personne (et ceux que ses
+     * collègues ont partagés), le catalogue de plateforme, et ce qui a déjà été tapé sur cette
+     * machine.
+     *
+     * **Entrée insère, Alt+Entrée exécute**, et l'ordre n'est pas un détail : on relit avant de
+     * lancer — d'autant plus quand la diffusion est armée.
+     */
+    openPalette() {
+        if (!this.hasPaletteTarget) {
+            return;
+        }
+
+        this.paletteTarget.hidden = false;
+        this.paletteInputTarget.value = '';
+        this.paletteInputTarget.focus();
+        this.loadPalette();
+    }
+
+    closePalette() {
+        if (this.hasPaletteTarget) {
+            this.paletteTarget.hidden = true;
+            this.terminal.focus();
+        }
+    }
+
+    async loadPalette() {
+        const query = this.paletteInputTarget.value;
+        const response = await fetch(`${this.paletteUrlValue}?q=${encodeURIComponent(query)}`, {
+            headers: { 'X-Requested-With': 'fetch' },
+        });
+
+        if (!response.ok) {
+            return;
+        }
+
+        const answer = await response.json();
+        const groups = [
+            ['consoleSnippets', answer.snippets ?? []],
+            ['consoleCatalog', answer.catalog ?? []],
+            ['consoleHistory', answer.history ?? []],
+        ];
+
+        this.paletteListTarget.innerHTML = '';
+        this.paletteEntries = [];
+
+        for (const [key, entries] of groups) {
+            if (entries.length === 0) {
+                continue;
+            }
+
+            const heading = document.createElement('div');
+            heading.className = 'cm-console__palgroup';
+            heading.textContent = this.paletteListTarget.dataset[key] ?? key;
+            this.paletteListTarget.append(heading);
+
+            for (const entry of entries) {
+                const row = document.createElement('button');
+                row.type = 'button';
+                row.className = 'cm-console__palitem';
+                row.dataset.command = entry.command;
+                row.dataset.action = 'console#pickEntry';
+
+                const label = document.createElement('span');
+                label.className = 'cm-console__pallabel';
+                label.textContent = entry.label || '';
+
+                const command = document.createElement('span');
+                command.className = 'cm-console__palcmd';
+                command.textContent = entry.command;
+
+                const meta = document.createElement('span');
+                meta.className = 'cm-console__palmeta';
+                meta.textContent = entry.author ? `· ${entry.author}` : (entry.uses ? `${entry.uses}×` : '');
+
+                row.append(label, command, meta);
+                this.paletteListTarget.append(row);
+                this.paletteEntries.push(row);
+            }
+        }
+
+        this.paletteCursor = 0;
+        this.highlight();
+    }
+
+    highlight() {
+        (this.paletteEntries ?? []).forEach((row, index) => {
+            row.classList.toggle('is-on', index === this.paletteCursor);
+        });
+    }
+
+    paletteKey(event) {
+        const entries = this.paletteEntries ?? [];
+
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            this.closePalette();
+
+            return;
+        }
+
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault();
+            const step = event.key === 'ArrowDown' ? 1 : -1;
+            this.paletteCursor = Math.max(0, Math.min((this.paletteCursor ?? 0) + step, entries.length - 1));
+            this.highlight();
+
+            return;
+        }
+
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            const row = entries[this.paletteCursor ?? 0];
+
+            if (row) {
+                this.insert(row.dataset.command, event.altKey);
+            }
+
+            return;
+        }
+
+        // Ctrl+S : la dernière commande passée devient un extrait, sans quitter l'écran. C'est ainsi
+        // qu'une bibliothèque personnelle se remplit — pas par un formulaire que personne n'ouvre.
+        if (event.ctrlKey && event.key === 's') {
+            event.preventDefault();
+            this.saveLastCommand();
+        }
+    }
+
+    pickEntry(event) {
+        this.insert(event.currentTarget.dataset.command, event.altKey);
+    }
+
+    /** Entrée insère (et laisse relire), Alt+Entrée exécute. */
+    insert(command, run) {
+        this.closePalette();
+        this.type(this.encode(command));
+
+        if (run) {
+            this.type(this.encode('\r'));
+        }
+    }
+
+    async saveLastCommand() {
+        if (!this.lastCommand) {
+            this.notify(this.paletteListTarget.dataset.consoleNoCommand ?? '');
+
+            return;
+        }
+
+        const answer = await this.post(this.snippetUrlValue, { command: this.lastCommand, label: '' });
+        this.notify(answer?.message ?? '');
+        this.closePalette();
+    }
+
+    // ------------------------------------------------------- devenir quelqu'un
+
+    toggleBecome() {
+        if (this.hasBecomeTarget) {
+            this.becomeTarget.hidden = !this.becomeTarget.hidden;
+        }
+    }
+
+    /**
+     * sudo -iu <login> : dans son $HOME, avec ses droits. On **reproduit** son problème au lieu de
+     * l'imaginer. La barre d'état change de couleur et de nom — une identité qu'on porte sans le
+     * savoir est la façon la plus simple de casser la machine de quelqu'un d'autre.
+     */
+    async become(event) {
+        const login = event.currentTarget.dataset.login;
+        const answer = await this.post(this.becomeUrlValue.replace(/zzlogin$/, encodeURIComponent(login)), {});
+
+        if (this.hasBecomeTarget) {
+            this.becomeTarget.hidden = true;
+        }
+
+        if (answer?.ok) {
+            // Dit tout de suite plutôt qu'au prochain échange : la requête longue en vol a été
+            // ouverte avant le changement d'identité et rapportera encore l'ancienne, jusqu'à huit
+            // secondes plus tard. Une identité qu'on porte sans le savoir est la façon la plus
+            // simple de casser la machine de quelqu'un d'autre.
+            this.pendingIdentity = answer.unixUser ?? login;
+            this.showIdentity(this.pendingIdentity);
+            this.notify(this.element.dataset.becameText?.replace('%login%', login) ?? login);
+
+            if (this.hasBecomeChipTarget) {
+                this.becomeChipTarget.classList.toggle('cm-console__chip--on', login !== this.platformAccountValue);
+            }
+        } else if (answer?.message) {
+            this.notify(answer.message);
+        }
+
+        this.terminal.focus();
+    }
+
+    // ------------------------------------------------------------- fichiers
+
+    toggleFileMenu() {
+        if (this.hasFileMenuTarget) {
+            this.fileMenuTarget.hidden = !this.fileMenuTarget.hidden;
+        }
+    }
+
+    pickFile() {
+        this.fileInputTarget.click();
+    }
+
+    async uploadFile(event) {
+        // Retenu avant le premier await : `currentTarget` est remis à null dès que le gestionnaire
+        // a rendu la main, et le vider après coup lève une erreur qui avale le reste de la méthode.
+        const input = event.currentTarget;
+        const file = input.files?.[0];
+
+        if (!file) {
+            return;
+        }
+
+        await this.sendFile(file);
+        input.value = '';
+    }
+
+    /** Glisser-déposer sur le panneau : le geste le plus court entre un fichier et une machine. */
+    async dropFile(event) {
+        event.preventDefault();
+        this.element.classList.remove('is-dropping');
+        const file = event.dataTransfer?.files?.[0];
+
+        if (file) {
+            await this.sendFile(file);
+        }
+    }
+
+    dragOver(event) {
+        event.preventDefault();
+        this.element.classList.add('is-dropping');
+    }
+
+    dragLeave() {
+        this.element.classList.remove('is-dropping');
+    }
+
+    async sendFile(file) {
+        this.notify(this.element.dataset.sendingText ?? '…');
+        const body = new FormData();
+        body.append('file', file);
+
+        const response = await fetch(this.fileUrlValue, {
+            method: 'POST',
+            headers: { 'X-CSRF-Token': this.tokenValue },
+            body,
+        });
+
+        const answer = response.ok ? await response.json() : null;
+        this.notify(answer?.message ?? this.lostTextValue);
+
+        if (this.hasFileMenuTarget) {
+            this.fileMenuTarget.hidden = true;
+        }
+    }
+
+    /** Le chemin inverse : le travail d'un poste remonte dans la bibliothèque, sans clé USB. */
+    async fetchFile() {
+        const path = this.fileMenuTarget.querySelector('[data-console-fetch-path]')?.value ?? '';
+        const answer = await this.post(this.fetchUrlValue, { path });
+        this.notify(answer?.message ?? this.lostTextValue);
+        this.fileMenuTarget.hidden = true;
+    }
+
+    // ------------------------------------------------------------- recherche
+
+    toggleSearch() {
+        if (!this.hasSearchTarget) {
+            return;
+        }
+
+        this.searchTarget.hidden = !this.searchTarget.hidden;
+
+        if (!this.searchTarget.hidden) {
+            this.searchInputTarget.focus();
+        } else {
+            this.terminal.focus();
+        }
+    }
+
+    async runSearch(event) {
+        if (event.key === 'Escape') {
+            this.toggleSearch();
+
+            return;
+        }
+
+        if (event.key !== 'Enter') {
+            return;
+        }
+
+        event.preventDefault();
+        const answer = await this.post(this.searchUrlValue, { q: this.searchInputTarget.value });
+        this.searchListTarget.innerHTML = '';
+
+        for (const match of answer?.matches ?? []) {
+            const row = document.createElement('div');
+            row.className = 'cm-console__searchrow';
+            row.textContent = `${match.line}  ${match.text}`;
+            this.searchListTarget.append(row);
+        }
+
+        if ((answer?.matches ?? []).length === 0) {
+            const row = document.createElement('div');
+            row.className = 'cm-console__searchrow';
+            row.textContent = this.searchListTarget.dataset.consoleNoMatch ?? '';
+            this.searchListTarget.append(row);
+        }
+    }
+
+    // --------------------------------------------------------------- outils
+
+    showIdentity(login) {
+        if (!this.hasIdentityTarget) {
+            return;
+        }
+
+        this.identityTarget.textContent = `${login}@${this.identityTarget.dataset.host ?? ''}`;
+        this.identityTarget.classList.toggle('cm-console__id--other', login !== this.platformAccountValue);
+    }
+
+    async post(url, payload) {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': this.tokenValue },
+            body: JSON.stringify(payload),
+        });
+
+        return response.ok ? response.json() : null;
+    }
+
+    /**
+     * Le bandeau cuivré : ce que MonCampus a fait *dans* le terminal, dit hors du panneau.
+     *
+     * Hors du panneau, et c'est délibéré : écrire une ligne dans le tmux voudrait dire y envoyer des
+     * touches, et des touches envoyées pendant qu'on tape une commande la corrompent. La créa dessine
+     * la ligne dans le panneau ; la sécurité de ce que quelqu'un est en train de taper passe avant.
+     */
+    notify(text) {
+        if (!this.hasNoticeTarget || !text) {
+            return;
+        }
+
+        this.noticeTextTarget.textContent = text;
+        this.noticeTarget.hidden = false;
+        window.clearTimeout(this.noticeTimer);
+        this.noticeTimer = window.setTimeout(() => { this.noticeTarget.hidden = true; }, 12000);
     }
 
     pause(ms) {

@@ -651,6 +651,13 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         // says the machine has no known address, because this fixture allocates none - which is a
         // console refusing for the right reason, not a door refusing.
         $this->assertScreens($this->teacher, ['/console/'.$this->teacherAccountId => 200]);
+
+        // « Mes extraits de commande » suit la même porte : c'est la moitié personnelle de la
+        // palette d'une console, et un étudiant n'en ouvre aucune.
+        $this->assertScreens($this->teacher, ['/console/snippets' => 200]);
+        $this->assertScreens($this->admin, ['/console/snippets' => 200]);
+        $this->assertScreens($this->student, ['/console/snippets' => 403]);
+        $this->assertScreens($this->tutor, ['/console/snippets' => 403]);
     }
 
     private function assertScreens(User $user, array $expectations): void

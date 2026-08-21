@@ -37,7 +37,20 @@
          data-console-close-url-value="{{ path('app_console_close', {id: session.id}) }}"
          data-console-token-value="{{ csrf_token('console_exchange') }}"
          data-console-connected-text-value="{{ 'consoleConnectedLabel'|trans }}"
-         data-console-lost-text-value="{{ 'consoleLostLabel'|trans }}">
+         data-console-lost-text-value="{{ 'consoleLostLabel'|trans }}"
+         data-console-palette-url-value="{{ path('app_console_palette', {id: session.id}) }}"
+         data-console-snippet-url-value="{{ path('app_console_snippet_add', {id: session.id}) }}"
+         {# Un gabarit de route plutôt qu'une découpe de chaîne : le jeton est en minuscules pour
+            satisfaire l'exigence [a-z0-9_.-] de la route, sans quoi la génération échouerait ici et
+            mettrait tout l'écran en 500. #}
+         data-console-become-url-value="{{ path('app_console_become', {id: session.id, login: 'zzlogin'}) }}"
+         data-console-file-url-value="{{ path('app_console_file_send', {id: session.id}) }}"
+         data-console-fetch-url-value="{{ path('app_console_file_fetch', {id: session.id}) }}"
+         data-console-search-url-value="{{ path('app_console_search', {id: session.id}) }}"
+         data-console-platform-account-value="moncampus"
+         data-sending-text="{{ 'consoleFileSendingMessage'|trans }}"
+         data-became-text="{{ 'consoleBecameMessage'|trans({'%login%': '%login%'}) }}"
+         data-action="dragover->console#dragOver dragleave->console#dragLeave drop->console#dropFile">
 
         <div class="cm-console__status">
             <span class="cm-console__name">{{ machineName }}</span>
@@ -45,7 +58,7 @@
             <span class="cm-console__sep">·</span>
             {# Sous quelle identité on parle. Vert tant que c'est le compte de plateforme ; il
                changera de couleur et de nom dès qu'on deviendra quelqu'un d'autre. #}
-            <span class="cm-console__id">{{ unixUser }}@{{ machineName }}</span>
+            <span class="cm-console__id" data-console-target="identity" data-host="{{ machineName }}">{{ unixUser }}@{{ machineName }}</span>
             {% if batchLabel %}
                 <span class="cm-console__sep">·</span>
                 <span class="cm-console__dim">{{ 'consoleBatchLabel'|trans({'%label%': batchLabel}) }}</span>
@@ -71,8 +84,47 @@
             </div>
         {% endif %}
 
+        {# Ce que MonCampus a fait *dans* le terminal - pris une identité, déposé un fichier - dit
+           en cuivre et hors du panneau. Hors du panneau volontairement : écrire une ligne dans le
+           tmux voudrait dire y envoyer des touches, et des touches envoyées pendant que quelqu'un
+           tape une commande la corrompent. #}
+        <div class="cm-console__notice" data-console-target="notice" hidden>
+            <span data-console-target="noticeText"></span>
+        </div>
+
         <div class="cm-console__pane">
             <div class="cm-console__screen" data-console-target="screen"></div>
+
+            {# La palette : un champ, une liste, trois sources fusionnées et étiquetées. #}
+            <div class="cm-console__palette" data-console-target="palette" hidden>
+                <div class="cm-console__palbox">
+                    <div class="cm-console__palquery">
+                        <span aria-hidden="true">⌕</span>
+                        <input type="search" data-console-target="paletteInput"
+                               data-action="input->console#loadPalette keydown->console#paletteKey"
+                               placeholder="{{ 'consolePalettePlaceholder'|trans }}" autocomplete="off">
+                    </div>
+                    <div class="cm-console__pallist" data-console-target="paletteList"
+                         data-console-snippets="{{ 'consolePaletteMineLabel'|trans }}"
+                         data-console-catalog="{{ 'consolePaletteCatalogLabel'|trans }}"
+                         data-console-history="{{ 'consolePaletteHistoryLabel'|trans }}"
+                         data-console-no-command="{{ 'consoleSnippetNoCommandMessage'|trans }}"></div>
+                    {# Entrée insère, Alt+Entrée exécute. L'ordre compte : on relit avant de lancer. #}
+                    <div class="cm-console__palfoot">
+                        <span><kbd>{{ 'consoleKeyEnterLabel'|trans }}</kbd> {{ 'consolePaletteInsertsLabel'|trans }}</span>
+                        <span><kbd>Alt ⏎</kbd> {{ 'consolePaletteRunsLabel'|trans }}</span>
+                        <span><kbd>Ctrl S</kbd> {{ 'consolePaletteSaveLabel'|trans }}</span>
+                    </div>
+                </div>
+            </div>
+
+            {# Ctrl+F : les 3 000 dernières lignes, lues dans le tmux de la machine. #}
+            <div class="cm-console__search" data-console-target="search" hidden>
+                <input type="search" data-console-target="searchInput" data-action="keydown->console#runSearch"
+                       placeholder="{{ 'consoleSearchPlaceholder'|trans }}" autocomplete="off">
+                <div class="cm-console__searchlist" data-console-target="searchList"
+                     data-console-no-match="{{ 'consoleSearchEmptyText'|trans }}"></div>
+            </div>
             <div class="cm-console__overlay" data-console-target="overlay" hidden>
                 <p class="cm-console__overlaytext" data-console-target="overlayText"></p>
                 {% if not fromAdmin and account is not null %}
@@ -86,6 +138,52 @@
         </div>
 
         <div class="cm-console__acts">
+            <button type="button" class="cm-console__chip cm-console__chip--pri" data-action="console#openPalette">
+                {{ 'consolePaletteAction'|trans }} <span class="cm-console__key">Ctrl K</span>
+            </button>
+
+            {# « Devenir » : la liste des comptes de la machine est déjà connue, un clic suffit. #}
+            <span class="cm-console__menuwrap">
+                <button type="button" class="cm-console__chip" data-console-target="becomeChip" data-action="console#toggleBecome"
+                        {{ machineAccounts is empty ? 'disabled' }}>{{ 'consoleBecomeAction'|trans }}</button>
+                <div class="cm-console__menu" data-console-target="become" hidden>
+                    <div class="cm-console__menuhead">{{ 'consoleBecomeHeading'|trans }}</div>
+                    {% for account in machineAccounts %}
+                        <button type="button" class="cm-console__menuitem" data-login="{{ account.login }}" data-action="console#become">
+                            {{ account.login }}{% if account.name %} <span>· {{ account.name }}</span>{% endif %}
+                        </button>
+                    {% endfor %}
+                    <div class="cm-console__menusep"></div>
+                    <button type="button" class="cm-console__menuitem" data-login="moncampus" data-action="console#become">
+                        {{ 'consoleBecomeBackAction'|trans }}
+                    </button>
+                </div>
+            </span>
+
+            <span class="cm-console__menuwrap">
+                <button type="button" class="cm-console__chip" data-action="console#toggleFileMenu">{{ 'consoleFileAction'|trans }}</button>
+                <div class="cm-console__menu" data-console-target="fileMenu" hidden>
+                    <div class="cm-console__menuhead">{{ 'consoleFileSendHeading'|trans }}</div>
+                    <button type="button" class="cm-console__menuitem" data-action="console#pickFile">
+                        {{ 'consoleFileFromComputerAction'|trans }}
+                        <span>{{ 'consoleFileDropHint'|trans }}</span>
+                    </button>
+                    <input type="file" hidden data-console-target="fileInput" data-action="change->console#uploadFile">
+                    <div class="cm-console__menusep"></div>
+                    <div class="cm-console__menuhead">{{ 'consoleFileFetchHeading'|trans }}</div>
+                    <div class="cm-console__menufetch">
+                        <input type="text" data-console-fetch-path placeholder="/home/mdupont/travail.txt" autocomplete="off">
+                        <button type="button" class="cm-console__chip" data-action="console#fetchFile">{{ 'consoleFileFetchAction'|trans }}</button>
+                    </div>
+                </div>
+            </span>
+
+            <button type="button" class="cm-console__chip" data-action="console#toggleSearch">
+                {{ 'consoleSearchAction'|trans }} <span class="cm-console__key">Ctrl F</span>
+            </button>
+
+            <a class="cm-console__chip" href="{{ path('app_console_snippets') }}">{{ 'consoleSnippetsAction'|trans }}</a>
+
             <button type="button" class="cm-console__chip" data-action="console#fullscreen">
                 {{ 'consoleFullscreenAction'|trans }} <span class="cm-console__key">Ctrl ⌥ F</span>
             </button>
