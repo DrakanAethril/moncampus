@@ -75,6 +75,41 @@ class GuestCommandLineTest extends TestCase
         self::assertStringContainsString('EOF', $line);
     }
 
+    /**
+     * The test that was missing, and the only shape that could have caught the defect: the built
+     * line is **run**, not inspected.
+     *
+     * Every assertion above looks for a substring, and a line can contain every substring anybody
+     * thought to check and still be a syntax error. `VAR=value cmd` is only valid in front of a
+     * *simple* command - put in front of a `for`, the shell answers `Syntax error: "do" unexpected`
+     * and nothing runs. The account probe is a `for` loop, so it never ran on any machine, and an
+     * empty answer reads exactly like a machine with no accounts: the Comptes screen listed every
+     * declared account as still to create, for ever, on machines that had them all.
+     *
+     * Run through the root form, which is the one that reaches a shell whole; a harmless loop, no
+     * network, nothing outside this container.
+     */
+    public function testACompoundCommandActuallyParsesWhenTheLineIsRun(): void
+    {
+        $line = GuestCommandLine::build('for u in alpha beta; do echo "$u"; done', 'root');
+
+        $output = shell_exec($line);
+
+        self::assertIsString($output);
+        self::assertSame("alpha\nbeta\n", $output, 'the wrapped line must be a command a shell can parse');
+    }
+
+    /**
+     * The same rule stated on the line itself, for the elevated form - which cannot be run here,
+     * sudo being neither present nor wanted in a unit test. A statement, never a prefix.
+     */
+    public function testTheEnvironmentIsSetAsAStatementRatherThanAsAPrefix(): void
+    {
+        foreach (['root', 'debian'] as $username) {
+            self::assertStringContainsString('export DEBIAN_FRONTEND=noninteractive;', GuestCommandLine::build('id', $username), $username);
+        }
+    }
+
     /** A password can hold a quote; it must reach the machine as itself and not end the argument. */
     public function testASingleQuoteInTheCommandDoesNotBreakOutOfIt(): void
     {
