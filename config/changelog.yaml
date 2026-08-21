@@ -26,6 +26,41 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.08.21.2'
+      date: '2026-08-21'
+      summary: "Les étudiants et les enseignants retrouvent désormais les machines virtuelles qui leur sont destinées : ils les démarrent, les arrêtent et y choisissent leur mot de passe. Côté installation, les machines se construisent réellement une par une, un déploiement se poursuit sans qu'on reste devant l'écran, et plusieurs pannes qui ne disaient pas leur nom sont corrigées."
+      entries:
+          - type: nouveaute
+            title: 'Mes machines virtuelles'
+            detail: "Chaque étudiant et chaque enseignant voit les machines créées pour lui — seul ou avec son groupe — avec leur nom, leur adresse et leur état. Il peut les démarrer, les arrêter, et surtout y choisir son mot de passe : sans cela, le compte existait sans que personne puisse s'y connecter. Le mot de passe n'est enregistré nulle part et se change autant de fois qu'on veut."
+          - type: nouveaute
+            title: "Donner un compte à des enseignants sur toutes les machines d'un lot"
+            detail: "Sur une installation par classe ou par groupes, un ou plusieurs enseignants peuvent recevoir leur propre compte sur chacune des machines. Cela n'ajoute aucune machine, et le lot apparaît dans leurs machines virtuelles."
+          - type: nouveaute
+            title: 'Créer une machine pour des personnes choisies'
+            detail: "Une machine unique portant un compte pour chaque personne désignée, étudiants comme enseignants. C'est aussi la façon de créer une machine pour une seule personne."
+          - type: fix
+            title: 'Les machines se construisent une par une, pour de bon'
+            detail: "Elles étaient encore trois ou quatre à se construire en même temps : une machine n'était considérée finie qu'au clonage, alors qu'il lui restait à être configurée, démarrée et équipée de ses comptes."
+          - type: modification
+            title: "Un déploiement se poursuit même quand on quitte la page"
+            detail: "L'écran d'un lot en cours se rafraîchit tout seul et déplie le journal de la machine en travaux. Auparavant, fermer l'onglet arrêtait l'installation là où elle en était — le plus souvent sur une machine copiée mais jamais configurée, qui démarrait alors sans adresse ni compte."
+          - type: fix
+            title: "Les comptes d'une machine s'affichaient comme manquants alors qu'ils existaient"
+            detail: "La question posée à la machine n'aboutissait jamais, et une réponse vide se lisait comme une machine sans aucun compte."
+          - type: modification
+            title: "Les comptes créés sur une machine sont utilisables sans réglage"
+            detail: "Chaque compte peut administrer sa machine sans qu'on lui redemande un mot de passe, rejoint le groupe docker, et l'horloge de la machine est réglée sur le réseau de la salle. Le réglage « donner l'administration » disparaît : il ne produisait que des machines sur lesquelles quelqu'un ne pouvait pas travailler."
+          - type: fix
+            title: "Un modèle qui ne peut pas recevoir sa configuration est refusé"
+            detail: "Il l'acceptait sans erreur et n'en lisait rien : la machine démarrait avec l'adresse du modèle et aucun compte, sans que rien ne le signale."
+          - type: fix
+            title: "Les filtres et les groupes se choisissent avant l'aperçu"
+            detail: "Il fallait d'abord demander un aperçu pour les voir apparaître, puis en redemander un."
+          - type: fix
+            title: "Une authentification refusée par le serveur de virtualisation dit enfin pourquoi"
+            detail: "L'écran affichait un refus sans motif. Il nomme désormais ce que le serveur a répondu. Un accès valide pouvait par ailleurs rester refusé pendant plus d'une heure et demie après un redémarrage du serveur ; il se rétablit maintenant tout seul."
+
     - version: '2026.08.21'
       date: '2026-08-21'
       summary: "Les sondages arrivent : composer un questionnaire, l'adresser à une ou plusieurs classes, suivre les réponses question par question, et rejouer la même série plus tard pour comparer. Une campagne peut être menée anonymement, et l'anonymat est alors définitif."
