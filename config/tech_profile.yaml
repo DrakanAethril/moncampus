@@ -7,10 +7,10 @@
 # `measured_at` is displayed next to the two values: a dated figure that has aged stays true, an
 # undated figure becomes a lie. The /beaup-deploy skill measures them again on every production
 # release.
-measured_at: '2026-08-20'
+measured_at: '2026-08-21'
 
 # git rev-list --count HEAD
-commits: 2077
+commits: 2096
 
 # bin/phpunit --list-tests
-tests: 1841
+tests: 1925

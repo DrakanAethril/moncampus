@@ -26,6 +26,32 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.08.21'
+      date: '2026-08-21'
+      summary: "Les sondages arrivent : composer un questionnaire, l'adresser à une ou plusieurs classes, suivre les réponses question par question, et rejouer la même série plus tard pour comparer. Une campagne peut être menée anonymement, et l'anonymat est alors définitif."
+      entries:
+          - type: nouveaute
+            title: 'Sondages : composer un questionnaire et le lancer dans une classe'
+            detail: "Depuis « Outils ». Cinq types de questions — choix unique, choix multiple, échelle, ordre et commentaire libre — et des intertitres pour aérer un questionnaire long. Un modèle se réutilise d'une classe à l'autre."
+          - type: nouveaute
+            title: 'Répondre à un sondage depuis son travail à faire'
+            detail: "Le sondage apparaît dans le travail à faire de chaque étudiant visé. Il ne propose pas « marquer comme fait » : seule la réponse le clôt, pour que le taux de participation dise la vérité."
+          - type: nouveaute
+            title: 'Résultats d’un sondage, question par question'
+            detail: "Le taux de participation, la répartition de chaque question, la liste des personnes qui n'ont pas encore répondu, et un export. Une campagne anonyme n'affiche aucune répartition tant qu'elle a reçu moins de trois réponses, et ne montre jamais qui a répondu quoi — à personne."
+          - type: nouveaute
+            title: 'Rejouer un sondage et comparer les vagues'
+            detail: "Rejouer ajoute une vague à la même série, avec le même questionnaire et la même cible : l'évolution se lit directement d'une vague à l'autre. Une question modifiée entre deux vagues est signalée comme non comparable plutôt que comptée de travers."
+          - type: nouveaute
+            title: 'Les sondages dans l’application mobile'
+            detail: "La liste des sondages en cours, le questionnaire et la réponse, avec les mêmes règles que sur le web."
+          - type: autre
+            title: 'Application mobile MonCampus 2.4.0 pour Android'
+            detail: "Elle apporte les sondages. e-CO est republiée à l'identique, sans changement de version."
+          - type: fix
+            title: 'Installer plusieurs machines virtuelles d’un coup fonctionne'
+            detail: "Au-delà de quelques machines, l'installation s'arrêtait juste après la copie : les machines existaient mais n'étaient jamais configurées ni démarrées, et rien ne le disait. Un ensemble déjà installé de cette manière se rattrape en relançant l'installation."
+
     - version: '2026.08.20.4'
       date: '2026-08-20'
       summary: "Correctif sur l'installation des machines virtuelles pédagogiques : une machine fraîchement créée n'était en réalité pas exploitable, et rien ne le signalait. Elle l'est désormais, et tout ce qui échoue en cours d'installation est rapporté avec sa cause."
