@@ -29,6 +29,40 @@ class VmBatchPlannerTest extends TestCase
     }
 
     /** @return list<BatchMember> */
+
+    /**
+     * The teachers a per-class batch names: one account each on every machine, and no extra
+     * machine. The student is in the list too - a machine with members carries **only** its
+     * members, so leaving them out would build their machine for their teacher and not for them.
+     */
+    public function testANamedTeacherJoinsEveryMachineAlongsideItsStudent(): void
+    {
+        $rows = $this->planner()->plan(
+            [new BatchMember(1, 'Célia L.', 'celia.l'), new BatchMember(2, 'Ana R.', 'ana.r')],
+            'tp-{index}',
+            100,
+            999,
+            [],
+            [new BatchMember(90, 'M. Roux', 'p.roux')],
+        );
+
+        self::assertCount(2, $rows, 'a named teacher adds no machine');
+        self::assertSame(['celia.l', 'p.roux'], array_column($rows[0]['members'], 'login'));
+        self::assertSame(['ana.r', 'p.roux'], array_column($rows[1]['members'], 'login'));
+    }
+
+    /**
+     * With nobody named, a machine carries no member list at all - which is what VmBatchExecutor
+     * reads as "this machine is one person's", and the difference between one account and two.
+     */
+    public function testAMachineWithNobodyElseOnItCarriesNoMemberList(): void
+    {
+        $rows = $this->planner()->plan([new BatchMember(1, 'Célia L.', 'celia.l')], 'tp-{index}', 100, 999, []);
+
+        self::assertSame([], $rows[0]['members']);
+        self::assertSame('celia.l', $rows[0]['login']);
+    }
+
     private function classOf(): array
     {
         return [

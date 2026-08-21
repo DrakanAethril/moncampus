@@ -81,6 +81,26 @@
                 {% endif %}
             </div>
 
+            {% if program and shape.value != 'for_accounts' %}
+                <div class="row g-3 mt-1">
+                    <div class="col-12">
+                        <label class="cm-field-label d-block mb-1">{{ 'vmBatchTeachersFieldLabel'|trans }}</label>
+                        {# Checkbox group rather than a multi-select, per this app's form rule. The
+                           list itself is not the same on the two shapes: a class's teachers here,
+                           only those who own or were given the saved set on a per-group batch. #}
+                        {% for teacher in candidateTeachers %}
+                            <label class="cm-field-label d-block">
+                                <input type="checkbox" name="teachers[]" value="{{ teacher.id }}"{{ teacher.id in chosenTeacherIds ? ' checked' }}>
+                                {{ teacher.displayName ?? teacher.username }}
+                            </label>
+                        {% else %}
+                            <p class="cm-guest__sub">{{ (shape.value == 'per_group' ? 'vmBatchNoGroupTeacherText' : 'vmBatchNoTeacherText')|trans }}</p>
+                        {% endfor %}
+                        <div class="cm-guest__sub mt-1">{{ 'vmBatchTeachersHelpText'|trans }}</div>
+                    </div>
+                </div>
+            {% endif %}
+
             {% if program and shape.value == 'for_accounts' %}
                 <div class="row g-3 mt-1">
                     <div class="col-md-8">
@@ -170,6 +190,7 @@
             {% for id in filters.options %}<input type="hidden" name="options[]" value="{{ id }}">{% endfor %}
             {% for id in filters.modalities %}<input type="hidden" name="modalities[]" value="{{ id }}">{% endfor %}
             {% for user in chosenUsers %}<input type="hidden" name="users[]" value="{{ user.id }}">{% endfor %}
+            {% for id in chosenTeacherIds %}<input type="hidden" name="teachers[]" value="{{ id }}">{% endfor %}
 
             <fieldset class="cm-fieldset">
                 <legend class="cm-fieldset__legend">{{ 'vmBatchMachineLegend'|trans }}</legend>
@@ -268,13 +289,15 @@
                                     <td class="cm-mono">{{ row.guestName }}</td>
                                     <td class="cm-mono">{{ row.vmid }}</td>
                                     <td class="cm-mono">
-                                        {%- if perGroup -%}
-                                            {# Every member of the group gets their own account on that
-                                               one machine - the shape's whole point, so it is spelled
-                                               out before anything is created rather than discovered. #}
+                                        {#- Every account of that one machine, spelled out before
+                                            anything is created rather than discovered: the members of
+                                            a group, and the teachers the batch names on top of them.
+                                            A per-student machine carries members only once there is
+                                            somebody beyond the student. -#}
+                                        {%- if row.members is not empty -%}
                                             {% for member in row.members %}{{ member.login }}{{ not loop.last ? ', ' }}{% endfor %}
                                         {%- else -%}
-                                            {{ row.login }}
+                                            {{ perGroup ? '—' : row.login }}
                                         {%- endif -%}
                                     </td>
                                 </tr>

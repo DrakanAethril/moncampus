@@ -58,12 +58,19 @@ class VmBatchPlanner
      * A window too small for the class plans what fits rather than refusing outright: eighteen of
      * twenty-four machines is a useful outcome, and the screen says what did not fit.
      *
-     * @param list<BatchMember> $members
-     * @param list<int>         $usedVmids VMIDs already taken on the host
+     * `everyMachine` are the people who get an account on **every** machine of the batch - the
+     * teachers a batch names. They add no machine, so they are absent from the loop below and
+     * present in each row's members; and a row only carries members at all once there is somebody
+     * beyond the student, because an empty list is what VmBatchExecutor reads as "this machine is
+     * one person's".
      *
-     * @return list<array{userId: int, studentLabel: string, login: string, guestName: string, vmid: int, position: int}>
+     * @param list<BatchMember> $members
+     * @param list<int>         $usedVmids    VMIDs already taken on the host
+     * @param list<BatchMember> $everyMachine an account on each machine, adding none
+     *
+     * @return list<array{userId: int, studentLabel: string, login: string, guestName: string, vmid: int, position: int, members: list<array{userId: int, label: string, login: string}>}>
      */
-    public function plan(array $members, string $namePattern, int $vmidMin, int $vmidMax, array $usedVmids): array
+    public function plan(array $members, string $namePattern, int $vmidMin, int $vmidMax, array $usedVmids, array $everyMachine = []): array
     {
         $taken = array_flip($usedVmids);
         $names = [];
@@ -89,6 +96,10 @@ class VmBatchPlanner
                 'guestName' => $name,
                 'vmid' => $vmid,
                 'position' => $index + 1,
+                // The student first: they are one of the accounts of their own machine as soon as
+                // there is a second one, and leaving them out would build a machine for somebody
+                // else's teacher and not for them.
+                'members' => [] === $everyMachine ? [] : $this->accountsOf([$member, ...$everyMachine]),
             ];
 
             $taken[$vmid] = true;
@@ -114,12 +125,13 @@ class VmBatchPlanner
      * are called « Groupe 3 » and slug perfectly well; a machine named after the people on it does
      * not, and its label is three names long - see BatchMemberResolver::forUsers().
      *
-     * @param list<array{label: string, slug?: string, members: list<BatchMember>}> $groups    in set order, empty groups included
-     * @param list<int>                                             $usedVmids VMIDs already taken on the host
+     * @param list<array{label: string, slug?: string, members: list<BatchMember>}> $groups       in set order, empty groups included
+     * @param list<int>                                                             $usedVmids    VMIDs already taken on the host
+     * @param list<BatchMember>                                                     $everyMachine an account on each machine, adding none
      *
      * @return list<array{groupLabel: string, slug: string, members: list<array{userId: int, label: string, login: string}>, guestName: string, vmid: int, position: int}>
      */
-    public function planGroups(array $groups, string $namePattern, int $vmidMin, int $vmidMax, array $usedVmids): array
+    public function planGroups(array $groups, string $namePattern, int $vmidMin, int $vmidMax, array $usedVmids, array $everyMachine = []): array
     {
         $taken = array_flip($usedVmids);
         $names = [];
@@ -146,14 +158,7 @@ class VmBatchPlanner
             $rows[] = [
                 'groupLabel' => $group['label'],
                 'slug' => $slug,
-                'members' => array_map(
-                    static fn (BatchMember $member): array => [
-                        'userId' => $member->userId,
-                        'label' => $member->displayName,
-                        'login' => $member->login,
-                    ],
-                    $group['members'],
-                ),
+                'members' => $this->accountsOf([...$group['members'], ...$everyMachine]),
                 'guestName' => $name,
                 'vmid' => $vmid,
                 'position' => $index + 1,
@@ -164,6 +169,32 @@ class VmBatchPlanner
         }
 
         return $rows;
+    }
+
+    /**
+     * The accounts of one machine, as the flat rows an item stores.
+     *
+     * Deduplicated on the login, because a teacher named on the batch may also be a member of one
+     * of its groups: two entries for the same person is one `useradd` that fails on the second, and
+     * the whole machine fails with it.
+     *
+     * @param list<BatchMember> $members
+     *
+     * @return list<array{userId: int, label: string, login: string}>
+     */
+    private function accountsOf(array $members): array
+    {
+        $accounts = [];
+
+        foreach ($members as $member) {
+            $accounts[$member->login] ??= [
+                'userId' => $member->userId,
+                'label' => $member->displayName,
+                'login' => $member->login,
+            ];
+        }
+
+        return array_values($accounts);
     }
 
     private function name(string $pattern, int $index, string $login): string

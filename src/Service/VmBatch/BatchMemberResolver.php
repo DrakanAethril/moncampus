@@ -113,21 +113,11 @@ class BatchMemberResolver
      */
     public function forUsers(array $users): array
     {
-        $members = [];
-
-        foreach ($users as $user) {
-            $members[] = new BatchMember(
-                $user->getId() ?? 0,
-                $user->getDisplayName() ?? $user->getUsername(),
-                $this->loginFor($user),
-            );
-        }
+        $members = $this->membersOf($users);
 
         if ([] === $members) {
             return [];
         }
-
-        usort($members, static fn (BatchMember $a, BatchMember $b): int => strnatcasecmp($a->displayName, $b->displayName));
 
         $names = array_map(static fn (BatchMember $member): string => $member->displayName, $members);
         $label = implode(', ', $names);
@@ -141,6 +131,33 @@ class BatchMemberResolver
             'slug' => 1 === \count($members) ? $members[0]->login : 'poste',
             'members' => $members,
         ]];
+    }
+
+    /**
+     * People picked by hand, as plain members - no group, no machine of their own.
+     *
+     * This is what the teachers added to a batch are: they get an account on **every** machine of
+     * the batch and add none to it, so they are members over and over rather than a group once.
+     *
+     * @param list<User> $users
+     *
+     * @return list<BatchMember>
+     */
+    public function membersOf(array $users): array
+    {
+        $members = [];
+
+        foreach ($users as $user) {
+            $members[] = new BatchMember(
+                $user->getId() ?? 0,
+                $user->getDisplayName() ?? $user->getUsername(),
+                $this->loginFor($user),
+            );
+        }
+
+        usort($members, static fn (BatchMember $a, BatchMember $b): int => strnatcasecmp($a->displayName, $b->displayName));
+
+        return $members;
     }
 
     /**
