@@ -1173,6 +1173,20 @@ td.cm-actions, .cm-actions {
    by a link: there is nothing to click. */
 .cm-actions .cm-action--off      { color: var(--cm-disabled); }
 
+/* The whole of a row's actions folded into one field (machines list). Tighter than a form select
+   because it lives inside a table row, and left to size itself on its widest entry so the column
+   does not jump between a machine that is running and one that is not. */
+.cm-select--action { padding: 4px 7px; font-size: 12px; }
+/* Under the select rather than beside it, which is what lets an operation in flight report itself
+   without taking the actions away. Qualified with the element so it beats the inline-block and the
+   14px gap that .cm-actions gives every child. */
+td.cm-actions .cm-actions__note {
+    display: block;
+    margin-left: 0;
+    margin-top: 4px;
+    white-space: normal;
+}
+
 /* ---------- RowGroup extension: group / subtotal / grand-total rows (tour 2, 2e) ----------
    Selectors are qualified with "table.dataTable" (rather than a bare "tr.cm-dt-*") to out-
    specificity datatables.bootstrap5.min.css's own `table.table.dataTable > :not(caption) > * > *

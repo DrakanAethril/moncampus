@@ -135,52 +135,71 @@
                                 </td>
                                 <td class="cm-guest__sub">{{ (guest.maxDiskBytes / 1073741824)|number_format(0, ',', ' ') }} Gio</td>
                                 <td class="cm-guest__sub">{{ guest.uptimeSeconds ? (guest.uptimeSeconds // 86400) ~ ' j ' ~ ((guest.uptimeSeconds % 86400) // 3600) ~ ' h' : '—' }}</td>
-                                {# The Stimulus target sits on the cell itself: run() replaces its
-                                   innerHTML while a power action is in flight, and the cell is what
-                                   lays the buttons out now that .cm-actions does it. #}
+                                {# One select rather than a row of links, and it carries « Comptes »
+                                   as well as the power actions: the column stays the same width from
+                                   one row to the next whatever the machine's state is. The Stimulus
+                                   target stays on the cell, which is what run() reaches from the
+                                   select to find the note underneath it. #}
                                 <td class="cm-actions" data-proxmox-guests-target="actions">
-                                        {# Outside the chain below on purpose: reaching the accounts of a
-                                           machine has nothing to do with whether it is running, and the
-                                           chain replaces the whole cell while an operation is pending. #}
-                                        {% if row.inScope and not guest.template and is_granted('ROLE_ADMIN') %}
-                                            <a href="{{ path('app_infrastructure_guest_accounts', {id: host.id, node: guest.node, vmid: guest.vmid}) }}">{{ 'guestAccountsShortAction'|trans }}</a>
-                                        {% endif %}
-                                        {% if not row.inScope %}
-                                            {# Visible, counted, and untouchable. Hiding it would make an
-                                               administrator think the machine had vanished from Proxmox. #}
-                                            <span class="cm-badge cm-badge--gray">{{ 'proxmoxGuestOutOfScopeBadge'|trans }}</span>
-                                        {% elseif live %}
-                                            <span class="cm-guest__sub" data-proxmox-guests-target="pending"
-                                                  data-status-url="{{ path('app_infrastructure_operation_status', {id: live.id}) }}">
-                                                {{ 'proxmoxGuestOperationPendingText'|trans({
+                                    {% if not row.inScope %}
+                                        {# Visible, counted, and untouchable. Hiding it would make an
+                                           administrator think the machine had vanished from Proxmox. #}
+                                        <span class="cm-badge cm-badge--gray">{{ 'proxmoxGuestOutOfScopeBadge'|trans }}</span>
+                                    {% elseif guest.template %}
+                                        <span class="cm-guest__sub">{{ 'proxmoxGuestTemplateNoActionText'|trans }}</span>
+                                    {% else %}
+                                        <select class="cm-select cm-select--action"
+                                                data-action="proxmox-guests#run"
+                                                aria-label="{{ 'proxmoxGuestActionPlaceholder'|trans }}">
+                                            {# A select the reader chooses *into*, so it opens on a
+                                               placeholder rather than on whichever action happens to
+                                               be first - picking the first entry must never be the
+                                               same gesture as opening the list. #}
+                                            <option value="">{{ 'proxmoxGuestActionPlaceholder'|trans }}</option>
+                                            {% if is_granted('ROLE_ADMIN') %}
+                                                {# Navigation rather than a POST, and offered whatever the
+                                                   machine is doing: reaching the accounts of a machine has
+                                                   nothing to do with whether it is running. #}
+                                                <option value="{{ path('app_infrastructure_guest_accounts', {id: host.id, node: guest.node, vmid: guest.vmid}) }}"
+                                                        data-method="navigate">{{ 'guestAccountsShortAction'|trans }}</option>
+                                            {% endif %}
+                                            {% if canOperate and not live %}
+                                                {% if guest.isRunning %}
+                                                    {% if row.canStop %}
+                                                        <option value="{{ path('app_infrastructure_guests_power', {id: host.id, node: guest.node, vmid: guest.vmid, action: 'shutdown'}) }}"
+                                                                data-method="post">{{ 'proxmoxGuestShutdownAction'|trans }}</option>
+                                                    {% endif %}
+                                                    {% if row.canStart %}
+                                                        <option value="{{ path('app_infrastructure_guests_power', {id: host.id, node: guest.node, vmid: guest.vmid, action: 'reboot'}) }}"
+                                                                data-method="post">{{ 'proxmoxGuestRebootAction'|trans }}</option>
+                                                    {% endif %}
+                                                    {% if row.canStop %}
+                                                        {# Last, and never directly under « Arrêter ». An ACPI
+                                                           request and a power cut now share one list, so the
+                                                           distance and the confirmation are what is left
+                                                           between them - see proxmoxGuestForceConfirmText. #}
+                                                        <option value="{{ path('app_infrastructure_guests_power', {id: host.id, node: guest.node, vmid: guest.vmid, action: 'stop'}) }}"
+                                                                data-method="post" data-confirm="1">{{ 'proxmoxGuestForceAction'|trans }}</option>
+                                                    {% endif %}
+                                                {% elseif row.canStart %}
+                                                    <option value="{{ path('app_infrastructure_guests_power', {id: host.id, node: guest.node, vmid: guest.vmid, action: 'start'}) }}"
+                                                            data-method="post">{{ 'proxmoxGuestStartAction'|trans }}</option>
+                                                {% endif %}
+                                            {% endif %}
+                                        </select>
+                                        {# Its own line under the select rather than in place of it: what an
+                                           operation in flight says is a note about the machine, and it must
+                                           not take « Comptes » away while it is being said. #}
+                                        <div class="cm-guest__sub cm-actions__note" data-proxmox-guests-target="pending"
+                                             {%- if live %} data-status-url="{{ path('app_infrastructure_operation_status', {id: live.id}) }}"{% endif %}>
+                                            {%- if live %}
+                                                {{- 'proxmoxGuestOperationPendingText'|trans({
                                                     '%action%': live.action.labelKey|trans,
                                                     '%who%': live.requestedByLabel,
-                                                }) }}
-                                            </span>
-                                        {% elseif guest.template %}
-                                            <span class="cm-guest__sub">{{ 'proxmoxGuestTemplateNoActionText'|trans }}</span>
-                                        {% elseif not canOperate %}
-                                            <span class="cm-guest__sub">—</span>
-                                        {% else %}
-                                            {# « Arrêter » and « Forcer » are two buttons and never a menu: an
-                                               ACPI request and a power cut must not be choosable by accident. #}
-                                            {% if guest.isRunning %}
-                                                {% if row.canStop %}
-                                                    <button type="button" data-action="proxmox-guests#run"
-                                                            data-url="{{ path('app_infrastructure_guests_power', {id: host.id, node: guest.node, vmid: guest.vmid, action: 'shutdown'}) }}">{{ 'proxmoxGuestShutdownAction'|trans }}</button>
-                                                    <button type="button" class="cm-action--danger" data-action="proxmox-guests#run"
-                                                            data-confirm="1"
-                                                            data-url="{{ path('app_infrastructure_guests_power', {id: host.id, node: guest.node, vmid: guest.vmid, action: 'stop'}) }}">{{ 'proxmoxGuestForceAction'|trans }}</button>
-                                                {% endif %}
-                                                {% if row.canStart %}
-                                                    <button type="button" data-action="proxmox-guests#run"
-                                                            data-url="{{ path('app_infrastructure_guests_power', {id: host.id, node: guest.node, vmid: guest.vmid, action: 'reboot'}) }}">{{ 'proxmoxGuestRebootAction'|trans }}</button>
-                                                {% endif %}
-                                            {% elseif row.canStart %}
-                                                <button type="button" class="cm-action--positive" data-action="proxmox-guests#run"
-                                                        data-url="{{ path('app_infrastructure_guests_power', {id: host.id, node: guest.node, vmid: guest.vmid, action: 'start'}) }}">{{ 'proxmoxGuestStartAction'|trans }}</button>
-                                            {% endif %}
-                                        {% endif %}
+                                                }) -}}
+                                            {%- endif %}
+                                        </div>
+                                    {% endif %}
                                 </td>
                             </tr>
                         {% else %}
