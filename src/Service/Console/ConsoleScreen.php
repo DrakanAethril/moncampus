@@ -189,7 +189,30 @@ class ConsoleScreen
             // already running.
             'resumedMinutes' => $session->openMinutes() >= 1 ? $session->openMinutes() : null,
             'machineAccounts' => $this->accountsOn($session),
+            // How many machines an armed broadcast would reach. Zero means there is no batch behind
+            // this console - an administrator on a machine outside any deployment - and the button
+            // is then not offered at all rather than offered and refused.
+            'broadcastMachines' => $this->broadcastReachOf($session),
         ];
+    }
+
+    private function broadcastReachOf(ConsoleSession $session): int
+    {
+        $batch = $session->getGuestAccount()?->getBatch();
+
+        if (null === $batch) {
+            return 0;
+        }
+
+        $count = 0;
+
+        foreach ($batch->getItems() as $item) {
+            if (null !== $item->getVmid()) {
+                ++$count;
+            }
+        }
+
+        return $count;
     }
 
     private function guestOf(ConsoleSession $session): ?ProxmoxGuest

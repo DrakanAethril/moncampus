@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Infrastructure;
 
+use App\Repository\ConsoleBroadcastRepository;
 use App\Repository\ConsoleSessionRepository;
 use App\Repository\UserRepository;
 use App\Service\QueryValue;
@@ -36,7 +37,7 @@ class ConsoleSessionController extends AbstractController
     private const int DEFAULT_DAYS = 7;
 
     #[Route(path: '/infrastructure/console-sessions', name: 'app_infrastructure_console_sessions', methods: ['GET'])]
-    public function index(Request $request, ConsoleSessionRepository $sessions, UserRepository $users): Response
+    public function index(Request $request, ConsoleSessionRepository $sessions, ConsoleBroadcastRepository $broadcasts, UserRepository $users): Response
     {
         // Every filter through QueryValue: a filter bar whose « Toutes » option carries value=""
         // sends `?vmid=` as a matter of course, and InputBag::getInt() answers 400 to exactly that.
@@ -56,18 +57,25 @@ class ConsoleSessionController extends AbstractController
             // teaches people not to use it.
             'machines' => $this->machinesOf($sessions),
             'people' => $users->findBy(['id' => $this->peopleIdsOf($sessions)], ['lastname' => 'ASC']),
+            // One query for the whole page rather than one per row. The column counts the only
+            // thing done in a console that had an effect *elsewhere*, which is why it is here at all.
+            'broadcasts' => $broadcasts->countBySession(array_values(array_filter(array_map(
+                static fn ($session): ?int => $session->getId(),
+                $rows,
+            )))),
             'retentionDays' => 90,
         ]);
     }
 
     #[Route(path: '/infrastructure/console-sessions/{id}', name: 'app_infrastructure_console_session', requirements: ['id' => '\d+'], methods: ['GET'])]
-    public function show(ConsoleSessionRepository $sessions, int $id): Response
+    public function show(ConsoleSessionRepository $sessions, ConsoleBroadcastRepository $broadcasts, int $id): Response
     {
         $session = $sessions->find($id) ?? throw $this->createNotFoundException();
 
         return $this->render('console/transcript.html.twig', [
             'activeNav' => 'console_sessions',
             'session' => $session,
+            'broadcasts' => $broadcasts->findBy(['session' => $session], ['sentAt' => 'DESC']),
         ]);
     }
 

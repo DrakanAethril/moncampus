@@ -79,6 +79,21 @@ class GuestPty
         }
     }
 
+    /**
+     * The screen as it is, without opening or installing anything.
+     *
+     * What the console wall reads. Deliberately does **not** repair: a tile must not install a
+     * package on a machine nobody has opened a console on, so a machine with no tmux simply has
+     * nothing to show, which the tile says.
+     *
+     * @throws ConsoleNotReadyException when there is no console session on the machine
+     * @throws GuestUnreachableException
+     */
+    public function snapshot(GuestShell $shell, int $columns, int $rows): ConsolePane
+    {
+        return $this->read($shell, TmuxCommandLine::snapshotOnly($columns, $rows));
+    }
+
     /** Types a whole command line into the session, exactly as if somebody had typed it. */
     public function sendLine(GuestShell $shell, string $command): void
     {

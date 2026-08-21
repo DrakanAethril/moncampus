@@ -1,0 +1,60 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'consoleWallHeading'|trans({'%label%': batch.label}) }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'myMachinesHeading'|trans, url: path('app_my_machines')},
+        {label: 'consoleWallCrumb'|trans({'%label%': batch.label}), url: app.request.pathInfo},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'consoleWallHeading'|trans({'%label%': batch.label}) }}{% endblock %}
+
+{% block page_body_container %}cm-console-bleed{% endblock %}
+
+{% block main %}
+    {# Une tuile par requête, quatre en parallèle, cycle de 15 s : vingt-quatre tuiles tiennent en
+       deux secondes de mur, chaque requête est courte, et les fils tournent. #}
+    <div class="cm-console"
+         data-controller="console-wall"
+         {# Un gabarit de route : le 0 final est remplacé par le VMID de la tuile. Généré par le
+            routeur plutôt que concaténé à la main, pour que le préfixe reste vrai s'il bouge. #}
+         data-console-wall-tile-url-value="{{ path('app_console_wall_tile', {id: batch.id, vmid: 0}) }}"
+         data-console-wall-cycle-value="15000"
+         data-console-wall-parallel-value="4"
+         data-off-label="{{ 'consoleWallOffLabel'|trans }}"
+         data-unknown-label="{{ 'consoleWallUnknownLabel'|trans }}"
+         data-idle-label="{{ 'consoleWallIdleLabel'|trans }}"
+         data-just-now-label="{{ 'consoleWallJustNowLabel'|trans }}">
+
+        <div class="cm-console__status">
+            <span class="cm-console__name">{{ batch.label }}</span>
+            <span class="cm-console__dim">{{ 'consoleWallCountLabel'|trans({'%count%': machines|length}) }}</span>
+            <span class="cm-console__right">
+                <span class="cm-console__dim" data-console-wall-target="freshness">—</span>
+                <button type="button" class="cm-console__chip" data-action="console-wall#refresh">{{ 'consoleWallRefreshAction'|trans }}</button>
+                <span class="cm-console__live">{{ 'consoleWallCycleLabel'|trans }}</span>
+            </span>
+        </div>
+
+        <div class="cm-console__wall">
+            {% for machine in machines %}
+                {# En lecture seule : on regarde la classe, on n'y tape pas. Un clic ouvre la console
+                   de cette machine, qui est l'endroit où l'on tape. #}
+                <a class="cm-console__tile" data-console-wall-target="tile" data-vmid="{{ machine.vmid }}"
+                   href="{{ path('app_console_wall_open', {id: batch.id, vmid: machine.vmid}) }}">
+                    <span class="cm-console__tilehead">
+                        <span class="cm-console__tiledot" data-state="unknown"></span>
+                        <span class="cm-console__tilename">{{ machine.guestName }}</span>
+                        <span class="cm-console__tileage">—</span>
+                    </span>
+                    <span class="cm-console__tilebody">{{ 'consoleWallLoadingLabel'|trans }}</span>
+                </a>
+            {% else %}
+                <p class="cm-console__dim" style="padding: 18px">{{ 'consoleWallEmptyText'|trans }}</p>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

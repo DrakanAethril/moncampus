@@ -8601,3 +8601,91 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-snippet .cm-snippet__check { margin: 0; }
 .cm-snippet__uses { margin: 0; width: 44px; text-align: right; }
 .cm-snippet__delete { border-color: var(--cm-red-tx); color: var(--cm-red-tx); background: transparent; }
+
+/* ---- diffusion armée : le seul écran de l'application dont le cadre change de couleur ---- */
+
+.cm-console.is-armed { border-color: var(--cm-console-copper); box-shadow: 0 0 0 3px rgba(216, 154, 92, .16); }
+.cm-console.is-armed .cm-console__status,
+.cm-console.is-armed .cm-console__acts { background: #24190e; border-color: #55401f; }
+
+.cm-console__armband {
+    display: inline-flex; align-items: center; gap: 7px;
+    font: 700 12px var(--cm-font-ui); letter-spacing: .03em; text-transform: uppercase;
+    color: #f0c088;
+}
+.cm-console__armband[hidden] { display: none; }
+.cm-console__armband::before {
+    content: ''; width: 8px; height: 8px; border-radius: 2px;
+    background: var(--cm-console-copper); display: inline-block;
+}
+
+.cm-console__bcast {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; background: #24190e; border-top: 1px solid #55401f;
+    font: 600 12.5px var(--cm-font-ui); color: #f0c088;
+}
+.cm-console__bcast[hidden] { display: none; }
+.cm-console__bcast input {
+    flex: 1; min-width: 0;
+    border: 1px solid #55401f; background: #16100a; border-radius: 7px;
+    padding: 6px 10px; color: #f4e2cb;
+    font: 12.5px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.cm-console__bresult {
+    background: #22190f; border-top: 1px solid #55401f; padding: 10px 14px;
+    font: 13px var(--cm-font-ui); color: #d8c3a4;
+}
+.cm-console__bresult[hidden] { display: none; }
+.cm-console__bhead { display: flex; align-items: center; gap: 10px; }
+.cm-console__bhead b { color: #f0c088; font-weight: 700; }
+.cm-console__bcmd {
+    font: 11.5px ui-monospace, SFMono-Regular, Menlo, monospace; color: #b0c6d6;
+    background: #10202c; border: 1px solid #24384a; border-radius: 5px; padding: 1px 7px;
+}
+.cm-console__blist {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 4px 16px;
+    margin-top: 9px; font: 11.5px ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.cm-console__blist span { display: flex; align-items: center; gap: 6px; color: #90a5b5; }
+.cm-console__blist span::before {
+    content: ''; width: 6px; height: 6px; border-radius: 50%; display: inline-block; flex: none;
+    background: var(--cm-console-green);
+}
+.cm-console__blist .is-ko { color: #dba393; }
+.cm-console__blist .is-ko::before { background: #e09384; }
+
+/* ---- le mur de consoles ---- */
+
+.cm-console__wall {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px;
+    padding: 12px; background: var(--cm-console-bg);
+}
+.cm-console__tile {
+    display: block; text-decoration: none;
+    border: 1px solid var(--cm-console-rule); border-radius: 8px; overflow: hidden;
+    background: var(--cm-console-pane);
+}
+.cm-console__tile:hover { border-color: #7fb3dc; box-shadow: 0 0 0 2px rgba(127, 179, 220, .2); }
+.cm-console__tile.is-off { border-color: #4a2b24; }
+.cm-console__tilehead {
+    display: flex; align-items: center; gap: 7px; padding: 5px 9px;
+    background: #131f2b; border-bottom: 1px solid var(--cm-console-rule);
+    font: 11.5px var(--cm-font-ui);
+}
+.cm-console__tiledot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--cm-console-fade); }
+.cm-console__tiledot[data-state="running"] { background: var(--cm-console-green); }
+.cm-console__tiledot[data-state="off"] { background: var(--cm-console-fade); }
+.cm-console__tiledot[data-state="idle"] { background: var(--cm-console-yel); }
+.cm-console__tiledot[data-state="unknown"] { background: #a43e2e; }
+.cm-console__tilename { color: #dbe6ef; font-weight: 700; }
+.cm-console__tileage { color: var(--cm-console-fade); margin-left: auto; font-size: 10.5px; }
+.cm-console__tilebody {
+    display: block; height: 96px; overflow: hidden; padding: 7px 9px;
+    color: var(--cm-console-dim); white-space: pre-wrap; word-break: break-word;
+    font: 9.8px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.cm-console__tile.is-off .cm-console__tilebody {
+    display: flex; align-items: center; justify-content: center;
+    color: var(--cm-console-fade); font-style: italic; font-size: 11.5px;
+}
