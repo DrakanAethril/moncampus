@@ -16,7 +16,9 @@ use App\Repository\UserRepository;
 use App\Repository\VmBatchItemRepository;
 use App\Service\Guest\GuestAccountService;
 use App\Service\Guest\GuestCommandFailedException;
+use App\Service\Guest\GuestShell;
 use App\Service\Guest\GuestShellFactory;
+use App\Service\Guest\GuestTimeSync;
 use App\Service\Guest\GuestUnreachableException;
 use App\Service\Guest\PlatformKeyUnavailableException;
 use App\Service\Guest\PostInstallRunner;
@@ -140,6 +142,7 @@ class VmBatchExecutor
         private readonly ProxmoxClientFactory $clientFactory,
         private readonly GuestShellFactory $shellFactory,
         private readonly PostInstallRunner $postInstall,
+        private readonly GuestTimeSync $timeSync,
         private readonly UnixLogin $unixLogin,
         private readonly EntityManagerInterface $entityManager,
         // Injectable so a test can pin the guard without waiting for a real budget to run out.
@@ -485,6 +488,10 @@ class VmBatchExecutor
             $logins = array_keys($applied['passwords']);
             $item->appendInstallLog(VmInstallStep::AccountsApplied, [] === $logins ? null : implode(', ', $logins));
 
+            // Before the script rather than after: a script that fetches a package, checks a
+            // certificate or writes a dated file wants the clock already right.
+            $this->configureTimeSync($item, $shell, $batch);
+
             $script = $batch->getPostInstallScript();
 
             if (null !== $script && '' !== trim($script)) {
@@ -522,6 +529,34 @@ class VmBatchExecutor
         $this->entityManager->flush();
 
         return self::PROGRESSED;
+    }
+
+    /**
+     * Points the machine's clock at the gateway of its own range.
+     *
+     * Recorded, never fatal. A school VLAN rarely lets a machine reach the public pool a cloud image
+     * ships with, so this is what makes the clock right at all - but a machine whose clock is wrong
+     * is still a machine the students can use, and failing it would hold the whole class behind a
+     * template that is merely missing a package. The red line in the installation log is what stops
+     * it being silent, which is the part that has cost time before.
+     *
+     * @throws GuestUnreachableException deliberately not caught: the machine going away mid-step is
+     *                                   the caller's business, not this step's
+     */
+    private function configureTimeSync(VmBatchItem $item, GuestShell $shell, VmBatch $batch): void
+    {
+        $gateway = $batch->getIpRange()?->getGateway();
+
+        if (null === $gateway || '' === $gateway) {
+            return;
+        }
+
+        try {
+            $this->timeSync->configure($shell, $gateway);
+            $item->appendInstallLog(VmInstallStep::TimeSyncConfigured, $gateway);
+        } catch (GuestCommandFailedException|\InvalidArgumentException $exception) {
+            $item->appendInstallLog(VmInstallStep::TimeSyncFailed, $exception->getMessage(), ok: false);
+        }
     }
 
     /** @return list<string> */

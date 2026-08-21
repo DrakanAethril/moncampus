@@ -277,6 +277,59 @@ class GuestAccountSyncerTest extends TestCase
         self::assertStringNotContainsString('&& echo', $shell->commands[0]);
     }
 
+    /**
+     * Being in the `sudo` group is what *allows* sudo; on Debian it also means being asked for a
+     * password. These accounts have one generated, sent to the machine and forgotten on the spot -
+     * nobody knows it - so without this rule sudo is allowed and unusable at the same time.
+     */
+    public function testAnAccountGrantedSudoGetsItWithoutBeingAskedForAPassword(): void
+    {
+        $shell = new RecordingShell();
+        $this->syncer()->apply($shell, $this->syncer()->plan([new DesiredAccount('marie-dupont', GuestAccountOrigin::Member, sudo: true)], []));
+
+        $rule = implode("\n", $shell->commands);
+
+        self::assertStringContainsString('marie-dupont ALL=(ALL) NOPASSWD:ALL', $rule);
+        self::assertStringContainsString('/etc/sudoers.d/90-moncampus-marie-dupont', $rule);
+    }
+
+    /**
+     * A malformed file in `/etc/sudoers.d` does not break itself, it breaks sudo entirely - on a
+     * machine whose only administrative way in is sudo. So it is judged before it lands, and a
+     * refusal leaves the machine as it was.
+     */
+    public function testTheSudoersRuleIsJudgedByVisudoBeforeItIsInstalled(): void
+    {
+        $shell = new RecordingShell();
+        $this->syncer()->apply($shell, $this->syncer()->plan([new DesiredAccount('marie-dupont', GuestAccountOrigin::Member, sudo: true)], []));
+
+        $sudoers = array_values(array_filter($shell->commands, static fn (string $c): bool => str_contains($c, 'sudoers.d')));
+
+        self::assertCount(1, $sudoers);
+        self::assertStringContainsString('visudo -c -f', $sudoers[0]);
+        // Judged on a temporary file, then installed: the order is the whole protection.
+        self::assertLessThan(
+            strpos($sudoers[0], 'install -m 440'),
+            strpos($sudoers[0], 'visudo -c -f'),
+            'the rule must be validated before it reaches /etc/sudoers.d',
+        );
+    }
+
+    public function testEveryAccountJoinsTheDockerGroup(): void
+    {
+        $shell = new RecordingShell();
+        // No sudo: the docker group is not a privilege this application ties to that one.
+        $this->syncer()->apply($shell, $this->syncer()->plan([new DesiredAccount('marie-dupont', GuestAccountOrigin::Member)], []));
+
+        $docker = array_values(array_filter($shell->commands, static fn (string $c): bool => str_contains($c, 'docker')));
+
+        self::assertCount(1, $docker);
+        self::assertStringContainsString("usermod -aG docker 'marie-dupont'", $docker[0]);
+        // Created when missing rather than the membership being skipped: Docker's own packaging
+        // adopts a group that already holds the name, so the order of installs stops mattering.
+        self::assertStringContainsString('groupadd docker', $docker[0]);
+    }
+
     public function testAskingAboutNobodyRunsNothing(): void
     {
         $shell = $this->shell();

@@ -233,7 +233,10 @@ class GuestAccountSyncer
             // Both group names, because Debian calls it sudo and RHEL calls it wheel, and a failed
             // usermod on the group that does not exist costs nothing.
             $commands[] = \sprintf('usermod -aG sudo %s || usermod -aG wheel %s', $login, $login);
+            $commands[] = $this->passwordlessSudoCommand($account->login);
         }
+
+        $commands[] = $this->dockerGroupCommand($account->login);
 
         if (null !== $publicKey && '' !== $publicKey) {
             $commands[] = \sprintf(
@@ -245,6 +248,50 @@ class GuestAccountSyncer
         }
 
         return $commands;
+    }
+
+    /**
+     * Passwordless sudo for an account that has been granted sudo at all.
+     *
+     * The group membership above is what *allows* sudo; on a Debian machine it also means being
+     * asked for a password. These accounts have one generated, sent to the machine and forgotten on
+     * the spot - nobody knows it, so being asked for it makes sudo unusable rather than safer.
+     *
+     * **Validated before it lands.** A malformed file in `/etc/sudoers.d` does not break itself, it
+     * breaks sudo *entirely* - on a machine whose only administrative way in is sudo. So it is
+     * written to a temporary file, `visudo -c` judges that file, and only a file that passes is
+     * installed. A refusal leaves the machine exactly as it was.
+     *
+     * `install -m 440` rather than a redirection plus chmod: it is one step, and it is the mode
+     * sudo insists on. The name carries no dot, which `/etc/sudoers.d` would silently ignore.
+     */
+    private function passwordlessSudoCommand(string $login): string
+    {
+        $file = \sprintf('/etc/sudoers.d/90-moncampus-%s', $login);
+        $rule = \sprintf('%s ALL=(ALL) NOPASSWD:ALL', $login);
+
+        return \sprintf(
+            'tmp=$(mktemp) && printf \'%%s\\n\' %s > "$tmp" && visudo -c -f "$tmp" >/dev/null && install -m 440 -o root -g root "$tmp" %s && rm -f "$tmp"',
+            escapeshellarg($rule),
+            escapeshellarg($file),
+        );
+    }
+
+    /**
+     * The account joins `docker`, so the student can drive the daemon without sudo for every call.
+     *
+     * The group is created when it is missing rather than the membership being skipped. Docker's
+     * own packaging creates `docker` only if nothing holds the name, so a group made here is the
+     * one it will adopt - which means the order stops mattering: a machine that gets Docker after
+     * its accounts still has its students in the group, where a `getent || skip` would have left
+     * them out with nothing saying so.
+     */
+    private function dockerGroupCommand(string $login): string
+    {
+        return \sprintf(
+            'if ! getent group docker >/dev/null 2>&1; then groupadd docker; fi; usermod -aG docker %s',
+            escapeshellarg($login),
+        );
     }
 
     /**

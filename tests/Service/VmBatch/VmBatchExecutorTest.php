@@ -21,8 +21,10 @@ use App\Repository\UserRepository;
 use App\Repository\VmBatchItemRepository;
 use App\Service\Guest\AccountPlan;
 use App\Service\Guest\GuestAccountService;
+use App\Service\Guest\GuestCommandFailedException;
 use App\Service\Guest\GuestShell;
 use App\Service\Guest\GuestShellFactory;
+use App\Service\Guest\GuestTimeSync;
 use App\Service\Guest\GuestUnreachableException;
 use App\Service\Guest\PlatformKeyUnavailableException;
 use App\Service\Guest\PostInstallRunner;
@@ -59,6 +61,9 @@ class VmBatchExecutorTest extends TestCase
     private ProxmoxOperationTracker&Stub $tracker;
     private GuestShellFactory&Stub $shells;
     private PostInstallRunner&Stub $postInstall;
+
+    /** Left unset by default: the real one only builds a command, and no shell here executes it. */
+    private ?GuestTimeSync $timeSync = null;
     private ?ProxmoxClientFactory $clientFactory = null;
 
     // Stubs by default and mocks only where a test actually asserts an interaction: phpunit.dist.xml
@@ -260,6 +265,79 @@ class VmBatchExecutorTest extends TestCase
         self::assertSame(VmBatchItemStatus::Provisioned, $item->getStatus());
         self::assertSame(1, $result['progressed']);
         self::assertSame(0, $result['remaining']);
+    }
+
+    public function testTheClockIsPointedAtTheGatewayOfItsOwnRange(): void
+    {
+        [$batch, $item] = $this->batchOnGateway('10.30.20.254');
+
+        $timeSync = $this->createMock(GuestTimeSync::class);
+        $timeSync->expects(self::once())->method('configure')->with(self::anything(), '10.30.20.254');
+        $this->timeSync = $timeSync;
+
+        $this->deployOnce($batch, $item);
+
+        $steps = array_map(static fn (array $entry): VmInstallStep => $entry['step'], $item->getInstallLogEntries());
+
+        self::assertContains(VmInstallStep::TimeSyncConfigured, $steps);
+        self::assertSame(VmBatchItemStatus::Provisioned, $item->getStatus());
+    }
+
+    /**
+     * Red in the log, and the machine still finishes. A clock nothing sets is a real problem and
+     * says so, but it is not one that should hold a whole class behind a template missing a
+     * package - one machine at a time being the rule.
+     */
+    public function testAClockThatCannotBeSetIsRecordedWithoutFailingTheMachine(): void
+    {
+        [$batch, $item] = $this->batchOnGateway('10.30.20.254');
+
+        $timeSync = $this->createStub(GuestTimeSync::class);
+        $timeSync->method('configure')->willThrowException(
+            new GuestCommandFailedException('chrony is not installed on this machine: no chrony.conf found.'),
+        );
+        $this->timeSync = $timeSync;
+
+        $result = $this->deployOnce($batch, $item);
+
+        $failed = array_values(array_filter(
+            $item->getInstallLogEntries(),
+            static fn (array $entry): bool => VmInstallStep::TimeSyncFailed === $entry['step'],
+        ));
+
+        self::assertCount(1, $failed);
+        self::assertFalse($failed[0]['ok']);
+        self::assertStringContainsString('chrony', (string) $failed[0]['detail']);
+        self::assertSame(VmBatchItemStatus::Provisioned, $item->getStatus());
+        self::assertSame(1, $result['progressed']);
+    }
+
+    /**
+     * A machine that is up, answering, and whose accounts are already in line - so the only thing
+     * a pass has left to do is the clock.
+     *
+     * @return array{VmBatch, VmBatchItem}
+     */
+    private function batchOnGateway(string $gateway): array
+    {
+        $range = $this->createStub(IpRange::class);
+        $range->method('getGateway')->willReturn($gateway);
+
+        $program = new Program('SIO-2 2026-2027', 'SIO-2', $this->createStub(Cohort::class), $this->createStub(SchoolYear::class));
+        $batch = new VmBatch('TP', $program, $this->createStub(ProxmoxHost::class), $range, 9000, 'pve');
+        $item = new VmBatchItem($batch, 'Groupe 1', 'tp-01', 'groupe-1', 1);
+        $item->setStatus(VmBatchItemStatus::Created);
+        $item->setIpAllocation($this->allocation());
+        $item->setVmid(210);
+        $batch->addItem($item);
+
+        $this->shells->method('open')->willReturn($this->createStub(GuestShell::class));
+        $accounts = $this->createStub(GuestAccountService::class);
+        $accounts->method('refresh')->willReturn(new AccountPlan([], [], [], []));
+        $accounts->method('apply')->willReturn(['operation' => $this->operation(ProxmoxOperationStatus::Succeeded), 'passwords' => []]);
+        $this->accounts = $accounts;
+
+        return [$batch, $item];
     }
 
     public function testNothingTheExecutorReturnsCarriesAPassword(): void
@@ -497,6 +575,7 @@ class VmBatchExecutorTest extends TestCase
             $this->clientFactory(),
             $this->shells,
             $this->postInstall,
+            $this->timeSync ?? new GuestTimeSync(),
             new UnixLogin(),
             $this->createStub(EntityManagerInterface::class),
             $budgetSeconds,
@@ -546,6 +625,7 @@ class VmBatchExecutorTest extends TestCase
             $this->clientFactory(),
             $this->shells,
             $this->postInstall,
+            $this->timeSync ?? new GuestTimeSync(),
             new UnixLogin(),
             $this->createStub(EntityManagerInterface::class),
             60.0,
