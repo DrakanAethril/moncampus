@@ -6,8 +6,11 @@ namespace App\Controller\Infrastructure;
 
 use App\Entity\ProxmoxHost;
 use App\Enum\ProxmoxAction;
+use App\Repository\IpAllocationRepository;
 use App\Repository\ProxmoxHostRepository;
 use App\Repository\ProxmoxOperationRepository;
+use App\Repository\VmBatchItemRepository;
+use App\Repository\VmBatchRepository;
 use App\Security\Voter\ProxmoxHostVoter;
 use App\Service\Proxmox\GuestPowerRunner;
 use App\Service\Proxmox\ProxmoxClientFactory;
@@ -26,14 +29,23 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * The machines of one host: the list, and the four power actions.
+ * The machines of every declared host: the list, and the four power actions.
  *
- * Unlike every other list screen in this application, this one **reads the hypervisor as it
+ * Unlike every other list screen in this application, this one **reads the hypervisors as it
  * renders**. That is not an oversight of the "never probe at display" rule, it is the other side of
- * it: the rule is about *hosts*, whose state is a badge on a page listing several of them, where
- * the slowest would hold up the rest. Here there is exactly one host, the screen is *about* it, and
- * showing a stale machine list would be worse than showing an error - somebody is about to press
- * "stop" on one of these rows.
+ * it: the rule is about the *hosts screen*, where the slowest host would hold up the badges of the
+ * rest. Here the machines are what the screen is about, and showing a stale list would be worse
+ * than showing an error - somebody is about to press "stop" on one of these rows. A host that does
+ * not answer is named in a note of its own and the others are still listed: one hypervisor being
+ * down must not take the whole fleet off the screen.
+ *
+ * It used to be one screen per host, reached through an « Aller à… » jump box beside the tabs. The
+ * host is a filter now, in the same bar as the rest and built the same way as the operations
+ * journal's - a jump list is a poor filter, and it made this the only screen you could not simply
+ * click to.
+ *
+ * Templates are not listed. They are what the Images screen is about, they are the only rows no
+ * action ever applies to, and leaving them here made half the fleet's rows inert.
  *
  * Nothing about a machine is stored. A guest created by hand in Proxmox appears here with nothing
  * to synchronise; one destroyed there simply stops being listed.
@@ -47,74 +59,111 @@ class GuestController extends AbstractController
 {
     use InfrastructureTrait;
 
+    /** Fifty rows a page, the same as the operations journal - a fleet is read a class at a time. */
+    private const int PAGE_SIZE = 50;
+
     public function __construct(private readonly TranslatorInterface $translator)
     {
     }
 
-    #[Route(path: '/infrastructure/hosts/{id}/guests', name: 'app_infrastructure_guests', requirements: ['id' => '\d+'])]
+    #[Route(path: '/infrastructure/guests', name: 'app_infrastructure_guests')]
     public function index(
         Request $request,
-        ProxmoxHostRepository $repository,
+        ProxmoxHostRepository $hosts,
         ProxmoxClientFactory $clientFactory,
         ProxmoxInventory $inventory,
         ProxmoxScopeGuard $scopeGuard,
         ProxmoxOperationRepository $operations,
-        int $id,
+        IpAllocationRepository $allocations,
+        VmBatchRepository $batches,
+        VmBatchItemRepository $batchItems,
     ): Response {
-        $host = $this->findHostOrNotFound($repository, $id);
-        $this->denyAccessUnlessGranted(ProxmoxHostVoter::VIEW, $host);
-
         // Every filter through QueryValue: a filter bar whose "Tous" option carries value="" sends
-        // `?node=` as a matter of course, and InputBag::getInt() answers 400 to exactly that.
+        // `?host=` as a matter of course, and InputBag::getInt() answers 400 to exactly that.
         $search = QueryValue::trimmed($request, 'q');
-        $node = QueryValue::trimmed($request, 'node');
+        $hostId = QueryValue::nullableInt($request, 'host');
         $status = QueryValue::trimmed($request, 'status');
-        $type = QueryValue::trimmed($request, 'type');
-        $inScopeOnly = QueryValue::bool($request, 'scoped');
+        $batchId = QueryValue::nullableInt($request, 'batch');
+        $page = max(1, QueryValue::int($request, 'page', 1));
 
-        $scope = ProxmoxScope::fromHost($host);
-        $failure = null;
-        $guests = [];
-        $nodes = [];
+        $declared = $hosts->findOrdered();
+        // The host filter narrows what is read, not just what is shown: an unselected host is one
+        // fewer hypervisor to wait for, which is the whole reason to offer the filter on a screen
+        // that probes as it renders.
+        $selected = null !== $hostId
+            ? array_values(array_filter($declared, static fn (ProxmoxHost $host): bool => $host->getId() === $hostId))
+            : $declared;
 
-        try {
-            $client = $clientFactory->operate($host);
-            $nodes = $inventory->nodes($client);
-            $guests = $inventory->guests($client);
-        } catch (ProxmoxUnavailableException $exception) {
-            $failure = $exception->getMessage();
-        }
+        // vmid => batch, per host: a VMID is only unique within a cluster, so the map is two deep.
+        $batchByMachine = $batchItems->findBatchesByHostAndVmid();
+        $liveOperations = $operations->findUnsettledByHostAndVmid();
 
         $rows = [];
-        foreach ($guests as $guest) {
-            $inScope = $scopeGuard->covers($scope, $guest->vmid, $guest->pool);
+        $failures = [];
+        $totalCount = 0;
 
-            if (!$this->matchesFilters($guest, $search, $node, $status, $type) || ($inScopeOnly && !$inScope)) {
+        foreach ($selected as $host) {
+            $this->denyAccessUnlessGranted(ProxmoxHostVoter::VIEW, $host);
+
+            try {
+                $guests = $inventory->machines($inventory->guests($clientFactory->operate($host)));
+            } catch (ProxmoxUnavailableException $exception) {
+                $failures[] = ['host' => $host, 'message' => $exception->getMessage()];
+
                 continue;
             }
 
-            $rows[] = [
-                'guest' => $guest,
-                'inScope' => $inScope,
-                // Asked per row rather than once, because the answer differs by action: a machine
-                // may be startable and not stoppable on a host that allows only one of the two.
-                'canStart' => $inScope && $scopeGuard->allows($scope, ProxmoxAction::Start, $guest->vmid, $guest->pool),
-                'canStop' => $inScope && $scopeGuard->allows($scope, ProxmoxAction::Stop, $guest->vmid, $guest->pool),
-            ];
+            $scope = ProxmoxScope::fromHost($host);
+            $hostKey = (int) $host->getId();
+            $canOperate = $this->isGranted(ProxmoxHostVoter::OPERATE, $host);
+            $totalCount += \count($guests);
+
+            foreach ($guests as $guest) {
+                $batch = $batchByMachine[$hostKey][$guest->vmid] ?? null;
+
+                if (!$this->matchesFilters($guest, $search, $status) || !$this->matchesBatch($batch, $batchId)) {
+                    continue;
+                }
+
+                $inScope = $scopeGuard->covers($scope, $guest->vmid, $guest->pool);
+
+                $rows[] = [
+                    'host' => $host,
+                    'guest' => $guest,
+                    'batch' => $batch,
+                    'inScope' => $inScope,
+                    'canOperate' => $canOperate,
+                    // Asked per row rather than once, because the answer differs by action: a
+                    // machine may be startable and not stoppable on a host that allows only one.
+                    'canStart' => $inScope && $scopeGuard->allows($scope, ProxmoxAction::Start, $guest->vmid, $guest->pool),
+                    'canStop' => $inScope && $scopeGuard->allows($scope, ProxmoxAction::Stop, $guest->vmid, $guest->pool),
+                    'live' => $liveOperations[$hostKey][$guest->vmid] ?? null,
+                ];
+            }
         }
+
+        $total = \count($rows);
+        $pageCount = max(1, (int) ceil($total / self::PAGE_SIZE));
+        $rows = \array_slice($rows, (min($page, $pageCount) - 1) * self::PAGE_SIZE, self::PAGE_SIZE);
 
         return $this->render('infrastructure/guests.html.twig', [
             'activeNav' => 'guests',
-            'host' => $host,
             'rows' => $rows,
-            'nodes' => $nodes,
-            'totalCount' => \count($guests),
-            'failure' => $failure,
-            'filters' => ['q' => $search, 'node' => $node, 'status' => $status, 'type' => $type, 'scoped' => $inScopeOnly],
-            // One query for the whole page rather than one per row - the machines list is the only
-            // screen where an operation in flight has to show up next to its machine.
-            'liveOperations' => $operations->findUnsettledByVmid($host),
-            'canOperate' => $this->isGranted(ProxmoxHostVoter::OPERATE, $host),
+            'hosts' => $declared,
+            'batches' => $batches->findOrdered(true),
+            'total' => $total,
+            'totalCount' => $totalCount,
+            'failures' => $failures,
+            'filters' => ['q' => $search, 'host' => $hostId, 'status' => $status, 'batch' => $batchId],
+            'page' => min($page, $pageCount),
+            'pageCount' => $pageCount,
+            // One query for the whole list, like the operations above: the address a machine holds
+            // is the one thing on this screen the hypervisor does not know - it lives in the
+            // address registry, keyed by VMID.
+            'addresses' => $allocations->findAddressesForVmids(array_map(
+                static fn (array $row): int => $row['guest']->vmid,
+                $rows,
+            )),
         ]);
     }
 
@@ -188,24 +237,10 @@ class GuestController extends AbstractController
         throw new ProxmoxUnavailableException('proxmoxGuestGoneMessage');
     }
 
-    private function matchesFilters(ProxmoxGuest $guest, string $search, string $node, string $status, string $type): bool
+    private function matchesFilters(ProxmoxGuest $guest, string $search, string $status): bool
     {
-        if ('' !== $node && $guest->node !== $node) {
+        if ('' !== $status && $guest->status !== $status) {
             return false;
-        }
-
-        if ('' !== $type && $guest->type !== $type) {
-            return false;
-        }
-
-        // "template" is a state as far as the filter bar is concerned, even though Proxmox carries
-        // it as a flag beside the status - which is how an administrator thinks of it.
-        if ('' !== $status) {
-            $matches = 'template' === $status ? $guest->template : (!$guest->template && $guest->status === $status);
-
-            if (!$matches) {
-                return false;
-            }
         }
 
         if ('' === $search) {
@@ -214,5 +249,11 @@ class GuestController extends AbstractController
 
         return str_contains(mb_strtolower($guest->name), mb_strtolower($search))
             || str_contains((string) $guest->vmid, $search);
+    }
+
+    /** @param array{id: int, label: string}|null $batch */
+    private function matchesBatch(?array $batch, ?int $batchId): bool
+    {
+        return null === $batchId || (null !== $batch && $batch['id'] === $batchId);
     }
 }

@@ -60,11 +60,20 @@ class GuestSshSession implements GuestShell
 
     public function run(string $command): GuestCommandResult
     {
-        $ssh = $this->connection();
-
         // Wrapping - and elevation, when this session is not root's - is GuestCommandLine's, in
         // one place: a command someone forgot to elevate fails silently into an output nobody reads.
-        $output = $ssh->exec(GuestCommandLine::build($command, $this->username));
+        return $this->execute(GuestCommandLine::build($command, $this->username));
+    }
+
+    public function runAsSelf(string $command): GuestCommandResult
+    {
+        return $this->execute(GuestCommandLine::buildAsSelf($command));
+    }
+
+    private function execute(string $line): GuestCommandResult
+    {
+        $ssh = $this->connection();
+        $output = $ssh->exec($line);
 
         if (!\is_string($output)) {
             // The session went away mid-command - a script that reboots does exactly this. Not a

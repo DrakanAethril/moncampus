@@ -9,11 +9,14 @@ use App\Entity\User;
 use App\Entity\VmBatch;
 use App\Entity\VmBatchItem;
 use App\Enum\GuestAccountOrigin;
+use App\Enum\ProxmoxAction;
 use App\Enum\ProxmoxOperationStatus;
 use App\Enum\VmBatchItemStatus;
 use App\Enum\VmInstallStep;
 use App\Repository\UserRepository;
 use App\Repository\VmBatchItemRepository;
+use App\Service\Console\GuestPty;
+use App\Service\Console\TmuxCommandLine;
 use App\Service\Guest\GuestAccountService;
 use App\Service\Guest\GuestCommandFailedException;
 use App\Service\Guest\GuestShell;
@@ -28,7 +31,10 @@ use App\Service\Network\IpAllocator;
 use App\Service\Network\RangeExhaustedException;
 use App\Service\Proxmox\GuestCreationRequest;
 use App\Service\Proxmox\GuestCreator;
+use App\Service\Proxmox\GuestPowerRunner;
 use App\Service\Proxmox\ProxmoxClientFactory;
+use App\Service\Proxmox\ProxmoxGuest;
+use App\Service\Proxmox\ProxmoxInventory;
 use App\Service\Proxmox\ProxmoxOperationTracker;
 use App\Service\Proxmox\ProxmoxUnavailableException;
 use Doctrine\ORM\EntityManagerInterface;
@@ -48,17 +54,17 @@ use Doctrine\ORM\EntityManagerInterface;
  * twenty-four machines being built at the same time - see MAX_IN_FLIGHT.
  *
  * **A pass advances each item by one step, it does not finish it.** The order the design fixes and
- * does not bend is clone → configure → start → reachable → accounts → post-installation, and three
- * of those steps are waits: Proxmox answers a clone with a task id and finishes it in its own time,
- * and a freshly started machine takes a minute to answer on SSH. Blocking a request until a machine
- * boots is not an option, so an item's status *is* the phase it has reached, and the screen keeps
- * pressing until nothing moves:
+ * does not bend is clone → configure → start → reachable → accounts → post-installation →
+ * shutdown, and three of those steps are waits: Proxmox answers a clone with a task id and finishes
+ * it in its own time, and a freshly started machine takes a minute to answer on SSH. Blocking a
+ * request until a machine boots is not an option, so an item's status *is* the phase it has
+ * reached, and the screen keeps pressing until nothing moves:
  *
  * | Phase         | What the pass does                                    | Then          |
  * |---------------|-------------------------------------------------------|---------------|
  * | `Planned`     | reserve an address, ask Proxmox to clone              | `Creating`    |
  * | `Creating`    | poll the clone task; when done, configure and start   | `Created`     |
- * | `Created`     | try SSH; when it answers, lay down accounts + script  | `Provisioned` |
+ * | `Created`     | try SSH; accounts, script, then switch it off         | `Provisioned` |
  *
  * A step that cannot happen *yet* leaves the item where it is and reports a wait, never a failure:
  * a machine that has not booted is the normal case, not an error. Only a refusal fails.
@@ -68,6 +74,10 @@ use Doctrine\ORM\EntityManagerInterface;
  * is given a way to set their own, the accounts exist but nobody can log into them by password;
  * MonCampus itself keeps root access through the platform key, which is what a later "set my
  * password" screen will use.
+ *
+ * **A machine is delivered switched off.** It was started to be configured, not to be used, and
+ * whoever holds an account on it starts it from « Mes machines virtuelles » the day they need it -
+ * see shutDown().
  */
 class VmBatchExecutor
 {
@@ -141,9 +151,12 @@ class VmBatchExecutor
         private readonly ProxmoxOperationTracker $tracker,
         private readonly ProxmoxClientFactory $clientFactory,
         private readonly GuestShellFactory $shellFactory,
+        private readonly ProxmoxInventory $inventory,
+        private readonly GuestPowerRunner $power,
         private readonly PostInstallRunner $postInstall,
         private readonly GuestTimeSync $timeSync,
         private readonly UnixLogin $unixLogin,
+        private readonly GuestPty $pty,
         private readonly EntityManagerInterface $entityManager,
         // Injectable so a test can pin the guard without waiting for a real budget to run out.
         private readonly float $passBudgetSeconds = self::PASS_BUDGET_SECONDS,
@@ -492,6 +505,11 @@ class VmBatchExecutor
             // certificate or writes a dated file wants the clock already right.
             $this->configureTimeSync($item, $shell, $batch);
 
+            // And before the script for the same reason: apt is available, the clock is right, and
+            // the machine is already open in front of us. Every machine the platform builds is
+            // delivered with a console ready to open.
+            $this->prepareConsole($item, $shell);
+
             $script = $batch->getPostInstallScript();
 
             if (null !== $script && '' !== trim($script)) {
@@ -525,10 +543,70 @@ class VmBatchExecutor
             $shell->disconnect();
         }
 
+        // After the shell is closed, never before: the last thing done to the machine is switching
+        // it off, and an SSH session held open across an ACPI shutdown hangs until it times out.
+        $this->shutDown($batch, $item, $host, $vmid, $requestedBy);
+
         $item->setStatus(VmBatchItemStatus::Provisioned);
         $this->entityManager->flush();
 
         return self::PROGRESSED;
+    }
+
+    /**
+     * Switches the machine off, now that everything asked for is on it.
+     *
+     * **Being switched off is the delivered state**, and the reason is what a batch is for: a class
+     * of twenty-four machines built one afternoon would otherwise run until somebody noticed, and
+     * the hypervisor's memory is what runs out first. The machine was started to be configured; the
+     * person it was built for starts it again from « Mes machines virtuelles » when they need it,
+     * which is the one verb that screen has always had.
+     *
+     * Recorded, never fatal - the same bargain as the clock. A host whose perimeter forbids
+     * stopping a machine, or one that has stopped answering, leaves a machine that is running and
+     * complete, and failing the item over it would send the next pass back through the accounts and
+     * the post-installation script to fix something its user fixes in one click.
+     *
+     * It goes through App\Service\Proxmox\GuestPowerRunner rather than posting the status itself,
+     * so this shutdown is logged, scoped and locked exactly like the one a student clicks.
+     */
+    private function shutDown(VmBatch $batch, VmBatchItem $item, ProxmoxHost $host, int $vmid, ?User $requestedBy): void
+    {
+        try {
+            $guest = $this->findGuest($host, $item->getNode() ?? $batch->getNode(), $vmid);
+
+            // `shutdown` on a machine that is already off is a refusal, not a no-op - it would be
+            // written in red for a machine that is in exactly the state wanted. Nothing is logged
+            // either: no request went out, and the log says what happened.
+            if (!$guest->isRunning()) {
+                return;
+            }
+
+            $this->power->run($host, $guest, ProxmoxAction::Shutdown, $requestedBy);
+            $item->appendInstallLog(VmInstallStep::ShutdownRequested);
+        } catch (ProxmoxUnavailableException $exception) {
+            $item->appendInstallLog(VmInstallStep::ShutdownFailed, $exception->getMessage(), ok: false);
+        }
+    }
+
+    /**
+     * The machine as the hypervisor describes it right now.
+     *
+     * Read rather than assembled from what is stored, because `pool` and `template` are what the
+     * perimeter is judged on and neither is ours to state: a machine moved out of the managed pool
+     * by hand must be refused, and only the hypervisor knows it moved.
+     *
+     * @throws ProxmoxUnavailableException when the host has no such machine any more
+     */
+    private function findGuest(ProxmoxHost $host, string $node, int $vmid): ProxmoxGuest
+    {
+        foreach ($this->inventory->guests($this->clientFactory->operate($host)) as $guest) {
+            if ($guest->vmid === $vmid && $guest->node === $node) {
+                return $guest;
+            }
+        }
+
+        throw new ProxmoxUnavailableException('proxmoxRefusalOutOfScope');
     }
 
     /**
@@ -557,6 +635,39 @@ class VmBatchExecutor
         } catch (GuestCommandFailedException|\InvalidArgumentException $exception) {
             $item->appendInstallLog(VmInstallStep::TimeSyncFailed, $exception->getMessage(), ok: false);
         }
+    }
+
+    /**
+     * Puts tmux on the machine, so that the first console opened on it opens straight away.
+     *
+     * Recorded, never fatal - the same rule as the clock above. A machine without tmux is a machine
+     * the students use exactly as before; the console is a teacher's tool and not a condition of
+     * the install, and failing a whole class over it would be the wrong trade. Machines built
+     * before this step existed install it by themselves at the first opening
+     * (App\Service\Console\GuestPty::ensure()), so nothing has to be swept over the fleet.
+     *
+     * @throws GuestUnreachableException deliberately not caught: the machine going away mid-step is
+     *                                   the caller's business, not this step's
+     */
+    private function prepareConsole(VmBatchItem $item, GuestShell $shell): void
+    {
+        if ($this->pty->isPresent($shell)) {
+            $item->appendInstallLog(VmInstallStep::ConsoleReady, TmuxCommandLine::SESSION);
+
+            return;
+        }
+
+        $result = $shell->run(TmuxCommandLine::install());
+
+        if ($this->pty->isPresent($shell)) {
+            $item->appendInstallLog(VmInstallStep::ConsoleReady, TmuxCommandLine::SESSION);
+
+            return;
+        }
+
+        // The machine's own last words, bounded: an apt failure is worth reading, and a whole apt
+        // transcript in an install log is not.
+        $item->appendInstallLog(VmInstallStep::ConsoleUnavailable, mb_substr(trim($result->output), -400), ok: false);
     }
 
     /** @return list<string> */

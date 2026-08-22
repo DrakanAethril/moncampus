@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\ProxmoxHost;
 use App\Entity\VmBatch;
 use App\Entity\VmBatchItem;
 use App\Enum\VmBatchItemStatus;
@@ -18,6 +19,60 @@ class VmBatchItemRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, VmBatchItem::class);
+    }
+
+    /**
+     * The batch row that describes one machine, found from the machine rather than from its batch.
+     *
+     * Which is the direction the console needs: it is handed (host, node, vmid) and has to answer
+     * « where does this machine live and what is it called », without knowing - or caring - which
+     * deployment produced it. Scoped by the batch's host rather than by VMID alone, because a VMID
+     * is only unique within a cluster.
+     */
+    public function findOneForMachine(ProxmoxHost $host, int $vmid): ?VmBatchItem
+    {
+        return $this->createQueryBuilder('i')
+            ->join('i.batch', 'b')
+            ->andWhere('b.host = :host')
+            ->andWhere('i.vmid = :vmid')
+            ->setParameter('host', $host)
+            ->setParameter('vmid', $vmid)
+            ->orderBy('i.id', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    /**
+     * Which batch each deployed machine belongs to, for the whole fleet at once.
+     *
+     * The machines list needs the answer for every row it draws, and asking it row by row would be
+     * one query per machine on a screen that already waits on every hypervisor. Keyed by host and
+     * then by VMID because a VMID is only unique within a cluster - the same reasoning that scopes
+     * findOneForMachine() by host rather than by number alone.
+     *
+     * @return array<int, array<int, array{id: int, label: string}>> host id => vmid => batch
+     */
+    public function findBatchesByHostAndVmid(): array
+    {
+        /** @var list<array{hostId: int, vmid: int, batchId: int, batchLabel: string}> $rows */
+        $rows = $this->createQueryBuilder('i')
+            ->select('IDENTITY(b.host) AS hostId', 'i.vmid AS vmid', 'b.id AS batchId', 'b.label AS batchLabel')
+            ->join('i.batch', 'b')
+            ->andWhere('i.vmid IS NOT NULL')
+            ->orderBy('i.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $map = [];
+
+        foreach ($rows as $row) {
+            // Latest wins, the way findOneForMachine() orders by id DESC: a VMID reused by a later
+            // deployment belongs to that one, not to the batch that first held the number.
+            $map[$row['hostId']][$row['vmid']] = ['id' => $row['batchId'], 'label' => $row['batchLabel']];
+        }
+
+        return $map;
     }
 
     /**

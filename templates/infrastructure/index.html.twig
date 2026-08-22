@@ -73,21 +73,18 @@
                 <span class="cm-tile__desc">{{ 'infrastructureHostsTileText'|trans }}</span>
                 <span class="cm-tile__go">{{ 'infrastructureHostsTileGo'|trans({'%count%': hostCount}) }} &rarr;</span>
             </a>
-            {% set firstHost = infrastructure_default_host() %}
-            {% if firstHost %}
-                <a href="{{ path('app_infrastructure_guests', {id: firstHost.id}) }}" class="cm-tile">
-                    <span class="cm-tile__title">{{ 'infrastructureGuestsTileTitle'|trans }}</span>
-                    <span class="cm-tile__desc">{{ 'infrastructureGuestsTileText'|trans }}</span>
-                    <span class="cm-tile__go">{{ 'infrastructureGuestsTileGo'|trans({'%count%': guestCount}) }} &rarr;</span>
-                </a>
-            {% endif %}
-            {% if firstHost %}
-                <a href="{{ path('app_infrastructure_images', {id: firstHost.id}) }}" class="cm-tile">
-                    <span class="cm-tile__title">{{ 'infrastructureImagesTileTitle'|trans }}</span>
-                    <span class="cm-tile__desc">{{ 'infrastructureImagesTileText'|trans }}</span>
-                    <span class="cm-tile__go">{{ 'infrastructureImagesTileGo'|trans }} &rarr;</span>
-                </a>
-            {% endif %}
+            {# Toujours présentes, désormais : les deux écrans lisent tous les hôtes déclarés et
+               n'ont plus besoin qu'on leur en désigne un. #}
+            <a href="{{ path('app_infrastructure_guests') }}" class="cm-tile">
+                <span class="cm-tile__title">{{ 'infrastructureGuestsTileTitle'|trans }}</span>
+                <span class="cm-tile__desc">{{ 'infrastructureGuestsTileText'|trans }}</span>
+                <span class="cm-tile__go">{{ 'infrastructureGuestsTileGo'|trans({'%count%': guestCount}) }} &rarr;</span>
+            </a>
+            <a href="{{ path('app_infrastructure_images') }}" class="cm-tile">
+                <span class="cm-tile__title">{{ 'infrastructureImagesTileTitle'|trans }}</span>
+                <span class="cm-tile__desc">{{ 'infrastructureImagesTileText'|trans }}</span>
+                <span class="cm-tile__go">{{ 'infrastructureImagesTileGo'|trans }} &rarr;</span>
+            </a>
             <a href="{{ path('app_infrastructure_ip_ranges') }}" class="cm-tile">
                 <span class="cm-tile__title">{{ 'infrastructureAddressesTileTitle'|trans }}</span>
                 <span class="cm-tile__desc">{{ 'infrastructureAddressesTileText'|trans }}</span>

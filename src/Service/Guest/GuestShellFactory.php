@@ -48,10 +48,16 @@ class GuestShellFactory
     }
 
     /**
+     * @param ?int $timeoutSeconds how long a command on this session may run, when the default five
+     *                             minutes is the wrong answer. The console is why it is a parameter:
+     *                             an exchange must hand the worker back in ten seconds, and a
+     *                             five-minute ceiling on a request nobody is waiting on any more is
+     *                             a worker held for five minutes.
+     *
      * @throws PlatformKeyUnavailableException when no key exists at all
      * @throws GuestUnreachableException       when no key opens a session
      */
-    public function open(string $ip, string $username = self::SERVICE_ACCOUNT, int $port = 22): GuestShell
+    public function open(string $ip, string $username = self::SERVICE_ACCOUNT, int $port = 22, ?int $timeoutSeconds = null): GuestShell
     {
         $keys = $this->keyProvider->usableKeys();
 
@@ -62,7 +68,13 @@ class GuestShellFactory
         $lastFailure = new GuestUnreachableException(\sprintf('No platform key opens a session on %s.', $ip));
 
         foreach ($keys as $key) {
-            $session = new GuestSshSession($ip, $username, $this->keyProvider->privateKey($key), $port);
+            $session = new GuestSshSession(
+                $ip,
+                $username,
+                $this->keyProvider->privateKey($key),
+                $port,
+                $timeoutSeconds ?? GuestSshSession::DEFAULT_TIMEOUT_SECONDS,
+            );
 
             try {
                 // Not `true`: a session can open and still run nothing at all. The marker is the

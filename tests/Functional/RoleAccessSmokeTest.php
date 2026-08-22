@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional;
 
+use App\Entity\GuestAccount;
+use App\Entity\IpRange;
 use App\Entity\Program;
 use App\Entity\Progression;
+use App\Entity\ProxmoxHost;
 use App\Entity\Topic;
 use App\Entity\TopicGroup;
 use App\Entity\User;
+use App\Entity\VmBatch;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -38,6 +42,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
     private User $admin;
     private User $tutor;
     private Program $program;
+    private int $studentAccountId;
+    private int $teacherAccountId;
+    private int $batchId;
 
     protected function setUp(): void
     {
@@ -49,6 +56,50 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->tutor = $this->createUser(['ROLE_USER', 'ROLE_TUTOR'], 'smoke.tutor');
 
         $this->program = $this->createProgram([$this->student], [$this->teacher], $this->admin);
+        $this->createMachineAccounts();
+    }
+
+    /**
+     * One machine of one batch, with an account for the student and one for the teacher.
+     *
+     * Built here rather than left out because the console's refusal cannot be proved against a
+     * machine that does not exist: /console/{id} on a missing account answers 404, which would make
+     * the line below pass for the wrong reason. With a real account owned by the student, the 403
+     * is App\Security\Voter\GuestConsoleVoter's, which is the thing under test.
+     */
+    private function createMachineAccounts(): void
+    {
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+
+        $host = new ProxmoxHost('Hôte de test', 'pve-test', 'svc');
+        $range = new IpRange('Plage de test', $host, '10.42.7.0/24', '10.42.7.254', '10.42.7.10', '10.42.7.200');
+        $batch = new VmBatch('Lot de test', $this->program, $host, $range, 9000, 'pve');
+
+        foreach ([$host, $range, $batch] as $row) {
+            // AuditableTrait: created_by is NOT NULL on all three.
+            $row->setCreatedBy($this->admin);
+            $entityManager->persist($row);
+        }
+
+        foreach ([[$this->student, 'smoke-student'], [$this->teacher, 'smoke-teacher']] as [$owner, $login]) {
+            $account = new GuestAccount($host, 'pve', 1203, $login);
+            $account->setUser($owner);
+            $account->setBatch($batch);
+            $entityManager->persist($account);
+        }
+
+        $entityManager->flush();
+
+        $this->batchId = $batch->getId() ?? 0;
+        $accounts = $entityManager->getRepository(GuestAccount::class)->findBy(['batch' => $batch]);
+
+        foreach ($accounts as $account) {
+            if ($account->getUser() === $this->student) {
+                $this->studentAccountId = $account->getId() ?? 0;
+            } else {
+                $this->teacherAccountId = $account->getId() ?? 0;
+            }
+        }
     }
 
     public function testStudentScreens(): void
@@ -517,11 +568,18 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/infrastructure',
             '/infrastructure/hosts',
             '/infrastructure/hosts/new',
+            // Machines et Images ne sont plus les écrans d'un hôte : ils lisent tous les
+            // hôtes déclarés, donc ils ont une URL fixe et ont leur place ici.
+            '/infrastructure/guests',
+            '/infrastructure/images',
             '/infrastructure/operations',
             '/infrastructure/ip-ranges',
             '/infrastructure/ip-ranges/new',
             '/infrastructure/batches',
             '/infrastructure/batches/new',
+            // Le journal des consoles : la trace d'une porte qui ouvre un shell root-capable, donc
+            // aussi fermée que le reste de l'espace - et pas même ouverte au personnel.
+            '/infrastructure/console-sessions',
         ];
 
         $this->assertScreens($this->admin, array_fill_keys($screens, 200));
@@ -574,8 +632,57 @@ class RoleAccessSmokeTest extends FunctionalTestCase
     }
 
     /**
-     * @param array<string, int> $expectations path => expected status code
+     * The console, one line per role - and the student's line is the one this table exists for.
+     *
+     * `/console/{id}` is reached *through an account*, so the id here is a real GuestAccount owned
+     * by the person in question: a 403 on a missing row would prove nothing. The four verdicts are
+     * the whole access rule of the feature:
+     *
+     *   - a **student** who owns the account is refused, because they do not teach the class. They
+     *     already have a shell on that machine - their own - and a console opens on `moncampus`,
+     *     which has sudo.
+     *   - an **administrator** is refused *here*, and that is deliberate: their door is
+     *     /infrastructure, guarded by access_control. The voter has no ROLE_STAFF bypass and must
+     *     never gain one.
+     *   - a **tutor** has no account at all, so there is nothing to be refused about - 403 too.
+     *   - a **teacher** of the class who owns the account gets in.
      */
+    public function testOnlyATeacherOfTheClassOpensAConsoleOnItsMachines(): void
+    {
+        $this->assertScreens($this->student, ['/console/'.$this->studentAccountId => 403]);
+        $this->assertScreens($this->tutor, ['/console/'.$this->studentAccountId => 403]);
+        $this->assertScreens($this->admin, ['/console/'.$this->studentAccountId => 403]);
+        $this->assertScreens($this->admin, ['/console/'.$this->teacherAccountId => 403]);
+        // The teacher's own account on the same machine: the door opens. The screen it lands on
+        // says the machine has no known address, because this fixture allocates none - which is a
+        // console refusing for the right reason, not a door refusing.
+        $this->assertScreens($this->teacher, ['/console/'.$this->teacherAccountId => 200]);
+
+        // « Mes extraits de commande » suit la même porte : c'est la moitié personnelle de la
+        // palette d'une console, et un étudiant n'en ouvre aucune.
+        $this->assertScreens($this->teacher, ['/console/snippets' => 200]);
+        $this->assertScreens($this->admin, ['/console/snippets' => 200]);
+        $this->assertScreens($this->student, ['/console/snippets' => 403]);
+        $this->assertScreens($this->tutor, ['/console/snippets' => 403]);
+    }
+
+    /**
+     * Le mur de consoles : la classe entière, en lecture seule.
+     *
+     * Il suit les deux portes de la console sans en inventer une troisième — enseignant de la
+     * formation du lot, ou administrateur — et rien d'autre. Un étudiant du lot n'y entre pas : ce
+     * qu'il verrait, c'est l'écran de ses camarades.
+     */
+    public function testTheConsoleWallFollowsTheSameTwoDoors(): void
+    {
+        $wall = '/console/batch/'.$this->batchId;
+
+        $this->assertScreens($this->teacher, [$wall => 200]);
+        $this->assertScreens($this->admin, [$wall => 200]);
+        $this->assertScreens($this->student, [$wall => 403]);
+        $this->assertScreens($this->tutor, [$wall => 403]);
+    }
+
     private function assertScreens(User $user, array $expectations): void
     {
         $this->client->loginUser($user);

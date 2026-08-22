@@ -294,6 +294,41 @@ Notes:
   `.env.prod.local.example`). Without them the command exits cleanly with a warning, so installing
   the cron entry before the credentials is harmless.
 
+## Retention: platform log and console transcripts (cron)
+
+`app:purge-platform-activity` deletes two families of rows that nothing else ever removes:
+
+- **`PlatformActivity`, beyond 12 months.** One row per login. Untidy if it grows for ever, and
+  nothing worse.
+- **`ConsoleSession`, beyond 90 days** - and with it the transcript each one carries, which is up to
+  256 KiB of what was on somebody's screen during a session opened on an account with passwordless
+  `sudo`.
+
+**Volume is not the argument.** A transcript measures a couple of kibibytes in practice, and a year
+of them would be a handful of megabytes. The argument is that the journal at
+`/infrastructure/console-sessions` prints « Conservation 90 jours » at the top of the screen: if this
+command never runs, that line is a promise nothing keeps, and an interface that misstates what it
+does is worse than one that keeps less.
+
+Once a day is plenty, off-peak. On the production host, as the user that owns the deploy directory:
+
+```cron
+15 3 * * * cd /srv/moncampus && docker compose -f compose.yaml -f compose.prod.yaml exec -T php bin/console app:purge-platform-activity >> /var/log/moncampus-purge.log 2>&1
+```
+
+Notes:
+
+- **Count before deleting the first time.** `--dry-run` reports what each threshold would remove
+  without touching anything, which on a host where this has never run is worth reading once: the
+  bulk of it will be `PlatformActivity` rows nobody has purged since the table was created.
+- **Both retentions are options**, `--months` and `--console-days`, so a shorter or longer window is
+  a crontab edit rather than a deploy. The defaults are the documented ones.
+- **No `flock` needed, and no `LockableTrait` either** - unlike the three `app:mail:*` commands, this
+  one does not lock itself. At one run a day two of them cannot meet; that is the only reason it is
+  safe, so a schedule tighter than the command's own runtime would need the lock added first.
+- Deleting is all it does: nothing is written, nothing is announced, and a run on an empty database
+  exits in a few milliseconds. Installing the entry before there is anything to purge is harmless.
+
 ## Disabling HTTPS
 
 Alternatively, if you don't want to expose an HTTPS server but only an HTTP one,

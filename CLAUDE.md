@@ -53,7 +53,10 @@ docker compose -f compose.yaml -f compose.prod.yaml build --pull --no-cache
 docker compose -f compose.yaml -f compose.prod.yaml up --wait
 ```
 
-Application commands (`src/Command/`), all cron-driven in production:
+Application commands (`src/Command/`). **They are not all cron-driven** — the table says which is
+which, and the distinction is worth keeping: a one-off, a diagnostic and a scheduled task each fail
+differently when nobody runs them. Only `app:mail:*` and `app:vm-batch:advance` are actually wired to
+cron on the production host today; `docs/production.md` carries the crontab lines.
 
 | Command | Role |
 |---|---|
@@ -63,7 +66,7 @@ Application commands (`src/Command/`), all cron-driven in production:
 | `app:mail:backfill-student-aliases` | One-off alias generation for existing students |
 | `app:import-edt-timetable`, `app:import-edt-periods` | Timetable import from the school's EDT export |
 | `app:import-notion-sequences` | One-off import of pedagogical sequences from a Notion export |
-| `app:purge-platform-activity` | Retention on `PlatformActivity` |
+| `app:purge-platform-activity` | Retention: 12 months on `PlatformActivity`, and **90 days on `ConsoleSession`** with the screen transcripts it carries. **Meant to be cron (once a day), and was still not wired to one on 2026-08-22.** That gap matters more since the machine console: the journal at `/infrastructure/console-sessions` prints « Conservation 90 jours » on screen, so a command nobody runs turns that line into a promise nothing keeps. Volume is *not* the argument — a transcript measures a couple of kibibytes — the retention decision is. See `docs/production.md` |
 | `app:antivirus:check` | **Diagnostic, not cron.** Scans a clean file and the EICAR test string through the configured `ANTIVIRUS_DSN`; exits non-zero unless uploads are genuinely being refused. The state it exists for is the silent one — a blank DSN disables scanning without announcing it anywhere |
 | `app:help:sync-content` | Creates the missing help sections/articles from `App\Help\HelpContentCatalog`; never overwrites what an admin has edited (`--refresh` also rewrites the untouched ones). Run it once after a deploy that adds catalogue entries |
 | `app:vm-batch:advance` | Continues every VM deployment already under way, one machine per pass. **Cron every minute.** It is what makes a deployment survive the browser tab that started it — without it the batch screen's own loop is the only thing pressing, and a closed tab leaves machines cloned and never configured. It never *starts* a deployment: a batch whose machines are all still `planned` is a plan, not an instruction |

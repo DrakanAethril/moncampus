@@ -39,3 +39,4 @@
 /.php-cs-fixer.php
 /.php-cs-fixer.cache
 ###< friendsofphp/php-cs-fixer ###
+docker/guest-mock/authorized_keys.local

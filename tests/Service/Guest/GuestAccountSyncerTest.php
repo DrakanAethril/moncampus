@@ -442,6 +442,11 @@ class RecordingShell implements GuestShell
         return new GuestCommandResult($this->output, 0);
     }
 
+    public function runAsSelf(string $command): GuestCommandResult
+    {
+        return $this->run($command);
+    }
+
     public function disconnect(): void
     {
     }

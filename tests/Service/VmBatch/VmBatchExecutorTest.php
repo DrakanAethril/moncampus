@@ -19,9 +19,11 @@ use App\Enum\VmBatchItemStatus;
 use App\Enum\VmInstallStep;
 use App\Repository\UserRepository;
 use App\Repository\VmBatchItemRepository;
+use App\Service\Console\GuestPty;
 use App\Service\Guest\AccountPlan;
 use App\Service\Guest\GuestAccountService;
 use App\Service\Guest\GuestCommandFailedException;
+use App\Service\Guest\GuestCommandResult;
 use App\Service\Guest\GuestShell;
 use App\Service\Guest\GuestShellFactory;
 use App\Service\Guest\GuestTimeSync;
@@ -31,8 +33,11 @@ use App\Service\Guest\PostInstallRunner;
 use App\Service\Guest\UnixLogin;
 use App\Service\Network\IpAllocator;
 use App\Service\Proxmox\GuestCreator;
+use App\Service\Proxmox\GuestPowerRunner;
 use App\Service\Proxmox\ProxmoxClient;
 use App\Service\Proxmox\ProxmoxClientFactory;
+use App\Service\Proxmox\ProxmoxGuest;
+use App\Service\Proxmox\ProxmoxInventory;
 use App\Service\Proxmox\ProxmoxOperationTracker;
 use App\Service\Proxmox\ProxmoxUnavailableException;
 use Doctrine\ORM\EntityManagerInterface;
@@ -40,7 +45,8 @@ use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 
 /**
- * The deployment chain, phase by phase: clone → configure → start → reachable → accounts.
+ * The deployment chain, phase by phase: clone → configure → start → reachable → accounts →
+ * shutdown.
  *
  * Tested with doubles rather than against a hypervisor, which is the whole reason GuestShell is a
  * one-method interface. Two properties matter more than the happy path and are the reason this file
@@ -61,6 +67,8 @@ class VmBatchExecutorTest extends TestCase
     private ProxmoxOperationTracker&Stub $tracker;
     private GuestShellFactory&Stub $shells;
     private PostInstallRunner&Stub $postInstall;
+    private ProxmoxInventory&Stub $inventory;
+    private GuestPowerRunner&Stub $power;
 
     /** Left unset by default: the real one only builds a command, and no shell here executes it. */
     private ?GuestTimeSync $timeSync = null;
@@ -77,6 +85,14 @@ class VmBatchExecutorTest extends TestCase
         $this->tracker = $this->createStub(ProxmoxOperationTracker::class);
         $this->shells = $this->createStub(GuestShellFactory::class);
         $this->postInstall = $this->createStub(PostInstallRunner::class);
+        // Every machine these tests build, seen as running - so the last step of a pass, switching
+        // it off, takes its ordinary path rather than the "the host has no such machine" branch.
+        $this->inventory = $this->createStub(ProxmoxInventory::class);
+        $this->inventory->method('guests')->willReturn(array_map(
+            static fn (int $vmid): ProxmoxGuest => new ProxmoxGuest($vmid, \sprintf('tp-%d', $vmid), 'pve', ProxmoxGuest::TYPE_QEMU, 'running', false, null, 2, 0.1, 2048, 512, 20, 60, null),
+            [210, ...range(9000, 9030)],
+        ));
+        $this->power = $this->createStub(GuestPowerRunner::class);
         $this->clientFactory = null;
     }
 
@@ -251,7 +267,7 @@ class VmBatchExecutorTest extends TestCase
         [$batch, $item] = $this->batchWithItem(VmBatchItemStatus::Created);
         $item->setIpAllocation($this->allocation());
         $item->setVmid(210);
-        $this->shells->method('open')->willReturn($this->createStub(GuestShell::class));
+        $this->shells->method('open')->willReturn($this->guestShell());
         $accounts = $this->createMock(GuestAccountService::class);
         $accounts->method('refresh')->willReturn(new AccountPlan([], [], [], []));
         $this->accounts = $accounts;
@@ -313,6 +329,80 @@ class VmBatchExecutorTest extends TestCase
     }
 
     /**
+     * The last link of the chain, and the one somebody will call a bug: a machine that has just
+     * been provisioned is switched off, not left running. It was started to be configured, and the
+     * person it was built for starts it again when they need it.
+     */
+    public function testAProvisionedMachineIsSwitchedOff(): void
+    {
+        [$batch, $item] = $this->readyMachine();
+
+        $power = $this->createMock(GuestPowerRunner::class);
+        $power->expects(self::once())->method('run')
+            // Shutdown and never stop: the machine is asked to go down, not cut off.
+            ->with(self::anything(), self::anything(), ProxmoxAction::Shutdown, self::anything())
+            ->willReturn($this->operation(ProxmoxOperationStatus::Succeeded, ProxmoxAction::Shutdown));
+        $this->power = $power;
+
+        $this->deployOnce($batch, $item);
+
+        $steps = array_map(static fn (array $entry): VmInstallStep => $entry['step'], $item->getInstallLogEntries());
+
+        self::assertContains(VmInstallStep::ShutdownRequested, $steps);
+        self::assertSame(VmBatchItemStatus::Provisioned, $item->getStatus());
+    }
+
+    /**
+     * Red in the log, and the machine still finishes - the same bargain as the clock. Everything
+     * that was asked for is on it, and being left running is not a defect worth sending the next
+     * pass back through the accounts and the post-installation script.
+     */
+    public function testAShutdownThatIsRefusedDoesNotFailTheMachine(): void
+    {
+        [$batch, $item] = $this->readyMachine();
+
+        $power = $this->createStub(GuestPowerRunner::class);
+        $power->method('run')->willThrowException(new ProxmoxUnavailableException('proxmoxRefusalActionNotAllowed'));
+        $this->power = $power;
+
+        $result = $this->deployOnce($batch, $item);
+
+        $failed = array_values(array_filter(
+            $item->getInstallLogEntries(),
+            static fn (array $entry): bool => VmInstallStep::ShutdownFailed === $entry['step'],
+        ));
+
+        self::assertCount(1, $failed);
+        self::assertFalse($failed[0]['ok']);
+        self::assertSame(VmBatchItemStatus::Provisioned, $item->getStatus());
+        self::assertSame(1, $result['progressed']);
+    }
+
+    /**
+     * A machine that is up, answering, and whose accounts are already in line - the state a pass
+     * finds it in when the only thing left to do is switch it off.
+     *
+     * Its range names no gateway, so the clock step stands aside: what these tests are about is the
+     * step after it.
+     *
+     * @return array{VmBatch, VmBatchItem}
+     */
+    private function readyMachine(): array
+    {
+        [$batch, $item] = $this->batchWithItem(VmBatchItemStatus::Created);
+        $item->setIpAllocation($this->allocation());
+        $item->setVmid(210);
+
+        $this->shells->method('open')->willReturn($this->guestShell());
+        $accounts = $this->createStub(GuestAccountService::class);
+        $accounts->method('refresh')->willReturn(new AccountPlan([], [], [], []));
+        $accounts->method('apply')->willReturn(['operation' => $this->operation(ProxmoxOperationStatus::Succeeded), 'passwords' => []]);
+        $this->accounts = $accounts;
+
+        return [$batch, $item];
+    }
+
+    /**
      * A machine that is up, answering, and whose accounts are already in line - so the only thing
      * a pass has left to do is the clock.
      *
@@ -331,7 +421,7 @@ class VmBatchExecutorTest extends TestCase
         $item->setVmid(210);
         $batch->addItem($item);
 
-        $this->shells->method('open')->willReturn($this->createStub(GuestShell::class));
+        $this->shells->method('open')->willReturn($this->guestShell());
         $accounts = $this->createStub(GuestAccountService::class);
         $accounts->method('refresh')->willReturn(new AccountPlan([], [], [], []));
         $accounts->method('apply')->willReturn(['operation' => $this->operation(ProxmoxOperationStatus::Succeeded), 'passwords' => []]);
@@ -345,7 +435,7 @@ class VmBatchExecutorTest extends TestCase
         [$batch, $item] = $this->batchWithItem(VmBatchItemStatus::Created);
         $item->setIpAllocation($this->allocation());
         $item->setVmid(210);
-        $this->shells->method('open')->willReturn($this->createStub(GuestShell::class));
+        $this->shells->method('open')->willReturn($this->guestShell());
         $this->accounts->method('refresh')->willReturn(new AccountPlan([], [], [], []));
         $this->accounts->method('apply')->willReturn([
             'operation' => $this->operation(ProxmoxOperationStatus::Succeeded),
@@ -380,7 +470,7 @@ class VmBatchExecutorTest extends TestCase
         [$batch, $item] = $this->batchWithItem(VmBatchItemStatus::Created);
         $item->setIpAllocation($this->allocation());
         $item->setVmid(210);
-        $this->shells->method('open')->willReturn($this->createStub(GuestShell::class));
+        $this->shells->method('open')->willReturn($this->guestShell());
         $this->accounts->method('refresh')->willReturn(new AccountPlan([], [], [], []));
         $this->accounts->method('apply')->willReturn(['operation' => $this->operation(ProxmoxOperationStatus::Succeeded), 'passwords' => []]);
         $postInstall = $this->createMock(PostInstallRunner::class);
@@ -574,14 +664,32 @@ class VmBatchExecutorTest extends TestCase
             $this->tracker,
             $this->clientFactory(),
             $this->shells,
+            $this->inventory,
+            $this->power,
             $this->postInstall,
             $this->timeSync ?? new GuestTimeSync(),
             new UnixLogin(),
+            new GuestPty(),
             $this->createStub(EntityManagerInterface::class),
             $budgetSeconds,
         );
 
         return $executor->run($batch, null);
+    }
+
+    /**
+     * A machine that answers « tmux est là ».
+     *
+     * A bare stub cannot: GuestCommandResult is final, so PHPUnit has nothing to hand back from
+     * runAsSelf() - and the console-preparation step of a pass calls it on every machine.
+     */
+    private function guestShell(): GuestShell
+    {
+        $shell = $this->createStub(GuestShell::class);
+        $shell->method('runAsSelf')->willReturn(new GuestCommandResult('ready', 0));
+        $shell->method('run')->willReturn(new GuestCommandResult('', 0));
+
+        return $shell;
     }
 
     private function clientFactory(): ProxmoxClientFactory
@@ -624,9 +732,12 @@ class VmBatchExecutorTest extends TestCase
             $this->tracker,
             $this->clientFactory(),
             $this->shells,
+            $this->inventory,
+            $this->power,
             $this->postInstall,
             $this->timeSync ?? new GuestTimeSync(),
             new UnixLogin(),
+            new GuestPty(),
             $this->createStub(EntityManagerInterface::class),
             60.0,
         );
