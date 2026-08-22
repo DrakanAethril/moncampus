@@ -26,6 +26,43 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.08.22'
+      date: '2026-08-22'
+      summary: "Les enseignants ouvrent désormais un terminal sur les machines virtuelles de leurs classes, depuis le navigateur et sans rien installer : ils voient l'écran de toute la classe d'un coup d'œil, envoient une commande à toutes les machines à la fois et reportent la séance dans le cahier de texte. Les machines sont par ailleurs livrées éteintes, et leurs listes d'administration se filtrent au lieu de se parcourir hôte par hôte."
+      entries:
+          - type: nouveaute
+            title: 'Un terminal sur ses machines virtuelles'
+            detail: "Depuis « Mes machines virtuelles », un enseignant ouvre un terminal sur les machines dont il détient un compte, sans rien installer sur son poste. L'accès est réservé aux enseignants de la classe à qui les machines sont destinées, et chaque ouverture est tracée."
+          - type: nouveaute
+            title: "Voir où en est toute la classe"
+            detail: "Un mur en lecture seule montre l'écran de chacune des machines du lot, rafraîchi tout seul. Un clic ouvre celle qu'on veut regarder de près. Une machine éteinte ou injoignable y est nommée comme telle sans empêcher les autres de s'afficher."
+          - type: nouveaute
+            title: "Envoyer une commande à toutes les machines d'un lot"
+            detail: "Installer la même chose partout ne demande plus d'ouvrir chaque machine une par une. La diffusion s'arme explicitement, le terminal change alors d'aspect pour qu'on ne la confonde pas avec une session ordinaire, chaque envoi nomme le nombre de machines concernées avant de partir, et l'armement se relâche seul après dix minutes."
+          - type: nouveaute
+            title: 'Une palette de commandes et des extraits partagés'
+            detail: "Ses propres extraits, ceux que ses collègues ont partagés, un catalogue fourni avec la plateforme et ce qui a déjà été tapé sur la machine, au même endroit. Une commande s'insère pour être relue avant d'être lancée, et la dernière commande passée s'enregistre comme extrait sans quitter l'écran."
+          - type: nouveaute
+            title: 'Envoyer et récupérer un fichier depuis le terminal'
+            detail: "Un fichier part vers la machine ou en revient sans passer par un autre outil. Ce qui remonte atterrit dans la bibliothèque de fichiers de la personne, dans un dossier au nom du lot."
+          - type: nouveaute
+            title: 'Reporter la séance dans le cahier de texte'
+            detail: "Le cahier de texte du jour s'ouvre pré-rempli des commandes de la séance — les commandes, pas les pages de sortie qu'elles ont produites. Rien n'est enregistré tant que la personne n'a pas validé, et un cahier déjà rempli n'est jamais écrasé."
+          - type: modification
+            title: 'Les machines sont livrées éteintes'
+            detail: "Une machine était démarrée pour être configurée, puis laissée allumée : une classe entière montée un après-midi tournait jusqu'à ce que quelqu'un s'en aperçoive. C'est désormais la personne à qui elle est destinée qui la démarre."
+          - type: modification
+            title: "L'adresse d'une machine se copie d'un clic"
+            detail: "Elle s'affiche sous le nom de la machine, avec un bouton pour la recopier."
+          - type: modification
+            title: "Les listes de machines et d'images se filtrent"
+            detail: "Elles couvrent maintenant tous les serveurs de virtualisation à la fois, avec un filtre par serveur, par état et par lot d'installation, et une pagination. Le menu qui obligeait à choisir un serveur avant de voir quoi que ce soit disparaît, et la liste des installations indique la date de création."
+          - type: fix
+            title: 'Les tailles annoncées en gibioctets'
+            detail: "Les fiches de machines écrivaient « Go » sur des valeurs qui sont des gibioctets, comme le reste de l'application le dit déjà."
+          - type: interne
+            title: 'Rétention et documentation des tâches planifiées'
+            detail: "La documentation de production distinguait mal les tâches réellement planifiées des diagnostics et des imports ponctuels, et la purge des données de rétention n'était branchée nulle part."
     - version: '2026.08.21.3'
       date: '2026-08-21'
       summary: "Les machines virtuelles de chacun s'affichent désormais en fiches : l'état, les caractéristiques, les comptes ouverts sur la machine et le choix du mot de passe au même endroit. Côté installation, l'écran d'un déploiement se met à jour dès le premier clic et les actions d'une machine tiennent dans une seule liste."
