@@ -44,6 +44,11 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  *
  * There is deliberately **no plain POST straight from the menu**: sharing has four decisions in it,
  * and a one-click share would be a share to the wrong class.
+ *
+ * **A folder is shared exactly like a file**, and the whole difference is on the reading side: the
+ * row points at the folder, and the student opens a listing of its subtree rather than a document.
+ * The share is therefore a reference to a place, not an enumeration of what was in it - see
+ * shareableNode() below and App\Controller\StudentSharedDocumentController.
  */
 #[IsGranted(FileLibraryVoter::VIEW)]
 #[Route(path: '/tools/file-library')]
@@ -168,14 +173,20 @@ class FileLibraryShareController extends AbstractController
     }
 
     /**
-     * A folder is not shared, and neither is a file in the corbeille: both would put a row in front
-     * of a student that resolves to nothing.
+     * **A folder is shared as a whole**, with everything under it at any depth: the row names the
+     * folder, and the student's screen lists its content and its subfolders from it. Nothing is
+     * copied and nothing is enumerated at share time - a file dropped into the folder tomorrow is
+     * part of the share by being where it is, which is the only reading of « partager un dossier »
+     * that stays true a week later.
+     *
+     * A node in the corbeille is refused either way: it would put a row in front of a student that
+     * resolves to nothing.
      */
     private function shareableNode(int $nodeId): FileLibraryNode
     {
         $node = $this->loadNode($this->nodes, $nodeId, FileLibraryVoter::EDIT);
 
-        if (null === $node || !$node->isFile() || $node->isDeleted()) {
+        if (null === $node || $node->isDeleted()) {
             throw $this->createNotFoundException();
         }
 

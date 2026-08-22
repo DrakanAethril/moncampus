@@ -7623,6 +7623,9 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-share__scope { display: flex; flex-direction: column; gap: 20px; }
 .cm-share__scope[hidden] { display: none; }
 .cm-share__help { margin: 0 0 8px; font-size: 12px; color: var(--cm-faint); }
+/* What sharing a folder means, above the form. Gold rather than grey: it is not help text about
+   a field, it is the scope of what the teacher is about to do. */
+.cm-share__notice { margin: 0 0 18px; padding: 10px 14px; border-radius: 8px; background: var(--cm-gold-bg); border: 1px solid var(--cm-gold); font: 400 13px var(--cm-font-ui); color: var(--cm-gold-tx); }
 .cm-share__checks { display: flex; flex-wrap: wrap; gap: 6px 20px; }
 .cm-share__window { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; }
 .cm-share__window[hidden] { display: none; }

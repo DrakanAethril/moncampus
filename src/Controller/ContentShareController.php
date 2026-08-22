@@ -32,6 +32,7 @@ use App\Service\ContentShareComposer;
 use App\Service\ContentShareQuotaException;
 use App\Service\FileLibraryNodeDuplicator;
 use App\Service\FileLibraryQuota;
+use App\Service\FileLibrarySubtree;
 use App\Service\FileUploadService;
 use App\Service\PostValue;
 use App\Service\ProgressionTrameImporter;
@@ -67,6 +68,9 @@ class ContentShareController extends AbstractController
         // The recipient's own séquences: the list a lone séance is offered to land in, and the check
         // that the one they submitted is theirs.
         private readonly SequenceTemplateRepository $sequences,
+        // A shared folder is listed the same way here and on the student's « Documents partagés »,
+        // ordering included - one reading of "what is in this folder", in one place.
+        private readonly FileLibrarySubtree $subtree,
     ) {
     }
 
@@ -633,7 +637,7 @@ class ContentShareController extends AbstractController
 
         // A node reached through a share must be **inside** what was shared. Without this the id in
         // the query string would open any file of the author's library.
-        if ($node->getId() !== $shared->getId() && !$this->isInside($node, $shared)) {
+        if ($node->getId() !== $shared->getId() && !$node->isDescendantOf($shared)) {
             throw $this->createNotFoundException();
         }
 
@@ -645,22 +649,11 @@ class ContentShareController extends AbstractController
             return $this->redirect($fileUploads->url($node->getStorageKey()));
         }
 
-        $rows = [];
-
-        foreach ($nodes->findSubtree($shared) as $member) {
-            if ($member->getId() !== $shared->getId() && !$member->isDeleted()) {
-                $rows[] = ['node' => $member, 'depth' => $member->getDepth() - $shared->getDepth() - 1];
-            }
-        }
-
-        usort($rows, static fn (array $a, array $b): int => [$a['node']->getPath(), $a['node']->getName()] <=> [$b['node']->getPath(), $b['node']->getName()]);
-
-        return $this->render('content_share/read_folder.html.twig', ['share' => $share, 'node' => $shared, 'rows' => $rows]);
-    }
-
-    private function isInside(FileLibraryNode $node, FileLibraryNode $ancestor): bool
-    {
-        return str_starts_with($node->getPath(), $ancestor->getPath().$ancestor->getId().'/');
+        return $this->render('content_share/read_folder.html.twig', [
+            'share' => $share,
+            'node' => $shared,
+            'rows' => $this->subtree->rows($shared),
+        ]);
     }
 
     /**

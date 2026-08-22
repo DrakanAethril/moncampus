@@ -44,7 +44,7 @@
         {# The count is a link, and it is the only way into the usage panel now: the row menu
            deliberately does not carry one, six entries being already the most a menu can hold and
            still be read. #}
-        {% if node.type.value == 'file' and row.usageCount > 0 %}
+        {% if row.usageCount > 0 %}
             <button type="button" class="cm-flib__use cm-flib__use--n" data-action="file-library#usages">{{ 'fileLibraryUsageCountLabel'|trans({'%count%': row.usageCount}) }}</button>
         {% else %}
             <span class="cm-flib__use">{{ 'fileLibraryNoUsageLabel'|trans }}</span>
@@ -52,15 +52,23 @@
     </td>
     <td class="cm-flib__menu">
         <div class="dropdown">
+            {# The table sits in a `.table-responsive`, whose `overflow: auto` is a clipping context:
+               a menu drawn inside it was cut at the bottom edge of the white card, and on a folder
+               holding one row the card is shorter than the menu, so half the entries were unreadable.
+               A `fixed` Popper strategy takes the menu out of that box - it is positioned against the
+               viewport and no ancestor's overflow can trim it - and the viewport boundary is what then
+               decides whether it opens downwards or flips up. Both are Bootstrap's own options; the
+               alternative was dropping the horizontal scroll the narrow screens need. #}
             <button type="button" class="cm-flib__kebab" data-bs-toggle="dropdown" aria-expanded="false"
+                    data-bs-boundary="viewport"
+                    data-bs-popper-config='{"strategy":"fixed"}'
                     aria-label="{{ 'fileLibraryRowMenuLabel'|trans }}">⋮</button>
             <ul class="dropdown-menu dropdown-menu-end">
                 {# First entry, above « Créer un travail »: putting a document at a class's disposal
                    asks nothing of the student, where a travail asks for something back - and the
-                   lighter of the two is the one reached first. #}
-                {% if node.type.value == 'file' %}
-                    <li><a class="dropdown-item" href="{{ path('app_file_library_node_share', {nodeId: node.id}) }}">{{ 'sharedDocumentShareAction'|trans }}</a></li>
-                {% endif %}
+                   lighter of the two is the one reached first. A folder carries it as well, and
+                   shares its whole subtree: the student opens a listing rather than a document. #}
+                <li><a class="dropdown-item" href="{{ path('app_file_library_node_share', {nodeId: node.id}) }}">{{ 'sharedDocumentShareAction'|trans }}</a></li>
                 {# « Partager à un collègue » - a different verb and a different audience from the row
                    above: that one puts a document at a class's disposal, this one hands the file to
                    another teacher, who then duplicates it into their own library
@@ -84,11 +92,13 @@
                     <li><button type="button" class="dropdown-item" data-action="file-library#replace">{{ 'fileLibraryReplaceAction'|trans }}</button></li>
                 {% endif %}
                 <li>
-                    {# A file that is used anywhere goes through the modal, which lists every usage by
-                       name before it removes them - « Supprimer partout (11 utilisations) ». A file
-                       used nowhere, and a folder, keep the plain confirmation: a modal that lists
-                       nothing is a modal nobody reads. #}
-                    {% if node.type.value == 'file' and row.usageCount > 0 %}
+                    {# A node that is used anywhere goes through the modal, which lists every usage
+                       by name before it removes them - « Supprimer partout (11 utilisations) ».
+                       A folder reaches it too since it can be shared with a class: deleting it
+                       withdraws the whole listing from that class, which nobody should discover
+                       afterwards. What is used nowhere keeps the plain confirmation: a modal that
+                       lists nothing is a modal nobody reads. #}
+                    {% if row.usageCount > 0 %}
                         <button type="button" class="dropdown-item text-danger" data-action="file-library#confirmDelete">{{ 'fileLibraryDeleteAction'|trans }}</button>
                     {% else %}
                         <form method="post" action="{{ path('app_file_library_node_delete', {nodeId: node.id}) }}">

@@ -7,7 +7,9 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Enum\SharedDocumentGrouping;
 use App\Enum\SharedDocumentOrdering;
+use App\Repository\FileLibraryNodeRepository;
 use App\Repository\SharedDocumentRepository;
+use App\Service\FileLibrarySubtree;
 use App\Service\FileUploadService;
 use App\Service\QueryValue;
 use App\Service\SharedDocumentAudience;
@@ -30,6 +32,13 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * The download route re-asks the audience question rather than trusting that the list produced the
  * link: a share whose window has just closed must stop resolving, and a share belonging to somebody
  * else's class must never resolve at all.
+ *
+ * **A share names a file or a folder**, and one route answers for both. A file hands over its
+ * address; a folder lists its whole content - subfolders included, at any depth - on a screen of its
+ * own, whose rows come back here with `?node=` to open one. That screen is not the teacher's library
+ * and must never become it: what was shared is one folder, so one folder is what is listed, and a
+ * node named in the query string is served only after being proved to sit inside it. The same shape
+ * as a folder shared to a colleague (App\Controller\ContentShareController), down to the check.
  */
 #[IsGranted('ROLE_STUDENT')]
 class StudentSharedDocumentController extends AbstractController
@@ -38,6 +47,7 @@ class StudentSharedDocumentController extends AbstractController
         private readonly SharedDocumentAudience $audience,
         private readonly SharedDocumentBoard $board,
         private readonly SharedDocumentRepository $sharedDocuments,
+        private readonly FileLibrarySubtree $subtree,
     ) {
     }
 
@@ -57,16 +67,42 @@ class StudentSharedDocumentController extends AbstractController
     }
 
     #[Route(path: '/my/shared-documents/{id}/open', name: 'app_student_shared_document_open', requirements: ['id' => '\d+'], methods: ['GET'])]
-    public function open(int $id, FileUploadService $fileUploads): Response
-    {
+    public function open(
+        int $id,
+        Request $request,
+        FileUploadService $fileUploads,
+        FileLibraryNodeRepository $nodes,
+    ): Response {
         $share = $this->sharedDocuments->find($id) ?? throw $this->createNotFoundException();
-        $node = $share->getLibraryNode();
+        $shared = $share->getLibraryNode();
 
-        if (!$this->audience->isVisibleTo($share, $this->currentUser()) || $node->isDeleted() || null === $node->getStorageKey()) {
+        if (!$this->audience->isVisibleTo($share, $this->currentUser()) || $shared->isDeleted()) {
             throw $this->createNotFoundException();
         }
 
-        return $this->redirect($fileUploads->url($node->getStorageKey()));
+        $wanted = QueryValue::nullableInt($request, 'node');
+        $node = null === $wanted ? $shared : $nodes->find($wanted) ?? throw $this->createNotFoundException();
+
+        // The id in the query string is the student's, so it is worth nothing until it is proved to
+        // name something inside what was actually shared. Without this line it would open any file
+        // of the teacher's library.
+        if ($node->getId() !== $shared->getId() && !$node->isDescendantOf($shared)) {
+            throw $this->createNotFoundException();
+        }
+
+        if ($node->isFile()) {
+            if ($node->isDeleted() || null === $node->getStorageKey()) {
+                throw $this->createNotFoundException();
+            }
+
+            return $this->redirect($fileUploads->url($node->getStorageKey()));
+        }
+
+        return $this->render('student_shared_document/folder.html.twig', [
+            'share' => $share,
+            'node' => $shared,
+            'rows' => $this->subtree->rows($shared),
+        ]);
     }
 
     private function currentUser(): User
