@@ -23,12 +23,17 @@
                placeholder="{{ 'fileLibrarySearchPlaceholder'|trans }}"
                aria-label="{{ 'fileLibrarySearchPlaceholder'|trans }}">
     </form>
-    <button type="button" class="cm-btn cm-btn--primary" data-action="file-library#pick">{{ 'fileLibraryImportAction'|trans }}</button>
+    {# The action bar is rendered by the layout outside {% block main %}, so this button is not in the
+       library controller's scope - it carries its own controller and reaches the screen by event. #}
+    <button type="button" class="cm-btn cm-btn--primary"
+            data-controller="file-library-import"
+            data-action="file-library-import#pick">{{ 'fileLibraryImportAction'|trans }}</button>
 {% endblock %}
 
 {% block main %}
     <div class="cm-flib"
          data-controller="file-library"
+         data-action="file-library:pick@window->file-library#pick"
          data-file-library-folder-id-value="{{ currentFolder ? currentFolder.id : '' }}"
          data-file-library-stage-url-value="{{ path('app_upload_stage') }}"
          data-file-library-upload-url-value="{{ path('app_file_library_upload') }}"
