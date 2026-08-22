@@ -315,4 +315,28 @@ class FileLibraryNode
     {
         return mb_strtolower(pathinfo($this->name, \PATHINFO_EXTENSION));
     }
+
+    /**
+     * The materialised path a child of this node carries - `/` at the root, `/3/7/` under folder 7
+     * of folder 3. It is also the LIKE prefix a subtree query needs, which is why it is written once
+     * here rather than assembled at each call site.
+     */
+    public function childPath(): string
+    {
+        return $this->path.$this->id.'/';
+    }
+
+    /**
+     * Is this node inside that folder, at any depth? The question every screen that opens a *shared*
+     * subtree has to ask before it hands a file over: the address carries a node id, and the only
+     * thing that makes it legitimate is being under the folder that was actually shared.
+     *
+     * The owner is checked too. Two libraries can hold the same materialised path - it is unique per
+     * owner, not globally - so path alone would let a node of one library answer for another's.
+     */
+    public function isDescendantOf(self $ancestor): bool
+    {
+        return $this->owner === $ancestor->getOwner()
+            && str_starts_with($this->path, $ancestor->childPath());
+    }
 }

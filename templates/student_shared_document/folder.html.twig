@@ -1,0 +1,73 @@
+{% extends 'layout/app.html.twig' %}
+
+{# A folder put at the class's disposal, opened.
+
+   **Not the teacher's library screen**, and that is the whole point: what was shared is one folder,
+   so one folder is what is listed - no rail, no other folder of theirs, nothing to walk out of it
+   into. The same rule and the same shape as a folder shared to a colleague
+   (templates/content_share/read_folder.html.twig).
+
+   The subtree comes flattened and indented rather than browsable, which is what a student wants of a
+   handful of documents: everything is on the screen at once, and there is no "up" to look for. #}
+
+{% block title %}{{ node.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'sharedDocumentNavLabel'|trans, url: path('app_student_shared_documents')},
+        {label: node.name, url: path('app_student_shared_document_open', {id: share.id})},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ node.name }}{% endblock %}
+
+{% block main %}
+    <p class="text-secondary">{{ 'sharedDocumentFolderSharedByText'|trans({
+        '%teacher%': share.teacher.displayName,
+        '%topic%': share.topic ? share.topic.name : ('sharedDocumentNoTopicLabel'|trans),
+    }) }}</p>
+
+    {% if rows is empty %}
+        <div class="cm-empty">{{ 'sharedDocumentFolderEmptyText'|trans }}</div>
+    {% else %}
+        <div class="cm-worktable">
+            <table class="cm-worktable__table">
+                <thead>
+                    <tr>
+                        <th>{{ 'fileLibraryNameColumnLabel'|trans }}</th>
+                        <th>{{ 'fileLibrarySizeColumnLabel'|trans }}</th>
+                        <th class="cm-worktable__action"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr>
+                            {# The indent is the tree: a subfolder's content sits under it, one level
+                               in, and the listing is already in that order (App\Service\FileLibrarySubtree). #}
+                            <td style="padding-left: {{ 10 + row.depth * 22 }}px;">
+                                <span class="cm-flib__name">
+                                    {% if row.node.folder %}
+                                        <span class="cm-flib__ext cm-flib__ext--dir" aria-hidden="true">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"></path></svg>
+                                        </span>
+                                        <span>{{ row.node.name }}</span>
+                                    {% else %}
+                                        <span class="cm-flib__ext cm-flib__ext--{{ file_library_family(row.node.name) }}">{{ row.node.extension|upper|slice(0, 4) ?: '?' }}</span>
+                                        <a href="{{ path('app_student_shared_document_open', {id: share.id, node: row.node.id}) }}">{{ row.node.name }}</a>
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td>{{ row.node.folder ? '—' : byte_size(row.node.sizeBytes) }}</td>
+                            <td class="cm-worktable__action">
+                                {% if not row.node.folder %}
+                                    <a class="cm-btn cm-btn--sm cm-btn--outline" href="{{ path('app_student_shared_document_open', {id: share.id, node: row.node.id}) }}">{{ 'sharedDocumentOpenAction'|trans }}</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+{% endblock %}

@@ -28,6 +28,13 @@
         {% include 'file_library/_rail.html.twig' with {rail: rail, quota: quota, currentFolder: currentFolder} %}
 
         <div class="cm-flib__content">
+            {# What sharing a folder means, said before the form rather than discovered afterwards:
+               everything under it goes, at every depth, and it keeps going - a file dropped in next
+               week is part of the share by being where it is. #}
+            {% if node.type.value == 'folder' %}
+                <p class="cm-share__notice">{{ 'sharedDocumentFolderNoticeText'|trans }}</p>
+            {% endif %}
+
             {% if targets is empty %}
                 <p class="cm-flib__empty">{{ 'sharedDocumentNoProgramText'|trans }}</p>
             {% else %}

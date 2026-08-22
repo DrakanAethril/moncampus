@@ -61,8 +61,18 @@
                             {% set node = share.libraryNode %}
                             <tr>
                                 <td>
+                                    {# A share names a document or a whole folder; the same link
+                                       opens both, and what changes is what is on the other side -
+                                       the file itself, or the listing of the folder's content and
+                                       subfolders. #}
                                     <span class="cm-flib__name">
-                                        <span class="cm-flib__ext cm-flib__ext--{{ file_library_family(node.name) }}">{{ node.extension|upper|slice(0, 4) ?: '?' }}</span>
+                                        {% if node.folder %}
+                                            <span class="cm-flib__ext cm-flib__ext--dir" aria-hidden="true">
+                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"></path></svg>
+                                            </span>
+                                        {% else %}
+                                            <span class="cm-flib__ext cm-flib__ext--{{ file_library_family(node.name) }}">{{ node.extension|upper|slice(0, 4) ?: '?' }}</span>
+                                        {% endif %}
                                         <a href="{{ path('app_student_shared_document_open', {id: share.id}) }}">{{ node.name }}</a>
                                     </span>
                                 </td>
@@ -74,7 +84,7 @@
                                 {% endif %}
                                 <td>{{ share.availableAt|date('d/m/Y') }}</td>
                                 <td class="cm-worktable__action">
-                                    <a class="cm-btn cm-btn--sm cm-btn--outline" href="{{ path('app_student_shared_document_open', {id: share.id}) }}">{{ 'sharedDocumentOpenAction'|trans }}</a>
+                                    <a class="cm-btn cm-btn--sm cm-btn--outline" href="{{ path('app_student_shared_document_open', {id: share.id}) }}">{{ (node.folder ? 'sharedDocumentBrowseAction' : 'sharedDocumentOpenAction')|trans }}</a>
                                 </td>
                             </tr>
                         {% endfor %}
