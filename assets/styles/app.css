@@ -7124,7 +7124,12 @@ button.cm-tabs__tab { border: 0; background: none; font: inherit; cursor: pointe
 .cm-wiki__node-action--danger:hover { background: var(--cm-red-bg); color: var(--cm-red-tx); }
 
 .cm-wiki__content { background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 24px 26px 26px; }
-.cm-wiki__body { font: 400 15px/1.65 var(--cm-font-ui); color: var(--cm-text); }
+/* `overflow-wrap` is not cosmetic here: a wiki page is where a URL, a token, a stack trace or a
+   command line gets pasted, and an unbroken run of characters is wider than the column it sits in.
+   Without this the text simply left the white panel and ran under the outline. `anywhere` rather
+   than `break-word` so the break is taken into account when the browser measures the line, which
+   is what a table cell holding a long URL needs. */
+.cm-wiki__body { font: 400 15px/1.65 var(--cm-font-ui); color: var(--cm-text); overflow-wrap: anywhere; }
 .cm-wiki__body h1, .cm-wiki__body h2, .cm-wiki__body h3, .cm-wiki__body h4 { font-family: var(--cm-font-title); color: var(--cm-ink); margin: 1.4em 0 0.5em; }
 .cm-wiki__body h1:first-child, .cm-wiki__body h2:first-child { margin-top: 0; }
 .cm-wiki__body table { width: 100%; border-collapse: collapse; margin: 1em 0; }
@@ -7163,8 +7168,12 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
 .cm-wiki-list__date { flex: none; font: 400 12px var(--cm-font-ui); color: var(--cm-faint); }
 .cm-wiki-list--muted .cm-wiki-list__row { border-top: 0; padding: 3px 2px; }
 
-.cm-wiki-regime { max-width: 900px; margin-bottom: 18px; padding: 11px 14px; border-radius: 8px; background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); font: 400 13px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-wiki-regime { margin-bottom: 18px; padding: 11px 14px; border-radius: 8px; background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); font: 400 13px var(--cm-font-ui); color: var(--cm-muted); }
 .cm-wiki-regime--supervised { background: var(--cm-gold-bg); border-color: var(--cm-gold); color: var(--cm-gold-tx); }
+/* The banner announces what the whole screen is, so it is as wide as the whole screen - which is
+   the two-column layout below it, not the form's own column. It follows that layout back down to
+   900px exactly where the layout does, single-column screens included. */
+.cm-wiki-regime--narrow { max-width: 900px; }
 
 /* What the wiki *is* on the left, what one does to it as a whole on the right. The right column
    collapses under the form on a narrow screen rather than squeezing both. */
@@ -7239,6 +7248,27 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
 .cm-wiki-attachments__add > .cm-wiki-attachments__grid { margin-top: 10px; }
 .cm-wiki-attachments__submit { display: flex; justify-content: flex-end; margin-top: 12px; }
 
+/* The folded adding zone. Closed it is one line of small text with a paper-clip; open it is exactly
+   the panel that used to be there, unchanged. `list-style: none` plus the ::-webkit- rule is what it
+   takes to be rid of the browser's own triangle - the chevron is drawn in the markup so it can turn
+   with the state and match the rest of the app's disclosures. */
+.cm-wiki-attachments__adder > summary::-webkit-details-marker { display: none; }
+.cm-wiki-attachments__toggle {
+    display: inline-flex; align-items: center; gap: 7px; list-style: none; cursor: pointer;
+    padding: 4px 2px; font: 500 12.5px var(--cm-font-ui); color: var(--cm-faint);
+}
+.cm-wiki-attachments__toggle:hover { color: var(--cm-brand-strong); }
+.cm-wiki-attachments__toggle:focus-visible { outline: 2px solid var(--cm-brand); outline-offset: 3px; border-radius: 6px; }
+.cm-wiki-attachments__clip, .cm-wiki-attachments__chevron { display: inline-flex; line-height: 0; }
+.cm-wiki-attachments__chevron { transition: transform .15s ease; }
+.cm-wiki-attachments__adder[open] .cm-wiki-attachments__chevron { transform: rotate(180deg); }
+.cm-wiki-attachments__adder[open] .cm-wiki-attachments__toggle { color: var(--cm-muted); margin-bottom: 10px; }
+/* With attachments above it, the line needs the separation the panel's own rule gives the heading. */
+.cm-wiki-attachments__grid + .cm-wiki-attachments__adder { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--cm-gold-bg); }
+
+/* Nothing to list: the section is that one line, so the gold panel around it goes away. */
+.cm-wiki-attachments--bare { margin-top: 18px; border: 0; background: none; padding: 0; }
+
 .cm-wiki-lock { margin-bottom: 16px; padding: 10px 14px; border-radius: 8px; background: var(--cm-gold-bg); border: 1px solid var(--cm-gold); font: 400 13px var(--cm-font-ui); color: var(--cm-gold-tx); }
 
 .cm-wiki__editor-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -7272,6 +7302,7 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
     .cm-wiki--with-outline { grid-template-columns: 264px minmax(0, 1fr); }
     .cm-wiki__outline { display: none; }
     .cm-wiki-settings-layout { grid-template-columns: minmax(0, 1fr); max-width: 900px; }
+    .cm-wiki-regime { max-width: 900px; }
     .cm-wiki-settings-layout__side .cm-wiki-settings__block-actions { flex-direction: row; align-items: center; }
     .cm-wiki-settings-layout__side .cm-wiki-settings__block-actions .cm-btn { width: auto; }
 }
@@ -7320,6 +7351,26 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
    box. Measured in a browser, which is the only way that kind of bug shows up. */
 .cm-wiki__body pre { padding: 12px 14px; border: 1px solid var(--cm-border); border-radius: 8px; background: var(--cm-surface-alt); color: var(--cm-ink); overflow-x: auto; font-size: 13px; }
 .cm-wiki__body pre code { color: inherit; background: none; }
+
+/* A code block and its copy button, put together at read time by wiki_code_copy_controller.js. The
+   button rides in the corner of the block and stays faint until the pointer or the keyboard reaches
+   it: on a page that is mostly commands, a column of solid buttons would read as the content. */
+.cm-codeblock { position: relative; }
+/* Room kept for the button, so the first line of code never runs underneath it. */
+.cm-codeblock > pre { padding-right: 42px; }
+.cm-codeblock__copy {
+    position: absolute; top: 7px; right: 7px;
+    width: 26px; height: 26px; border-radius: 7px;
+    background: var(--cm-surface); border: 1px solid var(--cm-border);
+    opacity: 0; transition: opacity .12s ease;
+}
+.cm-codeblock:hover .cm-codeblock__copy,
+.cm-codeblock__copy:focus-visible,
+.cm-codeblock__copy.cm-copybtn--done { opacity: 1; }
+/* The button hangs off the wrapper and not off the <pre>, which scrolls sideways when a line is
+   long - anchored to the block itself it would slide out of sight with the first wide command. The
+   wrapper carries no border, padding or height, so the <pre>'s own margins still collapse through it
+   and the page keeps the spacing it had before the buttons existed. */
 .cm-wiki__body code { font-size: 0.92em; color: var(--cm-ink); }
 .cm-wiki__body blockquote { margin: 1.1em 0; padding: 4px 0 4px 16px; border-left: 3px solid var(--cm-border); color: var(--cm-muted); }
 

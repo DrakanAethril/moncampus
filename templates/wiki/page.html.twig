@@ -36,7 +36,11 @@
 
         <div class="cm-wiki__content">
             {% if body %}
-                <div class="cm-wiki__body">{{ body|raw }}</div>
+                {# The copy buttons on the code blocks are added to the rendered body, not stored in
+                   it - see assets/controllers/wiki_code_copy_controller.js. #}
+                <div class="cm-wiki__body"
+                     data-controller="wiki-code-copy"
+                     data-wiki-code-copy-label-value="{{ 'wikiCodeCopyAction'|trans }}">{{ body|raw }}</div>
             {% else %}
                 <p class="cm-wiki__placeholder">{{ 'wikiPageEmptyText'|trans }}</p>
             {% endif %}

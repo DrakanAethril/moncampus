@@ -129,6 +129,25 @@ export default class extends Controller {
             autosave_ask_before_unload: true,
             autosave_interval: '20s',
             autosave_retention: '1440m',
+            // The plugin's own list, plus Bash. Naming it here REPLACES the default, so the ten
+            // entries below are the defaults written out rather than an addition to them. Bash has
+            // no grammar in the Prism build the codesample plugin vendors, so the sample stays
+            // unhighlighted in the editor - which is exactly what it is on the read screen and in
+            // the PDF, neither of which highlights anything: what the language buys is the
+            // `language-bash` class on the <pre>, kept by the sanitizer.
+            codesample_languages: [
+                { text: 'Bash', value: 'bash' },
+                { text: 'HTML/XML', value: 'markup' },
+                { text: 'JavaScript', value: 'javascript' },
+                { text: 'CSS', value: 'css' },
+                { text: 'PHP', value: 'php' },
+                { text: 'Python', value: 'python' },
+                { text: 'Java', value: 'java' },
+                { text: 'C', value: 'c' },
+                { text: 'C#', value: 'csharp' },
+                { text: 'C++', value: 'cpp' },
+                { text: 'Ruby', value: 'ruby' },
+            ],
             quickbars_insert_toolbar: 'image codesample table',
             quickbars_selection_toolbar: 'bold italic link blockquote',
             block_formats: 'Paragraph=p;Titre 1=h1;Titre 2=h2;Titre 3=h3;Titre 4=h4;Préformaté=pre',

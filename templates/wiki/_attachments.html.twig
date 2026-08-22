@@ -1,21 +1,32 @@
 {# The page's attachments, drawn as downloadable cards with a format and a size - the same block as
    the Base documentaire's, deliberately: the two features attach the same kind of file for the same
-   reason, so they are read the same way. The reading cards and the drop zone below are that screen's
-   (templates/documentation/article.html.twig and article_form.html.twig), down to the icon.
+   reason, so they are read the same way. The reading cards are that screen's
+   (templates/documentation/article.html.twig), down to the icon.
 
    The one difference is where the upload happens: an article's files ride along with the article's
    own form, while a wiki page's attachments are their own POST - the page body is edited on another
    screen entirely, and attaching a file must not mean opening the editor.
 
+   **The adding zone is folded away.** It is a full upload component with a drop area, and it used to
+   sit open under every page an editor opened - louder than the text above it on a page that has no
+   attachment at all, which is most of them. It is now behind one discreet line with a paper-clip:
+   unfolding it shows exactly the zone that was there before. A <details>, so the fold costs no
+   JavaScript and the keyboard reaches it the way it reaches any disclosure.
+
    This is the one upload field on the platform that narrows the rule by nothing (see
    design/validated/upload-policy.md): the wiki is the general-purpose workspace, so documents,
    spreadsheets, images, audio, video, archives, captures and inert source files all pass - only the
    executables and the archive-only formats do not. #}
-{% if node.attachments|length > 0 or is_granted('WIKI_EDIT', wiki) %}
-    <section class="cm-wiki-attachments">
-        <div class="cm-wiki-attachments__rule"><span>{{ 'wikiAttachmentsHeading'|trans }}</span></div>
+{% set canEdit = is_granted('WIKI_EDIT', wiki) %}
+{% set hasAttachments = node.attachments|length > 0 %}
 
-        {% if node.attachments|length > 0 %}
+{% if hasAttachments or canEdit %}
+    {# Without attachments the section is nothing but that one line, so it drops the card around it:
+       a framed panel holding a single link is the very weight this is removing. #}
+    <section class="cm-wiki-attachments{{ hasAttachments ? '' : ' cm-wiki-attachments--bare' }}">
+        {% if hasAttachments %}
+            <div class="cm-wiki-attachments__rule"><span>{{ 'wikiAttachmentsHeading'|trans }}</span></div>
+
             <div class="cm-wiki-attachments__grid">
                 {% for attachment in node.attachments %}
                     <div class="cm-wiki-attachment">
@@ -28,7 +39,7 @@
                                 <span class="cm-wiki-attachment__meta">{{ attachment.formatLabel }}{% if attachment.sizeBytes %} &middot; {{ (attachment.sizeBytes / 1024)|round }} Ko{% endif %}</span>
                             </span>
                         </a>
-                        {% if is_granted('WIKI_EDIT', wiki) %}
+                        {% if canEdit %}
                             {# Its own form beside the link, never nested inside it: a form inside an
                                anchor is the second of the two recurring bugs this repository has
                                already paid for on small in-place actions. #}
@@ -42,18 +53,30 @@
             </div>
         {% endif %}
 
-        {% if is_granted('WIKI_EDIT', wiki) %}
-            {# The page's own drop zone gave way to the platform's one component
-               (App\Form\FilePickerType, through App\Form\WikiAttachmentType): the files are already
-               deposited and scanned when "Ajouter" is pressed, so this POST carries tokens and no
-               bytes - and it no longer needs enctype at all. #}
-            {{ form_start(attachmentForm, {action: path('app_wiki_attachment_add', {id: wiki.id, nodeId: node.id}), attr: {class: 'cm-wiki-attachments__add'}}) }}
-                {{ form_widget(attachmentForm.files) }}
+        {% if canEdit %}
+            <details class="cm-wiki-attachments__adder">
+                <summary class="cm-wiki-attachments__toggle">
+                    <span class="cm-wiki-attachments__clip" aria-hidden="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7l-6.5 6.5a2.5 2.5 0 0 0 3.5 3.5l6.5-6.5a4.5 4.5 0 0 0-6.5-6.5L5.5 10.5a6.5 6.5 0 0 0 9 9L20 14"></path></svg>
+                    </span>
+                    <span>{{ 'wikiAttachmentsAddToggleAction'|trans }}</span>
+                    <span class="cm-wiki-attachments__chevron" aria-hidden="true">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+                    </span>
+                </summary>
 
-                <div class="cm-wiki-attachments__submit">
-                    <button type="submit" class="cm-btn cm-btn--sm cm-btn--outline">{{ 'wikiAttachmentAddAction'|trans }}</button>
-                </div>
-            {{ form_end(attachmentForm) }}
+                {# The page's own drop zone gave way to the platform's one component
+                   (App\Form\FilePickerType, through App\Form\WikiAttachmentType): the files are
+                   already deposited and scanned when "Joindre" is pressed, so this POST carries
+                   tokens and no bytes - and it no longer needs enctype at all. #}
+                {{ form_start(attachmentForm, {action: path('app_wiki_attachment_add', {id: wiki.id, nodeId: node.id}), attr: {class: 'cm-wiki-attachments__add'}}) }}
+                    {{ form_widget(attachmentForm.files) }}
+
+                    <div class="cm-wiki-attachments__submit">
+                        <button type="submit" class="cm-btn cm-btn--sm cm-btn--outline">{{ 'wikiAttachmentAddAction'|trans }}</button>
+                    </div>
+                {{ form_end(attachmentForm) }}
+            </details>
         {% endif %}
     </section>
 {% endif %}

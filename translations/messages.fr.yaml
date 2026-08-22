@@ -5404,6 +5404,7 @@ wikiOutlineHeading: 'Sur cette page'
 wikiAttachmentsHeading: 'Pièces jointes'
 wikiAttachmentsFieldLabel: 'Ajouter des pièces jointes'
 wikiAttachmentAddAction: 'Joindre'
+wikiAttachmentsAddToggleAction: 'Ajouter une pièce jointe'
 wikiAttachmentRemoveAction: 'Retirer la pièce jointe'
 wikiAttachmentsAddedFlashMessage: 'Les pièces jointes ont été ajoutées.'
 wikiInsertLinkAction: 'Lien vers une page'
@@ -5443,6 +5444,7 @@ wikiEditorLoadFailedText: 'La liste des pages n’a pas pu être chargée.'
 # Wiki - lot 6, l'export PDF.
 wikiExportPdfAction: 'Exporter le wiki (PDF)'
 wikiExportPagePdfAction: 'Exporter cette page (PDF)'
+wikiCodeCopyAction: 'Copier le code'
 wikiExportUnavailableFlashMessage: 'Le service de génération de PDF est momentanément indisponible. Réessayez dans quelques minutes.'
 
 # Wiki - lot 7, l'archive Markdown.

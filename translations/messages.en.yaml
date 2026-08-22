@@ -4626,6 +4626,7 @@ wikiOutlineHeading: 'On this page'
 wikiAttachmentsHeading: 'Attachments'
 wikiAttachmentsFieldLabel: 'Add attachments'
 wikiAttachmentAddAction: 'Attach'
+wikiAttachmentsAddToggleAction: 'Add an attachment'
 wikiAttachmentRemoveAction: 'Remove the attachment'
 wikiAttachmentsAddedFlashMessage: 'The attachments have been added.'
 wikiInsertLinkAction: 'Link to a page'
@@ -4665,6 +4666,7 @@ wikiEditorLoadFailedText: 'The page list could not be loaded.'
 # Wiki - lot 6, the PDF export.
 wikiExportPdfAction: 'Export the wiki (PDF)'
 wikiExportPagePdfAction: 'Export this page (PDF)'
+wikiCodeCopyAction: 'Copy the code'
 wikiExportUnavailableFlashMessage: 'The PDF generation service is momentarily unavailable. Try again in a few minutes.'
 
 # Wiki - lot 7, the Markdown archive.
