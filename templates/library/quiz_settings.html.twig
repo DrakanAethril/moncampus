@@ -11,15 +11,6 @@
 {% endblock %}
 {% block page_title %}{{ quizTemplate.name }}{% endblock %}
 
-{% block page_actions %}
-    {# Gated on canShare and not on canEdit: sharing is an act of authorship, so a staff member
-       reading a colleague's quiz does not get to hand it around on their behalf
-       (design/validated/content-sharing-between-teachers.md). #}
-    {% if canShare %}
-        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#content-share-modal">{{ 'contentShareAction'|trans }}</button>
-    {% endif %}
-{% endblock %}
-
 {% block main %}
     {% include '_tabs.html.twig' with {
         tabs: isNew
