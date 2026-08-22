@@ -6,8 +6,7 @@
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
         {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
-        {label: 'infrastructureHostsNavLabel'|trans, url: path('app_infrastructure_hosts')},
-        {label: host.label, url: path('app_infrastructure_guests', {id: host.id})},
+        {label: 'infrastructureGuestsNavLabel'|trans, url: path('app_infrastructure_guests', {host: host.id})},
         {label: 'proxmoxGuestCreatedHeading'|trans, url: app.request.requestUri},
     ]} %}
 {% endblock %}
@@ -83,7 +82,7 @@
                     {% if allocation %}
                         <a href="{{ path('app_infrastructure_ip_range', {id: allocation.range.id}) }}" class="cm-btn cm-btn--outline">{{ 'ipRangeRegistryAction'|trans }}</a>
                     {% endif %}
-                    <a href="{{ path('app_infrastructure_guests', {id: host.id}) }}" class="cm-btn cm-btn--primary">{{ 'proxmoxWizardBackToMachinesAction'|trans }}</a>
+                    <a href="{{ path('app_infrastructure_guests', {host: host.id}) }}" class="cm-btn cm-btn--primary">{{ 'proxmoxWizardBackToMachinesAction'|trans }}</a>
                 </div>
             </div>
         </div>

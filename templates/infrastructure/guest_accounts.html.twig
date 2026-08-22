@@ -1,14 +1,13 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'guestAccountsHeading'|trans }}{% endblock %}
+{% block title %}{{ 'guestAccountsHeading'|trans({'%vmid%': vmid}) }}{% endblock %}
 
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
         {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
-        {label: 'infrastructureHostsNavLabel'|trans, url: path('app_infrastructure_hosts')},
-        {label: host.label, url: path('app_infrastructure_guests', {id: host.id})},
-        {label: 'guestAccountsHeading'|trans, url: app.request.requestUri},
+        {label: 'infrastructureGuestsNavLabel'|trans, url: path('app_infrastructure_guests', {host: host.id})},
+        {label: 'guestAccountsHeading'|trans({'%vmid%': vmid}), url: app.request.requestUri},
     ]} %}
 {% endblock %}
 

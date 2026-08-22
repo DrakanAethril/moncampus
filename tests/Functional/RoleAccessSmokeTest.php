@@ -568,6 +568,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/infrastructure',
             '/infrastructure/hosts',
             '/infrastructure/hosts/new',
+            // Machines et Images ne sont plus les écrans d'un hôte : ils lisent tous les
+            // hôtes déclarés, donc ils ont une URL fixe et ont leur place ici.
+            '/infrastructure/guests',
+            '/infrastructure/images',
             '/infrastructure/operations',
             '/infrastructure/ip-ranges',
             '/infrastructure/ip-ranges/new',

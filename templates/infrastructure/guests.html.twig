@@ -1,242 +1,254 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ host.label }}{% endblock %}
+{% block title %}{{ 'infrastructureGuestsNavLabel'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
         {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
-        {label: 'infrastructureHostsNavLabel'|trans, url: path('app_infrastructure_hosts')},
-        {label: host.label, url: path('app_infrastructure_guests', {id: host.id})},
-        {label: 'infrastructureGuestsNavLabel'|trans, url: app.request.requestUri},
+        {label: 'infrastructureGuestsNavLabel'|trans, url: path('app_infrastructure_guests')},
     ]} %}
 {% endblock %}
 
-{% block page_title %}{{ host.label }}{% endblock %}
+{% block page_title %}{{ 'infrastructureGuestsNavLabel'|trans }}{% endblock %}
 
 {% block main %}
-    <p class="cm-host__meta mb-3">
-        <span class="cm-statusdot cm-statusdot--{{ host.lastCheckOk is null ? 'unknown' : (host.lastCheckOk ? 'ok' : 'down') }}"></span>
-        {{ host.displayAddress }}
-        {% if host.pveVersion %} · PVE {{ host.pveVersion }}{% endif %}
-        {% if host.managedPool %} · pool <b>{{ host.managedPool }}</b>{% endif %}
-        {% if host.vmidMin and host.vmidMax %} · VMID {{ host.vmidMin }}–{{ host.vmidMax }}{% endif %}
-    </p>
     {% include 'infrastructure/_tabs.html.twig' %}
 
-    {% if failure %}
-        {# The machine list is the one screen that reads the hypervisor as it renders - somebody is
-           about to press "stop" on one of these rows, and a stale list would be worse than an
-           error. So a host that has gone away says so here rather than showing an empty table. #}
-        <div class="cm-note cm-note--danger">
-            <span class="cm-note__icon">!</span>
-            <span><strong>{{ 'proxmoxGuestsUnreachableTitle'|trans }}</strong> {{ failure }}</span>
-        </div>
-    {% else %}
-        <div class="card cm-card--tabbed"
-             data-controller="proxmox-guests copy-value"
-             data-proxmox-guests-token-value="{{ csrf_token('infrastructure_action') }}"
-             data-proxmox-guests-confirm-stop-value="{{ 'proxmoxGuestForceConfirmText'|trans }}">
-            <form method="get" class="cm-actionbar" style="margin: 0; padding: 12px 18px; border-top: 0; border-bottom: 1px solid var(--cm-border-soft); background: var(--cm-surface-soft);">
-                {# GET, because this form asks to be shown a result rather than to change anything -
-                   a POST handled by Turbo would have to redirect to be legal. #}
-                <input type="search" name="q" value="{{ filters.q }}" class="cm-input cm-field--md" placeholder="{{ 'proxmoxGuestSearchPlaceholder'|trans }}">
-
-                <label class="cm-field-label" for="filter-node">{{ 'proxmoxGuestNodeLabel'|trans }}</label>
-                <select id="filter-node" name="node" class="cm-select cm-field--sm">
-                    <option value="">{{ 'proxmoxFilterAllLabel'|trans }}</option>
-                    {% for node in nodes %}
-                        <option value="{{ node.name }}"{{ filters.node == node.name ? ' selected' }}>{{ node.name }}</option>
-                    {% endfor %}
-                </select>
-
-                <label class="cm-field-label" for="filter-status">{{ 'proxmoxGuestStatusLabel'|trans }}</label>
-                <select id="filter-status" name="status" class="cm-select cm-field--sm">
-                    <option value="">{{ 'proxmoxFilterAllLabel'|trans }}</option>
-                    <option value="running"{{ filters.status == 'running' ? ' selected' }}>{{ 'proxmoxGuestRunningLabel'|trans }}</option>
-                    <option value="stopped"{{ filters.status == 'stopped' ? ' selected' }}>{{ 'proxmoxGuestStoppedLabel'|trans }}</option>
-                    <option value="template"{{ filters.status == 'template' ? ' selected' }}>{{ 'proxmoxGuestTemplateLabel'|trans }}</option>
-                </select>
-
-                <label class="cm-field-label" for="filter-type">{{ 'proxmoxGuestTypeLabel'|trans }}</label>
-                <select id="filter-type" name="type" class="cm-select cm-field--sm">
-                    <option value="">{{ 'proxmoxFilterAllLabel'|trans }}</option>
-                    <option value="qemu"{{ filters.type == 'qemu' ? ' selected' }}>QEMU</option>
-                    <option value="lxc"{{ filters.type == 'lxc' ? ' selected' }}>LXC</option>
-                </select>
-
-                <label class="cm-field-label"><input type="checkbox" name="scoped" value="1"{{ filters.scoped ? ' checked' }}> {{ 'proxmoxGuestScopedOnlyLabel'|trans }}</label>
-
-                <span class="cm-actionbar__meta" style="margin-left:auto">{{ 'proxmoxGuestCountMeta'|trans({'%shown%': rows|length, '%total%': totalCount}) }}</span>
-                <button type="submit" class="cm-btn cm-btn--outline cm-btn--sm">{{ 'proxmoxGuestRefreshAction'|trans }}</button>
-            </form>
-
-            <div class="table-responsive">
-                <table class="table table-vcenter card-table">
-                    <thead>
-                        <tr>
-                            <th>VMID</th>
-                            <th>{{ 'proxmoxGuestMachineLabel'|trans }}</th>
-                            <th>{{ 'proxmoxGuestNodeLabel'|trans }}</th>
-                            <th>{{ 'proxmoxGuestStatusLabel'|trans }}</th>
-                            <th>{{ 'proxmoxGuestCpuLabel'|trans }}</th>
-                            <th>{{ 'proxmoxGuestMemoryLabel'|trans }}</th>
-                            <th>{{ 'proxmoxGuestDiskLabel'|trans }}</th>
-                            <th>{{ 'proxmoxGuestUptimeLabel'|trans }}</th>
-                            <th class="cm-actions"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for row in rows %}
-                            {% set guest = row.guest %}
-                            {% set live = liveOperations[guest.vmid] is defined ? liveOperations[guest.vmid] : null %}
-                            <tr data-proxmox-guests-target="row"
-                                class="{{ row.inScope ? '' : 'cm-row--out' }}"
-                                data-vmid="{{ guest.vmid }}">
-                                <td class="cm-mono">{{ guest.vmid }}</td>
-                                <td>
-                                    <div class="cm-guest__name">{{ guest.name }}</div>
-                                    {# The address rather than the type and the pool: those two are
-                                       already a filter and a line of the host header, whereas the
-                                       address is what somebody reading this row is about to type
-                                       somewhere else - hence the copy button next to it. #}
-                                    {% set ip = addresses[guest.vmid]|default(null) %}
-                                    <div class="cm-guest__sub cm-guest__ip">
-                                        {% if ip %}
-                                            <span class="cm-mono">{{ ip }}</span>
-                                            <button type="button" class="cm-copybtn"
-                                                    data-action="click->copy-value#copy"
-                                                    data-copy-value-text-param="{{ ip }}"
-                                                    title="{{ 'proxmoxGuestIpCopyAction'|trans }}"
-                                                    aria-label="{{ 'proxmoxGuestIpCopyAction'|trans }}">
-                                                <svg class="cm-copybtn__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                                    <rect x="8" y="8" width="12" height="12" rx="2"></rect>
-                                                    <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path>
-                                                </svg>
-                                                <svg class="cm-copybtn__icon cm-copybtn__icon--done" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                                    <path d="M5 12l5 5L20 7"></path>
-                                                </svg>
-                                            </button>
-                                        {% else %}
-                                            <span class="cm-mono">—</span>
-                                        {% endif %}
-                                    </div>
-                                </td>
-                                <td class="cm-guest__sub">{{ guest.node }}</td>
-                                <td>
-                                    {% if guest.template %}
-                                        <span class="cm-badge cm-badge--teal">{{ 'proxmoxGuestTemplateLabel'|trans }}</span>
-                                    {% elseif guest.isRunning %}
-                                        <span class="cm-badge cm-badge--green">{{ 'proxmoxGuestRunningLabel'|trans }}</span>
-                                    {% else %}
-                                        <span class="cm-badge cm-badge--gray">{{ 'proxmoxGuestStoppedLabel'|trans }}</span>
-                                    {% endif %}
-                                    {% if guest.isLocked %}
-                                        <span class="cm-badge cm-badge--gold">{{ guest.lock }}</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if guest.isRunning %}
-                                        {% set cpuPercent = (guest.cpuUsage * 100)|round %}
-                                        <div class="cm-meter"><span class="cm-meter__fill{{ cpuPercent > 80 ? ' cm-meter__fill--high' }}" style="width: {{ cpuPercent }}%"></span></div>
-                                        <div class="cm-meter__text">{{ cpuPercent }} % · {{ guest.maxCpu }} {{ 'proxmoxGuestCoresLabel'|trans }}</div>
-                                    {% else %}
-                                        <span class="cm-guest__sub">— · {{ guest.maxCpu }} {{ 'proxmoxGuestCoresLabel'|trans }}</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if guest.isRunning %}
-                                        {% set memPercent = guest.memoryPercent|round %}
-                                        <div class="cm-meter"><span class="cm-meter__fill{{ memPercent > 80 ? ' cm-meter__fill--high' }}" style="width: {{ memPercent }}%"></span></div>
-                                        <div class="cm-meter__text">{{ (guest.usedMemoryBytes / 1073741824)|number_format(1, ',', ' ') }} / {{ (guest.maxMemoryBytes / 1073741824)|number_format(1, ',', ' ') }} Gio</div>
-                                    {% else %}
-                                        <span class="cm-guest__sub">— / {{ (guest.maxMemoryBytes / 1073741824)|number_format(1, ',', ' ') }} Gio</span>
-                                    {% endif %}
-                                </td>
-                                <td class="cm-guest__sub">{{ (guest.maxDiskBytes / 1073741824)|number_format(0, ',', ' ') }} Gio</td>
-                                <td class="cm-guest__sub">{{ guest.uptimeSeconds ? (guest.uptimeSeconds // 86400) ~ ' j ' ~ ((guest.uptimeSeconds % 86400) // 3600) ~ ' h' : '—' }}</td>
-                                {# One select rather than a row of links, and it carries « Comptes »
-                                   as well as the power actions: the column stays the same width from
-                                   one row to the next whatever the machine's state is. The Stimulus
-                                   target stays on the cell, which is what run() reaches from the
-                                   select to find the note underneath it. #}
-                                <td class="cm-actions" data-proxmox-guests-target="actions">
-                                    {% if not row.inScope %}
-                                        {# Visible, counted, and untouchable. Hiding it would make an
-                                           administrator think the machine had vanished from Proxmox. #}
-                                        <span class="cm-badge cm-badge--gray">{{ 'proxmoxGuestOutOfScopeBadge'|trans }}</span>
-                                    {% elseif guest.template %}
-                                        <span class="cm-guest__sub">{{ 'proxmoxGuestTemplateNoActionText'|trans }}</span>
-                                    {% else %}
-                                        <select class="cm-select cm-select--action"
-                                                data-action="proxmox-guests#run"
-                                                aria-label="{{ 'proxmoxGuestActionPlaceholder'|trans }}">
-                                            {# A select the reader chooses *into*, so it opens on a
-                                               placeholder rather than on whichever action happens to
-                                               be first - picking the first entry must never be the
-                                               same gesture as opening the list. #}
-                                            <option value="">{{ 'proxmoxGuestActionPlaceholder'|trans }}</option>
-                                            {% if is_granted('ROLE_ADMIN') %}
-                                                {# En tête de liste : « Console » est une *navigation*,
-                                                   les actions de puissance en dessous sont des *ordres*.
-                                                   Offerte quel que soit l'état de la machine - l'écran
-                                                   dit « éteinte » et donne le geste suivant, ce qui vaut
-                                                   mieux que de faire disparaître l'entrée. Absente sur un
-                                                   modèle et hors périmètre, exactement là où les actions
-                                                   de puissance le sont déjà. #}
-                                                <option value="{{ path('app_infrastructure_guest_console', {id: host.id, node: guest.node, vmid: guest.vmid}) }}"
-                                                        data-method="navigate">{{ 'consoleActionLabel'|trans }}</option>
-                                                {# Navigation rather than a POST, and offered whatever the
-                                                   machine is doing: reaching the accounts of a machine has
-                                                   nothing to do with whether it is running. #}
-                                                <option value="{{ path('app_infrastructure_guest_accounts', {id: host.id, node: guest.node, vmid: guest.vmid}) }}"
-                                                        data-method="navigate">{{ 'guestAccountsShortAction'|trans }}</option>
-                                            {% endif %}
-                                            {% if canOperate and not live %}
-                                                {% if guest.isRunning %}
-                                                    {% if row.canStop %}
-                                                        <option value="{{ path('app_infrastructure_guests_power', {id: host.id, node: guest.node, vmid: guest.vmid, action: 'shutdown'}) }}"
-                                                                data-method="post">{{ 'proxmoxGuestShutdownAction'|trans }}</option>
-                                                    {% endif %}
-                                                    {% if row.canStart %}
-                                                        <option value="{{ path('app_infrastructure_guests_power', {id: host.id, node: guest.node, vmid: guest.vmid, action: 'reboot'}) }}"
-                                                                data-method="post">{{ 'proxmoxGuestRebootAction'|trans }}</option>
-                                                    {% endif %}
-                                                    {% if row.canStop %}
-                                                        {# Last, and never directly under « Arrêter ». An ACPI
-                                                           request and a power cut now share one list, so the
-                                                           distance and the confirmation are what is left
-                                                           between them - see proxmoxGuestForceConfirmText. #}
-                                                        <option value="{{ path('app_infrastructure_guests_power', {id: host.id, node: guest.node, vmid: guest.vmid, action: 'stop'}) }}"
-                                                                data-method="post" data-confirm="1">{{ 'proxmoxGuestForceAction'|trans }}</option>
-                                                    {% endif %}
-                                                {% elseif row.canStart %}
-                                                    <option value="{{ path('app_infrastructure_guests_power', {id: host.id, node: guest.node, vmid: guest.vmid, action: 'start'}) }}"
-                                                            data-method="post">{{ 'proxmoxGuestStartAction'|trans }}</option>
-                                                {% endif %}
-                                            {% endif %}
-                                        </select>
-                                        {# Its own line under the select rather than in place of it: what an
-                                           operation in flight says is a note about the machine, and it must
-                                           not take « Comptes » away while it is being said. #}
-                                        <div class="cm-guest__sub cm-actions__note" data-proxmox-guests-target="pending"
-                                             {%- if live %} data-status-url="{{ path('app_infrastructure_operation_status', {id: live.id}) }}"{% endif %}>
-                                            {%- if live %}
-                                                {{- 'proxmoxGuestOperationPendingText'|trans({
-                                                    '%action%': live.action.labelKey|trans,
-                                                    '%who%': live.requestedByLabel,
-                                                }) -}}
-                                            {%- endif %}
-                                        </div>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        {% else %}
-                            <tr><td colspan="9" class="text-center py-4 cm-guest__sub">{{ 'proxmoxGuestNoneText'|trans }}</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    {% if failures %}
+        {# One note per host that did not answer, and the rest of the fleet is still listed below.
+           The machine list is the one screen that reads the hypervisors as it renders - somebody is
+           about to press "stop" on one of these rows - so a host that has gone away says so, and
+           taking every other host off the screen with it would be the worse answer. #}
+        {% for failure in failures %}
+            <div class="cm-note cm-note--danger">
+                <span class="cm-note__icon">!</span>
+                <span><strong>{{ failure.host.label }}</strong> — {{ failure.message }}</span>
             </div>
-        </div>
+        {% endfor %}
     {% endif %}
+
+    <div class="card cm-card--tabbed"
+         data-controller="proxmox-guests copy-value"
+         data-proxmox-guests-token-value="{{ csrf_token('infrastructure_action') }}"
+         data-proxmox-guests-confirm-stop-value="{{ 'proxmoxGuestForceConfirmText'|trans }}">
+        <form method="get" class="cm-actionbar" style="margin: 0; padding: 12px 18px; border-top: 0; border-bottom: 1px solid var(--cm-border-soft); background: var(--cm-surface-soft);">
+            {# GET, because this form asks to be shown a result rather than to change anything -
+               a POST handled by Turbo would have to redirect to be legal. #}
+            <input type="search" name="q" value="{{ filters.q }}" class="cm-input cm-field--md" placeholder="{{ 'proxmoxGuestSearchPlaceholder'|trans }}">
+
+            <label class="cm-field-label" for="filter-host">{{ 'proxmoxOperationHostLabel'|trans }}</label>
+            <select id="filter-host" name="host" class="cm-select cm-field--sm">
+                <option value="">{{ 'proxmoxFilterAllLabel'|trans }}</option>
+                {% for h in hosts %}
+                    <option value="{{ h.id }}"{{ filters.host == h.id ? ' selected' }}>{{ h.label }}</option>
+                {% endfor %}
+            </select>
+
+            <label class="cm-field-label" for="filter-status">{{ 'proxmoxGuestStatusLabel'|trans }}</label>
+            <select id="filter-status" name="status" class="cm-select cm-field--sm">
+                <option value="">{{ 'proxmoxFilterAllLabel'|trans }}</option>
+                <option value="running"{{ filters.status == 'running' ? ' selected' }}>{{ 'proxmoxGuestRunningLabel'|trans }}</option>
+                <option value="stopped"{{ filters.status == 'stopped' ? ' selected' }}>{{ 'proxmoxGuestStoppedLabel'|trans }}</option>
+            </select>
+
+            <label class="cm-field-label" for="filter-batch">{{ 'proxmoxGuestBatchLabel'|trans }}</label>
+            <select id="filter-batch" name="batch" class="cm-select cm-field--sm">
+                <option value="">{{ 'proxmoxFilterAllLabel'|trans }}</option>
+                {% for b in batches %}
+                    <option value="{{ b.id }}"{{ filters.batch == b.id ? ' selected' }}>{{ b.label }}</option>
+                {% endfor %}
+            </select>
+
+            <span class="cm-actionbar__meta" style="margin-left:auto">{{ 'proxmoxGuestCountMeta'|trans({'%shown%': total, '%total%': totalCount}) }}</span>
+            <button type="submit" class="cm-btn cm-btn--outline cm-btn--sm">{{ 'proxmoxGuestRefreshAction'|trans }}</button>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>VMID</th>
+                        <th>{{ 'proxmoxGuestMachineLabel'|trans }}</th>
+                        <th>{{ 'proxmoxOperationHostLabel'|trans }}</th>
+                        <th>{{ 'proxmoxGuestStatusLabel'|trans }}</th>
+                        <th>{{ 'proxmoxGuestCpuLabel'|trans }}</th>
+                        <th>{{ 'proxmoxGuestMemoryLabel'|trans }}</th>
+                        <th>{{ 'proxmoxGuestDiskLabel'|trans }}</th>
+                        <th>{{ 'proxmoxGuestUptimeLabel'|trans }}</th>
+                        <th class="cm-actions"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        {% set guest = row.guest %}
+                        {% set host = row.host %}
+                        {% set live = row.live %}
+                        <tr data-proxmox-guests-target="row"
+                            class="{{ row.inScope ? '' : 'cm-row--out' }}"
+                            data-vmid="{{ guest.vmid }}">
+                            <td class="cm-mono">{{ guest.vmid }}</td>
+                            <td>
+                                <div class="cm-guest__name">{{ guest.name }}</div>
+                                {# The address rather than the type and the pool: those two are
+                                   already a filter and a line of the host header, whereas the
+                                   address is what somebody reading this row is about to type
+                                   somewhere else - hence the copy button next to it. #}
+                                {% set ip = addresses[guest.vmid]|default(null) %}
+                                <div class="cm-guest__sub cm-guest__ip">
+                                    {% if ip %}
+                                        <span class="cm-mono">{{ ip }}</span>
+                                        <button type="button" class="cm-copybtn"
+                                                data-action="click->copy-value#copy"
+                                                data-copy-value-text-param="{{ ip }}"
+                                                title="{{ 'proxmoxGuestIpCopyAction'|trans }}"
+                                                aria-label="{{ 'proxmoxGuestIpCopyAction'|trans }}">
+                                            <svg class="cm-copybtn__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                <rect x="8" y="8" width="12" height="12" rx="2"></rect>
+                                                <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path>
+                                            </svg>
+                                            <svg class="cm-copybtn__icon cm-copybtn__icon--done" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                <path d="M5 12l5 5L20 7"></path>
+                                            </svg>
+                                        </button>
+                                    {% else %}
+                                        <span class="cm-mono">—</span>
+                                    {% endif %}
+                                </div>
+                                {% if row.batch %}
+                                    {# The batch a machine came from, next to its name: it is what
+                                       the filter above selects on, and a row that answers the
+                                       filter should say why it did. #}
+                                    <div class="cm-guest__sub">{{ row.batch.label }}</div>
+                                {% endif %}
+                            </td>
+                            {# The host, not the node. A node is an internal division of one cluster
+                               and nothing on this screen is addressed by it; the host is what the
+                               filter, the journal and every action path speak. #}
+                            <td class="cm-guest__sub">{{ host.label }}</td>
+                            <td>
+                                {% if guest.isRunning %}
+                                    <span class="cm-badge cm-badge--green">{{ 'proxmoxGuestRunningLabel'|trans }}</span>
+                                {% else %}
+                                    <span class="cm-badge cm-badge--gray">{{ 'proxmoxGuestStoppedLabel'|trans }}</span>
+                                {% endif %}
+                                {% if guest.isLocked %}
+                                    <span class="cm-badge cm-badge--gold">{{ guest.lock }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if guest.isRunning %}
+                                    {% set cpuPercent = (guest.cpuUsage * 100)|round %}
+                                    <div class="cm-meter"><span class="cm-meter__fill{{ cpuPercent > 80 ? ' cm-meter__fill--high' }}" style="width: {{ cpuPercent }}%"></span></div>
+                                    <div class="cm-meter__text">{{ cpuPercent }} % · {{ guest.maxCpu }} {{ 'proxmoxGuestCoresLabel'|trans }}</div>
+                                {% else %}
+                                    <span class="cm-guest__sub">— · {{ guest.maxCpu }} {{ 'proxmoxGuestCoresLabel'|trans }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if guest.isRunning %}
+                                    {% set memPercent = guest.memoryPercent|round %}
+                                    <div class="cm-meter"><span class="cm-meter__fill{{ memPercent > 80 ? ' cm-meter__fill--high' }}" style="width: {{ memPercent }}%"></span></div>
+                                    <div class="cm-meter__text">{{ (guest.usedMemoryBytes / 1073741824)|number_format(1, ',', ' ') }} / {{ (guest.maxMemoryBytes / 1073741824)|number_format(1, ',', ' ') }} Gio</div>
+                                {% else %}
+                                    <span class="cm-guest__sub">— / {{ (guest.maxMemoryBytes / 1073741824)|number_format(1, ',', ' ') }} Gio</span>
+                                {% endif %}
+                            </td>
+                            <td class="cm-guest__sub">{{ (guest.maxDiskBytes / 1073741824)|number_format(0, ',', ' ') }} Gio</td>
+                            <td class="cm-guest__sub">{{ guest.uptimeSeconds ? (guest.uptimeSeconds // 86400) ~ ' j ' ~ ((guest.uptimeSeconds % 86400) // 3600) ~ ' h' : '—' }}</td>
+                            {# One select rather than a row of links, and it carries « Comptes »
+                               as well as the power actions: the column stays the same width from
+                               one row to the next whatever the machine's state is. The Stimulus
+                               target stays on the cell, which is what run() reaches from the
+                               select to find the note underneath it. #}
+                            <td class="cm-actions" data-proxmox-guests-target="actions">
+                                {% if not row.inScope %}
+                                    {# Visible, counted, and untouchable. Hiding it would make an
+                                       administrator think the machine had vanished from Proxmox. #}
+                                    <span class="cm-badge cm-badge--gray">{{ 'proxmoxGuestOutOfScopeBadge'|trans }}</span>
+                                {% else %}
+                                    <select class="cm-select cm-select--action"
+                                            data-action="proxmox-guests#run"
+                                            aria-label="{{ 'proxmoxGuestActionPlaceholder'|trans }}">
+                                        {# A select the reader chooses *into*, so it opens on a
+                                           placeholder rather than on whichever action happens to
+                                           be first - picking the first entry must never be the
+                                           same gesture as opening the list. #}
+                                        <option value="">{{ 'proxmoxGuestActionPlaceholder'|trans }}</option>
+                                        {% if is_granted('ROLE_ADMIN') %}
+                                            {# En tête de liste : « Console » est une *navigation*,
+                                               les actions de puissance en dessous sont des *ordres*.
+                                               Offerte quel que soit l'état de la machine - l'écran
+                                               dit « éteinte » et donne le geste suivant, ce qui vaut
+                                               mieux que de faire disparaître l'entrée. Absente hors
+                                               périmètre, exactement là où les actions de puissance
+                                               le sont déjà. #}
+                                            <option value="{{ path('app_infrastructure_guest_console', {id: host.id, node: guest.node, vmid: guest.vmid}) }}"
+                                                    data-method="navigate">{{ 'consoleActionLabel'|trans }}</option>
+                                            {# Navigation rather than a POST, and offered whatever the
+                                               machine is doing: reaching the accounts of a machine has
+                                               nothing to do with whether it is running. #}
+                                            <option value="{{ path('app_infrastructure_guest_accounts', {id: host.id, node: guest.node, vmid: guest.vmid}) }}"
+                                                    data-method="navigate">{{ 'guestAccountsShortAction'|trans }}</option>
+                                        {% endif %}
+                                        {% if row.canOperate and not live %}
+                                            {% if guest.isRunning %}
+                                                {% if row.canStop %}
+                                                    <option value="{{ path('app_infrastructure_guests_power', {id: host.id, node: guest.node, vmid: guest.vmid, action: 'shutdown'}) }}"
+                                                            data-method="post">{{ 'proxmoxGuestShutdownAction'|trans }}</option>
+                                                {% endif %}
+                                                {% if row.canStart %}
+                                                    <option value="{{ path('app_infrastructure_guests_power', {id: host.id, node: guest.node, vmid: guest.vmid, action: 'reboot'}) }}"
+                                                            data-method="post">{{ 'proxmoxGuestRebootAction'|trans }}</option>
+                                                {% endif %}
+                                                {% if row.canStop %}
+                                                    {# Last, and never directly under « Arrêter ». An ACPI
+                                                       request and a power cut now share one list, so the
+                                                       distance and the confirmation are what is left
+                                                       between them - see proxmoxGuestForceConfirmText. #}
+                                                    <option value="{{ path('app_infrastructure_guests_power', {id: host.id, node: guest.node, vmid: guest.vmid, action: 'stop'}) }}"
+                                                            data-method="post" data-confirm="1">{{ 'proxmoxGuestForceAction'|trans }}</option>
+                                                {% endif %}
+                                            {% elseif row.canStart %}
+                                                <option value="{{ path('app_infrastructure_guests_power', {id: host.id, node: guest.node, vmid: guest.vmid, action: 'start'}) }}"
+                                                        data-method="post">{{ 'proxmoxGuestStartAction'|trans }}</option>
+                                            {% endif %}
+                                        {% endif %}
+                                    </select>
+                                    {# Its own line under the select rather than in place of it: what an
+                                       operation in flight says is a note about the machine, and it must
+                                       not take « Comptes » away while it is being said. #}
+                                    <div class="cm-guest__sub cm-actions__note" data-proxmox-guests-target="pending"
+                                         {%- if live %} data-status-url="{{ path('app_infrastructure_operation_status', {id: live.id}) }}"{% endif %}>
+                                        {%- if live %}
+                                            {{- 'proxmoxGuestOperationPendingText'|trans({
+                                                '%action%': live.action.labelKey|trans,
+                                                '%who%': live.requestedByLabel,
+                                            }) -}}
+                                        {%- endif %}
+                                    </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="9" class="text-center py-4 cm-guest__sub">{{ 'proxmoxGuestNoneText'|trans }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if pageCount > 1 %}
+            <div class="cm-actionbar" style="margin:0; padding: 12px 18px; border-top: 1px solid var(--cm-border-soft);">
+                <span class="cm-actionbar__meta">{{ 'proxmoxOperationPageMeta'|trans({'%page%': page, '%pages%': pageCount}) }}</span>
+                <div class="cm-actionbar__buttons">
+                    {% if page > 1 %}
+                        <a class="cm-btn cm-btn--outline cm-btn--sm" href="{{ path('app_infrastructure_guests', filters|merge({page: page - 1})) }}">{{ 'proxmoxOperationPreviousAction'|trans }}</a>
+                    {% endif %}
+                    {% if page < pageCount %}
+                        <a class="cm-btn cm-btn--outline cm-btn--sm" href="{{ path('app_infrastructure_guests', filters|merge({page: page + 1})) }}">{{ 'proxmoxOperationNextAction'|trans }}</a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
 {% endblock %}
