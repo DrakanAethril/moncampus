@@ -11,31 +11,22 @@
    the shared partial. So this uses the same one, and the card that follows carries
    .cm-card--tabbed so it fuses with the active tab.
 
-   « Machines » needs a host to point at, since there is no aggregated multi-host view by design. It
-   therefore takes the host currently being looked at, or the first declared one - and simply does
-   not appear while no host exists, rather than linking nowhere.
+   Every entry is host-free. « Machines » and « Images » used to need a host to point at, which is
+   what the « Aller à… » box beside the tabs existed to change - a jump list is a poor filter, and
+   it made two of the seven screens the only ones you could not simply click. Both now read every
+   declared host and filter in the bar, the way the operations journal already did.
 
    Entries appear as their screens are built; there is deliberately no disabled entry for a screen
    that does not exist yet - a link that goes nowhere teaches nothing. #}
-{% set nav_host = host|default(null) ?: infrastructure_default_host() %}
-{% set infrastructure_tabs = [
-    {url: path('app_infrastructure'), label: 'infrastructureOverviewNavLabel'|trans, active: activeNav == 'overview'},
-    {url: path('app_infrastructure_hosts'), label: 'infrastructureHostsNavLabel'|trans, active: activeNav == 'hosts'},
-] %}
-{% if nav_host %}
-    {% set infrastructure_tabs = infrastructure_tabs|merge([
-        {url: path('app_infrastructure_guests', {id: nav_host.id}), label: 'infrastructureGuestsNavLabel'|trans, active: activeNav == 'guests'},
-        {url: path('app_infrastructure_images', {id: nav_host.id}), label: 'infrastructureImagesNavLabel'|trans, active: activeNav == 'images'},
-    ]) %}
-{% endif %}
-{% set infrastructure_tabs = infrastructure_tabs|merge([
-    {url: path('app_infrastructure_ip_ranges'), label: 'infrastructureAddressesNavLabel'|trans, active: activeNav == 'ip_ranges'},
-    {url: path('app_infrastructure_batches'), label: 'infrastructureBatchesNavLabel'|trans, active: activeNav == 'batches'},
-    {url: path('app_infrastructure_operations'), label: 'infrastructureOperationsNavLabel'|trans, active: activeNav == 'operations'},
-    {url: path('app_infrastructure_console_sessions'), label: 'consoleSessionsNavLabel'|trans, active: activeNav == 'console_sessions'},
-]) %}
-
 {% include '_tabs.html.twig' with {
-    tabs: infrastructure_tabs,
-    tabs_action: infrastructure_hosts()|length > 1 ? 'infrastructure/_tabs_goto.html.twig' : null,
+    tabs: [
+        {url: path('app_infrastructure'), label: 'infrastructureOverviewNavLabel'|trans, active: activeNav == 'overview'},
+        {url: path('app_infrastructure_hosts'), label: 'infrastructureHostsNavLabel'|trans, active: activeNav == 'hosts'},
+        {url: path('app_infrastructure_guests'), label: 'infrastructureGuestsNavLabel'|trans, active: activeNav == 'guests'},
+        {url: path('app_infrastructure_images'), label: 'infrastructureImagesNavLabel'|trans, active: activeNav == 'images'},
+        {url: path('app_infrastructure_ip_ranges'), label: 'infrastructureAddressesNavLabel'|trans, active: activeNav == 'ip_ranges'},
+        {url: path('app_infrastructure_batches'), label: 'infrastructureBatchesNavLabel'|trans, active: activeNav == 'batches'},
+        {url: path('app_infrastructure_operations'), label: 'infrastructureOperationsNavLabel'|trans, active: activeNav == 'operations'},
+        {url: path('app_infrastructure_console_sessions'), label: 'consoleSessionsNavLabel'|trans, active: activeNav == 'console_sessions'},
+    ],
 } %}

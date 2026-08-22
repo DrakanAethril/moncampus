@@ -1,9 +1,0 @@
-{# « Aller à… » - the jump box, so a deep screen stays one click away rather than one remembered URL
-   away. It lists the declared hosts, which is what every deep screen hangs off. Rendered as the tab
-   row's own action slot, the same place every other tabbed screen puts its « + Ajouter… ». #}
-<select class="cm-select cm-field--sm" data-controller="jump-to" data-action="change->jump-to#go" aria-label="{{ 'infrastructureGoToLabel'|trans }}">
-    <option value="">{{ 'infrastructureGoToLabel'|trans }}</option>
-    {% for jump in infrastructure_hosts() %}
-        <option value="{{ path('app_infrastructure_guests', {id: jump.id}) }}">{{ jump.label }}</option>
-    {% endfor %}
-</select>

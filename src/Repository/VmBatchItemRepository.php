@@ -44,6 +44,38 @@ class VmBatchItemRepository extends ServiceEntityRepository
     }
 
     /**
+     * Which batch each deployed machine belongs to, for the whole fleet at once.
+     *
+     * The machines list needs the answer for every row it draws, and asking it row by row would be
+     * one query per machine on a screen that already waits on every hypervisor. Keyed by host and
+     * then by VMID because a VMID is only unique within a cluster - the same reasoning that scopes
+     * findOneForMachine() by host rather than by number alone.
+     *
+     * @return array<int, array<int, array{id: int, label: string}>> host id => vmid => batch
+     */
+    public function findBatchesByHostAndVmid(): array
+    {
+        /** @var list<array{hostId: int, vmid: int, batchId: int, batchLabel: string}> $rows */
+        $rows = $this->createQueryBuilder('i')
+            ->select('IDENTITY(b.host) AS hostId', 'i.vmid AS vmid', 'b.id AS batchId', 'b.label AS batchLabel')
+            ->join('i.batch', 'b')
+            ->andWhere('i.vmid IS NOT NULL')
+            ->orderBy('i.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $map = [];
+
+        foreach ($rows as $row) {
+            // Latest wins, the way findOneForMachine() orders by id DESC: a VMID reused by a later
+            // deployment belongs to that one, not to the batch that first held the number.
+            $map[$row['hostId']][$row['vmid']] = ['id' => $row['batchId'], 'label' => $row['batchLabel']];
+        }
+
+        return $map;
+    }
+
+    /**
      * The items a "resume" should try again - the ones that never started and the ones that failed.
      * Anything already created is left alone, which is what makes resuming safe to press twice.
      *

@@ -45,6 +45,38 @@ class ProxmoxOperationRepository extends ServiceEntityRepository
     }
 
     /**
+     * The same, for every host at once: the machines list is no longer about one of them.
+     *
+     * @return array<int, array<int, ProxmoxOperation>> host id => vmid => operation
+     */
+    public function findUnsettledByHostAndVmid(): array
+    {
+        /** @var list<ProxmoxOperation> $rows */
+        $rows = $this->createQueryBuilder('o')
+            ->andWhere('o.status IN (:live)')
+            ->andWhere('o.vmid IS NOT NULL')
+            ->andWhere('o.host IS NOT NULL')
+            ->setParameter('live', [ProxmoxOperationStatus::Pending, ProxmoxOperationStatus::Running])
+            ->orderBy('o.requestedAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $byHost = [];
+
+        foreach ($rows as $operation) {
+            $vmid = $operation->getVmid();
+            $host = $operation->getHost();
+
+            if (null !== $vmid && null !== $host) {
+                // Latest wins: two live operations on one machine is not a state to display twice.
+                $byHost[(int) $host->getId()][$vmid] = $operation;
+            }
+        }
+
+        return $byHost;
+    }
+
+    /**
      * The operations still under way on a host, keyed by VMID - what the machines list needs to
      * show "shutting down, asked for by X, 8 seconds ago" on the right row without a query per row.
      *

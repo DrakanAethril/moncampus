@@ -9,9 +9,7 @@
         {% include '_breadcrumb.html.twig' with {segments: [
             {label: 'homeNavLabel'|trans, url: path('app_home')},
             {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
-            {label: 'infrastructureHostsNavLabel'|trans, url: path('app_infrastructure_hosts')},
-            {label: host.label, url: path('app_infrastructure_guests', {id: host.id})},
-            {label: 'infrastructureGuestsNavLabel'|trans, url: path('app_infrastructure_guests', {id: host.id})},
+            {label: 'infrastructureGuestsNavLabel'|trans, url: path('app_infrastructure_guests', {host: host.id})},
             {label: machineName, url: app.request.pathInfo},
         ]} %}
     {% else %}
@@ -143,7 +141,7 @@
                        de ces écrans donnent le geste suivant au lieu de l'erreur. #}
                     <a class="cm-btn cm-btn--primary" href="{{ path('app_my_machines') }}">{{ 'consoleGoToMachinesAction'|trans }}</a>
                 {% elseif fromAdmin %}
-                    <a class="cm-btn cm-btn--primary" href="{{ path('app_infrastructure_guests', {id: host.id}) }}">{{ 'consoleBackToGuestsAction'|trans }}</a>
+                    <a class="cm-btn cm-btn--primary" href="{{ path('app_infrastructure_guests', {host: host.id}) }}">{{ 'consoleBackToGuestsAction'|trans }}</a>
                 {% endif %}
             </div>
         </div>
@@ -238,7 +236,7 @@
                     <button type="button" data-action="console#zoomOut" aria-label="{{ 'consoleZoomOutAction'|trans }}">A−</button>
                     <button type="button" data-action="console#zoomIn" aria-label="{{ 'consoleZoomInAction'|trans }}">A+</button>
                 </span>
-                <a class="cm-console__chip" href="{{ fromAdmin ? path('app_infrastructure_guests', {id: host.id}) : path('app_my_machines') }}">{{ 'consoleCloseAction'|trans }}</a>
+                <a class="cm-console__chip" href="{{ fromAdmin ? path('app_infrastructure_guests', {host: host.id}) : path('app_my_machines') }}">{{ 'consoleCloseAction'|trans }}</a>
             </span>
         </div>
     </div>

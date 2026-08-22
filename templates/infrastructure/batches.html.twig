@@ -36,6 +36,7 @@
                             <th>{{ 'vmBatchProgramFieldLabel'|trans }}</th>
                             <th>{{ 'proxmoxOperationHostLabel'|trans }}</th>
                             <th>{{ 'vmBatchProgressLabel'|trans }}</th>
+                            <th>{{ 'vmBatchCreatedLabel'|trans }}</th>
                             <th>{{ 'vmBatchExpiresFieldLabel'|trans }}</th>
                             <th class="cm-actions"></th>
                         </tr>
@@ -57,6 +58,9 @@
                                         <span class="cm-guest__sub">—</span>
                                     {% endfor %}
                                 </td>
+                                {# Quand le lot a été planifié. Deux lots portant le nom d'une même
+                                   classe ne se distinguent que par là, une fois l'année entamée. #}
+                                <td class="cm-guest__sub">{{ batch.creationDate|date('d/m/Y') }}</td>
                                 <td class="cm-guest__sub">
                                     {% if batch.expiresAt %}
                                         {{ batch.expiresAt|date('d/m/Y') }}
