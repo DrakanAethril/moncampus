@@ -6475,7 +6475,7 @@ vmInstallStepShutdownFailedLabel: 'Arrêt impossible'
 
 # --- Sondages (design/validated/surveys.md) - lots 1 et 2 : le socle et l'éditeur ---------------
 surveysNavLabel: 'Bibliothèque de Sondages'
-surveysPageHeading: 'Sondages'
+surveysPageHeading: 'Bibliothèque de Sondages'
 surveysOpenCampaignsCountText: '{0}aucune campagne ouverte|{1}1 campagne ouverte|]1,Inf[%count% campagnes ouvertes'
 surveysAwaitingReminderCountText: '{1}1 en attente de relance|]1,Inf[%count% en attente de relance'
 surveyNewButtonLabel: 'Nouveau sondage'
