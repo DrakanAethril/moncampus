@@ -26,6 +26,31 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.08.23'
+      date: '2026-08-23'
+      summary: "La bibliothèque de quiz se range en dossiers, et un dossier entier de la bibliothèque de fichiers se partage désormais à une classe, sous-dossiers compris. L'export PDF d'une progression peut par ailleurs se passer des dates de séances, pour servir de pièce de justification sans avoir à placer chaque séance dans l'emploi du temps."
+      entries:
+          - type: nouveaute
+            title: 'Classer ses quiz en dossiers'
+            detail: "La bibliothèque de quiz adopte l'arborescence de la bibliothèque de fichiers : les dossiers à gauche, le contenu à droite, et le déplacement soit en glissant une ligne, soit par le menu de fin de ligne. Supprimer un dossier ne supprime jamais les quiz qu'il contient : ils remontent d'un niveau. La recherche, elle, porte sur toute la bibliothèque."
+          - type: nouveaute
+            title: 'Partager un dossier entier à une classe'
+            detail: "Le partage porte tout le sous-arbre : le contenu, les sous-dossiers, et ce qui y sera déposé plus tard. Les étudiants ouvrent un écran de lecture propre au dossier. Un dossier partagé compte ses mises à disposition comme un fichier, et sa suppression nomme d'abord les classes concernées."
+          - type: nouveaute
+            title: "Un export PDF de progression sans les dates de séances"
+            detail: "Le bouton d'export propose une seconde version du document, qui ne parle plus d'heures placées mais de volumes et de mois : elle n'oblige donc pas à placer chaque séance dans l'emploi du temps, ni à refaire le document à chaque changement. Une vue d'ensemble, délibérément pas une vue exacte. Le document d'origine reste disponible, inchangé."
+          - type: modification
+            title: "Retouches de l'espace wiki"
+            detail: "Les pièces jointes se replient derrière une ligne discrète au lieu d'occuper un panneau sous chaque page, Bash rejoint les langages du bloc de code, chaque bloc de code reçoit un bouton pour le recopier, et un mot ou une adresse très longue revient à la ligne au lieu de déborder — à l'écran comme à l'impression."
+          - type: modification
+            title: "« Partager » rejoint « Enregistrer » sur un quiz"
+            detail: "Les deux boutons vivaient dans deux barres différentes, à deux bouts de l'écran ; ils voisinent désormais."
+          - type: fix
+            title: "Le bouton d'import de la bibliothèque de fichiers ne répondait pas"
+            detail: "Le clic ne faisait rien, à tous les niveaux de l'arborescence."
+          - type: fix
+            title: "Le menu d'une ligne de la bibliothèque n'est plus rogné"
+            detail: "Sur une carte plus courte que le menu, la moitié des entrées devenaient illisibles."
     - version: '2026.08.22'
       date: '2026-08-22'
       summary: "Les enseignants ouvrent désormais un terminal sur les machines virtuelles de leurs classes, depuis le navigateur et sans rien installer : ils voient l'écran de toute la classe d'un coup d'œil, envoient une commande à toutes les machines à la fois et reportent la séance dans le cahier de texte. Les machines sont par ailleurs livrées éteintes, et leurs listes d'administration se filtrent au lieu de se parcourir hôte par hôte."
