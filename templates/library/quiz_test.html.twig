@@ -3,11 +3,9 @@
 {% block title %}{{ quizTemplate.name }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
-        {label: 'quizLibraryPageHeading'|trans, url: path('app_library_quiz')},
+    {% include 'library/_quiz_trail.html.twig' with {folderTrail: folderTrail, tail: [
         {label: quizTemplate.name, url: app.request.requestUri},
-    ]} %}
+    ]} only %}
 {% endblock %}
 {% block page_title %}{{ quizTemplate.name }}{% endblock %}
 

@@ -90,6 +90,12 @@ class QuizImportAssistantController extends AbstractController
             return $this->answerStepOne($request, $sequenceRepository, $seanceRepository);
         }
 
+        // Step 1 is the import's front door, so the folder the teacher came from is recorded here
+        // and nowhere else - null included, which is what clears the folder an abandoned import left
+        // behind. What it is for: « Importer » clicked inside a folder files the quiz there, exactly
+        // like « + Nouveau quiz » (App\Controller\QuizLibraryController::create()).
+        $request->getSession()->set(QuizImportSession::FOLDER_KEY, QueryValue::nullableInt($request, 'folder'));
+
         // Deep link: ?sequence=…/?seance=… (+ optional mode/live) sets the state and skips ahead.
         $incoming = $this->fromQuery($request, $sequenceRepository, $seanceRepository);
         if (null !== $incoming) {

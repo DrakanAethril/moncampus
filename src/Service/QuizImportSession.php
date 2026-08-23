@@ -26,6 +26,16 @@ final class QuizImportSession
      */
     public const string SOURCE_KEY = 'quiz_import_source';
 
+    /**
+     * The folder the teacher was standing in when they entered the import, so what comes out of it
+     * is filed there rather than at the root - the pendant of « + Nouveau quiz »'s `?folder=`.
+     *
+     * Written at the doors (the assistant's step 1, the upload screen), read once when a *new* quiz
+     * is created, and cleared with the payload. An import that appends to an existing quiz never
+     * reads it: that quiz already has a place, and the import is not a reason to move it.
+     */
+    public const string FOLDER_KEY = 'quiz_import_folder';
+
     /** The assistant's own state - see App\Service\QuizAssistantState. */
     public const string ASSISTANT_KEY = 'quiz_import_assistant';
 }

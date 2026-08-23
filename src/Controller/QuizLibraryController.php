@@ -175,6 +175,7 @@ class QuizLibraryController extends AbstractController
             'quizTemplate' => $template,
             'form' => $form,
             'isNew' => true,
+            'folderTrail' => $this->folderTrailOf($folders, $template->getFolder(), $this->currentUser()),
             // Nothing to share yet: the quiz does not exist until this form is saved.
             'canShare' => false,
             'shares' => [],
@@ -243,6 +244,7 @@ class QuizLibraryController extends AbstractController
         Request $request,
         EntityManagerInterface $entityManager,
         QuizTemplateRepository $repository,
+        QuizFolderRepository $folders,
         ContentShareRepository $shares,
         ContentShareAudience $shareAudience,
     ): Response {
@@ -281,6 +283,7 @@ class QuizLibraryController extends AbstractController
             'quizTemplate' => $template,
             'form' => $form,
             'isNew' => false,
+            'folderTrail' => $this->folderTrailOf($folders, $template->getFolder(), $this->currentUser()),
             'canShare' => $canShare,
             'shares' => $existingShares,
             'shareGroups' => $canShare ? $shareAudience->pickableGroups() : [],
@@ -295,7 +298,7 @@ class QuizLibraryController extends AbstractController
     // for two unrelated entity hierarchies (QuizQuestion/QuizAnswer here vs
     // QuizInstanceQuestion/QuizInstanceAnswer there).
     #[Route(path: '/library/quiz/{id}/test', name: 'app_library_quiz_test')]
-    public function test(int $id, Request $request, QuizTemplateRepository $repository, QuizAnswerChecker $answerChecker): Response
+    public function test(int $id, Request $request, QuizTemplateRepository $repository, QuizFolderRepository $folders, QuizAnswerChecker $answerChecker): Response
     {
         $template = $this->findTemplateOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
@@ -403,6 +406,7 @@ class QuizLibraryController extends AbstractController
 
         return $this->render('library/quiz_test.html.twig', [
             'quizTemplate' => $template,
+            'folderTrail' => $this->folderTrailOf($folders, $template->getFolder(), $this->currentUser()),
             'questions' => $questions,
             'ordreAnswerOrder' => $ordreAnswerOrder,
             'wordBanks' => $wordBanks,
@@ -424,7 +428,7 @@ class QuizLibraryController extends AbstractController
     // results/instances stay teacher-visible (unlike the ROLE_ADMIN-only séquences Program side),
     // so there's no branching redirect based on role here.
     #[Route(path: '/library/quiz/{id}/launch', name: 'app_library_quiz_launch')]
-    public function launch(int $id, Request $request, QuizTemplateRepository $repository, ProgramRepository $programRepository, StructureAccessChecker $accessChecker, QuizInstantiationService $instantiationService, QuizQuestionCompleteness $completeness): Response
+    public function launch(int $id, Request $request, QuizTemplateRepository $repository, QuizFolderRepository $folders, ProgramRepository $programRepository, StructureAccessChecker $accessChecker, QuizInstantiationService $instantiationService, QuizQuestionCompleteness $completeness): Response
     {
         $template = $this->findTemplateOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
@@ -498,6 +502,7 @@ class QuizLibraryController extends AbstractController
 
         return $this->render('library/quiz_launch.html.twig', [
             'quizTemplate' => $template,
+            'folderTrail' => $this->folderTrailOf($folders, $template->getFolder(), $this->currentUser()),
             'form' => $form,
             'incompleteQuestions' => $incomplete,
             // Feeds quiz_pool_controller.js so the pool size, the draw's ceiling and its default
@@ -552,7 +557,7 @@ class QuizLibraryController extends AbstractController
     }
 
     #[Route(path: '/library/quiz/{id}/questions', name: 'app_library_quiz_questions')]
-    public function questions(int $id, Request $request, QuizTemplateRepository $repository, QuizQuestionCompleteness $completeness): Response
+    public function questions(int $id, Request $request, QuizTemplateRepository $repository, QuizFolderRepository $folders, QuizQuestionCompleteness $completeness): Response
     {
         $template = $this->findTemplateOrNotFound($repository, $id);
         $canEdit = $this->isGranted(QuizTemplateVoter::EDIT, $template);
@@ -601,6 +606,7 @@ class QuizLibraryController extends AbstractController
 
         return $this->render('library/quiz_questions.html.twig', [
             'quizTemplate' => $template,
+            'folderTrail' => $this->folderTrailOf($folders, $template->getFolder(), $this->currentUser()),
             'questions' => $pageQuestions,
             'totalQuestions' => \count($questions),
             'page' => $page,

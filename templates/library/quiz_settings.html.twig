@@ -3,11 +3,9 @@
 {% block title %}{{ quizTemplate.name }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
-        {label: 'quizLibraryPageHeading'|trans, url: path('app_library_quiz')},
+    {% include 'library/_quiz_trail.html.twig' with {folderTrail: folderTrail, tail: [
         {label: quizTemplate.name, url: app.request.requestUri},
-    ]} %}
+    ]} only %}
 {% endblock %}
 {% block page_title %}{{ quizTemplate.name }}{% endblock %}
 
@@ -85,7 +83,7 @@
                             <span class="cm-note__icon">i</span>
                             <div>
                                 {{ 'quizSettingsImportNoteText'|trans }}
-                                <a href="{{ path('app_library_quiz_import') }}">{{ 'quizImportButtonLabel'|trans }}</a>
+                                <a href="{{ path('app_library_quiz_import', quizTemplate.folder ? {folder: quizTemplate.folder.id} : {}) }}">{{ 'quizImportButtonLabel'|trans }}</a>
                             </div>
                         </div>
                     {% endif %}
@@ -94,7 +92,8 @@
             <div class="cm-actionbar">
                 {% include '_last_modified_meta.html.twig' with {entity: quizTemplate} %}
                 <div class="cm-actionbar__buttons">
-                    <a href="{{ path('app_library_quiz') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {% set backFolder = folderTrail|last %}
+                    <a href="{{ backFolder ? path('app_library_quiz_folder', {folderId: backFolder.id}) : path('app_library_quiz') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
                 </div>
             </div>
             {{ form_rest(form) }}
