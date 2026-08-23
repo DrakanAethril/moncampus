@@ -182,9 +182,10 @@
             {% else %}
                 <div class="list-group list-group-flush">
                     {% for row in quizBoard.quizzes %}
+                        {% set quizDescription = row.quiz.description|default('')|trim %}
                         <div class="list-group-item d-flex justify-content-between align-items-center px-0">
                             <div>
-                                <a href="{{ path('app_library_quiz_questions', {id: row.quiz.id}) }}">{{ row.quiz.name }}</a>
+                                <a href="{{ path('app_library_quiz_questions', {id: row.quiz.id}) }}"{% if quizDescription %} title="{{ quizDescription }}"{% endif %}>{{ row.quiz.name }}</a>
                                 {# Where this quiz hangs: the séquence itself, and/or the séances using
                                    it - one row however many there are. #}
                                 {% if row.onSequence %}<span class="badge bg-secondary-lt ms-2">{{ 'libraryQuizWholeSequenceLabel'|trans }}</span>{% endif %}
