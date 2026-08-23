@@ -22,6 +22,7 @@ use App\Entity\TopicGroup;
 use App\Entity\Track;
 use App\Entity\User;
 use App\Enum\EvaluationNature;
+use App\Enum\ProgressionExportMode;
 use App\Service\ProgressionQualiopiBuilder;
 use PHPUnit\Framework\TestCase;
 
@@ -464,6 +465,137 @@ class ProgressionQualiopiBuilderTest extends TestCase
         // Only the wording moved.
         self::assertFalse($before['sequences'][0]['coAnimated']);
         self::assertTrue($after['sequences'][0]['coAnimated']);
+    }
+
+    // --- The undated document (App\Enum\ProgressionExportMode::Undated) ------------------------
+    //
+    // It exists so that a justification file costs no placement work: no date anywhere, volumes and
+    // months only, and the auto-planner's proposal counted wherever nothing was validated. What is
+    // pinned here is the arithmetic that changes with it - the rest of the document is the same rows
+    // read by the same rules.
+
+    public function testTheUndatedDocumentCountsTheProposalTheDatedOneOnlyShows(): void
+    {
+        $progression = new Progression($this->topic, $this->teacher);
+        $sequence = $this->sequence($progression, 'Séquence 1');
+
+        $seance = new ProgressionSeance($sequence, 'Séance 1');
+        $seance->setPlannedMinutes(60);
+        $seance->setSeanceInstance($this->seanceInstance('Séance 1'));
+        $placement = new ProgressionSeancePlacement($seance, $this->slot('2026-09-01'));
+        $placement->setDurationMinutes(60);
+        // Not validated - the whole point: the dated document shows it and counts nothing.
+
+        $dated = $this->builder->build($progression);
+        $undated = $this->builder->build($progression, ProgressionExportMode::Undated);
+
+        self::assertSame(0, $dated['totalLearnerMinutes'], 'unchanged: the dated document counts the validated only');
+        self::assertSame(0, $dated['totalCountedMinutes']);
+
+        self::assertSame(60, $undated['totalCountedMinutes']);
+        self::assertSame(60, $undated['sequences'][0]['countedMinutes']);
+        self::assertSame(60, $undated['sequences'][0]['seances'][0]['countedMinutes']);
+        self::assertCount(1, $undated['sequences'][0]['seances'][0]['deliveries'], 'the proposal IS the delivery here');
+        self::assertSame([], $undated['sequences'][0]['seances'][0]['proposals'], 'and there is no second list to print');
+        // The date is still carried, because the month is derived from it - the document simply
+        // never prints the day.
+        self::assertSame('2026-09-01', $undated['firstDay']?->format('Y-m-d'));
+        self::assertSame(0, $undated['uncoveredSeanceCount']);
+    }
+
+    public function testASeanceNeverSumsAValidatedPlacementAndAProposal(): void
+    {
+        // THE arithmetic guard on the mode. A séance spread over two créneaux with only one of them
+        // validated would otherwise be counted once as delivered and once as proposed - 2 h for a
+        // 1 h séance. The validated reading wins whenever there is one.
+        $progression = new Progression($this->topic, $this->teacher);
+        $sequence = $this->sequence($progression, 'Séquence 1');
+
+        $seance = new ProgressionSeance($sequence, 'Séance 1');
+        $seance->setPlannedMinutes(60);
+        $seance->setSeanceInstance($this->seanceInstance('Séance 1'));
+
+        $confirmed = new ProgressionSeancePlacement($seance, $this->slot('2026-09-01'));
+        $confirmed->setDurationMinutes(60);
+        $confirmed->setConfirmed(true);
+
+        $stale = new ProgressionSeancePlacement($seance, $this->slot('2026-09-08'));
+        $stale->setDurationMinutes(60);
+
+        $undated = $this->builder->build($progression, ProgressionExportMode::Undated);
+
+        self::assertSame(60, $undated['totalCountedMinutes']);
+        self::assertCount(1, $undated['sequences'][0]['seances'][0]['deliveries']);
+        self::assertSame('2026-09-01', $undated['sequences'][0]['seances'][0]['deliveries'][0]['date']?->format('Y-m-d'));
+    }
+
+    public function testAPerGroupSeanceStillCountsOnceWhenOnlyProposed(): void
+    {
+        // The learner-hour rule is the same rule whichever list filled the deliveries: a séance
+        // proposed to each of two groups is received once by an apprenant, not twice.
+        $progression = new Progression($this->topic, $this->teacher);
+        $sequence = $this->sequence($progression, 'Analyse de risques');
+
+        $seance = new ProgressionSeance($sequence, 'Cartographier les actifs');
+        $seance->setPlannedMinutes(60);
+        $seance->setSeanceInstance($this->seanceInstance('Cartographier les actifs'));
+
+        foreach ([['2026-09-01', 'SLAM'], ['2026-09-02', 'SISR']] as [$day, $optionName]) {
+            $placement = new ProgressionSeancePlacement($seance, $this->slot($day));
+            $placement->setDurationMinutes(60);
+            $placement->setOption($this->option($optionName));
+        }
+
+        $undated = $this->builder->build($progression, ProgressionExportMode::Undated);
+
+        self::assertSame(60, $undated['totalCountedMinutes'], 'an apprenant attends their own group only');
+        self::assertCount(1, $undated['sequences'][0]['seances'][0]['redeliveries']);
+    }
+
+    public function testASeanceTheYearCannotHoldIsCountedApartAndWorthNothing(): void
+    {
+        // « Les séances qui ne rentrent pas sont ignorées » - but not silently: giving it a volume
+        // would make the total describe a year the timetable cannot hold, and dropping it without a
+        // word would make that total inexplicably short.
+        $progression = new Progression($this->topic, $this->teacher);
+        $sequence = $this->sequence($progression, 'Séquence 1');
+
+        $this->placedSeance($sequence, 'Séance 1', 60, '2026-09-01');
+
+        $orphan = new ProgressionSeance($sequence, 'Séance 2');
+        $orphan->setPlannedMinutes(120);
+        $orphan->setSeanceInstance($this->seanceInstance('Séance 2'));
+
+        $undated = $this->builder->build($progression, ProgressionExportMode::Undated);
+
+        self::assertSame(60, $undated['totalCountedMinutes'], 'the 2 h nobody can schedule are not in the total');
+        self::assertNull($undated['sequences'][0]['seances'][1]['countedMinutes']);
+        self::assertSame(1, $undated['uncoveredSeanceCount']);
+        self::assertSame(0, $undated['outOfTimetableSeanceCount']);
+        self::assertTrue($undated['sequences'][0]['inTimetable']);
+    }
+
+    public function testASequenceHeldOutsideTheTimetableKeepsItsPlannedVolume(): void
+    {
+        // §4.5 - « Placer dans l'EDT » décoché. Its séances will never carry a placement, not even a
+        // proposal, and that is a decision rather than a shortage: the teaching happens, only the
+        // scheduling was declined. Dropping it would empty the document of real hours.
+        $progression = new Progression($this->topic, $this->teacher);
+        $sequence = $this->sequence($progression, 'Projet fil rouge');
+        $sequence->setPlaceInTimetable(false);
+
+        $seance = new ProgressionSeance($sequence, 'Atelier');
+        $seance->setPlannedMinutes(180);
+        $seance->setSeanceInstance($this->seanceInstance('Atelier'));
+
+        $undated = $this->builder->build($progression, ProgressionExportMode::Undated);
+
+        self::assertSame(180, $undated['totalCountedMinutes']);
+        self::assertSame(180, $undated['sequences'][0]['seances'][0]['countedMinutes']);
+        self::assertFalse($undated['sequences'][0]['inTimetable']);
+        self::assertSame(1, $undated['outOfTimetableSeanceCount']);
+        self::assertSame(0, $undated['uncoveredSeanceCount'], 'nothing was missing: nothing was asked for');
+        self::assertNull($undated['sequences'][0]['firstDay'], 'and it has no month to print');
     }
 
     /**
