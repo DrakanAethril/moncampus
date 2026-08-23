@@ -104,6 +104,12 @@
     --cm-shadow-pop: 0 12px 28px rgba(18, 52, 77, .18);
     --cm-font-ui: 'Source Sans 3', system-ui, sans-serif;
     --cm-font-title: 'Spectral', Georgia, serif;
+    /* System-first, and deliberately not a vendored webfont: every platform the school runs
+       already ships the face its own editor and terminal use - SF Mono on macOS, Consolas on
+       Windows, DejaVu Sans Mono on Linux - so a code block reads like an IDE without a single
+       extra byte over the wire. `ui-monospace` is what picks SF Mono up on Safari. */
+    --cm-font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas,
+        'Cascadia Mono', 'JetBrains Mono', 'DejaVu Sans Mono', 'Liberation Mono', monospace;
 
     /* ---- Retint Tabler's own variables so unmocked screens inherit the theme ---- */
     --tblr-font-sans-serif: var(--cm-font-ui);
@@ -7349,29 +7355,51 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
 /* `color` is not decoration here: Tabler styles <pre> for a dark code panel and paints its text
    near-white, so a code sample on this light surface was invisible - the block rendered as an empty
    box. Measured in a browser, which is the only way that kind of bug shows up. */
-.cm-wiki__body pre { padding: 12px 14px; border: 1px solid var(--cm-border); border-radius: 8px; background: var(--cm-surface-alt); color: var(--cm-ink); overflow-x: auto; font-size: 13px; }
-.cm-wiki__body pre code { color: inherit; background: none; }
+.cm-wiki__body pre {
+    padding: 12px 14px; border: 1px solid var(--cm-border); border-radius: 8px;
+    background: var(--cm-surface-alt); color: var(--cm-ink); overflow-x: auto;
+    /* The editor face, not the document face: a code sample is read column by column, so it gets
+       the monospace stack, a tab that is four columns wide rather than the browser's eight, and no
+       ligature - `!=` and `=>` must stay two glyphs in a command somebody is about to retype. */
+    font: 400 13px/1.55 var(--cm-font-mono); tab-size: 4; font-variant-ligatures: none;
+}
+.cm-wiki__body pre code { color: inherit; background: none; font: inherit; }
 
 /* A code block and its copy button, put together at read time by wiki_code_copy_controller.js. The
-   button rides in the corner of the block and stays faint until the pointer or the keyboard reaches
-   it: on a page that is mostly commands, a column of solid buttons would read as the content. */
+   button rides in the corner of the block. It used to appear only under the pointer, which made a
+   feature nobody could see: an affordance that has to be discovered by hovering is one that gets
+   reported as missing. It is drawn at rest instead, faint enough that a page of commands still
+   reads as text, and comes up to full contrast on hover or keyboard focus. */
 .cm-codeblock { position: relative; }
 /* Room kept for the button, so the first line of code never runs underneath it. */
 .cm-codeblock > pre { padding-right: 42px; }
-.cm-codeblock__copy {
+/* Written as a descendant rather than as the bare class on purpose: .cm-copybtn is declared further
+   down this file with the same specificity, so it was winning on source order and the button ended
+   up 20px, transparent and borderless - the plated 26px square described here never reached the
+   screen. Two classes beat one, whatever the order. */
+.cm-codeblock > .cm-codeblock__copy {
     position: absolute; top: 7px; right: 7px;
     width: 26px; height: 26px; border-radius: 7px;
     background: var(--cm-surface); border: 1px solid var(--cm-border);
-    opacity: 0; transition: opacity .12s ease;
+    color: var(--cm-muted); opacity: .55; transition: opacity .12s ease, color .12s ease;
 }
-.cm-codeblock:hover .cm-codeblock__copy,
-.cm-codeblock__copy:focus-visible,
-.cm-codeblock__copy.cm-copybtn--done { opacity: 1; }
+.cm-codeblock:hover > .cm-codeblock__copy,
+.cm-codeblock > .cm-codeblock__copy:hover,
+.cm-codeblock > .cm-codeblock__copy:focus-visible,
+.cm-codeblock > .cm-codeblock__copy.cm-copybtn--done { opacity: 1; }
+.cm-codeblock > .cm-codeblock__copy:hover { color: var(--cm-ink); background: var(--cm-surface-soft); }
 /* The button hangs off the wrapper and not off the <pre>, which scrolls sideways when a line is
    long - anchored to the block itself it would slide out of sight with the first wide command. The
    wrapper carries no border, padding or height, so the <pre>'s own margins still collapse through it
    and the page keeps the spacing it had before the buttons existed. */
-.cm-wiki__body code { font-size: 0.92em; color: var(--cm-ink); }
+/* Inline code: same face as the blocks, on a soft plate so a class name inside a sentence is
+   picked out without the sentence breaking up. 0.92em keeps it on the paragraph's baseline grid -
+   a monospace face at the body's own size reads a notch too large. */
+.cm-wiki__body code {
+    font-family: var(--cm-font-mono); font-size: 0.92em; color: var(--cm-ink);
+    background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft);
+    border-radius: 4px; padding: 1px 5px; font-variant-ligatures: none;
+}
 .cm-wiki__body blockquote { margin: 1.1em 0; padding: 4px 0 4px 16px; border-left: 3px solid var(--cm-border); color: var(--cm-muted); }
 
 .cm-wiki__body details { margin: 1em 0; padding: 10px 14px; border: 1px solid var(--cm-border); border-radius: 8px; background: var(--cm-surface-alt); }
