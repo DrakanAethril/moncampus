@@ -357,20 +357,21 @@
                                     <a class="dropdown-item {{ current_route starts with 'app_progression' ? 'active' }}" href="{{ path('app_progression') }}">{{ 'progressionNavLabel'|trans }}</a>
                                     <a class="dropdown-item {{ current_route starts with 'app_library_sequences' or current_route starts with 'app_library_seances' or current_route starts with 'app_library_phases' ? 'active' }}" href="{{ path('app_library_sequences') }}">{{ 'libraryNavLabel'|trans }}</a>
                                     <a class="dropdown-item {{ current_route starts with 'app_library_quiz' ? 'active' }}" href="{{ path('app_library_quiz') }}">{{ 'libraryQuizNavLabel'|trans }}</a>
-                                    {# « Sondages », right after the quiz library
-                                       (design/validated/surveys.md §8). The entry needs no condition
-                                       of its own either: this menu is already gated on ROLE_TEACHER
-                                       or isStaff(), which is exactly the two audiences a survey is
-                                       written by - so one entry serves both, and the question « et
-                                       pour le personnel ? » needs no separate answer. #}
-                                    <a class="dropdown-item {{ current_route starts with 'app_survey' ? 'active' }}" href="{{ path('app_surveys') }}">{{ 'surveysNavLabel'|trans }}</a>
                                     {# After the quiz library, per design/validated/file-library.md's
-                                       "Outils, after" - the surveys have since slotted in between the
-                                       two, which changes neither's place in the group. The entry
-                                       needs no condition of its own: this
+                                       "Outils, after". The entry needs no condition of its own: this
                                        menu is already gated on ROLE_TEACHER or isStaff(), which is
                                        exactly who has a library. #}
                                     <a class="dropdown-item {{ current_route starts with 'app_file_library' ? 'active' }}" href="{{ path('app_file_library') }}">{{ 'fileLibraryNavLabel'|trans }}</a>
+                                    {# « Bibliothèque de Sondages » closes the run of libraries -
+                                       named and placed as one of them rather than as a tool of its
+                                       own (design/validated/surveys.md §8 put it right after the
+                                       quiz library, which the file library has since taken). The
+                                       entry needs no condition of its own either: this menu is
+                                       already gated on ROLE_TEACHER or isStaff(), which is exactly
+                                       the two audiences a survey is written by - so one entry serves
+                                       both, and the question « et pour le personnel ? » needs no
+                                       separate answer. #}
+                                    <a class="dropdown-item {{ current_route starts with 'app_survey' ? 'active' }}" href="{{ path('app_surveys') }}">{{ 'surveysNavLabel'|trans }}</a>
                                     {# « Vidéos » has lost its menu entry, not its feature
                                        (design/validated/file-library.md, "What disappears"):
                                        VideoResource still carries the cue points, the watch tracking,
