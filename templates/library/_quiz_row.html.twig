@@ -3,13 +3,14 @@
 
    The kebab replaces the four inline buttons on purpose: at two hundred quizzes the actions column
    was wider than the name it acted on. #}
+{% set quizDescription = row.quiz.description|default('')|trim %}
 <tr class="cm-qlib__row" data-quiz-id="{{ row.quiz.id }}" data-name="{{ row.quiz.name }}" draggable="true">
     <td>
         <span class="cm-qlib__name">
             <span class="cm-qlib__ext cm-qlib__ext--quiz" aria-hidden="true">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9a3 3 0 1 1 3 3v2"></path><circle cx="12" cy="18" r="1" fill="currentColor" stroke="none"></circle></svg>
             </span>
-            <a href="{{ path('app_library_quiz_questions', {id: row.quiz.id}) }}">{{ row.quiz.name }}</a>
+            <a href="{{ path('app_library_quiz_questions', {id: row.quiz.id}) }}"{% if quizDescription %} title="{{ quizDescription }}"{% endif %}>{{ row.quiz.name }}</a>
         </span>
     </td>
     <td class="cm-qlib__muted">{{ row.quiz.subject|default('') ?: '—' }}</td>

@@ -44,10 +44,11 @@
                         </thead>
                         <tbody>
                             {% for row in quizRows %}
+                                {% set quizDescription = row.quiz.description|default('')|trim %}
                                 <tr class="cm-qlib__row">
                                     <td>
                                         <span class="cm-qlib__name">
-                                            <a href="{{ path('app_library_quiz_questions', {id: row.quiz.id}) }}">{{ row.quiz.name }}</a>
+                                            <a href="{{ path('app_library_quiz_questions', {id: row.quiz.id}) }}"{% if quizDescription %} title="{{ quizDescription }}"{% endif %}>{{ row.quiz.name }}</a>
                                         </span>
                                     </td>
                                     <td>
