@@ -6,9 +6,9 @@ namespace App\Controller;
 
 use App\Entity\Program;
 use App\Entity\QuizAnswer;
+use App\Entity\QuizFolder;
 use App\Entity\QuizQuestion;
 use App\Entity\QuizTemplate;
-use App\Entity\User;
 use App\Enum\BlankMode;
 use App\Enum\ContentShareScope;
 use App\Enum\MatchingSideKind;
@@ -22,6 +22,7 @@ use App\Form\QuizQuestionType;
 use App\Form\QuizTemplateSettingsType;
 use App\Repository\ContentShareRepository;
 use App\Repository\ProgramRepository;
+use App\Repository\QuizFolderRepository;
 use App\Repository\QuizQuestionRepository;
 use App\Repository\QuizTemplateRepository;
 use App\Security\StructureAccessChecker;
@@ -34,6 +35,7 @@ use App\Service\MixedJsonImporter;
 use App\Service\PostValue;
 use App\Service\QueryValue;
 use App\Service\QuizAnswerChecker;
+use App\Service\QuizFolderTree;
 use App\Service\QuizInstantiationService;
 use App\Service\QuizQuestionCompleteness;
 use App\Service\QuizTemplateDuplicator;
@@ -60,6 +62,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class QuizLibraryController extends AbstractController
 {
+    use QuizLibraryFolderTrait;
+
     private const string IMAGE_UPLOAD_PREFIX = 'quiz-question-images/';
 
     // Rows per page in screen 1b's question bank. Matches the "Mes quiz" table's own page length
@@ -67,23 +71,74 @@ class QuizLibraryController extends AbstractController
     // fixed-height card the design was drawn in.
     private const int QUESTIONS_PER_PAGE = 10;
 
-    #[Route(path: '/library/quiz', name: 'app_library_quiz')]
-    public function list(): Response
+    /**
+     * The library's one screen (screen 1a), rebuilt on the file library's shape: a rail of folders on
+     * the left, what the current folder holds on the right.
+     *
+     * **It is no longer a DataTable**, and that is the point of the classement rather than a side
+     * effect of it. A single flat page of two hundred quizzes was searchable and not *organisable*;
+     * a listing that hosts a drag onto the rail cannot be bound to a DOM-rewriting library anyway,
+     * which is this repository's own standing rule.
+     */
+    #[Route(path: '/library/quiz', name: 'app_library_quiz', methods: ['GET'])]
+    public function list(QuizFolderRepository $folders, QuizTemplateRepository $quizzes, QuizFolderTree $tree, TranslatorInterface $translator): Response
     {
-        return $this->render('library/quiz_list.html.twig');
+        return $this->browse(null, $folders, $quizzes, $tree, $translator);
     }
 
-    #[Route(path: '/library/quiz/data', name: 'app_library_quiz_data')]
-    public function data(Request $request, QuizTemplateRepository $repository, TranslatorInterface $translator): JsonResponse
+    #[Route(path: '/library/quiz/folder/{folderId}', name: 'app_library_quiz_folder', requirements: ['folderId' => '\d+'], methods: ['GET'])]
+    public function folder(int $folderId, QuizFolderRepository $folders, QuizTemplateRepository $quizzes, QuizFolderTree $tree, TranslatorInterface $translator): Response
     {
-        $templates = $repository->findForTeacher($this->currentUser());
-        $total = \count($templates);
+        return $this->browse($this->loadFolder($folders, $folderId), $folders, $quizzes, $tree, $translator);
+    }
 
-        return $this->json([
-            'draw' => QueryValue::int($request, 'draw', 1),
-            'recordsTotal' => $total,
-            'recordsFiltered' => $total,
-            'data' => array_map(fn (QuizTemplate $template): array => $this->rowForTemplate($template, $translator), $templates),
+    /**
+     * The name search, over the whole library at once - the way back to a quiz whose folder the
+     * teacher has forgotten, which is what a classement takes away from a flat list.
+     *
+     * A GET, per the repository's rule for a "show me a result" form: a POST would have to redirect.
+     */
+    #[Route(path: '/library/quiz/search', name: 'app_library_quiz_search', methods: ['GET'])]
+    public function search(Request $request, QuizFolderRepository $folders, QuizTemplateRepository $quizzes, QuizFolderTree $tree, TranslatorInterface $translator): Response
+    {
+        $owner = $this->currentUser();
+        $terms = QueryValue::trimmed($request, 'q');
+
+        return $this->render('library/quiz_search.html.twig', [
+            'terms' => $terms,
+            'quizRows' => '' === $terms ? [] : array_map(
+                fn (QuizTemplate $template): array => $this->listingRow($template, $translator),
+                $quizzes->searchByName($owner, $terms),
+            ),
+            'rail' => $this->railTree($folders, $tree, $owner),
+            'currentFolder' => null,
+        ]);
+    }
+
+    private function browse(?QuizFolder $folder, QuizFolderRepository $folders, QuizTemplateRepository $quizzes, QuizFolderTree $tree, TranslatorInterface $translator): Response
+    {
+        $owner = $this->currentUser();
+
+        return $this->render('library/quiz_list.html.twig', [
+            'currentFolder' => $folder,
+            'ancestors' => $this->ancestorsOf($folders, $folder),
+            // Folders first, then quizzes - two lists rather than one sorted set: a folder is a place
+            // and a quiz is a thing, and a listing that interleaves them makes the reader check the
+            // icon on every line.
+            'folderRows' => array_map(
+                static fn (QuizFolder $child): array => [
+                    'folder' => $child,
+                    // At any depth, not just directly inside: a folder holding only sub-folders would
+                    // otherwise read as empty.
+                    'quizCount' => $quizzes->countInSubtree($child),
+                ],
+                $folders->findChildren($owner, $folder),
+            ),
+            'quizRows' => array_map(
+                fn (QuizTemplate $template): array => $this->listingRow($template, $translator),
+                $quizzes->findInFolder($owner, $folder),
+            ),
+            'rail' => $this->railTree($folders, $tree, $owner),
         ]);
     }
 
@@ -92,11 +147,15 @@ class QuizLibraryController extends AbstractController
     // form, at which point this same action persists it and drops the teacher into the question
     // editor (1b), exactly like the previous immediate-create behaviour.
     #[Route(path: '/library/quiz/new', name: 'app_library_quiz_new', methods: ['GET', 'POST'])]
-    public function create(Request $request, EntityManagerInterface $entityManager, TranslatorInterface $translator): Response
+    public function create(Request $request, EntityManagerInterface $entityManager, TranslatorInterface $translator, QuizFolderRepository $folders): Response
     {
         $template = new QuizTemplate($this->currentUser());
         $template->setName($translator->trans('quizTemplateDefaultNewName'));
         $template->setCreatedBy($this->currentUser());
+        // « + Nouveau quiz » from inside a folder files the quiz there. The alternative - everything
+        // arriving at the root - would have the teacher move each new quiz by hand, which is the
+        // work this feature exists to remove.
+        $template->setFolder($this->loadFolder($folders, QueryValue::nullableInt($request, 'folder')));
 
         $form = $this->createForm(QuizTemplateSettingsType::class, $template);
         $form->handleRequest($request);
@@ -142,6 +201,11 @@ class QuizLibraryController extends AbstractController
             $this->currentUser(),
             $translator->trans('quizTemplateDuplicateNameTemplate', ['%name%' => $template->getName()]),
         );
+
+        // The copy stays next to its original: duplicating is how a teacher makes a variant of a
+        // quiz, and a variant belongs where the quiz is filed. A share duplicates through the same
+        // service for **another** owner and deliberately does not - it lands at their root.
+        $copy->setFolder($template->getFolder());
 
         $entityManager->flush();
 
@@ -1219,7 +1283,13 @@ class QuizLibraryController extends AbstractController
     }
 
     /** @return array{id: int, name: string, subject: string, questionCount: int, difficultyLabel: string, difficultyDots: int, updatedAt: string} */
-    private function rowForTemplate(QuizTemplate $template, TranslatorInterface $translator): array
+    /**
+     * One quiz as the listing draws it: the entity, plus the two things a row shows that the entity
+     * does not carry - how many questions it holds and the difficulty they add up to.
+     *
+     * @return array{quiz: QuizTemplate, questionCount: int, difficultyLabel: string, difficultyDots: int}
+     */
+    private function listingRow(QuizTemplate $template, TranslatorInterface $translator): array
     {
         $difficulties = array_map(
             static fn (QuizQuestion $question): QuestionDifficulty => $question->getEffectiveDifficulty(),
@@ -1239,16 +1309,11 @@ class QuizLibraryController extends AbstractController
             $summary = null; // mixte - no single QuestionDifficulty case fits, handled below
         }
 
-        $updatedAt = $template->getLastUpdatedDate() ?? $template->getCreationDate();
-
         return [
-            'id' => $template->getId(),
-            'name' => $template->getName() ?? '',
-            'subject' => $template->getSubject() ?? '—',
+            'quiz' => $template,
             'questionCount' => $template->getQuestions()->count(),
             'difficultyLabel' => null !== $summary ? $translator->trans($summary->labelKey()) : $translator->trans('quizTemplateDifficultyMixedLabel'),
             'difficultyDots' => null !== $summary ? $summary->dotCount() : 2,
-            'updatedAt' => $updatedAt->format('d/m/Y'),
         ];
     }
 
@@ -1308,13 +1373,5 @@ class QuizLibraryController extends AbstractController
         }
 
         return $question;
-    }
-
-    private function currentUser(): User
-    {
-        /** @var User $user */
-        $user = $this->getUser();
-
-        return $user;
     }
 }

@@ -1,0 +1,70 @@
+{% extends 'layout/app.html.twig' %}
+
+{# The name search, over the whole library at once - what a classement takes away from a flat list and
+   has to give back. The rail stays, so the answer to « où est-il rangé ? » is on the same screen as
+   the quiz that was looked for: each row names its folder and links to it. #}
+
+{% block title %}{{ 'quizLibrarySearchResultsHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'library/_quiz_breadcrumb.html.twig' with {currentFolder: null, ancestors: [], searchTerms: terms} %}
+{% endblock %}
+
+{% block page_title %}{{ 'quizLibrarySearchResultsHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    <form method="get" action="{{ path('app_library_quiz_search') }}" class="cm-qlib__search">
+        <input type="search" name="q" value="{{ terms }}" class="form-control form-control-sm"
+               placeholder="{{ 'quizLibrarySearchPlaceholder'|trans }}"
+               aria-label="{{ 'quizLibrarySearchPlaceholder'|trans }}">
+    </form>
+    <a href="{{ path('app_library_quiz') }}" class="btn btn-outline-primary">{{ 'quizLibraryBackToLibraryAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    <div class="cm-qlib">
+        {# Read-only: the acts of the rail answer a controller this screen does not carry. #}
+        {% include 'library/_quiz_rail.html.twig' with {rail: rail, currentFolder: null, readonly: true} %}
+
+        <div class="cm-qlib__content">
+            {% if terms is empty %}
+                <p class="cm-qlib__empty">{{ 'quizLibrarySearchPromptText'|trans }}</p>
+            {% elseif quizRows is empty %}
+                <p class="cm-qlib__empty">{{ 'quizLibrarySearchEmptyText'|trans({'%terms%': terms}) }}</p>
+            {% else %}
+                <div class="table-responsive">
+                    <table class="cm-qlib__table">
+                        <thead>
+                            <tr>
+                                <th>{{ 'quizLibraryNameColumnLabel'|trans }}</th>
+                                <th>{{ 'quizLibraryFolderColumnLabel'|trans }}</th>
+                                <th>{{ 'quizLibraryQuestionCountColumnLabel'|trans }}</th>
+                                <th>{{ 'quizLibraryUpdatedAtColumnLabel'|trans }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in quizRows %}
+                                <tr class="cm-qlib__row">
+                                    <td>
+                                        <span class="cm-qlib__name">
+                                            <a href="{{ path('app_library_quiz_questions', {id: row.quiz.id}) }}">{{ row.quiz.name }}</a>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if row.quiz.folder %}
+                                            <a class="cm-qlib__folderlink" href="{{ path('app_library_quiz_folder', {folderId: row.quiz.folder.id}) }}">{{ row.quiz.folder.name }}</a>
+                                        {% else %}
+                                            <span class="cm-qlib__muted">{{ 'quizFolderRootLabel'|trans }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="cm-qlib__num">{{ row.questionCount }}</td>
+                                    <td class="cm-qlib__num">{{ (row.quiz.lastUpdatedDate ?? row.quiz.creationDate)|date('d/m/Y') }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
