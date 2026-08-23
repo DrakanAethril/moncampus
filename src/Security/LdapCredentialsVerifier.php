@@ -25,6 +25,7 @@ class LdapCredentialsVerifier
         private readonly EntityManagerInterface $entityManager,
         private readonly UserRepository $userRepository,
         private readonly LdapUserMapper $ldapUserMapper,
+        private readonly LoginEmailResolver $loginEmailResolver,
         private readonly string $ldapBaseDn,
         private readonly string $ldapSearchDn,
         #[\SensitiveParameter] private readonly string $ldapSearchPassword,
@@ -36,16 +37,15 @@ class LdapCredentialsVerifier
     {
         $entry = $this->findLdapEntry($username);
 
-        // The login field doubles as a username-or-contact-email field: if what was typed looks
-        // like an email and isn't itself an LDAP uid, try resolving it to the account whose
-        // verified contact email matches, then retry under that account's real username - the
-        // LDAP bind right below still enforces the real password, this only changes which uid it
-        // binds as.
-        if (null === $entry && $this->looksLikeEmail($username)) {
-            $resolvedUsername = $this->resolveUsernameFromContactEmail($username);
+        // The login field doubles as a username-or-email field: if what was typed isn't itself an
+        // LDAP uid, try resolving it as an address (school or confirmed personal - see
+        // LoginEmailResolver), then retry under that account's real username. The LDAP bind right
+        // below still enforces the real password; this only changes which uid it binds as.
+        if (null === $entry) {
+            $resolved = $this->loginEmailResolver->resolve($username);
 
-            if (null !== $resolvedUsername) {
-                $username = $resolvedUsername;
+            if (null !== $resolved) {
+                $username = $resolved->getUsername();
                 $entry = $this->findLdapEntry($username);
             }
         }
@@ -88,28 +88,5 @@ class LdapCredentialsVerifier
         $results = $this->ldap->query($this->ldapBaseDn, \sprintf('(%s=%s)', $this->ldapUsernameAttribute, $escapedUsername))->execute();
 
         return $results[0] ?? null;
-    }
-
-    private function looksLikeEmail(string $value): bool
-    {
-        return false !== filter_var($value, \FILTER_VALIDATE_EMAIL);
-    }
-
-    // Same eligibility bar as the magic-link login (MagicLoginService::isEligible): the contact
-    // email must be verified (never resolve off an unconfirmed address) and the account must not
-    // be inactive or ROLE_ADMIN - admins always authenticate under their real LDAP uid.
-    private function resolveUsernameFromContactEmail(string $contactEmail): ?string
-    {
-        $user = $this->userRepository->findOneBy(['contactEmail' => $contactEmail]);
-
-        if (null === $user
-            || null !== $user->getInactiveDate()
-            || !$user->isContactEmailVerified()
-            || \in_array('ROLE_ADMIN', $user->getRoles(), true)
-        ) {
-            return null;
-        }
-
-        return $user->getUsername();
     }
 }
