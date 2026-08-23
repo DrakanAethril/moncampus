@@ -5417,6 +5417,7 @@ filePickerInvalidTokenMessage: 'Ce dépôt n’est plus valable : retirez le fic
 
 # Wiki - lot 4, le contenu.
 wikiOutlineHeading: 'Sur cette page'
+wikiOutlineToggleAction: 'Sommaire'
 wikiAttachmentsHeading: 'Pièces jointes'
 wikiAttachmentsFieldLabel: 'Ajouter des pièces jointes'
 wikiAttachmentAddAction: 'Joindre'

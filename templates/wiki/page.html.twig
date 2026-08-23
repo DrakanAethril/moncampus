@@ -1,7 +1,9 @@
 {% extends 'layout/app.html.twig' %}
 
 {# Rail (tree) + page + attachments panel + outline. The sommaire is derived from the page's own
-   headings at read time and hidden when there are none - most wiki pages are a paragraph. #}
+   headings at read time and hidden when there are none - most wiki pages are a paragraph. When
+   there are some, the modifier below says so; showing the column is a separate state carried by
+   `is-outline-open`, which only the action bar's toggle sets, and which nothing persists. #}
 
 {% block title %}{{ node.title }}{% endblock %}
 
@@ -19,12 +21,29 @@
 
 {% block page_title %}{{ node.title }}{% endblock %}
 
-{# One button, and only one. Everything the bar used to carry moved to where it belongs: the whole-
-   wiki export and the import to the réglages screen, adding and deleting a page to the rail's own
-   icons - beside the page they act on - and the history and this page's PDF to the foot of the text,
-   where somebody who has just finished reading it is looking. #}
+{# Everything the bar used to carry moved to where it belongs: the whole-wiki export and the import
+   to the réglages screen, adding and deleting a page to the rail's own icons - beside the page they
+   act on - and the history and this page's PDF to the foot of the text, where somebody who has just
+   finished reading it is looking. The sommaire toggle is the one command that came back, and only
+   on the pages that have one: it is what pays for the 230px the third column used to take from the
+   text on every page, read or not. #}
 {% block page_actions %}
     {% include 'wiki/_search_form.html.twig' with {wiki: wiki} %}
+    {% if outline is not empty %}
+        <button type="button"
+                class="cm-btn cm-btn--outline cm-wiki__outline-toggle"
+                data-controller="wiki-outline"
+                data-action="wiki-outline#toggle"
+                aria-expanded="false"
+                aria-controls="wiki-outline">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                <line x1="4" y1="6" x2="20" y2="6"></line>
+                <line x1="4" y1="12" x2="20" y2="12"></line>
+                <line x1="4" y1="18" x2="14" y2="18"></line>
+            </svg>
+            {{ 'wikiOutlineToggleAction'|trans }}
+        </button>
+    {% endif %}
     {% if is_granted('WIKI_EDIT', wiki) %}
         <a href="{{ path('app_wiki_page_edit', {id: wiki.id, nodeId: node.id}) }}" class="cm-btn cm-btn--primary">{{ 'wikiEditPageAction'|trans }}</a>
     {% endif %}
@@ -58,7 +77,7 @@
         </div>
 
         {% if outline is not empty %}
-            <aside class="cm-wiki__outline">
+            <aside class="cm-wiki__outline" id="wiki-outline">
                 <span class="cm-wiki__outline-title">{{ 'wikiOutlineHeading'|trans }}</span>
                 <ul>
                     {% for entry in outline %}
