@@ -38,9 +38,10 @@ class LdapCredentialsVerifier
         $entry = $this->findLdapEntry($username);
 
         // The login field doubles as a username-or-email field: if what was typed isn't itself an
-        // LDAP uid, try resolving it as an address (school or confirmed personal - see
-        // LoginEmailResolver), then retry under that account's real username. The LDAP bind right
-        // below still enforces the real password; this only changes which uid it binds as.
+        // LDAP uid, try resolving it as a confirmed contact address (LoginEmailResolver - and see
+        // its docblock for why the school address is not one), then retry under that account's real
+        // username. The LDAP bind right below still enforces the real password; this only changes
+        // which uid it binds as.
         if (null === $entry) {
             $resolved = $this->loginEmailResolver->resolve($username);
 

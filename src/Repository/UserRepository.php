@@ -219,26 +219,6 @@ class UserRepository extends ServiceEntityRepository
     }
 
     /**
-     * Accounts whose mirrored LDAP `mail` attribute equals $email - used by
-     * App\Security\LoginEmailResolver to accept a school address in the login field.
-     *
-     * Returns a list rather than a single row on purpose: unlike User::$contactEmail, this column
-     * carries no uniqueness constraint (the directory is free to give two entries the same `mail`),
-     * so the caller has to be able to tell "exactly one match" from "several" instead of silently
-     * getting the first.
-     *
-     * @return list<User>
-     */
-    public function findByLdapEmail(string $email): array
-    {
-        return $this->createQueryBuilder('u')
-            ->where('u.email = :email')
-            ->setParameter('email', $email)
-            ->getQuery()
-            ->getResult();
-    }
-
-    /**
      * @param list<int> $ids
      *
      * @return list<User>
