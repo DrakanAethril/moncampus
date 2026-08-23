@@ -154,8 +154,14 @@ export default class extends Controller {
             // pagebreak's marker is read by the PDF export as a real page break.
             pagebreak_separator: '<div class="cm-wiki-pagebreak"></div>',
             // The editing area is an iframe and does not load app.css, so a diagram's affordance has
-            // to be declared here: it is an object to click, not text to walk into.
-            content_style: '.cm-mermaid { cursor: pointer; }',
+            // to be declared here: it is an object to click, not text to walk into. The code face is
+            // repeated here for the same reason - what the author types into a code block should
+            // already look like the block the reader gets, not like the surrounding prose.
+            content_style: '.cm-mermaid { cursor: pointer; }'
+                + ' pre, code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,'
+                + ' "Cascadia Mono", "JetBrains Mono", "DejaVu Sans Mono", "Liberation Mono", monospace;'
+                + ' font-variant-ligatures: none; }'
+                + ' pre { tab-size: 4; line-height: 1.55; }',
             // HugeRTE validates content against its own HTML schema, which knows nothing about
             // SVG - so a Mermaid diagram was silently stripped *in the editor*, before the server's
             // sanitizer ever saw it. Measured, not guessed: the stored page came back holding

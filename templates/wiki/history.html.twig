@@ -65,14 +65,20 @@
             {% endif %}
 
             {% if selected %}
+                {# Same copy buttons as the read screen: the reason somebody opens an old revision
+                   beside the current one is often to take a command back out of it. #}
                 <div class="cm-wiki-compare">
                     <div class="cm-wiki-compare__pane">
                         <span class="cm-wiki-compare__title">{{ 'wikiRevisionPastHeading'|trans({'%date%': selected.createdAt|date('d/m/Y H:i')}) }}</span>
-                        <div class="cm-wiki__body">{{ selected.body|raw }}</div>
+                        <div class="cm-wiki__body"
+                             data-controller="wiki-code-copy"
+                             data-wiki-code-copy-label-value="{{ 'wikiCodeCopyAction'|trans }}">{{ selected.body|raw }}</div>
                     </div>
                     <div class="cm-wiki-compare__pane">
                         <span class="cm-wiki-compare__title">{{ 'wikiRevisionCurrentHeading'|trans }}</span>
-                        <div class="cm-wiki__body">{{ node.body|raw }}</div>
+                        <div class="cm-wiki__body"
+                             data-controller="wiki-code-copy"
+                             data-wiki-code-copy-label-value="{{ 'wikiCodeCopyAction'|trans }}">{{ node.body|raw }}</div>
                     </div>
                 </div>
             {% endif %}

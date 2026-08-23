@@ -63,8 +63,15 @@
     .body img { max-width: 100%; height: auto; }
     .body table { width: 100%; border-collapse: collapse; margin: 1em 0; }
     .body td, .body th { border: 0.5pt solid #d3dae4; padding: 1.6mm 2mm; text-align: left; }
+    /* The same editor face as the read screen, named for what Gotenberg's own container actually
+       carries: Chromium there has DejaVu Sans Mono, not SF Mono, and a stack that only lists faces
+       absent from the image falls back to the body's sans-serif and prints code as prose. */
+    .body pre, .body code { font-family: 'DejaVu Sans Mono', 'Liberation Mono', Menlo, Consolas, monospace; }
     .body pre { padding: 2.5mm 3mm; border: 0.5pt solid #d3dae4; border-radius: 1.5mm; background: #f7fafc;
-                color: #1b2430; font-size: 8.5pt; white-space: pre-wrap; word-wrap: break-word; }
+                color: #1b2430; font-size: 8.5pt; line-height: 1.5; tab-size: 4;
+                white-space: pre-wrap; word-wrap: break-word; }
+    .body code { font-size: 0.92em; }
+    .body pre code { font-size: inherit; }
     .body blockquote { margin: 1em 0; padding-left: 4mm; border-left: 1pt solid #d3dae4; color: #5b6c79; }
     .body details { border: 0.5pt solid #d3dae4; border-radius: 1.5mm; padding: 2mm 3mm; margin: 1em 0; }
     .body summary { font-weight: 600; }
