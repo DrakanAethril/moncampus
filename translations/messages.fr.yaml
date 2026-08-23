@@ -3083,6 +3083,8 @@ progressionSequenceInstanceRemovedFlashMessage: 'Instanciation supprimée pour c
 
 progressionExportPdfAction: 'Export PDF'
 progressionExportPdfFailedFlashMessage: "L'export PDF n'a pas pu être généré (service de rendu indisponible). Réessayez dans un instant."
+progressionExportPdfWithDatesAction: 'Inclure les dates de séances'
+progressionExportPdfWithoutDatesAction: 'Ne pas inclure les dates de séances'
 
 instanceScopeNoteText: 'Fiche propre à la classe %class%'
 instanceScopeModelText: 'copiée depuis le modèle « %template% »'

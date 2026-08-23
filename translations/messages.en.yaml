@@ -2667,6 +2667,8 @@ progressionSequenceInstanceRemovedFlashMessage: 'Instantiation deleted for this 
 
 progressionExportPdfAction: 'Export PDF'
 progressionExportPdfFailedFlashMessage: 'The PDF could not be generated (rendering service unavailable). Try again in a moment.'
+progressionExportPdfWithDatesAction: 'Include session dates'
+progressionExportPdfWithoutDatesAction: 'Leave out session dates'
 
 instanceScopeNoteText: 'Sheet specific to class %class%'
 instanceScopeModelText: 'copied from the model "%template%"'

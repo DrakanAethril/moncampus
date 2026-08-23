@@ -11,6 +11,7 @@ use App\Entity\ProgressionSequence;
 use App\Entity\SeancePhaseInstance;
 use App\Enum\EvaluationNature;
 use App\Enum\ProgressionDeliveryKind;
+use App\Enum\ProgressionExportMode;
 
 /**
  * Assembles the "Progression pédagogique" export - the document a teacher hands an auditor to
@@ -29,6 +30,12 @@ use App\Enum\ProgressionDeliveryKind;
  * dates from those créneaux, methods from the séances' own déroulé. A document that stated round
  * numbers nobody could trace back would be worse than no document - an auditor's first question is
  * where the figure comes from.
+ *
+ * **That is the dated document, and there is a second one.** ProgressionExportMode::Undated drops
+ * the dates and prints volumes and months instead, counting the auto-planner's proposal wherever
+ * nothing was validated - see the enum for why the choice exists. The two readings never mix inside
+ * one séance (countedPlacements()), and everything downstream is untouched: the volumes, the
+ * per-group rule and the co-animation wording all read `deliveries`, whichever list filled it.
  *
  * It reads the CLASS's copies (SequenceInstance/SeanceInstance and their phases), never the library
  * templates: what has to be justified is what this class received.
@@ -52,8 +59,8 @@ use App\Enum\ProgressionDeliveryKind;
  *
  * @phpstan-type PhaseRow array{name: string, minutes: int|null, contenu: string|null, objectifs: string|null, teacher: string|null, student: string|null, means: string|null}
  * @phpstan-type DeliveryRow array{date: \DateTimeImmutable|null, start: string|null, end: string|null, room: string|null, group: string|null, groupKey: string, minutes: int, teacher: string|null, teacherId: int|null, kind: ProgressionDeliveryKind}
- * @phpstan-type SeanceRow array{title: string, deliveries: list<DeliveryRow>, proposals: list<DeliveryRow>, redeliveries: list<DeliveryRow>, coDeliveries: list<DeliveryRow>, plannedMinutes: int, learnerMinutes: int, nature: EvaluationNature|null, objectifs: string|null, materials: string|null, phases: list<PhaseRow>, sequenceInstanceId: int|null, seanceInstanceId: int|null}
- * @phpstan-type SequenceRow array{title: string, position: int, seanceCount: int, objectifs: string|null, capacites: string|null, preRequis: string|null, transversalites: string|null, situation: string|null, supports: string|null, differentiation: string|null, firstDay: \DateTimeImmutable|null, lastDay: \DateTimeImmutable|null, plannedMinutes: int, learnerMinutes: int, seances: list<SeanceRow>, unplacedCount: int, deliveredBy: list<string>, coAnimated: bool}
+ * @phpstan-type SeanceRow array{title: string, deliveries: list<DeliveryRow>, proposals: list<DeliveryRow>, redeliveries: list<DeliveryRow>, coDeliveries: list<DeliveryRow>, plannedMinutes: int, learnerMinutes: int, countedMinutes: int|null, nature: EvaluationNature|null, objectifs: string|null, materials: string|null, phases: list<PhaseRow>, sequenceInstanceId: int|null, seanceInstanceId: int|null}
+ * @phpstan-type SequenceRow array{title: string, position: int, seanceCount: int, objectifs: string|null, capacites: string|null, preRequis: string|null, transversalites: string|null, situation: string|null, supports: string|null, differentiation: string|null, firstDay: \DateTimeImmutable|null, lastDay: \DateTimeImmutable|null, plannedMinutes: int, learnerMinutes: int, countedMinutes: int, seances: list<SeanceRow>, unplacedCount: int, inTimetable: bool, deliveredBy: list<string>, coAnimated: bool}
  */
 class ProgressionQualiopiBuilder
 {
@@ -65,6 +72,10 @@ class ProgressionQualiopiBuilder
      *     totalLearnerMinutes: int,
      *     seanceCount: int,
      *     placedSeanceCount: int,
+     *     totalCountedMinutes: int,
+     *     uncoveredSeanceCount: int,
+     *     outOfTimetableSeanceCount: int,
+     *     mode: ProgressionExportMode,
      *     perGroupSeanceCount: int,
      *     coAnimatedSeanceCount: int,
      *     redeliveredSeanceCount: int,
@@ -75,13 +86,16 @@ class ProgressionQualiopiBuilder
      *     methodSummary: list<string>,
      * }
      */
-    public function build(Progression $progression): array
+    public function build(Progression $progression, ProgressionExportMode $mode = ProgressionExportMode::Dated): array
     {
         $sequences = [];
         $totalPlanned = 0;
         $totalLearner = 0;
+        $totalCounted = 0;
         $seanceCount = 0;
         $placedSeanceCount = 0;
+        $uncoveredSeanceCount = 0;
+        $outOfTimetableSeanceCount = 0;
         $firstDay = null;
         $lastDay = null;
         $evaluationRows = [];
@@ -95,8 +109,15 @@ class ProgressionQualiopiBuilder
             $seanceRows = [];
             $unplaced = 0;
             $sequenceLearner = 0;
+            $sequenceCounted = 0;
             $sequenceFirst = null;
             $sequenceLast = null;
+            // §4.5 - « Placer dans l'EDT » décoché keeps the séquence in the progression without
+            // ever touching a créneau. Its séances will never carry a placement, not even a
+            // proposal, and that is a decision rather than a gap: the undated document prints their
+            // planned volume and says they are outside the timetable, instead of dropping teaching
+            // that does happen.
+            $inTimetable = $sequence->isPlaceInTimetable();
 
             foreach ($sequence->getActiveSeances() as $seance) {
                 ++$seanceCount;
@@ -109,27 +130,40 @@ class ProgressionQualiopiBuilder
                 // hour delivered on a dated créneau would put in an audit file a fact that can
                 // change by itself - so the document counts what a teacher validated, and shows
                 // the rest as what it is, below.
-                $placements = [];
-                $proposals = [];
+                $confirmed = [];
+                $unconfirmed = [];
                 foreach ($seance->getActivePlacements() as $placement) {
                     if ($placement->isConfirmed()) {
-                        $placements[] = $placement;
+                        $confirmed[] = $placement;
                         continue;
                     }
 
-                    $proposals[] = $placement;
+                    $unconfirmed[] = $placement;
                 }
+
+                [$placements, $proposals] = $this->countedPlacements($confirmed, $unconfirmed, $mode);
 
                 // ONE row per séance, whatever it took to deliver it. A séance dédoublée par groupe
                 // is still one séance of the progression - printing it twice made the year look
                 // longer than it is. The deliveries it actually took are carried inside the row and
                 // named there instead, which is where an auditor asks the question.
-                $row = $this->seanceRow($seance, $placements, $proposals, $instance?->getId());
+                $row = $this->seanceRow($seance, $placements, $proposals, $instance?->getId(), $inTimetable);
                 $seanceRows[] = $row;
                 $sequenceLearner += $row['learnerMinutes'];
+                $sequenceCounted += $row['countedMinutes'] ?? 0;
 
                 if ([] === $placements) {
                     ++$unplaced;
+                    // Two silences that must not read as one. A séquence held outside the timetable
+                    // is where the teacher put it; a séance that found no créneau is one the year
+                    // could not fit, and the undated document counts those in a line of its own
+                    // rather than letting the total quietly come out short.
+                    if ($inTimetable) {
+                        ++$uncoveredSeanceCount;
+                    } else {
+                        ++$outOfTimetableSeanceCount;
+                    }
+
                     continue;
                 }
 
@@ -184,6 +218,7 @@ class ProgressionQualiopiBuilder
             $planned = $sequence->getPlannedMinutes();
             $totalPlanned += $planned;
             $totalLearner += $sequenceLearner;
+            $totalCounted += $sequenceCounted;
 
             $sequences[] = [
                 'title' => $sequence->getTitle(),
@@ -202,8 +237,10 @@ class ProgressionQualiopiBuilder
                 'lastDay' => $sequenceLast,
                 'plannedMinutes' => $planned,
                 'learnerMinutes' => $sequenceLearner,
+                'countedMinutes' => $sequenceCounted,
                 'seances' => $seanceRows,
                 'unplacedCount' => $unplaced,
+                'inTimetable' => $inTimetable,
                 // Computed from THIS séquence's deliveries, never inherited from the progression: a
                 // co-animated matière may perfectly well hold a séquence the titulaire runs alone
                 // with the whole class, and marking that one would be a false statement of the same
@@ -238,6 +275,10 @@ class ProgressionQualiopiBuilder
             'totalLearnerMinutes' => $totalLearner,
             'seanceCount' => $seanceCount,
             'placedSeanceCount' => $placedSeanceCount,
+            'totalCountedMinutes' => $totalCounted,
+            'uncoveredSeanceCount' => $uncoveredSeanceCount,
+            'outOfTimetableSeanceCount' => $outOfTimetableSeanceCount,
+            'mode' => $mode,
             'firstDay' => $firstDay,
             'lastDay' => $lastDay,
             'perGroupSeanceCount' => $perGroupSeanceCount,
@@ -247,6 +288,36 @@ class ProgressionQualiopiBuilder
             'evaluationRows' => $evaluationRows,
             'methodSummary' => $this->distinctMeans($means),
         ];
+    }
+
+    /**
+     * Which placements the document counts as delivered, and which it merely exhibits.
+     *
+     * The dated document counts what a teacher validated and prints the planner's proposals below,
+     * as proposals: an unconfirmed placement is nobody's commitment, and the next replan wipes and
+     * recomputes it (ProgressionPlacementService::clearUnconfirmedPlacements()) - printing one as an
+     * hour delivered on a dated créneau would put in an audit file a fact that can change by itself.
+     *
+     * The undated document counts the proposal instead, since it prints no date for that fact to be
+     * wrong about, and it has no second list: everything it shows, it counts.
+     *
+     * **The two are never summed for one séance.** The choice is made per séance and the validated
+     * reading wins whenever there is one - a séance spread over two créneaux with only one of them
+     * validated would otherwise be counted once as delivered and once as proposed, which is the one
+     * arithmetic error this whole document exists not to make.
+     *
+     * @param list<ProgressionSeancePlacement> $confirmed
+     * @param list<ProgressionSeancePlacement> $unconfirmed
+     *
+     * @return array{0: list<ProgressionSeancePlacement>, 1: list<ProgressionSeancePlacement>}
+     */
+    private function countedPlacements(array $confirmed, array $unconfirmed, ProgressionExportMode $mode): array
+    {
+        if (ProgressionExportMode::Dated === $mode) {
+            return [$confirmed, $unconfirmed];
+        }
+
+        return [[] !== $confirmed ? $confirmed : $unconfirmed, []];
     }
 
     /**
@@ -368,15 +439,17 @@ class ProgressionQualiopiBuilder
      * counts it as unplaced rather than hiding it (its `learnerMinutes` is then 0: nothing has been
      * delivered, and `plannedMinutes` is what the row prints instead).
      *
-     * @param list<ProgressionSeancePlacement> $placements validated ones - what the figures count
-     * @param list<ProgressionSeancePlacement> $proposals  the auto-planner's, printed as such
+     * @param list<ProgressionSeancePlacement> $placements what the figures count - see countedPlacements()
+     * @param list<ProgressionSeancePlacement> $proposals  the auto-planner's, printed as such (dated document only)
+     * @param bool                             $inTimetable whether the séquence is placed at all (§4.5)
      *
      * @return SeanceRow
      */
-    private function seanceRow(ProgressionSeance $seance, array $placements, array $proposals, ?int $sequenceInstanceId): array
+    private function seanceRow(ProgressionSeance $seance, array $placements, array $proposals, ?int $sequenceInstanceId, bool $inTimetable): array
     {
         $instance = $seance->getSeanceInstance();
         $deliveries = $this->deliveryRows($placements);
+        $learnerMinutes = $this->learnerMinutes($deliveries);
 
         return [
             'title' => $seance->getTitle(),
@@ -385,7 +458,8 @@ class ProgressionQualiopiBuilder
             'redeliveries' => $this->ofKind($deliveries, ProgressionDeliveryKind::Redelivery),
             'coDeliveries' => $this->ofKind($deliveries, ProgressionDeliveryKind::CoDelivery),
             'plannedMinutes' => $seance->getPlannedMinutesOrZero(),
-            'learnerMinutes' => $this->learnerMinutes($deliveries),
+            'learnerMinutes' => $learnerMinutes,
+            'countedMinutes' => $this->countedMinutes($learnerMinutes, $seance, $deliveries, $inTimetable),
             'nature' => $seance->getEvaluationNature(),
             'objectifs' => $instance?->getObjectifs(),
             'materials' => $instance?->getMaterials(),
@@ -445,6 +519,28 @@ class ProgressionQualiopiBuilder
         }
 
         return $rows;
+    }
+
+    /**
+     * The volume the undated document prints for this séance - and null when it prints nothing.
+     *
+     * Three cases, and the third is the one worth stating. A séance with créneaux (validated or
+     * proposed) is worth what one apprenant receives from it. A séance of a séquence held outside
+     * the timetable is worth what it plans, because it is taught all the same and only the
+     * scheduling was declined. A séance the planner found no créneau for is worth NOTHING here: it
+     * is the « les séances qui ne rentrent pas sont ignorées » case, and giving it a volume would
+     * make the total describe a year the timetable cannot hold. It is counted instead, and the
+     * document says how many there are.
+     *
+     * @param list<DeliveryRow> $deliveries
+     */
+    private function countedMinutes(int $learnerMinutes, ProgressionSeance $seance, array $deliveries, bool $inTimetable): ?int
+    {
+        if ([] !== $deliveries) {
+            return $learnerMinutes;
+        }
+
+        return $inTimetable ? null : $seance->getPlannedMinutesOrZero();
     }
 
     /**
