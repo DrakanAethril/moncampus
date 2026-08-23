@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Entity\QuizFolder;
 use App\Entity\QuizTemplate;
 use App\Entity\SeanceTemplate;
 use App\Entity\SequenceTemplate;
@@ -13,6 +14,7 @@ use App\Enum\QuestionType;
 use App\Enum\QuizSourceScope;
 use App\Form\QuizImportType;
 use App\Form\QuizTemplateSettingsType;
+use App\Repository\QuizFolderRepository;
 use App\Repository\QuizTemplateRepository;
 use App\Repository\SeanceTemplateRepository;
 use App\Repository\SequenceTemplateRepository;
@@ -20,6 +22,7 @@ use App\Security\Voter\QuizTemplateVoter;
 use App\Security\Voter\SequenceTemplateVoter;
 use App\Service\InteractiveQuizImporterRegistry;
 use App\Service\KahootXlsxImporter;
+use App\Service\QueryValue;
 use App\Service\QuizCsvImporter;
 use App\Service\QuizCsvImportException;
 use App\Service\QuizImportImages;
@@ -91,6 +94,13 @@ class QuizImportController extends AbstractController
             // offered on its confirmation screen would be a link the teacher never asked for.
             $request->getSession()->remove(QuizImportSession::PAYLOAD_KEY);
             $request->getSession()->remove(QuizImportSession::SOURCE_KEY);
+            // The folder, on the other hand, is not a leftover of the previous file: it says where
+            // the teacher was standing, and they are still standing there. It is only rewritten when
+            // a link says so - the note on the « Nouveau quiz » screen, which carries the quiz's own
+            // folder; the assistant's step 1 rewrites it for every import that starts there.
+            if ($request->query->has('folder')) {
+                $request->getSession()->set(QuizImportSession::FOLDER_KEY, QueryValue::nullableInt($request, 'folder'));
+            }
         }
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -163,6 +173,7 @@ class QuizImportController extends AbstractController
         QuizCsvImporter $importer,
         InteractiveQuizImporterRegistry $registry,
         QuizTemplateRepository $templateRepository,
+        QuizFolderRepository $folders,
         QuizImportImages $images,
         QuizQuestionCompleteness $completeness,
         SequenceTemplateRepository $sequenceRepository,
@@ -181,6 +192,10 @@ class QuizImportController extends AbstractController
         }
 
         $template = new QuizTemplate($this->currentUser());
+        // Where the import was started from, so a quiz produced inside a folder lands in it rather
+        // than at the root the teacher would then have to move it from
+        // (App\Service\QuizImportSession::FOLDER_KEY).
+        $template->setFolder($this->rememberedFolder($request, $folders));
         $template->setName($payload['name']);
         $template->setSubject($payload['subject']);
         $template->setDescription($payload['description']);
@@ -261,6 +276,7 @@ class QuizImportController extends AbstractController
 
                 $request->getSession()->remove(QuizImportSession::PAYLOAD_KEY);
                 $request->getSession()->remove(QuizImportSession::SOURCE_KEY);
+                $request->getSession()->remove(QuizImportSession::FOLDER_KEY);
                 // The batch is over: the questions that needed one of these images carry their own
                 // copy by now, so nothing here is worth keeping in the bucket.
                 $images->clear();
@@ -396,6 +412,25 @@ class QuizImportController extends AbstractController
             array_map(static fn (QuestionType $case): string => $case->value, $cases),
             array_map(static fn (QuestionType $case): string => $translator->trans($case->shortLabelKey()), $cases),
         );
+    }
+
+    /**
+     * The folder the import was started from, or null - the root, or a folder that is not this
+     * teacher's, which a hand-written `?folder=` is the only way to name.
+     *
+     * Read rather than trusted: the id was written into the session at a door that did not check it,
+     * so ownership is verified here, once, where it is used.
+     */
+    private function rememberedFolder(Request $request, QuizFolderRepository $folders): ?QuizFolder
+    {
+        $folderId = $request->getSession()->get(QuizImportSession::FOLDER_KEY);
+        if (!\is_int($folderId)) {
+            return null;
+        }
+
+        $folder = $folders->find($folderId);
+
+        return $folder instanceof QuizFolder && $folder->getOwner() === $this->currentUser() ? $folder : null;
     }
 
     private function currentUser(): User

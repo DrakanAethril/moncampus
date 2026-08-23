@@ -105,6 +105,26 @@ trait QuizLibraryFolderTrait
         return $ancestors;
     }
 
+    /**
+     * A quiz's own place in the classement, root folder first and its own folder last - the middle
+     * segments of the trail every quiz screen draws, so a quiz opened from a folder three levels
+     * deep leads back into it rather than to the root of the library.
+     *
+     * Empty for a reader who is not the owner: the listing a folder link opens shows the *reader's*
+     * quizzes (QuizTemplateRepository::findInFolder()), so pointing staff at a colleague's folder
+     * would open a screen that says empty about a folder that is not.
+     *
+     * @return list<QuizFolder>
+     */
+    private function folderTrailOf(QuizFolderRepository $folders, ?QuizFolder $folder, User $reader): array
+    {
+        if (null === $folder || $folder->getOwner() !== $reader) {
+            return [];
+        }
+
+        return [...$this->ancestorsOf($folders, $folder), $folder];
+    }
+
     /** Back to the folder that was being looked at - the root when there is none. */
     private function backToFolder(?QuizFolder $folder): Response
     {
