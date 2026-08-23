@@ -148,9 +148,14 @@
         </div>
     </div>
 
-    {# « Quiz de la séquence », and the one number it exists for: « 2 séances sur 4 ». That number is
-       what made the two links relation tables rather than nullable foreign keys - it measures usage,
-       which is multiple on both sides (see App\Entity\QuizTemplate::$seanceTemplates).
+    {# « Quiz de la séquence »: one row per quiz, whatever level it hangs from - séance-level quizzes
+       are raised here and deduplicated (App\Service\SequenceQuizBoard). Each row says where it hangs,
+       which is what makes its « Détacher » honest: it removes every link the row shows, séance links
+       included (App\Service\SequenceQuizLinker).
+
+       And the number the card exists for: « 2 séances sur 4 ». That number is what made the two links
+       relation tables rather than nullable foreign keys - it measures usage, which is multiple on both
+       sides (see App\Entity\QuizTemplate::$seanceTemplates).
 
        There is deliberately no « Lancer » button here: a launch needs a Program, so it lives on the
        séquence instantiated into a formation, which finds the same quizzes back through
@@ -158,40 +163,54 @@
     <div class="card mt-3">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h3 class="card-title mb-0">{{ 'libraryQuizSectionTitle'|trans }}</h3>
-            {% if quizBoard.totalSeances > 0 %}
-                {# Green only when every séance is covered: a partial count is information, not a
-                   failure, so it wears the neutral badge rather than a warning colour. #}
-                <span class="cm-badge cm-badge--{{ quizBoard.coveredSeances == quizBoard.totalSeances ? 'green' : 'gray' }}">
-                    {{ 'libraryQuizCoverageTemplate'|trans({'%covered%': quizBoard.coveredSeances, '%total%': quizBoard.totalSeances}) }}
-                </span>
-            {% endif %}
+            <div class="d-flex align-items-center gap-2">
+                {% if quizBoard.totalSeances > 0 %}
+                    {# Green only when every séance is covered: a partial count is information, not a
+                       failure, so it wears the neutral badge rather than a warning colour. #}
+                    <span class="cm-badge cm-badge--{{ quizBoard.coveredSeances == quizBoard.totalSeances ? 'green' : 'gray' }}">
+                        {{ 'libraryQuizCoverageTemplate'|trans({'%covered%': quizBoard.coveredSeances, '%total%': quizBoard.totalSeances}) }}
+                    </span>
+                {% endif %}
+                {% if canEdit %}
+                    <a href="#library-sequence-quiz-attach" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse">↑ {{ 'libraryQuizAttachToggleLabel'|trans }}</a>
+                {% endif %}
+            </div>
         </div>
         <div class="card-body">
             {% if not quizBoard.hasAnyQuiz %}
                 <div class="text-secondary">{{ 'libraryQuizEmptyMessage'|trans }}</div>
             {% else %}
-                <dl class="row mb-0">
-                    {% if quizBoard.sequenceQuizzes is not empty %}
-                        {# The kit's final QCM lands here: about the whole séquence, about no séance in
-                           particular - and counting for no séance in the coverage above. #}
-                        <dt class="col-3">{{ 'libraryQuizWholeSequenceLabel'|trans }}</dt>
-                        <dd class="col-9">
-                            {% for quiz in quizBoard.sequenceQuizzes %}
-                                <a class="badge bg-blue-lt me-1" href="{{ path('app_library_quiz_questions', {id: quiz.id}) }}">{{ quiz.name }}</a>
-                            {% endfor %}
-                        </dd>
-                    {% endif %}
-                    {% for row in quizBoard.seances %}
-                        {% if row.quizzes is not empty %}
-                            <dt class="col-3">{{ row.ordre }} · {{ row.titre }}</dt>
-                            <dd class="col-9">
-                                {% for quiz in row.quizzes %}
-                                    <a class="badge bg-blue-lt me-1" href="{{ path('app_library_quiz_questions', {id: quiz.id}) }}">{{ quiz.name }}</a>
+                <div class="list-group list-group-flush">
+                    {% for row in quizBoard.quizzes %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <div>
+                                <a href="{{ path('app_library_quiz_questions', {id: row.quiz.id}) }}">{{ row.quiz.name }}</a>
+                                {# Where this quiz hangs: the séquence itself, and/or the séances using
+                                   it - one row however many there are. #}
+                                {% if row.onSequence %}<span class="badge bg-secondary-lt ms-2">{{ 'libraryQuizWholeSequenceLabel'|trans }}</span>{% endif %}
+                                {% for seance in row.seances %}
+                                    <a class="badge bg-blue-lt ms-1" href="{{ path('app_library_seances_show', {sequenceId: sequenceTemplate.id, id: seance.id}) }}">{{ seance.ordre }} · {{ seance.titre }}</a>
                                 {% endfor %}
-                            </dd>
-                        {% endif %}
+                            </div>
+                            {% if canEdit %}
+                                <form method="post" action="{{ path('app_library_sequences_quiz_detach', {sequenceId: sequenceTemplate.id, quizId: row.quiz.id}) }}" class="cm-actions" onsubmit="return confirm('{{ 'libraryQuizDetachFromSequenceConfirmMessage'|trans|e('js') }}')">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('library_quiz_detach') }}">
+                                    <button type="submit" class="cm-action--danger">{{ 'libraryQuizDetachActionLabel'|trans }}</button>
+                                </form>
+                            {% endif %}
+                        </div>
                     {% endfor %}
-                </dl>
+                </div>
+            {% endif %}
+
+            {% if canEdit %}
+                {% include 'library/_quiz_attach_form.html.twig' with {
+                    collapseId: 'library-sequence-quiz-attach',
+                    actionRoute: 'app_library_sequences_quiz_attach',
+                    actionParams: {sequenceId: sequenceTemplate.id},
+                    pickableQuizzes: pickableQuizzes,
+                    attachedIds: attachedQuizIds,
+                } only %}
             {% endif %}
         </div>
     </div>

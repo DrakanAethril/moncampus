@@ -10,6 +10,7 @@ use App\Entity\LibraryNiveauTag;
 use App\Entity\LibraryOptionTag;
 use App\Entity\LibraryResource;
 use App\Entity\Program;
+use App\Entity\QuizTemplate;
 use App\Entity\SeancePhaseTemplate;
 use App\Entity\SeanceTemplate;
 use App\Entity\SequenceTemplate;
@@ -27,6 +28,7 @@ use App\Repository\LibraryNiveauTagRepository;
 use App\Repository\LibraryOptionTagRepository;
 use App\Repository\LibraryResourceRepository;
 use App\Repository\ProgramRepository;
+use App\Repository\QuizTemplateRepository;
 use App\Repository\SeancePhaseTemplateRepository;
 use App\Repository\SeanceTemplateRepository;
 use App\Repository\SequenceInstanceRepository;
@@ -44,6 +46,7 @@ use App\Service\SequenceJsonExporter;
 use App\Service\SequencePromptCatalog;
 use App\Service\SequenceQuizBoard;
 use App\Service\UploadIntake;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -161,6 +164,7 @@ class SequenceLibraryController extends AbstractController
         int $id,
         SequenceTemplateRepository $repository,
         SequenceQuizBoard $quizBoard,
+        QuizTemplateRepository $quizRepository,
         LibraryNiveauTagRepository $niveauTagRepository,
         LibraryOptionTagRepository $optionTagRepository,
         LibraryBlocTagRepository $blocTagRepository,
@@ -184,6 +188,10 @@ class SequenceLibraryController extends AbstractController
             'shareGroups' => $canShare ? $shareAudience->pickableGroups() : [],
             'shareMemberCounts' => $this->shareMemberCounts($existingShares, $shareAudience),
             'quizBoard' => $quizBoard->forSequence($sequenceTemplate),
+            // The picker offers the séquence owner's library, never the reader's: staff attaching on
+            // their behalf hand over a quiz that teacher can actually launch afterwards.
+            'pickableQuizzes' => $canEdit ? $quizRepository->findPickable($sequenceTemplate->getTeacher()) : [],
+            'attachedQuizIds' => $this->quizIdsOf($sequenceTemplate->getQuizTemplates()),
             'resourceForm' => $canEdit ? $this->createForm(LibraryResourceType::class) : null,
             'tagOptions' => $this->libraryTagOptions($niveauTagRepository, $optionTagRepository, $blocTagRepository),
         ]);
@@ -429,6 +437,8 @@ class SequenceLibraryController extends AbstractController
         int $id,
         SequenceTemplateRepository $sequenceRepository,
         SeanceTemplateRepository $seanceRepository,
+        SequenceQuizBoard $quizBoard,
+        QuizTemplateRepository $quizRepository,
         LibraryNiveauTagRepository $niveauTagRepository,
         LibraryOptionTagRepository $optionTagRepository,
         LibraryBlocTagRepository $blocTagRepository,
@@ -451,6 +461,9 @@ class SequenceLibraryController extends AbstractController
             'shares' => $existingShares,
             'shareGroups' => $canShare ? $shareAudience->pickableGroups() : [],
             'shareMemberCounts' => $this->shareMemberCounts($existingShares, $shareAudience),
+            'quizBoard' => $quizBoard->forSeance($seanceTemplate),
+            'pickableQuizzes' => $canEdit ? $quizRepository->findPickable($sequenceTemplate->getTeacher()) : [],
+            'attachedQuizIds' => $this->quizIdsOf($seanceTemplate->getQuizTemplates()),
             'resourceForm' => $canEdit ? $this->createForm(LibraryResourceType::class) : null,
             'tagOptions' => $this->libraryTagOptions($niveauTagRepository, $optionTagRepository, $blocTagRepository),
         ]);
@@ -784,16 +797,29 @@ class SequenceLibraryController extends AbstractController
     }
 
     /**
-     * @param ?SequenceTemplate $preloaded a row a caller already fetched with the joins it needs, so a
-     *                                     screen that reads collections does not pay for them one by one
-     */
-    /**
      * The door onto one séquence - its owner, staff, **or a colleague it was shared with**
      * (design/validated/content-sharing-between-teachers.md). VIEW is deliberately the widest thing
      * this helper grants: every action that writes calls denyAccessUnlessGranted(EDIT) of its own
      * right after, so a reader reaches the show screens, the export and the review prompt, and
      * nothing else.
      */
+    /**
+     * What « Associer un quiz » must not offer twice: the ids already attached at *this* level.
+     *
+     * @param Collection<int, QuizTemplate> $quizzes
+     *
+     * @return list<int>
+     */
+    private function quizIdsOf(Collection $quizzes): array
+    {
+        $ids = [];
+        foreach ($quizzes as $quiz) {
+            $ids[] = (int) $quiz->getId();
+        }
+
+        return $ids;
+    }
+
     private function findSequenceOrNotFound(SequenceTemplateRepository $repository, int $id, ?SequenceTemplate $preloaded = null): SequenceTemplate
     {
         $sequenceTemplate = $preloaded ?? $repository->find($id) ?? throw $this->createNotFoundException();
