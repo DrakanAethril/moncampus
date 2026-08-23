@@ -5695,7 +5695,7 @@ vmInstallStepShutdownRequestedLabel: 'Shutdown requested'
 vmInstallStepShutdownFailedLabel: 'Shutdown could not be requested'
 
 # --- Surveys (design/validated/surveys.md) - lots 1 and 2: the foundation and the editor --------
-surveysNavLabel: 'Surveys'
+surveysNavLabel: 'Survey library'
 surveysPageHeading: 'Surveys'
 surveysOpenCampaignsCountText: '{0}no open campaign|{1}1 open campaign|]1,Inf[%count% open campaigns'
 surveysAwaitingReminderCountText: '{1}1 awaiting a reminder|]1,Inf[%count% awaiting a reminder'

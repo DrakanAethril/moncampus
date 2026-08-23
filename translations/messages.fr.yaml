@@ -5509,7 +5509,7 @@ wikiTransferHelpText: 'Ces actions portent sur le wiki entier. Pour exporter une
 wikiToggleBranchAction: 'Déplier ou replier les sous-pages de « %title% »'
 wikiDangerZoneHeading: 'Danger Zone'
 wikiDangerZoneHelpText: 'Archiver garde le wiki et son contenu, en le sortant des listes. La suppression est définitive.'
-fileLibraryNavLabel: 'Bibliothèque de fichiers'
+fileLibraryNavLabel: 'Bibliothèque de Fichiers'
 fileLibraryRailTitleLabel: 'Ma bibliothèque'
 fileLibraryRailEmptyText: 'Aucun dossier pour l’instant.'
 fileLibraryTrashNavLabel: 'Corbeille'
@@ -6474,7 +6474,7 @@ vmInstallStepShutdownRequestedLabel: 'Arrêt demandé'
 vmInstallStepShutdownFailedLabel: 'Arrêt impossible'
 
 # --- Sondages (design/validated/surveys.md) - lots 1 et 2 : le socle et l'éditeur ---------------
-surveysNavLabel: 'Sondages'
+surveysNavLabel: 'Bibliothèque de Sondages'
 surveysPageHeading: 'Sondages'
 surveysOpenCampaignsCountText: '{0}aucune campagne ouverte|{1}1 campagne ouverte|]1,Inf[%count% campagnes ouvertes'
 surveysAwaitingReminderCountText: '{1}1 en attente de relance|]1,Inf[%count% en attente de relance'
