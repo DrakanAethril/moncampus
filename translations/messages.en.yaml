@@ -4639,6 +4639,7 @@ filePickerInvalidTokenMessage: 'This upload is no longer valid: remove the file 
 
 # Wiki - lot 4, the content.
 wikiOutlineHeading: 'On this page'
+wikiOutlineToggleAction: 'Outline'
 wikiAttachmentsHeading: 'Attachments'
 wikiAttachmentsFieldLabel: 'Add attachments'
 wikiAttachmentAddAction: 'Attach'
