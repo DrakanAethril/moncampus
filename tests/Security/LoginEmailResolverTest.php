@@ -11,18 +11,11 @@ use PHPUnit\Framework\TestCase;
 
 class LoginEmailResolverTest extends TestCase
 {
-    public function testResolvesTheSchoolAddressMirroredFromLdap(): void
-    {
-        $user = $this->user('mdupont', email: 'mdupont@example.org');
-
-        self::assertSame($user, $this->resolver([$user])->resolve('mdupont@example.org'));
-    }
-
     public function testResolvesAConfirmedContactAddress(): void
     {
         $user = $this->user('mdupont', contactEmail: 'marie@perso.example', contactEmailVerified: true);
 
-        self::assertSame($user, $this->resolver([], $user)->resolve('marie@perso.example'));
+        self::assertSame($user, $this->resolver($user)->resolve('marie@perso.example'));
     }
 
     // The unconfirmed address is the one somebody could have typed by mistake - or on purpose,
@@ -31,53 +24,46 @@ class LoginEmailResolverTest extends TestCase
     {
         $user = $this->user('mdupont', contactEmail: 'marie@perso.example');
 
-        self::assertNull($this->resolver([], $user)->resolve('marie@perso.example'));
+        self::assertNull($this->resolver($user)->resolve('marie@perso.example'));
     }
 
-    // The LDAP `mail` attribute has no uniqueness constraint, so two accounts really can share
-    // one - and picking either of them would log somebody into the wrong account.
-    public function testRefusesASchoolAddressSharedByTwoAccounts(): void
+    // The school address mirrored from LDAP is never a way in, however well it identifies the
+    // account: it is derived from the person's name rather than claimed by them.
+    public function testRefusesTheSchoolAddressMirroredFromLdap(): void
     {
-        $first = $this->user('mdupont', email: 'contact@example.org');
-        $second = $this->user('pmartin', email: 'contact@example.org');
+        $user = $this->user('mdupont', email: 'mdupont@example.org');
 
-        self::assertNull($this->resolver([$first, $second])->resolve('contact@example.org'));
+        self::assertNull($this->resolver(null)->resolve('mdupont@example.org'));
+        self::assertNotNull($user->getEmail());
     }
 
-    public function testIgnoresAnInactivatedAccountOnBothAddresses(): void
+    public function testIgnoresAnInactivatedAccount(): void
     {
-        $onLdapMail = $this->user('mdupont', email: 'mdupont@example.org', inactive: true);
-        self::assertNull($this->resolver([$onLdapMail])->resolve('mdupont@example.org'));
+        $user = $this->user('pmartin', contactEmail: 'paul@perso.example', contactEmailVerified: true, inactive: true);
 
-        $onContact = $this->user('pmartin', contactEmail: 'paul@perso.example', contactEmailVerified: true, inactive: true);
-        self::assertNull($this->resolver([], $onContact)->resolve('paul@perso.example'));
+        self::assertNull($this->resolver($user)->resolve('paul@perso.example'));
     }
 
     // An administrator is not excluded here, unlike on the magic-link path: this only decides
     // which uid the LDAP bind runs against, and the password is still required afterwards.
     public function testResolvesAnAdministrator(): void
     {
-        $admin = $this->user('root', email: 'root@example.org');
+        $admin = $this->user('root', contactEmail: 'root@perso.example', contactEmailVerified: true);
         $admin->setRoles(['ROLE_ADMIN']);
 
-        self::assertSame($admin, $this->resolver([$admin])->resolve('root@example.org'));
+        self::assertSame($admin, $this->resolver($admin)->resolve('root@perso.example'));
     }
 
     public function testRefusesAnythingThatIsNotAnAddress(): void
     {
-        self::assertNull($this->resolver()->resolve('mdupont'));
-        self::assertNull($this->resolver()->resolve(''));
+        self::assertNull($this->resolver(null)->resolve('mdupont'));
+        self::assertNull($this->resolver(null)->resolve(''));
     }
 
-    /**
-     * @param list<User> $byLdapEmail accounts the repository returns for the school address
-     * @param ?User      $byContact   the account the repository returns for the contact address
-     */
-    private function resolver(array $byLdapEmail = [], ?User $byContact = null): LoginEmailResolver
+    private function resolver(?User $byContactEmail): LoginEmailResolver
     {
         $repository = $this->createStub(UserRepository::class);
-        $repository->method('findByLdapEmail')->willReturn($byLdapEmail);
-        $repository->method('findOneBy')->willReturn($byContact);
+        $repository->method('findOneBy')->willReturn($byContactEmail);
 
         return new LoginEmailResolver($repository);
     }

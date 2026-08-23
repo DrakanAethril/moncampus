@@ -12,22 +12,22 @@ use App\Repository\UserRepository;
  * field accepts either an LDAP username or an address - people know their own email far better
  * than the login the directory gave them.
  *
- * Two addresses are looked up, in that order of authority:
+ * One address, and one only: User::$contactEmail, once confirmed (User::isContactEmailVerified()).
  *
- *  1. User::$email, the LDAP `mail` attribute mirrored at every login by LdapUserMapper - the
- *     school address, written by the directory itself, so there is nothing here to prove;
- *  2. User::$contactEmail, but only once confirmed (User::isContactEmailVerified()) - a personal
- *     address the account holder typed, only worth trusting after the mailed link was followed.
+ * The school address mirrored from the LDAP `mail` attribute onto User::$email is deliberately
+ * *not* accepted, although it is the one the directory itself wrote. Three reasons, and they
+ * compound: it is derivable from a person's name rather than chosen, so it turns "guess the login"
+ * into "guess nothing at all"; it carries no uniqueness constraint, so two entries may legitimately
+ * share one; and nobody ever claimed it - $contactEmail is an address its owner typed and then
+ * proved they read, which is precisely what makes it worth resolving on.
  *
- * An address matching several accounts resolves to none: unlike $contactEmail, the mirrored LDAP
- * address carries no uniqueness constraint, and picking one of two accounts is worse than asking
- * for the username. Inactivated accounts never resolve either.
+ * Inactivated accounts never resolve.
  *
- * This deliberately applies no role restriction, unlike MagicLoginService::isEligible(), and the
- * difference is not an oversight: a magic link *is* the whole proof of identity, whereas resolving
- * an address here only decides which uid the LDAP bind runs against - the real password is still
- * required right after (LdapCredentialsVerifier::verifyPassword()). Excluding ROLE_ADMIN from a
- * path that proves nothing on its own would only stop administrators from typing their own email.
+ * This applies no role restriction, unlike MagicLoginService::isEligible(), and the difference is
+ * not an oversight: a magic link *is* the whole proof of identity, whereas resolving an address
+ * here only decides which uid the LDAP bind runs against - the real password is still required
+ * right after (LdapCredentialsVerifier::verifyPassword()). Excluding ROLE_ADMIN from a path that
+ * proves nothing on its own would only stop administrators from typing their own address.
  */
 class LoginEmailResolver
 {
@@ -42,21 +42,6 @@ class LoginEmailResolver
             return null;
         }
 
-        return $this->resolveByLdapEmail($email) ?? $this->resolveByContactEmail($email);
-    }
-
-    private function resolveByLdapEmail(string $email): ?User
-    {
-        $candidates = array_values(array_filter(
-            $this->userRepository->findByLdapEmail($email),
-            static fn (User $user): bool => null === $user->getInactiveDate(),
-        ));
-
-        return 1 === \count($candidates) ? $candidates[0] : null;
-    }
-
-    private function resolveByContactEmail(string $email): ?User
-    {
         $user = $this->userRepository->findOneBy(['contactEmail' => $email]);
 
         if (null === $user || null !== $user->getInactiveDate() || !$user->isContactEmailVerified()) {
