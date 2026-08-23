@@ -1909,8 +1909,22 @@ librarySeanceQuizGenerateActionLabel: 'En générer depuis cette séance'
 librarySequenceQuizLiveActionLabel: 'En générer pour un concours live'
 libraryQuizSectionTitle: 'Quiz de la séquence'
 libraryQuizCoverageTemplate: '%covered% séances sur %total%'
-libraryQuizEmptyMessage: "Aucun quiz rattaché pour le moment. Le menu « Quiz » ci-dessus en fait générer ou transposer."
+libraryQuizEmptyMessage: "Aucun quiz rattaché pour le moment, ni à la séquence ni à ses séances. Le menu « Quiz » ci-dessus en fait générer ou transposer, et « Associer un quiz » en rattache un existant."
 libraryQuizWholeSequenceLabel: 'Toute la séquence'
+libraryQuizAttachToggleLabel: 'Associer un quiz'
+libraryQuizAttachFieldLabel: 'Quiz de votre bibliothèque'
+libraryQuizAttachPlaceholder: 'Choisissez un quiz'
+libraryQuizAttachSubmitLabel: 'Associer'
+libraryQuizAttachNothingLeftMessage: 'Tous les quiz de la bibliothèque sont déjà associés ici.'
+libraryQuizAttachNoneChosenFlashMessage: 'Choisissez un quiz à associer.'
+libraryQuizAttachedFlashMessage: 'Quiz associé.'
+libraryQuizDetachedFlashMessage: 'Quiz détaché. Il reste dans la bibliothèque.'
+libraryQuizDetachActionLabel: 'Détacher'
+libraryQuizDetachFromSequenceConfirmMessage: "Détacher ce quiz de la séquence ? Il sera également détaché des séances de cette séquence. Le quiz n'est pas supprimé : il reste dans la bibliothèque."
+libraryQuizDetachFromSeanceConfirmMessage: "Détacher ce quiz de la séance ? S'il est aussi associé à la séquence, il y reste associé. Le quiz n'est pas supprimé : il reste dans la bibliothèque."
+librarySeanceQuizSectionTitle: 'Quiz de la séance'
+librarySeanceQuizAlsoOnSequenceLabel: 'Aussi sur la séquence'
+librarySeanceQuizEmptyMessage: "Aucun quiz associé à cette séance. Le menu « Quiz » ci-dessus en fait générer ou transposer, et « Associer un quiz » en rattache un existant."
 librarySequenceAiMenuLabel: 'IA'
 sequenceExportActionLabel: 'Exporter la séquence'
 sequenceReviewActionLabel: 'Faire relire ma séquence'

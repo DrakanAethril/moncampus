@@ -1,0 +1,32 @@
+{# expects: collapseId, actionRoute, actionParams, pickableQuizzes, attachedIds
+
+   « Associer un quiz », the same block on a séquence and on a séance - the two levels ask the same
+   question and only differ by where they post. It offers the séquence owner's own library and
+   nothing else: a quiz belonging to somebody else could never be launched by the teacher whose
+   séquence carries it (App\Controller\SequenceQuizLinkController::pickedQuiz()).
+
+   Quizzes already attached at *this* level are left out: attaching twice is a no-op, and offering it
+   reads as though it would do something. #}
+{% set choices = pickableQuizzes|filter(quiz => quiz.id not in attachedIds) %}
+<div class="collapse mt-3" id="{{ collapseId }}">
+    <hr class="mt-0">
+    {% if choices is empty %}
+        <p class="text-secondary mb-0">{{ 'libraryQuizAttachNothingLeftMessage'|trans }}</p>
+    {% else %}
+        <form method="post" action="{{ path(actionRoute, actionParams) }}" class="row g-2 align-items-end">
+            <input type="hidden" name="_token" value="{{ csrf_token('library_quiz_attach') }}">
+            <div class="col-md">
+                <label class="form-label" for="{{ collapseId }}-quiz">{{ 'libraryQuizAttachFieldLabel'|trans }}</label>
+                <select id="{{ collapseId }}-quiz" name="quiz" class="form-select" data-controller="tom-select" data-tom-select-placeholder-value="{{ 'libraryQuizAttachPlaceholder'|trans }}">
+                    <option value="">{{ 'libraryQuizAttachPlaceholder'|trans }}</option>
+                    {% for quiz in choices %}
+                        <option value="{{ quiz.id }}">{% if quiz.folder %}{{ quiz.folder.name }} · {% endif %}{{ quiz.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-auto">
+                <button type="submit" class="btn btn-primary">{{ 'libraryQuizAttachSubmitLabel'|trans }}</button>
+            </div>
+        </form>
+    {% endif %}
+</div>

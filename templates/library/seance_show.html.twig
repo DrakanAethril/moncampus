@@ -121,6 +121,55 @@
         </div>
     </div>
 
+    {# « Quiz de la séance », the same card as the séquence's, scoped to this séance. What its
+       « Détacher » leaves behind is the whole difference between the two levels: it removes this
+       séance's link and nothing else, so a quiz the séquence names as well stays named by it
+       (App\Service\SequenceQuizLinker). The badge says which ones those are.
+
+       These quizzes are raised into the séquence's own card, deduplicated - a quiz attached to both
+       levels is listed once there (App\Service\SequenceQuizBoard). #}
+    <div class="card mt-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3 class="card-title mb-0">{{ 'librarySeanceQuizSectionTitle'|trans }}</h3>
+            {% if canEdit %}
+                <a href="#library-seance-quiz-attach" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse">↑ {{ 'libraryQuizAttachToggleLabel'|trans }}</a>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            {% if quizBoard.quizzes is empty %}
+                <div class="text-secondary">{{ 'librarySeanceQuizEmptyMessage'|trans }}</div>
+            {% else %}
+                <div class="list-group list-group-flush">
+                    {% for row in quizBoard.quizzes %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <div>
+                                <a href="{{ path('app_library_quiz_questions', {id: row.quiz.id}) }}">{{ row.quiz.name }}</a>
+                                {# Said here because it is what this card's « Détacher » will leave behind. #}
+                                {% if row.onSequence %}<span class="badge bg-secondary-lt ms-2">{{ 'librarySeanceQuizAlsoOnSequenceLabel'|trans }}</span>{% endif %}
+                            </div>
+                            {% if canEdit %}
+                                <form method="post" action="{{ path('app_library_seances_quiz_detach', {sequenceId: sequenceTemplate.id, seanceId: seanceTemplate.id, quizId: row.quiz.id}) }}" class="cm-actions" onsubmit="return confirm('{{ 'libraryQuizDetachFromSeanceConfirmMessage'|trans|e('js') }}')">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('library_quiz_detach') }}">
+                                    <button type="submit" class="cm-action--danger">{{ 'libraryQuizDetachActionLabel'|trans }}</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% if canEdit %}
+                {% include 'library/_quiz_attach_form.html.twig' with {
+                    collapseId: 'library-seance-quiz-attach',
+                    actionRoute: 'app_library_seances_quiz_attach',
+                    actionParams: {sequenceId: sequenceTemplate.id, seanceId: seanceTemplate.id},
+                    pickableQuizzes: pickableQuizzes,
+                    attachedIds: attachedQuizIds,
+                } only %}
+            {% endif %}
+        </div>
+    </div>
+
     {% include 'library/_resources.html.twig' with {
         resources: seanceTemplate.libraryResources,
         canEdit: canEdit,

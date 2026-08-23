@@ -24,8 +24,9 @@ use PHPUnit\Framework\TestCase;
  * its `qcm-final.md` is about the whole séquence and about no séance in particular. A half-absent key
  * is a table that means two things.
  *
- * Coverage counts *séances*, and deliberately not the séquence-level quizzes: a final exam attached to
- * the whole séquence must not make four séances look covered.
+ * The card lists one row per quiz, séance-level ones raised to the séquence and deduplicated, each row
+ * naming where it hangs. Coverage counts *séances*, and deliberately not the séquence-level quizzes: a
+ * final exam attached to the whole séquence must not make four séances look covered.
  */
 class SequenceQuizBoardTest extends TestCase
 {
@@ -44,14 +45,11 @@ class SequenceQuizBoardTest extends TestCase
 
         self::assertSame(0, $board['coveredSeances']);
         self::assertSame(4, $board['totalSeances']);
-        self::assertSame([], $board['sequenceQuizzes']);
-        self::assertCount(4, $board['seances']);
-        foreach ($board['seances'] as $row) {
-            self::assertSame([], $row['quizzes']);
-        }
+        self::assertSame([], $board['quizzes']);
+        self::assertFalse($board['hasAnyQuiz']);
     }
 
-    public function testASeanceWithAQuizIsCounted(): void
+    public function testASeanceWithAQuizIsCountedAndRaisedToTheSequence(): void
     {
         $sequence = $this->sequence(4);
         $this->attachToSeance($sequence, 0, 'Diagnostic Ansible');
@@ -61,9 +59,9 @@ class SequenceQuizBoardTest extends TestCase
 
         self::assertSame(2, $board['coveredSeances']);
         self::assertSame(4, $board['totalSeances']);
-        self::assertSame(['Diagnostic Ansible'], array_map($this->quizName(), $board['seances'][0]['quizzes']));
-        self::assertSame([], $board['seances'][1]['quizzes']);
-        self::assertSame(['Playbooks'], array_map($this->quizName(), $board['seances'][2]['quizzes']));
+        self::assertSame(['Diagnostic Ansible', 'Playbooks'], $this->names($board['quizzes']));
+        self::assertFalse($board['quizzes'][0]['onSequence']);
+        self::assertSame(['Séance 1'], array_column($board['quizzes'][0]['seances'], 'titre'));
     }
 
     /** A séance carries a diagnostic at its opening and a final at its end - and counts once. */
@@ -76,27 +74,42 @@ class SequenceQuizBoardTest extends TestCase
         $board = $this->board->forSequence($sequence);
 
         self::assertSame(1, $board['coveredSeances']);
-        self::assertCount(2, $board['seances'][0]['quizzes']);
+        self::assertCount(2, $board['quizzes']);
     }
 
     /**
      * The same quiz serving two séances is the case the relation tables exist for. Nothing is
-     * duplicated, and both séances count.
+     * duplicated - one row naming both séances - and both séances count.
      */
-    public function testOneQuizCanServeTwoSeancesWithoutBeingDuplicated(): void
+    public function testOneQuizServingTwoSeancesIsOneRowNamingBoth(): void
     {
         $sequence = $this->sequence(3);
         $reactivation = $this->quiz('Réactivation');
         foreach ([1, 2] as $index) {
-            $seance = $sequence->getSeanceTemplates()->get($index);
-            self::assertInstanceOf(SeanceTemplate::class, $seance);
-            $reactivation->addSeanceTemplate($seance);
+            $reactivation->addSeanceTemplate($this->seance($sequence, $index));
         }
 
         $board = $this->board->forSequence($sequence);
 
         self::assertSame(2, $board['coveredSeances']);
-        self::assertSame($board['seances'][1]['quizzes'][0], $board['seances'][2]['quizzes'][0], 'the same row, not a copy');
+        self::assertCount(1, $board['quizzes']);
+        self::assertSame([2, 3], array_column($board['quizzes'][0]['seances'], 'ordre'));
+    }
+
+    /** Attached to the séquence *and* to one of its séances: still one row, saying both. */
+    public function testAQuizAttachedToBothLevelsIsListedOnce(): void
+    {
+        $sequence = $this->sequence(2);
+        $quiz = $this->quiz('QCM final');
+        $quiz->addSequenceTemplate($sequence);
+        $quiz->addSeanceTemplate($this->seance($sequence, 1));
+
+        $board = $this->board->forSequence($sequence);
+
+        self::assertCount(1, $board['quizzes']);
+        self::assertTrue($board['quizzes'][0]['onSequence']);
+        self::assertSame(['Séance 2'], array_column($board['quizzes'][0]['seances'], 'titre'));
+        self::assertSame(1, $board['coveredSeances']);
     }
 
     /**
@@ -111,15 +124,10 @@ class SequenceQuizBoardTest extends TestCase
 
         $board = $this->board->forSequence($sequence);
 
-        self::assertSame(['QCM final'], array_map($this->quizName(), $board['sequenceQuizzes']));
+        self::assertSame(['QCM final'], $this->names($board['quizzes']));
+        self::assertTrue($board['quizzes'][0]['onSequence']);
+        self::assertSame([], $board['quizzes'][0]['seances']);
         self::assertSame(0, $board['coveredSeances'], 'a séquence-level quiz covers no séance');
-    }
-
-    public function testTheSeanceRowsKeepTheDeroulesOrderAndNameThemselves(): void
-    {
-        $board = $this->board->forSequence($this->sequence(3));
-
-        self::assertSame(['Séance 1', 'Séance 2', 'Séance 3'], array_column($board['seances'], 'titre'));
     }
 
     /** A séquence with no séance at all must not divide by zero on its way to a percentage. */
@@ -140,6 +148,29 @@ class SequenceQuizBoardTest extends TestCase
         self::assertTrue($this->board->forSequence($sequence)['hasAnyQuiz']);
     }
 
+    public function testTheSeanceCardTellsWhichQuizzesTheSequenceAlsoNames(): void
+    {
+        $sequence = $this->sequence(2);
+        $seance = $this->seance($sequence, 0);
+        $both = $this->quiz('QCM final');
+        $both->addSequenceTemplate($sequence);
+        $both->addSeanceTemplate($seance);
+        $this->quiz('Diagnostic')->addSeanceTemplate($seance);
+
+        $board = $this->board->forSeance($seance);
+
+        self::assertSame(['QCM final', 'Diagnostic'], $this->names($board['quizzes']));
+        self::assertTrue($board['quizzes'][0]['onSequence']);
+        self::assertFalse($board['quizzes'][1]['onSequence']);
+    }
+
+    public function testASeanceWithoutAQuizIsAnEmptyCard(): void
+    {
+        $board = $this->board->forSeance($this->seance($this->sequence(1), 0));
+
+        self::assertSame([], $board['quizzes']);
+    }
+
     private function sequence(int $seances): SequenceTemplate
     {
         $sequence = new SequenceTemplate(new User('prof-001'));
@@ -155,6 +186,14 @@ class SequenceQuizBoardTest extends TestCase
         return $sequence;
     }
 
+    private function seance(SequenceTemplate $sequence, int $index): SeanceTemplate
+    {
+        $seance = $sequence->getSeanceTemplates()->get($index);
+        self::assertInstanceOf(SeanceTemplate::class, $seance);
+
+        return $seance;
+    }
+
     private function quiz(string $name): QuizTemplate
     {
         $quiz = new QuizTemplate(new User('prof-001'));
@@ -165,14 +204,16 @@ class SequenceQuizBoardTest extends TestCase
 
     private function attachToSeance(SequenceTemplate $sequence, int $index, string $name): void
     {
-        $seance = $sequence->getSeanceTemplates()->get($index);
-        self::assertInstanceOf(SeanceTemplate::class, $seance);
-        $this->quiz($name)->addSeanceTemplate($seance);
+        $this->quiz($name)->addSeanceTemplate($this->seance($sequence, $index));
     }
 
-    /** @return \Closure(QuizTemplate): string */
-    private function quizName(): \Closure
+    /**
+     * @param list<array{quiz: QuizTemplate, ...}> $rows
+     *
+     * @return list<string>
+     */
+    private function names(array $rows): array
     {
-        return static fn (QuizTemplate $quiz): string => (string) $quiz->getName();
+        return array_map(static fn (array $row): string => (string) $row['quiz']->getName(), $rows);
     }
 }
