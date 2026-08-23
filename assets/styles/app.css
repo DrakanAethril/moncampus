@@ -7124,7 +7124,12 @@ button.cm-tabs__tab { border: 0; background: none; font: inherit; cursor: pointe
 .cm-wiki__node-action--danger:hover { background: var(--cm-red-bg); color: var(--cm-red-tx); }
 
 .cm-wiki__content { background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 24px 26px 26px; }
-.cm-wiki__body { font: 400 15px/1.65 var(--cm-font-ui); color: var(--cm-text); }
+/* `overflow-wrap` is not cosmetic here: a wiki page is where a URL, a token, a stack trace or a
+   command line gets pasted, and an unbroken run of characters is wider than the column it sits in.
+   Without this the text simply left the white panel and ran under the outline. `anywhere` rather
+   than `break-word` so the break is taken into account when the browser measures the line, which
+   is what a table cell holding a long URL needs. */
+.cm-wiki__body { font: 400 15px/1.65 var(--cm-font-ui); color: var(--cm-text); overflow-wrap: anywhere; }
 .cm-wiki__body h1, .cm-wiki__body h2, .cm-wiki__body h3, .cm-wiki__body h4 { font-family: var(--cm-font-title); color: var(--cm-ink); margin: 1.4em 0 0.5em; }
 .cm-wiki__body h1:first-child, .cm-wiki__body h2:first-child { margin-top: 0; }
 .cm-wiki__body table { width: 100%; border-collapse: collapse; margin: 1em 0; }
@@ -7163,8 +7168,12 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
 .cm-wiki-list__date { flex: none; font: 400 12px var(--cm-font-ui); color: var(--cm-faint); }
 .cm-wiki-list--muted .cm-wiki-list__row { border-top: 0; padding: 3px 2px; }
 
-.cm-wiki-regime { max-width: 900px; margin-bottom: 18px; padding: 11px 14px; border-radius: 8px; background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); font: 400 13px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-wiki-regime { margin-bottom: 18px; padding: 11px 14px; border-radius: 8px; background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); font: 400 13px var(--cm-font-ui); color: var(--cm-muted); }
 .cm-wiki-regime--supervised { background: var(--cm-gold-bg); border-color: var(--cm-gold); color: var(--cm-gold-tx); }
+/* The banner announces what the whole screen is, so it is as wide as the whole screen - which is
+   the two-column layout below it, not the form's own column. It follows that layout back down to
+   900px exactly where the layout does, single-column screens included. */
+.cm-wiki-regime--narrow { max-width: 900px; }
 
 /* What the wiki *is* on the left, what one does to it as a whole on the right. The right column
    collapses under the form on a narrow screen rather than squeezing both. */
@@ -7239,6 +7248,27 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
 .cm-wiki-attachments__add > .cm-wiki-attachments__grid { margin-top: 10px; }
 .cm-wiki-attachments__submit { display: flex; justify-content: flex-end; margin-top: 12px; }
 
+/* The folded adding zone. Closed it is one line of small text with a paper-clip; open it is exactly
+   the panel that used to be there, unchanged. `list-style: none` plus the ::-webkit- rule is what it
+   takes to be rid of the browser's own triangle - the chevron is drawn in the markup so it can turn
+   with the state and match the rest of the app's disclosures. */
+.cm-wiki-attachments__adder > summary::-webkit-details-marker { display: none; }
+.cm-wiki-attachments__toggle {
+    display: inline-flex; align-items: center; gap: 7px; list-style: none; cursor: pointer;
+    padding: 4px 2px; font: 500 12.5px var(--cm-font-ui); color: var(--cm-faint);
+}
+.cm-wiki-attachments__toggle:hover { color: var(--cm-brand-strong); }
+.cm-wiki-attachments__toggle:focus-visible { outline: 2px solid var(--cm-brand); outline-offset: 3px; border-radius: 6px; }
+.cm-wiki-attachments__clip, .cm-wiki-attachments__chevron { display: inline-flex; line-height: 0; }
+.cm-wiki-attachments__chevron { transition: transform .15s ease; }
+.cm-wiki-attachments__adder[open] .cm-wiki-attachments__chevron { transform: rotate(180deg); }
+.cm-wiki-attachments__adder[open] .cm-wiki-attachments__toggle { color: var(--cm-muted); margin-bottom: 10px; }
+/* With attachments above it, the line needs the separation the panel's own rule gives the heading. */
+.cm-wiki-attachments__grid + .cm-wiki-attachments__adder { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--cm-gold-bg); }
+
+/* Nothing to list: the section is that one line, so the gold panel around it goes away. */
+.cm-wiki-attachments--bare { margin-top: 18px; border: 0; background: none; padding: 0; }
+
 .cm-wiki-lock { margin-bottom: 16px; padding: 10px 14px; border-radius: 8px; background: var(--cm-gold-bg); border: 1px solid var(--cm-gold); font: 400 13px var(--cm-font-ui); color: var(--cm-gold-tx); }
 
 .cm-wiki__editor-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -7272,6 +7302,7 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
     .cm-wiki--with-outline { grid-template-columns: 264px minmax(0, 1fr); }
     .cm-wiki__outline { display: none; }
     .cm-wiki-settings-layout { grid-template-columns: minmax(0, 1fr); max-width: 900px; }
+    .cm-wiki-regime { max-width: 900px; }
     .cm-wiki-settings-layout__side .cm-wiki-settings__block-actions { flex-direction: row; align-items: center; }
     .cm-wiki-settings-layout__side .cm-wiki-settings__block-actions .cm-btn { width: auto; }
 }
@@ -7320,6 +7351,26 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
    box. Measured in a browser, which is the only way that kind of bug shows up. */
 .cm-wiki__body pre { padding: 12px 14px; border: 1px solid var(--cm-border); border-radius: 8px; background: var(--cm-surface-alt); color: var(--cm-ink); overflow-x: auto; font-size: 13px; }
 .cm-wiki__body pre code { color: inherit; background: none; }
+
+/* A code block and its copy button, put together at read time by wiki_code_copy_controller.js. The
+   button rides in the corner of the block and stays faint until the pointer or the keyboard reaches
+   it: on a page that is mostly commands, a column of solid buttons would read as the content. */
+.cm-codeblock { position: relative; }
+/* Room kept for the button, so the first line of code never runs underneath it. */
+.cm-codeblock > pre { padding-right: 42px; }
+.cm-codeblock__copy {
+    position: absolute; top: 7px; right: 7px;
+    width: 26px; height: 26px; border-radius: 7px;
+    background: var(--cm-surface); border: 1px solid var(--cm-border);
+    opacity: 0; transition: opacity .12s ease;
+}
+.cm-codeblock:hover .cm-codeblock__copy,
+.cm-codeblock__copy:focus-visible,
+.cm-codeblock__copy.cm-copybtn--done { opacity: 1; }
+/* The button hangs off the wrapper and not off the <pre>, which scrolls sideways when a line is
+   long - anchored to the block itself it would slide out of sight with the first wide command. The
+   wrapper carries no border, padding or height, so the <pre>'s own margins still collapse through it
+   and the page keeps the spacing it had before the buttons existed. */
 .cm-wiki__body code { font-size: 0.92em; color: var(--cm-ink); }
 .cm-wiki__body blockquote { margin: 1.1em 0; padding: 4px 0 4px 16px; border-left: 3px solid var(--cm-border); color: var(--cm-muted); }
 
@@ -7512,6 +7563,98 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
     .cm-flib__rail { position: static; max-height: none; }
 }
 
+/* --- Bibliothèque de quiz : le classement par dossiers ------------------------------------- */
+/* Derived from `.cm-flib` just above, which is itself derived from `.cm-wiki__rail` - same rail,
+   same listing, same row menu, because a teacher who has learnt to file a document should not have
+   to learn a second gesture to file a quiz. What is dropped here is the file library's own three
+   blocks that a quiz has no use for: no quota bar (a folder holds no bytes), no upload strip, no
+   full-frame viewer. What is added is « Déplacer vers… », a list of folders that does what the drag
+   does for a target that is collapsed, on a touch screen, or from the keyboard. */
+
+.cm-qlib { display: grid; grid-template-columns: 264px minmax(0, 1fr); gap: 22px; align-items: start; }
+.cm-qlib__rail { position: sticky; top: 84px; max-height: calc(100vh - 104px); display: flex; flex-direction: column; background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 14px 12px; }
+
+.cm-qlib__rail-head { display: flex; align-items: center; gap: 8px; padding: 0 4px 10px; border-bottom: 1px solid var(--cm-border-soft); }
+.cm-qlib__rail-title { flex: 1; min-width: 0; font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Pinned to the bottom of the block rather than laid under the last folder: it acts on the *whole*
+   library. One entry and not the file library's two - there is no corbeille on this side. */
+.cm-qlib__rail-foot { display: flex; align-items: center; padding-top: 10px; margin-top: auto; border-top: 1px solid var(--cm-border-soft); }
+
+.cm-qlib__tree { list-style: none; margin: 10px 0 0; padding: 0; }
+/* `:not(--nested)` for the reason the wiki records: the two lists share a class, and setting one
+   overflow axis to anything but `visible` computes the other to `auto` - every branch would get a
+   stray horizontal scrollbar. `min-height: 0` is what makes a flex item actually shrink. */
+.cm-qlib__tree:not(.cm-qlib__tree--nested) { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.cm-qlib__tree--nested { margin: 2px 0 2px 14px; border-left: 1px solid var(--cm-border-soft); padding-left: 6px; }
+.cm-qlib__node { margin: 1px 0; }
+.cm-qlib__node.is-dragging { opacity: 0.45; }
+/* One drop state, not the wiki's three: there is no re-order here, so "between two folders" means
+   nothing - a drop is always *into*. */
+.cm-qlib__node.is-drop-target > .cm-qlib__node-row { background: var(--cm-blue-bg-soft); box-shadow: inset 0 0 0 1px var(--cm-brand); border-radius: 6px; }
+.cm-qlib__node-row { display: flex; align-items: center; gap: 1px; min-width: 0; }
+.cm-qlib__node-link { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; padding: 5px 6px; border-radius: 6px; font: 400 13px var(--cm-font-ui); color: var(--cm-text); text-decoration: none; }
+.cm-qlib__node-link:hover { background: var(--cm-surface-alt); color: var(--cm-ink); }
+.cm-qlib__node-link.is-current { background: var(--cm-blue-bg); color: var(--cm-blue-tx); font-weight: 600; }
+.cm-qlib__node-ico { flex: none; display: grid; place-items: center; color: var(--cm-faint); }
+.cm-qlib__node-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-qlib__node-toggle { flex: none; display: grid; place-items: center; width: 14px; height: 18px; padding: 0; border: 0; background: none; color: var(--cm-faint); cursor: pointer; }
+.cm-qlib__node-toggle svg { transform: rotate(90deg); transition: transform 0.12s ease; }
+.cm-qlib__node.is-collapsed > .cm-qlib__node-row .cm-qlib__node-toggle svg { transform: rotate(0deg); }
+.cm-qlib__node-toggle--empty { cursor: default; }
+.cm-qlib__node.is-collapsed > .cm-qlib__tree--nested { display: none; }
+.cm-qlib__node-grip { flex: none; display: grid; place-items: center; width: 12px; color: var(--cm-disabled); cursor: grab; }
+.cm-qlib__node-row:hover .cm-qlib__node-grip { color: var(--cm-faint); }
+/* The root entry keeps the grip's width so its label lines up with every folder below it, and loses
+   the grab cursor: it receives a drop and is never itself dragged. */
+.cm-qlib__node-grip--fixed { cursor: default; }
+.cm-qlib__node-actions { flex: none; display: flex; align-items: center; gap: 1px; }
+.cm-qlib__node-action { display: grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 5px; background: none; color: var(--cm-faint); cursor: pointer; }
+.cm-qlib__node-action:hover { background: var(--cm-surface-alt); color: var(--cm-brand-strong); }
+
+.cm-qlib__content { background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 18px 20px 20px; }
+.cm-qlib__empty { margin: 8px 2px; font: 400 13.5px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-qlib__search { min-width: 220px; }
+
+.cm-qlib__table { width: 100%; border-collapse: collapse; font: 400 13px var(--cm-font-ui); }
+.cm-qlib__table th { text-align: left; padding: 6px 10px; font: 600 11px var(--cm-font-ui); letter-spacing: 0.05em; text-transform: uppercase; color: var(--cm-faint); border-bottom: 1px solid var(--cm-border-soft); }
+.cm-qlib__table td { padding: 9px 10px; border-bottom: 1px solid var(--cm-border-faint); color: var(--cm-text); vertical-align: middle; }
+.cm-qlib__row:hover td { background: var(--cm-surface-alt); }
+.cm-qlib__row.is-dragging td { opacity: 0.45; }
+.cm-qlib__name { display: flex; align-items: center; gap: 9px; min-width: 0; font-weight: 600; color: var(--cm-ink); }
+.cm-qlib__name a { color: inherit; text-decoration: none; }
+.cm-qlib__name a:hover { text-decoration: underline; }
+.cm-qlib__row.is-folder .cm-qlib__name a { color: var(--cm-brand-strong); }
+.cm-qlib__num { font-variant-numeric: tabular-nums; color: var(--cm-muted); white-space: nowrap; }
+.cm-qlib__muted { color: var(--cm-muted); }
+.cm-qlib__folderlink { color: var(--cm-brand-strong); text-decoration: none; }
+.cm-qlib__folderlink:hover { text-decoration: underline; }
+.cm-qlib__menu { width: 1%; white-space: nowrap; text-align: right; }
+.cm-qlib__kebab { border: 0; background: none; color: var(--cm-faint); font-weight: 700; letter-spacing: 1px; padding: 2px 6px; border-radius: 6px; cursor: pointer; }
+.cm-qlib__kebab:hover { background: var(--cm-surface-alt); color: var(--cm-ink); }
+
+/* The same tile as the file library's, so a row reads the same in both libraries - two cases here
+   rather than seven: a folder, and a quiz. */
+.cm-qlib__ext { font: 700 9.5px/1 var(--cm-font-ui); letter-spacing: .04em; padding: 5px 6px; border-radius: 5px; min-width: 34px; text-align: center; flex: none; background: var(--cm-surface-alt); color: var(--cm-muted); border: 1px solid var(--cm-border-soft); display: grid; place-items: center; }
+.cm-qlib__ext--dir { background: transparent; color: var(--cm-brand); border-color: var(--cm-border); }
+.cm-qlib__ext--quiz { background: var(--cm-purple-bg); color: var(--cm-purple-tx); border-color: transparent; }
+
+/* « Déplacer vers… » : the folder tree, flattened and indented, over the screen. A dialog rather than
+   a submenu because the list is as deep as the library is, and a dropdown inside a dropdown inside a
+   `.table-responsive` is the clipping trap the row menu already had to be taken out of. */
+.cm-qlib__move { position: fixed; inset: 0; z-index: 1080; display: grid; place-items: center; background: rgba(18, 52, 77, .55); padding: 20px; }
+.cm-qlib__move-box { width: min(420px, 100%); max-height: min(70vh, 560px); display: flex; flex-direction: column; background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); box-shadow: 0 18px 48px rgba(18, 52, 77, .28); }
+.cm-qlib__move-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--cm-border-soft); }
+.cm-qlib__move-title { flex: 1; min-width: 0; margin: 0; font: 600 14px var(--cm-font-ui); color: var(--cm-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-qlib__move-close { border: 0; background: none; color: var(--cm-faint); font-size: 22px; line-height: 1; cursor: pointer; }
+.cm-qlib__move-list { flex: 1; min-height: 0; overflow-y: auto; list-style: none; margin: 0; padding: 8px 0; }
+.cm-qlib__move-item { width: 100%; display: flex; align-items: center; gap: 8px; padding: 7px 10px; border: 0; background: none; font: 400 13px var(--cm-font-ui); color: var(--cm-text); text-align: left; cursor: pointer; }
+.cm-qlib__move-item:hover { background: var(--cm-surface-alt); color: var(--cm-ink); }
+
+@media (max-width: 991.98px) {
+    .cm-qlib { grid-template-columns: minmax(0, 1fr); }
+    .cm-qlib__rail { position: static; max-height: none; }
+}
+
 /* --- The link: the picker's Bibliothèque tab, the usage panel, the deletion modal -------- */
 
 /* The tab strip's buttons are buttons now that one of them switches panes - reset to the tab's look
@@ -7572,6 +7715,9 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-share__scope { display: flex; flex-direction: column; gap: 20px; }
 .cm-share__scope[hidden] { display: none; }
 .cm-share__help { margin: 0 0 8px; font-size: 12px; color: var(--cm-faint); }
+/* What sharing a folder means, above the form. Gold rather than grey: it is not help text about
+   a field, it is the scope of what the teacher is about to do. */
+.cm-share__notice { margin: 0 0 18px; padding: 10px 14px; border-radius: 8px; background: var(--cm-gold-bg); border: 1px solid var(--cm-gold); font: 400 13px var(--cm-font-ui); color: var(--cm-gold-tx); }
 .cm-share__checks { display: flex; flex-wrap: wrap; gap: 6px 20px; }
 .cm-share__window { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; }
 .cm-share__window[hidden] { display: none; }

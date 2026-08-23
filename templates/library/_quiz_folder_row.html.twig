@@ -1,0 +1,51 @@
+{# One folder of the listing - the file library's row shape (templates/file_library/_row.html.twig):
+   the same columns as a quiz, the ones that mean nothing for a container left empty rather than
+   invented, and the quiz count in the « Questions » column.
+
+   Folders are drawn **before** the quizzes and never interleaved: a folder is a place and a quiz is a
+   thing, and a listing that mixes them makes the reader check the icon on every line. #}
+<tr class="cm-qlib__row is-folder" data-folder-id="{{ row.folder.id }}" data-name="{{ row.folder.name }}" draggable="true">
+    <td>
+        <span class="cm-qlib__name">
+            <span class="cm-qlib__ext cm-qlib__ext--dir" aria-hidden="true">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"></path></svg>
+            </span>
+            <a href="{{ path('app_library_quiz_folder', {folderId: row.folder.id}) }}">{{ row.folder.name }}</a>
+        </span>
+    </td>
+    <td class="cm-qlib__muted">—</td>
+    <td class="cm-qlib__num">{{ 'quizFolderQuizCountLabel'|trans({'%count%': row.quizCount}) }}</td>
+    <td class="cm-qlib__muted">—</td>
+    <td class="cm-qlib__num">{{ row.folder.modifiedAt|date('d/m/Y') }}</td>
+    <td class="cm-qlib__menu">
+        <div class="dropdown">
+            {# `fixed` Popper strategy and the viewport as boundary, for the reason the file library
+               records: the table sits in a `.table-responsive` whose `overflow: auto` is a clipping
+               context, and a folder holding one row makes a card shorter than its own menu. #}
+            <button type="button" class="cm-qlib__kebab" data-bs-toggle="dropdown" aria-expanded="false"
+                    data-bs-boundary="viewport"
+                    data-bs-popper-config='{"strategy":"fixed"}'
+                    aria-label="{{ 'quizLibraryRowMenuLabel'|trans }}">⋮</button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="{{ path('app_library_quiz_folder', {folderId: row.folder.id}) }}">{{ 'quizFolderOpenAction'|trans }}</a></li>
+                <li><button type="button" class="dropdown-item" data-action="quiz-library#promptRenameFolder">{{ 'quizFolderRenameAction'|trans }}</button></li>
+                {# « Déplacer vers… » exists **alongside** the drag and not instead of it: dragging a
+                   row onto the rail is the quick gesture, and a list of folders is the one that works
+                   on a touch screen, with the keyboard, and when the target folder is collapsed. #}
+                <li><button type="button" class="dropdown-item" data-action="quiz-library#openMove">{{ 'quizLibraryMoveAction'|trans }}</button></li>
+                <li>
+                    <form method="post" action="{{ path('app_library_quiz_folder_delete', {folderId: row.folder.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('quiz_folder') }}">
+                        {# The confirmation says what becomes of the content rather than just naming
+                           the folder: deleting one **never deletes a quiz** here, everything inside
+                           moves up one level, and that is not what a file manager teaches. #}
+                        <button type="submit" class="dropdown-item text-danger"
+                                data-controller="confirm-submit"
+                                data-confirm-submit-message-value="{{ 'quizFolderDeleteConfirmText'|trans({'%name%': row.folder.name}) }}"
+                                data-action="click->confirm-submit#confirm">{{ 'quizFolderDeleteAction'|trans }}</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </td>
+</tr>

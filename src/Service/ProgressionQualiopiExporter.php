@@ -6,6 +6,7 @@ namespace App\Service;
 
 use App\Entity\Progression;
 use App\Entity\User;
+use App\Enum\ProgressionExportMode;
 
 /**
  * Renders templates/progression/qualiopi_export.html.twig and converts it to PDF via Gotenberg -
@@ -35,12 +36,13 @@ class ProgressionQualiopiExporter
      * @param \Closure(string, array<string, mixed>): string $renderView  bound to the calling
      *                                                                   controller's renderView()
      * @param User|null                                     $generatedBy who pressed the button
+     * @param ProgressionExportMode                         $mode        which of the two documents - see the enum
      *
      * @return non-empty-string raw PDF bytes
      */
-    public function export(Progression $progression, \Closure $renderView, \DateTimeImmutable $generatedAt, ?User $generatedBy = null): string
+    public function export(Progression $progression, \Closure $renderView, \DateTimeImmutable $generatedAt, ?User $generatedBy = null, ProgressionExportMode $mode = ProgressionExportMode::Dated): string
     {
-        $data = $this->builder->build($progression);
+        $data = $this->builder->build($progression, $mode);
         $progressionTitle = sprintf(
             'Progression pédagogique — %s × %s',
             $progression->getTopic()?->getName() ?? '—',
@@ -58,6 +60,10 @@ class ProgressionQualiopiExporter
                 // hold - measured off the timetable, never stored.
                 'roster' => $this->teacherRoster->forProgression($progression),
                 'generatedBy' => $generatedBy,
+                // Read by the template as one flag rather than by comparing the enum in Twig: the
+                // undated document is a different reading of the same rows, and every place it
+                // diverges asks the same yes/no question.
+                'undated' => ProgressionExportMode::Undated === $mode,
             ]),
             // The running footer is Chromium's, not the document's - see GotenbergPageSetup. The
             // bottom margin is the taller one because it has to hold that band; the others are the

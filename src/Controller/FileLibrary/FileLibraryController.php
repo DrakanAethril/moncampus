@@ -135,9 +135,11 @@ class FileLibraryController extends AbstractController
                 // A folder's "taille" column is its file count - the same column, reading the one
                 // number that means something for a container.
                 'fileCount' => $node->isFolder() ? $this->nodes->countFilesUnder($node) : null,
-                // And a file's "utilisations" column is where it is linked. It is a link into the
-                // usage panel, and what turns « Supprimer » into « Supprimer partout ».
-                'usageCount' => $node->isFile() ? $this->links->countUsagesOf($node) : 0,
+                // And the "utilisations" column is where the node is linked. It is a link into the
+                // usage panel, and what turns « Supprimer » into « Supprimer partout ». A folder has
+                // one kind of usage and one only - a class it was shared with - and it needs the
+                // same warning: deleting it withdraws the listing from that class.
+                'usageCount' => $this->links->countUsagesOf($node),
             ], $children),
             'rail' => $this->railTree($this->nodes, $this->tree, $owner),
             'quota' => $this->quotaBar($this->quota, $owner),

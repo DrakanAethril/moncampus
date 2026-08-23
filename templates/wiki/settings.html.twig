@@ -23,6 +23,8 @@
 {# The side column only exists for a wiki that exists: there is nothing to export or delete while
    creating one, so that screen stays a single column. #}
 {% set hasSide = not isNew %}
+{# The regime banner sits above the layout and has to be as wide as it, so both read the same flag. #}
+{% set isSingleColumn = not (hasSide and canManage) %}
 
 {% block title %}{{ isNew ? 'wikiNewPageHeading'|trans : 'wikiSettingsPageHeading'|trans }}{% endblock %}
 
@@ -45,12 +47,12 @@
 
 {% block main %}
     {% if not isNew %}
-        <p class="cm-wiki-regime{{ hasStudentAudience ? ' cm-wiki-regime--supervised' }}">
+        <p class="cm-wiki-regime{{ hasStudentAudience ? ' cm-wiki-regime--supervised' }}{{ isSingleColumn ? ' cm-wiki-regime--narrow' }}">
             {{ (hasStudentAudience ? 'wikiRegimeSupervisedText' : 'wikiRegimeMembersOnlyText')|trans }}
         </p>
     {% endif %}
 
-    <div class="cm-wiki-settings-layout{{ not (hasSide and canManage) ? ' cm-wiki-settings-layout--single' }}">
+    <div class="cm-wiki-settings-layout{{ isSingleColumn ? ' cm-wiki-settings-layout--single' }}">
         {% if canManage %}
             <form method="post" action="{{ isNew ? path('app_wiki_new') : path('app_wiki_settings', {id: wiki.id}) }}" class="cm-wiki-settings">
                 <input type="hidden" name="_token" value="{{ csrf_token('wiki_settings') }}">

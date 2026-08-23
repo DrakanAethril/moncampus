@@ -1,1 +1,11 @@
+{# The tab row's right-hand actions: « Partager » then « Enregistrer », in that order - the
+   destructive-free pair a teacher finishes a quiz with, and the primary button last so it stays the
+   one under the thumb. « Partager » sat in the page action bar and has moved here to be beside it.
+
+   Gated on canShare and not on canEdit: sharing is an act of authorship, so a staff member reading a
+   colleague's quiz does not get to hand it around on their behalf
+   (design/validated/content-sharing-between-teachers.md). #}
+{% if canShare %}
+    <button type="button" class="btn btn-outline-secondary me-2" data-bs-toggle="modal" data-bs-target="#content-share-modal">{{ 'contentShareAction'|trans }}</button>
+{% endif %}
 <button type="submit" form="quiz-settings-form" class="btn btn-primary">{{ 'submitSaveAction'|trans }}</button>

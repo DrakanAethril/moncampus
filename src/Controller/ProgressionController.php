@@ -15,6 +15,7 @@ use App\Entity\Topic;
 use App\Entity\User;
 use App\Enum\ContentShareScope;
 use App\Enum\EvaluationNature;
+use App\Enum\ProgressionExportMode;
 use App\Enum\ProgressionSlotComposition;
 use App\Enum\ProgressionSlotTopicScope;
 use App\Repository\ContentShareRepository;
@@ -271,29 +272,38 @@ class ProgressionController extends AbstractController
 
     /**
      * The PDF export of a progression, for the Qualiopi file - the button placed next to « Gérer » on
-     * the 3a list.
+     * the 3a list, whose submenu picks one of the two documents.
      *
      * The content and its justification live in App\Service\ProgressionQualiopiBuilder and in the
-     * print template; all that is left here is the authorisation, the possible Gotenberg failure and
-     * the file name.
+     * print template; all that is left here is the authorisation, the mode, the possible Gotenberg
+     * failure and the file name.
+     *
+     * `?mode=` rather than a second route: it is one document read two ways, and a link that predates
+     * the submenu still asks for the dated one (ProgressionExportMode::fromRequestValue()). Read as a
+     * string and never as an int - see App\Service\QueryValue on what InputBag::getInt() answers to
+     * the empty string.
      */
     #[Route(path: '/progression/{id}/export.pdf', name: 'app_progression_export_pdf', requirements: ['id' => '\d+'])]
-    public function exportPdf(int $id, ProgressionQualiopiExporter $exporter, SluggerInterface $slugger): Response
+    public function exportPdf(int $id, Request $request, ProgressionQualiopiExporter $exporter, SluggerInterface $slugger): Response
     {
         $progression = $this->findOrDeny($id);
+        $mode = ProgressionExportMode::fromRequestValue(QueryValue::string($request, 'mode'));
 
         try {
-            $pdf = $exporter->export($progression, $this->renderView(...), new \DateTimeImmutable('today'), $this->currentUser());
+            $pdf = $exporter->export($progression, $this->renderView(...), new \DateTimeImmutable('today'), $this->currentUser(), $mode);
         } catch (GotenbergUnavailableException) {
             $this->addFlash('danger', 'progressionExportPdfFailedFlashMessage');
 
             return $this->redirectToRoute('app_progression_manage');
         }
 
+        // The two documents carry different names, so exporting both leaves two files in the
+        // teacher's downloads rather than one silently overwriting the other.
         $name = sprintf(
-            'progression-%s-%s.pdf',
+            'progression-%s-%s%s.pdf',
             (string) $slugger->slug($progression->getTopic()?->getName() ?? 'matiere')->lower(),
             (string) $slugger->slug($progression->getProgram()?->getDisplayShortName() ?? 'classe')->lower(),
+            ProgressionExportMode::Undated === $mode ? '-sans-dates' : '',
         );
 
         return new Response($pdf, 200, [

@@ -161,6 +161,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tools/file-library' => 403,
             '/tools/file-library/trash' => 403,
             '/tools/file-library/search' => 403,
+            // The quiz library's classement: the same door as the library itself.
+            '/library/quiz' => 403,
+            '/library/quiz/search' => 403,
             '/library/quiz/import/assistant' => 403,
             // Outils > Sondages is the author's side: a student answers a survey, never writes one.
             '/surveys' => 403,
@@ -278,6 +281,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tools/file-library' => 200,
             '/tools/file-library/trash' => 200,
             '/tools/file-library/search' => 200,
+            '/library/quiz' => 200,
+            '/library/quiz/search' => 200,
             '/library/quiz/import/assistant' => 200,
             '/help/manage' => 403,
             '/settings/configuration' => 403,
@@ -373,6 +378,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // access table, not the narrow "somebody else's quota" one.
             '/tools/file-library' => 200,
             '/tools/file-library/trash' => 200,
+            '/library/quiz' => 200,
+            '/library/quiz/search' => 200,
             '/library/quiz/import/assistant' => 200,
             // An admin is neither enrolled nor teaching, so the two personal timetables stay shut.
             '/my/timetable' => 403,
@@ -472,6 +479,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tools/file-library' => 403,
             '/tools/file-library/trash' => 403,
             '/tools/file-library/search' => 403,
+            // The quiz library's classement: the same door as the library itself.
+            '/library/quiz' => 403,
+            '/library/quiz/search' => 403,
             '/library/quiz/import/assistant' => 403,
             '/help/manage' => 403,
             '/settings/configuration' => 403,

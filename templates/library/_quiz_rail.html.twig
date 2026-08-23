@@ -1,0 +1,58 @@
+{# The quiz library's rail - **the file library's rail, derived rather than reinvented**
+   (templates/file_library/_rail.html.twig). Same gestures, same states, class shapes mirroring
+   `cm-flib__rail`.
+
+   Three deliberate differences, each with a reason:
+
+     - **no quota bar**: a folder holds no bytes, and the only figure that would fit here is a quiz
+       count nobody is bounded by;
+     - the rail holds **folders only**. Quizzes are the listing's business; a rail listing both would
+       be the same list twice;
+     - the foot carries **one button**, « Nouveau dossier ». There is no corbeille on this side: a
+       quiz is hard-deleted in this application, so there is no back door to link to.
+
+   `readonly` drops the two acts the rail offers. The search screen sets it, because the controller
+   that answers them is not on that screen - a button that does nothing is worse than an absent one. #}
+{% set readonly = readonly|default(false) %}
+<aside class="cm-qlib__rail" data-controller="quiz-library-tree"
+       data-quiz-library-tree-folder-move-url-template-value="{{ path('app_library_quiz_folder_move', {folderId: '__FOLDER_ID__'}) }}"
+       data-quiz-library-tree-quiz-move-url-template-value="{{ path('app_library_quiz_move', {id: '__ID__'}) }}"
+       data-quiz-library-tree-token-value="{{ csrf_token('quiz_folder') }}"
+       data-quiz-library-tree-refused-message-value="{{ 'quizFolderMoveRefusedMessage'|trans }}"
+       {# dragstart/dragend are listened for on the whole screen by the controller itself: what is
+          dragged is a row of the listing, which is outside this element (see the controller). #}
+       data-action="dragover->quiz-library-tree#dragOver dragleave->quiz-library-tree#dragLeave drop->quiz-library-tree#drop">
+
+    <div class="cm-qlib__rail-head">
+        <span class="cm-qlib__rail-title">{{ 'quizFolderRailTitleLabel'|trans }}</span>
+    </div>
+
+    <ul class="cm-qlib__tree" data-quiz-library-tree-target="root">
+        {# The root itself is a drop target and a link: it is the only way to file a quiz back out of
+           a folder, this design having no « Déplacer vers la racine » of its own in the rail. #}
+        <li class="cm-qlib__node" data-folder-id="">
+            <div class="cm-qlib__node-row">
+                <span class="cm-qlib__node-grip cm-qlib__node-grip--fixed" aria-hidden="true"></span>
+                <span class="cm-qlib__node-toggle cm-qlib__node-toggle--empty" aria-hidden="true"></span>
+                <a class="cm-qlib__node-link{{ currentFolder is empty ? ' is-current' }}" href="{{ path('app_library_quiz') }}">
+                    <span class="cm-qlib__node-ico" aria-hidden="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"></path></svg>
+                    </span>
+                    <span class="cm-qlib__node-title">{{ 'quizFolderRootLabel'|trans }}</span>
+                </a>
+            </div>
+        </li>
+
+        {% for row in rail %}
+            {% include 'library/_quiz_rail_node.html.twig' with {row: row, currentFolder: currentFolder|default(null), readonly: readonly} only %}
+        {% endfor %}
+    </ul>
+
+    {% if not readonly %}
+        <div class="cm-qlib__rail-foot">
+            <button type="button" class="cm-btn cm-btn--sm cm-btn--outline"
+                    data-action="quiz-library#promptFolder"
+                    data-parent-id="{{ currentFolder ? currentFolder.id : '' }}">{{ 'quizFolderNewAction'|trans }}</button>
+        </div>
+    {% endif %}
+</aside>

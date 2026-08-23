@@ -111,8 +111,12 @@ class FileLibraryPickerController extends AbstractController
                 'url' => $usage['url'],
             ], $usages),
             // The line the deletion modal adds, and the whole of what the design asks it to say
-            // beyond the list: anything more turns a confirmation into a lecture.
-            'deleteNotice' => $this->translator->trans('fileLibraryDeleteEverywhereNoticeText'),
+            // beyond the list: anything more turns a confirmation into a lecture. A folder gets its
+            // own wording, because what leaves is the folder *and everything under it* - a sentence
+            // saying "the file" in front of a subtree is the kind of near-miss nobody re-reads.
+            'deleteNotice' => $this->translator->trans($node->isFolder()
+                ? 'fileLibraryDeleteFolderEverywhereNoticeText'
+                : 'fileLibraryDeleteEverywhereNoticeText'),
         ]);
     }
 }

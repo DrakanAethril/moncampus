@@ -69,20 +69,44 @@
                             </td>
                             <td class="text-end">
                                 {# One verb per row action, per the design's constraint. The export
-                                   is a GET that returns a file, so it is a plain link - no form and
-                                   nothing for Turbo to intercept; `pdf-download` takes the click over
-                                   only to show a spinner while Gotenberg renders, and falls back to
-                                   following the link when anything but a PDF comes back. #}
+                                   is a GET that returns a file, so each entry is a plain link - no
+                                   form and nothing for Turbo to intercept; `pdf-download` takes the
+                                   click over only to show a spinner while Gotenberg renders, and
+                                   falls back to following the link when anything but a PDF comes
+                                   back.
+
+                                   The controller sits on the wrapper rather than on the entries: the
+                                   menu closes on click, and the spinner has to stay on the button
+                                   instead of leaving with the entry that was clicked.
+
+                                   The table sits in a `.table-responsive`, whose `overflow` is a
+                                   clipping context - on the last row of a short list the menu was cut
+                                   at the bottom edge of the card. A `fixed` Popper strategy
+                                   positions it against the viewport instead, which no ancestor's
+                                   overflow can trim; same fix as the bibliothèque's row menu. #}
                                 <div class="d-flex justify-content-end gap-2">
-                                    <a href="{{ path('app_progression_export_pdf', {id: row.progression.id}) }}"
-                                       class="cm-btn cm-btn--outline cm-btn--sm"
-                                       data-controller="pdf-download"
-                                       data-action="pdf-download#download"
-                                       data-pdf-download-loading-label-value="{{ 'pdfExportLoadingLabel'|trans }}"
-                                       data-pdf-download-fallback-filename-value="progression.pdf">
-                                        <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true" data-pdf-download-target="spinner"></span>
-                                        <span data-pdf-download-target="label">{{ 'progressionExportPdfAction'|trans }}</span>
-                                    </a>
+                                    <div class="dropdown"
+                                         data-controller="pdf-download"
+                                         data-pdf-download-loading-label-value="{{ 'pdfExportLoadingLabel'|trans }}"
+                                         data-pdf-download-fallback-filename-value="progression.pdf">
+                                        <button type="button" class="cm-btn cm-btn--outline cm-btn--sm dropdown-toggle"
+                                                data-bs-toggle="dropdown" aria-expanded="false"
+                                                data-bs-boundary="viewport"
+                                                data-bs-popper-config='{"strategy":"fixed"}'
+                                                data-pdf-download-target="trigger">
+                                            <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true" data-pdf-download-target="spinner"></span>
+                                            <span data-pdf-download-target="label">{{ 'progressionExportPdfAction'|trans }}</span>
+                                        </button>
+                                        <div class="dropdown-menu dropdown-menu-end">
+                                            {# The dated one first: it is the document of record, and
+                                               it is what this button produced before there was a
+                                               choice. #}
+                                            <a class="dropdown-item" data-action="pdf-download#download"
+                                               href="{{ path('app_progression_export_pdf', {id: row.progression.id}) }}">{{ 'progressionExportPdfWithDatesAction'|trans }}</a>
+                                            <a class="dropdown-item" data-action="pdf-download#download"
+                                               href="{{ path('app_progression_export_pdf', {id: row.progression.id, mode: 'undated'}) }}">{{ 'progressionExportPdfWithoutDatesAction'|trans }}</a>
+                                        </div>
+                                    </div>
                                     <a href="{{ path('app_progression_show', {id: row.progression.id}) }}" class="cm-btn cm-btn--primary cm-btn--sm">{{ 'progressionManageRowAction'|trans }}</a>
                                 </div>
                             </td>

@@ -57,7 +57,9 @@
        makes the demoted headings read as sections of the wrong parent. */
     .page { break-before: page; }
     .page__path { font-size: 7.5pt; color: #8a93a3; margin-bottom: 1.5mm; }
-    .body { margin-top: 2mm; }
+    /* Same reason as the read screen (.cm-wiki__body in app.css): a pasted URL or token is one
+       unbroken run of characters, and unbroken it walks off the right edge of the sheet. */
+    .body { margin-top: 2mm; overflow-wrap: anywhere; }
     .body img { max-width: 100%; height: auto; }
     .body table { width: 100%; border-collapse: collapse; margin: 1em 0; }
     .body td, .body th { border: 0.5pt solid #d3dae4; padding: 1.6mm 2mm; text-align: left; }

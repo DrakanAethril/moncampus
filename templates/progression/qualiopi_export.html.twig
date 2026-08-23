@@ -5,7 +5,13 @@
    order the questions get asked in: what was planned and did it happen, how the objectives are
    broken down over the year, and by what methods each séance is run. Every figure is measured from
    the placements on real créneaux rather than stated - an auditor's first question is where a
-   number comes from, and "the timetable" is the only answer worth giving. #}
+   number comes from, and "the timetable" is the only answer worth giving.
+
+   `undated` is the second document (App\Enum\ProgressionExportMode): no date anywhere, volumes and
+   months only, and the auto-planner's proposal counted wherever nothing was validated. It exists so
+   that a justification file costs no placement work and does not go stale every time the timetable
+   moves - a global view rather than an exact one. Every divergence below asks that one flag. #}
+{% set undated = undated|default(false) %}
 {% set progression = data.progression %}
 {% set program = progression.program %}
 {% set topic = progression.topic %}
@@ -26,6 +32,16 @@
    promotion and print the repetition again. #}
 {% set cohortLabel = program and program.cohort and program.cohort.name|lower != program.shortName|lower ? program.cohort.name : '' %}
 {% set docTitle = 'Progression pédagogique — ' ~ (topic ? topic.name : '—') ~ ' × ' ~ (program ? program.displayShortName : '—') %}
+{# The undated document's unit of time. A single month prints alone rather than as "septembre 2026 →
+   septembre 2026", and the month names come from the same translation keys as the progression's own
+   month navigation - lowercase, as French writes them inside a sentence. #}
+{% macro monthRange(firstDay, lastDay) %}
+    {%- set from = ('monthFull' ~ firstDay|date('n') ~ 'Label')|trans ~ ' ' ~ firstDay|date('Y') -%}
+    {%- set to = lastDay ? ('monthFull' ~ lastDay|date('n') ~ 'Label')|trans ~ ' ' ~ lastDay|date('Y') : null -%}
+    {{- from -}}
+    {%- if to and to != from %} → {{ to }}{% endif -%}
+{% endmacro %}
+{% import _self as fmt %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -143,10 +159,22 @@
         <tr><th>Formateur</th><td>{{ teacherName }}</td></tr>
     {% endif %}
     <tr><th>Période couverte</th><td>
-        {% if data.firstDay %}{{ data.firstDay|date('d/m/Y') }} → {{ data.lastDay ? data.lastDay|date('d/m/Y') : '—' }}{% else %}<span class="qp-muted">aucune séance encore placée à l’emploi du temps</span>{% endif %}
+        {% if undated %}
+            {% if data.firstDay %}{{ fmt.monthRange(data.firstDay, data.lastDay) }}{% else %}<span class="qp-muted">—</span>{% endif %}
+        {% else %}
+            {% if data.firstDay %}{{ data.firstDay|date('d/m/Y') }} → {{ data.lastDay ? data.lastDay|date('d/m/Y') : '—' }}{% else %}<span class="qp-muted">aucune séance encore placée à l’emploi du temps</span>{% endif %}
+        {% endif %}
     </td></tr>
-    {# Both figures are learner volumes, so they are comparable - see ProgressionQualiopiBuilder. #}
-    <tr><th>Volume horaire</th><td>{{ data.totalLearnerMinutes|duration_minutes }} placés à l’emploi du temps sur {{ data.totalPlannedMinutes|duration_minutes }} prévus <span class="qp-muted">(heures reçues par un apprenant)</span></td></tr>
+    {# Both figures are learner volumes, so they are comparable - see ProgressionQualiopiBuilder.
+       The undated document prints ONE of them: it says nothing about what is placed and what is not,
+       so "X placés sur Y prévus" has no meaning there - only the volume received has. #}
+    <tr><th>Volume horaire</th><td>
+        {% if undated %}
+            {{ data.totalCountedMinutes|duration_minutes }} <span class="qp-muted">(heures reçues par un apprenant)</span>
+        {% else %}
+            {{ data.totalLearnerMinutes|duration_minutes }} placés à l’emploi du temps sur {{ data.totalPlannedMinutes|duration_minutes }} prévus <span class="qp-muted">(heures reçues par un apprenant)</span>
+        {% endif %}
+    </td></tr>
     <tr><th>Date d’édition</th><td>{{ generatedAt|date('d/m/Y') }}</td></tr>
     {# There is one document, not two: both formateurs export the same one, and it is right that
        they do — what an auditor is handed must not depend on who pressed the button. This row is
@@ -157,11 +185,17 @@
     {% endif %}
 </table>
 
-<div class="qp-note" style="margin-top: 5mm;">
-    Ce document est généré depuis MonCampus à partir des données réelles de la progression : les horaires
-    et les dates proviennent des créneaux de l’emploi du temps, les contenus et les méthodes des fiches de
-    séquence et de séance propres à cette classe. Aucune valeur n’y est saisie manuellement.
-</div>
+{# The claim belongs to the dated document alone: the undated one counts placements nobody
+   validated, so "les horaires et les dates proviennent des créneaux de l'emploi du temps" would be
+   a statement it cannot back. It carries no replacement note - it says less rather than saying
+   something weaker. #}
+{% if not undated %}
+    <div class="qp-note" style="margin-top: 5mm;">
+        Ce document est généré depuis MonCampus à partir des données réelles de la progression : les horaires
+        et les dates proviennent des créneaux de l’emploi du temps, les contenus et les méthodes des fiches de
+        séquence et de séance propres à cette classe. Aucune valeur n’y est saisie manuellement.
+    </div>
+{% endif %}
 
 {# ---- 1. Synthèse --------------------------------------------------------- #}
 {# Page 1 is the cover: who, what, when, and the note saying where the figures come from. The
@@ -173,30 +207,63 @@
 <div class="qp-kpis">
     <div class="qp-kpi"><div class="qp-kpi__v">{{ data.sequences|length }}</div><div class="qp-kpi__l">Séquences</div></div>
     <div class="qp-kpi"><div class="qp-kpi__v">{{ data.seanceCount }}</div><div class="qp-kpi__l">Séances</div></div>
-    <div class="qp-kpi"><div class="qp-kpi__v">{{ data.totalLearnerMinutes|duration_minutes }}</div><div class="qp-kpi__l">Volume / apprenant</div></div>
+    <div class="qp-kpi"><div class="qp-kpi__v">{{ (undated ? data.totalCountedMinutes : data.totalLearnerMinutes)|duration_minutes }}</div><div class="qp-kpi__l">Volume / apprenant</div></div>
     <div class="qp-kpi"><div class="qp-kpi__v">{{ data.evaluationCounts.diagnostic }} · {{ data.evaluationCounts.formative }} · {{ data.evaluationCounts.summative }}</div><div class="qp-kpi__l">Éval. D · F · S</div></div>
 </div>
 
+{# The undated document drops one column rather than blanking it: « Prévu » against « Délivré » is
+   the placed/not-placed question, which it does not ask. What is left is the volume an apprenant
+   receives, and the month the séquence runs in. #}
 <table class="qp-t">
-    <thead><tr><th style="width: 8mm;">#</th><th>Séquence</th><th style="width: 34mm;">Période</th><th style="width: 20mm;">Prévu</th><th style="width: 22mm;">Délivré / apprenant</th><th style="width: 26mm;">Séances</th></tr></thead>
+    <thead><tr><th style="width: 8mm;">#</th><th>Séquence</th><th style="width: 40mm;">Période</th>{% if not undated %}<th style="width: 20mm;">Prévu</th>{% endif %}<th style="width: 22mm;">{{ undated ? 'Volume / apprenant' : 'Délivré / apprenant' }}</th><th style="width: 26mm;">Séances</th></tr></thead>
     <tbody>
     {% for sequence in data.sequences %}
         <tr>
             <td>{{ sequence.position }}</td>
             <td><strong>{{ sequence.title }}</strong></td>
-            <td>{% if sequence.firstDay %}{{ sequence.firstDay|date('d/m/y') }} → {{ sequence.lastDay ? sequence.lastDay|date('d/m/y') : '…' }}{% else %}<span class="qp-muted">non placée</span>{% endif %}</td>
-            <td>{{ sequence.plannedMinutes|duration_minutes }}</td>
-            <td>{{ sequence.learnerMinutes|duration_minutes }}</td>
+            <td>
+                {% if undated %}
+                    {% if sequence.firstDay %}{{ fmt.monthRange(sequence.firstDay, sequence.lastDay) }}
+                    {%- elseif not sequence.inTimetable %}<span class="qp-muted">hors emploi du temps</span>
+                    {%- else %}<span class="qp-muted">—</span>{% endif %}
+                {% else %}
+                    {% if sequence.firstDay %}{{ sequence.firstDay|date('d/m/y') }} → {{ sequence.lastDay ? sequence.lastDay|date('d/m/y') : '…' }}{% else %}<span class="qp-muted">non placée</span>{% endif %}
+                {% endif %}
+            </td>
+            {% if not undated %}<td>{{ sequence.plannedMinutes|duration_minutes }}</td>{% endif %}
+            {# « 0 min » is a figure; a séquence nothing could be counted for has none. The line
+               below the table is what explains the gap - the cell only has to stop pretending. #}
+            <td>{% if undated and sequence.countedMinutes == 0 %}<span class="qp-muted">—</span>{% else %}{{ (undated ? sequence.countedMinutes : sequence.learnerMinutes)|duration_minutes }}{% endif %}</td>
             <td>
                 {{ sequence.seanceCount }}
-                {% if sequence.unplacedCount %}<span class="qp-muted">· {{ sequence.unplacedCount }} non placée{{ sequence.unplacedCount > 1 ? 's' }}</span>{% endif %}
+                {% if not undated and sequence.unplacedCount %}<span class="qp-muted">· {{ sequence.unplacedCount }} non placée{{ sequence.unplacedCount > 1 ? 's' }}</span>{% endif %}
             </td>
         </tr>
     {% else %}
-        <tr><td colspan="6" class="qp-muted">Aucune séquence dans cette progression.</td></tr>
+        <tr><td colspan="{{ undated ? 5 : 6 }}" class="qp-muted">Aucune séquence dans cette progression.</td></tr>
     {% endfor %}
     </tbody>
 </table>
+
+{# What the undated document leaves out, said out loud. A séance the year's créneaux cannot hold is
+   worth no volume here, so the total comes out short - and a total that is short without saying why
+   is the one thing worse than not printing it. Séquences held outside the timetable are named apart
+   because they are a decision, not a shortage. #}
+{% if undated and (data.uncoveredSeanceCount > 0 or data.outOfTimetableSeanceCount > 0) %}
+    <div class="qp-note">
+        {% if data.uncoveredSeanceCount > 0 %}
+            {{ data.uncoveredSeanceCount }} séance{{ data.uncoveredSeanceCount > 1 ? 's' }}
+            {{ data.uncoveredSeanceCount > 1 ? 'ne sont pas comptées' : 'n’est pas comptée' }} dans les volumes
+            ci-dessus : les créneaux de l’année ne suffisent pas à les accueillir.
+        {% endif %}
+        {% if data.outOfTimetableSeanceCount > 0 %}
+            {{ data.outOfTimetableSeanceCount }} séance{{ data.outOfTimetableSeanceCount > 1 ? 's' }}
+            {{ data.outOfTimetableSeanceCount > 1 ? 'relèvent' : 'relève' }} d’une séquence tenue hors emploi du
+            temps : {{ data.outOfTimetableSeanceCount > 1 ? 'leurs volumes prévus sont comptés' : 'son volume prévu est compté' }},
+            sans période.
+        {% endif %}
+    </div>
+{% endif %}
 
 {# The document counts ONE thing, and says which. A séance split by group is given twice by the
    trainer, but each learner only receives one of them: it is the hours received that are counted
@@ -248,8 +315,13 @@
             <div class="qp-seq__title">{{ sequence.position }}. {{ sequence.title }}{% if sequence.coAnimated %}<span class="qp-coanim">Co-animée</span>{% endif %}</div>
             <div class="qp-seq__meta">
                 {% if sequence.deliveredBy is not empty %}{{ sequence.deliveredBy|join(' et ') }} · {% endif %}
-                {% if sequence.firstDay %}{{ sequence.firstDay|date('d/m/Y') }} → {{ sequence.lastDay ? sequence.lastDay|date('d/m/Y') : '…' }} · {% endif %}
-                {{ sequence.learnerMinutes|duration_minutes }} placés sur {{ sequence.plannedMinutes|duration_minutes }} prévus par apprenant
+                {% if undated %}
+                    {% if sequence.firstDay %}{{ fmt.monthRange(sequence.firstDay, sequence.lastDay) }}{% elseif not sequence.inTimetable %}hors emploi du temps{% else %}aucun créneau disponible{% endif %}
+                    {%- if sequence.countedMinutes > 0 %} · {{ sequence.countedMinutes|duration_minutes }} par apprenant{% endif %}
+                {% else %}
+                    {% if sequence.firstDay %}{{ sequence.firstDay|date('d/m/Y') }} → {{ sequence.lastDay ? sequence.lastDay|date('d/m/Y') : '…' }} · {% endif %}
+                    {{ sequence.learnerMinutes|duration_minutes }} placés sur {{ sequence.plannedMinutes|duration_minutes }} prévus par apprenant
+                {% endif %}
             </div>
         </div>
 
@@ -277,15 +349,34 @@
                 <tr>
                     <td><strong>{{ seance.title }}</strong></td>
                     {# The duration one apprenant receives. A séance still waiting for a créneau has
-                       delivered nothing, so it prints what it plans to. #}
+                       delivered nothing, so it prints what it plans to.
+
+                       The undated document prints the volume it counted, and a dash where it counted
+                       nothing - a séance the year's créneaux cannot hold. Printing its planned
+                       duration there would put in the column a figure the total does not contain. #}
                     <td>
-                        {% if seance.deliveries is empty %}
+                        {% if undated %}
+                            {% if seance.countedMinutes is null %}<span class="qp-muted">—</span>{% else %}{{ seance.countedMinutes|duration_minutes }}{% endif %}
+                        {% elseif seance.deliveries is empty %}
                             {{ seance.plannedMinutes|duration_minutes }} <span class="qp-muted">(prévu)</span>
                         {% else %}
                             {{ seance.learnerMinutes|duration_minutes }}
                         {% endif %}
                     </td>
                     <td>
+                        {# The undated document keeps the GROUPS and drops everything dated. The
+                           groups are not decoration: they are what justifies the learner-hour rule
+                           below, and a volume counted once for a séance given twice would be
+                           unexplainable without them. #}
+                        {% if undated %}
+                            {% for delivery in seance.deliveries %}
+                                <strong>{{ delivery.group ?: 'classe entière' }}</strong>
+                                {% if delivery.teacher %}<span class="qp-muted">· {{ delivery.teacher }}</span>{% endif %}
+                                {% if not loop.last %}<br>{% endif %}
+                            {% else %}
+                                <span class="qp-muted">{{ sequence.inTimetable ? 'aucun créneau disponible' : 'hors emploi du temps' }}</span>
+                            {% endfor %}
+                        {% else %}
                         {% for delivery in seance.deliveries %}
                             {{ delivery.date ? delivery.date|date('d/m/Y') : '—' }}
                             {% if delivery.start %}· {{ delivery.start }}{% if delivery.end %}–{{ delivery.end }}{% endif %}{% endif %}
@@ -298,6 +389,7 @@
                         {% else %}
                             <span class="qp-muted">non placée à l’emploi du temps</span>
                         {% endfor %}
+                        {% endif %}
                         {# A placement the teacher has not validated is the planner's proposal, and
                            the next replan may move it - it is shown, never counted. #}
                         {% if seance.proposals is not empty %}
@@ -317,8 +409,8 @@
                             <span class="qp-redelivery">
                                 Séance par groupe, redispensée
                                 {%- for redelivery in seance.redeliveries %}
-                                    {{ ' ' }}le {{ redelivery.date ? redelivery.date|date('d/m/Y') : '—' }}{% if redelivery.start %} à {{ redelivery.start }}{% endif %}
-                                    au groupe {{ redelivery.group ?: '—' }}{% if not loop.last %},{% endif %}
+                                    {%- if not undated %}{{ ' ' }}le {{ redelivery.date ? redelivery.date|date('d/m/Y') : '—' }}{% if redelivery.start %} à {{ redelivery.start }}{% endif %}{% endif %}
+                                    {{ ' ' }}au groupe {{ redelivery.group ?: '—' }}{% if not loop.last %},{% endif %}
                                 {%- endfor %} : comptée une fois, un apprenant n’assistant qu’à celle de son groupe.
                             </span>
                         {% endif %}
@@ -360,8 +452,16 @@
             <div class="qp-seq">
                 <h3 class="qp-h3">
                     {{ sequence.position }}. {{ sequence.title }} — {{ seance.title }}
+                    {# The undated document names the groups alone, and nothing at all when the
+                       séance is taught to the whole class - a parenthesis reading "(classe entière)"
+                       on every heading of the § is noise. #}
                     {% if seance.deliveries|length %}
-                        <span class="qp-seq__meta">({% for d in seance.deliveries %}{{ d.date ? d.date|date('d/m/Y') : '—' }}{% if d.group %} · {{ d.group }}{% endif %}{% if not loop.last %} — {% endif %}{% endfor %})</span>
+                        {% if undated %}
+                            {% set groups = seance.deliveries|map(d => d.group)|filter(g => g is not empty) %}
+                            {% if groups is not empty %}<span class="qp-seq__meta">({{ groups|join(' — ') }})</span>{% endif %}
+                        {% else %}
+                            <span class="qp-seq__meta">({% for d in seance.deliveries %}{{ d.date ? d.date|date('d/m/Y') : '—' }}{% if d.group %} · {{ d.group }}{% endif %}{% if not loop.last %} — {% endif %}{% endfor %})</span>
+                        {% endif %}
                     {% endif %}
                 </h3>
                 {% if seance.objectifs is not empty %}
@@ -397,18 +497,22 @@
 <h2 class="qp-h2">4. Modalités d’évaluation des acquis</h2>
 <p class="qp-crit">Critère 7 — évaluation de l’atteinte des objectifs par les bénéficiaires, dans ses trois temps : diagnostique, formative, sommative.</p>
 
+{# The undated document drops the column, including for the évaluations posées au carnet de notes,
+   which carry a date of their own rather than a placement's: a document that says it prints no date
+   must not print one because that one happens to be solid. The rows keep their chronological order,
+   which is what makes the list read as a year. #}
 <table class="qp-t">
-    <thead><tr><th style="width: 22mm;">Date</th><th>Évaluation</th><th style="width: 52mm;">Séquence</th><th style="width: 24mm;">Nature</th></tr></thead>
+    <thead><tr>{% if not undated %}<th style="width: 22mm;">Date</th>{% endif %}<th>Évaluation</th><th style="width: 52mm;">Séquence</th><th style="width: 24mm;">Nature</th></tr></thead>
     <tbody>
     {% for row in data.evaluationRows %}
         <tr>
-            <td>{{ row.date ? row.date|date('d/m/Y') : '—' }}</td>
+            {% if not undated %}<td>{{ row.date ? row.date|date('d/m/Y') : '—' }}</td>{% endif %}
             <td><strong>{{ row.title }}</strong></td>
             <td>{{ row.sequence ?: 'hors séquence' }}</td>
             <td><span class="qp-nature qp-nature--{{ row.nature.slug }}">{{ row.nature.labelKey|trans }}</span></td>
         </tr>
     {% else %}
-        <tr><td colspan="4" class="qp-muted">Aucune évaluation posée sur cette progression.</td></tr>
+        <tr><td colspan="{{ undated ? 3 : 4 }}" class="qp-muted">Aucune évaluation posée sur cette progression.</td></tr>
     {% endfor %}
     </tbody>
 </table>
