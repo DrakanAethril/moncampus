@@ -1,22 +1,35 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'quizLibraryPageHeading'|trans }}{% endblock %}
+{# The quiz library's one screen, rebuilt on the file library's shape (templates/file_library/browse.html.twig):
+   a rail of folders on the left, what the current folder holds on the right - sub-folders first,
+   then the quizzes.
+
+   **This table is not a DataTable**, and that is the point rather than a side effect: a flat page of
+   two hundred quizzes was searchable and not *organisable*. It also hosts a drag and rows a Stimulus
+   controller acts on, and the rule in this repository is never to bind a `data-controller` to an
+   element a DOM-rewriting library moves. The search the DataTable used to offer is now a screen of
+   its own (`app_library_quiz_search`), over the whole library rather than the page. #}
+
+{% block title %}{{ currentFolder ? currentFolder.name : 'quizLibraryPageHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
-        {label: 'toolsNavLabel'|trans, url: path('app_library_quiz')},
-        {label: 'quizLibraryPageHeading'|trans, url: path('app_library_quiz')},
-    ]} %}
+    {% include 'library/_quiz_breadcrumb.html.twig' with {currentFolder: currentFolder, ancestors: ancestors} %}
 {% endblock %}
 
-{% block page_title %}{{ 'quizLibraryPageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ currentFolder ? currentFolder.name : 'quizLibraryPageHeading'|trans }}{% endblock %}
+
 {% block page_actions %}
+    {# GET, per the repository's rule for a "show me a result" form - a POST would have to redirect. #}
+    <form method="get" action="{{ path('app_library_quiz_search') }}" class="cm-qlib__search">
+        <input type="search" name="q" class="form-control form-control-sm"
+               placeholder="{{ 'quizLibrarySearchPlaceholder'|trans }}"
+               aria-label="{{ 'quizLibrarySearchPlaceholder'|trans }}">
+    </form>
     {# One door, not three. The menu that used to sit here answered « d'où viennent vos questions ? »
-       before the teacher had been asked it, and buried the assisted path as its third item. The
-       assistant asks the question; its step-1 cards carry the CSV and Kahoot answers. #}
+       before the teacher had been asked it, and buried the assisted path as its third item. #}
     <a class="btn btn-outline-primary" href="{{ path('app_library_quiz_assistant') }}">{{ 'quizImportButtonLabel'|trans }}</a>
-    <a href="{{ path('app_library_quiz_new') }}" class="btn btn-primary">{{ 'quizTemplateNewButtonLabel'|trans }}</a>
+    {# The new quiz lands in the folder being looked at, which is the whole point of being in one. #}
+    <a href="{{ path('app_library_quiz_new', currentFolder ? {folder: currentFolder.id} : {}) }}" class="btn btn-primary">{{ 'quizTemplateNewButtonLabel'|trans }}</a>
 {% endblock %}
 
 {% block main %}
@@ -25,60 +38,60 @@
         <div>{{ 'quizLibraryModelCopyNoteText'|trans }}</div>
     </div>
 
-    <div class="card"
-         data-frankenphp-hot-reload-preserve
-         data-controller="datatable"
-         data-datatable-url-value="{{ path('app_library_quiz_data') }}"
-         data-datatable-launch-url-template-value="{{ path('app_library_quiz_launch', {id: '__ID__'}) }}"
-         data-datatable-launch-label-value="{{ 'quizActionLaunchLabel'|trans }}"
-         data-datatable-edit-url-template-value="{{ path('app_library_quiz_questions', {id: '__ID__'}) }}"
-         data-datatable-duplicate-url-template-value="{{ path('app_library_quiz_duplicate', {id: '__ID__'}) }}"
-         data-datatable-duplicate-token-value="{{ csrf_token('library_quiz_duplicate') }}"
-         data-datatable-remove-url-template-value="{{ path('app_library_quiz_remove', {id: '__ID__'}) }}"
-         data-datatable-remove-token-value="{{ csrf_token('library_quiz_remove') }}"
-         data-datatable-edit-label-value="{{ 'editActionLabel'|trans }}"
-         data-datatable-duplicate-label-value="{{ 'quizActionDuplicateLabel'|trans }}"
-         data-datatable-duplicate-confirm-message-value="{{ 'quizTemplateDuplicateConfirmMessage'|trans }}"
-         data-datatable-duplicate-error-message-value="{{ 'quizTemplateDuplicateErrorMessage'|trans }}"
-         data-datatable-remove-label-value="{{ 'quizActionRemoveLabel'|trans }}"
-         data-datatable-remove-confirm-message-value="{{ 'quizTemplateRemoveConfirmMessage'|trans }}"
-         data-datatable-remove-error-message-value="{{ 'quizTemplateRemoveErrorMessage'|trans }}"
-         data-datatable-page-length-value="10"
-         data-datatable-columns-value="{{ [
-             {data: 'name'},
-             {data: 'subject'},
-             {data: 'questionCount'},
-             {data: 'difficultyLabel'},
-             {data: 'updatedAt'},
-             {data: null, render: 'quizTemplateActions'},
-         ]|json_encode }}"
-         data-datatable-language-value="{{ {
-             info: 'datatableInfoLabel'|trans,
-             infoEmpty: 'datatableInfoEmptyLabel'|trans,
-             infoFiltered: 'datatableInfoFilteredLabel'|trans,
-             zeroRecords: 'datatableZeroRecordsLabel'|trans,
-             processing: 'datatableProcessingLabel'|trans,
-             lengthMenu: 'datatableLengthMenuLabel'|trans,
-             search: 'datatableSearchLabel'|trans,
-             paginate: {
-                 next: 'datatablePaginateNextLabel'|trans,
-                 previous: 'datatablePaginatePreviousLabel'|trans,
-             },
-         }|json_encode }}">
-        <div class="table-responsive">
-            <table class="table table-vcenter card-table" data-datatable-target="table">
-                <thead>
-                    <tr>
-                        <th>{{ 'quizLibraryNameColumnLabel'|trans }}</th>
-                        <th>{{ 'quizLibrarySubjectColumnLabel'|trans }}</th>
-                        <th>{{ 'quizLibraryQuestionCountColumnLabel'|trans }}</th>
-                        <th>{{ 'quizLibraryDifficultyColumnLabel'|trans }}</th>
-                        <th>{{ 'quizLibraryUpdatedAtColumnLabel'|trans }}</th>
-                        <th class="cm-actions"></th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+    <div class="cm-qlib"
+         data-controller="quiz-library"
+         data-quiz-library-folder-id-value="{{ currentFolder ? currentFolder.id : '' }}"
+         data-quiz-library-folder-url-value="{{ path('app_library_quiz_folder_new') }}"
+         data-quiz-library-folder-rename-url-template-value="{{ path('app_library_quiz_folder_rename', {folderId: '__FOLDER_ID__'}) }}"
+         data-quiz-library-folder-move-url-template-value="{{ path('app_library_quiz_folder_move', {folderId: '__FOLDER_ID__'}) }}"
+         data-quiz-library-quiz-move-url-template-value="{{ path('app_library_quiz_move', {id: '__ID__'}) }}"
+         data-quiz-library-duplicate-url-template-value="{{ path('app_library_quiz_duplicate', {id: '__ID__'}) }}"
+         data-quiz-library-remove-url-template-value="{{ path('app_library_quiz_remove', {id: '__ID__'}) }}"
+         data-quiz-library-token-value="{{ csrf_token('quiz_folder') }}"
+         data-quiz-library-duplicate-token-value="{{ csrf_token('library_quiz_duplicate') }}"
+         data-quiz-library-remove-token-value="{{ csrf_token('library_quiz_remove') }}"
+         data-quiz-library-labels-value="{{ {
+             folderPrompt: 'quizFolderNamePrompt'|trans,
+             renamePrompt: 'quizFolderRenamePrompt'|trans,
+             movePrompt: 'quizLibraryMovePromptTitle'|trans,
+             duplicateConfirm: 'quizTemplateDuplicateConfirmMessage'|trans,
+             duplicateError: 'quizTemplateDuplicateErrorMessage'|trans,
+             removeConfirm: 'quizTemplateRemoveConfirmMessage'|trans,
+             removeError: 'quizTemplateRemoveErrorMessage'|trans,
+             moveRefused: 'quizFolderMoveRefusedMessage'|trans,
+         }|json_encode|e('html_attr') }}">
+
+        {% include 'library/_quiz_rail.html.twig' with {rail: rail, currentFolder: currentFolder} %}
+
+        <div class="cm-qlib__content">
+            {% if folderRows is empty and quizRows is empty %}
+                <p class="cm-qlib__empty">{{ currentFolder ? 'quizFolderEmptyText'|trans : 'quizLibraryEmptyText'|trans }}</p>
+            {% else %}
+                <div class="table-responsive">
+                    <table class="cm-qlib__table">
+                        <thead>
+                            <tr>
+                                <th>{{ 'quizLibraryNameColumnLabel'|trans }}</th>
+                                <th>{{ 'quizLibrarySubjectColumnLabel'|trans }}</th>
+                                <th>{{ 'quizLibraryQuestionCountColumnLabel'|trans }}</th>
+                                <th>{{ 'quizLibraryDifficultyColumnLabel'|trans }}</th>
+                                <th>{{ 'quizLibraryUpdatedAtColumnLabel'|trans }}</th>
+                                <th><span class="visually-hidden">{{ 'quizLibraryRowMenuLabel'|trans }}</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in folderRows %}
+                                {% include 'library/_quiz_folder_row.html.twig' with {row: row} only %}
+                            {% endfor %}
+                            {% for row in quizRows %}
+                                {% include 'library/_quiz_row.html.twig' with {row: row} only %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
         </div>
+
+        {% include 'library/_quiz_move_box.html.twig' with {rail: rail} %}
     </div>
 {% endblock %}

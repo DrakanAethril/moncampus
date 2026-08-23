@@ -50,6 +50,20 @@ class QuizTemplate
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
 
+    /**
+     * Where the teacher filed this quiz, null at the root of their library
+     * (App\Entity\QuizFolder). A classement, not an owner: the quiz belongs to its teacher and the
+     * folder only says where it is shown.
+     *
+     * `ON DELETE SET NULL` is a floor, not the rule - App\Service\QuizFolderManager promotes the
+     * content of a deleted folder one level up, so a quiz never silently jumps to the root. The
+     * constraint is what guarantees that a folder row removed by any other path still cannot take a
+     * quiz with it.
+     */
+    #[ORM\ManyToOne(targetEntity: QuizFolder::class)]
+    #[ORM\JoinColumn(name: 'folder_id', nullable: true, onDelete: 'SET NULL')]
+    private ?QuizFolder $folder = null;
+
     // Launch defaults (screen 1n) - pre-fill the "Lancer" form (1c) but are frozen onto each
     // QuizInstance at launch time, same as every other field here; changing these later never
     // touches an already-launched instance.
@@ -152,6 +166,18 @@ class QuizTemplate
     public function setSubject(?string $subject): static
     {
         $this->subject = $subject;
+
+        return $this;
+    }
+
+    public function getFolder(): ?QuizFolder
+    {
+        return $this->folder;
+    }
+
+    public function setFolder(?QuizFolder $folder): static
+    {
+        $this->folder = $folder;
 
         return $this;
     }
