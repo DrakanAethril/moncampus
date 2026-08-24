@@ -40,7 +40,7 @@ class LoginGenerator
      */
     public function generate(string $firstname, string $lastname, array $reservedLogins = []): string
     {
-        $base = $this->cleanNamePart($firstname, 1).$this->cleanNamePart($lastname);
+        $base = $this->baseFor($firstname, $lastname);
 
         if (!$this->loginTaken($base, $reservedLogins)) {
             return $base;
@@ -55,6 +55,20 @@ class LoginGenerator
         }
 
         return $base.'.'.uniqid();
+    }
+
+    /**
+     * The login a name gives before any collision is dealt with - `Camille Roux` → `croux`, always,
+     * whoever already holds it.
+     *
+     * generate() above cannot answer this: it checks the two sources and walks to `croux01` the
+     * moment `croux` is taken, and the account whose own login is `croux` makes it taken. What the
+     * rename modal offers is "what would this name give", which is often the current login itself -
+     * and saying so plainly is more use than suggesting `croux01`, which nobody wants.
+     */
+    public function baseFor(string $firstname, string $lastname): string
+    {
+        return $this->cleanNamePart($firstname, 1).$this->cleanNamePart($lastname);
     }
 
     private function cleanNamePart(string $part, ?int $maxLength = null): string

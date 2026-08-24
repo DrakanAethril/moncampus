@@ -83,10 +83,14 @@ class LdapManageAccount
     #[ORM\Column(name: 'verified_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $verificationDate = null;
 
-    // Why the re-read could not conclude, as a translation key - "the attribute does not exist on
-    // this directory", "the directory could not be reached". It is NOT a contradiction: dev's
-    // OpenLDAP has no userAccountControl at all, and a developer who saw "the script is lying" at
-    // every local deactivation would stop reading the warning that matters.
+    // Why this row is not settled, as a translation key. Two writers, both on this side: the
+    // verifier when the directory could not confirm ("the attribute does not exist on this
+    // directory", "the directory could not be reached"), and the applier when the directory did
+    // confirm and the consequence could not be drawn anyway.
+    //
+    // It is NOT a contradiction: dev's OpenLDAP has no userAccountControl at all, and a developer
+    // who saw "the script is lying" at every local deactivation would stop reading the warning that
+    // matters.
     #[ORM\Column(name: 'verification_note', length: 255, nullable: true)]
     private ?string $verificationNote = null;
 

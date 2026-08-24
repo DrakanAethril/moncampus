@@ -1,0 +1,84 @@
+{# « Changer le login » (design/validated/account-management.md §7.3, mockup 2).
+
+   The form's whole job is to show what it breaks. A login is not a field of the account like the
+   others: it names a folder on the file server, it is what the workstations authenticate with, and
+   it is what App\Security\LdapCredentialsVerifier searches the directory by - which is why nothing
+   here rewrites App\Entity\User::$username. The request is queued; the switch happens once the
+   directory has confirmed and this application has read that confirmation back
+   (App\Service\LdapAccountApplier).
+
+   Availability is read live against **both** sources, App\Entity\User::$username and
+   ldap_manage_user.login: a login reserved by a creation that never went through is taken every bit
+   as much as one somebody carries. It is advisory - the POST re-runs every check, because between
+   typing and validating anything may have happened. #}
+<div class="modal fade" id="change-login-modal" tabindex="-1" aria-hidden="true" aria-labelledby="change-login-modal-title">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content"
+             data-controller="login-change"
+             data-login-change-url-value="{{ path('app_directory_account_login_availability', {id: editedUser.id}) }}"
+             data-login-change-suggestion-value="{{ loginSuggestion|default('') }}"
+             data-login-change-labels-value="{{ {
+                 available: 'ldapAccountLoginAvailableHint'|trans,
+                 taken: 'ldapAccountLoginTakenMessage'|trans,
+                 invalid: 'ldapAccountLoginInvalidMessage'|trans,
+                 current: 'ldapAccountLoginUnchangedMessage'|trans,
+                 empty: '',
+             }|json_encode }}">
+            <div class="modal-header">
+                <div>
+                    <h2 class="modal-title" id="change-login-modal-title">{{ 'ldapAccountChangeLoginModalTitle'|trans({'%name%': editedUser.displayName ?? editedUser.username}) }}</h2>
+                    <div class="cm-subhead__hint">{{ 'ldapAccountChangeLoginModalHint'|trans }}</div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'cancelAction'|trans }}"></button>
+            </div>
+
+            <form method="post" action="{{ path('app_directory_account_change_login', {id: editedUser.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('directory_account_change_login') }}">
+
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <label class="form-label" for="current-login">{{ 'ldapAccountCurrentLoginLabel'|trans }}</label>
+                            <input type="text" id="current-login" class="form-control cm-mono" value="{{ editedUser.username }}" readonly disabled>
+                        </div>
+                        <div class="col-md-7">
+                            <label class="form-label" for="new-login">{{ 'ldapAccountNewLoginLabel'|trans }} <span class="text-danger">*</span></label>
+                            <input type="text" id="new-login" name="new_login" class="form-control cm-mono"
+                                   autocomplete="off" spellcheck="false" required
+                                   data-login-change-target="input"
+                                   data-action="input->login-change#check">
+                            <div class="cm-loginhint" data-login-change-target="hint" role="status"></div>
+                        </div>
+                    </div>
+
+                    {% if loginSuggestion|default('') is not empty %}
+                        <p class="text-secondary small mt-2 mb-0">
+                            <button type="button" class="cm-linkbtn" data-action="login-change#useSuggestion">{{ 'ldapAccountSuggestLoginAction'|trans }}</button>
+                            — {{ 'ldapAccountSuggestLoginWouldGive'|trans }} <span class="cm-mono">{{ loginSuggestion }}</span>{{ loginSuggestion == editedUser.username ? ', ' ~ 'ldapAccountSuggestLoginIsCurrent'|trans : '' }}
+                        </p>
+                    {% endif %}
+
+                    <div class="cm-subhead mt-4 mb-2">
+                        <div class="cm-subhead__title">{{ 'ldapAccountChangeLoginConsequencesTitle'|trans }}</div>
+                    </div>
+                    <ul class="cm-conseq">
+                        <li><span class="cm-conseq__mark">→</span><span>{{ 'ldapAccountChangeLoginConsequenceFolderHtml'|trans({'%old%': editedUser.username})|raw }}</span></li>
+                        <li><span class="cm-conseq__mark">→</span><span>{{ 'ldapAccountChangeLoginConsequenceSessionHtml'|trans|raw }}</span></li>
+                        <li><span class="cm-conseq__mark">→</span><span>{{ 'ldapAccountChangeLoginConsequenceMailHtml'|trans({'%old%': editedUser.username})|raw }}</span></li>
+                        <li><span class="cm-conseq__mark">→</span><span>{{ 'ldapAccountChangeLoginConsequencePasswordHtml'|trans|raw }}</span></li>
+                        <li><span class="cm-conseq__mark">→</span><span>{{ 'ldapAccountChangeLoginConsequenceReservedHtml'|trans|raw }}</span></li>
+                    </ul>
+
+                    <div class="cm-callout cm-callout--warning mt-3">
+                        <p>{{ 'ldapAccountChangeLoginWarningHtml'|trans|raw }}</p>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="cm-btn" data-bs-dismiss="modal">{{ 'cancelAction'|trans }}</button>
+                    <button type="submit" class="cm-btn cm-btn--primary">{{ 'ldapAccountChangeLoginSubmitAction'|trans }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -101,6 +101,12 @@
        App\Controller\DirectoryPasswordController's docblock for why it went, and where somebody
        locked out is sent instead. #}
     {% if isEdit and is_granted('ROLE_ADMIN') %}
+        {# « Changer le login » sits next to « Désactiver », and is offered whether the account is
+           open or closed: renaming and closing are orthogonal gestures, and the service refuses the
+           second only while the first is still in the queue. #}
+        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#change-login-modal">
+            {{ 'ldapAccountChangeLoginButtonLabel'|trans }}
+        </button>
         {% if isActive %}
             {# The confirm() this button carried until 2026-08-24 could show one sentence, and the
                gesture stopped fitting in one: it now closes the directory account too, hence the
@@ -390,7 +396,10 @@
         </div>
     </div>
 
-    {% if isEdit and is_granted('ROLE_ADMIN') and isActive %}
-        {% include 'directory/_deactivate_modal.html.twig' with {editedUser: editedUser} only %}
+    {% if isEdit and is_granted('ROLE_ADMIN') %}
+        {% if isActive %}
+            {% include 'directory/_deactivate_modal.html.twig' with {editedUser: editedUser} only %}
+        {% endif %}
+        {% include 'directory/_change_login_modal.html.twig' with {editedUser: editedUser, loginSuggestion: loginSuggestion|default('')} only %}
     {% endif %}
 {% endblock %}

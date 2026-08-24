@@ -24,6 +24,7 @@ use App\Service\FormValue;
 use App\Service\LdapAccountApplier;
 use App\Service\LdapAccountStatusPresenter;
 use App\Service\LdapManageUserRoleResolver;
+use App\Service\LoginGenerator;
 use App\Service\NewAccountRequest;
 use App\Service\QueueStateFormatter;
 use App\Service\StudentAccountFactory;
@@ -148,6 +149,7 @@ class DirectoryUserController extends AbstractController
         LdapManageAccountRepository $accountRequests,
         LdapAccountApplier $accountApplier,
         LdapAccountStatusPresenter $accountStatusPresenter,
+        LoginGenerator $loginGenerator,
         QueueStateFormatter $stateFormatter,
         StudentMailAliasValidator $aliasValidator,
         TranslatorInterface $translator,
@@ -282,6 +284,10 @@ class DirectoryUserController extends AbstractController
             'adGroupBuckets' => $adGroupBuckets,
             'manualGroupBuckets' => $groupRepository->findManuallyAssignableGroupedByType($adGroupNames),
             'accountStatus' => $accountStatusPresenter->present($latestAccountRequest),
+            // What « Proposer d'après le nom » would give in the rename modal - the same generator
+            // account creation uses, so the two paths hand out the same login for the same person.
+            // Often the current login itself, and the modal says so rather than hiding the link.
+            'loginSuggestion' => $this->isGranted('ROLE_ADMIN') ? $loginGenerator->baseFor($user->getFirstname() ?? '', $user->getLastname() ?? '') : '',
             'accountHistoryCount' => null === $latestAccountRequest ? 0 : $accountRequests->countForUser($user),
             'ldapAddStatus' => null === $ldapManageUser ? null : [
                 'label' => $stateFormatter->label($ldapManageUser->getState()),

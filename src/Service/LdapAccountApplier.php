@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\LdapManageAccount;
+use App\Enum\LdapAccountAction;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -30,8 +32,13 @@ use Doctrine\ORM\EntityManagerInterface;
  */
 class LdapAccountApplier
 {
+    /** Set when a rename could not be applied because a local row already carries the new login. */
+    public const string NOTE_LOGIN_TAKEN_LOCALLY = 'ldapAccountApplyLoginTakenNote';
+
     public function __construct(
         private readonly LdapAccountVerifier $verifier,
+        private readonly UserRepository $users,
+        private readonly StudentMailProvisioner $mailProvisioner,
         private readonly EntityManagerInterface $entityManager,
     ) {
     }
@@ -52,8 +59,7 @@ class LdapAccountApplier
 
         // No verification, no consequence. This is the whole meaning of the orange state: the
         // script said it worked, the directory did not confirm, so a rename keeps the old username.
-        if (null !== $request->getVerificationDate() && null === $request->getAppliedAt()) {
-            $this->apply($request);
+        if (null !== $request->getVerificationDate() && null === $request->getAppliedAt() && $this->apply($request)) {
             $request->setAppliedAt(new \DateTimeImmutable());
         }
 
@@ -61,16 +67,61 @@ class LdapAccountApplier
     }
 
     /**
-     * Nothing to do, for now, and that is the asymmetry rather than an omission: a deactivation and
-     * a reactivation both took effect at the click, on App\Entity\User::$inactiveDate. Closing the
-     * platform asks the directory's permission for nothing, and opening it again is the same
-     * gesture backwards; all that is left here is to record that the loop is closed, which
-     * process() does by stamping applied_at.
+     * A deactivation and a reactivation have nothing to do here, and that is the asymmetry rather
+     * than an omission: both took effect at the click, on App\Entity\User::$inactiveDate. Closing
+     * the platform asks the directory's permission for nothing, and opening it again is the same
+     * gesture backwards; all that is left is to record that the loop is closed.
      *
-     * A rename is the opposite and is the reason this method exists at all - it is the one action
-     * whose consequence on this side waits on the directory's confirmation.
+     * A rename is the opposite, and is the reason this method exists at all - the one action whose
+     * consequence on this side waits on the directory. It moves three things and leaves a fourth
+     * alone:
+     *
+     *  - **`User::$username`**, which is the truth: the user provider looks accounts up by it and
+     *    LdapCredentialsVerifier searches the directory by it. Rewriting it any earlier would make
+     *    the account unreachable on both sides at once.
+     *  - **The session in progress**, which falls of its own accord at the next request, the
+     *    provider no longer finding that name. Wanted, and announced in the modal.
+     *  - **The School mail address derived from the login**, added if its local part is free.
+     *  - The **old address, which stays**: reception is a catch-all, mail has already gone out to
+     *    it, and removing it would lose letters without freeing anything.
+     *
+     * @return bool false when the consequence could not be drawn, applied_at then staying NULL so
+     *              the screen goes on saying the operation is not settled
      */
-    private function apply(LdapManageAccount $request): void
+    private function apply(LdapManageAccount $request): bool
     {
+        if (LdapAccountAction::LoginChange !== $request->getActionType()) {
+            return true;
+        }
+
+        $newLogin = $request->getNewLogin();
+
+        if (null === $newLogin) {
+            return true;
+        }
+
+        $user = $request->getUser();
+
+        if ($newLogin === $user->getUsername()) {
+            // Already applied by the other caller between this row being read and this line.
+            return true;
+        }
+
+        $holder = $this->users->findOneBy(['username' => $newLogin]);
+
+        if (null !== $holder && $holder !== $user) {
+            // The login was free when the request was posted (LdapAccountRequestService checks both
+            // sources) and somebody has taken it since. Refusing here rather than letting the unique
+            // constraint blow up in a cron: the directory has already renamed the entry, so this is
+            // a state a human has to look at, not one to crash on.
+            $request->setVerificationNote(self::NOTE_LOGIN_TAKEN_LOCALLY);
+
+            return false;
+        }
+
+        $user->setUsername($newLogin);
+        $this->mailProvisioner->addLoginAlias($user, $newLogin);
+
+        return true;
     }
 }

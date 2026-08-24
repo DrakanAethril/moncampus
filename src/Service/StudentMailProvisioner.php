@@ -55,25 +55,52 @@ class StudentMailProvisioner
 
         // The login alias is only added when it is free: if a namesake already took it, we do
         // without rather than fail - it is a convenience, not the reference address.
-        $loginLocalPart = $this->addressGenerator->normalizeLoginAlias($user->getUsername());
+        $secondary = $this->addLoginAlias($user, $user->getUsername());
 
-        if ('' !== $loginLocalPart
-            && $loginLocalPart !== $primary->getLocalPart()
-            && $this->addressGenerator->isAvailable($loginLocalPart)
-        ) {
-            $this->addressGenerator->reserve($loginLocalPart);
-
-            $secondary = (new EmailAlias())
-                ->setLocalPart($loginLocalPart)
-                // The only origin without a dot, and the only one exempt from the rule: it is not
-                // typed but taken from the directory, and no screen administers it.
-                ->setOrigin(EmailAliasOrigin::Login);
-
-            $user->addEmailAlias($secondary);
-            $this->entityManager->persist($secondary);
+        if (null !== $secondary) {
             $created[] = $secondary;
         }
 
         return $created;
+    }
+
+    /**
+     * The address derived from a login, added to whatever the student already has.
+     *
+     * Called once at provisioning, and again after a rename has been confirmed by the directory
+     * (App\Service\LdapAccountApplier). The old address is deliberately **not** removed on a rename:
+     * reception is a catch-all, mail has already gone out to it, and the local part is taken for the
+     * whole school either way - dropping it would lose letters without freeing anything.
+     *
+     * @return EmailAlias|null null when there was nothing to add: the student has no mailbox at all,
+     *                         the local part is unusable, or a namesake already holds it. All three
+     *                         are ordinary - this address is a convenience, never the reference one.
+     */
+    public function addLoginAlias(User $user, string $login): ?EmailAlias
+    {
+        $localPart = $this->addressGenerator->normalizeLoginAlias($login);
+
+        if ('' === $localPart || !$this->addressGenerator->isAvailable($localPart)) {
+            return null;
+        }
+
+        foreach ($user->getEmailAliases() as $existing) {
+            if ($existing->getLocalPart() === $localPart) {
+                return null;
+            }
+        }
+
+        $this->addressGenerator->reserve($localPart);
+
+        $alias = (new EmailAlias())
+            ->setLocalPart($localPart)
+            // The only origin without a dot, and the only one exempt from the rule: it is not typed
+            // but taken from the directory, and no screen administers it.
+            ->setOrigin(EmailAliasOrigin::Login);
+
+        $user->addEmailAlias($alias);
+        $this->entityManager->persist($alias);
+
+        return $alias;
     }
 }

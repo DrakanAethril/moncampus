@@ -91,13 +91,23 @@ class LdapAccountStatusPresenter
         ];
     }
 
-    /** @return 'pending'|'running'|'ok'|'warn'|'crit' */
+    /**
+     * Green is the narrowest of the five, and deliberately so: the script said it worked, the
+     * directory agreed **and** whatever this side owed has been done. A rename that is confirmed but
+     * whose new login a local row has taken in the meantime is not a success - it shows orange with
+     * that as its reason (App\Service\LdapAccountApplier::NOTE_LOGIN_TAKEN_LOCALLY).
+     *
+     * @return 'pending'|'running'|'ok'|'warn'|'crit'
+     */
     private function level(LdapManageAccount $request): string
     {
+        $settled = $request->isSucceededAndVerified()
+            && (!$request->getActionType()->appliesOnConfirmation() || null !== $request->getAppliedAt());
+
         return match (true) {
             $request->isFailed() => 'crit',
-            $request->isSucceededAndVerified() => 'ok',
-            $request->isSucceededUnverified() => 'warn',
+            $settled => 'ok',
+            2 === $request->getState() => 'warn',
             1 === $request->getState() => 'running',
             default => 'pending',
         };
@@ -135,8 +145,10 @@ class LdapAccountStatusPresenter
             'pending' => 'ldapAccountBannerQueuedDetail',
             'running' => 'ldapAccountBannerStartedDetail',
             'ok' => 'ldapAccountBannerVerifiedDetail',
-            // The reason the re-read could not conclude, written by App\Service\LdapAccountVerifier.
-            // The fallback covers a row an older version left unverified without saying why.
+            // Why the row is not settled - written by App\Service\LdapAccountVerifier when the
+            // directory could not confirm, by App\Service\LdapAccountApplier when it did confirm and
+            // the consequence could not be drawn. The fallback covers a row an older version left
+            // unverified without saying why.
             'warn' => $request->getVerificationNote() ?? 'ldapAccountVerificationUnknownNote',
             default => 'ldapAccountBanner'.$this->actionKeyPart($request->getActionType()).'FailedDetail',
         };

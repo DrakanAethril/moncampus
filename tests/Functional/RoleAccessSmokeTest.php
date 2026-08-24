@@ -715,7 +715,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $targetId = $target->getId();
 
         foreach ([$this->student, $this->teacher, $this->tutor, $staff, $staffLead] as $user) {
-            foreach (['deactivate', 'reactivate'] as $action) {
+            foreach (['deactivate', 'reactivate', 'change-login'] as $action) {
                 // No CSRF token on purpose: the role check runs first, so a 403 here is the role's.
                 $this->client->loginUser($user);
                 $this->client->request('POST', '/directory/users/'.$targetId.'/'.$action);
@@ -741,10 +741,16 @@ class RoleAccessSmokeTest extends FunctionalTestCase
 
         self::assertSame(302, $this->client->getResponse()->getStatusCode());
 
-        // Le sondage du bandeau : 200 pour l'administrateur, 403 pour tous les autres.
-        $this->assertScreens($this->admin, ['/directory/users/'.$targetId.'/account-status' => 200]);
+        // Le sondage du bandeau et la disponibilité d'un login : 200 pour l'administrateur, 403
+        // pour tous les autres. La seconde répond « ce login est-il pris ? », ce qui est une
+        // question sur l'annuaire entier, pas sur la fiche ouverte.
+        $polling = [
+            '/directory/users/'.$targetId.'/account-status' => 200,
+            '/directory/users/'.$targetId.'/login-availability?login=quelquun' => 200,
+        ];
+        $this->assertScreens($this->admin, $polling);
         foreach ([$this->student, $this->teacher, $this->tutor, $staff, $staffLead] as $user) {
-            $this->assertScreens($user, ['/directory/users/'.$targetId.'/account-status' => 403]);
+            $this->assertScreens($user, array_fill_keys(array_keys($polling), 403));
         }
 
         // Re-read rather than trusted: a request in between may well have cleared the manager, so
