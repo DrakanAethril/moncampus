@@ -38,8 +38,12 @@ class LdapAccountRequestService
      * the shape LoginGenerator produces (`croux`, `yprigent01`) widened by the separators an
      * imported directory may already carry - not widened further: this string reaches
      * `samba-tool user rename` and `mv /srv/samba/userdata/<login>`.
+     *
+     * Public so the live availability check behind the field asks the same question the submission
+     * will - a field that says "available" about something the POST then refuses is worse than a
+     * field that says nothing.
      */
-    private const string LOGIN_PATTERN = '/^[a-z][a-z0-9._-]{1,63}$/';
+    public const string LOGIN_PATTERN = '/^[a-z][a-z0-9._-]{1,63}$/';
 
     public function __construct(
         private readonly LdapManageAccountRepository $requests,

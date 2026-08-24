@@ -12,6 +12,9 @@ use App\Service\LdapAccountApplier;
 use App\Service\LdapAccountRequestException;
 use App\Service\LdapAccountRequestService;
 use App\Service\LdapAccountStatusPresenter;
+use App\Service\LoginGenerator;
+use App\Service\PostValue;
+use App\Service\QueryValue;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -148,6 +151,83 @@ class DirectoryAccountController extends AbstractController
                 'accountStatus' => $presenter->present($latest),
                 'editedUser' => $user,
             ]),
+        ]);
+    }
+
+    /**
+     * « Changer le login ».
+     *
+     * It queues the request and nothing else - App\Entity\User::$username is not touched here, and
+     * that is the whole asymmetry of this feature: LdapCredentialsVerifier looks the directory up by
+     * the local name, so a username written ahead of the directory makes the account unreachable on
+     * both sides at once. The switch happens in App\Service\LdapAccountApplier, once the rename has
+     * been confirmed *and* read back.
+     *
+     * Every refusal comes back on the fiche as a flash - taken, unchanged, malformed, or a gesture
+     * already under way. The rules are the service's, not this action's: the modal is one caller.
+     */
+    #[Route(path: '/directory/users/{id}/change-login', name: 'app_directory_account_change_login', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function changeLogin(
+        Request $request,
+        UserRepository $users,
+        LdapAccountRequestService $accountRequests,
+        int $id,
+    ): Response {
+        $user = $users->find($id) ?? throw $this->createNotFoundException();
+
+        if (!$this->isCsrfTokenValid('directory_account_change_login', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        /** @var User $currentUser */
+        $currentUser = $this->getUser();
+
+        try {
+            $accountRequests->changeLogin($user, PostValue::string($request, 'new_login'), $currentUser);
+            $this->addFlash('success', 'ldapAccountLoginChangeQueuedFlashMessage');
+        } catch (LdapAccountRequestException $exception) {
+            $this->addFlash('danger', $exception->getMessage());
+        }
+
+        return $this->redirectToRoute('app_directory_users_edit', ['id' => $id]);
+    }
+
+    /**
+     * "Is this login free?", asked while the administrator types.
+     *
+     * Against **both** sources, which is App\Service\LoginGenerator::loginTaken()'s whole point: a
+     * login reserved by a creation that never went through is taken every bit as much as one
+     * somebody carries. It is also why an old login stays reserved for ever after a rename.
+     *
+     * The answer is advisory. The request itself re-runs the same checks when it is posted, because
+     * between typing and validating anything may have happened.
+     */
+    #[Route(path: '/directory/users/{id}/login-availability', name: 'app_directory_account_login_availability', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function loginAvailability(
+        Request $request,
+        UserRepository $users,
+        LdapAccountRequestService $accountRequests,
+        LoginGenerator $loginGenerator,
+        int $id,
+    ): JsonResponse {
+        $user = $users->find($id) ?? throw $this->createNotFoundException();
+        $login = $accountRequests->normaliseLogin(QueryValue::trimmed($request, 'login'));
+
+        if ('' === $login) {
+            return $this->json(['login' => '', 'state' => 'empty']);
+        }
+
+        if (1 !== preg_match(LdapAccountRequestService::LOGIN_PATTERN, $login)) {
+            return $this->json(['login' => $login, 'state' => 'invalid']);
+        }
+
+        if ($login === mb_strtolower($user->getUsername())) {
+            return $this->json(['login' => $login, 'state' => 'current']);
+        }
+
+        return $this->json([
+            'login' => $login,
+            'state' => $loginGenerator->loginTaken($login) ? 'taken' : 'available',
         ]);
     }
 

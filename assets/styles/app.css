@@ -8916,3 +8916,19 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-conseq__mark { flex: none; color: var(--cm-brand); font-weight: 700; }
 .cm-conseq b { color: var(--cm-ink); }
 .cm-conseq code, .cm-mono { font-family: var(--cm-font-mono); font-size: .94em; }
+
+/* The live availability line under « Nouveau login ». Its three answers are three colours, and the
+   fourth state - nothing typed yet - says nothing at all rather than "invalid". */
+.cm-loginhint { min-height: 18px; margin-top: 5px; font: 12px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-loginhint[data-state="available"] { color: var(--cm-green-tx); }
+.cm-loginhint[data-state="taken"], .cm-loginhint[data-state="invalid"] { color: var(--cm-red-tx); }
+.cm-loginhint[data-state="current"] { color: var(--cm-gold-tx); }
+.cm-loginhint[data-state]:not([data-state=""])::before { content: "● "; }
+
+/* A button that reads as a link - « Proposer d'après le nom » sits inside a sentence, and a real
+   <a href> would be a lie: it fills a field, it does not go anywhere. */
+.cm-linkbtn {
+    padding: 0; border: 0; background: none;
+    color: var(--cm-brand); font: inherit; text-decoration: underline; cursor: pointer;
+}
+.cm-linkbtn:hover { color: var(--cm-brand-strong); }
