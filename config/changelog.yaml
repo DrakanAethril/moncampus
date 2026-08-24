@@ -26,6 +26,34 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.08.24'
+      date: '2026-08-24'
+      summary: "La connexion accepte désormais l'adresse e-mail de contact autant que l'identifiant. Côté préparation des contenus, un quiz s'associe directement à une séquence ou à une séance, et le sommaire du wiki laisse sa largeur au texte tant qu'on ne le demande pas."
+      entries:
+          - type: nouveaute
+            title: "Se connecter avec son adresse e-mail"
+            detail: "Le champ identifiant accepte l'adresse de contact, à condition qu'elle ait été confirmée au préalable. Le mot de passe reste demandé comme avant."
+          - type: nouveaute
+            title: "Associer un quiz à une séquence ou à une séance"
+            detail: "La carte « Quiz de la séquence » liste tous les quiz rattachés, quel que soit le niveau auquel ils pendent, et la séance reçoit la même carte. Détacher un quiz ne le supprime jamais de la bibliothèque."
+          - type: modification
+            title: "Créer et importer un quiz dans le dossier où l'on se trouve"
+            detail: "L'import emporte désormais le dossier courant, comme la création le faisait déjà, et le fil d'Ariane d'un quiz porte son classement."
+          - type: modification
+            title: "Le sommaire d'une page de wiki s'affiche à la demande"
+            detail: "Il n'occupe plus une colonne en permanence : un bouton l'ouvre et le referme, sur les pages qui ont des titres. Le texte y gagne près d'un quart de sa largeur."
+          - type: modification
+            title: "Copier un bloc de code du wiki en un clic"
+            detail: "Le bouton de copie est visible au repos et non plus seulement au survol. Les blocs de code et le code en ligne adoptent la police à chasse fixe du système, à l'écran comme à l'export PDF."
+          - type: modification
+            title: "Le menu aligne quatre bibliothèques"
+            detail: "Séquences et séances, quiz, fichiers puis sondages se suivent désormais, et les écrans de sondage reprennent le nom que porte le menu."
+          - type: modification
+            title: "La description d'un quiz s'affiche en infobulle dans les listes"
+            detail: "La colonne difficulté écrit par ailleurs « Mixte » avec sa majuscule."
+          - type: fix
+            title: "Les sous-dossiers s'affichent avant les fichiers"
+            detail: "Dans la bibliothèque de fichiers, la liste d'un dossier comme les résultats de recherche sortaient les fichiers en premier."
     - version: '2026.08.23'
       date: '2026-08-23'
       summary: "La bibliothèque de quiz se range en dossiers, et un dossier entier de la bibliothèque de fichiers se partage désormais à une classe, sous-dossiers compris. L'export PDF d'une progression peut par ailleurs se passer des dates de séances, pour servir de pièce de justification sans avoir à placer chaque séance dans l'emploi du temps."
