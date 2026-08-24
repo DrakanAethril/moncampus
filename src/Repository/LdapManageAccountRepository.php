@@ -60,19 +60,28 @@ class LdapManageAccountRepository extends ServiceEntityRepository
     }
 
     /**
-     * Rows the application still owes something to: the script has finished (2 or 3) but nobody has
-     * read the directory back, or the consequence of a confirmed rename has not been applied yet.
+     * Rows the application still owes something to: the script says it succeeded, and either nobody
+     * has read the directory back or the consequence of a confirmed rename has not been applied.
      *
-     * Read by App\Command\ApplyLdapAccountRequestsCommand as well as by the fiche's polling - the
-     * queue is what carries the work, so an administrator who closes their tab changes nothing.
+     * Read by App\Command\ApplyLdapAccountRequestsCommand - the queue is what carries the work, so
+     * an administrator who closes their tab changes nothing.
+     *
+     * **Bounded in time, and that bound is not a tuning knob.** Some rows can never be verified: a
+     * directory with no account-status attribute at all - which is every development machine - leaves
+     * them unverified for ever. Without a window they would pile up at the head of an ORDER BY id
+     * queue and, past fifty of them, keep the command from ever reaching today's requests. An
+     * operation settles in under two minutes; a day is already an eternity, and past it the row is
+     * history the screen still shows in orange with its reason.
      *
      * @return list<LdapManageAccount>
      */
-    public function findAwaitingApplication(int $limit = 50): array
+    public function findAwaitingApplication(int $limit = 50, string $window = '-1 day'): array
     {
         return $this->createQueryBuilder('a')
             ->andWhere('a.state = 2')
             ->andWhere('a.verificationDate IS NULL OR a.appliedAt IS NULL')
+            ->andWhere('a.endedAt IS NULL OR a.endedAt > :since')
+            ->setParameter('since', new \DateTimeImmutable($window))
             ->orderBy('a.id', 'ASC')
             ->setMaxResults($limit)
             ->getQuery()

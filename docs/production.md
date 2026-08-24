@@ -329,6 +329,42 @@ Notes:
 - Deleting is all it does: nothing is written, nothing is announced, and a run on an empty database
   exits in a few milliseconds. Installing the entry before there is anything to purge is harmless.
 
+## Closing the loop on account operations (cron)
+
+`app:ldap:apply-account-requests` reads the directory back for every `ldap_manage_account` request
+the consumer script on the domain controller has finished with, and draws the consequence on this
+side - today, a confirmed rename rewriting `User::$username`.
+
+**It exists so that a closed browser tab is not what decides.** The user's fiche polls the same work
+every two seconds while it is open, and that is what makes the screen right immediately; but an
+administrator who requests a rename and shuts the laptop must not be the reason the new login never
+reaches the application. It is the same lesson as `app:vm-batch:advance`: the browser's own loop is
+never what carries the work.
+
+Every minute, matching the rate the queue is drained at on the domain controller:
+
+```cron
+* * * * * cd /srv/moncampus && docker compose -f compose.yaml -f compose.prod.yaml exec -T php bin/console app:ldap:apply-account-requests >> /var/log/moncampus-ldap-account.log 2>&1
+```
+
+Notes:
+
+- **No `flock` needed**, same as the `app:mail:*` commands: it locks itself (`LockableTrait`), and
+  every run `exec`s into the same `php` container, so they share the lock file.
+- **It invents nothing.** A directory that cannot be reached leaves the row exactly as it was, with
+  a note saying so, and the next minute tries again. `applied_at` is what makes a second pass a
+  no-op, which is what lets it cross the fiche's own polling safely.
+- **`LDAP_ACCOUNT_STATUS_ATTRIBUTE` decides whether a deactivation can be verified at all**
+  (`userAccountControl` on a Samba 4 AD DC). Left blank, deactivations settle at « réussi, non
+  vérifié » with the reason spelled out, for ever - which is the honest answer on a directory that
+  has no such notion, and the wrong one in production. A rename is verified either way, by looking
+  the two uids up.
+- **The three scripts and the consumer live on the domain controller**, not here - see the
+  `Beaupeyrat-scripts` repository (`samba/ldap/`). A queue that fills while nothing drains it shows
+  up as rows stuck at « En attente »; that pile-up is the symptom to recognise.
+- Requires nothing else. A run with an empty queue exits in a few milliseconds, so installing the
+  entry before the consumer exists is harmless.
+
 ## Disabling HTTPS
 
 Alternatively, if you don't want to expose an HTTPS server but only an HTTP one,
