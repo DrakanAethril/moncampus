@@ -92,7 +92,16 @@ class FileLibraryNodeRepository extends ServiceEntityRepository
 
         // Folders before files whatever the sort: a folder is a place and a file is a thing, and a
         // listing that interleaves them makes the reader check the icon on every line.
-        $builder->addOrderBy('n.type', 'ASC');
+        //
+        // Ranked rather than ordered by the column itself: `type` holds the enum's *value*, and
+        // 'file' sorts before 'folder' - so the obvious `ORDER BY n.type ASC` listed the files first
+        // and read as intentional. The rank says what is meant and survives a renamed case. It is
+        // selected as a HIDDEN alias because DQL's ORDER BY grammar takes no inline CASE, the same
+        // constraint QuizTemplateRepository::findForTeacher() meets with its COALESCE.
+        $builder
+            ->addSelect('CASE WHEN n.type = :folderType THEN 0 ELSE 1 END AS HIDDEN typeRank')
+            ->setParameter('folderType', FileLibraryNodeType::Folder)
+            ->addOrderBy('typeRank', 'ASC');
 
         match ($sort) {
             'size' => $builder->addOrderBy('n.sizeBytes', 'DESC'),
@@ -121,7 +130,10 @@ class FileLibraryNodeRepository extends ServiceEntityRepository
             ->andWhere('n.name LIKE :terms')
             ->setParameter('owner', $owner)
             ->setParameter('terms', '%'.addcslashes($terms, '%_').'%')
-            ->addOrderBy('n.type', 'ASC')
+            // Folders first here too, and ranked for the same reason as findChildren() above.
+            ->addSelect('CASE WHEN n.type = :folderType THEN 0 ELSE 1 END AS HIDDEN typeRank')
+            ->setParameter('folderType', FileLibraryNodeType::Folder)
+            ->addOrderBy('typeRank', 'ASC')
             ->addOrderBy('n.name', 'ASC')
             ->setMaxResults($limit)
             ->getQuery()

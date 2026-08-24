@@ -37,6 +37,30 @@ class QuizTemplateRepository extends ServiceEntityRepository
     }
 
     /**
+     * The teacher's whole library as a picker reads it: filed quizzes grouped behind their folder,
+     * unfiled ones first - which is what « Associer un quiz » offers on a séquence and on a séance
+     * (App\Service\SequenceQuizLinker).
+     *
+     * By folder then by name, and never by date: a teacher looking for a quiz they wrote last term
+     * looks for it where they filed it. The folder is fetch-joined because the picker labels every
+     * group with it.
+     *
+     * @return list<QuizTemplate>
+     */
+    public function findPickable(User $teacher): array
+    {
+        return $this->createQueryBuilder('q')
+            ->addSelect('folder')
+            ->leftJoin('q.folder', 'folder')
+            ->where('q.teacher = :teacher')
+            ->setParameter('teacher', $teacher)
+            ->orderBy('folder.name', 'ASC')
+            ->addOrderBy('q.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * The quizzes filed in one folder - what the listing draws under the sub-folders.
      *
      * By name and not by date, unlike findForTeacher(): a classement is read the way a file manager

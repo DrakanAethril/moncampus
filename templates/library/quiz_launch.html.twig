@@ -3,12 +3,10 @@
 {% block title %}{{ 'quizLaunchPageHeadingTemplate'|trans({'%name%': quizTemplate.name}) }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
-        {label: 'quizLibraryPageHeading'|trans, url: path('app_library_quiz')},
+    {% include 'library/_quiz_trail.html.twig' with {folderTrail: folderTrail, tail: [
         {label: quizTemplate.name, url: path('app_library_quiz_questions', {id: quizTemplate.id})},
         {label: 'quizLaunchBreadcrumbLabel'|trans, url: app.request.requestUri},
-    ]} %}
+    ]} only %}
 {% endblock %}
 {% block page_title %}{{ 'quizLaunchPageHeadingTemplate'|trans({'%name%': quizTemplate.name}) }}{% endblock %}
 

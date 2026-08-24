@@ -1,0 +1,16 @@
+{# expects: folderTrail, tail (list of {label, url})
+
+   The trail of a quiz screen. It opens on Accueil, then the library, then one segment per folder the
+   quiz is filed under - so leaving a quiz lands back in the folder it came from rather than at the
+   root (App\Controller\QuizLibraryFolderTrait::folderTrailOf(), which answers empty for a reader who
+   is not the owner). `tail` carries the screen's own last segments. #}
+{% set segments = [
+    {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {label: 'quizLibraryPageHeading'|trans, url: path('app_library_quiz')},
+] %}
+
+{% for folder in folderTrail %}
+    {% set segments = segments|merge([{label: folder.name, url: path('app_library_quiz_folder', {folderId: folder.id})}]) %}
+{% endfor %}
+
+{% include '_breadcrumb.html.twig' with {segments: segments|merge(tail)} %}
