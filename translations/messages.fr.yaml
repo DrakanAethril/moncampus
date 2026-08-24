@@ -549,8 +549,6 @@ forceInitialPasswordFieldLabel: 'Forcer la définition du mot de passe à la pre
 passwordsListPageHeading: 'Mots de passe'
 passwordResetUserFieldLabel: 'Utilisateur'
 passwordResetUserSearchPlaceholder: 'Rechercher un utilisateur...'
-passwordRevealButtonLabel: 'Voir'
-passwordRevealErrorMessage: 'Une erreur est survenue. Veuillez réessayer.'
 
 settingsNavLabel: 'Configuration'
 settingsConfigurationNavLabel: 'Configuration'

@@ -35,12 +35,18 @@ class LdapManagePassword
     #[ORM\Column(name: 'added_by', length: 255, options: ['default' => 'direct'])]
     private string $addedBy = 'direct';
 
-    // Dual-purpose, always AES_ENCRYPT(..., AES_KEY) - either left NULL at insert time (the
-    // consumer script generates a random password), or pre-filled via
-    // LdapManagePasswordRepository::setRequestedPassword() when a specific one was requested
-    // (see ProfileController::changePassword()). Either way, the consumer overwrites it with the
-    // actual applied password once processing finishes; this app only ever reads it back via
-    // LdapManagePasswordRepository::decryptPassword(), never directly off this property.
+    // Always AES_ENCRYPT(..., AES_KEY), and only ever set on the way in: left NULL at insert time
+    // (the consumer script then generates a random password), or pre-filled via
+    // LdapManagePasswordRepository::setRequestedPassword() when the user chose one themselves
+    // (see ProfileController::changePassword()).
+    //
+    // It exists solely because the queue is asynchronous - a password the user typed has to
+    // survive until the external script picks the row up. The moment that script is done it clears
+    // this column back to NULL, so a finished row carries nothing. Nothing in this application
+    // reads it: the "Voir" button of Annuaire > Mots de passe was removed on 2026-08-24 along with
+    // the decryption path behind it, and Version20260824* wiped the history the old behaviour had
+    // accumulated. Treat a non-null value here as a row still in flight, never as something to
+    // display.
     #[ORM\Column(type: Types::BINARY, length: 255, nullable: true)]
     private mixed $password = null;
 

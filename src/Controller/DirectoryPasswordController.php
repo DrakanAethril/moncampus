@@ -81,7 +81,6 @@ class DirectoryPasswordController extends AbstractController
                     'statusLabel' => $stateFormatter->label($ldapManagePassword->getState()),
                     'statusClass' => $stateFormatter->cssClass($ldapManagePassword->getState()),
                     'addedAt' => $ldapManagePassword->getAddedAt()->format('d/m/Y H:i'),
-                    'canReveal' => 2 === $ldapManagePassword->getState(),
                 ],
                 $rows,
             ),
@@ -104,21 +103,5 @@ class DirectoryPasswordController extends AbstractController
             ], $users),
             'pagination' => ['more' => \count($users) === $limit],
         ]);
-    }
-
-    // Decrypts and returns the generated password once the external consumer script has
-    // succeeded - see LdapManagePasswordRepository::decryptPassword() for why this can only ever
-    // return something for a row in the "succeeded" state.
-    #[Route(path: '/directory/passwords/{id}/reveal', name: 'app_directory_passwords_reveal', methods: ['POST'])]
-    public function reveal(int $id, Request $request, LdapManagePasswordRepository $repository): JsonResponse
-    {
-        if (!$this->isCsrfTokenValid('directory_password_reveal', $request->headers->get('X-CSRF-Token'))) {
-            throw $this->createAccessDeniedException('Invalid CSRF token.');
-        }
-
-        $ldapManagePassword = $repository->find($id) ?? throw $this->createNotFoundException();
-        $password = $repository->decryptPassword($ldapManagePassword) ?? throw $this->createNotFoundException();
-
-        return $this->json(['password' => $password]);
     }
 }

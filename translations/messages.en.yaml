@@ -501,8 +501,6 @@ forceInitialPasswordFieldLabel: 'Force password setup on first login'
 passwordsListPageHeading: 'Passwords'
 passwordResetUserFieldLabel: 'User'
 passwordResetUserSearchPlaceholder: 'Search for a user...'
-passwordRevealButtonLabel: 'Reveal'
-passwordRevealErrorMessage: 'Something went wrong. Please try again.'
 
 settingsNavLabel: 'Settings'
 settingsConfigurationNavLabel: 'Configuration'
