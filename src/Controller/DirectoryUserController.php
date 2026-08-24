@@ -414,6 +414,16 @@ class DirectoryUserController extends AbstractController
 
         /** @var User $currentUser */
         $currentUser = $this->getUser();
+
+        // Nothing technical stops an administrator locking themselves out of the screen that would
+        // let them back in - which is why it is stopped here. There is no second administrator to
+        // count on: the platform has one.
+        if ($currentUser === $user) {
+            $this->addFlash('danger', 'userCannotDeactivateSelfFlashMessage');
+
+            return $this->redirectToRoute('app_directory_users_edit', ['id' => $id]);
+        }
+
         $user->setInactiveDate(new \DateTimeImmutable());
         $user->setInactivatedBy($currentUser);
         $entityManager->flush();

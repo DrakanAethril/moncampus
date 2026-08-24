@@ -22,6 +22,9 @@ security:
         api_login:
             pattern: ^/api/login
             stateless: true
+            # See the "main" firewall below: one deactivation rule, declared on every firewall
+            # that authenticates somebody.
+            user_checker: App\Security\AccountStatusChecker
             custom_authenticators:
                 - App\Security\ApiLdapAuthenticator
         # Every other /api/* route (API Platform resources): stateless, Bearer-JWT-authenticated,
@@ -29,10 +32,23 @@ security:
         api:
             pattern: ^/api
             stateless: true
+            # A JWT is not a session: this firewall re-loads the user through app_user_provider on
+            # every single request, so the checker runs again each time and a token issued before a
+            # deactivation stops opening anything at once, without waiting for its expiry.
+            user_checker: App\Security\AccountStatusChecker
             jwt: ~
         main:
             lazy: true
             provider: app_user_provider
+            # App\Security\AccountStatusChecker refuses a deactivated account
+            # (App\Entity\User::$inactiveDate) on every authentication - the login form and the
+            # magic link here, POST /api/login and the JWT above. It is deliberately one checker
+            # rather than a test inside each authenticator.
+            #
+            # It does NOT cover a session that is already open: ContextListener refreshes the user
+            # without consulting any user checker. App\EventSubscriber\InactiveAccountSubscriber
+            # closes that fourth door, delegating the rule itself back to the checker.
+            user_checker: App\Security\AccountStatusChecker
             custom_authenticators:
                 - App\Security\LdapAuthenticator
                 - App\Security\MagicLinkAuthenticator

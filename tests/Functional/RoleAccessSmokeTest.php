@@ -693,6 +693,60 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->assertScreens($this->tutor, [$wall => 403]);
     }
 
+    /**
+     * Désactiver et réactiver un compte : `ROLE_ADMIN` et personne d'autre.
+     *
+     * Une ligne par rôle, et les deux lignes qui comptent sont celles du personnel : tout le reste
+     * de l'Annuaire leur est ouvert (`access_control` sur `^/directory`), et le contrôleur porte le
+     * même `#[IsGranted]` à trois rôles que ses voisins. Ce qui tient la porte, ce sont les deux
+     * `isGranted('ROLE_ADMIN')` écrits à l'intérieur des deux actions — exactement le genre de
+     * garde qu'une harmonisation de contrôleur fait disparaître sans que rien ne se voie.
+     *
+     * En POST, parce que les deux routes n'existent qu'en POST : un GET répondrait 405 à
+     * l'administrateur et masquerait la question.
+     */
+    public function testDeactivatingAnAccountIsAdminOnly(): void
+    {
+        $staff = $this->createUser(['ROLE_USER', 'ROLE_STAFF'], 'smoke.deact.staff');
+        $staffLead = $this->createUser(['ROLE_USER', 'ROLE_STAFF-LEAD'], 'smoke.deact.stafflead');
+        $target = $this->createUser(['ROLE_USER', 'ROLE_STUDENT'], 'smoke.deact.target');
+        $targetId = $target->getId();
+
+        foreach ([$this->student, $this->teacher, $this->tutor, $staff, $staffLead] as $user) {
+            foreach (['deactivate', 'reactivate'] as $action) {
+                // No CSRF token on purpose: the role check runs first, so a 403 here is the role's.
+                $this->client->loginUser($user);
+                $this->client->request('POST', '/directory/users/'.$targetId.'/'.$action);
+
+                self::assertSame(403, $this->client->getResponse()->getStatusCode(), \sprintf(
+                    'POST %s as %s must be refused.',
+                    $action,
+                    implode('/', $user->getRoles()),
+                ));
+            }
+        }
+
+        self::assertNull(
+            static::getContainer()->get(EntityManagerInterface::class)->getRepository(User::class)->find($targetId)?->getInactiveDate(),
+            'Not one of those requests may have gone through.',
+        );
+
+        $this->client->loginUser($this->admin);
+        $this->client->request('GET', '/directory/users');
+        $this->client->request('POST', '/directory/users/'.$targetId.'/deactivate', [
+            '_token' => $this->csrfToken('directory_user_deactivate'),
+        ]);
+
+        self::assertSame(302, $this->client->getResponse()->getStatusCode());
+
+        // Re-read rather than trusted: a request in between may well have cleared the manager, so
+        // the object this test still holds is not necessarily the row the controller wrote.
+        $reloaded = static::getContainer()->get(EntityManagerInterface::class)
+            ->getRepository(User::class)
+            ->find($targetId);
+        self::assertNotNull($reloaded?->getInactiveDate(), 'The administrator, and only the administrator, closes the account.');
+    }
+
     private function assertScreens(User $user, array $expectations): void
     {
         $this->client->loginUser($user);

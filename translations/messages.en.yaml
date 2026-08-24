@@ -323,6 +323,8 @@ userDeactivateButtonLabel: 'Deactivate account'
 userReactivateButtonLabel: 'Reactivate account'
 userDeactivatedFlashMessage: 'The account was deactivated successfully.'
 userReactivatedFlashMessage: 'The account was reactivated successfully.'
+userCannotDeactivateSelfFlashMessage: 'You cannot deactivate your own account.'
+accountDeactivatedFlashMessage: 'This account is deactivated. Please contact the school office.'
 
 contactEmailCardTitle: 'Email address'
 contactEmailCurrentAddressFieldLabel: 'Current email'

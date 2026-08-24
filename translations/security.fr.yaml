@@ -4,3 +4,4 @@
 # error.messageKey|trans(error.messageData, 'security'), and App\Security\MagicLinkAuthenticator's
 # CustomUserMessageAuthenticationException needs its own key resolved here.
 magicLoginConsumeInvalidMessage: 'Ce lien de connexion est invalide, a expiré, ou a déjà été utilisé.'
+accountDeactivatedMessage: 'Ce compte est désactivé. Rapprochez-vous du secrétariat.'

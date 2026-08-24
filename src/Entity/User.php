@@ -215,6 +215,17 @@ class User implements UserInterface
     #[ORM\Column(name: 'test_user', options: ['default' => false])]
     private bool $testUser = false;
 
+    // Set, the account is refused everywhere: App\Security\AccountStatusChecker is the firewalls'
+    // user_checker (login form, POST /api/login, JWT, magic link) and
+    // App\EventSubscriber\InactiveAccountSubscriber drops an already-open session at its next
+    // request. Nothing is erased - the row, its work, its login all stay, and the geste is
+    // reversible from the same fiche.
+    //
+    // Local-only, exactly like $testUser above and for the same reason: it says how this app must
+    // behave for the account, not who the person is. App\Security\LdapUserMapper and
+    // App\Service\LdapUserSyncer must never write it, whatever the directory says about the entry -
+    // the annuaire is told about a deactivation through the ldap_manage_account queue, it is not
+    // asked about it.
     #[ORM\Column(name: 'inactive_date', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $inactiveDate = null;
 
