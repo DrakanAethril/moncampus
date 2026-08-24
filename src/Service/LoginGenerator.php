@@ -74,8 +74,15 @@ class LoginGenerator
     //
     // $reservedLogins closes the other, far likelier collision - the one inside a single run, which
     // no query can see.
+    //
+    // Public since the "Changer le login" screen asks the same question about a login somebody
+    // typed (App\Service\LdapAccountRequestService, and the live availability check behind the
+    // field): a login reserved by a creation that never went through is taken every bit as much as
+    // one somebody carries, and answering that twice is how the two answers would come to differ.
+    // It is also why an old login stays reserved for ever after a rename - ldap_manage_user keeps
+    // its row.
     /** @param list<string> $reservedLogins */
-    private function loginTaken(string $login, array $reservedLogins): bool
+    public function loginTaken(string $login, array $reservedLogins = []): bool
     {
         return \in_array($login, $reservedLogins, true)
             || null !== $this->userRepository->findOneBy(['username' => $login])

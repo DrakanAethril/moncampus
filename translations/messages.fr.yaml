@@ -370,6 +370,14 @@ userReactivateButtonLabel: 'Réactiver le compte'
 userDeactivatedFlashMessage: 'Le compte a été désactivé avec succès.'
 userReactivatedFlashMessage: 'Le compte a été réactivé avec succès.'
 userCannotDeactivateSelfFlashMessage: 'Vous ne pouvez pas désactiver votre propre compte.'
+# Opérations de compte (file ldap_manage_account)
+ldapAccountActionDisableLabel: 'Désactivation'
+ldapAccountActionEnableLabel: 'Réactivation'
+ldapAccountActionLoginChangeLabel: 'Changement de login'
+ldapAccountRequestAlreadyPendingMessage: 'Une demande est déjà en cours sur ce compte.'
+ldapAccountLoginTakenMessage: 'Ce login est déjà pris par un compte ou par une demande de création.'
+ldapAccountLoginUnchangedMessage: "C'est déjà le login actuel de ce compte."
+ldapAccountLoginInvalidMessage: "Ce login n'est pas valide : minuscules, chiffres, point, tiret ou souligné, en commençant par une lettre."
 accountDeactivatedFlashMessage: 'Ce compte est désactivé. Rapprochez-vous du secrétariat.'
 
 contactEmailCardTitle: 'Adresse e-mail'
