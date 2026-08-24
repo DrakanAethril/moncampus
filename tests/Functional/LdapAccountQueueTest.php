@@ -99,6 +99,47 @@ class LdapAccountQueueTest extends FunctionalTestCase
         self::assertNotSame($first->getId(), $second->getId(), 'Once the first is done, the next one goes through.');
     }
 
+    /**
+     * What the cron command picks up - and, above all, what it stops picking up.
+     *
+     * A row nothing can ever verify (a directory with no account-status attribute, which is every
+     * development machine) would otherwise sit at the head of the queue for ever and, past fifty of
+     * them, keep today's requests from ever being read.
+     */
+    public function testTheCronOnlyChasesRowsItStillHasAChanceOfSettling(): void
+    {
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $repository = static::getContainer()->get(LdapManageAccountRepository::class);
+        $user = $this->createUser(['ROLE_USER', 'ROLE_STUDENT'], 'awaiting.user');
+
+        $fresh = new LdapManageAccount($user, LdapAccountAction::Disable);
+        $fresh->setState(2)->setEndedAt(new \DateTimeImmutable('-2 minutes'));
+
+        $stale = new LdapManageAccount($user, LdapAccountAction::Disable);
+        $stale->setState(2)->setEndedAt(new \DateTimeImmutable('-3 days'));
+
+        $failed = new LdapManageAccount($user, LdapAccountAction::Disable);
+        $failed->setState(3)->setEndedAt(new \DateTimeImmutable('-2 minutes'));
+
+        $settled = new LdapManageAccount($user, LdapAccountAction::Disable);
+        $settled->setState(2)
+            ->setEndedAt(new \DateTimeImmutable('-2 minutes'))
+            ->setVerificationDate(new \DateTimeImmutable('-1 minute'))
+            ->setAppliedAt(new \DateTimeImmutable('-1 minute'));
+
+        foreach ([$fresh, $stale, $failed, $settled] as $row) {
+            $entityManager->persist($row);
+        }
+        $entityManager->flush();
+
+        $awaiting = $repository->findAwaitingApplication();
+
+        self::assertContains($fresh, $awaiting, 'A success nobody has read back yet.');
+        self::assertNotContains($stale, $awaiting, 'Three days old: history, not work.');
+        self::assertNotContains($failed, $awaiting, 'A failure has nothing to confirm.');
+        self::assertNotContains($settled, $awaiting, 'Verified and applied: done.');
+    }
+
     /** No row at all is the ordinary case: most accounts never go through this queue. */
     public function testAnAccountWithNoHistoryHasNoLastOperation(): void
     {

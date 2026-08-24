@@ -703,7 +703,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
      * garde qu'une harmonisation de contrôleur fait disparaître sans que rien ne se voie.
      *
      * En POST, parce que les deux routes n'existent qu'en POST : un GET répondrait 405 à
-     * l'administrateur et masquerait la question.
+     * l'administrateur et masquerait la question. Le sondage du bandeau et le « Réessayer » suivent
+     * la même porte — le premier dit d'un compte s'il est fermé et par qui, le second dépose une
+     * demande dans la file de l'annuaire.
      */
     public function testDeactivatingAnAccountIsAdminOnly(): void
     {
@@ -738,6 +740,12 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         ]);
 
         self::assertSame(302, $this->client->getResponse()->getStatusCode());
+
+        // Le sondage du bandeau : 200 pour l'administrateur, 403 pour tous les autres.
+        $this->assertScreens($this->admin, ['/directory/users/'.$targetId.'/account-status' => 200]);
+        foreach ([$this->student, $this->teacher, $this->tutor, $staff, $staffLead] as $user) {
+            $this->assertScreens($user, ['/directory/users/'.$targetId.'/account-status' => 403]);
+        }
 
         // Re-read rather than trusted: a request in between may well have cleared the manager, so
         // the object this test still holds is not necessarily the row the controller wrote.
