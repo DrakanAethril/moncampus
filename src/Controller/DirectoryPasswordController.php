@@ -5,14 +5,9 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\LdapManagePassword;
-use App\Entity\User;
-use App\Form\LdapManagePasswordType;
 use App\Repository\LdapManagePasswordRepository;
-use App\Repository\UserRepository;
 use App\Service\DataTableParams;
-use App\Service\PostValue;
 use App\Service\QueueStateFormatter;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -21,6 +16,23 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+/**
+ * Annuaire > Mots de passe, which is a journal and nothing else: it reports where each
+ * ldap_manage_password request stands, and offers no way to create one.
+ *
+ * It did until 2026-08-24 - a "Réinitialiser un mot de passe" screen picking any user, plus the
+ * same action on a user's own fiche. Both were removed rather than kept, because the "Voir" button
+ * that made them useful went at the same time: a reset nobody can read hands the account a random
+ * password that locks its owner out. What replaces them is the passwordless mailed link
+ * (App\Service\MagicLoginService) for anyone who can use it, and samba-tool on the domain
+ * controller for the two cases it does not cover - ROLE_ADMIN accounts, deliberately excluded from
+ * that link, and accounts with no confirmed contact address.
+ *
+ * So the only thing that still fills this queue is the user's own profile
+ * (App\Controller\ProfileController::changePassword()) - and this screen is how staff sees whether
+ * it went through. Adding an action back here means answering how its result reaches the person
+ * concerned, which is the question that removed it.
+ */
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 class DirectoryPasswordController extends AbstractController
 {
@@ -28,35 +40,6 @@ class DirectoryPasswordController extends AbstractController
     public function index(): Response
     {
         return $this->render('directory/passwords.html.twig');
-    }
-
-    #[Route(path: '/directory/passwords/new', name: 'app_directory_passwords_new')]
-    public function new(Request $request, EntityManagerInterface $entityManager, UserRepository $userRepository): Response
-    {
-        $form = $this->createForm(LdapManagePasswordType::class);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            // Submitted outside the form's own namespace by the tom-select picker - see
-            // LdapManagePasswordType's docblock.
-            $targetUser = $userRepository->find(PostValue::int($request, 'user')) ?? throw $this->createNotFoundException();
-
-            $ldapManagePassword = new LdapManagePassword($targetUser);
-            /** @var User $currentUser */
-            $currentUser = $this->getUser();
-            $ldapManagePassword->setAddedBy($currentUser->getUsername());
-
-            $entityManager->persist($ldapManagePassword);
-            $entityManager->flush();
-
-            $this->addFlash('success', 'passwordResetRequestedFlashMessage');
-
-            return $this->redirectToRoute('app_directory_passwords');
-        }
-
-        return $this->render('directory/password_new.html.twig', [
-            'form' => $form,
-        ]);
     }
 
     #[Route(path: '/directory/passwords/data', name: 'app_directory_passwords_data')]
@@ -84,24 +67,6 @@ class DirectoryPasswordController extends AbstractController
                 ],
                 $rows,
             ),
-        ]);
-    }
-
-    // Backs the tom-select ajax widget for the "target user" picker (see LdapManagePasswordType's
-    // docblock) - any active user is a valid target, so this searches the whole directory rather
-    // than a role-scoped subset.
-    #[Route(path: '/directory/passwords/user-search', name: 'app_directory_passwords_user_search')]
-    public function userSearch(Request $request, UserRepository $userRepository): JsonResponse
-    {
-        $limit = 20;
-        $users = $userRepository->searchActive($request->query->get('q'), $limit);
-
-        return $this->json([
-            'results' => array_map(static fn (User $user): array => [
-                'id' => $user->getId(),
-                'text' => $user->getDisplayName() ?? $user->getUsername(),
-            ], $users),
-            'pagination' => ['more' => \count($users) === $limit],
         ]);
     }
 }

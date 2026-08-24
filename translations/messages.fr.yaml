@@ -365,8 +365,6 @@ userProfileLdapOwnedNotice: "Identifiant, prénom, nom, type de compte et les gr
 userProfileUpdatedFlashMessage: "Les informations de l'utilisateur ont été mises à jour avec succès."
 userAccountStatusActiveLabel: 'Compte actif'
 userAccountStatusInactiveLabel: 'Compte désactivé'
-userResetPasswordButtonLabel: 'Réinitialiser le mot de passe'
-userResetPasswordConfirmMessage: 'Envoyer une demande de réinitialisation du mot de passe pour ce compte ?'
 userDeactivateButtonLabel: 'Désactiver le compte'
 userReactivateButtonLabel: 'Réactiver le compte'
 userDeactivatedFlashMessage: 'Le compte a été désactivé avec succès.'
@@ -522,17 +520,14 @@ datatableSearchLabel: 'Rechercher :'
 
 addGroupButtonLabel: 'Ajouter un groupe'
 addUserButtonLabel: 'Ajouter un utilisateur'
-addPasswordResetButtonLabel: 'Réinitialiser un mot de passe'
 newGroupPageHeading: 'Nouveau groupe'
 newUserPageHeading: 'Nouvel utilisateur'
-newPasswordResetPageHeading: 'Réinitialiser un mot de passe'
 cancelAction: 'Annuler'
 submitCreateAction: 'Créer'
 submitCreateUserAction: "Créer l'utilisateur"
 submitEditAction: 'Modifier'
 groupCreatedFlashMessage: 'Le groupe a été ajouté avec succès.'
 userCreatedFlashMessage: "L'utilisateur a été ajouté avec succès."
-passwordResetRequestedFlashMessage: 'La demande de réinitialisation a été enregistrée avec succès.'
 
 userFirstnameFieldLabel: 'Prénom'
 userLastnameFieldLabel: 'Nom'
@@ -547,8 +542,6 @@ forcePasswordRenewalFieldLabel: 'Forcer le renouvellement du mot de passe à la 
 forceInitialPasswordFieldLabel: 'Forcer la définition du mot de passe à la première connexion'
 
 passwordsListPageHeading: 'Mots de passe'
-passwordResetUserFieldLabel: 'Utilisateur'
-passwordResetUserSearchPlaceholder: 'Rechercher un utilisateur...'
 
 settingsNavLabel: 'Configuration'
 settingsConfigurationNavLabel: 'Configuration'
