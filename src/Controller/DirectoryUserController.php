@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\EmailAlias;
-use App\Entity\LdapManagePassword;
 use App\Entity\LdapManageUser;
 use App\Entity\User;
 use App\Enum\EmailAliasOrigin;
@@ -395,36 +394,6 @@ class DirectoryUserController extends AbstractController
         }
 
         return $user->getEmailAliases()->first() ?: null;
-    }
-
-    // Reset the password (design/design_handoff_utilisateurs/README.md rule 5, admin
-    // only) - queues a request the same way Directory > Mots de passe's own "new" action does
-    // (App\Controller\DirectoryPasswordController::new()), just pre-targeted at this user instead
-    // of going through that screen's tom-select picker.
-    #[Route(path: '/directory/users/{id}/reset-password', name: 'app_directory_users_reset_password', methods: ['POST'])]
-    public function resetPassword(Request $request, EntityManagerInterface $entityManager, UserRepository $repository, int $id): Response
-    {
-        if (!$this->isGranted('ROLE_ADMIN')) {
-            throw $this->createAccessDeniedException();
-        }
-
-        $user = $repository->find($id) ?? throw $this->createNotFoundException();
-
-        if (!$this->isCsrfTokenValid('directory_user_reset_password', $request->request->get('_token'))) {
-            throw $this->createAccessDeniedException('Invalid CSRF token.');
-        }
-
-        $ldapManagePassword = new LdapManagePassword($user);
-        /** @var User $currentUser */
-        $currentUser = $this->getUser();
-        $ldapManagePassword->setAddedBy($currentUser->getUsername());
-
-        $entityManager->persist($ldapManagePassword);
-        $entityManager->flush();
-
-        $this->addFlash('success', 'passwordResetRequestedFlashMessage');
-
-        return $this->redirectToRoute('app_directory_users_edit', ['id' => $id]);
     }
 
     // Désactiver le compte (design rule 5, admin only) - see App\Entity\User::$inactiveDate's

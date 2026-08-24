@@ -93,14 +93,14 @@
 {% endblock %}
 
 {% block page_actions %}
-    {# Réinitialiser le mot de passe / Désactiver / Réactiver - admin only (design rule 5), guarded
-       here AND in the controller (App\Controller\DirectoryUserController::resetPassword()/
-       deactivate()/reactivate()), since a hidden button is not an access control. #}
+    {# Désactiver / Réactiver - admin only (design rule 5), guarded here AND in the controller
+       (App\Controller\DirectoryUserController::deactivate()/reactivate()), since a hidden button
+       is not an access control.
+
+       « Réinitialiser le mot de passe » sat here until 2026-08-24 - see
+       App\Controller\DirectoryPasswordController's docblock for why it went, and where somebody
+       locked out is sent instead. #}
     {% if isEdit and is_granted('ROLE_ADMIN') %}
-        <form method="post" action="{{ path('app_directory_users_reset_password', {id: editedUser.id}) }}" onsubmit="return confirm('{{ 'userResetPasswordConfirmMessage'|trans|e('js') }}')">
-            <input type="hidden" name="_token" value="{{ csrf_token('directory_user_reset_password') }}">
-            <button type="submit" class="btn btn-outline-secondary">{{ 'userResetPasswordButtonLabel'|trans }}</button>
-        </form>
         {% if isActive %}
             <form method="post" action="{{ path('app_directory_users_deactivate', {id: editedUser.id}) }}" onsubmit="return confirm('{{ 'deactivateConfirmMessage'|trans|e('js') }}')">
                 <input type="hidden" name="_token" value="{{ csrf_token('directory_user_deactivate') }}">
