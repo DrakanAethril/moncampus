@@ -369,6 +369,8 @@ userDeactivateButtonLabel: 'Désactiver le compte'
 userReactivateButtonLabel: 'Réactiver le compte'
 userDeactivatedFlashMessage: 'Le compte a été désactivé avec succès.'
 userReactivatedFlashMessage: 'Le compte a été réactivé avec succès.'
+userCannotDeactivateSelfFlashMessage: 'Vous ne pouvez pas désactiver votre propre compte.'
+accountDeactivatedFlashMessage: 'Ce compte est désactivé. Rapprochez-vous du secrétariat.'
 
 contactEmailCardTitle: 'Adresse e-mail'
 contactEmailCurrentAddressFieldLabel: 'E-mail actuel'
