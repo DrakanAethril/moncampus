@@ -71,6 +71,17 @@ class LdapManageUser
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $login = null;
 
+    // Never touched by this application - neither written before the consumer script runs nor read
+    // after. create_user.sh's password is invented by that script (manage_user.php's own
+    // generateUserPassword()), which used to store it back here AES_ENCRYPT'd as a record; as of
+    // 2026-08-24 it clears the column instead, and Version20260824140000 wiped what a year of
+    // account creation had accumulated. The column stays only because the consumer script's schema
+    // (the ldap-manage Scripts project's init.sql) declares it.
+    //
+    // Deliberately without accessors, unlike every other column here: a getter would be a read
+    // path, and the whole point is that there is nothing to read. Contrast
+    // App\Entity\LdapManagePassword::$password, where the column does have a job - carrying a
+    // user-chosen password across the asynchronous gap - and is cleared just the same afterwards.
     #[ORM\Column(type: Types::BINARY, length: 255, nullable: true)]
     private mixed $password = null;
 
@@ -209,18 +220,6 @@ class LdapManageUser
     public function setLogin(?string $login): static
     {
         $this->login = $login;
-
-        return $this;
-    }
-
-    public function getPassword(): mixed
-    {
-        return $this->password;
-    }
-
-    public function setPassword(mixed $password): static
-    {
-        $this->password = $password;
 
         return $this;
     }
