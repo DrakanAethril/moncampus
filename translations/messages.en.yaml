@@ -324,6 +324,14 @@ userReactivateButtonLabel: 'Reactivate account'
 userDeactivatedFlashMessage: 'The account was deactivated successfully.'
 userReactivatedFlashMessage: 'The account was reactivated successfully.'
 userCannotDeactivateSelfFlashMessage: 'You cannot deactivate your own account.'
+# Account operations (ldap_manage_account queue)
+ldapAccountActionDisableLabel: 'Deactivation'
+ldapAccountActionEnableLabel: 'Reactivation'
+ldapAccountActionLoginChangeLabel: 'Login change'
+ldapAccountRequestAlreadyPendingMessage: 'A request is already under way on this account.'
+ldapAccountLoginTakenMessage: 'This login is already held by an account or by a pending creation request.'
+ldapAccountLoginUnchangedMessage: "That is already this account's current login."
+ldapAccountLoginInvalidMessage: 'This login is not valid: lowercase letters, digits, dot, dash or underscore, starting with a letter.'
 accountDeactivatedFlashMessage: 'This account is deactivated. Please contact the school office.'
 
 contactEmailCardTitle: 'Email address'
