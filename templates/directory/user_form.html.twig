@@ -227,6 +227,14 @@
                                         </div>
                                     </div>
                                 {% endif %}
+                                {% if is_granted('ROLE_ADMIN') and accountHistoryCount|default(0) > 0 %}
+                                    <div class="cm-readonly-panel__row--wide">
+                                        <div class="cm-readonly-panel__label">{{ 'ldapAccountHistoryLabel'|trans }}</div>
+                                        <div class="cm-readonly-panel__value">
+                                            <a href="{{ path('app_directory_accounts', {user: editedUser.id}) }}">{{ 'ldapAccountHistoryLinkLabel'|trans({'%count%': accountHistoryCount}) }} →</a>
+                                        </div>
+                                    </div>
+                                {% endif %}
                                 {% if ldapAddStatus and ldapAddStatus.error %}
                                     <div class="cm-readonly-panel__row--wide">
                                         <div class="cm-readonly-panel__label">{{ 'userLdapAddErrorLabel'|trans }}</div>

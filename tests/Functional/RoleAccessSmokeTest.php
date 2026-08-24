@@ -747,6 +747,13 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $polling = [
             '/directory/users/'.$targetId.'/account-status' => 200,
             '/directory/users/'.$targetId.'/login-availability?login=quelquun' => 200,
+            // Le journal, et son point d'alimentation. Il est dans l'Annuaire, ouvert au personnel,
+            // et lui ne l'est pas : c'est toute la raison d'un contrôleur à part.
+            '/directory/accounts' => 200,
+            '/directory/accounts/data' => 200,
+            // Les filtres du bandeau soumettent « Toutes » en chaîne vide, ce qui répondait 400
+            // partout où un getInt() lisait la valeur. QueryValue est ce qui l'en empêche ici.
+            '/directory/accounts/data?action=&state=' => 200,
         ];
         $this->assertScreens($this->admin, $polling);
         foreach ([$this->student, $this->teacher, $this->tutor, $staff, $staffLead] as $user) {

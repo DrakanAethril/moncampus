@@ -88,28 +88,35 @@ class LdapManageAccountRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    public function countAll(?string $search = null, ?LdapAccountAction $action = null, ?int $state = null): int
+    public function countAll(?string $search = null, ?LdapAccountAction $action = null, ?int $state = null, ?int $userId = null): int
     {
         $qb = $this->createQueryBuilder('a')->select('COUNT(a.id)');
-        $this->applyFilters($qb, $search, $action, $state);
+        $this->applyFilters($qb, $search, $action, $state, $userId);
 
         return (int) $qb->getQuery()->getSingleScalarResult();
     }
 
     /** @return list<LdapManageAccount> */
-    public function findPageOrderedByMostRecent(int $offset, int $limit, ?string $search = null, ?LdapAccountAction $action = null, ?int $state = null): array
+    public function findPageOrderedByMostRecent(int $offset, int $limit, ?string $search = null, ?LdapAccountAction $action = null, ?int $state = null, ?int $userId = null): array
     {
         $qb = $this->createQueryBuilder('a')
             ->orderBy('a.id', 'DESC')
             ->setFirstResult($offset)
             ->setMaxResults($limit);
-        $this->applyFilters($qb, $search, $action, $state);
+        $this->applyFilters($qb, $search, $action, $state, $userId);
 
         return $qb->getQuery()->getResult();
     }
 
-    private function applyFilters(QueryBuilder $qb, ?string $search, ?LdapAccountAction $action, ?int $state): void
+    private function applyFilters(QueryBuilder $qb, ?string $search, ?LdapAccountAction $action, ?int $state, ?int $userId = null): void
     {
+        // The account, not a login: a rename means the same account appears under two of them, so a
+        // journal reached from a fiche and filtered on the current login would show one row out of
+        // four - and the fiche's own « Voir les 4 opérations » would be a lie.
+        if (null !== $userId) {
+            $qb->andWhere('a.user = :userId')->setParameter('userId', $userId);
+        }
+
         if (null !== $search && '' !== $search) {
             $qb->join('a.user', 'u')
                 ->andWhere("a.login LIKE :search OR a.newLogin LIKE :search OR CONCAT(u.firstname, ' ', u.lastname) LIKE :search")
