@@ -6,8 +6,10 @@ namespace App\Controller;
 
 use App\Entity\LdapManageAccount;
 use App\Entity\User;
+use App\Enum\LdapAccountAction;
 use App\Repository\LdapManageAccountRepository;
 use App\Repository\UserRepository;
+use App\Service\DataTableParams;
 use App\Service\LdapAccountApplier;
 use App\Service\LdapAccountRequestException;
 use App\Service\LdapAccountRequestService;
@@ -46,6 +48,20 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_ADMIN')]
 class DirectoryAccountController extends AbstractController
 {
+    /**
+     * The badge classes of the journal's five levels - the same five the banner draws, so a row
+     * cannot read one way on the fiche and another in the list.
+     *
+     * @var array<string, string>
+     */
+    private const array BADGE_CLASSES = [
+        'pending' => 'bg-secondary-lt',
+        'running' => 'bg-blue-lt',
+        'ok' => 'bg-green-lt',
+        'warn' => 'bg-yellow-lt',
+        'crit' => 'bg-red-lt',
+    ];
+
     #[Route(path: '/directory/users/{id}/deactivate', name: 'app_directory_users_deactivate', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function deactivate(
         Request $request,
@@ -232,11 +248,93 @@ class DirectoryAccountController extends AbstractController
     }
 
     /**
+     * Annuaire > Opérations de comptes: the journal, and the counterpart of the fiche's banner. The
+     * fiche says where *this* account stands; this says what has happened across the lot, which is
+     * the only place a queue that has stopped draining shows itself as a pile-up.
+     *
+     * Last of the six lots because it is a screen of comfort: until it existed, the fiche was
+     * enough to follow one account.
+     */
+    #[Route(path: '/directory/accounts', name: 'app_directory_accounts', methods: ['GET'])]
+    public function index(): Response
+    {
+        return $this->render('directory/accounts.html.twig', [
+            'actionChoices' => LdapAccountAction::cases(),
+        ]);
+    }
+
+    #[Route(path: '/directory/accounts/data', name: 'app_directory_accounts_data', methods: ['GET'])]
+    public function data(
+        Request $request,
+        LdapManageAccountRepository $requests,
+        LdapAccountStatusPresenter $presenter,
+    ): JsonResponse {
+        $params = DataTableParams::fromRequest($request);
+        [$draw, $start, $length, $search] = [$params->draw, $params->start, $params->length, $params->search];
+
+        // QueryValue, not InputBag::getInt(): a filter bar whose "Toutes" option is value="" submits
+        // ?action= as a matter of course, and getInt() answers 400 to the empty string.
+        $action = LdapAccountAction::tryFrom(QueryValue::trimmed($request, 'action'));
+        $state = QueryValue::nullableInt($request, 'state');
+        // Set when the journal was opened from a fiche's « Voir les N opérations » link.
+        $userId = QueryValue::nullableInt($request, 'user');
+
+        $total = $requests->countAll(null, $action, $state, $userId);
+        $filteredTotal = '' !== $search ? $requests->countAll($search, $action, $state, $userId) : $total;
+        $rows = $requests->findPageOrderedByMostRecent($start, $length, '' !== $search ? $search : null, $action, $state, $userId);
+
+        return $this->json([
+            'draw' => $draw,
+            'recordsTotal' => $total,
+            'recordsFiltered' => $filteredTotal,
+            'data' => array_map(
+                function (LdapManageAccount $row) use ($presenter): array {
+                    $status = $presenter->present($row);
+                    $user = $row->getUser();
+
+                    return [
+                        'id' => $row->getId(),
+                        'userId' => $user->getId(),
+                        'fullName' => $user->getDisplayName() ?? $user->getUsername(),
+                        'actionLabel' => $status['actionLabel'],
+                        // « croux → cderoux » for a rename, the login alone for the other two: the
+                        // detail column answers "what exactly", and for a deactivation there is
+                        // nothing more to say than which login it was.
+                        'detail' => null === $row->getNewLogin()
+                            ? $row->getLogin()
+                            : $row->getLogin().' → '.$row->getNewLogin(),
+                        'addedBy' => $row->getAddedBy(),
+                        'addedAt' => $row->getAddedAt()->format('d/m/Y H:i'),
+                        'statusLabel' => $status['badgeLabel'],
+                        'statusClass' => self::BADGE_CLASSES[$status['level']],
+                        // The whole reason a row is worth opening: the script's own output, or - on
+                        // an orange row - why the directory would not confirm it.
+                        'log' => 'warn' === $status['level'] ? $status['detail'] : $status['log'],
+                        'retryable' => $status['retryable'],
+                    ];
+                },
+                $rows,
+            ),
+        ]);
+    }
+
+    /**
      * Retrying inserts a **new** row rather than putting the old one back to state 0 - the same
      * reasoning as the class import: a queue row is the trace of one attempt, and a counter reset to
      * zero loses the only record that anything was tried.
+     *
+     * Two callers and two shapes of answer: the fiche's banner posts a form and wants the fiche
+     * back, the journal's row posts through the DataTables controller and wants JSON so it can
+     * redraw in place. The CSRF token is read from the body *or* the header for the same reason -
+     * this repository has a standing bug class of exactly that mismatch.
      */
-    #[Route(path: '/directory/accounts/{id}/retry', name: 'app_directory_account_retry', requirements: ['id' => '\d+'], methods: ['POST'])]
+    // No `\d+` on {id}, deliberately: the journal hands this route to the DataTables controller as a
+    // *template* with `__ID__` in the parameter's place, and path() throws while rendering when a
+    // requirement refuses that string - which surfaces as a 500 on a screen that has nothing to do
+    // with this route. It is the trap /tools/videos/{id}/files fell into; see
+    // App\Tests\Functional\PlaceholderUrlTest, which now pins this one too. Nothing is loosened
+    // by dropping it: /directory/accounts/data cannot match a path ending in /retry.
+    #[Route(path: '/directory/accounts/{id}/retry', name: 'app_directory_account_retry', methods: ['POST'])]
     public function retry(
         Request $request,
         LdapManageAccountRepository $requests,
@@ -244,20 +342,27 @@ class DirectoryAccountController extends AbstractController
         int $id,
     ): Response {
         $failed = $requests->find($id) ?? throw $this->createNotFoundException();
+        $token = $request->request->get('_token') ?? $request->headers->get('X-CSRF-Token');
 
-        if (!$this->isCsrfTokenValid('directory_account_retry', $request->request->get('_token'))) {
+        if (!$this->isCsrfTokenValid('directory_account_retry', \is_string($token) ? $token : null)) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
         /** @var User $currentUser */
         $currentUser = $this->getUser();
+        $refusal = null;
 
         try {
             $accountRequests->retry($failed, $currentUser);
-            $this->addFlash('success', 'ldapAccountRetryQueuedFlashMessage');
         } catch (LdapAccountRequestException $exception) {
-            $this->addFlash('danger', $exception->getMessage());
+            $refusal = $exception->getMessage();
         }
+
+        if ($request->isXmlHttpRequest() || str_contains((string) $request->headers->get('Accept'), 'application/json')) {
+            return $this->json(['queued' => null === $refusal, 'message' => $refusal]);
+        }
+
+        $this->addFlash(null === $refusal ? 'success' : 'danger', $refusal ?? 'ldapAccountRetryQueuedFlashMessage');
 
         return $this->redirectToRoute('app_directory_users_edit', ['id' => $this->userIdOf($failed)]);
     }

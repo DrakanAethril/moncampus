@@ -32,6 +32,8 @@ class PlaceholderUrlTest extends KernelTestCase
         yield 'audio files - delete' => ['app_audio_recording_file_delete', ['recordingId' => 1, 'fileId' => '__FILE_ID__']];
         yield 'cue editor - delete' => ['app_video_resource_cue_delete', ['resourceId' => 1, 'fileId' => 1, 'cueId' => '__CUE_ID__']];
         yield 'student video - question' => ['app_student_work_video_cue', ['assignmentId' => 1, 'cueId' => '__CUE_ID__']];
+        yield 'account operations - profile' => ['app_directory_users_edit', ['id' => '__ID__']];
+        yield 'account operations - retry' => ['app_directory_account_retry', ['id' => '__ID__']];
     }
 
     /**
