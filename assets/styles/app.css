@@ -1333,6 +1333,23 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
    to the content, which already carries its own margin between blocks. */
 .cm-tabbed-content { padding: 26px 26px 0; }
 
+/* ---------- Standing platform notice, immediately under the navbar ----------
+   A full-width strip rather than an .alert inside the container: it belongs to the shell, like the
+   « ZONE DE TEST » bar it sits above, and must not move with the page's own gutters. Informational
+   blue rather than a warning tint - it states where the reference data lives, it does not report a
+   problem. The link is styled explicitly because this strip has no Tabler ancestor to inherit from. */
+.cm-globalnotice {
+    padding: 9px 20px;
+    background: var(--cm-blue-bg);
+    color: var(--cm-blue-tx);
+    border-bottom: 1px solid var(--cm-mail-tint-border);
+    font-size: 13px;
+    line-height: 1.45;
+    text-align: center;
+}
+.cm-globalnotice a { color: inherit; font-weight: 600; text-decoration: underline; }
+.cm-globalnotice a:hover { color: inherit; }
+
 /* ---------- Breadcrumb + page head (sub-pages only, never menu root pages) ----------
    Every segment (including the current page) is a real <a href>. */
 /* Colors and separators aligned on 25e-pret-formulaire.png: parent links in brand blue, current

@@ -469,7 +469,7 @@
                            other Gestion entries entirely. Active state deliberately excludes the
                            user-facing app_tickets* routes, which now light the Support tab. #}
                         {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD') %}
-                        {% set gestion_is_active = current_route in ['app_tickets_queue', 'app_tickets_queue_categories'] or (is_granted('ROLE_ADMIN') and support_is_active) or current_route starts with 'app_directory_' or current_route starts with 'app_signup_lists' or current_route starts with 'app_school_mail_unlinked' or current_route starts with 'app_training_offer' %}
+                        {% set gestion_is_active = current_route in ['app_tickets_queue', 'app_tickets_queue_categories'] or (is_granted('ROLE_ADMIN') and support_is_active) or current_route starts with 'app_directory_' or current_route starts with 'app_signup_lists' or current_route starts with 'app_school_mail_unlinked' or current_route starts with 'app_training_offer' or current_route starts with 'app_features' %}
                         <li class="nav-item dropdown {{ gestion_is_active ? 'active' }}">
                             <a class="nav-link dropdown-toggle" href="#navbar-gestion" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ gestion_is_active ? ' aria-current="page"' }}>
                                 <span class="nav-link-title">{{ 'gestionNavLabel'|trans }}</span>
@@ -530,6 +530,14 @@
                                         </div>
                                     </div>
                                 {% endif %}
+                                {# Straight below Annuaire, and administrators only. It carries no
+                                   feature guard of its own: no setting made here may close the
+                                   screen the settings are made on (design/validated/feature-access.md
+                                   §8.8), which is why the "admin has everything" rule is not
+                                   negotiable. #}
+                                {% if is_granted('ROLE_ADMIN') %}
+                                    <a class="dropdown-item {{ current_route starts with 'app_features' ? 'active' }}" href="{{ path('app_features') }}">{{ 'featuresNavLabel'|trans }}</a>
+                                {% endif %}
                             </div>
                         </li>
                         {% endif %}
@@ -543,10 +551,6 @@
                                     <a class="dropdown-item {{ current_route in ['app_settings_structure_school_years', 'app_settings_structure_programs', 'app_settings_structure_periods'] ? 'active' }}" href="{{ path('app_settings_pedagogique') }}">{{ 'settingsPedagogiqueNavLabel'|trans }}</a>
                                     {% if is_granted('ROLE_ADMIN') %}
                                         <a class="dropdown-item {{ current_route starts with 'app_settings_groups' ? 'active' }}" href="{{ path('app_settings_groups') }}">{{ 'settingsGroupsNavLabel'|trans }}</a>
-                                        {# Administrators only, and carrying no feature guard of its own:
-                                           no setting made here may close the screen the settings are
-                                           made on (design/validated/feature-access.md §8.8). #}
-                                        <a class="dropdown-item {{ current_route starts with 'app_settings_features' ? 'active' }}" href="{{ path('app_settings_features') }}">{{ 'settingsFeaturesNavLabel'|trans }}</a>
                                     {% endif %}
                                 </div>
                             </li>
@@ -555,6 +559,14 @@
                 </div>
             </div>
         </header>
+        {# Students and teachers only, and permanently: the establishment keeps its school records in
+           another tool, and this platform is the pedagogical one. Staff and administrators are the
+           people who already know that, so the bar would only take a strip of screen from them.
+           It sits above the « ZONE DE TEST » bar because it is a statement about the whole platform,
+           not about the program being looked at. #}
+        {% if is_granted('ROLE_STUDENT') or is_granted('ROLE_TEACHER') %}
+            <div class="cm-globalnotice d-print-none" role="note">{{ 'pedagogicalUseBannerHtml'|trans|raw }}</div>
+        {% endif %}
         {% set current_test_program = structure_nav_current_test_program() %}
         {% if current_test_program %}
             {# .alert (Tabler) is display:flex, so text-center alone doesn't center a lone <strong>

@@ -3,9 +3,10 @@
 {% block title %}{{ 'featureMatrixPageHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
+    {# Two segments: Gestion is a menu with no landing page of its own, so the screen hangs
+       straight off Accueil - the same trail the Annuaire screens draw. #}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
-        {label: 'settingsNavLabel'|trans, url: path('app_settings_configuration')},
         {label: 'featureMatrixPageHeading'|trans, url: app.request.requestUri},
     ]} %}
 {% endblock %}
@@ -23,7 +24,7 @@
                    The inputs join their form by `form="…"`, which is what makes one save per line
                    possible without nesting anything. #}
                 {% for row in block.rows %}
-                    <form method="post" action="{{ path('app_settings_features_save', {feature: row.feature.value}) }}" id="feature-form-{{ row.feature.value }}">
+                    <form method="post" action="{{ path('app_features_save', {feature: row.feature.value}) }}" id="feature-form-{{ row.feature.value }}">
                         <input type="hidden" name="_token" value="{{ csrf_token('feature-matrix-' ~ row.feature.value) }}">
                     </form>
                 {% endfor %}
@@ -69,7 +70,7 @@
                                     {% endfor %}
                                     <td class="cm-featmatrix__overrides">
                                         {% if row.overrides > 0 %}
-                                            <a href="{{ path('app_settings_features_overrides', {feature: row.feature.value}) }}" class="cm-badge cm-badge--gold">{{ row.overrides }}</a>
+                                            <a href="{{ path('app_features_overrides', {feature: row.feature.value}) }}" class="cm-badge cm-badge--gold">{{ row.overrides }}</a>
                                         {% else %}
                                             <span class="text-secondary">—</span>
                                         {% endif %}

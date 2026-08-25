@@ -91,6 +91,9 @@ class FeatureCoverageTest extends KernelTestCase
             // place features are configured from.
             'administering the platform, including this system itself' => [
                 'app_settings_',
+                // Gestion > Fonctionnalités - the matrix itself. Admin-only, and deliberately
+                // unguarded: no setting made there may close the screen the settings are made on.
+                'app_features',
                 'app_directory_users_features',
                 'app_program_settings',
                 'app_program_settings_referent',
