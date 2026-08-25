@@ -1,0 +1,40 @@
+{# « Désactiver le compte » (design/validated/account-management.md §7.4, mockup 4).
+
+   It replaces the confirm() this button carried until 2026-08-24, and the reason is not taste: the
+   scope of the gesture changed that day. It no longer stops at MonCampus - the directory account is
+   closed within the minute, so the school's workstations close too - and a confirm() can show one
+   sentence.
+
+   Four points and a note, in that order, because the two questions an administrator actually has
+   are "what does this close" and "what does this destroy". The answer to the second is nothing. #}
+<div class="modal fade" id="deactivate-account-modal" tabindex="-1" aria-hidden="true" aria-labelledby="deactivate-account-modal-title">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="deactivate-account-modal-title">{{ 'userDeactivateModalTitle'|trans({'%name%': editedUser.displayName ?? editedUser.username}) }}</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'cancelAction'|trans }}"></button>
+            </div>
+
+            <div class="modal-body">
+                <ul class="cm-conseq">
+                    <li><span class="cm-conseq__mark">→</span><span>{{ 'userDeactivateConsequenceAccessHtml'|trans|raw }}</span></li>
+                    <li><span class="cm-conseq__mark">→</span><span>{{ 'userDeactivateConsequenceDirectoryHtml'|trans|raw }}</span></li>
+                    <li><span class="cm-conseq__mark">→</span><span>{{ 'userDeactivateConsequenceNothingErasedHtml'|trans|raw }}</span></li>
+                    <li><span class="cm-conseq__mark">→</span><span>{{ 'userDeactivateConsequenceReversibleHtml'|trans|raw }}</span></li>
+                </ul>
+
+                <div class="cm-callout cm-callout--info mt-3">
+                    <p>{{ 'userDeactivateMailboxNoticeHtml'|trans|raw }}</p>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="cm-btn" data-bs-dismiss="modal">{{ 'cancelAction'|trans }}</button>
+                <form method="post" action="{{ path('app_directory_users_deactivate', {id: editedUser.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('directory_user_deactivate') }}">
+                    <button type="submit" class="cm-btn cm-btn--danger">{{ 'userDeactivateButtonLabel'|trans }}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

@@ -11,12 +11,14 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
+use Symfony\Component\Security\Core\Exception\AccountStatusException;
 use Symfony\Component\Security\Core\Exception\AuthenticationException;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Http\Authenticator\AbstractAuthenticator;
 use Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge;
 use Symfony\Component\Security\Http\Authenticator\Passport\Credentials\CustomCredentials;
 use Symfony\Component\Security\Http\Authenticator\Passport\Passport;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Stateless counterpart to LdapAuthenticator, for the mobile app's POST /api/login: same LDAP
@@ -30,6 +32,7 @@ class ApiLdapAuthenticator extends AbstractAuthenticator
     public function __construct(
         private readonly LdapCredentialsVerifier $credentialsVerifier,
         private readonly JWTTokenManagerInterface $jwtManager,
+        private readonly TranslatorInterface $translator,
     ) {
     }
 
@@ -79,6 +82,18 @@ class ApiLdapAuthenticator extends AbstractAuthenticator
 
     public function onAuthenticationFailure(Request $request, AuthenticationException $exception): ?Response
     {
+        // A deactivated account is told so, where a wrong password is not: the refusal is the same
+        // one the web form shows (App\Security\AccountStatusChecker), and hiding it here would only
+        // send somebody who cannot log in any more into trying their password again. It reveals
+        // nothing a wrong password would not - the check runs before any credential is looked at,
+        // so the answer is identical whatever was typed in the password field.
+        if ($exception instanceof AccountStatusException) {
+            return new JsonResponse([
+                'error' => 'account_disabled',
+                'message' => $this->translator->trans($exception->getMessageKey(), $exception->getMessageData(), 'security'),
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
         return new JsonResponse(['error' => 'invalid_credentials'], Response::HTTP_UNAUTHORIZED);
     }
 }

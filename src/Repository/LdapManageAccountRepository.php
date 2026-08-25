@@ -1,0 +1,134 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Repository;
+
+use App\Entity\LdapManageAccount;
+use App\Entity\User;
+use App\Enum\LdapAccountAction;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
+use Doctrine\Persistence\ManagerRegistry;
+
+/**
+ * @extends ServiceEntityRepository<LdapManageAccount>
+ */
+class LdapManageAccountRepository extends ServiceEntityRepository
+{
+    public function __construct(ManagerRegistry $registry)
+    {
+        parent::__construct($registry, LdapManageAccount::class);
+    }
+
+    /**
+     * The row that makes App\Service\LdapAccountRequestService refuse a second request: one gesture
+     * at a time per account, or two scripts run on the same login in an order nobody chose.
+     */
+    public function findPendingForUser(User $user): ?LdapManageAccount
+    {
+        return $this->createQueryBuilder('a')
+            ->andWhere('a.user = :user')
+            ->andWhere('a.state IN (0, 1)')
+            ->setParameter('user', $user)
+            ->orderBy('a.id', 'ASC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    /** Backs the fiche's banner: where this account stands, whatever "there" is. */
+    public function findMostRecentForUser(User $user): ?LdapManageAccount
+    {
+        return $this->createQueryBuilder('a')
+            ->andWhere('a.user = :user')
+            ->setParameter('user', $user)
+            ->orderBy('a.id', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    public function countForUser(User $user): int
+    {
+        return (int) $this->createQueryBuilder('a')
+            ->select('COUNT(a.id)')
+            ->andWhere('a.user = :user')
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * Rows the application still owes something to: the script says it succeeded, and either nobody
+     * has read the directory back or the consequence of a confirmed rename has not been applied.
+     *
+     * Read by App\Command\ApplyLdapAccountRequestsCommand - the queue is what carries the work, so
+     * an administrator who closes their tab changes nothing.
+     *
+     * **Bounded in time, and that bound is not a tuning knob.** Some rows can never be verified: a
+     * directory with no account-status attribute at all - which is every development machine - leaves
+     * them unverified for ever. Without a window they would pile up at the head of an ORDER BY id
+     * queue and, past fifty of them, keep the command from ever reaching today's requests. An
+     * operation settles in under two minutes; a day is already an eternity, and past it the row is
+     * history the screen still shows in orange with its reason.
+     *
+     * @return list<LdapManageAccount>
+     */
+    public function findAwaitingApplication(int $limit = 50, string $window = '-1 day'): array
+    {
+        return $this->createQueryBuilder('a')
+            ->andWhere('a.state = 2')
+            ->andWhere('a.verificationDate IS NULL OR a.appliedAt IS NULL')
+            ->andWhere('a.endedAt IS NULL OR a.endedAt > :since')
+            ->setParameter('since', new \DateTimeImmutable($window))
+            ->orderBy('a.id', 'ASC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function countAll(?string $search = null, ?LdapAccountAction $action = null, ?int $state = null, ?int $userId = null): int
+    {
+        $qb = $this->createQueryBuilder('a')->select('COUNT(a.id)');
+        $this->applyFilters($qb, $search, $action, $state, $userId);
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /** @return list<LdapManageAccount> */
+    public function findPageOrderedByMostRecent(int $offset, int $limit, ?string $search = null, ?LdapAccountAction $action = null, ?int $state = null, ?int $userId = null): array
+    {
+        $qb = $this->createQueryBuilder('a')
+            ->orderBy('a.id', 'DESC')
+            ->setFirstResult($offset)
+            ->setMaxResults($limit);
+        $this->applyFilters($qb, $search, $action, $state, $userId);
+
+        return $qb->getQuery()->getResult();
+    }
+
+    private function applyFilters(QueryBuilder $qb, ?string $search, ?LdapAccountAction $action, ?int $state, ?int $userId = null): void
+    {
+        // The account, not a login: a rename means the same account appears under two of them, so a
+        // journal reached from a fiche and filtered on the current login would show one row out of
+        // four - and the fiche's own « Voir les 4 opérations » would be a lie.
+        if (null !== $userId) {
+            $qb->andWhere('a.user = :userId')->setParameter('userId', $userId);
+        }
+
+        if (null !== $search && '' !== $search) {
+            $qb->join('a.user', 'u')
+                ->andWhere("a.login LIKE :search OR a.newLogin LIKE :search OR CONCAT(u.firstname, ' ', u.lastname) LIKE :search")
+                ->setParameter('search', '%'.$search.'%');
+        }
+
+        if (null !== $action) {
+            $qb->andWhere('a.actionType = :action')->setParameter('action', $action);
+        }
+
+        if (null !== $state) {
+            $qb->andWhere('a.state = :state')->setParameter('state', $state);
+        }
+    }
+}

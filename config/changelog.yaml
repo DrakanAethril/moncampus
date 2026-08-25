@@ -26,6 +26,28 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.08.25'
+      date: '2026-08-25'
+      summary: "L'administration peut désormais désactiver, réactiver ou renommer un compte, et suivre l'aboutissement de chaque opération. Un compte fermé ne peut plus se connecter, par aucun chemin, et la réinitialisation de mot de passe par l'administration cède la place au lien de connexion par e-mail."
+      entries:
+          - type: nouveaute
+            title: "Désactiver, réactiver ou renommer un compte"
+            detail: "La fermeture d'un compte prend effet immédiatement sur MonCampus, et les autres services de l'établissement suivent dans la minute. Un changement de login n'est appliqué qu'une fois qu'il a été confirmé et relu, jamais par avance."
+          - type: nouveaute
+            title: "Suivre l'aboutissement des opérations de comptes"
+            detail: "Chaque demande dit où elle en est, jusqu'à la vérification de sa prise en compte, et peut être relancée si elle a échoué."
+          - type: modification
+            title: "Un compte fermé ne peut plus se connecter"
+            detail: "Quel que soit le chemin employé — identifiant, adresse e-mail, lien de connexion, application mobile — et une session déjà ouverte est interrompue. Le message affiché ne dit jamais si le mot de passe était bon."
+          - type: modification
+            title: "La réinitialisation de mot de passe par l'administration est retirée"
+            detail: "Le lien de connexion envoyé par e-mail la remplace. Chacun peut par ailleurs toujours changer son mot de passe depuis son profil."
+          - type: interne
+            title: "Les mots de passe ne sont ni conservés ni relus"
+            detail: "L'application ne dispose d'aucun chemin de lecture d'un mot de passe, et l'historique correspondant a été effacé."
+          - type: interne
+            title: "Le contrôle des accès de l'annuaire tient en un seul endroit"
+            detail: "Une même règle est appliquée à tous les points d'entrée, et les gestes de gestion de compte vivent dans leur propre contrôleur."
     - version: '2026.08.24'
       date: '2026-08-24'
       summary: "La connexion accepte désormais l'adresse e-mail de contact autant que l'identifiant. Côté préparation des contenus, un quiz s'associe directement à une séquence ou à une séance, et le sommaire du wiki laisse sa largeur au texte tant qu'on ne le demande pas."

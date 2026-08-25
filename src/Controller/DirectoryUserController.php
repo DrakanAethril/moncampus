@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\EmailAlias;
-use App\Entity\LdapManagePassword;
 use App\Entity\LdapManageUser;
 use App\Entity\User;
 use App\Enum\EmailAliasOrigin;
 use App\Form\LdapManageUserType;
 use App\Form\UserProfileType;
 use App\Repository\GroupRepository;
+use App\Repository\LdapManageAccountRepository;
 use App\Repository\LdapManageUserRepository;
 use App\Repository\StudentImportBatchRepository;
 use App\Repository\UserRepository;
@@ -21,7 +21,10 @@ use App\Service\ContactEmailVerifier;
 use App\Service\DataTableParams;
 use App\Service\FileLibraryQuota;
 use App\Service\FormValue;
+use App\Service\LdapAccountApplier;
+use App\Service\LdapAccountStatusPresenter;
 use App\Service\LdapManageUserRoleResolver;
+use App\Service\LoginGenerator;
 use App\Service\NewAccountRequest;
 use App\Service\QueueStateFormatter;
 use App\Service\StudentAccountFactory;
@@ -143,6 +146,10 @@ class DirectoryUserController extends AbstractController
         GroupRepository $groupRepository,
         LdapManageUserRoleResolver $roleResolver,
         LdapManageUserRepository $ldapManageUserRepository,
+        LdapManageAccountRepository $accountRequests,
+        LdapAccountApplier $accountApplier,
+        LdapAccountStatusPresenter $accountStatusPresenter,
+        LoginGenerator $loginGenerator,
         QueueStateFormatter $stateFormatter,
         StudentMailAliasValidator $aliasValidator,
         TranslatorInterface $translator,
@@ -255,6 +262,19 @@ class DirectoryUserController extends AbstractController
         $ldapManageUser = $ldapManageUserRepository->findMostRecentForUser($user);
         $ldapAddLog = $ldapManageUser?->getLog();
 
+        // The last of the three gestures asked of the directory about this account - the banner at
+        // the top of the screen and the « Dernière opération de compte » line both read it. The
+        // directory is re-read on the way past, so opening the fiche is already one of the two
+        // things that close the loop; the other is app:ldap:apply-account-requests, in cron.
+        //
+        // Administrators only, like the gestures themselves: nobody else may act on this row, and a
+        // screen that reports on an action it does not offer only invites the question.
+        $latestAccountRequest = $this->isGranted('ROLE_ADMIN') ? $accountRequests->findMostRecentForUser($user) : null;
+
+        if (null !== $latestAccountRequest) {
+            $accountApplier->process($latestAccountRequest);
+        }
+
         return $this->render('directory/user_form.html.twig', [
             'form' => $form,
             'editedUser' => $user,
@@ -263,6 +283,12 @@ class DirectoryUserController extends AbstractController
             'studentMailDomain' => $studentMailDomain,
             'adGroupBuckets' => $adGroupBuckets,
             'manualGroupBuckets' => $groupRepository->findManuallyAssignableGroupedByType($adGroupNames),
+            'accountStatus' => $accountStatusPresenter->present($latestAccountRequest),
+            // What « Proposer d'après le nom » would give in the rename modal - the same generator
+            // account creation uses, so the two paths hand out the same login for the same person.
+            // Often the current login itself, and the modal says so rather than hiding the link.
+            'loginSuggestion' => $this->isGranted('ROLE_ADMIN') ? $loginGenerator->baseFor($user->getFirstname() ?? '', $user->getLastname() ?? '') : '',
+            'accountHistoryCount' => null === $latestAccountRequest ? 0 : $accountRequests->countForUser($user),
             'ldapAddStatus' => null === $ldapManageUser ? null : [
                 'label' => $stateFormatter->label($ldapManageUser->getState()),
                 'class' => $stateFormatter->cssClass($ldapManageUser->getState()),
@@ -397,88 +423,11 @@ class DirectoryUserController extends AbstractController
         return $user->getEmailAliases()->first() ?: null;
     }
 
-    // Reset the password (design/design_handoff_utilisateurs/README.md rule 5, admin
-    // only) - queues a request the same way Directory > Mots de passe's own "new" action does
-    // (App\Controller\DirectoryPasswordController::new()), just pre-targeted at this user instead
-    // of going through that screen's tom-select picker.
-    #[Route(path: '/directory/users/{id}/reset-password', name: 'app_directory_users_reset_password', methods: ['POST'])]
-    public function resetPassword(Request $request, EntityManagerInterface $entityManager, UserRepository $repository, int $id): Response
-    {
-        if (!$this->isGranted('ROLE_ADMIN')) {
-            throw $this->createAccessDeniedException();
-        }
-
-        $user = $repository->find($id) ?? throw $this->createNotFoundException();
-
-        if (!$this->isCsrfTokenValid('directory_user_reset_password', $request->request->get('_token'))) {
-            throw $this->createAccessDeniedException('Invalid CSRF token.');
-        }
-
-        $ldapManagePassword = new LdapManagePassword($user);
-        /** @var User $currentUser */
-        $currentUser = $this->getUser();
-        $ldapManagePassword->setAddedBy($currentUser->getUsername());
-
-        $entityManager->persist($ldapManagePassword);
-        $entityManager->flush();
-
-        $this->addFlash('success', 'passwordResetRequestedFlashMessage');
-
-        return $this->redirectToRoute('app_directory_users_edit', ['id' => $id]);
-    }
-
-    // Désactiver le compte (design rule 5, admin only) - see App\Entity\User::$inactiveDate's
-    // docblock; reversible, doesn't erase data (design rule 7). New route, as this account-status
-    // concept didn't exist on the user profile screen before this handoff.
-    #[Route(path: '/directory/users/{id}/deactivate', name: 'app_directory_users_deactivate', methods: ['POST'])]
-    public function deactivate(Request $request, EntityManagerInterface $entityManager, UserRepository $repository, int $id): Response
-    {
-        if (!$this->isGranted('ROLE_ADMIN')) {
-            throw $this->createAccessDeniedException();
-        }
-
-        $user = $repository->find($id) ?? throw $this->createNotFoundException();
-
-        if (!$this->isCsrfTokenValid('directory_user_deactivate', $request->request->get('_token'))) {
-            throw $this->createAccessDeniedException('Invalid CSRF token.');
-        }
-
-        /** @var User $currentUser */
-        $currentUser = $this->getUser();
-        $user->setInactiveDate(new \DateTimeImmutable());
-        $user->setInactivatedBy($currentUser);
-        $entityManager->flush();
-
-        $this->addFlash('success', 'userDeactivatedFlashMessage');
-
-        return $this->redirectToRoute('app_directory_users_edit', ['id' => $id]);
-    }
-
-    // Symmetric counterpart to deactivate() above - not part of the design handoff's mockups
-    // (only the active-account state was mocked up), but rule 7 explicitly calls deactivation
-    // reversible, so a deactivated profile needs some way back without touching the database by
-    // hand.
-    #[Route(path: '/directory/users/{id}/reactivate', name: 'app_directory_users_reactivate', methods: ['POST'])]
-    public function reactivate(Request $request, EntityManagerInterface $entityManager, UserRepository $repository, int $id): Response
-    {
-        if (!$this->isGranted('ROLE_ADMIN')) {
-            throw $this->createAccessDeniedException();
-        }
-
-        $user = $repository->find($id) ?? throw $this->createNotFoundException();
-
-        if (!$this->isCsrfTokenValid('directory_user_reactivate', $request->request->get('_token'))) {
-            throw $this->createAccessDeniedException('Invalid CSRF token.');
-        }
-
-        $user->setInactiveDate(null);
-        $user->setInactivatedBy(null);
-        $entityManager->flush();
-
-        $this->addFlash('success', 'userReactivatedFlashMessage');
-
-        return $this->redirectToRoute('app_directory_users_edit', ['id' => $id]);
-    }
+    // Désactiver / Réactiver / Changer le login live in App\Controller\DirectoryAccountController
+    // since 2026-08-24, with ROLE_ADMIN on the class rather than inside each action. They stopped
+    // being a local flag on the User row that day: each one now queues a request into
+    // ldap_manage_account, so the directory follows - and the whole area is administrators only,
+    // which the rest of this controller is not.
 
     #[Route(path: '/directory/users/data', name: 'app_directory_users_data')]
     public function data(Request $request, LdapManageUserRepository $repository, UserRepository $userRepository): JsonResponse

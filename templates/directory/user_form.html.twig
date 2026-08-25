@@ -93,19 +93,27 @@
 {% endblock %}
 
 {% block page_actions %}
-    {# Réinitialiser le mot de passe / Désactiver / Réactiver - admin only (design rule 5), guarded
-       here AND in the controller (App\Controller\DirectoryUserController::resetPassword()/
-       deactivate()/reactivate()), since a hidden button is not an access control. #}
+    {# Désactiver / Réactiver - admin only (design rule 5), guarded here AND on the controller
+       (App\Controller\DirectoryAccountController carries ROLE_ADMIN on the class), since a hidden
+       button is not an access control.
+
+       « Réinitialiser le mot de passe » sat here until 2026-08-24 - see
+       App\Controller\DirectoryPasswordController's docblock for why it went, and where somebody
+       locked out is sent instead. #}
     {% if isEdit and is_granted('ROLE_ADMIN') %}
-        <form method="post" action="{{ path('app_directory_users_reset_password', {id: editedUser.id}) }}" onsubmit="return confirm('{{ 'userResetPasswordConfirmMessage'|trans|e('js') }}')">
-            <input type="hidden" name="_token" value="{{ csrf_token('directory_user_reset_password') }}">
-            <button type="submit" class="btn btn-outline-secondary">{{ 'userResetPasswordButtonLabel'|trans }}</button>
-        </form>
+        {# « Changer le login » sits next to « Désactiver », and is offered whether the account is
+           open or closed: renaming and closing are orthogonal gestures, and the service refuses the
+           second only while the first is still in the queue. #}
+        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#change-login-modal">
+            {{ 'ldapAccountChangeLoginButtonLabel'|trans }}
+        </button>
         {% if isActive %}
-            <form method="post" action="{{ path('app_directory_users_deactivate', {id: editedUser.id}) }}" onsubmit="return confirm('{{ 'deactivateConfirmMessage'|trans|e('js') }}')">
-                <input type="hidden" name="_token" value="{{ csrf_token('directory_user_deactivate') }}">
-                <button type="submit" class="btn btn-outline-danger">{{ 'userDeactivateButtonLabel'|trans }}</button>
-            </form>
+            {# The confirm() this button carried until 2026-08-24 could show one sentence, and the
+               gesture stopped fitting in one: it now closes the directory account too, hence the
+               workstations. See templates/directory/_deactivate_modal.html.twig. #}
+            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deactivate-account-modal">
+                {{ 'userDeactivateButtonLabel'|trans }}
+            </button>
         {% else %}
             <form method="post" action="{{ path('app_directory_users_reactivate', {id: editedUser.id}) }}">
                 <input type="hidden" name="_token" value="{{ csrf_token('directory_user_reactivate') }}">
@@ -116,6 +124,18 @@
 {% endblock %}
 
 {% block main %}
+    {# Where the last request to the directory stands. Server-rendered, so it survives a refresh and
+       a change of machine; the Stimulus controller only keeps it live while the tab is open, and
+       app:ldap:apply-account-requests is what carries the work when it is not. #}
+    {% if isEdit and is_granted('ROLE_ADMIN') and accountStatus is defined and accountStatus %}
+        <div data-controller="account-operation"
+             data-account-operation-url-value="{{ path('app_directory_account_status', {id: editedUser.id}) }}"
+             data-account-operation-done-value="{{ accountStatus.done ? 'true' : 'false' }}"
+             data-account-operation-target="banner">
+            {% include 'directory/_account_banner.html.twig' with {accountStatus: accountStatus, editedUser: editedUser} only %}
+        </div>
+    {% endif %}
+
     <div class="card">
         <div class="card-body">
             {{ form_start(form) }}
@@ -182,6 +202,39 @@
                                         {% endif %}
                                     </div>
                                 </div>
+                                {# The last thing asked of the directory about this account, next to
+                                   the creation request's own state just above. A dash for the many
+                                   accounts that have never been touched by these three gestures. #}
+                                {% if is_granted('ROLE_ADMIN') %}
+                                    <div>
+                                        <div class="cm-readonly-panel__label">
+                                            {{ 'userLastAccountOperationLabel'|trans }}
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10.5" width="16" height="10" rx="2"></rect><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"></path></svg>
+                                        </div>
+                                        <div class="cm-readonly-panel__value">
+                                            {% if accountStatus is defined and accountStatus %}
+                                                <span class="badge {{ {
+                                                    pending: 'bg-secondary-lt',
+                                                    running: 'bg-blue-lt',
+                                                    ok: 'bg-green-lt',
+                                                    warn: 'bg-yellow-lt',
+                                                    crit: 'bg-red-lt',
+                                                }[accountStatus.level] }}">{{ accountStatus.badgeLabel }}</span>
+                                                <span class="cm-readonly-panel__aside">{{ accountStatus.actionLabel }} · {{ accountStatus.requestedAt }} · {{ 'ldapAccountRequestedByLabel'|trans({'%by%': accountStatus.requestedBy}) }}</span>
+                                            {% else %}
+                                                —
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endif %}
+                                {% if is_granted('ROLE_ADMIN') and accountHistoryCount|default(0) > 0 %}
+                                    <div class="cm-readonly-panel__row--wide">
+                                        <div class="cm-readonly-panel__label">{{ 'ldapAccountHistoryLabel'|trans }}</div>
+                                        <div class="cm-readonly-panel__value">
+                                            <a href="{{ path('app_directory_accounts', {user: editedUser.id}) }}">{{ 'ldapAccountHistoryLinkLabel'|trans({'%count%': accountHistoryCount}) }} →</a>
+                                        </div>
+                                    </div>
+                                {% endif %}
                                 {% if ldapAddStatus and ldapAddStatus.error %}
                                     <div class="cm-readonly-panel__row--wide">
                                         <div class="cm-readonly-panel__label">{{ 'userLdapAddErrorLabel'|trans }}</div>
@@ -350,4 +403,11 @@
             {{ form_end(form) }}
         </div>
     </div>
+
+    {% if isEdit and is_granted('ROLE_ADMIN') %}
+        {% if isActive %}
+            {% include 'directory/_deactivate_modal.html.twig' with {editedUser: editedUser} only %}
+        {% endif %}
+        {% include 'directory/_change_login_modal.html.twig' with {editedUser: editedUser, loginSuggestion: loginSuggestion|default('')} only %}
+    {% endif %}
 {% endblock %}

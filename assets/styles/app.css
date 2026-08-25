@@ -8875,3 +8875,60 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
     display: flex; align-items: center; justify-content: center;
     color: var(--cm-console-fade); font-style: italic; font-size: 11.5px;
 }
+
+/* --- Opérations de compte (annuaire) --------------------------------------------------------
+   The banner at the top of a user's fiche, in its five states, and the consequence list the
+   deactivation and rename modals both use.
+
+   Four colours and not three: « réussi » is two states, verified (green) and unverified (gold).
+   That distinction is the whole point of the second proof - a row the directory did not confirm
+   must never read as a success, and gold is what makes an administrator look twice. */
+.cm-accountband {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 16px; padding: 12px 16px;
+    border: 1px solid transparent; border-left-width: 3px; border-radius: 0 10px 10px 0;
+    font: 13px var(--cm-font-ui);
+}
+.cm-accountband--wait { background: var(--cm-blue-bg-soft); border-left-color: var(--cm-brand); color: var(--cm-text); }
+.cm-accountband--ok   { background: var(--cm-green-bg); border-left-color: var(--cm-green-tx); color: var(--cm-green-tx); }
+.cm-accountband--warn { background: var(--cm-gold-bg); border-left-color: var(--cm-gold); color: var(--cm-gold-tx); }
+.cm-accountband--crit { background: var(--cm-red-bg); border-left-color: var(--cm-red-tx); color: var(--cm-red-tx); align-items: flex-start; }
+.cm-accountband__mark { flex: none; font-size: 16px; line-height: 1; }
+.cm-accountband__text { flex: 1; min-width: 0; }
+.cm-accountband__title { font-weight: 600; color: var(--cm-ink); }
+.cm-accountband--ok .cm-accountband__title { color: var(--cm-green-tx); }
+.cm-accountband--warn .cm-accountband__title { color: var(--cm-gold-tx); }
+.cm-accountband--crit .cm-accountband__title { color: var(--cm-red-tx); }
+.cm-accountband__detail { margin-top: 2px; font-size: 12.5px; opacity: .9; }
+/* The script's own output, kept scrollable inside the banner: a stack trace from the domain
+   controller must never be what makes the page scroll sideways. */
+.cm-accountband__log {
+    margin: 8px 0 0; padding: 8px 10px; max-height: 160px; overflow: auto;
+    background: var(--cm-surface); border-radius: 6px;
+    font: 11.5px/1.5 var(--cm-font-mono); color: var(--cm-text); white-space: pre-wrap; word-break: break-word;
+}
+.cm-accountband__side { flex: none; display: flex; align-items: center; gap: 10px; }
+.cm-accountband--crit .cm-accountband__side { align-self: flex-start; }
+
+/* « Ce que ce changement entraîne » - the list both account modals open with. */
+.cm-conseq { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+.cm-conseq li { display: flex; gap: 9px; font: 13px/1.5 var(--cm-font-ui); color: var(--cm-text); }
+.cm-conseq__mark { flex: none; color: var(--cm-brand); font-weight: 700; }
+.cm-conseq b { color: var(--cm-ink); }
+.cm-conseq code, .cm-mono { font-family: var(--cm-font-mono); font-size: .94em; }
+
+/* The live availability line under « Nouveau login ». Its three answers are three colours, and the
+   fourth state - nothing typed yet - says nothing at all rather than "invalid". */
+.cm-loginhint { min-height: 18px; margin-top: 5px; font: 12px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-loginhint[data-state="available"] { color: var(--cm-green-tx); }
+.cm-loginhint[data-state="taken"], .cm-loginhint[data-state="invalid"] { color: var(--cm-red-tx); }
+.cm-loginhint[data-state="current"] { color: var(--cm-gold-tx); }
+.cm-loginhint[data-state]:not([data-state=""])::before { content: "● "; }
+
+/* A button that reads as a link - « Proposer d'après le nom » sits inside a sentence, and a real
+   <a href> would be a lie: it fills a field, it does not go anywhere. */
+.cm-linkbtn {
+    padding: 0; border: 0; background: none;
+    color: var(--cm-brand); font: inherit; text-decoration: underline; cursor: pointer;
+}
+.cm-linkbtn:hover { color: var(--cm-brand-strong); }

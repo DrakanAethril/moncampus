@@ -53,27 +53,17 @@ class LdapManagePasswordRepository extends ServiceEntityRepository
             ->setParameter('search', '%'.$search.'%');
     }
 
-    // Decrypts the password column via MySQL's own AES_DECRYPT (not reimplemented in PHP - see
-    // AES_KEY's .env comment for why the key derivation has to stay MySQL-side) using the raw
-    // DBAL connection, only for a row that finished successfully. Returns null once there is
-    // nothing (yet, or ever) to decrypt.
-    public function decryptPassword(LdapManagePassword $ldapManagePassword): ?string
-    {
-        if (2 !== $ldapManagePassword->getState()) {
-            return null;
-        }
-
-        return $this->getEntityManager()->getConnection()->fetchOne(
-            'SELECT CAST(AES_DECRYPT(password, :key) AS CHAR) FROM ldap_manage_password WHERE id = :id',
-            ['key' => $this->ldapPasswordAesKey, 'id' => $ldapManagePassword->getId()],
-        ) ?: null;
-    }
-
-    // Symmetric counterpart to decryptPassword() - used by the profile page's self-service
-    // change-password flow (App\Controller\ProfileController::changePassword()) to pre-fill a
-    // specific requested password, encrypted the same MySQL-side way the consumer script writes
-    // the result back (see App\Entity\LdapManagePassword's own docblock on the $password
-    // column). Raw DBAL, not a mapped Doctrine property, for the same reason as decryptPassword().
+    // The only thing this application ever does with the password column: write it. The profile
+    // page's self-service change-password flow (App\Controller\ProfileController::changePassword())
+    // pre-fills the password the user chose, so the consumer script applies that one instead of
+    // generating a random one. Encrypted MySQL-side because the key derivation has to stay there
+    // (see AES_KEY's .env comment) - hence raw DBAL rather than a mapped Doctrine property.
+    //
+    // Nothing reads it back. The counterpart decryptPassword() existed until 2026-08-24, to show a
+    // generated password on Annuaire > Mots de passe; it was removed with the screen's "Voir"
+    // button, and the consumer script now clears the column as its last act. A password lives in
+    // this table for as long as the queue takes to drain, and not one moment longer - so do not
+    // reintroduce a read path here, whatever screen seems to want one.
     public function setRequestedPassword(LdapManagePassword $ldapManagePassword, string $password): void
     {
         $this->getEntityManager()->getConnection()->executeStatement(

@@ -40,7 +40,7 @@ class LoginGenerator
      */
     public function generate(string $firstname, string $lastname, array $reservedLogins = []): string
     {
-        $base = $this->cleanNamePart($firstname, 1).$this->cleanNamePart($lastname);
+        $base = $this->baseFor($firstname, $lastname);
 
         if (!$this->loginTaken($base, $reservedLogins)) {
             return $base;
@@ -55,6 +55,20 @@ class LoginGenerator
         }
 
         return $base.'.'.uniqid();
+    }
+
+    /**
+     * The login a name gives before any collision is dealt with - `Camille Roux` → `croux`, always,
+     * whoever already holds it.
+     *
+     * generate() above cannot answer this: it checks the two sources and walks to `croux01` the
+     * moment `croux` is taken, and the account whose own login is `croux` makes it taken. What the
+     * rename modal offers is "what would this name give", which is often the current login itself -
+     * and saying so plainly is more use than suggesting `croux01`, which nobody wants.
+     */
+    public function baseFor(string $firstname, string $lastname): string
+    {
+        return $this->cleanNamePart($firstname, 1).$this->cleanNamePart($lastname);
     }
 
     private function cleanNamePart(string $part, ?int $maxLength = null): string
@@ -74,8 +88,15 @@ class LoginGenerator
     //
     // $reservedLogins closes the other, far likelier collision - the one inside a single run, which
     // no query can see.
+    //
+    // Public since the "Changer le login" screen asks the same question about a login somebody
+    // typed (App\Service\LdapAccountRequestService, and the live availability check behind the
+    // field): a login reserved by a creation that never went through is taken every bit as much as
+    // one somebody carries, and answering that twice is how the two answers would come to differ.
+    // It is also why an old login stays reserved for ever after a rename - ldap_manage_user keeps
+    // its row.
     /** @param list<string> $reservedLogins */
-    private function loginTaken(string $login, array $reservedLogins): bool
+    public function loginTaken(string $login, array $reservedLogins = []): bool
     {
         return \in_array($login, $reservedLogins, true)
             || null !== $this->userRepository->findOneBy(['username' => $login])

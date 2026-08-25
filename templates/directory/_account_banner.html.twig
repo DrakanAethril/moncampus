@@ -1,0 +1,60 @@
+{# Where this account's last request to the directory stands (design/validated/account-management.md
+   §7.1, mockup 3).
+
+   Rendered by the server on the fiche itself, and again by
+   App\Controller\DirectoryAccountController::status() two seconds later - which is why it is a
+   partial and why App\Service\LdapAccountStatusPresenter, not this template, decides what it says.
+   The banner does not depend on the polling: refresh the page, come back from another machine, and
+   it is there in the right state. The polling only makes it live.
+
+   Five states, and the third and fourth are the point: « réussi » is two states, not one. A
+   directory that did not confirm shows orange with the reason, never green - and for a rename that
+   is also the state where the login has NOT changed. #}
+{% set levelClass = {
+    pending: 'cm-accountband--wait',
+    running: 'cm-accountband--wait',
+    ok: 'cm-accountband--ok',
+    warn: 'cm-accountband--warn',
+    crit: 'cm-accountband--crit',
+}[accountStatus.level] %}
+{% set badgeClass = {
+    pending: 'bg-secondary-lt',
+    running: 'bg-blue-lt',
+    ok: 'bg-green-lt',
+    warn: 'bg-yellow-lt',
+    crit: 'bg-red-lt',
+}[accountStatus.level] %}
+
+<div class="cm-accountband {{ levelClass }}" role="status">
+    <span class="cm-accountband__mark" aria-hidden="true">
+        {% if accountStatus.level in ['pending', 'running'] %}
+            <span class="spinner-border spinner-border-sm" role="status"></span>
+        {% elseif accountStatus.level == 'ok' %}✓
+        {% elseif accountStatus.level == 'warn' %}◐
+        {% else %}✕
+        {% endif %}
+    </span>
+
+    <div class="cm-accountband__text">
+        <div class="cm-accountband__title">{{ accountStatus.title }}</div>
+        {# data-still-running-label: what the banner says once the polling gives up, five minutes in
+           (assets/controllers/account_operation_controller.js). « L'opération suit son cours » is the
+           truth - the cron carries it - where a wheel spinning at nothing is not. #}
+        <div class="cm-accountband__detail" data-still-running-label="{{ 'ldapAccountBannerStillRunningDetail'|trans|e('html_attr') }}">{{ accountStatus.detail }}</div>
+        {% if accountStatus.log %}
+            <pre class="cm-accountband__log">{{ accountStatus.log }}</pre>
+        {% endif %}
+    </div>
+
+    <div class="cm-accountband__side">
+        <span class="badge {{ badgeClass }}">{{ accountStatus.badgeLabel }}</span>
+        {% if accountStatus.retryable %}
+            {# A new row, never the old one put back to zero: a queue row is the trace of one
+               attempt. See App\Service\LdapAccountRequestService::retry(). #}
+            <form method="post" action="{{ path('app_directory_account_retry', {id: accountStatus.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('directory_account_retry') }}">
+                <button type="submit" class="cm-btn cm-btn--sm cm-btn--outline">{{ 'ldapAccountRetryAction'|trans }}</button>
+            </form>
+        {% endif %}
+    </div>
+</div>

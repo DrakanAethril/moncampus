@@ -26,6 +26,7 @@ class LdapCredentialsVerifier
         private readonly UserRepository $userRepository,
         private readonly LdapUserMapper $ldapUserMapper,
         private readonly LoginEmailResolver $loginEmailResolver,
+        private readonly AccountStatusChecker $accountStatusChecker,
         private readonly string $ldapBaseDn,
         private readonly string $ldapSearchDn,
         #[\SensitiveParameter] private readonly string $ldapSearchPassword,
@@ -35,6 +36,18 @@ class LdapCredentialsVerifier
 
     public function loadOrCreateUser(string $username): User
     {
+        // Closing the platform needs nobody's permission, so a deactivated account is turned away
+        // before a single packet leaves for the directory. AccountStatusChecker would refuse it
+        // anyway - it is the firewalls' user_checker, and it runs on this passport a moment later -
+        // but only *after* the LDAP search below has already run, since a user checker sees a user
+        // and there is no user until one has been loaded. This is the same rule, read from the same
+        // place, applied one step earlier on the path that carries every login of the day.
+        $known = $this->userRepository->findOneBy(['username' => $username]);
+
+        if (null !== $known) {
+            $this->accountStatusChecker->checkPreAuth($known);
+        }
+
         $entry = $this->findLdapEntry($username);
 
         // The login field doubles as a username-or-email field: if what was typed isn't itself an

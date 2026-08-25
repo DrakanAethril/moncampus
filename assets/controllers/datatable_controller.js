@@ -63,6 +63,12 @@ export default class extends Controller {
         removeLabel: String,
         removeConfirmMessage: String,
         removeErrorMessage: String,
+        // Annuaire > Opérations de comptes (the 'accountActions' renderer above).
+        logLabel: String,
+        retryUrlTemplate: String,
+        retryToken: String,
+        retryLabel: String,
+        retryErrorMessage: String,
         printUrlTemplate: String,
         printLabel: String,
         pdfUrlTemplate: String,
@@ -83,12 +89,12 @@ export default class extends Controller {
         historyLabel: String,
         selectUrlTemplate: String,
         selectLabel: String,
-        revealUrlTemplate: String,
-        revealToken: String,
-        revealLabel: String,
-        revealErrorMessage: String,
         modalitiesUrlTemplate: String,
         modalitiesLabel: String,
+        // A search the screen arrives already filtered by - Annuaire > Opérations de comptes is
+        // reached from a user's fiche with that account's login in the URL, and a journal that
+        // opened on everybody's rows would make the link a lie.
+        initialSearch: String,
     };
 
     connect() {
@@ -103,6 +109,7 @@ export default class extends Controller {
         this.table = $(this.tableTarget).DataTable({
             serverSide: true,
             searching: this.searchingValue,
+            search: { search: this.initialSearchValue },
             ordering: false,
             pagingType: 'simple_numbers',
             pageLength: this.pageLengthValue,
@@ -270,6 +277,35 @@ export default class extends Controller {
             return;
         }
 
+        // Annuaire > Opérations de comptes: unfold the script's output under its row. A DataTables
+        // child row rather than a hidden <div> of our own - the tbody is rewritten on every draw,
+        // so anything we put there by hand would vanish on the next page change.
+        const logButton = event.target.closest('[data-datatable-account-log]');
+        if (logButton) {
+            const row = this.table.row(logButton.closest('tr'));
+            if (row.child.isShown()) {
+                row.child.hide();
+            } else {
+                row.child(`<pre class="cm-accountband__log">${escapeHtml(row.data().log ?? '')}</pre>`).show();
+            }
+
+            return;
+        }
+
+        const retryButton = event.target.closest('[data-datatable-account-retry-id]');
+        if (retryButton) {
+            this.performAction(
+                retryButton,
+                this.retryUrlTemplateValue,
+                retryButton.dataset.datatableAccountRetryId,
+                this.retryTokenValue,
+                '',
+                this.retryErrorMessageValue,
+            );
+
+            return;
+        }
+
         const removeButton = event.target.closest('[data-datatable-remove-id]');
         if (removeButton) {
             this.performAction(
@@ -283,36 +319,6 @@ export default class extends Controller {
 
             return;
         }
-
-        const revealButton = event.target.closest('[data-datatable-reveal-id]');
-        if (revealButton) {
-            this.revealSecret(revealButton);
-        }
-    }
-
-    // Unlike performAction() above (which reloads the table or navigates away on success), this
-    // shows the returned secret in place of the button itself - the whole point of clicking it -
-    // and never reloads the table, since the row's state doesn't change. Used by the Directory >
-    // Mots de passe list to reveal a generated LDAP password on demand (see
-    // App\Controller\DirectoryPasswordController::reveal()).
-    revealSecret(button) {
-        const url = this.revealUrlTemplateValue.replace('__ID__', button.dataset.datatableRevealId);
-
-        fetch(url, {
-            method: 'POST',
-            headers: { 'X-CSRF-Token': this.revealTokenValue },
-        })
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error(`Unexpected response status: ${response.status}`);
-                }
-
-                return response.json();
-            })
-            .then((data) => {
-                button.outerHTML = `<code>${escapeHtml(data.password)}</code>`;
-            })
-            .catch(() => window.alert(this.revealErrorMessageValue));
     }
 
     // confirmMessage is optional - omitting the corresponding *-confirm-message-value attribute
@@ -595,6 +601,40 @@ export default class extends Controller {
         // Laptop inventory row actions: Lend/Return are navigations (not one-click actions like
         // 'add'/'remove' below) because lending/returning also requires filling in a form
         // (borrower + due date, or return condition + notes) - see templates/laptop/*.html.twig.
+        // Annuaire > Opérations de comptes. Three actions and each is conditional, because the row
+        // decides what there is to do about it: the account's fiche (always, when the row still
+        // points at a user), the script's own output (only when there is one to read - a failure or
+        // a success the directory would not confirm), and a retry (only on a failure).
+        if (column.render === 'accountActions') {
+            return {
+                data: null,
+                orderable: false,
+                className: 'cm-actions',
+                render: (data, type, row) => {
+                    if (type !== 'display') {
+                        return '';
+                    }
+
+                    const ficheButton = null === row.userId
+                        ? ''
+                        : `<a href="${this.editUrlTemplateValue.replace('__ID__', row.userId)}" class="cm-action--neutral">${escapeHtml(this.editLabelValue)}</a>`;
+
+                    // Expanded in place rather than linked to: the log is two lines of shell output
+                    // about this row, and a screen of its own for it would be a screen nobody
+                    // arrives at twice.
+                    const logButton = row.log
+                        ? `<button type="button" class="cm-action--warning" data-datatable-account-log="${row.id}">${escapeHtml(this.logLabelValue)}</button>`
+                        : '';
+
+                    const retryButton = row.retryable
+                        ? `<button type="button" class="cm-action--positive" data-datatable-account-retry-id="${row.id}">${escapeHtml(this.retryLabelValue)}</button>`
+                        : '';
+
+                    return `${ficheButton}${logButton}${retryButton}`;
+                },
+            };
+        }
+
         if (column.render === 'laptopActions') {
             return {
                 data: null,
@@ -639,19 +679,6 @@ export default class extends Controller {
                 className: 'cm-actions',
                 render: (data, type, row) => (type === 'display'
                     ? `<a href="${this.selectUrlTemplateValue.replace('__ID__', row.id)}" class="cm-action--positive">${escapeHtml(this.selectLabelValue)}</a>`
-                    : ''),
-            };
-        }
-
-        // Row-conditional (row.canReveal) - only a "succeeded" ldap_manage_password row actually
-        // has a password to decrypt, see App\Repository\LdapManagePasswordRepository::decryptPassword().
-        if (column.render === 'reveal') {
-            return {
-                data: null,
-                orderable: false,
-                className: 'cm-actions',
-                render: (data, type, row) => (type === 'display' && row.canReveal
-                    ? `<button type="button" class="cm-action--neutral" data-datatable-reveal-id="${row.id}">${escapeHtml(this.revealLabelValue)}</button>`
                     : ''),
             };
         }

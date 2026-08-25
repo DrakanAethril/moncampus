@@ -1,0 +1,112 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Annuaire > Opérations de comptes (design/validated/account-management.md §7.5, mockup 5).
+
+   The counterpart of the fiche's banner: the fiche says where one account stands, this says what
+   has happened across the lot. It is also the only place a queue that has stopped draining shows
+   itself - as a pile-up of rows stuck at « En attente », which is the symptom to recognise.
+
+   Same shape as « Mots de passe » next door: DataTableParams, QueueStateFormatter, server-side
+   paging. Administrators only, like the three gestures themselves. #}
+
+{% block title %}{{ 'directoryAccountsPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'directoryNavLabel'|trans, url: path('app_directory_groups')},
+        {label: 'directoryAccountsPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'directoryAccountsPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {# DataTables owns this subtree's DOM from here on - see templates/directory/users.html.twig's
+       matching comment for why data-frankenphp-hot-reload-preserve is needed. #}
+    <div class="card"
+         data-frankenphp-hot-reload-preserve
+         data-controller="datatable"
+         data-datatable-url-value="{{ path('app_directory_accounts_data') }}"
+         data-datatable-page-length-value="25"
+         data-datatable-edit-url-template-value="{{ path('app_directory_users_edit', {id: '__ID__'}) }}"
+         data-datatable-edit-label-value="{{ 'ldapAccountFicheAction'|trans }}"
+         data-datatable-log-label-value="{{ 'ldapAccountLogAction'|trans }}"
+         data-datatable-retry-url-template-value="{{ path('app_directory_account_retry', {id: '__ID__'}) }}"
+         data-datatable-retry-token-value="{{ csrf_token('directory_account_retry') }}"
+         data-datatable-retry-label-value="{{ 'ldapAccountRetryAction'|trans }}"
+         data-datatable-retry-error-message-value="{{ 'ldapAccountRetryFailedMessage'|trans }}"
+         data-datatable-search-placeholder-value="{{ 'ldapAccountSearchPlaceholder'|trans }}"
+         data-datatable-initial-search-value="{{ app.request.query.get('search')|default('') }}"
+         data-datatable-columns-value="{{ [
+             {data: 'fullName'},
+             {data: 'actionLabel'},
+             {data: 'detail'},
+             {data: 'addedBy'},
+             {data: 'addedAt'},
+             {data: 'statusLabel', render: 'badge', classField: 'statusClass'},
+             {render: 'accountActions'},
+         ]|json_encode }}"
+         data-datatable-language-value="{{ {
+             info: 'datatableInfoLabel'|trans,
+             infoEmpty: 'datatableInfoEmptyLabel'|trans,
+             infoFiltered: 'datatableInfoFilteredLabel'|trans,
+             zeroRecords: 'datatableZeroRecordsLabel'|trans,
+             processing: 'datatableProcessingLabel'|trans,
+             lengthMenu: 'datatableLengthMenuLabel'|trans,
+             search: 'datatableSearchLabel'|trans,
+             paginate: {
+                 next: 'datatablePaginateNextLabel'|trans,
+                 previous: 'datatablePaginatePreviousLabel'|trans,
+             },
+         }|json_encode }}">
+        {# Arrived from a fiche's « Voir les N opérations » link. A hidden field rather than a
+           select, so it rides along on every ajax call through the same generic filter mechanism the
+           two dropdowns use - and on the account rather than on a login, since a rename makes the
+           same account appear under two of them. #}
+        <input type="hidden" value="{{ app.request.query.get('user')|default('') }}"
+               data-datatable-target="filter" data-datatable-filter-param="user">
+
+        <div class="cm-actionbar">
+            <div class="cm-filterbar__field">
+                <label class="form-label mb-0" for="account-filter-action">{{ 'ldapAccountActionFilterLabel'|trans }}</label>
+                <select id="account-filter-action" class="form-select form-select-sm" data-datatable-target="filter" data-datatable-filter-param="action" data-action="change->datatable#reload">
+                    <option value="">{{ 'ldapAccountActionFilterAllLabel'|trans }}</option>
+                    {% for action in actionChoices %}
+                        <option value="{{ action.value }}">{{ action.labelKey()|trans }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="cm-filterbar__field">
+                <label class="form-label mb-0" for="account-filter-state">{{ 'ldapAccountStateFilterLabel'|trans }}</label>
+                {# The four states of the queue contract, by their stored value. « Réussi, non
+                   vérifié » is deliberately not one of them: it is not a state of the row, it is the
+                   absence of a verification, and offering it here would suggest the script writes
+                   it. #}
+                <select id="account-filter-state" class="form-select form-select-sm" data-datatable-target="filter" data-datatable-filter-param="state" data-action="change->datatable#reload">
+                    <option value="">{{ 'ldapAccountStateFilterAllLabel'|trans }}</option>
+                    <option value="0">{{ 'queueStatusPending'|trans }}</option>
+                    <option value="1">{{ 'queueStatusProcessing'|trans }}</option>
+                    <option value="2">{{ 'queueStatusSucceeded'|trans }}</option>
+                    <option value="3">{{ 'queueStatusFailed'|trans }}</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
+                <thead>
+                    <tr>
+                        <th>{{ 'userFullNameColumnLabel'|trans }}</th>
+                        <th>{{ 'ldapAccountActionColumnLabel'|trans }}</th>
+                        <th>{{ 'ldapAccountDetailColumnLabel'|trans }}</th>
+                        <th>{{ 'ldapAccountRequestedByColumnLabel'|trans }}</th>
+                        <th>{{ 'ldapAccountRequestedAtColumnLabel'|trans }}</th>
+                        <th>{{ 'userStatusColumnLabel'|trans }}</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

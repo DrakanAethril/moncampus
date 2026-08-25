@@ -43,6 +43,11 @@ services:
             # (user/group/sAMAccountName) - see App\Security\LdapAuthenticator,
             # App\Security\LdapUserMapper, App\Service\LdapUserSyncer.
             string $ldapUsernameAttribute: '%env(LDAP_USERNAME_ATTRIBUTE)%'
+            # The attribute App\Service\LdapAccountVerifier reads back to check a deactivation
+            # really took - userAccountControl on a Samba 4 AD DC. Blank in development, where the
+            # OpenLDAP container has no equivalent: the row then stays "réussi, non vérifié" with
+            # the reason, which is the truth, not a contradiction. See .env.
+            string $ldapAccountStatusAttribute: '%env(LDAP_ACCOUNT_STATUS_ATTRIBUTE)%'
             string $ldapUserObjectClass: '%env(LDAP_USER_OBJECT_CLASS)%'
             string $ldapGroupObjectClass: '%env(LDAP_GROUP_OBJECT_CLASS)%'
             string $awsCloudfrontDomain: '%env(AWS_CLOUDFRONT_DOMAIN)%'

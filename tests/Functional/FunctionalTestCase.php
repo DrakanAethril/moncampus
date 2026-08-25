@@ -13,6 +13,7 @@ use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Base for tests that drive the app through a real HTTP request.
@@ -52,6 +53,33 @@ abstract class FunctionalTestCase extends WebTestCase
         }
 
         parent::tearDown();
+    }
+
+    /**
+     * A session-bound CSRF token for a POST the test drives by hand, when there is no rendered form
+     * to submit (an action guarded by a token but reached from a screen the test cannot open, or a
+     * button rendered under a condition the test is precisely trying to break).
+     *
+     * Three things have to line up and none of them does on its own once a request has finished:
+     * the token manager reads the session through the request stack, which is empty between
+     * requests; the session comes from the browser's last request; and nothing writes it back to
+     * disk afterwards, so the token would be minted into a session the next request never sees.
+     *
+     * Call it after at least one request has run under the logged-in user - that is what creates
+     * the session this borrows.
+     */
+    protected function csrfToken(string $tokenId): string
+    {
+        $request = new Request();
+        $request->setSession($this->client->getRequest()->getSession());
+
+        $requestStack = static::getContainer()->get('request_stack');
+        $requestStack->push($request);
+        $token = static::getContainer()->get('security.csrf.token_manager')->getToken($tokenId)->getValue();
+        $request->getSession()->save();
+        $requestStack->pop();
+
+        return $token;
     }
 
     /**

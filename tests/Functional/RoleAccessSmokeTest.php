@@ -693,6 +693,81 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->assertScreens($this->tutor, [$wall => 403]);
     }
 
+    /**
+     * Désactiver et réactiver un compte : `ROLE_ADMIN` et personne d'autre.
+     *
+     * Une ligne par rôle, et les deux lignes qui comptent sont celles du personnel : tout le reste
+     * de l'Annuaire leur est ouvert (`access_control` sur `^/directory`), et le contrôleur porte le
+     * même `#[IsGranted]` à trois rôles que ses voisins. Ce qui tient la porte, ce sont les deux
+     * `isGranted('ROLE_ADMIN')` écrits à l'intérieur des deux actions — exactement le genre de
+     * garde qu'une harmonisation de contrôleur fait disparaître sans que rien ne se voie.
+     *
+     * En POST, parce que les deux routes n'existent qu'en POST : un GET répondrait 405 à
+     * l'administrateur et masquerait la question. Le sondage du bandeau et le « Réessayer » suivent
+     * la même porte — le premier dit d'un compte s'il est fermé et par qui, le second dépose une
+     * demande dans la file de l'annuaire.
+     */
+    public function testDeactivatingAnAccountIsAdminOnly(): void
+    {
+        $staff = $this->createUser(['ROLE_USER', 'ROLE_STAFF'], 'smoke.deact.staff');
+        $staffLead = $this->createUser(['ROLE_USER', 'ROLE_STAFF-LEAD'], 'smoke.deact.stafflead');
+        $target = $this->createUser(['ROLE_USER', 'ROLE_STUDENT'], 'smoke.deact.target');
+        $targetId = $target->getId();
+
+        foreach ([$this->student, $this->teacher, $this->tutor, $staff, $staffLead] as $user) {
+            foreach (['deactivate', 'reactivate', 'change-login'] as $action) {
+                // No CSRF token on purpose: the role check runs first, so a 403 here is the role's.
+                $this->client->loginUser($user);
+                $this->client->request('POST', '/directory/users/'.$targetId.'/'.$action);
+
+                self::assertSame(403, $this->client->getResponse()->getStatusCode(), \sprintf(
+                    'POST %s as %s must be refused.',
+                    $action,
+                    implode('/', $user->getRoles()),
+                ));
+            }
+        }
+
+        self::assertNull(
+            static::getContainer()->get(EntityManagerInterface::class)->getRepository(User::class)->find($targetId)?->getInactiveDate(),
+            'Not one of those requests may have gone through.',
+        );
+
+        $this->client->loginUser($this->admin);
+        $this->client->request('GET', '/directory/users');
+        $this->client->request('POST', '/directory/users/'.$targetId.'/deactivate', [
+            '_token' => $this->csrfToken('directory_user_deactivate'),
+        ]);
+
+        self::assertSame(302, $this->client->getResponse()->getStatusCode());
+
+        // Le sondage du bandeau et la disponibilité d'un login : 200 pour l'administrateur, 403
+        // pour tous les autres. La seconde répond « ce login est-il pris ? », ce qui est une
+        // question sur l'annuaire entier, pas sur la fiche ouverte.
+        $polling = [
+            '/directory/users/'.$targetId.'/account-status' => 200,
+            '/directory/users/'.$targetId.'/login-availability?login=quelquun' => 200,
+            // Le journal, et son point d'alimentation. Il est dans l'Annuaire, ouvert au personnel,
+            // et lui ne l'est pas : c'est toute la raison d'un contrôleur à part.
+            '/directory/accounts' => 200,
+            '/directory/accounts/data' => 200,
+            // Les filtres du bandeau soumettent « Toutes » en chaîne vide, ce qui répondait 400
+            // partout où un getInt() lisait la valeur. QueryValue est ce qui l'en empêche ici.
+            '/directory/accounts/data?action=&state=' => 200,
+        ];
+        $this->assertScreens($this->admin, $polling);
+        foreach ([$this->student, $this->teacher, $this->tutor, $staff, $staffLead] as $user) {
+            $this->assertScreens($user, array_fill_keys(array_keys($polling), 403));
+        }
+
+        // Re-read rather than trusted: a request in between may well have cleared the manager, so
+        // the object this test still holds is not necessarily the row the controller wrote.
+        $reloaded = static::getContainer()->get(EntityManagerInterface::class)
+            ->getRepository(User::class)
+            ->find($targetId);
+        self::assertNotNull($reloaded?->getInactiveDate(), 'The administrator, and only the administrator, closes the account.');
+    }
+
     private function assertScreens(User $user, array $expectations): void
     {
         $this->client->loginUser($user);
