@@ -152,7 +152,11 @@
                         {# Right after "Emploi du temps", where mockup 3c puts it. Students only:
                            staff have the Travaux list on the Campus side, which is neither the same
                            screen nor the same question. #}
-                        {% if is_granted('ROLE_STUDENT') and not is_staff() and feature('student_work') %}
+                        {# Only when the screen behind it has something on it: the tab is the student's
+                           second most used, and one that opens on « rien à rendre » every day of a
+                           quiet fortnight is one they stop reading. student_has_work() asks the same
+                           builder the screen is drawn from, so the two cannot disagree. #}
+                        {% if is_granted('ROLE_STUDENT') and not is_staff() and feature('student_work') and student_has_work() %}
                             <li class="nav-item {{ current_route starts with 'app_student_work' ? 'active' }}">
                                 <a class="nav-link" href="{{ path('app_student_work') }}"{{ current_route starts with 'app_student_work' ? ' aria-current="page"' }}>
                                     <span class="nav-link-title">{{ 'studentWorkNavLabel'|trans }}</span>

@@ -13,7 +13,8 @@ use Symfony\Component\DomCrawler\Crawler;
  * No menu in the top bar may open on nothing.
  *
  * A dropdown whose entries are all switched off still renders its toggle: it looks like a door, it
- * answers a click, and it shows an empty panel. That is worse than the feature being off, because
+ * answers a click, and it shows an empty panel. The same rule reaches a flat tab whose screen has
+ * nothing on it - « Travail à faire » below. That is worse than the feature being off, because
  * the reader concludes the application is broken rather than that the establishment does not run
  * this.
  *
@@ -88,6 +89,26 @@ class NavigationEmptyMenusTest extends FunctionalTestCase
             implode('/', $roles),
             implode(', ', $empty),
         ));
+    }
+
+    /**
+     * « Travail à faire » is a flat tab rather than a panel, and follows the same rule: it is not
+     * offered to a student with nothing on that screen.
+     */
+    public function testTheStudentWorkTabWaitsUntilThereIsWork(): void
+    {
+        $student = $this->createUser(['ROLE_USER', 'ROLE_STUDENT', 'ROLE_CAMPUS'], 'work.student');
+        $this->createProgram([$student], [], $this->createUser(['ROLE_USER', 'ROLE_ADMIN'], 'work.author'));
+
+        $this->client->loginUser($student);
+        $this->client->followRedirects();
+        $crawler = $this->client->request('GET', '/');
+
+        self::assertNotContains('/student-work', $this->navHrefs($crawler));
+        // The screen itself is untouched: the feature is on, so the route answers - what the tab
+        // says is « there is something to read », not « you may read it ».
+        $this->client->request('GET', '/student-work');
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
     }
 
     /**

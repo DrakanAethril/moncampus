@@ -83,8 +83,11 @@ class FeatureDefaultsTest extends KernelTestCase
     }
 
     /**
-     * §4, "Ce que voit une personne à la livraison" - the sanity check of the whole table, which the
-     * design says must be redone whenever a line changes. Here it is, redone on every run.
+     * What each role is delivered with - the sanity check of the whole matrix, which has to be
+     * redone whenever a line moves. Here it is, redone on every run.
+     *
+     * Since 2026-08-25 the shape of that answer is inverted: the establishment runs a handful of
+     * areas and everything else is off, so what is worth pinning is the short list each role keeps.
      */
     public function testWhatEachRoleIsDeliveredWith(): void
     {
@@ -93,34 +96,42 @@ class FeatureDefaultsTest extends KernelTestCase
 
         $reads = static fn (string $role, string $feature): bool => $matrix[$feature.'|'.$role] ?? false;
 
-        // A student: their work, the quizzes, the support, their alternance, the surveys, their
-        // machines. Not the timetable, the agenda, the messagerie, the carnet or the annuaire -
-        // the establishment keeps all of those elsewhere.
-        foreach (['student_work', 'quiz_take', 'support', 'my_alternance', 'surveys', 'my_vms'] as $feature) {
+        // A student: their work, what a class shares with them, their wiki, their mailbox and the
+        // two screens that go with it, their machines, the alternance and the support.
+        foreach ([
+            'student_work', 'shared_documents', 'wiki', 'school_mail', 'training_offers',
+            'job_search', 'my_vms', 'ufa_booklet', 'my_alternance', 'support',
+        ] as $feature) {
             $this->assertTrue($reads('ROLE_STUDENT', $feature), 'a student is delivered '.$feature);
         }
-        foreach (['timetable', 'agenda', 'messaging', 'gradebook_student', 'directory', 'lesson_log'] as $feature) {
+        foreach (['timetable', 'agenda', 'messaging', 'gradebook_student', 'directory', 'lesson_log', 'quiz_take', 'course_space', 'surveys'] as $feature) {
             $this->assertFalse($reads('ROLE_STUDENT', $feature), 'a student is not delivered '.$feature);
         }
 
-        // A teacher: everything they prepare and run a class with.
-        foreach (['sequence_library', 'quiz_library', 'progression', 'video', 'audio', 'class_tools', 'evaluation_planning', 'quiz_live'] as $feature) {
+        // A teacher: the two class tools, their machines, the alternance, the support. The rest of
+        // Pédagogie is off - not because it does not work, but because nobody has asked to run it.
+        foreach (['class_tools', 'my_vms', 'ufa_booklet', 'evaluation_planning', 'support'] as $feature) {
             $this->assertTrue($reads('ROLE_TEACHER', $feature), 'a teacher is delivered '.$feature);
         }
-        // The wiki is the second per-role exception after e-CO, and sits here rather than in the
-        // list above: it stays on for the students, who read their personal and shared wikis, and
-        // off for the teachers, who are given one from their own card when they ask.
-        foreach (['gradebook_entry', 'timetable', 'file_library', 'content_sharing', 'course_space', 'wiki'] as $feature) {
+        foreach ([
+            'student_work', 'wiki', 'quiz_library', 'quiz_live', 'progression', 'sequence_library',
+            'video', 'audio', 'surveys', 'tsf_referential', 'lesson_log', 'gradebook_entry',
+            'timetable', 'file_library', 'content_sharing', 'course_space', 'school_mail',
+            'training_offers', 'job_search',
+        ] as $feature) {
             $this->assertFalse($reads('ROLE_TEACHER', $feature), 'a teacher is not delivered '.$feature);
         }
-        $this->assertTrue($reads('ROLE_STUDENT', 'wiki'), 'a student keeps the wiki');
 
-        // Staff: the alternance area and the equipment. The unlinked mail is *not* theirs any more
-        // (§12.2) - it is off on every role, so admins alone, and delegable one person at a time.
-        foreach (['ufa_booklet', 'laptop_loans', 'training_offers'] as $feature) {
+        // Staff: the alternance area and the equipment, and that is all. The unlinked mail is not
+        // theirs (§12.2), and neither are the offers or the job search any more - both went to the
+        // students, and a staff member who has to read them gets an individual derogation.
+        foreach (['ufa_booklet', 'laptop_loans', 'my_alternance', 'support'] as $feature) {
             $this->assertTrue($reads('ROLE_STAFF', $feature), 'staff are delivered '.$feature);
         }
-        foreach (['school_mail_supervision', 'infrastructure', 'guest_console', 'activity_history', 'directory'] as $feature) {
+        foreach ([
+            'training_offers', 'job_search', 'my_vms', 'school_mail', 'school_mail_supervision',
+            'infrastructure', 'guest_console', 'activity_history', 'directory',
+        ] as $feature) {
             $this->assertFalse($reads('ROLE_STAFF', $feature), 'staff are not delivered '.$feature);
         }
 

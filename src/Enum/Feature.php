@@ -235,59 +235,79 @@ enum Feature: string
      * written, the matrix decides. Changing a value here must not silently overwrite what an admin
      * ticked - which is exactly what would happen if the resolver preferred it to a stored row.
      *
-     * The values below are the ones of §4, applied by the lot 5 migration. Lot 1 seeded everything
-     * to ON so that no screen changed before the occurrences of §7.3 had been dealt with.
+     * Since 2026-08-25 the answer is **no** for almost everything, and the six exceptions are
+     * listed rather than the refusals: the establishment runs a handful of areas and keeps the rest
+     * of its schooling in another application. What survives here is what no role-specific decision
+     * applies to; everything opened for one role and not another is in defaultRoles() instead.
      */
     public function defaultForRoles(): bool
     {
         return match ($this) {
-            // Pédagogie - what the platform is for, mostly on.
-            self::LessonLog, self::CourseSpace, self::FileLibrary, self::SharedDocuments,
-            self::ContentSharing, self::Documentation => false,
+            // Planned evaluations stay: an Evaluation is a pedagogical object carried by the
+            // progression, and it is not the Grade - cutting the carnet must not take the planning
+            // with it (§8.2).
+            self::EvaluationPlanning => true,
 
-            // Scolarité - the establishment keeps all of this elsewhere.
-            self::Timetable, self::TimetableSettings, self::GradebookEntry,
-            self::GradebookStudent, self::SelfAssessment, self::ProgramReporting,
-            self::ProgramExports, self::ProgramFinancial, self::Directory => false,
+            // Support: everybody must be able to say that something is broken.
+            self::Support => true,
 
-            // Vie scolaire. `school_mail` is ON here and decided by the formation, which starts
-            // closed everywhere (§12.1); `school_mail_supervision` is off on every role, which
-            // leaves it to the admins while keeping it delegable to one person (§12.2).
-            self::Agenda, self::Announcements, self::Messaging, self::SchoolMailSupervision,
-            self::SignupLists, self::Help => false,
+            // Alternance is the other half of what this establishment runs, and it is open to
+            // everybody who takes part in it - the tutor included, whose only screens these are.
+            self::UfaBooklet, self::MyAlternance, self::TutorEvaluations, self::LaptopLoans => true,
 
-            // Technique - the same treatment as the supervision screen: off everywhere, so admins
-            // only, but still delegable through an individual override. `eco` is off here too and
-            // seeded ON for ROLE_ECO alone - see defaultForRole().
-            self::Infrastructure, self::GuestConsole, self::Eco, self::ActivityHistory => false,
-
-            default => true,
+            default => false,
         };
     }
 
     /**
-     * The seed for one (feature, role) pair. Only used by the seeding migration; the resolver
+     * The roles a feature is delivered ON for, when the answer is not the same for everybody.
+     *
+     * `null` means there is no role-specific decision and defaultForRoles() answers alone. A list
+     * means exactly those roles get it and every other one does not - `ROLE_ADMIN` never appears,
+     * having everything by construction.
+     *
+     * Read next to defaultForRoles(): a feature that is `false` there and named here is off
+     * everywhere *except* for the roles listed, which is how most of this catalogue now reads.
+     *
+     * @return list<string>|null
+     */
+    public function defaultRoles(): ?array
+    {
+        return match ($this) {
+            // Pédagogie is off for everyone, with four exceptions the establishment asked for by
+            // name. The rest of the family - the cahier de texte, the quizzes, the progression, the
+            // libraries, the videos, the audio, the surveys, the référentiel - is not switched off
+            // because it does not work, but because nobody has asked to run it yet. An admin turns
+            // any line back on from Gestion > Fonctionnalités, and one person at a time from their
+            // card in the annuaire.
+            self::StudentWork, self::SharedDocuments, self::Wiki => ['ROLE_STUDENT'],
+            self::ClassTools => ['ROLE_TEACHER'],
+
+            // The student's own corner of the app. « Candidatures » follows school_mail on the
+            // route itself (App\Controller\MyJobApplicationController), and these three travel
+            // together: an offer applied to, a mail sent from the school mailbox, the list of what
+            // was sent. The teachers' tracking screens go with them - reading what a class did is
+            // no longer offered by the role, only by an individual derogation.
+            self::SchoolMail, self::TrainingOffers, self::JobSearch => ['ROLE_STUDENT'],
+
+            // The machines are handed out in class, so the two roles that sit in one.
+            self::MyVms => ['ROLE_STUDENT', 'ROLE_TEACHER'],
+
+            // e-CO is what ROLE_ECO exists for.
+            self::Eco => ['ROLE_ECO'],
+
+            default => null,
+        };
+    }
+
+    /**
+     * The seed for one (feature, role) pair. Only used by the seeding migrations; the resolver
      * reads the stored matrix and falls back on defaultForRoles() alone.
-     *
-     * Two exceptions to the role-blind default, and only two:
-     *
-     * - e-CO is off for everybody *except* `ROLE_ECO`, which is what that role is for (§4);
-     * - the wiki is off for `ROLE_TEACHER`, on for everyone else. It is not a judgement on the
-     *   tool, it is who was asked for: students keep their personal and shared wikis, and a
-     *   teacher who needs one is given it from their own card rather than by the role. Note a
-     *   teacher who is also staff keeps it - the resolver takes the most permissive role, and
-     *   that rule is not bent for one feature.
      */
     public function defaultForRole(string $role): bool
     {
-        if (self::Eco === $this) {
-            return 'ROLE_ECO' === $role;
-        }
+        $roles = $this->defaultRoles();
 
-        if (self::Wiki === $this && 'ROLE_TEACHER' === $role) {
-            return false;
-        }
-
-        return $this->defaultForRoles();
+        return null === $roles ? $this->defaultForRoles() : \in_array($role, $roles, true);
     }
 }
