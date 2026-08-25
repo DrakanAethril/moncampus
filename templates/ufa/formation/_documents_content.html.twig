@@ -1,0 +1,39 @@
+{# « Documents » - the alternance calendar, and only that. The mode selector of Paramètres >
+   Pédagogique > Formations is deliberately absent: dropping a PDF here *is* the choice of serving
+   it, and the controller switches the mode over on its own (App\Controller\Ufa\FormationDocumentController). #}
+<div class="card-body">
+    <p class="cm-hint">{{ 'ufaFormationDocumentsHelpText'|trans }}</p>
+
+    <div class="cm-subhead mb-3">
+        <div class="cm-subhead__title">{{ 'programAlternanceCalendarFileFieldLabel'|trans }}</div>
+    </div>
+
+    {% if program.alternanceCalendarFileKey %}
+        <p class="mb-3">
+            <span class="cm-badge cm-badge--gold">{{ 'ufaFormationDocumentsCurrentFileLabel'|trans }}</span>
+            <a href="{{ path('app_program_alternance_calendar_pdf', {id: program.id}) }}" target="_blank" rel="noopener" class="ms-2">{{ 'ufaFormationDocumentsOpenFileAction'|trans }}</a>
+        </p>
+    {% else %}
+        <p class="cm-hint mb-3">{{ 'ufaFormationDocumentsNoFileText'|trans }}</p>
+    {% endif %}
+
+    {% if program.alternanceCalendarMode.value != 'file' %}
+        {# Says what will happen rather than offering the choice: the mode belongs to the formation's
+           own settings sheet, and this tab only ever moves it one way. #}
+        <p class="cm-hint mb-3">{{ 'ufaFormationDocumentsModeSwitchNoticeText'|trans }}</p>
+    {% endif %}
+
+    {{ form_start(form) }}
+        {{ form_errors(form) }}
+        <div class="row">
+            <div class="col-md-8">{{ form_row(form.alternanceCalendarFile) }}</div>
+        </div>
+        <div class="cm-actionbar">
+            {% include '_last_modified_meta.html.twig' with {entity: program} %}
+            <div class="cm-actionbar__buttons">
+                {{ form_widget(form.submit) }}
+            </div>
+        </div>
+        {{ form_rest(form) }}
+    {{ form_end(form) }}
+</div>

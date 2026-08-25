@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Controller\Program;
+namespace App\Controller\Ufa;
 
 use App\Attribute\RequiresFeature;
 use App\Controller\SkillGroupCrudTrait;
@@ -23,111 +23,109 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * Formation > Paramétrage, onglet « Groupes de compétences » et les compétences que chaque groupe
- * contient (SkillGroup::$skills). Toujours propres à la formation : il n'existe pas de variante
- * partagée, contrairement aux niveaux.
+ * UFA > Formations > une formation > « Compétences » - the same screens as Formation >
+ * Paramétrage > « Groupes de compétences », reached from the UFA menu.
  *
- * The bodies moved to App\Controller\SkillGroupCrudTrait when UFA > Formations gained the same
- * screens under the name « Compétences »; the routes, their names and what they do are unchanged.
- * This class now declares three things and nothing else: the paths, the shell the list renders in,
- * and the route names its templates point at.
+ * The name differs on purpose: the UFA team says « les compétences » and the tab is theirs. What is
+ * behind it is the same rows, the same forms and the same code - App\Controller\SkillGroupCrudTrait
+ * holds every body, and this class declares only the paths, the shell and the route names its
+ * templates point at.
+ *
+ * **It follows `ufa_booklet`, not `tsf_referential`**, and that is the reason the second door
+ * exists: the UFA team is delivered the booklet and not the référentiel, so the settings screens
+ * answer 404 to them. Two doors, two features, one implementation.
  */
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
-#[RequiresFeature(Feature::TsfReferential)]
-class SettingsSkillGroupController extends AbstractController
+#[RequiresFeature(Feature::UfaBooklet)]
+class FormationSkillGroupController extends AbstractController
 {
-    use ProgramSettingsTabTrait;
     use SkillGroupCrudTrait;
 
     public function __construct(private readonly ProgramRepository $programRepository)
     {
     }
 
-    #[Route(path: '/programs/{id}/settings/skill-groups', name: 'app_program_settings_skill_groups')]
+    #[Route(path: '/ufa/programs/{id}/skills', name: 'app_ufa_formation_skills')]
     public function skillGroupsTab(int $id, SkillGroupRepository $skillGroupRepository): Response
     {
         return $this->doSkillGroupsList($id, $skillGroupRepository);
     }
 
-    #[Route(path: '/programs/{id}/settings/skill-groups/reorder', name: 'app_program_settings_skill_groups_reorder', methods: ['POST'])]
+    #[Route(path: '/ufa/programs/{id}/skills/reorder', name: 'app_ufa_formation_skills_reorder', methods: ['POST'])]
     public function reorderSkillGroups(int $id, Request $request, EntityManagerInterface $entityManager, SkillGroupRepository $skillGroupRepository): JsonResponse
     {
         return $this->doReorderSkillGroups($id, $request, $entityManager, $skillGroupRepository);
     }
 
-    #[Route(path: '/programs/{id}/settings/skill-groups/new', name: 'app_program_settings_skill_groups_new')]
-    #[Route(path: '/programs/{id}/settings/skill-groups/{groupId}/edit', name: 'app_program_settings_skill_groups_edit')]
+    #[Route(path: '/ufa/programs/{id}/skills/new', name: 'app_ufa_formation_skills_new')]
+    #[Route(path: '/ufa/programs/{id}/skills/{groupId}/edit', name: 'app_ufa_formation_skills_edit')]
     public function skillGroupForm(int $id, Request $request, EntityManagerInterface $entityManager, SkillGroupRepository $skillGroupRepository, ?int $groupId = null): Response
     {
         return $this->doSkillGroupForm($id, $request, $entityManager, $skillGroupRepository, $groupId);
     }
 
-    #[Route(path: '/programs/{id}/settings/skill-groups/teachers-search', name: 'app_program_settings_skill_groups_teachers_search')]
+    #[Route(path: '/ufa/programs/{id}/skills/teachers-search', name: 'app_ufa_formation_skills_teachers_search')]
     public function skillGroupTeachersSearch(int $id, Request $request): JsonResponse
     {
         return $this->doSkillGroupTeachersSearch($id, $request);
     }
 
-    #[Route(path: '/programs/{id}/settings/skill-groups/{groupId}/deactivate', name: 'app_program_settings_skill_groups_deactivate', methods: ['POST'])]
+    #[Route(path: '/ufa/programs/{id}/skills/{groupId}/deactivate', name: 'app_ufa_formation_skills_deactivate', methods: ['POST'])]
     public function deactivateSkillGroup(int $id, int $groupId, Request $request, EntityManagerInterface $entityManager, SkillGroupRepository $skillGroupRepository): JsonResponse
     {
         return $this->doDeactivateSkillGroup($id, $groupId, $request, $entityManager, $skillGroupRepository);
     }
 
-    #[Route(path: '/programs/{id}/settings/skill-groups/{groupId}/skills', name: 'app_program_settings_skill_groups_skills')]
+    #[Route(path: '/ufa/programs/{id}/skills/{groupId}/items', name: 'app_ufa_formation_skills_items')]
     public function skillsList(int $id, int $groupId, SkillGroupRepository $skillGroupRepository, SkillRepository $skillRepository): Response
     {
         return $this->doSkillsList($id, $groupId, $skillGroupRepository, $skillRepository);
     }
 
-    #[Route(path: '/programs/{id}/settings/skill-groups/{groupId}/skills/reorder', name: 'app_program_settings_skill_groups_skills_reorder', methods: ['POST'])]
+    #[Route(path: '/ufa/programs/{id}/skills/{groupId}/items/reorder', name: 'app_ufa_formation_skills_items_reorder', methods: ['POST'])]
     public function reorderSkills(int $id, int $groupId, Request $request, EntityManagerInterface $entityManager, SkillGroupRepository $skillGroupRepository, SkillRepository $skillRepository): JsonResponse
     {
         return $this->doReorderSkills($id, $groupId, $request, $entityManager, $skillGroupRepository, $skillRepository);
     }
 
-    #[Route(path: '/programs/{id}/settings/skill-groups/{groupId}/skills/new', name: 'app_program_settings_skill_groups_skills_new')]
-    #[Route(path: '/programs/{id}/settings/skill-groups/{groupId}/skills/{skillId}/edit', name: 'app_program_settings_skill_groups_skills_edit')]
+    #[Route(path: '/ufa/programs/{id}/skills/{groupId}/items/new', name: 'app_ufa_formation_skills_items_new')]
+    #[Route(path: '/ufa/programs/{id}/skills/{groupId}/items/{skillId}/edit', name: 'app_ufa_formation_skills_items_edit')]
     public function skillForm(int $id, int $groupId, Request $request, EntityManagerInterface $entityManager, SkillGroupRepository $skillGroupRepository, SkillRepository $skillRepository, #[Target('app.message_body')] HtmlSanitizerInterface $sanitizer, ?int $skillId = null): Response
     {
         return $this->doSkillForm($id, $groupId, $request, $entityManager, $skillGroupRepository, $skillRepository, $sanitizer, $skillId);
     }
 
-    #[Route(path: '/programs/{id}/settings/skill-groups/{groupId}/skills/{skillId}/deactivate', name: 'app_program_settings_skill_groups_skills_deactivate', methods: ['POST'])]
+    #[Route(path: '/ufa/programs/{id}/skills/{groupId}/items/{skillId}/deactivate', name: 'app_ufa_formation_skills_items_deactivate', methods: ['POST'])]
     public function deactivateSkill(int $id, int $groupId, int $skillId, Request $request, EntityManagerInterface $entityManager, SkillGroupRepository $skillGroupRepository, SkillRepository $skillRepository): JsonResponse
     {
         return $this->doDeactivateSkill($id, $groupId, $skillId, $request, $entityManager, $skillGroupRepository, $skillRepository);
     }
 
-    /**
-     * The canonical set - the UFA door mirrors these keys with its own route names.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     #[\Override]
     protected function skillRoutes(): array
     {
         return [
-            'list' => 'app_program_settings_skill_groups',
-            'reorder' => 'app_program_settings_skill_groups_reorder',
-            'new' => 'app_program_settings_skill_groups_new',
-            'edit' => 'app_program_settings_skill_groups_edit',
-            'teachersSearch' => 'app_program_settings_skill_groups_teachers_search',
-            'deactivate' => 'app_program_settings_skill_groups_deactivate',
-            'skills' => 'app_program_settings_skill_groups_skills',
-            'skillsReorder' => 'app_program_settings_skill_groups_skills_reorder',
-            'skillNew' => 'app_program_settings_skill_groups_skills_new',
-            'skillEdit' => 'app_program_settings_skill_groups_skills_edit',
-            'skillDeactivate' => 'app_program_settings_skill_groups_skills_deactivate',
+            'list' => 'app_ufa_formation_skills',
+            'reorder' => 'app_ufa_formation_skills_reorder',
+            'new' => 'app_ufa_formation_skills_new',
+            'edit' => 'app_ufa_formation_skills_edit',
+            'teachersSearch' => 'app_ufa_formation_skills_teachers_search',
+            'deactivate' => 'app_ufa_formation_skills_deactivate',
+            'skills' => 'app_ufa_formation_skills_items',
+            'skillsReorder' => 'app_ufa_formation_skills_items_reorder',
+            'skillNew' => 'app_ufa_formation_skills_items_new',
+            'skillEdit' => 'app_ufa_formation_skills_items_edit',
+            'skillDeactivate' => 'app_ufa_formation_skills_items_deactivate',
         ];
     }
 
     #[\Override]
     protected function renderSkillGroupList(Program $program, array $skillGroups): Response
     {
-        return $this->render('program/settings.html.twig', [
+        return $this->render('ufa/formation.html.twig', [
             'program' => $program,
-            'activeTab' => 'skill_groups',
+            'activeTab' => 'skills',
             'skillGroups' => $skillGroups,
             'skillRoutes' => $this->skillRoutes(),
         ]);
@@ -136,20 +134,15 @@ class SettingsSkillGroupController extends AbstractController
     #[\Override]
     protected function skillProgram(int $id): Program
     {
-        return $this->findOrNotFound($id, $this->programRepository);
+        return $this->programRepository->find($id) ?? throw $this->createNotFoundException();
     }
 
-    /**
-     * The two segments between « Accueil » and the sub-screen's own title. `labelKey` is translated
-     * by the template, `label` is printed as it stands - a formation's short name is data, not a
-     * translation key.
-     */
     #[\Override]
     protected function skillBreadcrumb(Program $program): array
     {
         return [
-            ['labelKey' => 'programSettingsNavLabel', 'label' => null, 'url' => $this->generateUrl('app_program_settings', ['id' => $program->getId()])],
-            ['labelKey' => null, 'label' => $program->getDisplayShortName(), 'url' => $this->generateUrl('app_program_settings_skill_groups', ['id' => $program->getId()])],
+            ['labelKey' => 'ufaNavLabel', 'label' => null, 'url' => $this->generateUrl('app_ufa')],
+            ['labelKey' => null, 'label' => $program->getDisplayShortName(), 'url' => $this->generateUrl('app_ufa_formation_skills', ['id' => $program->getId()])],
         ];
     }
 }

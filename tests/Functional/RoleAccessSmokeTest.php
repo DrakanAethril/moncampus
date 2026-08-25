@@ -421,6 +421,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             sprintf('/ufa/programs/%d/denomination', $programId),
             sprintf('/ufa/programs/%d/contract-modalities', $programId),
             sprintf('/ufa/programs/%d/exam-modalities', $programId),
+            // The two tabs the UFA team was given so it would stop having to walk through
+            // Paramétrage: the calendar upload, and the referential under its own name.
+            sprintf('/ufa/programs/%d/documents', $programId),
+            sprintf('/ufa/programs/%d/skills', $programId),
             '/ufa/configuration/training-center',
         ];
 
