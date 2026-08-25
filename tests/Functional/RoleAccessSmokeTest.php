@@ -183,6 +183,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,
+            '/settings/features' => 403,
             '/directory/users' => 403,
             '/ufa' => 403,
             '/ufa/configuration/contract-import' => 403,
@@ -287,6 +288,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,
+            '/settings/features' => 403,
             '/settings/groups' => 403,
             '/settings/groups/hierarchy' => 403,
             '/directory/users' => 403,
@@ -306,6 +308,12 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // App\Controller\SettingsGroupsController's own note.
             '/settings/groups' => 200,
             '/settings/groups/hierarchy' => 200,
+            // Paramètres > Fonctionnalités, and the derogation list one of its counters leads to.
+            // Admin-only and carrying no feature guard of their own on purpose: no setting made
+            // here may close the screen the settings are made on
+            // (design/validated/feature-access.md §8.8).
+            '/settings/features' => 200,
+            '/settings/features/agenda/overrides' => 200,
             '/directory/users' => 200,
             '/ufa' => 200,
             '/ufa/reminders' => 200,
@@ -486,6 +494,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,
+            '/settings/features' => 403,
             '/directory/users' => 403,
             '/ufa' => 403,
             '/ufa/configuration/contract-import' => 403,

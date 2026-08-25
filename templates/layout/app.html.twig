@@ -529,6 +529,10 @@
                                     <a class="dropdown-item {{ current_route in ['app_settings_structure_school_years', 'app_settings_structure_programs', 'app_settings_structure_periods'] ? 'active' }}" href="{{ path('app_settings_pedagogique') }}">{{ 'settingsPedagogiqueNavLabel'|trans }}</a>
                                     {% if is_granted('ROLE_ADMIN') %}
                                         <a class="dropdown-item {{ current_route starts with 'app_settings_groups' ? 'active' }}" href="{{ path('app_settings_groups') }}">{{ 'settingsGroupsNavLabel'|trans }}</a>
+                                        {# Administrators only, and carrying no feature guard of its own:
+                                           no setting made here may close the screen the settings are
+                                           made on (design/validated/feature-access.md §8.8). #}
+                                        <a class="dropdown-item {{ current_route starts with 'app_settings_features' ? 'active' }}" href="{{ path('app_settings_features') }}">{{ 'settingsFeaturesNavLabel'|trans }}</a>
                                     {% endif %}
                                 </div>
                             </li>

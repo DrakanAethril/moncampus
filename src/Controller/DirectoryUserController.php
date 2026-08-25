@@ -8,13 +8,18 @@ use App\Entity\EmailAlias;
 use App\Entity\LdapManageUser;
 use App\Entity\User;
 use App\Enum\EmailAliasOrigin;
+use App\Enum\Feature;
+use App\Enum\FeatureAccessState;
+use App\Enum\FeatureFamily;
 use App\Form\LdapManageUserType;
 use App\Form\UserProfileType;
 use App\Repository\GroupRepository;
 use App\Repository\LdapManageAccountRepository;
 use App\Repository\LdapManageUserRepository;
 use App\Repository\StudentImportBatchRepository;
+use App\Repository\UserFeatureAccessRepository;
 use App\Repository\UserRepository;
+use App\Security\FeatureAccess;
 use App\Security\Voter\FileLibraryVoter;
 use App\Service\ByteSize;
 use App\Service\ContactEmailVerifier;
@@ -155,6 +160,8 @@ class DirectoryUserController extends AbstractController
         TranslatorInterface $translator,
         FileLibraryQuota $libraryQuota,
         FileLibraryVoter $libraryVoter,
+        FeatureAccess $featureAccess,
+        UserFeatureAccessRepository $featureOverrides,
         #[Autowire('%env(MAIL_STUDENT_DOMAIN)%')]
         string $studentMailDomain,
         int $id,
@@ -301,6 +308,11 @@ class DirectoryUserController extends AbstractController
             // student has none, and an empty section would invite the question of why
             // (design/validated/file-library.md, "The admin quota field"). The number itself is a
             // field of the form above; what is left here is the usage the screen displays.
+            // The « Fonctionnalités » block (§9.2), administrators only - the matrix and the
+            // derogations are one screen's worth of decision and they are made by the same people.
+            // Each line carries what « Par défaut » gives this person *today*, which is the only
+            // thing that makes three buttons readable.
+            'featureRows' => $this->isGranted('ROLE_ADMIN') ? $this->featureRows($user, $featureAccess, $featureOverrides) : [],
             'fileLibraryQuota' => $hasLibrary ? [
                 'usedLabel' => ByteSize::format($libraryQuota->usedBytes($user)),
                 'limitLabel' => ByteSize::format($libraryQuota->limitFor($user)),
@@ -309,6 +321,33 @@ class DirectoryUserController extends AbstractController
                 'defaultLabel' => ByteSize::format($libraryQuota->defaultBytes()),
             ] : null,
         ]);
+    }
+
+    /**
+     * One row per feature for the annuaire card: the state stored for this person (or none), and
+     * what the defaults alone would give them.
+     *
+     * The second half is the point. A screen offering « Par défaut / Activée / Désactivée » without
+     * saying what the first one currently means is a screen that cannot be used deliberately.
+     *
+     * @return list<array{feature: Feature, family: FeatureFamily, state: ?FeatureAccessState, default: bool}>
+     */
+    private function featureRows(User $user, FeatureAccess $featureAccess, UserFeatureAccessRepository $overrides): array
+    {
+        $states = $overrides->statesFor($user);
+        $defaults = $featureAccess->defaultsFor($user);
+
+        $rows = [];
+        foreach (Feature::cases() as $feature) {
+            $rows[] = [
+                'feature' => $feature,
+                'family' => $feature->family(),
+                'state' => $states[$feature->value] ?? null,
+                'default' => $defaults[$feature->value] ?? $feature->defaultForRoles(),
+            ];
+        }
+
+        return $rows;
     }
 
     /**

@@ -61,6 +61,30 @@ class FeatureAccess
         return $this->resolverFor($user)->all();
     }
 
+    /**
+     * What the defaults alone would give this person - the matrix, their formations, the catalogue,
+     * and **not** their own derogations.
+     *
+     * The annuaire card needs it and nothing else does: next to « Par défaut » it prints, in grey,
+     * what that choice gives today. Without it the screen offers three buttons and says what none
+     * of them means.
+     *
+     * @return array<string, bool>
+     */
+    public function defaultsFor(User $user): array
+    {
+        $roles = $user->getRoles();
+        $isAdmin = \in_array('ROLE_ADMIN', $roles, true);
+
+        return (new FeatureResolver(
+            $isAdmin,
+            $roles,
+            $this->matrix ??= $this->roleSettings->matrix(),
+            [],
+            $isAdmin ? [] : $this->openProgramFeatures($user),
+        ))->all();
+    }
+
     private function resolverFor(?User $user): FeatureResolver
     {
         $viewer = $user ?? $this->currentUser();
