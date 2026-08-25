@@ -72,7 +72,13 @@
                 </a>
                 <div class="dropdown-menu">
                     <a class="dropdown-item {{ current_route == 'app_wiki_personal' ? 'active' }}" href="{{ path('app_wiki_personal') }}">{{ 'wikiPersonalNavLabel'|trans }}</a>
-                    <a class="dropdown-item {{ current_route == 'app_wiki_shared' ? 'active' }}" href="{{ path('app_wiki_shared') }}">{{ 'wikiSharedNavLabel'|trans }}</a>
+                    {# Only for somebody who actually has one - same posture as « Mes machines
+                       virtuelles » above. Nothing is created from that screen: a shared wiki comes
+                       from a class or from a colleague adding you, so an entry opening on « aucun
+                       wiki » would never become useful by being clicked. #}
+                    {% if has_shared_wikis() %}
+                        <a class="dropdown-item {{ current_route == 'app_wiki_shared' ? 'active' }}" href="{{ path('app_wiki_shared') }}">{{ 'wikiSharedNavLabel'|trans }}</a>
+                    {% endif %}
                     {% if is_granted('ROLE_TEACHER') or is_staff() %}
                         <a class="dropdown-item {{ current_route == 'app_wiki_students' ? 'active' }}" href="{{ path('app_wiki_students') }}">{{ 'wikiStudentsNavLabel'|trans }}</a>
                     {% endif %}

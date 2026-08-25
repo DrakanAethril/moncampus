@@ -347,7 +347,7 @@ class ProgramRepository extends ServiceEntityRepository
      * Every Program somebody belongs to - enrolled in or teaching - **including past school
      * years**, ordered most recent year first.
      *
-     * Written for "Mes wikis" (App\Controller\Wiki\WikiController), which groups by class and
+     * Written for « Wikis partagés » (App\Controller\Wiki\WikiController), which groups by class and
      * collapses the earlier years rather than hiding them: a wiki does not expire with its
      * Program, and the archive of last year's project is exactly what a student comes looking for.
      * That is why this one deliberately does not filter on inactiveDate, unlike every method above.

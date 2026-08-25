@@ -95,13 +95,28 @@
                                     {% if session.classRoom %} · {{ session.classRoom.name }}{% endif %}
                                 </span>
                             </span>
+                            {# Same rule as the top bar's menus: a dropdown with nothing under it is
+                               not offered at all. With the two lists and the syllabus reserved to
+                               administrators, a teacher's quick links can now be empty. #}
+                            {% set quick_links = is_granted('ROLE_ADMIN')
+                                or (feature('timetable') and program.timetableManagementEnabled and visibility_allows(program.timetableVisibility))
+                                or (feature('gradebook_entry') and program.timetableManagementEnabled)
+                                or (feature('my_alternance') and visibility_allows(program.alternanceCalendarVisibility))
+                                or feature('class_tools') %}
+                            {% if quick_links %}
                             <span class="ms-auto">
                                 <div class="dropdown">
                                     <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">{{ 'homeTeacherQuickLinksLabel'|trans }}</button>
                                     <div class="dropdown-menu dropdown-menu-end">
                                         <h6 class="dropdown-header">{{ 'homeTeacherQuickLinksLabel'|trans }}</h6>
-                                        <a class="dropdown-item" href="{{ path('app_program_students', {id: program.id}) }}">{{ 'programStudentsNavLabel'|trans }}</a>
-                                        <a class="dropdown-item" href="{{ path('app_program_teachers', {id: program.id}) }}">{{ 'programTeachersNavLabel'|trans }}</a>
+                                        {# The same rule as the class submenu of the top bar: the two
+                                           lists and the syllabus below are administrators' screens.
+                                           This dropdown is the other menu a class carries, and the
+                                           two must not disagree about who is offered what. #}
+                                        {% if is_granted('ROLE_ADMIN') %}
+                                            <a class="dropdown-item" href="{{ path('app_program_students', {id: program.id}) }}">{{ 'programStudentsNavLabel'|trans }}</a>
+                                            <a class="dropdown-item" href="{{ path('app_program_teachers', {id: program.id}) }}">{{ 'programTeachersNavLabel'|trans }}</a>
+                                        {% endif %}
                                         {% if feature('timetable') and program.timetableManagementEnabled and visibility_allows(program.timetableVisibility) %}
                                             <a class="dropdown-item" href="{{ path('app_program_timetable', {id: program.id}) }}">{{ 'programTimetableNavLabel'|trans }}</a>
                                         {% endif %}
@@ -117,12 +132,16 @@
                                         {% if feature('class_tools') %}
                                             <a class="dropdown-item" href="{{ path('app_program_tools_random_draw', {id: program.id}) }}">{{ 'programToolsNavLabel'|trans }}</a>
                                         {% endif %}
-                                        {% if feature('progression') and visibility_allows(program.syllabusVisibility) %}
+                                        {# Administrators only, and no longer reading syllabusVisibility -
+                                           the setting stays in Formation > Paramétrage but nothing
+                                           applies it for now. #}
+                                        {% if is_granted('ROLE_ADMIN') and feature('progression') %}
                                             <a class="dropdown-item" href="{{ path('app_program_syllabus', {id: program.id}) }}"{% if program.syllabusMode.value == 'file' %} target="_blank" rel="noopener"{% endif %}>{{ 'programSyllabusNavLabel'|trans }}</a>
                                         {% endif %}
                                     </div>
                                 </div>
                             </span>
+                            {% endif %}
                         </div>
                         {% if not loop.last %}<div style="height: 1px; background: var(--cm-border-soft);"></div>{% endif %}
                     {% endfor %}
