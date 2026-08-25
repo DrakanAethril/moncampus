@@ -106,6 +106,43 @@ abstract class FunctionalTestCase extends WebTestCase
     }
 
     /**
+     * One HTTP request per (path, expected code), as the logged-in user.
+     *
+     * The codes are pinned rather than asserted loosely as "not a 500", and the three that turn up
+     * mean three different things:
+     *
+     *   200 - the screen renders for that role
+     *   302 - it hands over to a scoped URL
+     *   403 - it exists, and that role must not reach it
+     *   404 - it does not exist for that account at all: either nothing matches, or the feature
+     *         behind it is switched off (App\EventSubscriber\FeatureAccessSubscriber)
+     *
+     * A 403 turning into a 200 is a security regression; a 200 turning into a 403 is a broken
+     * screen; a 403 turning into a 404 means a feature was switched off under a test that was
+     * pinning a role. None of the three is caught by asserting "< 500".
+     *
+     * @param array<string, int> $expectations path => expected status code
+     */
+    protected function assertScreens(User $user, array $expectations): void
+    {
+        $this->client->loginUser($user);
+
+        foreach ($expectations as $path => $expected) {
+            $this->client->request('GET', $path);
+            $actual = $this->client->getResponse()->getStatusCode();
+
+            self::assertSame($expected, $actual, \sprintf(
+                'GET %s as %s: expected %d, got %d.%s',
+                $path,
+                implode('/', $user->getRoles()),
+                $expected,
+                $actual,
+                500 === $actual ? ' The screen is broken.' : '',
+            ));
+        }
+    }
+
+    /**
      * @param list<string> $roles LDAP-derived roles, exactly as LdapUserMapper would have set them
      */
     protected function createUser(array $roles, string $username = 'test.user'): User
@@ -150,6 +187,12 @@ abstract class FunctionalTestCase extends WebTestCase
 
         $program = new Program('Formation de test', 'TEST-1', $cohort, $schoolYear);
         $program->setCreatedBy($author);
+        // The third axis of the feature system, opened for the same reason enableEveryFeature()
+        // opens the other two: these tests pin who reaches what, and a formation whose Courrier
+        // école happens to be closed would turn « a student is redirected to their mailbox » into
+        // « the mailbox does not exist » - a different assertion about a different thing. The axis
+        // itself is pinned by tests/Functional/SchoolMailProgramAxisTest.php.
+        $program->setSchoolMailEnabled(true);
         foreach ($students as $student) {
             $program->addStudent($student);
         }

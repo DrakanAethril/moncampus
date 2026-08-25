@@ -129,6 +129,16 @@ class ProgramType extends AbstractType
                 'label' => 'programAssignmentManagementFieldLabel',
                 'required' => false,
             ])
+            // The third axis of the feature system: the Courrier école is decided per formation
+            // rather than per role or per person (design/validated/feature-access.md, "Le troisième
+            // axe"). The help line says what it does *not* do, because that is the half people get
+            // wrong: the addresses exist and keep receiving whatever this box says - closing it
+            // closes the reading, never the mailbox (§8.6).
+            ->add('schoolMailEnabled', CheckboxType::class, [
+                'label' => 'programSchoolMailEnabledFieldLabel',
+                'help' => 'programSchoolMailEnabledFieldHelp',
+                'required' => false,
+            ])
             // UFA section fields - all revealed together on the Program form by the alternance
             // Modality chip (Modality::$isAlternance), not by a dedicated checkbox of their own.
             ->add('internshipManagementEnabled', CheckboxType::class, [
