@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Form;
 
+use App\Enum\Feature;
 use App\Form\DataTransformer\StagedUploadTransformer;
 use App\Repository\FileLibraryNodeRepository;
+use App\Security\FeatureAccess;
 use App\Security\Voter\FileLibraryVoter;
 use App\Service\StagedUploadStore;
 use App\Service\UploadPolicy;
@@ -69,7 +71,17 @@ use Symfony\Component\Validator\Constraints\All;
  * material) and on the avatar.
  *
  * The tab is also hidden, whatever the option says, for a user who has no library: the check is the
- * Voter's `FILE_LIBRARY_LINK`, so who may link and who has a library are one answer.
+ * Voter's `FILE_LIBRARY_LINK`, so who may link and who has a library are one answer - and for anyone
+ * the `file_library` feature is switched off for.
+ *
+ * **That second check is the whole reason the feature is not just a 404 on `/files`.** The library is
+ * a *tab inside this component*, which is on some fifteen forms across a dozen features; 404-ing its
+ * routes and leaving the tab would leave every one of those forms showing a tab that fails to load
+ * (design/validated/feature-access.md §8.1). Attaching a file from the disk is untouched: what goes
+ * away is one way of choosing it, never the field.
+ *
+ * Files already attached from the library stay valid: the row carries its own storage key, copied
+ * from the node.
  *
  * A file picked there is a **reference**: the row takes the node's own storage key and a foreign key
  * back to it, so the file weighs once and correcting it in the library corrects it everywhere - and
@@ -82,6 +94,7 @@ class FilePickerType extends AbstractType
         private readonly Security $security,
         private readonly FileLibraryNodeRepository $libraryNodes,
         private readonly AuthorizationCheckerInterface $authorization,
+        private readonly FeatureAccess $featureAccess,
     ) {
     }
 
@@ -99,7 +112,9 @@ class FilePickerType extends AbstractType
         $view->vars['multiple'] = true === $options['multiple'];
         // The tab is hidden - whatever the field says - for a user who has no library at all. A tab
         // that opens on "you have no library" is a worse answer than an absent one.
-        $view->vars['library'] = true === $options['library'] && $this->authorization->isGranted(FileLibraryVoter::LINK);
+        $view->vars['library'] = true === $options['library']
+            && $this->featureAccess->isEnabled(Feature::FileLibrary)
+            && $this->authorization->isGranted(FileLibraryVoter::LINK);
         $view->vars['max_bytes'] = $policy->maxSizeInBytes();
         $view->vars['extensions'] = $policy->extensions();
         // The `accept` attribute of the native picker: a courtesy that decides what the file dialog

@@ -71,7 +71,12 @@ class AccessConditionEvaluator
             AccessConditionType::QuizScore => null !== $id && $this->scoreIsInRange($facts->quizBestPercents[$id] ?? null, $leaf),
             // Same reading for a grade nobody has yet: an ungraded, absent or excluded student is
             // not "under 10", they have no note at all, and neither bound holds for them.
-            AccessConditionType::GradeValue => null !== $id && $this->gradeCompares($facts->gradeValues[$id] ?? null, $leaf),
+            // A grade condition nobody can satisfy any more is **ignored, not enforced**: with the
+            // carnet de notes switched off, "note ≥ 10" would never become true and the content
+            // behind it would stay locked for ever, with nothing on screen to explain why
+            // (design/validated/feature-access.md §8.4). The edit screen says so too.
+            AccessConditionType::GradeValue => !$facts->gradesAreEnterable
+                || (null !== $id && $this->gradeCompares($facts->gradeValues[$id] ?? null, $leaf)),
             AccessConditionType::AssignmentDone => null !== $id && isset($facts->doneAssignmentIds[$id]),
             AccessConditionType::AudioListened => null !== $id && ($facts->audioPercents[$id] ?? -1) >= $leaf->requiredPercent(),
             AccessConditionType::VideoWatched => null !== $id && ($facts->videoPercents[$id] ?? -1) >= $leaf->requiredPercent(),

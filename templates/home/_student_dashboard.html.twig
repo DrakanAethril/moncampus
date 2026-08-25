@@ -70,11 +70,13 @@
     {% endif %}
 
     {% if show_events ?? true %}
+        {% if feature('agenda') %}
         {% include 'home/_events_row.html.twig' with {
             events: events,
             filter_programs: multi ? student.programs : [],
             program_meta: student.programMeta,
         } %}
+        {% endif %}
     {% endif %}
 
     {% if student.alternance %}

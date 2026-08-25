@@ -12,6 +12,7 @@ use App\Form\SequenceInstanceType;
 use App\Repository\ProgramRepository;
 use App\Repository\ProgressionSeancePlacementRepository;
 use App\Repository\SequenceInstanceRepository;
+use App\Security\FeatureAccess;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\SequenceInstanceVoter;
 use App\Service\SequenceInstanceRemover;
@@ -79,7 +80,7 @@ class ProgramSequenceInstanceController extends AbstractController
     }
 
     #[Route(path: '/programs/{id}/sequences/{sequenceInstanceId}', name: 'app_program_sequences_show', requirements: ['sequenceInstanceId' => '\d+'])]
-    public function show(int $id, int $sequenceInstanceId, ProgramRepository $repository, StructureAccessChecker $accessChecker, SequenceInstanceRepository $sequenceInstanceRepository): Response
+    public function show(int $id, int $sequenceInstanceId, ProgramRepository $repository, StructureAccessChecker $accessChecker, SequenceInstanceRepository $sequenceInstanceRepository, FeatureAccess $featureAccess): Response
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
         $sequenceInstance = $sequenceInstanceRepository->find($sequenceInstanceId) ?? throw $this->createNotFoundException();
@@ -95,7 +96,12 @@ class ProgramSequenceInstanceController extends AbstractController
             'sequenceInstance' => $sequenceInstance,
             // The controls are rendered only for whoever may actually write them - a form nobody
             // may submit is a promise the screen cannot keep.
-            'mayPublish' => $this->isGranted(SequenceInstanceVoter::PUBLISH, $sequenceInstance),
+            // The three publication switches - the séquence, each séance, each resource - all hang
+            // off this one flag. Publishing is what puts content into « Mes cours », so with the
+            // course space switched off there is nothing to publish *to*: the switches go, and what
+            // is already published stays exactly as it is (design/validated/feature-access.md §7.3).
+            'mayPublish' => $featureAccess->isEnabled(Feature::CourseSpace)
+                && $this->isGranted(SequenceInstanceVoter::PUBLISH, $sequenceInstance),
             'mayEdit' => $this->isGranted(SequenceInstanceVoter::EDIT, $sequenceInstance),
             'visibilityChoices' => ContentVisibility::cases(),
         ]);

@@ -10,6 +10,7 @@ use App\Repository\FeatureRoleSettingRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\UserFeatureAccessRepository;
 use Symfony\Bundle\SecurityBundle\Security;
+use Symfony\Contracts\Service\ResetInterface;
 
 /**
  * The single authority on "does this account see this feature at all", on the model of
@@ -28,8 +29,15 @@ use Symfony\Bundle\SecurityBundle\Security;
  * read once per request and the viewer's derogations once per account, then memorised in the
  * resolver. No application cache - `cache.app` has no consumer in this repository, and a per-user
  * authorisation answer is the last thing that should give it one.
+ *
+ * **`ResetInterface`, and it is load-bearing here rather than tidy.** This application is served by
+ * FrankenPHP in worker mode: the container outlives the request, so a service that memorises
+ * anything keeps it for the *next* request - and, for this one, for the next *person*. Without the
+ * reset below, switching a feature off changed nothing until the worker restarted, and one visitor's
+ * resolved catalogue could answer for another. Symfony calls reset() between requests through
+ * `services_resetter`; both caches go, and each request reads the two small tables again.
  */
-class FeatureAccess
+class FeatureAccess implements ResetInterface
 {
     /** @var array<string, FeatureResolver> keyed by user identifier, `''` for the anonymous visitor */
     private array $resolvers = [];
@@ -83,6 +91,37 @@ class FeatureAccess
             [],
             $isAdmin ? [] : $this->openProgramFeatures($user),
         ))->all();
+    }
+
+    /**
+     * Does **anybody** still have this feature - is the establishment still running it at all?
+     *
+     * Read off the matrix alone, without a person: it answers a question about the platform, not
+     * about a reader. One caller today, and it is the reason the method exists: an access condition
+     * of type `grade_value` can only ever become true if somebody, somewhere, can still enter the
+     * grade. When nobody can, the condition is ignored rather than left to lock content for ever
+     * (§8.4).
+     *
+     * An individual derogation is deliberately not consulted: it opens a screen to one person, it
+     * does not put the carnet de notes back into service.
+     */
+    public function isEnabledForAnyRole(Feature $feature): bool
+    {
+        $matrix = $this->matrix ??= $this->roleSettings->matrix();
+
+        foreach (Feature::managedRoles() as $role) {
+            if ($matrix[$feature->value.'|'.$role] ?? $feature->defaultForRoles()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function reset(): void
+    {
+        $this->resolvers = [];
+        $this->matrix = null;
     }
 
     private function resolverFor(?User $user): FeatureResolver

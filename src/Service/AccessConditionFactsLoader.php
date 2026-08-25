@@ -6,6 +6,7 @@ namespace App\Service;
 
 use App\Entity\User;
 use App\Enum\AccessConditionType;
+use App\Enum\Feature;
 use App\Repository\AssignmentCompletionRepository;
 use App\Repository\AssignmentSubmissionRepository;
 use App\Repository\AudioRecordingFileRepository;
@@ -14,6 +15,7 @@ use App\Repository\LibraryResourceInstanceViewRepository;
 use App\Repository\QuizAttemptRepository;
 use App\Repository\SeanceInstanceRepository;
 use App\Repository\VideoResourceFileRepository;
+use App\Security\FeatureAccess;
 
 /**
  * Turns a screenful of conditions into one StudentAccessFacts: one query per *type* of leaf, never
@@ -35,6 +37,7 @@ class AccessConditionFactsLoader
         private readonly LibraryResourceInstanceViewRepository $viewRepository,
         private readonly SeanceInstanceRepository $seanceRepository,
         private readonly GradeRepository $gradeRepository,
+        private readonly FeatureAccess $featureAccess,
     ) {
     }
 
@@ -76,6 +79,11 @@ class AccessConditionFactsLoader
                 $student->getManualGroups()->toArray(),
             ), true),
             $this->gradeRepository->findValueByEvaluationIdForStudent($evaluationIds, $student),
+            // Asked of the matrix rather than of this student: the question is whether the
+            // establishment still runs the carnet de notes at all. When it does not, a grade
+            // condition can never become true, and the evaluator ignores it instead of locking the
+            // content behind it for ever (design/validated/feature-access.md §8.4).
+            $this->featureAccess->isEnabledForAnyRole(Feature::GradebookEntry),
         );
     }
 

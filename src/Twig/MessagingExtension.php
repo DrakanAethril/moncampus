@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Twig;
 
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\MessageThreadRecipientRepository;
+use App\Security\FeatureAccess;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
@@ -21,6 +23,7 @@ class MessagingExtension extends AbstractExtension
     public function __construct(
         private readonly MessageThreadRecipientRepository $recipientRepository,
         private readonly TranslatorInterface $translator,
+        private readonly FeatureAccess $featureAccess,
     ) {
     }
 
@@ -51,9 +54,21 @@ class MessagingExtension extends AbstractExtension
         return mb_strtoupper(mb_substr($name, 0, 2));
     }
 
+    /**
+     * Zero when the messaging feature is switched off for this account, without asking the database
+     * (design/validated/feature-access.md §7.3).
+     *
+     * The badge is drawn from this number alone, in the navbar and nowhere else, so answering zero
+     * here is what makes the pastille disappear along with the envelope - a count of unread threads
+     * next to no way of reading them is worse than no count at all.
+     */
     public function unreadMessageThreadCount(?User $user): int
     {
-        return null !== $user ? $this->recipientRepository->countUnreadForUser($user) : 0;
+        if (null === $user || !$this->featureAccess->isEnabled(Feature::Messaging, $user)) {
+            return 0;
+        }
+
+        return $this->recipientRepository->countUnreadForUser($user);
     }
 
     // "Aujourd'hui" / "Hier" / "20/07/2026" - the sticky group header above a run of same-day
