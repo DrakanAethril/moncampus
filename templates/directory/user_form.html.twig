@@ -69,6 +69,8 @@
 
 {% set isEdit = editedUser is defined and editedUser is not null %}
 {% set isActive = isEdit and editedUser.inactiveDate is null %}
+{# One's own card - an administrator may now open it, and two gestures do not apply to it. #}
+{% set isSelf = isEdit and app.user and editedUser.id == app.user.id %}
 {% set pageLabel = isEdit ? (editedUser.displayName ?? editedUser.username) : 'newUserPageHeading'|trans %}
 
 {% block title %}{{ pageLabel }}{% endblock %}
@@ -107,18 +109,26 @@
         <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#change-login-modal">
             {{ 'ldapAccountChangeLoginButtonLabel'|trans }}
         </button>
-        {% if isActive %}
-            {# The confirm() this button carried until 2026-08-24 could show one sentence, and the
-               gesture stopped fitting in one: it now closes the directory account too, hence the
-               workstations. See templates/directory/_deactivate_modal.html.twig. #}
-            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deactivate-account-modal">
-                {{ 'userDeactivateButtonLabel'|trans }}
-            </button>
-        {% else %}
-            <form method="post" action="{{ path('app_directory_users_reactivate', {id: editedUser.id}) }}">
-                <input type="hidden" name="_token" value="{{ csrf_token('directory_user_reactivate') }}">
-                <button type="submit" class="btn btn-outline-success">{{ 'userReactivateButtonLabel'|trans }}</button>
-            </form>
+        {# **Neither** button on one's own card, not just the closing one: an administrator opening
+           their own card since 2026-08-25 is not there to close it -
+           App\Service\LdapAccountRequestService::disable() has always refused that - and « Réactiver »
+           on an account one is signed in with reads as an offer to fix something that is not broken.
+           Written as three branches rather than "and not isSelf" on the first, which is how the
+           reactivate branch came to fire on an active account. #}
+        {% if not isSelf %}
+            {% if isActive %}
+                {# The confirm() this button carried until 2026-08-24 could show one sentence, and the
+                   gesture stopped fitting in one: it now closes the directory account too, hence the
+                   workstations. See templates/directory/_deactivate_modal.html.twig. #}
+                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deactivate-account-modal">
+                    {{ 'userDeactivateButtonLabel'|trans }}
+                </button>
+            {% else %}
+                <form method="post" action="{{ path('app_directory_users_reactivate', {id: editedUser.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('directory_user_reactivate') }}">
+                    <button type="submit" class="btn btn-outline-success">{{ 'userReactivateButtonLabel'|trans }}</button>
+                </form>
+            {% endif %}
         {% endif %}
     {% endif %}
 {% endblock %}
@@ -471,7 +481,7 @@
     {% endif %}
 
     {% if isEdit and is_granted('ROLE_ADMIN') %}
-        {% if isActive %}
+        {% if isActive and not isSelf %}
             {% include 'directory/_deactivate_modal.html.twig' with {editedUser: editedUser} only %}
         {% endif %}
         {% include 'directory/_change_login_modal.html.twig' with {editedUser: editedUser, loginSuggestion: loginSuggestion|default('')} only %}
