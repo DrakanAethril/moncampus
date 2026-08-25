@@ -42,6 +42,32 @@ class ProgramRepository extends ServiceEntityRepository
     }
 
     /**
+     * Does this person belong - as a student or as a teacher - to at least one formation whose
+     * Courrier école is open?
+     *
+     * The formation axis of App\Security\FeatureAccess, and the "most permissive wins" of §3.4
+     * written as SQL: a mailbox is not partitioned by formation and could not be, so one open
+     * formation answers for all of them.
+     *
+     * Deliberately unfiltered by active state, like the two methods above: a mailbox does not
+     * close because the school year did.
+     */
+    public function hasMemberProgramWithSchoolMail(User $user): bool
+    {
+        $count = $this->createQueryBuilder('p')
+            ->select('COUNT(p.id)')
+            ->leftJoin('p.students', 's')
+            ->leftJoin('p.teachers', 't')
+            ->where('s = :user OR t = :user')
+            ->andWhere('p.schoolMailEnabled = true')
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return (int) $count > 0;
+    }
+
+    /**
      * $association is a hardcoded caller-side constant ('students'/'teachers'), never user input -
      * the two public methods above are the only callers and DQL has no parameter slot for a field
      * name anyway.

@@ -192,6 +192,26 @@ class Program
     #[ORM\Column(name: 'assignment_management_enabled', options: ['default' => true])]
     private bool $assignmentManagementEnabled = true;
 
+    /**
+     * The third axis of the feature system: the Courrier école is decided by the formation, not by
+     * the role or by the person (design/validated/feature-access.md, "Le troisième axe").
+     *
+     * A column next to the four booleans above rather than a generic table, because there is
+     * exactly one feature on this axis today - if a second turns up, that is the day to generalise,
+     * and the cost of having been wrong is one migration.
+     *
+     * **It decides the reading, never the addresses.** App\Service\StudentMailProvisioner runs at
+     * account creation, before the account is enrolled in anything, and an address that has reached
+     * a company is not regenerated: a student of a closed formation has a working address whose
+     * mail piles up unread, and opening the formation later reveals the whole history with nothing
+     * to replay (§8.6).
+     *
+     * `false` on the property as well as in the DDL: the column DEFAULT only lives for the length
+     * of the ALTER, and a row created by the code would otherwise go in null.
+     */
+    #[ORM\Column(name: 'school_mail_enabled', options: ['default' => false])]
+    private bool $schoolMailEnabled = false;
+
     // Who sees the "Calendrier d'alternance" nav entry - replaces the old
     // $alternanceCalendarEnabled boolean (migrated: true -> Everyone, false -> Hidden, preserving
     // the exact prior behavior, which had no role tiering). No TeachersOnly case for this one -
@@ -590,6 +610,18 @@ class Program
     public function isAssignmentManagementEnabled(): bool
     {
         return $this->assignmentManagementEnabled;
+    }
+
+    public function isSchoolMailEnabled(): bool
+    {
+        return $this->schoolMailEnabled;
+    }
+
+    public function setSchoolMailEnabled(bool $schoolMailEnabled): static
+    {
+        $this->schoolMailEnabled = $schoolMailEnabled;
+
+        return $this;
     }
 
     public function setAssignmentManagementEnabled(bool $assignmentManagementEnabled): static
