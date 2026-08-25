@@ -24,8 +24,16 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * or follow-up block, no goals, no right-hand column, no "Declare an application". A full-width
  * list, grouped by company, with purely factual rows. Do not add guidance here: that lives on the
  * teacher side (screen 2a), not on this screen.
+ *
+ * **Gated on `school_mail`, not on `job_search`**, and that is not a slip: an application *is* a
+ * mail sent from the student's school mailbox, this screen is the list of those mails grouped by
+ * company, and the mailbox links straight to it (templates/school_mail/_folders.html.twig). With
+ * the mailbox closed - by the role matrix or by the student's formation, `school_mail` carrying
+ * both axes - there is nothing to list and no way to add to it. The teachers' side of the job
+ * search (« Démarches », the tracking screen) keeps `job_search`: it reads what a class did, and
+ * that reading is a different decision from opening a mailbox.
  */
-#[RequiresFeature(Feature::JobSearch)]
+#[RequiresFeature(Feature::SchoolMail)]
 class MyJobApplicationController extends AbstractController
 {
     /** The mockup's filters. "Awaiting reply" = no reply received, not a verdict on the outcome. */

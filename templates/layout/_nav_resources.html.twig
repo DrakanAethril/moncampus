@@ -23,7 +23,11 @@
 {% set resources_shared_documents = is_granted('ROLE_STUDENT') and not is_staff() and feature('shared_documents') %}
 {% set resources_my_vms = is_pure_student and feature('my_vms') and has_virtual_machines(app.user) %}
 {% set resources_school_mail = is_pure_student and feature('school_mail') %}
-{% set resources_job_applications = is_pure_student and feature('job_search') %}
+{# « Candidatures » follows « Courrier école », condition for condition: an application is a mail
+   sent from the student's mailbox, and that screen is the list of those mails grouped by company.
+   One source rather than two identical expressions that would drift - see
+   App\Controller\MyJobApplicationController for the same decision on the route itself. #}
+{% set resources_job_applications = resources_school_mail %}
 {% set resources_wiki = not is_granted('ROLE_TUTOR') and not is_granted('ROLE_EXTERNAL') and feature('wiki') %}
 {% set resources_course_space = is_granted('ROLE_STUDENT') and not is_staff() and feature('course_space') %}
 {% set resources_documentation = feature('documentation') %}
