@@ -66,6 +66,29 @@ class SchoolMailProgramAxisTest extends FunctionalTestCase
         $this->assertScreens($this->student, ['/school-mail' => 302]);
     }
 
+    /**
+     * « Candidatures » travels with the mailbox, on every one of its axes.
+     *
+     * An application is a mail sent from that mailbox, and the screen is the list of those mails:
+     * with the box closed there is nothing to list and no way to add to it, so it answers the same
+     * 404 rather than an empty page. What used to gate it - `job_search` - now covers the teachers'
+     * side alone.
+     */
+    public function testTheApplicationsScreenIsClosedWithTheMailbox(): void
+    {
+        $this->programFor($this->student, schoolMail: false);
+
+        $this->assertScreens($this->student, ['/school-mail' => 404, '/my/applications' => 404]);
+    }
+
+    /** The other half of the pair: opening the formation opens both screens at once. */
+    public function testTheApplicationsScreenOpensWithTheMailbox(): void
+    {
+        $this->programFor($this->student, schoolMail: true);
+
+        $this->assertScreens($this->student, ['/school-mail' => 302, '/my/applications' => 200]);
+    }
+
     /** The derogation comes before the formation flag - §3.5. */
     public function testADerogationOpensTheBoxInAClosedFormation(): void
     {
