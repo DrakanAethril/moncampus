@@ -99,6 +99,39 @@ class AccessConditionEvaluatorTest extends TestCase
     }
 
     /**
+     * A grade condition written before the carnet de notes was switched off is **ignored**, not
+     * enforced (design/validated/feature-access.md §8.4).
+     *
+     * The alternative is the one thing this must not do: "note ≥ 10" with nobody able to enter a
+     * grade any more never becomes true, so the content behind it stays locked for ever and nothing
+     * on screen explains why. A condition that cannot be satisfied must not forbid.
+     */
+    public function testAGradeConditionIsIgnoredWhenNobodyCanEnterAGradeAnyMore(): void
+    {
+        $tree = $this->all([$this->gradeLeaf(88, AccessConditionComparison::Above, 10.0)]);
+
+        // The student has no grade at all, and would be locked out under the ordinary reading...
+        self::assertFalse($this->evaluate($tree, $this->facts())->satisfied);
+        // ...but is not, once nobody can give them one.
+        self::assertTrue($this->evaluate($tree, $this->facts(gradesAreEnterable: false))->satisfied);
+        // A grade that would have failed the bound does not fail it either: the leaf is out of the
+        // decision entirely, not evaluated leniently.
+        self::assertTrue($this->evaluate($tree, $this->facts(gradeValues: [88 => 3.0], gradesAreEnterable: false))->satisfied);
+    }
+
+    /** The other leaves keep deciding: only the grade ones step aside. */
+    public function testTheOtherConditionsStillApplyWhenGradesAreOutOfService(): void
+    {
+        $tree = $this->all([
+            $this->gradeLeaf(88, AccessConditionComparison::Above, 10.0),
+            $this->leaf(AccessConditionType::QuizScore, 7, 50),
+        ]);
+
+        self::assertFalse($this->evaluate($tree, $this->facts(gradesAreEnterable: false))->satisfied);
+        self::assertTrue($this->evaluate($tree, $this->facts(quizBestPercents: [7 => 80], gradesAreEnterable: false))->satisfied);
+    }
+
+    /**
      * The case the feature was asked for: "< 15 et > 10 à Sommative HTML" is two leaves on the same
      * evaluation, combined by "toutes les conditions" - no range type of its own.
      */
@@ -324,6 +357,7 @@ class AccessConditionEvaluatorTest extends TestCase
         array $seanceEndDates = [],
         array $groupIds = [],
         array $gradeValues = [],
+        bool $gradesAreEnterable = true,
     ): StudentAccessFacts {
         return new StudentAccessFacts(
             new \DateTimeImmutable(self::NOW),
@@ -336,6 +370,7 @@ class AccessConditionEvaluatorTest extends TestCase
             array_map(static fn (?string $at): ?\DateTimeImmutable => null === $at ? null : new \DateTimeImmutable($at), $seanceEndDates),
             array_fill_keys($groupIds, true),
             $gradeValues,
+            $gradesAreEnterable,
         );
     }
 }

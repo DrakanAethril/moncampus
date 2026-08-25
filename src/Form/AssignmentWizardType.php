@@ -13,7 +13,9 @@ use App\Entity\QuizInstance;
 use App\Entity\User;
 use App\Enum\AssignmentAudienceType;
 use App\Enum\AssignmentNature;
+use App\Enum\Feature;
 use App\Enum\QuizMode;
+use App\Security\FeatureAccess;
 use App\Service\UploadPolicy;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
@@ -49,8 +51,22 @@ class AssignmentWizardType extends AbstractType
     public const VISIBILITY_SCHEDULED = 'scheduled';
     public const VISIBILITY_HIDDEN = 'hidden';
 
+    public function __construct(private readonly FeatureAccess $featureAccess)
+    {
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        // « Noté / Non noté » fabricates an Evaluation the moment it is answered yes
+        // (App\Service\AssignmentGradebookLinker::ensureEvaluationExists). With the carnet switched
+        // off, a teacher would be manufacturing grades in write-only mode - so the question is not
+        // asked (design/validated/feature-access.md §8.3). Assignments already marked as graded keep
+        // their evaluation, intact and invisible: nothing is deleted, here as everywhere else.
+        $gradebook = $this->featureAccess->isEnabled(Feature::GradebookEntry);
+        // The autoévaluation is a nature of work, not a field: with no real grade to compare against,
+        // the student estimates into the void (§8.5), so it leaves the grid rather than leaving a
+        // wizard whose last step has nothing to offer.
+        $selfAssessment = $this->featureAccess->isEnabled(Feature::SelfAssessment);
         /** @var ?Assignment $assignment */
         $assignment = $options['data'] ?? null;
 
@@ -114,7 +130,12 @@ class AssignmentWizardType extends AbstractType
             // Step 2 - Work type.
             ->add('nature', EnumType::class, [
                 'class' => AssignmentNature::class,
-                'choices' => $options['natures'],
+                'choices' => $selfAssessment
+                    ? $options['natures']
+                    : array_values(array_filter(
+                        $options['natures'],
+                        static fn (AssignmentNature $nature): bool => AssignmentNature::SelfAssessment !== $nature,
+                    )),
                 'choice_label' => static fn (AssignmentNature $nature): string => $nature->labelKey(),
                 'label' => 'assignmentWizardNatureFieldLabel',
                 'expanded' => true,
@@ -131,20 +152,6 @@ class AssignmentWizardType extends AbstractType
                 'choice_value' => static fn (?bool $value): string => null === $value ? '' : ($value ? '1' : '0'),
                 'expanded' => true,
                 'placeholder' => false,
-            ])
-            ->add('graded', ChoiceType::class, [
-                'label' => 'assignmentWizardGradedFieldLabel',
-                'choices' => [
-                    'assignmentWizardGradedLabel' => true,
-                    'assignmentWizardNotGradedLabel' => false,
-                ],
-                'choice_value' => static fn (?bool $value): string => null === $value ? '' : ($value ? '1' : '0'),
-                'expanded' => true,
-                'placeholder' => false,
-            ])
-            ->add('gradingVisibleToStudents', CheckboxType::class, [
-                'label' => 'assignmentWizardGradingVisibleFieldLabel',
-                'required' => false,
             ])
 
             // Étape 3 - Consigne.
@@ -219,37 +226,6 @@ class AssignmentWizardType extends AbstractType
                 'required' => false,
                 'attr' => ['inputmode' => 'decimal', 'placeholder' => '70,0'],
             ])
-            ->add('evaluation', EntityType::class, [
-                'class' => Evaluation::class,
-                'query_builder' => static function (\Doctrine\ORM\EntityRepository $repository) use ($programIds, $options) {
-                    $builder = $repository->createQueryBuilder('e')
-                        ->innerJoin('e.topic', 't')
-                        ->addSelect('t')
-                        ->where('t.program IN (:programs)')
-                        ->andWhere('e.inactiveDate IS NULL')
-                        ->andWhere('t.inactiveDate IS NULL')
-                        ->setParameter('programs', $programIds ?: [0])
-                        ->orderBy('e.date', 'DESC');
-
-                    // Outside staff, only the evaluations of the teacher's own matières: the
-                    // comparison made by the student is made against THEIR grading.
-                    if (null !== $options['teacher_topics_only']) {
-                        $builder->andWhere('t.teacher = :teacher')->setParameter('teacher', $options['teacher_topics_only']);
-                    }
-
-                    return $builder;
-                },
-                'choice_label' => static fn (Evaluation $evaluation): string => sprintf(
-                    '%s — %s · %s',
-                    $evaluation->getName(),
-                    $evaluation->getTopic()?->getName() ?? '',
-                    $evaluation->getDate()?->format('d/m/Y') ?? '',
-                ),
-                'choice_attr' => static fn (Evaluation $evaluation): array => ['data-programs' => (string) $evaluation->getTopic()?->getProgram()?->getId()],
-                'label' => 'assignmentWizardEvaluationFieldLabel',
-                'placeholder' => 'assignmentWizardEvaluationPlaceholder',
-                'required' => false,
-            ])
             ->add('readTrackingEnabled', CheckboxType::class, [
                 'label' => 'assignmentWizardReadTrackingFieldLabel',
                 'required' => false,
@@ -290,6 +266,59 @@ class AssignmentWizardType extends AbstractType
                 'data' => $assignment?->getVisibleAt(),
             ])
         ;
+
+        if ($gradebook) {
+            $builder
+                ->add('graded', ChoiceType::class, [
+                    'label' => 'assignmentWizardGradedFieldLabel',
+                    'choices' => [
+                        'assignmentWizardGradedLabel' => true,
+                        'assignmentWizardNotGradedLabel' => false,
+                    ],
+                    'choice_value' => static fn (?bool $value): string => null === $value ? '' : ($value ? '1' : '0'),
+                    'expanded' => true,
+                    'placeholder' => false,
+                ])
+                ->add('gradingVisibleToStudents', CheckboxType::class, [
+                    'label' => 'assignmentWizardGradingVisibleFieldLabel',
+                    'required' => false,
+                ])
+            ;
+        }
+
+        if ($selfAssessment) {
+            $builder->add('evaluation', EntityType::class, [
+                'class' => Evaluation::class,
+                'query_builder' => static function (\Doctrine\ORM\EntityRepository $repository) use ($programIds, $options) {
+                    $builder = $repository->createQueryBuilder('e')
+                        ->innerJoin('e.topic', 't')
+                        ->addSelect('t')
+                        ->where('t.program IN (:programs)')
+                        ->andWhere('e.inactiveDate IS NULL')
+                        ->andWhere('t.inactiveDate IS NULL')
+                        ->setParameter('programs', $programIds ?: [0])
+                        ->orderBy('e.date', 'DESC');
+
+                    // Outside staff, only the evaluations of the teacher's own matières: the
+                    // comparison made by the student is made against THEIR grading.
+                    if (null !== $options['teacher_topics_only']) {
+                        $builder->andWhere('t.teacher = :teacher')->setParameter('teacher', $options['teacher_topics_only']);
+                    }
+
+                    return $builder;
+                },
+                'choice_label' => static fn (Evaluation $evaluation): string => sprintf(
+                    '%s — %s · %s',
+                    $evaluation->getName(),
+                    $evaluation->getTopic()?->getName() ?? '',
+                    $evaluation->getDate()?->format('d/m/Y') ?? '',
+                ),
+                'choice_attr' => static fn (Evaluation $evaluation): array => ['data-programs' => (string) $evaluation->getTopic()?->getProgram()?->getId()],
+                'label' => 'assignmentWizardEvaluationFieldLabel',
+                'placeholder' => 'assignmentWizardEvaluationPlaceholder',
+                'required' => false,
+            ]);
+        }
     }
 
     public function configureOptions(OptionsResolver $resolver): void

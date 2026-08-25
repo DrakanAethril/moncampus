@@ -48,7 +48,7 @@
     </div>
 {% endif %}
 
-{% include 'home/_events_row.html.twig' with {events: events} %}
+{% if feature('agenda') %}{% include 'home/_events_row.html.twig' with {events: events} %}{% endif %}
 
 {# Its own turbo-frame: the ‹ / › arrows and the date picker repaint the matrix alone, leaving the
    banner and the events row above untouched. #}

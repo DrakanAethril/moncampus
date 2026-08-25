@@ -29,6 +29,11 @@ final readonly class StudentAccessFacts
      * @param array<int, float>               $gradeValues           the grade actually awarded, keyed by evaluation id, in that
      *                                                               evaluation's own barème - a missing key is a student with no
      *                                                               grade at all (never graded, absent, excluded), not a zero
+     * @param bool                            $gradesAreEnterable    whether anybody can still enter a grade at all - see
+     *                                                               AccessConditionEvaluator::holds(). False makes every
+     *                                                               `grade_value` leaf hold rather than block: a condition
+     *                                                               nobody can satisfy any more must not lock content for ever
+     *                                                               (design/validated/feature-access.md §8.4)
      */
     public function __construct(
         public \DateTimeImmutable $now,
@@ -41,6 +46,7 @@ final readonly class StudentAccessFacts
         public array $seanceEndDates = [],
         public array $groupIds = [],
         public array $gradeValues = [],
+        public bool $gradesAreEnterable = true,
     ) {
     }
 

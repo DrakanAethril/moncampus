@@ -33,6 +33,14 @@
           data-access-condition-messages-value="{{ builderMessages|json_encode|e('html_attr') }}"
           data-access-condition-conditions-value="{{ conditions|json_encode|e('html_attr') }}">
         <input type="hidden" name="_token" value="{{ csrf_token('access-condition-' ~ host.id) }}">
+
+        {# A « note obtenue » condition written before the carnet de notes was switched off can never
+           become true again. It is **ignored** rather than left to lock the content for ever, and the
+           screen says so: a rule that silently stops applying is worse than one that never existed
+           (design/validated/feature-access.md §8.4). #}
+        {% if hasIgnoredGradeConditions|default(false) %}
+            <div class="alert alert-warning" role="status">{{ 'accessConditionGradeIgnoredWarning'|trans }}</div>
+        {% endif %}
         <input type="hidden" name="conditions" data-access-condition-target="payload">
 
         <div class="card mb-3">
