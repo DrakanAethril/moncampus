@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipTutorLink;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Enum\UfaActivityType;
 use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipLivretEngagementRepository;
@@ -35,6 +37,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 // students. Used to key off ROLE_EXTERNAL, which turned out too generic once other outside
 // populations needed accounts too.
 #[IsGranted('ROLE_TUTOR')]
+#[RequiresFeature(Feature::TutorEvaluations)]
 class InternshipTutorEvaluationController extends AbstractController
 {
     use ProgramFeatureGuardTrait;

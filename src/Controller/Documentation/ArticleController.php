@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Controller\Documentation;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\DocumentationArticle;
 use App\Entity\DocumentationArticleAttachment;
 use App\Entity\DocumentationTag;
 use App\Entity\FileLibraryNode;
 use App\Entity\Group;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Form\DocumentationArticleType;
 use App\Repository\DocumentationArticleRepository;
 use App\Repository\DocumentationTagRepository;
@@ -44,6 +46,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  */
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD") or is_granted("ROLE_ADMIN")'))]
 #[Route(path: '/documentation/articles')]
+#[RequiresFeature(Feature::Documentation)]
 class ArticleController extends AbstractController
 {
     private const string UPLOAD_PREFIX = 'documentation/';

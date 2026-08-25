@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\SchoolMailSignature;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\SchoolMailSignatureRepository;
 use App\Service\StudentMailboxResolver;
 use App\Service\StudentSignatureBuilder;
@@ -25,6 +27,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * the computed values: the point of the default is that it keeps following its sources.
  */
 #[IsGranted('ROLE_STUDENT')]
+#[RequiresFeature(Feature::SchoolMail)]
 class SchoolMailSignatureController extends AbstractController
 {
     public function __construct(

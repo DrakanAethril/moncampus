@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\LdapService;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\LdapServiceRepository;
 use App\Service\DataTableParams;
 use App\Service\LdapServiceSyncer;
@@ -21,6 +23,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 // something day-to-day staff need visibility into. Read-only: there's no create/edit/deactivate
 // action at all, only "sync now" (LdapServiceSyncer) - see App\Entity\LdapService.
 #[IsGranted('ROLE_ADMIN')]
+#[RequiresFeature(Feature::Directory)]
 class DirectoryServiceController extends AbstractController
 {
     #[Route(path: '/directory/services', name: 'app_directory_services')]

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Assignment;
 use App\Entity\AssignmentAttachment;
 use App\Entity\AssignmentView;
@@ -12,6 +13,7 @@ use App\Entity\Program;
 use App\Entity\User;
 use App\Entity\VideoResourceFile;
 use App\Enum\AssignmentNature;
+use App\Enum\Feature;
 use App\Enum\StudentWorkState;
 use App\Repository\AssignmentRepository;
 use App\Repository\AssignmentViewRepository;
@@ -48,6 +50,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * The state machine is not reimplemented here: StudentWorkBoard is the single source of truth for
  * what is late/à faire/rendu, as on the web.
  */
+#[RequiresFeature(Feature::StudentWork)]
 class WorkController extends AbstractController
 {
     public function __construct(

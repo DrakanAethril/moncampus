@@ -30,7 +30,7 @@ use Symfony\Component\HttpKernel\KernelEvents;
  *
  * An action's own attribute wins over its class's, entirely: a screen that names a narrower feature
  * than its neighbours means "this one, and not the other". Several features on one attribute are an
- * AND - all of them have to be on.
+ * OR - the screen exists as long as one of its audiences still has theirs.
  */
 class FeatureAccessSubscriber implements EventSubscriberInterface
 {
@@ -56,10 +56,12 @@ class FeatureAccessSubscriber implements EventSubscriberInterface
         $attribute = $attributes[array_key_last($attributes)];
 
         foreach ($attribute->features as $feature) {
-            if (!$this->featureAccess->isEnabled($feature)) {
-                throw new NotFoundHttpException(sprintf('Feature "%s" is switched off for this account.', $feature->value));
+            if ($this->featureAccess->isEnabled($feature)) {
+                return;
             }
         }
+
+        throw new NotFoundHttpException(sprintf('Feature "%s" is switched off for this account.', implode('", "', array_map(static fn ($feature): string => $feature->value, $attribute->features))));
     }
 
     /** @return array<string, string> */

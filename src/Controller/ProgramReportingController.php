@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
+use App\Enum\Feature;
 use App\Repository\ProgramRepository;
 use App\Service\ProgramFinancialCalculator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -16,6 +18,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 // staff/admin only, unlike the students/teachers/timetable pages, since financial data isn't
 // meant to be visible to the class's own teachers/students.
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::ProgramReporting)]
 class ProgramReportingController extends AbstractController
 {
     use ProgramFeatureGuardTrait;

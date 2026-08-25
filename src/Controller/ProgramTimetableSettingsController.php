@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\LessonSession;
 use App\Entity\Program;
 use App\Entity\Topic;
 use App\Entity\TopicGroup;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Form\LessonSessionType;
 use App\Form\TopicGroupType;
 use App\Form\TopicType;
@@ -39,6 +41,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 // by the same single toggle (isTimetableManagementEnabled()), since Topics/TopicGroups only
 // make sense once the timetable itself is in use.
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::TimetableSettings)]
 class ProgramTimetableSettingsController extends AbstractController
 {
     use CalendarFeedRangeTrait;

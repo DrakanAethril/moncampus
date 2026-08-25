@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller\Infrastructure;
 
+use App\Attribute\RequiresFeature;
+use App\Enum\Feature;
 use App\Enum\GuestAccountOrigin;
 use App\Repository\GuestAccountRepository;
 use App\Repository\IpAllocationRepository;
@@ -44,6 +46,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * screen says so plainly instead of failing at each button.
  */
 #[IsGranted('ROLE_ADMIN')]
+#[RequiresFeature(Feature::Infrastructure)]
 class GuestAccountController extends AbstractController
 {
     use InfrastructureTrait;

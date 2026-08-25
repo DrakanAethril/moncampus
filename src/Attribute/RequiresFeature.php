@@ -26,10 +26,11 @@ use App\Enum\Feature;
  * that belongs to a narrower feature than its neighbours states it (the self-assessment inside the
  * gradebook, a video inside a course space).
  *
- * Several features may be named. They are read as an **AND**: every one of them has to be on. The
- * usual case for that is a screen that is genuinely the meeting of two - a quiz launched inside a
- * course space - and it stays rare, because a screen that needs three features is usually a screen
- * that has not been placed yet.
+ * Several features may be named, and they are read as an **OR**: the screen exists as long as one
+ * of them is on. A handful of routes genuinely belong to two - /programs/{id}/gradebook is the
+ * teacher's grid and the student's own carnet under one path, and it must survive as long as either
+ * audience still has theirs. In the single-feature case, which is nearly all of them, the question
+ * does not arise.
  */
 #[\Attribute(\Attribute::TARGET_CLASS | \Attribute::TARGET_METHOD)]
 final class RequiresFeature

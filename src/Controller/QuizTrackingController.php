@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Program;
 use App\Entity\QuizInstance;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Enum\QuizInstanceState;
 use App\Repository\ProgramRepository;
 use App\Repository\QuizAttemptRepository;
@@ -34,6 +36,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * screen, and that is the correct answer rather than an accident.
  */
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::QuizLibrary)]
 class QuizTrackingController extends AbstractController
 {
     #[Route(path: '/tools/quiz', name: 'app_tools_quiz', methods: ['GET'])]

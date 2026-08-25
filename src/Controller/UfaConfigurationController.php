@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\ContractType;
 use App\Entity\InternshipBehaviorCriteria;
 use App\Entity\InternshipBehaviorLevel;
 use App\Entity\User;
 use App\Enum\ContractTypeCode;
+use App\Enum\Feature;
 use App\Form\InternshipBehaviorCriteriaType;
 use App\Form\InternshipFormationCenterType;
 use App\Repository\ContractTypeRepository;
@@ -36,6 +38,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 // configuration proper. Modalités de contrats (contract_modalities) is genuinely new - the
 // center-level default per ContractType, with the list of Formations currently overriding it.
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::UfaBooklet)]
 class UfaConfigurationController extends AbstractController
 {
     #[Route(path: '/ufa/configuration', name: 'app_ufa_configuration')]

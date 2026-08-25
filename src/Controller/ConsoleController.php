@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\ConsoleSession;
 use App\Entity\ConsoleSnippet;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\ConsoleSessionRepository;
 use App\Repository\FileLibraryNodeRepository;
 use App\Repository\GuestAccountRepository;
@@ -67,6 +69,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * the screen can show rather than a wait it holds.
  */
 #[IsGranted('ROLE_USER')]
+#[RequiresFeature(Feature::GuestConsole)]
 class ConsoleController extends AbstractController
 {
     public function __construct(

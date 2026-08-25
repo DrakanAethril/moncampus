@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\EmailAlias;
 use App\Entity\LdapManageUser;
 use App\Entity\User;
@@ -48,6 +49,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::Directory)]
 class DirectoryUserController extends AbstractController
 {
     #[Route(path: '/directory/users', name: 'app_directory_users')]

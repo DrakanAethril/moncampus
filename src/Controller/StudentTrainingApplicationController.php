@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\TrainingApplication;
 use App\Entity\TrainingOffer;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Enum\TrainingApplicationElement;
 use App\Enum\TrainingApplicationState;
 use App\Repository\TrainingApplicationRepository;
@@ -36,6 +38,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * until somebody has read what this student would have sent to a real company.
  */
 #[IsGranted('ROLE_STUDENT')]
+#[RequiresFeature(Feature::TrainingOffers)]
 class StudentTrainingApplicationController extends AbstractController
 {
     public function __construct(

@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Assignment;
 use App\Entity\Program;
 use App\Entity\User;
 use App\Enum\AssignmentAudienceType;
 use App\Enum\AssignmentSubmissionStatus;
+use App\Enum\Feature;
 use App\Form\AssignmentType;
 use App\Repository\AssignmentRepository;
 use App\Repository\AssignmentSubmissionRepository;
@@ -30,6 +32,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 // and design/validated/assignment-submission-box.md). The student-facing "my assignments"
 // self-service side lives in ProgramAssignmentSubmissionController instead.
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::StudentWork)]
 class ProgramAssignmentController extends AbstractController
 {
     use ProgramFeatureGuardTrait;

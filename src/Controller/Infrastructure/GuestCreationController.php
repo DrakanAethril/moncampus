@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller\Infrastructure;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\IpAllocation;
 use App\Entity\IpRange;
 use App\Entity\ProxmoxHost;
+use App\Enum\Feature;
 use App\Repository\IpAllocationRepository;
 use App\Repository\IpRangeRepository;
 use App\Repository\ProxmoxHostRepository;
@@ -60,6 +62,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * loop somewhere should not be able to fill a hypervisor.
  */
 #[IsGranted('ROLE_ADMIN')]
+#[RequiresFeature(Feature::Infrastructure)]
 class GuestCreationController extends AbstractController
 {
     use InfrastructureTrait;

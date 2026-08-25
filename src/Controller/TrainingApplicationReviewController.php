@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\TrainingApplication;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Enum\TrainingApplicationElement;
 use App\Repository\ProgramRepository;
 use App\Security\StructureAccessChecker;
@@ -27,6 +29,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * which version, is recorded on every verdict.
  */
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::TrainingOffers)]
 class TrainingApplicationReviewController extends AbstractController
 {
     public function __construct(

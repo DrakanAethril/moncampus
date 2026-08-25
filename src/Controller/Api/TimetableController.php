@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\LessonSession;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\LessonSessionRepository;
 use App\Repository\ProgramRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -20,6 +22,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * 7 days. A user who is neither (pure staff/admin) has no personal timetable, same as on the web.
  */
 #[Route(path: '/api/timetable', name: 'api_timetable', methods: ['GET'])]
+#[RequiresFeature(Feature::Timetable)]
 class TimetableController extends AbstractController
 {
     public function __invoke(Request $request, ProgramRepository $programRepository, LessonSessionRepository $lessonSessionRepository): JsonResponse

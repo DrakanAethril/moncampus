@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Message;
 use App\Entity\MessageAttachment;
 use App\Entity\MessageThread;
 use App\Entity\MessageThreadRecipient;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Enum\MessageAudienceType;
 use App\Repository\MessageRepository;
 use App\Repository\MessageThreadRecipientRepository;
@@ -44,6 +46,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
  * of going through the Program audience type's own live-membership syncing (MessageThreadRecipient
  * Syncer) - a one-off mobile message doesn't need a broadcast that keeps growing after send.
  */
+#[RequiresFeature(Feature::Messaging)]
 class MessagesController extends AbstractController
 {
     private const string ATTACHMENT_PREFIX = 'messages/';

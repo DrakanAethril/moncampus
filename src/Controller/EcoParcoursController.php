@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\EcoCheckpoint;
 use App\Entity\EcoParcours;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Form\EcoParcoursCreateType;
 use App\Repository\EcoParcoursRepository;
 use App\Security\Voter\EcoParcoursVoter;
@@ -34,6 +36,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 // (App\Entity\Group with ldapCn null, granted via Settings > Groupes) - not everyone with
 // ROLE_TEACHER gets e-CO, unlike the quiz/séquences library.
 #[IsGranted(new Expression('is_granted("ROLE_ECO") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::Eco)]
 class EcoParcoursController extends AbstractController
 {
     // Rendered server-side, without DataTables: screen 1d shows neither a search box, nor a

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller\Documentation;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\DocumentationArticleRepository;
 use App\Service\DocumentationPerimeter;
 use App\Service\DocumentationReadCounter;
@@ -28,6 +30,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  */
 #[IsGranted(new Expression('is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD") or is_granted("ROLE_ADMIN")'))]
 #[Route(path: '/documentation/manage')]
+#[RequiresFeature(Feature::Documentation)]
 class StatsController extends AbstractController
 {
     private const int MOST_READ_LIMIT = 6;

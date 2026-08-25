@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\AgendaEvent;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Enum\MessageAudienceType;
 use App\Form\AgendaEventType;
 use App\Repository\AgendaEventRepository;
@@ -27,6 +29,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 // Institution events, distinct from the per-Program timetable - see App\Entity\AgendaEvent's
 // docblock.
 #[IsGranted('ROLE_USER')]
+#[RequiresFeature(Feature::Agenda)]
 class AgendaController extends AbstractController
 {
     private const string MANAGE_ACCESS_EXPRESSION = 'is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")';

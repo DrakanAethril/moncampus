@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Program;
 use App\Entity\QuizAttempt;
 use App\Entity\QuizAttemptSelectedAnswer;
@@ -11,6 +12,7 @@ use App\Entity\QuizInstance;
 use App\Entity\QuizInstanceAnswer;
 use App\Entity\User;
 use App\Enum\AttemptStatus;
+use App\Enum\Feature;
 use App\Enum\QuestionType;
 use App\Enum\QuizMode;
 use App\Repository\ProgramRepository;
@@ -39,6 +41,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * decided by Program membership, not a per-instance audience (a quiz's audience is always its
  * whole launch Program - see App\Entity\QuizInstance's class docblock).
  */
+#[RequiresFeature(Feature::QuizTake)]
 class ProgramQuizAttemptController extends AbstractController
 {
     #[Route(path: '/programs/{id}/quiz/mine', name: 'app_program_quiz_mine')]

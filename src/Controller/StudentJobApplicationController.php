@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\JobSearchNote;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\EmailMessageRepository;
 use App\Repository\JobApplicationRepository;
 use App\Repository\JobSearchNoteRepository;
@@ -31,6 +33,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * The notes are invisible to the student (see App\Entity\JobSearchNote), which is why this screen
  * and screen 2b never share a template even though both list the same applications.
  */
+#[RequiresFeature(Feature::JobSearch)]
 class StudentJobApplicationController extends AbstractController
 {
     public function __construct(

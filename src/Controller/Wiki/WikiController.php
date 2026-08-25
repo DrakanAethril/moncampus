@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller\Wiki;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Program;
 use App\Entity\User;
 use App\Entity\Wiki;
+use App\Enum\Feature;
 use App\Repository\ProgramRepository;
 use App\Repository\WikiNodeRepository;
 use App\Repository\WikiRepository;
@@ -39,6 +41,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  */
 #[IsGranted(new Expression('is_granted("ROLE_USER") and not is_granted("ROLE_TUTOR") and not is_granted("ROLE_EXTERNAL")'))]
 #[Route(path: '/wiki')]
+#[RequiresFeature(Feature::Wiki)]
 class WikiController extends AbstractController
 {
     use WikiTrait;

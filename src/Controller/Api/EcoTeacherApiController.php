@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\EcoCheckpoint;
 use App\Entity\EcoParcours;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\EcoCheckpointRepository;
 use App\Repository\EcoCourseRepository;
 use App\Repository\EcoParcoursRepository;
@@ -28,6 +30,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * with the web screen 1h so the two never drift apart).
  */
 #[IsGranted(new Expression('is_granted("ROLE_ECO") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::Eco)]
 class EcoTeacherApiController extends AbstractController
 {
     // Parcours still needing at least one checkpoint located (screen 4b's entry list) - a fully

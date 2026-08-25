@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller\Ufa;
 
+use App\Attribute\RequiresFeature;
+use App\Enum\Feature;
 use App\Form\UfaContractImportType;
 use App\Service\AlternanceImport\ContractRow;
 use App\Service\AlternanceImport\ContractSpreadsheetReader;
@@ -39,6 +41,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * has stopped being importable in the meantime.
  */
 #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
+#[RequiresFeature(Feature::UfaBooklet)]
 class ContractImportController extends AbstractController
 {
     use UfaAlternanceTrait;

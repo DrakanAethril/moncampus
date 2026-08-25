@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
+use App\Enum\Feature;
 use App\Service\LdapUserSyncer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -17,6 +19,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 // same-page-triggers-its-own-sync pattern used by Settings > Groups and Directory > Services/
 // Computers.
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::Directory)]
 class DirectorySyncController extends AbstractController
 {
     #[Route(path: '/directory/sync/run', name: 'app_directory_sync_run', methods: ['POST'])]

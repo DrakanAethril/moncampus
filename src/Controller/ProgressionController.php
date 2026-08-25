@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Evaluation;
 use App\Entity\LessonSession;
 use App\Entity\Progression;
@@ -15,6 +16,7 @@ use App\Entity\Topic;
 use App\Entity\User;
 use App\Enum\ContentShareScope;
 use App\Enum\EvaluationNature;
+use App\Enum\Feature;
 use App\Enum\ProgressionExportMode;
 use App\Enum\ProgressionSlotComposition;
 use App\Enum\ProgressionSlotTopicScope;
@@ -68,6 +70,7 @@ use Symfony\Component\String\Slugger\SluggerInterface;
  * Staff are let in via ProgressionVoter for support purposes, same as the library.
  */
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::Progression)]
 class ProgressionController extends AbstractController
 {
     public function __construct(

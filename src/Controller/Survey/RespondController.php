@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller\Survey;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\SurveyCampaign;
 use App\Entity\SurveyCampaignQuestion;
 use App\Entity\SurveyResponse;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\SurveyCampaignRepository;
 use App\Repository\SurveyTargetRepository;
 use App\Security\Voter\SurveyVoter;
@@ -31,6 +33,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * campaign, *is* the right to answer - the frozen target is the permission.
  */
 #[IsGranted('ROLE_USER')]
+#[RequiresFeature(Feature::Surveys)]
 class RespondController extends AbstractController
 {
     // Where the id of an anonymous draft is kept: an anonymous response stores no respondent, so

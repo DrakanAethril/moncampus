@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller\Survey;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\SurveyCampaign;
 use App\Entity\SurveySeries;
+use App\Enum\Feature;
 use App\Repository\SurveyCampaignRepository;
 use App\Repository\SurveySeriesRepository;
 use App\Repository\SurveyTargetRepository;
@@ -33,6 +35,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * from the overall comparison, deliberately.
  */
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::Surveys)]
 class SeriesController extends AbstractController
 {
     use SurveyTabTrait;

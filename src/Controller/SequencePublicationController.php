@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\LibraryResourceInstance;
 use App\Entity\SeanceInstance;
 use App\Entity\SequenceInstance;
 use App\Enum\ContentVisibility;
+use App\Enum\Feature;
 use App\Repository\SequenceInstanceRepository;
 use App\Security\Voter\SequenceInstanceVoter;
 use Doctrine\ORM\EntityManagerInterface;
@@ -38,6 +40,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * where the form lives.
  */
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::CourseSpace)]
 class SequencePublicationController extends AbstractController
 {
     #[Route(path: '/programs/{id}/sequences/{sequenceInstanceId}/visibility', name: 'app_program_sequence_visibility', methods: ['POST'], requirements: ['id' => '\d+', 'sequenceInstanceId' => '\d+'])]

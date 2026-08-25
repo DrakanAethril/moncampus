@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller\Program;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Program;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipStudentEvaluationRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
@@ -32,6 +34,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * bodies are unchanged; only the class hosting them is new.
  */
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::UfaBooklet)]
 class InternshipReminderController extends AbstractController
 {
     use ProgramInternshipTrait;

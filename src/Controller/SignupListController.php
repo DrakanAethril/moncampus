@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\AgendaEvent;
 use App\Entity\Announcement;
 use App\Entity\MessageThread;
@@ -11,6 +12,7 @@ use App\Entity\SignupList;
 use App\Entity\SignupListAttachment;
 use App\Entity\SignupListRegistration;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Enum\MessageAudienceType;
 use App\Form\SignupListType;
 use App\Repository\AgendaEventRepository;
@@ -42,6 +44,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 // AudienceTargetable) and can optionally be attached to one of those three (a nullable signupList
 // FK on THAT side, not here - see AgendaEvent::$signupList's docblock).
 #[IsGranted('ROLE_USER')]
+#[RequiresFeature(Feature::SignupLists)]
 class SignupListController extends AbstractController
 {
     private const string ATTACHMENT_PREFIX = 'signup-lists/';

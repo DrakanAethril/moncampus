@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Laptop;
 use App\Entity\LaptopConditionType;
 use App\Entity\LaptopLoan;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Enum\LaptopLoanScope;
 use App\Enum\LaptopLoanType;
 use App\Form\LaptopConditionTypeType;
@@ -40,6 +42,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::LaptopLoans)]
 class LaptopController extends AbstractController
 {
     public function __construct(private readonly LaptopLoanEligibility $eligibility)

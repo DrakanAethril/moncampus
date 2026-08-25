@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\LdapManageUser;
 use App\Entity\Program;
 use App\Entity\StudentImportBatchLine;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Form\ClassImportStartType;
 use App\Repository\ProgramRepository;
 use App\Repository\StudentImportBatchLineRepository;
@@ -52,6 +54,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * anything is written - somebody may have created one of these accounts in the meantime.
  */
 #[IsGranted('ROLE_ADMIN')]
+#[RequiresFeature(Feature::Directory)]
 class DirectoryClassImportController extends AbstractController
 {
     /** The parsed file waiting for its analysis to be confirmed. */

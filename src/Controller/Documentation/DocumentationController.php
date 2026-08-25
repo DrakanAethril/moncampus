@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller\Documentation;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Group;
 use App\Entity\User;
 use App\Enum\DocumentationAudience;
+use App\Enum\Feature;
 use App\Repository\DocumentationArticleRepository;
 use App\Security\Voter\DocumentationArticleVoter;
 use App\Service\DocumentationAccess;
@@ -32,6 +34,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  */
 #[IsGranted('ROLE_USER')]
 #[Route(path: '/documentation')]
+#[RequiresFeature(Feature::Documentation)]
 class DocumentationController extends AbstractController
 {
     public const int RECENT_LIMIT = 8;

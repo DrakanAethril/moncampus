@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\ContractType;
 use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipOptionExamModality;
@@ -13,6 +14,7 @@ use App\Entity\Program;
 use App\Entity\ProgramContractModality;
 use App\Entity\User;
 use App\Enum\ContractTypeCode;
+use App\Enum\Feature;
 use App\Form\InternshipEvaluationPeriodType;
 use App\Form\InternshipExamModalityType;
 use App\Form\InternshipLegalNameType;
@@ -45,6 +47,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 // touching that older, still fully working nav path. The "Tableau de bord" (bare /ufa route) and "Tuteurs" routes moved to
 // the App\Controller\Ufa\* controllers - see their own docblocks; this controller no longer owns them.
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::UfaBooklet)]
 class UfaController extends AbstractController
 {
     // 24a - a plain table of the formation's active periods ("les petites listes ... sont des
