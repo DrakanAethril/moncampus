@@ -120,7 +120,11 @@
         </div>
     {% endif %}
 
-    <div class="cm-dash-cols">
+    {# One column when the timetable is switched off rather than a hole beside the work list: the
+       establishment keeps its timetable elsewhere, so the day card has nothing to read and its
+       « Voir la semaine » link leads to a screen that no longer exists. #}
+    <div class="{{ feature('timetable') ? 'cm-dash-cols' : '' }}">
+        {% if feature('timetable') %}
         <div class="card">
             <div class="card-header">
                 {# Falls back to the next lesson day when today is free (see
@@ -158,6 +162,7 @@
                 {% endif %}
             </div>
         </div>
+        {% endif %}
         <div class="card">
             <div class="card-header">
                 <h3 class="card-title">{{ 'homeStudentWorkCardTitle'|trans }}</h3>

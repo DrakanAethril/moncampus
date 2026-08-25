@@ -43,6 +43,29 @@ abstract class FunctionalTestCase extends WebTestCase
         // One transaction per test, never committed: the requests run in this same process on this
         // same connection, so everything the test and the app write is rolled back together.
         $this->entityManager->getConnection()->beginTransaction();
+        $this->enableEveryFeature();
+    }
+
+    /**
+     * Opens the whole feature catalogue for every role, for the duration of this test.
+     *
+     * The two axes are orthogonal and are tested apart: **who** may reach a screen is the role, the
+     * Voters and `access_control`, which is what these functional tests are about; **what the
+     * establishment runs at all** is the feature matrix, and it has tests of its own
+     * (tests/Security/FeatureResolverTest.php, tests/Functional/FeatureDefaultsTest.php, and the
+     * three feature tables of RoleAccessSmokeTest).
+     *
+     * Without this, flipping one default in App\Enum\Feature would turn a dozen unrelated
+     * assertions from "this role is refused" (403) into "this screen does not exist" (404) - and a
+     * test that changes its meaning when a setting moves has stopped pinning what it was written for.
+     *
+     * One statement rather than 384 rows: the matrix is seeded whole by the migration the empty
+     * `_test` schema replays, so there is nothing to insert. Rolled back with everything else.
+     */
+    private function enableEveryFeature(): void
+    {
+        $this->entityManager->createQuery('UPDATE App\Entity\FeatureRoleSetting s SET s.enabled = true')->execute();
+        $this->entityManager->clear();
     }
 
     protected function tearDown(): void

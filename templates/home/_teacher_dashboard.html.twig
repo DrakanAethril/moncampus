@@ -26,6 +26,11 @@
    goes with it, rather than leaving a strip whose « Voir l'agenda » link answers 404. #}
 {% if feature('agenda') %}{% include 'home/_events_row.html.twig' with {events: events} %}{% endif %}
 
+{# Both columns read the timetable: the teacher's own day, and the next session of each of their
+   classes. With « Emploi du temps » switched off there is no timetable to read them from - the
+   establishment keeps it elsewhere - so the strip goes rather than showing hours nobody maintains
+   here, with a « Cahier de texte » link that would answer 404 on top. #}
+{% if feature('timetable') %}
 <div class="cm-dash-cols">
     <div class="card">
         <div class="card-header">
@@ -52,9 +57,11 @@
                                 <span class="cm-sched__title {{ is_past ? 'cm-sched__title--past' }}">{{ session.displayName }} — {{ session.program.displayShortName }}</span>
                                 <span class="cm-sched__meta">{% if session.classRoom %}{{ session.classRoom.name }}{% endif %}</span>
                             </span>
-                            <span class="cm-sched__side">
-                                <a href="{{ path('app_program_timetable_session_log', {id: session.program.id, sessionId: session.id}) }}" class="small fw-bold text-decoration-none">{{ 'homeTeacherLessonLogLabel'|trans }}</a>
-                            </span>
+                            {% if feature('lesson_log') %}
+                                <span class="cm-sched__side">
+                                    <a href="{{ path('app_program_timetable_session_log', {id: session.program.id, sessionId: session.id}) }}" class="small fw-bold text-decoration-none">{{ 'homeTeacherLessonLogLabel'|trans }}</a>
+                                </span>
+                            {% endif %}
                         </div>
                     {% endfor %}
                 </div>
@@ -124,3 +131,4 @@
         </div>
     </div>
 </div>
+{% endif %}
