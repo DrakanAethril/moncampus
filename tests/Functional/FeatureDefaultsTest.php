@@ -139,5 +139,20 @@ class FeatureDefaultsTest extends KernelTestCase
         foreach (['tutor_evaluations', 'ufa_booklet', 'support'] as $feature) {
             $this->assertTrue($reads('ROLE_TUTOR', $feature), 'a tutor is delivered '.$feature);
         }
+
+        // The three columns that hold nothing but what names them: `eco` for the role it exists
+        // for, and not one line for the two outside accounts. They are carried alongside another
+        // role far more often than on their own, and the resolver takes the most permissive.
+        $this->assertTrue($reads('ROLE_ECO', 'eco'), 'the e-CO role is delivered e-CO');
+
+        foreach (Feature::cases() as $feature) {
+            foreach (['ROLE_ECO', 'ROLE_SUPPORT-TECH', 'ROLE_EXTERNAL'] as $role) {
+                if ('ROLE_ECO' === $role && Feature::Eco === $feature) {
+                    continue;
+                }
+
+                $this->assertFalse($reads($role, $feature->value), $role.' is delivered nothing, yet holds '.$feature->value);
+            }
+        }
     }
 }
