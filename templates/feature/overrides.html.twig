@@ -5,8 +5,7 @@
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
-        {label: 'settingsNavLabel'|trans, url: path('app_settings_configuration')},
-        {label: 'featureMatrixPageHeading'|trans, url: path('app_settings_features')},
+        {label: 'featureMatrixPageHeading'|trans, url: path('app_features')},
         {label: feature.labelKey|trans, url: app.request.requestUri},
     ]} %}
 {% endblock %}

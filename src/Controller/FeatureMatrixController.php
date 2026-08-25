@@ -17,7 +17,11 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * Paramètres > Fonctionnalités - the role matrix (design/validated/feature-access.md §9.1).
+ * Gestion > Fonctionnalités - the role matrix (design/validated/feature-access.md §9.1).
+ *
+ * It sits under Gestion, straight below Annuaire, rather than under Paramètres: what it settles is
+ * what the establishment runs for whom, which is the same kind of decision as the accounts next to
+ * it, not a piece of the pedagogical structure.
  *
  * **Admin-only, and carrying no `RequiresFeature` attribute of its own.** That is not an oversight:
  * an admin has every feature by construction, so no setting made here can close the screen the
@@ -33,7 +37,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * whose effect can be read straight away.
  */
 #[IsGranted('ROLE_ADMIN')]
-class SettingsFeatureController extends AbstractController
+class FeatureMatrixController extends AbstractController
 {
     public function __construct(
         private readonly FeatureRoleSettingRepository $roleSettings,
@@ -42,7 +46,7 @@ class SettingsFeatureController extends AbstractController
     ) {
     }
 
-    #[Route(path: '/settings/features', name: 'app_settings_features')]
+    #[Route(path: '/features', name: 'app_features')]
     public function index(): Response
     {
         $matrix = $this->roleSettings->matrix();
@@ -78,7 +82,7 @@ class SettingsFeatureController extends AbstractController
             }
         }
 
-        return $this->render('settings/features.html.twig', [
+        return $this->render('feature/matrix.html.twig', [
             'roles' => $roles,
             'families' => $families,
         ]);
@@ -91,7 +95,7 @@ class SettingsFeatureController extends AbstractController
      *
      * Turbo handles the POST, so it redirects (a POST that renders is a POST Turbo drops).
      */
-    #[Route(path: '/settings/features/{feature}', name: 'app_settings_features_save', methods: ['POST'])]
+    #[Route(path: '/features/{feature}', name: 'app_features_save', methods: ['POST'])]
     public function save(Request $request, string $feature): Response
     {
         $case = Feature::tryFrom($feature) ?? throw $this->createNotFoundException();
@@ -123,7 +127,7 @@ class SettingsFeatureController extends AbstractController
         $this->entityManager->flush();
         $this->addFlash('success', 'featureMatrixSavedFlashMessage');
 
-        return $this->redirectToRoute('app_settings_features', ['_fragment' => $case->value]);
+        return $this->redirectToRoute('app_features', ['_fragment' => $case->value]);
     }
 
     /**
@@ -132,12 +136,12 @@ class SettingsFeatureController extends AbstractController
      * A read-only list: the derogation itself is set from the person's own card in the annuaire,
      * where the reader can see who they are looking at rather than a name in a list.
      */
-    #[Route(path: '/settings/features/{feature}/overrides', name: 'app_settings_features_overrides')]
+    #[Route(path: '/features/{feature}/overrides', name: 'app_features_overrides')]
     public function overrides(string $feature): Response
     {
         $case = Feature::tryFrom($feature) ?? throw $this->createNotFoundException();
 
-        return $this->render('settings/feature_overrides.html.twig', [
+        return $this->render('feature/overrides.html.twig', [
             'feature' => $case,
             'rows' => $this->overrides->findForFeatureWithUsers($case),
         ]);
