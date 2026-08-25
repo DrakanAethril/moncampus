@@ -48,6 +48,54 @@ class AccountDeactivationFlowTest extends FunctionalTestCase
         return static::getContainer()->get(LdapManageAccountRepository::class);
     }
 
+    /**
+     * The rule softened on 2026-08-25: an administrator maintains their own card, and only their
+     * own. Somebody else's admin profile is still maintained in the directory itself.
+     */
+    public function testAnAdministratorOpensTheirOwnCardAndNobodyElsesAdminCard(): void
+    {
+        $otherAdmin = $this->createUser(['ROLE_USER', 'ROLE_ADMIN'], 'flow.other.admin');
+
+        $this->client->request('GET', '/directory/users/'.$this->admin->getId().'/edit');
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+
+        $this->client->request('GET', '/directory/users/'.$otherAdmin->getId().'/edit');
+        self::assertSame(403, $this->client->getResponse()->getStatusCode());
+    }
+
+    /**
+     * The one gesture the exception does not open. The service has always refused it
+     * (LdapAccountRequestService::disable()); what is new is that the card is reachable at all, so
+     * the button would otherwise sit there with a red flash as its only possible answer.
+     */
+    public function testOnesOwnCardOffersNeitherDeactivateNorReactivate(): void
+    {
+        $crawler = $this->client->request('GET', '/directory/users/'.$this->admin->getId().'/edit');
+
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        self::assertCount(0, $crawler->filter('[data-bs-target="#deactivate-account-modal"]'));
+        self::assertCount(0, $crawler->filter('#deactivate-account-modal'));
+        // « Réactiver » too: hiding only the first button let the else branch fire, and an active
+        // account offered to be reactivated.
+        self::assertStringNotContainsString('/reactivate', (string) $this->client->getResponse()->getContent());
+
+        // And on somebody else's card it is right there, so the assertion above is about the self
+        // case rather than about the button having moved.
+        $crawler = $this->client->request('GET', '/directory/users/'.$this->targetId.'/edit');
+        self::assertCount(1, $crawler->filter('[data-bs-target="#deactivate-account-modal"]'));
+    }
+
+    /** Refused by the service, whatever the screen offers. */
+    public function testAnAdministratorStillCannotCloseTheirOwnAccount(): void
+    {
+        $this->client->request('POST', '/directory/users/'.$this->admin->getId().'/deactivate', [
+            '_token' => $this->csrfToken('directory_user_deactivate'),
+        ]);
+
+        self::assertSame(302, $this->client->getResponse()->getStatusCode());
+        self::assertNull($this->admin->getInactiveDate());
+    }
+
     public function testDeactivatingClosesThePlatformAtOnceAndQueuesTheDirectory(): void
     {
         $this->post('deactivate', 'directory_user_deactivate');

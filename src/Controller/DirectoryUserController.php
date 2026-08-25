@@ -170,11 +170,19 @@ class DirectoryUserController extends AbstractController
     ): Response {
         $user = $repository->find($id) ?? throw $this->createNotFoundException();
 
-        // Admin profiles are edited through LDAP directly, not this screen - the Modifier action
-        // is already hidden for them in the list (see App\Controller\DirectoryUserController::data()
-        // and assets/controllers/datatable_controller.js), this is the server-side enforcement of
+        // Somebody else's admin profile is edited through LDAP directly, not this screen - the
+        // Modifier action is already hidden for those in the list (see
+        // App\Controller\DirectoryUserController::data() and
+        // assets/controllers/datatable_controller.js), and this is the server-side enforcement of
         // the same rule in case someone still reaches this URL directly.
-        if (\in_array('ROLE_ADMIN', $user->getRoles(), true)) {
+        //
+        // **One's own card is the exception, since 2026-08-25.** An administrator maintains their
+        // own contact address, avatar and preferences like everybody else, and sending them to
+        // `samba-tool` for that was the rule being blunt rather than careful. What the exception
+        // does not open is closing that account: App\Service\LdapAccountRequestService::disable()
+        // has always refused an administrator closing their own, and the button goes with it in
+        // templates/directory/user_form.html.twig.
+        if ($this->isLockedAdmin($user)) {
             throw $this->createAccessDeniedException();
         }
 
@@ -507,9 +515,10 @@ class DirectoryUserController extends AbstractController
                     static fn ($group): string => $group->getName(),
                     $user?->getManualGroups()->toArray() ?? [],
                 ),
-                // The Modifier action is hidden client-side for these - staff must not be able to
-                // edit an admin profile from this list.
-                'isAdmin' => \in_array('ROLE_ADMIN', $user?->getRoles() ?? [], true),
+                // The Modifier action is hidden client-side for these - nobody edits somebody
+                // else's admin profile from this list. An administrator's own row is not locked:
+                // the name says which of the two questions this answers.
+                'isLockedAdmin' => null !== $user && $this->isLockedAdmin($user),
             ];
         }
 
@@ -519,5 +528,22 @@ class DirectoryUserController extends AbstractController
             'recordsFiltered' => $filteredTotal,
             'data' => $data,
         ]);
+    }
+
+    /**
+     * An administrator's card that this reader may not edit - that is, anybody's but their own.
+     *
+     * The rule it softens is « les comptes admin ne se modifient pas ici » (they are maintained in
+     * the directory itself); the exception is that maintaining *one's own* contact address or
+     * avatar is not an act of administration on somebody else, and there was never a reason to
+     * send an administrator to the command line for it.
+     */
+    private function isLockedAdmin(User $user): bool
+    {
+        if (!\in_array('ROLE_ADMIN', $user->getRoles(), true)) {
+            return false;
+        }
+
+        return $this->getUser()?->getUserIdentifier() !== $user->getUserIdentifier();
     }
 }
