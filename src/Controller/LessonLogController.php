@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Assignment;
 use App\Entity\LessonLog;
 use App\Entity\LessonLogAttachment;
@@ -13,6 +14,7 @@ use App\Entity\Program;
 use App\Entity\ProgressionSeance;
 use App\Entity\User;
 use App\Enum\AssignmentNature;
+use App\Enum\Feature;
 use App\Enum\LessonLogAttachmentSourceType;
 use App\Enum\LessonLogSection;
 use App\Form\LessonLogAttachmentType;
@@ -50,6 +52,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 // tab) via LessonSessionEventFormatter's logUrl. Unlike ProgramTimetableSettingsController, this
 // isn't staff-only: viewing follows program visibility, editing is staff-or-the-session's-own-
 // teacher (see LessonLogVoter), so access is checked per-route rather than class-wide.
+#[RequiresFeature(Feature::LessonLog)]
 class LessonLogController extends AbstractController
 {
     use ProgramFeatureGuardTrait;

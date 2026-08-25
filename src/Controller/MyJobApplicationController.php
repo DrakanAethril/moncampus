@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\JobApplicationRepository;
 use App\Repository\JobSearchRepository;
 use App\Service\JobApplicationSummaryBuilder;
@@ -23,6 +25,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * list, grouped by company, with purely factual rows. Do not add guidance here: that lives on the
  * teacher side (screen 2a), not on this screen.
  */
+#[RequiresFeature(Feature::JobSearch)]
 class MyJobApplicationController extends AbstractController
 {
     /** The mockup's filters. "Awaiting reply" = no reply received, not a verdict on the outcome. */

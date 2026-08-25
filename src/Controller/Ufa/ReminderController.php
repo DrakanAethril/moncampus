@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller\Ufa;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Program;
+use App\Enum\Feature;
 use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipReminderRepository;
 use App\Repository\InternshipTutorLinkRepository;
@@ -31,6 +33,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * bodies are unchanged; only the class hosting them is new.
  */
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD") or is_granted("ROLE_TEACHER")'))]
+#[RequiresFeature(Feature::UfaBooklet)]
 class ReminderController extends AbstractController
 {
     use UfaAlternanceTrait;

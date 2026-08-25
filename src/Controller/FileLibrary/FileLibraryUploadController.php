@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller\FileLibrary;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\FileLibraryNode;
+use App\Enum\Feature;
 use App\Repository\FileLibraryNodeRepository;
 use App\Security\Voter\FileLibraryVoter;
 use App\Service\FileLibraryNodeManager;
@@ -45,6 +47,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  */
 #[IsGranted(FileLibraryVoter::EDIT)]
 #[Route(path: '/tools/file-library')]
+#[RequiresFeature(Feature::FileLibrary)]
 class FileLibraryUploadController extends AbstractController
 {
     use FileLibraryTrait;

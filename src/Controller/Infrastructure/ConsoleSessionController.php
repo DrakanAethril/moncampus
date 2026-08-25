@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller\Infrastructure;
 
+use App\Attribute\RequiresFeature;
+use App\Enum\Feature;
 use App\Repository\ConsoleBroadcastRepository;
 use App\Repository\ConsoleSessionRepository;
 use App\Repository\UserRepository;
@@ -31,6 +33,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * Retention is ninety days, applied by `app:purge-platform-activity`, and the screen says so.
  */
 #[IsGranted('ROLE_ADMIN')]
+#[RequiresFeature(Feature::Infrastructure)]
 class ConsoleSessionController extends AbstractController
 {
     /** How far back the filter bar can look, and its default. */

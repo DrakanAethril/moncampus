@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Program;
 use App\Entity\QuizLiveSession;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\ProgramRepository;
 use App\Repository\QuizLiveParticipantRepository;
 use App\Repository\QuizLiveSessionRepository;
@@ -31,6 +33,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * docblock and the "Concours en cours" banner on program/quiz_mine.html.twig) - there is no
  * "type a room code" screen in v1.
  */
+#[RequiresFeature(Feature::QuizLive)]
 class ProgramQuizLiveController extends AbstractController
 {
     #[Route(path: '/programs/{id}/quiz/live/{sessionId}/join', name: 'app_program_quiz_live_join', requirements: ['sessionId' => '\d+'])]

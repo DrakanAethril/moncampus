@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\SeanceTemplate;
 use App\Entity\SequenceTemplate;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\LibraryBlocTagRepository;
 use App\Repository\LibraryNiveauTagRepository;
 use App\Repository\LibraryOptionTagRepository;
@@ -53,6 +55,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * @phpstan-import-type SequenceImportPayload from SequenceJsonImporter
  */
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::SequenceImport)]
 class SequenceImportController extends AbstractController
 {
     private const string SESSION_KEY = 'sequence_import';

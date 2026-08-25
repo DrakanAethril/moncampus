@@ -22,7 +22,7 @@
         {# First entry, and the reason this dropdown became the student's main door: the documents
            their teachers put at the class's disposal. Shown to students only - a teacher shares
            from their own file library, and reads the result back through the file's utilisations. #}
-        {% if is_granted('ROLE_STUDENT') and not is_staff() %}
+        {% if is_granted('ROLE_STUDENT') and not is_staff() and feature('shared_documents') %}
             <a class="dropdown-item {{ current_route starts with 'app_student_shared_document' ? 'active' }}" href="{{ path('app_student_shared_documents') }}">{{ 'sharedDocumentNavLabel'|trans }}</a>
         {% endif %}
         {# The two entries of the retired student "Outils" dropdown - their mailbox and their
@@ -32,11 +32,13 @@
            student of the school is an entry they learn to ignore. Students read it here; a teacher
            who is not an administrator reads the same screen from the profile menu, that menu being
            where their own account's things live. #}
-        {% if is_pure_student and has_virtual_machines(app.user) %}
+        {% if is_pure_student and feature('my_vms') and has_virtual_machines(app.user) %}
             <a class="dropdown-item {{ current_route starts with 'app_my_machines' ? 'active' }}" href="{{ path('app_my_machines') }}">{{ 'myMachinesNavLabel'|trans }}</a>
         {% endif %}
-        {% if is_pure_student %}
+        {% if is_pure_student and feature('school_mail') %}
             <a class="dropdown-item {{ current_route starts with 'app_school_mail' or current_route starts with 'app_training_' ? 'active' }}" href="{{ path('app_school_mail') }}">{{ 'schoolMailNavLabel'|trans }}</a>
+        {% endif %}
+        {% if is_pure_student and feature('job_search') %}
             <a class="dropdown-item {{ current_route == 'app_my_job_applications' ? 'active' }}" href="{{ path('app_my_job_applications') }}">{{ 'jobApplicationsNavLabel'|trans }}</a>
         {% endif %}
         {# Wikis, unfolding into the three questions a user actually asks. Same dropend shape as
@@ -47,7 +49,7 @@
            Hidden from tutors and the other outside accounts, which are excluded from the feature
            entirely - the same posture messaging takes, and enforced again at the controller's
            door. #}
-        {% if not is_granted('ROLE_TUTOR') and not is_granted('ROLE_EXTERNAL') %}
+        {% if not is_granted('ROLE_TUTOR') and not is_granted('ROLE_EXTERNAL') and feature('wiki') %}
             <div class="dropend">
                 <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_wiki' ? 'active' }}" href="#navbar-resources-wikis" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                     {{ 'wikiNavLabel'|trans }}
@@ -63,10 +65,12 @@
         {% endif %}
         {# « Mes cours » under its real name: what the student reads there is the year's séquences,
            and the old label promised a course space that this screen is only one face of. #}
-        {% if is_granted('ROLE_STUDENT') and not is_staff() %}
+        {% if is_granted('ROLE_STUDENT') and not is_staff() and feature('course_space') %}
             <a class="dropdown-item {{ current_route starts with 'app_my_courses' ? 'active' }}" href="{{ path('app_my_courses') }}">{{ 'courseSpaceNavLabel'|trans }}</a>
         {% endif %}
-        <a class="dropdown-item {{ current_route starts with 'app_documentation' ? 'active' }}" href="{{ path('app_documentation') }}">{{ 'documentationNavLabel'|trans }}</a>
+        {% if feature('documentation') %}
+            <a class="dropdown-item {{ current_route starts with 'app_documentation' ? 'active' }}" href="{{ path('app_documentation') }}">{{ 'documentationNavLabel'|trans }}</a>
+        {% endif %}
         {# The two app-download entries keep the ROLE_ADMIN gate they were given by explicit product
            request. #}
         {% if is_granted('ROLE_ADMIN') %}

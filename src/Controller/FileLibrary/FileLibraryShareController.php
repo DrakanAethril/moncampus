@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\FileLibrary;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\FileLibraryNode;
 use App\Entity\Modality;
 use App\Entity\Option;
@@ -11,6 +12,7 @@ use App\Entity\Program;
 use App\Entity\SharedDocument;
 use App\Entity\Topic;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\FileLibraryNodeRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\SharedDocumentRepository;
@@ -52,6 +54,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  */
 #[IsGranted(FileLibraryVoter::VIEW)]
 #[Route(path: '/tools/file-library')]
+#[RequiresFeature(Feature::FileLibrary)]
 class FileLibraryShareController extends AbstractController
 {
     use FileLibraryTrait;

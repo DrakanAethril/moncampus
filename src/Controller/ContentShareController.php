@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\ContentShare;
 use App\Entity\FileLibraryNode;
 use App\Entity\Program;
@@ -15,6 +16,7 @@ use App\Entity\Topic;
 use App\Entity\User;
 use App\Enum\ContentShareScope;
 use App\Enum\ContentShareSubject;
+use App\Enum\Feature;
 use App\Repository\ContentShareRepository;
 use App\Repository\FileLibraryNodeRepository;
 use App\Repository\ProgressionRepository;
@@ -59,6 +61,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * App\Service\ContentShareAccess says so a second time for anything that gets past this door.
  */
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::ContentSharing)]
 class ContentShareController extends AbstractController
 {
     public function __construct(

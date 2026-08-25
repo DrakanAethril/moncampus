@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\EmailMessage;
 use App\Entity\SchoolMailDraft;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\EmailMessageRepository;
 use App\Repository\JobSearchRepository;
 use App\Repository\SchoolMailDraftRepository;
@@ -42,6 +44,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * (principle #9): the student attaches whatever they want, not only approved documents.
  */
 #[IsGranted('ROLE_STUDENT')]
+#[RequiresFeature(Feature::SchoolMail)]
 class SchoolMailComposeController extends AbstractController
 {
     public function __construct(

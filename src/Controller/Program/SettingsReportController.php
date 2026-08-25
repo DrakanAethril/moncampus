@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller\Program;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Program;
 use App\Entity\ProgramReport;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Form\ProgramReportType;
 use App\Repository\ProgramReportRepository;
 use App\Repository\ProgramRepository;
@@ -26,6 +28,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * bodies are unchanged; only the class hosting them is new.
  */
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::ProgramReporting)]
 class SettingsReportController extends AbstractController
 {
     use ProgramSettingsTabTrait;

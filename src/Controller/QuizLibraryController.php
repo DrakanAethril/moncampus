@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Program;
 use App\Entity\QuizAnswer;
 use App\Entity\QuizFolder;
@@ -11,6 +12,7 @@ use App\Entity\QuizQuestion;
 use App\Entity\QuizTemplate;
 use App\Enum\BlankMode;
 use App\Enum\ContentShareScope;
+use App\Enum\Feature;
 use App\Enum\MatchingSideKind;
 use App\Enum\QuestionDifficulty;
 use App\Enum\QuestionType;
@@ -60,6 +62,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 // launch() bridges into the Program-scoped side (App\Controller\ProgramQuizController), same
 // reasoning as SequenceLibraryController::instantiate().
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::QuizLibrary)]
 class QuizLibraryController extends AbstractController
 {
     use QuizLibraryFolderTrait;

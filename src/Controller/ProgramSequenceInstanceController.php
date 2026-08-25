@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Program;
 use App\Enum\ContentVisibility;
+use App\Enum\Feature;
 use App\Form\SequenceInstanceType;
 use App\Repository\ProgramRepository;
 use App\Repository\ProgressionSeancePlacementRepository;
@@ -39,6 +41,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 // removal stay admin-only; what a teacher may do to a given sequence is decided per object by
 // App\Security\Voter\SequenceInstanceVoter, never by the role alone.
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::Progression)]
 class ProgramSequenceInstanceController extends AbstractController
 {
     use ProgramFeatureGuardTrait;

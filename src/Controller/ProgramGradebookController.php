@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Evaluation;
 use App\Entity\Grade;
 use App\Entity\GradeRubricAnswer;
 use App\Entity\Program;
 use App\Entity\Topic;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Enum\GradeStatus;
 use App\Form\EvaluationFormType;
 use App\Repository\EvaluationRepository;
@@ -45,12 +47,17 @@ use Symfony\Component\Routing\Attribute\Route;
  * already lives under that same feature area (see App\Controller\ProgramTimetableSettingsController's
  * topicsTab()); this doesn't introduce a new dedicated feature flag for grading.
  */
+#[RequiresFeature(Feature::GradebookEntry)]
 class ProgramGradebookController extends AbstractController
 {
     use ProgramFeatureGuardTrait;
 
     private const string SAVE_GRADE_CSRF_TOKEN_ID = 'gradebook_save';
 
+    // One path, two audiences: the teacher's grid and, for an enrolled student, their own carnet
+    // (studentView() below). It therefore names both features - the route survives as long as
+    // either side still has theirs, which is the whole reason the attribute reads as an OR.
+    #[RequiresFeature(Feature::GradebookEntry, Feature::GradebookStudent)]
     #[Route(path: '/programs/{id}/gradebook', name: 'app_program_gradebook')]
     public function grid(
         int $id,

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Program;
+use App\Enum\Feature;
 use App\Enum\PlatformActivityType;
 use App\Enum\UfaActivityType;
 use App\Repository\PlatformActivityRepository;
@@ -30,6 +32,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * parameterised screen: the UFA one is open to staff, the platform one - which logs everybody's
  * logins - to administrators only.
  */
+#[RequiresFeature(Feature::ActivityHistory)]
 class ActivityHistoryController extends AbstractController
 {
     private const int PAGE_SIZE = 30;

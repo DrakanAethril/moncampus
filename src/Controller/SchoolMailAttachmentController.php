@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\EmailAttachment;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\ProgramRepository;
 use App\Security\StructureAccessChecker;
 use Aws\S3\S3Client;
@@ -27,6 +29,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * can already see their sheet (screen 2a). No one else, including other students.
  */
 #[IsGranted('ROLE_USER')]
+#[RequiresFeature(Feature::SchoolMail)]
 class SchoolMailAttachmentController extends AbstractController
 {
     public function __construct(

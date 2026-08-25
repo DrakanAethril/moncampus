@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\LibraryResourceInstance;
 use App\Entity\LibraryResourceInstanceView;
 use App\Entity\Program;
 use App\Entity\SequenceInstance;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Enum\LibraryResourceSourceType;
 use App\Repository\LibraryResourceInstanceRepository;
 use App\Repository\LibraryResourceInstanceViewRepository;
@@ -36,6 +38,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * The sequence and séance screens are open to teaching staff too - that is what makes "Aperçu
  * étudiant" possible - and the split is decided by SequenceInstanceVoter, never here.
  */
+#[RequiresFeature(Feature::CourseSpace)]
 class StudentCourseSpaceController extends AbstractController
 {
     /**

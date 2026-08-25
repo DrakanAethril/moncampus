@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Program;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\ProgramRepository;
 use App\Security\StructureAccessChecker;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -35,12 +37,14 @@ class ToolsController extends AbstractController
     ) {
     }
 
+    #[RequiresFeature(Feature::ClassTools)]
     #[Route(path: '/tools/random-draw', name: 'app_tools_random_draw', methods: ['GET'])]
     public function randomDraw(ProgramRepository $repository): Response
     {
         return $this->renderPicker($repository, 'app_program_tools_random_draw', 'programToolsRandomDrawNavLabel');
     }
 
+    #[RequiresFeature(Feature::ClassTools)]
     #[Route(path: '/tools/group-creation', name: 'app_tools_group_creation', methods: ['GET'])]
     public function groupCreation(ProgramRepository $repository): Response
     {
@@ -52,6 +56,7 @@ class ToolsController extends AbstractController
     // straight from the menu. It hands over to the class's list of contests, running ones first,
     // rather than straight to the creation form - a teacher opening this mid-lesson is usually
     // going back to the session already on the projector, and the form is one button away.
+    #[RequiresFeature(Feature::QuizLive)]
     #[Route(path: '/tools/quiz-live', name: 'app_tools_quiz_live', methods: ['GET'])]
     public function quizLive(ProgramRepository $repository): Response
     {
@@ -62,12 +67,14 @@ class ToolsController extends AbstractController
     // gradebook off the evaluations of a Program that has one), so both target routes reject a class
     // whose timetable management is off - hence the filter, without which the picker would offer
     // classes that answer 404.
+    #[RequiresFeature(Feature::LessonLog)]
     #[Route(path: '/tools/lesson-log', name: 'app_tools_lesson_log', methods: ['GET'])]
     public function lessonLog(ProgramRepository $repository): Response
     {
         return $this->renderPicker($repository, 'app_program_lesson_logs', 'lessonLogPageHeading', timetableOnly: true);
     }
 
+    #[RequiresFeature(Feature::GradebookEntry)]
     #[Route(path: '/tools/gradebook', name: 'app_tools_gradebook', methods: ['GET'])]
     public function gradebook(ProgramRepository $repository): Response
     {
@@ -77,6 +84,7 @@ class ToolsController extends AbstractController
     // No filter here: the target screen asks only for staff-or-teacher plus a visible class
     // (ProgramJobSearchController::findOrDenyAccess()), which is what the picker's own list
     // already answers - the classes taught, or every one of them for staff.
+    #[RequiresFeature(Feature::JobSearch)]
     #[Route(path: '/tools/job-search-tracking', name: 'app_tools_job_search', methods: ['GET'])]
     public function jobSearch(ProgramRepository $repository): Response
     {

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\QuizLiveSession;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\ProgramRepository;
 use App\Repository\QuizLiveParticipantRepository;
 use App\Repository\QuizLiveSessionRepository;
@@ -34,6 +36,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * security.yaml only requires authentication, not this specific role) - deliberately not on the
  * class, because active() answers everyone, see its own docblock.
  */
+#[RequiresFeature(Feature::QuizLive)]
 class QuizLiveController extends AbstractController
 {
     /**

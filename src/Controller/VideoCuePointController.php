@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\QuizQuestion;
 use App\Entity\QuizTemplate;
 use App\Entity\User;
 use App\Entity\VideoCuePoint;
 use App\Entity\VideoResource;
 use App\Entity\VideoResourceFile;
+use App\Enum\Feature;
 use App\Enum\QuestionType;
 use App\Form\QuizImportType;
 use App\Repository\QuizQuestionRepository;
@@ -49,6 +51,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * keeps the promise made for the quiz import - nothing is written before the teacher confirms.
  */
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::Video)]
 class VideoCuePointController extends AbstractController
 {
     // One token for the editor's three actions (add, update, delete): they all fire from a single

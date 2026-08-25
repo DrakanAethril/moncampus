@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller\Infrastructure;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\ProxmoxHost;
+use App\Enum\Feature;
 use App\Enum\ProxmoxAction;
 use App\Repository\IpAllocationRepository;
 use App\Repository\ProxmoxHostRepository;
@@ -55,6 +57,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * moment the question arises.
  */
 #[IsGranted('ROLE_ADMIN')]
+#[RequiresFeature(Feature::Infrastructure)]
 class GuestController extends AbstractController
 {
     use InfrastructureTrait;

@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Assignment;
 use App\Entity\User;
 use App\Entity\VideoCueAnswer;
 use App\Entity\VideoCuePoint;
+use App\Enum\Feature;
 use App\Enum\QuestionType;
 use App\Repository\AssignmentRepository;
 use App\Repository\VideoCueAnswerRepository;
@@ -38,6 +40,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * student and marker - a second pass would measure the correction rather than the teaching.
  */
 #[IsGranted('ROLE_STUDENT')]
+#[RequiresFeature(Feature::Video)]
 class VideoCueController extends AbstractController
 {
     public function __construct(

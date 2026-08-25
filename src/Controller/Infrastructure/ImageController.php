@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller\Infrastructure;
 
+use App\Attribute\RequiresFeature;
+use App\Enum\Feature;
 use App\Repository\ProxmoxHostRepository;
 use App\Security\Voter\ProxmoxHostVoter;
 use App\Service\Proxmox\ProxmoxClientFactory;
@@ -33,6 +35,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * hypervisors by other means.
  */
 #[IsGranted('ROLE_ADMIN')]
+#[RequiresFeature(Feature::Infrastructure)]
 class ImageController extends AbstractController
 {
     use InfrastructureTrait;

@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller\Program;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\PeriodGroup;
 use App\Entity\Program;
 use App\Entity\ProgramPeriodGroup;
+use App\Enum\Feature;
 use App\Repository\PeriodGroupRepository;
 use App\Repository\ProgramPeriodGroupRepository;
 use App\Repository\ProgramRepository;
@@ -28,6 +30,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * bodies are unchanged; only the class hosting them is new.
  */
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::TimetableSettings)]
 class SettingsPeriodGroupController extends AbstractController
 {
     use ProgramSettingsTabTrait;

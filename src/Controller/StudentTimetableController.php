@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\ProgramRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -17,6 +19,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * Program and forwards to its timetable page; with two formations (etu-e) the most recent one
  * wins, the other stays reachable from the dashboard's per-formation links.
  */
+#[RequiresFeature(Feature::Timetable)]
 class StudentTimetableController extends AbstractController
 {
     #[Route(path: '/my/timetable', name: 'app_my_timetable')]

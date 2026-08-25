@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller\Survey;
 
+use App\Attribute\RequiresFeature;
+use App\Enum\Feature;
 use App\Enum\MessageAudienceType;
 use App\Form\Survey\SurveyLaunchType;
 use App\Repository\ProgramRepository;
@@ -33,6 +35,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * travail à faire and must not try to have one (§7.9).
  */
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::Surveys)]
 class LaunchController extends AbstractController
 {
     use SurveyTabTrait;

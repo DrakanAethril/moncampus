@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Program;
 use App\Entity\QuizAttempt;
 use App\Entity\QuizAttemptSelectedAnswer;
@@ -12,6 +13,7 @@ use App\Entity\QuizInstanceAnswer;
 use App\Entity\QuizInstanceQuestion;
 use App\Entity\User;
 use App\Enum\AttemptStatus;
+use App\Enum\Feature;
 use App\Enum\QuestionType;
 use App\Enum\QuizMode;
 use App\Repository\ProgramRepository;
@@ -55,6 +57,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * requires authentication).
  */
 #[IsGranted('ROLE_STUDENT')]
+#[RequiresFeature(Feature::QuizTake)]
 class QuizController extends AbstractController
 {
     public function __construct(

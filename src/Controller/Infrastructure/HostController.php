@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller\Infrastructure;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\ProxmoxHost;
+use App\Enum\Feature;
 use App\Enum\ProxmoxCredentialKind;
 use App\Enum\ProxmoxTlsMode;
 use App\Form\ProxmoxHostType;
@@ -47,6 +49,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * token travels in the X-CSRF-Token header, which is the other half of that pair.
  */
 #[IsGranted('ROLE_ADMIN')]
+#[RequiresFeature(Feature::Infrastructure)]
 class HostController extends AbstractController
 {
     use InfrastructureTrait;

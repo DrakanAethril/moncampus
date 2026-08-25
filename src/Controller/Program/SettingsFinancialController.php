@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller\Program;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Program;
 use App\Entity\ProgramFinancialItem;
 use App\Entity\ProgramLessonTypeCost;
+use App\Enum\Feature;
 use App\Enum\FinancialItemSource;
 use App\Form\ProgramFinancialItemType;
 use App\Repository\LessonTypeRepository;
@@ -30,6 +32,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * bodies are unchanged; only the class hosting them is new.
  */
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::ProgramFinancial)]
 class SettingsFinancialController extends AbstractController
 {
     use ProgramSettingsTabTrait;

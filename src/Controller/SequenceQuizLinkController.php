@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\QuizTemplate;
 use App\Entity\SeanceTemplate;
 use App\Entity\SequenceTemplate;
+use App\Enum\Feature;
 use App\Repository\QuizTemplateRepository;
 use App\Repository\SeanceTemplateRepository;
 use App\Repository\SequenceTemplateRepository;
@@ -34,6 +36,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * assistant's import step attaches what it produced (App\Controller\QuizImportController).
  */
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::QuizLibrary)]
 class SequenceQuizLinkController extends AbstractController
 {
     public function __construct(

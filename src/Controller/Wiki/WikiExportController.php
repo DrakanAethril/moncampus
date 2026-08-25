@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller\Wiki;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Wiki;
+use App\Enum\Feature;
 use App\Repository\WikiNodeRepository;
 use App\Repository\WikiRepository;
 use App\Service\GotenbergUnavailableException;
@@ -28,6 +30,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  */
 #[IsGranted(new Expression('is_granted("ROLE_USER") and not is_granted("ROLE_TUTOR") and not is_granted("ROLE_EXTERNAL")'))]
 #[Route(path: '/wiki/{id}', requirements: ['id' => '\d+'])]
+#[RequiresFeature(Feature::Wiki)]
 class WikiExportController extends AbstractController
 {
     use WikiTrait;

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller\Infrastructure;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\ProxmoxHost;
+use App\Enum\Feature;
 use App\Enum\ProxmoxAction;
 use App\Enum\ProxmoxOperationStatus;
 use App\Repository\ProxmoxHostRepository;
@@ -33,6 +35,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * seconds, for at most five minutes.
  */
 #[IsGranted('ROLE_ADMIN')]
+#[RequiresFeature(Feature::Infrastructure)]
 class OperationController extends AbstractController
 {
     use InfrastructureTrait;

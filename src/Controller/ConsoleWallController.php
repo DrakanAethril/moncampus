@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\User;
 use App\Entity\VmBatch;
+use App\Enum\Feature;
 use App\Repository\GuestAccountRepository;
 use App\Repository\VmBatchRepository;
 use App\Service\Console\ConsoleWallReader;
@@ -34,6 +36,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * would not already show.
  */
 #[IsGranted('ROLE_USER')]
+#[RequiresFeature(Feature::GuestConsole)]
 class ConsoleWallController extends AbstractController
 {
     #[Route(path: '/console/batch/{id}', name: 'app_console_wall', requirements: ['id' => '\d+'], methods: ['GET'])]

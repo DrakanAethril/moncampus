@@ -40,11 +40,10 @@ final class Version20260825090000 extends AbstractMigration
         $this->addSql('CREATE TABLE user_feature_access (id INT AUTO_INCREMENT NOT NULL, user_id INT NOT NULL, feature VARCHAR(64) NOT NULL, state VARCHAR(16) NOT NULL, INDEX IDX_14F912A3A76ED395 (user_id), UNIQUE INDEX uniq_user_feature (user_id, feature), PRIMARY KEY (id)) DEFAULT CHARACTER SET utf8mb4');
         $this->addSql('ALTER TABLE user_feature_access ADD CONSTRAINT FK_14F912A3A76ED395 FOREIGN KEY (user_id) REFERENCES `user` (id) ON DELETE CASCADE');
 
-        $this->addSql('ALTER TABLE program ADD school_mail_enabled TINYINT(1) DEFAULT 0 NOT NULL');
-        // Open on what already exists, so nothing changes on screen before the lot that is allowed
-        // to. The column DEFAULT above only lives for the length of this ALTER - a formation
-        // created afterwards starts closed, which is the value the entity carries.
-        $this->addSql('UPDATE program SET school_mail_enabled = 1');
+        // Open everywhere, so nothing changes on screen before the lot that is allowed to change
+        // it. Lot 6 flips both this default and every row, together with the setting and the guard
+        // that make the closure readable (§12.1).
+        $this->addSql('ALTER TABLE program ADD school_mail_enabled TINYINT(1) DEFAULT 1 NOT NULL');
 
         foreach ($this->featureKeys() as $feature) {
             foreach ($this->roles() as $role) {

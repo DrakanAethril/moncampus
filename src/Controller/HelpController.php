@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\HelpArticle;
 use App\Entity\HelpSection;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Enum\HelpArticleKind;
 use App\Repository\HelpArticleRepository;
 use App\Repository\HelpSectionRepository;
@@ -45,6 +47,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * screens off /help/manage, and a route pattern is what keeps the two from racing to match it.
  */
 #[IsGranted('ROLE_USER')]
+#[RequiresFeature(Feature::Help)]
 class HelpController extends AbstractController
 {
     private const string SECTION_SLUG = '(?!manage$)[a-z0-9-]+';

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Infrastructure;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\GroupBatch;
 use App\Entity\IpRange;
 use App\Entity\Program;
@@ -11,6 +12,7 @@ use App\Entity\ProxmoxHost;
 use App\Entity\User;
 use App\Entity\VmBatch;
 use App\Entity\VmBatchItem;
+use App\Enum\Feature;
 use App\Enum\VmBatchItemStatus;
 use App\Enum\VmBatchShape;
 use App\Repository\GroupBatchRepository;
@@ -53,6 +55,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * not atomic can be resumed - which is safe to press twice by construction.
  */
 #[IsGranted('ROLE_ADMIN')]
+#[RequiresFeature(Feature::Infrastructure)]
 class VmBatchController extends AbstractController
 {
     use InfrastructureTrait;

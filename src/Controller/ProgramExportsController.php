@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\LessonSession;
 use App\Entity\Program;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Form\ExportDateRangeType;
 use App\Repository\LessonSessionRepository;
 use App\Repository\ProgramRepository;
@@ -29,6 +31,7 @@ use Symfony\Component\String\Slugger\SluggerInterface;
 // generate-on-submit tool (not persisted, unlike the "Comptes rendus" settings tab): pick some
 // parameters, get a printable/reviewable result back on the same page.
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::ProgramExports)]
 class ProgramExportsController extends AbstractController
 {
     use ProgramFeatureGuardTrait;

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\LdapManageAccount;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Enum\LdapAccountAction;
 use App\Repository\LdapManageAccountRepository;
 use App\Repository\UserRepository;
@@ -46,6 +48,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  *    App\Service\LdapAccountApplier.
  */
 #[IsGranted('ROLE_ADMIN')]
+#[RequiresFeature(Feature::Directory)]
 class DirectoryAccountController extends AbstractController
 {
     /**

@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Controller\Program;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipStudentEvaluation;
 use App\Entity\InternshipTutorEvaluation;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Program;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Form\InternshipStudentEvaluationType;
 use App\Form\InternshipTutorEvaluationType;
 use App\Repository\InternshipEvaluationPeriodRepository;
@@ -34,6 +36,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * bodies are unchanged; only the class hosting them is new.
  */
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::UfaBooklet)]
 class InternshipEvaluationStatusController extends AbstractController
 {
     use ProgramInternshipTrait;

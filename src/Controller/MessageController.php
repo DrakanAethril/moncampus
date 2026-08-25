@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\AudienceTargetable;
 use App\Entity\Message;
 use App\Entity\MessageAttachment;
@@ -11,6 +12,7 @@ use App\Entity\MessageThread;
 use App\Entity\MessageThreadRecipient;
 use App\Entity\Program;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Enum\MessageAudienceType;
 use App\Form\MessageComposeType;
 use App\Form\MessageReplyType;
@@ -47,6 +49,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 // ROLE_USER (the class attribute below); there is no unauthenticated or tutor-reachable
 // entry point anywhere in this controller, per that design's permission matrix.
 #[IsGranted('ROLE_USER')]
+#[RequiresFeature(Feature::Messaging)]
 class MessageController extends AbstractController
 {
     private const string ATTACHMENT_PREFIX = 'messages/';

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Program;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\LessonSessionRepository;
 use App\Service\LessonSessionEventFormatter;
 use App\Service\NameColorGenerator;
@@ -23,6 +25,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 // settings/timetable tab, and this personal view only makes sense for someone who actually
 // teaches sessions.
 #[IsGranted('ROLE_TEACHER')]
+#[RequiresFeature(Feature::Timetable)]
 class TeacherTimetableController extends AbstractController
 {
     use CalendarFeedRangeTrait;

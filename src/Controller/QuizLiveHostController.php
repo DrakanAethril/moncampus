@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Program;
 use App\Entity\QuizLiveSession;
 use App\Entity\QuizTemplate;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\ProgramRepository;
 use App\Repository\QuizLiveParticipantRepository;
 use App\Repository\QuizLiveSessionRepository;
@@ -39,6 +41,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * (StructureAccessChecker::isProgramTeacher()) for the Program side, since a session is reachable
  * by any teacher of the target Program, not just whoever happened to create it.
  */
+#[RequiresFeature(Feature::QuizLive)]
 class QuizLiveHostController extends AbstractController
 {
     #[Route(path: '/programs/{id}/quiz/live/new', name: 'app_program_quiz_live_new')]
