@@ -8,9 +8,11 @@ use App\Entity\Program;
 use App\Entity\SchoolYear;
 use App\Entity\Section;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\ProgramRepository;
 use App\Repository\QuizInstanceRepository;
 use App\Repository\SectionRepository;
+use App\Security\FeatureAccess;
 use App\Security\StructureAccessChecker;
 use App\Service\StudentAlternanceProgramResolver;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -59,6 +61,8 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
         private readonly RequestStack $requestStack,
         private readonly Security $security,
         private readonly StudentAlternanceProgramResolver $alternanceProgramResolver,
+        private readonly FeatureAccess $featureAccess,
+        private readonly VisibilityExtension $visibility,
     ) {
     }
 
@@ -73,6 +77,7 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
             new TwigFunction('is_staff', $this->accessChecker->isStaff(...)),
             new TwigFunction('is_program_teacher', $this->accessChecker->isProgramTeacher(...)),
             new TwigFunction('program_has_quiz_instances', $this->hasQuizInstances(...)),
+            new TwigFunction('program_nav_has_entries', $this->hasNavEntries(...)),
             new TwigFunction('student_nav_programs', $this->getStudentPrograms(...)),
             new TwigFunction('student_nav_alternance_program', $this->getStudentAlternanceProgram(...)),
         ];
@@ -111,6 +116,43 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
         return $this->alternanceProgramResolver->resolve($user);
     }
 
+    /**
+     * Whether a class's submenu holds at least one entry for the person reading it - the mirror of
+     * what templates/layout/app.html.twig renders inside the class dropend.
+     *
+     * It has to be kept in step with that template by hand, which is why
+     * tests/Functional/NavigationEmptyMenusTest.php walks the rendered bar for every role and
+     * refuses any panel without a link: the drift shows there rather than on somebody's screen.
+     */
+    public function hasNavEntries(Program $program): bool
+    {
+        // An administrator always reads the two lists, the syllabus and the sequences; a staff
+        // member always reads the « Paramétrage » submenu. Neither can be empty, so neither needs
+        // the rest of this method.
+        if ($this->security->isGranted('ROLE_ADMIN') || $this->accessChecker->isStaff()) {
+            return true;
+        }
+
+        if ($this->featureAccess->isEnabled(Feature::Timetable)
+            && $program->isTimetableManagementEnabled()
+            && $this->visibility->allows($program->getTimetableVisibility())) {
+            return true;
+        }
+
+        if ($this->featureAccess->isEnabled(Feature::MyAlternance)
+            && $this->visibility->allows($program->getAlternanceCalendarVisibility())) {
+            return true;
+        }
+
+        if (!$this->security->isGranted('ROLE_STUDENT')) {
+            return false;
+        }
+
+        return ($this->featureAccess->isEnabled(Feature::UfaBooklet) && $program->isInternshipManagementEnabled())
+            || ($this->featureAccess->isEnabled(Feature::StudentWork) && $program->isAssignmentManagementEnabled())
+            || ($this->featureAccess->isEnabled(Feature::QuizTake) && $this->hasQuizInstances($program));
+    }
+
     public function hasQuizInstances(Program $program): bool
     {
         if (null === $this->programIdsWithQuizInstances) {
@@ -139,9 +181,14 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
         $groups = [];
 
         foreach ($this->programGroupsBySection()[$section->getId()] ?? [] as $group) {
+            // Two questions, and both have to be answered here rather than in the template: may
+            // this person see the class at all, and does its submenu lead anywhere. A class whose
+            // every entry is switched off would otherwise draw a name that opens on an empty panel,
+            // and dropping it here is what also empties its school-year group and, in turn, its
+            // Section - the template reads this same result to decide whether to draw either.
             $visiblePrograms = array_values(array_filter(
                 $group['programs'],
-                fn (Program $program): bool => $this->accessChecker->isProgramVisible($program),
+                fn (Program $program): bool => $this->accessChecker->isProgramVisible($program) && $this->hasNavEntries($program),
             ));
 
             if ([] !== $visiblePrograms) {

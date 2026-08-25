@@ -123,7 +123,7 @@ class WikiController extends AbstractController
     }
 
     /**
-     * "Mes wikis" - everything that is not my own personal wiki, grouped by class.
+     * « Wikis partagés » - everything that is not my own personal wiki, grouped by class.
      *
      * Flat, it becomes an unreadable pile after two school years. Program being Cohort x SchoolYear,
      * grouping by class separates the years by itself, so only the current one is expanded.

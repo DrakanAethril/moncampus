@@ -37,7 +37,7 @@ class WikiRepository extends ServiceEntityRepository
     }
 
     /**
-     * "Mes wikis": everything that is not my own personal wiki - assigned to me through one of my
+     * « Wikis partagés »: everything that is not my own personal wiki - assigned to me through one of my
      * classes, created by me, or where I was added as a member.
      *
      * Deliberately not "every wiki I may read": a teacher may read every student wiki in the
@@ -76,6 +76,39 @@ class WikiRepository extends ServiceEntityRepository
             ->getResult();
 
         return $wikis;
+    }
+
+    /**
+     * Whether « Wikis partagés » would show this person anything at all - what the nav entry is
+     * gated on, since an entry that always leads to « aucun wiki » is one people learn to ignore.
+     *
+     * The same conditions as findSharedFor(), hydrating nothing and stopping at the first row: this
+     * runs on every authenticated page, not on the screen it guards. Archived wikis do not count,
+     * because the screen does not show them either until somebody asks for them.
+     *
+     * @param list<Program> $programs the classes the person is enrolled in or teaches
+     */
+    public function hasSharedFor(User $user, array $programs): bool
+    {
+        $qb = $this->createQueryBuilder('w')
+            ->select('1')
+            ->leftJoin('w.members', 'm')
+            ->leftJoin('w.programs', 'p')
+            ->andWhere('w.type = :shared')
+            ->andWhere('w.archived = false')
+            ->setParameter('shared', WikiType::Shared)
+            ->setMaxResults(1);
+
+        if ([] === $programs) {
+            $qb->andWhere('m = :user OR w.createdBy = :user')
+                ->setParameter('user', $user);
+        } else {
+            $qb->andWhere('m = :user OR w.createdBy = :user OR p IN (:programs)')
+                ->setParameter('user', $user)
+                ->setParameter('programs', $programs);
+        }
+
+        return [] !== $qb->getQuery()->getScalarResult();
     }
 
     /**

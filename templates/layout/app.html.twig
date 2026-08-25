@@ -202,8 +202,15 @@
                                                         {{ program.displayShortName }}
                                                     </a>
                                                     <div class="dropdown-menu">
-                                                        <a class="dropdown-item {{ current_route == 'app_program_students' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_students', {id: program.id}) }}">{{ 'programStudentsNavLabel'|trans }}</a>
-                                                        <a class="dropdown-item {{ current_route == 'app_program_teachers' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_teachers', {id: program.id}) }}">{{ 'programTeachersNavLabel'|trans }}</a>
+                                                        {# The two lists are administrators' screens since 2026-08-25: they
+                                                           hold the class's people, which is the establishment's own directory
+                                                           rather than a teaching tool. A teacher reaches their students
+                                                           through the tools that need them. The routes themselves are
+                                                           unchanged - this hides the door, it does not lock it. #}
+                                                        {% if is_granted('ROLE_ADMIN') %}
+                                                            <a class="dropdown-item {{ current_route == 'app_program_students' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_students', {id: program.id}) }}">{{ 'programStudentsNavLabel'|trans }}</a>
+                                                            <a class="dropdown-item {{ current_route == 'app_program_teachers' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_teachers', {id: program.id}) }}">{{ 'programTeachersNavLabel'|trans }}</a>
+                                                        {% endif %}
                                                         {% if feature('timetable') and program.timetableManagementEnabled and visibility_allows(program.timetableVisibility) %}
                                                             <a class="dropdown-item {{ current_route == 'app_program_timetable' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_timetable', {id: program.id}) }}">{{ 'programTimetableNavLabel'|trans }}</a>
                                                         {% endif %}
@@ -224,7 +231,13 @@
                                                                CloudFront URL, not an in-app page. #}
                                                             <a class="dropdown-item" href="{{ path('app_program_alternance_calendar_pdf', {id: program.id}) }}"{% if program.alternanceCalendarMode.value == 'file' %} target="_blank" rel="noopener"{% endif %}>{{ 'programAlternanceCalendarNavLabel'|trans }}</a>
                                                         {% endif %}
-                                                        {% if feature('progression') and visibility_allows(program.syllabusVisibility) %}
+                                                        {# Administrators only since 2026-08-25, and **deliberately no longer
+                                                           reading program.syllabusVisibility**: the setting stays in Formation >
+                                                           Paramétrage, where it was configured, but nothing applies it for now.
+                                                           Removing the field would throw away what each class had already been
+                                                           set to, and the day the syllabus opens up again that is exactly what
+                                                           would have to be entered a second time. #}
+                                                        {% if is_granted('ROLE_ADMIN') and feature('progression') %}
                                                             <a class="dropdown-item {{ current_route == 'app_program_syllabus' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_syllabus', {id: program.id}) }}"{% if program.syllabusMode.value == 'file' %} target="_blank" rel="noopener"{% endif %}>{{ 'programSyllabusNavLabel'|trans }}</a>
                                                         {% endif %}
                                                         {% if is_granted('ROLE_ADMIN') and feature('progression') and program.timetableManagementEnabled %}

@@ -6,6 +6,7 @@ namespace App\Twig;
 
 use App\Entity\User;
 use App\Repository\GuestAccountRepository;
+use Symfony\Contracts\Service\ResetInterface;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
 
@@ -17,8 +18,10 @@ use Twig\TwigFunction;
 //
 // The answer is held for the request. The two menus are rendered from the same layout and the
 // question is asked once per menu, so without this a page would count twice for one answer that
-// cannot have changed in between.
-class MyMachineExtension extends AbstractExtension
+// cannot have changed in between. It is dropped between requests: under FrankenPHP worker mode a
+// Twig extension is a singleton that outlives the request, and a memo with no reset would serve the
+// first visitor's answer to every later one in the same worker - here, somebody else's menu entry.
+class MyMachineExtension extends AbstractExtension implements ResetInterface
 {
     private ?bool $hasMachines = null;
 
@@ -41,5 +44,11 @@ class MyMachineExtension extends AbstractExtension
         }
 
         return $this->hasMachines ??= $this->accounts->userHasAny($user);
+    }
+
+    #[\Override]
+    public function reset(): void
+    {
+        $this->hasMachines = null;
     }
 }
