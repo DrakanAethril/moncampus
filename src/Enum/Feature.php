@@ -301,6 +301,21 @@ enum Feature: string
     }
 
     /**
+     * The roles that are delivered **nothing at all** unless a feature names them.
+     *
+     * They are not "somebody who uses the platform" the way a student or a teacher is: `ROLE_ECO`
+     * exists for the orienteering races and is named by `eco` alone, and the other two are outside
+     * accounts. Without this they would inherit the six role-blind survivors of defaultForRoles(),
+     * which is how a race organiser came to be delivered the alternance booklet.
+     *
+     * It costs nobody anything real: these roles are carried alongside another one far more often
+     * than on their own, and the resolver takes the most permissive of a person's roles. Somebody
+     * who genuinely holds only one of them, and needs a screen, gets it from their card in the
+     * annuaire - which is what the individual derogation is for.
+     */
+    private const array ROLES_WITHOUT_DEFAULTS = ['ROLE_ECO', 'ROLE_SUPPORT-TECH', 'ROLE_EXTERNAL'];
+
+    /**
      * The seed for one (feature, role) pair. Only used by the seeding migrations; the resolver
      * reads the stored matrix and falls back on defaultForRoles() alone.
      */
@@ -308,6 +323,16 @@ enum Feature: string
     {
         $roles = $this->defaultRoles();
 
-        return null === $roles ? $this->defaultForRoles() : \in_array($role, $roles, true);
+        if (null !== $roles) {
+            return \in_array($role, $roles, true);
+        }
+
+        // Checked after the named roles, not before: a feature that names one of these three is
+        // delivered to it, which is the whole point of `eco` and `ROLE_ECO`.
+        if (\in_array($role, self::ROLES_WITHOUT_DEFAULTS, true)) {
+            return false;
+        }
+
+        return $this->defaultForRoles();
     }
 }
