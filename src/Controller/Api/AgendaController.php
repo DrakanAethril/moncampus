@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\AgendaEvent;
 use App\Entity\SignupList;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\AgendaEventRepository;
 use App\Repository\SignupListRegistrationRepository;
 use App\Security\Voter\AudienceTargetableVoter;
@@ -25,6 +27,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * mobile client to render a register/unregister button without a second request; the actual
  * register/unregister actions themselves live in Api\SignupListController, not here.
  */
+#[RequiresFeature(Feature::Agenda)]
 class AgendaController extends AbstractController
 {
     #[Route(path: '/api/agenda', name: 'api_agenda', methods: ['GET'])]

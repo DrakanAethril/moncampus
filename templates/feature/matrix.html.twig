@@ -1,0 +1,89 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'featureMatrixPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {# Two segments: Gestion is a menu with no landing page of its own, so the screen hangs
+       straight off Accueil - the same trail the Annuaire screens draw. #}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'featureMatrixPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'featureMatrixPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="cm-card-note">{{ 'featureMatrixHelpText'|trans }}</div>
+
+        {% for block in families %}
+            <div class="cm-featmatrix">
+                <h2 class="cm-featmatrix__family">{{ block.family.labelKey|trans }}</h2>
+                {# The row forms live OUTSIDE the table: a <form> placed between <tr> and <td> is
+                   hoisted out of the table by every HTML parser, taking its hidden token with it.
+                   The inputs join their form by `form="…"`, which is what makes one save per line
+                   possible without nesting anything. #}
+                {% for row in block.rows %}
+                    <form method="post" action="{{ path('app_features_save', {feature: row.feature.value}) }}" id="feature-form-{{ row.feature.value }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('feature-matrix-' ~ row.feature.value) }}">
+                    </form>
+                {% endfor %}
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table cm-featmatrix__table">
+                        <thead>
+                            <tr>
+                                <th>{{ 'featureColumnLabel'|trans }}</th>
+                                {% for role in roles %}
+                                    <th class="cm-featmatrix__role">{{ role|replace({'ROLE_': ''}) }}</th>
+                                {% endfor %}
+                                <th class="cm-featmatrix__overrides">{{ 'featureOverridesColumnLabel'|trans }}</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in block.rows %}
+                                {# One <form> per line: a matrix saved in one go is a matrix where a
+                                   stray click is invisible. It POSTs and redirects, as every Turbo
+                                   POST in this application must. #}
+                                <tr id="{{ row.feature.value }}">
+                                    <td>
+                                        <div>{{ row.feature.labelKey|trans }}</div>
+                                        <div class="cm-featmatrix__key">{{ row.feature.value }}</div>
+                                        {% if row.parent %}
+                                            {# One level, never a tree: a child under an
+                                               extinguished parent stays extinguished whatever this
+                                               line says, so the line says so. #}
+                                            <div class="cm-featmatrix__note">{{ 'featureChildOfText'|trans({'%parent%': row.parent.labelKey|trans}) }}</div>
+                                        {% endif %}
+                                        {% if row.programScoped %}
+                                            <div class="cm-featmatrix__note">{{ 'featureProgramScopedText'|trans }}</div>
+                                        {% endif %}
+                                    </td>
+                                    {% for role in roles %}
+                                        <td class="cm-featmatrix__cell">
+                                            <input class="form-check-input" type="checkbox"
+                                                   form="feature-form-{{ row.feature.value }}"
+                                                   name="roles[{{ role }}]" value="1"
+                                                   {{ row.cells[role] ? 'checked' }}
+                                                   aria-label="{{ row.feature.labelKey|trans }} — {{ role }}">
+                                        </td>
+                                    {% endfor %}
+                                    <td class="cm-featmatrix__overrides">
+                                        {% if row.overrides > 0 %}
+                                            <a href="{{ path('app_features_overrides', {feature: row.feature.value}) }}" class="cm-badge cm-badge--gold">{{ row.overrides }}</a>
+                                        {% else %}
+                                            <span class="text-secondary">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="cm-actions">
+                                        <button type="submit" form="feature-form-{{ row.feature.value }}" class="cm-action--positive">{{ 'submitSaveAction'|trans }}</button>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

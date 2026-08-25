@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Assignment;
 use App\Entity\AssignmentCompletion;
 use App\Entity\AssignmentDismissal;
@@ -14,6 +15,7 @@ use App\Entity\AudioRecordingFile;
 use App\Entity\Topic;
 use App\Entity\User;
 use App\Entity\VideoResourceFile;
+use App\Enum\Feature;
 use App\Enum\StudentWorkState;
 use App\Form\AssignmentSubmissionFileType;
 use App\Repository\AssignmentCompletionRepository;
@@ -52,6 +54,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
  * modal - this is the student's way in, and handing something in should not ask them to leave it.
  */
 #[IsGranted('ROLE_STUDENT')]
+#[RequiresFeature(Feature::StudentWork)]
 class StudentWorkController extends AbstractController
 {
     private const string SUBMISSION_UPLOAD_PREFIX = 'assignment-submissions/';

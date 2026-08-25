@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Program;
 use App\Entity\QuizAttempt;
 use App\Entity\QuizAttemptAnswer;
 use App\Entity\QuizInstance;
 use App\Entity\User;
 use App\Enum\AttemptOrigin;
+use App\Enum\Feature;
 use App\Form\QuizInstanceEditType;
 use App\Repository\ProgramRepository;
 use App\Repository\QuizAttemptRepository;
@@ -30,6 +32,7 @@ use Symfony\Component\Routing\Attribute\Route;
 //
 // "Sessions live" (screen 1o) is deliberately not built - out of scope along with the rest of the
 // concours-à-plusieurs feature (App\Enum\QuizMode::Live is unexposed everywhere else too).
+#[RequiresFeature(Feature::QuizLibrary)]
 class ProgramQuizController extends AbstractController
 {
     #[Route(path: '/programs/{id}/quiz', name: 'app_program_quiz')]

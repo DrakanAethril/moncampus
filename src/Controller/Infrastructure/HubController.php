@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller\Infrastructure;
 
+use App\Attribute\RequiresFeature;
+use App\Enum\Feature;
 use App\Repository\IpRangeRepository;
 use App\Repository\ProxmoxHostRepository;
 use App\Repository\ProxmoxOperationRepository;
@@ -24,6 +26,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * why the hub never probes anything as it renders.
  */
 #[IsGranted('ROLE_ADMIN')]
+#[RequiresFeature(Feature::Infrastructure)]
 class HubController extends AbstractController
 {
     use InfrastructureTrait;

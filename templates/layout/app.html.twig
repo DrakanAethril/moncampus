@@ -35,7 +35,7 @@
                     {# Visual-only gate (no backend/route change): the icon that opens Messagerie is
                        hidden in the menu for everyone but admins, per explicit product request -
                        app_messages itself stays reachable by anyone who already has the URL. #}
-                    {% if is_granted('ROLE_ADMIN') %}
+                    {% if is_granted('ROLE_ADMIN') and feature('messaging') %}
                         {% set messaging_is_active = current_route starts with 'app_messages' %}
                         <div class="nav-item">
                             <a href="{{ path('app_messages') }}" class="cm-mail {{ messaging_is_active ? 'is-active' }}" title="{{ 'messagingNavLabel'|trans }}" aria-label="{{ 'messagingUnreadAriaLabel'|trans({'%count%': unread_message_count}) }}"{{ messaging_is_active ? ' aria-current="page"' }}>
@@ -60,7 +60,7 @@
                            menu wider than its own entries. #}
                         <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow cm-user__menu">
                             <a href="{{ path('app_profile') }}" class="dropdown-item">{{ 'profileNavLabel'|trans }}</a>
-                            {% if is_granted('ROLE_TEACHER') %}
+                            {% if is_granted('ROLE_TEACHER') and feature('timetable') %}
                                 <a href="{{ path('app_teacher_timetable') }}" class="dropdown-item">{{ 'teacherTimetableNavLabel'|trans }}</a>
                             {% endif %}
                             {# « Mes machines virtuelles » for a teacher who is not an administrator:
@@ -68,7 +68,7 @@
                                doors to two different screens is how somebody ends up on the wrong
                                one. Students read the same entry from the Ressources dropdown, which
                                is their whole navigation. Shown only to somebody who has a machine. #}
-                            {% if is_granted('ROLE_TEACHER') and not is_granted('ROLE_ADMIN') and has_virtual_machines(app.user) %}
+                            {% if is_granted('ROLE_TEACHER') and not is_granted('ROLE_ADMIN') and feature('my_vms') and has_virtual_machines(app.user) %}
                                 <a href="{{ path('app_my_machines') }}" class="dropdown-item">{{ 'myMachinesNavLabel'|trans }}</a>
                             {% endif %}
                             {# Séquences/Séances, Progression pédagogique and Quiz used to sit here.
@@ -100,7 +100,7 @@
                                addressed to students and tutors can already be written, but neither
                                role is given a way in yet. /help itself stays open to any
                                authenticated user and simply shows them nothing. #}
-                            {% if is_granted('ROLE_TEACHER') or is_staff() %}
+                            {% if (is_granted('ROLE_TEACHER') or is_staff()) and feature('help') %}
                                 <a href="{{ path('app_help') }}" class="dropdown-item">{{ 'helpPageHeading'|trans }}</a>
                             {% endif %}
                             {# "Changelog" stays in English on purpose - see App\Controller\ChangelogController. #}
@@ -141,7 +141,7 @@
                             </li>
                         {% endif %}
                         {% set student_programs = is_granted('ROLE_STUDENT') and not is_staff() ? student_nav_programs() : [] %}
-                        {% set student_has_timetable = student_programs|filter(p => p.timetableManagementEnabled)|length > 0 %}
+                        {% set student_has_timetable = feature('timetable') and student_programs|filter(p => p.timetableManagementEnabled)|length > 0 %}
                         {% if student_has_timetable %}
                             <li class="nav-item {{ current_route == 'app_my_timetable' or current_route == 'app_program_timetable' ? 'active' }}">
                                 <a class="nav-link" href="{{ path('app_my_timetable') }}"{{ current_route == 'app_my_timetable' ? ' aria-current="page"' }}>
@@ -152,7 +152,11 @@
                         {# Right after "Emploi du temps", where mockup 3c puts it. Students only:
                            staff have the Travaux list on the Campus side, which is neither the same
                            screen nor the same question. #}
-                        {% if is_granted('ROLE_STUDENT') and not is_staff() %}
+                        {# Only when the screen behind it has something on it: the tab is the student's
+                           second most used, and one that opens on « rien à rendre » every day of a
+                           quiet fortnight is one they stop reading. student_has_work() asks the same
+                           builder the screen is drawn from, so the two cannot disagree. #}
+                        {% if is_granted('ROLE_STUDENT') and not is_staff() and feature('student_work') and student_has_work() %}
                             <li class="nav-item {{ current_route starts with 'app_student_work' ? 'active' }}">
                                 <a class="nav-link" href="{{ path('app_student_work') }}"{{ current_route starts with 'app_student_work' ? ' aria-current="page"' }}>
                                     <span class="nav-link-title">{{ 'studentWorkNavLabel'|trans }}</span>
@@ -168,11 +172,14 @@
                         {% if not is_pure_student %}
                         {% for section in structure_nav_sections() %}
                             {% set section_school_year_groups = structure_nav_school_year_groups(section) %}
-                            {# Staff see every Section unconditionally (even an empty one); a student/teacher
-                               only sees a Section that leads to at least one Program they're actually linked
-                               to - structure_nav_school_year_groups() already filters down to those, see
-                               App\Security\StructureAccessChecker::isProgramVisible(). #}
-                            {% if is_staff() or section_school_year_groups|length > 0 %}
+                            {# A Section appears when it leads somewhere, for everybody - staff included
+                               since 2026-08-25. A student/teacher only ever saw the Sections holding a
+                               Program they are linked to (structure_nav_school_year_groups() filters down
+                               to those, see App\Security\StructureAccessChecker::isProgramVisible());
+                               staff used to see the empty ones too, which drew a menu that opened on
+                               nothing. A Section with no Program is administered from Paramètres >
+                               Configuration, which is where it is created. #}
+                            {% if section_school_year_groups|length > 0 %}
                                 <li class="nav-item dropdown {{ current_program_section_id == section.id ? 'active' }}">
                                     <a class="nav-link dropdown-toggle" href="#nav-section-{{ section.id }}" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ current_program_section_id == section.id ? ' aria-current="page"' }}>
                                         {% if section.icon %}
@@ -199,9 +206,16 @@
                                                         {{ program.displayShortName }}
                                                     </a>
                                                     <div class="dropdown-menu">
-                                                        <a class="dropdown-item {{ current_route == 'app_program_students' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_students', {id: program.id}) }}">{{ 'programStudentsNavLabel'|trans }}</a>
-                                                        <a class="dropdown-item {{ current_route == 'app_program_teachers' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_teachers', {id: program.id}) }}">{{ 'programTeachersNavLabel'|trans }}</a>
-                                                        {% if program.timetableManagementEnabled and visibility_allows(program.timetableVisibility) %}
+                                                        {# The two lists are administrators' screens since 2026-08-25: they
+                                                           hold the class's people, which is the establishment's own directory
+                                                           rather than a teaching tool. A teacher reaches their students
+                                                           through the tools that need them. The routes themselves are
+                                                           unchanged - this hides the door, it does not lock it. #}
+                                                        {% if is_granted('ROLE_ADMIN') %}
+                                                            <a class="dropdown-item {{ current_route == 'app_program_students' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_students', {id: program.id}) }}">{{ 'programStudentsNavLabel'|trans }}</a>
+                                                            <a class="dropdown-item {{ current_route == 'app_program_teachers' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_teachers', {id: program.id}) }}">{{ 'programTeachersNavLabel'|trans }}</a>
+                                                        {% endif %}
+                                                        {% if feature('timetable') and program.timetableManagementEnabled and visibility_allows(program.timetableVisibility) %}
                                                             <a class="dropdown-item {{ current_route == 'app_program_timetable' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_timetable', {id: program.id}) }}">{{ 'programTimetableNavLabel'|trans }}</a>
                                                         {% endif %}
                                                         {# No teaching tool is left in a class's submenu: the carnet de notes, the
@@ -213,7 +227,7 @@
                                                            classes one TEACHES (App\Controller\QuizTrackingController), so a staff
                                                            member no longer reads a teacher's quizzes and their students' answers
                                                            from a class screen. #}
-                                                        {% if visibility_allows(program.alternanceCalendarVisibility) %}
+                                                        {% if feature('my_alternance') and visibility_allows(program.alternanceCalendarVisibility) %}
                                                             {# Same route in both alternanceCalendarMode cases - the controller redirects to the
                                                                uploaded PDF instead of generating one when mode is File - so still no "active"
                                                                state to track here, unlike the page-based nav entries around it. Opens in a new
@@ -221,36 +235,42 @@
                                                                CloudFront URL, not an in-app page. #}
                                                             <a class="dropdown-item" href="{{ path('app_program_alternance_calendar_pdf', {id: program.id}) }}"{% if program.alternanceCalendarMode.value == 'file' %} target="_blank" rel="noopener"{% endif %}>{{ 'programAlternanceCalendarNavLabel'|trans }}</a>
                                                         {% endif %}
-                                                        {% if visibility_allows(program.syllabusVisibility) %}
+                                                        {# Administrators only since 2026-08-25, and **deliberately no longer
+                                                           reading program.syllabusVisibility**: the setting stays in Formation >
+                                                           Paramétrage, where it was configured, but nothing applies it for now.
+                                                           Removing the field would throw away what each class had already been
+                                                           set to, and the day the syllabus opens up again that is exactly what
+                                                           would have to be entered a second time. #}
+                                                        {% if is_granted('ROLE_ADMIN') and feature('progression') %}
                                                             <a class="dropdown-item {{ current_route == 'app_program_syllabus' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_syllabus', {id: program.id}) }}"{% if program.syllabusMode.value == 'file' %} target="_blank" rel="noopener"{% endif %}>{{ 'programSyllabusNavLabel'|trans }}</a>
                                                         {% endif %}
-                                                        {% if is_granted('ROLE_ADMIN') and program.timetableManagementEnabled %}
+                                                        {% if is_granted('ROLE_ADMIN') and feature('progression') and program.timetableManagementEnabled %}
                                                             <a class="dropdown-item {{ current_route starts with 'app_program_sequence' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_sequences', {id: program.id}) }}">{{ 'programSequencesNavLabel'|trans }}</a>
                                                         {% endif %}
                                                         {% if is_staff() %}
-                                                            {% if program.financialManagementEnabled %}
+                                                            {% if feature('program_reporting') and program.financialManagementEnabled %}
                                                                 <a class="dropdown-item {{ current_route == 'app_program_reporting' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_reporting', {id: program.id}) }}">{{ 'programReportingNavLabel'|trans }}</a>
                                                             {% endif %}
-                                                            <a class="dropdown-item {{ current_route starts with 'app_program_exports' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_exports', {id: program.id}) }}">{{ 'programExportsNavLabel'|trans }}</a>
+                                                            {% if feature('program_exports') %}<a class="dropdown-item {{ current_route starts with 'app_program_exports' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_exports', {id: program.id}) }}">{{ 'programExportsNavLabel'|trans }}</a>{% endif %}
                                                             <div class="dropend">
                                                                 <a class="dropdown-item dropdown-toggle {{ (current_route starts with 'app_program_settings' or current_route starts with 'app_program_timetable_settings') and app.request.attributes.get('id') == program.id ? 'active' }}" href="#nav-program-settings-{{ program.id }}" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                                                                     {{ 'programSettingsNavLabel'|trans }}
                                                                 </a>
                                                                 <div class="dropdown-menu">
                                                                     <a class="dropdown-item {{ current_route starts with 'app_program_settings' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_settings', {id: program.id}) }}">{{ 'programSettingsProgramNavLabel'|trans }}</a>
-                                                                    {% if program.timetableManagementEnabled %}
+                                                                    {% if feature('timetable_settings') and program.timetableManagementEnabled %}
                                                                         <a class="dropdown-item {{ current_route starts with 'app_program_timetable_settings' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_timetable_settings', {id: program.id}) }}">{{ 'programSettingsTimetableTabLabel'|trans }}</a>
                                                                     {% endif %}
                                                                 </div>
                                                             </div>
                                                         {% endif %}
-                                                        {% if is_granted('ROLE_STUDENT') and program.internshipManagementEnabled %}
+                                                        {% if is_granted('ROLE_STUDENT') and feature('ufa_booklet') and program.internshipManagementEnabled %}
                                                             <a class="dropdown-item {{ current_route starts with 'app_program_internship_my_evaluation' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_internship_my_evaluations', {id: program.id}) }}">{{ 'programInternshipMyEvaluationsNavLabel'|trans }}</a>
                                                         {% endif %}
-                                                        {% if is_granted('ROLE_STUDENT') and program.assignmentManagementEnabled %}
+                                                        {% if is_granted('ROLE_STUDENT') and feature('student_work') and program.assignmentManagementEnabled %}
                                                             <a class="dropdown-item {{ current_route starts with 'app_program_my_assignment' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_my_assignments', {id: program.id}) }}">{{ 'programMyAssignmentsNavLabel'|trans }}</a>
                                                         {% endif %}
-                                                        {% if is_granted('ROLE_STUDENT') and program_has_quiz_instances(program) %}
+                                                        {% if is_granted('ROLE_STUDENT') and feature('quiz_take') and program_has_quiz_instances(program) %}
                                                             <a class="dropdown-item {{ current_route starts with 'app_program_quiz_' and current_route != 'app_program_quiz_show' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_quiz_mine', {id: program.id}) }}">{{ 'programQuizNavLabel'|trans }}</a>
                                                         {% endif %}
                                                     </div>
@@ -262,17 +282,20 @@
                             {% endif %}
                         {% endfor %}
                         {% endif %}
-                        {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD') %}
+                        {% if (is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD')) and (feature('ufa_booklet') or feature('laptop_loans')) %}
                             <li class="nav-item dropdown {{ current_route starts with 'app_ufa' or current_route starts with 'app_laptops' ? 'active' }}">
                                 <a class="nav-link dropdown-toggle" href="#navbar-ufa" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ (current_route starts with 'app_ufa' or current_route starts with 'app_laptops') ? ' aria-current="page"' }}>
                                     <span class="nav-link-title">{{ 'ufaNavLabel'|trans }}</span>
                                 </a>
                                 <div class="dropdown-menu">
+                                    {% if feature('ufa_booklet') %}
                                     <a class="dropdown-item {{ current_route == 'app_ufa' ? 'active' }}" href="{{ path('app_ufa') }}">{{ 'ufaDashboardNavLabel'|trans }}</a>
                                     {% set ufa_formations_list = ufa_nav_formations() %}
                                     {# Purely a list: no "Nouvelle UFA" entry here, one does not create a UFA.
                                        A UFA is a program carrying the alternance modality, so it is born of the
-                                       pedagogical settings screens and appears here on its own. #}
+                                       pedagogical settings screens and appears here on its own - which is also
+                                       why the submenu is not drawn when there is none yet. #}
+                                    {% if ufa_formations_list.regular|length > 0 or ufa_formations_list.test|length > 0 %}
                                     <div class="dropend">
                                         <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_ufa_formation' ? 'active' }}" href="#navbar-ufa-formations" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                                             {{ 'ufaFormationsNavLabel'|trans }}
@@ -292,6 +315,7 @@
                                             {% endif %}
                                         </div>
                                     </div>
+                                    {% endif %}
                                     <div class="dropend">
                                         <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_ufa_configuration' ? 'active' }}" href="#navbar-ufa-configuration" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                                             {{ 'ufaConfigurationNavLabel'|trans }}
@@ -303,6 +327,8 @@
                                             <a class="dropdown-item {{ current_route starts with 'app_ufa_configuration_contract_import' ? 'active' }}" href="{{ path('app_ufa_configuration_contract_import') }}">{{ 'ufaConfigurationContractImportNavLabel'|trans }}</a>
                                         </div>
                                     </div>
+                                    {% endif %}
+                                    {% if feature('laptop_loans') %}
                                     <h6 class="dropdown-header">{{ 'ufaEquipmentGroupLabel'|trans }}</h6>
                                     <div class="dropend">
                                         <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_laptops' ? 'active' }}" href="#navbar-ufa-laptops" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
@@ -314,6 +340,7 @@
                                             <a class="dropdown-item {{ current_route starts with 'app_laptops_configuration' ? 'active' }}" href="{{ path('app_laptops_configuration') }}">{{ 'ufaLaptopsConfigurationNavLabel'|trans }}</a>
                                         </div>
                                     </div>
+                                    {% endif %}
                                 </div>
                             </li>
                         {% endif %}
@@ -335,7 +362,16 @@
 
                            Namesake of the student "Outils" menu further down, which has nothing to do
                            with this one - the two never show for the same person. #}
-                        {% if is_granted('ROLE_TEACHER') or is_staff() %}
+                        {# Every group carries its own boolean, and the menu itself is the union of
+                           the three: a header with nothing under it and a menu that opens on
+                           nothing are the same defect, and both become reachable as soon as an
+                           establishment switches a few of these off. #}
+                        {% set tools_run = feature('class_tools') or feature('quiz_live') %}
+                        {% set tools_prepare = feature('progression') or feature('sequence_library') or feature('quiz_library')
+                            or feature('file_library') or feature('surveys') or feature('content_sharing') or feature('audio') %}
+                        {% set tools_follow = feature('lesson_log') or feature('student_work') or feature('quiz_library')
+                            or feature('gradebook_entry') or feature('job_search') %}
+                        {% if (is_granted('ROLE_TEACHER') or is_staff()) and (tools_run or tools_prepare or tools_follow) %}
                             {% set tools_is_active = current_route starts with 'app_tools_'
                                 or current_route starts with 'app_audio_recording'
                                 or current_route starts with 'app_progression'
@@ -348,20 +384,27 @@
                                     <span class="nav-link-title">{{ 'toolsNavLabel'|trans }}</span>
                                 </a>
                                 <div class="dropdown-menu cm-toolsmenu">
+                                    {% if tools_run %}
                                     <h6 class="dropdown-header">{{ 'toolsGroupRunClassLabel'|trans }}</h6>
-                                    <a class="dropdown-item {{ current_route == 'app_tools_random_draw' ? 'active' }}" href="{{ path('app_tools_random_draw') }}">{{ 'programToolsRandomDrawNavLabel'|trans }}</a>
-                                    <a class="dropdown-item {{ current_route == 'app_tools_group_creation' ? 'active' }}" href="{{ path('app_tools_group_creation') }}">{{ 'programToolsGroupCreationNavLabel'|trans }}</a>
-                                    <a class="dropdown-item {{ current_route == 'app_tools_quiz_live' ? 'active' }}" href="{{ path('app_tools_quiz_live') }}">{{ 'quizLiveNavLabel'|trans }}</a>
-                                    <div class="dropdown-divider"></div>
+                                    {% if feature('class_tools') %}
+                                        <a class="dropdown-item {{ current_route == 'app_tools_random_draw' ? 'active' }}" href="{{ path('app_tools_random_draw') }}">{{ 'programToolsRandomDrawNavLabel'|trans }}</a>
+                                        <a class="dropdown-item {{ current_route == 'app_tools_group_creation' ? 'active' }}" href="{{ path('app_tools_group_creation') }}">{{ 'programToolsGroupCreationNavLabel'|trans }}</a>
+                                    {% endif %}
+                                    {% if feature('quiz_live') %}
+                                        <a class="dropdown-item {{ current_route == 'app_tools_quiz_live' ? 'active' }}" href="{{ path('app_tools_quiz_live') }}">{{ 'quizLiveNavLabel'|trans }}</a>
+                                    {% endif %}
+                                    {% endif %}
+                                    {% if tools_prepare %}
+                                    {% if tools_run %}<div class="dropdown-divider"></div>{% endif %}
                                     <h6 class="dropdown-header">{{ 'toolsGroupPrepareContentLabel'|trans }}</h6>
-                                    <a class="dropdown-item {{ current_route starts with 'app_progression' ? 'active' }}" href="{{ path('app_progression') }}">{{ 'progressionNavLabel'|trans }}</a>
-                                    <a class="dropdown-item {{ current_route starts with 'app_library_sequences' or current_route starts with 'app_library_seances' or current_route starts with 'app_library_phases' ? 'active' }}" href="{{ path('app_library_sequences') }}">{{ 'libraryNavLabel'|trans }}</a>
-                                    <a class="dropdown-item {{ current_route starts with 'app_library_quiz' ? 'active' }}" href="{{ path('app_library_quiz') }}">{{ 'libraryQuizNavLabel'|trans }}</a>
+                                    {% if feature('progression') %}<a class="dropdown-item {{ current_route starts with 'app_progression' ? 'active' }}" href="{{ path('app_progression') }}">{{ 'progressionNavLabel'|trans }}</a>{% endif %}
+                                    {% if feature('sequence_library') %}<a class="dropdown-item {{ current_route starts with 'app_library_sequences' or current_route starts with 'app_library_seances' or current_route starts with 'app_library_phases' ? 'active' }}" href="{{ path('app_library_sequences') }}">{{ 'libraryNavLabel'|trans }}</a>{% endif %}
+                                    {% if feature('quiz_library') %}<a class="dropdown-item {{ current_route starts with 'app_library_quiz' ? 'active' }}" href="{{ path('app_library_quiz') }}">{{ 'libraryQuizNavLabel'|trans }}</a>{% endif %}
                                     {# After the quiz library, per design/validated/file-library.md's
                                        "Outils, after". The entry needs no condition of its own: this
                                        menu is already gated on ROLE_TEACHER or isStaff(), which is
                                        exactly who has a library. #}
-                                    <a class="dropdown-item {{ current_route starts with 'app_file_library' ? 'active' }}" href="{{ path('app_file_library') }}">{{ 'fileLibraryNavLabel'|trans }}</a>
+                                    {% if feature('file_library') %}<a class="dropdown-item {{ current_route starts with 'app_file_library' ? 'active' }}" href="{{ path('app_file_library') }}">{{ 'fileLibraryNavLabel'|trans }}</a>{% endif %}
                                     {# « Bibliothèque de Sondages » closes the run of libraries -
                                        named and placed as one of them rather than as a tool of its
                                        own (design/validated/surveys.md §8 put it right after the
@@ -371,7 +414,7 @@
                                        the two audiences a survey is written by - so one entry serves
                                        both, and the question « et pour le personnel ? » needs no
                                        separate answer. #}
-                                    <a class="dropdown-item {{ current_route starts with 'app_survey' ? 'active' }}" href="{{ path('app_surveys') }}">{{ 'surveysNavLabel'|trans }}</a>
+                                    {% if feature('surveys') %}<a class="dropdown-item {{ current_route starts with 'app_survey' ? 'active' }}" href="{{ path('app_surveys') }}">{{ 'surveysNavLabel'|trans }}</a>{% endif %}
                                     {# « Vidéos » has lost its menu entry, not its feature
                                        (design/validated/file-library.md, "What disappears"):
                                        VideoResource still carries the cue points, the watch tracking,
@@ -387,15 +430,18 @@
                                        them it needs no condition of its own: this menu is already
                                        gated on ROLE_TEACHER or isStaff(), which is exactly who may
                                        read or write a share. #}
-                                    <a class="dropdown-item {{ current_route starts with 'app_shares' ? 'active' }}" href="{{ path('app_shares') }}">{{ 'contentShareNavLabel'|trans }}</a>
-                                    <a class="dropdown-item {{ current_route starts with 'app_audio_recording' ? 'active' }}" href="{{ path('app_audio_recordings') }}">{{ 'audioRecordingsNavLabel'|trans }}</a>
-                                    <div class="dropdown-divider"></div>
+                                    {% if feature('content_sharing') %}<a class="dropdown-item {{ current_route starts with 'app_shares' ? 'active' }}" href="{{ path('app_shares') }}">{{ 'contentShareNavLabel'|trans }}</a>{% endif %}
+                                    {% if feature('audio') %}<a class="dropdown-item {{ current_route starts with 'app_audio_recording' ? 'active' }}" href="{{ path('app_audio_recordings') }}">{{ 'audioRecordingsNavLabel'|trans }}</a>{% endif %}
+                                    {% endif %}
+                                    {% if tools_follow %}
+                                    {% if tools_run or tools_prepare %}<div class="dropdown-divider"></div>{% endif %}
                                     <h6 class="dropdown-header">{{ 'toolsGroupFollowStudentsLabel'|trans }}</h6>
-                                    <a class="dropdown-item {{ current_route == 'app_tools_lesson_log' ? 'active' }}" href="{{ path('app_tools_lesson_log') }}">{{ 'lessonLogPageHeading'|trans }}</a>
-                                    <a class="dropdown-item" href="{{ path('app_assignments') }}">{{ 'toolsStudentWorkNavLabel'|trans }}</a>
-                                    <a class="dropdown-item {{ current_route == 'app_tools_quiz' ? 'active' }}" href="{{ path('app_tools_quiz') }}">{{ 'quizTrackingPageHeading'|trans }}</a>
-                                    <a class="dropdown-item {{ current_route == 'app_tools_gradebook' ? 'active' }}" href="{{ path('app_tools_gradebook') }}">{{ 'gradebookNavLabel'|trans }}</a>
-                                    <a class="dropdown-item {{ current_route == 'app_tools_job_search' ? 'active' }}" href="{{ path('app_tools_job_search') }}">{{ 'jobSearchTrackingNavLabel'|trans }}</a>
+                                    {% if feature('lesson_log') %}<a class="dropdown-item {{ current_route == 'app_tools_lesson_log' ? 'active' }}" href="{{ path('app_tools_lesson_log') }}">{{ 'lessonLogPageHeading'|trans }}</a>{% endif %}
+                                    {% if feature('student_work') %}<a class="dropdown-item" href="{{ path('app_assignments') }}">{{ 'toolsStudentWorkNavLabel'|trans }}</a>{% endif %}
+                                    {% if feature('quiz_library') %}<a class="dropdown-item {{ current_route == 'app_tools_quiz' ? 'active' }}" href="{{ path('app_tools_quiz') }}">{{ 'quizTrackingPageHeading'|trans }}</a>{% endif %}
+                                    {% if feature('gradebook_entry') %}<a class="dropdown-item {{ current_route == 'app_tools_gradebook' ? 'active' }}" href="{{ path('app_tools_gradebook') }}">{{ 'gradebookNavLabel'|trans }}</a>{% endif %}
+                                    {% if feature('job_search') %}<a class="dropdown-item {{ current_route == 'app_tools_job_search' ? 'active' }}" href="{{ path('app_tools_job_search') }}">{{ 'jobSearchTrackingNavLabel'|trans }}</a>{% endif %}
+                                    {% endif %}
                                 </div>
                             </li>
                         {% endif %}
@@ -411,25 +457,29 @@
                         {% if is_pure_student %}
                             {% include 'layout/_nav_resources.html.twig' with {current_route: current_route, is_pure_student: is_pure_student} only %}
                         {% endif %}
-                        {% if not is_granted('ROLE_ADMIN') and not is_pure_student %}
+                        {% if not is_granted('ROLE_ADMIN') and not is_pure_student and feature('support') %}
                             <li class="nav-item {{ support_is_active ? 'active' }}">
                                 <a class="nav-link" href="{{ path('app_tickets') }}"{{ support_is_active ? ' aria-current="page"' }}>
                                     <span class="nav-link-title">{{ 'supportNavLabel'|trans }}</span>
                                 </a>
                             </li>
                         {% endif %}
-                        <li class="nav-item {{ current_route starts with 'app_agenda' ? 'active' }}">
-                            <a class="nav-link" href="{{ path('app_agenda') }}"{{ current_route starts with 'app_agenda' ? ' aria-current="page"' }}>
-                                <span class="nav-link-title">{{ 'agendaNavLabel'|trans }}</span>
-                            </a>
-                        </li>
-                        {% if is_pure_student %}
-                            <li class="nav-item {{ support_is_active ? 'active' }}">
-                                <a class="nav-link" href="{{ path('app_tickets') }}"{{ support_is_active ? ' aria-current="page"' }}>
-                                    <span class="nav-link-title">{{ 'supportNavLabel'|trans }}</span>
+                        {% if feature('agenda') %}
+                            <li class="nav-item {{ current_route starts with 'app_agenda' ? 'active' }}">
+                                <a class="nav-link" href="{{ path('app_agenda') }}"{{ current_route starts with 'app_agenda' ? ' aria-current="page"' }}>
+                                    <span class="nav-link-title">{{ 'agendaNavLabel'|trans }}</span>
                                 </a>
                             </li>
-                            {% set student_alternance_program = student_nav_alternance_program() %}
+                        {% endif %}
+                        {% if is_pure_student %}
+                            {% if feature('support') %}
+                                <li class="nav-item {{ support_is_active ? 'active' }}">
+                                    <a class="nav-link" href="{{ path('app_tickets') }}"{{ support_is_active ? ' aria-current="page"' }}>
+                                        <span class="nav-link-title">{{ 'supportNavLabel'|trans }}</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+                            {% set student_alternance_program = feature('my_alternance') ? student_nav_alternance_program() : null %}
                             {% if student_alternance_program %}
                                 <li class="nav-item {{ current_route starts with 'app_my_alternance' ? 'active' }}">
                                     <a class="nav-link" href="{{ path('app_my_alternance') }}"{{ current_route starts with 'app_my_alternance' ? ' aria-current="page"' }}>
@@ -442,7 +492,7 @@
                            header) - visual-only, menu-only gate to ROLE_ADMIN per explicit product request
                            (tighter than EcoParcoursController's own ROLE_ECO/staff access-control, which is
                            unchanged - this only hides the link, it doesn't restrict the route). #}
-                        {% if is_granted('ROLE_ADMIN') %}
+                        {% if is_granted('ROLE_ADMIN') and feature('eco') %}
                             <li class="nav-item {{ current_route starts with 'app_eco_' ? 'active' }}">
                                 <a class="nav-link" href="{{ path('app_eco_parcours') }}"{{ current_route starts with 'app_eco_' ? ' aria-current="page"' }}>
                                     <span class="nav-link-title">{{ 'ecoNavLabel'|trans }}</span>
@@ -456,8 +506,15 @@
                            their tickets through the top-level Support tab instead, and lose the
                            other Gestion entries entirely. Active state deliberately excludes the
                            user-facing app_tickets* routes, which now light the Support tab. #}
-                        {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD') %}
-                        {% set gestion_is_active = current_route in ['app_tickets_queue', 'app_tickets_queue_categories'] or (is_granted('ROLE_ADMIN') and support_is_active) or current_route starts with 'app_directory_' or current_route starts with 'app_signup_lists' or current_route starts with 'app_school_mail_unlinked' or current_route starts with 'app_training_offer' %}
+                        {# Same treatment as Ressources and Outils: every group's condition is read
+                           once, and the menu is the union of them. Nothing here is on by default
+                           except the tickets, so an establishment that switches those off would
+                           otherwise be left with a Gestion opening on an empty panel. #}
+                        {% set gestion_internship = feature('training_offers') or (is_granted('ROLE_ADMIN') and feature('school_mail_supervision')) %}
+                        {% set gestion_directory = (is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD')) and feature('directory') %}
+                        {% if (is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD'))
+                            and (gestion_internship or feature('support') or feature('signup_lists') or gestion_directory or is_granted('ROLE_ADMIN')) %}
+                        {% set gestion_is_active = current_route in ['app_tickets_queue', 'app_tickets_queue_categories'] or (is_granted('ROLE_ADMIN') and support_is_active) or current_route starts with 'app_directory_' or current_route starts with 'app_signup_lists' or current_route starts with 'app_school_mail_unlinked' or current_route starts with 'app_training_offer' or current_route starts with 'app_features' %}
                         <li class="nav-item dropdown {{ gestion_is_active ? 'active' }}">
                             <a class="nav-link dropdown-toggle" href="#navbar-gestion" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ gestion_is_active ? ' aria-current="page"' }}>
                                 <span class="nav-link-title">{{ 'gestionNavLabel'|trans }}</span>
@@ -467,20 +524,23 @@
                                    (design_handoff_workflow_postulation, screen 7a): the fictitious
                                    offers students apply to in order to unlock their mailbox. #}
                                 {% set internship_group_is_active = current_route starts with 'app_training_offer' or current_route starts with 'app_school_mail_unlinked' %}
+                                {% if gestion_internship %}
                                 <div class="dropend">
                                     <a class="dropdown-item dropdown-toggle {{ internship_group_is_active ? 'active' }}" href="#gestion-internship" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                                         {{ 'internshipAlternanceGroupNavLabel'|trans }}
                                     </a>
                                     <div class="dropdown-menu">
-                                        <a class="dropdown-item {{ current_route starts with 'app_training_offer' ? 'active' }}" href="{{ path('app_training_offers') }}">{{ 'trainingOffersNavLabel'|trans }}</a>
+                                        {% if feature('training_offers') %}<a class="dropdown-item {{ current_route starts with 'app_training_offer' ? 'active' }}" href="{{ path('app_training_offers') }}">{{ 'trainingOffersNavLabel'|trans }}</a>{% endif %}
                                         {# Screen 5a: admins only, as the mockup states in as many words -
                                            this queue holds other people's incoming mail. It belongs to the
                                            same corner of the app as the offers: everything school mail. #}
-                                        {% if is_granted('ROLE_ADMIN') %}
+                                        {% if is_granted('ROLE_ADMIN') and feature('school_mail_supervision') %}
                                             <a class="dropdown-item {{ current_route starts with 'app_school_mail_unlinked' ? 'active' }}" href="{{ path('app_school_mail_unlinked') }}">{{ 'schoolMailUnlinkedNavLabel'|trans }}</a>
                                         {% endif %}
                                     </div>
                                 </div>
+                                {% endif %}
+                                {% if feature('support') %}
                                 <div class="dropend">
                                     <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_tickets' ? 'active' }}" href="#gestion-tickets" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                                         {{ 'ticketsGroupNavLabel'|trans }}
@@ -492,12 +552,13 @@
                                         {% endif %}
                                     </div>
                                 </div>
+                                {% endif %}
                                 {# Deliberately a flat link outside the staff-only block below, unlike Laptops/
                                    Directory - students/teachers need to reach it too, to register/view lists
                                    they're eligible for (see App\Controller\SignupListController), not just staff
                                    to manage them. #}
-                                <a class="dropdown-item {{ current_route starts with 'app_signup_lists' ? 'active' }}" href="{{ path('app_signup_lists') }}">{{ 'signupListsNavLabel'|trans }}</a>
-                                {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD') %}
+                                {% if feature('signup_lists') %}<a class="dropdown-item {{ current_route starts with 'app_signup_lists' ? 'active' }}" href="{{ path('app_signup_lists') }}">{{ 'signupListsNavLabel'|trans }}</a>{% endif %}
+                                {% if gestion_directory %}
                                     <div class="dropend">
                                         <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_directory_' ? 'active' }}" href="#gestion-directory" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                                             {{ 'directoryNavLabel'|trans }}
@@ -515,6 +576,14 @@
                                             {% endif %}
                                         </div>
                                     </div>
+                                {% endif %}
+                                {# Straight below Annuaire, and administrators only. It carries no
+                                   feature guard of its own: no setting made here may close the
+                                   screen the settings are made on (design/validated/feature-access.md
+                                   §8.8), which is why the "admin has everything" rule is not
+                                   negotiable. #}
+                                {% if is_granted('ROLE_ADMIN') %}
+                                    <a class="dropdown-item {{ current_route starts with 'app_features' ? 'active' }}" href="{{ path('app_features') }}">{{ 'featuresNavLabel'|trans }}</a>
                                 {% endif %}
                             </div>
                         </li>
@@ -537,6 +606,14 @@
                 </div>
             </div>
         </header>
+        {# Students and teachers only, and permanently: the establishment keeps its school records in
+           another tool, and this platform is the pedagogical one. Staff and administrators are the
+           people who already know that, so the bar would only take a strip of screen from them.
+           It sits above the « ZONE DE TEST » bar because it is a statement about the whole platform,
+           not about the program being looked at. #}
+        {% if is_granted('ROLE_STUDENT') or is_granted('ROLE_TEACHER') %}
+            <div class="cm-globalnotice d-print-none" role="note">{{ 'pedagogicalUseBannerHtml'|trans|raw }}</div>
+        {% endif %}
         {% set current_test_program = structure_nav_current_test_program() %}
         {% if current_test_program %}
             {# .alert (Tabler) is display:flex, so text-center alone doesn't center a lone <strong>

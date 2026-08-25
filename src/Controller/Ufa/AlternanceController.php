@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller\Ufa;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Program;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Form\InternshipAlternanceType;
 use App\Form\InternshipTutorLinkType;
 use App\Repository\InternshipEvaluationPeriodRepository;
@@ -38,6 +40,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * bodies are unchanged; only the class hosting them is new.
  */
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD") or is_granted("ROLE_TEACHER")'))]
+#[RequiresFeature(Feature::UfaBooklet)]
 class AlternanceController extends AbstractController
 {
     use UfaAlternanceTrait;

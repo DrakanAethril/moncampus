@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\GuestAccount;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Enum\ProxmoxAction;
 use App\Repository\GuestAccountRepository;
 use App\Repository\IpAllocationRepository;
@@ -49,6 +51,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * on the administration side.
  */
 #[IsGranted('ROLE_USER')]
+#[RequiresFeature(Feature::MyVms)]
 class MyMachineController extends AbstractController
 {
     /** Start and shutdown, and deliberately not stop or reboot - see the class docblock. */

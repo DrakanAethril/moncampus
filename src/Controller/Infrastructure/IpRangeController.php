@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller\Infrastructure;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\IpRange;
+use App\Enum\Feature;
 use App\Enum\IpAllocationOrigin;
 use App\Enum\IpAllocationStatus;
 use App\Form\IpRangeType;
@@ -36,6 +38,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * "Libérer" on a screen full of virtual machines reads like something that might delete one.
  */
 #[IsGranted('ROLE_ADMIN')]
+#[RequiresFeature(Feature::Infrastructure)]
 class IpRangeController extends AbstractController
 {
     use InfrastructureTrait;

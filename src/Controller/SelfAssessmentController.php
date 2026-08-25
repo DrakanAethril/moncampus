@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Assignment;
 use App\Entity\EvaluationRubricQuestion;
 use App\Entity\SelfAssessment;
 use App\Entity\SelfAssessmentAnswer;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\AssignmentRepository;
 use App\Repository\GradeRepository;
 use App\Repository\ProgramRepository;
@@ -34,6 +36,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * notes, and the student only sees the teacher's grade under the conditions laid down by
  * App\Service\SelfAssessmentComparator::isComparisonReadable().
  */
+#[RequiresFeature(Feature::SelfAssessment)]
 class SelfAssessmentController extends AbstractController
 {
     private const string CSRF_TOKEN_ID = 'self_assessment';

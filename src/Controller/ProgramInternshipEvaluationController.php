@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipStudentEvaluation;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Program;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Enum\UfaActivityType;
 use App\Form\InternshipStudentEvaluationType;
 use App\Repository\InternshipEvaluationPeriodRepository;
@@ -36,6 +38,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 // A student's own Livret Alternant self-evaluation - route-level guards (not a class-level
 // staff gate) since students, not staff, are the ones reaching this area. Stays inside the
 // normal layout/app.html.twig shell - students already navigate their program from there.
+#[RequiresFeature(Feature::UfaBooklet)]
 class ProgramInternshipEvaluationController extends AbstractController
 {
     use ProgramFeatureGuardTrait;

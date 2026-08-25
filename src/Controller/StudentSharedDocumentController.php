@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Enum\SharedDocumentGrouping;
 use App\Enum\SharedDocumentOrdering;
 use App\Repository\FileLibraryNodeRepository;
@@ -41,6 +43,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * as a folder shared to a colleague (App\Controller\ContentShareController), down to the check.
  */
 #[IsGranted('ROLE_STUDENT')]
+#[RequiresFeature(Feature::SharedDocuments)]
 class StudentSharedDocumentController extends AbstractController
 {
     public function __construct(

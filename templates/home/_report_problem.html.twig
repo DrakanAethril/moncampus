@@ -1,0 +1,24 @@
+{# « Un problème à signaler ? » - the full-width block at the foot of the student and teacher
+   dashboards.
+
+   A door, not a second ticket form: the ticket manager already asks for a category, a room and a
+   description, and a shortened copy of it here would either lose those fields or drift from the
+   real form. What this block buys is the click - the shortest path from the screen somebody is
+   already on to /tickets/new.
+
+   Rendered once from home/index.html.twig rather than from each dashboard partial: a
+   student+teacher hybrid stacks both, and two identical blocks would answer the same question
+   twice. It follows `support`, like the tab it leads to - with the ticket manager switched off the
+   block goes with it rather than pointing at a 404. #}
+<div class="cm-dash-report">
+    <span class="cm-dash-report__icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"></path><path d="M12 16.5v.01"></path><path d="M10.3 4.3 2.6 17.6A1.9 1.9 0 0 0 4.3 20.5h15.4a1.9 1.9 0 0 0 1.7-2.9L13.7 4.3a1.9 1.9 0 0 0-3.4 0z"></path></svg>
+    </span>
+    <span class="cm-dash-report__body">
+        <span class="cm-dash-report__title">{{ 'homeReportProblemTitle'|trans }}</span>
+        <span class="cm-dash-report__text">{{ 'homeReportProblemText'|trans }}</span>
+    </span>
+    <span class="cm-dash-report__action">
+        <a href="{{ path('app_tickets_new') }}" class="cm-btn cm-btn--primary">{{ 'homeReportProblemAction'|trans }}</a>
+    </span>
+</div>

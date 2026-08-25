@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\LessonSession;
 use App\Entity\Program;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Enum\ProgramAlternanceCalendarMode;
 use App\Repository\LessonSessionRepository;
 use App\Repository\PeriodRepository;
@@ -74,6 +76,7 @@ class ProgramController extends AbstractController
         return $users;
     }
 
+    #[RequiresFeature(Feature::Timetable)]
     #[Route(path: '/programs/{id}/timetable', name: 'app_program_timetable')]
     public function timetable(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker): Response
     {
@@ -83,6 +86,7 @@ class ProgramController extends AbstractController
         return $this->render('program/timetable.html.twig', ['program' => $program]);
     }
 
+    #[RequiresFeature(Feature::Timetable)]
     #[Route(path: '/programs/{id}/timetable/feed', name: 'app_program_timetable_feed')]
     public function timetableFeed(int $id, Request $request, ProgramRepository $repository, StructureAccessChecker $accessChecker, LessonSessionRepository $lessonSessionRepository, LessonSessionEventFormatter $eventFormatter): JsonResponse
     {
@@ -100,6 +104,7 @@ class ProgramController extends AbstractController
     // Same route either way - when alternanceCalendarMode is File, it serves the uploaded PDF
     // directly instead of generating one from PeriodGroup data, so the nav entry never needs to
     // know which mode is configured.
+    #[RequiresFeature(Feature::MyAlternance)]
     #[Route(path: '/programs/{id}/alternance-calendar/pdf', name: 'app_program_alternance_calendar_pdf')]
     public function alternanceCalendarPdf(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, PeriodRepository $periodRepository, InternshipCalendarBuilder $calendarBuilder, GotenbergClient $gotenbergClient, FileUploadService $fileUploadService): Response
     {

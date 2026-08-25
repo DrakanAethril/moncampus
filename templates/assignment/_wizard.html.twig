@@ -16,6 +16,9 @@
 {# A refused publication comes back to the page with its errors. The wizard must then open on the
    offending step and not on the first one: the message lives in its step, and would stay invisible.
    The fields are listed by step, in the order the wizard lays them out. #}
+{# 'graded' and 'evaluation' are absent from the form when the carnet de notes, respectively the
+   autoévaluation, are switched off (App\Form\AssignmentWizardType) - hence the `is defined` guard
+   here and around each of their blocks below. #}
 {% set steps_fields = {
     1: ['program', 'audienceType', 'options', 'groupBatch'],
     2: ['nature', 'mandatory', 'graded'],
@@ -23,7 +26,7 @@
     4: ['dueDate', 'visibility', 'visibleAt'],
 } %}
 {% set error_step = steps_fields
-    |filter((fields, step) => fields|filter(field => form[field].vars.errors|length > 0)|length > 0)
+    |filter((fields, step) => fields|filter(field => form[field] is defined and form[field].vars.errors|length > 0)|length > 0)
     |keys|first|default(0) %}
 {% set audience_labels = {
     'program': 'assignmentWizardAudienceWholeClassLabel',
@@ -172,23 +175,29 @@
                     </div>
                     {% do form.mandatory.setRendered %}
 
-                    <span class="cm-wizard__label">{{ 'assignmentWizardGradedFieldLabel'|trans }}</span>
-                    <div class="cm-pillpick">
-                        {% for choice in form.graded %}
-                            <label class="cm-pillpick__item">
-                                {{ form_widget(choice) }}
-                                <span>{{ choice.vars.label|trans }}</span>
-                            </label>
-                        {% endfor %}
-                    </div>
-                    {% do form.graded.setRendered %}
+                    {# Absent when « Carnet de notes — saisie » is off: answering « Noté » creates an
+                       Evaluation (App\Service\AssignmentGradebookLinker), which with no carnet to read
+                       it back would be grading in write-only mode. #}
+                    {% if form.graded is defined %}
+                        <span class="cm-wizard__label">{{ 'assignmentWizardGradedFieldLabel'|trans }}</span>
+                        <div class="cm-pillpick">
+                            {% for choice in form.graded %}
+                                <label class="cm-pillpick__item">
+                                    {{ form_widget(choice) }}
+                                    <span>{{ choice.vars.label|trans }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                        {% do form.graded.setRendered %}
+                    {% endif %}
 
                     {# The grading choice is either shown to or hidden from students; it stays
                        editable afterwards, hence a switch rather than a fixed statement.
                        Available whatever "Noté / Non noté" says: what is shown or hidden is the
                        grading choice itself, and an ungraded piece of work has just as much to say
                        about it - the switch used to hide itself out of sheer overzealousness. #}
-                    <label class="cm-toggle-row" data-assignment-wizard-target="gradeVisibility">
+{% if form.gradingVisibleToStudents is defined %}
+                                        <label class="cm-toggle-row" data-assignment-wizard-target="gradeVisibility">
                         <span class="cm-toggle cm-toggle--green">
                             {{ form_widget(form.gradingVisibleToStudents, {attr: {'data-action': 'change->assignment-wizard#refreshToggleLabels'}}) }}
                             <span class="cm-toggle__track"></span>
@@ -198,6 +207,7 @@
                               data-off-label="{{ 'assignmentWizardGradingVisibleOffLabel'|trans }}">{{ 'assignmentWizardGradingVisibleOnLabel'|trans }}</span>
                     </label>
                     {% do form.gradingVisibleToStudents.setRendered %}
+                    {% endif %}
                 </section>
 
                 {# ---------- Étape 3 · Consigne ---------- #}
@@ -295,7 +305,8 @@
                         {% do form.minimumScorePercent.setRendered %}
                     </div>
 
-                    <div class="cm-wizard__conditional d-none" data-assignment-wizard-target="naturePane" data-natures="self_assessment">
+{% if form.evaluation is defined %}
+                                        <div class="cm-wizard__conditional d-none" data-assignment-wizard-target="naturePane" data-natures="self_assessment">
                         <span class="cm-wizard__label">{{ 'assignmentWizardEvaluationFieldLabel'|trans }}</span>
                         <div class="cm-inline-field">
                             {{ form_widget(form.evaluation, {attr: {class: 'cm-select', 'data-assignment-wizard-target': 'evaluationSelect'}}) }}
@@ -304,6 +315,7 @@
                         {{ form_errors(form.evaluation) }}
                         {% do form.evaluation.setRendered %}
                     </div>
+                    {% endif %}
 
                     {# A listening assignment has nothing to configure: the recording is already chosen,
                        it is what the assignment is about. Recalling it is enough - it is the only

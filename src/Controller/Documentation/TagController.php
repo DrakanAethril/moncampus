@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller\Documentation;
 
+use App\Attribute\RequiresFeature;
+use App\Enum\Feature;
 use App\Repository\DocumentationTagRepository;
 use App\Service\DocumentationTagResolver;
 use App\Service\PostValue;
@@ -25,6 +27,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  */
 #[IsGranted(new Expression('is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD") or is_granted("ROLE_ADMIN")'))]
 #[Route(path: '/documentation/manage/tags')]
+#[RequiresFeature(Feature::Documentation)]
 class TagController extends AbstractController
 {
     public function __construct(

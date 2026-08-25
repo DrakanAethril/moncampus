@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Program;
 use App\Entity\User;
 use App\Entity\VideoResource;
 use App\Entity\VideoResourceFile;
+use App\Enum\Feature;
 use App\Repository\ProgramRepository;
 use App\Repository\VideoResourceRepository;
 use App\Repository\VideoWatchProgressRepository;
@@ -45,6 +47,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * assignment instead (App\Controller\StudentWorkController).
  */
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::Video)]
 class VideoResourceController extends AbstractController
 {
     // One token for all of step 2's actions (upload, delete): they all fire from a single screen,

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller\Ufa;
 
+use App\Attribute\RequiresFeature;
+use App\Enum\Feature;
 use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Service\GotenbergUnavailableException;
@@ -25,6 +27,7 @@ use Symfony\Component\String\Slugger\SluggerInterface;
  * bodies are unchanged; only the class hosting them is new.
  */
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD") or is_granted("ROLE_TEACHER")'))]
+#[RequiresFeature(Feature::UfaBooklet)]
 class BookletController extends AbstractController
 {
     use UfaAlternanceTrait;

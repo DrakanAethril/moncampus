@@ -72,6 +72,14 @@
     --cm-mail-tint-bg: #eef5fb;
     --cm-mail-tint-border: #c6ddf0;
 
+    /* The standing platform notice under the navbar. A solid deep blue rather than a tinted band:
+       it states where the school's reference data lives, and a pale strip reads as decoration. It
+       is a shade lighter than --cm-topbar-bg on purpose, so the two do not merge into one block. */
+    --cm-notice-bg: #1b5580;
+    --cm-notice-tx: #ffffff;
+    --cm-notice-bd: #0f3c5c;
+    --cm-notice-link: #f0cf8a;
+
     /* Not in campus-theme.css - row-action "positive" color (Retour/Valider) is given as the
        literal hex #2e7d4f in the spacing handoff, matching this file's own --tblr-success value
        below exactly. Wired through a variable instead of hardcoded in .cm-action--positive so it
@@ -199,6 +207,11 @@
 
     --cm-mail-tint-bg: #1c3247;
     --cm-mail-tint-border: #2f4d68;
+
+    --cm-notice-bg: #17466b;
+    --cm-notice-tx: #eaf2f8;
+    --cm-notice-bd: #0a2b44;
+    --cm-notice-link: #e2c07a;
 
     --cm-topbar-bg: #0d2438;
     --cm-shadow-pop: 0 12px 28px rgba(0, 0, 0, .5);
@@ -1332,6 +1345,27 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
    lines up with a screen made of rows instead of butting against the tabs. Bottom padding is left
    to the content, which already carries its own margin between blocks. */
 .cm-tabbed-content { padding: 26px 26px 0; }
+
+/* ---------- Standing platform notice, immediately under the navbar ----------
+   A full-width strip rather than an .alert inside the container: it belongs to the shell, like the
+   « ZONE DE TEST » bar it sits above, and must not move with the page's own gutters. Informational
+   blue rather than a warning tint - it states where the reference data lives, it does not report a
+   problem. The link is styled explicitly because this strip has no Tabler ancestor to inherit from. */
+.cm-globalnotice {
+    padding: 10px 20px;
+    background: var(--cm-notice-bg);
+    color: var(--cm-notice-tx);
+    border-bottom: 2px solid var(--cm-notice-bd);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.45;
+    text-align: center;
+}
+/* The link is the one thing on the strip somebody is meant to click, so it carries the accent
+   rather than inheriting the band's own colour: underlined, and gold against the deep blue in both
+   themes - the same pair the medallion and the "depuis 1634" rule use in the top bar. */
+.cm-globalnotice a { color: var(--cm-notice-link); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+.cm-globalnotice a:hover { color: #fff; }
 
 /* ---------- Breadcrumb + page head (sub-pages only, never menu root pages) ----------
    Every segment (including the current page) is a real <a href>. */
@@ -3342,6 +3376,23 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 [data-bs-theme=dark] .cm-dash-banner { background: #3c3117; border-color: #7a5417; color: #e0bc6d; }
 [data-bs-theme=dark] .cm-dash-banner--ok { background: #1d3327; border-color: #2e5c44; color: #8cc3a2; }
 [data-bs-theme=dark] .cm-dash-banner--danger { background: #40221c; border-color: #7a4033; color: #e09384; }
+
+/* « Un problème à signaler ? » - full-width strip closing the student and teacher dashboards.
+   Same skeleton as .cm-dash-banner (icon / body / action pushed right), and deliberately NOT its
+   colours: gold there means "act on this now", and a standing door to the ticket manager is not an
+   alert. Plain surface, brand-tinted icon, margin on top rather than bottom because this one closes
+   the page instead of opening it. On a narrow screen the action drops under the text rather than
+   squeezing the sentence to two words a line. */
+.cm-dash-report {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  border: 1px solid var(--cm-border); background: var(--cm-surface); color: var(--cm-text);
+  border-radius: 11px; padding: 15px 20px; margin-top: 16px;
+}
+.cm-dash-report__icon { flex: none; color: var(--cm-brand); }
+.cm-dash-report__body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 260px; }
+.cm-dash-report__title { font: 600 15px var(--cm-font-title); color: var(--cm-ink); }
+.cm-dash-report__text { font-size: 13px; color: var(--cm-muted); }
+.cm-dash-report__action { margin-left: auto; flex: none; }
 
 /* Date chip (day + month) - events and work to do */
 .cm-date-chip {
@@ -8932,3 +8983,37 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
     color: var(--cm-brand); font: inherit; text-decoration: underline; cursor: pointer;
 }
 .cm-linkbtn:hover { color: var(--cm-brand-strong); }
+
+/* ============================================================================
+   Accès aux fonctionnalités (design/validated/feature-access.md §9)
+   Two screens, one vocabulary: the role matrix in Paramètres > Fonctionnalités,
+   and the per-person derogations on the annuaire card.
+   ============================================================================ */
+
+.cm-featmatrix { padding: 8px 0 20px; }
+.cm-featmatrix__family {
+    margin: 18px 20px 6px; font: 600 15px var(--cm-font-heading);
+    color: var(--cm-ink); letter-spacing: .2px;
+}
+.cm-featmatrix__table th { white-space: nowrap; }
+/* Eight role columns on one row: the header reads sideways-narrow rather than wrapping the table
+   into a horizontal scroll on a laptop. */
+.cm-featmatrix__role { text-align: center; font-size: 11.5px; letter-spacing: .4px; color: var(--cm-faint); }
+.cm-featmatrix__cell { text-align: center; }
+.cm-featmatrix__overrides { text-align: center; }
+/* The enum's own key, under the label. It is what the attribute in the code names, and it is what
+   an admin reads back to whoever is asking - worth showing rather than hiding as an implementation
+   detail. */
+.cm-featmatrix__key { font: 11px var(--cm-font-mono); color: var(--cm-faint); }
+.cm-featmatrix__note { font: 11.5px var(--cm-font-ui); color: var(--cm-gold-tx); margin-top: 2px; }
+
+.cm-featovr__family td {
+    background: var(--cm-bg); font: 600 12.5px var(--cm-font-ui);
+    text-transform: uppercase; letter-spacing: .6px; color: var(--cm-faint);
+}
+.cm-featovr__key { font: 11px var(--cm-font-mono); color: var(--cm-faint); }
+.cm-featovr__choices { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.cm-featovr__choice { display: flex; align-items: center; gap: 6px; font: 13px var(--cm-font-ui); cursor: pointer; }
+/* What « Par défaut » gives this person today, in grey next to the button. Without it the three
+   buttons say nothing about what choosing the first one means. */
+.cm-featovr__hint { font: 11.5px var(--cm-font-ui); color: var(--cm-faint); }

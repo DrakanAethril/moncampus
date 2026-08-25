@@ -3,23 +3,21 @@
 {% block title %}{{ 'skillsPageHeading'|trans }} - {{ skillGroup.label }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
-        {label: 'programSettingsNavLabel'|trans, url: path('app_program_settings', {id: program.id})},
-        {label: program.displayShortName, url: path('app_program_settings_skill_groups', {id: program.id})},
-        {label: skillGroup.label, url: app.request.requestUri},
-    ]} %}
+    {# Middle segments from the controller - see App\Controller\SkillGroupCrudTrait::skillBreadcrumb(). #}
+    {% include '_breadcrumb.html.twig' with {segments: [{label: 'homeNavLabel'|trans, url: path('app_home')}]
+        |merge(skillBreadcrumb|map(s => {label: s.labelKey ? s.labelKey|trans : s.label, url: s.url}))
+        |merge([{label: skillGroup.label, url: app.request.requestUri}]) } %}
 {% endblock %}
 {% block page_title %}{{ 'skillsPageHeading'|trans }} - {{ skillGroup.label }}{% endblock %}
 
 {% block main %}
     <div class="mb-3">
-        <a href="{{ path('app_program_settings_skill_groups', {id: program.id}) }}">&laquo; {{ 'backToInternshipSkillGroupsLinkLabel'|trans }}</a>
+        <a href="{{ path(skillRoutes.list, {id: program.id}) }}">&laquo; {{ 'backToInternshipSkillGroupsLinkLabel'|trans }}</a>
     </div>
     <div class="card">
         <div class="card-header d-flex align-items-center">
             <div class="ms-auto">
-                <a href="{{ path('app_program_settings_skill_groups_skills_new', {id: program.id, groupId: skillGroup.id}) }}" class="btn btn-primary">
+                <a href="{{ path(skillRoutes.skillNew, {id: program.id, groupId: skillGroup.id}) }}" class="btn btn-primary">
                     <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
                     {{ 'addSkillButtonLabel'|trans }}
                 </a>
@@ -29,7 +27,7 @@
             {# Server-rendered and drag-reorderable, same reasoning as the skill-group list itself. #}
             <div data-frankenphp-hot-reload-preserve
                  data-controller="deactivable-list"
-                 data-deactivable-list-deactivate-url-template-value="{{ path('app_program_settings_skill_groups_skills_deactivate', {id: program.id, groupId: skillGroup.id, skillId: '__ID__'}) }}"
+                 data-deactivable-list-deactivate-url-template-value="{{ path(skillRoutes.skillDeactivate, {id: program.id, groupId: skillGroup.id, skillId: '__ID__'}) }}"
                  data-deactivable-list-token-value="{{ csrf_token('program_settings_deactivate') }}"
                  data-deactivable-list-deactivate-confirm-message-value="{{ 'deactivateConfirmMessage'|trans }}"
                  data-deactivable-list-error-message-value="{{ 'deactivateErrorMessage'|trans }}">
@@ -52,7 +50,7 @@
                             </tr>
                         </thead>
                         <tbody data-controller="sortable-reorder"
-                               data-sortable-reorder-url-value="{{ path('app_program_settings_skill_groups_skills_reorder', {id: program.id, groupId: skillGroup.id}) }}"
+                               data-sortable-reorder-url-value="{{ path(skillRoutes.skillsReorder, {id: program.id, groupId: skillGroup.id}) }}"
                                data-sortable-reorder-token-value="{{ csrf_token('program_settings_skills_reorder') }}">
                             {% for skill in skills %}
                                 {% set isInactive = skill.inactiveDate is not null %}
@@ -81,7 +79,7 @@
                                         {% endif %}
                                     </td>
                                     <td class="cm-actions">
-                                        <a href="{{ path('app_program_settings_skill_groups_skills_edit', {id: program.id, groupId: skillGroup.id, skillId: skill.id}) }}" class="cm-action--warning">{{ 'editActionLabel'|trans }}</a>
+                                        <a href="{{ path(skillRoutes.skillEdit, {id: program.id, groupId: skillGroup.id, skillId: skill.id}) }}" class="cm-action--warning">{{ 'editActionLabel'|trans }}</a>
                                         {% if not isInactive %}
                                             <button type="button" class="cm-action--danger" data-id="{{ skill.id }}" data-action="click->deactivable-list#deactivate">{{ 'deactivateActionLabel'|trans }}</button>
                                         {% endif %}

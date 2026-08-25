@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional;
 
+use App\Entity\FeatureRoleSetting;
 use App\Entity\GuestAccount;
 use App\Entity\IpRange;
 use App\Entity\Program;
@@ -12,7 +13,10 @@ use App\Entity\ProxmoxHost;
 use App\Entity\Topic;
 use App\Entity\TopicGroup;
 use App\Entity\User;
+use App\Entity\UserFeatureAccess;
 use App\Entity\VmBatch;
+use App\Enum\Feature;
+use App\Enum\FeatureAccessState;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -183,6 +187,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,
+            '/features' => 403,
             '/directory/users' => 403,
             '/ufa' => 403,
             '/ufa/configuration/contract-import' => 403,
@@ -287,6 +292,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,
+            '/features' => 403,
             '/settings/groups' => 403,
             '/settings/groups/hierarchy' => 403,
             '/directory/users' => 403,
@@ -306,6 +312,12 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // App\Controller\SettingsGroupsController's own note.
             '/settings/groups' => 200,
             '/settings/groups/hierarchy' => 200,
+            // Paramètres > Fonctionnalités, and the derogation list one of its counters leads to.
+            // Admin-only and carrying no feature guard of their own on purpose: no setting made
+            // here may close the screen the settings are made on
+            // (design/validated/feature-access.md §8.8).
+            '/features' => 200,
+            '/features/agenda/overrides' => 200,
             '/directory/users' => 200,
             '/ufa' => 200,
             '/ufa/reminders' => 200,
@@ -409,6 +421,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             sprintf('/ufa/programs/%d/denomination', $programId),
             sprintf('/ufa/programs/%d/contract-modalities', $programId),
             sprintf('/ufa/programs/%d/exam-modalities', $programId),
+            // The two tabs the UFA team was given so it would stop having to walk through
+            // Paramétrage: the calendar upload, and the referential under its own name.
+            sprintf('/ufa/programs/%d/documents', $programId),
+            sprintf('/ufa/programs/%d/skills', $programId),
             '/ufa/configuration/training-center',
         ];
 
@@ -486,11 +502,151 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,
+            '/features' => 403,
             '/directory/users' => 403,
             '/ufa' => 403,
             '/ufa/configuration/contract-import' => 403,
             '/eco/parcours' => 403,
         ]);
+    }
+
+    /**
+     * One route per feature that §4 of design/validated/feature-access.md switches **off** by
+     * default, asserted for each of the four roles.
+     *
+     * This table is the cheapest place in the repository to see that a role gained or lost an
+     * access by accident, and it is the counterpart to FeatureCoverageTest: that one proves every
+     * route belongs to a feature, this one proves the guard actually answers.
+     *
+     * The expected code is **404**, not 403, everywhere - an extinguished screen does not exist, it
+     * is not forbidden (§7.1). Where a role would already have been refused on its own merits, the
+     * 403 comes first (access_control runs before the controller is even resolved) and the line
+     * says so; the ones that read 404 are the ones this system is answering.
+     *
+     * An admin is asserted separately, below: they must keep **everything**, whatever the matrix
+     * says, and that is what makes switching a feature off a safe gesture.
+     */
+    public function testExtinguishedFeaturesAnswerNotFound(): void
+    {
+        $this->switchOffEveryRole(
+            Feature::Agenda,
+            Feature::Announcements,
+            Feature::Documentation,
+            Feature::Help,
+            Feature::Timetable,
+            Feature::FileLibrary,
+            Feature::ContentSharing,
+            Feature::CourseSpace,
+            Feature::SharedDocuments,
+            Feature::LessonLog,
+            Feature::GradebookEntry,
+            Feature::GradebookStudent,
+            Feature::Directory,
+            Feature::Messaging,
+            Feature::SignupLists,
+            Feature::Eco,
+        );
+
+        // A 403 here would mean the role was refused before the feature was ever read, which is a
+        // different answer to a different question - and the line would then prove nothing.
+        $this->assertScreens($this->student, [
+            '/agenda' => 404,
+            '/documentation' => 404,
+            '/help' => 404,
+            '/my/courses' => 404,
+            '/my/shared-documents' => 404,
+            '/messages' => 404,
+            '/signup-lists' => 404,
+        ]);
+
+        $this->assertScreens($this->teacher, [
+            '/agenda' => 404,
+            '/documentation' => 404,
+            '/help' => 404,
+            '/timetable' => 404,
+            '/tools/file-library' => 404,
+            '/tools/lesson-log' => 404,
+            '/tools/gradebook' => 404,
+            '/shares' => 404,
+            '/messages' => 404,
+        ]);
+
+        // The tutor keeps their own doors - none of the features above is theirs - and loses the
+        // ones that were switched off for everybody.
+        $this->assertScreens($this->tutor, [
+            '/agenda' => 404,
+            '/documentation' => 404,
+            '/messages' => 404,
+            '/my-surveys' => 200,
+        ]);
+    }
+
+    /**
+     * The first thing to check, and the reason the whole design is safe to deploy: with every
+     * feature switched off on every role, an admin still reads everything.
+     */
+    public function testAnAdminKeepsEverythingWhateverTheMatrixSays(): void
+    {
+        $this->switchOffEveryRole(...Feature::cases());
+
+        $this->assertScreens($this->admin, [
+            '/agenda' => 200,
+            '/documentation' => 200,
+            '/help' => 200,
+            '/messages' => 200,
+            '/directory/users' => 200,
+            '/tools/file-library' => 200,
+            '/features' => 200,
+            '/eco/parcours' => 200,
+            '/ufa' => 200,
+            '/shares' => 200,
+        ]);
+    }
+
+    /**
+     * A derogation reopens a screen **for that person alone** - the other half of « une
+     * fonctionnalité s'éteint pour un rôle, et se rallume pour une personne ».
+     */
+    public function testADerogationReopensAScreenForOnePersonOnly(): void
+    {
+        $this->switchOffEveryRole(Feature::Agenda);
+
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist(new UserFeatureAccess($this->student, Feature::Agenda, FeatureAccessState::Enabled));
+        $entityManager->flush();
+
+        $this->assertScreens($this->student, ['/agenda' => 200]);
+        // Same role, same matrix, no derogation: nothing changed for them.
+        $this->assertScreens($this->teacher, ['/agenda' => 404]);
+    }
+
+    /**
+     * Switches these features off for every managed role.
+     *
+     * Updates the row when there already is one rather than inserting blindly: the matrix is seeded
+     * by the migration the empty `_test` schema replays, so every pair already exists here - which
+     * is also what production looks like.
+     */
+    private function switchOffEveryRole(Feature ...$features): void
+    {
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $repository = $entityManager->getRepository(FeatureRoleSetting::class);
+
+        foreach ($features as $feature) {
+            foreach (Feature::managedRoles() as $role) {
+                $existing = $repository->findOneBy(['feature' => $feature, 'role' => $role]);
+
+                if (null === $existing) {
+                    $entityManager->persist(new FeatureRoleSetting($feature, $role, false));
+
+                    continue;
+                }
+
+                $existing->setEnabled(false);
+            }
+        }
+
+        $entityManager->flush();
     }
 
     /**
@@ -766,24 +922,5 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             ->getRepository(User::class)
             ->find($targetId);
         self::assertNotNull($reloaded?->getInactiveDate(), 'The administrator, and only the administrator, closes the account.');
-    }
-
-    private function assertScreens(User $user, array $expectations): void
-    {
-        $this->client->loginUser($user);
-
-        foreach ($expectations as $path => $expected) {
-            $this->client->request('GET', $path);
-            $actual = $this->client->getResponse()->getStatusCode();
-
-            self::assertSame($expected, $actual, \sprintf(
-                'GET %s as %s: expected %d, got %d.%s',
-                $path,
-                implode('/', $user->getRoles()),
-                $expected,
-                $actual,
-                500 === $actual ? ' The screen is broken.' : '',
-            ));
-        }
     }
 }

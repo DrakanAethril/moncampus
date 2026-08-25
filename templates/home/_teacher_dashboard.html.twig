@@ -22,8 +22,15 @@
     </div>
 {% endif %}
 
-{% include 'home/_events_row.html.twig' with {events: events} %}
+{# The events row belongs to the agenda, not to the dashboard: with the agenda switched off it
+   goes with it, rather than leaving a strip whose « Voir l'agenda » link answers 404. #}
+{% if feature('agenda') %}{% include 'home/_events_row.html.twig' with {events: events} %}{% endif %}
 
+{# Both columns read the timetable: the teacher's own day, and the next session of each of their
+   classes. With « Emploi du temps » switched off there is no timetable to read them from - the
+   establishment keeps it elsewhere - so the strip goes rather than showing hours nobody maintains
+   here, with a « Cahier de texte » link that would answer 404 on top. #}
+{% if feature('timetable') %}
 <div class="cm-dash-cols">
     <div class="card">
         <div class="card-header">
@@ -50,9 +57,11 @@
                                 <span class="cm-sched__title {{ is_past ? 'cm-sched__title--past' }}">{{ session.displayName }} — {{ session.program.displayShortName }}</span>
                                 <span class="cm-sched__meta">{% if session.classRoom %}{{ session.classRoom.name }}{% endif %}</span>
                             </span>
-                            <span class="cm-sched__side">
-                                <a href="{{ path('app_program_timetable_session_log', {id: session.program.id, sessionId: session.id}) }}" class="small fw-bold text-decoration-none">{{ 'homeTeacherLessonLogLabel'|trans }}</a>
-                            </span>
+                            {% if feature('lesson_log') %}
+                                <span class="cm-sched__side">
+                                    <a href="{{ path('app_program_timetable_session_log', {id: session.program.id, sessionId: session.id}) }}" class="small fw-bold text-decoration-none">{{ 'homeTeacherLessonLogLabel'|trans }}</a>
+                                </span>
+                            {% endif %}
                         </div>
                     {% endfor %}
                 </div>
@@ -86,29 +95,53 @@
                                     {% if session.classRoom %} · {{ session.classRoom.name }}{% endif %}
                                 </span>
                             </span>
+                            {# Same rule as the top bar's menus: a dropdown with nothing under it is
+                               not offered at all. With the two lists and the syllabus reserved to
+                               administrators, a teacher's quick links can now be empty. #}
+                            {% set quick_links = is_granted('ROLE_ADMIN')
+                                or (feature('timetable') and program.timetableManagementEnabled and visibility_allows(program.timetableVisibility))
+                                or (feature('gradebook_entry') and program.timetableManagementEnabled)
+                                or (feature('my_alternance') and visibility_allows(program.alternanceCalendarVisibility))
+                                or feature('class_tools') %}
+                            {% if quick_links %}
                             <span class="ms-auto">
                                 <div class="dropdown">
                                     <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">{{ 'homeTeacherQuickLinksLabel'|trans }}</button>
                                     <div class="dropdown-menu dropdown-menu-end">
                                         <h6 class="dropdown-header">{{ 'homeTeacherQuickLinksLabel'|trans }}</h6>
-                                        <a class="dropdown-item" href="{{ path('app_program_students', {id: program.id}) }}">{{ 'programStudentsNavLabel'|trans }}</a>
-                                        <a class="dropdown-item" href="{{ path('app_program_teachers', {id: program.id}) }}">{{ 'programTeachersNavLabel'|trans }}</a>
-                                        {% if program.timetableManagementEnabled and visibility_allows(program.timetableVisibility) %}
+                                        {# The same rule as the class submenu of the top bar: the two
+                                           lists and the syllabus below are administrators' screens.
+                                           This dropdown is the other menu a class carries, and the
+                                           two must not disagree about who is offered what. #}
+                                        {% if is_granted('ROLE_ADMIN') %}
+                                            <a class="dropdown-item" href="{{ path('app_program_students', {id: program.id}) }}">{{ 'programStudentsNavLabel'|trans }}</a>
+                                            <a class="dropdown-item" href="{{ path('app_program_teachers', {id: program.id}) }}">{{ 'programTeachersNavLabel'|trans }}</a>
+                                        {% endif %}
+                                        {% if feature('timetable') and program.timetableManagementEnabled and visibility_allows(program.timetableVisibility) %}
                                             <a class="dropdown-item" href="{{ path('app_program_timetable', {id: program.id}) }}">{{ 'programTimetableNavLabel'|trans }}</a>
                                         {% endif %}
-                                        {% if program.timetableManagementEnabled %}
+                                        {# « Carnet de notes » - the establishment keeps its grades elsewhere, so this
+                                           entry goes with the feature rather than with the timetable flag it was
+                                           historically tied to (design/validated/feature-access.md §7.3). #}
+                                        {% if feature('gradebook_entry') and program.timetableManagementEnabled %}
                                             <a class="dropdown-item" href="{{ path('app_program_gradebook', {id: program.id}) }}">{{ 'gradebookNavLabel'|trans }}</a>
                                         {% endif %}
-                                        {% if visibility_allows(program.alternanceCalendarVisibility) %}
+                                        {% if feature('my_alternance') and visibility_allows(program.alternanceCalendarVisibility) %}
                                             <a class="dropdown-item" href="{{ path('app_program_alternance_calendar_pdf', {id: program.id}) }}"{% if program.alternanceCalendarMode.value == 'file' %} target="_blank" rel="noopener"{% endif %}>{{ 'programAlternanceCalendarNavLabel'|trans }}</a>
                                         {% endif %}
-                                        <a class="dropdown-item" href="{{ path('app_program_tools_random_draw', {id: program.id}) }}">{{ 'programToolsNavLabel'|trans }}</a>
-                                        {% if visibility_allows(program.syllabusVisibility) %}
+                                        {% if feature('class_tools') %}
+                                            <a class="dropdown-item" href="{{ path('app_program_tools_random_draw', {id: program.id}) }}">{{ 'programToolsNavLabel'|trans }}</a>
+                                        {% endif %}
+                                        {# Administrators only, and no longer reading syllabusVisibility -
+                                           the setting stays in Formation > Paramétrage but nothing
+                                           applies it for now. #}
+                                        {% if is_granted('ROLE_ADMIN') and feature('progression') %}
                                             <a class="dropdown-item" href="{{ path('app_program_syllabus', {id: program.id}) }}"{% if program.syllabusMode.value == 'file' %} target="_blank" rel="noopener"{% endif %}>{{ 'programSyllabusNavLabel'|trans }}</a>
                                         {% endif %}
                                     </div>
                                 </div>
                             </span>
+                            {% endif %}
                         </div>
                         {% if not loop.last %}<div style="height: 1px; background: var(--cm-border-soft);"></div>{% endif %}
                     {% endfor %}
@@ -117,3 +150,4 @@
         </div>
     </div>
 </div>
+{% endif %}

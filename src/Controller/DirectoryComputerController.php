@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\LdapComputer;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\LdapComputerRepository;
 use App\Service\DataTableParams;
 use App\Service\LdapComputerSyncer;
@@ -20,6 +22,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 // there's no create/edit/deactivate action at all, only "sync now" (LdapComputerSyncer) - see
 // App\Entity\LdapComputer.
 #[IsGranted('ROLE_ADMIN')]
+#[RequiresFeature(Feature::Directory)]
 class DirectoryComputerController extends AbstractController
 {
     #[Route(path: '/directory/computers', name: 'app_directory_computers')]

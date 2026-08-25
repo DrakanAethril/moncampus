@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipTutorEvaluation;
 use App\Entity\Program;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipLivretEngagementRepository;
 use App\Repository\InternshipTutorLinkRepository;
@@ -24,6 +26,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * the same gates as the per-program wizard in ProgramInternshipEvaluationController, which stays
  * the actual step-by-step journey this page links into.
  */
+#[RequiresFeature(Feature::MyAlternance)]
 class MyAlternanceController extends AbstractController
 {
     #[Route(path: '/my/alternance', name: 'app_my_alternance')]

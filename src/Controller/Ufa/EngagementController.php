@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller\Ufa;
 
+use App\Attribute\RequiresFeature;
+use App\Enum\Feature;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Service\AlternanceEngagementService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -20,6 +22,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * bodies are unchanged; only the class hosting them is new.
  */
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD") or is_granted("ROLE_TEACHER")'))]
+#[RequiresFeature(Feature::UfaBooklet)]
 class EngagementController extends AbstractController
 {
     use UfaAlternanceTrait;

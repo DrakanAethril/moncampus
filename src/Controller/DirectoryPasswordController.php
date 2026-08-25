@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\LdapManagePassword;
+use App\Enum\Feature;
 use App\Repository\LdapManagePasswordRepository;
 use App\Service\DataTableParams;
 use App\Service\QueueStateFormatter;
@@ -34,6 +36,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * concerned, which is the question that removed it.
  */
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::Directory)]
 class DirectoryPasswordController extends AbstractController
 {
     #[Route(path: '/directory/passwords', name: 'app_directory_passwords')]

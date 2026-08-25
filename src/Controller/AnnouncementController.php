@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Announcement;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Enum\MessageAudienceType;
 use App\Form\AnnouncementType;
 use App\Repository\AnnouncementRepository;
@@ -29,6 +31,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 // Institutional broadcasts (circulaires) - see App\Entity\Announcement's docblock for why this is
 // a standalone entity rather than riding on the messaging system.
 #[IsGranted('ROLE_USER')]
+#[RequiresFeature(Feature::Announcements)]
 class AnnouncementController extends AbstractController
 {
     private const string MANAGE_ACCESS_EXPRESSION = 'is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")';

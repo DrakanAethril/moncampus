@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\EcoCheckpoint;
 use App\Entity\EcoCheckpointScan;
 use App\Entity\EcoCourse;
@@ -14,6 +15,7 @@ use App\Entity\User;
 use App\Enum\EcoCheckpointType;
 use App\Enum\EcoCourseStatus;
 use App\Enum\EcoScanResult;
+use App\Enum\Feature;
 use App\Form\EcoCourseType;
 use App\Repository\EcoCourseRepository;
 use App\Repository\EcoParcoursRepository;
@@ -46,6 +48,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * @phpstan-import-type EcoLeg from EcoPerformanceAnalyzer
  */
 #[IsGranted(new Expression('is_granted("ROLE_ECO") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::Eco)]
 class EcoCourseController extends AbstractController
 {
     #[Route(path: '/eco/parcours/{parcoursId}/courses', name: 'app_eco_course_index')]

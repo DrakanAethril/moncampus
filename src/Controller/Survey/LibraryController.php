@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller\Survey;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\SurveyAnswer;
 use App\Entity\SurveyQuestion;
 use App\Entity\SurveyTemplate;
+use App\Enum\Feature;
 use App\Enum\SurveyQuestionType as QuestionKind;
 use App\Form\Survey\SurveyQuestionType;
 use App\Form\Survey\SurveyTemplateType;
@@ -34,6 +36,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * audiences and the question « et pour le personnel ? » needs no separate answer.
  */
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::Surveys)]
 class LibraryController extends AbstractController
 {
     use SurveyTabTrait;

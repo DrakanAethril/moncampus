@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Ticket;
 use App\Entity\TicketCategory;
 use App\Entity\TicketComment;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Form\TicketCategoryType;
 use App\Form\TicketCommentType;
 use App\Form\TicketManageType;
@@ -36,6 +38,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 // catch-all already requires that), while the queue/category routes below are handler-only via
 // a per-method IsGranted, and the ticket detail routes are gated per-object via TicketVoter
 // instead of a role Expression - see denyAccessUnlessGranted() calls.
+#[RequiresFeature(Feature::Support)]
 class TicketController extends AbstractController
 {
     private const string HANDLER_ACCESS_EXPRESSION = 'is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD") or is_granted("ROLE_SUPPORT-TECH")';

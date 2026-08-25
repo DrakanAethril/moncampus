@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\HelpArticle;
 use App\Entity\HelpSection;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Form\HelpArticleType;
 use App\Form\HelpSectionType;
 use App\Repository\HelpArticleRepository;
@@ -34,6 +36,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * dozen of them to a mis-clicked section is not a mistake the admin can undo.
  */
 #[IsGranted('ROLE_ADMIN')]
+#[RequiresFeature(Feature::Help)]
 class HelpAdminController extends AbstractController
 {
     public function __construct(

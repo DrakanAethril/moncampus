@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Program;
 use App\Enum\ContentVisibility;
+use App\Enum\Feature;
 use App\Form\SequenceInstanceType;
 use App\Repository\ProgramRepository;
 use App\Repository\ProgressionSeancePlacementRepository;
 use App\Repository\SequenceInstanceRepository;
+use App\Security\FeatureAccess;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\SequenceInstanceVoter;
 use App\Service\SequenceInstanceRemover;
@@ -39,6 +42,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 // removal stay admin-only; what a teacher may do to a given sequence is decided per object by
 // App\Security\Voter\SequenceInstanceVoter, never by the role alone.
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::Progression)]
 class ProgramSequenceInstanceController extends AbstractController
 {
     use ProgramFeatureGuardTrait;
@@ -76,7 +80,7 @@ class ProgramSequenceInstanceController extends AbstractController
     }
 
     #[Route(path: '/programs/{id}/sequences/{sequenceInstanceId}', name: 'app_program_sequences_show', requirements: ['sequenceInstanceId' => '\d+'])]
-    public function show(int $id, int $sequenceInstanceId, ProgramRepository $repository, StructureAccessChecker $accessChecker, SequenceInstanceRepository $sequenceInstanceRepository): Response
+    public function show(int $id, int $sequenceInstanceId, ProgramRepository $repository, StructureAccessChecker $accessChecker, SequenceInstanceRepository $sequenceInstanceRepository, FeatureAccess $featureAccess): Response
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
         $sequenceInstance = $sequenceInstanceRepository->find($sequenceInstanceId) ?? throw $this->createNotFoundException();
@@ -92,7 +96,12 @@ class ProgramSequenceInstanceController extends AbstractController
             'sequenceInstance' => $sequenceInstance,
             // The controls are rendered only for whoever may actually write them - a form nobody
             // may submit is a promise the screen cannot keep.
-            'mayPublish' => $this->isGranted(SequenceInstanceVoter::PUBLISH, $sequenceInstance),
+            // The three publication switches - the séquence, each séance, each resource - all hang
+            // off this one flag. Publishing is what puts content into « Mes cours », so with the
+            // course space switched off there is nothing to publish *to*: the switches go, and what
+            // is already published stays exactly as it is (design/validated/feature-access.md §7.3).
+            'mayPublish' => $featureAccess->isEnabled(Feature::CourseSpace)
+                && $this->isGranted(SequenceInstanceVoter::PUBLISH, $sequenceInstance),
             'mayEdit' => $this->isGranted(SequenceInstanceVoter::EDIT, $sequenceInstance),
             'visibilityChoices' => ContentVisibility::cases(),
         ]);

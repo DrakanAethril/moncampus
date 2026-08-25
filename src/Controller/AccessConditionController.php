@@ -14,11 +14,13 @@ use App\Entity\User;
 use App\Enum\AccessConditionComparison;
 use App\Enum\AccessConditionDisplay;
 use App\Enum\AccessConditionType;
+use App\Enum\Feature;
 use App\Repository\AssignmentRepository;
 use App\Repository\LibraryResourceInstanceRepository;
 use App\Repository\QuizInstanceRepository;
 use App\Repository\SeanceInstanceRepository;
 use App\Repository\SequenceInstanceRepository;
+use App\Security\FeatureAccess;
 use App\Security\StructureAccessChecker;
 use App\Service\AccessConditionCycleDetector;
 use App\Service\AccessConditionGraph;
@@ -51,6 +53,7 @@ class AccessConditionController extends AbstractController
         private readonly LibraryResourceInstanceRepository $resourceRepository,
         private readonly SequenceInstanceRepository $sequenceRepository,
         private readonly StructureAccessChecker $accessChecker,
+        private readonly FeatureAccess $featureAccess,
     ) {
     }
 
@@ -63,6 +66,7 @@ class AccessConditionController extends AbstractController
 
         $reader = $this->getUser();
         $teacher = $this->accessChecker->isStaff() || !$reader instanceof User ? null : $reader;
+        $gradesEnterable = $this->featureAccess->isEnabledForAnyRole(Feature::GradebookEntry);
 
         return $this->render('access_condition/edit.html.twig', [
             'program' => $program,
@@ -76,7 +80,21 @@ class AccessConditionController extends AbstractController
             // A teacher writes conditions on the notes of their own matières; staff, who hold none,
             // are offered the class's whole gradebook rather than an empty select.
             'options' => $options->forProgram($program, $host, $teacher),
-            'types' => AccessConditionType::forPicker(),
+            // « Note obtenue » leaves the picker when nobody can enter a grade any more: a condition
+            // that can never become true would lock its content for ever (§8.4). The ones already
+            // written stay in the list and are simply ignored - the banner below says so, because a
+            // rule that silently stops applying is worse than one that never existed.
+            'types' => $gradesEnterable
+                ? AccessConditionType::forPicker()
+                : array_values(array_filter(
+                    AccessConditionType::forPicker(),
+                    static fn (AccessConditionType $one): bool => AccessConditionType::GradeValue !== $one,
+                )),
+            'gradesEnterable' => $gradesEnterable,
+            'hasIgnoredGradeConditions' => !$gradesEnterable && null !== $tree && [] !== array_filter(
+                $tree->leaves,
+                static fn (AccessConditionLeaf $leaf): bool => AccessConditionType::GradeValue === $leaf->type,
+            ),
             // The screen draws its own rows, so it needs the type names the same way it needs the
             // object names - as data, not as markup it would have to keep in step with the enum.
             'conditionLabels' => array_reduce(

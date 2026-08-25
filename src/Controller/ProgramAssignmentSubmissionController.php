@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Assignment;
 use App\Entity\AssignmentSubmission;
 use App\Entity\AssignmentSubmissionFile;
@@ -11,6 +12,7 @@ use App\Entity\AssignmentView;
 use App\Entity\Program;
 use App\Entity\User;
 use App\Enum\AssignmentSubmissionStatus;
+use App\Enum\Feature;
 use App\Form\AssignmentSubmissionFileType;
 use App\Repository\AssignmentRepository;
 use App\Repository\AssignmentSubmissionFileRepository;
@@ -34,6 +36,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 // actually reachable is decided per-object by AssignmentVoter::SUBMIT (audience membership), not
 // just the ROLE_STUDENT check, since not every student in a Program is in every Assignment's
 // audience (see design/validated/assignment-submission-box.md).
+#[RequiresFeature(Feature::StudentWork)]
 class ProgramAssignmentSubmissionController extends AbstractController
 {
     use ProgramFeatureGuardTrait;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 /**
- * Arranges "Mes wikis" into the groups the screen shows.
+ * Arranges « Wikis partagés » into the groups the screen shows.
  *
  * Flat, the list becomes an unreadable pile after two school years, so it is grouped by class - the
  * same organising principle as the supervision screen, because it is the same mental model. The

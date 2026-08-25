@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\AudioRecording;
 use App\Entity\AudioRecordingFile;
 use App\Entity\Option;
 use App\Entity\Program;
 use App\Entity\User;
 use App\Enum\AudioRecordingMode;
+use App\Enum\Feature;
 use App\Repository\AudioListenProgressRepository;
 use App\Repository\AudioRecordingRepository;
 use App\Repository\ProgramRepository;
@@ -47,6 +49,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * student screen. Students listen from their assignment instead (App\Controller\StudentWorkController).
  */
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::Audio)]
 class AudioRecordingController extends AbstractController
 {
     // One token for all of step 2's actions (record, delete): they all fire from a single screen,

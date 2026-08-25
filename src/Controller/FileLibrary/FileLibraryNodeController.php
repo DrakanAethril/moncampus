@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller\FileLibrary;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\FileLibraryNode;
+use App\Enum\Feature;
 use App\Repository\FileLibraryNodeRepository;
 use App\Security\Voter\FileLibraryVoter;
 use App\Service\FileLibraryNodeManager;
@@ -31,6 +33,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  */
 #[IsGranted(FileLibraryVoter::VIEW)]
 #[Route(path: '/tools/file-library')]
+#[RequiresFeature(Feature::FileLibrary)]
 class FileLibraryNodeController extends AbstractController
 {
     use FileLibraryTrait;

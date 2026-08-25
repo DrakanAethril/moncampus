@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller\Infrastructure;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\ProxmoxHost;
+use App\Enum\Feature;
 use App\Repository\ProxmoxHostRepository;
 use App\Security\Voter\ProxmoxHostVoter;
 use App\Service\Console\ConsoleAddressUnknownException;
@@ -39,6 +41,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * one terminal, two ways in.
  */
 #[IsGranted('ROLE_ADMIN')]
+#[RequiresFeature(Feature::GuestConsole)]
 class GuestConsoleController extends AbstractController
 {
     use InfrastructureTrait;

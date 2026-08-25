@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Controller\Ufa;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\InternshipStudentEvaluation;
 use App\Entity\InternshipSupervisorEvaluation;
 use App\Entity\InternshipTeamEvaluation;
 use App\Entity\InternshipTutorEvaluation;
 use App\Entity\Program;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Enum\UfaActivityType;
 use App\Form\InternshipStudentEvaluationType;
 use App\Form\InternshipTeamEvaluationType;
@@ -44,6 +46,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * bodies are unchanged; only the class hosting them is new.
  */
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD") or is_granted("ROLE_TEACHER")'))]
+#[RequiresFeature(Feature::UfaBooklet)]
 class PeriodWizardController extends AbstractController
 {
     use UfaAlternanceTrait;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\ContentShare;
 use App\Entity\LibraryBlocTag;
 use App\Entity\LibraryNiveauTag;
@@ -16,6 +17,7 @@ use App\Entity\SeanceTemplate;
 use App\Entity\SequenceTemplate;
 use App\Entity\User;
 use App\Enum\ContentShareScope;
+use App\Enum\Feature;
 use App\Enum\LibraryResourceSourceType;
 use App\Form\LibraryResourceType;
 use App\Form\SeancePhaseTemplateType;
@@ -65,6 +67,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 // cross-teacher shared/discoverable library in this pass. Instantiating a template against a real
 // Program is what bridges into the Program-scoped side (App\Controller\ProgramSequenceInstanceController).
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::SequenceLibrary)]
 class SequenceLibraryController extends AbstractController
 {
     private const string RESOURCE_UPLOAD_PREFIX = 'library-resources/';

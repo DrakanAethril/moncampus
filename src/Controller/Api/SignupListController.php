@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\SignupList;
 use App\Entity\SignupListRegistration;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\SignupListRegistrationRepository;
 use App\Repository\SignupListRepository;
 use App\Security\Voter\SignupListVoter;
@@ -24,6 +26,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * isn't exposed here, only what Api\AgendaController's event feed needs to make its
  * register/unregister button work.
  */
+#[RequiresFeature(Feature::SignupLists)]
 class SignupListController extends AbstractController
 {
     #[Route(path: '/api/signup-lists/{id}/register', name: 'api_signup_lists_register', methods: ['POST'])]

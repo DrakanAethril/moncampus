@@ -26,6 +26,43 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.08.25.2'
+      date: '2026-08-25'
+      summary: "L'établissement choisit désormais, fonctionnalité par fonctionnalité et profil par profil, ce qui est ouvert dans MonCampus, avec la possibilité de faire une exception pour une personne en particulier. Le tour de l'application s'en trouve resserré : chacun ne voit plus que ce qui le concerne, et les rubriques sans contenu ne s'affichent plus."
+      entries:
+          - type: nouveaute
+            title: "Choisir les fonctionnalités ouvertes à chaque profil"
+            detail: "L'administration ouvre ou ferme chaque fonctionnalité pour les étudiants, les enseignants et les autres profils, peut la régler formation par formation, et faire une exception pour une personne. Une fonctionnalité fermée disparaît des menus et n'est plus atteignable, même par un lien direct."
+          - type: modification
+            title: "Chacun ne voit plus que les écrans qui le concernent"
+            detail: "Seules les fonctionnalités que l'établissement utilise aujourd'hui sont ouvertes ; les autres restent en sommeil et se rallument à la demande, d'un clic, sans attendre une mise à jour."
+          - type: modification
+            title: "Une rubrique sans entrée disponible n'est plus affichée"
+            detail: "Plus de menu qui s'ouvre sur du vide, ni de classe dont aucun écran n'est accessible dans la liste de sa section."
+          - type: nouveaute
+            title: "Signaler un problème depuis l'accueil"
+            detail: "Les tableaux de bord étudiant et enseignant se terminent par un accès direct au signalement, dès lors que le support est ouvert."
+          - type: nouveaute
+            title: "Documents et compétences d'une formation en alternance"
+            detail: "Le calendrier de l'alternance se dépose en PDF sur la formation, et ses groupes de compétences se consultent au même endroit."
+          - type: modification
+            title: "« Mes wikis » devient « Wikis partagés »"
+            detail: "L'entrée n'apparaît que si un wiki a effectivement été partagé avec vous."
+          - type: modification
+            title: "Un administrateur peut modifier sa propre fiche"
+            detail: "Adresse de contact, avatar : chacun tient sa propre fiche, sans pouvoir fermer son propre compte ni toucher à celle d'un autre administrateur."
+          - type: modification
+            title: "Un rappel vers EcoleDirecte"
+            detail: "Une bannière rappelle aux étudiants et aux enseignants la plateforme de référence de l'établissement."
+          - type: autre
+            title: "Applications mobiles MonCampus 2.5.0 et e-CO 1.1.0"
+            detail: "Nouvelles versions Android disponibles au téléchargement."
+          - type: interne
+            title: "L'application mobile connaît les fonctionnalités ouvertes"
+            detail: "Elle les reçoit à la connexion, et chaque appel reste vérifié de son côté."
+          - type: interne
+            title: "Le contrôle des fonctionnalités est vérifié écran par écran"
+            detail: "Chaque écran déclare la fonctionnalité dont il dépend, et un test refuse qu'un écran y échappe."
     - version: '2026.08.25'
       date: '2026-08-25'
       summary: "L'administration peut désormais désactiver, réactiver ou renommer un compte, et suivre l'aboutissement de chaque opération. Un compte fermé ne peut plus se connecter, par aucun chemin, et la réinitialisation de mot de passe par l'administration cède la place au lien de connexion par e-mail."

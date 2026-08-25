@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Assignment;
 use App\Entity\AssignmentAttachment;
 use App\Entity\AudioRecording;
@@ -17,6 +18,7 @@ use App\Enum\AssignmentAttachmentSourceType;
 use App\Enum\AssignmentAudienceType;
 use App\Enum\AssignmentNature;
 use App\Enum\AssignmentSubmissionStatus;
+use App\Enum\Feature;
 use App\Enum\LessonLogSection;
 use App\Form\AssignmentWizardType;
 use App\Repository\AssignmentRepository;
@@ -62,6 +64,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * assignments.
  */
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::StudentWork)]
 class AssignmentController extends AbstractController
 {
     private const string ATTACHMENT_UPLOAD_PREFIX = 'assignment-attachments/';

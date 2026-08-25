@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\GroupBatch;
 use App\Entity\Option;
 use App\Entity\Program;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Enum\GroupCreationMode;
 use App\Repository\GroupBatchRepository;
 use App\Repository\ProgramRepository;
@@ -33,6 +35,7 @@ use Symfony\Component\String\Slugger\AsciiSlugger;
 // dropdown, since these are meant to be run live in front of a class, not something a student
 // should be able to reach (StructureAccessChecker::isProgramTeacher(), stricter than the plain
 // isProgramVisible() every other program-scoped controller here uses).
+#[RequiresFeature(Feature::ClassTools)]
 class ProgramToolsController extends AbstractController
 {
     private const string GROUP_CREATION_CSRF_TOKEN_ID = 'program_group_creation';

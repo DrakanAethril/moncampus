@@ -7,6 +7,7 @@ namespace App\Tests\Form;
 use App\Entity\User;
 use App\Form\FilePickerType;
 use App\Repository\FileLibraryNodeRepository;
+use App\Security\FeatureAccess;
 use App\Service\StagedUpload;
 use App\Service\StagedUploadStore;
 use App\Service\UploadPolicy;
@@ -156,9 +157,15 @@ class FilePickerTypeTest extends TypeTestCase
         $libraryNodes = $this->createStub(FileLibraryNodeRepository::class);
         $authorization = $this->createStub(AuthorizationCheckerInterface::class);
         $authorization->method('isGranted')->willReturn(false);
+        // The `file_library` feature is the second half of that answer - the tab is offered only
+        // when the establishment runs the library *and* the reader has one. Stubbed open here, so
+        // that what keeps the tab out of the way stays the authorization checker above and this
+        // test keeps testing the field.
+        $featureAccess = $this->createStub(FeatureAccess::class);
+        $featureAccess->method('isEnabled')->willReturn(true);
 
         return [
-            new PreloadedExtension([new FilePickerType($this->store, $security, $libraryNodes, $authorization)], []),
+            new PreloadedExtension([new FilePickerType($this->store, $security, $libraryNodes, $authorization, $featureAccess)], []),
             // The `constraints` option is the validator extension's, and this type normalises it -
             // building its own AllowedUpload from the policy. Without the extension the option does
             // not exist and every case here dies on resolution, which is a property of the bare test

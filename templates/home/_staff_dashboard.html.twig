@@ -48,8 +48,10 @@
     </div>
 {% endif %}
 
-{% include 'home/_events_row.html.twig' with {events: events} %}
+{% if feature('agenda') %}{% include 'home/_events_row.html.twig' with {events: events} %}{% endif %}
 
 {# Its own turbo-frame: the ‹ / › arrows and the date picker repaint the matrix alone, leaving the
    banner and the events row above untouched. #}
-{% include 'home/_staff_timetable.html.twig' with {timetable: staff.timetable} only %}
+{# The establishment-wide timetable board. Same reading as the two dashboards above: with
+   « Emploi du temps » switched off there is nothing behind it, and its own route answers 404. #}
+{% if feature('timetable') %}{% include 'home/_staff_timetable.html.twig' with {timetable: staff.timetable} only %}{% endif %}

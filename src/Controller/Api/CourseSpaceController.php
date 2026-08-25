@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\LibraryResourceInstance;
 use App\Entity\LibraryResourceInstanceView;
 use App\Entity\Program;
 use App\Entity\SequenceInstance;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Enum\LibraryResourceSourceType;
 use App\Repository\LibraryResourceInstanceRepository;
 use App\Repository\LibraryResourceInstanceViewRepository;
@@ -39,6 +41,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * Three GETs and one opening, mirroring App\Controller\StudentCourseSpaceController one for one.
  */
 #[IsGranted('ROLE_STUDENT')]
+#[RequiresFeature(Feature::CourseSpace)]
 class CourseSpaceController extends AbstractController
 {
     /** The student's classes - the list « Mes cours » opens on. */

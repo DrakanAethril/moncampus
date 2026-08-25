@@ -3,13 +3,14 @@
 {% block title %}{{ (isEdit ? 'editSkillPageHeading' : 'newSkillPageHeading')|trans }} - {{ skillGroup.label }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
-        {label: 'programSettingsNavLabel'|trans, url: path('app_program_settings', {id: program.id})},
-        {label: program.displayShortName, url: path('app_program_settings_skill_groups', {id: program.id})},
-        {label: skillGroup.label, url: path('app_program_settings_skill_groups_skills', {id: program.id, groupId: skillGroup.id})},
-        {label: (isEdit ? 'editSkillPageHeading' : 'newSkillPageHeading')|trans, url: app.request.requestUri},
-    ]} %}
+    {# The two middle segments come from the controller (skillBreadcrumb): a reader who came in
+       through UFA must not be sent back into Paramétrage by the trail. #}
+    {% include '_breadcrumb.html.twig' with {segments: [{label: 'homeNavLabel'|trans, url: path('app_home')}]
+        |merge(skillBreadcrumb|map(s => {label: s.labelKey ? s.labelKey|trans : s.label, url: s.url}))
+        |merge([
+            {label: skillGroup.label, url: path(skillRoutes.skills, {id: program.id, groupId: skillGroup.id})},
+            {label: (isEdit ? 'editSkillPageHeading' : 'newSkillPageHeading')|trans, url: app.request.requestUri},
+        ]) } %}
 {% endblock %}
 {% block page_title %}{{ (isEdit ? 'editSkillPageHeading' : 'newSkillPageHeading')|trans }} - {{ skillGroup.label }}{% endblock %}
 
@@ -41,7 +42,7 @@
                         <label class="form-label" for="teacher">{{ 'skillTeacherFieldLabel'|trans }}</label>
                         <select id="teacher" name="teacher" class="form-select"
                                 data-controller="tom-select"
-                                data-tom-select-url-value="{{ path('app_program_settings_skill_groups_teachers_search', {id: program.id}) }}"
+                                data-tom-select-url-value="{{ path(skillRoutes.teachersSearch, {id: program.id}) }}"
                                 data-tom-select-placeholder-value="{{ 'skillTeacherFieldLabel'|trans }}">
                             {% if form.vars.data and form.vars.data.teacher %}
                                 <option value="{{ form.vars.data.teacher.id }}" selected>{{ form.vars.data.teacher.displayName ?? form.vars.data.teacher.username }}</option>
@@ -105,7 +106,7 @@
                 <div class="cm-actionbar">
                     {% include '_last_modified_meta.html.twig' with {entity: form.vars.data} %}
                     <div class="cm-actionbar__buttons">
-                        <a href="{{ path('app_program_settings_skill_groups_skills', {id: program.id, groupId: skillGroup.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                        <a href="{{ path(skillRoutes.skills, {id: program.id, groupId: skillGroup.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
                         {{ form_widget(form.submit, {'label': isEdit ? 'submitEditAction' : 'submitCreateAction'}) }}
                     </div>
                 </div>

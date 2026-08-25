@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\SurveyCampaign;
 use App\Entity\SurveyResponse;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\SurveyCampaignRepository;
 use App\Repository\SurveyTargetRepository;
 use App\Service\JsonRequestPayload;
@@ -35,6 +37,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * silence.
  */
 #[IsGranted('ROLE_USER')]
+#[RequiresFeature(Feature::Surveys)]
 class SurveyController extends AbstractController
 {
     public function __construct(private readonly SurveyQuestionPayload $payloadBuilder)

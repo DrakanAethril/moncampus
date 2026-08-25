@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\EmailAttachment;
 use App\Entity\EmailMessage;
 use App\Entity\User;
 use App\Enum\EmailDirection;
+use App\Enum\Feature;
 use App\Repository\EmailMessageRepository;
 use App\Repository\JobSearchRepository;
 use App\Service\JobApplicationResolver;
@@ -40,6 +42,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * démarches - the phone reads Reçus/Envoyés, opens a mail and answers it.
  */
 #[IsGranted('ROLE_STUDENT')]
+#[RequiresFeature(Feature::SchoolMail)]
 class SchoolMailController extends AbstractController
 {
     /** How many mails a folder page holds - the phone list is scrolled, not paginated. */

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Program;
+use App\Enum\Feature;
 use App\Enum\ProgramSyllabusMode;
 use App\Repository\ProgramRepository;
 use App\Repository\TopicRepository;
@@ -21,6 +23,7 @@ use Symfony\Component\Routing\Attribute\Route;
 // data. Ported from a sister app's "syllabus" screen: the whole table is rendered server-side in
 // one page, and DataTables (+ RowGroup) does all grouping/sorting/hour-total calculation
 // client-side - no pagination, since a Program's topic list is small.
+#[RequiresFeature(Feature::Progression)]
 class ProgramSyllabusController extends AbstractController
 {
     use ProgramFeatureGuardTrait;

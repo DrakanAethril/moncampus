@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Program;
 use App\Entity\SeanceInstance;
 use App\Entity\SeancePhaseInstance;
 use App\Entity\SequenceInstance;
+use App\Enum\Feature;
 use App\Form\SeanceInstanceType;
 use App\Form\SeancePhaseInstanceType;
 use App\Repository\ProgramRepository;
@@ -40,6 +42,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * standing between "I corrected this for my class" and "I have just rewritten my library".
  */
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::Progression)]
 class ProgramSeanceInstanceController extends AbstractController
 {
     use ProgramFeatureGuardTrait;

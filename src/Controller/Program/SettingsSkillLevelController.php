@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller\Program;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Program;
 use App\Entity\Skill;
 use App\Entity\SkillGroup;
 use App\Entity\SkillLevel;
+use App\Enum\Feature;
 use App\Form\SkillLevelType;
 use App\Repository\ProgramRepository;
 use App\Repository\SkillLevelRepository;
@@ -27,6 +29,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * bodies are unchanged; only the class hosting them is new.
  */
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::TsfReferential)]
 class SettingsSkillLevelController extends AbstractController
 {
     use ProgramSettingsTabTrait;

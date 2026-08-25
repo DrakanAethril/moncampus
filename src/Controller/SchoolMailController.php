@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\EmailMessage;
 use App\Entity\JobApplication;
 use App\Entity\User;
 use App\Enum\EmailDirection;
+use App\Enum\Feature;
 use App\Repository\EmailMessageRepository;
 use App\Repository\JobApplicationRepository;
 use App\Repository\JobSearchRepository;
@@ -35,6 +37,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * is known about what the company does with what we send.
  */
 #[IsGranted('ROLE_STUDENT')]
+#[RequiresFeature(Feature::SchoolMail)]
 class SchoolMailController extends AbstractController
 {
     public function __construct(

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller\Program;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\InternshipTutorLink;
+use App\Enum\Feature;
 use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\ProgramRepository;
@@ -27,6 +29,7 @@ use Symfony\Component\String\Slugger\SluggerInterface;
  * bodies are unchanged; only the class hosting them is new.
  */
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::UfaBooklet)]
 class InternshipBookletController extends AbstractController
 {
     use ProgramInternshipTrait;

@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Assignment;
 use App\Entity\QuizQuestion;
 use App\Entity\User;
 use App\Entity\VideoCueAnswer;
 use App\Entity\VideoCuePoint;
+use App\Enum\Feature;
 use App\Enum\QuestionType;
 use App\Repository\AssignmentRepository;
 use App\Repository\VideoCueAnswerRepository;
@@ -38,6 +40,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * is already long, and whose video actions are about watching rather than about answering.
  */
 #[IsGranted('ROLE_USER')]
+#[RequiresFeature(Feature::Video)]
 class StudentVideoCueController extends AbstractController
 {
     public const string CSRF_TOKEN_ID = 'student_video_cue';

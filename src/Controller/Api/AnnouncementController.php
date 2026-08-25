@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Announcement;
+use App\Enum\Feature;
 use App\Repository\AnnouncementRepository;
 use App\Security\Voter\AudienceTargetableVoter;
 use App\Service\AudienceLabelFormatter;
@@ -19,6 +21,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * $body is the raw sanitized HTML (see Announcement's docblock) - same convention as Api\
  * MessagesController's Message::$body, stripped to plain text client-side rather than server-side.
  */
+#[RequiresFeature(Feature::Announcements)]
 class AnnouncementController extends AbstractController
 {
     #[Route(path: '/api/announcements', name: 'api_announcements', methods: ['GET'])]

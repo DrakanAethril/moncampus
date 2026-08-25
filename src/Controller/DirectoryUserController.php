@@ -4,17 +4,23 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\EmailAlias;
 use App\Entity\LdapManageUser;
 use App\Entity\User;
 use App\Enum\EmailAliasOrigin;
+use App\Enum\Feature;
+use App\Enum\FeatureAccessState;
+use App\Enum\FeatureFamily;
 use App\Form\LdapManageUserType;
 use App\Form\UserProfileType;
 use App\Repository\GroupRepository;
 use App\Repository\LdapManageAccountRepository;
 use App\Repository\LdapManageUserRepository;
 use App\Repository\StudentImportBatchRepository;
+use App\Repository\UserFeatureAccessRepository;
 use App\Repository\UserRepository;
+use App\Security\FeatureAccess;
 use App\Security\Voter\FileLibraryVoter;
 use App\Service\ByteSize;
 use App\Service\ContactEmailVerifier;
@@ -43,6 +49,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
+#[RequiresFeature(Feature::Directory)]
 class DirectoryUserController extends AbstractController
 {
     #[Route(path: '/directory/users', name: 'app_directory_users')]
@@ -155,17 +162,27 @@ class DirectoryUserController extends AbstractController
         TranslatorInterface $translator,
         FileLibraryQuota $libraryQuota,
         FileLibraryVoter $libraryVoter,
+        FeatureAccess $featureAccess,
+        UserFeatureAccessRepository $featureOverrides,
         #[Autowire('%env(MAIL_STUDENT_DOMAIN)%')]
         string $studentMailDomain,
         int $id,
     ): Response {
         $user = $repository->find($id) ?? throw $this->createNotFoundException();
 
-        // Admin profiles are edited through LDAP directly, not this screen - the Modifier action
-        // is already hidden for them in the list (see App\Controller\DirectoryUserController::data()
-        // and assets/controllers/datatable_controller.js), this is the server-side enforcement of
+        // Somebody else's admin profile is edited through LDAP directly, not this screen - the
+        // Modifier action is already hidden for those in the list (see
+        // App\Controller\DirectoryUserController::data() and
+        // assets/controllers/datatable_controller.js), and this is the server-side enforcement of
         // the same rule in case someone still reaches this URL directly.
-        if (\in_array('ROLE_ADMIN', $user->getRoles(), true)) {
+        //
+        // **One's own card is the exception, since 2026-08-25.** An administrator maintains their
+        // own contact address, avatar and preferences like everybody else, and sending them to
+        // `samba-tool` for that was the rule being blunt rather than careful. What the exception
+        // does not open is closing that account: App\Service\LdapAccountRequestService::disable()
+        // has always refused an administrator closing their own, and the button goes with it in
+        // templates/directory/user_form.html.twig.
+        if ($this->isLockedAdmin($user)) {
             throw $this->createAccessDeniedException();
         }
 
@@ -301,6 +318,11 @@ class DirectoryUserController extends AbstractController
             // student has none, and an empty section would invite the question of why
             // (design/validated/file-library.md, "The admin quota field"). The number itself is a
             // field of the form above; what is left here is the usage the screen displays.
+            // The « Fonctionnalités » block (§9.2), administrators only - the matrix and the
+            // derogations are one screen's worth of decision and they are made by the same people.
+            // Each line carries what « Par défaut » gives this person *today*, which is the only
+            // thing that makes three buttons readable.
+            'featureRows' => $this->isGranted('ROLE_ADMIN') ? $this->featureRows($user, $featureAccess, $featureOverrides) : [],
             'fileLibraryQuota' => $hasLibrary ? [
                 'usedLabel' => ByteSize::format($libraryQuota->usedBytes($user)),
                 'limitLabel' => ByteSize::format($libraryQuota->limitFor($user)),
@@ -309,6 +331,33 @@ class DirectoryUserController extends AbstractController
                 'defaultLabel' => ByteSize::format($libraryQuota->defaultBytes()),
             ] : null,
         ]);
+    }
+
+    /**
+     * One row per feature for the annuaire card: the state stored for this person (or none), and
+     * what the defaults alone would give them.
+     *
+     * The second half is the point. A screen offering « Par défaut / Activée / Désactivée » without
+     * saying what the first one currently means is a screen that cannot be used deliberately.
+     *
+     * @return list<array{feature: Feature, family: FeatureFamily, state: ?FeatureAccessState, default: bool}>
+     */
+    private function featureRows(User $user, FeatureAccess $featureAccess, UserFeatureAccessRepository $overrides): array
+    {
+        $states = $overrides->statesFor($user);
+        $defaults = $featureAccess->defaultsFor($user);
+
+        $rows = [];
+        foreach (Feature::cases() as $feature) {
+            $rows[] = [
+                'feature' => $feature,
+                'family' => $feature->family(),
+                'state' => $states[$feature->value] ?? null,
+                'default' => $defaults[$feature->value] ?? $feature->defaultForRoles(),
+            ];
+        }
+
+        return $rows;
     }
 
     /**
@@ -466,9 +515,10 @@ class DirectoryUserController extends AbstractController
                     static fn ($group): string => $group->getName(),
                     $user?->getManualGroups()->toArray() ?? [],
                 ),
-                // The Modifier action is hidden client-side for these - staff must not be able to
-                // edit an admin profile from this list.
-                'isAdmin' => \in_array('ROLE_ADMIN', $user?->getRoles() ?? [], true),
+                // The Modifier action is hidden client-side for these - nobody edits somebody
+                // else's admin profile from this list. An administrator's own row is not locked:
+                // the name says which of the two questions this answers.
+                'isLockedAdmin' => null !== $user && $this->isLockedAdmin($user),
             ];
         }
 
@@ -478,5 +528,22 @@ class DirectoryUserController extends AbstractController
             'recordsFiltered' => $filteredTotal,
             'data' => $data,
         ]);
+    }
+
+    /**
+     * An administrator's card that this reader may not edit - that is, anybody's but their own.
+     *
+     * The rule it softens is « les comptes admin ne se modifient pas ici » (they are maintained in
+     * the directory itself); the exception is that maintaining *one's own* contact address or
+     * avatar is not an act of administration on somebody else, and there was never a reason to
+     * send an administrator to the command line for it.
+     */
+    private function isLockedAdmin(User $user): bool
+    {
+        if (!\in_array('ROLE_ADMIN', $user->getRoles(), true)) {
+            return false;
+        }
+
+        return $this->getUser()?->getUserIdentifier() !== $user->getUserIdentifier();
     }
 }

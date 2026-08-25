@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller\Wiki;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\Program;
 use App\Entity\User;
 use App\Entity\Wiki;
+use App\Enum\Feature;
 use App\Repository\ProgramRepository;
 use App\Repository\WikiNodeRepository;
 use App\Repository\WikiRepository;
@@ -39,6 +41,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  */
 #[IsGranted(new Expression('is_granted("ROLE_USER") and not is_granted("ROLE_TUTOR") and not is_granted("ROLE_EXTERNAL")'))]
 #[Route(path: '/wiki')]
+#[RequiresFeature(Feature::Wiki)]
 class WikiController extends AbstractController
 {
     use WikiTrait;
@@ -120,7 +123,7 @@ class WikiController extends AbstractController
     }
 
     /**
-     * "Mes wikis" - everything that is not my own personal wiki, grouped by class.
+     * « Wikis partagés » - everything that is not my own personal wiki, grouped by class.
      *
      * Flat, it becomes an unreadable pile after two school years. Program being Cohort x SchoolYear,
      * grouping by class separates the years by itself, so only the current one is expanded.

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller\Survey;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\SurveyCampaign;
+use App\Enum\Feature;
 use App\Repository\SurveyCampaignRepository;
 use App\Repository\SurveyResponseRepository;
 use App\Repository\SurveyTargetRepository;
@@ -37,6 +39,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * enrolled after the launch must be able to answer, and nobody is ever removed.
  */
 #[IsGranted('ROLE_USER')]
+#[RequiresFeature(Feature::Surveys)]
 class ResultsController extends AbstractController
 {
     use SurveyTabTrait;

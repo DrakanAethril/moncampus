@@ -480,11 +480,11 @@ export default class extends Controller {
                     }
 
                     const editUrl = this.editUrlTemplateValue.replace('__ID__', row.id);
-                    // row.isAdmin is only set by directory/users.html.twig's data endpoint (see
-                    // App\Controller\DirectoryUserController::data()) - staff must not be able to
-                    // edit an admin profile from that list; every other user of this renderer
-                    // never sets it, so this is a no-op there.
-                    const editButton = row.isAdmin
+                    // row.isLockedAdmin is only set by directory/users.html.twig's data endpoint
+                    // (see App\Controller\DirectoryUserController::data()) - nobody edits somebody
+                    // else's admin profile from that list, an administrator's own row excepted.
+                    // Every other user of this renderer never sets it, so this is a no-op there.
+                    const editButton = row.isLockedAdmin
                         ? ''
                         : `<a href="${editUrl}" class="cm-action--warning">${escapeHtml(this.editLabelValue)}</a>`;
                     // Optional - a template that doesn't set data-datatable-deactivate-url-template-value

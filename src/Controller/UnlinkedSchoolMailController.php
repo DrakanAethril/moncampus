@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\EmailMessage;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Enum\PlatformActivityType;
 use App\Repository\EmailMessageRepository;
 use App\Repository\JobApplicationRepository;
@@ -33,6 +35,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  *   incoming mail is exactly the kind of act that has to leave a trace.
  */
 #[IsGranted('ROLE_ADMIN')]
+#[RequiresFeature(Feature::SchoolMailSupervision)]
 class UnlinkedSchoolMailController extends AbstractController
 {
     public function __construct(

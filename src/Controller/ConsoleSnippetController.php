@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\ConsoleSnippet;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\ConsoleSnippetRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -31,6 +33,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 // and the console's two doors are those two. Nothing about a snippet needs a further rule - a shared
 // one is readable by colleagues and writable by nobody but its author, which is an ownership check.
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN")'))]
+#[RequiresFeature(Feature::GuestConsole)]
 class ConsoleSnippetController extends AbstractController
 {
     #[Route(path: '/console/snippets', name: 'app_console_snippets', methods: ['GET'])]

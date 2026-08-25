@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Attribute\RequiresFeature;
 use App\Entity\JobSearch;
 use App\Entity\Program;
 use App\Entity\User;
+use App\Enum\Feature;
 use App\Repository\EmailMessageRepository;
 use App\Repository\JobSearchRepository;
 use App\Repository\ProgramRepository;
@@ -31,6 +33,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * and they drop out of the reminders. It is neither a deletion nor an archive, which is why it is
  * undoable and records who closed it.
  */
+#[RequiresFeature(Feature::JobSearch)]
 class ProgramJobSearchController extends AbstractController
 {
     /** The window of the mockup's first tile, "Envois - 30 jours". */
