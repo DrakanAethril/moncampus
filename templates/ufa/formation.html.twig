@@ -20,8 +20,10 @@
             {url: path('app_ufa_formation_denomination', {id: program.id}), label: 'programInternshipDenominationTabLabel'|trans, active: activeTab == 'denomination'},
             {url: path('app_ufa_formation_contract_modalities', {id: program.id}), label: 'programInternshipContractModalitiesTabLabel'|trans, active: activeTab == 'contract_modalities'},
             {url: path('app_ufa_formation_exam_modalities', {id: program.id}), label: 'programInternshipExamModalitiesTabLabel'|trans, active: activeTab == 'exam_modalities'},
+            {url: path('app_ufa_formation_documents', {id: program.id}), label: 'ufaFormationDocumentsTabLabel'|trans, active: activeTab == 'documents'},
+            {url: path('app_ufa_formation_skills', {id: program.id}), label: 'ufaFormationSkillsTabLabel'|trans, active: activeTab == 'skills'},
         ],
-        tabs_action: activeTab in ['evaluation_periods', 'tutors'] ? 'ufa/formation/_' ~ activeTab ~ '_button.html.twig' : null,
+        tabs_action: activeTab in ['evaluation_periods', 'tutors', 'skills'] ? 'ufa/formation/_' ~ activeTab ~ '_button.html.twig' : null,
     } %}
     <div class="card cm-card--tabbed">
         {# Turn-24 content partials (templates/ufa/formation/_*_content.html.twig) - own layouts

@@ -14,14 +14,11 @@ use App\Entity\Section;
 use App\Entity\Track;
 use App\Form\ProgramType;
 use App\Repository\ProgramRepository;
-use App\Service\FileUploadService;
-use App\Service\StagedUpload;
-use App\Service\UploadIntake;
+use App\Service\ProgramPdfReplacer;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
-use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -39,11 +36,6 @@ class ProgramController extends AbstractController
 {
     use SettingsTabTrait;
 
-    // App\Service\FileUploadService namespace prefixes for Program's two optional PDF uploads.
-    private const string PROGRAM_SYLLABUS_FILE_PREFIX = 'programs/syllabus/';
-
-    private const string PROGRAM_ALTERNANCE_CALENDAR_FILE_PREFIX = 'programs/alternance-calendar/';
-
     #[Route(path: '/settings/structure/programs', name: 'app_settings_structure_programs')]
     public function programsTab(): Response
     {
@@ -52,7 +44,7 @@ class ProgramController extends AbstractController
 
     #[Route(path: '/settings/structure/programs/new', name: 'app_settings_structure_programs_new')]
     #[Route(path: '/settings/structure/programs/{id}/edit', name: 'app_settings_structure_programs_edit')]
-    public function programForm(Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, FileUploadService $fileUploadService, UploadIntake $uploadIntake, ?int $id = null): Response
+    public function programForm(Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, ProgramPdfReplacer $pdfReplacer, ?int $id = null): Response
     {
         $isEdit = null !== $id;
         // A real Program backs the "new" form too, not null - ProgramType's management-enabled
@@ -79,8 +71,8 @@ class ProgramController extends AbstractController
             $entityManager->persist($entity);
             $entityManager->flush();
 
-            $this->uploadProgramFile($form, $entityManager, $fileUploadService, $uploadIntake, 'syllabusFile', self::PROGRAM_SYLLABUS_FILE_PREFIX, $entity, $entity->getSyllabusFileKey(), $entity->setSyllabusFileKey(...));
-            $this->uploadProgramFile($form, $entityManager, $fileUploadService, $uploadIntake, 'alternanceCalendarFile', self::PROGRAM_ALTERNANCE_CALENDAR_FILE_PREFIX, $entity, $entity->getAlternanceCalendarFileKey(), $entity->setAlternanceCalendarFileKey(...));
+            $pdfReplacer->replace($form->get('syllabusFile')->getData(), ProgramPdfReplacer::SYLLABUS_PREFIX, $entity, $entity->getSyllabusFileKey(), $entity->setSyllabusFileKey(...));
+            $pdfReplacer->replace($form->get('alternanceCalendarFile')->getData(), ProgramPdfReplacer::ALTERNANCE_CALENDAR_PREFIX, $entity, $entity->getAlternanceCalendarFileKey(), $entity->setAlternanceCalendarFileKey(...));
 
             $this->addFlash('success', $isEdit ? 'programUpdatedFlashMessage' : 'programCreatedFlashMessage');
 
@@ -167,29 +159,5 @@ class ProgramController extends AbstractController
         }
 
         return implode(', ', array_map(static fn (ProgramPeriodGroup $link): string => $link->getPeriodGroup()->getName(), $links));
-    }
-
-    // Handles one of Program's two optional PDF upload fields (syllabusFile/alternanceCalendarFile,
-    // both unmapped App\Form\FilePickerType fields) - same ordering as
-    // ProfileController::uploadAvatar(): the new file is claimed and its key persisted (flush)
-    // before the old S3 object is deleted, so a mid-upload failure never leaves a broken reference.
-    // No-op when no file was submitted this time (edit forms are re-submitted without re-choosing
-    // an already-uploaded file).
-    private function uploadProgramFile(FormInterface $form, EntityManagerInterface $entityManager, FileUploadService $fileUploadService, UploadIntake $uploadIntake, string $fieldName, string $prefix, Program $program, ?string $oldKey, \Closure $setNewKey): void
-    {
-        $file = $form->get($fieldName)->getData();
-
-        if (!$file instanceof StagedUpload) {
-            return;
-        }
-
-        $newKey = $uploadIntake->store($file, $prefix, sprintf('%d-%d.%s', $program->getId(), time(), UploadIntake::extension($file)));
-
-        $setNewKey($newKey);
-        $entityManager->flush();
-
-        if (null !== $oldKey) {
-            $fileUploadService->delete($oldKey);
-        }
     }
 }
