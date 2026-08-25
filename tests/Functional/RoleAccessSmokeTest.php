@@ -919,23 +919,4 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             ->find($targetId);
         self::assertNotNull($reloaded?->getInactiveDate(), 'The administrator, and only the administrator, closes the account.');
     }
-
-    private function assertScreens(User $user, array $expectations): void
-    {
-        $this->client->loginUser($user);
-
-        foreach ($expectations as $path => $expected) {
-            $this->client->request('GET', $path);
-            $actual = $this->client->getResponse()->getStatusCode();
-
-            self::assertSame($expected, $actual, \sprintf(
-                'GET %s as %s: expected %d, got %d.%s',
-                $path,
-                implode('/', $user->getRoles()),
-                $expected,
-                $actual,
-                500 === $actual ? ' The screen is broken.' : '',
-            ));
-        }
-    }
 }

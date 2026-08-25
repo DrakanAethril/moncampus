@@ -206,18 +206,18 @@ class Program
      * mail piles up unread, and opening the formation later reveals the whole history with nothing
      * to replay (§8.6).
      *
-     * **It starts `true`, and lot 6 is what closes it.** The axis is live from the day the resolver
-     * reads it, four lots before the one allowed to change what people see - so until then every
-     * formation carries it open and nothing moves on screen. Lot 6 brings the setting, the guard and
-     * the help sentence, and closes it everywhere at once (§12.1: the Courrier école is not in
-     * service in production, so nobody loses an access that day).
+     * **Closed by default, and closed on every existing formation.** The Courrier école is not in
+     * service in production, so there is nothing to seed and nobody loses an access the day it
+     * arrives: each formation opens when the establishment decides (§12.1). The column was carried
+     * open from lot 1 to lot 6 for one reason - the resolver reads this axis from the day it exists,
+     * and closing it earlier would have moved a screen four lots before the lot allowed to.
      *
      * The same value on the property and in the DDL, deliberately: the column DEFAULT only lives for
      * the length of the ALTER, and a formation created by the code would otherwise disagree with
      * every formation created before it.
      */
-    #[ORM\Column(name: 'school_mail_enabled', options: ['default' => true])]
-    private bool $schoolMailEnabled = true;
+    #[ORM\Column(name: 'school_mail_enabled', options: ['default' => false])]
+    private bool $schoolMailEnabled = false;
 
     // Who sees the "Calendrier d'alternance" nav entry - replaces the old
     // $alternanceCalendarEnabled boolean (migrated: true -> Everyone, false -> Hidden, preserving
