@@ -7042,3 +7042,6 @@ accessConditionGradeIgnoredWarning: 'Une ou plusieurs conditions portent sur une
 programSchoolMailEnabledFieldLabel: 'Courrier école'
 programSchoolMailEnabledFieldHelp: 'Les adresses des étudiants existent et reçoivent le courrier même lorsque cette option est fermée ; elle décide seulement de l''accès à la boîte. Ouvrir la formation plus tard leur montre tout l''historique, sans rien rejouer.'
 pedagogicalUseBannerHtml: 'Cette plateforme est utilisée uniquement à des fins pédagogiques. La plateforme de référence reste <a href="https://www.ecoledirecte.com/" target="_blank" rel="noopener">EcoleDirecte</a> particulièrement pour les emplois du temps, les notes et toute donnée à caractère administratif.'
+homeReportProblemTitle: 'Un problème à signaler ?'
+homeReportProblemText: 'Un poste qui ne démarre pas, un vidéoprojecteur en panne, un accès qui manque : ouvrez un ticket et l''équipe technique le reçoit immédiatement.'
+homeReportProblemAction: 'Signaler un problème'

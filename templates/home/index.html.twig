@@ -96,4 +96,11 @@
         {# A student+teacher hybrid stacks both dashboards - the events strip renders once. #}
         {% include 'home/_student_dashboard.html.twig' with {show_events: teacher is not defined} %}
     {% endif %}
+
+    {# Last thing on the page, full width, for the two roles that meet the equipment rather than
+       administer it. Once for a hybrid, and never for staff or admins, who reach the queue itself
+       from Gestion. #}
+    {% if (teacher is defined or student is defined) and feature('support') %}
+        {% include 'home/_report_problem.html.twig' %}
+    {% endif %}
 {% endblock %}

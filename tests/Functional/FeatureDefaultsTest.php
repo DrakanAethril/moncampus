@@ -104,12 +104,16 @@ class FeatureDefaultsTest extends KernelTestCase
         }
 
         // A teacher: everything they prepare and run a class with.
-        foreach (['sequence_library', 'quiz_library', 'progression', 'video', 'audio', 'wiki', 'class_tools', 'evaluation_planning', 'quiz_live'] as $feature) {
+        foreach (['sequence_library', 'quiz_library', 'progression', 'video', 'audio', 'class_tools', 'evaluation_planning', 'quiz_live'] as $feature) {
             $this->assertTrue($reads('ROLE_TEACHER', $feature), 'a teacher is delivered '.$feature);
         }
-        foreach (['gradebook_entry', 'timetable', 'file_library', 'content_sharing', 'course_space'] as $feature) {
+        // The wiki is the second per-role exception after e-CO, and sits here rather than in the
+        // list above: it stays on for the students, who read their personal and shared wikis, and
+        // off for the teachers, who are given one from their own card when they ask.
+        foreach (['gradebook_entry', 'timetable', 'file_library', 'content_sharing', 'course_space', 'wiki'] as $feature) {
             $this->assertFalse($reads('ROLE_TEACHER', $feature), 'a teacher is not delivered '.$feature);
         }
+        $this->assertTrue($reads('ROLE_STUDENT', 'wiki'), 'a student keeps the wiki');
 
         // Staff: the alternance area and the equipment. The unlinked mail is *not* theirs any more
         // (§12.2) - it is off on every role, so admins alone, and delegable one person at a time.
