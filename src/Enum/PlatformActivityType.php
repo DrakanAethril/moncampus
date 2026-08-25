@@ -38,6 +38,14 @@ enum PlatformActivityType: string
      */
     case ProxmoxPostInstallRun = 'proxmox_post_install_run';
 
+    /**
+     * An admin set, changed or cleared one person's derogation on one feature (the « Fonctionnalités »
+     * block of the annuaire card). Recorded because it is an act on somebody else's account that
+     * leaves no other trace: choosing « Par défaut » deletes the row, so the table itself cannot say
+     * a decision was ever taken.
+     */
+    case FeatureOverrideChanged = 'feature_override_changed';
+
     /** Placeholder disponible : %user%. */
     public function messageKey(): string
     {
@@ -47,6 +55,7 @@ enum PlatformActivityType: string
             self::SchoolMailUnlinkedDeleted => 'platformActivitySchoolMailUnlinkedDeletedText',
             self::ProxmoxGuestCreated => 'platformActivityProxmoxGuestCreatedText',
             self::ProxmoxPostInstallRun => 'platformActivityProxmoxPostInstallRunText',
+            self::FeatureOverrideChanged => 'platformActivityFeatureOverrideChangedText',
         };
     }
 }

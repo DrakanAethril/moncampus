@@ -8932,3 +8932,37 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
     color: var(--cm-brand); font: inherit; text-decoration: underline; cursor: pointer;
 }
 .cm-linkbtn:hover { color: var(--cm-brand-strong); }
+
+/* ============================================================================
+   Accès aux fonctionnalités (design/validated/feature-access.md §9)
+   Two screens, one vocabulary: the role matrix in Paramètres > Fonctionnalités,
+   and the per-person derogations on the annuaire card.
+   ============================================================================ */
+
+.cm-featmatrix { padding: 8px 0 20px; }
+.cm-featmatrix__family {
+    margin: 18px 20px 6px; font: 600 15px var(--cm-font-heading);
+    color: var(--cm-ink); letter-spacing: .2px;
+}
+.cm-featmatrix__table th { white-space: nowrap; }
+/* Eight role columns on one row: the header reads sideways-narrow rather than wrapping the table
+   into a horizontal scroll on a laptop. */
+.cm-featmatrix__role { text-align: center; font-size: 11.5px; letter-spacing: .4px; color: var(--cm-faint); }
+.cm-featmatrix__cell { text-align: center; }
+.cm-featmatrix__overrides { text-align: center; }
+/* The enum's own key, under the label. It is what the attribute in the code names, and it is what
+   an admin reads back to whoever is asking - worth showing rather than hiding as an implementation
+   detail. */
+.cm-featmatrix__key { font: 11px var(--cm-font-mono); color: var(--cm-faint); }
+.cm-featmatrix__note { font: 11.5px var(--cm-font-ui); color: var(--cm-gold-tx); margin-top: 2px; }
+
+.cm-featovr__family td {
+    background: var(--cm-bg); font: 600 12.5px var(--cm-font-ui);
+    text-transform: uppercase; letter-spacing: .6px; color: var(--cm-faint);
+}
+.cm-featovr__key { font: 11px var(--cm-font-mono); color: var(--cm-faint); }
+.cm-featovr__choices { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.cm-featovr__choice { display: flex; align-items: center; gap: 6px; font: 13px var(--cm-font-ui); cursor: pointer; }
+/* What « Par défaut » gives this person today, in grey next to the button. Without it the three
+   buttons say nothing about what choosing the first one means. */
+.cm-featovr__hint { font: 11.5px var(--cm-font-ui); color: var(--cm-faint); }

@@ -1,0 +1,49 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'featureOverridesPageHeading'|trans({'%feature%': feature.labelKey|trans}) }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'settingsNavLabel'|trans, url: path('app_settings_configuration')},
+        {label: 'featureMatrixPageHeading'|trans, url: path('app_settings_features')},
+        {label: feature.labelKey|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'featureOverridesPageHeading'|trans({'%feature%': feature.labelKey|trans}) }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        {# Read-only on purpose: a derogation is set from the person's own card in the annuaire,
+           where whoever sets it can see who they are looking at. #}
+        <div class="cm-card-note">{{ 'featureOverridesHelpText'|trans }}</div>
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'userColumnLabel'|trans }}</th>
+                        <th>{{ 'featureOverrideStateColumnLabel'|trans }}</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr>
+                            <td>{{ row.user.displayName ?? row.user.username }}</td>
+                            <td>
+                                <span class="cm-badge {{ row.state.isEnabled ? 'cm-badge--green' : 'cm-badge--red' }}">{{ row.state.labelKey|trans }}</span>
+                            </td>
+                            <td class="cm-actions">
+                                <a href="{{ path('app_directory_users_edit', {id: row.user.id}) }}" class="cm-action--warning">{{ 'editActionLabel'|trans }}</a>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center text-secondary">{{ 'datatableZeroRecordsLabel'|trans }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
