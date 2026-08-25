@@ -194,8 +194,11 @@ class FeatureResolverTest extends TestCase
     {
         $resolver = $this->resolver(['ROLE_STUDENT']);
 
-        $this->assertTrue(Feature::StudentWork->defaultForRoles());
-        $this->assertTrue($resolver->isEnabled(Feature::StudentWork));
+        // Support rather than a Pédagogie entry: since the catalogue was inverted, almost
+        // everything answers false role-blind, and a test of the fallback needs one of the six that
+        // still answer true - otherwise it passes for the wrong reason.
+        $this->assertTrue(Feature::Support->defaultForRoles());
+        $this->assertTrue($resolver->isEnabled(Feature::Support));
 
         $this->assertFalse(Feature::Timetable->defaultForRoles());
         $this->assertFalse($resolver->isEnabled(Feature::Timetable));
@@ -217,9 +220,9 @@ class FeatureResolverTest extends TestCase
     // Somebody carrying no managed role at all still gets an answer, and it is the catalogue's.
     public function testAnAccountWithNoManagedRoleFallsBackOnTheDefault(): void
     {
-        $resolver = $this->resolver(['ROLE_USER'], $this->matrixOf(Feature::StudentWork, false, 'ROLE_STUDENT'));
+        $resolver = $this->resolver(['ROLE_USER'], $this->matrixOf(Feature::Support, false, 'ROLE_STUDENT'));
 
-        $this->assertTrue($resolver->isEnabled(Feature::StudentWork));
+        $this->assertTrue($resolver->isEnabled(Feature::Support));
     }
 
     // all() answers the whole catalogue, keyed by the enum's own values - that shape is the mobile
