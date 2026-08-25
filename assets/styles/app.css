@@ -3360,6 +3360,23 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 [data-bs-theme=dark] .cm-dash-banner--ok { background: #1d3327; border-color: #2e5c44; color: #8cc3a2; }
 [data-bs-theme=dark] .cm-dash-banner--danger { background: #40221c; border-color: #7a4033; color: #e09384; }
 
+/* « Un problème à signaler ? » - full-width strip closing the student and teacher dashboards.
+   Same skeleton as .cm-dash-banner (icon / body / action pushed right), and deliberately NOT its
+   colours: gold there means "act on this now", and a standing door to the ticket manager is not an
+   alert. Plain surface, brand-tinted icon, margin on top rather than bottom because this one closes
+   the page instead of opening it. On a narrow screen the action drops under the text rather than
+   squeezing the sentence to two words a line. */
+.cm-dash-report {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  border: 1px solid var(--cm-border); background: var(--cm-surface); color: var(--cm-text);
+  border-radius: 11px; padding: 15px 20px; margin-top: 16px;
+}
+.cm-dash-report__icon { flex: none; color: var(--cm-brand); }
+.cm-dash-report__body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 260px; }
+.cm-dash-report__title { font: 600 15px var(--cm-font-title); color: var(--cm-ink); }
+.cm-dash-report__text { font-size: 13px; color: var(--cm-muted); }
+.cm-dash-report__action { margin-left: auto; flex: none; }
+
 /* Date chip (day + month) - events and work to do */
 .cm-date-chip {
   flex: none; width: 46px; text-align: center;

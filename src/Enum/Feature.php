@@ -269,13 +269,23 @@ enum Feature: string
      * The seed for one (feature, role) pair. Only used by the seeding migration; the resolver
      * reads the stored matrix and falls back on defaultForRoles() alone.
      *
-     * It exists for the single exception of §4: e-CO is off for everybody *except* `ROLE_ECO`,
-     * which is what that role is for.
+     * Two exceptions to the role-blind default, and only two:
+     *
+     * - e-CO is off for everybody *except* `ROLE_ECO`, which is what that role is for (§4);
+     * - the wiki is off for `ROLE_TEACHER`, on for everyone else. It is not a judgement on the
+     *   tool, it is who was asked for: students keep their personal and shared wikis, and a
+     *   teacher who needs one is given it from their own card rather than by the role. Note a
+     *   teacher who is also staff keeps it - the resolver takes the most permissive role, and
+     *   that rule is not bent for one feature.
      */
     public function defaultForRole(string $role): bool
     {
         if (self::Eco === $this) {
             return 'ROLE_ECO' === $role;
+        }
+
+        if (self::Wiki === $this && 'ROLE_TEACHER' === $role) {
+            return false;
         }
 
         return $this->defaultForRoles();

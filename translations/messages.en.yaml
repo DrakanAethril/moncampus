@@ -6239,3 +6239,6 @@ accessConditionGradeIgnoredWarning: 'One or more conditions rest on a grade obta
 programSchoolMailEnabledFieldLabel: 'School mail'
 programSchoolMailEnabledFieldHelp: 'Students'' addresses exist and keep receiving mail even when this option is closed; it only decides access to the mailbox. Opening the formation later shows them the whole history, with nothing to replay.'
 pedagogicalUseBannerHtml: 'This platform is used for teaching purposes only. The reference platform remains <a href="https://www.ecoledirecte.com/" target="_blank" rel="noopener">EcoleDirecte</a>, in particular for timetables, grades and any administrative data.'
+homeReportProblemTitle: 'Something to report?'
+homeReportProblemText: 'A machine that will not start, a broken projector, a missing access: open a ticket and the technical team gets it straight away.'
+homeReportProblemAction: 'Report a problem'
