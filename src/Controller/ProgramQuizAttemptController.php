@@ -25,6 +25,7 @@ use App\Service\QuizAttemptGrader;
 use App\Service\QuizAttemptNotAllowedException;
 use App\Service\QuizAttemptStarter;
 use App\Service\QuizDrawService;
+use App\Service\QuizQuestionBudget;
 use App\Service\StudentQuizBoard;
 use App\Util\NumericAnswerParser;
 use Doctrine\ORM\EntityManagerInterface;
@@ -139,6 +140,14 @@ class ProgramQuizAttemptController extends AbstractController
         $attemptAnswer = $attemptAnswers[$position];
         $question = $attemptAnswer->getInstanceQuestion();
 
+        // The server's own half of the stopwatch: the first display is stamped, every display is
+        // counted (App\Entity\QuizAttemptAnswer::markServed()). Reloading this page therefore
+        // never hands out a fresh budget - it only raises display_count, which is itself a signal.
+        $attemptAnswer->markServed(new \DateTimeImmutable());
+        $entityManager->flush();
+
+        $questionSeconds = $question->resolveSeconds($instance->getSecondsPerQuestion());
+
         return $this->render('program/quiz_question.html.twig', [
             'program' => $program,
             'quizInstance' => $instance,
@@ -161,6 +170,10 @@ class ProgramQuizAttemptController extends AbstractController
                 : [],
             'position' => $position,
             'total' => \count($attemptAnswers),
+            'questionSeconds' => $questionSeconds,
+            // What is left of the budget from the *first* display, not the whole of it: the chip a
+            // reloaded page shows must say the same thing the server would answer.
+            'remainingSeconds' => QuizQuestionBudget::remainingSeconds($attemptAnswer->getServedAt(), $questionSeconds, new \DateTimeImmutable()),
         ]);
     }
 
@@ -186,6 +199,17 @@ class ProgramQuizAttemptController extends AbstractController
         }
         $attemptAnswer = $attemptAnswers[$position];
         $question = $attemptAnswer->getInstanceQuestion();
+
+        // The per-question budget, applied where the global one already is. Nothing is recorded and
+        // the student moves on: the question stays as it was, which for an unanswered one means
+        // empty. Refusing without advancing would leave them stuck on a question they can no longer
+        // answer.
+        $now = new \DateTimeImmutable();
+        if (QuizQuestionBudget::isLate($attemptAnswer->getServedAt(), $question->resolveSeconds($instance->getSecondsPerQuestion()), $now)) {
+            $this->addFlash('warning', 'programQuizAnswerTooLateFlashMessage');
+
+            return $this->afterQuestion($program, $instance, $attempt, $position, \count($attemptAnswers));
+        }
 
         // Texte à trous submits one "blanks[n]" field per blank instead of answer ids - both modes
         // (word bank and free input) post the same shape, so grading never has to know which one
@@ -272,12 +296,21 @@ class ProgramQuizAttemptController extends AbstractController
         $attemptAnswer->setNumericResponse($numericRaw, $numericParsed['value'], $numericParsed['unit'], $numericVariables);
         $attemptAnswer->setIsCorrect($grader->isCorrect($question, $validSubmittedIds, $blankResponses, $zoneResponses, $matchingResponses, $numericParsed['value'], $numericParsed['unit'], $numericVariables));
         $attemptAnswer->setScore($grader->score($question, $validSubmittedIds, $blankResponses, $zoneResponses, $matchingResponses, $numericParsed['value'], $numericParsed['unit'], $numericVariables));
-        $attemptAnswer->setAnsweredAt(new \DateTimeImmutable());
+        $attemptAnswer->setAnsweredAt($now);
+        // Two instants the application wrote itself - never a duration the browser declared.
+        $attemptAnswer->freezeElapsed($now);
 
         $entityManager->flush();
 
+        return $this->afterQuestion($program, $instance, $attempt, $position, \count($attemptAnswers));
+    }
+
+    // Where a question hands over once it is done with, answered or refused: the next one, or the
+    // hand-in.
+    private function afterQuestion(Program $program, QuizInstance $instance, QuizAttempt $attempt, int $position, int $total): Response
+    {
         $nextPosition = $position + 1;
-        if ($nextPosition < \count($attemptAnswers)) {
+        if ($nextPosition < $total) {
             return $this->redirectToQuestion($program, $instance, $attempt, $nextPosition);
         }
 

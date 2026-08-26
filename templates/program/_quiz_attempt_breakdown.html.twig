@@ -10,6 +10,15 @@
                 <div class="d-flex align-items-center gap-2">
                     <span class="d-flex align-items-center justify-content-center" style="width:22px;height:22px;border-radius:50%;flex:none;color:#fff;font-size:12px;background:{{ attemptAnswer.isCorrect ? 'var(--cm-positive-tx)' : 'var(--cm-red-tx)' }};">{{ attemptAnswer.isCorrect ? '✓' : '✕' }}</span>
                     <span class="text-secondary" style="font:600 12px ui-monospace, monospace;">Q{{ loop.index }}</span>
+                    {# Time spent on this question, measured server-side between the display and the
+                       answer (App\Entity\QuizAttemptAnswer::$elapsedMs). Shown to the student and to
+                       the teacher alike: it is not a mark, and it says things a mark cannot. #}
+                    {% if attemptAnswer.elapsedMs is not null %}
+                        <span class="text-secondary" style="font:500 12px ui-monospace, monospace;" title="{{ 'quizQuestionElapsedTitle'|trans }}">{{ attemptAnswer.elapsedMs|duration_ms }}</span>
+                    {% endif %}
+                    {% if attemptAnswer.displayCount > 1 %}
+                        <span class="cm-badge cm-badge--gold" title="{{ 'quizQuestionDisplayCountTitle'|trans }}">{{ 'quizQuestionDisplayCountTemplate'|trans({'%count%': attemptAnswer.displayCount}) }}</span>
+                    {% endif %}
                     {# A texte à trous *is* its statement: it gets replayed just below with the
                        student's words in place, so repeating it here with raw "..." markers would
                        print the same sentence twice. #}
