@@ -5,7 +5,13 @@
 {% block page_title %}{{ quizInstance.name }}{% endblock %}
 
 {% block main %}
-    <div class="d-flex justify-content-center">
+    {# The journal is only mounted on a supervised évaluation, and it carries the key its beacons
+       authenticate with. Nothing is listened to anywhere else. #}
+    <div class="d-flex justify-content-center"
+         {% if supervisionKey %}data-controller="quiz-supervision"
+         data-quiz-supervision-url-value="{{ path('app_program_quiz_event', {id: program.id, instanceId: quizInstance.id, attemptId: attempt.id}) }}"
+         data-quiz-supervision-key-value="{{ supervisionKey }}"
+         data-quiz-supervision-position-value="{{ position }}"{% endif %}>
         <div class="card" style="width: 820px; max-width: 100%;">
             <div class="card-body d-flex flex-column gap-3">
                 <div class="d-flex align-items-center gap-3">

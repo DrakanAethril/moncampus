@@ -23,6 +23,7 @@ use App\Service\PostValue;
 use App\Service\QuizAttemptConcluder;
 use App\Service\QuizAttemptGrader;
 use App\Service\QuizAttemptNotAllowedException;
+use App\Service\QuizAttemptSessionLock;
 use App\Service\QuizAttemptStarter;
 use App\Service\QuizDrawService;
 use App\Service\QuizQuestionBudget;
@@ -93,7 +94,7 @@ class ProgramQuizAttemptController extends AbstractController
     // App\Enum\AttemptOrigin::Relance, a later phase) and redirects to its first question.
     #[Route(path: '/programs/{id}/quiz/{instanceId}/take', name: 'app_program_quiz_take', requirements: ['instanceId' => '\d+'])]
     #[IsGranted('ROLE_STUDENT')]
-    public function take(int $id, int $instanceId, ProgramRepository $repository, QuizInstanceRepository $instanceRepository, QuizAttemptRepository $attemptRepository, StudentQuizBoard $quizBoard, QuizAttemptStarter $attemptStarter): Response
+    public function take(int $id, int $instanceId, Request $request, ProgramRepository $repository, QuizInstanceRepository $instanceRepository, QuizAttemptRepository $attemptRepository, StudentQuizBoard $quizBoard, QuizAttemptStarter $attemptStarter, QuizAttemptSessionLock $sessionLock): Response
     {
         $program = $this->findProgramForStudentOrNotFound($id, $repository);
         $instance = $this->findInstanceOrNotFound($instanceRepository, $program, $instanceId);
@@ -130,6 +131,13 @@ class ProgramQuizAttemptController extends AbstractController
             return $this->redirectToRoute('app_program_quiz_result', ['id' => $program->getId(), 'instanceId' => $instance->getId(), 'attemptId' => $started['attempt']->getId()]);
         }
 
+        // Coming back to a supervised attempt takes it over: this is the door a student whose tab
+        // crashed comes back through, and it must give them the hand rather than ask them to prove
+        // anything.
+        if ($instance->isSupervised()) {
+            $sessionLock->claim($started['attempt'], $request->getSession());
+        }
+
         return $this->redirectToQuestion($program, $instance, $started['attempt'], 0);
     }
 
@@ -140,7 +148,7 @@ class ProgramQuizAttemptController extends AbstractController
      */
     #[Route(path: '/programs/{id}/quiz/{instanceId}/start', name: 'app_program_quiz_start', requirements: ['instanceId' => '\d+'], methods: ['POST'])]
     #[IsGranted('ROLE_STUDENT')]
-    public function start(int $id, int $instanceId, Request $request, ProgramRepository $repository, QuizInstanceRepository $instanceRepository, StudentQuizBoard $quizBoard, QuizAttemptStarter $attemptStarter): Response
+    public function start(int $id, int $instanceId, Request $request, ProgramRepository $repository, QuizInstanceRepository $instanceRepository, StudentQuizBoard $quizBoard, QuizAttemptStarter $attemptStarter, QuizAttemptSessionLock $sessionLock): Response
     {
         $program = $this->findProgramForStudentOrNotFound($id, $repository);
         $instance = $this->findInstanceOrNotFound($instanceRepository, $program, $instanceId);
@@ -162,12 +170,15 @@ class ProgramQuizAttemptController extends AbstractController
             return $this->redirectToRoute('app_program_quiz_result', ['id' => $program->getId(), 'instanceId' => $instance->getId(), 'attemptId' => $started['attempt']->getId()]);
         }
 
+        // This browser session becomes the owner - and whoever held it is turned away from here on.
+        $sessionLock->claim($started['attempt'], $request->getSession());
+
         return $this->redirectToQuestion($program, $instance, $started['attempt'], 0);
     }
 
     #[Route(path: '/programs/{id}/quiz/{instanceId}/attempt/{attemptId}/question/{position}', name: 'app_program_quiz_question', requirements: ['instanceId' => '\d+', 'attemptId' => '\d+', 'position' => '\d+'])]
     #[IsGranted('ROLE_STUDENT')]
-    public function question(int $id, int $instanceId, int $attemptId, int $position, EntityManagerInterface $entityManager, ProgramRepository $repository, QuizInstanceRepository $instanceRepository, QuizAttemptRepository $attemptRepository, QuizDrawService $drawService, QuizAttemptConcluder $concluder): Response
+    public function question(int $id, int $instanceId, int $attemptId, int $position, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, QuizInstanceRepository $instanceRepository, QuizAttemptRepository $attemptRepository, QuizDrawService $drawService, QuizAttemptConcluder $concluder, QuizAttemptSessionLock $sessionLock): Response
     {
         $program = $this->findProgramForStudentOrNotFound($id, $repository);
         $instance = $this->findInstanceOrNotFound($instanceRepository, $program, $instanceId);
@@ -186,6 +197,16 @@ class ProgramQuizAttemptController extends AbstractController
         }
         $attemptAnswer = $attemptAnswers[$position];
         $question = $attemptAnswer->getInstanceQuestion();
+
+        // The tab that lost the hand stops here. Nothing punitive: it is told the attempt was
+        // resumed elsewhere and offered the way to take it back - the point of the lock is that two
+        // simultaneous openings are useless, not that anybody is shut out.
+        if ($instance->isSupervised() && !$sessionLock->holds($attempt, $request->getSession())) {
+            return $this->render('program/quiz_taken_over.html.twig', [
+                'program' => $program,
+                'quizInstance' => $instance,
+            ]);
+        }
 
         // The server's own half of the stopwatch: the first display is stamped, every display is
         // counted (App\Entity\QuizAttemptAnswer::markServed()). Reloading this page therefore
@@ -218,6 +239,9 @@ class ProgramQuizAttemptController extends AbstractController
             'position' => $position,
             'total' => \count($attemptAnswers),
             'questionSeconds' => $questionSeconds,
+            // The key the page's beacons authenticate with - null on anything unsupervised, where
+            // quiz_supervision_controller.js is not mounted at all.
+            'supervisionKey' => $instance->isSupervised() ? $sessionLock->keyFor($attempt, $request->getSession()) : null,
             // What is left of the budget from the *first* display, not the whole of it: the chip a
             // reloaded page shows must say the same thing the server would answer.
             'remainingSeconds' => QuizQuestionBudget::remainingSeconds($attemptAnswer->getServedAt(), $questionSeconds, new \DateTimeImmutable()),
@@ -226,7 +250,7 @@ class ProgramQuizAttemptController extends AbstractController
 
     #[Route(path: '/programs/{id}/quiz/{instanceId}/attempt/{attemptId}/question/{position}/answer', name: 'app_program_quiz_answer', requirements: ['instanceId' => '\d+', 'attemptId' => '\d+', 'position' => '\d+'], methods: ['POST'])]
     #[IsGranted('ROLE_STUDENT')]
-    public function answer(int $id, int $instanceId, int $attemptId, int $position, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, QuizInstanceRepository $instanceRepository, QuizAttemptRepository $attemptRepository, QuizAttemptGrader $grader, QuizAttemptConcluder $concluder, QuizDrawService $drawService): Response
+    public function answer(int $id, int $instanceId, int $attemptId, int $position, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, QuizInstanceRepository $instanceRepository, QuizAttemptRepository $attemptRepository, QuizAttemptGrader $grader, QuizAttemptConcluder $concluder, QuizDrawService $drawService, QuizAttemptSessionLock $sessionLock): Response
     {
         $program = $this->findProgramForStudentOrNotFound($id, $repository);
         $instance = $this->findInstanceOrNotFound($instanceRepository, $program, $instanceId);
@@ -238,6 +262,15 @@ class ProgramQuizAttemptController extends AbstractController
 
         if ($this->concludeIfExpired($attempt, $entityManager, $concluder) || $attempt->isConcluded()) {
             return $this->redirectToOutcome($program, $instance, $attempt);
+        }
+
+        // An answer from the tab that lost the hand is not recorded: it is the whole point of the
+        // lock that the second opening becomes useless the moment the first one answers.
+        if ($instance->isSupervised() && !$sessionLock->holds($attempt, $request->getSession())) {
+            return $this->render('program/quiz_taken_over.html.twig', [
+                'program' => $program,
+                'quizInstance' => $instance,
+            ]);
         }
 
         $attemptAnswers = $attempt->getAttemptAnswers()->toArray();

@@ -2286,6 +2286,20 @@ quizContractNothingYetBulletText: "The content of your other tabs is not read, a
 quizContractAcceptLabel: "I have read this and I am starting the assessment."
 quizContractStartAction: "Start"
 quizContractFullscreenHintText: "Full screen will be requested on that click."
+quizEventPageHiddenLabel: "Left the page"
+quizEventPageVisibleLabel: "Back on the page"
+quizEventWindowBlurLabel: "Window sent behind"
+quizEventWindowFocusLabel: "Back on the window"
+quizEventFullscreenExitLabel: "Left full screen"
+quizEventWindowShrunkLabel: "Window narrowed (side by side)"
+quizEventPasteLabel: "Pasted into a field"
+quizEventStatementCopiedLabel: "Copied the question"
+quizEventTakenOverLabel: "Attempt resumed from another session"
+quizEventClientWebLabel: "browser"
+quizEventClientMobileLabel: "mobile app"
+quizTakenOverHeadingText: "This attempt was resumed elsewhere"
+quizTakenOverHintText: "Your copy is intact. It is open in another window or on another machine, and the last opening holds the hand."
+quizTakenOverResumeAction: "Take the assessment back here"
 quizInstanceEditAction: 'Edit the quiz'
 quizInstanceEditPageHeading: 'Edit the quiz'
 quizInstanceEditLead: 'Only the settings that do not affect the draw can be changed: the questions, how many there are and the difficulty split were frozen at launch.'
