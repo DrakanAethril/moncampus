@@ -60,6 +60,28 @@ class QuizAttemptSessionLock
         return $key;
     }
 
+    /**
+     * The same takeover, for a client that has no PHP session to keep the key in - the mobile app,
+     * which is stateless and carries the key itself from `api_quiz_start` onwards.
+     *
+     * The rule is identical and the two clients dispossess each other: a phone that starts an
+     * attempt takes it from the browser tab, and the tab is turned away on its next request.
+     */
+    public function claimStateless(QuizAttempt $attempt, ?int $position = null): string
+    {
+        $previous = $attempt->getSessionKey();
+
+        $key = bin2hex(random_bytes(24));
+        $attempt->setSessionKey($key);
+        $this->entityManager->flush();
+
+        if (null !== $previous) {
+            $this->journal->record($attempt, QuizAttemptEventType::TakenOver, $position, QuizEventClient::Mobile);
+        }
+
+        return $key;
+    }
+
     /** Whether this browser session is still the one that owns the attempt. */
     public function holds(QuizAttempt $attempt, SessionInterface $session): bool
     {

@@ -15,6 +15,8 @@ use App\Entity\User;
 use App\Enum\AttemptStatus;
 use App\Enum\Feature;
 use App\Enum\QuestionType;
+use App\Enum\QuizAttemptEventType;
+use App\Enum\QuizEventClient;
 use App\Enum\QuizMode;
 use App\Repository\ProgramRepository;
 use App\Repository\QuizAttemptRepository;
@@ -25,10 +27,13 @@ use App\Service\JsonRequestPayload;
 use App\Service\QuizAttemptConcluder;
 use App\Service\QuizAttemptGrader;
 use App\Service\QuizAttemptNotAllowedException;
+use App\Service\QuizAttemptSessionLock;
 use App\Service\QuizAttemptStarter;
 use App\Service\QuizDrawService;
 use App\Service\QuizQuestionBudget;
 use App\Service\QuizQuestionPayload;
+use App\Service\QuizSupervisionJournal;
+use App\Service\QuizSupervisionNotice;
 use App\Service\StudentQuizBoard;
 use App\Util\NumericAnswerParser;
 use App\Util\NumericVariableParser;
@@ -39,6 +44,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Mobile counterpart to App\Controller\ProgramQuizAttemptController - the student's own quiz
@@ -65,6 +71,7 @@ class QuizController extends AbstractController
         private readonly FileUploadService $fileUploadService,
         private readonly QuizAttemptConcluder $concluder,
         private readonly QuizQuestionPayload $questionPayloadBuilder,
+        private readonly TranslatorInterface $translator,
     ) {
     }
 
@@ -118,6 +125,11 @@ class QuizController extends AbstractController
                     'scorePercent' => $instance->isScoreVisibleImmediately() ? $lastConcluded?->getScorePercent() : null,
                     'locked' => [] !== $lockedBy,
                     'lockedReasons' => $lockedBy,
+                    // The mode contrôle, said to the app so the card can carry its padlock. The
+                    // refusal itself is the server's (start() below): an app recompiled without the
+                    // padlock meets the same 409, which is the difference between a polite display
+                    // and a rule.
+                    'supervised' => $instance->isSupervised(),
                 ];
 
                 continue;
@@ -163,9 +175,17 @@ class QuizController extends AbstractController
         ]);
     }
 
-    /** "Commencer" / "S'entraîner" - resumes an open attempt or draws a new one. */
+    /**
+     * "Commencer" / "S'entraîner" - resumes an open attempt or draws a new one.
+     *
+     * **A client that cannot report does not compose.** A supervised évaluation applied to the web
+     * alone cancels itself the moment the mobile app is opened - and turns against the school,
+     * since the student composing honestly on a computer is then the only one being measured. So
+     * the capability is *declared*, in the body, rather than guessed from a version number: a third
+     * party client that declares nothing is treated like the old app, which is to say refused.
+     */
     #[Route(path: '/api/quiz/{instanceId}/start', name: 'api_quiz_start', requirements: ['instanceId' => '\d+'], methods: ['POST'])]
-    public function start(int $instanceId, ProgramRepository $programRepository, QuizInstanceRepository $instanceRepository, StudentQuizBoard $quizBoard, QuizAttemptStarter $attemptStarter): JsonResponse
+    public function start(int $instanceId, Request $request, ProgramRepository $programRepository, QuizInstanceRepository $instanceRepository, StudentQuizBoard $quizBoard, QuizAttemptStarter $attemptStarter, QuizAttemptSessionLock $sessionLock): JsonResponse
     {
         $student = $this->currentUser();
         $instance = $this->findInstanceOrNotFound($instanceRepository, $programRepository, $instanceId);
@@ -176,18 +196,105 @@ class QuizController extends AbstractController
             return $this->json(['error' => 'quiz_locked'], Response::HTTP_CONFLICT);
         }
 
+        // The refusal is the server's, and it carries a sentence the app displays as it stands -
+        // an older build knows nothing of this key and shows the message rather than a raw code.
+        if ($instance->isSupervised() && !$this->declaresSupervision($request)) {
+            return $this->json([
+                'error' => 'supervision_unsupported',
+                'message' => $this->translator->trans('quizSupervisionMobileRefusedMessage'),
+            ], Response::HTTP_CONFLICT);
+        }
+
         try {
             $started = $attemptStarter->startOrResume($instance, $student);
         } catch (QuizAttemptNotAllowedException) {
             return $this->json(['error' => 'quiz_closed'], Response::HTTP_CONFLICT);
         }
 
+        // The key that owns the attempt, handed to the app: it authenticates the app's own event
+        // beacons, and taking it here dispossesses whatever browser tab held the attempt.
+        $sessionKey = $instance->isSupervised() && !$started['concluded']
+            ? $sessionLock->claimStateless($started['attempt'])
+            : null;
+
         return $this->json([
             'attemptId' => $started['attempt']->getId(),
             // The app sends the student to the result screen instead of question 1 - an évaluation
             // is one attempt only.
             'concluded' => $started['concluded'],
+            'supervised' => $instance->isSupervised(),
+            'sessionKey' => $sessionKey,
+            'supervisionExitSeconds' => $instance->isSupervised() ? $instance->getSupervisionExitSeconds() : null,
         ]);
+    }
+
+    /**
+     * The supervision journal, mobile side. Same service as the web beacon, same vocabulary: the
+     * server learns nothing new from a phone, and App\Service\QuizSupervisionAssessor never knows
+     * where an event came from.
+     */
+    #[Route(path: '/api/quiz/attempt/{attemptId}/event', name: 'api_quiz_event', requirements: ['attemptId' => '\d+'], methods: ['POST'])]
+    public function event(int $attemptId, Request $request, ProgramRepository $programRepository, QuizAttemptRepository $attemptRepository, QuizSupervisionJournal $journal, QuizSupervisionNotice $notice): JsonResponse
+    {
+        $attempt = $this->findOwnAttemptOrNotFound($attemptRepository, $programRepository, $attemptId);
+        $instance = $attempt->getQuizInstance();
+
+        if (!$instance->isSupervised()) {
+            throw $this->createNotFoundException();
+        }
+
+        $payload = JsonRequestPayload::fromRequest($request);
+
+        // The dispossessed client writes nothing, exactly as on the web.
+        if (!$attempt->isHeldBy($payload->string('sessionKey'))) {
+            return $this->json(['error' => 'attempt_taken_over'], Response::HTTP_CONFLICT);
+        }
+        if ($attempt->isConcluded()) {
+            return $this->json(['error' => 'attempt_concluded'], Response::HTTP_CONFLICT);
+        }
+
+        $type = QuizAttemptEventType::tryFrom($payload->string('type'));
+        if (null === $type || !$type->isClientReportable()) {
+            return $this->json(['error' => 'unknown_event'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $position = $payload->int('position');
+        $journal->record(
+            $attempt,
+            $type,
+            null !== $position && $position >= 0 && $position < $attempt->getAttemptAnswers()->count() ? $position : null,
+            QuizEventClient::Mobile,
+            $payload->int('durationMs'),
+        );
+
+        $notice->autoSubmitIfDue($attempt);
+
+        return $this->json(['recorded' => true, 'concluded' => $attempt->isConcluded()]);
+    }
+
+    /**
+     * The takeover, on the mobile side: the client that no longer owns a supervised attempt is told
+     * so rather than left composing into nothing. Null when there is nothing to refuse.
+     *
+     * Only ever asked on a supervised attempt: everything else has no owning session at all, and a
+     * key would be a requirement invented for nothing.
+     */
+    private function refuseIfTakenOver(QuizAttempt $attempt, ?string $sessionKey): ?JsonResponse
+    {
+        if (!$attempt->getQuizInstance()->isSupervised() || $attempt->isHeldBy($sessionKey)) {
+            return null;
+        }
+
+        return $this->json(['error' => 'attempt_taken_over'], Response::HTTP_CONFLICT);
+    }
+
+    /**
+     * Whether this client says it knows how to report. Declared, never deduced: a version number
+     * says what was shipped, not what is compiled in.
+     */
+    private function declaresSupervision(Request $request): bool
+    {
+        return 'supported' === JsonRequestPayload::fromRequest($request)->string('supervision');
     }
 
     /**
@@ -195,7 +302,7 @@ class QuizController extends AbstractController
      * already in this attempt's order (never the stored order - that would leak "ordre" solutions).
      */
     #[Route(path: '/api/quiz/attempt/{attemptId}/question/{position}', name: 'api_quiz_question', requirements: ['attemptId' => '\d+', 'position' => '\d+'], methods: ['GET'])]
-    public function question(int $attemptId, int $position, EntityManagerInterface $entityManager, ProgramRepository $programRepository, QuizAttemptRepository $attemptRepository, QuizDrawService $drawService): JsonResponse
+    public function question(int $attemptId, int $position, EntityManagerInterface $entityManager, ProgramRepository $programRepository, QuizAttemptRepository $attemptRepository, QuizDrawService $drawService, QuizSupervisionNotice $supervisionNotice): JsonResponse
     {
         $attempt = $this->findOwnAttemptOrNotFound($attemptRepository, $programRepository, $attemptId);
 
@@ -207,6 +314,12 @@ class QuizController extends AbstractController
         $attemptAnswer = $attemptAnswers[$position] ?? throw $this->createNotFoundException();
         $question = $attemptAnswer->getInstanceQuestion();
         $instance = $attempt->getQuizInstance();
+
+        // « Rendre la copie après N sorties », asked here as well as at the beacon - see
+        // App\Service\QuizSupervisionNotice.
+        if ($supervisionNotice->autoSubmitIfDue($attempt)) {
+            return $this->json(['concluded' => true, 'attemptId' => $attempt->getId()]);
+        }
 
         // Same server-side stopwatch as the web passation, and it costs the app nothing: the API
         // already serves one question per request, so both ends of the measurement are here.
@@ -232,6 +345,13 @@ class QuizController extends AbstractController
             // reads it stops handing out a fresh countdown on every reopening; one that does not
             // simply keeps the behaviour it had, and the server refuses the late answer anyway.
             'secondsRemaining' => QuizQuestionBudget::remainingSeconds($attemptAnswer->getServedAt(), $questionSeconds, $now),
+            // The same banner the web shows, with the same numbers - the app renders it, it does
+            // not decide it. Empty on everything unsupervised.
+            'supervision' => $instance->isSupervised() ? [
+                'exits' => $supervisionNotice->countedAbsences($attempt),
+                'warn' => $supervisionNotice->shouldWarn($attempt, $supervisionNotice->countedAbsences($attempt)),
+                'submitAt' => $instance->getSupervisionSubmitAt(),
+            ] : null,
             'deadline' => $attempt->getTimeLimitAt()?->format(\DateTimeInterface::ATOM),
             'question' => $this->questionPayload($question, $attempt, $drawService),
         ]);
@@ -249,6 +369,11 @@ class QuizController extends AbstractController
 
         if ($this->concludeIfExpired($attempt, $entityManager) || $attempt->isConcluded()) {
             return $this->json(['concluded' => true, 'attemptId' => $attempt->getId()]);
+        }
+
+        $takenOver = $this->refuseIfTakenOver($attempt, JsonRequestPayload::fromRequest($request)->string('sessionKey'));
+        if (null !== $takenOver) {
+            return $takenOver;
         }
 
         $attemptAnswers = $attempt->getAttemptAnswers()->toArray();
