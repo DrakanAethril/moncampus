@@ -5492,6 +5492,7 @@ filePickerTooLargeMessage: 'Ce fichier dépasse la taille autorisée.'
 filePickerNetworkErrorMessage: 'L’envoi a échoué : vérifiez votre connexion et réessayez.'
 filePickerOnlyOneMessage: 'Ce champ n’accepte qu’un seul fichier.'
 filePickerInvalidTokenMessage: 'Ce dépôt n’est plus valable : retirez le fichier et déposez-le à nouveau.'
+filePickerRequiredMessage: 'Choisissez un fichier.'
 
 # Wiki - lot 4, le contenu.
 wikiOutlineHeading: 'Sur cette page'
