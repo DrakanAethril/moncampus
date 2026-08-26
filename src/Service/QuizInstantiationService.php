@@ -14,6 +14,7 @@ use App\Entity\QuizTemplate;
 use App\Entity\User;
 use App\Enum\QuizMode;
 use App\Enum\QuizScoring;
+use App\Enum\QuizSupervisionPolicy;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -67,6 +68,10 @@ class QuizInstantiationService
         bool $scoreVisibleImmediately,
         ?string $name = null,
         ?\Closure $questionFilter = null,
+        bool $supervised = false,
+        QuizSupervisionPolicy $supervisionPolicy = QuizSupervisionPolicy::Warn,
+        int $supervisionExitSeconds = 8,
+        ?int $supervisionSubmitAt = null,
     ): QuizInstance {
         $firstTemplate = $templates[0];
 
@@ -90,6 +95,12 @@ class QuizInstantiationService
         $instance->setGlobalTimeMinutes($globalTimeMinutes);
         $instance->setScoring($scoring);
         $instance->setScoreVisibleImmediately($scoreVisibleImmediately);
+        // « Le mode contrôle n'existe qu'en Évaluation » applied where the instance is built, so no
+        // caller can launch a supervised entraînement by forgetting the rule.
+        $instance->setSupervised($supervised && QuizMode::Evaluation === $mode);
+        $instance->setSupervisionPolicy($supervisionPolicy);
+        $instance->setSupervisionExitSeconds($supervisionExitSeconds);
+        $instance->setSupervisionSubmitAt(QuizSupervisionPolicy::Autosubmit === $supervisionPolicy ? $supervisionSubmitAt : null);
 
         $percents = $this->difficultyResolver->resolvePercents($difficultySliderPosition);
         $instance->setDifficultyPercents($percents['facilePercent'], $percents['moyenPercent'], $percents['difficilePercent']);

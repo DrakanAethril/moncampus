@@ -2255,6 +2255,37 @@ quizQuestionDisplayCountTitle: 'How many times this question was displayed'
 quizQuestionDisplayCountTemplate: '%count% displays'
 quizAttemptTimingsHeading: 'Time per question'
 quizAttemptTimingsHintText: 'Measured between the question being displayed and your answer. It is not a mark.'
+quizSupervisedBadgeLabel: "Supervised"
+quizLaunchSupervisionTitle: "Supervised mode"
+quizLaunchSupervisionHint: "For an assessment taken in an ordinary browser, on a machine the school does not control."
+quizLaunchSupervisedFieldLabel: "Supervise this attempt"
+quizLaunchSupervisedFieldHint: "The student is told at the start. Page exits are recorded and shown to you alongside the time spent on each question."
+quizLaunchSupervisionPolicyFieldLabel: "When an exit is detected"
+quizLaunchSupervisionExitSecondsFieldLabel: "How long an exit must last to count"
+quizLaunchSupervisionExitSecondsFieldHint: "Below that, it is a notification - not a search."
+quizLaunchSupervisionSubmitAtFieldLabel: "Number of exits"
+quizLaunchSupervisionSubmitAtFieldHint: "Never fewer than 3."
+quizLaunchSupervisionMobileNoteText: "On a phone. This assessment cannot be taken from a mobile app too old to report: it will show \"take this one on a computer\"."
+quizSupervisionPolicyLogLabel: "Record only"
+quizSupervisionPolicyLogDescription: "Nothing appears on the student's screen. For an assessment invigilated in the room."
+quizSupervisionPolicyWarnLabel: "Warn the student live"
+quizSupervisionPolicyWarnDescription: "A banner reminds them their exits are being counted. This is what deters most."
+quizSupervisionPolicyAutosubmitLabel: "Warn, then hand the copy in"
+quizSupervisionPolicyAutosubmitDescription: "Past the number of exits set, the copy is handed in as it stands and marked normally."
+quizContractQuestionsLabel: "questions"
+quizContractPerQuestionLabel: "per question"
+quizContractTotalTimeLabel: "in total"
+quizContractAttemptsLabel: "attempt"
+quizContractHeadingText: "This assessment is supervised."
+quizContractTimeBulletText: "The time you spend on each question is recorded."
+quizContractExitsBulletText: "Every time you leave this page - another tab, another window, another application - the exit and how long it lasted are recorded."
+quizContractAutosubmitBulletTemplate: "Past %count% exits, your copy is handed in as it stands and marked normally."
+quizContractTeacherBulletText: "Your teacher receives the detail along with your copy."
+quizContractRetentionBulletText: "These records are kept for 12 months, then deleted."
+quizContractNothingYetBulletText: "The content of your other tabs is not read, and nothing is recorded before you click \"Start\"."
+quizContractAcceptLabel: "I have read this and I am starting the assessment."
+quizContractStartAction: "Start"
+quizContractFullscreenHintText: "Full screen will be requested on that click."
 quizInstanceEditAction: 'Edit the quiz'
 quizInstanceEditPageHeading: 'Edit the quiz'
 quizInstanceEditLead: 'Only the settings that do not affect the draw can be changed: the questions, how many there are and the difficulty split were frozen at launch.'

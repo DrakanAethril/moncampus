@@ -93,7 +93,7 @@ class ProgramQuizAttemptController extends AbstractController
     // App\Enum\AttemptOrigin::Relance, a later phase) and redirects to its first question.
     #[Route(path: '/programs/{id}/quiz/{instanceId}/take', name: 'app_program_quiz_take', requirements: ['instanceId' => '\d+'])]
     #[IsGranted('ROLE_STUDENT')]
-    public function take(int $id, int $instanceId, ProgramRepository $repository, QuizInstanceRepository $instanceRepository, StudentQuizBoard $quizBoard, QuizAttemptStarter $attemptStarter): Response
+    public function take(int $id, int $instanceId, ProgramRepository $repository, QuizInstanceRepository $instanceRepository, QuizAttemptRepository $attemptRepository, StudentQuizBoard $quizBoard, QuizAttemptStarter $attemptStarter): Response
     {
         $program = $this->findProgramForStudentOrNotFound($id, $repository);
         $instance = $this->findInstanceOrNotFound($instanceRepository, $program, $instanceId);
@@ -104,6 +104,21 @@ class ProgramQuizAttemptController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
+        // The entry contract of a supervised évaluation - what is recorded, who reads it, for how
+        // long - shown before anything exists. « Rien n'est enregistré avant que vous ne cliquiez
+        // sur Commencer » is only true if the attempt itself is not created yet, which is why this
+        // stands in front of QuizAttemptStarter rather than after it.
+        //
+        // Only on the way in: an attempt already open is resumed straight away. The sentence above
+        // would be false on a resumption, and a student whose tab crashed mid-exam has better
+        // things to read than a contract they already accepted.
+        if ($instance->isSupervised() && null === $attemptRepository->findInProgress($instance, $this->currentUser()) && null === $attemptRepository->findLastConcluded($instance, $this->currentUser())) {
+            return $this->render('program/quiz_contract.html.twig', [
+                'program' => $program,
+                'quizInstance' => $instance,
+            ]);
+        }
+
         try {
             $started = $attemptStarter->startOrResume($instance, $this->currentUser());
         } catch (QuizAttemptNotAllowedException) {
@@ -111,6 +126,38 @@ class ProgramQuizAttemptController extends AbstractController
         }
 
         // Évaluation already handed in: there is nothing to take, only a result to look at.
+        if ($started['concluded']) {
+            return $this->redirectToRoute('app_program_quiz_result', ['id' => $program->getId(), 'instanceId' => $instance->getId(), 'attemptId' => $started['attempt']->getId()]);
+        }
+
+        return $this->redirectToQuestion($program, $instance, $started['attempt'], 0);
+    }
+
+    /**
+     * "Commencer" on the entry contract of a supervised évaluation. A POST of its own rather than a
+     * link back to take(): accepting the contract is what creates the attempt, and that is not
+     * something a URL pasted into a browser should do.
+     */
+    #[Route(path: '/programs/{id}/quiz/{instanceId}/start', name: 'app_program_quiz_start', requirements: ['instanceId' => '\d+'], methods: ['POST'])]
+    #[IsGranted('ROLE_STUDENT')]
+    public function start(int $id, int $instanceId, Request $request, ProgramRepository $repository, QuizInstanceRepository $instanceRepository, StudentQuizBoard $quizBoard, QuizAttemptStarter $attemptStarter): Response
+    {
+        $program = $this->findProgramForStudentOrNotFound($id, $repository);
+        $instance = $this->findInstanceOrNotFound($instanceRepository, $program, $instanceId);
+
+        if (!$this->isCsrfTokenValid('quiz_supervised_start', (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+        if (!$quizBoard->isOpenFor($instance, $this->currentUser())) {
+            throw $this->createAccessDeniedException();
+        }
+
+        try {
+            $started = $attemptStarter->startOrResume($instance, $this->currentUser());
+        } catch (QuizAttemptNotAllowedException) {
+            throw $this->createAccessDeniedException();
+        }
+
         if ($started['concluded']) {
             return $this->redirectToRoute('app_program_quiz_result', ['id' => $program->getId(), 'instanceId' => $instance->getId(), 'attemptId' => $started['attempt']->getId()]);
         }

@@ -45,7 +45,10 @@
                     <tbody>
                         {% for row in evaluations %}
                             <tr>
-                                <td><span class="fw-bold">{{ row.instance.name }}</span> <span class="text-secondary">· {{ row.instance.questionCount }} {{ 'quizQuestionsCountLabel'|trans }}</span></td>
+                                <td>
+                                    <span class="fw-bold">{{ row.instance.name }}</span> <span class="text-secondary">· {{ row.instance.questionCount }} {{ 'quizQuestionsCountLabel'|trans }}</span>
+                                    {% if row.instance.supervised %}<span class="cm-badge cm-badge--gold ms-1">{{ 'quizSupervisedBadgeLabel'|trans }}</span>{% endif %}
+                                </td>
                                 <td>{{ row.instance.opensAt ? row.instance.opensAt|date('d/m H:i') : '—' }} → {{ row.instance.closesAt ? row.instance.closesAt|date('d/m H:i') : '—' }}</td>
                                 <td>
                                     {% if row.instance.secondsPerQuestion %}{{ row.instance.secondsPerQuestion }} {{ 'programQuizSecondsPerQuestionLabel'|trans }}{% endif %}
