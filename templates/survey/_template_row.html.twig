@@ -1,0 +1,50 @@
+{# One model of the listing. The row menu carries what the four inline buttons carried, plus the act
+   the classement adds - « Déplacer vers… ».
+
+   The kebab replaces the four inline buttons on purpose: once the library is deep enough to need
+   folders, the actions column is wider than the name it acts on. #}
+<tr class="cm-slib__row" data-template-id="{{ template.id }}" data-name="{{ template.name }}" draggable="true">
+    <td>
+        <span class="cm-slib__name">
+            <span class="cm-slib__ext cm-slib__ext--survey" aria-hidden="true">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h9M9 12h9M9 18h9"></path><circle cx="5" cy="6" r="1" fill="currentColor" stroke="none"></circle><circle cx="5" cy="12" r="1" fill="currentColor" stroke="none"></circle><circle cx="5" cy="18" r="1" fill="currentColor" stroke="none"></circle></svg>
+            </span>
+            <a href="{{ path('app_survey_template_edit', {id: template.id}) }}">{{ template.name }}</a>
+        </span>
+    </td>
+    <td class="cm-slib__muted">{{ template.subject|default('') ?: '—' }}</td>
+    {# Intertitles are not questions - the count is the answerable ones (§7.13). #}
+    <td class="cm-slib__num">{{ template.answerableQuestions|length }}</td>
+    <td class="cm-slib__num">{{ (template.lastUpdatedDate ?? template.creationDate)|date('d/m/Y') }}</td>
+    <td class="cm-slib__menu">
+        <div class="dropdown">
+            <button type="button" class="cm-slib__kebab" data-bs-toggle="dropdown" aria-expanded="false"
+                    data-bs-boundary="viewport"
+                    data-bs-popper-config='{"strategy":"fixed"}'
+                    aria-label="{{ 'surveyLibraryRowMenuLabel'|trans }}">⋮</button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="{{ path('app_survey_launch', {id: template.id}) }}">{{ 'surveyLaunchCampaignActionLabel'|trans }}</a></li>
+                <li><a class="dropdown-item" href="{{ path('app_survey_template_edit', {id: template.id}) }}">{{ 'editActionLabel'|trans }}</a></li>
+                <li><button type="button" class="dropdown-item" data-action="survey-library#openMove">{{ 'surveyLibraryMoveAction'|trans }}</button></li>
+                <li>
+                    {# Both stay ordinary forms that redirect - there is nothing here for a fetch to do,
+                       and a nested `<form>` is one of this repository's two recurring bug classes, so
+                       each sits in its own `<li>` rather than inside the menu's markup. #}
+                    <form method="post" action="{{ path('app_survey_template_duplicate', {id: template.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('survey_template_duplicate') }}">
+                        <button type="submit" class="dropdown-item">{{ 'surveyDuplicateActionLabel'|trans }}</button>
+                    </form>
+                </li>
+                <li>
+                    <form method="post" action="{{ path('app_survey_template_remove', {id: template.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('survey_template_remove') }}">
+                        <button type="submit" class="dropdown-item text-danger"
+                                data-controller="confirm-submit"
+                                data-confirm-submit-message-value="{{ 'surveyTemplateRemoveConfirmMessage'|trans }}"
+                                data-action="click->confirm-submit#confirm">{{ 'removeActionLabel'|trans }}</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </td>
+</tr>

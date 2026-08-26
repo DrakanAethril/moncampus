@@ -30,7 +30,7 @@
                 </div>
             {% endif %}
             <div class="row g-4 align-items-start"
-                 data-controller="quiz-launch quiz-pool"
+                 data-controller="quiz-launch quiz-pool quiz-supervision-launch"
                  data-action="quiz-pool:change->quiz-launch#poolChanged"
                  data-quiz-pool-base-count-value="{{ quizTemplate.questions|length }}"
                  data-quiz-pool-base-default-count-value="{{ min(quizTemplate.defaultQuestionCount, quizTemplate.questions|length) }}"
@@ -67,7 +67,7 @@
                         <label class="form-label">{{ 'quizLaunchModeFieldLabel'|trans }}</label>
                         {% for choice in form.mode %}
                             <label class="cm-radiocard">
-                                {{ form_widget(choice) }}
+                                {{ form_widget(choice, {attr: {'data-action': 'change->quiz-supervision-launch#refresh'}}) }}
                                 <span class="cm-radiocard__dot"></span>
                                 <span>
                                     <span class="cm-radiocard__title d-block">{{ (choice.vars.value == 'entrainement' ? 'quizModeEntrainementLabel' : 'quizModeEvaluationLabel')|trans }}</span>
@@ -156,6 +156,44 @@
                     <div class="cm-note">
                         <span class="cm-note__icon">i</span>
                         <div data-quiz-launch-target="noteText"></div>
+                    </div>
+
+                    {# Mode contrôle. Rendered under Évaluation only - an entraînement se refait, se
+                       cherche et se discute, et le surveiller userait la case. #}
+                    <div class="d-none" data-quiz-supervision-launch-target="block">
+                        <div class="cm-subhead">
+                            <div class="cm-subhead__title">{{ 'quizLaunchSupervisionTitle'|trans }}</div>
+                            <div class="cm-subhead__hint">{{ 'quizLaunchSupervisionHint'|trans }}</div>
+                        </div>
+                        <div class="d-flex flex-column gap-3 mt-2">
+                            {{ form_row(form.supervised, {row_attr: {class: 'form-switch'}, help: 'quizLaunchSupervisedFieldHint'|trans, attr: {'data-quiz-supervision-launch-target': 'toggle', 'data-action': 'change->quiz-supervision-launch#refresh'}}) }}
+
+                            <div class="d-flex flex-column gap-2 d-none" data-quiz-supervision-launch-target="settings">
+                                <label class="form-label mb-0">{{ 'quizLaunchSupervisionPolicyFieldLabel'|trans }}</label>
+                                {% for choice in form.supervisionPolicy %}
+                                    <label class="cm-radiocard">
+                                        {{ form_widget(choice, {attr: {'data-quiz-supervision-launch-target': 'policy', 'data-action': 'change->quiz-supervision-launch#refresh'}}) }}
+                                        <span class="cm-radiocard__dot"></span>
+                                        <span>
+                                            <span class="cm-radiocard__title d-block">{{ choice.vars.label|trans }}</span>
+                                            <span class="cm-radiocard__desc">{{ (choice.vars.value == 'log' ? 'quizSupervisionPolicyLogDescription' : (choice.vars.value == 'warn' ? 'quizSupervisionPolicyWarnDescription' : 'quizSupervisionPolicyAutosubmitDescription'))|trans }}</span>
+                                        </span>
+                                    </label>
+                                {% endfor %}
+
+                                <div class="d-none" style="max-width: 200px;" data-quiz-supervision-launch-target="submitAt">
+                                    {{ form_row(form.supervisionSubmitAt, {help: 'quizLaunchSupervisionSubmitAtFieldHint'|trans}) }}
+                                </div>
+                                <div style="max-width: 260px;">
+                                    {{ form_row(form.supervisionExitSeconds, {help: 'quizLaunchSupervisionExitSecondsFieldHint'|trans}) }}
+                                </div>
+
+                                <div class="cm-note">
+                                    <span class="cm-note__icon">i</span>
+                                    <div>{{ 'quizLaunchSupervisionMobileNoteText'|trans }}</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

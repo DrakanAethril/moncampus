@@ -10,7 +10,10 @@
         {label: 'programQuizResultsBreadcrumbLabel'|trans, url: app.request.requestUri},
     ]} %}
 {% endblock %}
-{% block page_title %}{{ 'programQuizResultsHeadingTemplate'|trans({'%name%': quizInstance.name}) }}{% endblock %}
+{% block page_title %}
+    {{ 'programQuizResultsHeadingTemplate'|trans({'%name%': quizInstance.name}) }}
+    {% if quizInstance.supervised %}<span class="cm-badge cm-badge--gold ms-2">{{ 'quizSupervisedBadgeLabel'|trans }}</span>{% endif %}
+{% endblock %}
 
 {% block page_actions %}
     <a href="{{ path('app_access_condition_edit', {type: 'quiz_instance', id: quizInstance.id}) }}" class="btn btn-outline-secondary">{{ 'accessConditionEditAction'|trans }}</a>
@@ -81,6 +84,7 @@
                             <th>{{ 'programQuizNote20ColumnLabel'|trans }}</th>
                             <th>{{ 'programQuizDurationColumnLabel'|trans }}</th>
                             <th>{{ 'programQuizStatusColumnLabel'|trans }}</th>
+                            {% if quizInstance.supervised %}<th>{{ 'quizSupervisionColumnLabel'|trans }}</th>{% endif %}
                             <th class="cm-actions"></th>
                         </tr>
                     </thead>
@@ -98,6 +102,7 @@
                                        immediately sees it reflected here instead of the stale old TERMINÉ score. #}
                                     <td class="text-secondary" colspan="3">—</td>
                                     <td><span class="badge bg-blue-lt">{{ 'programQuizInProgressStatusLabel'|trans }}</span></td>
+                                    {% if quizInstance.supervised %}<td class="text-secondary">—</td>{% endif %}
                                     <td class="cm-actions">
                                         {% if row.retained %}
                                             {% if row.attemptCount > 1 %}
@@ -112,7 +117,25 @@
                                     <td class="fw-bold">{{ row.retained.scoreOn20 }}</td>
                                     <td class="text-secondary">{{ ((row.retained.submittedAt.timestamp - row.retained.startedAt.timestamp) // 60) }} min {{ ((row.retained.submittedAt.timestamp - row.retained.startedAt.timestamp) % 60) }}</td>
                                     <td><span class="badge {{ row.retained.status.value == 'termine' ? 'bg-green-lt' : 'bg-red-lt' }}">{{ row.retained.status.labelKey|trans|upper }}</span></td>
+                                    {% if quizInstance.supervised %}
+                                        {# Four states, and they do not mean the same thing. « Rien à
+                                           signaler » is the rule having done its job, which is above
+                                           all NOT to raise; « examiné » is a copy that already went
+                                           past a human and stops coming back. #}
+                                        <td>
+                                            {% if row.retained.reviewed %}
+                                                <span class="cm-badge cm-badge--gray">{{ 'quizSupervisionReviewedBadgeTemplate'|trans({'%outcome%': row.retained.reviewOutcome.labelKey|trans}) }}</span>
+                                            {% elseif row.retained.flaggedCount %}
+                                                <span class="cm-badge cm-badge--red">{{ 'quizSupervisionFlaggedBadgeTemplate'|trans({'%count%': row.retained.flaggedCount}) }}</span>
+                                            {% else %}
+                                                <span class="cm-badge cm-badge--green">{{ 'quizSupervisionCleanBadgeLabel'|trans }}</span>
+                                            {% endif %}
+                                        </td>
+                                    {% endif %}
                                     <td class="cm-actions">
+                                        {% if quizInstance.supervised %}
+                                            <a href="{{ path('app_program_quiz_timeline', {id: program.id, instanceId: quizInstance.id, attemptId: row.retained.id}) }}" class="cm-action--neutral">{{ 'quizSupervisionSeeTimelineAction'|trans }}</a>
+                                        {% endif %}
                                         {% if row.attemptCount > 1 %}
                                             <a href="{{ path('app_program_quiz_student_attempts', {id: program.id, instanceId: quizInstance.id, studentId: row.student.id}) }}" class="cm-action--neutral">{{ 'programQuizViewAttemptsAction'|trans }}</a>
                                         {% else %}
@@ -122,6 +145,7 @@
                                 {% else %}
                                     <td class="text-secondary" colspan="3">—</td>
                                     <td><span class="badge bg-red-lt">{{ 'programQuizNotStartedStatusLabel'|trans }}</span></td>
+                                    {% if quizInstance.supervised %}<td class="text-secondary">—</td>{% endif %}
                                     <td class="cm-actions">
                                         <form method="post" action="{{ path('app_program_quiz_relaunch', {id: program.id, instanceId: quizInstance.id, studentId: row.student.id}) }}">
                                             <input type="hidden" name="_token" value="{{ csrf_token('quiz_relaunch') }}">
@@ -132,13 +156,13 @@
                             </tr>
                         {% else %}
                             <tr>
-                                <td colspan="7" class="text-secondary">{{ 'programQuizEmptyMessage'|trans }}</td>
+                                <td colspan="{{ quizInstance.supervised ? 8 : 7 }}" class="text-secondary">{{ 'programQuizEmptyMessage'|trans }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>
                     <tfoot>
                         <tr>
-                            <td colspan="7" class="text-secondary small">{{ 'programQuizResultsFooterHintText'|trans }}</td>
+                            <td colspan="{{ quizInstance.supervised ? 8 : 7 }}" class="text-secondary small">{{ 'programQuizResultsFooterHintText'|trans }}</td>
                         </tr>
                     </tfoot>
                 </table>

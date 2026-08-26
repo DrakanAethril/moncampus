@@ -1,0 +1,25 @@
+{% extends 'layout/app.html.twig' %}
+
+{# The tab that lost the hand. Not a refusal and not a sanction: the attempt was reopened somewhere
+   else, the last opening owns it, and taking it back is one click away. Shutting a student out of
+   their own exam because a tab crashed is the failure this screen exists to avoid. #}
+
+{% block title %}{{ quizInstance.name }}{% endblock %}
+{% block page_breadcrumb %}{% endblock %}
+{% block page_title %}{{ quizInstance.name }}{% endblock %}
+
+{% block main %}
+    <div class="d-flex justify-content-center">
+        <div class="card" style="width: 560px; max-width: 100%;">
+            <div class="card-body text-center d-flex flex-column align-items-center gap-3 py-5">
+                <div style="font: 600 20px var(--cm-font-title); color: var(--cm-ink);">{{ 'quizTakenOverHeadingText'|trans }}</div>
+                <div class="text-secondary">{{ 'quizTakenOverHintText'|trans }}</div>
+                <form method="post" action="{{ path('app_program_quiz_start', {id: program.id, instanceId: quizInstance.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('quiz_supervised_start') }}">
+                    <button type="submit" class="btn btn-primary">{{ 'quizTakenOverResumeAction'|trans }}</button>
+                </form>
+                <a href="{{ path('app_program_quiz_mine', {id: program.id}) }}" class="btn btn-link">{{ 'programQuizBackToListAction'|trans }}</a>
+            </div>
+        </div>
+    </div>
+{% endblock %}

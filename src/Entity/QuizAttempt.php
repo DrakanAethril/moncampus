@@ -6,6 +6,7 @@ namespace App\Entity;
 
 use App\Enum\AttemptOrigin;
 use App\Enum\AttemptStatus;
+use App\Enum\QuizReviewOutcome;
 use App\Repository\QuizAttemptRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -61,6 +62,21 @@ class QuizAttempt
     #[ORM\Column(name: 'started_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $startedAt;
 
+    /**
+     * Which browser session owns this attempt, on a supervised évaluation - see
+     * App\Service\QuizAttemptSessionLock.
+     *
+     * The last session to open the attempt wins and the previous one is turned away. The tempting
+     * rule is the other one - refuse the second opening - and it is the wrong one: a browser that
+     * crashes, a tab closed by accident, a PHP session that expires, and the student is locked out
+     * in the middle of an exam with nobody able to let them back in quickly. The anti-cheating
+     * device would then have stopped an honest student from composing.
+     *
+     * Null on everything that is not supervised, and on attempts that predate the feature.
+     */
+    #[ORM\Column(name: 'session_key', length: 64, nullable: true)]
+    private ?string $sessionKey = null;
+
     #[ORM\Column(name: 'submitted_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $submittedAt = null;
 
@@ -72,6 +88,28 @@ class QuizAttempt
 
     #[ORM\Column(name: 'question_total', nullable: true)]
     private ?int $questionTotal = null;
+
+    // ---- Mode contrôle: what was found, and what a human decided about it ----
+    /**
+     * How many questions App\Service\QuizSupervisionAssessor marked « à vérifier », frozen when the
+     * attempt is concluded and re-read at display time. It is what classes the attempt on the
+     * teacher's list - a count of things to look at, never a score and never a verdict.
+     */
+    #[ORM\Column(name: 'flagged_count', type: Types::SMALLINT, options: ['unsigned' => true])]
+    private int $flaggedCount = 0;
+
+    #[ORM\Column(name: 'reviewed_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $reviewedAt = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'reviewed_by_id', nullable: true, onDelete: 'SET NULL')]
+    private ?User $reviewedBy = null;
+
+    #[ORM\Column(name: 'review_outcome', length: 16, enumType: QuizReviewOutcome::class, nullable: true)]
+    private ?QuizReviewOutcome $reviewOutcome = null;
+
+    #[ORM\Column(name: 'review_note', type: Types::TEXT, nullable: true)]
+    private ?string $reviewNote = null;
 
     /** @var Collection<int, QuizAttemptAnswer> */
     #[ORM\OneToMany(mappedBy: 'attempt', targetEntity: QuizAttemptAnswer::class, cascade: ['persist'], orphanRemoval: true)]
@@ -196,6 +234,24 @@ class QuizAttempt
         return $this->startedAt;
     }
 
+    public function getSessionKey(): ?string
+    {
+        return $this->sessionKey;
+    }
+
+    public function setSessionKey(?string $sessionKey): static
+    {
+        $this->sessionKey = $sessionKey;
+
+        return $this;
+    }
+
+    /** Whether the key a client presents is the one that currently owns this attempt. */
+    public function isHeldBy(?string $sessionKey): bool
+    {
+        return null !== $this->sessionKey && null !== $sessionKey && hash_equals($this->sessionKey, $sessionKey);
+    }
+
     public function getSubmittedAt(): ?\DateTimeImmutable
     {
         return $this->submittedAt;
@@ -259,6 +315,55 @@ class QuizAttempt
         $percent = $this->getScorePercent();
 
         return null !== $percent ? round($percent / 100 * 20, 1) : null;
+    }
+
+    public function getFlaggedCount(): int
+    {
+        return $this->flaggedCount;
+    }
+
+    public function setFlaggedCount(int $flaggedCount): static
+    {
+        $this->flaggedCount = max(0, $flaggedCount);
+
+        return $this;
+    }
+
+    public function getReviewedAt(): ?\DateTimeImmutable
+    {
+        return $this->reviewedAt;
+    }
+
+    public function getReviewedBy(): ?User
+    {
+        return $this->reviewedBy;
+    }
+
+    public function getReviewOutcome(): ?QuizReviewOutcome
+    {
+        return $this->reviewOutcome;
+    }
+
+    public function getReviewNote(): ?string
+    {
+        return $this->reviewNote;
+    }
+
+    /** Whether a human has already said something about this attempt - it then leaves the list. */
+    public function isReviewed(): bool
+    {
+        return null !== $this->reviewOutcome;
+    }
+
+    /** The one statement of the whole device, and it is signed. */
+    public function review(QuizReviewOutcome $outcome, User $by, ?string $note): static
+    {
+        $this->reviewOutcome = $outcome;
+        $this->reviewedBy = $by;
+        $this->reviewedAt = new \DateTimeImmutable();
+        $this->reviewNote = null === $note || '' === trim($note) ? null : trim($note);
+
+        return $this;
     }
 
     /** @return Collection<int, QuizAttemptAnswer> */

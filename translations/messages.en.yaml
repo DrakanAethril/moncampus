@@ -2249,6 +2249,92 @@ programQuizScoreHiddenHintText: 'Your score will be published by the teacher.'
 programQuizBackToListAction: 'Back to the list'
 programQuizResultsBreadcrumbLabel: 'Results'
 programQuizResultsHeadingTemplate: 'Results - "%name%"'
+programQuizAnswerTooLateFlashMessage: 'The time allowed for this question had run out: your answer was not recorded.'
+quizQuestionElapsedTitle: 'Time spent on this question'
+quizQuestionDisplayCountTitle: 'How many times this question was displayed'
+quizQuestionDisplayCountTemplate: '%count% displays'
+quizAttemptTimingsHeading: 'Time per question'
+quizAttemptTimingsHintText: 'Measured between the question being displayed and your answer. It is not a mark.'
+quizSupervisedBadgeLabel: "Supervised"
+quizLaunchSupervisionTitle: "Supervised mode"
+quizLaunchSupervisionHint: "For an assessment taken in an ordinary browser, on a machine the school does not control."
+quizLaunchSupervisedFieldLabel: "Supervise this attempt"
+quizLaunchSupervisedFieldHint: "The student is told at the start. Page exits are recorded and shown to you alongside the time spent on each question."
+quizLaunchSupervisionPolicyFieldLabel: "When an exit is detected"
+quizLaunchSupervisionExitSecondsFieldLabel: "How long an exit must last to count"
+quizLaunchSupervisionExitSecondsFieldHint: "Below that, it is a notification - not a search."
+quizLaunchSupervisionSubmitAtFieldLabel: "Number of exits"
+quizLaunchSupervisionSubmitAtFieldHint: "Never fewer than 3."
+quizLaunchSupervisionMobileNoteText: "On a phone. This assessment cannot be taken from a mobile app too old to report: it will show \"take this one on a computer\"."
+quizSupervisionPolicyLogLabel: "Record only"
+quizSupervisionPolicyLogDescription: "Nothing appears on the student's screen. For an assessment invigilated in the room."
+quizSupervisionPolicyWarnLabel: "Warn the student live"
+quizSupervisionPolicyWarnDescription: "A banner reminds them their exits are being counted. This is what deters most."
+quizSupervisionPolicyAutosubmitLabel: "Warn, then hand the copy in"
+quizSupervisionPolicyAutosubmitDescription: "Past the number of exits set, the copy is handed in as it stands and marked normally."
+quizContractQuestionsLabel: "questions"
+quizContractPerQuestionLabel: "per question"
+quizContractTotalTimeLabel: "in total"
+quizContractAttemptsLabel: "attempt"
+quizContractHeadingText: "This assessment is supervised."
+quizContractTimeBulletText: "The time you spend on each question is recorded."
+quizContractExitsBulletText: "Every time you leave this page - another tab, another window, another application - the exit and how long it lasted are recorded."
+quizContractAutosubmitBulletTemplate: "Past %count% exits, your copy is handed in as it stands and marked normally."
+quizContractTeacherBulletText: "Your teacher receives the detail along with your copy."
+quizContractRetentionBulletText: "These records are kept for 12 months, then deleted."
+quizContractNothingYetBulletText: "The content of your other tabs is not read, and nothing is recorded before you click \"Start\"."
+quizContractAcceptLabel: "I have read this and I am starting the assessment."
+quizContractStartAction: "Start"
+quizContractFullscreenHintText: "Full screen will be requested on that click."
+quizEventPageHiddenLabel: "Left the page"
+quizEventPageVisibleLabel: "Back on the page"
+quizEventWindowBlurLabel: "Window sent behind"
+quizEventWindowFocusLabel: "Back on the window"
+quizEventFullscreenExitLabel: "Left full screen"
+quizEventWindowShrunkLabel: "Window narrowed (side by side)"
+quizEventPasteLabel: "Pasted into a field"
+quizEventStatementCopiedLabel: "Copied the question"
+quizEventTakenOverLabel: "Attempt resumed from another session"
+quizEventClientWebLabel: "browser"
+quizEventClientMobileLabel: "mobile app"
+quizTakenOverHeadingText: "This attempt was resumed elsewhere"
+quizTakenOverHintText: "Your copy is intact. It is open in another window or on another machine, and the last opening holds the hand."
+quizTakenOverResumeAction: "Take the assessment back here"
+quizSupervisionColumnLabel: "Supervision"
+quizSupervisionMobileRefusedMessage: "This assessment is taken on a computer. Update the app to be able to take it from your phone."
+quizSupervisionBannerTitleTemplate: "You have left this page %count% times since the assessment began"
+quizSupervisionBannerHintText: "These exits are recorded and passed on to your teacher."
+quizSupervisionBannerAutosubmitTemplate: "Past %count% exits, your copy will be handed in as it stands."
+quizSupervisionAutoSubmittedNotice: "Your copy was handed in automatically after %count% page exits, as announced at the start. It is marked normally: what you answered counts."
+quizSupervisionFlaggedBadgeTemplate: "%count% question(s) to check"
+quizSupervisionCleanBadgeLabel: "nothing to report"
+quizSupervisionFastBadgeLabel: "very fast answers"
+quizSupervisionReviewedBadgeTemplate: "reviewed · %outcome%"
+quizSupervisionSeeTimelineAction: "See the timeline"
+quizSupervisionReasonAbsence: "absence during the question"
+quizSupervisionReasonPaste: "pasted into a field"
+quizSupervisionReasonRedisplayed: "question displayed again"
+quizSupervisionReviewNoteLabel: "Review note"
+quizSupervisionReviewNotePlaceholder: "Optional - what you conclude from it"
+quizSupervisionReviewedByTemplate: "Reviewed by %name% on %date%"
+quizSupervisionReviewedFlashMessage: "The decision was recorded."
+quizReviewOutcomeDismissedLabel: "dismissed"
+quizReviewOutcomeUpheldLabel: "upheld"
+quizReviewOutcomeDismissedAction: "Dismiss"
+quizReviewOutcomeUpheldAction: "Uphold and pass on"
+quizTimelineHeadingTemplate: "%student% - timeline of the copy"
+quizTimelineCardTitleTemplate: "%count% questions, %duration%"
+quizTimelineFoldedTemplate: "%count% question(s) with nothing to report - unfold"
+quizTimelineLegendBarLabel: "time on screen"
+quizTimelineLegendExitLabel: "left the page"
+quizTimelineVerdictFlaggedLabel: "to check"
+quizTimelineVerdictRightLabel: "right"
+quizTimelineVerdictWrongLabel: "wrong"
+quizTimelineVerdictUnansweredLabel: "unanswered"
+quizTimelineAbsenceTemplate: "left the page %duration%"
+quizTimelineFlaggedSummaryTitle: "What is flagged"
+quizTimelineFlaggedLineTemplate: "Question %number% - at %at%. On screen %elapsed%."
+quizTimelineFastHintText: "Every answer right and very fast, the hard questions included. This is not cheating in the moment: the paper was probably known in advance. Something to look at at the scale of the class, not of the student."
 quizInstanceEditAction: 'Edit the quiz'
 quizInstanceEditPageHeading: 'Edit the quiz'
 quizInstanceEditLead: 'Only the settings that do not affect the draw can be changed: the questions, how many there are and the difficulty split were frozen at launch.'
@@ -4714,6 +4800,7 @@ filePickerTooLargeMessage: 'This file is over the size limit.'
 filePickerNetworkErrorMessage: 'The upload failed: check your connection and try again.'
 filePickerOnlyOneMessage: 'This field accepts a single file.'
 filePickerInvalidTokenMessage: 'This upload is no longer valid: remove the file and upload it again.'
+filePickerRequiredMessage: 'Choose a file.'
 
 # Wiki - lot 4, the content.
 wikiOutlineHeading: 'On this page'
@@ -6250,3 +6337,33 @@ ufaFormationDocumentsOpenFileAction: 'Open the current calendar'
 ufaFormationDocumentsNoFileText: 'No calendar uploaded yet.'
 ufaFormationDocumentsModeSwitchNoticeText: 'This formation currently shows the calendar computed from its periods. Uploading a PDF here replaces it: the file is what will be served. To go back to the computed calendar, use the formation''s own settings.'
 ufaFormationDocumentsSavedFlashMessage: 'Alternance calendar saved.'
+
+# Survey library: the folder classification
+surveyFolderRailTitleLabel: 'Folders'
+surveyFolderRootLabel: 'Library'
+surveyFolderNewAction: 'New folder'
+surveyFolderNewSubfolderAction: 'New subfolder'
+surveyFolderNewSubfolderOfAction: 'New subfolder in %name%'
+surveyFolderToggleBranchAction: 'Expand or collapse %name%'
+surveyFolderNamePrompt: 'Folder name'
+surveyFolderRenamePrompt: 'New folder name'
+surveyFolderRenameAction: 'Rename'
+surveyFolderOpenAction: 'Open'
+surveyFolderDeleteAction: 'Delete folder'
+surveyFolderDeleteConfirmText: 'Delete the folder "%name%"? The models and subfolders it holds are not deleted: they move up one level.'
+surveyFolderTemplateCountLabel: '{0}no model|{1}1 model|]1,Inf[%count% models'
+surveyFolderNameRequiredMessage: 'The folder name is required.'
+surveyFolderCreatedFlashMessage: 'Folder created.'
+surveyFolderRenamedFlashMessage: 'Folder renamed.'
+surveyFolderDeletedFlashMessage: 'Folder deleted. Its contents moved up one level.'
+surveyFolderMoveRefusedMessage: 'Move refused: a folder cannot be filed inside one of its own subfolders.'
+surveyFolderEmptyText: 'This folder holds no model and no subfolder yet.'
+surveyLibraryRowMenuLabel: 'Actions'
+surveyLibraryMoveAction: 'Move to…'
+surveyLibraryMovePromptTitle: 'Move "%name%" to…'
+surveyLibrarySearchPlaceholder: 'Search for a model…'
+surveyLibrarySearchResultsHeading: 'Search results'
+surveyLibrarySearchEmptyText: 'No model matches "%terms%".'
+surveyLibrarySearchPromptText: 'Type a model name to search for.'
+surveyLibraryFolderColumnLabel: 'Folder'
+surveyLibraryBackToLibraryAction: 'Back to the library'

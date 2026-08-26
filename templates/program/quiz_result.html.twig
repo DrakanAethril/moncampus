@@ -16,6 +16,11 @@
     <div class="d-flex justify-content-center">
         <div class="card" style="width: 560px; max-width: 100%;">
             <div class="card-body text-center d-flex flex-column align-items-center gap-3 py-5">
+                {% if autoSubmitted %}
+                    {# The student was told at the door this would happen; they are owed the
+                       sentence. The copy was marked normally - nothing was cancelled. #}
+                    <div class="cm-audio-warn text-start w-100">{{ 'quizSupervisionAutoSubmittedNotice'|trans({'%count%': quizInstance.supervisionSubmitAt}) }}</div>
+                {% endif %}
                 {% if quizInstance.scoreVisibleImmediately %}
                     <span class="badge {{ attempt.scorePercent >= 70 ? 'bg-green-lt' : (attempt.scorePercent >= 40 ? 'bg-warning-lt' : 'bg-red-lt') }}" style="font-weight:700;font-size:22px;padding:14px 26px;">
                         {% if quizInstance.scoring.value == 'note20' %}{{ attempt.scoreOn20 }} / 20{% else %}{{ attempt.scorePercent }} %{% endif %}
@@ -29,4 +34,27 @@
             </div>
         </div>
     </div>
+
+    {# The time per question, shown even when the score is deferred: the time is not the mark, and
+       an évaluation has no correction screen where it could otherwise appear. #}
+    {% set timed = attempt.attemptAnswers|filter(a => a.elapsedMs is not null) %}
+    {% if timed|length %}
+        <div class="d-flex justify-content-center mt-3">
+            <div class="card" style="width: 560px; max-width: 100%;">
+                <div class="card-header"><h3 class="card-title">{{ 'quizAttemptTimingsHeading'|trans }}</h3></div>
+                <div class="card-body d-flex flex-column gap-1">
+                    {% for attemptAnswer in attempt.attemptAnswers %}
+                        <div class="d-flex align-items-baseline gap-2" style="font-size:13.5px;">
+                            <span class="text-secondary" style="font:600 12px ui-monospace, monospace;width:34px;">Q{{ loop.index }}</span>
+                            <span style="color: var(--cm-ink);">{{ attemptAnswer.elapsedMs|duration_ms }}</span>
+                            {% if attemptAnswer.displayCount > 1 %}
+                                <span class="text-secondary small">{{ 'quizQuestionDisplayCountTemplate'|trans({'%count%': attemptAnswer.displayCount}) }}</span>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                    <div class="text-secondary small border-top pt-2 mt-1">{{ 'quizAttemptTimingsHintText'|trans }}</div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
 {% endblock %}

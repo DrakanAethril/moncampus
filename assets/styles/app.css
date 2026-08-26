@@ -7746,6 +7746,97 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
     .cm-qlib__rail { position: static; max-height: none; }
 }
 
+/* --- Bibliothèque de sondages : le classement par dossiers --------------------------------- */
+/* The quiz library's `.cm-qlib` block just above, under its own prefix. Duplicated rather than
+   shared, which is what `.cm-flib` -> `.cm-qlib` already did: the two libraries look alike today and
+   their columns are not the same set, so a single block would have to be split again the first time
+   one of them grows a column the other has no use for. What changes here is the row tile - a model
+   is not a quiz - and nothing else. */
+
+.cm-slib { display: grid; grid-template-columns: 264px minmax(0, 1fr); gap: 22px; align-items: start; }
+.cm-slib__rail { position: sticky; top: 84px; max-height: calc(100vh - 104px); display: flex; flex-direction: column; background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 14px 12px; }
+
+.cm-slib__rail-head { display: flex; align-items: center; gap: 8px; padding: 0 4px 10px; border-bottom: 1px solid var(--cm-border-soft); }
+.cm-slib__rail-title { flex: 1; min-width: 0; font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Pinned to the bottom of the block rather than laid under the last folder: it acts on the *whole*
+   library. One entry and not the file library's two - there is no corbeille on this side. */
+.cm-slib__rail-foot { display: flex; align-items: center; padding-top: 10px; margin-top: auto; border-top: 1px solid var(--cm-border-soft); }
+
+.cm-slib__tree { list-style: none; margin: 10px 0 0; padding: 0; }
+/* `:not(--nested)` for the reason the wiki records: the two lists share a class, and setting one
+   overflow axis to anything but `visible` computes the other to `auto` - every branch would get a
+   stray horizontal scrollbar. `min-height: 0` is what makes a flex item actually shrink. */
+.cm-slib__tree:not(.cm-slib__tree--nested) { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.cm-slib__tree--nested { margin: 2px 0 2px 14px; border-left: 1px solid var(--cm-border-soft); padding-left: 6px; }
+.cm-slib__node { margin: 1px 0; }
+.cm-slib__node.is-dragging { opacity: 0.45; }
+/* One drop state, not the wiki's three: there is no re-order here, so "between two folders" means
+   nothing - a drop is always *into*. */
+.cm-slib__node.is-drop-target > .cm-slib__node-row { background: var(--cm-blue-bg-soft); box-shadow: inset 0 0 0 1px var(--cm-brand); border-radius: 6px; }
+.cm-slib__node-row { display: flex; align-items: center; gap: 1px; min-width: 0; }
+.cm-slib__node-link { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; padding: 5px 6px; border-radius: 6px; font: 400 13px var(--cm-font-ui); color: var(--cm-text); text-decoration: none; }
+.cm-slib__node-link:hover { background: var(--cm-surface-alt); color: var(--cm-ink); }
+.cm-slib__node-link.is-current { background: var(--cm-blue-bg); color: var(--cm-blue-tx); font-weight: 600; }
+.cm-slib__node-ico { flex: none; display: grid; place-items: center; color: var(--cm-faint); }
+.cm-slib__node-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-slib__node-toggle { flex: none; display: grid; place-items: center; width: 14px; height: 18px; padding: 0; border: 0; background: none; color: var(--cm-faint); cursor: pointer; }
+.cm-slib__node-toggle svg { transform: rotate(90deg); transition: transform 0.12s ease; }
+.cm-slib__node.is-collapsed > .cm-slib__node-row .cm-slib__node-toggle svg { transform: rotate(0deg); }
+.cm-slib__node-toggle--empty { cursor: default; }
+.cm-slib__node.is-collapsed > .cm-slib__tree--nested { display: none; }
+.cm-slib__node-grip { flex: none; display: grid; place-items: center; width: 12px; color: var(--cm-disabled); cursor: grab; }
+.cm-slib__node-row:hover .cm-slib__node-grip { color: var(--cm-faint); }
+/* The root entry keeps the grip's width so its label lines up with every folder below it, and loses
+   the grab cursor: it receives a drop and is never itself dragged. */
+.cm-slib__node-grip--fixed { cursor: default; }
+.cm-slib__node-actions { flex: none; display: flex; align-items: center; gap: 1px; }
+.cm-slib__node-action { display: grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 5px; background: none; color: var(--cm-faint); cursor: pointer; }
+.cm-slib__node-action:hover { background: var(--cm-surface-alt); color: var(--cm-brand-strong); }
+
+.cm-slib__content { background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 18px 20px 20px; }
+.cm-slib__empty { margin: 8px 2px; font: 400 13.5px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-slib__search { min-width: 220px; }
+
+.cm-slib__table { width: 100%; border-collapse: collapse; font: 400 13px var(--cm-font-ui); }
+.cm-slib__table th { text-align: left; padding: 6px 10px; font: 600 11px var(--cm-font-ui); letter-spacing: 0.05em; text-transform: uppercase; color: var(--cm-faint); border-bottom: 1px solid var(--cm-border-soft); }
+.cm-slib__table td { padding: 9px 10px; border-bottom: 1px solid var(--cm-border-faint); color: var(--cm-text); vertical-align: middle; }
+.cm-slib__row:hover td { background: var(--cm-surface-alt); }
+.cm-slib__row.is-dragging td { opacity: 0.45; }
+.cm-slib__name { display: flex; align-items: center; gap: 9px; min-width: 0; font-weight: 600; color: var(--cm-ink); }
+.cm-slib__name a { color: inherit; text-decoration: none; }
+.cm-slib__name a:hover { text-decoration: underline; }
+.cm-slib__row.is-folder .cm-slib__name a { color: var(--cm-brand-strong); }
+.cm-slib__num { font-variant-numeric: tabular-nums; color: var(--cm-muted); white-space: nowrap; }
+.cm-slib__muted { color: var(--cm-muted); }
+.cm-slib__folderlink { color: var(--cm-brand-strong); text-decoration: none; }
+.cm-slib__folderlink:hover { text-decoration: underline; }
+.cm-slib__menu { width: 1%; white-space: nowrap; text-align: right; }
+.cm-slib__kebab { border: 0; background: none; color: var(--cm-faint); font-weight: 700; letter-spacing: 1px; padding: 2px 6px; border-radius: 6px; cursor: pointer; }
+.cm-slib__kebab:hover { background: var(--cm-surface-alt); color: var(--cm-ink); }
+
+/* The same tile as the file library's, so a row reads the same in both libraries - two cases here
+   rather than seven: a folder, and a quiz. */
+.cm-slib__ext { font: 700 9.5px/1 var(--cm-font-ui); letter-spacing: .04em; padding: 5px 6px; border-radius: 5px; min-width: 34px; text-align: center; flex: none; background: var(--cm-surface-alt); color: var(--cm-muted); border: 1px solid var(--cm-border-soft); display: grid; place-items: center; }
+.cm-slib__ext--dir { background: transparent; color: var(--cm-brand); border-color: var(--cm-border); }
+.cm-slib__ext--survey { background: var(--cm-blue-bg); color: var(--cm-blue-tx); border-color: transparent; }
+
+/* « Déplacer vers… » : the folder tree, flattened and indented, over the screen. A dialog rather than
+   a submenu because the list is as deep as the library is, and a dropdown inside a dropdown inside a
+   `.table-responsive` is the clipping trap the row menu already had to be taken out of. */
+.cm-slib__move { position: fixed; inset: 0; z-index: 1080; display: grid; place-items: center; background: rgba(18, 52, 77, .55); padding: 20px; }
+.cm-slib__move-box { width: min(420px, 100%); max-height: min(70vh, 560px); display: flex; flex-direction: column; background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); box-shadow: 0 18px 48px rgba(18, 52, 77, .28); }
+.cm-slib__move-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--cm-border-soft); }
+.cm-slib__move-title { flex: 1; min-width: 0; margin: 0; font: 600 14px var(--cm-font-ui); color: var(--cm-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-slib__move-close { border: 0; background: none; color: var(--cm-faint); font-size: 22px; line-height: 1; cursor: pointer; }
+.cm-slib__move-list { flex: 1; min-height: 0; overflow-y: auto; list-style: none; margin: 0; padding: 8px 0; }
+.cm-slib__move-item { width: 100%; display: flex; align-items: center; gap: 8px; padding: 7px 10px; border: 0; background: none; font: 400 13px var(--cm-font-ui); color: var(--cm-text); text-align: left; cursor: pointer; }
+.cm-slib__move-item:hover { background: var(--cm-surface-alt); color: var(--cm-ink); }
+
+@media (max-width: 991.98px) {
+    .cm-slib { grid-template-columns: minmax(0, 1fr); }
+    .cm-slib__rail { position: static; max-height: none; }
+}
+
 /* --- The link: the picker's Bibliothèque tab, the usage panel, the deletion modal -------- */
 
 /* The tab strip's buttons are buttons now that one of them switches panes - reset to the tab's look
@@ -9017,3 +9108,45 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 /* What « Par défaut » gives this person today, in grey next to the button. Without it the three
    buttons say nothing about what choosing the first one means. */
 .cm-featovr__hint { font: 11.5px var(--cm-font-ui); color: var(--cm-faint); }
+
+/* ===========================================================================
+   Mode contrôle (quiz) - the frise of one copy, design/validated/quiz-supervised-mode.html.
+   One row per question: the bar is the time the question was on screen, the notches are the exits
+   that fell inside it. Everything in --cm-* tokens, so dark mode follows with no rule of its own.
+   =========================================================================== */
+
+.cm-tl { border-top: 1px solid var(--cm-border-faint); }
+.cm-tl__row {
+  display: grid; grid-template-columns: 118px 1fr 118px 88px; align-items: center;
+  gap: 12px; padding: 7px 10px; border-bottom: 1px solid var(--cm-border-faint);
+  font: 12.5px var(--cm-font-ui);
+}
+.cm-tl__row--flagged { background: var(--cm-red-bg); }
+.cm-tl__q { color: var(--cm-ink); font-weight: 600; }
+.cm-tl__diff { color: var(--cm-faint); font-weight: 500; font-size: 11px; }
+.cm-tl__track {
+  position: relative; height: 15px; background: var(--cm-surface-alt);
+  border: 1px solid var(--cm-border); border-radius: 4px;
+}
+.cm-tl__bar { position: absolute; inset: 0 auto 0 0; background: var(--cm-blue-bg); border-radius: 3px; }
+/* Deliberately taller than the bar: an absence is a notch across it, not a segment of it. */
+.cm-tl__exit { position: absolute; top: -3px; bottom: -3px; background: var(--cm-red-tx); border-radius: 2px; opacity: .82; }
+.cm-tl__time { text-align: right; font-variant-numeric: tabular-nums; color: var(--cm-ink); font-weight: 600; }
+.cm-tl__count { display: block; color: var(--cm-faint); font-weight: 500; font-size: 11px; }
+.cm-tl__verdict { font-size: 11px; letter-spacing: .05em; text-transform: uppercase; font-weight: 700; }
+.cm-tl__verdict--right { color: var(--cm-positive-tx); }
+.cm-tl__verdict--wrong { color: var(--cm-faint); }
+.cm-tl__verdict--flagged { color: var(--cm-red-tx); }
+.cm-tl__rest > summary { padding: 9px 10px; color: var(--cm-muted); font: 12.5px var(--cm-font-ui); cursor: pointer; }
+.cm-tl__legend {
+  display: flex; gap: 18px; align-items: center; padding: 9px 10px 0;
+  font: 11.5px var(--cm-font-ui); color: var(--cm-muted);
+}
+.cm-tl__swatch { display: inline-block; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.cm-tl__swatch--bar { width: 16px; background: var(--cm-blue-bg); border: 1px solid var(--cm-border); }
+.cm-tl__swatch--exit { width: 5px; background: var(--cm-red-tx); }
+
+@media (max-width: 720px) {
+  .cm-tl__row { grid-template-columns: 88px 1fr 84px; }
+  .cm-tl__verdict { grid-column: 2 / -1; }
+}

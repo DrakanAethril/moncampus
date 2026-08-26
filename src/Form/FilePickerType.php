@@ -22,6 +22,7 @@ use Symfony\Component\OptionsResolver\Options;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 use Symfony\Component\Validator\Constraints\All;
+use Symfony\Component\Validator\Constraints\NotBlank;
 
 /**
  * The one upload field of this application (design/validated/file-library.md, "The harmonised upload
@@ -147,11 +148,25 @@ class FilePickerType extends AbstractType
             // Built from the policy rather than written at the call site: stating a narrowing twice
             // is how the two come to disagree, and the `All` wrapper for a multiple field is exactly
             // the half that used to be forgotten.
+            //
+            // `required` is added here for the same reason. On a native file input it is only an
+            // HTML attribute; on this one it is not even that, since the value travels in a hidden
+            // input the browser has nothing to check. Left to itself an empty submit passes
+            // validation - App\Validator\AllowedUpload returns on null, as every file constraint
+            // does - and reaches a controller that expects a file, where it dies in
+            // App\Service\UploadIntake's signature rather than telling the user to pick one.
             ->setNormalizer('constraints', function (Options $options, mixed $constraints): array {
                 $declared = \is_array($constraints) ? $constraints : [];
                 $upload = new AllowedUpload($this->policyOf($options));
+                $policy = [true === $options['multiple'] ? new All([$upload]) : $upload];
 
-                return [...$declared, true === $options['multiple'] ? new All([$upload]) : $upload];
+                if (true === $options['required']) {
+                    // NotBlank rather than NotNull: a `multiple` field submitted empty answers an
+                    // empty array, not null.
+                    $policy[] = new NotBlank(message: 'filePickerRequiredMessage');
+                }
+
+                return [...$declared, ...$policy];
             })
         ;
     }

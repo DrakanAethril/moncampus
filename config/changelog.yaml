@@ -26,6 +26,37 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.08.26'
+      date: '2026-08-26'
+      summary: "Un quiz d'évaluation peut désormais se passer en mode contrôle : l'étudiant est prévenu à l'entrée de ce qui sera enregistré, un bandeau l'avertit s'il quitte la page, et l'enseignant dispose ensuite d'une frise détaillée de la passation pour en juger lui-même. La bibliothèque de sondages se range par ailleurs en dossiers, comme celle des quiz."
+      entries:
+          - type: nouveaute
+            title: "Passer un quiz d'évaluation en mode contrôle"
+            detail: "L'enseignant choisit, quiz par quiz, si la passation est surveillée et ce qu'il advient lorsqu'un étudiant quitte la page : rien, un avertissement, ou la remise de la copie. Les quiz déjà lancés ne sont pas concernés : la surveillance ne s'active jamais rétroactivement."
+          - type: nouveaute
+            title: "L'étudiant est prévenu avant de commencer"
+            detail: "Un écran d'entrée annonce ce qui sera enregistré, qui pourra le lire et pendant combien de temps. Rien n'est enregistré avant le clic sur « Commencer »."
+          - type: nouveaute
+            title: "Un avertissement pendant la passation, plutôt qu'après"
+            detail: "Le bandeau énonce des faits — les sorties de page constatées — sans accuser, sans bloquer quoi que ce soit et sans interrompre la composition. Lorsque la copie est remise automatiquement, l'écran de remise en donne la raison."
+          - type: nouveaute
+            title: "La frise de passation et la décision d'examen"
+            detail: "L'enseignant lit, question par question, le temps d'affichage et les faits constatés, et peut consigner une décision signée et datée. Aucune note n'est modifiée, et l'application ne conclut rien à la place de personne."
+          - type: modification
+            title: "Le temps passé sur chaque question est mesuré par le serveur"
+            detail: "Recharger la page ne remet plus le minuteur à neuf. Le temps est montré à l'étudiant dans sa correction, même lorsque la note est différée, et à l'enseignant sur la copie."
+          - type: modification
+            title: "L'application mobile doit être à jour pour une passation surveillée"
+            detail: "La version Android 2.6.0, disponible au téléchargement, est nécessaire pour composer un quiz en mode contrôle depuis le téléphone. Les autres quiz restent accessibles comme avant."
+          - type: nouveaute
+            title: "Classer la bibliothèque de sondages en dossiers"
+            detail: "Un dossier se crée, se renomme et se déplace, et un modèle s'y range en le faisant glisser. Supprimer un dossier ne supprime aucun modèle : son contenu remonte d'un niveau. La recherche porte sur toute la bibliothèque."
+          - type: fix
+            title: "Un champ de fichier obligatoire refuse proprement un envoi vide"
+            detail: "L'envoi sans pièce jointe affiche désormais un message clair au lieu d'échouer sans explication."
+          - type: autre
+            title: "Application mobile MonCampus 2.6.0"
+            detail: "Nouvelle version Android disponible au téléchargement."
     - version: '2026.08.25.2'
       date: '2026-08-25'
       summary: "L'établissement choisit désormais, fonctionnalité par fonctionnalité et profil par profil, ce qui est ouvert dans MonCampus, avec la possibilité de faire une exception pour une personne en particulier. Le tour de l'application s'en trouve resserré : chacun ne voit plus que ce qui le concerne, et les rubriques sans contenu ne s'affichent plus."

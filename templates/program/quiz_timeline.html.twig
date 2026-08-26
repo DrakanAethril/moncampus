@@ -1,0 +1,122 @@
+{% extends 'layout/app.html.twig' %}
+
+{# The frise: one row per question, the bar is the time on screen, the red notches are the exits.
+   The real deliverable of the mode contrôle - a dated sentence one can put in front of a student.
+   Rows with nothing to report are folded away by default: a list of twenty lines of which two
+   matter reads badly. #}
+
+{% block title %}{{ quizInstance.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'quizTrackingPageHeading'|trans, url: path('app_tools_quiz', {program: program.id})},
+        {label: program.displayShortName, url: path('app_program_quiz', {id: program.id})},
+        {label: 'programQuizResultsBreadcrumbLabel'|trans, url: path('app_program_quiz_show', {id: program.id, instanceId: quizInstance.id})},
+        {label: attempt.student.displayName ?? attempt.student.username, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}
+    {{ 'quizTimelineHeadingTemplate'|trans({'%student%': attempt.student.displayName ?? attempt.student.username}) }}
+    {% if report.flaggedCount %}
+        <span class="cm-badge cm-badge--red ms-2">{{ 'quizSupervisionFlaggedBadgeTemplate'|trans({'%count%': report.flaggedCount}) }}</span>
+    {% elseif report.suspiciouslyFast %}
+        <span class="cm-badge cm-badge--blue ms-2">{{ 'quizSupervisionFastBadgeLabel'|trans }}</span>
+    {% else %}
+        <span class="cm-badge cm-badge--green ms-2">{{ 'quizSupervisionCleanBadgeLabel'|trans }}</span>
+    {% endif %}
+{% endblock %}
+{% block page_actions %}
+    <a href="{{ path('app_program_quiz_attempt_show', {id: program.id, instanceId: quizInstance.id, attemptId: attempt.id}) }}" class="btn btn-outline-secondary">{{ 'programQuizViewStudentCopyAction'|trans }}</a>
+    <a href="{{ path('app_program_quiz_show', {id: program.id, instanceId: quizInstance.id}) }}" class="btn btn-link">{{ 'programQuizBackToResultsAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    {% set noteworthy = rows|filter(row => row.flagged or row.absences|length or row.displayCount > 1) %}
+    {% set quiet = rows|filter(row => not (row.flagged or row.absences|length or row.displayCount > 1)) %}
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">{{ 'quizTimelineCardTitleTemplate'|trans({'%count%': rows|length, '%duration%': attempt.submittedAt ? ((attempt.submittedAt.timestamp - attempt.startedAt.timestamp) // 60) ~ ' min ' ~ ((attempt.submittedAt.timestamp - attempt.startedAt.timestamp) % 60) : '—'}) }}</h3>
+        </div>
+        <div class="card-body">
+            <div class="cm-tl">
+                {% for row in noteworthy %}
+                    {% include 'program/_quiz_timeline_row.html.twig' with {row: row} only %}
+                {% endfor %}
+                {% if quiet|length and noteworthy|length %}
+                    {# Folded, not hidden: a <details> so the teacher can open the quiet questions
+                       without the screen opening on twenty rows of nothing. #}
+                    <details class="cm-tl__rest">
+                        <summary>{{ 'quizTimelineFoldedTemplate'|trans({'%count%': quiet|length}) }}</summary>
+                        {% for row in quiet %}
+                            {% include 'program/_quiz_timeline_row.html.twig' with {row: row} only %}
+                        {% endfor %}
+                    </details>
+                {% elseif quiet|length %}
+                    {% for row in quiet %}
+                        {% include 'program/_quiz_timeline_row.html.twig' with {row: row} only %}
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <div class="cm-tl__legend">
+                <span><i class="cm-tl__swatch cm-tl__swatch--bar"></i>{{ 'quizTimelineLegendBarLabel'|trans }}</span>
+                <span><i class="cm-tl__swatch cm-tl__swatch--exit"></i>{{ 'quizTimelineLegendExitLabel'|trans }}</span>
+            </div>
+
+            {% if report.flaggedCount %}
+                <div class="cm-audio-warn mt-3">
+                    <div class="fw-medium">{{ 'quizTimelineFlaggedSummaryTitle'|trans }}</div>
+                    <ul class="mb-0 mt-1 ps-3">
+                        {% for row in rows|filter(r => r.flagged) %}
+                            <li>
+                                {{ 'quizTimelineFlaggedLineTemplate'|trans({
+                                    '%number%': row.number,
+                                    '%at%': row.atMs is null ? '—' : ((row.atMs // 60000) ~ '′' ~ ('%02d'|format((row.atMs // 1000) % 60))),
+                                    '%elapsed%': row.elapsedMs|duration_ms,
+                                }) }}
+                                {% for reason in row.reasons %}<span class="cm-badge cm-badge--red ms-1">{{ reason|trans }}</span>{% endfor %}
+                                {% for absence in row.absences %}
+                                    <span class="text-secondary">{{ 'quizTimelineAbsenceTemplate'|trans({'%duration%': absence.durationMs|duration_ms}) }}</span>
+                                {% endfor %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% elseif report.suspiciouslyFast %}
+                <div class="cm-note mt-3">
+                    <span class="cm-note__icon">i</span>
+                    <div>{{ 'quizTimelineFastHintText'|trans }}</div>
+                </div>
+            {% endif %}
+
+            {# The decision. Not a sanction: the application states facts, a person states this, and
+               it is signed. Nothing here touches the mark. #}
+            <div class="border-top mt-3 pt-3">
+                {% if attempt.reviewed %}
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="cm-badge {{ attempt.reviewOutcome.value == 'upheld' ? 'cm-badge--red' : 'cm-badge--gray' }}">{{ attempt.reviewOutcome.labelKey|trans }}</span>
+                        <span class="text-secondary small">{{ 'quizSupervisionReviewedByTemplate'|trans({
+                            '%name%': attempt.reviewedBy ? (attempt.reviewedBy.displayName ?? attempt.reviewedBy.username) : '—',
+                            '%date%': attempt.reviewedAt|date('d/m/Y à H:i'),
+                        }) }}</span>
+                    </div>
+                    {% if attempt.reviewNote %}
+                        <div class="mt-2" style="white-space: pre-wrap;">{{ attempt.reviewNote }}</div>
+                    {% endif %}
+                {% endif %}
+
+                <form method="post" action="{{ path('app_program_quiz_review', {id: program.id, instanceId: quizInstance.id, attemptId: attempt.id}) }}" class="d-flex gap-2 align-items-end flex-wrap mt-2">
+                    <input type="hidden" name="_token" value="{{ csrf_token('quiz_supervision_review') }}">
+                    <div class="flex-fill" style="min-width: 260px;">
+                        <label class="form-label" for="quiz-review-note">{{ 'quizSupervisionReviewNoteLabel'|trans }}</label>
+                        <input type="text" class="form-control" id="quiz-review-note" name="note" value="{{ attempt.reviewNote }}" placeholder="{{ 'quizSupervisionReviewNotePlaceholder'|trans }}" maxlength="1000">
+                    </div>
+                    <button type="submit" name="outcome" value="dismissed" class="btn btn-outline-secondary">{{ 'quizReviewOutcomeDismissedAction'|trans }}</button>
+                    <button type="submit" name="outcome" value="upheld" class="btn btn-outline-danger">{{ 'quizReviewOutcomeUpheldAction'|trans }}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}

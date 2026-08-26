@@ -2668,6 +2668,92 @@ programQuizScoreHiddenHintText: "Votre score sera publié par l'enseignant."
 programQuizBackToListAction: 'Retour à la liste'
 programQuizResultsBreadcrumbLabel: 'Résultats'
 programQuizResultsHeadingTemplate: 'Résultats — « %name% »'
+programQuizAnswerTooLateFlashMessage: 'Le temps imparti pour cette question était écoulé : votre réponse n''a pas été enregistrée.'
+quizQuestionElapsedTitle: 'Temps passé sur cette question'
+quizQuestionDisplayCountTitle: 'Nombre d''affichages de cette question'
+quizQuestionDisplayCountTemplate: '%count% affichages'
+quizAttemptTimingsHeading: 'Temps par question'
+quizAttemptTimingsHintText: 'Mesuré entre l''affichage de la question et votre réponse. Ce n''est pas une note.'
+quizSupervisedBadgeLabel: "Mode contrôle"
+quizLaunchSupervisionTitle: "Mode contrôle"
+quizLaunchSupervisionHint: "Pour une évaluation composée depuis un navigateur ordinaire, sur un poste que l'établissement ne maîtrise pas."
+quizLaunchSupervisedFieldLabel: "Surveiller la passation"
+quizLaunchSupervisedFieldHint: "L'étudiant est prévenu au démarrage. Les sorties de page sont enregistrées et vous sont présentées avec le temps passé sur chaque question."
+quizLaunchSupervisionPolicyFieldLabel: "Quand une sortie est détectée"
+quizLaunchSupervisionExitSecondsFieldLabel: "Durée à partir de laquelle une sortie compte"
+quizLaunchSupervisionExitSecondsFieldHint: "En deçà, c'est une notification — pas une recherche."
+quizLaunchSupervisionSubmitAtFieldLabel: "Nombre de sorties"
+quizLaunchSupervisionSubmitAtFieldHint: "Jamais moins de 3."
+quizLaunchSupervisionMobileNoteText: "Sur téléphone. Ce contrôle ne pourra pas être passé depuis une version de l'application mobile trop ancienne pour être surveillée : elle affichera « à passer sur ordinateur »."
+quizSupervisionPolicyLogLabel: "Enregistrer seulement"
+quizSupervisionPolicyLogDescription: "Rien n'apparaît à l'écran de l'étudiant. Pour un contrôle surveillé en salle."
+quizSupervisionPolicyWarnLabel: "Avertir l'étudiant en direct"
+quizSupervisionPolicyWarnDescription: "Un bandeau lui rappelle que ses sorties sont comptées. C'est ce qui dissuade le plus."
+quizSupervisionPolicyAutosubmitLabel: "Avertir, puis rendre la copie"
+quizSupervisionPolicyAutosubmitDescription: "Au-delà du nombre de sorties fixé, la copie est rendue en l'état et corrigée normalement."
+quizContractQuestionsLabel: "questions"
+quizContractPerQuestionLabel: "par question"
+quizContractTotalTimeLabel: "au total"
+quizContractAttemptsLabel: "tentative"
+quizContractHeadingText: "Ce contrôle est surveillé."
+quizContractTimeBulletText: "Le temps que vous passez sur chaque question est enregistré."
+quizContractExitsBulletText: "Chaque fois que vous quittez cette page — autre onglet, autre fenêtre, autre application — la sortie et sa durée sont enregistrées."
+quizContractAutosubmitBulletTemplate: "Au-delà de %count% sorties, votre copie est rendue en l'état et corrigée normalement."
+quizContractTeacherBulletText: "Votre enseignant en reçoit le détail avec votre copie."
+quizContractRetentionBulletText: "Ces enregistrements sont conservés 12 mois, puis supprimés."
+quizContractNothingYetBulletText: "Le contenu de vos autres onglets n'est pas lu, et rien n'est enregistré avant que vous ne cliquiez sur « Commencer »."
+quizContractAcceptLabel: "J'ai lu et je commence le contrôle."
+quizContractStartAction: "Commencer"
+quizContractFullscreenHintText: "Le plein écran sera demandé à ce clic."
+quizEventPageHiddenLabel: "Page quittée"
+quizEventPageVisibleLabel: "Retour sur la page"
+quizEventWindowBlurLabel: "Fenêtre passée derrière"
+quizEventWindowFocusLabel: "Retour sur la fenêtre"
+quizEventFullscreenExitLabel: "Sortie du plein écran"
+quizEventWindowShrunkLabel: "Fenêtre réduite (écran partagé)"
+quizEventPasteLabel: "Collage dans un champ"
+quizEventStatementCopiedLabel: "Copie de l'énoncé"
+quizEventTakenOverLabel: "Tentative reprise depuis une autre session"
+quizEventClientWebLabel: "navigateur"
+quizEventClientMobileLabel: "application mobile"
+quizTakenOverHeadingText: "Cette tentative a été reprise ailleurs"
+quizTakenOverHintText: "Votre copie est intacte. Elle est ouverte dans une autre fenêtre ou sur un autre poste, et c'est la dernière ouverture qui a la main."
+quizTakenOverResumeAction: "Reprendre le contrôle ici"
+quizSupervisionColumnLabel: "Surveillance"
+quizSupervisionMobileRefusedMessage: "Ce contrôle se passe sur ordinateur. Mettez l'application à jour pour pouvoir le passer depuis votre téléphone."
+quizSupervisionBannerTitleTemplate: "Vous avez quitté cette page %count% fois depuis le début du contrôle"
+quizSupervisionBannerHintText: "Ces sorties sont enregistrées et transmises à votre enseignant."
+quizSupervisionBannerAutosubmitTemplate: "Au-delà de %count% sorties, votre copie sera rendue en l'état."
+quizSupervisionAutoSubmittedNotice: "Votre copie a été rendue automatiquement après %count% sorties de page, comme annoncé au démarrage. Elle est corrigée normalement : ce que vous avez répondu compte."
+quizSupervisionFlaggedBadgeTemplate: "%count% question(s) à vérifier"
+quizSupervisionCleanBadgeLabel: "rien à signaler"
+quizSupervisionFastBadgeLabel: "réponses très rapides"
+quizSupervisionReviewedBadgeTemplate: "examiné · %outcome%"
+quizSupervisionSeeTimelineAction: "Voir la frise"
+quizSupervisionReasonAbsence: "absence pendant la question"
+quizSupervisionReasonPaste: "collage dans un champ"
+quizSupervisionReasonRedisplayed: "question réaffichée"
+quizSupervisionReviewNoteLabel: "Note d'examen"
+quizSupervisionReviewNotePlaceholder: "Facultative — ce que vous en concluez"
+quizSupervisionReviewedByTemplate: "Examiné par %name% le %date%"
+quizSupervisionReviewedFlashMessage: "La décision a été enregistrée."
+quizReviewOutcomeDismissedLabel: "écarté"
+quizReviewOutcomeUpheldLabel: "retenu"
+quizReviewOutcomeDismissedAction: "Écarter"
+quizReviewOutcomeUpheldAction: "Retenir et transmettre"
+quizTimelineHeadingTemplate: "%student% — frise de la copie"
+quizTimelineCardTitleTemplate: "%count% questions, %duration%"
+quizTimelineFoldedTemplate: "%count% question(s) sans rien à signaler — déplier"
+quizTimelineLegendBarLabel: "temps d'affichage"
+quizTimelineLegendExitLabel: "page quittée"
+quizTimelineVerdictFlaggedLabel: "à vérifier"
+quizTimelineVerdictRightLabel: "juste"
+quizTimelineVerdictWrongLabel: "faux"
+quizTimelineVerdictUnansweredLabel: "sans réponse"
+quizTimelineAbsenceTemplate: "page quittée %duration%"
+quizTimelineFlaggedSummaryTitle: "Ce qui est signalé"
+quizTimelineFlaggedLineTemplate: "Question %number% — à %at%. Affichée %elapsed%."
+quizTimelineFastHintText: "Toutes les réponses sont justes et très rapides, questions difficiles comprises. Ce n'est pas de la triche en direct : c'est un sujet probablement connu d'avance. À regarder à l'échelle de la classe, pas de l'étudiant."
 quizInstanceEditAction: 'Modifier le quiz'
 quizInstanceEditPageHeading: 'Modifier le quiz'
 quizInstanceEditLead: "Seuls les réglages qui n'affectent pas le tirage sont modifiables : les questions, leur nombre et la répartition des difficultés ont été figés au lancement."
@@ -5492,6 +5578,7 @@ filePickerTooLargeMessage: 'Ce fichier dépasse la taille autorisée.'
 filePickerNetworkErrorMessage: 'L’envoi a échoué : vérifiez votre connexion et réessayez.'
 filePickerOnlyOneMessage: 'Ce champ n’accepte qu’un seul fichier.'
 filePickerInvalidTokenMessage: 'Ce dépôt n’est plus valable : retirez le fichier et déposez-le à nouveau.'
+filePickerRequiredMessage: 'Choisissez un fichier.'
 
 # Wiki - lot 4, le contenu.
 wikiOutlineHeading: 'Sur cette page'
@@ -7053,3 +7140,33 @@ ufaFormationDocumentsOpenFileAction: 'Ouvrir le calendrier actuel'
 ufaFormationDocumentsNoFileText: 'Aucun calendrier déposé pour le moment.'
 ufaFormationDocumentsModeSwitchNoticeText: 'Cette formation affiche aujourd''hui le calendrier calculé à partir de ses périodes. Déposer un PDF ici le remplace : c''est le fichier qui sera servi. Pour revenir au calendrier calculé, passez par le paramétrage de la formation.'
 ufaFormationDocumentsSavedFlashMessage: 'Calendrier de l''alternance enregistré.'
+
+# Bibliothèque de sondages : le classement par dossiers
+surveyFolderRailTitleLabel: 'Dossiers'
+surveyFolderRootLabel: 'Bibliothèque'
+surveyFolderNewAction: 'Nouveau dossier'
+surveyFolderNewSubfolderAction: 'Nouveau sous-dossier'
+surveyFolderNewSubfolderOfAction: 'Nouveau sous-dossier dans %name%'
+surveyFolderToggleBranchAction: 'Déplier ou replier %name%'
+surveyFolderNamePrompt: 'Nom du dossier'
+surveyFolderRenamePrompt: 'Nouveau nom du dossier'
+surveyFolderRenameAction: 'Renommer'
+surveyFolderOpenAction: 'Ouvrir'
+surveyFolderDeleteAction: 'Supprimer le dossier'
+surveyFolderDeleteConfirmText: "Supprimer le dossier « %name% » ? Les modèles et les sous-dossiers qu'il contient ne sont pas supprimés : ils remontent d'un niveau."
+surveyFolderTemplateCountLabel: '{0}aucun modèle|{1}1 modèle|]1,Inf[%count% modèles'
+surveyFolderNameRequiredMessage: 'Le nom du dossier est obligatoire.'
+surveyFolderCreatedFlashMessage: 'Dossier créé.'
+surveyFolderRenamedFlashMessage: 'Dossier renommé.'
+surveyFolderDeletedFlashMessage: "Dossier supprimé. Son contenu a été remonté d'un niveau."
+surveyFolderMoveRefusedMessage: "Déplacement impossible : un dossier ne peut pas être rangé dans l'un de ses propres sous-dossiers."
+surveyFolderEmptyText: 'Ce dossier ne contient encore ni modèle ni sous-dossier.'
+surveyLibraryRowMenuLabel: 'Actions'
+surveyLibraryMoveAction: 'Déplacer vers…'
+surveyLibraryMovePromptTitle: 'Déplacer « %name% » vers…'
+surveyLibrarySearchPlaceholder: 'Rechercher un modèle…'
+surveyLibrarySearchResultsHeading: 'Résultats de recherche'
+surveyLibrarySearchEmptyText: 'Aucun modèle ne correspond à « %terms% ».'
+surveyLibrarySearchPromptText: 'Saisissez un nom de modèle à rechercher.'
+surveyLibraryFolderColumnLabel: 'Dossier'
+surveyLibraryBackToLibraryAction: 'Retour à la bibliothèque'
