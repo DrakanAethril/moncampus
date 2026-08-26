@@ -16,6 +16,7 @@ use App\Enum\Feature;
 use App\Enum\MatchingSideKind;
 use App\Enum\QuestionDifficulty;
 use App\Enum\QuestionType;
+use App\Enum\QuizMode;
 use App\Enum\QuizQuestionGap;
 use App\Enum\ToleranceMode;
 use App\Enum\ZoneSupportKind;
@@ -496,6 +497,13 @@ class QuizLibraryController extends AbstractController
                 scoring: $form->get('scoring')->getData(),
                 scoreVisibleImmediately: (bool) $form->get('scoreVisibleImmediately')->getData(),
                 name: FormValue::trimmed($form, 'name'),
+                // The block is only rendered under Évaluation, and its value is only read there:
+                // switching back to Entraînement puts supervised back to false on the server, not
+                // merely out of sight.
+                supervised: QuizMode::Evaluation === $form->get('mode')->getData() && (bool) $form->get('supervised')->getData(),
+                supervisionPolicy: $form->get('supervisionPolicy')->getData(),
+                supervisionExitSeconds: FormValue::int($form, 'supervisionExitSeconds') ?: 8,
+                supervisionSubmitAt: FormValue::int($form, 'supervisionSubmitAt') ?: null,
             );
 
             $this->addFlash('success', 'quizLaunchedFlashMessage');

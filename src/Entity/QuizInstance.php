@@ -6,6 +6,7 @@ namespace App\Entity;
 
 use App\Enum\QuizMode;
 use App\Enum\QuizScoring;
+use App\Enum\QuizSupervisionPolicy;
 use App\Repository\QuizInstanceRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -137,6 +138,34 @@ class QuizInstance implements AccessConditionHost
 
     #[ORM\Column(name: 'score_visible_immediately', options: ['default' => true])]
     private bool $scoreVisibleImmediately = true;
+
+    // ---- Mode contrôle (évaluation only) ----
+    /**
+     * Whether this évaluation is supervised: the page-event journal is kept, the student is told so
+     * at the door, and the teacher gets the timeline. Never true on an entraînement - an
+     * entraînement is meant to be redone, searched and discussed, and supervising it would only
+     * wear the setting out. The launch form forces it back to false server-side when the mode goes
+     * back to Entraînement, and isSupervised() asks the mode again below, so a row edited by hand
+     * is harmless too.
+     */
+    #[ORM\Column(name: 'supervised')]
+    private bool $supervised = false;
+
+    #[ORM\Column(name: 'supervision_policy', length: 16, enumType: QuizSupervisionPolicy::class)]
+    private QuizSupervisionPolicy $supervisionPolicy = QuizSupervisionPolicy::Warn;
+
+    /**
+     * How long an absence must last to count as one. Below it, it is a notification, a screen going
+     * to sleep, a spell-checker - not a search. Settable per quiz because the right value is a
+     * measurement nobody has yet (see the design's "Reste ouvert"); the twenty seconds of display
+     * the rule also demands are not, being the physical floor of looking something up.
+     */
+    #[ORM\Column(name: 'supervision_exit_secs', type: Types::SMALLINT, options: ['unsigned' => true])]
+    private int $supervisionExitSeconds = 8;
+
+    /** After how many exits the copy is handed in - only read under QuizSupervisionPolicy::Autosubmit. */
+    #[ORM\Column(name: 'supervision_submit_at', type: Types::SMALLINT, nullable: true, options: ['unsigned' => true])]
+    private ?int $supervisionSubmitAt = null;
 
     // ---- Deactivation ----
     // Not a deletion: a deactivated instance disappears from every student surface (list, passation,
@@ -438,6 +467,59 @@ class QuizInstance implements AccessConditionHost
     public function setScoreVisibleImmediately(bool $scoreVisibleImmediately): static
     {
         $this->scoreVisibleImmediately = $scoreVisibleImmediately;
+
+        return $this;
+    }
+
+    /**
+     * The mode is asked again on purpose: « le mode contrôle n'existe qu'en Évaluation » is the
+     * rule, and reading it here means no screen and no service has to remember it.
+     */
+    public function isSupervised(): bool
+    {
+        return $this->supervised && QuizMode::Evaluation === $this->mode;
+    }
+
+    public function setSupervised(bool $supervised): static
+    {
+        $this->supervised = $supervised;
+
+        return $this;
+    }
+
+    public function getSupervisionPolicy(): QuizSupervisionPolicy
+    {
+        return $this->supervisionPolicy;
+    }
+
+    public function setSupervisionPolicy(QuizSupervisionPolicy $supervisionPolicy): static
+    {
+        $this->supervisionPolicy = $supervisionPolicy;
+
+        return $this;
+    }
+
+    public function getSupervisionExitSeconds(): int
+    {
+        return $this->supervisionExitSeconds;
+    }
+
+    public function setSupervisionExitSeconds(int $supervisionExitSeconds): static
+    {
+        $this->supervisionExitSeconds = max(1, $supervisionExitSeconds);
+
+        return $this;
+    }
+
+    public function getSupervisionSubmitAt(): ?int
+    {
+        return $this->supervisionSubmitAt;
+    }
+
+    /** Never fewer than three exits: the design forbids handing a copy in on one stray click. */
+    public function setSupervisionSubmitAt(?int $supervisionSubmitAt): static
+    {
+        $this->supervisionSubmitAt = null === $supervisionSubmitAt ? null : max(3, $supervisionSubmitAt);
 
         return $this;
     }

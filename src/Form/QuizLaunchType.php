@@ -8,6 +8,7 @@ use App\Entity\Program;
 use App\Entity\QuizTemplate;
 use App\Enum\QuizMode;
 use App\Enum\QuizScoring;
+use App\Enum\QuizSupervisionPolicy;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
@@ -144,6 +145,35 @@ class QuizLaunchType extends AbstractType
                 'label' => 'quizLaunchGlobalTimeMinutesFieldLabel',
                 'required' => false,
                 'constraints' => [new Positive()],
+            ])
+            // Mode contrôle - rendered only under Évaluation (the template hides the whole block,
+            // quiz_supervision_launch_controller.js does the toggling), and forced back to false
+            // server-side by the launch controller when the mode is Entraînement. Hidden is not the
+            // same as off, and only the second one is a rule.
+            ->add('supervised', CheckboxType::class, [
+                'label' => 'quizLaunchSupervisedFieldLabel',
+                'required' => false,
+            ])
+            ->add('supervisionPolicy', EnumType::class, [
+                'class' => QuizSupervisionPolicy::class,
+                'choice_label' => static fn (QuizSupervisionPolicy $policy): string => $policy->labelKey(),
+                'expanded' => true,
+                'label' => 'quizLaunchSupervisionPolicyFieldLabel',
+                'data' => QuizSupervisionPolicy::Warn,
+            ])
+            ->add('supervisionExitSeconds', IntegerType::class, [
+                'label' => 'quizLaunchSupervisionExitSecondsFieldLabel',
+                'required' => false,
+                'constraints' => [new Range(min: 1, max: 300)],
+                'data' => 8,
+            ])
+            ->add('supervisionSubmitAt', IntegerType::class, [
+                'label' => 'quizLaunchSupervisionSubmitAtFieldLabel',
+                'required' => false,
+                // Never fewer than three: a copy handed in on one stray click would be the very
+                // automatic sanction the design refuses.
+                'constraints' => [new Range(min: 3, max: 50)],
+                'data' => 5,
             ])
             ->add('submit', SubmitType::class, [
                 'label' => 'quizLaunchSubmitAction',
