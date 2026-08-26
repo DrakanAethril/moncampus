@@ -230,6 +230,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // Outils > Sondages is the author's side: a student answers a survey, never writes one.
             '/surveys' => 403,
             '/surveys/templates' => 403,
+            // The survey library's classement: the same door as the library itself.
+            '/surveys/templates/search' => 403,
             '/surveys/campaigns' => 403,
             '/surveys/templates/new' => 403,
             // Their own door - open to every account, and empty until a campaign aims at them.
@@ -275,6 +277,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // sits in is already gated on exactly those two.
             '/surveys' => 302,
             '/surveys/templates' => 200,
+            '/surveys/templates/search' => 200,
             '/surveys/campaigns' => 200,
             '/surveys/templates/new' => 200,
             // Also a respondent: a teacher aimed at by a satisfaction survey has no travail à
@@ -394,6 +397,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // sits in is already gated on exactly those two.
             '/surveys' => 302,
             '/surveys/templates' => 200,
+            '/surveys/templates/search' => 200,
             '/surveys/campaigns' => 200,
             '/surveys/templates/new' => 200,
             // Also a respondent: a teacher aimed at by a satisfaction survey has no travail à
@@ -543,6 +547,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/my-surveys' => 200,
             '/surveys' => 403,
             '/surveys/templates' => 403,
+            // The survey library's classement: the same door as the library itself.
+            '/surveys/templates/search' => 403,
             '/surveys/campaigns' => 403,
             '/surveys/templates/new' => 403,
             '/shares' => 403,

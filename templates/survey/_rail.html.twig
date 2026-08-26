@@ -1,0 +1,52 @@
+{# The survey library's rail - the quiz library's rail (templates/library/_quiz_rail.html.twig),
+   derived rather than reinvented. Same gestures, same states, class shapes mirroring `cm-qlib__rail`.
+
+   Folders only: models are the listing's business, and a rail listing both would be the same list
+   twice. The foot carries one button, « Nouveau dossier » - there is no corbeille on this side
+   either, so there is no back door to link to.
+
+   `readonly` drops the two acts the rail offers. The search screen sets it, because the controller
+   that answers them is not on that screen - a button that does nothing is worse than an absent one. #}
+{% set readonly = readonly|default(false) %}
+<aside class="cm-slib__rail" data-controller="survey-library-tree"
+       data-survey-library-tree-folder-move-url-template-value="{{ path('app_survey_folder_move', {folderId: '__FOLDER_ID__'}) }}"
+       data-survey-library-tree-template-move-url-template-value="{{ path('app_survey_template_move', {id: '__ID__'}) }}"
+       data-survey-library-tree-token-value="{{ csrf_token('survey_folder') }}"
+       data-survey-library-tree-refused-message-value="{{ 'surveyFolderMoveRefusedMessage'|trans }}"
+       {# dragstart/dragend are listened for on the whole screen by the controller itself: what is
+          dragged is a row of the listing, which is outside this element (see the controller). #}
+       data-action="dragover->survey-library-tree#dragOver dragleave->survey-library-tree#dragLeave drop->survey-library-tree#drop">
+
+    <div class="cm-slib__rail-head">
+        <span class="cm-slib__rail-title">{{ 'surveyFolderRailTitleLabel'|trans }}</span>
+    </div>
+
+    <ul class="cm-slib__tree" data-survey-library-tree-target="root">
+        {# The root itself is a drop target and a link: it is the only way to file a model back out of
+           a folder, this design having no « Déplacer vers la racine » of its own in the rail. #}
+        <li class="cm-slib__node" data-folder-id="">
+            <div class="cm-slib__node-row">
+                <span class="cm-slib__node-grip cm-slib__node-grip--fixed" aria-hidden="true"></span>
+                <span class="cm-slib__node-toggle cm-slib__node-toggle--empty" aria-hidden="true"></span>
+                <a class="cm-slib__node-link{{ currentFolder is empty ? ' is-current' }}" href="{{ path('app_surveys_templates') }}">
+                    <span class="cm-slib__node-ico" aria-hidden="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"></path></svg>
+                    </span>
+                    <span class="cm-slib__node-title">{{ 'surveyFolderRootLabel'|trans }}</span>
+                </a>
+            </div>
+        </li>
+
+        {% for row in rail %}
+            {% include 'survey/_rail_node.html.twig' with {row: row, currentFolder: currentFolder|default(null), readonly: readonly} only %}
+        {% endfor %}
+    </ul>
+
+    {% if not readonly %}
+        <div class="cm-slib__rail-foot">
+            <button type="button" class="cm-btn cm-btn--sm cm-btn--outline"
+                    data-action="survey-library#promptFolder"
+                    data-parent-id="{{ currentFolder ? currentFolder.id : '' }}">{{ 'surveyFolderNewAction'|trans }}</button>
+        </div>
+    {% endif %}
+</aside>

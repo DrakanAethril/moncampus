@@ -1,0 +1,74 @@
+{% extends 'layout/app.html.twig' %}
+
+{# The name search, over the whole library at once - what a classement takes away from a flat list and
+   has to give back. The rail stays, so the answer to « où est-il rangé ? » is on the same screen as
+   the model that was looked for: each row names its folder and links to it. #}
+
+{% block title %}{{ 'surveyLibrarySearchResultsHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'survey/_breadcrumb.html.twig' with {currentFolder: null, ancestors: [], searchTerms: terms} %}
+{% endblock %}
+
+{% block page_title %}{{ 'surveyLibrarySearchResultsHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    <form method="get" action="{{ path('app_surveys_templates_search') }}" class="cm-slib__search">
+        <input type="search" name="q" value="{{ terms }}" class="form-control form-control-sm"
+               placeholder="{{ 'surveyLibrarySearchPlaceholder'|trans }}"
+               aria-label="{{ 'surveyLibrarySearchPlaceholder'|trans }}">
+    </form>
+    <a href="{{ path('app_surveys_templates') }}" class="btn btn-outline-primary">{{ 'surveyLibraryBackToLibraryAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    {% include 'survey/_page_head.html.twig' %}
+
+    {% include '_tabs.html.twig' with {tabs: tabs|map(t => {url: t.url, label: t.label|trans, active: t.active, count: t.count})} %}
+
+    <div class="cm-slib">
+        {# Read-only: the acts of the rail answer a controller this screen does not carry. #}
+        {% include 'survey/_rail.html.twig' with {rail: rail, currentFolder: null, readonly: true} %}
+
+        <div class="cm-slib__content">
+            {% if terms is empty %}
+                <p class="cm-slib__empty">{{ 'surveyLibrarySearchPromptText'|trans }}</p>
+            {% elseif templates is empty %}
+                <p class="cm-slib__empty">{{ 'surveyLibrarySearchEmptyText'|trans({'%terms%': terms}) }}</p>
+            {% else %}
+                <div class="table-responsive">
+                    <table class="cm-slib__table">
+                        <thead>
+                            <tr>
+                                <th>{{ 'surveyTemplateNameColumnLabel'|trans }}</th>
+                                <th>{{ 'surveyLibraryFolderColumnLabel'|trans }}</th>
+                                <th>{{ 'surveyTemplateQuestionCountColumnLabel'|trans }}</th>
+                                <th>{{ 'surveyTemplateUpdatedColumnLabel'|trans }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for template in templates %}
+                                <tr class="cm-slib__row">
+                                    <td>
+                                        <span class="cm-slib__name">
+                                            <a href="{{ path('app_survey_template_edit', {id: template.id}) }}">{{ template.name }}</a>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if template.folder %}
+                                            <a class="cm-slib__folderlink" href="{{ path('app_surveys_templates_folder', {folderId: template.folder.id}) }}">{{ template.folder.name }}</a>
+                                        {% else %}
+                                            <span class="cm-slib__muted">{{ 'surveyFolderRootLabel'|trans }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="cm-slib__num">{{ template.answerableQuestions|length }}</td>
+                                    <td class="cm-slib__num">{{ (template.lastUpdatedDate ?? template.creationDate)|date('d/m/Y') }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

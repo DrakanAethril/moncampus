@@ -6,6 +6,7 @@ namespace App\Controller\Survey;
 
 use App\Attribute\RequiresFeature;
 use App\Entity\SurveyAnswer;
+use App\Entity\SurveyFolder;
 use App\Entity\SurveyQuestion;
 use App\Entity\SurveyTemplate;
 use App\Enum\Feature;
@@ -13,12 +14,14 @@ use App\Enum\SurveyQuestionType as QuestionKind;
 use App\Form\Survey\SurveyQuestionType;
 use App\Form\Survey\SurveyTemplateType;
 use App\Repository\SurveyCampaignRepository;
+use App\Repository\SurveyFolderRepository;
 use App\Repository\SurveySeriesRepository;
 use App\Repository\SurveyTargetRepository;
 use App\Repository\SurveyTemplateRepository;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\SurveyVoter;
 use App\Service\QueryValue;
+use App\Service\Survey\SurveyFolderTree;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -39,6 +42,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 #[RequiresFeature(Feature::Surveys)]
 class LibraryController extends AbstractController
 {
+    use SurveyFolderTrait;
     use SurveyTabTrait;
 
     #[Route(path: '/surveys', name: 'app_surveys')]
@@ -47,20 +51,100 @@ class LibraryController extends AbstractController
         return $this->redirectToRoute('app_surveys_templates');
     }
 
-    #[Route(path: '/surveys/templates', name: 'app_surveys_templates')]
+    /**
+     * The Modèles tab, rebuilt on the quiz library's classement (App\Controller\QuizLibraryController):
+     * a rail of folders on the left, what the current folder holds on the right - sub-folders first,
+     * then the models.
+     *
+     * The tab count stays the **whole** library's, not the folder's: it answers « combien de modèles
+     * ai-je ? », which is not a question a folder narrows.
+     */
+    #[Route(path: '/surveys/templates', name: 'app_surveys_templates', methods: ['GET'])]
     public function templates(
         SurveyTemplateRepository $repository,
         SurveyCampaignRepository $campaigns,
         SurveyTargetRepository $targets,
+        SurveyFolderRepository $folders,
+        SurveyFolderTree $tree,
         StructureAccessChecker $accessChecker,
     ): Response {
-        $templates = $repository->findForOwner($this->currentUser());
-        $owner = $accessChecker->isStaff() ? null : $this->currentUser();
+        return $this->browse(null, $repository, $campaigns, $targets, $folders, $tree, $accessChecker);
+    }
+
+    #[Route(path: '/surveys/templates/folder/{folderId}', name: 'app_surveys_templates_folder', requirements: ['folderId' => '\d+'], methods: ['GET'])]
+    public function folder(
+        int $folderId,
+        SurveyTemplateRepository $repository,
+        SurveyCampaignRepository $campaigns,
+        SurveyTargetRepository $targets,
+        SurveyFolderRepository $folders,
+        SurveyFolderTree $tree,
+        StructureAccessChecker $accessChecker,
+    ): Response {
+        return $this->browse($this->loadFolder($folders, $folderId), $repository, $campaigns, $targets, $folders, $tree, $accessChecker);
+    }
+
+    /**
+     * The name search, over the whole library at once - the way back to a model whose folder the
+     * author has forgotten, which is what a classement takes away from a flat list.
+     *
+     * A GET, per the repository's rule for a "show me a result" form: a POST would have to redirect.
+     */
+    #[Route(path: '/surveys/templates/search', name: 'app_surveys_templates_search', methods: ['GET'])]
+    public function search(
+        Request $request,
+        SurveyTemplateRepository $repository,
+        SurveyCampaignRepository $campaigns,
+        SurveyTargetRepository $targets,
+        SurveyFolderRepository $folders,
+        SurveyFolderTree $tree,
+        StructureAccessChecker $accessChecker,
+    ): Response {
+        $author = $this->currentUser();
+        $terms = QueryValue::trimmed($request, 'q');
+        $owner = $accessChecker->isStaff() ? null : $author;
+
+        return $this->render('survey/templates_search.html.twig', [
+            'tabs' => $this->surveyTabs('app_surveys_templates', $repository->countForOwner($author), $campaigns->countLaunched($owner)),
+            'headline' => $this->headline($campaigns, $targets, $owner),
+            'terms' => $terms,
+            'templates' => '' === $terms ? [] : $repository->searchByName($author, $terms),
+            'rail' => $this->railTree($folders, $tree, $author),
+            'currentFolder' => null,
+        ]);
+    }
+
+    private function browse(
+        ?SurveyFolder $folder,
+        SurveyTemplateRepository $repository,
+        SurveyCampaignRepository $campaigns,
+        SurveyTargetRepository $targets,
+        SurveyFolderRepository $folders,
+        SurveyFolderTree $tree,
+        StructureAccessChecker $accessChecker,
+    ): Response {
+        $author = $this->currentUser();
+        $owner = $accessChecker->isStaff() ? null : $author;
 
         return $this->render('survey/templates.html.twig', [
-            'tabs' => $this->surveyTabs('app_surveys_templates', \count($templates), $campaigns->countLaunched($owner)),
-            'templates' => $templates,
+            'tabs' => $this->surveyTabs('app_surveys_templates', $repository->countForOwner($author), $campaigns->countLaunched($owner)),
             'headline' => $this->headline($campaigns, $targets, $owner),
+            'currentFolder' => $folder,
+            'ancestors' => $this->ancestorsOf($folders, $folder),
+            // Folders first, then models - two lists rather than one sorted set: a folder is a place
+            // and a model is a thing, and a listing that interleaves them makes the reader check the
+            // icon on every line.
+            'folderRows' => array_map(
+                static fn (SurveyFolder $child): array => [
+                    'folder' => $child,
+                    // At any depth, not just directly inside: a folder holding only sub-folders would
+                    // otherwise read as empty.
+                    'templateCount' => $repository->countInSubtree($child),
+                ],
+                $folders->findChildren($author, $folder),
+            ),
+            'templates' => $repository->findInFolder($author, $folder),
+            'rail' => $this->railTree($folders, $tree, $author),
         ]);
     }
 
@@ -132,11 +216,15 @@ class LibraryController extends AbstractController
      * nothing reaches the database until it is submitted.
      */
     #[Route(path: '/surveys/templates/new', name: 'app_survey_template_new', methods: ['GET', 'POST'])]
-    public function create(Request $request, EntityManagerInterface $entityManager, TranslatorInterface $translator): Response
+    public function create(Request $request, EntityManagerInterface $entityManager, TranslatorInterface $translator, SurveyFolderRepository $folders): Response
     {
         $template = new SurveyTemplate();
         $template->setOwner($this->currentUser());
         $template->setName($translator->trans('surveyTemplateDefaultNewName'));
+        // « + Nouveau sondage » from inside a folder files the model there. The alternative -
+        // everything arriving at the root - would have the author move each new model by hand, which
+        // is the work this classement exists to remove.
+        $template->setFolder($this->loadFolder($folders, QueryValue::nullableInt($request, 'folder')));
 
         $form = $this->createForm(SurveyTemplateType::class, $template);
         $form->handleRequest($request);
@@ -330,6 +418,9 @@ class LibraryController extends AbstractController
         $copy->setName($translator->trans('surveyTemplateDuplicateNameTemplate', ['%name%' => $template->getName()]));
         $copy->setSubject($template->getSubject());
         $copy->setDescription($template->getDescription());
+        // The copy stays next to its original: duplicating is how an author makes a variant of a
+        // model, and a variant belongs where the model is filed.
+        $copy->setFolder($template->getFolder());
         $entityManager->persist($copy);
 
         foreach ($template->getQuestions() as $question) {
@@ -372,12 +463,16 @@ class LibraryController extends AbstractController
         // measurement already made is rewritten.
         unset($campaigns);
 
+        // Read before the removal: the listing to come back to is the folder the model was filed in,
+        // not the root of the library the author may not have been standing at.
+        $folder = $template->getFolder();
+
         $entityManager->remove($template);
         $entityManager->flush();
 
         $this->addFlash('success', 'surveyTemplateRemovedFlashMessage');
 
-        return $this->redirectToRoute('app_surveys_templates');
+        return $this->backToFolder($folder);
     }
 
     /**
