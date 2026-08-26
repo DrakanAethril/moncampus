@@ -13,6 +13,7 @@ use App\Enum\QuizEventClient;
 use App\Repository\QuizAttemptRepository;
 use App\Service\JsonRequestPayload;
 use App\Service\QuizSupervisionJournal;
+use App\Service\QuizSupervisionNotice;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -42,7 +43,7 @@ class ProgramQuizSupervisionController extends AbstractController
         methods: ['POST'],
     )]
     #[IsGranted('ROLE_STUDENT')]
-    public function event(int $attemptId, Request $request, QuizAttemptRepository $attemptRepository, QuizSupervisionJournal $journal): Response
+    public function event(int $attemptId, Request $request, QuizAttemptRepository $attemptRepository, QuizSupervisionJournal $journal, QuizSupervisionNotice $notice): Response
     {
         $attempt = $attemptRepository->find($attemptId);
         if (!$attempt instanceof QuizAttempt || $attempt->getStudent() !== $this->currentUser()) {
@@ -82,6 +83,11 @@ class ProgramQuizSupervisionController extends AbstractController
             QuizEventClient::Web,
             $payload->int('durationMs'),
         );
+
+        // The count only ever moves here, so this is where « rendre la copie après N sorties » is
+        // decided. The page cannot be told - a beacon has no answer to read - so it finds out on
+        // its next request, which is the honest shape of "rendue en l'état".
+        $notice->autoSubmitIfDue($attempt);
 
         return new Response(null, Response::HTTP_NO_CONTENT);
     }
