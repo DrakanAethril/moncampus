@@ -27,6 +27,7 @@ use App\Service\QuizAttemptGrader;
 use App\Service\QuizAttemptNotAllowedException;
 use App\Service\QuizAttemptStarter;
 use App\Service\QuizDrawService;
+use App\Service\QuizQuestionBudget;
 use App\Service\QuizQuestionPayload;
 use App\Service\StudentQuizBoard;
 use App\Util\NumericAnswerParser;
@@ -207,6 +208,14 @@ class QuizController extends AbstractController
         $question = $attemptAnswer->getInstanceQuestion();
         $instance = $attempt->getQuizInstance();
 
+        // Same server-side stopwatch as the web passation, and it costs the app nothing: the API
+        // already serves one question per request, so both ends of the measurement are here.
+        $now = new \DateTimeImmutable();
+        $attemptAnswer->markServed($now);
+        $entityManager->flush();
+
+        $questionSeconds = $question->resolveSeconds($instance->getSecondsPerQuestion());
+
         return $this->json([
             'concluded' => false,
             'attemptId' => $attempt->getId(),
@@ -218,7 +227,11 @@ class QuizController extends AbstractController
             // read secondsForQuestion, which is the one that accounts for the question's own mode
             // (null = no limit at all, so no countdown for this question).
             'secondsPerQuestion' => $instance->getSecondsPerQuestion(),
-            'secondsForQuestion' => $question->resolveSeconds($instance->getSecondsPerQuestion()),
+            'secondsForQuestion' => $questionSeconds,
+            // What is actually left of that budget, counted from the first display. An app that
+            // reads it stops handing out a fresh countdown on every reopening; one that does not
+            // simply keeps the behaviour it had, and the server refuses the late answer anyway.
+            'secondsRemaining' => QuizQuestionBudget::remainingSeconds($attemptAnswer->getServedAt(), $questionSeconds, $now),
             'deadline' => $attempt->getTimeLimitAt()?->format(\DateTimeInterface::ATOM),
             'question' => $this->questionPayload($question, $attempt, $drawService),
         ]);
@@ -241,6 +254,19 @@ class QuizController extends AbstractController
         $attemptAnswers = $attempt->getAttemptAnswers()->toArray();
         $attemptAnswer = $attemptAnswers[$position] ?? throw $this->createNotFoundException();
         $question = $attemptAnswer->getInstanceQuestion();
+
+        // The per-question budget, refused server-side exactly as on the web: nothing recorded, and
+        // the app is told where to go next rather than left on a question it can no longer answer.
+        $now = new \DateTimeImmutable();
+        if (QuizQuestionBudget::isLate($attemptAnswer->getServedAt(), $question->resolveSeconds($attempt->getQuizInstance()->getSecondsPerQuestion()), $now)) {
+            $isLastQuestion = $position + 1 >= \count($attemptAnswers);
+            if ($isLastQuestion) {
+                $this->concluder->conclude($attempt, AttemptStatus::Termine);
+            }
+            $entityManager->flush();
+
+            return $this->json(['concluded' => $isLastQuestion, 'late' => true, 'nextPosition' => $isLastQuestion ? null : $position + 1, 'attemptId' => $attempt->getId()]);
+        }
 
         $payload = JsonRequestPayload::fromRequest($request);
 
@@ -325,7 +351,8 @@ class QuizController extends AbstractController
         $attemptAnswer->setNumericResponse($numericRaw, $numericParsed['value'], $numericParsed['unit'], $numericVariables);
         $attemptAnswer->setIsCorrect($grader->isCorrect($question, $validSubmittedIds, $blankResponses, $zoneResponses, $matchingResponses, $numericParsed['value'], $numericParsed['unit'], $numericVariables));
         $attemptAnswer->setScore($grader->score($question, $validSubmittedIds, $blankResponses, $zoneResponses, $matchingResponses, $numericParsed['value'], $numericParsed['unit'], $numericVariables));
-        $attemptAnswer->setAnsweredAt(new \DateTimeImmutable());
+        $attemptAnswer->setAnsweredAt($now);
+        $attemptAnswer->freezeElapsed($now);
 
         $isLast = $position + 1 >= \count($attemptAnswers);
         if ($isLast) {
@@ -334,7 +361,7 @@ class QuizController extends AbstractController
 
         $entityManager->flush();
 
-        return $this->json(['concluded' => $isLast, 'nextPosition' => $isLast ? null : $position + 1, 'attemptId' => $attempt->getId()]);
+        return $this->json(['concluded' => $isLast, 'late' => false, 'nextPosition' => $isLast ? null : $position + 1, 'attemptId' => $attempt->getId()]);
     }
 
     /**
@@ -392,6 +419,9 @@ class QuizController extends AbstractController
                 $correction[] = [
                     'label' => $question->getLabel(),
                     'type' => $question->getType()->value,
+                    // Shown to the student whatever the mode says about the score: the time is not
+                    // the mark (see the design's "Reste ouvert", point 2).
+                    'elapsedMs' => $attemptAnswer->getElapsedMs(),
                     'isCorrect' => $attemptAnswer->getIsCorrect(),
                     'explanation' => $question->getExplanation(),
                     'blankResponses' => $question->getType()->usesBlankAnswers() ? $attemptAnswer->getBlankResponses() : null,
@@ -439,10 +469,22 @@ class QuizController extends AbstractController
             }
         }
 
+        // The per-question time, on its own axis: an évaluation gets no correction list at all, and
+        // the time is still the student's to read - a deferred score does not defer it.
+        $timings = [];
+        foreach ($attempt->getAttemptAnswers() as $index => $attemptAnswer) {
+            $timings[] = [
+                'position' => $index + 1,
+                'elapsedMs' => $attemptAnswer->getElapsedMs(),
+                'displayCount' => $attemptAnswer->getDisplayCount(),
+            ];
+        }
+
         return $this->json([
             'quizName' => $instance->getName(),
             'mode' => $instance->getMode()->value,
             'status' => $attempt->getStatus()?->value,
+            'timings' => $timings,
             'scoreVisible' => $scoreVisible,
             'score' => $scoreVisible ? $attempt->getCorrectCountLabel() : null,
             'questionTotal' => $attempt->getQuestionTotal(),

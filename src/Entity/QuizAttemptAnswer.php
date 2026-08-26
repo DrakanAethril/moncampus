@@ -41,6 +41,34 @@ class QuizAttemptAnswer
     #[ORM\Column(name: 'answered_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $answeredAt = null;
 
+    /**
+     * When this question was first put on screen - the other end of the measurement $answeredAt
+     * only gives half of. Written by the server at the GET that serves the question (web and API
+     * alike) and **only when still null**: a reload must not hand the student a fresh timer, which
+     * is exactly what made QuizInstance::$secondsPerQuestion decorative until now.
+     */
+    #[ORM\Column(name: 'served_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $servedAt = null;
+
+    /**
+     * How long the student had this question in front of them, in milliseconds - $answeredAt minus
+     * $servedAt, computed by the server from two instants it wrote itself. No duration declared by
+     * a client is ever read into it.
+     *
+     * Frozen at the first answer: a question served again afterwards (a back-and-forth, a
+     * correction screen) never rewrites it.
+     */
+    #[ORM\Column(name: 'elapsed_ms', nullable: true, options: ['unsigned' => true])]
+    private ?int $elapsedMs = null;
+
+    /**
+     * How many times this question has been served. Incremented unconditionally, unlike $servedAt -
+     * a question displayed five times is a signal in itself, and it is precisely the gesture that
+     * used to reset the countdown.
+     */
+    #[ORM\Column(name: 'display_count', type: Types::SMALLINT, options: ['unsigned' => true])]
+    private int $displayCount = 0;
+
     // Computed and frozen the moment this question is answered (App\Service\QuizAttemptGrader) -
     // not recomputed at correction-display time, so a later change to how grading works never
     // silently reshuffles an already-answered attempt's outcome.
@@ -163,6 +191,50 @@ class QuizAttemptAnswer
     public function isAnswered(): bool
     {
         return null !== $this->answeredAt;
+    }
+
+    public function getServedAt(): ?\DateTimeImmutable
+    {
+        return $this->servedAt;
+    }
+
+    public function getElapsedMs(): ?int
+    {
+        return $this->elapsedMs;
+    }
+
+    public function getDisplayCount(): int
+    {
+        return $this->displayCount;
+    }
+
+    /**
+     * "This question is on screen." Stamps the first display and counts every one of them - the two
+     * halves of the rule, kept together so no caller can remember one and forget the other.
+     */
+    public function markServed(\DateTimeImmutable $now): static
+    {
+        $this->servedAt ??= $now;
+        ++$this->displayCount;
+
+        return $this;
+    }
+
+    /**
+     * Freezes the time spent on this question, from the two server-written instants. Does nothing
+     * when the question was never served (an attempt closed out before reaching it) or when the
+     * measurement already exists - answering twice does not extend it.
+     */
+    public function freezeElapsed(\DateTimeImmutable $answeredAt): static
+    {
+        if (null === $this->servedAt || null !== $this->elapsedMs) {
+            return $this;
+        }
+
+        $milliseconds = (int) round(((float) $answeredAt->format('U.u') - (float) $this->servedAt->format('U.u')) * 1000);
+        $this->elapsedMs = max(0, $milliseconds);
+
+        return $this;
     }
 
     public function getIsCorrect(): ?bool

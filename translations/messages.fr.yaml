@@ -2668,6 +2668,12 @@ programQuizScoreHiddenHintText: "Votre score sera publié par l'enseignant."
 programQuizBackToListAction: 'Retour à la liste'
 programQuizResultsBreadcrumbLabel: 'Résultats'
 programQuizResultsHeadingTemplate: 'Résultats — « %name% »'
+programQuizAnswerTooLateFlashMessage: 'Le temps imparti pour cette question était écoulé : votre réponse n''a pas été enregistrée.'
+quizQuestionElapsedTitle: 'Temps passé sur cette question'
+quizQuestionDisplayCountTitle: 'Nombre d''affichages de cette question'
+quizQuestionDisplayCountTemplate: '%count% affichages'
+quizAttemptTimingsHeading: 'Temps par question'
+quizAttemptTimingsHintText: 'Mesuré entre l''affichage de la question et votre réponse. Ce n''est pas une note.'
 quizInstanceEditAction: 'Modifier le quiz'
 quizInstanceEditPageHeading: 'Modifier le quiz'
 quizInstanceEditLead: "Seuls les réglages qui n'affectent pas le tirage sont modifiables : les questions, leur nombre et la répartition des difficultés ont été figés au lancement."
