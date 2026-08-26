@@ -9017,3 +9017,45 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 /* What « Par défaut » gives this person today, in grey next to the button. Without it the three
    buttons say nothing about what choosing the first one means. */
 .cm-featovr__hint { font: 11.5px var(--cm-font-ui); color: var(--cm-faint); }
+
+/* ===========================================================================
+   Mode contrôle (quiz) - the frise of one copy, design/validated/quiz-supervised-mode.html.
+   One row per question: the bar is the time the question was on screen, the notches are the exits
+   that fell inside it. Everything in --cm-* tokens, so dark mode follows with no rule of its own.
+   =========================================================================== */
+
+.cm-tl { border-top: 1px solid var(--cm-border-faint); }
+.cm-tl__row {
+  display: grid; grid-template-columns: 118px 1fr 118px 88px; align-items: center;
+  gap: 12px; padding: 7px 10px; border-bottom: 1px solid var(--cm-border-faint);
+  font: 12.5px var(--cm-font-ui);
+}
+.cm-tl__row--flagged { background: var(--cm-red-bg); }
+.cm-tl__q { color: var(--cm-ink); font-weight: 600; }
+.cm-tl__diff { color: var(--cm-faint); font-weight: 500; font-size: 11px; }
+.cm-tl__track {
+  position: relative; height: 15px; background: var(--cm-surface-alt);
+  border: 1px solid var(--cm-border); border-radius: 4px;
+}
+.cm-tl__bar { position: absolute; inset: 0 auto 0 0; background: var(--cm-blue-bg); border-radius: 3px; }
+/* Deliberately taller than the bar: an absence is a notch across it, not a segment of it. */
+.cm-tl__exit { position: absolute; top: -3px; bottom: -3px; background: var(--cm-red-tx); border-radius: 2px; opacity: .82; }
+.cm-tl__time { text-align: right; font-variant-numeric: tabular-nums; color: var(--cm-ink); font-weight: 600; }
+.cm-tl__count { display: block; color: var(--cm-faint); font-weight: 500; font-size: 11px; }
+.cm-tl__verdict { font-size: 11px; letter-spacing: .05em; text-transform: uppercase; font-weight: 700; }
+.cm-tl__verdict--right { color: var(--cm-positive-tx); }
+.cm-tl__verdict--wrong { color: var(--cm-faint); }
+.cm-tl__verdict--flagged { color: var(--cm-red-tx); }
+.cm-tl__rest > summary { padding: 9px 10px; color: var(--cm-muted); font: 12.5px var(--cm-font-ui); cursor: pointer; }
+.cm-tl__legend {
+  display: flex; gap: 18px; align-items: center; padding: 9px 10px 0;
+  font: 11.5px var(--cm-font-ui); color: var(--cm-muted);
+}
+.cm-tl__swatch { display: inline-block; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.cm-tl__swatch--bar { width: 16px; background: var(--cm-blue-bg); border: 1px solid var(--cm-border); }
+.cm-tl__swatch--exit { width: 5px; background: var(--cm-red-tx); }
+
+@media (max-width: 720px) {
+  .cm-tl__row { grid-template-columns: 88px 1fr 84px; }
+  .cm-tl__verdict { grid-column: 2 / -1; }
+}

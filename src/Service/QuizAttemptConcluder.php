@@ -14,15 +14,29 @@ use App\Enum\AttemptStatus;
  * whether the student pressed the last "Question suivante" or simply ran out of time.
  *
  * Shared rather than duplicated per controller: this is the one place that decides what a quiz is
- * out of, and two copies of that would eventually disagree on a student's mark.
+ * out of, and two copies of that would eventually disagree on a student's mark. The automatic
+ * hand-in of a supervised évaluation goes through here too, rather than growing a second way of
+ * closing an attempt.
  */
 class QuizAttemptConcluder
 {
+    public function __construct(
+        private readonly QuizSupervisionReportBuilder $supervisionReports,
+    ) {
+    }
+
     public function conclude(QuizAttempt $attempt, AttemptStatus $status): void
     {
         $attempt->setStatus($status);
         $attempt->setSubmittedAt(new \DateTimeImmutable());
         $attempt->setScore($this->earnedPoints($attempt), $this->availablePoints($attempt));
+
+        // The rule is asked once here and re-read at display time - never copied. It changes
+        // nothing about the mark just computed above: it counts what a teacher may want to look
+        // at, and that is all it does.
+        if ($attempt->getQuizInstance()->isSupervised()) {
+            $attempt->setFlaggedCount($this->supervisionReports->build($attempt)->flaggedCount);
+        }
     }
 
     /**
