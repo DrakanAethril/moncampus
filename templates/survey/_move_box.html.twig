@@ -1,0 +1,42 @@
+{# « Déplacer vers… » - the folder tree as a flat, clickable list.
+
+   It exists **alongside** the drag onto the rail, not instead of it. The drag is the quick gesture
+   for a folder that is already open in front of you; this is the one that still works when the target
+   is collapsed three branches away, on a touch screen, or from the keyboard. Same endpoint either
+   way, so there is one rule about where a model may go and not two. #}
+{% macro branch(rows, depth) %}
+    {% for row in rows %}
+        <li>
+            <button type="button" class="cm-slib__move-item" style="padding-left: {{ 10 + depth * 16 }}px"
+                    data-action="survey-library#moveTo" data-target-id="{{ row.id }}">
+                <span class="cm-slib__node-ico" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"></path></svg>
+                </span>
+                {{ row.name }}
+            </button>
+        </li>
+        {% if row.children is not empty %}
+            {{ _self.branch(row.children, depth + 1) }}
+        {% endif %}
+    {% endfor %}
+{% endmacro %}
+
+<div class="cm-slib__move" data-survey-library-target="move" hidden>
+    <div class="cm-slib__move-box">
+        <div class="cm-slib__move-head">
+            <h2 class="cm-slib__move-title" data-survey-library-target="moveTitle"></h2>
+            <button type="button" class="cm-slib__move-close" data-action="survey-library#closeMove" aria-label="{{ 'fileLibraryCloseAction'|trans }}">&times;</button>
+        </div>
+        <ul class="cm-slib__move-list">
+            <li>
+                <button type="button" class="cm-slib__move-item" data-action="survey-library#moveTo" data-target-id="">
+                    <span class="cm-slib__node-ico" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"></path></svg>
+                    </span>
+                    {{ 'surveyFolderRootLabel'|trans }}
+                </button>
+            </li>
+            {{ _self.branch(rail, 0) }}
+        </ul>
+    </div>
+</div>

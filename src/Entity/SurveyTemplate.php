@@ -51,6 +51,20 @@ class SurveyTemplate
     #[Assert\Length(max: 255)]
     private ?string $subject = null;
 
+    /**
+     * Where the author filed this model, null at the root of their library
+     * (App\Entity\SurveyFolder). A classement, not an owner: the model belongs to its author and
+     * the folder only says where it is shown.
+     *
+     * `ON DELETE SET NULL` is a floor, not the rule - App\Service\Survey\SurveyFolderManager
+     * promotes the content of a deleted folder one level up, so a model never silently jumps to the
+     * root. The constraint is what guarantees that a folder row removed by any other path still
+     * cannot take a model with it.
+     */
+    #[ORM\ManyToOne(targetEntity: SurveyFolder::class)]
+    #[ORM\JoinColumn(name: 'folder_id', nullable: true, onDelete: 'SET NULL')]
+    private ?SurveyFolder $folder = null;
+
     #[ORM\Column(name: 'creation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $creationDate;
 
@@ -117,6 +131,18 @@ class SurveyTemplate
     public function setSubject(?string $subject): static
     {
         $this->subject = $subject;
+
+        return $this;
+    }
+
+    public function getFolder(): ?SurveyFolder
+    {
+        return $this->folder;
+    }
+
+    public function setFolder(?SurveyFolder $folder): static
+    {
+        $this->folder = $folder;
 
         return $this;
     }

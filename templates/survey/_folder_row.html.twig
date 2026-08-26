@@ -1,0 +1,50 @@
+{# One folder of the listing - the quiz library's row shape: the same columns as a model, the ones
+   that mean nothing for a container left empty rather than invented, and the model count in the
+   « Questions » column.
+
+   Folders are drawn **before** the models and never interleaved: a folder is a place and a model is a
+   thing, and a listing that mixes them makes the reader check the icon on every line. #}
+<tr class="cm-slib__row is-folder" data-folder-id="{{ row.folder.id }}" data-name="{{ row.folder.name }}" draggable="true">
+    <td>
+        <span class="cm-slib__name">
+            <span class="cm-slib__ext cm-slib__ext--dir" aria-hidden="true">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"></path></svg>
+            </span>
+            <a href="{{ path('app_surveys_templates_folder', {folderId: row.folder.id}) }}">{{ row.folder.name }}</a>
+        </span>
+    </td>
+    <td class="cm-slib__muted">—</td>
+    <td class="cm-slib__num">{{ 'surveyFolderTemplateCountLabel'|trans({'%count%': row.templateCount}) }}</td>
+    <td class="cm-slib__num">{{ row.folder.modifiedAt|date('d/m/Y') }}</td>
+    <td class="cm-slib__menu">
+        <div class="dropdown">
+            {# `fixed` Popper strategy and the viewport as boundary, for the reason the file library
+               records: the table sits in a `.table-responsive` whose `overflow: auto` is a clipping
+               context, and a folder holding one row makes a card shorter than its own menu. #}
+            <button type="button" class="cm-slib__kebab" data-bs-toggle="dropdown" aria-expanded="false"
+                    data-bs-boundary="viewport"
+                    data-bs-popper-config='{"strategy":"fixed"}'
+                    aria-label="{{ 'surveyLibraryRowMenuLabel'|trans }}">⋮</button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="{{ path('app_surveys_templates_folder', {folderId: row.folder.id}) }}">{{ 'surveyFolderOpenAction'|trans }}</a></li>
+                <li><button type="button" class="dropdown-item" data-action="survey-library#promptRenameFolder">{{ 'surveyFolderRenameAction'|trans }}</button></li>
+                {# « Déplacer vers… » exists **alongside** the drag and not instead of it: dragging a
+                   row onto the rail is the quick gesture, and a list of folders is the one that works
+                   on a touch screen, with the keyboard, and when the target folder is collapsed. #}
+                <li><button type="button" class="dropdown-item" data-action="survey-library#openMove">{{ 'surveyLibraryMoveAction'|trans }}</button></li>
+                <li>
+                    <form method="post" action="{{ path('app_survey_folder_delete', {folderId: row.folder.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('survey_folder') }}">
+                        {# The confirmation says what becomes of the content rather than just naming
+                           the folder: deleting one **never deletes a model** here, everything inside
+                           moves up one level, and that is not what a file manager teaches. #}
+                        <button type="submit" class="dropdown-item text-danger"
+                                data-controller="confirm-submit"
+                                data-confirm-submit-message-value="{{ 'surveyFolderDeleteConfirmText'|trans({'%name%': row.folder.name}) }}"
+                                data-action="click->confirm-submit#confirm">{{ 'surveyFolderDeleteAction'|trans }}</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </td>
+</tr>
