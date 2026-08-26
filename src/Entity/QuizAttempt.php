@@ -61,6 +61,21 @@ class QuizAttempt
     #[ORM\Column(name: 'started_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $startedAt;
 
+    /**
+     * Which browser session owns this attempt, on a supervised évaluation - see
+     * App\Service\QuizAttemptSessionLock.
+     *
+     * The last session to open the attempt wins and the previous one is turned away. The tempting
+     * rule is the other one - refuse the second opening - and it is the wrong one: a browser that
+     * crashes, a tab closed by accident, a PHP session that expires, and the student is locked out
+     * in the middle of an exam with nobody able to let them back in quickly. The anti-cheating
+     * device would then have stopped an honest student from composing.
+     *
+     * Null on everything that is not supervised, and on attempts that predate the feature.
+     */
+    #[ORM\Column(name: 'session_key', length: 64, nullable: true)]
+    private ?string $sessionKey = null;
+
     #[ORM\Column(name: 'submitted_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $submittedAt = null;
 
@@ -194,6 +209,24 @@ class QuizAttempt
     public function getStartedAt(): \DateTimeImmutable
     {
         return $this->startedAt;
+    }
+
+    public function getSessionKey(): ?string
+    {
+        return $this->sessionKey;
+    }
+
+    public function setSessionKey(?string $sessionKey): static
+    {
+        $this->sessionKey = $sessionKey;
+
+        return $this;
+    }
+
+    /** Whether the key a client presents is the one that currently owns this attempt. */
+    public function isHeldBy(?string $sessionKey): bool
+    {
+        return null !== $this->sessionKey && null !== $sessionKey && hash_equals($this->sessionKey, $sessionKey);
     }
 
     public function getSubmittedAt(): ?\DateTimeImmutable

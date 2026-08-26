@@ -6,6 +6,7 @@ namespace App\Command;
 
 use App\Repository\ConsoleSessionRepository;
 use App\Repository\PlatformActivityRepository;
+use App\Repository\QuizAttemptEventRepository;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -17,6 +18,11 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * Rolling retention of the platform log: beyond 12 months, rows are deleted. One row per login is
  * what makes the table grow - App\Entity\UfaActivity, by contrast, is not purged, its volume is small
  * and its events are the story of a booklet.
+ *
+ * **A third family since the mode contrôle: the quiz supervision journal, at 12 months.** The entry
+ * contract of a supervised évaluation says so in as many words to the student, which is precisely
+ * what makes running this command due rather than optional - a retention printed on screen that
+ * nothing applies is worse than one never printed.
  *
  * **A second family since the machine console: console sessions, at 90 days.** Their own retention
  * rather than the platform log's, and much shorter, because what they hold is different in kind - a
@@ -41,6 +47,7 @@ class PurgePlatformActivityCommand extends Command
     public function __construct(
         private readonly PlatformActivityRepository $repository,
         private readonly ConsoleSessionRepository $consoleSessions,
+        private readonly QuizAttemptEventRepository $quizEvents,
     ) {
         parent::__construct();
     }
@@ -74,6 +81,11 @@ class PurgePlatformActivityCommand extends Command
                 $this->consoleSessions->countOlderThan($consoleThreshold),
                 $consoleThreshold->format('d/m/Y'),
             ));
+            $io->info(\sprintf(
+                '%d événement(s) de surveillance antérieur(s) au %s seraient supprimés.',
+                $this->quizEvents->countOlderThan($threshold),
+                $threshold->format('d/m/Y'),
+            ));
 
             return Command::SUCCESS;
         }
@@ -83,6 +95,11 @@ class PurgePlatformActivityCommand extends Command
 
         $consoles = $this->consoleSessions->deleteOlderThan($consoleThreshold);
         $io->success(\sprintf('%d session(s) de console antérieure(s) au %s supprimée(s).', $consoles, $consoleThreshold->format('d/m/Y')));
+
+        // The same 12 months as the platform log, and for once the duration is a promise made on
+        // screen: the entry contract of a supervised évaluation announces it to the student.
+        $quizEvents = $this->quizEvents->deleteOlderThan($threshold);
+        $io->success(\sprintf('%d événement(s) de surveillance antérieur(s) au %s supprimé(s).', $quizEvents, $threshold->format('d/m/Y')));
 
         return Command::SUCCESS;
     }
