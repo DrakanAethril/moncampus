@@ -10,6 +10,11 @@ use App\Entity\IpRange;
 use App\Entity\Program;
 use App\Entity\Progression;
 use App\Entity\ProxmoxHost;
+use App\Entity\QuizAttempt;
+use App\Entity\QuizAttemptAnswer;
+use App\Entity\QuizInstance;
+use App\Entity\QuizInstanceQuestion;
+use App\Entity\QuizTemplate;
 use App\Entity\Topic;
 use App\Entity\TopicGroup;
 use App\Entity\User;
@@ -17,6 +22,8 @@ use App\Entity\UserFeatureAccess;
 use App\Entity\VmBatch;
 use App\Enum\Feature;
 use App\Enum\FeatureAccessState;
+use App\Enum\QuestionType;
+use App\Enum\QuizMode;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -49,6 +56,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
     private int $studentAccountId;
     private int $teacherAccountId;
     private int $batchId;
+    private string $timelinePath;
 
     protected function setUp(): void
     {
@@ -61,6 +69,53 @@ class RoleAccessSmokeTest extends FunctionalTestCase
 
         $this->program = $this->createProgram([$this->student], [$this->teacher], $this->admin);
         $this->createMachineAccounts();
+        $this->createSupervisedAttempt();
+    }
+
+    /**
+     * One supervised évaluation with one attempt on it, so the frise has something to render.
+     *
+     * Built here rather than left out for the same reason as the machine accounts above: the
+     * refusal cannot be proved against a timeline that does not exist - a missing attempt answers
+     * 404, and the student line would then pass for the wrong reason. With a real supervised
+     * attempt, the 403 is StructureAccessChecker::isProgramTeacher()'s, which is what is under test.
+     */
+    private function createSupervisedAttempt(): void
+    {
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+
+        $template = new QuizTemplate($this->teacher);
+        $template->setName('Contrôle de test');
+        $template->setCreatedBy($this->teacher);
+        $entityManager->persist($template);
+
+        $instance = new QuizInstance($this->program, $this->teacher);
+        $instance->setName('Contrôle de test');
+        $instance->setMode(QuizMode::Evaluation);
+        $instance->setSourceTemplate($template);
+        $instance->setSupervised(true);
+        $entityManager->persist($instance);
+
+        $question = new QuizInstanceQuestion($instance);
+        $question->setType(QuestionType::Qcm);
+        $question->setLabel('Question de test');
+        $instance->addQuestion($question);
+        $entityManager->persist($question);
+
+        $attempt = new QuizAttempt($instance, $this->student);
+        $answer = new QuizAttemptAnswer($attempt, $question);
+        $attempt->addAttemptAnswer($answer);
+        $entityManager->persist($attempt);
+        $entityManager->persist($answer);
+
+        $entityManager->flush();
+
+        $this->timelinePath = \sprintf(
+            '/programs/%d/quiz/%d/attempt/%d/timeline',
+            $this->program->getId() ?? 0,
+            $instance->getId() ?? 0,
+            $attempt->getId() ?? 0,
+        );
     }
 
     /**
@@ -159,6 +214,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tools/quiz-live' => 403,
             '/tools/job-search-tracking' => 403,
             '/tools/quiz' => 403,
+            // The frise of a supervised copy: the teachers of the formation and the staff read it,
+            // never the student it is about.
+            $this->timelinePath => 403,
             '/tools/videos' => 403,
             // No student library, and no entry point: what a student sees is unchanged - the file
             // inside the assignment, exactly as today (design/validated/file-library.md).
@@ -279,6 +337,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // Not a picker: the cross-class quiz list renders whatever the viewer teaches, empty
             // included, so it answers 200 rather than handing over to a class.
             '/tools/quiz' => 200,
+            // The frise of a supervised copy - a teacher of the formation reads it.
+            $this->timelinePath => 200,
             // Same reading: the video list shows what the viewer owns, empty included.
             '/tools/videos' => 200,
             // The library is personal and lazily created: an account with no file has an empty
@@ -385,6 +445,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tools/quiz-live' => 302,
             '/tools/job-search-tracking' => 302,
             '/tools/quiz' => 200,
+            // Staff read the frise too: StructureAccessChecker::isProgramTeacher() bypasses for them.
+            $this->timelinePath => 200,
             '/tools/videos' => 200,
             // An admin holding ROLE_ADMIN also *owns* a library - that is the first row of the
             // access table, not the narrow "somebody else's quota" one.
@@ -489,6 +551,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tools/quiz-live' => 403,
             '/tools/job-search-tracking' => 403,
             '/tools/quiz' => 403,
+            // An external tutor is not a teacher of the formation: the frise is closed to them too.
+            $this->timelinePath => 403,
             '/tools/videos' => 403,
             // ROLE_TUTOR is excluded from the library entirely, as it is from the wiki and from
             // messaging (design/validated/file-library.md, "Who has a library").

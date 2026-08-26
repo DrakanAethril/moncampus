@@ -1,0 +1,31 @@
+{# One question of the frise. The bar is how long the question was on screen, relative to the
+   longest of the attempt; each notch is an absence, placed and sized inside that bar. `row` is the
+   only expected variable - see App\Service\QuizSupervisionReportBuilder::timelineRows(). #}
+<div class="cm-tl__row{{ row.flagged ? ' cm-tl__row--flagged' }}">
+    <span class="cm-tl__q" title="{{ row.label }}">
+        Q{{ row.number }}
+        <span class="cm-tl__diff">{{ ('questionDifficulty' ~ row.difficulty|capitalize ~ 'Label')|trans }}</span>
+    </span>
+    <span class="cm-tl__track">
+        <span class="cm-tl__bar" style="width: {{ row.barPercent }}%;"></span>
+        {% for absence in row.absences %}
+            <span class="cm-tl__exit" style="left: {{ (row.barPercent * absence.offsetPercent / 100)|round(1) }}%; width: {{ max((row.barPercent * absence.widthPercent / 100)|round(1), 1) }}%;"
+                  title="{{ 'quizTimelineAbsenceTemplate'|trans({'%duration%': absence.durationMs|duration_ms}) }}"></span>
+        {% endfor %}
+    </span>
+    <span class="cm-tl__time">
+        {{ row.elapsedMs|duration_ms }}
+        {% if row.displayCount > 1 %}<span class="cm-tl__count">{{ 'quizQuestionDisplayCountTemplate'|trans({'%count%': row.displayCount}) }}</span>{% endif %}
+    </span>
+    <span class="cm-tl__verdict {{ row.flagged ? 'cm-tl__verdict--flagged' : (row.isCorrect ? 'cm-tl__verdict--right' : 'cm-tl__verdict--wrong') }}">
+        {%- if row.flagged -%}
+            {{ 'quizTimelineVerdictFlaggedLabel'|trans }}
+        {%- elseif row.isCorrect is null -%}
+            {{ 'quizTimelineVerdictUnansweredLabel'|trans }}
+        {%- elseif row.isCorrect -%}
+            {{ 'quizTimelineVerdictRightLabel'|trans }}
+        {%- else -%}
+            {{ 'quizTimelineVerdictWrongLabel'|trans }}
+        {%- endif -%}
+    </span>
+</div>

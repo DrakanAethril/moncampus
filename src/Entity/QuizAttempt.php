@@ -6,6 +6,7 @@ namespace App\Entity;
 
 use App\Enum\AttemptOrigin;
 use App\Enum\AttemptStatus;
+use App\Enum\QuizReviewOutcome;
 use App\Repository\QuizAttemptRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -87,6 +88,28 @@ class QuizAttempt
 
     #[ORM\Column(name: 'question_total', nullable: true)]
     private ?int $questionTotal = null;
+
+    // ---- Mode contrôle: what was found, and what a human decided about it ----
+    /**
+     * How many questions App\Service\QuizSupervisionAssessor marked « à vérifier », frozen when the
+     * attempt is concluded and re-read at display time. It is what classes the attempt on the
+     * teacher's list - a count of things to look at, never a score and never a verdict.
+     */
+    #[ORM\Column(name: 'flagged_count', type: Types::SMALLINT, options: ['unsigned' => true])]
+    private int $flaggedCount = 0;
+
+    #[ORM\Column(name: 'reviewed_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $reviewedAt = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'reviewed_by_id', nullable: true, onDelete: 'SET NULL')]
+    private ?User $reviewedBy = null;
+
+    #[ORM\Column(name: 'review_outcome', length: 16, enumType: QuizReviewOutcome::class, nullable: true)]
+    private ?QuizReviewOutcome $reviewOutcome = null;
+
+    #[ORM\Column(name: 'review_note', type: Types::TEXT, nullable: true)]
+    private ?string $reviewNote = null;
 
     /** @var Collection<int, QuizAttemptAnswer> */
     #[ORM\OneToMany(mappedBy: 'attempt', targetEntity: QuizAttemptAnswer::class, cascade: ['persist'], orphanRemoval: true)]
@@ -292,6 +315,55 @@ class QuizAttempt
         $percent = $this->getScorePercent();
 
         return null !== $percent ? round($percent / 100 * 20, 1) : null;
+    }
+
+    public function getFlaggedCount(): int
+    {
+        return $this->flaggedCount;
+    }
+
+    public function setFlaggedCount(int $flaggedCount): static
+    {
+        $this->flaggedCount = max(0, $flaggedCount);
+
+        return $this;
+    }
+
+    public function getReviewedAt(): ?\DateTimeImmutable
+    {
+        return $this->reviewedAt;
+    }
+
+    public function getReviewedBy(): ?User
+    {
+        return $this->reviewedBy;
+    }
+
+    public function getReviewOutcome(): ?QuizReviewOutcome
+    {
+        return $this->reviewOutcome;
+    }
+
+    public function getReviewNote(): ?string
+    {
+        return $this->reviewNote;
+    }
+
+    /** Whether a human has already said something about this attempt - it then leaves the list. */
+    public function isReviewed(): bool
+    {
+        return null !== $this->reviewOutcome;
+    }
+
+    /** The one statement of the whole device, and it is signed. */
+    public function review(QuizReviewOutcome $outcome, User $by, ?string $note): static
+    {
+        $this->reviewOutcome = $outcome;
+        $this->reviewedBy = $by;
+        $this->reviewedAt = new \DateTimeImmutable();
+        $this->reviewNote = null === $note || '' === trim($note) ? null : trim($note);
+
+        return $this;
     }
 
     /** @return Collection<int, QuizAttemptAnswer> */
