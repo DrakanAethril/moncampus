@@ -72,17 +72,33 @@ class QuizAttemptEventRepository extends ServiceEntityRepository
         return $event instanceof QuizAttemptEvent ? $event->getOccurredAt() : null;
     }
 
-    /** How many absences of at least $thresholdMs this attempt has come back from. */
-    public function countAbsencesAtLeast(QuizAttempt $attempt, int $thresholdMs): int
+    /**
+     * The length of every absence of at least $thresholdMs this attempt has come back from, in the
+     * order they happened.
+     *
+     * Durations rather than a count, because that is what the student is shown: « vous avez quitté
+     * cette page 2 fois (38 s, puis 12 s) » states facts, where a bare number states an accusation.
+     * Absences nobody came back from carry no duration yet and are not counted - one cannot be told
+     * how long one has been away while still away.
+     *
+     * @return list<int>
+     */
+    public function findAbsencesAtLeast(QuizAttempt $attempt, int $thresholdMs): array
     {
-        return (int) $this->createQueryBuilder('e')
-            ->select('COUNT(e.id)')
+        /** @var list<array{durationMs: int}> $rows */
+        $rows = $this->createQueryBuilder('e')
+            ->select('e.durationMs')
             ->where('e.attempt = :attempt')
             ->andWhere('e.durationMs >= :threshold')
             ->setParameter('attempt', $attempt)
             ->setParameter('threshold', $thresholdMs)
+            ->orderBy('e.occurredAt', 'ASC')
+            ->addOrderBy('e.occurredMs', 'ASC')
+            ->addOrderBy('e.id', 'ASC')
             ->getQuery()
-            ->getSingleScalarResult();
+            ->getArrayResult();
+
+        return array_map(static fn (array $row): int => $row['durationMs'], $rows);
     }
 
     /** Rolling retention, called by app:purge-platform-activity - see that command's docblock. */

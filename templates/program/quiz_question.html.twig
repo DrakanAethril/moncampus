@@ -12,7 +12,21 @@
          data-quiz-supervision-url-value="{{ path('app_program_quiz_event', {id: program.id, instanceId: quizInstance.id, attemptId: attempt.id}) }}"
          data-quiz-supervision-key-value="{{ supervisionKey }}"
          data-quiz-supervision-position-value="{{ position }}"{% endif %}>
-        <div class="card" style="width: 820px; max-width: 100%;">
+        <div style="width: 820px; max-width: 100%;">
+        {% if supervisionWarns %}
+            {# Sits ABOVE the card without moving it, does not steal focus and does not close. It
+               states facts - how many, and how long - not an accusation: that is what makes it
+               bearable for the student whose screen went to sleep, and dissuasive for the other. #}
+            <div class="cm-audio-warn mb-3" role="status">
+                <b>{{ 'quizSupervisionBannerTitleTemplate'|trans({'%count%': supervisionAbsences|length}) }}</b>
+                ({{ supervisionAbsences|map(ms => ms|duration_ms)|join(', ') }}).
+                {{ 'quizSupervisionBannerHintText'|trans }}
+                {% if quizInstance.supervisionPolicy.value == 'autosubmit' and quizInstance.supervisionSubmitAt %}
+                    {{ 'quizSupervisionBannerAutosubmitTemplate'|trans({'%count%': quizInstance.supervisionSubmitAt}) }}
+                {% endif %}
+            </div>
+        {% endif %}
+        <div class="card">
             <div class="card-body d-flex flex-column gap-3">
                 <div class="d-flex align-items-center gap-3">
                     <div>
@@ -137,6 +151,7 @@
                     </div>
                 </form>
             </div>
+        </div>
         </div>
     </div>
 {% endblock %}

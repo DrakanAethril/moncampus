@@ -16,6 +16,11 @@
     <div class="d-flex justify-content-center">
         <div class="card" style="width: 560px; max-width: 100%;">
             <div class="card-body text-center d-flex flex-column align-items-center gap-3 py-5">
+                {% if autoSubmitted %}
+                    {# The student was told at the door this would happen; they are owed the
+                       sentence. The copy was marked normally - nothing was cancelled. #}
+                    <div class="cm-audio-warn text-start w-100">{{ 'quizSupervisionAutoSubmittedNotice'|trans({'%count%': quizInstance.supervisionSubmitAt}) }}</div>
+                {% endif %}
                 {% if quizInstance.scoreVisibleImmediately %}
                     <span class="badge {{ attempt.scorePercent >= 70 ? 'bg-green-lt' : (attempt.scorePercent >= 40 ? 'bg-warning-lt' : 'bg-red-lt') }}" style="font-weight:700;font-size:22px;padding:14px 26px;">
                         {% if quizInstance.scoring.value == 'note20' %}{{ attempt.scoreOn20 }} / 20{% else %}{{ attempt.scorePercent }} %{% endif %}

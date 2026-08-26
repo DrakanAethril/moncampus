@@ -27,6 +27,7 @@ use App\Service\QuizAttemptSessionLock;
 use App\Service\QuizAttemptStarter;
 use App\Service\QuizDrawService;
 use App\Service\QuizQuestionBudget;
+use App\Service\QuizSupervisionNotice;
 use App\Service\StudentQuizBoard;
 use App\Util\NumericAnswerParser;
 use Doctrine\ORM\EntityManagerInterface;
@@ -178,7 +179,7 @@ class ProgramQuizAttemptController extends AbstractController
 
     #[Route(path: '/programs/{id}/quiz/{instanceId}/attempt/{attemptId}/question/{position}', name: 'app_program_quiz_question', requirements: ['instanceId' => '\d+', 'attemptId' => '\d+', 'position' => '\d+'])]
     #[IsGranted('ROLE_STUDENT')]
-    public function question(int $id, int $instanceId, int $attemptId, int $position, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, QuizInstanceRepository $instanceRepository, QuizAttemptRepository $attemptRepository, QuizDrawService $drawService, QuizAttemptConcluder $concluder, QuizAttemptSessionLock $sessionLock): Response
+    public function question(int $id, int $instanceId, int $attemptId, int $position, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, QuizInstanceRepository $instanceRepository, QuizAttemptRepository $attemptRepository, QuizDrawService $drawService, QuizAttemptConcluder $concluder, QuizAttemptSessionLock $sessionLock, QuizSupervisionNotice $supervisionNotice): Response
     {
         $program = $this->findProgramForStudentOrNotFound($id, $repository);
         $instance = $this->findInstanceOrNotFound($instanceRepository, $program, $instanceId);
@@ -208,11 +209,22 @@ class ProgramQuizAttemptController extends AbstractController
             ]);
         }
 
+        // The copy the teacher asked to be handed in past N exits. Asked here as well as at the
+        // beacon: a beacon may be the last thing a tab ever sends, and the rule must not wait for
+        // one more.
+        if ($supervisionNotice->autoSubmitIfDue($attempt)) {
+            return $this->redirectToOutcome($program, $instance, $attempt);
+        }
+
         // The server's own half of the stopwatch: the first display is stamped, every display is
         // counted (App\Entity\QuizAttemptAnswer::markServed()). Reloading this page therefore
         // never hands out a fresh budget - it only raises display_count, which is itself a signal.
         $attemptAnswer->markServed(new \DateTimeImmutable());
         $entityManager->flush();
+
+        // What the student is told, right now: how many times they have left, and for how long.
+        // Facts, never an accusation - see App\Service\QuizSupervisionNotice.
+        $countedAbsences = $instance->isSupervised() ? $supervisionNotice->countedAbsences($attempt) : [];
 
         $questionSeconds = $question->resolveSeconds($instance->getSecondsPerQuestion());
 
@@ -242,6 +254,8 @@ class ProgramQuizAttemptController extends AbstractController
             // The key the page's beacons authenticate with - null on anything unsupervised, where
             // quiz_supervision_controller.js is not mounted at all.
             'supervisionKey' => $instance->isSupervised() ? $sessionLock->keyFor($attempt, $request->getSession()) : null,
+            'supervisionAbsences' => $countedAbsences,
+            'supervisionWarns' => $supervisionNotice->shouldWarn($attempt, $countedAbsences),
             // What is left of the budget from the *first* display, not the whole of it: the chip a
             // reloaded page shows must say the same thing the server would answer.
             'remainingSeconds' => QuizQuestionBudget::remainingSeconds($attemptAnswer->getServedAt(), $questionSeconds, new \DateTimeImmutable()),
@@ -441,7 +455,7 @@ class ProgramQuizAttemptController extends AbstractController
     // just "copie remise" - see design/design_campus_manager/README.md.
     #[Route(path: '/programs/{id}/quiz/{instanceId}/attempt/{attemptId}/result', name: 'app_program_quiz_result', requirements: ['instanceId' => '\d+', 'attemptId' => '\d+'])]
     #[IsGranted('ROLE_STUDENT')]
-    public function result(int $id, int $instanceId, int $attemptId, ProgramRepository $repository, QuizInstanceRepository $instanceRepository, QuizAttemptRepository $attemptRepository): Response
+    public function result(int $id, int $instanceId, int $attemptId, ProgramRepository $repository, QuizInstanceRepository $instanceRepository, QuizAttemptRepository $attemptRepository, QuizSupervisionNotice $supervisionNotice): Response
     {
         $program = $this->findProgramForStudentOrNotFound($id, $repository);
         $instance = $this->findInstanceOrNotFound($instanceRepository, $program, $instanceId);
@@ -455,6 +469,9 @@ class ProgramQuizAttemptController extends AbstractController
             'program' => $program,
             'quizInstance' => $instance,
             'attempt' => $attempt,
+            // A copy handed in by the rule says so rather than appearing to have been handed in by
+            // its author: the student was warned it would happen, and is owed the sentence.
+            'autoSubmitted' => $supervisionNotice->wasAutoSubmitted($attempt),
         ]);
     }
 
