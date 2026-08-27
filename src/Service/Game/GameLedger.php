@@ -100,6 +100,46 @@ final class GameLedger
     }
 
     /**
+     * Write a correction on a source that has already paid - the one call that does **not** refuse a
+     * second line on the same (sourceType, sourceId, ruleCode).
+     *
+     * It exists for the relevé and for nothing else. A statement is editable until the period
+     * closes, so a card toggled from « net » to « pas net » has to give its thirty points back; the
+     * ledger stays append only, and what is written is the *difference*, signed, next to the line
+     * that produced it. Deleting the original would be the other way to do it, and it would erase
+     * the fact that the week had been stated otherwise.
+     */
+    public function adjust(
+        User $student,
+        Program $program,
+        EvaluationPeriod $period,
+        string $ruleCode,
+        int $points,
+        string $sourceType,
+        int $sourceId,
+        ?\DateTimeImmutable $occurredAt = null,
+        ?string $reason = null,
+    ): ?GameEntry {
+        if (0 === $points) {
+            return null;
+        }
+
+        $rule = $this->rules->valueOf($program, $period, $ruleCode);
+
+        if (null === $rule) {
+            return null;
+        }
+
+        $entry = (new GameEntry($student, $program, $period, $rule->family(), $ruleCode, $points, $occurredAt ?? new \DateTimeImmutable()))
+            ->setSource($sourceType, $sourceId)
+            ->setReason($reason);
+
+        $this->entityManager->persist($entry);
+
+        return $entry;
+    }
+
+    /**
      * Undo a line by writing its inverse.
      *
      * The original stays, marked by the line pointing at it; a cancelled gesture is still read by

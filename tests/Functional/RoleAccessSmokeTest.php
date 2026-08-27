@@ -60,6 +60,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
     private int $teacherAccountId;
     private int $batchId;
     private string $timelinePath;
+    private string $attendancePath;
 
     protected function setUp(): void
     {
@@ -74,6 +75,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->createMachineAccounts();
         $this->createSupervisedAttempt();
         $this->openTheGame();
+        $this->attendancePath = '/programs/'.$this->program->getId().'/game/attendance';
     }
 
     /**
@@ -201,6 +203,15 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->assertScreens($this->student, [
             '/' => 200,
             '/student-work' => 200,
+            // The campus game. « Ma progression » exists for the student of a formation that plays;
+            // the board of six levels is open to every role the feature is on for; the wording of
+            // those levels is an administrator's screen; and the relevé is the teachers' - a class
+            // stating its own attendance would not be a relevé.
+            '/game' => 200,
+            '/game/journal' => 200,
+            '/game/levels' => 200,
+            '/settings/game/levels' => 403,
+            $this->attendancePath => 403,
             // « Séquences de l'année » hands over to the single formation this student belongs to
             // rather than drawing a picker with one card in it (2026-08-17). The list still renders
             // for a student straddling two, and for the empty state.
@@ -294,6 +305,14 @@ class RoleAccessSmokeTest extends FunctionalTestCase
     {
         $this->assertScreens($this->teacher, [
             '/' => 200,
+            // A teacher plays no game: they have no formation *as a student*, so their own screens
+            // do not exist. The board of levels is a poster and stays open, and the relevé is
+            // theirs.
+            '/game' => 404,
+            '/game/journal' => 404,
+            '/game/levels' => 200,
+            '/settings/game/levels' => 403,
+            $this->attendancePath => 200,
             // The course-space index is the student's own list of programs; a teacher reaches the
             // same sequences from their program screens instead.
             '/my/courses' => 403,
@@ -404,6 +423,13 @@ class RoleAccessSmokeTest extends FunctionalTestCase
     {
         $this->assertScreens($this->admin, [
             '/' => 200,
+            // The wording of the six levels is the administrator's, and the thresholds are nobody's:
+            // they live in code, common to the whole establishment. Staff reach every formation's
+            // teaching screens - isProgramTeacher() bypasses for them.
+            '/game' => 404,
+            '/game/levels' => 200,
+            '/settings/game/levels' => 200,
+            $this->attendancePath => 200,
             '/settings/configuration' => 200,
             '/settings/teaching' => 200,
             // Groups are admin-only, deliberately stricter than the rest of Settings - see
@@ -546,6 +572,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/game' => 404,
             '/game/levels' => 200,
             '/settings/game/levels' => 403,
+            $this->attendancePath => 403,
             '/agenda' => 200,
             '/messages' => 200,
             '/tickets' => 200,

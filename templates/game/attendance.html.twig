@@ -1,0 +1,94 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'attendanceStatementHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.displayShortName, url: path('app_program_timetable', {id: program.id})},
+        {label: 'attendanceStatementHeading'|trans, url: path('app_program_game_attendance', {id: program.id})},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'attendanceStatementHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    {# One unit at a time, and never outside the period. #}
+    <div class="cm-att-nav">
+        {% if previousDay %}
+            <a class="cm-btn cm-btn--outline" href="{{ path('app_program_game_attendance', {id: program.id, on: previousDay}) }}" aria-label="{{ 'attendanceStatementPreviousLabel'|trans }}">‹</a>
+        {% else %}
+            <span class="cm-btn cm-btn--outline is-disabled" aria-hidden="true">‹</span>
+        {% endif %}
+        <span class="cm-att-nav__label">{{ statement.startsOn|date('d/m') }} → {{ statement.endsOn|date('d/m/Y') }}</span>
+        {% if nextDay %}
+            <a class="cm-btn cm-btn--outline" href="{{ path('app_program_game_attendance', {id: program.id, on: nextDay}) }}" aria-label="{{ 'attendanceStatementNextLabel'|trans }}">›</a>
+        {% else %}
+            <span class="cm-btn cm-btn--outline is-disabled" aria-hidden="true">›</span>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block main %}
+    <p class="cm-gm-context">{{ program.displayShortName }} · {{ period.name }} · {{ ('gameAttendanceStep' ~ settings.attendanceStep.value|capitalize ~ 'Label')|trans }}</p>
+
+    <div class="card">
+        <div class="card-body"
+             data-controller="game-attendance"
+             data-game-attendance-url-value="{{ path('app_program_game_attendance_state', {id: program.id, statementId: statement.id}) }}"
+             data-game-attendance-token-value="{{ csrf_token('game_attendance') }}"
+             data-game-attendance-closed-message-value="{{ 'attendanceStatementClosedFlashMessage'|trans }}"
+             data-game-attendance-labels-value="{{ {
+                 'clean': 'attendanceStateCleanLabel'|trans,
+                 'not_clean': 'attendanceStateNotCleanLabel'|trans,
+                 'out_of_scope': 'attendanceStateOutOfScopeLabel'|trans,
+             }|json_encode }}">
+
+            <div class="cm-att-head">
+                <span class="cm-gm-label">{{ 'attendanceStatementCycleHint'|trans }}</span>
+                <span class="cm-att-tally">
+                    {% for state in states %}
+                        <span class="cm-badge cm-badge--{{ {'clean': 'green', 'not_clean': 'red', 'out_of_scope': 'gray'}[state.value] }}"
+                              data-game-attendance-target="tally" data-state="{{ state.value }}">
+                            {{ tally[state.value] }} {{ state.labelKey|trans }}
+                        </span>
+                    {% endfor %}
+                </span>
+            </div>
+
+            {% if statement.closed %}
+                {# A statement is closed by the period's own closure and never re-opened here: that
+                   is what stops a term's ranking from moving after the fact. #}
+                <div class="cm-note cm-note--gold" style="margin: 14px 0">
+                    <span class="cm-note__icon">i</span>
+                    <span>{{ 'attendanceStatementClosedText'|trans({'%date%': statement.closedAt|date('d/m/Y')}) }}</span>
+                </div>
+            {% endif %}
+
+            <div class="cm-att-grid">
+                {% for line in lines %}
+                    <button type="button"
+                            class="cm-att-card cm-att-card--{{ line.state.value }}"
+                            data-game-attendance-target="card"
+                            data-student="{{ line.student.id }}"
+                            data-state="{{ line.state.value }}"
+                            {{ statement.closed ? 'disabled' }}>
+                        <span class="cm-att-card__mark">{{ line.state.symbol }}</span>
+                        <span class="cm-att-card__name">{{ line.student.displayName ?? line.student.username }}</span>
+                        <span class="cm-att-card__state">{{ line.state.labelKey|trans }}</span>
+                    </button>
+                {% else %}
+                    <div class="cm-card-note">{{ 'attendanceStatementNoStudentText'|trans }}</div>
+                {% endfor %}
+            </div>
+
+            {# Both halves matter and neither is decoration: the pass costs four clicks rather than
+               thirty, and « hors comptage » is what stops the game from punishing an apprenticeship
+               fortnight, a sick leave or an arrival in November. #}
+            <div class="cm-note" style="margin-top: 18px">
+                <span class="cm-note__icon">i</span>
+                <span>{{ 'attendanceStatementNoteText'|trans }}</span>
+            </div>
+        </div>
+    </div>
+{% endblock %}
