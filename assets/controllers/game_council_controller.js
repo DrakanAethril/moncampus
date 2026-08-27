@@ -13,7 +13,7 @@ import { Controller } from '@hotwired/stimulus';
  * without ever changing page.
  */
 export default class extends Controller {
-    static targets = ['row', 'points'];
+    static targets = ['row', 'points', 'stated'];
     static values = { url: String, token: String, lockedMessage: String, shortcuts: Object };
 
     connect() {
@@ -98,8 +98,14 @@ export default class extends Controller {
             const payload = await response.json();
             const cell = row.querySelector('[data-game-council-target="points"]');
 
-            if (cell) {
+            if (cell && payload.points !== undefined) {
                 cell.textContent = payload.points > 0 ? `+${payload.points}` : String(payload.points);
+            }
+
+            // « 18 / 30 saisies » follows every keystroke: it is the only progress a professeur
+            // principal has while the class is being entered.
+            if (this.hasStatedTarget && payload.stated !== undefined) {
+                this.statedTarget.textContent = String(payload.stated);
             }
         } catch (error) {
             // A dropped request leaves the row as the teacher set it; the next keystroke retries.

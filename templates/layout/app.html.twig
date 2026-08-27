@@ -252,30 +252,34 @@
                                                            classes one TEACHES (App\Controller\QuizTrackingController), so a staff
                                                            member no longer reads a teacher's quizzes and their students' answers
                                                            from a class screen. #}
-                                                        {# The campus game's teacher screens, under the class they belong to
-                                                           rather than in a global menu: no ranking, no statement and no gesture
-                                                           ever crosses a formation's boundary (§4, decision 1), and the menu is
-                                                           what says so first. Both switches, and the teacher check on top -
-                                                           is_program_teacher() is what keeps an enrolled student out. #}
-                                                        {% if feature('game') and program.gameEnabled and is_program_teacher(program) %}
-                                                            <a class="dropdown-item {{ current_route == 'app_program_game_attendance' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_game_attendance', {id: program.id}) }}">{{ 'attendanceStatementNavLabel'|trans }}</a>
-                                                            <a class="dropdown-item {{ current_route starts with 'app_program_game_gestures' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_game_gestures', {id: program.id}) }}">{{ 'gameGesturesHeading'|trans }}</a>
-                                                            <a class="dropdown-item {{ current_route starts with 'app_game_engagements' and app.request.query.get('program') == program.id ? 'active' }}" href="{{ path('app_game_engagements', {program: program.id}) }}">{{ 'engagementQueueHeading'|trans }}</a>
-                                                            <a class="dropdown-item {{ current_route starts with 'app_program_game_rewards' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_game_rewards', {id: program.id}) }}">{{ 'gameRewardsHeading'|trans }}</a>
-                                                            {# The council is the professeur principal's screen, and an
-                                                               administrator's. is_program_teacher() is too wide for it, so the
-                                                               entry asks the narrower question the controller asks. #}
-                                                            {% if is_granted('ROLE_ADMIN') or is_program_referent_teacher(program) %}
-                                                                <a class="dropdown-item {{ current_route starts with 'app_program_council' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_council', {id: program.id}) }}">{{ 'gameCouncilHeading'|trans }}</a>
-                                                            {% endif %}
-                                                        {% endif %}
-                                                        {# The settings entry is deliberately NOT behind program.gameEnabled, unlike
-                                                           the four above: it is the screen that switches the formation on, and one
-                                                           reachable only once it already is could never be reached at all. Only the
-                                                           feature gates it, plus the same door as the council - the referent
-                                                           teacher's, and an administrator's. #}
-                                                        {% if feature('game') and (is_granted('ROLE_ADMIN') or is_program_referent_teacher(program)) %}
-                                                            <a class="dropdown-item {{ current_route == 'app_program_settings_game' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_settings_game', {id: program.id}) }}">{{ 'gameSettingsHeading'|trans }}</a>
+                                                        {# The campus game, gathered under one entry rather than scattered among
+                                                           the class's own: five screens that all answer the same question and
+                                                           that a class which does not play must not have to read past. The
+                                                           frontier of the formation is what the placement says first - no
+                                                           ranking, no relevé and no gesture crosses it (§4, decision 1).
+
+                                                           « Réglages » is deliberately outside program.gameEnabled, unlike the
+                                                           four others: it is the screen that switches the formation on, and one
+                                                           reachable only once it already is could never be reached at all. #}
+                                                        {% set game_plays = feature('game') and program.gameEnabled and is_program_teacher(program) %}
+                                                        {% set game_settles = feature('game') and (is_granted('ROLE_ADMIN') or is_program_referent_teacher(program)) %}
+                                                        {% if game_plays or game_settles %}
+                                                            <div class="dropend">
+                                                                <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_program_game' or current_route starts with 'app_game_engagements' or current_route == 'app_program_settings_game' ? 'active' }}" href="#nav-program-game-{{ program.id }}" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                                                    {{ 'gameNavGroupLabel'|trans }}
+                                                                </a>
+                                                                <div class="dropdown-menu">
+                                                                    {% if game_plays %}
+                                                                        <a class="dropdown-item {{ current_route starts with 'app_program_game_statement' ? 'active' }}" href="{{ path('app_program_game_statements', {id: program.id}) }}">{{ 'gameStatementsHeading'|trans }}</a>
+                                                                        <a class="dropdown-item {{ current_route starts with 'app_program_game_gestures' ? 'active' }}" href="{{ path('app_program_game_gestures', {id: program.id}) }}">{{ 'gameGesturesHeading'|trans }}</a>
+                                                                        <a class="dropdown-item {{ current_route starts with 'app_game_engagements' and app.request.query.get('program') == program.id ? 'active' }}" href="{{ path('app_game_engagements', {program: program.id}) }}">{{ 'engagementQueueHeading'|trans }}</a>
+                                                                        <a class="dropdown-item {{ current_route starts with 'app_program_game_rewards' ? 'active' }}" href="{{ path('app_program_game_rewards', {id: program.id}) }}">{{ 'gameRewardsHeading'|trans }}</a>
+                                                                    {% endif %}
+                                                                    {% if game_settles %}
+                                                                        <a class="dropdown-item {{ current_route == 'app_program_settings_game' ? 'active' }}" href="{{ path('app_program_settings_game', {id: program.id}) }}">{{ 'gameSettingsHeading'|trans }}</a>
+                                                                    {% endif %}
+                                                                </div>
+                                                            </div>
                                                         {% endif %}
                                                         {% if feature('my_alternance') and visibility_allows(program.alternanceCalendarVisibility) %}
                                                             {# Same route in both alternanceCalendarMode cases - the controller redirects to the

@@ -1,0 +1,118 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'gameStatementsHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.displayShortName, url: path('app_program_timetable', {id: program.id})},
+        {label: 'gameStatementsHeading'|trans, url: path('app_program_game_statements', {id: program.id})},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'gameStatementsHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <p class="cm-gm-context">{{ program.displayShortName }}</p>
+
+    <div class="card">
+        <div class="card-body">
+            <span class="cm-gm-label">{{ 'gameStatementNewHeading'|trans }}</span>
+
+            {# A relevé is created and named by hand, and there may be as many or as few as the team
+               wants. The evaluation periods still carry the index - they no longer decide how many
+               documents get filled in. #}
+            <form method="post" action="{{ path('app_program_game_statements_new', {id: program.id}) }}"
+                  data-controller="game-statement-new" style="margin-top: 10px">
+                <input type="hidden" name="_token" value="{{ csrf_token('game_statement_new') }}">
+
+                <div class="cm-gm-gestureform">
+                    <label title="{{ 'gameStatementTypeHelpText'|trans }}">
+                        <span class="cm-gm-label">{{ 'gameStatementTypeLabel'|trans }} *</span>
+                        <select name="type" required data-action="change->game-statement-new#typeChanged" data-game-statement-new-target="type">
+                            {% for type in types %}
+                                {% if type.value != 'council' or canRunCouncil %}
+                                    <option value="{{ type.value }}" title="{{ type.helpKey|trans }}">{{ type.labelKey|trans }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label title="{{ 'gameStatementNameHelpText'|trans }}">
+                        <span class="cm-gm-label">{{ 'gameStatementNameLabel'|trans }} *</span>
+                        <input type="text" name="name" maxlength="160" required placeholder="{{ 'gameStatementNamePlaceholder'|trans }}">
+                    </label>
+                    <label title="{{ 'gameStatementHeldOnHelpText'|trans }}">
+                        <span class="cm-gm-label">{{ 'gameStatementHeldOnLabel'|trans }} *</span>
+                        <input type="date" name="held_on" required value="{{ 'now'|date('Y-m-d') }}">
+                    </label>
+                    <div data-game-statement-new-target="periodicity" title="{{ 'gameStatementPeriodicityHelpText'|trans }}">
+                        <span class="cm-gm-label">{{ 'gameStatementPeriodicityLabel'|trans }}</span>
+                        <div class="cm-gm-seg">
+                            {% for step in steps %}
+                                <label><input type="radio" name="periodicity" value="{{ step.value }}" {{ settings.attendanceStep == step ? 'checked' }}><span>{{ step.labelKey|trans }}</span></label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cm-actionbar">
+                    <span class="cm-actionbar__meta">{{ 'gameStatementNewNoteText'|trans }}</span>
+                    <div class="cm-actionbar__buttons">
+                        <button type="submit" class="cm-btn cm-btn--primary">{{ 'gameStatementCreateAction'|trans }}</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 16px">
+        <div class="card-body">
+            <span class="cm-gm-label">{{ 'gameStatementListHeading'|trans }}</span>
+            <table class="card-table" style="margin-top: 10px">
+                <thead>
+                    <tr>
+                        <th>{{ 'gameStatementNameLabel'|trans }}</th>
+                        <th>{{ 'gameStatementTypeLabel'|trans }}</th>
+                        <th>{{ 'gameStatementHeldOnLabel'|trans }}</th>
+                        <th title="{{ 'gameStatementPeriodColumnHelpText'|trans }}">{{ 'gameStatementPeriodColumnLabel'|trans }}</th>
+                        <th>{{ 'gameStatementStateColumnLabel'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for statement in statements %}
+                        <tr>
+                            <td><a href="{{ path('app_program_game_statement', {id: program.id, statementId: statement.id}) }}">{{ statement.name }}</a></td>
+                            <td><span class="cm-badge cm-badge--{{ statement.type.badgeVariant }}">{{ statement.type.labelKey|trans }}</span></td>
+                            <td>
+                                {% if statement.startsOn %}
+                                    {{ statement.startsOn|date('d/m') }} → {{ statement.endsOn|date('d/m/Y') }}
+                                {% else %}
+                                    {{ statement.heldOn|date('d/m/Y') }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {# A relevé held outside every period pays nothing: there is no index
+                                   for it to count towards, and it says so rather than paying in
+                                   silence. #}
+                                {% if periodOf[statement.id] is defined %}
+                                    {{ periodOf[statement.id] }}
+                                {% else %}
+                                    <span class="cm-badge cm-badge--gray" title="{{ 'gameStatementOutOfPeriodHelpText'|trans }}">{{ 'gameStatementOutOfPeriodLabel'|trans }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if statement.closed %}
+                                    <span class="cm-badge cm-badge--gray">{{ 'gameStatementClosedLabel'|trans({'%date%': statement.closedAt|date('d/m/Y')}) }}</span>
+                                {% else %}
+                                    <span class="cm-badge cm-badge--green">{{ 'gameStatementOpenLabel'|trans({'%stated%': statement.statedCount, '%total%': statement.lines|length}) }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="5" class="text-secondary">{{ 'gameStatementListEmptyText'|trans }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

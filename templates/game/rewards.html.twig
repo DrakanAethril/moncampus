@@ -13,7 +13,7 @@
 {% block page_title %}{{ 'gameRewardsHeading'|trans }}{% endblock %}
 
 {% block main %}
-    <p class="cm-gm-context">{{ program.displayShortName }} · {{ period.name }}</p>
+    <p class="cm-gm-context">{{ program.displayShortName }}{% if period %} · {{ period.name }}{% endif %}</p>
 
     {# Repeated on the screen because it is the rule most easily broken by accident: granting a
        reward never moves the ranking. Points make the index, the index makes the tiers, the tiers
@@ -75,7 +75,10 @@
                                                 {% endfor %}
                                             </select>
                                         {% endif %}
-                                        <input type="text" name="reason" maxlength="1000" placeholder="{{ 'gameRewardReasonPlaceholder'|trans }}">
+                                        {# The occasion, in the teacher's own words: « examen blanc
+                                           de mars », « journée portes ouvertes ». A reward does not
+                                           have to be the outcome of a closure. #}
+                                        <input type="text" name="reason" maxlength="1000" placeholder="{{ 'gameRewardReasonPlaceholder'|trans }}" title="{{ 'gameRewardReasonHelpText'|trans }}">
                                         <button type="submit" class="cm-action cm-action--positive">{{ 'gameRewardGrantAction'|trans }}</button>
                                     </form>
                                 {% endif %}
@@ -155,7 +158,10 @@
                             <td>{{ grant.item.icon ?? '🎁' }} {{ grant.item.label }}{% if grant.used %} <span class="cm-badge cm-badge--gray">{{ 'gameRewardUsedLabel'|trans({'%date%': grant.usedAt|date('d/m/Y')}) }}</span>{% endif %}</td>
                             <td>{{ grant.student ? (grant.student.displayName ?? grant.student.username) : '—' }}</td>
                             <td>{{ grant.automatic ? 'gameRewardAutomaticGrantLabel'|trans : (grant.grantedBy.displayName ?? grant.grantedBy.username) }}</td>
-                            <td>{{ grant.grantedAt|date('d/m/Y') }}</td>
+                            <td>
+                                {{ grant.grantedAt|date('d/m/Y') }}
+                                {% if grant.reason %}<span class="cm-gm-log__src">{{ grant.reason }}</span>{% endif %}
+                            </td>
                         </tr>
                     {% else %}
                         <tr><td colspan="4" class="text-secondary">{{ 'gameRewardGrantedEmptyText'|trans }}</td></tr>

@@ -44,21 +44,22 @@ class RewardGrantRepository extends ServiceEntityRepository
     }
 
     /**
-     * Everything granted on one class and period - the « Attribuées » tab.
+     * Everything granted to one class, most recent first - the « Attribuées » tab.
+     *
+     * No period filter: a reward granted for a mock exam or an open day carries none, and a list
+     * that filtered on one would simply never show it.
      *
      * @return list<RewardGrant>
      */
-    public function grantedIn(Program $program, EvaluationPeriod $period): array
+    public function grantedIn(Program $program): array
     {
         /** @var list<RewardGrant> $grants */
         $grants = $this->createQueryBuilder('g')
             ->addSelect('i')
             ->join('g.item', 'i')
             ->where('g.program = :program')
-            ->andWhere('g.period = :period')
             ->orderBy('g.grantedAt', 'DESC')
             ->setParameter('program', $program)
-            ->setParameter('period', $period)
             ->getQuery()
             ->getResult();
 

@@ -69,7 +69,7 @@ final class GameCollector
         // The relevé's default answer - « net » - is a complete answer that nobody clicks, so it
         // cannot be paid by an edit. It is projected here instead, where every reading of the
         // period passes: a statement opened and left alone still pays the whole class.
-        $this->attendance->project($student, $program, $period);
+        $this->attendance->project($student, $program);
 
         $this->collectWork($student, $program, $period, $now);
         $this->collectEngagement($student, $program, $period, $start, $to);

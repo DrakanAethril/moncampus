@@ -60,9 +60,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
     private int $teacherAccountId;
     private int $batchId;
     private string $timelinePath;
-    private string $attendancePath;
+    private string $statementsPath;
     private string $gesturesPath;
-    private string $councilPath;
     private string $rewardsPath;
     private string $gameSettingsPath;
 
@@ -79,9 +78,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->createMachineAccounts();
         $this->createSupervisedAttempt();
         $this->openTheGame();
-        $this->attendancePath = '/programs/'.$this->program->getId().'/game/attendance';
+        $this->statementsPath = '/programs/'.$this->program->getId().'/game/statements';
         $this->gesturesPath = '/programs/'.$this->program->getId().'/game/gestures';
-        $this->councilPath = '/programs/'.$this->program->getId().'/council';
         $this->rewardsPath = '/programs/'.$this->program->getId().'/game/rewards';
         $this->gameSettingsPath = '/programs/'.$this->program->getId().'/settings/game';
     }
@@ -219,9 +217,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/game/journal' => 200,
             '/game/levels' => 200,
             '/settings/game/levels' => 403,
-            $this->attendancePath => 403,
+            $this->statementsPath => 403,
             $this->gesturesPath => 403,
-            $this->councilPath => 403,
             // Declared engagement: the student files, a teacher of the class reviews.
             '/game/engagement/new' => 200,
             '/game/engagements' => 404,
@@ -334,12 +331,11 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/game/journal' => 404,
             '/game/levels' => 200,
             '/settings/game/levels' => 403,
-            $this->attendancePath => 200,
+            $this->statementsPath => 200,
             $this->gesturesPath => 200,
             // The council is the professeur principal's, and isProgramReferentTeacher() is
             // deliberately NOT staff-bypassed - a teacher of the class who does not carry the
             // referent remit does not get in, which is exactly what this row pins.
-            $this->councilPath => 403,
             // A teacher files nothing - they are nobody's student - and reviews everything.
             '/game/engagement/new' => 404,
             '/game/engagements' => 200,
@@ -466,10 +462,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/game' => 404,
             '/game/levels' => 200,
             '/settings/game/levels' => 200,
-            $this->attendancePath => 200,
+            $this->statementsPath => 200,
             $this->gesturesPath => 200,
-            // Re-opening a closed council is an administrator's act, so the screen is theirs too.
-            $this->councilPath => 200,
             '/game/engagement/new' => 404,
             '/game/engagements' => 200,
             $this->rewardsPath => 200,
@@ -619,9 +613,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/game' => 404,
             '/game/levels' => 200,
             '/settings/game/levels' => 403,
-            $this->attendancePath => 403,
+            $this->statementsPath => 403,
             $this->gesturesPath => 403,
-            $this->councilPath => 403,
             '/game/engagement/new' => 404,
             '/game/engagements' => 404,
             $this->rewardsPath => 403,
