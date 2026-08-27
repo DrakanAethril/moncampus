@@ -1,0 +1,22 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'gameAliasHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'gameProgressHeading'|trans, url: path('app_game')},
+        {label: 'gameAliasHeading'|trans, url: path('app_game_alias')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'gameAliasHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {# No filière on the formation, or a catalogue with nothing left in it. The game runs without
+       pseudonyms rather than offering a choice that is not one. #}
+    <div class="cm-note">
+        <span class="cm-note__icon">i</span>
+        <span>{{ 'gameAliasNoneText'|trans({'%program%': program.name}) }}</span>
+    </div>
+{% endblock %}

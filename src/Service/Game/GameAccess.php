@@ -36,6 +36,18 @@ final class GameAccess
         return $this->features->isEnabled(Feature::Game, $user);
     }
 
+    /**
+     * Whether the establishment runs a game at all, asked without a user.
+     *
+     * What a cron has instead of the half above: there is nobody logged in, so the role matrix is
+     * asked whether *any* role has the feature. A command that skipped the question would keep
+     * closing periods for a whole establishment that had switched the game off.
+     */
+    public function isFeatureOpenForAnyone(): bool
+    {
+        return $this->features->isEnabledForAnyRole(Feature::Game);
+    }
+
     public function isOpen(Program $program, ?User $user = null): bool
     {
         return $program->isGameEnabled() && $this->isFeatureOpen($user);

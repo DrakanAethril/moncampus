@@ -1,0 +1,63 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'gameAliasHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'gameProgressHeading'|trans, url: path('app_game')},
+        {label: 'gameAliasHeading'|trans, url: path('app_game_alias')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'gameAliasHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <p class="cm-gm-context">
+        {{ period.name }} · {{ program.displayShortName }} ·
+        {% if alias.chosen %}
+            {{ 'gameAliasChosenSubtitle'|trans({'%name%': alias.figure.surname}) }}
+        {% else %}
+            {{ 'gameAliasPendingSubtitle'|trans({'%count%': alias.offeredFigures|length, '%date%': deadline|date('d/m/Y')}) }}
+        {% endif %}
+    </p>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="cm-gm-figures">
+                {% for id in alias.offeredFigures %}
+                    {% set figure = offered[id]|default(null) %}
+                    {% if figure %}
+                        {% set chosen = alias.figure and alias.figure.id == figure.id %}
+                        <div class="cm-gm-figure {{ chosen ? 'is-chosen' }}">
+                            <span class="cm-gm-figure__initials">{{ figure.initials }}</span>
+                            <span class="cm-gm-figure__surname">{{ figure.surname }}</span>
+                            <span class="cm-gm-figure__full">{{ figure.fullName }}{% if figure.dates %} · {{ figure.dates }}{% endif %}</span>
+                            <span class="cm-gm-figure__notice">{{ figure.notice }}</span>
+                            {% if not figure.reviewed %}
+                                {# A wrong notice in a device that claims to be pedagogical is worse
+                                   than no notice: the seeded catalogue says so about itself until
+                                   somebody has read it. #}
+                                <span class="cm-badge cm-badge--gold">{{ 'gameFigureUnreviewedLabel'|trans }}</span>
+                            {% endif %}
+                            {% if chosen %}
+                                <span class="cm-badge cm-badge--green">{{ 'gameAliasChosenLabel'|trans }}</span>
+                            {% elseif not alias.chosen %}
+                                <form method="post">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('game_alias') }}">
+                                    <input type="hidden" name="figure" value="{{ figure.id }}">
+                                    <button type="submit" class="cm-btn cm-btn--primary">{{ 'gameAliasChooseAction'|trans }}</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            <div class="cm-note" style="margin-top: 18px">
+                <span class="cm-note__icon">🎭</span>
+                <span>{{ 'gameAliasNoteText'|trans({'%days%': 7}) }}</span>
+            </div>
+        </div>
+    </div>
+{% endblock %}
