@@ -259,6 +259,13 @@
                                                            is_program_teacher() is what keeps an enrolled student out. #}
                                                         {% if feature('game') and program.gameEnabled and is_program_teacher(program) %}
                                                             <a class="dropdown-item {{ current_route == 'app_program_game_attendance' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_game_attendance', {id: program.id}) }}">{{ 'attendanceStatementNavLabel'|trans }}</a>
+                                                            <a class="dropdown-item {{ current_route starts with 'app_program_game_gestures' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_game_gestures', {id: program.id}) }}">{{ 'gameGesturesHeading'|trans }}</a>
+                                                            {# The council is the professeur principal's screen, and an
+                                                               administrator's. is_program_teacher() is too wide for it, so the
+                                                               entry asks the narrower question the controller asks. #}
+                                                            {% if is_granted('ROLE_ADMIN') or is_program_referent_teacher(program) %}
+                                                                <a class="dropdown-item {{ current_route starts with 'app_program_council' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_council', {id: program.id}) }}">{{ 'gameCouncilHeading'|trans }}</a>
+                                                            {% endif %}
                                                         {% endif %}
                                                         {% if feature('my_alternance') and visibility_allows(program.alternanceCalendarVisibility) %}
                                                             {# Same route in both alternanceCalendarMode cases - the controller redirects to the

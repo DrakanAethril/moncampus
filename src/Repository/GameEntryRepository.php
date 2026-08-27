@@ -9,6 +9,7 @@ use App\Entity\GameEntry;
 use App\Entity\Program;
 use App\Entity\User;
 use App\Enum\GameFamily;
+use App\Service\Game\GameRuleCatalog;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -171,6 +172,116 @@ class GameEntryRepository extends ServiceEntityRepository
             ->setParameter('end', $weekEnd)
             ->getQuery()
             ->getSingleScalarResult();
+    }
+
+    /**
+     * The gestures one teacher posted on one class and period, most recent first.
+     *
+     * Cancellations are excluded from the list itself - a reversal is a line of the ledger, not a
+     * gesture - and the caller asks isCancelled() for each of the ones that remain.
+     *
+     * @return list<GameEntry>
+     */
+    public function gesturesBy(User $teacher, Program $program, EvaluationPeriod $period): array
+    {
+        /** @var list<GameEntry> $entries */
+        $entries = $this->createQueryBuilder('e')
+            ->where('e.author = :teacher')
+            ->andWhere('e.program = :program')
+            ->andWhere('e.period = :period')
+            ->andWhere('e.ruleCode IN (:codes)')
+            ->andWhere('e.reversalOf IS NULL')
+            ->orderBy('e.occurredAt', 'DESC')
+            ->addOrderBy('e.id', 'DESC')
+            ->setParameter('teacher', $teacher)
+            ->setParameter('program', $program)
+            ->setParameter('period', $period)
+            ->setParameter('codes', [GameRuleCatalog::RECOGNITION_GESTURE_BONUS, GameRuleCatalog::RECOGNITION_GESTURE_MALUS])
+            ->getQuery()
+            ->getResult();
+
+        return $entries;
+    }
+
+    /**
+     * The net contribution of one teacher's gestures to one student - what the ±60 bound is
+     * measured against.
+     *
+     * Reversals are summed in rather than filtered out, which is what makes a cancelled gesture
+     * free the room it took.
+     */
+    public function gestureNet(User $teacher, User $student, Program $program, EvaluationPeriod $period): int
+    {
+        return (int) $this->createQueryBuilder('e')
+            ->select('COALESCE(SUM(e.points), 0)')
+            ->where('e.author = :teacher')
+            ->andWhere('e.student = :student')
+            ->andWhere('e.program = :program')
+            ->andWhere('e.period = :period')
+            ->andWhere('e.ruleCode IN (:codes)')
+            ->setParameter('teacher', $teacher)
+            ->setParameter('student', $student)
+            ->setParameter('program', $program)
+            ->setParameter('period', $period)
+            ->setParameter('codes', [GameRuleCatalog::RECOGNITION_GESTURE_BONUS, GameRuleCatalog::RECOGNITION_GESTURE_MALUS])
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * Every line one source produced for one student under one rule - what a re-opened council has
+     * to undo.
+     *
+     * @return list<GameEntry>
+     */
+    public function findBySource(User $student, string $sourceType, int $sourceId, string $ruleCode): array
+    {
+        /** @var list<GameEntry> $entries */
+        $entries = $this->createQueryBuilder('e')
+            ->where('e.student = :student')
+            ->andWhere('e.sourceType = :sourceType')
+            ->andWhere('e.sourceId = :sourceId')
+            ->andWhere('e.ruleCode = :ruleCode')
+            ->setParameter('student', $student)
+            ->setParameter('sourceType', $sourceType)
+            ->setParameter('sourceId', $sourceId)
+            ->setParameter('ruleCode', $ruleCode)
+            ->getQuery()
+            ->getResult();
+
+        return $entries;
+    }
+
+    /** The line that undoes this one, when there is one. */
+    public function findReversalOf(GameEntry $entry): ?GameEntry
+    {
+        return $this->findOneBy(['reversalOf' => $entry]);
+    }
+
+    /**
+     * The gestures addressed to one student that they may still contest or read as contested -
+     * their own side of §5.4.
+     *
+     * @return list<GameEntry>
+     */
+    public function gesturesFor(User $student, Program $program, EvaluationPeriod $period): array
+    {
+        /** @var list<GameEntry> $entries */
+        $entries = $this->createQueryBuilder('e')
+            ->where('e.student = :student')
+            ->andWhere('e.program = :program')
+            ->andWhere('e.period = :period')
+            ->andWhere('e.ruleCode IN (:codes)')
+            ->andWhere('e.reversalOf IS NULL')
+            ->orderBy('e.occurredAt', 'DESC')
+            ->setParameter('student', $student)
+            ->setParameter('program', $program)
+            ->setParameter('period', $period)
+            ->setParameter('codes', [GameRuleCatalog::RECOGNITION_GESTURE_BONUS, GameRuleCatalog::RECOGNITION_GESTURE_MALUS])
+            ->getQuery()
+            ->getResult();
+
+        return $entries;
     }
 
     /**

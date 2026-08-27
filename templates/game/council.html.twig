@@ -1,0 +1,113 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'gameCouncilHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.displayShortName, url: path('app_program_timetable', {id: program.id})},
+        {label: 'gameCouncilHeading'|trans, url: path('app_program_council', {id: program.id})},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'gameCouncilHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    <span class="cm-actionbar__meta"><b>{{ stated }}</b> / {{ students|length }} {{ 'gameCouncilStatedLabel'|trans }}</span>
+    {% if closed %}
+        {% if canReopen %}
+            <form method="post" action="{{ path('app_program_council_reopen', {id: program.id}) }}" class="d-inline">
+                <input type="hidden" name="_token" value="{{ csrf_token('game_council_reopen') }}">
+                <button type="submit" class="cm-btn cm-btn--outline">{{ 'gameCouncilReopenAction'|trans }}</button>
+            </form>
+        {% endif %}
+    {% else %}
+        <form method="post" action="{{ path('app_program_council_close', {id: program.id}) }}" class="d-inline">
+            <input type="hidden" name="_token" value="{{ csrf_token('game_council_close') }}">
+            <button type="submit" class="cm-btn cm-btn--primary">{{ 'gameCouncilCloseAction'|trans }}</button>
+        </form>
+    {% endif %}
+{% endblock %}
+
+{% block main %}
+    <p class="cm-gm-context">{{ program.displayShortName }} · {{ period.name }}</p>
+
+    <div class="card">
+        <div class="card-body"
+             data-controller="game-council"
+             data-game-council-url-value="{{ path('app_program_council_state', {id: program.id}) }}"
+             data-game-council-token-value="{{ csrf_token('game_council') }}"
+             data-game-council-locked-message-value="{{ 'gameCouncilLockedFlashMessage'|trans }}"
+             data-game-council-shortcuts-value="{{ mentions|reduce((carry, m) => carry|merge({(m.shortcut): m.value}), {})|json_encode }}">
+
+            <div class="cm-att-head">
+                <span class="cm-gm-label">{{ 'gameCouncilQuickEntryLabel'|trans }}</span>
+                <span class="cm-council-keys">
+                    {% for mention in mentions %}
+                        <kbd>{{ mention.shortcut }}</kbd> {{ mention.labelKey|trans }}{{ not loop.last ? ' ·' }}
+                    {% endfor %}
+                    · <kbd>↵</kbd> {{ 'gameCouncilNextLabel'|trans }}
+                </span>
+                <span class="cm-badge cm-badge--green" style="margin-left: auto">{{ 'gameCouncilAutosaveLabel'|trans }}</span>
+            </div>
+
+            {% if closed %}
+                <div class="cm-note cm-note--gold" style="margin: 14px 0">
+                    <span class="cm-note__icon">🔒</span>
+                    <span>{{ 'gameCouncilClosedText'|trans }}</span>
+                </div>
+            {% endif %}
+
+            <table class="card-table cm-council" style="margin-top: 10px">
+                <thead>
+                    <tr>
+                        <th>{{ 'gameCouncilStudentColumnLabel'|trans }}</th>
+                        <th>{{ 'gameCouncilMentionColumnLabel'|trans }}</th>
+                        <th>{{ 'gameCouncilCommentColumnLabel'|trans }}</th>
+                        <th class="text-end">{{ 'gameCouncilPointsColumnLabel'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                        {% set row = rows[student.id]|default(null) %}
+                        <tr data-game-council-target="row" data-student="{{ student.id }}">
+                            <td>{{ student.displayName ?? student.username }}</td>
+                            <td>
+                                <div class="cm-gm-seg cm-council__mentions">
+                                    {% for mention in mentions %}
+                                        <label>
+                                            <input type="radio" name="mention-{{ student.id }}" value="{{ mention.value }}"
+                                                   {{ row and row.mention == mention ? 'checked' }}
+                                                   {{ closed ? 'disabled' }}
+                                                   data-action="game-council#mention">
+                                            <span>{{ mention.labelKey|trans }}</span>
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td>
+                                <input type="text" class="cm-council__comment"
+                                       value="{{ row ? row.comment : '' }}"
+                                       maxlength="2000"
+                                       placeholder="{{ 'gameCouncilCommentPlaceholder'|trans }}"
+                                       {{ closed ? 'disabled' }}
+                                       data-action="game-council#comment">
+                            </td>
+                            {# The value of the mention just placed, and nothing else: no index, no
+                               rank, no total. The council feeds the game; the game never weighs on
+                               the council. #}
+                            <td class="text-end cm-gm-log__pts" data-game-council-target="points">
+                                {{ row ? (row.mention.points > 0 ? '+' ~ row.mention.points : row.mention.points) : '—' }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="cm-note" style="margin-top: 16px">
+                <span class="cm-note__icon">🔒</span>
+                <span>{{ 'gameCouncilNoteText'|trans }}</span>
+            </div>
+        </div>
+    </div>
+{% endblock %}
