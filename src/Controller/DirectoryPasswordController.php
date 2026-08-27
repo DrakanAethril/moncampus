@@ -27,8 +27,9 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * that made them useful went at the same time: a reset nobody can read hands the account a random
  * password that locks its owner out. What replaces them is the passwordless mailed link
  * (App\Service\MagicLoginService) for anyone who can use it, and samba-tool on the domain
- * controller for the two cases it does not cover - ROLE_ADMIN accounts, deliberately excluded from
- * that link, and accounts with no confirmed contact address.
+ * controller for the one case it does not cover - an account with no confirmed contact address.
+ * ROLE_ADMIN used to be a second such case; the link stopped excluding it on 2026-08-27, precisely
+ * because samba-tool is not an answer somebody locked out at 8am has.
  *
  * So the only thing that still fills this queue is the user's own profile
  * (App\Controller\ProfileController::changePassword()) - and this screen is how staff sees whether
