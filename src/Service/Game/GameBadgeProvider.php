@@ -28,6 +28,7 @@ final class GameBadgeProvider
         private readonly GameProfileRepository $profiles,
         private readonly GameLevelResolver $levels,
         private readonly GameLevelBoard $board,
+        private readonly GameTrackResolver $tracks,
         private readonly AvatarExtension $avatars,
     ) {
     }
@@ -53,7 +54,9 @@ final class GameBadgeProvider
         $progress = $this->levels->resolve($profile?->getXpTotal() ?? 0);
 
         // A chosen title survives a level change; without one, the level's own wording answers.
-        $title = $profile?->getDisplayedTitle() ?? $this->board->titleFor($program->getGameTrack(), $progress->level->level);
+        // The filière is the student's own, read off their option: two students of one SIO class
+        // read « Chasseur·se de bugs » and « Chasseur·se de pannes ».
+        $title = $profile?->getDisplayedTitle() ?? $this->board->titleFor($this->tracks->forStudent($user, $program), $progress->level->level);
 
         return new GameBadge(
             $user,

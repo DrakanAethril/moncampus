@@ -34,6 +34,7 @@ final class GameAliasDrawer
     public function __construct(
         private readonly GameFigureRepository $figures,
         private readonly GameAliasRepository $aliases,
+        private readonly GameTrackResolver $tracks,
         private readonly EntityManagerInterface $entityManager,
     ) {
     }
@@ -41,7 +42,7 @@ final class GameAliasDrawer
     /**
      * The student's alias for this period, drawn if it does not exist yet.
      *
-     * Returns null when the formation carries no filière, or when its catalogue is empty: the game
+     * Returns null when the student's filière cannot be resolved, or when its catalogue is empty: the game
      * then simply runs without pseudonyms, and the ranking shows real names to nobody because it
      * shows nothing at all (the settings screen can switch the ranking off for the same reason).
      */
@@ -53,7 +54,9 @@ final class GameAliasDrawer
             return $existing;
         }
 
-        $track = $program->getGameTrack();
+        // Per student, not per formation: in a SIO class the SLAM students draw from the SLAM
+        // catalogue and the SISR ones from theirs.
+        $track = $this->tracks->forStudent($student, $program);
 
         if (null === $track) {
             return null;
