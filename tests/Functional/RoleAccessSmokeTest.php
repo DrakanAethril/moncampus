@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional;
 
+use App\Entity\EvaluationPeriod;
+use App\Entity\EvaluationPeriodGroup;
 use App\Entity\FeatureRoleSetting;
 use App\Entity\GuestAccount;
 use App\Entity\IpRange;
@@ -22,6 +24,7 @@ use App\Entity\UserFeatureAccess;
 use App\Entity\VmBatch;
 use App\Enum\Feature;
 use App\Enum\FeatureAccessState;
+use App\Enum\GameTrack;
 use App\Enum\QuestionType;
 use App\Enum\QuizMode;
 use Doctrine\ORM\EntityManagerInterface;
@@ -70,6 +73,38 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->program = $this->createProgram([$this->student], [$this->teacher], $this->admin);
         $this->createMachineAccounts();
         $this->createSupervisedAttempt();
+        $this->openTheGame();
+    }
+
+    /**
+     * The campus game switched on for the fixture formation, with a calendar it can actually score.
+     *
+     * Both switches are needed and the second one is the point: the feature being on for every role
+     * (FunctionalTestCase opens the whole catalogue) still shows nobody a game until a formation has
+     * declared itself. Without the period group the screens would answer « pas de période » - a 200,
+     * but not the screen anybody is trying to pin.
+     */
+    private function openTheGame(): void
+    {
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $today = new \DateTimeImmutable('today');
+
+        $group = new EvaluationPeriodGroup('Semestres de test');
+        $group->setCreatedBy($this->admin);
+        $entityManager->persist($group);
+
+        $period = new EvaluationPeriod();
+        $period->setName('Semestre de test');
+        $period->setStartDate($today->modify('-2 months'));
+        $period->setEndDate($today->modify('+2 months'));
+        $period->setEvaluationPeriodGroup($group);
+        $entityManager->persist($period);
+
+        $this->program->setEvaluationPeriodGroup($group);
+        $this->program->setGameEnabled(true);
+        $this->program->setGameTrack(GameTrack::Sisr);
+
+        $entityManager->flush();
     }
 
     /**
@@ -506,6 +541,11 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         // project_livret_alternant_tutor_access.
         $this->assertScreens($this->tutor, [
             '/' => 302,
+            // The game stays between the student, their class and their teachers - a tutor reads
+            // none of it (§1, « aucune vue tuteur ni famille »).
+            '/game' => 404,
+            '/game/levels' => 200,
+            '/settings/game/levels' => 403,
             '/agenda' => 200,
             '/messages' => 200,
             '/tickets' => 200,

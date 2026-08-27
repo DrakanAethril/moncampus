@@ -1,0 +1,40 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'gameJournalHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'gameProgressHeading'|trans, url: path('app_game')},
+        {label: 'gameJournalHeading'|trans, url: path('app_game_journal')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'gameJournalHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <p class="cm-gm-context">{{ period.name }} · {{ program.shortName }}</p>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="cm-gm-log">
+                {% for entry in journal %}
+                    <div class="cm-gm-log__row">
+                        <span class="cm-gm-log__date">{{ entry.occurredAt|date('D d/m') }}</span>
+                        <span class="cm-gm-log__rule">
+                            {{ ('gameRule.' ~ entry.ruleCode)|trans }}
+                            {% if entry.reason %}<span class="cm-gm-log__src">{{ entry.reason }}</span>{% endif %}
+                            {% if entry.reversal %}<span class="cm-gm-log__src">{{ 'gameEntryReversalLabel'|trans }}</span>{% endif %}
+                        </span>
+                        <span class="cm-gm-log__fam">{{ entry.family.labelKey|trans }}</span>
+                        <span class="cm-gm-log__pts{{ entry.points > 0 ? '' : (entry.points < 0 ? ' cm-gm-log__pts--neg' : ' cm-gm-log__pts--nil') }}">
+                            {{ entry.points > 0 ? '+' }}{{ entry.points }}
+                        </span>
+                    </div>
+                {% else %}
+                    <div class="cm-card-note">{{ 'gameJournalEmptyText'|trans }}</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

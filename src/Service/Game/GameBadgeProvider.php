@@ -1,0 +1,80 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Service\Game;
+
+use App\Entity\User;
+use App\Repository\GameProfileRepository;
+use App\Twig\AvatarExtension;
+
+/**
+ * The decorated avatar of the person looking at the page, or null.
+ *
+ * Null is by far the common answer and it has to be cheap: the main bar asks on every authenticated
+ * page, and until an establishment switches the game on nobody has a badge. The memo is per request
+ * and keyed by account, so a page drawing the bar twice pays once.
+ *
+ * A teacher has no badge either, deliberately - the game is played by students, and a ring around a
+ * teacher's avatar would announce a level nobody earns.
+ */
+final class GameBadgeProvider
+{
+    /** @var array<int, GameBadge|null> */
+    private array $cache = [];
+
+    public function __construct(
+        private readonly GameAccess $access,
+        private readonly GameProfileRepository $profiles,
+        private readonly GameLevelResolver $levels,
+        private readonly GameLevelBoard $board,
+        private readonly AvatarExtension $avatars,
+    ) {
+    }
+
+    public function forUser(?User $user): ?GameBadge
+    {
+        if (null === $user || null === $user->getId()) {
+            return null;
+        }
+
+        return $this->cache[$user->getId()] ??= $this->resolve($user);
+    }
+
+    private function resolve(User $user): ?GameBadge
+    {
+        $program = $this->access->primaryProgramFor($user);
+
+        if (null === $program) {
+            return null;
+        }
+
+        $profile = $this->profiles->findForStudent($user);
+        $progress = $this->levels->resolve($profile?->getXpTotal() ?? 0);
+
+        // A chosen title survives a level change; without one, the level's own wording answers.
+        $title = $profile?->getDisplayedTitle() ?? $this->board->titleFor($program->getGameTrack(), $progress->level->level);
+
+        return new GameBadge(
+            $user,
+            $program,
+            $progress,
+            $title,
+            $this->initialsOf($user),
+            $this->avatars->getAvatarUrl($user),
+        );
+    }
+
+    private function initialsOf(User $user): string
+    {
+        $initials = $user->getInitials();
+
+        if (null !== $initials && '' !== $initials) {
+            return $initials;
+        }
+
+        $name = $user->getDisplayName() ?? $user->getUsername();
+
+        return mb_strtoupper(mb_substr($name, 0, 1));
+    }
+}
