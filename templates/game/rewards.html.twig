@@ -1,0 +1,167 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'gameRewardsHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.displayShortName, url: path('app_program_timetable', {id: program.id})},
+        {label: 'gameRewardsHeading'|trans, url: path('app_program_game_rewards', {id: program.id})},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'gameRewardsHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <p class="cm-gm-context">{{ program.displayShortName }} · {{ period.name }}</p>
+
+    {# Repeated on the screen because it is the rule most easily broken by accident: granting a
+       reward never moves the ranking. Points make the index, the index makes the tiers, the tiers
+       and a human hand make the rewards — nothing comes back up. #}
+    <div class="cm-note cm-note--gold">
+        <span class="cm-note__icon">i</span>
+        <span>{{ 'gameRewardNoPointsNoteText'|trans }}</span>
+    </div>
+
+    <div class="card" style="margin-top: 16px">
+        <div class="card-body">
+            <span class="cm-gm-label">{{ 'gameRewardCatalogueHeading'|trans }}</span>
+
+            <table class="card-table" style="margin-top: 10px">
+                <thead>
+                    <tr>
+                        <th>{{ 'gameRewardLabelColumnLabel'|trans }}</th>
+                        <th>{{ 'gameRewardNatureColumnLabel'|trans }}</th>
+                        <th>{{ 'gameRewardScopeColumnLabel'|trans }}</th>
+                        <th>{{ 'gameRewardCirculationColumnLabel'|trans }}</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in catalogue %}
+                        <tr>
+                            <td>
+                                <b>{{ item.icon ?? '🎁' }} {{ item.label }}</b>
+                                {% if item.description %}<span class="cm-gm-log__src">{{ item.description }}</span>{% endif %}
+                            </td>
+                            <td><span class="cm-badge cm-badge--gray">{{ item.nature.labelKey|trans }}</span></td>
+                            <td>{{ item.scope.labelKey|trans }}</td>
+                            <td>
+                                {{ counts[item.id]|default(0) }}
+                                {%- if item.quantity is not null %} / {{ item.quantity }}{% endif %}
+                            </td>
+                            <td class="cm-actions">
+                                {% if item.automatic %}
+                                    {# Granted by the closure and by nothing else: a bronze handed out
+                                       by hand would be a tier saying nothing about an index. #}
+                                    <span class="cm-badge cm-badge--blue">
+                                        {%- if item.automaticThreshold is not null -%}
+                                            {{ 'gameRewardAutomaticLabel'|trans({'%threshold%': item.automaticThreshold}) }}
+                                        {%- else -%}
+                                            {# The trophy goes to the head of the class, which is a rank
+                                               rather than a value: the closure grants it, and there is
+                                               no threshold to print. #}
+                                            {{ 'gameRewardAutomaticTopLabel'|trans }}
+                                        {%- endif -%}
+                                    </span>
+                                {% else %}
+                                    <form method="post" action="{{ path('app_program_game_rewards_grant', {id: program.id, itemId: item.id}) }}" class="cm-engagement-review">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('game_reward_grant') }}">
+                                        {% if item.scope.value != 'class' %}
+                                            <select name="student" required>
+                                                <option value="">{{ 'gameRewardStudentPlaceholder'|trans }}</option>
+                                                {% for student in students %}
+                                                    <option value="{{ student.id }}">{{ student.displayName ?? student.username }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        {% endif %}
+                                        <input type="text" name="reason" maxlength="1000" placeholder="{{ 'gameRewardReasonPlaceholder'|trans }}">
+                                        <button type="submit" class="cm-action cm-action--positive">{{ 'gameRewardGrantAction'|trans }}</button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 16px">
+        <div class="card-body">
+            <span class="cm-gm-label">{{ 'gameRewardCreateHeading'|trans }}</span>
+            <form method="post" action="{{ path('app_program_game_rewards_new', {id: program.id}) }}" style="margin-top: 10px">
+                <input type="hidden" name="_token" value="{{ csrf_token('game_reward_new') }}">
+                <div class="cm-gm-gestureform">
+                    <label>
+                        <span class="cm-gm-label">{{ 'gameRewardLabelColumnLabel'|trans }} *</span>
+                        <input type="text" name="label" maxlength="120" required>
+                    </label>
+                    <label>
+                        <span class="cm-gm-label">{{ 'gameRewardIconFieldLabel'|trans }}</span>
+                        <input type="text" name="icon" maxlength="2" placeholder="🎁">
+                    </label>
+                    <label>
+                        <span class="cm-gm-label">{{ 'gameRewardNatureColumnLabel'|trans }} *</span>
+                        <select name="nature" required>
+                            <option value="">{{ 'gameRewardNaturePlaceholder'|trans }}</option>
+                            {% for nature in natures %}
+                                <option value="{{ nature.value }}">{{ nature.labelKey|trans }} — {{ nature.lifecycleKey|trans }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>
+                        <span class="cm-gm-label">{{ 'gameRewardScopeColumnLabel'|trans }} *</span>
+                        <select name="scope" required>
+                            <option value="">{{ 'gameRewardScopePlaceholder'|trans }}</option>
+                            {% for scope in scopes %}
+                                <option value="{{ scope.value }}">{{ scope.labelKey|trans }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>
+                        <span class="cm-gm-label">{{ 'gameRewardQuantityFieldLabel'|trans }}</span>
+                        <input type="number" name="quantity" min="0" max="10000" placeholder="{{ 'gameRewardQuantityPlaceholder'|trans }}">
+                    </label>
+                    <label class="cm-gm-gestureform__reason">
+                        <span class="cm-gm-label">{{ 'gameRewardDescriptionFieldLabel'|trans }}</span>
+                        <textarea name="description" rows="2" maxlength="1000"></textarea>
+                    </label>
+                </div>
+                <div class="cm-actionbar">
+                    <div class="cm-actionbar__buttons">
+                        <button type="submit" class="cm-btn cm-btn--primary">{{ 'gameRewardCreateAction'|trans }}</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 16px">
+        <div class="card-body">
+            <span class="cm-gm-label">{{ 'gameRewardGrantedHeading'|trans }}</span>
+            <table class="card-table" style="margin-top: 10px">
+                <thead>
+                    <tr>
+                        <th>{{ 'gameRewardLabelColumnLabel'|trans }}</th>
+                        <th>{{ 'engagementStudentColumnLabel'|trans }}</th>
+                        <th>{{ 'gameRewardGrantedByColumnLabel'|trans }}</th>
+                        <th>{{ 'gameGesturePostedOnLabel'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for grant in granted %}
+                        <tr>
+                            <td>{{ grant.item.icon ?? '🎁' }} {{ grant.item.label }}{% if grant.used %} <span class="cm-badge cm-badge--gray">{{ 'gameRewardUsedLabel'|trans({'%date%': grant.usedAt|date('d/m/Y')}) }}</span>{% endif %}</td>
+                            <td>{{ grant.student ? (grant.student.displayName ?? grant.student.username) : '—' }}</td>
+                            <td>{{ grant.automatic ? 'gameRewardAutomaticGrantLabel'|trans : (grant.grantedBy.displayName ?? grant.grantedBy.username) }}</td>
+                            <td>{{ grant.grantedAt|date('d/m/Y') }}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="4" class="text-secondary">{{ 'gameRewardGrantedEmptyText'|trans }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

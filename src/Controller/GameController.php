@@ -9,6 +9,7 @@ use App\Entity\User;
 use App\Enum\Feature;
 use App\Enum\GameFamily;
 use App\Repository\GameEntryRepository;
+use App\Repository\RewardGrantRepository;
 use App\Security\Voter\GameGestureVoter;
 use App\Service\Game\GameAccess;
 use App\Service\Game\GameBadgeProvider;
@@ -17,6 +18,7 @@ use App\Service\Game\GameIndexReader;
 use App\Service\Game\GameLevelBoard;
 use App\Service\Game\GamePeriodResolver;
 use App\Service\Game\GameSettingsProvider;
+use App\Service\Game\RewardGranter;
 use App\Service\Game\TeacherGestureService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -58,6 +60,7 @@ class GameController extends AbstractController
         GameBadgeProvider $badges,
         GameSettingsProvider $settingsProvider,
         TeacherGestureService $teacherGestures,
+        RewardGrantRepository $rewards,
     ): Response {
         $student = $this->currentUser();
         $program = $access->primaryProgramFor($student) ?? throw $this->createNotFoundException();
@@ -94,6 +97,9 @@ class GameController extends AbstractController
             'families' => GameFamily::cases(),
             'journal' => $entries->journal($student, $program, $period, self::JOURNAL_PREVIEW),
             'tier' => $standing->tier($settings->getThresholdBronze(), $settings->getThresholdSilver(), $settings->getThresholdGold()),
+            // The shelf: every period, not only this one. A symbolic reward is acquired for good
+            // and does not stop existing when its term ends (§5.6).
+            'shelf' => $rewards->shelfFor($student),
         ]);
     }
 
@@ -113,6 +119,39 @@ class GameController extends AbstractController
             'period' => $period,
             'journal' => $entries->journal($student, $program, $period),
         ]);
+    }
+
+    /**
+     * Spend a consumable - the student does it themselves.
+     *
+     * The teacher is notified, they do not grant it: a joker one can refuse is not a reward, it is a
+     * request (§5.5). What it may be spent on is written on the reward itself; what it may never be
+     * spent on - a graded assessment - is a rule the joker's own description carries, because the
+     * application has no way of knowing which piece of work the student means.
+     */
+    #[Route(path: '/game/rewards/{grantId}/use', name: 'app_game_reward_use', requirements: ['grantId' => '\d+'], methods: ['POST'])]
+    public function useReward(
+        int $grantId,
+        Request $request,
+        RewardGrantRepository $rewards,
+        RewardGranter $granter,
+    ): Response {
+        if (!$this->isCsrfTokenValid('game_reward_use', (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $grant = $rewards->find($grantId) ?? throw $this->createNotFoundException();
+
+        if ($grant->getStudent()?->getId() !== $this->currentUser()->getId()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $this->addFlash(
+            $granter->spend($grant, trim((string) $request->request->get('used_on'))) ? 'success' : 'error',
+            'gameRewardSpentFlashMessage',
+        );
+
+        return $this->redirectToRoute('app_game');
     }
 
     /**
