@@ -218,8 +218,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             $this->attendancePath => 403,
             $this->gesturesPath => 403,
             $this->councilPath => 403,
-            $this->gesturesPath => 403,
-            $this->councilPath => 403,
+            // Declared engagement: the student files, a teacher of the class reviews.
+            '/game/engagement/new' => 200,
+            '/game/engagements' => 404,
             // « Séquences de l'année » hands over to the single formation this student belongs to
             // rather than drawing a picker with one card in it (2026-08-17). The list still renders
             // for a student straddling two, and for the empty state.
@@ -326,6 +327,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // deliberately NOT staff-bypassed - a teacher of the class who does not carry the
             // referent remit does not get in, which is exactly what this row pins.
             $this->councilPath => 403,
+            // A teacher files nothing - they are nobody's student - and reviews everything.
+            '/game/engagement/new' => 404,
+            '/game/engagements' => 200,
             // The course-space index is the student's own list of programs; a teacher reaches the
             // same sequences from their program screens instead.
             '/my/courses' => 403,
@@ -446,6 +450,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             $this->gesturesPath => 200,
             // Re-opening a closed council is an administrator's act, so the screen is theirs too.
             $this->councilPath => 200,
+            '/game/engagement/new' => 404,
+            '/game/engagements' => 200,
             '/settings/configuration' => 200,
             '/settings/teaching' => 200,
             // Groups are admin-only, deliberately stricter than the rest of Settings - see
@@ -589,6 +595,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/game/levels' => 200,
             '/settings/game/levels' => 403,
             $this->attendancePath => 403,
+            $this->gesturesPath => 403,
+            $this->councilPath => 403,
+            '/game/engagement/new' => 404,
+            '/game/engagements' => 404,
             '/agenda' => 200,
             '/messages' => 200,
             '/tickets' => 200,

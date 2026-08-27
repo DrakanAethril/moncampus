@@ -9359,3 +9359,10 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
     display: inline-block; padding: 1px 5px; border-radius: 4px; font-size: 11px; font-weight: 700;
     background: var(--cm-surface-alt); border: 1px solid var(--cm-border); color: var(--cm-ink);
 }
+
+/* ---------- Declared engagement, validation queue (screen 13) ---------- */
+.cm-engagement-review { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.cm-engagement-review input[type="text"] {
+    width: 190px; padding: 4px 8px; font: inherit; font-size: 12px;
+    border: 1px solid var(--cm-border); border-radius: 6px; background: var(--cm-surface); color: var(--cm-ink);
+}

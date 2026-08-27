@@ -14,6 +14,7 @@
 {% block page_title %}{{ 'gameProgressHeading'|trans }}{% endblock %}
 
 {% block page_actions %}
+    <a href="{{ path('app_game_engagement_new') }}" class="cm-btn cm-btn--primary">{{ 'engagementDeclareHeading'|trans }}</a>
     <a href="{{ path('app_game_levels') }}" class="cm-btn cm-btn--outline">{{ 'gameLevelsHeading'|trans }}</a>
 {% endblock %}
 
