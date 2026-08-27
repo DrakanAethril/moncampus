@@ -262,17 +262,20 @@
                                                             <a class="dropdown-item {{ current_route starts with 'app_program_game_gestures' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_game_gestures', {id: program.id}) }}">{{ 'gameGesturesHeading'|trans }}</a>
                                                             <a class="dropdown-item {{ current_route starts with 'app_game_engagements' and app.request.query.get('program') == program.id ? 'active' }}" href="{{ path('app_game_engagements', {program: program.id}) }}">{{ 'engagementQueueHeading'|trans }}</a>
                                                             <a class="dropdown-item {{ current_route starts with 'app_program_game_rewards' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_game_rewards', {id: program.id}) }}">{{ 'gameRewardsHeading'|trans }}</a>
-                                                            {# The barème and the two switches are the referent teacher's decision, and
-                                                               an administrator's - the same door as the council, for the same reason. #}
-                                                            {% if is_granted('ROLE_ADMIN') or is_program_referent_teacher(program) %}
-                                                                <a class="dropdown-item {{ current_route == 'app_program_settings_game' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_settings_game', {id: program.id}) }}">{{ 'gameSettingsHeading'|trans }}</a>
-                                                            {% endif %}
                                                             {# The council is the professeur principal's screen, and an
                                                                administrator's. is_program_teacher() is too wide for it, so the
                                                                entry asks the narrower question the controller asks. #}
                                                             {% if is_granted('ROLE_ADMIN') or is_program_referent_teacher(program) %}
                                                                 <a class="dropdown-item {{ current_route starts with 'app_program_council' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_council', {id: program.id}) }}">{{ 'gameCouncilHeading'|trans }}</a>
                                                             {% endif %}
+                                                        {% endif %}
+                                                        {# The settings entry is deliberately NOT behind program.gameEnabled, unlike
+                                                           the four above: it is the screen that switches the formation on, and one
+                                                           reachable only once it already is could never be reached at all. Only the
+                                                           feature gates it, plus the same door as the council - the referent
+                                                           teacher's, and an administrator's. #}
+                                                        {% if feature('game') and (is_granted('ROLE_ADMIN') or is_program_referent_teacher(program)) %}
+                                                            <a class="dropdown-item {{ current_route == 'app_program_settings_game' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_settings_game', {id: program.id}) }}">{{ 'gameSettingsHeading'|trans }}</a>
                                                         {% endif %}
                                                         {% if feature('my_alternance') and visibility_allows(program.alternanceCalendarVisibility) %}
                                                             {# Same route in both alternanceCalendarMode cases - the controller redirects to the
