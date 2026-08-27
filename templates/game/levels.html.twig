@@ -1,0 +1,47 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'gameLevelsHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'gameProgressHeading'|trans, url: path('app_game')},
+        {label: 'gameLevelsHeading'|trans, url: path('app_game_levels')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'gameLevelsHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body">
+            <div class="cm-card-toolbar" style="padding: 0 0 18px">
+                <span class="cm-gm-label">{{ 'gameLevelsSubtitle'|trans }}</span>
+            </div>
+
+            <div class="cm-gm-plate">
+                {% for entry in entries %}
+                    {% set level = entry.level %}
+                    <div class="cm-gm-plate__cell">
+                        <span class="cm-gm-av">
+                            <span class="cm-gm-av__ring" style="{{ game_level_style(level.level) }}">
+                                <span class="cm-gm-av__face">{{ badge ? badge.initials : '·' }}</span>
+                            </span>
+                            <span class="cm-gm-av__band" style="{{ game_band_style(level.level) }}">{{ 'gameLevelBandLabel'|trans({'%level%': level.level}) }}</span>
+                        </span>
+                        <span class="cm-gm-plate__title">{% if level.legendary %}🏆 {% endif %}{{ entry.title }}</span>
+                        <span class="cm-gm-plate__xp">{{ level.xpMin|number_format(0, ',', ' ') }} XP</span>
+                    </div>
+                {% endfor %}
+            </div>
+
+            {# Both halves of the sentence matter: no image, and two independent layers. A reward
+               frame is laid over the ring at closure; it never replaces it, because the ring says
+               the cursus and the frame says the period. #}
+            <div class="cm-note" style="margin-top: 20px">
+                <span class="cm-note__icon">i</span>
+                <span>{{ 'gameLevelsNoteText'|trans }}</span>
+            </div>
+        </div>
+    </div>
+{% endblock %}

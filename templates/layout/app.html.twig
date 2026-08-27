@@ -48,12 +48,26 @@
                     {% endif %}
                     <div class="nav-item dropdown">
                         {% set navbar_avatar_url = avatar_url(app.user) %}
+                        {# The campus game's badge, when this person plays one (design/validated/
+                           gamification.md, screen 4 - the handoff's #3c kept as it is). The ring says
+                           the level of the whole cursus, the band underneath turns into a filled bar
+                           carrying the way to the next one, and the second line under the name
+                           becomes the displayed title instead of the login. Nobody else's bar
+                           changes: game_badge() answers null for a teacher, for a staff account and
+                           for every formation that has not switched its game on. #}
+                        {% set game_user_badge = game_badge(app.user) %}
                         <a href="#" class="nav-link d-flex align-items-center lh-1 text-reset p-0 cm-user__toggle" data-bs-toggle="dropdown" aria-label="{{ 'openUserMenuLabel'|trans }}">
                             <div class="d-none d-xl-block cm-user__id">
                                 <div class="cm-user__name">{{ app.user.displayName ?? app.user.username }}</div>
-                                <div class="cm-user__login">{{ app.user.username }}</div>
+                                <div class="cm-user__login">{{ game_user_badge ? game_user_badge.title : app.user.username }}</div>
                             </div>
-                            <span class="cm-user__avatar"{% if navbar_avatar_url %} style="background-image: url({{ navbar_avatar_url }})"{% endif %}>{% if not navbar_avatar_url %}{{ app.user.initials|default((app.user.displayName ?? app.user.username)|slice(0, 1)|upper) }}{% endif %}</span>
+                            {% if game_user_badge %}
+                                <span class="cm-user__avatar cm-user__avatar--game">
+                                    {% include 'game/_avatar.html.twig' with {badge: game_user_badge, small: true, progress: true} %}
+                                </span>
+                            {% else %}
+                                <span class="cm-user__avatar"{% if navbar_avatar_url %} style="background-image: url({{ navbar_avatar_url }})"{% endif %}>{% if not navbar_avatar_url %}{{ app.user.initials|default((app.user.displayName ?? app.user.username)|slice(0, 1)|upper) }}{% endif %}</span>
+                            {% endif %}
                         </a>
                         {# No name/identity header inside this menu: the bar already shows who is
                            logged in right next to the avatar, and repeating it here only forced the
@@ -160,6 +174,17 @@
                             <li class="nav-item {{ current_route starts with 'app_student_work' ? 'active' }}">
                                 <a class="nav-link" href="{{ path('app_student_work') }}"{{ current_route starts with 'app_student_work' ? ' aria-current="page"' }}>
                                     <span class="nav-link-title">{{ 'studentWorkNavLabel'|trans }}</span>
+                                </a>
+                            </li>
+                        {% endif %}
+                        {# « Ma progression », right after « Travail à faire » exactly as the mockup's
+                           bar draws it. Shown only to somebody whose own formation actually plays:
+                           game_badge() answers null unless the feature is on *and* the formation has
+                           declared itself, which is the strict conjunction of §4, decision 1. #}
+                        {% if is_granted('ROLE_STUDENT') and not is_staff() and game_user_badge %}
+                            <li class="nav-item {{ current_route starts with 'app_game' ? 'active' }}">
+                                <a class="nav-link" href="{{ path('app_game') }}"{{ current_route starts with 'app_game' ? ' aria-current="page"' }}>
+                                    <span class="nav-link-title">{{ 'gameProgressHeading'|trans }}</span>
                                 </a>
                             </li>
                         {% endif %}
@@ -598,6 +623,9 @@
                                     <a class="dropdown-item {{ current_route in ['app_settings_structure_school_years', 'app_settings_structure_programs', 'app_settings_structure_periods'] ? 'active' }}" href="{{ path('app_settings_pedagogique') }}">{{ 'settingsPedagogiqueNavLabel'|trans }}</a>
                                     {% if is_granted('ROLE_ADMIN') %}
                                         <a class="dropdown-item {{ current_route starts with 'app_settings_groups' ? 'active' }}" href="{{ path('app_settings_groups') }}">{{ 'settingsGroupsNavLabel'|trans }}</a>
+                                        {% if feature('game') %}
+                                            <a class="dropdown-item {{ current_route == 'app_settings_game_levels' ? 'active' }}" href="{{ path('app_settings_game_levels') }}">{{ 'gameLevelLabelsHeading'|trans }}</a>
+                                        {% endif %}
                                     {% endif %}
                                 </div>
                             </li>

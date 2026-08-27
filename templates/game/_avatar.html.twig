@@ -1,0 +1,42 @@
+{# The decorated avatar: a ring saying the level, and a band saying either the level or the way to
+   the next one. Two sizes exist and no more - 64 px on a page, 34 px in the main bar - and there is
+   no image anywhere: the ring is a conic-gradient and the halo a box-shadow, both handed over by
+   game_level_style() so the handoff's tints are transcribed exactly once.
+
+   Parameters: badge (App\Service\Game\GameBadge), small (bool), progress (bool - the band becomes a
+   filled bar), tier (null|'bronze'|'silver'|'gold' - the frame laid over the ring, never replacing
+   it). #}
+{% set small = small|default(false) %}
+{% set progress = progress|default(false) %}
+{% set tier = tier|default(null) %}
+{% set medals = {'bronze': '🥉', 'silver': '🥈', 'gold': '🥇'} %}
+
+{% set avatar %}
+    <span class="cm-gm-av{{ small ? ' cm-gm-av--sm' }}">
+        <span class="cm-gm-av__ring" style="{{ game_level_style(badge.level) }}">
+            <span class="cm-gm-av__face"{% if badge.avatarUrl %} style="background-image: url({{ badge.avatarUrl }})"{% endif %}>{% if not badge.avatarUrl %}{{ badge.initials }}{% endif %}</span>
+        </span>
+        {% if progress %}
+            {# « 860 / 1 200 XP — prochain niveau : Chasseuse de bugs » on hover: the bar carries the
+               way to the next level, and the exact figures belong in the title rather than on it. #}
+            <span class="cm-gm-av__band cm-gm-av__band--prog"
+                  title="{{ badge.progress.isMaxed
+                      ? 'gameXpMaxedHint'|trans({'%xp%': badge.progress.xpTotal|number_format(0, ',', ' ')})
+                      : 'gameXpProgressHint'|trans({'%xp%': badge.progress.xpTotal|number_format(0, ',', ' '), '%next%': badge.progress.next.xpMin|number_format(0, ',', ' ')}) }}">
+                <span class="fill" style="width: {{ badge.percent }}%"></span>
+                <span class="lb">{{ 'gameLevelShortLabel'|trans({'%level%': badge.level}) }}</span>
+            </span>
+        {% else %}
+            <span class="cm-gm-av__band" style="{{ game_band_style(badge.level) }}">{{ 'gameLevelBandLabel'|trans({'%level%': badge.level}) }}</span>
+        {% endif %}
+    </span>
+{% endset %}
+
+{% if tier %}
+    <span class="cm-gm-frame cm-gm-frame--{{ tier }}">
+        {{ avatar }}
+        <span class="cm-gm-frame__medal" aria-hidden="true">{{ medals[tier] }}</span>
+    </span>
+{% else %}
+    {{ avatar }}
+{% endif %}
