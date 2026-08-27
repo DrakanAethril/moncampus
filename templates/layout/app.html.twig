@@ -564,7 +564,7 @@
                         {% set gestion_directory = (is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD')) and feature('directory') %}
                         {% if (is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD'))
                             and (gestion_internship or feature('support') or feature('signup_lists') or gestion_directory or is_granted('ROLE_ADMIN')) %}
-                        {% set gestion_is_active = current_route in ['app_tickets_queue', 'app_tickets_queue_categories'] or (is_granted('ROLE_ADMIN') and support_is_active) or current_route starts with 'app_directory_' or current_route starts with 'app_signup_lists' or current_route starts with 'app_school_mail_unlinked' or current_route starts with 'app_training_offer' or current_route starts with 'app_features' %}
+                        {% set gestion_is_active = current_route in ['app_tickets_queue', 'app_tickets_queue_categories'] or (is_granted('ROLE_ADMIN') and support_is_active) or current_route starts with 'app_directory_' or current_route starts with 'app_signup_lists' or current_route starts with 'app_school_mail_unlinked' or current_route starts with 'app_training_offer' %}
                         <li class="nav-item dropdown {{ gestion_is_active ? 'active' }}">
                             <a class="nav-link dropdown-toggle" href="#navbar-gestion" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ gestion_is_active ? ' aria-current="page"' }}>
                                 <span class="nav-link-title">{{ 'gestionNavLabel'|trans }}</span>
@@ -627,20 +627,16 @@
                                         </div>
                                     </div>
                                 {% endif %}
-                                {# Straight below Annuaire, and administrators only. It carries no
-                                   feature guard of its own: no setting made here may close the
-                                   screen the settings are made on (design/validated/feature-access.md
-                                   §8.8), which is why the "admin has everything" rule is not
-                                   negotiable. #}
-                                {% if is_granted('ROLE_ADMIN') %}
-                                    <a class="dropdown-item {{ current_route starts with 'app_features' ? 'active' }}" href="{{ path('app_features') }}">{{ 'featuresNavLabel'|trans }}</a>
-                                {% endif %}
                             </div>
                         </li>
                         {% endif %}
                         {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD') %}
-                            <li class="nav-item dropdown {{ current_route starts with 'app_settings_' ? 'active' }}">
-                                <a class="nav-link dropdown-toggle" href="#navbar-settings" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ current_route starts with 'app_settings_' ? ' aria-current="page"' }}>
+                            {# « Fonctionnalités » moved here from Gestion (2026-08-27): what it holds
+                               is a configuration of the platform, not a day-to-day operation, and it
+                               sits next to the two settings shells it decides the contents of. #}
+                            {% set settings_is_active = current_route starts with 'app_settings_' or current_route starts with 'app_features' %}
+                            <li class="nav-item dropdown {{ settings_is_active ? 'active' }}">
+                                <a class="nav-link dropdown-toggle" href="#navbar-settings" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ settings_is_active ? ' aria-current="page"' }}>
                                     <span class="nav-link-title">{{ 'settingsNavLabel'|trans }}</span>
                                 </a>
                                 <div class="dropdown-menu">
@@ -648,6 +644,11 @@
                                     <a class="dropdown-item {{ current_route in ['app_settings_structure_school_years', 'app_settings_structure_programs', 'app_settings_structure_periods'] ? 'active' }}" href="{{ path('app_settings_pedagogique') }}">{{ 'settingsPedagogiqueNavLabel'|trans }}</a>
                                     {% if is_granted('ROLE_ADMIN') %}
                                         <a class="dropdown-item {{ current_route starts with 'app_settings_groups' ? 'active' }}" href="{{ path('app_settings_groups') }}">{{ 'settingsGroupsNavLabel'|trans }}</a>
+                                        {# Administrators only, and it carries no feature guard of its
+                                           own: no setting made here may close the screen the settings
+                                           are made on (design/validated/feature-access.md §8.8), which
+                                           is why the "admin has everything" rule is not negotiable. #}
+                                        <a class="dropdown-item {{ current_route starts with 'app_features' ? 'active' }}" href="{{ path('app_features') }}">{{ 'featuresNavLabel'|trans }}</a>
                                         {% if feature('game') %}
                                             <a class="dropdown-item {{ current_route == 'app_settings_game_levels' ? 'active' }}" href="{{ path('app_settings_game_levels') }}">{{ 'gameLevelLabelsHeading'|trans }}</a>
                                         {% endif %}
