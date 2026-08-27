@@ -32,7 +32,7 @@
 {% block main %}
     <p class="cm-gm-context">
         {{ program.displayShortName }} · {{ statement.heldOn|date('d/m/Y') }}
-        {%- if period %} · {{ period.name }}{% else %} · <span title="{{ 'gameStatementOutOfPeriodHelpText'|trans }}">{{ 'gameStatementOutOfPeriodLabel'|trans }}</span>{% endif %}
+
     </p>
 
     <div class="card">

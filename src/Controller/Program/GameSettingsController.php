@@ -20,8 +20,6 @@ use App\Repository\ProgramRepository;
 use App\Repository\RewardItemRepository;
 use App\Security\StructureAccessChecker;
 use App\Service\Game\GameAccess;
-use App\Service\Game\GameLevelResolver;
-use App\Service\Game\GamePeriodResolver;
 use App\Service\Game\GameRuleCatalog;
 use App\Service\Game\GameRuleResolver;
 use App\Service\Game\GameSettingsProvider;
@@ -60,8 +58,6 @@ class GameSettingsController extends AbstractController
         GameAccess $access,
         StructureAccessChecker $accessChecker,
         GameSettingsProvider $settingsProvider,
-        GamePeriodResolver $periods,
-        GameLevelResolver $levels,
         GameRuleResolver $rules,
         GameRuleRepository $ruleRepository,
         GameFigureRepository $figures,
@@ -73,30 +69,23 @@ class GameSettingsController extends AbstractController
     ): Response {
         $program = $this->openProgram($id, $programs, $accessChecker);
         $settings = $settingsProvider->for($program);
-        $period = $periods->activePeriod($program);
-
         if ($request->isMethod('POST')) {
             if (!$this->isCsrfTokenValid('game_settings', (string) $request->request->get('_token'))) {
                 throw $this->createAccessDeniedException();
             }
 
-            $this->save($request, $program, $settingsProvider, $periods, $ruleRepository, $batches, $teamSets, $entityManager);
+            $this->save($request, $program, $settingsProvider, $ruleRepository, $batches, $teamSets, $entityManager);
             $this->addFlash('success', 'gameSettingsSavedFlashMessage');
 
             return $this->redirectToRoute('app_program_settings_game', ['id' => $program->getId()]);
         }
 
-        $periodCount = $periods->periodCount($program);
-
         return $this->render('game/settings.html.twig', [
             'program' => $program,
             'settings' => $settings,
-            'period' => $period,
             'featureOpen' => $access->isFeatureOpenForAnyone(),
             'enabledPrograms' => $this->countEnabled($programs),
             'totalPrograms' => \count($programs->findAllActiveWithStudents()),
-            'periodCount' => $periodCount,
-            'coefficient' => $levels->coefficient($periodCount),
             // The numeric fields are built here rather than derived in the template: Twig has no
             // camel-casing filter, and a screen that guessed getter names from field names would
             // break silently the first time one of them was renamed.
@@ -125,7 +114,11 @@ class GameSettingsController extends AbstractController
             'figureTally' => $this->figureTally($figures),
             'rewardCount' => \count($rewards->catalogueFor($program)),
             'batches' => $batches->findBy(['program' => $program], ['createdAt' => 'DESC']),
-            'teamSet' => null === $period ? null : $teamSets->findForPeriod($program, $period),
+            'teamSet' => $teamSets->findForProgram($program),
+            // The months this formation wants a ranking for. All twelve by default; a school that
+            // does not rank July and August simply unticks them.
+            'rankedMonths' => $settings->getRankedMonths(),
+            'monthNames' => $this->monthNames(),
         ]);
     }
 
@@ -133,7 +126,6 @@ class GameSettingsController extends AbstractController
         Request $request,
         Program $program,
         GameSettingsProvider $settingsProvider,
-        GamePeriodResolver $periods,
         GameRuleRepository $ruleRepository,
         GroupBatchRepository $batches,
         GameTeamSetRepository $teamSets,
@@ -159,21 +151,16 @@ class GameSettingsController extends AbstractController
             ->setAttendanceStreakCap($this->bounded($request, 'attendance_streak_cap', 0, 500))
             ->setAttendanceStep(GameAttendanceStep::tryFrom((string) $request->request->get('attendance_step')) ?? GameAttendanceStep::Week)
             ->setTeamMode(GameTeamMode::tryFrom((string) $request->request->get('team_mode')) ?? GameTeamMode::Period)
+            ->setRankedMonths(array_map(intval(...), array_values($request->request->all('months'))))
             ->setRankingEnabled($request->request->getBoolean('ranking_enabled'))
             ->setAliasEnabled($request->request->getBoolean('alias_enabled'))
             ->setMalusEnabled($request->request->getBoolean('malus_enabled'))
         ;
 
-        $period = $periods->activePeriod($program);
-
-        // The barème belongs to the formation, not to a term: retuning it needs no period at all.
-        // What a closed period keeps is its **result**, frozen once in App\Entity\GamePeriodScore.
+        // The barème belongs to the formation, not to a term: retuning it needs no calendar at all.
+        // What a closed month keeps is its **result**, frozen once in App\Entity\GameMonthScore.
         $this->saveRules($request, $program, $ruleRepository, $entityManager);
-
-        // Teams are still drawn per period - one of the few things that genuinely is a cycle.
-        if (null !== $period) {
-            $this->saveTeams($request, $program, $period, $batches, $teamSets, $entityManager);
-        }
+        $this->saveTeams($request, $program, $batches, $teamSets, $entityManager);
 
         $entityManager->flush();
     }
@@ -218,10 +205,10 @@ class GameSettingsController extends AbstractController
         }
     }
 
-    private function saveTeams(Request $request, Program $program, \App\Entity\EvaluationPeriod $period, GroupBatchRepository $batches, GameTeamSetRepository $teamSets, EntityManagerInterface $entityManager): void
+    private function saveTeams(Request $request, Program $program, GroupBatchRepository $batches, GameTeamSetRepository $teamSets, EntityManagerInterface $entityManager): void
     {
         $batchId = $request->request->getInt('team_batch');
-        $set = $teamSets->findForPeriod($program, $period);
+        $set = $teamSets->findForProgram($program);
 
         if ($batchId <= 0) {
             if (null !== $set) {
@@ -238,7 +225,7 @@ class GameSettingsController extends AbstractController
         }
 
         if (null === $set) {
-            $entityManager->persist(new GameTeamSet($program, $period, $batch));
+            $entityManager->persist(new GameTeamSet($program, $batch));
 
             return;
         }
@@ -264,17 +251,36 @@ class GameSettingsController extends AbstractController
         return \count(array_filter($programs->findAllActiveWithStudents(), static fn (Program $program): bool => $program->isGameEnabled()));
     }
 
+    /**
+     * The twelve months, in the school's own order - September first, because that is where a year
+     * starts for everybody reading this screen.
+     *
+     * @return array<int, string>
+     */
+    private function monthNames(): array
+    {
+        $names = [];
+        foreach ([9, 10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8] as $month) {
+            $names[$month] = (new \DateTimeImmutable(\sprintf('2026-%02d-01', $month)))->format('F');
+        }
+
+        return $names;
+    }
+
     private function bounded(Request $request, string $key, int $min, int $max): int
     {
         return max($min, min($max, $request->request->getInt($key)));
     }
 
     /**
-     * The referent teacher of the formation, or an administrator.
+     * An administrator, and for the moment nobody else.
      *
-     * Deliberately **not** the whole teaching team: the barème is a decision about the class, and
-     * isProgramReferentTeacher() answers the factual question without a staff bypass of its own -
-     * which is why the administrator branch is written out.
+     * It was the referent teacher or an administrator until 2026-08-28, and the restriction is
+     * deliberate rather than a tightening for its own sake: while the game is being settled, the
+     * barème and the switch that turns a formation on are the establishment's decisions, and the
+     * team must be able to take the feature away from teachers entirely
+     * (Gestion > Fonctionnalités) without leaving a screen that still answers. Reopening it is one
+     * line: put isProgramReferentTeacher() back beside the administrator branch.
      *
      * The feature/formation conjunction is *not* checked here: this is the screen that switches the
      * formation on, and a screen one can only reach once it is already on could never be used.
@@ -283,7 +289,7 @@ class GameSettingsController extends AbstractController
     {
         $program = $programs->find($id) ?? throw $this->createNotFoundException();
 
-        if (!$accessChecker->isProgramReferentTeacher($program) && !$this->isGranted('ROLE_ADMIN')) {
+        if (!$this->isGranted('ROLE_ADMIN')) {
             throw $this->createAccessDeniedException();
         }
 

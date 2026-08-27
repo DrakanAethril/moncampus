@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Service\Game;
 
-use App\Entity\EvaluationPeriod;
 use App\Entity\Program;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
@@ -45,25 +44,19 @@ final class GameCollector
      * Cheap to call: everything it would write again is refused by the ledger, so the screens can
      * ask for it before drawing and the closure can ask for it again before freezing.
      */
-    public function collect(User $student, Program $program, EvaluationPeriod $period, ?\DateTimeImmutable $now = null): void
+    public function collect(User $student, Program $program, \DateTimeImmutable $start, \DateTimeImmutable $end, ?\DateTimeImmutable $now = null): void
     {
-        $this->collectWithoutFlush($student, $program, $period, $now);
+        $this->collectWithoutFlush($student, $program, $start, $end, $now);
         $this->entityManager->flush();
     }
 
     /** The same, for a caller running over a whole class and flushing once. */
-    public function collectWithoutFlush(User $student, Program $program, EvaluationPeriod $period, ?\DateTimeImmutable $now = null): void
+    public function collectWithoutFlush(User $student, Program $program, \DateTimeImmutable $start, \DateTimeImmutable $end, ?\DateTimeImmutable $now = null): void
     {
         $now ??= new \DateTimeImmutable();
-        $start = $period->getStartDate();
-        $end = $period->getEndDate();
 
-        if (null === $start || null === $end) {
-            return;
-        }
-
-        // Never collect beyond today: a period runs until June and its deadlines are not all in the
-        // past, so the window closes on whichever comes first.
+        // Never collect beyond today: a window may run into the future, so it closes on whichever
+        // comes first.
         $to = min($end, $now);
 
         // The relevé's default answer - « net » - is a complete answer that nobody clicks, so it
@@ -71,13 +64,13 @@ final class GameCollector
         // period passes: a statement opened and left alone still pays the whole class.
         $this->attendance->project($student, $program);
 
-        $this->collectWork($student, $program, $period, $now);
-        $this->collectEngagement($student, $program, $period, $start, $to);
+        $this->collectWork($student, $program, $start, $end, $now);
+        $this->collectEngagement($student, $program, $start, $to);
     }
 
-    private function collectWork(User $student, Program $program, EvaluationPeriod $period, \DateTimeImmutable $now): void
+    private function collectWork(User $student, Program $program, \DateTimeImmutable $start, \DateTimeImmutable $end, \DateTimeImmutable $now): void
     {
-        foreach ($this->work->deadlines($student, $program, $period, $now) as $deadline) {
+        foreach ($this->work->deadlines($student, $program, $start, $end, $now) as $deadline) {
             if (!$deadline->isHonoured() || null === $deadline->ruleCode) {
                 continue;
             }
@@ -93,9 +86,9 @@ final class GameCollector
         }
     }
 
-    private function collectEngagement(User $student, Program $program, EvaluationPeriod $period, \DateTimeImmutable $from, \DateTimeImmutable $to): void
+    private function collectEngagement(User $student, Program $program, \DateTimeImmutable $from, \DateTimeImmutable $to): void
     {
-        $this->collectQuizProgress($student, $program, $period, $from, $to);
+        $this->collectQuizProgress($student, $program, $from, $to);
 
         foreach ($this->signals->optionalSurveyAnswers($student, $from, $to) as $row) {
             $this->ledger->record($student, $program, GameRuleCatalog::ENGAGEMENT_SURVEY, 'SurveyTarget', $row['id'], $row['at']);
@@ -133,7 +126,7 @@ final class GameCollector
      * same quiz. Somebody at 100 % can no longer earn from it, which is the correct outcome for a
      * rule whose subject is progress.
      */
-    private function collectQuizProgress(User $student, Program $program, EvaluationPeriod $period, \DateTimeImmutable $from, \DateTimeImmutable $to): void
+    private function collectQuizProgress(User $student, Program $program, \DateTimeImmutable $from, \DateTimeImmutable $to): void
     {
         $best = $this->signals->bestScoresBefore($student, $from);
 

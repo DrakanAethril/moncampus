@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
-use App\Entity\EvaluationPeriod;
 use App\Entity\Program;
 use App\Entity\RewardGrant;
 use App\Entity\RewardItem;
@@ -77,17 +76,20 @@ class RewardGrantRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
-    /** Whether this student already holds this entry for this period - what makes a closure idempotent. */
-    public function alreadyHolds(RewardItem $item, User $student, EvaluationPeriod $period): bool
+    /**
+     * Whether this student already holds this entry - what makes a closure idempotent.
+     *
+     * Not scoped to a period, and not to a formation either: a level frame is held for good, and a
+     * student who reached level 4 last year does not collect it again on arriving somewhere else.
+     */
+    public function alreadyHolds(RewardItem $item, User $student): bool
     {
         return null !== $this->createQueryBuilder('g')
             ->select('g.id')
             ->where('g.item = :item')
             ->andWhere('g.student = :student')
-            ->andWhere('g.period = :period')
             ->setParameter('item', $item)
             ->setParameter('student', $student)
-            ->setParameter('period', $period)
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();

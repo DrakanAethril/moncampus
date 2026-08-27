@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Repository\GamePeriodScoreRepository;
+use App\Repository\GameMonthScoreRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -19,10 +19,10 @@ use Doctrine\ORM\Mapping as ORM;
  * $rank is null for a student in discreet mode - they are scored and rewarded like everybody else,
  * they simply appear nowhere.
  */
-#[ORM\Entity(repositoryClass: GamePeriodScoreRepository::class)]
-#[ORM\Table(name: 'game_period_score')]
-#[ORM\UniqueConstraint(name: 'uniq_game_period_score', columns: ['student_id', 'period_id', 'program_id'])]
-class GamePeriodScore
+#[ORM\Entity(repositoryClass: GameMonthScoreRepository::class)]
+#[ORM\Table(name: 'game_month_score')]
+#[ORM\UniqueConstraint(name: 'uniq_game_month_score', columns: ['student_id', 'month_key', 'program_id'])]
+class GameMonthScore
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -37,9 +37,9 @@ class GamePeriodScore
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private Program $program;
 
-    #[ORM\ManyToOne(targetEntity: EvaluationPeriod::class)]
-    #[ORM\JoinColumn(name: 'period_id', nullable: false, onDelete: 'CASCADE')]
-    private EvaluationPeriod $period;
+    /** `YYYY-MM` - sortable as a string, which is what makes a plain column a calendar. */
+    #[ORM\Column(name: 'month_key', length: 7)]
+    private string $monthKey;
 
     #[ORM\Column(name: 'index_value')]
     private int $indexValue;
@@ -59,17 +59,18 @@ class GamePeriodScore
     #[ORM\Column(name: '`rank`', nullable: true)]
     private ?int $rank = null;
 
-    #[ORM\Column(name: 'xp_awarded')]
-    private int $xpAwarded = 0;
+    /** The top-three bonus paid at the end of the month - 20, 10, 5, or nothing at all. */
+    #[ORM\Column(name: 'bonus_awarded')]
+    private int $bonusAwarded = 0;
 
     #[ORM\Column(name: 'closed_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $closedAt;
 
-    public function __construct(User $student, Program $program, EvaluationPeriod $period, int $indexValue)
+    public function __construct(User $student, Program $program, string $monthKey, int $indexValue)
     {
         $this->student = $student;
         $this->program = $program;
-        $this->period = $period;
+        $this->monthKey = $monthKey;
         $this->indexValue = $indexValue;
         $this->closedAt = new \DateTimeImmutable();
     }
@@ -89,9 +90,9 @@ class GamePeriodScore
         return $this->program;
     }
 
-    public function getPeriod(): EvaluationPeriod
+    public function getMonthKey(): string
     {
-        return $this->period;
+        return $this->monthKey;
     }
 
     public function getIndexValue(): int
@@ -133,14 +134,14 @@ class GamePeriodScore
         return $this;
     }
 
-    public function getXpAwarded(): int
+    public function getBonusAwarded(): int
     {
-        return $this->xpAwarded;
+        return $this->bonusAwarded;
     }
 
-    public function setXpAwarded(int $xpAwarded): static
+    public function setBonusAwarded(int $bonus): static
     {
-        $this->xpAwarded = $xpAwarded;
+        $this->bonusAwarded = $bonus;
 
         return $this;
     }

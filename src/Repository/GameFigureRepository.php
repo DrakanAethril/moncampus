@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
-use App\Entity\EvaluationPeriod;
 use App\Entity\GameFigure;
 use App\Entity\Program;
 use App\Entity\User;
@@ -24,7 +23,7 @@ class GameFigureRepository extends ServiceEntityRepository
 
     /**
      * The figures still available to one student: their filière's catalogue, minus the ones already
-     * taken in the class this period, minus the ones they have carried before.
+     * taken in the class, minus the ones they have carried before.
      *
      * Both exclusions matter and for different reasons. The first keeps the patronym unique in the
      * class - the database refuses a duplicate anyway, this is what stops the draw from proposing
@@ -32,18 +31,17 @@ class GameFigureRepository extends ServiceEntityRepository
      *
      * @return list<GameFigure>
      */
-    public function availableFor(GameTrack $track, Program $program, EvaluationPeriod $period, User $student): array
+    public function availableFor(GameTrack $track, Program $program, User $student): array
     {
         /** @var list<GameFigure> $figures */
         $figures = $this->createQueryBuilder('f')
             ->where('f.track = :track')
             ->andWhere('f.active = true')
-            ->andWhere('f.id NOT IN (SELECT IDENTITY(taken.figure) FROM App\Entity\GameAlias taken WHERE taken.program = :program AND taken.period = :period AND taken.figure IS NOT NULL)')
+            ->andWhere('f.id NOT IN (SELECT IDENTITY(taken.figure) FROM App\Entity\GameAlias taken WHERE taken.program = :program AND taken.figure IS NOT NULL)')
             ->andWhere('f.id NOT IN (SELECT IDENTITY(worn.figure) FROM App\Entity\GameAlias worn WHERE worn.student = :student AND worn.figure IS NOT NULL)')
             ->orderBy('f.surname', 'ASC')
             ->setParameter('track', $track)
             ->setParameter('program', $program)
-            ->setParameter('period', $period)
             ->setParameter('student', $student)
             ->getQuery()
             ->getResult();

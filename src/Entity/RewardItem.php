@@ -14,14 +14,10 @@ use Symfony\Component\Validator\Constraints as Assert;
 /**
  * One entry of a formation's reward catalogue (§5.5).
  *
- * The four tiers of the design - bronze, silver, gold, trophy - are **entries of this same
- * catalogue**, granted automatically at closure through $automaticThreshold. There is no separate
- * mechanism for them, which is what stops the tiers and the hand-granted rewards from drifting into
- * two different ideas of what a reward is.
- *
- * $automaticThreshold is an **index**, never a total of points: that is the whole of §2, and a
- * threshold expressed in points would quietly re-introduce the ranking by availability the index
- * exists to remove.
+ * The six level frames and the promotion trophy are **entries of this same catalogue**, granted by
+ * the machine rather than by a hand. There is no separate mechanism for them, which is what stops
+ * the automatic rewards and the hand-granted ones from drifting into two different ideas of what a
+ * reward is.
  */
 #[ORM\Entity(repositoryClass: RewardItemRepository::class)]
 #[ORM\Table(name: 'reward_item')]
@@ -57,11 +53,6 @@ class RewardItem
     #[ORM\Column(length: 8, nullable: true)]
     private ?string $icon = null;
 
-    /** The index that grants this entry on its own at closure; null means a human hand only. */
-    #[ORM\Column(name: 'automatic_threshold', nullable: true)]
-    #[Assert\Range(min: 0, max: 100)]
-    private ?int $automaticThreshold = null;
-
     /** How many exist at all - a place on an outing; null is unlimited. */
     #[ORM\Column(nullable: true)]
     #[Assert\Range(min: 0, max: 10000)]
@@ -70,9 +61,22 @@ class RewardItem
     #[ORM\Column]
     private bool $active = true;
 
-    /** The tier this entry stands for, when it is one of the four - `bronze`, `silver`, `gold`, `trophy`. */
+    /** The tier this entry stands for, when it is one - `trophy` today, and nothing else. */
     #[ORM\Column(name: 'tier_code', length: 20, nullable: true)]
     private ?string $tierCode = null;
+
+    /**
+     * The level this entry is the frame of, 1 to 6, or null when it is not a frame.
+     *
+     * **One frame per level, and there are six.** There used to be three - bronze, silver, gold -
+     * granted on the *index* of a period, which sat next to six levels granted on points and read as
+     * an arithmetic mistake to anybody looking at both. The frames now follow the levels one for
+     * one, and the index's own tiers stay what they always were underneath: a badge on the ranking,
+     * computed from the thresholds, never an object in the catalogue.
+     */
+    #[ORM\Column(name: 'level', nullable: true)]
+    #[Assert\Range(min: 1, max: 6)]
+    private ?int $level = null;
 
     public function __construct(?Program $program, string $label, RewardNature $nature, RewardScope $scope = RewardScope::Student)
     {
@@ -152,21 +156,22 @@ class RewardItem
         return $this;
     }
 
-    public function getAutomaticThreshold(): ?int
+    public function getLevel(): ?int
     {
-        return $this->automaticThreshold;
+        return $this->level;
     }
 
-    public function setAutomaticThreshold(?int $threshold): static
+    public function setLevel(?int $level): static
     {
-        $this->automaticThreshold = $threshold;
+        $this->level = $level;
 
         return $this;
     }
 
+    /** Granted by the machine - a level frame, or the promotion trophy - rather than by a hand. */
     public function isAutomatic(): bool
     {
-        return null !== $this->automaticThreshold || null !== $this->tierCode;
+        return null !== $this->level || null !== $this->tierCode;
     }
 
     public function getQuantity(): ?int

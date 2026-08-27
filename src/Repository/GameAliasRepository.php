@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
-use App\Entity\EvaluationPeriod;
 use App\Entity\GameAlias;
 use App\Entity\Program;
 use App\Entity\User;
@@ -21,9 +20,9 @@ class GameAliasRepository extends ServiceEntityRepository
         parent::__construct($registry, GameAlias::class);
     }
 
-    public function findOneFor(User $student, Program $program, EvaluationPeriod $period): ?GameAlias
+    public function findOneFor(User $student, Program $program): ?GameAlias
     {
-        return $this->findOneBy(['student' => $student, 'program' => $program, 'period' => $period]);
+        return $this->findOneBy(['student' => $student, 'program' => $program]);
     }
 
     /**
@@ -31,16 +30,14 @@ class GameAliasRepository extends ServiceEntityRepository
      *
      * @return array<int, GameAlias>
      */
-    public function findForPeriod(Program $program, EvaluationPeriod $period): array
+    public function findForProgram(Program $program): array
     {
         /** @var list<GameAlias> $rows */
         $rows = $this->createQueryBuilder('a')
             ->addSelect('f')
             ->leftJoin('a.figure', 'f')
             ->where('a.program = :program')
-            ->andWhere('a.period = :period')
             ->setParameter('program', $program)
-            ->setParameter('period', $period)
             ->getQuery()
             ->getResult();
 

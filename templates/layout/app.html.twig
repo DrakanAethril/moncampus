@@ -268,7 +268,11 @@
                                                            four others: it is the screen that switches the formation on, and one
                                                            reachable only once it already is could never be reached at all. #}
                                                         {% set game_plays = feature('game') and program.gameEnabled and is_program_teacher(program) %}
-                                                        {% set game_settles = feature('game') and (is_granted('ROLE_ADMIN') or is_program_referent_teacher(program)) %}
+                                                        {# Settling the game - the barème, and the catalogue it hands out - is the
+                                                           administration's while the game is being settled (2026-08-28), so that the
+                                                           feature can be taken away from teachers entirely without leaving a menu
+                                                           entry that leads to a 403. #}
+                                                        {% set game_settles = feature('game') and is_granted('ROLE_ADMIN') %}
                                                         {% if game_plays or game_settles %}
                                                             <div class="dropend">
                                                                 <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_program_game' or current_route starts with 'app_game_engagements' or current_route == 'app_program_settings_game' ? 'active' }}" href="#nav-program-game-{{ program.id }}" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
@@ -279,9 +283,9 @@
                                                                         <a class="dropdown-item {{ current_route starts with 'app_program_game_statement' ? 'active' }}" href="{{ path('app_program_game_statements', {id: program.id}) }}">{{ 'gameStatementsHeading'|trans }}</a>
                                                                         <a class="dropdown-item {{ current_route starts with 'app_program_game_gestures' ? 'active' }}" href="{{ path('app_program_game_gestures', {id: program.id}) }}">{{ 'gameGesturesHeading'|trans }}</a>
                                                                         <a class="dropdown-item {{ current_route starts with 'app_game_engagements' and app.request.query.get('program') == program.id ? 'active' }}" href="{{ path('app_game_engagements', {program: program.id}) }}">{{ 'engagementQueueHeading'|trans }}</a>
-                                                                        <a class="dropdown-item {{ current_route starts with 'app_program_game_rewards' ? 'active' }}" href="{{ path('app_program_game_rewards', {id: program.id}) }}">{{ 'gameRewardsHeading'|trans }}</a>
                                                                     {% endif %}
                                                                     {% if game_settles %}
+                                                                        <a class="dropdown-item {{ current_route starts with 'app_program_game_rewards' ? 'active' }}" href="{{ path('app_program_game_rewards', {id: program.id}) }}">{{ 'gameRewardsHeading'|trans }}</a>
                                                                         <a class="dropdown-item {{ current_route == 'app_program_settings_game' ? 'active' }}" href="{{ path('app_program_settings_game', {id: program.id}) }}">{{ 'gameSettingsHeading'|trans }}</a>
                                                                     {% endif %}
                                                                 </div>
@@ -661,6 +665,7 @@
                                         <a class="dropdown-item {{ current_route starts with 'app_features' ? 'active' }}" href="{{ path('app_features') }}">{{ 'featuresNavLabel'|trans }}</a>
                                         {% if feature('game') %}
                                             <a class="dropdown-item {{ current_route == 'app_settings_game_levels' ? 'active' }}" href="{{ path('app_settings_game_levels') }}">{{ 'gameLevelLabelsHeading'|trans }}</a>
+                                            <a class="dropdown-item {{ current_route starts with 'app_settings_game_figures' ? 'active' }}" href="{{ path('app_settings_game_figures') }}">{{ 'gameFiguresHeading'|trans }}</a>
                                         {% endif %}
                                     {% endif %}
                                 </div>

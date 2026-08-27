@@ -49,19 +49,18 @@ class RewardItemRepository extends ServiceEntityRepository
     }
 
     /**
-     * The entries granted on their own at closure, cheapest tier first.
+     * The six level frames, lowest first - what a closure grants as a student's total opens them.
      *
      * @return list<RewardItem>
      */
-    public function automaticFor(Program $program): array
+    public function levelFrames(): array
     {
         /** @var list<RewardItem> $items */
         $items = $this->createQueryBuilder('r')
-            ->where('r.program = :program OR r.program IS NULL')
+            ->where('r.program IS NULL')
             ->andWhere('r.active = true')
-            ->andWhere('r.automaticThreshold IS NOT NULL')
-            ->orderBy('r.automaticThreshold', 'ASC')
-            ->setParameter('program', $program)
+            ->andWhere('r.level IS NOT NULL')
+            ->orderBy('r.level', 'ASC')
             ->getQuery()
             ->getResult();
 

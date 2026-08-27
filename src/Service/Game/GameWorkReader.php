@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Service\Game;
 
-use App\Entity\EvaluationPeriod;
 use App\Entity\Program;
 use App\Entity\User;
 use App\Enum\QuizMode;
@@ -25,7 +24,7 @@ use App\Service\StudentWorkItem;
  *
  * **A deadline enters the denominator once it has elapsed, or as soon as it is answered.** Counting
  * deadlines still ahead would make the rate fall every time a teacher schedules something, and the
- * index is read live, all period long.
+ * index is read live, all month long.
  */
 final class GameWorkReader
 {
@@ -39,15 +38,9 @@ final class GameWorkReader
     /**
      * @return list<GameWorkDeadline>
      */
-    public function deadlines(User $student, Program $program, EvaluationPeriod $period, ?\DateTimeImmutable $now = null): array
+    public function deadlines(User $student, Program $program, \DateTimeImmutable $start, \DateTimeImmutable $end, ?\DateTimeImmutable $now = null): array
     {
         $now ??= new \DateTimeImmutable();
-        $start = $period->getStartDate();
-        $end = $period->getEndDate();
-
-        if (null === $start || null === $end) {
-            return [];
-        }
 
         $onTime = $this->rules->valueOf($program, GameRuleCatalog::WORK_ON_TIME)?->possibleValue() ?? 30;
         $quizValue = $this->rules->valueOf($program, GameRuleCatalog::WORK_QUIZ)?->possibleValue() ?? 20;
@@ -63,16 +56,16 @@ final class GameWorkReader
                 continue;
             }
 
-            foreach ($this->submissionDeadlines($item, $period, $now, $onTime) as $deadline) {
+            foreach ($this->submissionDeadlines($item, $start, $end, $now, $onTime) as $deadline) {
                 $deadlines[] = $deadline;
             }
 
-            $quiz = $this->quizDeadline($item, $period, $now, $quizValue, $attempts);
+            $quiz = $this->quizDeadline($item, $start, $end, $now, $quizValue, $attempts);
             if (null !== $quiz) {
                 $deadlines[] = $quiz;
             }
 
-            $self = $this->selfAssessmentDeadline($item, $period, $now, $selfValue, $selfAssessments);
+            $self = $this->selfAssessmentDeadline($item, $start, $end, $now, $selfValue, $selfAssessments);
             if (null !== $self) {
                 $deadlines[] = $self;
             }
@@ -86,14 +79,14 @@ final class GameWorkReader
      *
      * @return list<GameWorkDeadline>
      */
-    private function submissionDeadlines(StudentWorkItem $item, EvaluationPeriod $period, \DateTimeImmutable $now, int $maxPoints): array
+    private function submissionDeadlines(StudentWorkItem $item, \DateTimeImmutable $start, \DateTimeImmutable $end, \DateTimeImmutable $now, int $maxPoints): array
     {
         $deadlines = [];
 
         foreach ($item->expectations as $expectation) {
             $dueDate = $expectation->dueDate ?? $item->assignment->getDueDate();
 
-            if (null === $dueDate || !$period->contains($dueDate)) {
+            if (null === $dueDate || $dueDate < $start || $dueDate > $end) {
                 continue;
             }
 
@@ -133,7 +126,7 @@ final class GameWorkReader
      *
      * @param array<int, array{id: int, at: \DateTimeImmutable}> $attempts keyed by instance id
      */
-    private function quizDeadline(StudentWorkItem $item, EvaluationPeriod $period, \DateTimeImmutable $now, int $maxPoints, array $attempts): ?GameWorkDeadline
+    private function quizDeadline(StudentWorkItem $item, \DateTimeImmutable $start, \DateTimeImmutable $end, \DateTimeImmutable $now, int $maxPoints, array $attempts): ?GameWorkDeadline
     {
         $instance = $item->assignment->getQuizInstance();
 
@@ -143,7 +136,7 @@ final class GameWorkReader
 
         $dueDate = $item->assignment->getDueDate();
 
-        if (null === $dueDate || !$period->contains($dueDate)) {
+        if (null === $dueDate || $dueDate < $start || $dueDate > $end) {
             return null;
         }
 
@@ -168,7 +161,7 @@ final class GameWorkReader
      *
      * @param array<int, array{id: int, at: \DateTimeImmutable}> $validations keyed by assignment id
      */
-    private function selfAssessmentDeadline(StudentWorkItem $item, EvaluationPeriod $period, \DateTimeImmutable $now, int $maxPoints, array $validations): ?GameWorkDeadline
+    private function selfAssessmentDeadline(StudentWorkItem $item, \DateTimeImmutable $start, \DateTimeImmutable $end, \DateTimeImmutable $now, int $maxPoints, array $validations): ?GameWorkDeadline
     {
         if (!$item->assignment->getNature()->expectsSelfAssessment()) {
             return null;
@@ -176,7 +169,7 @@ final class GameWorkReader
 
         $dueDate = $item->assignment->getDueDate();
 
-        if (null === $dueDate || !$period->contains($dueDate)) {
+        if (null === $dueDate || $dueDate < $start || $dueDate > $end) {
             return null;
         }
 

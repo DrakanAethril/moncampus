@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Service\Game;
 
-use App\Entity\EvaluationPeriod;
 use App\Entity\Program;
 use App\Entity\User;
 
@@ -23,8 +22,8 @@ class GameAttendancePossible
     }
 
     /** @return int|null null when nothing was stated for this student - the family leaves the index */
-    public function forStudent(User $student, Program $program, EvaluationPeriod $period): ?int
+    public function forStudent(User $student, Program $program, \DateTimeImmutable $from, \DateTimeImmutable $to): ?int
     {
-        return $this->projector->possibleFor($student, $program, $period);
+        return $this->projector->possibleFor($student, $program, $from, $to);
     }
 }

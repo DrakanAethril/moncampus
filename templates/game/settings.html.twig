@@ -61,16 +61,22 @@
 
         <div class="card" style="margin-top: 16px">
             <div class="card-body">
-                <span class="cm-gm-label">{{ 'gameSettingsPeriodsHeading'|trans }}</span>
-                <div class="cm-card-note" style="padding: 6px 0">
-                    {% if periodCount > 0 %}
-                        {{ 'gameSettingsPeriodsText'|trans({'%count%': periodCount, '%coefficient%': coefficient|number_format(coefficient == coefficient|round ? 0 : 1, ',', ' ')}) }}
-                    {% else %}
-                        {{ 'gameSettingsNoPeriodsText'|trans }}
-                    {% endif %}
+                <span class="cm-gm-label">{{ 'gameSettingsMonthsHeading'|trans }}</span>
+                <div class="cm-card-note" style="padding: 6px 0">{{ 'gameSettingsMonthsText'|trans({'%podium%': '20 · 10 · 5'}) }}</div>
+
+                {# Which months this formation wants a ranking for. An unticked month is still
+                   played - points are earned and still count towards the year - it is simply never
+                   closed, never ranked, and never pays a podium. #}
+                <div class="cm-gm-months">
+                    {% for number, name in monthNames %}
+                        <label class="cm-gm-month {{ number in rankedMonths ? 'is-on' }}" title="{{ 'gameSettingsMonthHelpText'|trans }}">
+                            <input type="checkbox" name="months[]" value="{{ number }}" {{ number in rankedMonths ? 'checked' }}>
+                            <span>{{ ('monthName' ~ number)|trans }}</span>
+                        </label>
+                    {% endfor %}
                 </div>
 
-                <div class="cm-formgrid" style="margin-top: 10px">
+                <div class="cm-formgrid" style="margin-top: 18px">
                     <div class="cm-field" title="{{ 'gameSettingsStepHelpText'|trans }}">
                         <span class="cm-field__label">{{ 'gameSettingsStepLabel'|trans }}</span>
                         <div class="cm-gm-seg">

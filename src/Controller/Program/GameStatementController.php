@@ -19,7 +19,6 @@ use App\Repository\ProgramStudentOptionRepository;
 use App\Repository\UserRepository;
 use App\Security\StructureAccessChecker;
 use App\Service\Game\GameAccess;
-use App\Service\Game\GamePeriodResolver;
 use App\Service\Game\GameSettingsProvider;
 use App\Service\Game\GameStatementService;
 use App\Service\JsonRequestPayload;
@@ -33,12 +32,11 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 /**
  * Relevés: the list, the creation, and the two grids (design's screens 5 and 6).
  *
- * **A relevé no longer belongs to an evaluation period.** Until 2026-08-27 there was one attendance
+ * **A relevé belongs to no evaluation period at all.** Until 2026-08-27 there was one attendance
  * pass per week *of a period* and exactly one council *per period*, so a team could hold neither
  * four councils in a two-period year nor one across both. Now a relevé is created by hand, named by
- * hand, and there may be as many or as few as the team wants; the periods still carry the index, so
- * a relevé's points are filed into the period its own date falls in, and one held outside every
- * period says so rather than paying silently.
+ * hand, and there may be as many or as few as the team wants. Its points are filed into the **month**
+ * its own date falls in, which is a window every calendar already has and nobody has to configure.
  *
  * The two grids save **at each click or keystroke** rather than on a submit: a form that has to be
  * submitted is a form somebody leaves without submitting, and a half-stated council is worse than
@@ -58,7 +56,6 @@ class GameStatementController extends AbstractController
         GameAccess $access,
         StructureAccessChecker $accessChecker,
         GameStatementRepository $statements,
-        GamePeriodResolver $periods,
         GameSettingsProvider $settingsProvider,
     ): Response {
         $program = $this->openProgram($id, $programs, $access, $accessChecker);
@@ -67,7 +64,6 @@ class GameStatementController extends AbstractController
         return $this->render('game/statements.html.twig', [
             'program' => $program,
             'statements' => $all,
-            'periodOf' => $this->periodsOf($program, $all, $periods),
             'types' => GameStatementType::cases(),
             'steps' => GameAttendanceStep::cases(),
             'settings' => $settingsProvider->for($program),
@@ -120,7 +116,6 @@ class GameStatementController extends AbstractController
         StructureAccessChecker $accessChecker,
         GameStatementRepository $statements,
         GameStatementService $service,
-        GamePeriodResolver $periods,
         ProgramStudentOptionRepository $studentOptions,
     ): Response {
         $program = $this->openProgram($id, $programs, $access, $accessChecker);
@@ -137,7 +132,6 @@ class GameStatementController extends AbstractController
             'tally' => $service->tally($statement),
             'states' => AttendanceState::cases(),
             'mentions' => CouncilMention::cases(),
-            'period' => $periods->periodContaining($program, $statement->getHeldOn()),
             // The council lists each student's options: a SIO council has to see who is SLAM and
             // who is SISR without leaving the screen.
             'optionsByStudent' => $isCouncil ? $studentOptions->findOptionsByStudentForProgram($program) : [],
@@ -248,28 +242,6 @@ class GameStatementController extends AbstractController
         $this->addFlash('success', 'gameStatementReopenedFlashMessage');
 
         return $this->redirectToRoute('app_program_game_statement', ['id' => $program->getId(), 'statementId' => $statement->getId()]);
-    }
-
-    /**
-     * Which period each relevé's points land in - null being a legitimate answer the list prints,
-     * rather than one it hides.
-     *
-     * @param list<GameStatement> $statements
-     *
-     * @return array<int, string> statement id => period name
-     */
-    private function periodsOf(Program $program, array $statements, GamePeriodResolver $periods): array
-    {
-        $names = [];
-        foreach ($statements as $statement) {
-            $period = $periods->periodContaining($program, $statement->getHeldOn());
-
-            if (null !== $period) {
-                $names[(int) $statement->getId()] = $period->getName();
-            }
-        }
-
-        return $names;
     }
 
     private function openStatement(GameStatementRepository $statements, int $statementId, Program $program, StructureAccessChecker $accessChecker): GameStatement

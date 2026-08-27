@@ -22,9 +22,9 @@ use Symfony\Component\Validator\Constraints as Assert;
  * team could hold neither four councils in a two-period year nor one across both. A relevé is
  * created by hand, named by hand, and there may be as many or as few as the team wants.
  *
- * The school's periods still carry the **index**: the game invents no calendar (§4, decision 2), so
- * the points a relevé produces are filed into the period its own date falls in
- * (App\Service\Game\GamePeriodResolver::periodContaining()). What changed is that the calendar no
+ * The game invents no calendar (§4, decision 2) and no longer borrows the school's either: the
+ * points a relevé produces are filed into the **month** its own date falls in
+ * (App\Service\Game\GameMonth), which every calendar already has. What changed is that the calendar no
  * longer decides how many documents get filled in - only where their points land.
  *
  * The type decides the fields. An attendance relevé covers a stretch of time and carries a

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Service\Game;
 
-use App\Entity\EvaluationPeriod;
 use App\Entity\Program;
 use App\Entity\RewardGrant;
 use App\Entity\RewardItem;
@@ -39,13 +38,13 @@ final class RewardGranter
     /**
      * Grant to one student, by a teacher's hand.
      *
-     * $period may be null: a reward for a mock exam or an open day belongs to the establishment's
-     * calendar, not to the game's, and there is no reason to refuse one because no evaluation period
+     * No calendar of any kind is involved: a reward for a mock exam, an open day or a competition
+     * belongs to the establishment's own calendar, and the grant carries its date, which is
      * covers that day. What it never does either way is move an index.
      */
-    public function grantToStudent(RewardItem $item, User $student, Program $program, ?EvaluationPeriod $period, ?User $grantedBy, ?string $reason = null): RewardGrant
+    public function grantToStudent(RewardItem $item, User $student, Program $program, ?User $grantedBy, ?string $reason = null): RewardGrant
     {
-        $grant = (new RewardGrant($item, $program, $period))
+        $grant = (new RewardGrant($item, $program))
             ->setStudent($student)
             ->setGrantedBy($grantedBy)
             ->setReason($reason);
@@ -64,11 +63,11 @@ final class RewardGranter
      *
      * @return list<RewardGrant>
      */
-    public function grantToGroup(RewardItem $item, array $members, Program $program, ?EvaluationPeriod $period, ?User $grantedBy, ?int $groupRef = null, ?string $reason = null): array
+    public function grantToGroup(RewardItem $item, array $members, Program $program, ?User $grantedBy, ?int $groupRef = null, ?string $reason = null): array
     {
         $granted = [];
         foreach ($members as $member) {
-            $grant = (new RewardGrant($item, $program, $period))
+            $grant = (new RewardGrant($item, $program))
                 ->setStudent($member)
                 ->setGroupRef($groupRef)
                 ->setGrantedBy($grantedBy)
@@ -84,30 +83,25 @@ final class RewardGranter
     }
 
     /**
-     * The tiers a closure grants on their own, given a frozen index.
+     * The frames of every level this student's total has opened, granted once each.
      *
-     * Idempotent: a period closed twice grants nothing twice. The threshold is read on the **index**
-     * and never on a total - which is the whole of §2, and a threshold in points would quietly
-     * re-introduce the ranking by availability the index exists to remove.
+     * **One frame per level, six of them**, and they are granted on the running total rather than on
+     * a period's index - a level is never lost, so neither is its frame. Idempotent: a student who
+     * already holds a frame is skipped, so a closure run twice grants nothing twice, and a student
+     * arriving at level 4 from another formation collects the four they had earned.
      *
      * @return list<RewardGrant>
      */
-    public function grantAutomatic(User $student, Program $program, EvaluationPeriod $period, int $index): array
+    public function grantLevelFrames(User $student, Program $program, int $level): array
     {
         $granted = [];
 
-        foreach ($this->items->automaticFor($program) as $item) {
-            $threshold = $item->getAutomaticThreshold();
-
-            if (null === $threshold || $index < $threshold) {
+        foreach ($this->items->levelFrames() as $item) {
+            if (($item->getLevel() ?? 99) > $level || $this->grants->alreadyHolds($item, $student)) {
                 continue;
             }
 
-            if ($this->grants->alreadyHolds($item, $student, $period)) {
-                continue;
-            }
-
-            $grant = (new RewardGrant($item, $program, $period))->setStudent($student);
+            $grant = (new RewardGrant($item, $program))->setStudent($student);
             $this->entityManager->persist($grant);
             $granted[] = $grant;
         }
@@ -118,9 +112,9 @@ final class RewardGranter
     /**
      * Spend a consumable.
      *
-     * The student does it themselves and the teacher is only notified: a joker one can refuse is not
-     * a reward, it is a request (§5.5). What it cannot be spent on - a graded assessment - is the
-     * caller's business, not this method's; here it is simply marked, once.
+     * The student does it themselves and the teacher is only notified: a reward one can refuse is
+     * not a reward, it is a request (§5.5). What it cannot be spent on is the caller's business,
+     * not this method's; here it is simply marked, once.
      */
     public function spend(RewardGrant $grant, string $usedOn): bool
     {

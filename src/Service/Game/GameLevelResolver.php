@@ -5,20 +5,16 @@ declare(strict_types=1);
 namespace App\Service\Game;
 
 /**
- * XP to level, and index to XP.
+ * A running total of points to a level, and to how far the next one is.
  *
- * The second half is the one that carries a decision (§4, decision 2). The game borrows the
- * school's calendar rather than inventing one, so a cursus is worth as many closures as the
- * formation has evaluation periods - four semesters here, six terms elsewhere. For level 6 to stay
- * reachable on both, the XP paid at each closure scales:
+ * There is nothing to calibrate here any more, and that is the decision (2026-08-28). Until then a
+ * closure converted an index into XP through a coefficient read off the number of evaluation
+ * periods a cursus counted, so a formation in terms and one in semesters could reach level 6 alike.
+ * Points are now credited on the day they are earned, and the total of the ledger *is* the total -
+ * one conversion less, one calendar less, and a student changing formation arrives at the level
+ * their own points give them there.
  *
- *     XP de période = indice x (3600 / nombre de périodes du cursus) / 100
- *
- * A perfect cursus is therefore always 3 600 XP. On four semesters the coefficient happens to be
- * x9 - **the formula is wired, never the 9**, which is exactly what a formation in terms would
- * break.
- *
- * XP only ever grows: no malus touches it, no school year resets it (§5.6).
+ * The total only ever grows: no malus touches it, no school year resets it (§5.6).
  */
 final class GameLevelResolver
 {
@@ -50,27 +46,5 @@ final class GameLevelResolver
             $next->xpMin - $xpTotal,
             $span > 0 ? min(1.0, max(0.0, $into / $span)) : 0.0,
         );
-    }
-
-    /**
-     * The XP one closure pays for an index, on a cursus of $periodCount periods.
-     *
-     * A formation with no period group answers 0 rather than guessing a count: nothing can be
-     * closed on a calendar that does not exist, and inventing a divisor here would quietly pay a
-     * whole cursus for one period.
-     */
-    public function xpForIndex(int $index, int $periodCount): int
-    {
-        if ($periodCount <= 0) {
-            return 0;
-        }
-
-        return (int) round(max(0, $index) * (GameLevels::CURSUS_CAP / $periodCount) / 100);
-    }
-
-    /** The multiplier the settings screen prints next to the number of periods (« x9 »). */
-    public function coefficient(int $periodCount): ?float
-    {
-        return $periodCount > 0 ? GameLevels::CURSUS_CAP / $periodCount / 100 : null;
     }
 }

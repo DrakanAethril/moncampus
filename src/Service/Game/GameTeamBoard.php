@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Service\Game;
 
-use App\Entity\EvaluationPeriod;
 use App\Entity\Program;
 use App\Entity\User;
 use App\Repository\GameTeamSetRepository;
@@ -31,9 +30,9 @@ final class GameTeamBoard
     /**
      * @return list<GameTeamView>
      */
-    public function teams(Program $program, EvaluationPeriod $period, ?\DateTimeImmutable $now = null): array
+    public function teams(Program $program, \DateTimeImmutable $from, \DateTimeImmutable $to, ?\DateTimeImmutable $now = null): array
     {
-        $set = $this->sets->findForPeriod($program, $period);
+        $set = $this->sets->findForProgram($program);
 
         if (null === $set) {
             return [];
@@ -41,7 +40,7 @@ final class GameTeamBoard
 
         $threshold = $this->settings->for($program)->getTeamThreshold();
         $students = array_values($program->getStudents()->toArray());
-        $standings = $this->reader->standingsFor($students, $program, $period, $now);
+        $standings = $this->reader->standingsFor($students, $program, $from, $to, $now);
 
         $byId = [];
         foreach ($students as $student) {
@@ -75,9 +74,9 @@ final class GameTeamBoard
         return $teams;
     }
 
-    public function forStudent(User $student, Program $program, EvaluationPeriod $period, ?\DateTimeImmutable $now = null): ?GameTeamView
+    public function forStudent(User $student, Program $program, \DateTimeImmutable $from, \DateTimeImmutable $to, ?\DateTimeImmutable $now = null): ?GameTeamView
     {
-        foreach ($this->teams($program, $period, $now) as $team) {
+        foreach ($this->teams($program, $from, $to, $now) as $team) {
             if ($team->contains($student)) {
                 return $team;
             }
@@ -87,9 +86,35 @@ final class GameTeamBoard
     }
 
     /** How many teams of the class have cleared the objective - « 3 / 6 », and never a rank. */
-    public function reachedCount(Program $program, EvaluationPeriod $period, ?\DateTimeImmutable $now = null): int
+    public function reachedCount(Program $program, \DateTimeImmutable $from, \DateTimeImmutable $to, ?\DateTimeImmutable $now = null): int
     {
-        return \count(array_filter($this->teams($program, $period, $now), static fn (GameTeamView $team): bool => $team->isReached()));
+        return \count(array_filter($this->teams($program, $from, $to, $now), static fn (GameTeamView $team): bool => $team->isReached()));
+    }
+
+    /**
+     * The teams of a formation ordered by their **mean index** over the window - the team ranking
+     * the monthly and yearly screens draw.
+     *
+     * A mean rather than a total, for exactly the reason the individual ranking is a rate: a team of
+     * six would otherwise beat a team of four for being bigger.
+     *
+     * @return list<array{team: GameTeamView, average: int}>
+     */
+    public function ranking(Program $program, \DateTimeImmutable $from, \DateTimeImmutable $to, ?\DateTimeImmutable $now = null): array
+    {
+        $rows = [];
+
+        foreach ($this->teams($program, $from, $to, $now) as $team) {
+            $count = \count($team->members);
+            $rows[] = [
+                'team' => $team,
+                'average' => 0 === $count ? 0 : (int) round(array_sum(array_column($team->members, 'index')) / $count),
+            ];
+        }
+
+        usort($rows, static fn (array $a, array $b): int => $b['average'] <=> $a['average']);
+
+        return $rows;
     }
 
     /** A lot names itself; its teams are numbered inside it. */

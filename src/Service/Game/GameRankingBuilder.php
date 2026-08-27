@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace App\Service\Game;
 
-use App\Entity\EvaluationPeriod;
 use App\Entity\Program;
 use App\Entity\User;
 use App\Repository\GameAliasRepository;
 use App\Repository\GameProfileRepository;
 
 /**
- * The class ranking during a period - anonymous, and inside one formation.
+ * The class ranking over a window - a month, or a school year - anonymous, and inside one formation.
  *
  * A student in discreet mode is scored and rewarded like everybody else and simply appears nowhere:
  * they are counted, never named. Leaving takes effect at once; **coming back only takes effect at
@@ -27,11 +26,11 @@ final class GameRankingBuilder
     ) {
     }
 
-    public function build(Program $program, EvaluationPeriod $period, ?User $viewer = null, ?\DateTimeImmutable $now = null): GameRankingView
+    public function build(Program $program, \DateTimeImmutable $from, \DateTimeImmutable $to, ?User $viewer = null, ?\DateTimeImmutable $now = null): GameRankingView
     {
         $students = array_values($program->getStudents()->toArray());
-        $standings = $this->reader->standingsFor($students, $program, $period, $now);
-        $aliases = $this->aliases->findForPeriod($program, $period);
+        $standings = $this->reader->standingsFor($students, $program, $from, $to, $now);
+        $aliases = $this->aliases->findForProgram($program);
         $profiles = $this->profiles->findForStudents($students);
         $settings = $this->settings->for($program);
 

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Service\Game;
 
-use App\Entity\EvaluationPeriod;
 use App\Entity\GameStatementLine;
 use App\Entity\Program;
 use App\Entity\User;
@@ -42,7 +41,6 @@ final class GameAttendanceProjector
         private readonly GameAttendanceScale $scale,
         private readonly GameRuleResolver $rules,
         private readonly GameSettingsProvider $settings,
-        private readonly GamePeriodResolver $periods,
         private readonly GameLedger $ledger,
     ) {
     }
@@ -90,7 +88,7 @@ final class GameAttendanceProjector
      * The scale is still computed over the whole formation, because that is where the streak lives;
      * only the summing is per period.
      */
-    public function possibleFor(User $student, Program $program, EvaluationPeriod $period): ?int
+    public function possibleFor(User $student, Program $program, \DateTimeImmutable $from, \DateTimeImmutable $to): ?int
     {
         $lines = $this->lines->attendanceForStudent($student, $program);
 
@@ -103,7 +101,10 @@ final class GameAttendanceProjector
         $counted = false;
 
         foreach ($lines as $offset => $line) {
-            if ($this->periodOf($program, $line)?->getId() !== $period->getId()) {
+            $statement = $line->getStatement();
+            $day = ($statement->getEndsOn() ?? $statement->getHeldOn())->setTime(12, 0);
+
+            if ($day < $from || $day > $to) {
                 continue;
             }
 
@@ -114,13 +115,6 @@ final class GameAttendanceProjector
         // Nothing stated on this period, or every unit out of scope: the family leaves the index
         // rather than reading 0 %.
         return $counted && $possible > 0 ? $possible : null;
-    }
-
-    private function periodOf(Program $program, GameStatementLine $line): ?EvaluationPeriod
-    {
-        $statement = $line->getStatement();
-
-        return $this->periods->periodContaining($program, ($statement->getEndsOn() ?? $statement->getHeldOn())->setTime(12, 0));
     }
 
     /**

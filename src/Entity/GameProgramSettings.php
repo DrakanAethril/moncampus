@@ -97,6 +97,22 @@ class GameProgramSettings
     #[ORM\Column(name: 'ranking_enabled')]
     private bool $rankingEnabled = true;
 
+    /**
+     * The months of the year this formation wants a ranking for, as numbers 1-12.
+     *
+     * All twelve by default. A school that does not want July and August simply unticks them: an
+     * unranked month is still played - points are still earned and still count towards the year -
+     * it is only never closed, never ranked, and never pays a podium.
+     *
+     * The docblock says `array-key` rather than `list` deliberately: this is a JSON column, and what
+     * comes back out of it is whatever was written - the `array_values()` in the getter is the
+     * normalisation, not a redundant call.
+     *
+     * @var array<array-key, int>
+     */
+    #[ORM\Column(name: 'ranked_months')]
+    private array $rankedMonths = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
     #[ORM\Column(name: 'alias_enabled')]
     private bool $aliasEnabled = true;
 
@@ -289,6 +305,32 @@ class GameProgramSettings
     public function isRankingEnabled(): bool
     {
         return $this->rankingEnabled;
+    }
+
+    /** @return list<int> */
+    public function getRankedMonths(): array
+    {
+        return array_values(array_map(intval(...), $this->rankedMonths));
+    }
+
+    /**
+     * @param array<array-key, int> $months
+     *
+     * The `array_values()` is input normalisation on a public setter feeding a JSON column, and the
+     * parameter is widened rather than the call dropped - the repository's own rule
+     */
+    public function setRankedMonths(array $months): static
+    {
+        $kept = array_unique(array_filter($months, static fn (int $month): bool => $month >= 1 && $month <= 12));
+        sort($kept);
+        $this->rankedMonths = $kept;
+
+        return $this;
+    }
+
+    public function ranksMonth(int $month): bool
+    {
+        return \in_array($month, $this->getRankedMonths(), true);
     }
 
     public function setRankingEnabled(bool $enabled): static
