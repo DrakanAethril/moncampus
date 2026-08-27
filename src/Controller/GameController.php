@@ -9,6 +9,7 @@ use App\Entity\User;
 use App\Enum\Feature;
 use App\Enum\GameFamily;
 use App\Repository\GameEntryRepository;
+use App\Security\Voter\GameGestureVoter;
 use App\Service\Game\GameAccess;
 use App\Service\Game\GameBadgeProvider;
 use App\Service\Game\GameCollector;
@@ -16,7 +17,9 @@ use App\Service\Game\GameIndexReader;
 use App\Service\Game\GameLevelBoard;
 use App\Service\Game\GamePeriodResolver;
 use App\Service\Game\GameSettingsProvider;
+use App\Service\Game\TeacherGestureService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -54,6 +57,7 @@ class GameController extends AbstractController
         GameEntryRepository $entries,
         GameBadgeProvider $badges,
         GameSettingsProvider $settingsProvider,
+        TeacherGestureService $teacherGestures,
     ): Response {
         $student = $this->currentUser();
         $program = $access->primaryProgramFor($student) ?? throw $this->createNotFoundException();
@@ -80,6 +84,10 @@ class GameController extends AbstractController
         return $this->render('game/index.html.twig', [
             'program' => $program,
             'period' => $period,
+            // The gestures addressed to this student, with the seven-day window still open on the
+            // ones they may answer. Shown next to the journal rather than inside it: a gesture is
+            // the only line of the journal that can be argued with.
+            'gestures' => $this->contestableGestures($entries->gesturesFor($student, $program, $period), $teacherGestures),
             'settings' => $settings,
             'standing' => $standing,
             'badge' => $badges->forUser($student),
@@ -108,6 +116,40 @@ class GameController extends AbstractController
     }
 
     /**
+     * Contest a gesture, within the seven days.
+     *
+     * The student's own act and nobody else's - GameGestureVoter::CONTEST answers only to the person
+     * the gesture was addressed to, because a teacher contesting on their behalf would empty the
+     * seven days of meaning. The entry stays where it is, marked; its author answers or withdraws it,
+     * and withdrawing writes an inverse line rather than deleting anything.
+     */
+    #[Route(path: '/game/gestures/{entryId}/contest', name: 'app_game_gesture_contest', requirements: ['entryId' => '\d+'], methods: ['POST'])]
+    public function contest(
+        int $entryId,
+        Request $request,
+        GameEntryRepository $entries,
+        TeacherGestureService $gestures,
+    ): Response {
+        if (!$this->isCsrfTokenValid('game_gesture_contest', (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $entry = $entries->find($entryId) ?? throw $this->createNotFoundException();
+        $this->denyAccessUnlessGranted(GameGestureVoter::CONTEST, $entry);
+
+        // Called once: the second call would find the entry already contested and answer false,
+        // which would flash « trop tard » on a contestation that had just been registered.
+        $contested = $gestures->contest($entry);
+
+        $this->addFlash(
+            $contested ? 'success' : 'error',
+            $contested ? 'gameGestureContestedFlashMessage' : 'gameGestureContestTooLateMessage',
+        );
+
+        return $this->redirectToRoute('app_game');
+    }
+
+    /**
      * The board of the six levels - open to every role the feature is on for.
      *
      * It reads as a poster rather than as a status screen, and that is deliberate: the wording of a
@@ -124,6 +166,19 @@ class GameController extends AbstractController
             'entries' => $board->boardFor($program?->getGameTrack()),
             'badge' => $badges->forUser($student),
         ]);
+    }
+
+    /**
+     * @param list<\App\Entity\GameEntry> $entries
+     *
+     * @return list<array{entry: \App\Entity\GameEntry, contestable: bool}>
+     */
+    private function contestableGestures(array $entries, TeacherGestureService $gestures): array
+    {
+        return array_map(
+            static fn ($entry): array => ['entry' => $entry, 'contestable' => $gestures->isContestable($entry)],
+            $entries,
+        );
     }
 
     private function currentUser(): User

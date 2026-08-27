@@ -134,6 +134,40 @@
                 </div>
             </div>
 
+            {% if gestures|length %}
+                <div class="card">
+                    <div class="card-body">
+                        <span class="cm-gm-label">{{ 'gameGesturesAboutMeHeading'|trans }}</span>
+                        {# A gesture is the only line of the journal that can be argued with, so it
+                           gets its own block with the seven days written on it. The motive is shown
+                           exactly as it was typed - that is the whole point of asking for one. #}
+                        <div class="cm-gm-log" style="margin-top: 8px">
+                            {% for row in gestures %}
+                                <div class="cm-gm-log__row">
+                                    <span class="cm-gm-log__date">{{ row.entry.occurredAt|date('d/m') }}</span>
+                                    <span class="cm-gm-log__rule">
+                                        {% if row.entry.gestureObject %}{{ row.entry.gestureObject.labelKey|trans }} — {% endif %}{{ row.entry.reason }}
+                                        <span class="cm-gm-log__src">
+                                            {{ row.entry.author ? (row.entry.author.displayName ?? row.entry.author.username) : '—' }}
+                                            {%- if row.entry.pendingContest %} · {{ 'gameGestureContestedLabel'|trans }}{% endif %}
+                                        </span>
+                                    </span>
+                                    <span class="cm-gm-log__fam">
+                                        {% if row.contestable %}
+                                            <form method="post" action="{{ path('app_game_gesture_contest', {entryId: row.entry.id}) }}">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('game_gesture_contest') }}">
+                                                <button type="submit" class="cm-action cm-action--neutral">{{ 'gameGestureContestAction'|trans }}</button>
+                                            </form>
+                                        {% endif %}
+                                    </span>
+                                    <span class="cm-gm-log__pts{{ row.entry.points < 0 ? ' cm-gm-log__pts--neg' }}">{{ row.entry.points > 0 ? '+' }}{{ row.entry.points }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
             <div class="card">
                 <div class="card-body">
                     <div class="cm-card-toolbar" style="padding: 0 0 6px">

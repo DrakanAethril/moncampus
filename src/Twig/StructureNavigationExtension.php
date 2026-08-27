@@ -76,6 +76,10 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
             new TwigFunction('structure_nav_current_test_program', $this->getCurrentTestProgram(...)),
             new TwigFunction('is_staff', $this->accessChecker->isStaff(...)),
             new TwigFunction('is_program_teacher', $this->accessChecker->isProgramTeacher(...)),
+            // Stricter than the one above and deliberately not staff-bypassed: it answers « does
+            // this person carry the class-wide referent remit », which is a fact rather than a
+            // permission level. The class council's nav entry asks it (the campus game, screen 6).
+            new TwigFunction('is_program_referent_teacher', $this->accessChecker->isProgramReferentTeacher(...)),
             new TwigFunction('program_has_quiz_instances', $this->hasQuizInstances(...)),
             new TwigFunction('program_nav_has_entries', $this->hasNavEntries(...)),
             new TwigFunction('student_nav_programs', $this->getStudentPrograms(...)),

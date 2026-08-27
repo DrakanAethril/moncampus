@@ -61,6 +61,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
     private int $batchId;
     private string $timelinePath;
     private string $attendancePath;
+    private string $gesturesPath;
+    private string $councilPath;
 
     protected function setUp(): void
     {
@@ -76,6 +78,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->createSupervisedAttempt();
         $this->openTheGame();
         $this->attendancePath = '/programs/'.$this->program->getId().'/game/attendance';
+        $this->gesturesPath = '/programs/'.$this->program->getId().'/game/gestures';
+        $this->councilPath = '/programs/'.$this->program->getId().'/council';
     }
 
     /**
@@ -212,6 +216,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/game/levels' => 200,
             '/settings/game/levels' => 403,
             $this->attendancePath => 403,
+            $this->gesturesPath => 403,
+            $this->councilPath => 403,
+            $this->gesturesPath => 403,
+            $this->councilPath => 403,
             // « Séquences de l'année » hands over to the single formation this student belongs to
             // rather than drawing a picker with one card in it (2026-08-17). The list still renders
             // for a student straddling two, and for the empty state.
@@ -313,6 +321,11 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/game/levels' => 200,
             '/settings/game/levels' => 403,
             $this->attendancePath => 200,
+            $this->gesturesPath => 200,
+            // The council is the professeur principal's, and isProgramReferentTeacher() is
+            // deliberately NOT staff-bypassed - a teacher of the class who does not carry the
+            // referent remit does not get in, which is exactly what this row pins.
+            $this->councilPath => 403,
             // The course-space index is the student's own list of programs; a teacher reaches the
             // same sequences from their program screens instead.
             '/my/courses' => 403,
@@ -430,6 +443,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/game/levels' => 200,
             '/settings/game/levels' => 200,
             $this->attendancePath => 200,
+            $this->gesturesPath => 200,
+            // Re-opening a closed council is an administrator's act, so the screen is theirs too.
+            $this->councilPath => 200,
             '/settings/configuration' => 200,
             '/settings/teaching' => 200,
             // Groups are admin-only, deliberately stricter than the rest of Settings - see

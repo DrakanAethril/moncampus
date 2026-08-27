@@ -9319,3 +9319,43 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-att-card--not_clean .cm-att-card__mark, .cm-att-card--not_clean .cm-att-card__state { color: var(--cm-red-tx); }
 .cm-att-card--out_of_scope { border-style: dashed; background: var(--cm-surface-alt); }
 .cm-att-card--out_of_scope .cm-att-card__mark, .cm-att-card--out_of_scope .cm-att-card__state { color: var(--cm-faint); }
+
+/* ---------- Teacher gestures and the class council (screens 6 and 7) ---------- */
+.cm-gm-env { display: inline-flex; align-items: center; gap: 6px; }
+.cm-gm-env i { width: 15px; height: 15px; border-radius: 4px; background: var(--cm-brand); display: inline-block; }
+/* A spent token, not a missing one: the envelope is six squares all period long, and what changes
+   is how many of them are still yours. */
+.cm-gm-env i.is-used { background: var(--cm-border-soft); box-shadow: inset 0 0 0 1px var(--cm-border); }
+.cm-gm-env__count { font-size: 12px; color: var(--cm-muted); margin-left: 5px; }
+
+.cm-gm-gestureform { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; align-items: start; }
+.cm-gm-gestureform__reason { grid-column: 1 / -1; }
+.cm-gm-gestureform label { display: block; }
+.cm-gm-gestureform select, .cm-gm-gestureform textarea {
+    width: 100%; margin-top: 6px; padding: 7px 10px; font: inherit; font-size: 13.5px;
+    border: 1px solid var(--cm-border); border-radius: 8px; background: var(--cm-surface); color: var(--cm-ink);
+}
+
+/* A segmented control built from radios: the input is hidden, its label is the segment. */
+.cm-gm-seg { display: inline-flex; margin-top: 6px; border: 1px solid var(--cm-border); border-radius: 8px; overflow: hidden; background: var(--cm-surface); }
+.cm-gm-seg label { display: inline-flex; margin: 0; }
+.cm-gm-seg input { position: absolute; opacity: 0; width: 0; height: 0; }
+.cm-gm-seg span {
+    display: inline-block; padding: 5px 12px; font-size: 12.5px; font-weight: 600;
+    color: var(--cm-muted); border-left: 1px solid var(--cm-border); cursor: pointer; white-space: nowrap;
+}
+.cm-gm-seg label:first-child span { border-left: 0; }
+.cm-gm-seg input:checked + span { background: var(--cm-brand); color: #fff; }
+.cm-gm-seg input:focus-visible + span { outline: 2px solid var(--cm-brand); outline-offset: -2px; }
+.cm-gm-seg input:disabled + span { opacity: .45; cursor: default; }
+
+.cm-gm-gesture--cancelled td { opacity: .55; text-decoration: line-through; }
+.cm-gm-gesture--cancelled .cm-actions { text-decoration: none; }
+
+.cm-council__mentions span { padding: 4px 9px; font-size: 12px; }
+.cm-council__comment { width: 100%; padding: 5px 8px; font: inherit; font-size: 12.5px; border: 1px solid var(--cm-border); border-radius: 6px; background: var(--cm-surface); color: var(--cm-ink); }
+.cm-council-keys { font-size: 11.5px; color: var(--cm-muted); }
+.cm-council-keys kbd {
+    display: inline-block; padding: 1px 5px; border-radius: 4px; font-size: 11px; font-weight: 700;
+    background: var(--cm-surface-alt); border: 1px solid var(--cm-border); color: var(--cm-ink);
+}

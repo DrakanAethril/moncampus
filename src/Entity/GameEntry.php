@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\GameFamily;
+use App\Enum\GameGestureObject;
 use App\Repository\GameEntryRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
@@ -81,6 +82,16 @@ class GameEntry
     #[ORM\ManyToOne(targetEntity: self::class)]
     #[ORM\JoinColumn(name: 'reversal_of_id', nullable: true, onDelete: 'CASCADE')]
     private ?self $reversalOf = null;
+
+    /**
+     * What a malus is about - dress or behaviour, and nothing else (§4, decision 6).
+     *
+     * A column rather than a prefix on $reason, because $reason is read by the student exactly as
+     * it was typed and must stay the teacher's own sentence; and because a closed list in the
+     * schema is what stops the gesture from acquiring a third subject one screen at a time.
+     */
+    #[ORM\Column(name: 'gesture_object', length: 20, nullable: true, enumType: GameGestureObject::class)]
+    private ?GameGestureObject $gestureObject = null;
 
     #[ORM\Column(name: 'contested_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $contestedAt = null;
@@ -184,6 +195,18 @@ class GameEntry
     public function setReason(?string $reason): static
     {
         $this->reason = $reason;
+
+        return $this;
+    }
+
+    public function getGestureObject(): ?GameGestureObject
+    {
+        return $this->gestureObject;
+    }
+
+    public function setGestureObject(?GameGestureObject $gestureObject): static
+    {
+        $this->gestureObject = $gestureObject;
 
         return $this;
     }
