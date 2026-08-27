@@ -255,6 +255,33 @@ class SignupListController extends AbstractController
         return $this->redirectToRoute('app_signup_lists_show', ['id' => $signupList->getId()]);
     }
 
+    /**
+     * Tick, or untick, that somebody actually turned up.
+     *
+     * The list's manager decides, after the fact, and the row says nothing more than that: there is
+     * no absence anywhere here. It matters beyond the roster because the campus game pays « une
+     * inscription tenue » and never the inscription itself - signing up leaves a click and nothing
+     * else (design/validated/gamification.md §4, decision 4).
+     */
+    #[Route(path: '/signup-lists/{id}/registrations/{registrationId}/attendance', name: 'app_signup_lists_attendance', requirements: ['id' => '\d+', 'registrationId' => '\d+'], methods: ['POST'])]
+    public function attendance(int $id, int $registrationId, Request $request, SignupListRepository $repository, SignupListRegistrationRepository $registrationRepository, EntityManagerInterface $entityManager): Response
+    {
+        $signupList = $this->findOrNotFound($repository, $id);
+        $this->denyAccessUnlessGranted(SignupListVoter::MANAGE, $signupList);
+        $this->assertValidToken('signup_list_attendance', $request);
+
+        $registration = $registrationRepository->find($registrationId) ?? throw $this->createNotFoundException();
+
+        if ($registration->getSignupList()?->getId() !== $signupList->getId()) {
+            throw $this->createNotFoundException();
+        }
+
+        $registration->setAttended($request->request->getBoolean('attended'));
+        $entityManager->flush();
+
+        return $this->redirectToRoute('app_signup_lists_show', ['id' => $signupList->getId()]);
+    }
+
     #[Route(path: '/signup-lists/{id}/attachments/{attachmentId}/remove', name: 'app_signup_lists_attachments_remove', methods: ['POST'])]
     public function removeAttachment(int $id, int $attachmentId, Request $request, SignupListRepository $repository, EntityManagerInterface $entityManager, FileUploadService $fileUploadService): Response
     {
