@@ -13,15 +13,13 @@ namespace App\Service\Game;
  * shows in every screen of the application, and a threshold moving from one formation to the next
  * would make the ring mean nothing.
  *
- * The cursus cap is invariant at 3 600 XP whatever the number of periods, which is what
- * App\Service\Game\GameLevelResolver::xpForIndex() computes and why the coefficient is never
- * written down as a number.
+ * Since 2026-08-28 a level is read off the **running total of points a student has earned across
+ * their whole schooling**, and off nothing else. There is no per-period conversion any more: the
+ * points in the ledger are the points, and a student changing formation arrives at the level their
+ * own total gives them there.
  */
 final class GameLevels
 {
-    /** A perfect cursus, whatever its number of periods (§4, decision 2). */
-    public const int CURSUS_CAP = 3600;
-
     /** @var list<GameLevel>|null */
     private static ?array $levels = null;
 

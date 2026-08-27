@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
-use App\Entity\EvaluationPeriod;
 use App\Entity\GameEntry;
 use App\Entity\Program;
 use App\Entity\User;
@@ -33,10 +32,8 @@ class GameEntryRepository extends ServiceEntityRepository
      *
      * @return array<string, int> keyed by App\Enum\GameFamily value
      */
-    public function sumByFamily(User $student, Program $program, EvaluationPeriod $period): array
+    public function sumByFamily(User $student, Program $program, \DateTimeImmutable $from, \DateTimeImmutable $to): array
     {
-        [$from, $to] = $this->boundsOf($period);
-
         // `e.family` hydrates as the enum itself even in an array result - the enumType on the
         // column applies to every hydration mode - so the key is taken off ->value, never off a
         // cast that would throw.
@@ -70,13 +67,11 @@ class GameEntryRepository extends ServiceEntityRepository
      *
      * @return array<int, array<string, int>> student id => family value => points
      */
-    public function sumByFamilyForStudents(array $students, Program $program, EvaluationPeriod $period): array
+    public function sumByFamilyForStudents(array $students, Program $program, \DateTimeImmutable $from, \DateTimeImmutable $to): array
     {
         if ([] === $students) {
             return [];
         }
-
-        [$from, $to] = $this->boundsOf($period);
 
         /** @var list<array{student: int, family: GameFamily, total: string|int|null}> $rows */
         $rows = $this->createQueryBuilder('e')
@@ -288,7 +283,7 @@ class GameEntryRepository extends ServiceEntityRepository
      *
      * @return list<GameEntry>
      */
-    public function journal(User $student, Program $program, ?EvaluationPeriod $period = null, ?int $limit = null): array
+    public function journal(User $student, Program $program, ?\DateTimeImmutable $from = null, ?\DateTimeImmutable $to = null, ?int $limit = null): array
     {
         $query = $this->createQueryBuilder('e')
             ->where('e.student = :student')
@@ -298,10 +293,9 @@ class GameEntryRepository extends ServiceEntityRepository
             ->setParameter('student', $student)
             ->setParameter('program', $program);
 
-        // A period narrows the reading; without one the journal is the student's whole history,
+        // A window narrows the reading; without one the journal is the student's whole history,
         // which is what « voir l'historique des points » asks for.
-        if (null !== $period) {
-            [$from, $to] = $this->boundsOf($period);
+        if (null !== $from && null !== $to) {
             $query->andWhere('e.occurredAt >= :from AND e.occurredAt <= :to')
                 ->setParameter('from', $from)
                 ->setParameter('to', $to);
@@ -318,32 +312,23 @@ class GameEntryRepository extends ServiceEntityRepository
     }
 
     /**
-     * The two bounds a period covers.
+     * One student's whole ledger, **across every formation they have passed through**.
      *
-     * This is the whole of what a period is to the ledger: a range of dates. An entry belongs to it
-     * because of *when it happened*, never because somebody had to pick a period before writing it -
-     * which is what made a gesture impossible on a day the calendar had not planned for.
-     *
-     * @return array{0: \DateTimeImmutable, 1: \DateTimeImmutable}
+     * That is what a level is made of: a student keeps their points for the whole of their schooling,
+     * and changing formation starts them at the level those points already give them (2026-08-28).
+     * Scoping this to one program would reset somebody's level the day they moved up a year.
      */
-    private function boundsOf(EvaluationPeriod $period): array
+    public function sumForStudent(User $student, ?Program $program = null): int
     {
-        return [
-            $period->getStartDate() ?? new \DateTimeImmutable('@0'),
-            $period->getEndDate() ?? new \DateTimeImmutable('+100 years'),
-        ];
-    }
-
-    /** One student's whole ledger for a formation, all time - the « Mon XP » total. */
-    public function sumAllTime(User $student, Program $program): int
-    {
-        return (int) $this->createQueryBuilder('e')
+        $query = $this->createQueryBuilder('e')
             ->select('COALESCE(SUM(e.points), 0)')
             ->where('e.student = :student')
-            ->andWhere('e.program = :program')
-            ->setParameter('student', $student)
-            ->setParameter('program', $program)
-            ->getQuery()
-            ->getSingleScalarResult();
+            ->setParameter('student', $student);
+
+        if (null !== $program) {
+            $query->andWhere('e.program = :program')->setParameter('program', $program);
+        }
+
+        return (int) $query->getQuery()->getSingleScalarResult();
     }
 }

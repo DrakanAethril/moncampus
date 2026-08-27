@@ -12,9 +12,9 @@ use Doctrine\ORM\Mapping as ORM;
  * The durable half of a student's game: the XP of the whole cursus, the level it reaches, the title
  * they display and whether they have stepped out of the rankings.
  *
- * One row per student, across every formation they pass through. **XP is never reset** - not by a
- * malus, not by a change of school year (§5.6): a level is what the avatar carries everywhere, and
- * a level that could be lost would make constancy worth nothing.
+ * One row per student, across every formation they pass through. **A level is never lost** - not to
+ * a malus, not to a change of school year: a level is what the avatar carries everywhere, and one
+ * that could be taken back would make constancy worth nothing.
  *
  * $discreetSince is what enforces the other half of the discreet mode: leaving is immediate,
  * **coming back only takes effect on the next period** (§4, decision 8). Without that date the
@@ -35,13 +35,21 @@ class GameProfile
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private User $student;
 
-    #[ORM\Column(name: 'xp_total')]
-    private int $xpTotal = 0;
+    /**
+     * Everything this student has ever earned, **across every formation they have passed through**.
+     *
+     * That is what a level is made of. « Le compte d'un étudiant garde les points acquis tout au
+     * long de sa scolarité » - so changing formation starts them at the level those points already
+     * give them, and only the *wording* of that level changes with the filière. Scoping the total to
+     * one program would reset somebody's level the day they moved up a year.
+     */
+    #[ORM\Column(name: 'total_points')]
+    private int $totalPoints = 0;
 
     #[ORM\Column]
     private int $level = 1;
 
-    /** Chosen among the titles already unlocked, from the silver tier on; null falls back on the current level's. */
+    /** Chosen among the titles already unlocked; null falls back on the current level's own. */
     #[ORM\Column(name: 'displayed_title', length: 120, nullable: true)]
     private ?string $displayedTitle = null;
 
@@ -70,15 +78,20 @@ class GameProfile
         return $this->student;
     }
 
-    public function getXpTotal(): int
+    public function getTotalPoints(): int
     {
-        return $this->xpTotal;
+        return $this->totalPoints;
     }
 
-    /** The only way XP moves, and it only ever goes up. */
-    public function addXp(int $xp): static
+    /**
+     * The running total, recomputed from the ledger rather than incremented.
+     *
+     * A stored counter and a journal drift; recomputing is the only way the two can never disagree,
+     * and a student adding up their own history has to land on the same number.
+     */
+    public function setTotalPoints(int $totalPoints): static
     {
-        $this->xpTotal += max(0, $xp);
+        $this->totalPoints = max(0, $totalPoints);
 
         return $this;
     }

@@ -9,8 +9,10 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * The teams a formation plays with on one period: a saved App\Entity\GroupBatch, and nothing more
- * (§4, decision 7).
+ * The teams a formation plays with: a saved App\Entity\GroupBatch, and nothing more (§4, decision 7).
+ *
+ * One set per formation, not one per period. The monthly and yearly rankings both read the same
+ * teams, and a team that changed underneath a ranking would make the year's own ranking unreadable.
  *
  * A lot **is** the period's teams. `GroupBatch::$groups` is a frozen `list<list<int>>` of student ids
  * taken at save time - deliberately not a relation, so a student joining the class afterwards does
@@ -25,7 +27,7 @@ use Doctrine\ORM\Mapping as ORM;
  */
 #[ORM\Entity(repositoryClass: GameTeamSetRepository::class)]
 #[ORM\Table(name: 'game_team_set')]
-#[ORM\UniqueConstraint(name: 'uniq_game_team_set', columns: ['program_id', 'period_id'])]
+#[ORM\UniqueConstraint(name: 'uniq_game_team_set', columns: ['program_id'])]
 class GameTeamSet
 {
     #[ORM\Id]
@@ -37,10 +39,6 @@ class GameTeamSet
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private Program $program;
 
-    #[ORM\ManyToOne(targetEntity: EvaluationPeriod::class)]
-    #[ORM\JoinColumn(name: 'period_id', nullable: false, onDelete: 'CASCADE')]
-    private EvaluationPeriod $period;
-
     #[ORM\ManyToOne(targetEntity: GroupBatch::class)]
     #[ORM\JoinColumn(name: 'group_batch_id', nullable: false, onDelete: 'CASCADE')]
     private GroupBatch $batch;
@@ -48,10 +46,9 @@ class GameTeamSet
     #[ORM\Column(name: 'created_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
 
-    public function __construct(Program $program, EvaluationPeriod $period, GroupBatch $batch)
+    public function __construct(Program $program, GroupBatch $batch)
     {
         $this->program = $program;
-        $this->period = $period;
         $this->batch = $batch;
         $this->createdAt = new \DateTimeImmutable();
     }
@@ -64,11 +61,6 @@ class GameTeamSet
     public function getProgram(): Program
     {
         return $this->program;
-    }
-
-    public function getPeriod(): EvaluationPeriod
-    {
-        return $this->period;
     }
 
     public function getBatch(): GroupBatch

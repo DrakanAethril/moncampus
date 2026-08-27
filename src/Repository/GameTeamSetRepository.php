@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
-use App\Entity\EvaluationPeriod;
 use App\Entity\GameTeamSet;
 use App\Entity\Program;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -20,8 +19,8 @@ class GameTeamSetRepository extends ServiceEntityRepository
         parent::__construct($registry, GameTeamSet::class);
     }
 
-    public function findForPeriod(Program $program, EvaluationPeriod $period): ?GameTeamSet
+    public function findForProgram(Program $program): ?GameTeamSet
     {
-        return $this->findOneBy(['program' => $program, 'period' => $period]);
+        return $this->findOneBy(['program' => $program]);
     }
 }

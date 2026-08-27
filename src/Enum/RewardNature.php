@@ -9,7 +9,8 @@ namespace App\Enum;
  *
  * - **Symbolic**: an avatar frame, a badge, a displayed title, a line on the promo's wall. Acquired
  *   for good, shown on the profile, and **never taken back** - not even after a malus (§5.6).
- * - **Consumable**: a 24-hour joker, the choice of a TP subject, the choice of a partner. Used once,
+ * - **Consumable**: the choice of a TP subject, the choice of a partner, a seat at the front for a
+ *   demonstration. Used once,
  *   spent by the student themselves, with the date it was spent on kept.
  * - **Offline**: a place on an outing, a breakfast, a company visit. The application notifies it and
  *   remembers it, and does nothing else with it - the rest happens outside.

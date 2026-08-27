@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Service\Game;
 
-use App\Entity\EvaluationPeriod;
 use App\Entity\GameAlias;
 use App\Entity\GameFigure;
 use App\Entity\Program;
@@ -46,9 +45,9 @@ final class GameAliasDrawer
      * then simply runs without pseudonyms, and the ranking shows real names to nobody because it
      * shows nothing at all (the settings screen can switch the ranking off for the same reason).
      */
-    public function aliasFor(User $student, Program $program, EvaluationPeriod $period): ?GameAlias
+    public function aliasFor(User $student, Program $program): ?GameAlias
     {
-        $existing = $this->aliases->findOneFor($student, $program, $period);
+        $existing = $this->aliases->findOneFor($student, $program);
 
         if (null !== $existing) {
             return $existing;
@@ -62,7 +61,7 @@ final class GameAliasDrawer
             return null;
         }
 
-        $available = $this->figures->availableFor($track, $program, $period, $student);
+        $available = $this->figures->availableFor($track, $program, $student);
 
         if ([] === $available) {
             return null;
@@ -70,7 +69,7 @@ final class GameAliasDrawer
 
         $offered = $this->pick($available, self::OFFERED);
 
-        $alias = new GameAlias($student, $program, $period, array_map(static fn (GameFigure $figure): int => (int) $figure->getId(), $offered));
+        $alias = new GameAlias($student, $program, array_map(static fn (GameFigure $figure): int => (int) $figure->getId(), $offered));
         $this->entityManager->persist($alias);
         $this->entityManager->flush();
 
@@ -147,12 +146,12 @@ final class GameAliasDrawer
      *
      * @return int how many were drawn
      */
-    public function drawForClass(Program $program, EvaluationPeriod $period): int
+    public function drawForClass(Program $program): int
     {
         $drawn = 0;
 
         foreach ($program->getStudents() as $student) {
-            if (null !== $this->aliasFor($student, $program, $period)) {
+            if (null !== $this->aliasFor($student, $program)) {
                 ++$drawn;
             }
         }

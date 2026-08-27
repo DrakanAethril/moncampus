@@ -365,21 +365,27 @@ Notes:
 - Requires nothing else. A run with an empty queue exits in a few milliseconds, so installing the
   entry before the consumer exists is harmless.
 
-## Closing the campus game's periods (cron)
+## Closing the campus game's months (cron)
 
-`app:game:close-period` closes every evaluation period that has ended, in every formation where the
-game is running, then opens the next one and draws its pseudonyms
+`app:game:close-month` closes every **calendar month** that has ended and that a formation has asked
+to be ranked, in every formation where the game is running, and pays the month's podium
 (design/validated/gamification.md §8).
 
+A month rather than an evaluation period since 2026-08-28: points are credited on the day they are
+earned and counted in the month that day falls in, which is a window every calendar already has and
+nobody has to set up. A formation ranks only the months it ticked on its own game settings screen -
+an unticked month is still played, it is simply never closed and never pays a podium.
+
 **It exists because a closure is not something a browser tab can be trusted with.** It freezes a
-whole class's period into `GamePeriodScore` - written once and never recomputed - pays XP that never
-comes back down, and grants rewards. It has to happen whether or not anybody opened a screen that
+whole class's month into `GameMonthScore` - written once and never recomputed - credits 20, 10 and 5
+points to the first three, refreshes each student's running total and the level it gives, and grants
+the level frames that total has opened. It has to happen whether or not anybody opened a screen that
 morning, and it must happen exactly once.
 
 Once a day is the right rate: what it reacts to is the calendar, and the calendar moves once a day.
 
 ```cron
-30 4 * * * cd /srv/moncampus && docker compose -f compose.yaml -f compose.prod.yaml exec -T php bin/console app:game:close-period >> /var/log/moncampus-game.log 2>&1
+30 4 * * * cd /srv/moncampus && docker compose -f compose.yaml -f compose.prod.yaml exec -T php bin/console app:game:close-month >> /var/log/moncampus-game.log 2>&1
 ```
 
 Notes:
@@ -388,9 +394,10 @@ Notes:
   CLI included, and this command writes a great deal. The failure shows up at flush time rather than
   at startup, which is what makes it worth stating here rather than discovering it on a closure night.
 - **No `flock` needed**: it locks itself (`LockableTrait`), like the `app:mail:*` commands.
-- **Idempotent.** A period already frozen is skipped whole - the snapshot is the guard - and every
+- **Idempotent.** A month already frozen is skipped whole - the snapshot is the guard - and every
   write inside a closure is either bounded by it or refused by the ledger's own duplicate check.
-  Running it twice a day is harmless; missing a day only delays a closure.
+  Running it twice a day is harmless; missing a day only delays a closure, and a month left unclosed
+  is picked up on the next run - it walks twelve months back.
 - **`--dry-run` lists what would be closed and writes nothing**, which is the way to read a host's
   state before installing the entry. `--program` narrows it to one formation.
 - **It also attributes the pseudonyms nobody chose within seven days**, in the same pass: it is the

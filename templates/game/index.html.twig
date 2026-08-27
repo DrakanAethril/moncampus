@@ -21,10 +21,8 @@
 {% endblock %}
 
 {% block main %}
-    {# The period and the formation, said once under the title rather than in it. #}
-    <p class="cm-gm-context">
-        {{ period.name }} · {{ program.shortName }}{% if period.endDate %} · {{ 'gameClosesOnLabel'|trans({'%date%': period.endDate|date('d/m/Y')}) }}{% endif %}
-    </p>
+    {# The month and the formation, said once under the title rather than in it. #}
+    <p class="cm-gm-context">{{ monthLabel }} · {{ program.displayShortName }}</p>
 
     <div class="cm-gm-layout">
 
@@ -75,7 +73,7 @@
             <div class="card">
                 <div class="card-body">
                     <div class="cm-gm-label">{{ 'gameShelfHeading'|trans }}</div>
-                    {# Every period, not only this one: a symbolic reward is acquired for good, and a
+                    {# Every month, not only this one: a symbolic reward is acquired for good, and a
                        reward is never points - the journal says so on its own lines, and the shelf
                        says it by simply having no number on it. #}
                     <div class="cm-gm-shelf" style="margin-top: 10px">
@@ -116,7 +114,7 @@
                 <div class="card-body">
                     <div class="cm-card-toolbar" style="padding: 0 0 14px">
                         <span class="cm-gm-label">{{ 'gameFamiliesHeading'|trans }}</span>
-                        <span class="cm-badge cm-badge--blue" style="margin-left: auto">{{ period.name }}</span>
+                        <span class="cm-badge cm-badge--blue" style="margin-left: auto">{{ monthLabel }}</span>
                     </div>
 
                     {% include 'game/_families.html.twig' with {standing: standing, families: families} %}

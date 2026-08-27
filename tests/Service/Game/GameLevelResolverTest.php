@@ -52,41 +52,15 @@ class GameLevelResolverTest extends TestCase
         self::assertNull($progress->xpToNext);
     }
 
-    public function testAPerfectCursusIsThirtySixHundredXpWhateverTheNumberOfPeriods(): void
+    public function testTheThresholdsOfTheDesignAreWhatDecidesALevel(): void
     {
-        foreach ([2, 3, 4, 6, 12] as $periodCount) {
-            $total = 0;
-            for ($i = 0; $i < $periodCount; ++$i) {
-                $total += $this->resolver->xpForIndex(100, $periodCount);
-            }
-
-            self::assertSame(GameLevels::CURSUS_CAP, $total, $periodCount.' periods');
-        }
-    }
-
-    public function testTheCalibrationOfTheDesignHoldsOnFourSemesters(): void
-    {
-        // §4, decision 2: the table of "indice moyen -> XP par période" on a x9 coefficient.
-        self::assertSame(855, $this->resolver->xpForIndex(95, 4));
-        self::assertSame(648, $this->resolver->xpForIndex(72, 4));
-        self::assertSame(450, $this->resolver->xpForIndex(50, 4));
-        self::assertSame(270, $this->resolver->xpForIndex(30, 4));
-
-        // A regular student reaches level 6 on the fourth semester, not the perfect one on the first.
-        self::assertSame(6, $this->resolver->resolve(4 * 648)->level->level);
-        self::assertSame(5, $this->resolver->resolve(3 * 648)->level->level);
-    }
-
-    public function testATermBasedCursusReachesTheSameCeiling(): void
-    {
-        self::assertSame(6.0, $this->resolver->coefficient(6));
-        self::assertSame(570, $this->resolver->xpForIndex(95, 6));
-    }
-
-    public function testAFormationWithoutAPeriodGroupPaysNothingRatherThanGuessing(): void
-    {
-        self::assertSame(0, $this->resolver->xpForIndex(95, 0));
-        self::assertNull($this->resolver->coefficient(0));
-        self::assertSame(9.0, $this->resolver->coefficient(4));
+        // The six thresholds are the establishment's, and a level is read off a running total of
+        // points - there is no per-period conversion left to calibrate.
+        self::assertSame(1, $this->resolver->resolve(0)->level->level);
+        self::assertSame(2, $this->resolver->resolve(300)->level->level);
+        self::assertSame(3, $this->resolver->resolve(700)->level->level);
+        self::assertSame(4, $this->resolver->resolve(1200)->level->level);
+        self::assertSame(5, $this->resolver->resolve(1800)->level->level);
+        self::assertSame(6, $this->resolver->resolve(2500)->level->level);
     }
 }

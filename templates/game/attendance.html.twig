@@ -27,7 +27,7 @@
         {{ program.displayShortName }} ·
         {{ statement.startsOn|date('d/m') }} → {{ statement.endsOn|date('d/m/Y') }} ·
         {{ (statement.periodicity ? statement.periodicity.labelKey : 'gameAttendanceStepWeekLabel')|trans }}
-        {%- if period %} · {{ period.name }}{% else %} · <span title="{{ 'gameStatementOutOfPeriodHelpText'|trans }}">{{ 'gameStatementOutOfPeriodLabel'|trans }}</span>{% endif %}
+
     </p>
 
     <div class="card">

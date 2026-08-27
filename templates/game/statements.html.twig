@@ -74,7 +74,6 @@
                         <th>{{ 'gameStatementNameLabel'|trans }}</th>
                         <th>{{ 'gameStatementTypeLabel'|trans }}</th>
                         <th>{{ 'gameStatementHeldOnLabel'|trans }}</th>
-                        <th title="{{ 'gameStatementPeriodColumnHelpText'|trans }}">{{ 'gameStatementPeriodColumnLabel'|trans }}</th>
                         <th>{{ 'gameStatementStateColumnLabel'|trans }}</th>
                     </tr>
                 </thead>
@@ -88,16 +87,6 @@
                                     {{ statement.startsOn|date('d/m') }} → {{ statement.endsOn|date('d/m/Y') }}
                                 {% else %}
                                     {{ statement.heldOn|date('d/m/Y') }}
-                                {% endif %}
-                            </td>
-                            <td>
-                                {# A relevé held outside every period pays nothing: there is no index
-                                   for it to count towards, and it says so rather than paying in
-                                   silence. #}
-                                {% if periodOf[statement.id] is defined %}
-                                    {{ periodOf[statement.id] }}
-                                {% else %}
-                                    <span class="cm-badge cm-badge--gray" title="{{ 'gameStatementOutOfPeriodHelpText'|trans }}">{{ 'gameStatementOutOfPeriodLabel'|trans }}</span>
                                 {% endif %}
                             </td>
                             <td>

@@ -9,15 +9,15 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * A formation's deviation from App\Service\Game\GameRuleCatalog, for one period.
+ * A formation's deviation from App\Service\Game\GameRuleCatalog.
  *
  * One row per formation and per rule, and **no period**: retuning a rule is a decision about a
  * class, not about a term, and versioning it by period meant a team could not change a value without
  * first knowing which period they were in - which is exactly the coupling that made the whole area
  * unusable outside the calendar.
  *
- * A period already closed keeps what it was played under all the same, because what is frozen is
- * the **result**: App\Entity\GamePeriodScore is written once and never recomputed (§6), so moving a
+ * A month already closed keeps what it was played under all the same, because what is frozen is
+ * the **result**: App\Entity\GameMonthScore is written once and never recomputed (§6), so moving a
  * value today cannot move January's ranking.
  *
  * Absence is the normal state: a program that has never retuned a rule has no row at all and plays

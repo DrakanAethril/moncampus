@@ -227,14 +227,15 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/game/leveling/team' => 200,
             '/game/leveling/ranking' => 200,
             '/game/leveling/rules' => 200,
+            '/settings/game/figures' => 403,
             // The catalogue is the teachers': a student reads their shelf, never the shelf's source.
             $this->rewardsPath => 403,
-            // Figures, ranking, teams. The révélation answers 404 until a closure has frozen
-            // something: a page that guessed one would publish a ranking that can still move.
+            // Figures, ranking, teams. The ranking answers on the month running now; an earlier
+            // month is the same screen with ?month=, and the year the same with ?scope=year.
             '/game/alias' => 200,
             '/game/ranking' => 200,
+            '/game/ranking?scope=year' => 200,
             '/game/team' => 200,
-            '/game/ranking/reveal' => 404,
             $this->gameSettingsPath => 403,
             // « Séquences de l'année » hands over to the single formation this student belongs to
             // rather than drawing a picker with one card in it (2026-08-17). The list still renders
@@ -345,12 +346,13 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/game/engagement/new' => 404,
             '/game/engagements' => 200,
             '/game/leveling' => 404,
-            $this->rewardsPath => 200,
+            // The catalogue and the barème are the administration's while the game is being
+            // settled (2026-08-28): a teacher gives gestures and holds relevés, and settles
+            // nothing. Reopening either to the referent teacher is one line in each controller.
+            $this->rewardsPath => 403,
             '/game/alias' => 404,
             '/game/ranking' => 404,
             '/game/team' => 404,
-            // Not the referent of the fixture class, and the barème is the referent's decision -
-            // isProgramReferentTeacher() carries no staff bypass, and none is added here.
             $this->gameSettingsPath => 403,
             // The course-space index is the student's own list of programs; a teacher reaches the
             // same sequences from their program screens instead.
@@ -468,6 +470,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/game' => 404,
             '/game/levels' => 200,
             '/settings/game/levels' => 200,
+            '/settings/game/figures' => 200,
             $this->statementsPath => 200,
             $this->gesturesPath => 200,
             '/game/engagement/new' => 404,

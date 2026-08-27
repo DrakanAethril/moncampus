@@ -14,7 +14,7 @@
 
 {% block main %}
     <p class="cm-gm-context">
-        {{ period.name }} · {{ program.displayShortName }} ·
+        {{ program.displayShortName }} ·
         {% if alias.chosen %}
             {{ 'gameAliasChosenSubtitle'|trans({'%name%': alias.figure.surname}) }}
         {% else %}

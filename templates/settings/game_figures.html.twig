@@ -1,0 +1,116 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'gameFiguresHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'settingsConfigurationNavLabel'|trans, url: path('app_settings_configuration')},
+        {label: 'gameFiguresHeading'|trans, url: path('app_settings_game_figures')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'gameFiguresHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="cm-tabs">
+        {% for candidate in tracks %}
+            <a class="cm-tabs__tab {{ candidate == track ? 'is-active' }}" href="{{ path('app_settings_game_figures', {track: candidate.value}) }}">
+                {{ candidate.emoji }} {{ candidate.labelKey|trans }}
+                <span class="cm-tabs__count">{{ tally[candidate.value].total }}</span>
+            </a>
+        {% endfor %}
+    </div>
+
+    <div class="card cm-card--tabbed">
+        {# A wrong notice in a device that claims to be pedagogical is worse than no notice at all,
+           so the tally is the first thing this screen says. #}
+        <div class="cm-note {{ tally[track.value].reviewed < tally[track.value].total ? 'cm-note--gold' }}">
+            <span class="cm-note__icon">i</span>
+            <span>{{ 'gameFiguresTallyText'|trans({
+                '%total%': tally[track.value].total,
+                '%reviewed%': tally[track.value].reviewed,
+                '%target%': 60,
+            }) }}</span>
+        </div>
+
+        <div class="cm-gm-section">
+            <h3 class="cm-gm-section__title">{{ 'gameFigureNewHeading'|trans }}</h3>
+            <form method="post" action="{{ path('app_settings_game_figures_new') }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('game_figure_new') }}">
+                <input type="hidden" name="track" value="{{ track.value }}">
+                <div class="cm-formgrid">
+                    <label class="cm-field" title="{{ 'gameFigureSurnameHelpText'|trans }}">
+                        <span class="cm-field__label">{{ 'gameFigureSurnameLabel'|trans }} <span class="req">*</span></span>
+                        <input type="text" name="surname" maxlength="60" required placeholder="Lovelace">
+                    </label>
+                    <label class="cm-field">
+                        <span class="cm-field__label">{{ 'gameFigureFullNameLabel'|trans }} <span class="req">*</span></span>
+                        <input type="text" name="full_name" maxlength="120" required placeholder="Ada Lovelace">
+                    </label>
+                    <label class="cm-field" title="{{ 'gameFigureDatesHelpText'|trans }}">
+                        <span class="cm-field__label">{{ 'gameFigureDatesLabel'|trans }}</span>
+                        <input type="text" name="dates" maxlength="60" placeholder="1815-1852">
+                    </label>
+                    <label class="cm-field cm-formgrid__wide" title="{{ 'gameFigureNoticeHelpText'|trans }}">
+                        <span class="cm-field__label">{{ 'gameFigureNoticeLabel'|trans }}</span>
+                        <textarea name="notice" rows="2" maxlength="500"></textarea>
+                        <span class="cm-field__help">{{ 'gameFigureNoticeHelpText'|trans }}</span>
+                    </label>
+                </div>
+                <div class="cm-actionbar">
+                    <div class="cm-actionbar__buttons">
+                        <button type="submit" class="cm-btn cm-btn--primary">{{ 'gameFigureCreateAction'|trans }}</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="cm-gm-section">
+            <h3 class="cm-gm-section__title">{{ 'gameFigureListHeading'|trans }}</h3>
+            <table class="card-table cm-figtable">
+                <thead>
+                    <tr>
+                        <th>{{ 'gameFigureSurnameLabel'|trans }}</th>
+                        <th>{{ 'gameFigureFullNameLabel'|trans }}</th>
+                        <th>{{ 'gameFigureNoticeLabel'|trans }}</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for figure in figures %}
+                        {# The form is *inside* a cell and the fields point back at it with the
+                           HTML5 `form` attribute. A <form> placed directly under a <tr> is invalid
+                           markup: the browser hoists it out of the table and the row collapses into
+                           a single column - which is exactly what it did on 2026-08-28. #}
+                        {% set fid = 'figure-' ~ figure.id %}
+                        <tr class="{{ figure.active ? '' : 'cm-gm-gesture--cancelled' }}">
+                            {# `cm-field` is a flex container: on a <td> it takes the cell out of the
+                               table layout and the row stacks into one column. It goes on a wrapper. #}
+                            <td>
+                                <form id="{{ fid }}" method="post" action="{{ path('app_settings_game_figures_edit', {id: figure.id}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('game_figure_edit') }}">
+                                </form>
+                                <div class="cm-field"><input type="text" form="{{ fid }}" name="surname" maxlength="60" value="{{ figure.surname }}"></div>
+                            </td>
+                            <td>
+                                <div class="cm-field">
+                                    <input type="text" form="{{ fid }}" name="full_name" maxlength="120" value="{{ figure.fullName }}">
+                                    <input type="text" form="{{ fid }}" name="dates" maxlength="60" value="{{ figure.dates }}" placeholder="{{ 'gameFigureDatesLabel'|trans }}">
+                                </div>
+                            </td>
+                            <td><div class="cm-field"><textarea form="{{ fid }}" name="notice" rows="2" maxlength="500">{{ figure.notice }}</textarea></div></td>
+                            <td class="cm-actions">
+                                <label class="cm-gm-switch" title="{{ 'gameFigureReviewedHelpText'|trans }}"><input type="checkbox" form="{{ fid }}" name="reviewed" value="1" {{ figure.reviewed ? 'checked' }}><span>{{ 'gameFigureReviewedLabel'|trans }}</span></label>
+                                <label class="cm-gm-switch" title="{{ 'gameFigureActiveHelpText'|trans }}"><input type="checkbox" form="{{ fid }}" name="active" value="1" {{ figure.active ? 'checked' }}><span>{{ 'gameFigureActiveLabel'|trans }}</span></label>
+                                <button type="submit" form="{{ fid }}" class="cm-action cm-action--positive">{{ 'submitSaveAction'|trans }}</button>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="4" class="text-secondary">{{ 'gameFigureListEmptyText'|trans }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

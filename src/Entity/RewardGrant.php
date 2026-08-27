@@ -14,17 +14,16 @@ use Doctrine\ORM\Mapping as ORM;
  * $grantedBy is null when the closure granted it on its own - the four tiers - and carries the
  * teacher's name otherwise, so a student reading their shelf always knows whether a person decided.
  *
- * $usedAt and $usedOn are the consumable's own half: **the student spends it themselves**. The joker
- * in particular is of right on a piece of work to hand in and does not exist on a graded assessment;
- * the teacher is notified, they do not grant it - a joker that can be refused is not a reward, it is
- * a request.
+ * $usedAt and $usedOn are the consumable's own half: **the student spends it themselves**. A
+ * consumable a teacher could refuse would not be a reward, it would be a request - so the screen
+ * marks it spent and the teacher is told, they do not grant it.
  *
  * **Nothing here ever moves an index.** A grant is the end of the chain, never a link back into it.
  */
 #[ORM\Entity(repositoryClass: RewardGrantRepository::class)]
 #[ORM\Table(name: 'reward_grant')]
 #[ORM\Index(name: 'idx_reward_grant_student', columns: ['student_id'])]
-#[ORM\Index(name: 'idx_reward_grant_period', columns: ['program_id', 'period_id'])]
+#[ORM\Index(name: 'idx_reward_grant_program', columns: ['program_id', 'granted_at'])]
 class RewardGrant
 {
     #[ORM\Id]
@@ -39,21 +38,6 @@ class RewardGrant
     #[ORM\ManyToOne(targetEntity: Program::class)]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private Program $program;
-
-    /**
-     * The period this grant belongs to, **or null**.
-     *
-     * Null since 2026-08-27, and it is the point: a reward is not always the outcome of a closure.
-     * A mock exam, an open day, a competition, a piece of work the class did together - these
-     * happen on the establishment's own calendar and not on the game's, and refusing to record one
-     * because no evaluation period covers that day would be the calendar deciding what a teacher
-     * may thank somebody for.
-     *
-     * The automatic tiers always carry one, because a tier *is* the outcome of a closure.
-     */
-    #[ORM\ManyToOne(targetEntity: EvaluationPeriod::class)]
-    #[ORM\JoinColumn(name: 'period_id', nullable: true, onDelete: 'CASCADE')]
-    private ?EvaluationPeriod $period = null;
 
     /** Null on a team or class grant, where $groupRef names the group instead. */
     #[ORM\ManyToOne(targetEntity: User::class)]
@@ -81,11 +65,10 @@ class RewardGrant
     #[ORM\Column(name: 'used_on', length: 255, nullable: true)]
     private ?string $usedOn = null;
 
-    public function __construct(RewardItem $item, Program $program, ?EvaluationPeriod $period = null)
+    public function __construct(RewardItem $item, Program $program)
     {
         $this->item = $item;
         $this->program = $program;
-        $this->period = $period;
         $this->grantedAt = new \DateTimeImmutable();
     }
 
@@ -102,11 +85,6 @@ class RewardGrant
     public function getProgram(): Program
     {
         return $this->program;
-    }
-
-    public function getPeriod(): ?EvaluationPeriod
-    {
-        return $this->period;
     }
 
     public function getStudent(): ?User

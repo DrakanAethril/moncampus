@@ -51,7 +51,7 @@ final class GameBadgeProvider
         }
 
         $profile = $this->profiles->findForStudent($user);
-        $progress = $this->levels->resolve($profile?->getXpTotal() ?? 0);
+        $progress = $this->levels->resolve($profile?->getTotalPoints() ?? 0);
 
         // A chosen title survives a level change; without one, the level's own wording answers.
         // The filière is the student's own, read off their option: two students of one SIO class

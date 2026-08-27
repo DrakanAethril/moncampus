@@ -65,6 +65,8 @@ final class GameRuleCatalog
     public const string RECOGNITION_GESTURE_BONUS = 'recognition.gesture_bonus';
     public const string RECOGNITION_GESTURE_MALUS = 'recognition.gesture_malus';
     public const string RECOGNITION_TEAM_GOAL = 'recognition.team_goal';
+    /** The first three of a ranked month, paid at its close - 20, 10, 5. */
+    public const string RECOGNITION_MONTH_PODIUM = 'recognition.month_podium';
 
     /** @var array<string, GameRuleDefinition>|null */
     private static ?array $rules = null;
@@ -99,6 +101,7 @@ final class GameRuleCatalog
             new GameRuleDefinition(self::RECOGNITION_GESTURE_BONUS, GameFamily::Recognition, 0),
             new GameRuleDefinition(self::RECOGNITION_GESTURE_MALUS, GameFamily::Recognition, 0),
             new GameRuleDefinition(self::RECOGNITION_TEAM_GOAL, GameFamily::Recognition, 40),
+            new GameRuleDefinition(self::RECOGNITION_MONTH_PODIUM, GameFamily::Recognition, 0),
         ]);
     }
 
@@ -130,6 +133,9 @@ final class GameRuleCatalog
             self::RECOGNITION_COUNCIL,
             self::RECOGNITION_GESTURE_BONUS,
             self::RECOGNITION_GESTURE_MALUS,
+            // The podium's three values are a rank, not a rate: they live in
+            // App\Service\Game\GameMonthCloser::PODIUM and are not one number to retune.
+            self::RECOGNITION_MONTH_PODIUM,
         ];
 
         return array_values(array_filter(

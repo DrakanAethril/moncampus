@@ -15,9 +15,7 @@ use App\Repository\ProgramRepository;
 use App\Repository\RewardGrantRepository;
 use App\Repository\RewardItemRepository;
 use App\Repository\UserRepository;
-use App\Security\StructureAccessChecker;
 use App\Service\Game\GameAccess;
-use App\Service\Game\GamePeriodResolver;
 use App\Service\Game\RewardGranter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -34,8 +32,9 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * A reward gives no points and touches no index - if it did, a teacher could lift a student above
  * the others with one click and outside their envelope.
  *
- * The four tiers are entries of this same catalogue, marked automatic, granted at closure. They are
- * listed here so a teacher can see what the machine hands out beside what they hand out themselves.
+ * The six level frames are entries of this same catalogue, marked automatic and granted by the
+ * machine as a student's running total opens them. They are listed here so a teacher can see what
+ * the machine hands out beside what they hand out themselves.
  */
 #[IsGranted('ROLE_USER')]
 #[RequiresFeature(Feature::Game)]
@@ -46,21 +45,15 @@ class GameRewardController extends AbstractController
         int $id,
         ProgramRepository $programs,
         GameAccess $access,
-        StructureAccessChecker $accessChecker,
-        GamePeriodResolver $periods,
         RewardItemRepository $items,
         RewardGrantRepository $grants,
     ): Response {
-        $program = $this->openProgram($id, $programs, $access, $accessChecker);
-        // A formation with no period at all still has a catalogue and can still thank somebody: a
-        // reward is not the outcome of a closure, and refusing the screen would say it was.
-        $period = $periods->activePeriod($program);
+        $program = $this->openProgram($id, $programs, $access);
 
         $catalogue = $items->catalogueFor($program);
 
         return $this->render('game/rewards.html.twig', [
             'program' => $program,
-            'period' => $period,
             'catalogue' => $catalogue,
             'counts' => $this->countsOf($catalogue, $grants),
             'granted' => $grants->grantedIn($program),
@@ -77,10 +70,9 @@ class GameRewardController extends AbstractController
         Request $request,
         ProgramRepository $programs,
         GameAccess $access,
-        StructureAccessChecker $accessChecker,
         EntityManagerInterface $entityManager,
     ): Response {
-        $program = $this->openProgram($id, $programs, $access, $accessChecker);
+        $program = $this->openProgram($id, $programs, $access);
 
         if (!$this->isCsrfTokenValid('game_reward_new', (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException();
@@ -119,14 +111,11 @@ class GameRewardController extends AbstractController
         Request $request,
         ProgramRepository $programs,
         GameAccess $access,
-        StructureAccessChecker $accessChecker,
-        GamePeriodResolver $periods,
         RewardItemRepository $items,
         UserRepository $users,
         RewardGranter $granter,
     ): Response {
-        $program = $this->openProgram($id, $programs, $access, $accessChecker);
-        $period = $periods->activePeriod($program);
+        $program = $this->openProgram($id, $programs, $access);
 
         if (!$this->isCsrfTokenValid('game_reward_grant', (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException();
@@ -139,8 +128,8 @@ class GameRewardController extends AbstractController
         }
 
         if ($item->isAutomatic()) {
-            // A tier is granted by the closure and by nothing else: a hand-granted bronze would be
-            // a tier that says nothing about an index.
+            // A level frame is granted by the machine and by nothing else: one handed out by hand
+            // would be a frame saying nothing about a level.
             $this->addFlash('error', 'rewardAutomaticRefusedMessage');
 
             return $this->redirectToRoute('app_program_game_rewards', ['id' => $program->getId()]);
@@ -149,7 +138,7 @@ class GameRewardController extends AbstractController
         $reason = trim((string) $request->request->get('reason'));
 
         if (RewardScope::ClassWide === $item->getScope()) {
-            $granter->grantToGroup($item, $this->orderedStudents($program), $program, $period, $this->currentUser(), null, $reason);
+            $granter->grantToGroup($item, $this->orderedStudents($program), $program, $this->currentUser(), null, $reason);
             $this->addFlash('success', 'rewardGrantedFlashMessage');
 
             return $this->redirectToRoute('app_program_game_rewards', ['id' => $program->getId()]);
@@ -161,7 +150,7 @@ class GameRewardController extends AbstractController
             throw $this->createNotFoundException();
         }
 
-        $granter->grantToStudent($item, $student, $program, $period, $this->currentUser(), $reason);
+        $granter->grantToStudent($item, $student, $program, $this->currentUser(), $reason);
         $this->addFlash('success', 'rewardGrantedFlashMessage');
 
         return $this->redirectToRoute('app_program_game_rewards', ['id' => $program->getId()]);
@@ -194,7 +183,7 @@ class GameRewardController extends AbstractController
         return $students;
     }
 
-    private function openProgram(int $id, ProgramRepository $programs, GameAccess $access, StructureAccessChecker $accessChecker): Program
+    private function openProgram(int $id, ProgramRepository $programs, GameAccess $access): Program
     {
         $program = $programs->find($id) ?? throw $this->createNotFoundException();
 
@@ -202,7 +191,11 @@ class GameRewardController extends AbstractController
             throw $this->createNotFoundException();
         }
 
-        if (!$accessChecker->isProgramTeacher($program)) {
+        // An administrator, and for the moment nobody else: while the game is being settled the
+        // catalogue is the establishment's, and the team must be able to take the feature away from
+        // teachers entirely without leaving a screen that still answers. Reopening it is one line -
+        // isProgramTeacher() back in place of the role check.
+        if (!$this->isGranted('ROLE_ADMIN')) {
             throw $this->createAccessDeniedException();
         }
 

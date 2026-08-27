@@ -9464,3 +9464,27 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-gm-title__level { flex: none; border-radius: 99px; padding: 2px 8px; font: 700 9px var(--cm-font-ui); letter-spacing: 1px; }
 .cm-gm-title__name { font-size: 13px; font-weight: 600; color: var(--cm-ink); min-width: 0; }
 .cm-gm-title__xp { margin-left: auto; font-size: 11.5px; color: var(--cm-faint); font-variant-numeric: tabular-nums; }
+
+/* ---------- Ranked months, and the month bar of the ranking ---------- */
+.cm-gm-months { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-top: 10px; }
+.cm-gm-month {
+    display: flex; align-items: center; gap: 8px; padding: 8px 11px; cursor: pointer;
+    border: 1px solid var(--cm-border); border-radius: 8px; background: var(--cm-surface);
+    font-size: 13px; color: var(--cm-muted);
+}
+.cm-gm-month.is-on { border-color: var(--cm-brand); background: var(--cm-blue-bg); color: var(--cm-blue-tx); font-weight: 600; }
+.cm-gm-month input { accent-color: var(--cm-brand); }
+
+.cm-gm-monthbar { display: flex; align-items: center; gap: 12px; padding: 16px 0 4px; flex-wrap: wrap; }
+.cm-gm-monthbar__label { font: 600 16px var(--cm-font-title); color: var(--cm-ink); }
+.cm-gm-monthlinks { display: flex; flex-wrap: wrap; gap: 6px; }
+.cm-gm-monthlinks a { text-decoration: none; }
+
+/* Figure catalogue - a table of editable rows. The notice takes what the three short fields do
+   not, so the table stays readable rather than the fields all sharing a quarter each. */
+.cm-figtable { width: 100%; table-layout: fixed; }
+.cm-figtable th:nth-child(1), .cm-figtable td:nth-child(1) { width: 18%; }
+.cm-figtable th:nth-child(2), .cm-figtable td:nth-child(2) { width: 24%; }
+.cm-figtable th:nth-child(4), .cm-figtable td:nth-child(4) { width: 200px; }
+.cm-figtable td { vertical-align: top; }
+.cm-figtable input[type="text"], .cm-figtable textarea { width: 100%; }

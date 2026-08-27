@@ -13,7 +13,7 @@
 {% block page_title %}{{ 'gameRewardsHeading'|trans }}{% endblock %}
 
 {% block main %}
-    <p class="cm-gm-context">{{ program.displayShortName }}{% if period %} · {{ period.name }}{% endif %}</p>
+    <p class="cm-gm-context">{{ program.displayShortName }}</p>
 
     {# Repeated on the screen because it is the rule most easily broken by accident: granting a
        reward never moves the ranking. Points make the index, the index makes the tiers, the tiers
@@ -52,15 +52,12 @@
                             </td>
                             <td class="cm-actions">
                                 {% if item.automatic %}
-                                    {# Granted by the closure and by nothing else: a bronze handed out
-                                       by hand would be a tier saying nothing about an index. #}
+                                    {# Granted by the machine and by nothing else: a frame follows a
+                                       level, and the trophy follows a rank at the close of a month. #}
                                     <span class="cm-badge cm-badge--blue">
-                                        {%- if item.automaticThreshold is not null -%}
-                                            {{ 'gameRewardAutomaticLabel'|trans({'%threshold%': item.automaticThreshold}) }}
+                                        {%- if item.level is not null -%}
+                                            {{ 'gameRewardAutomaticLevelLabel'|trans({'%level%': item.level}) }}
                                         {%- else -%}
-                                            {# The trophy goes to the head of the class, which is a rank
-                                               rather than a value: the closure grants it, and there is
-                                               no threshold to print. #}
                                             {{ 'gameRewardAutomaticTopLabel'|trans }}
                                         {%- endif -%}
                                     </span>

@@ -9,11 +9,14 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * The name one student carries for one period, and the three that were offered to them
+ * The name one student carries in one formation, and the three that were offered to them
  * (§4, decision 8).
  *
- * The unique constraint on `(program, period, figure)` is what guarantees the patronym is unique in
- * the class - **not an application check**. Two students landing on the same figure is refused by the
+ * One per formation rather than one per period: the monthly and yearly rankings share the same
+ * board, and a pseudonym that changed between them would make the year unreadable.
+ *
+ * The unique constraint on `(program, figure)` is what guarantees the patronym is unique in the
+ * class - **not an application check**. Two students landing on the same figure is refused by the
  * database, which is the only place a race between two simultaneous choices can be settled.
  *
  * $figure stays null while nothing has been chosen. At J+7 the first of the three is attributed and
@@ -21,8 +24,8 @@ use Doctrine\ORM\Mapping as ORM;
  */
 #[ORM\Entity(repositoryClass: GameAliasRepository::class)]
 #[ORM\Table(name: 'game_alias')]
-#[ORM\UniqueConstraint(name: 'uniq_game_alias_student', columns: ['student_id', 'period_id', 'program_id'])]
-#[ORM\UniqueConstraint(name: 'uniq_game_alias_figure', columns: ['program_id', 'period_id', 'figure_id'])]
+#[ORM\UniqueConstraint(name: 'uniq_game_alias_student', columns: ['student_id', 'program_id'])]
+#[ORM\UniqueConstraint(name: 'uniq_game_alias_figure', columns: ['program_id', 'figure_id'])]
 class GameAlias
 {
     #[ORM\Id]
@@ -37,10 +40,6 @@ class GameAlias
     #[ORM\ManyToOne(targetEntity: Program::class)]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private Program $program;
-
-    #[ORM\ManyToOne(targetEntity: EvaluationPeriod::class)]
-    #[ORM\JoinColumn(name: 'period_id', nullable: false, onDelete: 'CASCADE')]
-    private EvaluationPeriod $period;
 
     #[ORM\ManyToOne(targetEntity: GameFigure::class)]
     #[ORM\JoinColumn(name: 'figure_id', nullable: true, onDelete: 'SET NULL')]
@@ -63,11 +62,10 @@ class GameAlias
     /**
      * @param list<int> $offeredFigures
      */
-    public function __construct(User $student, Program $program, EvaluationPeriod $period, array $offeredFigures)
+    public function __construct(User $student, Program $program, array $offeredFigures)
     {
         $this->student = $student;
         $this->program = $program;
-        $this->period = $period;
         $this->offeredFigures = $offeredFigures;
         $this->offeredAt = new \DateTimeImmutable();
     }
@@ -85,11 +83,6 @@ class GameAlias
     public function getProgram(): Program
     {
         return $this->program;
-    }
-
-    public function getPeriod(): EvaluationPeriod
-    {
-        return $this->period;
     }
 
     public function getFigure(): ?GameFigure

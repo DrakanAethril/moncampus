@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Service\Game;
 
-use App\Entity\EvaluationPeriod;
 use App\Entity\Program;
 use App\Entity\User;
 
@@ -25,7 +24,6 @@ final readonly class GameStanding
     public function __construct(
         public User $student,
         public Program $program,
-        public EvaluationPeriod $period,
         public GameScore $score,
         public array $earned,
         public array $possible,
