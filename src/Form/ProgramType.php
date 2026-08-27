@@ -139,6 +139,18 @@ class ProgramType extends AbstractType
                 'help' => 'programSchoolMailEnabledFieldHelp',
                 'required' => false,
             ])
+            // The campus game's second switch (design/validated/gamification.md §4, decision 1). It
+            // is offered here as well as on the formation's own game settings screen, and both write
+            // the same column: this form is where every per-formation switch of this application
+            // lives - the Courrier école right above it is the closest sibling - and it is the first
+            // place somebody looks. The game screen keeps its own copy because it is where the rest
+            // of the barème is, and because it has to say what this form cannot: that the feature
+            // being off makes the box moot.
+            ->add('gameEnabled', CheckboxType::class, [
+                'label' => 'programGameEnabledFieldLabel',
+                'help' => 'programGameEnabledFieldHelp',
+                'required' => false,
+            ])
             // UFA section fields - all revealed together on the Program form by the alternance
             // Modality chip (Modality::$isAlternance), not by a dedicated checkbox of their own.
             ->add('internshipManagementEnabled', CheckboxType::class, [
