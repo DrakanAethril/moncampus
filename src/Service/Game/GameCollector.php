@@ -34,6 +34,7 @@ final class GameCollector
         private readonly GameLedger $ledger,
         private readonly GameWorkReader $work,
         private readonly GameSignalReader $signals,
+        private readonly GameAttendanceProjector $attendance,
         private readonly EntityManagerInterface $entityManager,
     ) {
     }
@@ -64,6 +65,11 @@ final class GameCollector
         // Never collect beyond today: a period runs until June and its deadlines are not all in the
         // past, so the window closes on whichever comes first.
         $to = min($end, $now);
+
+        // The relevé's default answer - « net » - is a complete answer that nobody clicks, so it
+        // cannot be paid by an edit. It is projected here instead, where every reading of the
+        // period passes: a statement opened and left alone still pays the whole class.
+        $this->attendance->project($student, $program, $period);
 
         $this->collectWork($student, $program, $period, $now);
         $this->collectEngagement($student, $program, $period, $start, $to);

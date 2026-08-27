@@ -11,16 +11,20 @@ use App\Entity\User;
 /**
  * How many attendance points one student could have earned on a period.
  *
- * A seam rather than a service: until the relevé exists (lot 3) the answer is « nothing was
- * stated », which is not a failure - the attendance family simply leaves the index and its weight
- * spreads over the other three (§9, first row). Lot 3 replaces the body and nothing else moves,
- * which is what makes lot 1 usable on its own.
+ * A thin seam over App\Service\Game\GameAttendanceProjector, kept because it is what
+ * App\Service\Game\GameIndexReader asks and because the answer has one property the rest of the
+ * index does not: **null is normal**. A formation where nobody makes a statement has no attendance
+ * family, its weight goes to the other three, and no screen says anything about it (§9, first row).
  */
 class GameAttendancePossible
 {
+    public function __construct(private readonly GameAttendanceProjector $projector)
+    {
+    }
+
     /** @return int|null null when nothing was stated for this student - the family leaves the index */
     public function forStudent(User $student, Program $program, EvaluationPeriod $period): ?int
     {
-        return null;
+        return $this->projector->possibleFor($student, $program, $period);
     }
 }

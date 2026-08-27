@@ -8,6 +8,7 @@ use App\Entity\EvaluationPeriod;
 use App\Entity\GameEntry;
 use App\Entity\Program;
 use App\Entity\User;
+use App\Enum\GameFamily;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -33,7 +34,10 @@ class GameEntryRepository extends ServiceEntityRepository
      */
     public function sumByFamily(User $student, Program $program, EvaluationPeriod $period): array
     {
-        /** @var list<array{family: string, total: string|int|null}> $rows */
+        // `e.family` hydrates as the enum itself even in an array result - the enumType on the
+        // column applies to every hydration mode - so the key is taken off ->value, never off a
+        // cast that would throw.
+        /** @var list<array{family: GameFamily, total: string|int|null}> $rows */
         $rows = $this->createQueryBuilder('e')
             ->select('e.family AS family, SUM(e.points) AS total')
             ->where('e.student = :student')
@@ -48,7 +52,7 @@ class GameEntryRepository extends ServiceEntityRepository
 
         $totals = [];
         foreach ($rows as $row) {
-            $totals[(string) $row['family']] = (int) $row['total'];
+            $totals[$row['family']->value] = (int) $row['total'];
         }
 
         return $totals;
@@ -68,7 +72,7 @@ class GameEntryRepository extends ServiceEntityRepository
             return [];
         }
 
-        /** @var list<array{student: int, family: string, total: string|int|null}> $rows */
+        /** @var list<array{student: int, family: GameFamily, total: string|int|null}> $rows */
         $rows = $this->createQueryBuilder('e')
             ->select('IDENTITY(e.student) AS student, e.family AS family, SUM(e.points) AS total')
             ->where('e.student IN (:students)')
@@ -83,7 +87,7 @@ class GameEntryRepository extends ServiceEntityRepository
 
         $totals = [];
         foreach ($rows as $row) {
-            $totals[(int) $row['student']][(string) $row['family']] = (int) $row['total'];
+            $totals[(int) $row['student']][$row['family']->value] = (int) $row['total'];
         }
 
         return $totals;
@@ -110,6 +114,43 @@ class GameEntryRepository extends ServiceEntityRepository
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    /**
+     * What each source has been paid so far, for one rule - the current state a correction is
+     * measured against (App\Service\Game\GameLedger::adjust()).
+     *
+     * A plain sum per source, so a line already corrected once reads as its net total rather than
+     * as its first value.
+     *
+     * @return array<int, int> source id => points
+     */
+    public function sumBySourceForRule(User $student, Program $program, EvaluationPeriod $period, string $sourceType, string $ruleCode): array
+    {
+        /** @var list<array{source: int|null, total: string|int|null}> $rows */
+        $rows = $this->createQueryBuilder('e')
+            ->select('e.sourceId AS source, SUM(e.points) AS total')
+            ->where('e.student = :student')
+            ->andWhere('e.program = :program')
+            ->andWhere('e.period = :period')
+            ->andWhere('e.sourceType = :sourceType')
+            ->andWhere('e.ruleCode = :ruleCode')
+            ->andWhere('e.sourceId IS NOT NULL')
+            ->groupBy('e.sourceId')
+            ->setParameter('student', $student)
+            ->setParameter('program', $program)
+            ->setParameter('period', $period)
+            ->setParameter('sourceType', $sourceType)
+            ->setParameter('ruleCode', $ruleCode)
+            ->getQuery()
+            ->getArrayResult();
+
+        $totals = [];
+        foreach ($rows as $row) {
+            $totals[(int) $row['source']] = (int) $row['total'];
+        }
+
+        return $totals;
     }
 
     /**

@@ -252,6 +252,14 @@
                                                            classes one TEACHES (App\Controller\QuizTrackingController), so a staff
                                                            member no longer reads a teacher's quizzes and their students' answers
                                                            from a class screen. #}
+                                                        {# The campus game's teacher screens, under the class they belong to
+                                                           rather than in a global menu: no ranking, no statement and no gesture
+                                                           ever crosses a formation's boundary (§4, decision 1), and the menu is
+                                                           what says so first. Both switches, and the teacher check on top -
+                                                           is_program_teacher() is what keeps an enrolled student out. #}
+                                                        {% if feature('game') and program.gameEnabled and is_program_teacher(program) %}
+                                                            <a class="dropdown-item {{ current_route == 'app_program_game_attendance' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_game_attendance', {id: program.id}) }}">{{ 'attendanceStatementNavLabel'|trans }}</a>
+                                                        {% endif %}
                                                         {% if feature('my_alternance') and visibility_allows(program.alternanceCalendarVisibility) %}
                                                             {# Same route in both alternanceCalendarMode cases - the controller redirects to the
                                                                uploaded PDF instead of generating one when mode is File - so still no "active"
