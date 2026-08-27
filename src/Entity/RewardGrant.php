@@ -40,9 +40,20 @@ class RewardGrant
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private Program $program;
 
+    /**
+     * The period this grant belongs to, **or null**.
+     *
+     * Null since 2026-08-27, and it is the point: a reward is not always the outcome of a closure.
+     * A mock exam, an open day, a competition, a piece of work the class did together - these
+     * happen on the establishment's own calendar and not on the game's, and refusing to record one
+     * because no evaluation period covers that day would be the calendar deciding what a teacher
+     * may thank somebody for.
+     *
+     * The automatic tiers always carry one, because a tier *is* the outcome of a closure.
+     */
     #[ORM\ManyToOne(targetEntity: EvaluationPeriod::class)]
-    #[ORM\JoinColumn(name: 'period_id', nullable: false, onDelete: 'CASCADE')]
-    private EvaluationPeriod $period;
+    #[ORM\JoinColumn(name: 'period_id', nullable: true, onDelete: 'CASCADE')]
+    private ?EvaluationPeriod $period = null;
 
     /** Null on a team or class grant, where $groupRef names the group instead. */
     #[ORM\ManyToOne(targetEntity: User::class)]
@@ -70,7 +81,7 @@ class RewardGrant
     #[ORM\Column(name: 'used_on', length: 255, nullable: true)]
     private ?string $usedOn = null;
 
-    public function __construct(RewardItem $item, Program $program, EvaluationPeriod $period)
+    public function __construct(RewardItem $item, Program $program, ?EvaluationPeriod $period = null)
     {
         $this->item = $item;
         $this->program = $program;
@@ -93,7 +104,7 @@ class RewardGrant
         return $this->program;
     }
 
-    public function getPeriod(): EvaluationPeriod
+    public function getPeriod(): ?EvaluationPeriod
     {
         return $this->period;
     }

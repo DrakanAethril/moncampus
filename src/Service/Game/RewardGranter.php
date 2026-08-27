@@ -36,8 +36,14 @@ final class RewardGranter
     ) {
     }
 
-    /** Grant to one student, by a teacher's hand. */
-    public function grantToStudent(RewardItem $item, User $student, Program $program, EvaluationPeriod $period, ?User $grantedBy, ?string $reason = null): RewardGrant
+    /**
+     * Grant to one student, by a teacher's hand.
+     *
+     * $period may be null: a reward for a mock exam or an open day belongs to the establishment's
+     * calendar, not to the game's, and there is no reason to refuse one because no evaluation period
+     * covers that day. What it never does either way is move an index.
+     */
+    public function grantToStudent(RewardItem $item, User $student, Program $program, ?EvaluationPeriod $period, ?User $grantedBy, ?string $reason = null): RewardGrant
     {
         $grant = (new RewardGrant($item, $program, $period))
             ->setStudent($student)
@@ -58,7 +64,7 @@ final class RewardGranter
      *
      * @return list<RewardGrant>
      */
-    public function grantToGroup(RewardItem $item, array $members, Program $program, EvaluationPeriod $period, ?User $grantedBy, ?int $groupRef = null, ?string $reason = null): array
+    public function grantToGroup(RewardItem $item, array $members, Program $program, ?EvaluationPeriod $period, ?User $grantedBy, ?int $groupRef = null, ?string $reason = null): array
     {
         $granted = [];
         foreach ($members as $member) {

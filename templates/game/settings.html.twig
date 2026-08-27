@@ -20,7 +20,7 @@
            kind of state a screen has to announce rather than leave somebody to work out. #}
         <div class="card">
             <div class="card-body">
-                <label class="cm-gm-switch">
+                <label class="cm-gm-switch" title="{{ 'gameSettingsEnabledHelpText'|trans }}">
                     <input type="checkbox" name="game_enabled" value="1" {{ program.gameEnabled ? 'checked' }}>
                     <span>{{ 'gameSettingsEnabledLabel'|trans({'%program%': program.displayShortName}) }}</span>
                 </label>
@@ -45,7 +45,7 @@
                    nowhere. #}
                 <div class="cm-gm-gestureform" style="margin-top: 10px">
                     {% for field, weight in weights %}
-                        <label>
+                        <label title="{{ 'gameSettingsWeightHelpText'|trans }}">
                             <span class="cm-gm-label">{{ weight.label|trans }}</span>
                             <input type="number" name="{{ field }}" min="0" max="100" value="{{ weight.value }}">
                         </label>
@@ -71,7 +71,7 @@
                 </div>
 
                 <div class="cm-gm-gestureform" style="margin-top: 10px">
-                    <div>
+                    <div title="{{ 'gameSettingsStepHelpText'|trans }}">
                         <span class="cm-gm-label">{{ 'gameSettingsStepLabel'|trans }}</span>
                         <div class="cm-gm-seg">
                             {% for step in steps %}
@@ -79,7 +79,7 @@
                             {% endfor %}
                         </div>
                     </div>
-                    <div>
+                    <div title="{{ 'gameSettingsTeamModeHelpText'|trans }}">
                         <span class="cm-gm-label">{{ 'gameSettingsTeamModeLabel'|trans }}</span>
                         <div class="cm-gm-seg">
                             {% for mode in teamModes %}
@@ -87,7 +87,7 @@
                             {% endfor %}
                         </div>
                     </div>
-                    <label>
+                    <label title="{{ 'gameSettingsTrackHelpText'|trans }}">
                         <span class="cm-gm-label">{{ 'gameSettingsTrackLabel'|trans }}</span>
                         <select name="track">
                             <option value="">{{ 'gameSettingsTrackPlaceholder'|trans }}</option>
@@ -97,7 +97,7 @@
                         </select>
                         <span class="cm-card-note" style="display: block; padding: 4px 0">{{ 'gameSettingsTrackHelpText'|trans }}</span>
                     </label>
-                    <label>
+                    <label title="{{ 'gameSettingsTeamBatchHelpText'|trans }}">
                         <span class="cm-gm-label">{{ 'gameSettingsTeamBatchLabel'|trans }}</span>
                         <select name="team_batch">
                             <option value="0">{{ 'gameSettingsTeamBatchPlaceholder'|trans }}</option>
@@ -115,7 +115,7 @@
                 <span class="cm-gm-label">{{ 'gameSettingsThresholdsHeading'|trans }}</span>
                 <div class="cm-gm-gestureform" style="margin-top: 10px">
                     {% for field, number in numbers %}
-                        <label>
+                        <label title="{{ ('gameSettings' ~ field|replace({'_': ' '})|title|replace({' ': ''}) ~ 'HelpText')|trans }}">
                             <span class="cm-gm-label">{{ number.label|trans }}</span>
                             <input type="number" name="{{ field }}" min="0" max="5000" value="{{ number.value }}">
                         </label>
@@ -131,7 +131,7 @@
                     <div class="cm-card-note" style="padding: 6px 0">{{ 'gameSettingsScaleNoteText'|trans }}</div>
                     <div class="cm-gm-gestureform" style="margin-top: 6px">
                         {% for definition in tunable %}
-                            <label>
+                            <label title="{{ 'gameSettingsRuleHelpText'|trans({'%rule%': ('gameRule.' ~ definition.code)|trans}) }}">
                                 <span class="cm-gm-label">{{ ('gameRule.' ~ definition.code)|trans }}</span>
                                 <input type="number" name="rules[{{ definition.code }}]" min="-200" max="200" value="{{ ruleValues[definition.code].points }}">
                             </label>
@@ -145,10 +145,10 @@
             <div class="card-body">
                 <span class="cm-gm-label">{{ 'gameSettingsSwitchesHeading'|trans }}</span>
                 <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px">
-                    <label class="cm-gm-switch"><input type="checkbox" name="ranking_enabled" value="1" {{ settings.rankingEnabled ? 'checked' }}><span>{{ 'gameSettingsRankingLabel'|trans }}</span></label>
-                    <label class="cm-gm-switch"><input type="checkbox" name="alias_enabled" value="1" {{ settings.aliasEnabled ? 'checked' }}><span>{{ 'gameSettingsAliasLabel'|trans }}</span></label>
+                    <label class="cm-gm-switch" title="{{ 'gameSettingsRankingHelpText'|trans }}"><input type="checkbox" name="ranking_enabled" value="1" {{ settings.rankingEnabled ? 'checked' }}><span>{{ 'gameSettingsRankingLabel'|trans }}</span></label>
+                    <label class="cm-gm-switch" title="{{ 'gameSettingsAliasHelpText'|trans }}"><input type="checkbox" name="alias_enabled" value="1" {{ settings.aliasEnabled ? 'checked' }}><span>{{ 'gameSettingsAliasLabel'|trans }}</span></label>
                     {# A formation may refuse the malus; none may add another. #}
-                    <label class="cm-gm-switch"><input type="checkbox" name="malus_enabled" value="1" {{ settings.malusEnabled ? 'checked' }}><span>{{ 'gameSettingsMalusLabel'|trans }}</span></label>
+                    <label class="cm-gm-switch" title="{{ 'gameSettingsMalusHelpText'|trans }}"><input type="checkbox" name="malus_enabled" value="1" {{ settings.malusEnabled ? 'checked' }}><span>{{ 'gameSettingsMalusLabel'|trans }}</span></label>
                 </div>
             </div>
         </div>

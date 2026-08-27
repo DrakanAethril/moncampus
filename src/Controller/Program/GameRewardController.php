@@ -52,7 +52,9 @@ class GameRewardController extends AbstractController
         RewardGrantRepository $grants,
     ): Response {
         $program = $this->openProgram($id, $programs, $access, $accessChecker);
-        $period = $periods->activePeriod($program) ?? throw $this->createNotFoundException();
+        // A formation with no period at all still has a catalogue and can still thank somebody: a
+        // reward is not the outcome of a closure, and refusing the screen would say it was.
+        $period = $periods->activePeriod($program);
 
         $catalogue = $items->catalogueFor($program);
 
@@ -61,7 +63,7 @@ class GameRewardController extends AbstractController
             'period' => $period,
             'catalogue' => $catalogue,
             'counts' => $this->countsOf($catalogue, $grants),
-            'granted' => $grants->grantedIn($program, $period),
+            'granted' => $grants->grantedIn($program),
             'students' => $this->orderedStudents($program),
             'natures' => RewardNature::cases(),
             'scopes' => RewardScope::cases(),
@@ -124,7 +126,7 @@ class GameRewardController extends AbstractController
         RewardGranter $granter,
     ): Response {
         $program = $this->openProgram($id, $programs, $access, $accessChecker);
-        $period = $periods->activePeriod($program) ?? throw $this->createNotFoundException();
+        $period = $periods->activePeriod($program);
 
         if (!$this->isCsrfTokenValid('game_reward_grant', (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException();

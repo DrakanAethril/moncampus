@@ -53,7 +53,7 @@ final class GamePeriodCloser
         private readonly GameTeamBoard $teams,
         private readonly RewardGranter $rewards,
         private readonly RewardItemRepository $rewardItems,
-        private readonly AttendanceStatementService $attendance,
+        private readonly GameStatementService $statements,
         private readonly GameAliasDrawer $aliases,
         private readonly EntityManagerInterface $entityManager,
     ) {
@@ -84,7 +84,10 @@ final class GamePeriodCloser
 
         $frozen = $this->freeze($students, $program, $period, $now);
 
-        $this->attendance->closePeriod($program, $period, $now);
+        // Every attendance relevé whose span has ended is closed with the period: what stops a
+        // term's ranking from moving afterwards. A relevé still running is left alone - relevés no
+        // longer belong to a period, so one may legitimately straddle two.
+        $this->statements->closeAttendanceUpTo($program, $period->getEndDate() ?? $now);
         $this->openNext($program, $period);
 
         return $frozen;
