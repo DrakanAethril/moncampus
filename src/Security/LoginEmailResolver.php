@@ -23,11 +23,11 @@ use App\Repository\UserRepository;
  *
  * Inactivated accounts never resolve.
  *
- * This applies no role restriction, unlike MagicLoginService::isEligible(), and the difference is
- * not an oversight: a magic link *is* the whole proof of identity, whereas resolving an address
- * here only decides which uid the LDAP bind runs against - the real password is still required
- * right after (LdapCredentialsVerifier::verifyPassword()). Excluding ROLE_ADMIN from a path that
- * proves nothing on its own would only stop administrators from typing their own address.
+ * This applies no role restriction. Neither does MagicLoginService::isEligible() any more, since
+ * 2026-08-27 - but the two answer different questions and it is worth keeping them apart: resolving
+ * an address here only decides which uid the LDAP bind runs against, the real password being
+ * required right after (LdapCredentialsVerifier::verifyPassword()), whereas a magic link *is* the
+ * whole proof of identity. Both narrow on the address rather than on the role.
  */
 class LoginEmailResolver
 {
