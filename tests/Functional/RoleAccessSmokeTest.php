@@ -63,6 +63,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
     private string $attendancePath;
     private string $gesturesPath;
     private string $councilPath;
+    private string $rewardsPath;
 
     protected function setUp(): void
     {
@@ -80,6 +81,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->attendancePath = '/programs/'.$this->program->getId().'/game/attendance';
         $this->gesturesPath = '/programs/'.$this->program->getId().'/game/gestures';
         $this->councilPath = '/programs/'.$this->program->getId().'/council';
+        $this->rewardsPath = '/programs/'.$this->program->getId().'/game/rewards';
     }
 
     /**
@@ -221,6 +223,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // Declared engagement: the student files, a teacher of the class reviews.
             '/game/engagement/new' => 200,
             '/game/engagements' => 404,
+            // The catalogue is the teachers': a student reads their shelf, never the shelf's source.
+            $this->rewardsPath => 403,
             // « Séquences de l'année » hands over to the single formation this student belongs to
             // rather than drawing a picker with one card in it (2026-08-17). The list still renders
             // for a student straddling two, and for the empty state.
@@ -330,6 +334,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // A teacher files nothing - they are nobody's student - and reviews everything.
             '/game/engagement/new' => 404,
             '/game/engagements' => 200,
+            $this->rewardsPath => 200,
             // The course-space index is the student's own list of programs; a teacher reaches the
             // same sequences from their program screens instead.
             '/my/courses' => 403,
@@ -452,6 +457,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             $this->councilPath => 200,
             '/game/engagement/new' => 404,
             '/game/engagements' => 200,
+            $this->rewardsPath => 200,
             '/settings/configuration' => 200,
             '/settings/teaching' => 200,
             // Groups are admin-only, deliberately stricter than the rest of Settings - see
@@ -599,6 +605,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             $this->councilPath => 403,
             '/game/engagement/new' => 404,
             '/game/engagements' => 404,
+            $this->rewardsPath => 403,
             '/agenda' => 200,
             '/messages' => 200,
             '/tickets' => 200,

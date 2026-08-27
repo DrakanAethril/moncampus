@@ -9366,3 +9366,11 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
     width: 190px; padding: 4px 8px; font: inherit; font-size: 12px;
     border: 1px solid var(--cm-border); border-radius: 6px; background: var(--cm-surface); color: var(--cm-ink);
 }
+
+/* ---------- The shelf's « Utiliser » ---------- */
+.cm-gm-shelf__spend { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.cm-gm-shelf__spend input {
+    width: 130px; padding: 3px 7px; font: inherit; font-size: 11.5px;
+    border: 1px solid var(--cm-border); border-radius: 6px; background: var(--cm-surface); color: var(--cm-ink);
+}
+.cm-gm-shelf__row { flex-wrap: wrap; }

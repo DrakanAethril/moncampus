@@ -73,11 +73,37 @@
             <div class="card">
                 <div class="card-body">
                     <div class="cm-gm-label">{{ 'gameShelfHeading'|trans }}</div>
-                    {# The shelf fills up with lot 6's rewards. Empty is the honest state today, and
-                       the sentence says what it will hold rather than nothing at all. #}
-                    <div class="cm-note" style="margin-top: 10px">
-                        <span class="cm-note__icon">i</span>
-                        <span>{{ 'gameShelfEmptyText'|trans }}</span>
+                    {# Every period, not only this one: a symbolic reward is acquired for good, and a
+                       reward is never points - the journal says so on its own lines, and the shelf
+                       says it by simply having no number on it. #}
+                    <div class="cm-gm-shelf" style="margin-top: 10px">
+                        {% for grant in shelf %}
+                            <div class="cm-gm-shelf__row">
+                                <span class="cm-gm-shelf__icon">{{ grant.item.icon ?? '🎁' }}</span>
+                                <span class="cm-gm-shelf__label">
+                                    <b>{{ grant.item.label }}</b>
+                                    {% if grant.used %}
+                                        — {{ 'gameRewardUsedLabel'|trans({'%date%': grant.usedAt|date('d/m/Y')}) }}
+                                    {% elseif grant.item.nature.spendable %}
+                                        — {{ 'gameRewardToSpendLabel'|trans }}
+                                    {% else %}
+                                        — {{ grant.item.nature.labelKey|trans }}
+                                    {% endif %}
+                                </span>
+                                {% if grant.item.nature.spendable and not grant.used %}
+                                    <form method="post" action="{{ path('app_game_reward_use', {grantId: grant.id}) }}" class="cm-gm-shelf__spend">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('game_reward_use') }}">
+                                        <input type="text" name="used_on" maxlength="255" required placeholder="{{ 'gameRewardUsedOnPlaceholder'|trans }}">
+                                        <button type="submit" class="cm-action cm-action--positive">{{ 'gameRewardUseAction'|trans }}</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <div class="cm-note">
+                                <span class="cm-note__icon">i</span>
+                                <span>{{ 'gameShelfEmptyText'|trans }}</span>
+                            </div>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
