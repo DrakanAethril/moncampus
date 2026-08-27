@@ -8,16 +8,24 @@ use App\Attribute\RequiresFeature;
 use App\Entity\User;
 use App\Enum\Feature;
 use App\Enum\GameFamily;
+use App\Repository\GameAliasRepository;
 use App\Repository\GameEntryRepository;
+use App\Repository\GameFigureRepository;
+use App\Repository\GamePeriodScoreRepository;
+use App\Repository\GameProfileRepository;
 use App\Repository\RewardGrantRepository;
 use App\Security\Voter\GameGestureVoter;
 use App\Service\Game\GameAccess;
+use App\Service\Game\GameAliasDrawer;
 use App\Service\Game\GameBadgeProvider;
 use App\Service\Game\GameCollector;
 use App\Service\Game\GameIndexReader;
 use App\Service\Game\GameLevelBoard;
 use App\Service\Game\GamePeriodResolver;
+use App\Service\Game\GameProfileProvider;
+use App\Service\Game\GameRankingBuilder;
 use App\Service\Game\GameSettingsProvider;
+use App\Service\Game\GameTeamBoard;
 use App\Service\Game\RewardGranter;
 use App\Service\Game\TeacherGestureService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -186,6 +194,177 @@ class GameController extends AbstractController
         );
 
         return $this->redirectToRoute('app_game');
+    }
+
+    /**
+     * Choosing a figure, at the opening of a period (design's screen 9).
+     *
+     * Three cards, a name, dates and one line on what the person did. It takes a minute and it
+     * teaches something: over four semesters a student is offered twelve figures of their own field,
+     * the class shows thirty at a time, and the révélation turns the ranking into a wall of figures.
+     *
+     * Under that name nobody knows who they are until the closure - which is exactly what the
+     * ceremony of screen 11 pays for.
+     */
+    #[Route(path: '/game/alias', name: 'app_game_alias', methods: ['GET', 'POST'])]
+    public function alias(
+        Request $request,
+        GameAccess $access,
+        GamePeriodResolver $periods,
+        GameAliasDrawer $drawer,
+        GameFigureRepository $figures,
+    ): Response {
+        $student = $this->currentUser();
+        $program = $access->primaryProgramFor($student) ?? throw $this->createNotFoundException();
+        $period = $periods->activePeriod($program) ?? throw $this->createNotFoundException();
+
+        $alias = $drawer->aliasFor($student, $program, $period);
+
+        if (null === $alias) {
+            // No filière on the formation, or an empty catalogue: the game simply runs without
+            // pseudonyms rather than pretending to offer a choice.
+            return $this->render('game/alias_none.html.twig', ['program' => $program, 'period' => $period]);
+        }
+
+        if ($request->isMethod('POST')) {
+            if (!$this->isCsrfTokenValid('game_alias', (string) $request->request->get('_token'))) {
+                throw $this->createAccessDeniedException();
+            }
+
+            $figure = $figures->find($request->request->getInt('figure'));
+
+            $this->addFlash(
+                null !== $figure && $drawer->choose($alias, $figure) ? 'success' : 'error',
+                null !== $figure && $alias->isChosen() ? 'gameAliasChosenFlashMessage' : 'gameAliasRefusedFlashMessage',
+            );
+
+            return $this->redirectToRoute('app_game_alias');
+        }
+
+        return $this->render('game/alias.html.twig', [
+            'program' => $program,
+            'period' => $period,
+            'alias' => $alias,
+            'offered' => $figures->findByIds($alias->getOfferedFigures()),
+            'deadline' => $alias->deadline(GameAliasDrawer::CHOICE_DAYS),
+        ]);
+    }
+
+    /**
+     * The class ranking during a period (screen 10).
+     *
+     * **One tab, and it is the class.** No « entre promos », no section ranking, no comparison
+     * between filières: the frontier of a formation is crossed nowhere in this application.
+     */
+    #[Route(path: '/game/ranking', name: 'app_game_ranking', methods: ['GET'])]
+    public function ranking(
+        GameAccess $access,
+        GamePeriodResolver $periods,
+        GameRankingBuilder $ranking,
+        GameProfileProvider $profiles,
+        GameSettingsProvider $settingsProvider,
+        GamePeriodScoreRepository $scores,
+    ): Response {
+        $student = $this->currentUser();
+        $program = $access->primaryProgramFor($student) ?? throw $this->createNotFoundException();
+        $period = $periods->activePeriod($program) ?? throw $this->createNotFoundException();
+        $settings = $settingsProvider->for($program);
+
+        if (!$settings->isRankingEnabled()) {
+            throw $this->createNotFoundException();
+        }
+
+        return $this->render('game/ranking.html.twig', [
+            'program' => $program,
+            'period' => $period,
+            'view' => $ranking->build($program, $period, $student),
+            'profile' => $profiles->for($student),
+            'revealed' => $scores->isClosed($program, $period),
+        ]);
+    }
+
+    /** Step out of every ranking, or ask to come back - which the next closure grants. */
+    #[Route(path: '/game/ranking/discreet', name: 'app_game_ranking_discreet', methods: ['POST'])]
+    public function discreet(Request $request, GameProfileProvider $profiles): Response
+    {
+        if (!$this->isCsrfTokenValid('game_discreet', (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $profile = $profiles->persistent($this->currentUser());
+        $wanted = $request->request->getBoolean('discreet');
+        $profile->setDiscreet($wanted);
+        $profiles->save();
+
+        // Leaving takes effect at once; coming back waits for the closure. Said in the flash rather
+        // than only in the design, because it is the half a student will otherwise discover by
+        // refreshing the ranking and finding themselves still absent.
+        $this->addFlash('success', $wanted ? 'gameDiscreetOnFlashMessage' : 'gameDiscreetReturnFlashMessage');
+
+        return $this->redirectToRoute('app_game_ranking');
+    }
+
+    /**
+     * The révélation and the wall of figures (screen 11).
+     *
+     * A ceremony screen, projected in class: it is that moment which pays for the ten weeks of
+     * anonymity before it. **The bottom is never revealed** - the first five, everybody who reached
+     * a tier, and the wall where each patronym is given back to its person.
+     */
+    #[Route(path: '/game/ranking/reveal', name: 'app_game_ranking_reveal', methods: ['GET'])]
+    public function reveal(
+        GameAccess $access,
+        GamePeriodResolver $periods,
+        GamePeriodScoreRepository $scores,
+        GameAliasRepository $aliases,
+        GameProfileRepository $profiles,
+        GameSettingsProvider $settingsProvider,
+    ): Response {
+        $student = $this->currentUser();
+        $program = $access->primaryProgramFor($student) ?? throw $this->createNotFoundException();
+        $period = $periods->activePeriod($program) ?? throw $this->createNotFoundException();
+
+        if (!$scores->isClosed($program, $period)) {
+            // Nothing to reveal before the closure has frozen anything, and a page that guessed one
+            // would be publishing a ranking that could still move.
+            throw $this->createNotFoundException();
+        }
+
+        $settings = $settingsProvider->for($program);
+        $ranked = $scores->ranking($program, $period);
+
+        return $this->render('game/reveal.html.twig', [
+            'program' => $program,
+            'period' => $period,
+            'podium' => \array_slice($ranked, 0, 5),
+            'scores' => $ranked,
+            'aliases' => $aliases->findForPeriod($program, $period),
+            'profiles' => $profiles->findForStudents(array_values($program->getStudents()->toArray())),
+            'settings' => $settings,
+        ]);
+    }
+
+    /** My team, and its threshold (screen 12). */
+    #[Route(path: '/game/team', name: 'app_game_team', methods: ['GET'])]
+    public function team(
+        GameAccess $access,
+        GamePeriodResolver $periods,
+        GameTeamBoard $board,
+        GameSettingsProvider $settingsProvider,
+    ): Response {
+        $student = $this->currentUser();
+        $program = $access->primaryProgramFor($student) ?? throw $this->createNotFoundException();
+        $period = $periods->activePeriod($program) ?? throw $this->createNotFoundException();
+
+        return $this->render('game/team.html.twig', [
+            'program' => $program,
+            'period' => $period,
+            'team' => $board->forStudent($student, $program, $period),
+            'teamCount' => \count($board->teams($program, $period)),
+            'reachedCount' => $board->reachedCount($program, $period),
+            'settings' => $settingsProvider->for($program),
+            'me' => $student,
+        ]);
     }
 
     /**

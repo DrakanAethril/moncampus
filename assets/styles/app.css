@@ -9374,3 +9374,27 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
     border: 1px solid var(--cm-border); border-radius: 6px; background: var(--cm-surface); color: var(--cm-ink);
 }
 .cm-gm-shelf__row { flex-wrap: wrap; }
+
+/* ---------- Figures, ranking and teams (screens 9 to 12) ---------- */
+.cm-gm-figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.cm-gm-figure {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+    border: 1px solid var(--cm-border); border-radius: 10px; background: var(--cm-surface); padding: 16px;
+}
+.cm-gm-figure.is-chosen { border-color: var(--cm-green-tx); background: var(--cm-green-bg); }
+.cm-gm-figure__initials {
+    width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center;
+    background: var(--cm-navy); color: var(--cm-gold); font: 700 15px var(--cm-font-ui);
+}
+.cm-gm-figure__surname { font: 700 16px var(--cm-font-title); color: var(--cm-ink); }
+.cm-gm-figure__full { font-size: 12px; color: var(--cm-muted); }
+.cm-gm-figure__notice { font-size: 12.5px; color: var(--cm-text); line-height: 1.5; }
+
+/* The viewer's own line, in both the ranking and their team. */
+.cm-gm-rank--me td { background: var(--cm-blue-bg); }
+.cm-gm-rank--me td:first-child { font-weight: 700; }
+
+/* ---------- The game's own settings screen (screen 14) ---------- */
+.cm-gm-switch { display: flex; align-items: center; gap: 9px; font-size: 13.5px; color: var(--cm-ink); cursor: pointer; }
+.cm-gm-switch input { width: 16px; height: 16px; accent-color: var(--cm-brand); }
+.cm-gm-switch span { font-weight: 600; }

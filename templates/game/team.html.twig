@@ -1,0 +1,87 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'gameTeamHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'gameProgressHeading'|trans, url: path('app_game')},
+        {label: 'gameTeamHeading'|trans, url: path('app_game_team')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'gameTeamHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="cm-tabs">
+        <a class="cm-tabs__tab" href="{{ path('app_game_ranking') }}">{{ 'gameRankingClassTabLabel'|trans }}</a>
+        <span class="cm-tabs__tab is-active">{{ 'gameTeamHeading'|trans }}</span>
+    </div>
+
+    <div class="card cm-card--tabbed">
+        <div class="card-body">
+            {% if team is null %}
+                <div class="cm-note">
+                    <span class="cm-note__icon">i</span>
+                    <span>{{ 'gameTeamNoneText'|trans }}</span>
+                </div>
+            {% else %}
+                <div class="cm-card-toolbar" style="padding: 0 0 14px">
+                    <span class="cm-gm-label">{{ team.name }}</span>
+                    <span class="cm-badge cm-badge--{{ team.reached ? 'green' : 'blue' }}" style="margin-left: auto">
+                        {{ (team.reached ? 'gameTeamReachedLabel' : 'gameTeamPendingLabel')|trans }}
+                    </span>
+                </div>
+
+                {# The objective is a threshold everyone must clear, never a rank: a podium would
+                   reward the team that drew the best students, and nobody could do anything about
+                   it. A threshold makes helping the weakest member the rational move. #}
+                <div class="cm-note">
+                    <span class="cm-note__icon">🎯</span>
+                    <span>
+                        {{ 'gameTeamGoalText'|trans({'%threshold%': team.threshold, '%above%': team.aboveCount, '%total%': team.members|length}) }}
+                        {% if not team.reached and team.lowest %}
+                            {{ 'gameTeamLowestText'|trans({'%name%': team.lowest.student.displayName ?? team.lowest.student.username, '%margin%': team.lowest.margin}) }}
+                        {% endif %}
+                    </span>
+                </div>
+
+                <table class="card-table" style="margin-top: 14px">
+                    <tbody>
+                        {% for member in team.members %}
+                            <tr class="{{ member.student.id == me.id ? 'cm-gm-rank--me' }}">
+                                <td>
+                                    {{ member.student.displayName ?? member.student.username }}
+                                    {% if member.student.id == me.id %}<span class="cm-gm-log__src">{{ 'gameRankingItsYouLabel'|trans }}</span>{% endif %}
+                                </td>
+                                {# Only the index of a classmate, never the detail of their families:
+                                   one sees that somebody is behind, never why. #}
+                                <td class="text-end"><b>{{ member.index }}</b> <span class="cm-gm-fam__sub" style="display:inline">{{ 'gameIndexLabel'|trans }}</span></td>
+                                <td>
+                                    {% if member.above %}
+                                        <span class="cm-badge cm-badge--green">{{ 'gameTeamAboveLabel'|trans }}</span>
+                                    {% else %}
+                                        <span class="cm-badge cm-badge--gold">{{ 'gameTeamBelowLabel'|trans({'%margin%': member.margin}) }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <div class="cm-gm-tiers" style="margin-top: 16px; grid-template-columns: repeat(2, minmax(0, 1fr))">
+                    <div class="cm-gm-tier">
+                        <div class="cm-gm-tier__head"><span class="cm-gm-tier__name">{{ team.aboveCount }} / {{ team.members|length }}</span></div>
+                        <div class="cm-card-note" style="padding: 4px 0">{{ 'gameTeamAboveCountLabel'|trans }}</div>
+                    </div>
+                    <div class="cm-gm-tier">
+                        <div class="cm-gm-tier__head"><span class="cm-gm-tier__name">{{ reachedCount }} / {{ teamCount }}</span></div>
+                        <div class="cm-card-note" style="padding: 4px 0">{{ 'gameTeamReachedCountLabel'|trans }}</div>
+                    </div>
+                </div>
+
+                <div class="cm-card-note">{{ 'gameTeamNoRankText'|trans }}</div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

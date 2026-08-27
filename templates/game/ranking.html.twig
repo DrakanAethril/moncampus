@@ -1,0 +1,81 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'gameRankingHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'gameProgressHeading'|trans, url: path('app_game')},
+        {label: 'gameRankingHeading'|trans, url: path('app_game_ranking')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'gameRankingHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    {# Leaving is immediate; coming back only takes effect at the next period, so that the switch
+       cannot be used tactically on the eve of a closure. #}
+    <form method="post" action="{{ path('app_game_ranking_discreet') }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('game_discreet') }}">
+        <input type="hidden" name="discreet" value="{{ profile.discreet ? '0' : '1' }}">
+        <button type="submit" class="cm-btn cm-btn--outline">
+            {{ (profile.discreet ? 'gameDiscreetLeaveAction' : 'gameDiscreetEnterAction')|trans }}
+        </button>
+    </form>
+{% endblock %}
+
+{% block main %}
+    {# One tab, and it is the class. There is no « entre promos », no section ranking and no
+       comparison between filières: the frontier of a formation is crossed nowhere. #}
+    <div class="cm-tabs">
+        <span class="cm-tabs__tab is-active">{{ 'gameRankingClassTabLabel'|trans }}</span>
+        <a class="cm-tabs__tab" href="{{ path('app_game_team') }}">{{ 'gameTeamHeading'|trans }}</a>
+    </div>
+
+    <div class="card cm-card--tabbed">
+        <div class="cm-card-note cm-card-note--split">
+            <span>{{ program.displayShortName }} · {{ period.name }} · {{ 'gameRankingCountLabel'|trans({'%count%': view.count}) }}{% if view.discreetCount %} · {{ 'gameRankingDiscreetCountLabel'|trans({'%count%': view.discreetCount}) }}{% endif %}</span>
+            <span>
+                {%- if revealed -%}
+                    <a href="{{ path('app_game_ranking_reveal') }}">{{ 'gameRevealHeading'|trans }}</a>
+                {%- else -%}
+                    {{ 'gameRankingRevealLaterLabel'|trans({'%date%': period.endDate|date('d/m/Y')}) }}
+                {%- endif -%}
+            </span>
+        </div>
+
+        {% if profile.discreet %}
+            <div class="cm-card-note">{{ (profile.returningNextPeriod ? 'gameDiscreetReturningText' : 'gameDiscreetOnText')|trans }}</div>
+        {% endif %}
+
+        <table class="card-table">
+            <thead>
+                <tr>
+                    <th>{{ 'gameRankingRankColumnLabel'|trans }}</th>
+                    <th>{{ 'gameRankingFigureColumnLabel'|trans }}</th>
+                    <th class="text-end">{{ 'gameIndexLabel'|trans }}</th>
+                    <th>{{ 'gameRankingTierColumnLabel'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in view.rows %}
+                    <tr class="{{ row.isViewer ? 'cm-gm-rank--me' }}">
+                        <td>{{ row.rank }}</td>
+                        <td>
+                            {# Only the patronym. At the hover, who the person was - never who the
+                               classmate is. #}
+                            <span title="{{ row.alias and row.alias.figure ? row.alias.figure.fullName ~ (row.alias.figure.dates ? ' · ' ~ row.alias.figure.dates : '') ~ ' — ' ~ row.alias.figure.notice : '' }}">{{ row.name }}</span>
+                            {% if row.isViewer %}<span class="cm-gm-log__src">{{ 'gameRankingItsYouLabel'|trans }}</span>{% endif %}
+                        </td>
+                        <td class="text-end"><b>{{ row.index }}</b></td>
+                        <td>{% if row.tier %}<span class="cm-badge cm-badge--gold">{{ ('gameTier' ~ row.tier|capitalize ~ 'ReachedLabel')|trans }}</span>{% endif %}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="4" class="text-secondary">{{ 'gameRankingEmptyText'|trans }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="cm-card-note">{{ 'gameRankingNoteText'|trans }}</div>
+    </div>
+{% endblock %}

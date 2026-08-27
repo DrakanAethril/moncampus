@@ -64,6 +64,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
     private string $gesturesPath;
     private string $councilPath;
     private string $rewardsPath;
+    private string $gameSettingsPath;
 
     protected function setUp(): void
     {
@@ -82,6 +83,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->gesturesPath = '/programs/'.$this->program->getId().'/game/gestures';
         $this->councilPath = '/programs/'.$this->program->getId().'/council';
         $this->rewardsPath = '/programs/'.$this->program->getId().'/game/rewards';
+        $this->gameSettingsPath = '/programs/'.$this->program->getId().'/settings/game';
     }
 
     /**
@@ -225,6 +227,13 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/game/engagements' => 404,
             // The catalogue is the teachers': a student reads their shelf, never the shelf's source.
             $this->rewardsPath => 403,
+            // Figures, ranking, teams. The révélation answers 404 until a closure has frozen
+            // something: a page that guessed one would publish a ranking that can still move.
+            '/game/alias' => 200,
+            '/game/ranking' => 200,
+            '/game/team' => 200,
+            '/game/ranking/reveal' => 404,
+            $this->gameSettingsPath => 403,
             // « Séquences de l'année » hands over to the single formation this student belongs to
             // rather than drawing a picker with one card in it (2026-08-17). The list still renders
             // for a student straddling two, and for the empty state.
@@ -335,6 +344,12 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/game/engagement/new' => 404,
             '/game/engagements' => 200,
             $this->rewardsPath => 200,
+            '/game/alias' => 404,
+            '/game/ranking' => 404,
+            '/game/team' => 404,
+            // Not the referent of the fixture class, and the barème is the referent's decision -
+            // isProgramReferentTeacher() carries no staff bypass, and none is added here.
+            $this->gameSettingsPath => 403,
             // The course-space index is the student's own list of programs; a teacher reaches the
             // same sequences from their program screens instead.
             '/my/courses' => 403,
@@ -458,6 +473,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/game/engagement/new' => 404,
             '/game/engagements' => 200,
             $this->rewardsPath => 200,
+            '/game/alias' => 404,
+            '/game/ranking' => 404,
+            '/game/team' => 404,
+            $this->gameSettingsPath => 200,
             '/settings/configuration' => 200,
             '/settings/teaching' => 200,
             // Groups are admin-only, deliberately stricter than the rest of Settings - see
@@ -606,6 +625,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/game/engagement/new' => 404,
             '/game/engagements' => 404,
             $this->rewardsPath => 403,
+            '/game/alias' => 404,
+            '/game/ranking' => 404,
+            '/game/team' => 404,
+            $this->gameSettingsPath => 403,
             '/agenda' => 200,
             '/messages' => 200,
             '/tickets' => 200,

@@ -262,6 +262,11 @@
                                                             <a class="dropdown-item {{ current_route starts with 'app_program_game_gestures' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_game_gestures', {id: program.id}) }}">{{ 'gameGesturesHeading'|trans }}</a>
                                                             <a class="dropdown-item {{ current_route starts with 'app_game_engagements' and app.request.query.get('program') == program.id ? 'active' }}" href="{{ path('app_game_engagements', {program: program.id}) }}">{{ 'engagementQueueHeading'|trans }}</a>
                                                             <a class="dropdown-item {{ current_route starts with 'app_program_game_rewards' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_game_rewards', {id: program.id}) }}">{{ 'gameRewardsHeading'|trans }}</a>
+                                                            {# The barème and the two switches are the referent teacher's decision, and
+                                                               an administrator's - the same door as the council, for the same reason. #}
+                                                            {% if is_granted('ROLE_ADMIN') or is_program_referent_teacher(program) %}
+                                                                <a class="dropdown-item {{ current_route == 'app_program_settings_game' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_settings_game', {id: program.id}) }}">{{ 'gameSettingsHeading'|trans }}</a>
+                                                            {% endif %}
                                                             {# The council is the professeur principal's screen, and an
                                                                administrator's. is_program_teacher() is too wide for it, so the
                                                                entry asks the narrower question the controller asks. #}
