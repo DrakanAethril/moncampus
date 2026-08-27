@@ -1,0 +1,110 @@
+{# The month and the year, individually and by team - drawn once and included by both the ranking
+   screen and « Leveling »'s Ranking tab, so the two can never drift apart.
+
+   Parameters: route (the screen's own route name, so the month arrows come back here), scope
+   ('month'|'year'), and the whole context App\Controller\GameController::rankingContext() builds.
+   `extra` carries whatever else that route needs in its links (the leveling tab, for instance). #}
+{% set extra = extra|default({}) %}
+
+{% if scope == 'month' %}
+    <div class="cm-gm-monthbar">
+        <a class="cm-btn cm-btn--outline" href="{{ path(route, extra|merge({month: month.previous.key})) }}" aria-label="{{ 'gameRankingPreviousMonthLabel'|trans }}">‹</a>
+        <span class="cm-gm-monthbar__label">{{ monthLabel }}</span>
+        <a class="cm-btn cm-btn--outline" href="{{ path(route, extra|merge({month: month.next.key})) }}" aria-label="{{ 'gameRankingNextMonthLabel'|trans }}">›</a>
+        {% if monthClosed %}
+            <span class="cm-badge cm-badge--green">{{ 'gameRankingMonthClosedLabel'|trans }}</span>
+        {% elseif not ranksThisMonth %}
+            {# An unranked month is still played - points are earned and still count towards the
+               year - it is simply never closed and never pays a podium. #}
+            <span class="cm-badge cm-badge--gray" title="{{ 'gameRankingMonthNotRankedHelpText'|trans }}">{{ 'gameRankingMonthNotRankedLabel'|trans }}</span>
+        {% else %}
+            <span class="cm-badge cm-badge--blue">{{ 'gameRankingMonthLiveLabel'|trans }}</span>
+        {% endif %}
+    </div>
+{% else %}
+    <div class="cm-gm-monthbar">
+        <span class="cm-gm-monthbar__label">{{ year.label }}</span>
+        <span class="cm-badge cm-badge--blue">{{ 'gameRankingYearLiveLabel'|trans }}</span>
+    </div>
+{% endif %}
+
+{% set view = scope == 'month' ? monthRanking : yearRanking %}
+{% set teams = scope == 'month' ? monthTeams : yearTeams %}
+
+<div class="cm-gm-section">
+    <h3 class="cm-gm-section__title">{{ 'gameRankingIndividualHeading'|trans }}</h3>
+    <p class="cm-gm-section__hint">
+        {{ 'gameRankingCountLabel'|trans({'%count%': view.count}) }}
+        {%- if view.discreetCount %} · {{ 'gameRankingDiscreetCountLabel'|trans({'%count%': view.discreetCount}) }}{% endif %}
+        {%- if scope == 'month' %} · {{ 'gameRankingPodiumHintText'|trans({'%podium%': podium|join(' · ')}) }}{% endif %}
+    </p>
+    <table class="card-table">
+        <thead>
+            <tr>
+                <th>{{ 'gameRankingRankColumnLabel'|trans }}</th>
+                <th>{{ 'gameRankingFigureColumnLabel'|trans }}</th>
+                <th class="text-end">{{ 'gameIndexLabel'|trans }}</th>
+                <th>{{ 'gameRankingTierColumnLabel'|trans }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in view.rows %}
+                <tr class="{{ row.isViewer ? 'cm-gm-rank--me' }}">
+                    <td>{{ row.rank }}</td>
+                    <td>
+                        <span title="{{ row.alias and row.alias.figure ? row.alias.figure.fullName ~ ' — ' ~ row.alias.figure.notice : '' }}">{{ row.name }}</span>
+                        {% if row.isViewer %}<span class="cm-gm-log__src">{{ 'gameRankingItsYouLabel'|trans }}</span>{% endif %}
+                    </td>
+                    <td class="text-end"><b>{{ row.index }}</b></td>
+                    <td>{% if row.tier %}<span class="cm-badge cm-badge--gold">{{ ('gameTier' ~ row.tier|capitalize ~ 'ReachedLabel')|trans }}</span>{% endif %}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="4" class="text-secondary">{{ 'gameRankingEmptyText'|trans }}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="cm-gm-section">
+    <h3 class="cm-gm-section__title">{{ 'gameRankingTeamHeading'|trans }}</h3>
+    {# A mean rather than a total, for exactly the reason the individual ranking is a rate: a team
+       of six would otherwise beat a team of four for being bigger. #}
+    <p class="cm-gm-section__hint">{{ 'gameRankingTeamHintText'|trans }}</p>
+    <table class="card-table">
+        <thead>
+            <tr>
+                <th>{{ 'gameRankingRankColumnLabel'|trans }}</th>
+                <th>{{ 'gameTeamHeading'|trans }}</th>
+                <th class="text-end">{{ 'gameRankingTeamAverageLabel'|trans }}</th>
+                <th>{{ 'gameTeamAboveCountLabel'|trans }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in teams %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ row.team.name }}</td>
+                    <td class="text-end"><b>{{ row.average }}</b></td>
+                    <td>
+                        {{ row.team.aboveCount }} / {{ row.team.members|length }}
+                        {% if row.team.reached %}<span class="cm-badge cm-badge--green">{{ 'gameTeamReachedLabel'|trans }}</span>{% endif %}
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="4" class="text-secondary">{{ 'gameTeamNoneText'|trans }}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if closedMonths|length %}
+    <div class="cm-gm-section">
+        <h3 class="cm-gm-section__title">{{ 'gameRankingClosedMonthsHeading'|trans }}</h3>
+        <p class="cm-gm-section__hint">{{ 'gameRankingClosedMonthsHintText'|trans }}</p>
+        <div class="cm-gm-monthlinks">
+            {% for key in closedMonths %}
+                <a class="cm-badge cm-badge--{{ key == month.key ? 'blue' : 'gray' }}" href="{{ path(route, extra|merge({month: key})) }}">{{ key }}</a>
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}

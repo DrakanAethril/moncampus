@@ -1,0 +1,142 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'gameGesturesHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.displayShortName, url: path('app_program_timetable', {id: program.id})},
+        {label: 'gameGesturesHeading'|trans, url: path('app_program_game_gestures', {id: program.id})},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'gameGesturesHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <p class="cm-gm-context">{{ program.displayShortName }}</p>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post" action="{{ path('app_program_game_gestures_new', {id: program.id}) }}"
+                  data-controller="game-gesture">
+                <input type="hidden" name="_token" value="{{ csrf_token('game_gesture') }}">
+
+                <div class="cm-formgrid">
+                    <label class="cm-field">
+                        <span class="cm-field__label">{{ 'gameGestureStudentLabel'|trans }} *</span>
+                        <select name="student" required>
+                            <option value="">{{ 'gameGestureStudentPlaceholder'|trans }}</option>
+                            {% for student in students %}
+                                <option value="{{ student.id }}">{{ student.displayName ?? student.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+
+                    <div class="cm-field">
+                        <span class="cm-field__label">{{ 'gameGestureKindLabel'|trans }} *</span>
+                        <div class="cm-gm-seg">
+                            <label><input type="radio" name="kind" value="bonus" checked data-action="game-gesture#kindChanged"><span>{{ 'gameGestureBonusLabel'|trans }}</span></label>
+                            {% if settings.malusEnabled %}
+                                <label><input type="radio" name="kind" value="malus" data-action="game-gesture#kindChanged"><span>{{ 'gameGestureMalusLabel'|trans }}</span></label>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="cm-field">
+                        <span class="cm-field__label">{{ 'gameGestureValueLabel'|trans }} *</span>
+                        <div class="cm-gm-seg">
+                            {% for value in values %}
+                                <label><input type="radio" name="value" value="{{ value }}" {{ loop.first ? 'checked' }}><span data-game-gesture-target="value" data-value="{{ value }}">+{{ value }}</span></label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    {# Two objects and nothing else. The malus of §4, decision 6 is the only one in
+                       the system, and the closed list is what stops it acquiring a third subject. #}
+                    <div class="cm-field" data-game-gesture-target="object" hidden>
+                        <span class="cm-field__label">{{ 'gameGestureObjectLabel'|trans }} *</span>
+                        <div class="cm-gm-seg">
+                            {% for object in objects %}
+                                <label><input type="radio" name="object" value="{{ object.value }}" {{ loop.first ? 'checked' }}><span>{{ object.labelKey|trans }}</span></label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <label class="cm-field cm-formgrid__wide">
+                        <span class="cm-gm-label">{{ 'gameGestureReasonLabel'|trans }} *</span>
+                        <textarea name="reason" rows="2" required maxlength="1000" placeholder="{{ 'gameGestureReasonPlaceholder'|trans }}"></textarea>
+                        <span class="cm-card-note" style="padding: 4px 0">{{ 'gameGestureReasonHint'|trans({'%days%': 7}) }}</span>
+                    </label>
+                </div>
+
+                <div class="cm-actionbar">
+                    {# The bound hint used to sit here. There is no bound any more, and what belongs
+                       in its place is the one thing a teacher should read before posting: the motive
+                       is what the student sees. #}
+                    <span class="cm-actionbar__meta">{{ 'gameGestureNoQuotaHint'|trans }}</span>
+                    <div class="cm-actionbar__buttons">
+                        <button type="submit" class="cm-btn cm-btn--primary">{{ 'gameGesturePostAction'|trans }}</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 16px">
+        <div class="card-body">
+            <span class="cm-gm-label">{{ 'gameGestureListHeading'|trans }}</span>
+            <table class="card-table" style="margin-top: 10px">
+                <thead>
+                    <tr>
+                        <th>{{ 'gameGestureStudentLabel'|trans }}</th>
+                        <th>{{ 'gameGestureReasonLabel'|trans }}</th>
+                        <th>{{ 'gameGesturePostedOnLabel'|trans }}</th>
+                        <th class="text-end">{{ 'gameGestureValueLabel'|trans }}</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in entries %}
+                        <tr class="{{ cancelled[entry.id] ? 'cm-gm-gesture--cancelled' }}">
+                            <td>{{ entry.student.displayName ?? entry.student.username }}</td>
+                            <td>
+                                {% if entry.gestureObject %}<span class="cm-badge cm-badge--gray">{{ entry.gestureObject.labelKey|trans }}</span> {% endif %}
+                                {{ entry.reason }}
+                                {% if entry.pendingContest %}
+                                    <span class="cm-badge cm-badge--red">{{ 'gameGestureContestedLabel'|trans }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ entry.occurredAt|date('d/m/Y') }}</td>
+                            <td class="text-end cm-gm-log__pts{{ entry.points < 0 ? ' cm-gm-log__pts--neg' }}">{{ entry.points > 0 ? '+' }}{{ entry.points }}</td>
+                            <td class="cm-actions">
+                                {% if cancelled[entry.id] %}
+                                    <span class="cm-badge cm-badge--gray">{{ 'gameGestureCancelledLabel'|trans }}</span>
+                                {% else %}
+                                    {% if entry.pendingContest and is_granted('GAME_GESTURE_RESPOND', entry) %}
+                                        <form method="post" action="{{ path('app_program_game_gestures_respond', {id: program.id, entryId: entry.id}) }}" class="d-inline">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('game_gesture_respond') }}">
+                                            <button type="submit" class="cm-action cm-action--neutral">{{ 'gameGestureRespondAction'|trans }}</button>
+                                        </form>
+                                    {% endif %}
+                                    {% if is_granted('GAME_GESTURE_CANCEL', entry) %}
+                                        <form method="post" action="{{ path('app_program_game_gestures_cancel', {id: program.id, entryId: entry.id}) }}" class="d-inline">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('game_gesture_cancel') }}">
+                                            <button type="submit" class="cm-action cm-action--danger">{{ 'gameGestureCancelAction'|trans }}</button>
+                                        </form>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="5" class="text-secondary">{{ 'gameGestureListEmptyText'|trans }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="cm-note" style="margin-top: 16px">
+                <span class="cm-note__icon">⚖</span>
+                <span>{{ 'gameGestureMalusNoteText'|trans }}</span>
+            </div>
+        </div>
+    </div>
+{% endblock %}

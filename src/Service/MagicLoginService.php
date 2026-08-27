@@ -15,10 +15,12 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 /**
  * Owns the passwordless "magic link" login flow (App\Security\MagicLinkAuthenticator,
  * App\Controller\PublicMagicLoginController): request a single-use, short-lived login link by
- * email instead of a username/password. Deliberately narrower than the LDAP login it sits next
- * to - see isEligible() - since a link mailed to an inbox is inherently a weaker proof of
- * identity than an LDAP bind, and this must never become a way to sidestep LDAP auth for
- * high-privilege accounts.
+ * email instead of a username/password.
+ *
+ * A link mailed to an inbox is a weaker proof of identity than an LDAP bind, and what narrows it is
+ * therefore **the address it can be sent to**, never the role of the person asking: only
+ * User::$contactEmail, and only once its owner has typed it and proved they read it
+ * (User::isContactEmailVerified()). See isEligible(), which is the whole of the rule.
  */
 class MagicLoginService
 {
@@ -114,9 +116,9 @@ class MagicLoginService
 
     // Resolves and consumes a mailed link's token in one atomic step - returns the now-logged-in
     // User, or null for any reason it can't proceed (malformed, unknown selector, wrong verifier,
-    // expired, already used, or no longer eligible - e.g. promoted to ROLE_ADMIN since the link
-    // was sent). Never distinguishes these cases to the caller, same "don't leak why" principle
-    // as requestLink().
+    // expired, already used, or no longer eligible - inactivated, or the contact address unconfirmed
+    // since the link was sent). Never distinguishes these cases to the caller, same "don't leak why"
+    // principle as requestLink().
     public function consume(string $token, ?string $requestIp): ?User
     {
         if (!str_contains($token, '.')) {
@@ -151,14 +153,26 @@ class MagicLoginService
         return $user;
     }
 
-    // ROLE_ADMIN accounts must always go through LDAP - a magic link mailed to a contact address
-    // is a strictly weaker proof of identity, and admin accounts are exactly the ones where that
-    // gap matters most. Checked both when issuing a link (requestLink()) and again when consuming
-    // one (consume()), since roles can change in between.
+    /**
+     * Two conditions, and **no role condition at all**.
+     *
+     * ROLE_ADMIN was excluded here until 2026-08-27, on the grounds that a mailed link is a weaker
+     * proof than an LDAP bind and that administrators are where that gap matters most. It was
+     * removed on request: the exclusion did not make an administrator's account harder to reach, it
+     * only left the people who cannot reset their own password with no way back in at all - the
+     * administration reset was itself removed on 2026-08-24, so the answer for them was `samba-tool`
+     * on the domain controller, which is not an answer somebody locked out at 8am has.
+     *
+     * What still narrows the path is the address rather than the role, and it is not nothing: the
+     * link goes only to a contact address its owner typed and then proved they read, it is
+     * single-use, it expires in an hour (a quarter of one on mobile), and asking for one is rate
+     * limited on both the address and the requesting IP.
+     *
+     * Checked both when issuing a link (requestLink()) and again when consuming one (consume()),
+     * since an account can be inactivated or lose its confirmed address in between.
+     */
     private function isEligible(User $user): bool
     {
-        return null === $user->getInactiveDate()
-            && $user->isContactEmailVerified()
-            && !\in_array('ROLE_ADMIN', $user->getRoles(), true);
+        return null === $user->getInactiveDate() && $user->isContactEmailVerified();
     }
 }

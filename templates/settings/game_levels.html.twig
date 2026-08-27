@@ -1,0 +1,53 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'gameLevelLabelsHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'settingsConfigurationNavLabel'|trans, url: path('app_settings_configuration')},
+        {label: 'gameLevelLabelsHeading'|trans, url: path('app_settings_game_levels')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'gameLevelLabelsHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <form method="post">
+        <input type="hidden" name="_token" value="{{ csrf_token('game_level_labels') }}">
+
+        <div class="cm-gm-levels">
+            <div class="cm-gm-levels__head cm-gm-levels__head--key">{{ 'gameLevelXpColumnLabel'|trans }}</div>
+            {% for track in tracks %}
+                <div class="cm-gm-levels__head">{{ track.emoji }} {{ track.labelKey|trans }}</div>
+            {% endfor %}
+
+            {% for level in levels %}
+                <div class="cm-gm-levels__cell cm-gm-levels__cell--key">
+                    <b>{{ 'gameLevelShortLabel'|trans({'%level%': level.level}) }}</b> · {{ level.xpMin|number_format(0, ',', ' ') }}
+                </div>
+                {% for track in tracks %}
+                    <div class="cm-gm-levels__cell">
+                        <input type="text" name="labels[{{ track.value }}][{{ level.level }}]"
+                               maxlength="120"
+                               value="{{ matrix[track.value][level.level]|default('') }}"
+                               placeholder="{{ 'gameLevelGenericTitle'|trans({'%level%': level.level}) }}">
+                    </div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+
+        {# Said on the screen because it is the rule somebody will try to break from here: the words
+           belong to the formation, the thresholds belong to the establishment. #}
+        <div class="cm-note" style="margin-top: 18px">
+            <span class="cm-note__icon">i</span>
+            <span>{{ 'gameLevelLabelsNoteText'|trans }}</span>
+        </div>
+
+        <div class="cm-actionbar">
+            <div class="cm-actionbar__buttons">
+                <button type="submit" class="cm-btn cm-btn--primary">{{ 'submitSaveAction'|trans }}</button>
+            </div>
+        </div>
+    </form>
+{% endblock %}

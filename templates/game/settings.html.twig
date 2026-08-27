@@ -1,0 +1,217 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'gameSettingsHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.displayShortName, url: path('app_program_timetable', {id: program.id})},
+        {label: 'gameSettingsHeading'|trans, url: path('app_program_settings_game', {id: program.id})},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'gameSettingsHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <form method="post">
+        <input type="hidden" name="_token" value="{{ csrf_token('game_settings') }}">
+
+        {# The second switch, and the line that says the first one can make it moot. That is the
+           kind of state a screen has to announce rather than leave somebody to work out. #}
+        <div class="card">
+            <div class="card-body">
+                <label class="cm-gm-switch" title="{{ 'gameSettingsEnabledHelpText'|trans }}">
+                    <input type="checkbox" name="game_enabled" value="1" {{ program.gameEnabled ? 'checked' }}>
+                    <span>{{ 'gameSettingsEnabledLabel'|trans({'%program%': program.displayShortName}) }}</span>
+                </label>
+                <div class="cm-card-note" style="padding: 6px 0 0">
+                    {{ 'gameSettingsEnabledCountText'|trans({'%count%': enabledPrograms, '%total%': totalPrograms}) }}
+                </div>
+                {% if not featureOpen %}
+                    <div class="cm-note cm-note--gold" style="margin-top: 12px">
+                        <span class="cm-note__icon">i</span>
+                        <span>{{ 'gameSettingsFeatureOffText'|trans }}</span>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 16px">
+            <div class="card-body">
+                <span class="cm-gm-label">{{ 'gameSettingsWeightsHeading'|trans }}</span>
+
+                {# The four weights are the real barème: setting 30/30/25/15 is a pedagogical
+                   statement readable in one line, where tuning forty rule values is readable
+                   nowhere. #}
+                <div class="cm-formgrid" style="margin-top: 10px">
+                    {% for field, weight in weights %}
+                        <label class="cm-field" title="{{ 'gameSettingsWeightHelpText'|trans }}">
+                            <span class="cm-field__label">{{ weight.label|trans }}</span>
+                            <input type="number" name="{{ field }}" min="0" max="100" value="{{ weight.value }}">
+                        </label>
+                    {% endfor %}
+                </div>
+
+                <div class="cm-note" style="margin-top: 14px">
+                    <span class="cm-note__icon">i</span>
+                    <span>{{ 'gameSettingsWeightsNoteText'|trans }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 16px">
+            <div class="card-body">
+                <span class="cm-gm-label">{{ 'gameSettingsMonthsHeading'|trans }}</span>
+                <div class="cm-card-note" style="padding: 6px 0">{{ 'gameSettingsMonthsText'|trans({'%podium%': '20 · 10 · 5'}) }}</div>
+
+                {# Which months this formation wants a ranking for. An unticked month is still
+                   played - points are earned and still count towards the year - it is simply never
+                   closed, never ranked, and never pays a podium. #}
+                <div class="cm-gm-months">
+                    {% for number, name in monthNames %}
+                        <label class="cm-gm-month {{ number in rankedMonths ? 'is-on' }}" title="{{ 'gameSettingsMonthHelpText'|trans }}">
+                            <input type="checkbox" name="months[]" value="{{ number }}" {{ number in rankedMonths ? 'checked' }}>
+                            <span>{{ ('monthName' ~ number)|trans }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+
+                <div class="cm-formgrid" style="margin-top: 18px">
+                    <div class="cm-field" title="{{ 'gameSettingsStepHelpText'|trans }}">
+                        <span class="cm-field__label">{{ 'gameSettingsStepLabel'|trans }}</span>
+                        <div class="cm-gm-seg">
+                            {% for step in steps %}
+                                <label><input type="radio" name="attendance_step" value="{{ step.value }}" {{ settings.attendanceStep == step ? 'checked' }}><span>{{ step.labelKey|trans }}</span></label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="cm-field" title="{{ 'gameSettingsTeamModeHelpText'|trans }}">
+                        <span class="cm-field__label">{{ 'gameSettingsTeamModeLabel'|trans }}</span>
+                        <div class="cm-gm-seg">
+                            {% for mode in teamModes %}
+                                <label><input type="radio" name="team_mode" value="{{ mode.value }}" {{ settings.teamMode == mode ? 'checked' }}><span>{{ mode.labelKey|trans }}</span></label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <label class="cm-field" title="{{ 'gameSettingsTrackHelpText'|trans }}">
+                        <span class="cm-field__label">{{ 'gameSettingsTrackLabel'|trans }}</span>
+                        <select name="track">
+                            <option value="">{{ 'gameSettingsTrackPlaceholder'|trans }}</option>
+                            {% for track in tracks %}
+                                <option value="{{ track.value }}" {{ program.gameTrack == track ? 'selected' }}>{{ track.emoji }} {{ track.labelKey|trans }}</option>
+                            {% endfor %}
+                        </select>
+                        <span class="cm-card-note" style="display: block; padding: 4px 0">{{ 'gameSettingsTrackHelpText'|trans }}</span>
+                    </label>
+                    <label class="cm-field" title="{{ 'gameSettingsTeamBatchHelpText'|trans }}">
+                        <span class="cm-field__label">{{ 'gameSettingsTeamBatchLabel'|trans }}</span>
+                        <select name="team_batch">
+                            <option value="0">{{ 'gameSettingsTeamBatchPlaceholder'|trans }}</option>
+                            {% for batch in batches %}
+                                <option value="{{ batch.id }}" {{ teamSet and teamSet.batch.id == batch.id ? 'selected' }}>{{ batch.name }} ({{ batch.groups|length }})</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 16px">
+            <div class="card-body">
+                <span class="cm-gm-label">{{ 'gameSettingsThresholdsHeading'|trans }}</span>
+                <div class="cm-formgrid" style="margin-top: 10px">
+                    {% for field, number in numbers %}
+                        <label class="cm-field" title="{{ ('gameSettings' ~ field|replace({'_': ' '})|title|replace({' ': ''}) ~ 'HelpText')|trans }}">
+                            <span class="cm-field__label">{{ number.label|trans }}</span>
+                            <input type="number" name="{{ field }}" min="0" max="5000" value="{{ number.value }}">
+                        </label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        {% if ruleValues|length %}
+            <div class="card" style="margin-top: 16px">
+                <div class="card-body">
+                    <span class="cm-gm-label">{{ 'gameSettingsScaleHeading'|trans }}</span>
+                    <div class="cm-card-note" style="padding: 6px 0">{{ 'gameSettingsScaleNoteText'|trans }}</div>
+                    <div class="cm-formgrid" style="margin-top: 6px">
+                        {% for definition in tunable %}
+                            <label class="cm-field" title="{{ 'gameSettingsRuleHelpText'|trans({'%rule%': ('gameRule.' ~ definition.code)|trans}) }}">
+                                <span class="cm-field__label">{{ ('gameRule.' ~ definition.code)|trans }}</span>
+                                <input type="number" name="rules[{{ definition.code }}]" min="-200" max="200" value="{{ ruleValues[definition.code].points }}">
+                            </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="card" style="margin-top: 16px">
+            <div class="card-body">
+                <span class="cm-gm-label">{{ 'gameSettingsSwitchesHeading'|trans }}</span>
+                <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px">
+                    <label class="cm-gm-switch" title="{{ 'gameSettingsRankingHelpText'|trans }}"><input type="checkbox" name="ranking_enabled" value="1" {{ settings.rankingEnabled ? 'checked' }}><span>{{ 'gameSettingsRankingLabel'|trans }}</span></label>
+                    <label class="cm-gm-switch" title="{{ 'gameSettingsAliasHelpText'|trans }}"><input type="checkbox" name="alias_enabled" value="1" {{ settings.aliasEnabled ? 'checked' }}><span>{{ 'gameSettingsAliasLabel'|trans }}</span></label>
+                    {# A formation may refuse the malus; none may add another. #}
+                    <label class="cm-gm-switch" title="{{ 'gameSettingsMalusHelpText'|trans }}"><input type="checkbox" name="malus_enabled" value="1" {{ settings.malusEnabled ? 'checked' }}><span>{{ 'gameSettingsMalusLabel'|trans }}</span></label>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 16px">
+            <div class="card-body">
+                <span class="cm-gm-label">{{ 'gameSettingsCatalogueHeading'|trans }}</span>
+                {# What this class actually plays in, and it is not one value: a SIO class holds SLAM
+                   and SISR side by side, and which one a student is in is their option. The
+                   fallback above only answers for a formation that splits into no option at all. #}
+                <div class="cm-gm-tracks">
+                    <span class="cm-gm-label">{{ 'gameSettingsResolvedTracksLabel'|trans }}</span>
+                    {% if trackedOptions is empty and program.gameTrack is null %}
+                        <p class="cm-card-note" style="padding: 4px 0">{{ 'gameSettingsNoTrackText'|trans }}</p>
+                    {% else %}
+                        <ul class="cm-gm-tracks__list">
+                            {% for option in trackedOptions %}
+                                <li><b>{{ option.shortName }}</b> — {{ option.gameTrack.emoji }} {{ option.gameTrack.labelKey|trans }}</li>
+                            {% endfor %}
+                            {% if trackedOptions is empty %}
+                                <li>{{ 'gameSettingsFallbackTrackText'|trans({'%track%': program.gameTrack.labelKey|trans}) }}</li>
+                            {% endif %}
+                        </ul>
+                    {% endif %}
+                    <p class="cm-card-note" style="padding: 4px 0">{{ 'gameSettingsResolvedTracksHelpText'|trans }}</p>
+                </div>
+
+                <div class="cm-gm-shelf" style="margin-top: 10px">
+                    {% for track in tracks %}
+                        {% set tally = figureTally[track.value] %}
+                        <div class="cm-gm-shelf__row">
+                            <span class="cm-gm-shelf__icon">{{ track.emoji }}</span>
+                            <span class="cm-gm-shelf__label">
+                                <b>{{ track.labelKey|trans }}</b> — {{ 'gameSettingsFigureTallyText'|trans({'%total%': tally.total, '%reviewed%': tally.reviewed}) }}
+                            </span>
+                        </div>
+                    {% endfor %}
+                    <div class="cm-gm-shelf__row">
+                        <span class="cm-gm-shelf__icon">🎁</span>
+                        <span class="cm-gm-shelf__label">{{ 'gameSettingsRewardCountText'|trans({'%count%': rewardCount}) }} — <a href="{{ path('app_program_game_rewards', {id: program.id}) }}">{{ 'gameRewardsHeading'|trans }}</a></span>
+                    </div>
+                </div>
+
+                {# A wrong notice in a device claiming to be pedagogical is worse than no notice at
+                   all: the seeded catalogue is an amorce and says so about itself. #}
+                <div class="cm-note cm-note--gold" style="margin-top: 12px">
+                    <span class="cm-note__icon">i</span>
+                    <span>{{ 'gameSettingsFigureReviewNoteText'|trans }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="cm-actionbar">
+            <span class="cm-actionbar__meta">{{ 'gameSettingsScopeNoteText'|trans }}</span>
+            <div class="cm-actionbar__buttons">
+                <button type="submit" class="cm-btn cm-btn--primary">{{ 'submitSaveAction'|trans }}</button>
+            </div>
+        </div>
+    </form>
+{% endblock %}

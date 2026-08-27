@@ -1,0 +1,80 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'engagementDeclareHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'gameProgressHeading'|trans, url: path('app_game')},
+        {label: 'engagementDeclareHeading'|trans, url: path('app_game_engagement_new')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'engagementDeclareHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <p class="cm-gm-context">{{ program.displayShortName }}</p>
+
+    <div class="cm-gm-layout">
+        <div class="cm-gm-layout__main">
+            <div class="card">
+                <div class="card-body">
+                    {{ form_start(form) }}
+                        {{ form_row(form.kind) }}
+                        {{ form_row(form.description) }}
+                        {{ form_row(form.attachments) }}
+
+                        {# The one thing the screen has to say, because it is what the student is
+                           about to wait for: nothing is credited until an adult has looked. #}
+                        <div class="cm-note">
+                            <span class="cm-note__icon">⏳</span>
+                            <span>{{ 'engagementPendingNoteText'|trans }}</span>
+                        </div>
+
+                        <div class="cm-actionbar">
+                            <div class="cm-actionbar__buttons">
+                                <a href="{{ path('app_game') }}" class="cm-btn cm-btn--outline">{{ 'cancelAction'|trans }}</a>
+                                <button type="submit" class="cm-btn cm-btn--primary">{{ 'engagementFileAction'|trans }}</button>
+                            </div>
+                        </div>
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+
+        <div class="cm-gm-layout__side">
+            <div class="card">
+                <div class="card-body">
+                    <span class="cm-gm-label">{{ 'engagementScaleHeading'|trans }}</span>
+                    <div class="cm-gm-shelf" style="margin-top: 10px">
+                        {% for kind in kinds %}
+                            <div class="cm-gm-shelf__row">
+                                <span class="cm-gm-shelf__label"><b>{{ kind.labelKey|trans }}</b> +{{ kind.points }}</span>
+                            </div>
+                            <div class="cm-card-note" style="padding: 0 0 6px">{{ kind.expectedProofKey|trans }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <span class="cm-gm-label">{{ 'engagementMineHeading'|trans }}</span>
+                    <div class="cm-gm-log" style="margin-top: 8px">
+                        {% for declaration in mine %}
+                            <div class="cm-gm-log__row" style="grid-template-columns: minmax(0, 1fr) auto">
+                                <span class="cm-gm-log__rule">
+                                    {{ declaration.kind.labelKey|trans }}
+                                    <span class="cm-gm-log__src">{{ declaration.createdAt|date('d/m/Y') }}{% if declaration.refusalReason %} · {{ declaration.refusalReason }}{% endif %}</span>
+                                </span>
+                                <span class="cm-badge cm-badge--{{ declaration.state.badgeVariant }}">{{ declaration.state.labelKey|trans }}</span>
+                            </div>
+                        {% else %}
+                            <div class="cm-card-note">{{ 'engagementMineEmptyText'|trans }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

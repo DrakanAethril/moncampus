@@ -1,0 +1,89 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'engagementQueueHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'engagementQueueHeading'|trans, url: path('app_game_engagements')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'engagementQueueHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    <span class="cm-badge cm-badge--gold">{{ 'engagementWaitingLabel'|trans({'%count%': waiting}) }}</span>
+{% endblock %}
+
+{% block main %}
+    {% if programs|length > 1 %}
+        {# One formation at a time, never two side by side (§4, decision 1). #}
+        <div class="cm-tabs">
+            {% for candidate in programs %}
+                <a class="cm-tabs__tab {{ candidate.id == program.id ? 'is-active' }}" href="{{ path('app_game_engagements', {program: candidate.id}) }}">{{ candidate.displayShortName }}</a>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="card {{ programs|length > 1 ? 'cm-card--tabbed' }}">
+        <div class="card-body">
+            <p class="cm-gm-context">{{ program.displayShortName }}</p>
+
+            <table class="card-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'engagementStudentColumnLabel'|trans }}</th>
+                        <th>{{ 'engagementDescriptionColumnLabel'|trans }}</th>
+                        <th>{{ 'engagementKindColumnLabel'|trans }}</th>
+                        <th class="text-end">{{ 'engagementPointsColumnLabel'|trans }}</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for declaration in declarations %}
+                        <tr class="{{ declaration.state.value == 'refused' ? 'cm-gm-gesture--cancelled' }}">
+                            <td>{{ declaration.student.displayName ?? declaration.student.username }}</td>
+                            <td>
+                                {{ declaration.description }}
+                                {% if declaration.attachments|length %}
+                                    <span class="cm-gm-log__src">
+                                        {% for attachment in declaration.attachments %}
+                                            <a href="{{ file_url(attachment.storageKey) }}" target="_blank" rel="noopener">{{ attachment.name }}</a>{{ not loop.last ? ' · ' }}
+                                        {% endfor %}
+                                    </span>
+                                {% else %}
+                                    <span class="cm-gm-log__src">{{ 'engagementNoAttachmentText'|trans }}</span>
+                                {% endif %}
+                                {% if declaration.refusalReason %}
+                                    <span class="cm-gm-log__src">{{ 'engagementRefusedOnLabel'|trans({'%date%': declaration.reviewedAt|date('d/m/Y')}) }} — « {{ declaration.refusalReason }} »</span>
+                                {% endif %}
+                            </td>
+                            <td><span class="cm-badge cm-badge--{{ declaration.state.badgeVariant }}">{{ declaration.state.value == 'filed' ? declaration.kind.labelKey|trans : declaration.state.labelKey|trans }}</span></td>
+                            <td class="text-end cm-gm-log__pts">{{ declaration.state.value == 'refused' ? '—' : '+' ~ declaration.points }}</td>
+                            <td class="cm-actions">
+                                {% if declaration.state.value == 'filed' %}
+                                    <form method="post" action="{{ path('app_game_engagements_review', {id: declaration.id}) }}" class="cm-engagement-review">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('game_engagement_review') }}">
+                                        <button type="submit" name="decision" value="validate" class="cm-action cm-action--positive">{{ 'engagementValidateAction'|trans }}</button>
+                                        {# A refusal is motivated and read by the student, exactly like
+                                           a malus - so the reason is required in the markup, not only
+                                           in the service. #}
+                                        <input type="text" name="reason" maxlength="2000" placeholder="{{ 'engagementRefusalReasonPlaceholder'|trans }}">
+                                        <button type="submit" name="decision" value="refuse" class="cm-action cm-action--danger">{{ 'engagementRefuseAction'|trans }}</button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="5" class="text-secondary">{{ 'engagementQueueEmptyText'|trans }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="cm-note" style="margin-top: 16px">
+                <span class="cm-note__icon">i</span>
+                <span>{{ 'engagementQueueNoteText'|trans }}</span>
+            </div>
+        </div>
+    </div>
+{% endblock %}

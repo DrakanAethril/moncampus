@@ -26,6 +26,40 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.08.27'
+      date: '2026-08-27'
+      summary: "Le jeu du campus arrive : une progression par niveaux, des classements de classe anonymes et un catalogue de récompenses, à activer formation par formation et éteint partout au départ. Les comptes administrateurs peuvent par ailleurs se connecter par lien reçu par courriel, comme tous les autres."
+      entries:
+          - type: nouveaute
+            title: "Le jeu du campus"
+            detail: "Une progression par niveaux, des classements de classe et des récompenses, pour rendre visible ce qu'un étudiant fait déjà. Le dispositif est éteint partout et s'active formation par formation ; rien n'est visible tant qu'une équipe ne l'a pas décidé."
+          - type: nouveaute
+            title: "On est classé sur un taux, jamais sur un total"
+            detail: "L'indice est un nombre sur 100 et chaque famille montre son dénominateur. Une famille sans donnée sort d'elle-même du calcul et son poids se redistribue, pour qu'un étudiant arrivé en cours d'année ne soit pas désavantagé."
+          - type: nouveaute
+            title: "Aucune absence n'est enregistrée"
+            detail: "Le relevé d'assiduité pose une seule question par étudiant et par unité de temps, et ne conserve ni date, ni motif, ni compteur. « Hors comptage » retire l'unité du calcul au lieu de coûter des points."
+          - type: nouveaute
+            title: "Les points comptent sur le mois de leur obtention"
+            detail: "Un classement du mois et un classement de l'année, individuels et par équipe, avec la possibilité de revenir sur les mois précédents. Une formation choisit les mois qu'elle veut voir classés ; les trois premiers d'un mois classé reçoivent des points à sa clôture."
+          - type: nouveaute
+            title: "Un étudiant garde ses points toute sa scolarité"
+            detail: "Changer de formation ne remet rien à zéro : l'étudiant y arrive au niveau que ses points lui donnent."
+          - type: nouveaute
+            title: "Les classements sont anonymes"
+            detail: "Chaque étudiant choisit un pseudonyme parmi trois figures tirées au sort dans sa filière, et un mode discret permet de sortir de tout classement."
+          - type: nouveaute
+            title: "Une récompense ne donne jamais de points"
+            detail: "Les récompenses sont symboliques ou consommables et ne déplacent aucun classement. Un consommable se dépense par l'étudiant lui-même."
+          - type: nouveaute
+            title: "L'étudiant voit d'où vient chaque point"
+            detail: "Une page « Leveling » dans le menu du profil réunit le total personnel, le niveau, l'équipe, les classements, l'historique complet des points et les règles d'attribution des bonus et du malus."
+          - type: nouveaute
+            title: "Les administrateurs peuvent se connecter par lien reçu par courriel"
+            detail: "La connexion par lien s'ouvre à tous les comptes. Le lien ne part que vers une adresse de contact confirmée par son propriétaire, il est à usage unique et expire au bout d'une heure."
+          - type: modification
+            title: "« Fonctionnalités » se trouve désormais dans le menu Configuration"
+            detail: "L'écran décide du contenu des deux espaces de réglages : il se range à côté d'eux plutôt que dans Gestion."
     - version: '2026.08.26'
       date: '2026-08-26'
       summary: "Un quiz d'évaluation peut désormais se passer en mode contrôle : l'étudiant est prévenu à l'entrée de ce qui sera enregistré, un bandeau l'avertit s'il quitte la page, et l'enseignant dispose ensuite d'une frise détaillée de la passation pour en juger lui-même. La bibliothèque de sondages se range par ailleurs en dossiers, comme celle des quiz."

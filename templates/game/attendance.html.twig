@@ -1,0 +1,89 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ statement.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.displayShortName, url: path('app_program_timetable', {id: program.id})},
+        {label: 'gameStatementsHeading'|trans, url: path('app_program_game_statements', {id: program.id})},
+        {label: statement.name, url: path('app_program_game_statement', {id: program.id, statementId: statement.id})},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ statement.name }}{% endblock %}
+
+{% block page_actions %}
+    {% if not statement.closed %}
+        <form method="post" action="{{ path('app_program_game_statement_close', {id: program.id, statementId: statement.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('game_statement_close') }}">
+            <button type="submit" class="cm-btn cm-btn--outline" title="{{ 'gameStatementCloseHelpText'|trans }}">{{ 'gameStatementCloseAction'|trans }}</button>
+        </form>
+    {% endif %}
+{% endblock %}
+
+{% block main %}
+    <p class="cm-gm-context">
+        {{ program.displayShortName }} ·
+        {{ statement.startsOn|date('d/m') }} → {{ statement.endsOn|date('d/m/Y') }} ·
+        {{ (statement.periodicity ? statement.periodicity.labelKey : 'gameAttendanceStepWeekLabel')|trans }}
+
+    </p>
+
+    <div class="card">
+        <div class="card-body"
+             data-controller="game-attendance"
+             data-game-attendance-url-value="{{ path('app_program_game_statement_state', {id: program.id, statementId: statement.id}) }}"
+             data-game-attendance-token-value="{{ csrf_token('game_statement') }}"
+             data-game-attendance-closed-message-value="{{ 'gameStatementLockedFlashMessage'|trans }}"
+             data-game-attendance-labels-value="{{ {
+                 'clean': 'attendanceStateCleanLabel'|trans,
+                 'not_clean': 'attendanceStateNotCleanLabel'|trans,
+                 'out_of_scope': 'attendanceStateOutOfScopeLabel'|trans,
+             }|json_encode }}">
+
+            <div class="cm-att-head">
+                <span class="cm-gm-label">{{ 'attendanceStatementCycleHint'|trans }}</span>
+                <span class="cm-att-tally">
+                    {% for state in states %}
+                        <span class="cm-badge cm-badge--{{ {'clean': 'green', 'not_clean': 'red', 'out_of_scope': 'gray'}[state.value] }}"
+                              data-game-attendance-target="tally" data-state="{{ state.value }}"
+                              title="{{ ('attendanceState' ~ state.value|replace({'_': ' '})|title|replace({' ': ''}) ~ 'HelpText')|trans }}">
+                            {{ tally[state.value] }} {{ state.labelKey|trans }}
+                        </span>
+                    {% endfor %}
+                </span>
+            </div>
+
+            {% if statement.closed %}
+                <div class="cm-note cm-note--gold" style="margin: 14px 0">
+                    <span class="cm-note__icon">i</span>
+                    <span>{{ 'gameStatementClosedText'|trans({'%date%': statement.closedAt|date('d/m/Y')}) }}</span>
+                </div>
+            {% endif %}
+
+            <div class="cm-att-grid">
+                {% for line in lines %}
+                    <button type="button"
+                            class="cm-att-card cm-att-card--{{ line.state.value }}"
+                            data-game-attendance-target="card"
+                            data-student="{{ line.student.id }}"
+                            data-state="{{ line.state.value }}"
+                            title="{{ 'attendanceStatementCycleHint'|trans }}"
+                            {{ statement.closed ? 'disabled' }}>
+                        <span class="cm-att-card__mark">{{ line.state.symbol }}</span>
+                        <span class="cm-att-card__name">{{ line.student.displayName ?? line.student.username }}</span>
+                        <span class="cm-att-card__state">{{ line.state.labelKey|trans }}</span>
+                    </button>
+                {% else %}
+                    <div class="cm-card-note">{{ 'attendanceStatementNoStudentText'|trans }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="cm-note" style="margin-top: 18px">
+                <span class="cm-note__icon">i</span>
+                <span>{{ 'attendanceStatementNoteText'|trans }}</span>
+            </div>
+        </div>
+    </div>
+{% endblock %}

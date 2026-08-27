@@ -1,0 +1,40 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'gameRankingHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'gameProgressHeading'|trans, url: path('app_game')},
+        {label: 'gameRankingHeading'|trans, url: path('app_game_ranking')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'gameRankingHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    {# Leaving is immediate; coming back only takes effect at the next closure, so that the switch
+       cannot be used tactically on the eve of one. #}
+    <form method="post" action="{{ path('app_game_ranking_discreet') }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('game_discreet') }}">
+        <input type="hidden" name="discreet" value="{{ profile.discreet ? '0' : '1' }}">
+        <button type="submit" class="cm-btn cm-btn--outline">
+            {{ (profile.discreet ? 'gameDiscreetLeaveAction' : 'gameDiscreetEnterAction')|trans }}
+        </button>
+    </form>
+{% endblock %}
+
+{% block main %}
+    {# One formation, and no other: there is no « entre promos », no section ranking and no
+       comparison between filières. The two scopes are the month and the school year. #}
+    <div class="cm-tabs">
+        <a class="cm-tabs__tab {{ scope == 'month' ? 'is-active' }}" href="{{ path('app_game_ranking', {month: month.key}) }}">{{ 'gameRankingMonthTabLabel'|trans }}</a>
+        <a class="cm-tabs__tab {{ scope == 'year' ? 'is-active' }}" href="{{ path('app_game_ranking', {scope: 'year'}) }}">{{ 'gameRankingYearTabLabel'|trans }}</a>
+    </div>
+
+    <div class="card cm-card--tabbed">
+        {% include 'game/_ranking_view.html.twig' with {route: 'app_game_ranking', scope: scope} %}
+
+        <div class="cm-card-note">{{ 'gameRankingNoteText'|trans }}</div>
+    </div>
+{% endblock %}

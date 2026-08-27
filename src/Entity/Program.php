@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\GameTrack;
 use App\Enum\ProgramAlternanceCalendarMode;
 use App\Enum\ProgramSyllabusMode;
 use App\Enum\VisibilityLevel;
@@ -246,6 +247,33 @@ class Program
     // mechanism - they're always this Program's own.
     #[ORM\Column(name: 'custom_skill_levels_enabled', options: ['default' => false])]
     private bool $customSkillLevelsEnabled = false;
+
+    /**
+     * The second of the game's two switches (design/validated/gamification.md §4, decision 1).
+     *
+     * **Off at creation, including for a formation created after the feature was switched on
+     * globally**, and in strict conjunction with App\Enum\Feature::Game: a formation that turns its
+     * game on while the feature is off sees *nothing* - no menu, no screen, no calculation - and
+     * switching the feature on makes the game appear in no class until one has declared itself.
+     * That is what lets a pilot promo play without anybody else noticing.
+     *
+     * The reason the frontier exists at all is mechanical rather than pedagogical: nobody knows
+     * which teachers will play. Comparing two formations would compare the involvement of their
+     * teachers while pretending to compare that of their students.
+     *
+     * Same value on the property and in the DDL - the column DEFAULT only lives for the length of
+     * the ALTER.
+     */
+    #[ORM\Column(name: 'game_enabled', options: ['default' => false])]
+    private bool $gameEnabled = false;
+
+    /**
+     * The « univers » this formation plays in, which decides the wording of its six levels and the
+     * catalogue its students draw a pseudonym from. Null is a legitimate state: generic level
+     * wording and no figure catalogue - never an empty cell.
+     */
+    #[ORM\Column(name: 'game_track', length: 10, nullable: true, enumType: GameTrack::class)]
+    private ?GameTrack $gameTrack = null;
 
     public function __construct(string $name, string $shortName, Cohort $cohort, SchoolYear $schoolYear)
     {
@@ -622,6 +650,30 @@ class Program
     public function isSchoolMailEnabled(): bool
     {
         return $this->schoolMailEnabled;
+    }
+
+    public function isGameEnabled(): bool
+    {
+        return $this->gameEnabled;
+    }
+
+    public function setGameEnabled(bool $gameEnabled): static
+    {
+        $this->gameEnabled = $gameEnabled;
+
+        return $this;
+    }
+
+    public function getGameTrack(): ?GameTrack
+    {
+        return $this->gameTrack;
+    }
+
+    public function setGameTrack(?GameTrack $gameTrack): static
+    {
+        $this->gameTrack = $gameTrack;
+
+        return $this;
     }
 
     public function setSchoolMailEnabled(bool $schoolMailEnabled): static

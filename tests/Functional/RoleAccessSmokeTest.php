@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional;
 
+use App\Entity\EvaluationPeriod;
+use App\Entity\EvaluationPeriodGroup;
 use App\Entity\FeatureRoleSetting;
 use App\Entity\GuestAccount;
 use App\Entity\IpRange;
@@ -22,6 +24,7 @@ use App\Entity\UserFeatureAccess;
 use App\Entity\VmBatch;
 use App\Enum\Feature;
 use App\Enum\FeatureAccessState;
+use App\Enum\GameTrack;
 use App\Enum\QuestionType;
 use App\Enum\QuizMode;
 use Doctrine\ORM\EntityManagerInterface;
@@ -57,6 +60,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
     private int $teacherAccountId;
     private int $batchId;
     private string $timelinePath;
+    private string $statementsPath;
+    private string $gesturesPath;
+    private string $rewardsPath;
+    private string $gameSettingsPath;
 
     protected function setUp(): void
     {
@@ -70,6 +77,42 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->program = $this->createProgram([$this->student], [$this->teacher], $this->admin);
         $this->createMachineAccounts();
         $this->createSupervisedAttempt();
+        $this->openTheGame();
+        $this->statementsPath = '/programs/'.$this->program->getId().'/game/statements';
+        $this->gesturesPath = '/programs/'.$this->program->getId().'/game/gestures';
+        $this->rewardsPath = '/programs/'.$this->program->getId().'/game/rewards';
+        $this->gameSettingsPath = '/programs/'.$this->program->getId().'/settings/game';
+    }
+
+    /**
+     * The campus game switched on for the fixture formation, with a calendar it can actually score.
+     *
+     * Both switches are needed and the second one is the point: the feature being on for every role
+     * (FunctionalTestCase opens the whole catalogue) still shows nobody a game until a formation has
+     * declared itself. Without the period group the screens would answer « pas de période » - a 200,
+     * but not the screen anybody is trying to pin.
+     */
+    private function openTheGame(): void
+    {
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $today = new \DateTimeImmutable('today');
+
+        $group = new EvaluationPeriodGroup('Semestres de test');
+        $group->setCreatedBy($this->admin);
+        $entityManager->persist($group);
+
+        $period = new EvaluationPeriod();
+        $period->setName('Semestre de test');
+        $period->setStartDate($today->modify('-2 months'));
+        $period->setEndDate($today->modify('+2 months'));
+        $period->setEvaluationPeriodGroup($group);
+        $entityManager->persist($period);
+
+        $this->program->setEvaluationPeriodGroup($group);
+        $this->program->setGameEnabled(true);
+        $this->program->setGameTrack(GameTrack::Sisr);
+
+        $entityManager->flush();
     }
 
     /**
@@ -166,6 +209,34 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->assertScreens($this->student, [
             '/' => 200,
             '/student-work' => 200,
+            // The campus game. « Ma progression » exists for the student of a formation that plays;
+            // the board of six levels is open to every role the feature is on for; the wording of
+            // those levels is an administrator's screen; and the relevé is the teachers' - a class
+            // stating its own attendance would not be a relevé.
+            '/game' => 200,
+            '/game/journal' => 200,
+            '/game/levels' => 200,
+            '/settings/game/levels' => 403,
+            $this->statementsPath => 403,
+            $this->gesturesPath => 403,
+            // Declared engagement: the student files, a teacher of the class reviews.
+            '/game/engagement/new' => 200,
+            '/game/engagements' => 404,
+            // « Leveling » - the student's own four-tab reading, from the profile menu.
+            '/game/leveling' => 200,
+            '/game/leveling/team' => 200,
+            '/game/leveling/ranking' => 200,
+            '/game/leveling/rules' => 200,
+            '/settings/game/figures' => 403,
+            // The catalogue is the teachers': a student reads their shelf, never the shelf's source.
+            $this->rewardsPath => 403,
+            // Figures, ranking, teams. The ranking answers on the month running now; an earlier
+            // month is the same screen with ?month=, and the year the same with ?scope=year.
+            '/game/alias' => 200,
+            '/game/ranking' => 200,
+            '/game/ranking?scope=year' => 200,
+            '/game/team' => 200,
+            $this->gameSettingsPath => 403,
             // « Séquences de l'année » hands over to the single formation this student belongs to
             // rather than drawing a picker with one card in it (2026-08-17). The list still renders
             // for a student straddling two, and for the empty state.
@@ -259,6 +330,30 @@ class RoleAccessSmokeTest extends FunctionalTestCase
     {
         $this->assertScreens($this->teacher, [
             '/' => 200,
+            // A teacher plays no game: they have no formation *as a student*, so their own screens
+            // do not exist. The board of levels is a poster and stays open, and the relevé is
+            // theirs.
+            '/game' => 404,
+            '/game/journal' => 404,
+            '/game/levels' => 200,
+            '/settings/game/levels' => 403,
+            $this->statementsPath => 200,
+            $this->gesturesPath => 200,
+            // The council is the professeur principal's, and isProgramReferentTeacher() is
+            // deliberately NOT staff-bypassed - a teacher of the class who does not carry the
+            // referent remit does not get in, which is exactly what this row pins.
+            // A teacher files nothing - they are nobody's student - and reviews everything.
+            '/game/engagement/new' => 404,
+            '/game/engagements' => 200,
+            '/game/leveling' => 404,
+            // The catalogue and the barème are the administration's while the game is being
+            // settled (2026-08-28): a teacher gives gestures and holds relevés, and settles
+            // nothing. Reopening either to the referent teacher is one line in each controller.
+            $this->rewardsPath => 403,
+            '/game/alias' => 404,
+            '/game/ranking' => 404,
+            '/game/team' => 404,
+            $this->gameSettingsPath => 403,
             // The course-space index is the student's own list of programs; a teacher reaches the
             // same sequences from their program screens instead.
             '/my/courses' => 403,
@@ -369,6 +464,23 @@ class RoleAccessSmokeTest extends FunctionalTestCase
     {
         $this->assertScreens($this->admin, [
             '/' => 200,
+            // The wording of the six levels is the administrator's, and the thresholds are nobody's:
+            // they live in code, common to the whole establishment. Staff reach every formation's
+            // teaching screens - isProgramTeacher() bypasses for them.
+            '/game' => 404,
+            '/game/levels' => 200,
+            '/settings/game/levels' => 200,
+            '/settings/game/figures' => 200,
+            $this->statementsPath => 200,
+            $this->gesturesPath => 200,
+            '/game/engagement/new' => 404,
+            '/game/engagements' => 200,
+            '/game/leveling' => 404,
+            $this->rewardsPath => 200,
+            '/game/alias' => 404,
+            '/game/ranking' => 404,
+            '/game/team' => 404,
+            $this->gameSettingsPath => 200,
             '/settings/configuration' => 200,
             '/settings/teaching' => 200,
             // Groups are admin-only, deliberately stricter than the rest of Settings - see
@@ -506,6 +618,21 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         // project_livret_alternant_tutor_access.
         $this->assertScreens($this->tutor, [
             '/' => 302,
+            // The game stays between the student, their class and their teachers - a tutor reads
+            // none of it (§1, « aucune vue tuteur ni famille »).
+            '/game' => 404,
+            '/game/levels' => 200,
+            '/settings/game/levels' => 403,
+            $this->statementsPath => 403,
+            $this->gesturesPath => 403,
+            '/game/engagement/new' => 404,
+            '/game/engagements' => 404,
+            '/game/leveling' => 404,
+            $this->rewardsPath => 403,
+            '/game/alias' => 404,
+            '/game/ranking' => 404,
+            '/game/team' => 404,
+            $this->gameSettingsPath => 403,
             '/agenda' => 200,
             '/messages' => 200,
             '/tickets' => 200,

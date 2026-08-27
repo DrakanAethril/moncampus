@@ -1,0 +1,197 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'gameProgressHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {# Two segments: « Ma progression » hangs straight off the main bar, nothing navigates through
+       a section to reach it. #}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'gameProgressHeading'|trans, url: path('app_game')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'gameProgressHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_game_engagement_new') }}" class="cm-btn cm-btn--primary">{{ 'engagementDeclareHeading'|trans }}</a>
+    <a href="{{ path('app_game_alias') }}" class="cm-btn cm-btn--outline">{{ 'gameAliasHeading'|trans }}</a>
+    <a href="{{ path('app_game_ranking') }}" class="cm-btn cm-btn--outline">{{ 'gameRankingHeading'|trans }}</a>
+    <a href="{{ path('app_game_levels') }}" class="cm-btn cm-btn--outline">{{ 'gameLevelsHeading'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    {# The month and the formation, said once under the title rather than in it. #}
+    <p class="cm-gm-context">{{ monthLabel }} · {{ program.displayShortName }}</p>
+
+    <div class="cm-gm-layout">
+
+        <div class="cm-gm-layout__side">
+            <div class="card">
+                <div class="card-body">
+                    {% if badge %}
+                        <div class="cm-gm-identity">
+                            {% include 'game/_avatar.html.twig' with {badge: badge, tier: tier} %}
+                            <div class="cm-gm-identity__text">
+                                <div class="cm-gm-identity__name">{{ app.user.displayName ?? app.user.username }}</div>
+                                <div class="cm-gm-identity__title">{{ badge.title }}</div>
+                                <div class="cm-gm-identity__xp">
+                                    {% if badge.progress.isMaxed %}
+                                        {{ 'gameXpMaxedHint'|trans({'%xp%': badge.progress.xpTotal|number_format(0, ',', ' ')}) }}
+                                    {% else %}
+                                        {{ 'gameXpTowardsNextLabel'|trans({
+                                            '%xp%': badge.progress.xpTotal|number_format(0, ',', ' '),
+                                            '%next%': badge.progress.next.xpMin|number_format(0, ',', ' '),
+                                            '%level%': badge.progress.next.level,
+                                        }) }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <hr class="cm-gm-rule">
+
+                    {# The one number of the whole screen, and it is a rate rather than a total: it
+                       is the only figure that compares to a classmate's. #}
+                    <div class="cm-gm-label">{{ 'gameIndexLabel'|trans }}</div>
+                    <div class="cm-gm-index">
+                        <span class="cm-gm-index__n">{{ standing.index }}</span>
+                        <span class="cm-gm-index__u">/ 100</span>
+                    </div>
+                    <div class="cm-gm-identity__xp">
+                        {% if tier %}
+                            {{ ('gameTier' ~ tier|capitalize ~ 'ReachedLabel')|trans }}
+                        {% else %}
+                            {{ 'gameTierNoneLabel'|trans({'%threshold%': settings.thresholdBronze}) }}
+                        {% endif %}
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="cm-gm-label">{{ 'gameShelfHeading'|trans }}</div>
+                    {# Every month, not only this one: a symbolic reward is acquired for good, and a
+                       reward is never points - the journal says so on its own lines, and the shelf
+                       says it by simply having no number on it. #}
+                    <div class="cm-gm-shelf" style="margin-top: 10px">
+                        {% for grant in shelf %}
+                            <div class="cm-gm-shelf__row">
+                                <span class="cm-gm-shelf__icon">{{ grant.item.icon ?? '🎁' }}</span>
+                                <span class="cm-gm-shelf__label">
+                                    <b>{{ grant.item.label }}</b>
+                                    {% if grant.used %}
+                                        — {{ 'gameRewardUsedLabel'|trans({'%date%': grant.usedAt|date('d/m/Y')}) }}
+                                    {% elseif grant.item.nature.spendable %}
+                                        — {{ 'gameRewardToSpendLabel'|trans }}
+                                    {% else %}
+                                        — {{ grant.item.nature.labelKey|trans }}
+                                    {% endif %}
+                                </span>
+                                {% if grant.item.nature.spendable and not grant.used %}
+                                    <form method="post" action="{{ path('app_game_reward_use', {grantId: grant.id}) }}" class="cm-gm-shelf__spend">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('game_reward_use') }}">
+                                        <input type="text" name="used_on" maxlength="255" required placeholder="{{ 'gameRewardUsedOnPlaceholder'|trans }}">
+                                        <button type="submit" class="cm-action cm-action--positive">{{ 'gameRewardUseAction'|trans }}</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <div class="cm-note">
+                                <span class="cm-note__icon">i</span>
+                                <span>{{ 'gameShelfEmptyText'|trans }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cm-gm-layout__main">
+            <div class="card">
+                <div class="card-body">
+                    <div class="cm-card-toolbar" style="padding: 0 0 14px">
+                        <span class="cm-gm-label">{{ 'gameFamiliesHeading'|trans }}</span>
+                        <span class="cm-badge cm-badge--blue" style="margin-left: auto">{{ monthLabel }}</span>
+                    </div>
+
+                    {% include 'game/_families.html.twig' with {standing: standing, families: families} %}
+
+                    {# Said once, on the screen rather than only in the documentation: a family with
+                       no data leaves the index and its weight goes to the others. It is a working
+                       state, not a breakdown, and the reader has to be told so. #}
+                    {% if standing.score.weights|length < families|length %}
+                        <div class="cm-note" style="margin-top: 16px">
+                            <span class="cm-note__icon">i</span>
+                            <span>{{ 'gameFamilyRedistributedText'|trans }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if gestures|length %}
+                <div class="card">
+                    <div class="card-body">
+                        <span class="cm-gm-label">{{ 'gameGesturesAboutMeHeading'|trans }}</span>
+                        {# A gesture is the only line of the journal that can be argued with, so it
+                           gets its own block with the seven days written on it. The motive is shown
+                           exactly as it was typed - that is the whole point of asking for one. #}
+                        <div class="cm-gm-log" style="margin-top: 8px">
+                            {% for row in gestures %}
+                                <div class="cm-gm-log__row">
+                                    <span class="cm-gm-log__date">{{ row.entry.occurredAt|date('d/m') }}</span>
+                                    <span class="cm-gm-log__rule">
+                                        {% if row.entry.gestureObject %}{{ row.entry.gestureObject.labelKey|trans }} — {% endif %}{{ row.entry.reason }}
+                                        <span class="cm-gm-log__src">
+                                            {{ row.entry.author ? (row.entry.author.displayName ?? row.entry.author.username) : '—' }}
+                                            {%- if row.entry.pendingContest %} · {{ 'gameGestureContestedLabel'|trans }}{% endif %}
+                                        </span>
+                                    </span>
+                                    <span class="cm-gm-log__fam">
+                                        {% if row.contestable %}
+                                            <form method="post" action="{{ path('app_game_gesture_contest', {entryId: row.entry.id}) }}">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('game_gesture_contest') }}">
+                                                <button type="submit" class="cm-action cm-action--neutral">{{ 'gameGestureContestAction'|trans }}</button>
+                                            </form>
+                                        {% endif %}
+                                    </span>
+                                    <span class="cm-gm-log__pts{{ row.entry.points < 0 ? ' cm-gm-log__pts--neg' }}">{{ row.entry.points > 0 ? '+' }}{{ row.entry.points }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="cm-card-toolbar" style="padding: 0 0 6px">
+                        <span class="cm-gm-label">{{ 'gameJournalHeading'|trans }}</span>
+                        <a href="{{ path('app_game_journal') }}" class="cm-tabs__count" style="margin-left: auto; font-size: 13px">{{ 'gameJournalAllLabel'|trans }}</a>
+                    </div>
+
+                    <div class="cm-gm-log">
+                        {% for entry in journal %}
+                            <div class="cm-gm-log__row">
+                                <span class="cm-gm-log__date">{{ entry.occurredAt|date('D d/m') }}</span>
+                                <span class="cm-gm-log__rule">
+                                    {{ ('gameRule.' ~ entry.ruleCode)|trans }}
+                                    {% if entry.reason %}<span class="cm-gm-log__src">{{ entry.reason }}</span>{% endif %}
+                                    {% if entry.reversal %}<span class="cm-gm-log__src">{{ 'gameEntryReversalLabel'|trans }}</span>{% endif %}
+                                </span>
+                                <span class="cm-gm-log__fam">{{ entry.family.labelKey|trans }}</span>
+                                <span class="cm-gm-log__pts{{ entry.points > 0 ? '' : (entry.points < 0 ? ' cm-gm-log__pts--neg' : ' cm-gm-log__pts--nil') }}">
+                                    {{ entry.points > 0 ? '+' }}{{ entry.points }}
+                                </span>
+                            </div>
+                        {% else %}
+                            <div class="cm-card-note">{{ 'gameJournalEmptyText'|trans }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -48,18 +48,38 @@
                     {% endif %}
                     <div class="nav-item dropdown">
                         {% set navbar_avatar_url = avatar_url(app.user) %}
+                        {# The campus game's badge, when this person plays one (design/validated/
+                           gamification.md, screen 4 - the handoff's #3c kept as it is). The ring says
+                           the level of the whole cursus, the band underneath turns into a filled bar
+                           carrying the way to the next one, and the second line under the name
+                           becomes the displayed title instead of the login. Nobody else's bar
+                           changes: game_badge() answers null for a teacher, for a staff account and
+                           for every formation that has not switched its game on. #}
+                        {% set game_user_badge = game_badge(app.user) %}
                         <a href="#" class="nav-link d-flex align-items-center lh-1 text-reset p-0 cm-user__toggle" data-bs-toggle="dropdown" aria-label="{{ 'openUserMenuLabel'|trans }}">
                             <div class="d-none d-xl-block cm-user__id">
                                 <div class="cm-user__name">{{ app.user.displayName ?? app.user.username }}</div>
-                                <div class="cm-user__login">{{ app.user.username }}</div>
+                                <div class="cm-user__login">{{ game_user_badge ? game_user_badge.title : app.user.username }}</div>
                             </div>
-                            <span class="cm-user__avatar"{% if navbar_avatar_url %} style="background-image: url({{ navbar_avatar_url }})"{% endif %}>{% if not navbar_avatar_url %}{{ app.user.initials|default((app.user.displayName ?? app.user.username)|slice(0, 1)|upper) }}{% endif %}</span>
+                            {% if game_user_badge %}
+                                <span class="cm-user__avatar cm-user__avatar--game">
+                                    {% include 'game/_avatar.html.twig' with {badge: game_user_badge, small: true, progress: true} %}
+                                </span>
+                            {% else %}
+                                <span class="cm-user__avatar"{% if navbar_avatar_url %} style="background-image: url({{ navbar_avatar_url }})"{% endif %}>{% if not navbar_avatar_url %}{{ app.user.initials|default((app.user.displayName ?? app.user.username)|slice(0, 1)|upper) }}{% endif %}</span>
+                            {% endif %}
                         </a>
                         {# No name/identity header inside this menu: the bar already shows who is
                            logged in right next to the avatar, and repeating it here only forced the
                            menu wider than its own entries. #}
                         <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow cm-user__menu">
                             <a href="{{ path('app_profile') }}" class="dropdown-item">{{ 'profileNavLabel'|trans }}</a>
+                            {# « Leveling » sits with the profile because that is what it is: the
+                               student's own reading of their own game. It appears only for somebody
+                               who actually plays one - game_badge() answers null otherwise. #}
+                            {% if game_user_badge %}
+                                <a href="{{ path('app_game_leveling') }}" class="dropdown-item">{{ 'gameLevelingHeading'|trans }}</a>
+                            {% endif %}
                             {% if is_granted('ROLE_TEACHER') and feature('timetable') %}
                                 <a href="{{ path('app_teacher_timetable') }}" class="dropdown-item">{{ 'teacherTimetableNavLabel'|trans }}</a>
                             {% endif %}
@@ -163,6 +183,17 @@
                                 </a>
                             </li>
                         {% endif %}
+                        {# « Ma progression », right after « Travail à faire » exactly as the mockup's
+                           bar draws it. Shown only to somebody whose own formation actually plays:
+                           game_badge() answers null unless the feature is on *and* the formation has
+                           declared itself, which is the strict conjunction of §4, decision 1. #}
+                        {% if is_granted('ROLE_STUDENT') and not is_staff() and game_user_badge %}
+                            <li class="nav-item {{ current_route starts with 'app_game' ? 'active' }}">
+                                <a class="nav-link" href="{{ path('app_game') }}"{{ current_route starts with 'app_game' ? ' aria-current="page"' }}>
+                                    <span class="nav-link-title">{{ 'gameProgressHeading'|trans }}</span>
+                                </a>
+                            </li>
+                        {% endif %}
                         {# The student bar stops here, at Accueil · Emploi du temps · Travail à faire,
                            and everything else they read moved into "Ressources" further down
                            (2026-08-17). Three entries left the top level in that move: "Mes cours",
@@ -227,6 +258,39 @@
                                                            classes one TEACHES (App\Controller\QuizTrackingController), so a staff
                                                            member no longer reads a teacher's quizzes and their students' answers
                                                            from a class screen. #}
+                                                        {# The campus game, gathered under one entry rather than scattered among
+                                                           the class's own: five screens that all answer the same question and
+                                                           that a class which does not play must not have to read past. The
+                                                           frontier of the formation is what the placement says first - no
+                                                           ranking, no relevé and no gesture crosses it (§4, decision 1).
+
+                                                           « Réglages » is deliberately outside program.gameEnabled, unlike the
+                                                           four others: it is the screen that switches the formation on, and one
+                                                           reachable only once it already is could never be reached at all. #}
+                                                        {% set game_plays = feature('game') and program.gameEnabled and is_program_teacher(program) %}
+                                                        {# Settling the game - the barème, and the catalogue it hands out - is the
+                                                           administration's while the game is being settled (2026-08-28), so that the
+                                                           feature can be taken away from teachers entirely without leaving a menu
+                                                           entry that leads to a 403. #}
+                                                        {% set game_settles = feature('game') and is_granted('ROLE_ADMIN') %}
+                                                        {% if game_plays or game_settles %}
+                                                            <div class="dropend">
+                                                                <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_program_game' or current_route starts with 'app_game_engagements' or current_route == 'app_program_settings_game' ? 'active' }}" href="#nav-program-game-{{ program.id }}" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                                                    {{ 'gameNavGroupLabel'|trans }}
+                                                                </a>
+                                                                <div class="dropdown-menu">
+                                                                    {% if game_plays %}
+                                                                        <a class="dropdown-item {{ current_route starts with 'app_program_game_statement' ? 'active' }}" href="{{ path('app_program_game_statements', {id: program.id}) }}">{{ 'gameStatementsHeading'|trans }}</a>
+                                                                        <a class="dropdown-item {{ current_route starts with 'app_program_game_gestures' ? 'active' }}" href="{{ path('app_program_game_gestures', {id: program.id}) }}">{{ 'gameGesturesHeading'|trans }}</a>
+                                                                        <a class="dropdown-item {{ current_route starts with 'app_game_engagements' and app.request.query.get('program') == program.id ? 'active' }}" href="{{ path('app_game_engagements', {program: program.id}) }}">{{ 'engagementQueueHeading'|trans }}</a>
+                                                                    {% endif %}
+                                                                    {% if game_settles %}
+                                                                        <a class="dropdown-item {{ current_route starts with 'app_program_game_rewards' ? 'active' }}" href="{{ path('app_program_game_rewards', {id: program.id}) }}">{{ 'gameRewardsHeading'|trans }}</a>
+                                                                        <a class="dropdown-item {{ current_route == 'app_program_settings_game' ? 'active' }}" href="{{ path('app_program_settings_game', {id: program.id}) }}">{{ 'gameSettingsHeading'|trans }}</a>
+                                                                    {% endif %}
+                                                                </div>
+                                                            </div>
+                                                        {% endif %}
                                                         {% if feature('my_alternance') and visibility_allows(program.alternanceCalendarVisibility) %}
                                                             {# Same route in both alternanceCalendarMode cases - the controller redirects to the
                                                                uploaded PDF instead of generating one when mode is File - so still no "active"
@@ -514,7 +578,7 @@
                         {% set gestion_directory = (is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD')) and feature('directory') %}
                         {% if (is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD'))
                             and (gestion_internship or feature('support') or feature('signup_lists') or gestion_directory or is_granted('ROLE_ADMIN')) %}
-                        {% set gestion_is_active = current_route in ['app_tickets_queue', 'app_tickets_queue_categories'] or (is_granted('ROLE_ADMIN') and support_is_active) or current_route starts with 'app_directory_' or current_route starts with 'app_signup_lists' or current_route starts with 'app_school_mail_unlinked' or current_route starts with 'app_training_offer' or current_route starts with 'app_features' %}
+                        {% set gestion_is_active = current_route in ['app_tickets_queue', 'app_tickets_queue_categories'] or (is_granted('ROLE_ADMIN') and support_is_active) or current_route starts with 'app_directory_' or current_route starts with 'app_signup_lists' or current_route starts with 'app_school_mail_unlinked' or current_route starts with 'app_training_offer' %}
                         <li class="nav-item dropdown {{ gestion_is_active ? 'active' }}">
                             <a class="nav-link dropdown-toggle" href="#navbar-gestion" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ gestion_is_active ? ' aria-current="page"' }}>
                                 <span class="nav-link-title">{{ 'gestionNavLabel'|trans }}</span>
@@ -577,20 +641,16 @@
                                         </div>
                                     </div>
                                 {% endif %}
-                                {# Straight below Annuaire, and administrators only. It carries no
-                                   feature guard of its own: no setting made here may close the
-                                   screen the settings are made on (design/validated/feature-access.md
-                                   §8.8), which is why the "admin has everything" rule is not
-                                   negotiable. #}
-                                {% if is_granted('ROLE_ADMIN') %}
-                                    <a class="dropdown-item {{ current_route starts with 'app_features' ? 'active' }}" href="{{ path('app_features') }}">{{ 'featuresNavLabel'|trans }}</a>
-                                {% endif %}
                             </div>
                         </li>
                         {% endif %}
                         {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD') %}
-                            <li class="nav-item dropdown {{ current_route starts with 'app_settings_' ? 'active' }}">
-                                <a class="nav-link dropdown-toggle" href="#navbar-settings" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ current_route starts with 'app_settings_' ? ' aria-current="page"' }}>
+                            {# « Fonctionnalités » moved here from Gestion (2026-08-27): what it holds
+                               is a configuration of the platform, not a day-to-day operation, and it
+                               sits next to the two settings shells it decides the contents of. #}
+                            {% set settings_is_active = current_route starts with 'app_settings_' or current_route starts with 'app_features' %}
+                            <li class="nav-item dropdown {{ settings_is_active ? 'active' }}">
+                                <a class="nav-link dropdown-toggle" href="#navbar-settings" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ settings_is_active ? ' aria-current="page"' }}>
                                     <span class="nav-link-title">{{ 'settingsNavLabel'|trans }}</span>
                                 </a>
                                 <div class="dropdown-menu">
@@ -598,6 +658,15 @@
                                     <a class="dropdown-item {{ current_route in ['app_settings_structure_school_years', 'app_settings_structure_programs', 'app_settings_structure_periods'] ? 'active' }}" href="{{ path('app_settings_pedagogique') }}">{{ 'settingsPedagogiqueNavLabel'|trans }}</a>
                                     {% if is_granted('ROLE_ADMIN') %}
                                         <a class="dropdown-item {{ current_route starts with 'app_settings_groups' ? 'active' }}" href="{{ path('app_settings_groups') }}">{{ 'settingsGroupsNavLabel'|trans }}</a>
+                                        {# Administrators only, and it carries no feature guard of its
+                                           own: no setting made here may close the screen the settings
+                                           are made on (design/validated/feature-access.md §8.8), which
+                                           is why the "admin has everything" rule is not negotiable. #}
+                                        <a class="dropdown-item {{ current_route starts with 'app_features' ? 'active' }}" href="{{ path('app_features') }}">{{ 'featuresNavLabel'|trans }}</a>
+                                        {% if feature('game') %}
+                                            <a class="dropdown-item {{ current_route == 'app_settings_game_levels' ? 'active' }}" href="{{ path('app_settings_game_levels') }}">{{ 'gameLevelLabelsHeading'|trans }}</a>
+                                            <a class="dropdown-item {{ current_route starts with 'app_settings_game_figures' ? 'active' }}" href="{{ path('app_settings_game_figures') }}">{{ 'gameFiguresHeading'|trans }}</a>
+                                        {% endif %}
                                     {% endif %}
                                 </div>
                             </li>

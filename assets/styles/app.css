@@ -9150,3 +9150,341 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
   .cm-tl__row { grid-template-columns: 88px 1fr 84px; }
   .cm-tl__verdict { grid-column: 2 / -1; }
 }
+
+/* ==========================================================================
+   Campus game (design/validated/gamification.md)
+
+   Not one image anywhere, on purpose: the ring is a conic-gradient, the halo a box-shadow of
+   growing opacity, the band a filled pill and the tier frame an inset shadow laid *over* the ring
+   without replacing it - two independent layers, the ring saying the cursus and the frame saying
+   the period. The six tints themselves are not written here: they live in
+   App\Service\Game\GameLevels and reach the markup through game_level_style(), so the handoff's
+   values are transcribed exactly once.
+   ========================================================================== */
+
+.cm-gm-av { display: inline-flex; flex-direction: column; align-items: center; }
+.cm-gm-av__ring { padding: 4px; border-radius: 18px; display: inline-block; line-height: 0; }
+.cm-gm-av__face {
+    display: grid; width: 64px; height: 64px; border-radius: 13px;
+    background: var(--cm-gold); color: var(--cm-navy); place-items: center;
+    font: 700 20px var(--cm-font-ui); line-height: 1;
+    background-size: cover; background-position: center;
+}
+/* Overlaps the bottom of the avatar - the band is part of the medallion, not a caption under it. */
+.cm-gm-av__band {
+    margin-top: -9px; position: relative; z-index: 1; border-radius: 99px;
+    padding: 3px 10px; font: 700 9px var(--cm-font-ui); letter-spacing: 1.2px;
+    white-space: nowrap;
+}
+/* The main bar's size (34 px), the only other one that exists. */
+.cm-gm-av--sm .cm-gm-av__ring { padding: 2.5px; border-radius: 11px; }
+.cm-gm-av--sm .cm-gm-av__face { width: 34px; height: 34px; border-radius: 8px; font-size: 13px; }
+.cm-gm-av--sm .cm-gm-av__band { margin-top: -6px; padding: 2px 8px; font-size: 7px; letter-spacing: 1px; }
+
+/* The band turned into a progress bar: same geometry, same place, but it carries the way to the
+   next level rather than the level reached. */
+.cm-gm-av__band--prog {
+    position: relative; overflow: hidden; background: #12344d; color: #cfe3f2;
+    min-width: 62px; text-align: center; border: 1px solid rgba(255, 255, 255, .18);
+}
+.cm-gm-av__band--prog .fill {
+    position: absolute; inset: 0 auto 0 0;
+    background: linear-gradient(90deg, #3f88bd, #6ea3cd);
+}
+.cm-gm-av__band--prog .lb { position: relative; z-index: 1; }
+
+/* The tier frame, laid over the ring and never replacing it. */
+.cm-gm-frame { position: relative; display: inline-block; padding: 5px; border-radius: 22px; }
+.cm-gm-frame--bronze { box-shadow: inset 0 0 0 2px #8a5a2b; }
+.cm-gm-frame--silver { box-shadow: inset 0 0 0 2px #5b6c79; }
+.cm-gm-frame--gold   { box-shadow: inset 0 0 0 2px #8a6a1f; }
+.cm-gm-frame__medal {
+    position: absolute; right: -4px; bottom: 12px; font-size: 15px; line-height: 1;
+    filter: drop-shadow(0 1px 2px rgba(18, 52, 77, .35));
+}
+
+/* ---------- The board of six levels ---------- */
+.cm-gm-plate { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
+.cm-gm-plate__cell { display: flex; flex-direction: column; align-items: center; gap: 9px; text-align: center; }
+.cm-gm-plate__title { font-size: 12.5px; font-weight: 700; color: var(--cm-ink); line-height: 1.25; }
+.cm-gm-plate__xp { font-size: 11.5px; font-weight: 700; color: var(--cm-brand); font-variant-numeric: tabular-nums; }
+@media (max-width: 900px) { .cm-gm-plate { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 520px) { .cm-gm-plate { grid-template-columns: repeat(2, 1fr); } }
+
+/* ---------- Level wording, filière by filière ---------- */
+.cm-gm-levels { display: grid; grid-template-columns: 148px repeat(4, minmax(0, 1fr)); border: 1px solid var(--cm-border); border-radius: 12px; overflow: hidden; font-size: 12.5px; }
+.cm-gm-levels__head { background: var(--cm-navy); color: #fff; padding: 11px 14px; font-weight: 600; font-size: 12.5px; }
+.cm-gm-levels__head--key { color: #cfdde9; font-size: 11px; letter-spacing: .5px; text-transform: uppercase; }
+.cm-gm-levels__cell { padding: 8px 10px; border-top: 1px solid var(--cm-border-soft); color: var(--cm-text); }
+.cm-gm-levels__cell--key { color: var(--cm-muted); }
+.cm-gm-levels__cell--key b { color: var(--cm-ink); }
+.cm-gm-levels__cell input { width: 100%; border: 1px solid var(--cm-border); border-radius: 6px; padding: 5px 8px; font-size: 12.5px; background: var(--cm-surface); color: var(--cm-ink); }
+
+/* ---------- The four families ---------- */
+.cm-gm-fams { display: flex; flex-direction: column; gap: 13px; }
+.cm-gm-fam { display: grid; grid-template-columns: 172px minmax(0, 1fr) 108px; align-items: center; gap: 14px; }
+.cm-gm-fam__name { font-size: 13px; font-weight: 700; color: var(--cm-ink); }
+/* The denominator, printed under the family's name. A rate whose possible is not shown cannot be
+   checked by the person reading it, so it is not decoration. */
+.cm-gm-fam__sub { display: block; font-size: 11px; font-weight: 500; color: var(--cm-faint); }
+.cm-gm-fam__track { position: relative; height: 13px; border-radius: 7px; background: var(--cm-border-soft); overflow: hidden; }
+.cm-gm-fam__fill { position: absolute; inset: 0 auto 0 0; border-radius: 7px; }
+.cm-gm-fam__fill--attendance { background: linear-gradient(90deg, #1B6BA8, #6ea3cd); }
+.cm-gm-fam__fill--work { background: linear-gradient(90deg, #12507e, #3f88bd); }
+.cm-gm-fam__fill--engagement { background: linear-gradient(90deg, #1f7a54, #7cc3a3); }
+.cm-gm-fam__fill--recognition { background: linear-gradient(90deg, #8a6a1f, #e0bc6d); }
+.cm-gm-fam__value { text-align: right; font-size: 12.5px; color: var(--cm-ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+.cm-gm-fam__value .cap { color: var(--cm-faint); font-weight: 500; }
+/* A family with no data at all: it left the index, and it says so rather than showing 0 %. */
+.cm-gm-fam--empty .cm-gm-fam__value { color: var(--cm-faint); font-weight: 500; }
+@media (max-width: 640px) { .cm-gm-fam { grid-template-columns: 1fr; gap: 6px; } .cm-gm-fam__value { text-align: left; } }
+
+/* ---------- The one number ---------- */
+.cm-gm-index { display: flex; align-items: flex-end; gap: 6px; }
+.cm-gm-index__n { font: 700 40px var(--cm-font-ui); color: var(--cm-ink); line-height: .95; font-variant-numeric: tabular-nums; }
+.cm-gm-index__u { font-size: 15px; color: var(--cm-faint); font-weight: 600; padding-bottom: 4px; }
+.cm-gm-label { font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--cm-faint); font-weight: 700; }
+
+/* ---------- The journal ---------- */
+.cm-gm-log { border-top: 1px solid var(--cm-border-soft); }
+.cm-gm-log__row { display: grid; grid-template-columns: 76px minmax(0, 1fr) 128px 66px; align-items: baseline; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--cm-border-soft); font-size: 13px; }
+.cm-gm-log__row:last-child { border-bottom: 0; }
+.cm-gm-log__date { font-size: 11.5px; color: var(--cm-faint); }
+.cm-gm-log__rule { color: var(--cm-ink); font-weight: 600; }
+.cm-gm-log__src { display: block; font-size: 11.5px; color: var(--cm-muted); font-weight: 400; }
+.cm-gm-log__fam { font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--cm-faint); font-weight: 700; }
+.cm-gm-log__pts { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; color: #2e7d4f; }
+.cm-gm-log__pts--neg { color: #b0553f; }
+/* Two kinds of line are worth zero and say so - the consultation no rule pays, and the reward that
+   is not points. It is the cheapest way to teach decisions 4 and 7 without writing a paragraph. */
+.cm-gm-log__pts--nil { color: var(--cm-faint); font-weight: 500; }
+@media (max-width: 640px) { .cm-gm-log__row { grid-template-columns: 1fr 66px; } .cm-gm-log__fam { display: none; } }
+
+/* ---------- The shelf ---------- */
+.cm-gm-shelf { display: flex; flex-direction: column; gap: 9px; }
+.cm-gm-shelf__row { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--cm-text); }
+.cm-gm-shelf__icon { font-size: 17px; line-height: 1; flex: none; }
+.cm-gm-shelf__label b { color: var(--cm-ink); }
+
+/* ---------- Tier row ---------- */
+.cm-gm-tiers { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 13px; }
+.cm-gm-tier { border: 1px solid var(--cm-border); border-radius: 10px; background: var(--cm-surface); padding: 13px 15px; }
+.cm-gm-tier--reached { border-color: var(--cm-gold); background: var(--cm-gold-bg); }
+.cm-gm-tier__head { display: flex; align-items: baseline; gap: 8px; }
+.cm-gm-tier__medal { font-size: 17px; }
+.cm-gm-tier__name { font-size: 13px; font-weight: 700; color: var(--cm-ink); }
+.cm-gm-tier__threshold { margin-left: auto; font-size: 11.5px; color: var(--cm-muted); font-variant-numeric: tabular-nums; }
+@media (max-width: 860px) { .cm-gm-tiers { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ---------- The main bar's own cell ---------- */
+.cm-user__avatar--game { background: none; width: auto; height: auto; border-radius: 0; }
+
+/* ---------- « Ma progression » page frame ---------- */
+.cm-gm-context { font-size: 13px; color: var(--cm-muted); margin: -6px 0 16px; }
+.cm-gm-layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 16px; align-items: start; }
+.cm-gm-layout__side, .cm-gm-layout__main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+@media (max-width: 980px) { .cm-gm-layout { grid-template-columns: 1fr; } }
+.cm-gm-identity { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+.cm-gm-identity__name { font: 700 15px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-gm-identity__title { font-size: 12.5px; color: var(--cm-brand-strong); font-weight: 600; }
+.cm-gm-identity__xp { font-size: 11.5px; color: var(--cm-faint); margin-top: 4px; }
+.cm-gm-rule { border: 0; border-top: 1px solid var(--cm-border-soft); margin: 16px 0; }
+
+/* ---------- The relevé's grid (design's screen 5) ----------
+   Cards rather than a table: the pass is « everybody is net, click the exceptions », and a table
+   invites reading thirty rows where a grid invites spotting three. Nothing here carries a motive,
+   a date or a counter - see App\Entity\AttendanceStatement. */
+.cm-att-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.cm-att-tally { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+.cm-att-nav { display: flex; align-items: center; gap: 10px; }
+.cm-att-nav__label { font-size: 13px; font-weight: 600; color: var(--cm-ink); font-variant-numeric: tabular-nums; }
+.cm-btn.is-disabled { opacity: .4; pointer-events: none; }
+
+.cm-att-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; margin-top: 16px; }
+.cm-att-card {
+    display: grid; grid-template-columns: 26px minmax(0, 1fr); grid-template-rows: auto auto;
+    align-items: center; gap: 2px 10px; text-align: left;
+    padding: 10px 12px; border-radius: 9px; cursor: pointer;
+    border: 1px solid var(--cm-border); background: var(--cm-surface); color: var(--cm-ink);
+    font: inherit;
+}
+.cm-att-card:hover { border-color: var(--cm-brand); }
+.cm-att-card:disabled { cursor: default; opacity: .65; }
+.cm-att-card__mark { grid-row: 1 / 3; font-size: 17px; font-weight: 700; text-align: center; }
+.cm-att-card__name { font-size: 13.5px; font-weight: 600; }
+.cm-att-card__state { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; color: var(--cm-faint); }
+.cm-att-card--clean { border-color: var(--cm-green-tx); background: var(--cm-green-bg); }
+.cm-att-card--clean .cm-att-card__mark, .cm-att-card--clean .cm-att-card__state { color: var(--cm-green-tx); }
+.cm-att-card--not_clean { border-color: var(--cm-red-tx); background: var(--cm-red-bg); }
+.cm-att-card--not_clean .cm-att-card__mark, .cm-att-card--not_clean .cm-att-card__state { color: var(--cm-red-tx); }
+.cm-att-card--out_of_scope { border-style: dashed; background: var(--cm-surface-alt); }
+.cm-att-card--out_of_scope .cm-att-card__mark, .cm-att-card--out_of_scope .cm-att-card__state { color: var(--cm-faint); }
+
+/* ---------- Teacher gestures and the class council (screens 6 and 7) ---------- */
+.cm-gm-env { display: inline-flex; align-items: center; gap: 6px; }
+.cm-gm-env i { width: 15px; height: 15px; border-radius: 4px; background: var(--cm-brand); display: inline-block; }
+/* A spent token, not a missing one: the envelope is six squares all period long, and what changes
+   is how many of them are still yours. */
+.cm-gm-env i.is-used { background: var(--cm-border-soft); box-shadow: inset 0 0 0 1px var(--cm-border); }
+.cm-gm-env__count { font-size: 12px; color: var(--cm-muted); margin-left: 5px; }
+
+.cm-gm-gestureform { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; align-items: start; }
+.cm-gm-gestureform__reason { grid-column: 1 / -1; }
+.cm-gm-gestureform label { display: block; }
+.cm-gm-gestureform select, .cm-gm-gestureform textarea {
+    width: 100%; margin-top: 6px; padding: 7px 10px; font: inherit; font-size: 13.5px;
+    border: 1px solid var(--cm-border); border-radius: 8px; background: var(--cm-surface); color: var(--cm-ink);
+}
+
+/* A segmented control built from radios: the input is hidden, its label is the segment. */
+.cm-gm-seg { display: inline-flex; margin-top: 6px; border: 1px solid var(--cm-border); border-radius: 8px; overflow: hidden; background: var(--cm-surface); }
+.cm-gm-seg label { display: inline-flex; margin: 0; }
+.cm-gm-seg input { position: absolute; opacity: 0; width: 0; height: 0; }
+.cm-gm-seg span {
+    display: inline-block; padding: 5px 12px; font-size: 12.5px; font-weight: 600;
+    color: var(--cm-muted); border-left: 1px solid var(--cm-border); cursor: pointer; white-space: nowrap;
+}
+.cm-gm-seg label:first-child span { border-left: 0; }
+.cm-gm-seg input:checked + span { background: var(--cm-brand); color: #fff; }
+.cm-gm-seg input:focus-visible + span { outline: 2px solid var(--cm-brand); outline-offset: -2px; }
+.cm-gm-seg input:disabled + span { opacity: .45; cursor: default; }
+
+.cm-gm-gesture--cancelled td { opacity: .55; text-decoration: line-through; }
+.cm-gm-gesture--cancelled .cm-actions { text-decoration: none; }
+
+.cm-council__mentions span { padding: 4px 9px; font-size: 12px; }
+.cm-council__comment { width: 100%; padding: 5px 8px; font: inherit; font-size: 12.5px; border: 1px solid var(--cm-border); border-radius: 6px; background: var(--cm-surface); color: var(--cm-ink); }
+.cm-council-keys { font-size: 11.5px; color: var(--cm-muted); }
+.cm-council-keys kbd {
+    display: inline-block; padding: 1px 5px; border-radius: 4px; font-size: 11px; font-weight: 700;
+    background: var(--cm-surface-alt); border: 1px solid var(--cm-border); color: var(--cm-ink);
+}
+
+/* ---------- Declared engagement, validation queue (screen 13) ---------- */
+.cm-engagement-review { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.cm-engagement-review input[type="text"] {
+    width: 190px; padding: 4px 8px; font: inherit; font-size: 12px;
+    border: 1px solid var(--cm-border); border-radius: 6px; background: var(--cm-surface); color: var(--cm-ink);
+}
+
+/* ---------- The shelf's « Utiliser » ---------- */
+.cm-gm-shelf__spend { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.cm-gm-shelf__spend input {
+    width: 130px; padding: 3px 7px; font: inherit; font-size: 11.5px;
+    border: 1px solid var(--cm-border); border-radius: 6px; background: var(--cm-surface); color: var(--cm-ink);
+}
+.cm-gm-shelf__row { flex-wrap: wrap; }
+
+/* ---------- Figures, ranking and teams (screens 9 to 12) ---------- */
+.cm-gm-figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.cm-gm-figure {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+    border: 1px solid var(--cm-border); border-radius: 10px; background: var(--cm-surface); padding: 16px;
+}
+.cm-gm-figure.is-chosen { border-color: var(--cm-green-tx); background: var(--cm-green-bg); }
+.cm-gm-figure__initials {
+    width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center;
+    background: var(--cm-navy); color: var(--cm-gold); font: 700 15px var(--cm-font-ui);
+}
+.cm-gm-figure__surname { font: 700 16px var(--cm-font-title); color: var(--cm-ink); }
+.cm-gm-figure__full { font-size: 12px; color: var(--cm-muted); }
+.cm-gm-figure__notice { font-size: 12.5px; color: var(--cm-text); line-height: 1.5; }
+
+/* The viewer's own line, in both the ranking and their team. */
+.cm-gm-rank--me td { background: var(--cm-blue-bg); }
+.cm-gm-rank--me td:first-child { font-weight: 700; }
+
+/* ---------- The game's own settings screen (screen 14) ---------- */
+.cm-gm-switch { display: flex; align-items: center; gap: 9px; font-size: 13.5px; color: var(--cm-ink); cursor: pointer; }
+.cm-gm-switch input { width: 16px; height: 16px; accent-color: var(--cm-brand); }
+.cm-gm-switch span { font-weight: 600; }
+
+/* ---------- « Filières de cette classe », on the game's settings screen ---------- */
+.cm-gm-tracks { margin-top: 14px; padding: 12px 14px; border: 1px solid var(--cm-border); border-radius: 10px; background: var(--cm-surface-alt); }
+.cm-gm-tracks__list { margin: 6px 0 0; padding-left: 18px; font-size: 13px; color: var(--cm-text); line-height: 1.6; }
+.cm-gm-tracks__list b { color: var(--cm-ink); }
+
+/* ==========================================================================
+   Campus game - form and section furniture
+
+   The game's screens were built with bare `<label>` + `<input>` and inline styles, which read as a
+   different application from the rest of the platform. These are the pieces that put them back on
+   the charter: the same field shell everywhere, the same section rhythm, one heading style.
+   ========================================================================== */
+
+/* One field: a label, a control, a help line. Replaces the ad-hoc labels the game's forms used. */
+.cm-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.cm-field__label { font: 600 12px var(--cm-font-ui); color: var(--cm-muted); text-transform: uppercase; letter-spacing: .06em; }
+.cm-field__label .req { color: var(--cm-red-tx); margin-left: 2px; }
+.cm-field__help { font-size: 11.5px; color: var(--cm-faint); line-height: 1.5; }
+.cm-field input[type="text"],
+.cm-field input[type="number"],
+.cm-field input[type="date"],
+.cm-field select,
+.cm-field textarea {
+    width: 100%; padding: 8px 11px; font: inherit; font-size: 13.5px; color: var(--cm-ink);
+    background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: 8px;
+    transition: border-color .12s ease, box-shadow .12s ease;
+}
+.cm-field input:focus, .cm-field select:focus, .cm-field textarea:focus {
+    outline: none; border-color: var(--cm-brand);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--cm-brand) 18%, transparent);
+}
+.cm-field input:disabled, .cm-field select:disabled, .cm-field textarea:disabled {
+    background: var(--cm-surface-alt); color: var(--cm-faint); cursor: not-allowed;
+}
+.cm-field textarea { resize: vertical; min-height: 72px; }
+
+/* The grid the game's forms lay their fields on. */
+.cm-formgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 18px 20px; align-items: start; }
+.cm-formgrid__wide { grid-column: 1 / -1; }
+
+/* A titled block inside a card - the rhythm the Leveling tabs and the settings screen share. */
+.cm-gm-section { padding: 22px 0; border-top: 1px solid var(--cm-border-soft); }
+.cm-gm-section:first-child { padding-top: 0; border-top: 0; }
+.cm-gm-section__title { font: 600 15px var(--cm-font-title); color: var(--cm-ink); margin: 0 0 6px; }
+.cm-gm-section__hint { font-size: 12.5px; color: var(--cm-muted); line-height: 1.6; margin: 0 0 12px; }
+.cm-gm-section__hint:last-child { margin-bottom: 0; }
+
+/* The banner every Leveling tab opens on. */
+.cm-gm-hero { display: flex; align-items: center; gap: 22px; padding: 4px 0 22px; flex-wrap: wrap; }
+.cm-gm-hero__body { flex: 1 1 260px; min-width: 0; }
+.cm-gm-hero__name { font: 700 18px var(--cm-font-title); color: var(--cm-ink); }
+.cm-gm-hero__stats { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 8px; font-size: 12.5px; color: var(--cm-muted); }
+.cm-gm-hero__stats b { font: 700 20px var(--cm-font-ui); color: var(--cm-ink); display: block; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.cm-gm-hero__next { font-size: 12.5px; color: var(--cm-faint); margin-top: 8px; }
+
+/* The six titles, with the ones already unlocked standing out from the ones ahead. */
+.cm-gm-titles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+.cm-gm-title {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    border: 1px solid var(--cm-border); border-radius: 9px; background: var(--cm-surface); opacity: .55;
+}
+.cm-gm-title.is-reached { opacity: 1; border-color: var(--cm-brand); }
+.cm-gm-title__level { flex: none; border-radius: 99px; padding: 2px 8px; font: 700 9px var(--cm-font-ui); letter-spacing: 1px; }
+.cm-gm-title__name { font-size: 13px; font-weight: 600; color: var(--cm-ink); min-width: 0; }
+.cm-gm-title__xp { margin-left: auto; font-size: 11.5px; color: var(--cm-faint); font-variant-numeric: tabular-nums; }
+
+/* ---------- Ranked months, and the month bar of the ranking ---------- */
+.cm-gm-months { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-top: 10px; }
+.cm-gm-month {
+    display: flex; align-items: center; gap: 8px; padding: 8px 11px; cursor: pointer;
+    border: 1px solid var(--cm-border); border-radius: 8px; background: var(--cm-surface);
+    font-size: 13px; color: var(--cm-muted);
+}
+.cm-gm-month.is-on { border-color: var(--cm-brand); background: var(--cm-blue-bg); color: var(--cm-blue-tx); font-weight: 600; }
+.cm-gm-month input { accent-color: var(--cm-brand); }
+
+.cm-gm-monthbar { display: flex; align-items: center; gap: 12px; padding: 16px 0 4px; flex-wrap: wrap; }
+.cm-gm-monthbar__label { font: 600 16px var(--cm-font-title); color: var(--cm-ink); }
+.cm-gm-monthlinks { display: flex; flex-wrap: wrap; gap: 6px; }
+.cm-gm-monthlinks a { text-decoration: none; }
+
+/* Figure catalogue - a table of editable rows. The notice takes what the three short fields do
+   not, so the table stays readable rather than the fields all sharing a quarter each. */
+.cm-figtable { width: 100%; table-layout: fixed; }
+.cm-figtable th:nth-child(1), .cm-figtable td:nth-child(1) { width: 18%; }
+.cm-figtable th:nth-child(2), .cm-figtable td:nth-child(2) { width: 24%; }
+.cm-figtable th:nth-child(4), .cm-figtable td:nth-child(4) { width: 200px; }
+.cm-figtable td { vertical-align: top; }
+.cm-figtable input[type="text"], .cm-figtable textarea { width: 100%; }

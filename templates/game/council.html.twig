@@ -1,0 +1,122 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ statement.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.displayShortName, url: path('app_program_timetable', {id: program.id})},
+        {label: 'gameStatementsHeading'|trans, url: path('app_program_game_statements', {id: program.id})},
+        {label: statement.name, url: path('app_program_game_statement', {id: program.id, statementId: statement.id})},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ statement.name }}{% endblock %}
+
+{% block page_actions %}
+    {% if statement.closed %}
+        {% if canReopen %}
+            <form method="post" action="{{ path('app_program_game_statement_reopen', {id: program.id, statementId: statement.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('game_statement_reopen') }}">
+                <button type="submit" class="cm-btn cm-btn--outline" title="{{ 'gameCouncilReopenHelpText'|trans }}">{{ 'gameCouncilReopenAction'|trans }}</button>
+            </form>
+        {% endif %}
+    {% else %}
+        <form method="post" action="{{ path('app_program_game_statement_close', {id: program.id, statementId: statement.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('game_statement_close') }}">
+            <button type="submit" class="cm-btn cm-btn--primary" title="{{ 'gameCouncilCloseHelpText'|trans }}">{{ 'gameCouncilCloseAction'|trans }}</button>
+        </form>
+    {% endif %}
+{% endblock %}
+
+{% block main %}
+    <p class="cm-gm-context">
+        {{ program.displayShortName }} · {{ statement.heldOn|date('d/m/Y') }}
+
+    </p>
+
+    <div class="card">
+        <div class="card-body"
+             data-controller="game-council"
+             data-game-council-url-value="{{ path('app_program_game_statement_state', {id: program.id, statementId: statement.id}) }}"
+             data-game-council-token-value="{{ csrf_token('game_statement') }}"
+             data-game-council-locked-message-value="{{ 'gameStatementLockedFlashMessage'|trans }}"
+             data-game-council-shortcuts-value="{{ mentions|reduce((carry, m) => carry|merge({(m.shortcut): m.value}), {})|json_encode }}">
+
+            <div class="cm-att-head">
+                <span class="cm-gm-label">{{ 'gameCouncilQuickEntryLabel'|trans }}</span>
+                <span class="cm-council-keys">
+                    {% for mention in mentions %}
+                        <kbd>{{ mention.shortcut }}</kbd> {{ mention.labelKey|trans }}{{ not loop.last ? ' ·' }}
+                    {% endfor %}
+                    · <kbd>↵</kbd> {{ 'gameCouncilNextLabel'|trans }}
+                </span>
+                {# Inside the controller's own element, not in the page header: the header lives
+                   outside it, and a target Stimulus cannot see is a counter that never moves. #}
+                <span class="cm-badge cm-badge--blue" style="margin-left: auto"><b data-game-council-target="stated">{{ statement.statedCount }}</b> / {{ lines|length }} {{ 'gameCouncilStatedLabel'|trans }}</span>
+                <span class="cm-badge cm-badge--green">{{ 'gameCouncilAutosaveLabel'|trans }}</span>
+            </div>
+
+            {% if statement.closed %}
+                <div class="cm-note cm-note--gold" style="margin: 14px 0">
+                    <span class="cm-note__icon">🔒</span>
+                    <span>{{ 'gameCouncilClosedText'|trans }}</span>
+                </div>
+            {% endif %}
+
+            <table class="card-table cm-council" style="margin-top: 10px">
+                <thead>
+                    <tr>
+                        <th>{{ 'gameCouncilStudentColumnLabel'|trans }}</th>
+                        <th>{{ 'gameCouncilMentionColumnLabel'|trans }}</th>
+                        <th>{{ 'gameCouncilCommentColumnLabel'|trans }}</th>
+                        <th class="text-end" title="{{ 'gameCouncilPointsColumnHelpText'|trans }}">{{ 'gameCouncilPointsColumnLabel'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for line in lines %}
+                        <tr data-game-council-target="row" data-student="{{ line.student.id }}">
+                            <td>
+                                {{ line.student.displayName ?? line.student.username }}
+                                {# Each student's options, so a SIO council sees who is SLAM and who
+                                   is SISR without leaving the screen. #}
+                                {% for option in optionsByStudent[line.student.id]|default([]) %}
+                                    <span class="cm-badge cm-badge--gray">{{ option.shortName }}</span>
+                                {% endfor %}
+                            </td>
+                            <td>
+                                <div class="cm-gm-seg cm-council__mentions">
+                                    {% for mention in mentions %}
+                                        <label title="{{ ('councilMention' ~ mention.value|title ~ 'HelpText')|trans }}">
+                                            <input type="radio" name="mention-{{ line.student.id }}" value="{{ mention.value }}"
+                                                   {{ line.mention == mention ? 'checked' }}
+                                                   {{ statement.closed ? 'disabled' }}
+                                                   data-action="game-council#mention">
+                                            <span>{{ mention.labelKey|trans }}</span>
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td>
+                                <input type="text" class="cm-council__comment"
+                                       value="{{ line.comment }}"
+                                       maxlength="2000"
+                                       placeholder="{{ 'gameCouncilCommentPlaceholder'|trans }}"
+                                       {{ statement.closed ? 'disabled' }}
+                                       data-action="game-council#comment">
+                            </td>
+                            <td class="text-end cm-gm-log__pts" data-game-council-target="points">
+                                {{ line.mention ? (line.councilPoints > 0 ? '+' ~ line.councilPoints : line.councilPoints) : '—' }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="cm-note" style="margin-top: 16px">
+                <span class="cm-note__icon">🔒</span>
+                <span>{{ 'gameCouncilNoteText'|trans }}</span>
+            </div>
+        </div>
+    </div>
+{% endblock %}
