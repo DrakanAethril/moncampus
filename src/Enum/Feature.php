@@ -49,6 +49,7 @@ enum Feature: string
     case Surveys = 'surveys';
     case ClassTools = 'class_tools';
     case TsfReferential = 'tsf_referential';
+    case Game = 'game';
 
     // --- Scolarité ---------------------------------------------------------------------------
 
@@ -124,7 +125,7 @@ enum Feature: string
             self::Progression, self::SequenceLibrary, self::SequenceImport, self::CourseSpace,
             self::Video, self::Audio, self::FileLibrary, self::SharedDocuments,
             self::ContentSharing, self::Wiki, self::Documentation, self::Surveys,
-            self::ClassTools, self::TsfReferential => FeatureFamily::Pedagogy,
+            self::ClassTools, self::TsfReferential, self::Game => FeatureFamily::Pedagogy,
 
             self::Timetable, self::TimetableSettings, self::EvaluationPlanning,
             self::GradebookEntry, self::GradebookStudent, self::SelfAssessment,
@@ -195,6 +196,7 @@ enum Feature: string
             self::Surveys => 'featureSurveysLabel',
             self::ClassTools => 'featureClassToolsLabel',
             self::TsfReferential => 'featureTsfReferentialLabel',
+            self::Game => 'featureGameLabel',
             self::Timetable => 'featureTimetableLabel',
             self::TimetableSettings => 'featureTimetableSettingsLabel',
             self::EvaluationPlanning => 'featureEvaluationPlanningLabel',

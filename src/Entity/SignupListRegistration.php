@@ -38,6 +38,23 @@ class SignupListRegistration
     #[ORM\Column(name: 'registered_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $registeredAt;
 
+    /**
+     * Whether the person actually turned up - ticked by whoever manages the list, after the fact.
+     *
+     * Added for the campus game, which pays « l'inscription **tenue** » and never the inscription
+     * itself (design/validated/gamification.md §4, decision 4): signing up leaves a row and nothing
+     * else, and a rule that paid it would pay a click. It is useful outside the game too - a list
+     * whose roster nobody ever confirms is a list nobody can report on.
+     *
+     * Deliberately a single boolean with a date, and no absence of any kind: an unticked line means
+     * « nobody said », never « was not there ».
+     */
+    #[ORM\Column(options: ['default' => false])]
+    private bool $attended = false;
+
+    #[ORM\Column(name: 'attended_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $attendedAt = null;
+
     public function __construct(SignupList $signupList, User $user)
     {
         $this->signupList = $signupList;
@@ -63,5 +80,23 @@ class SignupListRegistration
     public function getRegisteredAt(): \DateTimeImmutable
     {
         return $this->registeredAt;
+    }
+
+    public function hasAttended(): bool
+    {
+        return $this->attended;
+    }
+
+    public function getAttendedAt(): ?\DateTimeImmutable
+    {
+        return $this->attendedAt;
+    }
+
+    public function setAttended(bool $attended): static
+    {
+        $this->attended = $attended;
+        $this->attendedAt = $attended ? ($this->attendedAt ?? new \DateTimeImmutable()) : null;
+
+        return $this;
     }
 }

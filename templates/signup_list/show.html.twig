@@ -93,6 +93,7 @@
                             <th>{{ 'userLoginColumnLabel'|trans }}</th>
                             <th>{{ 'accountEmailLabel'|trans }}</th>
                             <th>{{ 'signupListRegisteredAtColumnLabel'|trans }}</th>
+                            {% if canManage %}<th>{{ 'signupListAttendedColumnLabel'|trans }}</th>{% endif %}
                         </tr>
                     </thead>
                     <tbody>
@@ -102,10 +103,23 @@
                                 <td>{{ registration.user.username }}</td>
                                 <td>{{ registration.user.email ?? '—' }}</td>
                                 <td>{{ registration.registeredAt|date('d/m/Y H:i') }}</td>
+                                {# Ticked after the fact by whoever manages the list. Nothing here
+                                   records an absence: an unticked line means « nobody said ». #}
+                                {% if canManage %}
+                                    <td>
+                                        <form method="post" action="{{ path('app_signup_lists_attendance', {id: signupList.id, registrationId: registration.id}) }}">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('signup_list_attendance') }}">
+                                            <input type="hidden" name="attended" value="{{ registration.attended ? '0' : '1' }}">
+                                            <button type="submit" class="cm-action {{ registration.attended ? 'cm-action--positive' : 'cm-action--off' }}" title="{{ 'signupListAttendedToggleHint'|trans }}">
+                                                {{ (registration.attended ? 'signupListAttendedYesLabel' : 'signupListAttendedUnknownLabel')|trans }}
+                                            </button>
+                                        </form>
+                                    </td>
+                                {% endif %}
                             </tr>
                         {% else %}
                             <tr>
-                                <td colspan="4" class="text-secondary">{{ 'signupListRosterEmptyMessage'|trans }}</td>
+                                <td colspan="{{ canManage ? 5 : 4 }}" class="text-secondary">{{ 'signupListRosterEmptyMessage'|trans }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>
