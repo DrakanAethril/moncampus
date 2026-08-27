@@ -111,8 +111,6 @@ class GameSettingsController extends AbstractController
                 'threshold_silver' => ['label' => 'gameSettingsSilverLabel', 'value' => $settings->getThresholdSilver()],
                 'threshold_gold' => ['label' => 'gameSettingsGoldLabel', 'value' => $settings->getThresholdGold()],
                 'team_threshold' => ['label' => 'gameSettingsTeamThresholdLabel', 'value' => $settings->getTeamThreshold()],
-                'gesture_envelope' => ['label' => 'gameSettingsEnvelopeLabel', 'value' => $settings->getGestureEnvelope()],
-                'gesture_net_bound' => ['label' => 'gameSettingsNetBoundLabel', 'value' => $settings->getGestureNetBound()],
                 'engagement_cap' => ['label' => 'gameSettingsEngagementCapLabel', 'value' => $settings->getEngagementCap()],
                 'recognition_cap' => ['label' => 'gameSettingsRecognitionCapLabel', 'value' => $settings->getRecognitionCap()],
                 'attendance_streak_cap' => ['label' => 'gameSettingsStreakCapLabel', 'value' => $settings->getAttendanceStreakCap()],
@@ -123,7 +121,7 @@ class GameSettingsController extends AbstractController
             // What this formation actually plays in, option by option - a SIO class holds two.
             'trackedOptions' => $trackResolver->trackedOptions($program),
             'tunable' => GameRuleCatalog::tunable(),
-            'ruleValues' => null === $period ? [] : $rules->all($program, $period),
+            'ruleValues' => $rules->all($program),
             'figureTally' => $this->figureTally($figures),
             'rewardCount' => \count($rewards->catalogueFor($program)),
             'batches' => $batches->findBy(['program' => $program], ['createdAt' => 'DESC']),
@@ -157,8 +155,6 @@ class GameSettingsController extends AbstractController
             ->setThresholdBronze($this->bounded($request, 'threshold_bronze', 0, 100))
             ->setThresholdSilver($this->bounded($request, 'threshold_silver', 0, 100))
             ->setThresholdGold($this->bounded($request, 'threshold_gold', 0, 100))
-            ->setGestureEnvelope($this->bounded($request, 'gesture_envelope', 0, 50))
-            ->setGestureNetBound($this->bounded($request, 'gesture_net_bound', 0, 500))
             ->setTeamThreshold($this->bounded($request, 'team_threshold', 0, 100))
             ->setAttendanceStreakCap($this->bounded($request, 'attendance_streak_cap', 0, 500))
             ->setAttendanceStep(GameAttendanceStep::tryFrom((string) $request->request->get('attendance_step')) ?? GameAttendanceStep::Week)
@@ -170,21 +166,23 @@ class GameSettingsController extends AbstractController
 
         $period = $periods->activePeriod($program);
 
+        // The barème belongs to the formation, not to a term: retuning it needs no period at all.
+        // What a closed period keeps is its **result**, frozen once in App\Entity\GamePeriodScore.
+        $this->saveRules($request, $program, $ruleRepository, $entityManager);
+
+        // Teams are still drawn per period - one of the few things that genuinely is a cycle.
         if (null !== $period) {
-            // The barème is versioned by period: what is saved applies to the period **in progress**,
-            // and the periods already closed keep the rules they were played under (§9).
-            $this->saveRules($request, $program, $period, $ruleRepository, $entityManager);
             $this->saveTeams($request, $program, $period, $batches, $teamSets, $entityManager);
         }
 
         $entityManager->flush();
     }
 
-    private function saveRules(Request $request, Program $program, \App\Entity\EvaluationPeriod $period, GameRuleRepository $ruleRepository, EntityManagerInterface $entityManager): void
+    private function saveRules(Request $request, Program $program, GameRuleRepository $ruleRepository, EntityManagerInterface $entityManager): void
     {
         /** @var array<string, mixed> $submitted */
         $submitted = $request->request->all('rules');
-        $stored = $ruleRepository->findForPeriod($program, $period);
+        $stored = $ruleRepository->findForProgram($program);
 
         foreach (GameRuleCatalog::tunable() as $definition) {
             if (!\array_key_exists($definition->code, $submitted)) {
@@ -211,7 +209,7 @@ class GameSettingsController extends AbstractController
             }
 
             if (null === $row) {
-                $entityManager->persist(new GameRule($program, $period, $definition->code, $points));
+                $entityManager->persist(new GameRule($program, $definition->code, $points));
 
                 continue;
             }

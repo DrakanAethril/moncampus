@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Service\Game;
 
-use App\Entity\EvaluationPeriod;
 use App\Entity\GameEntry;
 use App\Entity\Program;
 use App\Entity\User;
@@ -53,7 +52,6 @@ final class GameLedger
     public function record(
         User $student,
         Program $program,
-        EvaluationPeriod $period,
         string $ruleCode,
         ?string $sourceType = null,
         ?int $sourceId = null,
@@ -62,7 +60,7 @@ final class GameLedger
         ?User $author = null,
         ?string $reason = null,
     ): ?GameEntry {
-        $rule = $this->rules->valueOf($program, $period, $ruleCode);
+        $rule = $this->rules->valueOf($program, $ruleCode);
 
         if (null === $rule || !$rule->enabled) {
             return null;
@@ -89,7 +87,7 @@ final class GameLedger
         }
         $this->countWeek($student, $ruleCode, $occurredAt);
 
-        $entry = (new GameEntry($student, $program, $period, $rule->family(), $ruleCode, $value, $occurredAt))
+        $entry = (new GameEntry($student, $program, $rule->family(), $ruleCode, $value, $occurredAt))
             ->setSource($sourceType, $sourceId)
             ->setAuthor($author)
             ->setReason($reason);
@@ -112,7 +110,6 @@ final class GameLedger
     public function adjust(
         User $student,
         Program $program,
-        EvaluationPeriod $period,
         string $ruleCode,
         int $points,
         string $sourceType,
@@ -124,13 +121,13 @@ final class GameLedger
             return null;
         }
 
-        $rule = $this->rules->valueOf($program, $period, $ruleCode);
+        $rule = $this->rules->valueOf($program, $ruleCode);
 
         if (null === $rule) {
             return null;
         }
 
-        $entry = (new GameEntry($student, $program, $period, $rule->family(), $ruleCode, $points, $occurredAt ?? new \DateTimeImmutable()))
+        $entry = (new GameEntry($student, $program, $rule->family(), $ruleCode, $points, $occurredAt ?? new \DateTimeImmutable()))
             ->setSource($sourceType, $sourceId)
             ->setReason($reason);
 
@@ -151,7 +148,6 @@ final class GameLedger
         $reversal = (new GameEntry(
             $entry->getStudent(),
             $entry->getProgram(),
-            $entry->getPeriod(),
             $entry->getFamily(),
             $entry->getRuleCode(),
             -$entry->getPoints(),

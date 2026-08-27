@@ -9403,3 +9403,64 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-gm-tracks { margin-top: 14px; padding: 12px 14px; border: 1px solid var(--cm-border); border-radius: 10px; background: var(--cm-surface-alt); }
 .cm-gm-tracks__list { margin: 6px 0 0; padding-left: 18px; font-size: 13px; color: var(--cm-text); line-height: 1.6; }
 .cm-gm-tracks__list b { color: var(--cm-ink); }
+
+/* ==========================================================================
+   Campus game - form and section furniture
+
+   The game's screens were built with bare `<label>` + `<input>` and inline styles, which read as a
+   different application from the rest of the platform. These are the pieces that put them back on
+   the charter: the same field shell everywhere, the same section rhythm, one heading style.
+   ========================================================================== */
+
+/* One field: a label, a control, a help line. Replaces the ad-hoc labels the game's forms used. */
+.cm-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.cm-field__label { font: 600 12px var(--cm-font-ui); color: var(--cm-muted); text-transform: uppercase; letter-spacing: .06em; }
+.cm-field__label .req { color: var(--cm-red-tx); margin-left: 2px; }
+.cm-field__help { font-size: 11.5px; color: var(--cm-faint); line-height: 1.5; }
+.cm-field input[type="text"],
+.cm-field input[type="number"],
+.cm-field input[type="date"],
+.cm-field select,
+.cm-field textarea {
+    width: 100%; padding: 8px 11px; font: inherit; font-size: 13.5px; color: var(--cm-ink);
+    background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: 8px;
+    transition: border-color .12s ease, box-shadow .12s ease;
+}
+.cm-field input:focus, .cm-field select:focus, .cm-field textarea:focus {
+    outline: none; border-color: var(--cm-brand);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--cm-brand) 18%, transparent);
+}
+.cm-field input:disabled, .cm-field select:disabled, .cm-field textarea:disabled {
+    background: var(--cm-surface-alt); color: var(--cm-faint); cursor: not-allowed;
+}
+.cm-field textarea { resize: vertical; min-height: 72px; }
+
+/* The grid the game's forms lay their fields on. */
+.cm-formgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 18px 20px; align-items: start; }
+.cm-formgrid__wide { grid-column: 1 / -1; }
+
+/* A titled block inside a card - the rhythm the Leveling tabs and the settings screen share. */
+.cm-gm-section { padding: 22px 0; border-top: 1px solid var(--cm-border-soft); }
+.cm-gm-section:first-child { padding-top: 0; border-top: 0; }
+.cm-gm-section__title { font: 600 15px var(--cm-font-title); color: var(--cm-ink); margin: 0 0 6px; }
+.cm-gm-section__hint { font-size: 12.5px; color: var(--cm-muted); line-height: 1.6; margin: 0 0 12px; }
+.cm-gm-section__hint:last-child { margin-bottom: 0; }
+
+/* The banner every Leveling tab opens on. */
+.cm-gm-hero { display: flex; align-items: center; gap: 22px; padding: 4px 0 22px; flex-wrap: wrap; }
+.cm-gm-hero__body { flex: 1 1 260px; min-width: 0; }
+.cm-gm-hero__name { font: 700 18px var(--cm-font-title); color: var(--cm-ink); }
+.cm-gm-hero__stats { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 8px; font-size: 12.5px; color: var(--cm-muted); }
+.cm-gm-hero__stats b { font: 700 20px var(--cm-font-ui); color: var(--cm-ink); display: block; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.cm-gm-hero__next { font-size: 12.5px; color: var(--cm-faint); margin-top: 8px; }
+
+/* The six titles, with the ones already unlocked standing out from the ones ahead. */
+.cm-gm-titles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+.cm-gm-title {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    border: 1px solid var(--cm-border); border-radius: 9px; background: var(--cm-surface); opacity: .55;
+}
+.cm-gm-title.is-reached { opacity: 1; border-color: var(--cm-brand); }
+.cm-gm-title__level { flex: none; border-radius: 99px; padding: 2px 8px; font: 700 9px var(--cm-font-ui); letter-spacing: 1px; }
+.cm-gm-title__name { font-size: 13px; font-weight: 600; color: var(--cm-ink); min-width: 0; }
+.cm-gm-title__xp { margin-left: auto; font-size: 11.5px; color: var(--cm-faint); font-variant-numeric: tabular-nums; }

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\EngagementDeclaration;
-use App\Entity\EvaluationPeriod;
 use App\Entity\Program;
 use App\Entity\User;
 use App\Enum\EngagementKind;
@@ -33,17 +32,15 @@ class EngagementDeclarationRepository extends ServiceEntityRepository
      *
      * @return list<EngagementDeclaration>
      */
-    public function queueFor(Program $program, EvaluationPeriod $period): array
+    public function queueFor(Program $program): array
     {
         /** @var list<EngagementDeclaration> $rows */
         $rows = $this->createQueryBuilder('d')
             ->addSelect("CASE d.state WHEN 'filed' THEN 1 WHEN 'validated' THEN 2 ELSE 3 END AS HIDDEN state_rank")
             ->where('d.program = :program')
-            ->andWhere('d.period = :period')
             ->orderBy('state_rank', 'ASC')
             ->addOrderBy('d.createdAt', 'DESC')
             ->setParameter('program', $program)
-            ->setParameter('period', $period)
             ->getQuery()
             ->getResult();
 
@@ -55,48 +52,51 @@ class EngagementDeclarationRepository extends ServiceEntityRepository
      *
      * @return list<EngagementDeclaration>
      */
-    public function findForStudent(User $student, Program $program, EvaluationPeriod $period): array
+    public function findForStudent(User $student, Program $program): array
     {
         /** @var list<EngagementDeclaration> $rows */
         $rows = $this->createQueryBuilder('d')
             ->where('d.student = :student')
             ->andWhere('d.program = :program')
-            ->andWhere('d.period = :period')
             ->orderBy('d.createdAt', 'DESC')
             ->setParameter('student', $student)
             ->setParameter('program', $program)
-            ->setParameter('period', $period)
             ->getQuery()
             ->getResult();
 
         return $rows;
     }
 
-    public function countWaiting(Program $program, EvaluationPeriod $period): int
+    public function countWaiting(Program $program): int
     {
         return (int) $this->createQueryBuilder('d')
             ->select('COUNT(d.id)')
             ->where('d.program = :program')
-            ->andWhere('d.period = :period')
             ->andWhere('d.state = :state')
             ->setParameter('program', $program)
-            ->setParameter('period', $period)
             ->setParameter('state', EngagementState::Filed)
             ->getQuery()
             ->getSingleScalarResult();
     }
 
-    /** Whether this student already declared a mandate this period - the one kind that is once-only. */
-    public function hasKindOnPeriod(User $student, EvaluationPeriod $period, EngagementKind $kind): bool
+    /**
+     * Whether this student already declared a mandate in this formation - the one kind that is
+     * once-only.
+     *
+     * Once per **formation** rather than once per period since 2026-08-28: a mandate is held for a
+     * year, not for a term, and asking which period we were in before answering was a condition with
+     * nothing behind it.
+     */
+    public function hasKindInProgram(User $student, Program $program, EngagementKind $kind): bool
     {
         return null !== $this->createQueryBuilder('d')
             ->select('d.id')
             ->where('d.student = :student')
-            ->andWhere('d.period = :period')
+            ->andWhere('d.program = :program')
             ->andWhere('d.kind = :kind')
             ->andWhere('d.state != :refused')
             ->setParameter('student', $student)
-            ->setParameter('period', $period)
+            ->setParameter('program', $program)
             ->setParameter('kind', $kind)
             ->setParameter('refused', EngagementState::Refused)
             ->setMaxResults(1)

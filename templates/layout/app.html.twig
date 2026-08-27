@@ -74,6 +74,12 @@
                            menu wider than its own entries. #}
                         <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow cm-user__menu">
                             <a href="{{ path('app_profile') }}" class="dropdown-item">{{ 'profileNavLabel'|trans }}</a>
+                            {# « Leveling » sits with the profile because that is what it is: the
+                               student's own reading of their own game. It appears only for somebody
+                               who actually plays one - game_badge() answers null otherwise. #}
+                            {% if game_user_badge %}
+                                <a href="{{ path('app_game_leveling') }}" class="dropdown-item">{{ 'gameLevelingHeading'|trans }}</a>
+                            {% endif %}
                             {% if is_granted('ROLE_TEACHER') and feature('timetable') %}
                                 <a href="{{ path('app_teacher_timetable') }}" class="dropdown-item">{{ 'teacherTimetableNavLabel'|trans }}</a>
                             {% endif %}

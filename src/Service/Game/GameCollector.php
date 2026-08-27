@@ -85,7 +85,6 @@ final class GameCollector
             $this->ledger->record(
                 $student,
                 $program,
-                $period,
                 $deadline->ruleCode,
                 $deadline->sourceType,
                 $deadline->sourceId,
@@ -99,11 +98,11 @@ final class GameCollector
         $this->collectQuizProgress($student, $program, $period, $from, $to);
 
         foreach ($this->signals->optionalSurveyAnswers($student, $from, $to) as $row) {
-            $this->ledger->record($student, $program, $period, GameRuleCatalog::ENGAGEMENT_SURVEY, 'SurveyTarget', $row['id'], $row['at']);
+            $this->ledger->record($student, $program, GameRuleCatalog::ENGAGEMENT_SURVEY, 'SurveyTarget', $row['id'], $row['at']);
         }
 
         foreach ($this->signals->attendedSignups($student, $from, $to) as $row) {
-            $this->ledger->record($student, $program, $period, GameRuleCatalog::ENGAGEMENT_SIGNUP_ATTENDED, 'SignupListRegistration', $row['id'], $row['at']);
+            $this->ledger->record($student, $program, GameRuleCatalog::ENGAGEMENT_SIGNUP_ATTENDED, 'SignupListRegistration', $row['id'], $row['at']);
         }
 
         foreach ($this->signals->wikiRevisions($student, $from, $to) as $row) {
@@ -114,15 +113,15 @@ final class GameCollector
                 continue;
             }
 
-            $this->ledger->record($student, $program, $period, GameRuleCatalog::ENGAGEMENT_WIKI, 'WikiRevision', $row['id'], $row['createdAt']);
+            $this->ledger->record($student, $program, GameRuleCatalog::ENGAGEMENT_WIKI, 'WikiRevision', $row['id'], $row['createdAt']);
         }
 
         foreach ($this->signals->applications($student, $from, $to) as $row) {
-            $this->ledger->record($student, $program, $period, GameRuleCatalog::ENGAGEMENT_APPLICATION, $row['type'], $row['id'], $row['at']);
+            $this->ledger->record($student, $program, GameRuleCatalog::ENGAGEMENT_APPLICATION, $row['type'], $row['id'], $row['at']);
         }
 
         foreach ($this->signals->sharedResources($student, $program, $from, $to) as $row) {
-            $this->ledger->record($student, $program, $period, GameRuleCatalog::ENGAGEMENT_SHARED_RESOURCE, 'SharedDocument', $row['id'], $row['at']);
+            $this->ledger->record($student, $program, GameRuleCatalog::ENGAGEMENT_SHARED_RESOURCE, 'SharedDocument', $row['id'], $row['at']);
         }
     }
 
@@ -158,7 +157,7 @@ final class GameCollector
                 continue;
             }
 
-            $this->ledger->record($student, $program, $period, GameRuleCatalog::ENGAGEMENT_QUIZ_PROGRESS, 'QuizAttempt', $attempt['id'], $attempt['submittedAt']);
+            $this->ledger->record($student, $program, GameRuleCatalog::ENGAGEMENT_QUIZ_PROGRESS, 'QuizAttempt', $attempt['id'], $attempt['submittedAt']);
         }
     }
 }

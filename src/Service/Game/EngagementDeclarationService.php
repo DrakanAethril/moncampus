@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Service\Game;
 
 use App\Entity\EngagementDeclaration;
-use App\Entity\EvaluationPeriod;
 use App\Entity\Program;
 use App\Entity\User;
 use App\Enum\EngagementKind;
@@ -36,13 +35,13 @@ final class EngagementDeclarationService
     /**
      * @throws EngagementRefused when a once-per-period kind is declared a second time
      */
-    public function file(User $student, Program $program, EvaluationPeriod $period, EngagementKind $kind, string $description): EngagementDeclaration
+    public function file(User $student, Program $program, EngagementKind $kind, string $description): EngagementDeclaration
     {
-        if ($kind->isOncePerPeriod() && $this->declarations->hasKindOnPeriod($student, $period, $kind)) {
+        if ($kind->isOncePerPeriod() && $this->declarations->hasKindInProgram($student, $program, $kind)) {
             throw new EngagementRefused('engagementAlreadyDeclaredMessage');
         }
 
-        $declaration = new EngagementDeclaration($student, $program, $period, $kind);
+        $declaration = new EngagementDeclaration($student, $program, $kind);
         $declaration->setDescription(trim($description));
 
         $this->entityManager->persist($declaration);
@@ -67,7 +66,6 @@ final class EngagementDeclarationService
         $this->ledger->record(
             $declaration->getStudent(),
             $declaration->getProgram(),
-            $declaration->getPeriod(),
             $declaration->getKind()->ruleCode(),
             self::SOURCE,
             (int) $declaration->getId(),

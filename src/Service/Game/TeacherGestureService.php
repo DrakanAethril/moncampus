@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Service\Game;
 
-use App\Entity\EvaluationPeriod;
 use App\Entity\GameEntry;
 use App\Entity\Program;
 use App\Entity\User;
@@ -13,22 +12,25 @@ use App\Repository\GameEntryRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * The teacher's gesture: the envelope, the two bounds, the contestation and the withdrawal
- * (§5.4 and §4, decision 6).
+ * The teacher's gesture: its motive, its contestation and its withdrawal (§5.4 and §4, decision 6).
  *
- * Four limits, and each of them answers a way the gesture could go wrong:
+ * **No envelope, and no per-teacher bound.** Both existed until 2026-08-28 - six tokens per teacher
+ * per class per period, and a net contribution capped at ±60 - and both were removed on request. The
+ * reason they went together is that they were the same idea twice: a quota placed between a teacher
+ * and their own judgement. What remains is what actually governs the gesture, and it is not a
+ * counter:
  *
- * - **An envelope of six per teacher, per class, per period**, shown permanently and never
- *   recharged. It is what turns a gesture from a reflex into a decision, and it is what keeps the
- *   malus from becoming a register: a malus spends a token exactly like a bonus, so a malus posted
- *   is a bonus that can no longer be given.
  * - **A malus bears on dress or on behaviour and on nothing else.** The constraint is in the form
- *   and in the schema, not only in the documentation.
- * - **One teacher's net contribution is bounded at ±60.** A student is neither made nor unmade by
- *   a single teacher, and the bound is applied when the gesture is posted rather than at reading
- *   time - a student must be able to add up their own journal.
- * - **Cancelling writes an inverse line and gives the token back.** Nothing is ever deleted: a
- *   gesture that was posted and withdrawn stays readable by the person it was addressed to.
+ *   and in the schema, not only in the documentation, and it is what keeps the one malus of the
+ *   system from becoming a second disciplinary register.
+ * - **A motive is mandatory**, read by the student exactly as it was typed, contestable for seven
+ *   days.
+ * - **Cancelling writes an inverse line.** Nothing is ever deleted: a gesture that was posted and
+ *   withdrawn stays readable by the person it was addressed to.
+ *
+ * And no period either. A gesture is posted on the day it is deserved; which period it counts
+ * towards is read afterwards from its date, and one posted on a day no period covers is still in
+ * the student's journal.
  */
 final class TeacherGestureService
 {
@@ -46,27 +48,18 @@ final class TeacherGestureService
     ) {
     }
 
-    /** Tokens left in this teacher's envelope for this class and this period. */
-    public function remaining(User $teacher, Program $program, EvaluationPeriod $period): int
-    {
-        $envelope = $this->settings->for($program)->getGestureEnvelope();
-
-        return max(0, $envelope - \count($this->standingGestures($teacher, $program, $period)));
-    }
-
     /**
      * Post a gesture, or refuse.
      *
-     * @param int                     $points signed, one of ±5 / ±10 / ±20
-     * @param GameGestureObject|null  $object mandatory on a malus, refused on a bonus
+     * @param int                    $points signed, one of ±5 / ±10 / ±20
+     * @param GameGestureObject|null $object mandatory on a malus, refused on a bonus
      *
-     * @throws GestureRefused when the envelope is empty, the value is not offered, or the malus is malformed
+     * @throws GestureRefused when the value is not offered, the motive is missing, or the malus is malformed
      */
     public function post(
         User $teacher,
         User $student,
         Program $program,
-        EvaluationPeriod $period,
         int $points,
         string $reason,
         ?GameGestureObject $object = null,
@@ -98,30 +91,14 @@ final class TeacherGestureService
             throw new GestureRefused('gameGestureObjectRefusedMessage');
         }
 
-        if ($this->remaining($teacher, $program, $period) < 1) {
-            throw new GestureRefused('gameGestureEnvelopeEmptyMessage');
-        }
-
-        // The ±60 bound, applied here rather than at reading time: what the journal shows is what
-        // counted. A gesture that would cross the bound is truncated to what is left of it, and one
-        // that would add nothing at all is refused rather than written as a zero.
-        $bound = $settings->getGestureNetBound();
-        $net = $this->netFor($teacher, $student, $program, $period);
-        $effective = $points > 0 ? min($points, $bound - $net) : max($points, -$bound - $net);
-
-        if (0 === $effective) {
-            throw new GestureRefused('gameGestureBoundReachedMessage');
-        }
-
         $entry = $this->ledger->record(
             $student,
             $program,
-            $period,
             $isMalus ? GameRuleCatalog::RECOGNITION_GESTURE_MALUS : GameRuleCatalog::RECOGNITION_GESTURE_BONUS,
             null,
             null,
             null,
-            $effective,
+            $points,
             $teacher,
             $reason,
         );
@@ -137,7 +114,7 @@ final class TeacherGestureService
     }
 
     /**
-     * Withdraw a gesture: an inverse line, and the token comes back.
+     * Withdraw a gesture: an inverse line.
      *
      * The original stays in the student's journal, marked by the line that undoes it - a gesture
      * somebody read cannot be made not to have existed.
@@ -194,23 +171,23 @@ final class TeacherGestureService
      *
      * @return list<GameEntry>
      */
-    public function standingGestures(User $teacher, Program $program, EvaluationPeriod $period): array
+    public function standingGestures(User $teacher, Program $program): array
     {
         return array_values(array_filter(
-            $this->entries->gesturesBy($teacher, $program, $period),
+            $this->entries->gesturesBy($teacher, $program),
             fn (GameEntry $entry): bool => !$this->isCancelled($entry),
         ));
     }
 
     /** Every gesture of the class this teacher posted, cancelled ones included - the screen's list. */
-    public function listFor(User $teacher, Program $program, EvaluationPeriod $period): array
+    public function listFor(User $teacher, Program $program): array
     {
-        return $this->entries->gesturesBy($teacher, $program, $period);
+        return $this->entries->gesturesBy($teacher, $program);
     }
 
-    /** This teacher's net contribution to one student, cancellations already netted out. */
-    public function netFor(User $teacher, User $student, Program $program, EvaluationPeriod $period): int
+    /** This teacher's net contribution to one student, cancellations already netted out - shown, never enforced. */
+    public function netFor(User $teacher, User $student, Program $program): int
     {
-        return $this->entries->gestureNet($teacher, $student, $program, $period);
+        return $this->entries->gestureNet($teacher, $student, $program);
     }
 }

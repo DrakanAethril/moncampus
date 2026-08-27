@@ -16,7 +16,6 @@ use App\Repository\UserRepository;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\GameGestureVoter;
 use App\Service\Game\GameAccess;
-use App\Service\Game\GamePeriodResolver;
 use App\Service\Game\GameSettingsProvider;
 use App\Service\Game\GestureRefused;
 use App\Service\Game\TeacherGestureService;
@@ -48,24 +47,20 @@ class GameGestureController extends AbstractController
         ProgramRepository $programs,
         GameAccess $access,
         StructureAccessChecker $accessChecker,
-        GamePeriodResolver $periods,
         GameSettingsProvider $settingsProvider,
         TeacherGestureService $gestures,
     ): Response {
         $program = $this->openProgram($id, $programs, $access, $accessChecker);
-        $period = $periods->activePeriod($program) ?? throw $this->createNotFoundException();
         $teacher = $this->currentUser();
         $settings = $settingsProvider->for($program);
 
-        $entries = $gestures->listFor($teacher, $program, $period);
+        $entries = $gestures->listFor($teacher, $program);
 
         return $this->render('game/gestures.html.twig', [
             'program' => $program,
-            'period' => $period,
             'settings' => $settings,
             'entries' => $entries,
             'cancelled' => $this->cancelledMap($entries, $gestures),
-            'remaining' => $gestures->remaining($teacher, $program, $period),
             'values' => TeacherGestureService::VALUES,
             'objects' => GameGestureObject::cases(),
             'students' => $this->orderedStudents($program),
@@ -79,12 +74,10 @@ class GameGestureController extends AbstractController
         ProgramRepository $programs,
         GameAccess $access,
         StructureAccessChecker $accessChecker,
-        GamePeriodResolver $periods,
         UserRepository $users,
         TeacherGestureService $gestures,
     ): Response {
         $program = $this->openProgram($id, $programs, $access, $accessChecker);
-        $period = $periods->activePeriod($program) ?? throw $this->createNotFoundException();
 
         if (!$this->isCsrfTokenValid('game_gesture', (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException();
@@ -105,7 +98,6 @@ class GameGestureController extends AbstractController
                 $this->currentUser(),
                 $student,
                 $program,
-                $period,
                 $isMalus ? -abs($value) : abs($value),
                 (string) $request->request->get('reason'),
                 $object,

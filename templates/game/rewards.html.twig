@@ -95,17 +95,17 @@
             <span class="cm-gm-label">{{ 'gameRewardCreateHeading'|trans }}</span>
             <form method="post" action="{{ path('app_program_game_rewards_new', {id: program.id}) }}" style="margin-top: 10px">
                 <input type="hidden" name="_token" value="{{ csrf_token('game_reward_new') }}">
-                <div class="cm-gm-gestureform">
-                    <label>
-                        <span class="cm-gm-label">{{ 'gameRewardLabelColumnLabel'|trans }} *</span>
+                <div class="cm-formgrid">
+                    <label class="cm-field">
+                        <span class="cm-field__label">{{ 'gameRewardLabelColumnLabel'|trans }} *</span>
                         <input type="text" name="label" maxlength="120" required>
                     </label>
-                    <label>
-                        <span class="cm-gm-label">{{ 'gameRewardIconFieldLabel'|trans }}</span>
+                    <label class="cm-field">
+                        <span class="cm-field__label">{{ 'gameRewardIconFieldLabel'|trans }}</span>
                         <input type="text" name="icon" maxlength="2" placeholder="🎁">
                     </label>
-                    <label>
-                        <span class="cm-gm-label">{{ 'gameRewardNatureColumnLabel'|trans }} *</span>
+                    <label class="cm-field">
+                        <span class="cm-field__label">{{ 'gameRewardNatureColumnLabel'|trans }} *</span>
                         <select name="nature" required>
                             <option value="">{{ 'gameRewardNaturePlaceholder'|trans }}</option>
                             {% for nature in natures %}
@@ -113,8 +113,8 @@
                             {% endfor %}
                         </select>
                     </label>
-                    <label>
-                        <span class="cm-gm-label">{{ 'gameRewardScopeColumnLabel'|trans }} *</span>
+                    <label class="cm-field">
+                        <span class="cm-field__label">{{ 'gameRewardScopeColumnLabel'|trans }} *</span>
                         <select name="scope" required>
                             <option value="">{{ 'gameRewardScopePlaceholder'|trans }}</option>
                             {% for scope in scopes %}
@@ -122,11 +122,11 @@
                             {% endfor %}
                         </select>
                     </label>
-                    <label>
-                        <span class="cm-gm-label">{{ 'gameRewardQuantityFieldLabel'|trans }}</span>
+                    <label class="cm-field">
+                        <span class="cm-field__label">{{ 'gameRewardQuantityFieldLabel'|trans }}</span>
                         <input type="number" name="quantity" min="0" max="10000" placeholder="{{ 'gameRewardQuantityPlaceholder'|trans }}">
                     </label>
-                    <label class="cm-gm-gestureform__reason">
+                    <label class="cm-field cm-formgrid__wide">
                         <span class="cm-gm-label">{{ 'gameRewardDescriptionFieldLabel'|trans }}</span>
                         <textarea name="description" rows="2" maxlength="1000"></textarea>
                     </label>

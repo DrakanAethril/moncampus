@@ -1,0 +1,33 @@
+{# The four families with their denominators - shared by « Ma progression » and « Leveling », so the
+   two screens cannot come to say different things about the same rate. #}
+<div class="cm-gm-fams">
+    {% for family in families %}
+        {% set counts = standing.score.counts(family.value) %}
+        {% set rate = standing.score.rateOf(family.value) %}
+        {% set possible = standing.possibleIn(family.value) %}
+        <div class="cm-gm-fam{{ counts ? '' : ' cm-gm-fam--empty' }}">
+            <div class="cm-gm-fam__name">
+                {{ family.labelKey|trans }}
+                <span class="cm-gm-fam__sub">
+                    {% if counts %}
+                        {{ 'gameFamilyWeightLabel'|trans({'%weight%': standing.score.weightOf(family.value)}) }}
+                        · {{ 'gameFamilyPossibleLabel'|trans({'%possible%': possible}) }}
+                    {% else %}
+                        {{ 'gameFamilyOutOfIndexLabel'|trans }}
+                    {% endif %}
+                </span>
+            </div>
+            <div class="cm-gm-fam__track">
+                <span class="cm-gm-fam__fill cm-gm-fam__fill--{{ family.value }}" style="width: {{ counts ? (rate * 100)|round : 0 }}%"></span>
+            </div>
+            <div class="cm-gm-fam__value">
+                {% if counts %}
+                    {{ (rate * 100)|round }} %
+                    <span class="cap">· {{ standing.earnedIn(family.value) }}/{{ possible }}</span>
+                {% else %}
+                    —
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+</div>

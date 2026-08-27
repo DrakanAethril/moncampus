@@ -19,6 +19,10 @@ use Symfony\Component\Validator\Constraints as Assert;
  * readable in one line, where tuning forty rule values is readable nowhere; that is why they sit
  * here rather than among App\Entity\GameRule's rows, and why they are what the screen leads with.
  *
+ * The gesture envelope and the ±60 per-teacher bound lived here until 2026-08-28 and are gone: a
+ * quota placed between a teacher and their own judgement was removed on request, and a setting that
+ * no longer governs anything is worse than no setting at all.
+ *
  * A row exists only once a formation has saved something. Everything is defaulted here, so a
  * program that has never opened the screen plays a complete game - and
  * App\Entity\Program::$gameEnabled, not this entity, is what says whether it plays at all.
@@ -81,16 +85,6 @@ class GameProgramSettings
     #[ORM\Column(name: 'threshold_gold')]
     #[Assert\Range(min: 0, max: 100)]
     private int $thresholdGold = 85;
-
-    /** Gestures per teacher, per class, per period. It does not recharge; cancelling gives the token back. */
-    #[ORM\Column(name: 'gesture_envelope')]
-    #[Assert\Range(min: 0, max: 50)]
-    private int $gestureEnvelope = 6;
-
-    /** The net contribution of one teacher's gestures, bounded both ways (§5.4). */
-    #[ORM\Column(name: 'gesture_net_bound')]
-    #[Assert\Range(min: 0, max: 500)]
-    private int $gestureNetBound = 60;
 
     /** The index every member of a team must clear for all of them to be paid (§4, decision 7). */
     #[ORM\Column(name: 'team_threshold')]
@@ -264,30 +258,6 @@ class GameProgramSettings
     public function setThresholdGold(int $threshold): static
     {
         $this->thresholdGold = $threshold;
-
-        return $this;
-    }
-
-    public function getGestureEnvelope(): int
-    {
-        return $this->gestureEnvelope;
-    }
-
-    public function setGestureEnvelope(int $envelope): static
-    {
-        $this->gestureEnvelope = $envelope;
-
-        return $this;
-    }
-
-    public function getGestureNetBound(): int
-    {
-        return $this->gestureNetBound;
-    }
-
-    public function setGestureNetBound(int $bound): static
-    {
-        $this->gestureNetBound = $bound;
 
         return $this;
     }

@@ -20,6 +20,12 @@ use Doctrine\ORM\Mapping as ORM;
  * contested and withdrawn has to remain readable by the student it was addressed to, and a journal
  * one can delete from is not a journal.
  *
+ * **It carries no period.** A period is a range of dates, and an entry carries the date it happened
+ * on: which period it counts towards is therefore a *reading*
+ * (App\Repository\GameEntryRepository sums on `occurredAt` between two bounds), never a condition on
+ * writing one. Nothing in this application has to wait for a calendar to thank a student, and an
+ * entry that falls outside every period is still in the journal - it simply counts towards no index.
+ *
  * $sourceType / $sourceId name the object that produced the line - a submission, a quiz attempt, an
  * attendance line - as a plain pair rather than a polymorphic Doctrine association: the sources
  * belong to a dozen unrelated tables and none of them should gain a mapping towards the game. That
@@ -28,8 +34,8 @@ use Doctrine\ORM\Mapping as ORM;
  */
 #[ORM\Entity(repositoryClass: GameEntryRepository::class)]
 #[ORM\Table(name: 'game_entry')]
-#[ORM\Index(name: 'idx_game_entry_student_period_family', columns: ['student_id', 'period_id', 'family'])]
-#[ORM\Index(name: 'idx_game_entry_program_period', columns: ['program_id', 'period_id'])]
+#[ORM\Index(name: 'idx_game_entry_student_family', columns: ['student_id', 'family', 'occurred_at'])]
+#[ORM\Index(name: 'idx_game_entry_program_occurred', columns: ['program_id', 'occurred_at'])]
 #[ORM\Index(name: 'idx_game_entry_source', columns: ['source_type', 'source_id'])]
 class GameEntry
 {
@@ -45,10 +51,6 @@ class GameEntry
     #[ORM\ManyToOne(targetEntity: Program::class)]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private Program $program;
-
-    #[ORM\ManyToOne(targetEntity: EvaluationPeriod::class)]
-    #[ORM\JoinColumn(name: 'period_id', nullable: false, onDelete: 'CASCADE')]
-    private EvaluationPeriod $period;
 
     #[ORM\Column(length: 20, enumType: GameFamily::class)]
     private GameFamily $family;
@@ -102,7 +104,6 @@ class GameEntry
     public function __construct(
         User $student,
         Program $program,
-        EvaluationPeriod $period,
         GameFamily $family,
         string $ruleCode,
         int $points,
@@ -110,7 +111,6 @@ class GameEntry
     ) {
         $this->student = $student;
         $this->program = $program;
-        $this->period = $period;
         $this->family = $family;
         $this->ruleCode = $ruleCode;
         $this->points = $points;
@@ -130,11 +130,6 @@ class GameEntry
     public function getProgram(): Program
     {
         return $this->program;
-    }
-
-    public function getPeriod(): EvaluationPeriod
-    {
-        return $this->period;
     }
 
     public function getFamily(): GameFamily

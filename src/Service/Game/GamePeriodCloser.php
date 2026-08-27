@@ -113,7 +113,6 @@ final class GamePeriodCloser
                 $this->ledger->record(
                     $member['student'],
                     $program,
-                    $period,
                     GameRuleCatalog::RECOGNITION_TEAM_GOAL,
                     'GameTeamSet',
                     // Keyed on the team's position so the source is stable and the line is written

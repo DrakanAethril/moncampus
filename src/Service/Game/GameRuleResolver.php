@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Service\Game;
 
-use App\Entity\EvaluationPeriod;
 use App\Entity\Program;
 use App\Repository\GameRuleRepository;
 
@@ -26,15 +25,15 @@ final class GameRuleResolver
     {
     }
 
-    public function valueOf(Program $program, EvaluationPeriod $period, string $code): ?GameRuleValue
+    public function valueOf(Program $program, string $code): ?GameRuleValue
     {
-        return $this->all($program, $period)[$code] ?? null;
+        return $this->all($program)[$code] ?? null;
     }
 
     /** What one occasion of this rule pays, 0 when it is switched off or unknown. */
-    public function pointsOf(Program $program, EvaluationPeriod $period, string $code): int
+    public function pointsOf(Program $program, string $code): int
     {
-        $value = $this->valueOf($program, $period, $code);
+        $value = $this->valueOf($program, $code);
 
         return null !== $value && $value->enabled ? $value->points : 0;
     }
@@ -44,15 +43,15 @@ final class GameRuleResolver
      *
      * @return array<string, GameRuleValue>
      */
-    public function all(Program $program, EvaluationPeriod $period): array
+    public function all(Program $program): array
     {
-        $key = $program->getId().'|'.$period->getId();
+        $key = (string) $program->getId();
 
         if (isset($this->cache[$key])) {
             return $this->cache[$key];
         }
 
-        $overrides = $this->rules->findForPeriod($program, $period);
+        $overrides = $this->rules->findForProgram($program);
 
         $resolved = [];
         foreach (GameRuleCatalog::all() as $code => $definition) {

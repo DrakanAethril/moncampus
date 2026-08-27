@@ -35,6 +35,8 @@ class GameEntryRepository extends ServiceEntityRepository
      */
     public function sumByFamily(User $student, Program $program, EvaluationPeriod $period): array
     {
+        [$from, $to] = $this->boundsOf($period);
+
         // `e.family` hydrates as the enum itself even in an array result - the enumType on the
         // column applies to every hydration mode - so the key is taken off ->value, never off a
         // cast that would throw.
@@ -43,11 +45,12 @@ class GameEntryRepository extends ServiceEntityRepository
             ->select('e.family AS family, SUM(e.points) AS total')
             ->where('e.student = :student')
             ->andWhere('e.program = :program')
-            ->andWhere('e.period = :period')
+            ->andWhere('e.occurredAt >= :from AND e.occurredAt <= :to')
             ->groupBy('e.family')
             ->setParameter('student', $student)
             ->setParameter('program', $program)
-            ->setParameter('period', $period)
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
             ->getQuery()
             ->getArrayResult();
 
@@ -73,16 +76,19 @@ class GameEntryRepository extends ServiceEntityRepository
             return [];
         }
 
+        [$from, $to] = $this->boundsOf($period);
+
         /** @var list<array{student: int, family: GameFamily, total: string|int|null}> $rows */
         $rows = $this->createQueryBuilder('e')
             ->select('IDENTITY(e.student) AS student, e.family AS family, SUM(e.points) AS total')
             ->where('e.student IN (:students)')
             ->andWhere('e.program = :program')
-            ->andWhere('e.period = :period')
+            ->andWhere('e.occurredAt >= :from AND e.occurredAt <= :to')
             ->groupBy('e.student, e.family')
             ->setParameter('students', $students)
             ->setParameter('program', $program)
-            ->setParameter('period', $period)
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
             ->getQuery()
             ->getArrayResult();
 
@@ -126,21 +132,19 @@ class GameEntryRepository extends ServiceEntityRepository
      *
      * @return array<int, int> source id => points
      */
-    public function sumBySourceForRule(User $student, Program $program, EvaluationPeriod $period, string $sourceType, string $ruleCode): array
+    public function sumBySourceForRule(User $student, Program $program, string $sourceType, string $ruleCode): array
     {
         /** @var list<array{source: int|null, total: string|int|null}> $rows */
         $rows = $this->createQueryBuilder('e')
             ->select('e.sourceId AS source, SUM(e.points) AS total')
             ->where('e.student = :student')
             ->andWhere('e.program = :program')
-            ->andWhere('e.period = :period')
             ->andWhere('e.sourceType = :sourceType')
             ->andWhere('e.ruleCode = :ruleCode')
             ->andWhere('e.sourceId IS NOT NULL')
             ->groupBy('e.sourceId')
             ->setParameter('student', $student)
             ->setParameter('program', $program)
-            ->setParameter('period', $period)
             ->setParameter('sourceType', $sourceType)
             ->setParameter('ruleCode', $ruleCode)
             ->getQuery()
@@ -182,20 +186,18 @@ class GameEntryRepository extends ServiceEntityRepository
      *
      * @return list<GameEntry>
      */
-    public function gesturesBy(User $teacher, Program $program, EvaluationPeriod $period): array
+    public function gesturesBy(User $teacher, Program $program): array
     {
         /** @var list<GameEntry> $entries */
         $entries = $this->createQueryBuilder('e')
             ->where('e.author = :teacher')
             ->andWhere('e.program = :program')
-            ->andWhere('e.period = :period')
             ->andWhere('e.ruleCode IN (:codes)')
             ->andWhere('e.reversalOf IS NULL')
             ->orderBy('e.occurredAt', 'DESC')
             ->addOrderBy('e.id', 'DESC')
             ->setParameter('teacher', $teacher)
             ->setParameter('program', $program)
-            ->setParameter('period', $period)
             ->setParameter('codes', [GameRuleCatalog::RECOGNITION_GESTURE_BONUS, GameRuleCatalog::RECOGNITION_GESTURE_MALUS])
             ->getQuery()
             ->getResult();
@@ -210,19 +212,17 @@ class GameEntryRepository extends ServiceEntityRepository
      * Reversals are summed in rather than filtered out, which is what makes a cancelled gesture
      * free the room it took.
      */
-    public function gestureNet(User $teacher, User $student, Program $program, EvaluationPeriod $period): int
+    public function gestureNet(User $teacher, User $student, Program $program): int
     {
         return (int) $this->createQueryBuilder('e')
             ->select('COALESCE(SUM(e.points), 0)')
             ->where('e.author = :teacher')
             ->andWhere('e.student = :student')
             ->andWhere('e.program = :program')
-            ->andWhere('e.period = :period')
             ->andWhere('e.ruleCode IN (:codes)')
             ->setParameter('teacher', $teacher)
             ->setParameter('student', $student)
             ->setParameter('program', $program)
-            ->setParameter('period', $period)
             ->setParameter('codes', [GameRuleCatalog::RECOGNITION_GESTURE_BONUS, GameRuleCatalog::RECOGNITION_GESTURE_MALUS])
             ->getQuery()
             ->getSingleScalarResult();
@@ -264,19 +264,17 @@ class GameEntryRepository extends ServiceEntityRepository
      *
      * @return list<GameEntry>
      */
-    public function gesturesFor(User $student, Program $program, EvaluationPeriod $period): array
+    public function gesturesFor(User $student, Program $program): array
     {
         /** @var list<GameEntry> $entries */
         $entries = $this->createQueryBuilder('e')
             ->where('e.student = :student')
             ->andWhere('e.program = :program')
-            ->andWhere('e.period = :period')
             ->andWhere('e.ruleCode IN (:codes)')
             ->andWhere('e.reversalOf IS NULL')
             ->orderBy('e.occurredAt', 'DESC')
             ->setParameter('student', $student)
             ->setParameter('program', $program)
-            ->setParameter('period', $period)
             ->setParameter('codes', [GameRuleCatalog::RECOGNITION_GESTURE_BONUS, GameRuleCatalog::RECOGNITION_GESTURE_MALUS])
             ->getQuery()
             ->getResult();
@@ -290,17 +288,24 @@ class GameEntryRepository extends ServiceEntityRepository
      *
      * @return list<GameEntry>
      */
-    public function journal(User $student, Program $program, EvaluationPeriod $period, ?int $limit = null): array
+    public function journal(User $student, Program $program, ?EvaluationPeriod $period = null, ?int $limit = null): array
     {
         $query = $this->createQueryBuilder('e')
             ->where('e.student = :student')
             ->andWhere('e.program = :program')
-            ->andWhere('e.period = :period')
             ->orderBy('e.occurredAt', 'DESC')
             ->addOrderBy('e.id', 'DESC')
             ->setParameter('student', $student)
-            ->setParameter('program', $program)
-            ->setParameter('period', $period);
+            ->setParameter('program', $program);
+
+        // A period narrows the reading; without one the journal is the student's whole history,
+        // which is what « voir l'historique des points » asks for.
+        if (null !== $period) {
+            [$from, $to] = $this->boundsOf($period);
+            $query->andWhere('e.occurredAt >= :from AND e.occurredAt <= :to')
+                ->setParameter('from', $from)
+                ->setParameter('to', $to);
+        }
 
         if (null !== $limit) {
             $query->setMaxResults($limit);
@@ -310,5 +315,35 @@ class GameEntryRepository extends ServiceEntityRepository
         $entries = $query->getQuery()->getResult();
 
         return $entries;
+    }
+
+    /**
+     * The two bounds a period covers.
+     *
+     * This is the whole of what a period is to the ledger: a range of dates. An entry belongs to it
+     * because of *when it happened*, never because somebody had to pick a period before writing it -
+     * which is what made a gesture impossible on a day the calendar had not planned for.
+     *
+     * @return array{0: \DateTimeImmutable, 1: \DateTimeImmutable}
+     */
+    private function boundsOf(EvaluationPeriod $period): array
+    {
+        return [
+            $period->getStartDate() ?? new \DateTimeImmutable('@0'),
+            $period->getEndDate() ?? new \DateTimeImmutable('+100 years'),
+        ];
+    }
+
+    /** One student's whole ledger for a formation, all time - the « Mon XP » total. */
+    public function sumAllTime(User $student, Program $program): int
+    {
+        return (int) $this->createQueryBuilder('e')
+            ->select('COALESCE(SUM(e.points), 0)')
+            ->where('e.student = :student')
+            ->andWhere('e.program = :program')
+            ->setParameter('student', $student)
+            ->setParameter('program', $program)
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 }

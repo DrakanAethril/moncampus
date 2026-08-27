@@ -19,7 +19,6 @@ use App\Service\FormValue;
 use App\Service\Game\EngagementDeclarationService;
 use App\Service\Game\EngagementRefused;
 use App\Service\Game\GameAccess;
-use App\Service\Game\GamePeriodResolver;
 use App\Service\UploadIntake;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -47,7 +46,6 @@ class GameEngagementController extends AbstractController
     public function declare(
         Request $request,
         GameAccess $access,
-        GamePeriodResolver $periods,
         EngagementDeclarationService $service,
         EngagementDeclarationRepository $declarations,
         UploadIntake $uploadIntake,
@@ -55,7 +53,6 @@ class GameEngagementController extends AbstractController
     ): Response {
         $student = $this->currentUser();
         $program = $access->primaryProgramFor($student) ?? throw $this->createNotFoundException();
-        $period = $periods->activePeriod($program) ?? throw $this->createNotFoundException();
 
         $form = $this->createForm(EngagementDeclarationType::class);
         $form->handleRequest($request);
@@ -68,7 +65,7 @@ class GameEngagementController extends AbstractController
                     throw new EngagementRefused('engagementKindPlaceholder');
                 }
 
-                $declaration = $service->file($student, $program, $period, $kind, FormValue::trimmed($form, 'description'));
+                $declaration = $service->file($student, $program, $kind, FormValue::trimmed($form, 'description'));
                 $this->attach($declaration, $form->get('attachments')->getData(), $uploadIntake);
                 $entityManager->flush();
 
@@ -88,9 +85,8 @@ class GameEngagementController extends AbstractController
         return $this->render('game/engagement_new.html.twig', [
             'form' => $form,
             'program' => $program,
-            'period' => $period,
             'kinds' => EngagementKind::cases(),
-            'mine' => $declarations->findForStudent($student, $program, $period),
+            'mine' => $declarations->findForStudent($student, $program),
         ], new Response('', $status));
     }
 
@@ -106,7 +102,6 @@ class GameEngagementController extends AbstractController
         ProgramRepository $programs,
         GameAccess $access,
         StructureAccessChecker $accessChecker,
-        GamePeriodResolver $periods,
         EngagementDeclarationRepository $declarations,
     ): Response {
         $teaching = $this->teachingPrograms($programs, $access, $accessChecker);
@@ -117,14 +112,12 @@ class GameEngagementController extends AbstractController
 
         $asked = $request->query->getInt('program');
         $program = $this->pick($teaching, $asked);
-        $period = $periods->activePeriod($program) ?? throw $this->createNotFoundException();
 
         return $this->render('game/engagement_queue.html.twig', [
             'programs' => $teaching,
             'program' => $program,
-            'period' => $period,
-            'declarations' => $declarations->queueFor($program, $period),
-            'waiting' => $declarations->countWaiting($program, $period),
+            'declarations' => $declarations->queueFor($program),
+            'waiting' => $declarations->countWaiting($program),
         ]);
     }
 

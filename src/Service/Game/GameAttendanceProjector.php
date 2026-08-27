@@ -28,9 +28,9 @@ use App\Repository\GameStatementLineRepository;
  * - **The scale is computed across the whole formation, in date order**, and a streak therefore runs
  *   through a term boundary. Nothing says it should stop there, and a run of clean weeks broken
  *   only by the calendar would be a rule nobody could explain to a student.
- * - **Each line's points are filed into the period its own relevé falls in.** A relevé held outside
- *   every period pays nothing at all - there is no index for it to count towards - and that is
- *   said rather than silently dropped: the screen shows the relevé as « hors période ».
+ * - **Nothing is filed into a period.** A line pays on the day its relevé covers, and which period
+ *   that day belongs to is read afterwards; a relevé held outside every period is still paid and
+ *   still in the journal, it simply counts towards no index. The screen says so.
  */
 final class GameAttendanceProjector
 {
@@ -58,15 +58,9 @@ final class GameAttendanceProjector
         $scale = $this->scaleFor($program, $lines);
 
         foreach ($lines as $offset => $line) {
-            $period = $this->periodOf($program, $line);
-
-            if (null === $period) {
-                continue;
-            }
-
             $paid = [
-                GameRuleCatalog::ATTENDANCE_CLEAN => $this->entries->sumBySourceForRule($student, $program, $period, self::SOURCE, GameRuleCatalog::ATTENDANCE_CLEAN),
-                GameRuleCatalog::ATTENDANCE_STREAK => $this->entries->sumBySourceForRule($student, $program, $period, self::SOURCE, GameRuleCatalog::ATTENDANCE_STREAK),
+                GameRuleCatalog::ATTENDANCE_CLEAN => $this->entries->sumBySourceForRule($student, $program, self::SOURCE, GameRuleCatalog::ATTENDANCE_CLEAN),
+                GameRuleCatalog::ATTENDANCE_STREAK => $this->entries->sumBySourceForRule($student, $program, self::SOURCE, GameRuleCatalog::ATTENDANCE_STREAK),
             ];
 
             $id = (int) $line->getId();
@@ -83,7 +77,7 @@ final class GameAttendanceProjector
                 $delta = $target - ($paid[$code][$id] ?? 0);
 
                 if (0 !== $delta) {
-                    $this->ledger->adjust($student, $program, $period, $code, $delta, self::SOURCE, $id, $at);
+                    $this->ledger->adjust($student, $program, $code, $delta, self::SOURCE, $id, $at);
                 }
             }
         }
@@ -138,14 +132,8 @@ final class GameAttendanceProjector
     {
         $settings = $this->settings->for($program);
 
-        // The barème is versioned by period and a run of relevés can cross one, so the values are
-        // read on the formation's active period: retuning a rule mid-term applies to the term in
-        // progress (§9), and a scale computed rule-by-rule per line would make one week worth more
-        // than the next for reasons nobody could see on screen.
-        $period = $this->periods->activePeriod($program);
-
-        $unit = null === $period ? 30 : $this->rules->pointsOf($program, $period, GameRuleCatalog::ATTENDANCE_CLEAN);
-        $streak = null === $period ? 10 : $this->rules->pointsOf($program, $period, GameRuleCatalog::ATTENDANCE_STREAK);
+        $unit = $this->rules->pointsOf($program, GameRuleCatalog::ATTENDANCE_CLEAN);
+        $streak = $this->rules->pointsOf($program, GameRuleCatalog::ATTENDANCE_STREAK);
 
         return $this->scale->points(
             array_map(static fn (GameStatementLine $line): array => [
