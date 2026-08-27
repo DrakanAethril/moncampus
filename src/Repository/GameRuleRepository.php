@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
-use App\Entity\EvaluationPeriod;
 use App\Entity\GameRule;
 use App\Entity\Program;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -21,18 +20,16 @@ class GameRuleRepository extends ServiceEntityRepository
     }
 
     /**
-     * Every deviation this formation has saved for this period, keyed by code.
+     * Every deviation this formation has saved, keyed by code.
      *
      * @return array<string, GameRule>
      */
-    public function findForPeriod(Program $program, EvaluationPeriod $period): array
+    public function findForProgram(Program $program): array
     {
         /** @var list<GameRule> $rules */
         $rules = $this->createQueryBuilder('r')
             ->where('r.program = :program')
-            ->andWhere('r.period = :period')
             ->setParameter('program', $program)
-            ->setParameter('period', $period)
             ->getQuery()
             ->getResult();
 

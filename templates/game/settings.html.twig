@@ -43,10 +43,10 @@
                 {# The four weights are the real barème: setting 30/30/25/15 is a pedagogical
                    statement readable in one line, where tuning forty rule values is readable
                    nowhere. #}
-                <div class="cm-gm-gestureform" style="margin-top: 10px">
+                <div class="cm-formgrid" style="margin-top: 10px">
                     {% for field, weight in weights %}
-                        <label title="{{ 'gameSettingsWeightHelpText'|trans }}">
-                            <span class="cm-gm-label">{{ weight.label|trans }}</span>
+                        <label class="cm-field" title="{{ 'gameSettingsWeightHelpText'|trans }}">
+                            <span class="cm-field__label">{{ weight.label|trans }}</span>
                             <input type="number" name="{{ field }}" min="0" max="100" value="{{ weight.value }}">
                         </label>
                     {% endfor %}
@@ -70,25 +70,25 @@
                     {% endif %}
                 </div>
 
-                <div class="cm-gm-gestureform" style="margin-top: 10px">
-                    <div title="{{ 'gameSettingsStepHelpText'|trans }}">
-                        <span class="cm-gm-label">{{ 'gameSettingsStepLabel'|trans }}</span>
+                <div class="cm-formgrid" style="margin-top: 10px">
+                    <div class="cm-field" title="{{ 'gameSettingsStepHelpText'|trans }}">
+                        <span class="cm-field__label">{{ 'gameSettingsStepLabel'|trans }}</span>
                         <div class="cm-gm-seg">
                             {% for step in steps %}
                                 <label><input type="radio" name="attendance_step" value="{{ step.value }}" {{ settings.attendanceStep == step ? 'checked' }}><span>{{ step.labelKey|trans }}</span></label>
                             {% endfor %}
                         </div>
                     </div>
-                    <div title="{{ 'gameSettingsTeamModeHelpText'|trans }}">
-                        <span class="cm-gm-label">{{ 'gameSettingsTeamModeLabel'|trans }}</span>
+                    <div class="cm-field" title="{{ 'gameSettingsTeamModeHelpText'|trans }}">
+                        <span class="cm-field__label">{{ 'gameSettingsTeamModeLabel'|trans }}</span>
                         <div class="cm-gm-seg">
                             {% for mode in teamModes %}
                                 <label><input type="radio" name="team_mode" value="{{ mode.value }}" {{ settings.teamMode == mode ? 'checked' }}><span>{{ mode.labelKey|trans }}</span></label>
                             {% endfor %}
                         </div>
                     </div>
-                    <label title="{{ 'gameSettingsTrackHelpText'|trans }}">
-                        <span class="cm-gm-label">{{ 'gameSettingsTrackLabel'|trans }}</span>
+                    <label class="cm-field" title="{{ 'gameSettingsTrackHelpText'|trans }}">
+                        <span class="cm-field__label">{{ 'gameSettingsTrackLabel'|trans }}</span>
                         <select name="track">
                             <option value="">{{ 'gameSettingsTrackPlaceholder'|trans }}</option>
                             {% for track in tracks %}
@@ -97,8 +97,8 @@
                         </select>
                         <span class="cm-card-note" style="display: block; padding: 4px 0">{{ 'gameSettingsTrackHelpText'|trans }}</span>
                     </label>
-                    <label title="{{ 'gameSettingsTeamBatchHelpText'|trans }}">
-                        <span class="cm-gm-label">{{ 'gameSettingsTeamBatchLabel'|trans }}</span>
+                    <label class="cm-field" title="{{ 'gameSettingsTeamBatchHelpText'|trans }}">
+                        <span class="cm-field__label">{{ 'gameSettingsTeamBatchLabel'|trans }}</span>
                         <select name="team_batch">
                             <option value="0">{{ 'gameSettingsTeamBatchPlaceholder'|trans }}</option>
                             {% for batch in batches %}
@@ -113,10 +113,10 @@
         <div class="card" style="margin-top: 16px">
             <div class="card-body">
                 <span class="cm-gm-label">{{ 'gameSettingsThresholdsHeading'|trans }}</span>
-                <div class="cm-gm-gestureform" style="margin-top: 10px">
+                <div class="cm-formgrid" style="margin-top: 10px">
                     {% for field, number in numbers %}
-                        <label title="{{ ('gameSettings' ~ field|replace({'_': ' '})|title|replace({' ': ''}) ~ 'HelpText')|trans }}">
-                            <span class="cm-gm-label">{{ number.label|trans }}</span>
+                        <label class="cm-field" title="{{ ('gameSettings' ~ field|replace({'_': ' '})|title|replace({' ': ''}) ~ 'HelpText')|trans }}">
+                            <span class="cm-field__label">{{ number.label|trans }}</span>
                             <input type="number" name="{{ field }}" min="0" max="5000" value="{{ number.value }}">
                         </label>
                     {% endfor %}
@@ -129,10 +129,10 @@
                 <div class="card-body">
                     <span class="cm-gm-label">{{ 'gameSettingsScaleHeading'|trans }}</span>
                     <div class="cm-card-note" style="padding: 6px 0">{{ 'gameSettingsScaleNoteText'|trans }}</div>
-                    <div class="cm-gm-gestureform" style="margin-top: 6px">
+                    <div class="cm-formgrid" style="margin-top: 6px">
                         {% for definition in tunable %}
-                            <label title="{{ 'gameSettingsRuleHelpText'|trans({'%rule%': ('gameRule.' ~ definition.code)|trans}) }}">
-                                <span class="cm-gm-label">{{ ('gameRule.' ~ definition.code)|trans }}</span>
+                            <label class="cm-field" title="{{ 'gameSettingsRuleHelpText'|trans({'%rule%': ('gameRule.' ~ definition.code)|trans}) }}">
+                                <span class="cm-field__label">{{ ('gameRule.' ~ definition.code)|trans }}</span>
                                 <input type="number" name="rules[{{ definition.code }}]" min="-200" max="200" value="{{ ruleValues[definition.code].points }}">
                             </label>
                         {% endfor %}

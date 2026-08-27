@@ -49,9 +49,9 @@ final class GameWorkReader
             return [];
         }
 
-        $onTime = $this->rules->valueOf($program, $period, GameRuleCatalog::WORK_ON_TIME)?->possibleValue() ?? 30;
-        $quizValue = $this->rules->valueOf($program, $period, GameRuleCatalog::WORK_QUIZ)?->possibleValue() ?? 20;
-        $selfValue = $this->rules->valueOf($program, $period, GameRuleCatalog::WORK_SELF_ASSESSMENT)?->possibleValue() ?? 10;
+        $onTime = $this->rules->valueOf($program, GameRuleCatalog::WORK_ON_TIME)?->possibleValue() ?? 30;
+        $quizValue = $this->rules->valueOf($program, GameRuleCatalog::WORK_QUIZ)?->possibleValue() ?? 20;
+        $selfValue = $this->rules->valueOf($program, GameRuleCatalog::WORK_SELF_ASSESSMENT)?->possibleValue() ?? 10;
 
         $attempts = $this->attemptsByInstance($student, $start, $end);
         $selfAssessments = $this->selfAssessmentsByDeadline($student, $program, $start, $end);

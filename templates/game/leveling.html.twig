@@ -1,0 +1,243 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'gameLevelingHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {# Two segments: « Leveling » hangs off the profile menu, and nothing navigates through a
+       section to reach it. #}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'gameLevelingHeading'|trans, url: path('app_game_leveling')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'gameLevelingHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="cm-tabs">
+        {% for key, label in {'xp': 'gameLevelingXpTabLabel', 'team': 'gameLevelingTeamTabLabel', 'ranking': 'gameLevelingRankingTabLabel', 'rules': 'gameLevelingRulesTabLabel'} %}
+            <a class="cm-tabs__tab {{ tab == key ? 'is-active' }}" href="{{ path('app_game_leveling', {tab: key}) }}">{{ label|trans }}</a>
+        {% endfor %}
+    </div>
+
+    <div class="card cm-card--tabbed">
+
+        {# ---- Mon XP ------------------------------------------------------------------- #}
+        {% if tab == 'xp' %}
+            <div class="cm-gm-hero">
+                {% if badge %}
+                    {% include 'game/_avatar.html.twig' with {badge: badge} %}
+                {% endif %}
+                <div class="cm-gm-hero__body">
+                    <div class="cm-gm-hero__name">{{ badge ? badge.title : '—' }}</div>
+                    <div class="cm-gm-hero__stats">
+                        <span><b>{{ profile.xpTotal|number_format(0, ',', ' ') }}</b> {{ 'gameLevelingXpTotalLabel'|trans }}</span>
+                        <span><b>{{ profile.level }}</b> {{ 'gameLevelingLevelLabel'|trans }}</span>
+                        <span><b>{{ totalPoints }}</b> {{ 'gameLevelingPointsTotalLabel'|trans }}</span>
+                    </div>
+                    {% if badge and not badge.progress.isMaxed %}
+                        <div class="cm-gm-fam__track" style="margin-top: 10px">
+                            <span class="cm-gm-fam__fill cm-gm-fam__fill--work" style="width: {{ badge.percent }}%"></span>
+                        </div>
+                        <div class="cm-gm-hero__next">
+                            {{ 'gameLevelingNextLevelText'|trans({
+                                '%missing%': badge.progress.xpToNext|number_format(0, ',', ' '),
+                                '%level%': badge.progress.next.level,
+                            }) }}
+                        </div>
+                    {% elseif badge %}
+                        <div class="cm-gm-hero__next">{{ 'gameXpMaxedHint'|trans({'%xp%': profile.xpTotal|number_format(0, ',', ' ')}) }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if standing %}
+                <div class="cm-gm-section">
+                    <h3 class="cm-gm-section__title">{{ 'gameFamiliesHeading'|trans }}</h3>
+                    {% include 'game/_families.html.twig' with {standing: standing, families: families} %}
+                </div>
+            {% endif %}
+
+            <div class="cm-gm-section">
+                <h3 class="cm-gm-section__title">{{ 'gameLevelingTitlesHeading'|trans }}</h3>
+                <p class="cm-gm-section__hint">{{ 'gameLevelingTitlesHintText'|trans }}</p>
+                <div class="cm-gm-titles">
+                    {% for entry in levels %}
+                        {% set reached = profile.xpTotal >= entry.level.xpMin %}
+                        <div class="cm-gm-title {{ reached ? 'is-reached' }}">
+                            <span class="cm-gm-title__level" style="{{ game_band_style(entry.level.level) }}">{{ 'gameLevelShortLabel'|trans({'%level%': entry.level.level}) }}</span>
+                            <span class="cm-gm-title__name">{{ entry.title }}</span>
+                            <span class="cm-gm-title__xp">{{ entry.level.xpMin|number_format(0, ',', ' ') }} XP</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="cm-gm-section">
+                <h3 class="cm-gm-section__title">{{ 'gameShelfHeading'|trans }}</h3>
+                <p class="cm-gm-section__hint">{{ 'gameLevelingRewardsHintText'|trans }}</p>
+                <div class="cm-gm-shelf">
+                    {% for grant in shelf %}
+                        <div class="cm-gm-shelf__row">
+                            <span class="cm-gm-shelf__icon">{{ grant.item.icon ?? '🎁' }}</span>
+                            <span class="cm-gm-shelf__label">
+                                <b>{{ grant.item.label }}</b>
+                                {%- if grant.used %} — {{ 'gameRewardUsedLabel'|trans({'%date%': grant.usedAt|date('d/m/Y')}) }}
+                                {%- elseif grant.item.nature.spendable %} — {{ 'gameRewardToSpendLabel'|trans }}
+                                {%- else %} — {{ grant.item.nature.labelKey|trans }}{% endif %}
+                                {%- if grant.reason %}<span class="cm-gm-log__src">{{ grant.reason }}</span>{% endif %}
+                            </span>
+                        </div>
+                    {% else %}
+                        <p class="cm-gm-section__hint">{{ 'gameShelfEmptyText'|trans }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="cm-gm-section">
+                <h3 class="cm-gm-section__title">{{ 'gameLevelingHistoryHeading'|trans }}</h3>
+                <p class="cm-gm-section__hint">{{ 'gameLevelingHistoryHintText'|trans }}</p>
+                <div class="cm-gm-log">
+                    {% for entry in history %}
+                        <div class="cm-gm-log__row">
+                            <span class="cm-gm-log__date">{{ entry.occurredAt|date('d/m/Y') }}</span>
+                            <span class="cm-gm-log__rule">
+                                {{ ('gameRule.' ~ entry.ruleCode)|trans }}
+                                {% if entry.reason %}<span class="cm-gm-log__src">{{ entry.reason }}</span>{% endif %}
+                                {% if entry.reversal %}<span class="cm-gm-log__src">{{ 'gameEntryReversalLabel'|trans }}</span>{% endif %}
+                            </span>
+                            <span class="cm-gm-log__fam">{{ entry.family.labelKey|trans }}</span>
+                            <span class="cm-gm-log__pts{{ entry.points > 0 ? '' : (entry.points < 0 ? ' cm-gm-log__pts--neg' : ' cm-gm-log__pts--nil') }}">{{ entry.points > 0 ? '+' }}{{ entry.points }}</span>
+                        </div>
+                    {% else %}
+                        <p class="cm-gm-section__hint">{{ 'gameJournalEmptyText'|trans }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        {# ---- Ma team ------------------------------------------------------------------ #}
+        {% if tab == 'team' %}
+            {% if team is null %}
+                <div class="cm-note"><span class="cm-note__icon">i</span><span>{{ 'gameTeamNoneText'|trans }}</span></div>
+            {% else %}
+                <div class="cm-gm-hero">
+                    <div class="cm-gm-hero__body">
+                        <div class="cm-gm-hero__name">{{ team.name }}</div>
+                        <div class="cm-gm-hero__stats">
+                            <span><b>{{ team.aboveCount }} / {{ team.members|length }}</b> {{ 'gameTeamAboveCountLabel'|trans }}</span>
+                            <span><b>{{ reachedCount }} / {{ teamCount }}</b> {{ 'gameTeamReachedCountLabel'|trans }}</span>
+                        </div>
+                        <div class="cm-gm-hero__next">
+                            {{ 'gameTeamGoalText'|trans({'%threshold%': team.threshold, '%above%': team.aboveCount, '%total%': team.members|length}) }}
+                            {% if not team.reached and team.lowest %}
+                                {{ 'gameTeamLowestText'|trans({'%name%': team.lowest.student.displayName ?? team.lowest.student.username, '%margin%': team.lowest.margin}) }}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cm-gm-section">
+                    <h3 class="cm-gm-section__title">{{ 'gameLevelingTeamMembersHeading'|trans }}</h3>
+                    {# Only an index of a classmate, never the detail of their families: one sees
+                       that somebody is behind, never why. #}
+                    <p class="cm-gm-section__hint">{{ 'gameLevelingTeamHintText'|trans }}</p>
+                    <table class="card-table">
+                        <tbody>
+                            {% for member in team.members %}
+                                <tr class="{{ member.student.id == me.id ? 'cm-gm-rank--me' }}">
+                                    <td>{{ member.student.displayName ?? member.student.username }}{% if member.student.id == me.id %} <span class="cm-gm-log__src">{{ 'gameRankingItsYouLabel'|trans }}</span>{% endif %}</td>
+                                    <td class="text-end"><b>{{ member.index }}</b></td>
+                                    <td>
+                                        {% if member.above %}
+                                            <span class="cm-badge cm-badge--green">{{ 'gameTeamAboveLabel'|trans }}</span>
+                                        {% else %}
+                                            <span class="cm-badge cm-badge--gold">{{ 'gameTeamBelowLabel'|trans({'%margin%': member.margin}) }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <p class="cm-gm-section__hint">{{ 'gameTeamNoRankText'|trans }}</p>
+                </div>
+            {% endif %}
+        {% endif %}
+
+        {# ---- Ranking ------------------------------------------------------------------ #}
+        {% if tab == 'ranking' %}
+            {% if ranking is null %}
+                <div class="cm-note"><span class="cm-note__icon">i</span><span>{{ 'gameLevelingNoRankingText'|trans }}</span></div>
+            {% else %}
+                <p class="cm-gm-section__hint">
+                    {{ program.displayShortName }}{% if period %} · {{ period.name }}{% endif %} ·
+                    {{ 'gameRankingCountLabel'|trans({'%count%': ranking.count}) }}
+                    {%- if ranking.discreetCount %} · {{ 'gameRankingDiscreetCountLabel'|trans({'%count%': ranking.discreetCount}) }}{% endif %}
+                </p>
+                <table class="card-table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'gameRankingRankColumnLabel'|trans }}</th>
+                            <th>{{ 'gameRankingFigureColumnLabel'|trans }}</th>
+                            <th class="text-end">{{ 'gameIndexLabel'|trans }}</th>
+                            <th>{{ 'gameRankingTierColumnLabel'|trans }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in ranking.rows %}
+                            <tr class="{{ row.isViewer ? 'cm-gm-rank--me' }}">
+                                <td>{{ row.rank }}</td>
+                                <td>
+                                    <span title="{{ row.alias and row.alias.figure ? row.alias.figure.fullName ~ ' — ' ~ row.alias.figure.notice : '' }}">{{ row.name }}</span>
+                                    {% if row.isViewer %}<span class="cm-gm-log__src">{{ 'gameRankingItsYouLabel'|trans }}</span>{% endif %}
+                                </td>
+                                <td class="text-end"><b>{{ row.index }}</b></td>
+                                <td>{% if row.tier %}<span class="cm-badge cm-badge--gold">{{ ('gameTier' ~ row.tier|capitalize ~ 'ReachedLabel')|trans }}</span>{% endif %}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <p class="cm-gm-section__hint">{{ 'gameRankingNoteText'|trans }}</p>
+            {% endif %}
+        {% endif %}
+
+        {# ---- Règles ------------------------------------------------------------------- #}
+        {% if tab == 'rules' %}
+            <div class="cm-gm-section">
+                <h3 class="cm-gm-section__title">{{ 'gameLevelingRulesBonusHeading'|trans }}</h3>
+                <p class="cm-gm-section__hint">{{ 'gameLevelingRulesBonusText'|trans({'%values%': gestureValues|join(' · +'), '%days%': contestDays}) }}</p>
+            </div>
+
+            <div class="cm-gm-section">
+                <h3 class="cm-gm-section__title">{{ 'gameLevelingRulesMalusHeading'|trans }}</h3>
+                {# The one malus of the whole system, and the four bounds that keep it from becoming
+                   a second disciplinary register. #}
+                <p class="cm-gm-section__hint">{{ (settings.malusEnabled ? 'gameLevelingRulesMalusText' : 'gameLevelingRulesMalusDisabledText')|trans({'%days%': contestDays}) }}</p>
+            </div>
+
+            <div class="cm-gm-section">
+                <h3 class="cm-gm-section__title">{{ 'gameLevelingRulesScaleHeading'|trans }}</h3>
+                <p class="cm-gm-section__hint">{{ 'gameLevelingRulesScaleText'|trans }}</p>
+                <table class="card-table">
+                    <thead><tr><th>{{ 'gameLevelingRulesRuleColumnLabel'|trans }}</th><th>{{ 'gameFamiliesHeading'|trans }}</th><th class="text-end">{{ 'gameCouncilPointsColumnLabel'|trans }}</th></tr></thead>
+                    <tbody>
+                        {% for code, value in rules %}
+                            {% if value.enabled and value.points != 0 %}
+                                <tr>
+                                    <td>{{ ('gameRule.' ~ code)|trans }}</td>
+                                    <td>{{ value.family.labelKey|trans }}</td>
+                                    <td class="text-end cm-gm-log__pts">+{{ value.points }}</td>
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="cm-gm-section">
+                <h3 class="cm-gm-section__title">{{ 'gameLevelingRulesIndexHeading'|trans }}</h3>
+                <p class="cm-gm-section__hint">{{ 'gameLevelingRulesIndexText'|trans }}</p>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

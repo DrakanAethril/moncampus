@@ -12,19 +12,8 @@
 
 {% block page_title %}{{ 'gameGesturesHeading'|trans }}{% endblock %}
 
-{% block page_actions %}
-    {# The envelope, shown permanently and tokens included: that is what turns a gesture from a
-       reflex into a decision, and it is what keeps the malus from becoming a register. #}
-    <span class="cm-gm-env" title="{{ 'gameGestureEnvelopeHint'|trans }}">
-        {% for i in 1..settings.gestureEnvelope %}
-            <i class="{{ i > remaining ? 'is-used' }}"></i>
-        {% endfor %}
-        <span class="cm-gm-env__count">{{ 'gameGestureRemainingLabel'|trans({'%count%': remaining, '%total%': settings.gestureEnvelope}) }}</span>
-    </span>
-{% endblock %}
-
 {% block main %}
-    <p class="cm-gm-context">{{ program.displayShortName }} · {{ period.name }}</p>
+    <p class="cm-gm-context">{{ program.displayShortName }}</p>
 
     <div class="card">
         <div class="card-body">
@@ -32,10 +21,10 @@
                   data-controller="game-gesture">
                 <input type="hidden" name="_token" value="{{ csrf_token('game_gesture') }}">
 
-                <div class="cm-gm-gestureform">
-                    <label>
-                        <span class="cm-gm-label">{{ 'gameGestureStudentLabel'|trans }} *</span>
-                        <select name="student" required {{ remaining < 1 ? 'disabled' }}>
+                <div class="cm-formgrid">
+                    <label class="cm-field">
+                        <span class="cm-field__label">{{ 'gameGestureStudentLabel'|trans }} *</span>
+                        <select name="student" required>
                             <option value="">{{ 'gameGestureStudentPlaceholder'|trans }}</option>
                             {% for student in students %}
                                 <option value="{{ student.id }}">{{ student.displayName ?? student.username }}</option>
@@ -43,29 +32,29 @@
                         </select>
                     </label>
 
-                    <div>
-                        <span class="cm-gm-label">{{ 'gameGestureKindLabel'|trans }} *</span>
+                    <div class="cm-field">
+                        <span class="cm-field__label">{{ 'gameGestureKindLabel'|trans }} *</span>
                         <div class="cm-gm-seg">
-                            <label><input type="radio" name="kind" value="bonus" checked data-action="game-gesture#kindChanged" {{ remaining < 1 ? 'disabled' }}><span>{{ 'gameGestureBonusLabel'|trans }}</span></label>
+                            <label><input type="radio" name="kind" value="bonus" checked data-action="game-gesture#kindChanged"><span>{{ 'gameGestureBonusLabel'|trans }}</span></label>
                             {% if settings.malusEnabled %}
-                                <label><input type="radio" name="kind" value="malus" data-action="game-gesture#kindChanged" {{ remaining < 1 ? 'disabled' }}><span>{{ 'gameGestureMalusLabel'|trans }}</span></label>
+                                <label><input type="radio" name="kind" value="malus" data-action="game-gesture#kindChanged"><span>{{ 'gameGestureMalusLabel'|trans }}</span></label>
                             {% endif %}
                         </div>
                     </div>
 
-                    <div>
-                        <span class="cm-gm-label">{{ 'gameGestureValueLabel'|trans }} *</span>
+                    <div class="cm-field">
+                        <span class="cm-field__label">{{ 'gameGestureValueLabel'|trans }} *</span>
                         <div class="cm-gm-seg">
                             {% for value in values %}
-                                <label><input type="radio" name="value" value="{{ value }}" {{ loop.first ? 'checked' }} {{ remaining < 1 ? 'disabled' }}><span data-game-gesture-target="value" data-value="{{ value }}">+{{ value }}</span></label>
+                                <label><input type="radio" name="value" value="{{ value }}" {{ loop.first ? 'checked' }}><span data-game-gesture-target="value" data-value="{{ value }}">+{{ value }}</span></label>
                             {% endfor %}
                         </div>
                     </div>
 
                     {# Two objects and nothing else. The malus of §4, decision 6 is the only one in
                        the system, and the closed list is what stops it acquiring a third subject. #}
-                    <div data-game-gesture-target="object" hidden>
-                        <span class="cm-gm-label">{{ 'gameGestureObjectLabel'|trans }} *</span>
+                    <div class="cm-field" data-game-gesture-target="object" hidden>
+                        <span class="cm-field__label">{{ 'gameGestureObjectLabel'|trans }} *</span>
                         <div class="cm-gm-seg">
                             {% for object in objects %}
                                 <label><input type="radio" name="object" value="{{ object.value }}" {{ loop.first ? 'checked' }}><span>{{ object.labelKey|trans }}</span></label>
@@ -73,17 +62,20 @@
                         </div>
                     </div>
 
-                    <label class="cm-gm-gestureform__reason">
+                    <label class="cm-field cm-formgrid__wide">
                         <span class="cm-gm-label">{{ 'gameGestureReasonLabel'|trans }} *</span>
-                        <textarea name="reason" rows="2" required maxlength="1000" placeholder="{{ 'gameGestureReasonPlaceholder'|trans }}" {{ remaining < 1 ? 'disabled' }}></textarea>
+                        <textarea name="reason" rows="2" required maxlength="1000" placeholder="{{ 'gameGestureReasonPlaceholder'|trans }}"></textarea>
                         <span class="cm-card-note" style="padding: 4px 0">{{ 'gameGestureReasonHint'|trans({'%days%': 7}) }}</span>
                     </label>
                 </div>
 
                 <div class="cm-actionbar">
-                    <span class="cm-actionbar__meta">{{ 'gameGestureBoundHint'|trans({'%bound%': settings.gestureNetBound}) }}</span>
+                    {# The bound hint used to sit here. There is no bound any more, and what belongs
+                       in its place is the one thing a teacher should read before posting: the motive
+                       is what the student sees. #}
+                    <span class="cm-actionbar__meta">{{ 'gameGestureNoQuotaHint'|trans }}</span>
                     <div class="cm-actionbar__buttons">
-                        <button type="submit" class="cm-btn cm-btn--primary" {{ remaining < 1 ? 'disabled' }}>{{ 'gameGesturePostAction'|trans }}</button>
+                        <button type="submit" class="cm-btn cm-btn--primary">{{ 'gameGesturePostAction'|trans }}</button>
                     </div>
                 </div>
             </form>

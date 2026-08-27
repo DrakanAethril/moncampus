@@ -24,6 +24,7 @@ use App\Service\Game\GameLevelBoard;
 use App\Service\Game\GamePeriodResolver;
 use App\Service\Game\GameProfileProvider;
 use App\Service\Game\GameRankingBuilder;
+use App\Service\Game\GameRuleResolver;
 use App\Service\Game\GameSettingsProvider;
 use App\Service\Game\GameTeamBoard;
 use App\Service\Game\GameTrackResolver;
@@ -99,7 +100,7 @@ class GameController extends AbstractController
             // The gestures addressed to this student, with the seven-day window still open on the
             // ones they may answer. Shown next to the journal rather than inside it: a gesture is
             // the only line of the journal that can be argued with.
-            'gestures' => $this->contestableGestures($entries->gesturesFor($student, $program, $period), $teacherGestures),
+            'gestures' => $this->contestableGestures($entries->gesturesFor($student, $program), $teacherGestures),
             'settings' => $settings,
             'standing' => $standing,
             'badge' => $badges->forUser($student),
@@ -195,6 +196,72 @@ class GameController extends AbstractController
         );
 
         return $this->redirectToRoute('app_game');
+    }
+
+    /**
+     * « Leveling » - the student's own four-tab reading of the game, reached from the profile menu.
+     *
+     * Four questions, one per tab, and each answers only what its own name says:
+     *
+     * - **Mon XP**: the whole personal total, the level, what the next one takes, the titles and
+     *   rewards it opens, and the history of every point ever credited. All time, not one period:
+     *   XP is cumulative and never resets (§5.6), so a screen that showed only a term would be
+     *   showing the smaller half.
+     * - **Ma team**: the same shape for the group, with the collective threshold rather than a rank.
+     * - **Ranking**: the class, anonymous, and nothing beyond it.
+     * - **Règles**: how a bonus and the single malus may be given, which is the one thing a student
+     *   cannot infer from their own journal.
+     */
+    #[Route(path: '/game/leveling/{tab}', name: 'app_game_leveling', requirements: ['tab' => 'xp|team|ranking|rules'], defaults: ['tab' => 'xp'], methods: ['GET'])]
+    public function leveling(
+        string $tab,
+        GameAccess $access,
+        GamePeriodResolver $periods,
+        GameIndexReader $reader,
+        GameEntryRepository $entries,
+        GameBadgeProvider $badges,
+        GameProfileProvider $profiles,
+        GameSettingsProvider $settingsProvider,
+        GameLevelBoard $board,
+        GameTrackResolver $tracks,
+        GameTeamBoard $teamBoard,
+        GameRankingBuilder $ranking,
+        RewardGrantRepository $rewards,
+        GameRuleResolver $rules,
+    ): Response {
+        $student = $this->currentUser();
+        $program = $access->primaryProgramFor($student) ?? throw $this->createNotFoundException();
+        $settings = $settingsProvider->for($program);
+        // A period narrows some readings and is required by none of them: without one the screen
+        // shows the whole history rather than refusing to open.
+        $period = $periods->activePeriod($program);
+        $profile = $profiles->for($student);
+        $badge = $badges->forUser($student);
+
+        return $this->render('game/leveling.html.twig', [
+            'tab' => $tab,
+            'program' => $program,
+            'period' => $period,
+            'settings' => $settings,
+            'profile' => $profile,
+            'badge' => $badge,
+            'standing' => null === $period ? null : $reader->standingFor($student, $program, $period),
+            'families' => GameFamily::cases(),
+            // Every point ever credited in this formation, most recent first - « la capacité à voir
+            // l'historique des points ».
+            'history' => $entries->journal($student, $program),
+            'totalPoints' => $entries->sumAllTime($student, $program),
+            'levels' => $board->boardFor($tracks->forStudent($student, $program)),
+            'shelf' => $rewards->shelfFor($student),
+            'team' => null === $period ? null : $teamBoard->forStudent($student, $program, $period),
+            'teamCount' => null === $period ? 0 : \count($teamBoard->teams($program, $period)),
+            'reachedCount' => null === $period ? 0 : $teamBoard->reachedCount($program, $period),
+            'ranking' => null === $period || !$settings->isRankingEnabled() ? null : $ranking->build($program, $period, $student),
+            'gestureValues' => TeacherGestureService::VALUES,
+            'contestDays' => TeacherGestureService::CONTEST_DAYS,
+            'rules' => $rules->all($program),
+            'me' => $student,
+        ]);
     }
 
     /**

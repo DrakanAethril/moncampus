@@ -24,10 +24,14 @@ use Symfony\Component\Validator\Constraints as Assert;
  * Nothing is credited before validation. A refusal carries its reason, is read by the student, and
  * the declaration **stays in the queue struck through** rather than disappearing - which is what
  * stops the same thing being re-filed three times in the hope of a different reviewer.
+ *
+ * **No period.** A student declares what they did on the day they did it; which period the points
+ * count towards is read from the validation's date afterwards. Waiting for a calendar to be able to
+ * say « j'ai passé le PIX » was a condition with nothing behind it.
  */
 #[ORM\Entity(repositoryClass: EngagementDeclarationRepository::class)]
 #[ORM\Table(name: 'engagement_declaration')]
-#[ORM\Index(name: 'idx_engagement_program_period_state', columns: ['program_id', 'period_id', 'state'])]
+#[ORM\Index(name: 'idx_engagement_program_state', columns: ['program_id', 'state'])]
 class EngagementDeclaration
 {
     #[ORM\Id]
@@ -42,10 +46,6 @@ class EngagementDeclaration
     #[ORM\ManyToOne(targetEntity: Program::class)]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private Program $program;
-
-    #[ORM\ManyToOne(targetEntity: EvaluationPeriod::class)]
-    #[ORM\JoinColumn(name: 'period_id', nullable: false, onDelete: 'CASCADE')]
-    private EvaluationPeriod $period;
 
     #[ORM\Column(length: 20, enumType: EngagementKind::class)]
     private EngagementKind $kind;
@@ -78,11 +78,10 @@ class EngagementDeclaration
     #[ORM\OrderBy(['position' => 'ASC'])]
     private Collection $attachments;
 
-    public function __construct(User $student, Program $program, EvaluationPeriod $period, EngagementKind $kind)
+    public function __construct(User $student, Program $program, EngagementKind $kind)
     {
         $this->student = $student;
         $this->program = $program;
-        $this->period = $period;
         $this->kind = $kind;
         $this->createdAt = new \DateTimeImmutable();
         $this->attachments = new ArrayCollection();
@@ -101,11 +100,6 @@ class EngagementDeclaration
     public function getProgram(): Program
     {
         return $this->program;
-    }
-
-    public function getPeriod(): EvaluationPeriod
-    {
-        return $this->period;
     }
 
     public function getKind(): EngagementKind

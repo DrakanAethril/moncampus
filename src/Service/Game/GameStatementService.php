@@ -38,7 +38,6 @@ final class GameStatementService
         private readonly GameStatementRepository $statements,
         private readonly GameEntryRepository $entries,
         private readonly GameAttendanceProjector $projector,
-        private readonly GamePeriodResolver $periods,
         private readonly GameLedger $ledger,
         private readonly EntityManagerInterface $entityManager,
     ) {
@@ -144,37 +143,30 @@ final class GameStatementService
         $credited = 0;
 
         if (GameStatementType::Council === $statement->getType()) {
-            // The period the relevé's own day falls in, and **no fallback**: a council held outside
-            // every evaluation period closes and keeps its mentions - they are a record of what the
-            // council said, true whether or not a game is being played - but it credits nothing,
-            // there being no index for the points to count towards. The screen says exactly that,
-            // and falling back on the active period would make it a lie.
-            $period = $this->periods->periodContaining($statement->getProgram(), $statement->getHeldOn());
+            foreach ($statement->getLines() as $line) {
+                $points = $line->councilPoints();
 
-            if (null !== $period) {
-                foreach ($statement->getLines() as $line) {
-                    $points = $line->councilPoints();
+                if ($points <= 0) {
+                    // « Aucune » and « avertissement » are both worth zero, and a zero-point line in
+                    // a student's journal reads as a bug rather than as a decision.
+                    continue;
+                }
 
-                    if ($points <= 0) {
-                        // « Aucune » and « avertissement » are both worth zero, and a zero-point line
-                        // in a student's journal reads as a bug rather than as a decision.
-                        continue;
-                    }
+                // Dated on the council's own day. Which period that day belongs to is read
+                // afterwards; a council held outside every period still credits, and its points
+                // simply count towards no index - they stay in the student's journal all the same.
+                $entry = $this->ledger->record(
+                    $line->getStudent(),
+                    $statement->getProgram(),
+                    GameRuleCatalog::RECOGNITION_COUNCIL,
+                    self::SOURCE,
+                    (int) $line->getId(),
+                    $statement->getHeldOn()->setTime(12, 0),
+                    $points,
+                );
 
-                    $entry = $this->ledger->record(
-                        $line->getStudent(),
-                        $statement->getProgram(),
-                        $period,
-                        GameRuleCatalog::RECOGNITION_COUNCIL,
-                        self::SOURCE,
-                        (int) $line->getId(),
-                        $at,
-                        $points,
-                    );
-
-                    if (null !== $entry) {
-                        ++$credited;
-                    }
+                if (null !== $entry) {
+                    ++$credited;
                 }
             }
         }

@@ -26,9 +26,9 @@
                   data-controller="game-statement-new" style="margin-top: 10px">
                 <input type="hidden" name="_token" value="{{ csrf_token('game_statement_new') }}">
 
-                <div class="cm-gm-gestureform">
-                    <label title="{{ 'gameStatementTypeHelpText'|trans }}">
-                        <span class="cm-gm-label">{{ 'gameStatementTypeLabel'|trans }} *</span>
+                <div class="cm-formgrid">
+                    <label class="cm-field" title="{{ 'gameStatementTypeHelpText'|trans }}">
+                        <span class="cm-field__label">{{ 'gameStatementTypeLabel'|trans }} *</span>
                         <select name="type" required data-action="change->game-statement-new#typeChanged" data-game-statement-new-target="type">
                             {% for type in types %}
                                 {% if type.value != 'council' or canRunCouncil %}
@@ -37,16 +37,16 @@
                             {% endfor %}
                         </select>
                     </label>
-                    <label title="{{ 'gameStatementNameHelpText'|trans }}">
-                        <span class="cm-gm-label">{{ 'gameStatementNameLabel'|trans }} *</span>
+                    <label class="cm-field" title="{{ 'gameStatementNameHelpText'|trans }}">
+                        <span class="cm-field__label">{{ 'gameStatementNameLabel'|trans }} *</span>
                         <input type="text" name="name" maxlength="160" required placeholder="{{ 'gameStatementNamePlaceholder'|trans }}">
                     </label>
-                    <label title="{{ 'gameStatementHeldOnHelpText'|trans }}">
-                        <span class="cm-gm-label">{{ 'gameStatementHeldOnLabel'|trans }} *</span>
+                    <label class="cm-field" title="{{ 'gameStatementHeldOnHelpText'|trans }}">
+                        <span class="cm-field__label">{{ 'gameStatementHeldOnLabel'|trans }} *</span>
                         <input type="date" name="held_on" required value="{{ 'now'|date('Y-m-d') }}">
                     </label>
-                    <div data-game-statement-new-target="periodicity" title="{{ 'gameStatementPeriodicityHelpText'|trans }}">
-                        <span class="cm-gm-label">{{ 'gameStatementPeriodicityLabel'|trans }}</span>
+                    <div class="cm-field" data-game-statement-new-target="periodicity" title="{{ 'gameStatementPeriodicityHelpText'|trans }}">
+                        <span class="cm-field__label">{{ 'gameStatementPeriodicityLabel'|trans }}</span>
                         <div class="cm-gm-seg">
                             {% for step in steps %}
                                 <label><input type="radio" name="periodicity" value="{{ step.value }}" {{ settings.attendanceStep == step ? 'checked' }}><span>{{ step.labelKey|trans }}</span></label>

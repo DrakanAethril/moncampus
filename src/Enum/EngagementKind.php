@@ -66,7 +66,7 @@ enum EngagementKind: string
         };
     }
 
-    /** A mandate is declared once per period; the others may be declared as often as they happen. */
+    /** A mandate is declared once per formation; the others may be declared as often as they happen. */
     public function isOncePerPeriod(): bool
     {
         return self::Mandate === $this;

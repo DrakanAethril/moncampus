@@ -222,6 +222,11 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // Declared engagement: the student files, a teacher of the class reviews.
             '/game/engagement/new' => 200,
             '/game/engagements' => 404,
+            // « Leveling » - the student's own four-tab reading, from the profile menu.
+            '/game/leveling' => 200,
+            '/game/leveling/team' => 200,
+            '/game/leveling/ranking' => 200,
+            '/game/leveling/rules' => 200,
             // The catalogue is the teachers': a student reads their shelf, never the shelf's source.
             $this->rewardsPath => 403,
             // Figures, ranking, teams. The révélation answers 404 until a closure has frozen
@@ -339,6 +344,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // A teacher files nothing - they are nobody's student - and reviews everything.
             '/game/engagement/new' => 404,
             '/game/engagements' => 200,
+            '/game/leveling' => 404,
             $this->rewardsPath => 200,
             '/game/alias' => 404,
             '/game/ranking' => 404,
@@ -466,6 +472,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             $this->gesturesPath => 200,
             '/game/engagement/new' => 404,
             '/game/engagements' => 200,
+            '/game/leveling' => 404,
             $this->rewardsPath => 200,
             '/game/alias' => 404,
             '/game/ranking' => 404,
@@ -617,6 +624,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             $this->gesturesPath => 403,
             '/game/engagement/new' => 404,
             '/game/engagements' => 404,
+            '/game/leveling' => 404,
             $this->rewardsPath => 403,
             '/game/alias' => 404,
             '/game/ranking' => 404,
