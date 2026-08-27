@@ -26,6 +26,7 @@ use App\Service\Game\GameProfileProvider;
 use App\Service\Game\GameRankingBuilder;
 use App\Service\Game\GameSettingsProvider;
 use App\Service\Game\GameTeamBoard;
+use App\Service\Game\GameTrackResolver;
 use App\Service\Game\RewardGranter;
 use App\Service\Game\TeacherGestureService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -375,13 +376,15 @@ class GameController extends AbstractController
      * what makes the cursus legible from the first semester.
      */
     #[Route(path: '/game/levels', name: 'app_game_levels', methods: ['GET'])]
-    public function levels(GameAccess $access, GameLevelBoard $board, GameBadgeProvider $badges): Response
+    public function levels(GameAccess $access, GameLevelBoard $board, GameBadgeProvider $badges, GameTrackResolver $tracks): Response
     {
         $student = $this->currentUser();
         $program = $access->primaryProgramFor($student);
 
         return $this->render('game/levels.html.twig', [
-            'entries' => $board->boardFor($program?->getGameTrack()),
+            // The board is drawn in the reader's own filière, which in a SIO class is decided by
+            // their option and not by the class.
+            'entries' => $board->boardFor(null === $program ? null : $tracks->forStudent($student, $program)),
             'badge' => $badges->forUser($student),
         ]);
     }

@@ -9398,3 +9398,8 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-gm-switch { display: flex; align-items: center; gap: 9px; font-size: 13.5px; color: var(--cm-ink); cursor: pointer; }
 .cm-gm-switch input { width: 16px; height: 16px; accent-color: var(--cm-brand); }
 .cm-gm-switch span { font-weight: 600; }
+
+/* ---------- « Filières de cette classe », on the game's settings screen ---------- */
+.cm-gm-tracks { margin-top: 14px; padding: 12px 14px; border: 1px solid var(--cm-border); border-radius: 10px; background: var(--cm-surface-alt); }
+.cm-gm-tracks__list { margin: 6px 0 0; padding-left: 18px; font-size: 13px; color: var(--cm-text); line-height: 1.6; }
+.cm-gm-tracks__list b { color: var(--cm-ink); }

@@ -95,6 +95,7 @@
                                 <option value="{{ track.value }}" {{ program.gameTrack == track ? 'selected' }}>{{ track.emoji }} {{ track.labelKey|trans }}</option>
                             {% endfor %}
                         </select>
+                        <span class="cm-card-note" style="display: block; padding: 4px 0">{{ 'gameSettingsTrackHelpText'|trans }}</span>
                     </label>
                     <label>
                         <span class="cm-gm-label">{{ 'gameSettingsTeamBatchLabel'|trans }}</span>
@@ -155,6 +156,26 @@
         <div class="card" style="margin-top: 16px">
             <div class="card-body">
                 <span class="cm-gm-label">{{ 'gameSettingsCatalogueHeading'|trans }}</span>
+                {# What this class actually plays in, and it is not one value: a SIO class holds SLAM
+                   and SISR side by side, and which one a student is in is their option. The
+                   fallback above only answers for a formation that splits into no option at all. #}
+                <div class="cm-gm-tracks">
+                    <span class="cm-gm-label">{{ 'gameSettingsResolvedTracksLabel'|trans }}</span>
+                    {% if trackedOptions is empty and program.gameTrack is null %}
+                        <p class="cm-card-note" style="padding: 4px 0">{{ 'gameSettingsNoTrackText'|trans }}</p>
+                    {% else %}
+                        <ul class="cm-gm-tracks__list">
+                            {% for option in trackedOptions %}
+                                <li><b>{{ option.shortName }}</b> — {{ option.gameTrack.emoji }} {{ option.gameTrack.labelKey|trans }}</li>
+                            {% endfor %}
+                            {% if trackedOptions is empty %}
+                                <li>{{ 'gameSettingsFallbackTrackText'|trans({'%track%': program.gameTrack.labelKey|trans}) }}</li>
+                            {% endif %}
+                        </ul>
+                    {% endif %}
+                    <p class="cm-card-note" style="padding: 4px 0">{{ 'gameSettingsResolvedTracksHelpText'|trans }}</p>
+                </div>
+
                 <div class="cm-gm-shelf" style="margin-top: 10px">
                     {% for track in tracks %}
                         {% set tally = figureTally[track.value] %}

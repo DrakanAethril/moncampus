@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\GameTrack;
 use App\Repository\OptionRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -36,6 +37,22 @@ class Option extends AbstractStructureNode
     #[ORM\ManyToMany(targetEntity: Program::class, inversedBy: 'options')]
     #[ORM\JoinTable(name: 'option_program')]
     private Collection $programs;
+
+    /**
+     * The campus game's filière, when this option *is* one.
+     *
+     * A formation is not a filière: BTS SIO holds SLAM and SISR side by side in the same class, and
+     * which one a student belongs to is their **option**, not their formation. So the game's
+     * univers - the wording of the six levels, and the catalogue a pseudonym is drawn from - hangs
+     * here rather than on App\Entity\Program, and App\Service\Game\GameTrackResolver reads it
+     * through App\Entity\ProgramStudentOption, one student at a time.
+     *
+     * Null on every option that is not a filière - a group, a bilingual track, a mini-entreprise -
+     * which is nearly all of them. `Program::$gameTrack` remains the answer for a formation whose
+     * whole class is one filière and which therefore splits into no option at all.
+     */
+    #[ORM\Column(name: 'game_track', length: 10, nullable: true, enumType: GameTrack::class)]
+    private ?GameTrack $gameTrack = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
@@ -105,6 +122,18 @@ class Option extends AbstractStructureNode
     public function setDescription(?string $description): static
     {
         $this->description = $description;
+
+        return $this;
+    }
+
+    public function getGameTrack(): ?GameTrack
+    {
+        return $this->gameTrack;
+    }
+
+    public function setGameTrack(?GameTrack $gameTrack): static
+    {
+        $this->gameTrack = $gameTrack;
 
         return $this;
     }

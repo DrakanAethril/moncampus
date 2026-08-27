@@ -25,6 +25,7 @@ use App\Service\Game\GamePeriodResolver;
 use App\Service\Game\GameRuleCatalog;
 use App\Service\Game\GameRuleResolver;
 use App\Service\Game\GameSettingsProvider;
+use App\Service\Game\GameTrackResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -67,6 +68,7 @@ class GameSettingsController extends AbstractController
         RewardItemRepository $rewards,
         GroupBatchRepository $batches,
         GameTeamSetRepository $teamSets,
+        GameTrackResolver $trackResolver,
         EntityManagerInterface $entityManager,
     ): Response {
         $program = $this->openProgram($id, $programs, $accessChecker);
@@ -118,6 +120,8 @@ class GameSettingsController extends AbstractController
             'steps' => GameAttendanceStep::cases(),
             'teamModes' => GameTeamMode::cases(),
             'tracks' => GameTrack::cases(),
+            // What this formation actually plays in, option by option - a SIO class holds two.
+            'trackedOptions' => $trackResolver->trackedOptions($program),
             'tunable' => GameRuleCatalog::tunable(),
             'ruleValues' => null === $period ? [] : $rules->all($program, $period),
             'figureTally' => $this->figureTally($figures),
