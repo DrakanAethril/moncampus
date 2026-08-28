@@ -61,12 +61,23 @@
             <div class="cm-gm-section">
                 <h3 class="cm-gm-section__title">{{ 'gameLevelingTitlesHeading'|trans }}</h3>
                 <p class="cm-gm-section__hint">{{ 'gameLevelingTitlesHintText'|trans }}</p>
+                {# The reader's own face inside each of the six rings, rather than a coloured pill
+                   saying « NIV. 3 »: what a level changes is the medallion carried everywhere, so
+                   the board that announces the six shows them worn. #}
                 <div class="cm-gm-titles">
                     {% for entry in levels %}
                         {% set reached = profile.totalPoints >= entry.level.xpMin %}
                         <div class="cm-gm-title {{ reached ? 'is-reached' }}">
-                            <span class="cm-gm-title__level" style="{{ game_band_style(entry.level.level) }}">{{ 'gameLevelShortLabel'|trans({'%level%': entry.level.level}) }}</span>
-                            <span class="cm-gm-title__name">{{ entry.title }}</span>
+                            {% if badge %}
+                                {% include 'game/_avatar.html.twig' with {badge: badge, small: true, level: entry.level.level} only %}
+                            {% else %}
+                                <span class="cm-gm-title__level" style="{{ game_band_style(entry.level.level) }}">{{ 'gameLevelShortLabel'|trans({'%level%': entry.level.level}) }}</span>
+                            {% endif %}
+                            <span class="cm-gm-title__name">
+                                {# Both wordings when the student plays in two filières - which is
+                                   what a SIO student reads until their option names one. #}
+                                {{ entry.titles|join(' · ') }}
+                            </span>
                             <span class="cm-gm-title__xp">{{ entry.level.xpMin|number_format(0, ',', ' ') }} XP</span>
                         </div>
                     {% endfor %}

@@ -21,11 +21,15 @@ class RewardItemRepository extends ServiceEntityRepository
 
     /**
      * A formation's catalogue: what it created, plus the establishment-wide entries every formation
-     * has (the four tiers).
+     * has (the six level frames).
      *
      * **The order is a CASE in a HIDDEN alias, never `ORDER BY r.nature`**: sorting on an enum column
      * sorts the stored values, so `offline` would come before `symbolic` - the trap this repository
      * already paid for once, on the quiz library's folders.
+     *
+     * The frames come last within their nature and **in the order of the XP that opens them**, which
+     * is their level: alphabetical order put « Cadre or » (1 800 XP) before « Cadre acier » (the
+     * first point), and a ladder printed out of order reads as six unrelated objects.
      *
      * @return list<RewardItem>
      */
@@ -33,8 +37,10 @@ class RewardItemRepository extends ServiceEntityRepository
     {
         $query = $this->createQueryBuilder('r')
             ->addSelect("CASE r.nature WHEN 'consumable' THEN 1 WHEN 'symbolic' THEN 2 ELSE 3 END AS HIDDEN nature_rank")
+            ->addSelect('COALESCE(r.level, 0) AS HIDDEN level_rank')
             ->where('r.program = :program OR r.program IS NULL')
             ->orderBy('nature_rank', 'ASC')
+            ->addOrderBy('level_rank', 'ASC')
             ->addOrderBy('r.label', 'ASC')
             ->setParameter('program', $program);
 
@@ -65,10 +71,5 @@ class RewardItemRepository extends ServiceEntityRepository
             ->getResult();
 
         return $items;
-    }
-
-    public function findTier(string $tierCode): ?RewardItem
-    {
-        return $this->findOneBy(['tierCode' => $tierCode, 'program' => null]);
     }
 }

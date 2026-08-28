@@ -29,7 +29,9 @@
                             </span>
                             <span class="cm-gm-av__band" style="{{ game_band_style(level.level) }}">{{ 'gameLevelBandLabel'|trans({'%level%': level.level}) }}</span>
                         </span>
-                        <span class="cm-gm-plate__title">{% if level.legendary %}🏆 {% endif %}{{ entry.title }}</span>
+                        {# Both wordings when the reader plays in two filières, one when their
+                           option names it. #}
+                        <span class="cm-gm-plate__title">{% if level.legendary %}🏆 {% endif %}{{ entry.titles|join(' · ') }}</span>
                         <span class="cm-gm-plate__xp">{{ level.xpMin|number_format(0, ',', ' ') }} XP</span>
                     </div>
                 {% endfor %}

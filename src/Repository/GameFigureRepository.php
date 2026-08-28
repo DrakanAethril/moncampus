@@ -22,25 +22,34 @@ class GameFigureRepository extends ServiceEntityRepository
     }
 
     /**
-     * The figures still available to one student: their filière's catalogue, minus the ones already
-     * taken in the class, minus the ones they have carried before.
+     * The figures still available to one student: the catalogues of their filières, minus the ones
+     * already taken in the class, minus the ones they have carried before.
      *
      * Both exclusions matter and for different reasons. The first keeps the patronym unique in the
      * class - the database refuses a duplicate anyway, this is what stops the draw from proposing
      * one. The second is what makes the cursus teach twelve names rather than the same three.
      *
+     * **Filières, plural**: a student whose option does not name one draws from every catalogue
+     * their formation plays in, which in a SIO class is SLAM and SISR at once.
+     *
+     * @param list<GameTrack> $tracks
+     *
      * @return list<GameFigure>
      */
-    public function availableFor(GameTrack $track, Program $program, User $student): array
+    public function availableFor(array $tracks, Program $program, User $student): array
     {
+        if ([] === $tracks) {
+            return [];
+        }
+
         /** @var list<GameFigure> $figures */
         $figures = $this->createQueryBuilder('f')
-            ->where('f.track = :track')
+            ->where('f.track IN (:tracks)')
             ->andWhere('f.active = true')
             ->andWhere('f.id NOT IN (SELECT IDENTITY(taken.figure) FROM App\Entity\GameAlias taken WHERE taken.program = :program AND taken.figure IS NOT NULL)')
             ->andWhere('f.id NOT IN (SELECT IDENTITY(worn.figure) FROM App\Entity\GameAlias worn WHERE worn.student = :student AND worn.figure IS NOT NULL)')
             ->orderBy('f.surname', 'ASC')
-            ->setParameter('track', $track)
+            ->setParameter('tracks', $tracks)
             ->setParameter('program', $program)
             ->setParameter('student', $student)
             ->getQuery()

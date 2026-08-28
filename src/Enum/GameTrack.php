@@ -43,14 +43,4 @@ enum GameTrack: string
             self::Mco => '🤝',
         };
     }
-
-    /** The promotion trophy of §5.5, one per univers - SIO share theirs. */
-    public function trophyKey(): string
-    {
-        return match ($this) {
-            self::Slam, self::Sisr => 'gameTrophySioLabel',
-            self::Cg => 'gameTrophyCgLabel',
-            self::Mco => 'gameTrophyMcoLabel',
-        };
-    }
 }

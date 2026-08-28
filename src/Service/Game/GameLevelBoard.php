@@ -48,12 +48,46 @@ final class GameLevelBoard
     }
 
     /**
-     * @return list<array{level: GameLevel, title: string}>
+     * The wordings of one level across several filières, without a duplicate and never empty.
+     *
+     * A student whose option names no filière plays in all of their formation's, and reads what
+     * that level is called in each - « Chasseur·se de bugs » and « Chasseur·se de pannes » side by
+     * side rather than the generic « Niveau 3 » that answering with no filière used to give them.
+     *
+     * @param list<GameTrack> $tracks
+     *
+     * @return list<string>
      */
-    public function boardFor(?GameTrack $track): array
+    public function titlesFor(array $tracks, int $level): array
+    {
+        $titles = [];
+
+        foreach ($tracks as $track) {
+            $title = $this->titleFor($track, $level);
+
+            if (!\in_array($title, $titles, true)) {
+                $titles[] = $title;
+            }
+        }
+
+        return [] === $titles ? [$this->titleFor(null, $level)] : $titles;
+    }
+
+    /**
+     * @param list<GameTrack> $tracks
+     *
+     * @return list<array{level: GameLevel, title: string, titles: list<string>}>
+     */
+    public function boardFor(array $tracks): array
     {
         return array_map(
-            fn (GameLevel $level): array => ['level' => $level, 'title' => $this->titleFor($track, $level->level)],
+            function (GameLevel $level) use ($tracks): array {
+                $titles = $this->titlesFor($tracks, $level->level);
+
+                // `title` stays the single wording a screen with one slot shows; `titles` is what a
+                // board with room for both prints.
+                return ['level' => $level, 'title' => $titles[0], 'titles' => $titles];
+            },
             GameLevels::all(),
         );
     }

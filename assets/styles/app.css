@@ -9455,15 +9455,18 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-gm-hero__next { font-size: 12.5px; color: var(--cm-faint); margin-top: 8px; }
 
 /* The six titles, with the ones already unlocked standing out from the ones ahead. */
-.cm-gm-titles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+.cm-gm-titles { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 10px; }
 .cm-gm-title {
     display: flex; align-items: center; gap: 10px; padding: 10px 12px;
     border: 1px solid var(--cm-border); border-radius: 9px; background: var(--cm-surface); opacity: .55;
 }
 .cm-gm-title.is-reached { opacity: 1; border-color: var(--cm-brand); }
+/* The medallion of that level, worn by the reader: it holds its own width, and level 6's outline
+   sits 3 px outside the ring, so the cell leaves it that much room. */
+.cm-gm-title .cm-gm-av { flex: none; margin: 3px 3px 0; }
 .cm-gm-title__level { flex: none; border-radius: 99px; padding: 2px 8px; font: 700 9px var(--cm-font-ui); letter-spacing: 1px; }
 .cm-gm-title__name { font-size: 13px; font-weight: 600; color: var(--cm-ink); min-width: 0; }
-.cm-gm-title__xp { margin-left: auto; font-size: 11.5px; color: var(--cm-faint); font-variant-numeric: tabular-nums; }
+.cm-gm-title__xp { margin-left: auto; font-size: 11.5px; color: var(--cm-faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* ---------- Ranked months, and the month bar of the ranking ---------- */
 .cm-gm-months { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-top: 10px; }
