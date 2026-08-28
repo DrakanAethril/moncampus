@@ -26,6 +26,39 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.08.28'
+      date: '2026-08-28'
+      summary: "Un bandeau prévient désormais tout le monde qu'une mise à jour de la plateforme est en cours, quelques minutes avant le redémarrage qui la rend brièvement indisponible. Les quiz rédigés avec une IA s'importent par lots au lieu d'un par un, les filtres qui ne répondaient plus fonctionnent à nouveau, et le jeu du campus gagne le choix de son titre et un écran de suivi pour l'administration."
+      entries:
+          - type: nouveaute
+            title: "Prévenu avant une mise à jour de la plateforme"
+            detail: "Un bandeau annonce sur chaque page qu'une mise à jour est en cours : la plateforme redémarre dans les minutes qui suivent et reste indisponible le temps du redémarrage, généralement moins de cinq minutes. Il apparaît même sur un onglet resté ouvert, et disparaît de lui-même une fois la mise à jour terminée."
+          - type: nouveaute
+            title: "Importer plusieurs quiz en une fois"
+            detail: "Les quiz obtenus d'une IA se collent les uns à la suite des autres, ou se déposent en archive : chacun devient son propre quiz. L'écran de vérification les présente un par un avant création, et chacun peut être renommé ou écarté du lot."
+          - type: fix
+            title: "Les barres de filtres répondent à nouveau"
+            detail: "Depuis une semaine, choisir un filtre ne changeait plus rien sur les écrans concernés. Les filtres se soumettent de nouveau, et les classes se choisissent une par une avec « Toutes » par défaut."
+          - type: modification
+            title: "Toutes les séquences restent à portée pendant le placement"
+            detail: "En créant une progression à partir de plusieurs séquences, le placement n'ouvrait que la première. Un rail les liste maintenant toutes, dans l'ordre de la progression, avec l'état de chacune."
+          - type: nouveaute
+            title: "Choisir le titre que l'on affiche"
+            detail: "Un étudiant choisit son titre parmi ceux des niveaux qu'il a atteints, dans chacune des filières qu'il joue. « Suivre mon niveau » reste le défaut et le chemin de retour."
+          - type: modification
+            title: "Le médaillon plutôt qu'une pastille"
+            detail: "Le tableau des niveaux montre l'avatar du lecteur dans chacun des six anneaux : ce qu'un niveau change, c'est le médaillon porté partout. Un étudiant dont l'option ne nomme aucune filière joue désormais dans toutes celles de sa formation."
+          - type: nouveaute
+            title: "Suivre le jeu d'une classe"
+            detail: "L'administration dispose d'un écran de suivi par formation : ce que chaque action a réellement produit, les seuils de niveau face aux totaux observés, et le journal complet des points. Le pseudonyme protège l'anonymat entre étudiants ; l'équipe qui encadre la classe y voit les noms, comme sur ses autres écrans."
+          - type: fix
+            title: "Le barème du jeu dit enfin la vérité sur les points"
+            detail: "« L'XP ne redescend jamais » était faux : un malus y écrit une ligne négative. Ce qui est acquis pour toujours, c'est le niveau, le titre et la récompense, jamais le total. Le barème parle d'actions et l'assiduité dit ce qu'elle mesure."
+          - type: modification
+            title: "Le catalogue des récompenses est rangé"
+            detail: "Les cadres apparaissent dans l'ordre des points qui les ouvrent. Le trophée de promotion est retiré : il était décerné à une place que l'application ne peut pas connaître."
+          - type: interne
+            title: "Un avertissement de moins dans le journal de chaque déploiement"
     - version: '2026.08.27'
       date: '2026-08-27'
       summary: "Le jeu du campus arrive : une progression par niveaux, des classements de classe anonymes et un catalogue de récompenses, à activer formation par formation et éteint partout au départ. Les comptes administrateurs peuvent par ailleurs se connecter par lien reçu par courriel, comme tous les autres."
