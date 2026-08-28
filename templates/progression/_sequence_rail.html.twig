@@ -4,21 +4,22 @@
 
    One entry per séquence, in the progression's own order, each carrying the same
    « Placée / Partiellement placée / Non placée » tone as 5a's chip, here as a dot: the rail is a
-   way through, not a status table.
+   way through, not a status table. Its entries are links because moving means a new page - the
+   options, the séances and the two actions of this screen are all scoped to one séquence.
 
    Not rendered for a single séquence - a rail with one entry navigates nowhere. #}
 {% if sequences|length > 1 %}
-    <nav class="cm-prog-seqrail" aria-label="{{ 'progressionPlacementSequenceRailLabel'|trans }}">
-        <span class="cm-prog-seqrail__label">{{ 'progressionPlacementSequenceRailLabel'|trans }}</span>
+    <nav class="cm-rail" aria-label="{{ 'progressionPlacementSequenceRailLabel'|trans }}">
+        <span class="cm-rail__label">{{ 'progressionPlacementSequenceRailLabel'|trans }}</span>
         {% for item in sequences %}
             {% set current = item.id == sequence.id %}
-            <a class="cm-prog-chip cm-prog-seqrail__item{{ current ? ' is-active' }}"
+            <a class="cm-rail__item{{ current ? ' is-active' }}"
                href="{{ path('app_progression_placement', {id: progression.id, sequenceId: item.id}) }}"
                title="{{ item.status.labelKey|trans }}"
                {% if current %}aria-current="page"{% endif %}>
-                <span class="cm-prog-seqrail__index">{{ loop.index }}</span>
-                <span class="cm-prog-seqrail__title">{{ item.title }}</span>
-                <span class="cm-prog-seqrail__dot cm-prog-seqrail__dot--{{ item.status.tone }}"></span>
+                <span class="cm-rail__index">{{ loop.index }}</span>
+                <span class="cm-rail__title">{{ item.title }}</span>
+                <span class="cm-rail__dot cm-rail__dot--{{ item.status.tone }}"></span>
             </a>
         {% endfor %}
     </nav>

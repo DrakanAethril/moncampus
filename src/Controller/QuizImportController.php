@@ -29,8 +29,8 @@ use App\Service\QuizCsvImporter;
 use App\Service\QuizCsvImportException;
 use App\Service\QuizImportImages;
 use App\Service\QuizImportImageValidator;
+use App\Service\QuizImportPreview;
 use App\Service\QuizImportSession;
-use App\Service\QuizQuestionCompleteness;
 use App\Service\UploadIntake;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
@@ -96,6 +96,7 @@ class QuizImportController extends AbstractController
             // spreadsheet uploaded afterwards has nothing to do with that séance, and an attachment
             // offered on its confirmation screen would be a link the teacher never asked for.
             $request->getSession()->remove(QuizImportSession::PAYLOAD_KEY);
+            $request->getSession()->remove(QuizImportSession::BATCH_KEY);
             $request->getSession()->remove(QuizImportSession::SOURCE_KEY);
             // The folder, on the other hand, is not a leftover of the previous file: it says where
             // the teacher was standing, and they are still standing there. It is only rewritten when
@@ -178,7 +179,7 @@ class QuizImportController extends AbstractController
         QuizTemplateRepository $templateRepository,
         QuizFolderRepository $folders,
         QuizImportImages $images,
-        QuizQuestionCompleteness $completeness,
+        QuizImportPreview $preview,
         SequenceTemplateRepository $sequenceRepository,
         SeanceTemplateRepository $seanceRepository,
         TranslatorInterface $translator,
@@ -278,6 +279,7 @@ class QuizImportController extends AbstractController
                 $entityManager->flush();
 
                 $request->getSession()->remove(QuizImportSession::PAYLOAD_KEY);
+                $request->getSession()->remove(QuizImportSession::BATCH_KEY);
                 $request->getSession()->remove(QuizImportSession::SOURCE_KEY);
                 $request->getSession()->remove(QuizImportSession::FOLDER_KEY);
                 // The batch is over: the questions that needed one of these images carry their own
@@ -289,25 +291,17 @@ class QuizImportController extends AbstractController
             }
         }
 
-        // The preview builds real (transient, never persisted) entities and renders them through the
-        // partials the passation itself uses - which is what makes it show the question the student
-        // will get, rather than a description of it. It is also what tells apart a question that
-        // found its deposited image from one that will wait for one.
-        $previewTemplate = new QuizTemplate($this->currentUser());
-        if (null !== $interactive) {
-            $interactive->appendQuestions($previewTemplate, $payload['questions'], copyImages: false);
-        } else {
-            $importer->appendQuestions($previewTemplate, $payload['questions']);
-        }
-        $previewQuestions = $previewTemplate->getQuestions()->toArray();
+        // What the payload would become, built from real transient entities - see
+        // App\Service\QuizImportPreview, which the batch screen reads the same way.
+        $rows = $preview->of($payload, $this->currentUser());
 
         return $this->render('library/quiz_import_preview.html.twig', [
             'form' => $form,
             'payload' => $payload,
             'family' => $interactive?->family(),
-            'previewQuestions' => $previewQuestions,
-            'incompleteCount' => $completeness->countIncomplete($previewQuestions),
-            'gaps' => array_map($completeness->gapOf(...), $previewQuestions),
+            'previewQuestions' => $rows['questions'],
+            'incompleteCount' => $rows['incompleteCount'],
+            'gaps' => $rows['gaps'],
             'existingTemplates' => $existingTemplates,
             // What the extra destination is about to attach to, named so the checkbox can say it.
             'attachTo' => null === $attachTo ? null : [
