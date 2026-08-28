@@ -1,0 +1,18 @@
+{# « Une mise à jour est en cours » - the strip every visitor gets while a production deploy runs.
+
+   Rendered by the shell on every page AND handed back whole by the status endpoint the poll calls,
+   so a tab that has been sitting open for an hour and a tab that has just loaded say exactly the
+   same thing.
+
+   Not dismissible on purpose. It is up for a quarter of an hour at most and it is the only warning
+   somebody gets before the platform stops answering mid-sentence; a close button would mostly be
+   clicked by the people about to lose what they were typing. #}
+<div class="cm-deploynotice d-print-none" role="status">
+    <span class="cm-deploynotice__icon" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="M10.24 3.957 1.815 18.243A2 2 0 0 0 3.53 21.25h16.94a2 2 0 0 0 1.715-3.007L13.76 3.957a2 2 0 0 0-3.52 0Z"></path></svg>
+    </span>
+    <span class="cm-deploynotice__text">
+        <strong>{{ 'deploymentNoticeTitle'|trans }}</strong>
+        {{ 'deploymentNoticeBody'|trans }}
+    </span>
+</div>

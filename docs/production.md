@@ -119,6 +119,41 @@ Your server is up and running, and a HTTPS certificate has been automatically
 generated for you.
 Go to `https://your-domain-name.example.com` and enjoy!
 
+## Turning on the deployment banner
+
+While a deploy runs, everyone using the platform gets a strip at the top of the window saying it is
+about to restart (`App\Controller\DeploymentNoticeController`). It goes up at the same instant the
+Discord channel says the deploy started and comes down when the channel announces the outcome, so
+the two describe the same window.
+
+It needs one shared secret in two places, and they must hold the **same string**:
+
+```console
+# On the server, generate one and put it in .env.prod.local:
+php -r 'echo bin2hex(random_bytes(32)), "\n";'
+# DEPLOYMENT_NOTICE_TOKEN=<the value>
+```
+
+Then create a repository secret named `BEAUP_DEPLOYMENT_NOTICE_TOKEN` with that same value, in the
+`production` environment next to the VPN and SSH credentials. Nothing else to do - the two
+`deployment_notice.py` steps in `.github/workflows/deploy.yaml` do the rest.
+
+**Blank is safe and merely silent.** With no token set the write route answers 404, the workflow's
+two steps log a line and exit 0, and nobody ever sees a banner - a deploy is never held up by it.
+That is also what happens on the very first deploy after this feature ships, since the production
+still running at that moment does not know the route yet.
+
+**The banner cannot get stuck.** It is lowered on success, on failure and on a cancelled run, and
+past that it expires on its own after thirty minutes
+(`App\Service\DeploymentNoticeBoard::DEFAULT_WINDOW_MINUTES`) whatever the workflow did or did not
+manage to announce. To check the state by hand, or to take one down:
+
+```console
+curl -s https://your-domain-name.example.com/deployment/notice
+curl -s -X POST https://your-domain-name.example.com/deployment/notice \
+  -H "Authorization: Bearer $DEPLOYMENT_NOTICE_TOKEN" -d 'phase=success'
+```
+
 ## Generating the mobile-app JWT signing keypair
 
 The mobile apps (MonCampus, e-CO) authenticate via `POST /api/login`

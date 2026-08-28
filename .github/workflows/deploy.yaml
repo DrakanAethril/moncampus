@@ -56,6 +56,26 @@ jobs:
           APP_URL: ${{ vars.BEAUP_APP_URL }}
         run: python3 .github/scripts/announce_release.py --phase start
 
+      # And the same moment, on the platform itself: the « une mise à jour est en cours » banner,
+      # which is what warns the people actually using it rather than the people reading Discord.
+      # It goes up here - before the VPN, before anything is touched - because that is the whole
+      # value of it: the deploy takes 7.5 to 10.3 minutes, and the warning is only worth having
+      # while there is still time to finish a sentence and press Enregistrer.
+      #
+      # Over HTTP, not over the SSH session further down, and that is not a shortcut: there is no
+      # session open at this instant, nor at the one where the banner comes down (after the VPN is
+      # dropped). The public address is the one thing available at both.
+      #
+      # continue-on-error for the same reason the Discord steps carry it, and it earns its keep on
+      # the very first deploy of this feature: production is still running the version that has no
+      # such route, so this call is answered 404. The script exits 0 either way.
+      - name: Raise the deployment banner
+        continue-on-error: true
+        env:
+          APP_URL: ${{ vars.BEAUP_APP_URL }}
+          DEPLOYMENT_NOTICE_TOKEN: ${{ secrets.BEAUP_DEPLOYMENT_NOTICE_TOKEN }}
+        run: python3 .github/scripts/deployment_notice.py --phase start
+
       # Bounded on purpose. This normally takes seconds, but it reaches an apt mirror, and on
       # 2026-08-19 that mirror stopped answering: the step sat there silently for 33 minutes and
       # would have held the runner for the 6-hour job default, with `concurrency: deploy-production`
@@ -206,6 +226,17 @@ jobs:
           APP_URL: ${{ vars.BEAUP_APP_URL }}
         run: python3 .github/scripts/announce_release.py --phase success
 
+      # Down it comes, and only here - after /login has answered 200 from the open internet. Taking
+      # it down when deploy-prod.sh returned would clear the warning while the site is still 502ing,
+      # which is the one moment it is most literally true.
+      - name: Lower the deployment banner
+        if: success()
+        continue-on-error: true
+        env:
+          APP_URL: ${{ vars.BEAUP_APP_URL }}
+          DEPLOYMENT_NOTICE_TOKEN: ${{ secrets.BEAUP_DEPLOYMENT_NOTICE_TOKEN }}
+        run: python3 .github/scripts/deployment_notice.py --phase success
+
       # failure() covers any step above it, the SSH deploy included. It stays last so the VPN is
       # already down by the time it runs, and carries the link to this run - a failure message that
       # doesn't say where to look is just noise.
@@ -216,3 +247,15 @@ jobs:
           DISCORD_WEBHOOK: ${{ secrets.BEAUP_DISCORD_NOTIFS_WEBHOOK }}
           APP_URL: ${{ vars.BEAUP_APP_URL }}
         run: python3 .github/scripts/announce_release.py --phase failure
+
+      # cancelled() as well as failure(), unlike the Discord notice above: a cancelled run posts
+      # nothing to the channel, and that is fine, but it must not leave a banner up announcing a
+      # restart nobody is going to perform. The banner expires on its own after thirty minutes
+      # (App\Service\DeploymentNoticeBoard) - this is what keeps it from taking all thirty.
+      - name: Lower the deployment banner (failed or cancelled run)
+        if: failure() || cancelled()
+        continue-on-error: true
+        env:
+          APP_URL: ${{ vars.BEAUP_APP_URL }}
+          DEPLOYMENT_NOTICE_TOKEN: ${{ secrets.BEAUP_DEPLOYMENT_NOTICE_TOKEN }}
+        run: python3 .github/scripts/deployment_notice.py --phase failure
