@@ -7,6 +7,7 @@ namespace App\Service\Game;
 use App\Entity\User;
 use App\Repository\GameProfileRepository;
 use App\Twig\AvatarExtension;
+use Symfony\Contracts\Service\ResetInterface;
 
 /**
  * The decorated avatar of the person looking at the page, or null.
@@ -17,8 +18,13 @@ use App\Twig\AvatarExtension;
  *
  * A teacher has no badge either, deliberately - the game is played by students, and a ring around a
  * teacher's avatar would announce a level nobody earns.
+ *
+ * **`ResetInterface`, and it is load-bearing rather than tidy.** FrankenPHP serves this application
+ * in worker mode: the container outlives the request, so a memo kept here would answer the *next*
+ * request with what the last one saw - a stale one, and one holding entities of an EntityManager
+ * that has since been cleared. Symfony calls reset() between requests through `services_resetter`.
  */
-final class GameBadgeProvider
+final class GameBadgeProvider implements ResetInterface
 {
     /** @var array<int, GameBadge|null> */
     private array $cache = [];
@@ -79,5 +85,11 @@ final class GameBadgeProvider
         $name = $user->getDisplayName() ?? $user->getUsername();
 
         return mb_strtoupper(mb_substr($name, 0, 1));
+    }
+
+    #[\Override]
+    public function reset(): void
+    {
+        $this->cache = [];
     }
 }

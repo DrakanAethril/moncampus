@@ -59,7 +59,12 @@
             {% endif %}
 
             <div class="cm-gm-section">
-                <h3 class="cm-gm-section__title">{{ 'gameLevelingTitlesHeading'|trans }}</h3>
+                <div class="cm-card-toolbar" style="padding: 0 0 6px">
+                    <h3 class="cm-gm-section__title">{{ 'gameLevelingTitlesHeading'|trans }}</h3>
+                    {# The one thing a student decides about their own title, so it hangs off the
+                       board that shows the six rather than off a menu. #}
+                    <a href="{{ path('app_game_title') }}" class="cm-btn cm-btn--outline" style="margin-left: auto">{{ 'gameTitleChooseAction'|trans }}</a>
+                </div>
                 <p class="cm-gm-section__hint">{{ 'gameLevelingTitlesHintText'|trans }}</p>
                 {# The reader's own face inside each of the six rings, rather than a coloured pill
                    saying « NIV. 3 »: what a level changes is the medallion carried everywhere, so

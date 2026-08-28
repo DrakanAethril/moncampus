@@ -9,6 +9,7 @@ use App\Entity\Program;
 use App\Entity\User;
 use App\Enum\GameTrack;
 use App\Repository\ProgramStudentOptionRepository;
+use Symfony\Contracts\Service\ResetInterface;
 
 /**
  * Which filière of the campus game a student plays in - **per student, not per formation**.
@@ -32,8 +33,13 @@ use App\Repository\ProgramStudentOptionRepository;
  * them with no filière at all cost them both their level wording and their pseudonym - the two
  * things the univers decides. They draw from the two catalogues at once and read the two wordings
  * of a level; the day their option is set, they are back to one.
+ *
+ * **`ResetInterface`, and it is load-bearing rather than tidy.** FrankenPHP serves this application
+ * in worker mode: the container outlives the request, so a memo kept here would answer the *next*
+ * request with what the last one saw - a stale one, and one holding entities of an EntityManager
+ * that has since been cleared. Symfony calls reset() between requests through `services_resetter`.
  */
-final class GameTrackResolver
+final class GameTrackResolver implements ResetInterface
 {
     /** @var array<string, list<GameTrack>> */
     private array $cache = [];
@@ -119,5 +125,11 @@ final class GameTrackResolver
         }
 
         return $tracked;
+    }
+
+    #[\Override]
+    public function reset(): void
+    {
+        $this->cache = [];
     }
 }

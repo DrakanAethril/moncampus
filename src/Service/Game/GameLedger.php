@@ -9,6 +9,7 @@ use App\Entity\Program;
 use App\Entity\User;
 use App\Repository\GameEntryRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Contracts\Service\ResetInterface;
 
 /**
  * The one place a App\Entity\GameEntry is written, and the three refusals that make the ledger
@@ -26,8 +27,13 @@ use Doctrine\ORM\EntityManagerInterface;
  *
  * Nothing here flushes - the caller owns the transaction - so an in-memory guard doubles the
  * database check: within one batch the earlier lines are not yet visible to a query.
+ *
+ * **`ResetInterface`, and it is load-bearing rather than tidy.** FrankenPHP serves this application
+ * in worker mode: the container outlives the request, so a memo kept here would answer the *next*
+ * request with what the last one saw - a stale one, and one holding entities of an EntityManager
+ * that has since been cleared. Symfony calls reset() between requests through `services_resetter`.
  */
-final class GameLedger
+final class GameLedger implements ResetInterface
 {
     /** @var array<string, true> what this instance has already written, unflushed included */
     private array $written = [];
@@ -199,5 +205,12 @@ final class GameLedger
     private function weekKey(User $student, string $ruleCode, \DateTimeImmutable $weekStart): string
     {
         return $student->getId().'|'.$ruleCode.'|'.$weekStart->format('o-W');
+    }
+
+    #[\Override]
+    public function reset(): void
+    {
+        $this->written = [];
+        $this->weekCounts = [];
     }
 }

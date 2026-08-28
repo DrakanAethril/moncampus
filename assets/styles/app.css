@@ -9468,6 +9468,24 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-gm-title__name { font-size: 13px; font-weight: 600; color: var(--cm-ink); min-width: 0; }
 .cm-gm-title__xp { margin-left: auto; font-size: 11.5px; color: var(--cm-faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
+/* ---------- Choosing the displayed title ---------- */
+/* One column per filière: a student playing in two reads them side by side, which is the only
+   reason the screen exists. */
+.cm-gm-titlecols { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-top: 16px; }
+.cm-gm-titlepicks { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.cm-gm-titlepick {
+    display: flex; align-items: center; gap: 10px; padding: 9px 12px; cursor: pointer;
+    border: 1px solid var(--cm-border); border-radius: 9px; background: var(--cm-surface);
+}
+.cm-gm-titlepick:hover { border-color: var(--cm-brand); }
+.cm-gm-titlepick.is-chosen { border-color: var(--cm-brand); box-shadow: inset 0 0 0 1px var(--cm-brand); }
+/* Locked rather than hidden: the six levels are the ladder, and the rung one cannot stand on yet
+   still says how far it is. */
+.cm-gm-titlepick.is-locked { opacity: .5; cursor: not-allowed; }
+.cm-gm-titlepick.is-locked:hover { border-color: var(--cm-border); }
+.cm-gm-titlepick__name { font-size: 13.5px; font-weight: 600; color: var(--cm-ink); min-width: 0; }
+.cm-gm-titlepick__hint { margin-left: auto; font-size: 11.5px; color: var(--cm-faint); white-space: nowrap; }
+
 /* ---------- Ranked months, and the month bar of the ranking ---------- */
 .cm-gm-months { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-top: 10px; }
 .cm-gm-month {

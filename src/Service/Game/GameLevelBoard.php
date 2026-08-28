@@ -6,6 +6,7 @@ namespace App\Service\Game;
 
 use App\Enum\GameTrack;
 use App\Repository\GameLevelLabelRepository;
+use Symfony\Contracts\Service\ResetInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
@@ -21,7 +22,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * has one wording table, keyed by filière, and a second one keyed by section would be a table nobody
  * fills. The generic wording covers the same case.
  */
-final class GameLevelBoard
+final class GameLevelBoard implements ResetInterface
 {
     /** @var array<string, string>|null */
     private ?array $labels = null;
@@ -118,7 +119,14 @@ final class GameLevelBoard
         return $matrix;
     }
 
-    /** Drops the memo - the settings screen saves and redraws in the same request. */
+    /**
+     * Drops the memo - the settings screen saves and redraws in the same request.
+     *
+     * It is also what `services_resetter` calls between two requests: FrankenPHP serves this
+     * application in worker mode, so a wording memorised here would otherwise outlive the request
+     * that read it, and a renamed level would keep its old name until the worker restarted.
+     */
+    #[\Override]
     public function reset(): void
     {
         $this->labels = null;

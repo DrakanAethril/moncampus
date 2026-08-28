@@ -233,6 +233,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // Figures, ranking, teams. The ranking answers on the month running now; an earlier
             // month is the same screen with ?month=, and the year the same with ?scope=year.
             '/game/alias' => 200,
+            // « Mon titre affiché » - the student's own choice among the titles of the levels they
+            // have reached, in each filière they play in.
+            '/game/title' => 200,
             '/game/ranking' => 200,
             '/game/ranking?scope=year' => 200,
             '/game/team' => 200,
@@ -351,6 +354,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // nothing. Reopening either to the referent teacher is one line in each controller.
             $this->rewardsPath => 403,
             '/game/alias' => 404,
+            '/game/title' => 404,
             '/game/ranking' => 404,
             '/game/team' => 404,
             $this->gameSettingsPath => 403,
@@ -478,6 +482,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/game/leveling' => 404,
             $this->rewardsPath => 200,
             '/game/alias' => 404,
+            '/game/title' => 404,
             '/game/ranking' => 404,
             '/game/team' => 404,
             $this->gameSettingsPath => 200,
@@ -630,6 +635,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/game/leveling' => 404,
             $this->rewardsPath => 403,
             '/game/alias' => 404,
+            '/game/title' => 404,
             '/game/ranking' => 404,
             '/game/team' => 404,
             $this->gameSettingsPath => 403,
