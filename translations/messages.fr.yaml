@@ -3165,6 +3165,7 @@ progressionAnnualPageHeading: 'Progressions pédagogiques'
 progressionManagePageHeading: 'Mes progressions pédagogiques'
 progressionNewPageHeading: 'Nouvelle progression pédagogique'
 progressionPlacementPageHeading: '%sequence% · placer les séances'
+progressionPlacementSequenceRailLabel: 'Séquences de la progression'
 
 progressionFilterClassesLabel: 'Classes'
 progressionFilterTopicLabel: 'Matière'
