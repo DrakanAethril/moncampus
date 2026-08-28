@@ -1217,13 +1217,14 @@ class ProgressionController extends AbstractController
      */
     private function readFilters(Request $request): array
     {
-        // Both reads go through QueryValue for the same reason: InputBag::all() throws when the
-        // parameter is present but not an array (`?cohorts=`, which the chip bar submits once every
-        // chip is deselected), and getString() throws on the opposite shape.
+        // Both reads go through QueryValue for the same reason: InputBag::getInt() answers a 400
+        // to the empty string, which is exactly what every "Toutes" option of the bar submits.
         $evaluationFilter = QueryValue::string($request, 'evaluations');
 
         return [
-            'cohortIds' => QueryValue::intList($request, 'cohorts'),
+            // A list although the bar now names a single class: the calendars filter on a set, and
+            // intList reads the one value and the empty "Toutes" alike.
+            'cohortIds' => QueryValue::intList($request, 'cohort'),
             'topicId' => QueryValue::nullableInt($request, 'topic'),
             'nature' => EvaluationNature::tryFrom($evaluationFilter),
             'withEvaluation' => 'any' === $evaluationFilter,
