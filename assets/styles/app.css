@@ -1381,6 +1381,37 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
    to the content, which already carries its own margin between blocks. */
 .cm-tabbed-content { padding: 26px 26px 0; }
 
+/* ---------- Deployment notice, at the very top of the window ----------
+   Above the navbar and not under it, unlike .cm-globalnotice: the standing notice states a fact
+   about the platform, this one warns that the platform is about to stop answering, and the two
+   must not read as a pair of stripes saying equally little.
+
+   Warning amber, and it announces itself once - `role="status"`, not `alert`: a screen reader
+   should hear it when it arrives without having whatever the reader is doing interrupted.
+
+   Sticky, because the window it covers is a quarter of an hour and the person it is written for is
+   the one scrolled far down a long form. */
+.cm-deploynotice {
+    position: sticky;
+    top: 0;
+    z-index: 1040;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 9px 20px;
+    background: var(--cm-gold-bg);
+    color: var(--cm-gold-tx);
+    border-bottom: 2px solid var(--cm-gold);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.45;
+    text-align: center;
+}
+.cm-deploynotice__icon { display: inline-flex; flex: 0 0 auto; }
+.cm-deploynotice__text strong { font-weight: 700; }
+.cm-deploynotice__text strong::after { content: ' · '; font-weight: 400; }
+
 /* ---------- Standing platform notice, immediately under the navbar ----------
    A full-width strip rather than an .alert inside the container: it belongs to the shell, like the
    « ZONE DE TEST » bar it sits above, and must not move with the page's own gutters. Informational
