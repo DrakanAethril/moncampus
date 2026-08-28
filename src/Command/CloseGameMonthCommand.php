@@ -75,10 +75,13 @@ class CloseGameMonthCommand extends Command
             return Command::SUCCESS;
         }
 
-        if (!$this->access->isFeatureOpenForAnyone()) {
-            // The establishment switched the game off. Nothing is closed, nothing is lost: the
-            // entries stay, and switching it back on picks the thread up.
-            $io->writeln('Le jeu du campus est éteint pour tous les rôles.');
+        if (!$this->access->isRunningAnywhere()) {
+            // No formation is playing. Nothing is closed, nothing is lost: the entries stay, and
+            // switching a class back on picks the thread up. Deliberately **not** the role matrix:
+            // a silent pilot - the class plays, no role sees it, the administration reads it on the
+            // observation screen - is a formation that is playing, and it has to be closed like any
+            // other (2026-08-28).
+            $io->writeln('Aucune formation ne fait tourner le jeu.');
             $this->release();
 
             return Command::SUCCESS;
