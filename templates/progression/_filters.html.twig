@@ -1,4 +1,4 @@
-{# Shared filter bar of screens 4a and 4b (design_handoff_progression README §3): Classes (multi),
+{# Shared filter bar of screens 4a and 4b (design_handoff_progression README §3): Classes,
    Matière, Évaluations. A plain GET form auto-submitted on change - the calendars are read-only
    projections, so there is no state to keep and no reason for anything more than auto-submit.
    `action_template` is an optional template path rendered on the right of the bar (4a's "Gérer mes
@@ -6,9 +6,12 @@
 <form method="get" class="cm-prog-filters" data-controller="auto-submit">
     <label class="cm-prog-filters__field">
         <span>{{ 'progressionFilterClassesLabel'|trans }}</span>
-        {# Multiple, per the design's "Classes (multi)" - no selection means every class, so an
-           empty submit is a valid "Toutes" rather than an empty result. #}
-        <select name="cohorts[]" class="cm-prog-filters__select" multiple data-action="change->auto-submit#submit" aria-label="{{ 'progressionFilterClassesLabel'|trans }}">
+        {# One class at a time, "Toutes" first and selected by default. The design said "Classes
+           (multi)", but a multiple <select> reads as a filter that has to be built before it
+           answers - and the two neighbours are single lists opening on "Toutes". An empty value
+           is the valid "every class", never an empty result. #}
+        <select name="cohort" class="cm-prog-filters__select" data-action="change->auto-submit#submit" aria-label="{{ 'progressionFilterClassesLabel'|trans }}">
+            <option value="">{{ 'progressionFilterAllLabel'|trans }}</option>
             {% for cohort in filterOptions.cohorts %}
                 <option value="{{ cohort.id }}"{{ cohort.id in filters.cohortIds ? ' selected' }}>{{ cohort.label }}</option>
             {% endfor %}
