@@ -306,6 +306,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/library/quiz' => 403,
             '/library/quiz/search' => 403,
             '/library/quiz/import/assistant' => 403,
+            '/library/quiz/import/batch' => 403,
             // Outils > Sondages is the author's side: a student answers a survey, never writes one.
             '/surveys' => 403,
             '/surveys/templates' => 403,
@@ -457,6 +458,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/library/quiz' => 200,
             '/library/quiz/search' => 200,
             '/library/quiz/import/assistant' => 200,
+            // No batch in the session, so the batch verification screen sends the teacher back to
+            // the paste step rather than rendering an empty rail.
+            '/library/quiz/import/batch' => 302,
             '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,
@@ -583,6 +587,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/library/quiz' => 200,
             '/library/quiz/search' => 200,
             '/library/quiz/import/assistant' => 200,
+            '/library/quiz/import/batch' => 302,
             // An admin is neither enrolled nor teaching, so the two personal timetables stay shut.
             '/my/timetable' => 403,
             '/timetable' => 403,

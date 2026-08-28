@@ -1302,6 +1302,41 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .tox .tox-tbtn--enabled { background: var(--cm-blue-bg) !important; }
 
 /* ==========================================================================
+   The rail (.cm-rail) - GLOBAL pattern for "here are the N things you are
+   working through, and this is the one you are on".
+
+   Not a variant of .cm-tabs: tabs name the *facets* of one subject (Membres,
+   Groupes, Périodes...) and are part of a screen's furniture. A rail names the
+   *items* of a batch - the séquences of a progression being placed, the
+   quizzes of an import waiting to be checked - so it is a row of pills, it
+   carries a rank, and each entry can say how it is doing with a coloured dot.
+
+   Both mechanics use the same skin: an entry is a link when moving means a new
+   page (progression placement), and a button when the panels are already on the
+   page and only one shows (quiz batch import).
+   ========================================================================== */
+.cm-rail { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.cm-rail__label { font: 600 12px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-rail__item {
+  display: inline-flex; align-items: center; gap: 7px; max-width: 320px;
+  border: 1px solid var(--cm-border); background: var(--cm-surface); color: var(--cm-text);
+  border-radius: 999px; padding: 6px 14px; font: 600 12.5px var(--cm-font-ui);
+  cursor: pointer; text-decoration: none;
+}
+.cm-rail__item:hover { background: var(--cm-bg); }
+.cm-rail__item.is-active { border-color: var(--cm-brand); background: var(--cm-blue-bg); color: var(--cm-blue-tx); }
+.cm-rail__index { font: 600 11px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-rail__item.is-active .cm-rail__index { color: inherit; }
+/* An entry the teacher took out of the batch: still there, still readable, plainly not going. */
+.cm-rail__item.is-off { opacity: .55; }
+.cm-rail__item.is-off .cm-rail__title { text-decoration: line-through; }
+.cm-rail__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-rail__dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; }
+.cm-rail__dot--ok     { background: var(--cm-green-tx); }
+.cm-rail__dot--warn   { background: var(--cm-gold-tx); }
+.cm-rail__dot--danger { background: var(--cm-red-tx); }
+
+/* ==========================================================================
    Card-attached tabs (.cm-tabs) - GLOBAL pattern for every tabbed admin
    screen (UFA, Configuration, Pédagogique, Ordinateurs portables...),
    replacing the previous Bootstrap "nav nav-pills card-header-pills" inside
@@ -3830,19 +3865,6 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-deflist dt { font: 600 12px var(--cm-font-ui); color: var(--cm-faint); }
 .cm-deflist dd { margin: 0; font-size: 13px; color: var(--cm-text); }
 .cm-cell-prose { font-size: 12.5px; color: var(--cm-muted); max-width: 260px; }
-
-/* 2a - the séquence rail: every séquence of the progression, the one being placed marked. Built
-   on .cm-prog-chip so a séquence reads like 3a's class chips; the dot repeats 5a's status tone. */
-.cm-prog-seqrail { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
-.cm-prog-seqrail__label { font: 600 12px var(--cm-font-ui); color: var(--cm-muted); }
-.cm-prog-seqrail__item { display: inline-flex; align-items: center; gap: 7px; max-width: 320px; }
-.cm-prog-seqrail__index { font: 600 11px var(--cm-font-ui); color: var(--cm-faint); }
-.cm-prog-seqrail__item.is-active .cm-prog-seqrail__index { color: inherit; }
-.cm-prog-seqrail__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cm-prog-seqrail__dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; }
-.cm-prog-seqrail__dot--ok     { background: var(--cm-green-tx); }
-.cm-prog-seqrail__dot--warn   { background: var(--cm-gold-tx); }
-.cm-prog-seqrail__dot--danger { background: var(--cm-red-tx); }
 
 /* 2a - "Créneaux utilisés": the séquence's own placement options, its own <form> above the
    séance rows so nothing ends up nested in it */
