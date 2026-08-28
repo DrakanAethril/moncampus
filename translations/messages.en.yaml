@@ -2749,6 +2749,7 @@ progressionAnnualPageHeading: 'Teaching progressions'
 progressionManagePageHeading: 'My teaching progressions'
 progressionNewPageHeading: 'New teaching progression'
 progressionPlacementPageHeading: '%sequence% · place the sessions'
+progressionPlacementSequenceRailLabel: 'Sequences in this progression'
 
 progressionFilterClassesLabel: 'Classes'
 progressionFilterTopicLabel: 'Subject'

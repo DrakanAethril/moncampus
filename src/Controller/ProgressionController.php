@@ -405,8 +405,12 @@ class ProgressionController extends AbstractController
 
     // 2a - placing ONE séquence's séances on real créneaux.
     #[Route(path: '/progression/{id}/sequence/{sequenceId}/placement', name: 'app_progression_placement', requirements: ['id' => '\d+', 'sequenceId' => '\d+'])]
-    public function placement(int $id, int $sequenceId, ProgressionSeanceRepository $seanceRepository): Response
-    {
+    public function placement(
+        int $id,
+        int $sequenceId,
+        ProgressionSeanceRepository $seanceRepository,
+        ProgressionSequenceRepository $sequenceRepository,
+    ): Response {
         $progression = $this->findOrDeny($id);
         $sequence = $this->findSequenceOrDeny($progression, $sequenceId);
 
@@ -418,8 +422,11 @@ class ProgressionController extends AbstractController
             // The evaluations this séquence carries, so that attaching one to a séquence no longer
             // takes it out of every screen the module has.
             'evaluations' => $this->evaluationSelector->forSequence($progression->getTopic()?->getEvaluations() ?? [], $sequence),
-            // The edit form can move an evaluation to another séquence, so it needs them all.
-            'sequences' => $progression->getSequences(),
+            // Every séquence of the progression, in its own order: the rail above the options
+            // walks through them, and the evaluation edit form can move one to another séquence.
+            // Read through the repository rather than off the collection so the rail's status dots
+            // do not lazy-load one séance collection per séquence.
+            'sequences' => $sequenceRepository->findOrderedForProgression($progression),
             // "Créneaux utilisés". The matière choice is only worth showing when the teacher holds
             // more than one with this class - offering to restrict a list of one is noise.
             'slot_compositions' => ProgressionSlotComposition::cases(),
