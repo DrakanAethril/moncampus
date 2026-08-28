@@ -63,6 +63,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
     private string $statementsPath;
     private string $gesturesPath;
     private string $rewardsPath;
+    private string $observationPath;
     private string $gameSettingsPath;
 
     protected function setUp(): void
@@ -81,6 +82,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->statementsPath = '/programs/'.$this->program->getId().'/game/statements';
         $this->gesturesPath = '/programs/'.$this->program->getId().'/game/gestures';
         $this->rewardsPath = '/programs/'.$this->program->getId().'/game/rewards';
+        $this->observationPath = '/programs/'.$this->program->getId().'/game/observation';
         $this->gameSettingsPath = '/programs/'.$this->program->getId().'/settings/game';
     }
 
@@ -230,9 +232,15 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/settings/game/figures' => 403,
             // The catalogue is the teachers': a student reads their shelf, never the shelf's source.
             $this->rewardsPath => 403,
+            // « Observation » is the administration's alone - it names every student beside their
+            // index, which is the one thing the students' own ranking never does.
+            $this->observationPath => 403,
             // Figures, ranking, teams. The ranking answers on the month running now; an earlier
             // month is the same screen with ?month=, and the year the same with ?scope=year.
             '/game/alias' => 200,
+            // « Mon titre affiché » - the student's own choice among the titles of the levels they
+            // have reached, in each filière they play in.
+            '/game/title' => 200,
             '/game/ranking' => 200,
             '/game/ranking?scope=year' => 200,
             '/game/team' => 200,
@@ -298,6 +306,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/library/quiz' => 403,
             '/library/quiz/search' => 403,
             '/library/quiz/import/assistant' => 403,
+            '/library/quiz/import/batch' => 403,
+            // The deployment banner's status route is public on purpose: the login screen polls
+            // it, so somebody not yet logged in during a deploy gets told too.
+            '/deployment/notice' => 200,
             // Outils > Sondages is the author's side: a student answers a survey, never writes one.
             '/surveys' => 403,
             '/surveys/templates' => 403,
@@ -350,7 +362,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // settled (2026-08-28): a teacher gives gestures and holds relevés, and settles
             // nothing. Reopening either to the referent teacher is one line in each controller.
             $this->rewardsPath => 403,
+            $this->observationPath => 403,
             '/game/alias' => 404,
+            '/game/title' => 404,
             '/game/ranking' => 404,
             '/game/team' => 404,
             $this->gameSettingsPath => 403,
@@ -447,6 +461,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/library/quiz' => 200,
             '/library/quiz/search' => 200,
             '/library/quiz/import/assistant' => 200,
+            // No batch in the session, so the batch verification screen sends the teacher back to
+            // the paste step rather than rendering an empty rail.
+            '/library/quiz/import/batch' => 302,
+            '/deployment/notice' => 200,
             '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,
@@ -477,7 +495,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/game/engagements' => 200,
             '/game/leveling' => 404,
             $this->rewardsPath => 200,
+            $this->observationPath => 200,
             '/game/alias' => 404,
+            '/game/title' => 404,
             '/game/ranking' => 404,
             '/game/team' => 404,
             $this->gameSettingsPath => 200,
@@ -571,6 +591,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/library/quiz' => 200,
             '/library/quiz/search' => 200,
             '/library/quiz/import/assistant' => 200,
+            '/library/quiz/import/batch' => 302,
+            '/deployment/notice' => 200,
             // An admin is neither enrolled nor teaching, so the two personal timetables stay shut.
             '/my/timetable' => 403,
             '/timetable' => 403,
@@ -629,7 +651,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/game/engagements' => 404,
             '/game/leveling' => 404,
             $this->rewardsPath => 403,
+            $this->observationPath => 403,
             '/game/alias' => 404,
+            '/game/title' => 404,
             '/game/ranking' => 404,
             '/game/team' => 404,
             $this->gameSettingsPath => 403,

@@ -29,6 +29,7 @@ use App\Service\Game\GameRankingBuilder;
 use App\Service\Game\GameRuleResolver;
 use App\Service\Game\GameSettingsProvider;
 use App\Service\Game\GameTeamBoard;
+use App\Service\Game\GameTitleBoard;
 use App\Service\Game\GameTrackResolver;
 use App\Service\Game\GameYear;
 use App\Service\Game\RewardGranter;
@@ -162,7 +163,7 @@ class GameController extends AbstractController
                 'history' => $entries->journal($student, $program),
                 // The running total across every formation - what the level is made of.
                 'totalPoints' => $entries->sumForStudent($student),
-                'levels' => $board->boardFor($tracks->forStudent($student, $program)),
+                'levels' => $board->boardFor($tracks->tracksForStudent($student, $program)),
                 'shelf' => $rewards->shelfFor($student),
                 'team' => $teamBoard->forStudent($student, $program, $month->firstDay(), $month->lastMoment()),
                 'teamCount' => \count($teamBoard->teams($program, $month->firstDay(), $month->lastMoment())),
@@ -292,6 +293,67 @@ class GameController extends AbstractController
         ]);
     }
 
+    /**
+     * Choosing the title shown next to one's name - among the wordings of the levels already
+     * reached, in each of the filières the student plays in.
+     *
+     * A student whose option names no filière plays in all of their formation's, so a SIO one is
+     * offered both columns: that is the whole reason this screen exists rather than the title simply
+     * following the level. The choice survives a level change, and « suivre mon niveau » is how one
+     * goes back to a title that moves on its own.
+     *
+     * The **check is server-side** (App\Service\Game\GameTitleBoard::allows()): the form posts a
+     * string, so a locked card in the template locks nothing at all.
+     */
+    #[Route(path: '/game/title', name: 'app_game_title', methods: ['GET', 'POST'])]
+    public function title(
+        Request $request,
+        GameAccess $access,
+        GameProfileProvider $profiles,
+        GameTrackResolver $tracks,
+        GameTitleBoard $titles,
+        GameBadgeProvider $badges,
+    ): Response {
+        $student = $this->currentUser();
+        $program = $access->primaryProgramFor($student) ?? throw $this->createNotFoundException();
+
+        $profile = $profiles->for($student);
+        $played = $tracks->tracksForStudent($student, $program);
+        // The same total the titles board of « Mon XP » reads, so the two screens cannot disagree on
+        // which levels are behind this student.
+        $totalPoints = $profile->getTotalPoints();
+
+        if ($request->isMethod('POST')) {
+            if (!$this->isCsrfTokenValid('game_title', (string) $request->request->get('_token'))) {
+                throw $this->createAccessDeniedException();
+            }
+
+            $wanted = trim((string) $request->request->get('title'));
+
+            if ('' !== $wanted && !$titles->allows($played, $totalPoints, $wanted)) {
+                $this->addFlash('error', 'gameTitleRefusedFlashMessage');
+
+                return $this->redirectToRoute('app_game_title');
+            }
+
+            // The empty string is « suivre mon niveau »: stored as null, which is what makes the
+            // badge fall back on the wording of the level reached.
+            $profiles->persistent($student)->setDisplayedTitle('' === $wanted ? null : $wanted);
+            $profiles->save();
+
+            $this->addFlash('success', '' === $wanted ? 'gameTitleFollowsLevelFlashMessage' : 'gameTitleSavedFlashMessage');
+
+            return $this->redirectToRoute('app_game_title');
+        }
+
+        return $this->render('game/title.html.twig', [
+            'program' => $program,
+            'columns' => $titles->columnsFor($played, $totalPoints),
+            'chosen' => $profile->getDisplayedTitle(),
+            'badge' => $badges->forUser($student),
+        ]);
+    }
+
     /** The board of the six levels - open to every role the feature is on for. */
     #[Route(path: '/game/levels', name: 'app_game_levels', methods: ['GET'])]
     public function levels(GameAccess $access, GameLevelBoard $board, GameBadgeProvider $badges, GameTrackResolver $tracks): Response
@@ -301,8 +363,8 @@ class GameController extends AbstractController
 
         return $this->render('game/levels.html.twig', [
             // The board is drawn in the reader's own filière, which in a SIO class is decided by
-            // their option and not by the class.
-            'entries' => $board->boardFor(null === $program ? null : $tracks->forStudent($student, $program)),
+            // their option and not by the class - and in both of them while that option says nothing.
+            'entries' => $board->boardFor(null === $program ? [] : $tracks->tracksForStudent($student, $program)),
             'badge' => $badges->forUser($student),
         ]);
     }

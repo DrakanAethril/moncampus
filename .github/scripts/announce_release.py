@@ -77,7 +77,7 @@ def load_release():
 
 
 def release_sort_key(release):
-    """Orders releases oldest-first, exactly as App\Service\Changelog does.
+    r"""Orders releases oldest-first, exactly as App\Service\Changelog does.
 
     The version breaks a tie on the date, and it has to: two deploys in one day is ordinary, the
     CalVer rank being monthly rather than daily. Without it the order fell back to the order of the

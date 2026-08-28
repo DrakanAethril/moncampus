@@ -21,6 +21,17 @@ final class QuizImportSession
     public const string PAYLOAD_KEY = 'quiz_csv_import';
 
     /**
+     * The parsed documents of a **batch** - several quizzes pasted one under another, or zipped
+     * together - waiting for the batch verification screen to confirm them.
+     *
+     * A key of its own rather than a list stored under PAYLOAD_KEY: everything that reads the
+     * single payload (the CSV route, the Kahoot route, the interactive preview) would have to learn
+     * to tell a payload from a list of them, and a batch left behind must never be resurrected by a
+     * screen that thinks it is looking at one quiz. The two are cleared together.
+     */
+    public const string BATCH_KEY = 'quiz_import_batch';
+
+    /**
      * Where the import came from, so the preview can offer « rattacher à la séance … » pre-checked.
      * A key of its own rather than a field of the payload: no importer knows what a séquence is.
      */

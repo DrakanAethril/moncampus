@@ -285,6 +285,9 @@
                                                                         <a class="dropdown-item {{ current_route starts with 'app_game_engagements' and app.request.query.get('program') == program.id ? 'active' }}" href="{{ path('app_game_engagements', {program: program.id}) }}">{{ 'engagementQueueHeading'|trans }}</a>
                                                                     {% endif %}
                                                                     {% if game_settles %}
+                                                                        {# The administration's reading of the class's game - and the only screen
+                                                                           a silent pilot is visible from at all. #}
+                                                                        <a class="dropdown-item {{ current_route starts with 'app_program_game_observation' ? 'active' }}" href="{{ path('app_program_game_observation', {id: program.id}) }}">{{ 'gameObservationHeading'|trans }}</a>
                                                                         <a class="dropdown-item {{ current_route starts with 'app_program_game_rewards' ? 'active' }}" href="{{ path('app_program_game_rewards', {id: program.id}) }}">{{ 'gameRewardsHeading'|trans }}</a>
                                                                         <a class="dropdown-item {{ current_route == 'app_program_settings_game' ? 'active' }}" href="{{ path('app_program_settings_game', {id: program.id}) }}">{{ 'gameSettingsHeading'|trans }}</a>
                                                                     {% endif %}
@@ -663,9 +666,19 @@
                                            are made on (design/validated/feature-access.md §8.8), which
                                            is why the "admin has everything" rule is not negotiable. #}
                                         <a class="dropdown-item {{ current_route starts with 'app_features' ? 'active' }}" href="{{ path('app_features') }}">{{ 'featuresNavLabel'|trans }}</a>
+                                        {# The two tables the game is configured from, under their own
+                                           heading: they are the only settings entries that belong to
+                                           one feature rather than to the establishment's structure. #}
                                         {% if feature('game') %}
-                                            <a class="dropdown-item {{ current_route == 'app_settings_game_levels' ? 'active' }}" href="{{ path('app_settings_game_levels') }}">{{ 'gameLevelLabelsHeading'|trans }}</a>
-                                            <a class="dropdown-item {{ current_route starts with 'app_settings_game_figures' ? 'active' }}" href="{{ path('app_settings_game_figures') }}">{{ 'gameFiguresHeading'|trans }}</a>
+                                            <div class="dropend">
+                                                <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_settings_game_' ? 'active' }}" href="#settings-gamification" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                                    {{ 'gamificationNavLabel'|trans }}
+                                                </a>
+                                                <div class="dropdown-menu">
+                                                    <a class="dropdown-item {{ current_route == 'app_settings_game_levels' ? 'active' }}" href="{{ path('app_settings_game_levels') }}">{{ 'gameLevelsNavLabel'|trans }}</a>
+                                                    <a class="dropdown-item {{ current_route starts with 'app_settings_game_figures' ? 'active' }}" href="{{ path('app_settings_game_figures') }}">{{ 'gameFiguresNavLabel'|trans }}</a>
+                                                </div>
+                                            </div>
                                         {% endif %}
                                     {% endif %}
                                 </div>

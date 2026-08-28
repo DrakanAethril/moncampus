@@ -1,0 +1,84 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'gameTitleChoiceHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'gameLevelingHeading'|trans, url: path('app_game_leveling')},
+        {label: 'gameTitleChoiceHeading'|trans, url: path('app_game_title')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'gameTitleChoiceHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <p class="cm-gm-context">{{ program.displayShortName }}</p>
+
+    <form method="post">
+        <input type="hidden" name="_token" value="{{ csrf_token('game_title') }}">
+
+        <div class="card">
+            <div class="card-body">
+                {% if badge %}
+                    {# What the choice actually changes, shown before it is made: the name as the rest
+                       of the application draws it. #}
+                    <div class="cm-gm-identity">
+                        {% include 'game/_avatar.html.twig' with {badge: badge} only %}
+                        <div class="cm-gm-identity__text">
+                            <div class="cm-gm-identity__name">{{ app.user.displayName ?? app.user.username }}</div>
+                            <div class="cm-gm-identity__title">{{ badge.title }}</div>
+                        </div>
+                    </div>
+                    <hr class="cm-gm-rule">
+                {% endif %}
+
+                <p class="cm-gm-section__hint">{{ 'gameTitleChoiceHintText'|trans }}</p>
+
+                {# The default, and the way back to it: a pinned title never moves again, so the
+                   option that follows the level has to stay reachable. #}
+                <label class="cm-gm-titlepick {{ chosen is null ? 'is-chosen' }}">
+                    <input type="radio" name="title" value=""{{ chosen is null ? ' checked' }}>
+                    <span class="cm-gm-titlepick__name">{{ 'gameTitleFollowLevelLabel'|trans }}</span>
+                    <span class="cm-gm-titlepick__hint">{{ 'gameTitleFollowLevelHelpText'|trans }}</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="cm-gm-titlecols">
+            {% for column in columns %}
+                <div class="card">
+                    <div class="card-body">
+                        <span class="cm-gm-label">
+                            {%- if column.track %}{{ column.track.emoji }} {{ column.track.labelKey|trans }}
+                            {%- else %}{{ 'gameTitleGenericColumnLabel'|trans }}{% endif -%}
+                        </span>
+
+                        <div class="cm-gm-titlepicks">
+                            {% for entry in column.entries %}
+                                {# A level not reached is shown rather than hidden - the six of them
+                                   are the ladder, and half a ladder says nothing about the climb. #}
+                                <label class="cm-gm-titlepick {{ entry.reached ? '' : 'is-locked' }} {{ chosen == entry.title ? 'is-chosen' }}">
+                                    <input type="radio" name="title" value="{{ entry.title }}"{{ chosen == entry.title ? ' checked' }}{{ entry.reached ? '' : ' disabled' }}>
+                                    <span class="cm-gm-title__level" style="{{ game_band_style(entry.level.level) }}">{{ 'gameLevelShortLabel'|trans({'%level%': entry.level.level}) }}</span>
+                                    <span class="cm-gm-titlepick__name">{{ entry.title }}</span>
+                                    <span class="cm-gm-titlepick__hint">
+                                        {%- if entry.reached %}{{ 'gameTitleUnlockedLabel'|trans }}
+                                        {%- else %}{{ 'gameTitleLockedLabel'|trans({'%xp%': entry.level.xpMin|number_format(0, ',', ' ')}) }}{% endif -%}
+                                    </span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="cm-actionbar">
+            <div class="cm-actionbar__buttons">
+                <a href="{{ path('app_game_leveling') }}" class="cm-btn cm-btn--outline">{{ 'cancelAction'|trans }}</a>
+                <button type="submit" class="cm-btn cm-btn--primary">{{ 'gameTitleSaveAction'|trans }}</button>
+            </div>
+        </div>
+    </form>
+{% endblock %}

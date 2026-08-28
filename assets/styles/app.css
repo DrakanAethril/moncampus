@@ -1302,6 +1302,41 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .tox .tox-tbtn--enabled { background: var(--cm-blue-bg) !important; }
 
 /* ==========================================================================
+   The rail (.cm-rail) - GLOBAL pattern for "here are the N things you are
+   working through, and this is the one you are on".
+
+   Not a variant of .cm-tabs: tabs name the *facets* of one subject (Membres,
+   Groupes, Périodes...) and are part of a screen's furniture. A rail names the
+   *items* of a batch - the séquences of a progression being placed, the
+   quizzes of an import waiting to be checked - so it is a row of pills, it
+   carries a rank, and each entry can say how it is doing with a coloured dot.
+
+   Both mechanics use the same skin: an entry is a link when moving means a new
+   page (progression placement), and a button when the panels are already on the
+   page and only one shows (quiz batch import).
+   ========================================================================== */
+.cm-rail { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.cm-rail__label { font: 600 12px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-rail__item {
+  display: inline-flex; align-items: center; gap: 7px; max-width: 320px;
+  border: 1px solid var(--cm-border); background: var(--cm-surface); color: var(--cm-text);
+  border-radius: 999px; padding: 6px 14px; font: 600 12.5px var(--cm-font-ui);
+  cursor: pointer; text-decoration: none;
+}
+.cm-rail__item:hover { background: var(--cm-bg); }
+.cm-rail__item.is-active { border-color: var(--cm-brand); background: var(--cm-blue-bg); color: var(--cm-blue-tx); }
+.cm-rail__index { font: 600 11px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-rail__item.is-active .cm-rail__index { color: inherit; }
+/* An entry the teacher took out of the batch: still there, still readable, plainly not going. */
+.cm-rail__item.is-off { opacity: .55; }
+.cm-rail__item.is-off .cm-rail__title { text-decoration: line-through; }
+.cm-rail__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-rail__dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; }
+.cm-rail__dot--ok     { background: var(--cm-green-tx); }
+.cm-rail__dot--warn   { background: var(--cm-gold-tx); }
+.cm-rail__dot--danger { background: var(--cm-red-tx); }
+
+/* ==========================================================================
    Card-attached tabs (.cm-tabs) - GLOBAL pattern for every tabbed admin
    screen (UFA, Configuration, Pédagogique, Ordinateurs portables...),
    replacing the previous Bootstrap "nav nav-pills card-header-pills" inside
@@ -1345,6 +1380,37 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
    lines up with a screen made of rows instead of butting against the tabs. Bottom padding is left
    to the content, which already carries its own margin between blocks. */
 .cm-tabbed-content { padding: 26px 26px 0; }
+
+/* ---------- Deployment notice, at the very top of the window ----------
+   Above the navbar and not under it, unlike .cm-globalnotice: the standing notice states a fact
+   about the platform, this one warns that the platform is about to stop answering, and the two
+   must not read as a pair of stripes saying equally little.
+
+   Warning amber, and it announces itself once - `role="status"`, not `alert`: a screen reader
+   should hear it when it arrives without having whatever the reader is doing interrupted.
+
+   Sticky, because the window it covers is a quarter of an hour and the person it is written for is
+   the one scrolled far down a long form. */
+.cm-deploynotice {
+    position: sticky;
+    top: 0;
+    z-index: 1040;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 9px 20px;
+    background: var(--cm-gold-bg);
+    color: var(--cm-gold-tx);
+    border-bottom: 2px solid var(--cm-gold);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.45;
+    text-align: center;
+}
+.cm-deploynotice__icon { display: inline-flex; flex: 0 0 auto; }
+.cm-deploynotice__text strong { font-weight: 700; }
+.cm-deploynotice__text strong::after { content: ' · '; font-weight: 400; }
 
 /* ---------- Standing platform notice, immediately under the navbar ----------
    A full-width strip rather than an .alert inside the container: it belongs to the shell, like the
@@ -3630,9 +3696,6 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
   border-radius: var(--cm-radius-sm); padding: 7px 12px;
   font: 600 12.5px var(--cm-font-ui); min-width: 150px;
 }
-/* The « Classes » multi-select stays on one line as in the mockup: it unfolds on focus */
-.cm-prog-filters__select[multiple] { height: 36px; overflow: hidden; }
-.cm-prog-filters__select[multiple]:focus { height: auto; overflow: auto; }
 .cm-prog-filters__action { margin-left: auto; display: flex; align-items: center; gap: 6px; }
 .cm-prog-filters__month { font: 600 12.5px var(--cm-font-ui); color: var(--cm-ink); }
 
@@ -9455,15 +9518,48 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-gm-hero__next { font-size: 12.5px; color: var(--cm-faint); margin-top: 8px; }
 
 /* The six titles, with the ones already unlocked standing out from the ones ahead. */
-.cm-gm-titles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+.cm-gm-titles { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 10px; }
 .cm-gm-title {
     display: flex; align-items: center; gap: 10px; padding: 10px 12px;
     border: 1px solid var(--cm-border); border-radius: 9px; background: var(--cm-surface); opacity: .55;
 }
 .cm-gm-title.is-reached { opacity: 1; border-color: var(--cm-brand); }
+/* The medallion of that level, worn by the reader: it holds its own width, and level 6's outline
+   sits 3 px outside the ring, so the cell leaves it that much room. */
+.cm-gm-title .cm-gm-av { flex: none; margin: 3px 3px 0; }
 .cm-gm-title__level { flex: none; border-radius: 99px; padding: 2px 8px; font: 700 9px var(--cm-font-ui); letter-spacing: 1px; }
 .cm-gm-title__name { font-size: 13px; font-weight: 600; color: var(--cm-ink); min-width: 0; }
-.cm-gm-title__xp { margin-left: auto; font-size: 11.5px; color: var(--cm-faint); font-variant-numeric: tabular-nums; }
+.cm-gm-title__xp { margin-left: auto; font-size: 11.5px; color: var(--cm-faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* ---------- Choosing the displayed title ---------- */
+/* One column per filière: a student playing in two reads them side by side, which is the only
+   reason the screen exists. */
+.cm-gm-titlecols { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-top: 16px; }
+.cm-gm-titlepicks { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.cm-gm-titlepick {
+    display: flex; align-items: center; gap: 10px; padding: 9px 12px; cursor: pointer;
+    border: 1px solid var(--cm-border); border-radius: 9px; background: var(--cm-surface);
+}
+.cm-gm-titlepick:hover { border-color: var(--cm-brand); }
+.cm-gm-titlepick.is-chosen { border-color: var(--cm-brand); box-shadow: inset 0 0 0 1px var(--cm-brand); }
+/* Locked rather than hidden: the six levels are the ladder, and the rung one cannot stand on yet
+   still says how far it is. */
+.cm-gm-titlepick.is-locked { opacity: .5; cursor: not-allowed; }
+.cm-gm-titlepick.is-locked:hover { border-color: var(--cm-border); }
+.cm-gm-titlepick__name { font-size: 13.5px; font-weight: 600; color: var(--cm-ink); min-width: 0; }
+.cm-gm-titlepick__hint { margin-left: auto; font-size: 11.5px; color: var(--cm-faint); white-space: nowrap; }
+
+/* ---------- The administration's observation screen ---------- */
+.cm-gm-obs-figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 16px; }
+.cm-gm-obs-figure {
+    display: flex; flex-direction: column; gap: 2px; padding: 14px 16px;
+    border: 1px solid var(--cm-border); border-radius: 9px; background: var(--cm-surface);
+}
+.cm-gm-obs-figure__n { font: 700 26px var(--cm-font-title); color: var(--cm-ink); font-variant-numeric: tabular-nums; }
+.cm-gm-obs-figure__l { font-size: 12px; color: var(--cm-faint); }
+/* A rule that paid nothing over the window: shown, and shown as such - it is the finding, not a
+   gap in the table. */
+.cm-gm-obs-row--idle { opacity: .55; }
 
 /* ---------- Ranked months, and the month bar of the ranking ---------- */
 .cm-gm-months { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-top: 10px; }

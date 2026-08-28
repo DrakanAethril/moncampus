@@ -1,0 +1,241 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'gameObservationHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.displayShortName, url: path('app_program_timetable', {id: program.id})},
+        {label: 'gameObservationHeading'|trans, url: path('app_program_game_observation', {id: program.id})},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'gameObservationHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    {# Collection normally rides on a student opening their own screen, or on the monthly closure.
+       A pilot the students cannot see has neither, so it is asked for here. #}
+    <form method="post" action="{{ path('app_program_game_observation_collect', {id: program.id}) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('game_observation_collect') }}">
+        <input type="hidden" name="month" value="{{ month.key }}">
+        <button type="submit" class="cm-btn cm-btn--primary">{{ 'gameObservationCollectAction'|trans }}</button>
+    </form>
+    <a href="{{ path('app_program_settings_game', {id: program.id}) }}" class="cm-btn cm-btn--outline">{{ 'gameSettingsHeading'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    <p class="cm-gm-context">{{ program.displayShortName }}</p>
+
+    <div class="cm-note">
+        <span class="cm-note__icon">i</span>
+        <span>{{ 'gameObservationIntroText'|trans }}</span>
+    </div>
+
+    {# The window every figure below is read over, except the cursus totals - which are the whole of
+       a schooling by definition and answer to no window. #}
+    <div class="cm-tabs cm-tabs--inner" style="margin-top: 16px">
+        <a class="cm-tabs__tab {{ scope == 'month' ? 'is-active' }}" href="{{ path('app_program_game_observation', {id: program.id, month: month.key}) }}">
+            {{ ('monthName' ~ month.month)|trans }} {{ month.year }}
+        </a>
+        <a class="cm-tabs__tab {{ scope == 'year' ? 'is-active' }}" href="{{ path('app_program_game_observation', {id: program.id, scope: 'year'}) }}">{{ year.label }}</a>
+    </div>
+
+    {% if scope == 'month' %}
+        <div class="cm-gm-monthbar" style="margin-top: 12px">
+            <a class="cm-btn cm-btn--outline" href="{{ path('app_program_game_observation', {id: program.id, month: month.previous.key}) }}" aria-label="{{ 'gameRankingPreviousMonthLabel'|trans }}">‹</a>
+            <span class="cm-gm-monthbar__label">{{ ('monthName' ~ month.month)|trans }} {{ month.year }}</span>
+            <a class="cm-btn cm-btn--outline" href="{{ path('app_program_game_observation', {id: program.id, month: month.next.key}) }}" aria-label="{{ 'gameRankingNextMonthLabel'|trans }}">›</a>
+        </div>
+    {% endif %}
+
+    <div class="cm-gm-obs-figures">
+        <div class="cm-gm-obs-figure">
+            <span class="cm-gm-obs-figure__n">{{ observation.windowPoints|number_format(0, ',', ' ') }}</span>
+            <span class="cm-gm-obs-figure__l">{{ 'gameObservationTotalPointsLabel'|trans }}</span>
+        </div>
+        <div class="cm-gm-obs-figure">
+            <span class="cm-gm-obs-figure__n">{{ observation.creditedCount }} / {{ observation.studentCount }}</span>
+            <span class="cm-gm-obs-figure__l">{{ 'gameObservationCreditedLabel'|trans }}</span>
+        </div>
+        <div class="cm-gm-obs-figure">
+            <span class="cm-gm-obs-figure__n">{{ observation.pace|number_format(0, ',', ' ') }}</span>
+            {# The median student brought to 30 days, so a month read on its ninth day still says
+               something. Written on the screen rather than only in the code. #}
+            <span class="cm-gm-obs-figure__l">{{ 'gameObservationPaceLabel'|trans({'%days%': observation.daysSpent}) }}</span>
+        </div>
+    </div>
+
+    {# ---- Per level: is the ladder climbable ------------------------------------------------- #}
+    <div class="card" style="margin-top: 16px">
+        <div class="card-body">
+            <span class="cm-gm-label">{{ 'gameObservationLevelsHeading'|trans }}</span>
+            <p class="cm-gm-section__hint">{{ 'gameObservationLevelsHintText'|trans }}</p>
+            <table class="card-table" style="margin-top: 10px">
+                <thead>
+                    <tr>
+                        <th>{{ 'gameLevelingLevelLabel'|trans }}</th>
+                        <th class="text-end">{{ 'gameObservationThresholdColumnLabel'|trans }}</th>
+                        <th class="text-end">{{ 'gameObservationReachedColumnLabel'|trans }}</th>
+                        <th class="text-end">{{ 'gameObservationMonthsColumnLabel'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in observation.levels %}
+                        <tr>
+                            <td><span class="cm-gm-title__level" style="{{ game_band_style(row.level.level) }}">{{ 'gameLevelShortLabel'|trans({'%level%': row.level.level}) }}</span></td>
+                            <td class="text-end">{{ row.level.xpMin|number_format(0, ',', ' ') }} XP</td>
+                            <td class="text-end">
+                                {{ row.reached }} / {{ observation.studentCount }}
+                                <span class="cm-gm-log__src">{{ (row.share * 100)|round }} %</span>
+                            </td>
+                            <td class="text-end">
+                                {% if row.months is null %}
+                                    —
+                                {% elseif row.months == 0 %}
+                                    {{ 'gameObservationMonthsImmediateLabel'|trans }}
+                                {% else %}
+                                    {{ 'gameObservationMonthsLabel'|trans({'%months%': row.months|number_format(1, ',', ' ')}) }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {# ---- Per rule: what the barème actually produced ---------------------------------------- #}
+    <div class="card" style="margin-top: 16px">
+        <div class="card-body">
+            <span class="cm-gm-label">{{ 'gameObservationRulesHeading'|trans }}</span>
+            <p class="cm-gm-section__hint">{{ 'gameObservationRulesHintText'|trans }}</p>
+            <table class="card-table" style="margin-top: 10px">
+                <thead>
+                    <tr>
+                        <th>{{ 'gameLevelingRulesRuleColumnLabel'|trans }}</th>
+                        <th>{{ 'gameFamiliesHeading'|trans }}</th>
+                        <th class="text-end">{{ 'gameObservationValueColumnLabel'|trans }}</th>
+                        <th class="text-end">{{ 'gameObservationLinesColumnLabel'|trans }}</th>
+                        <th class="text-end">{{ 'gameCouncilPointsColumnLabel'|trans }}</th>
+                        <th class="text-end">{{ 'gameObservationShareColumnLabel'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in observation.rules %}
+                        {# A rule that never fired is the most common mistake in a barème and leaves
+                           no line at all in the ledger, so it is shown with its zero. #}
+                        <tr class="{{ row.lines == 0 ? 'cm-gm-obs-row--idle' }}">
+                            <td>
+                                {{ ('gameRule.' ~ row.value.code)|trans }}
+                                {%- if not row.value.enabled %} <span class="cm-badge cm-badge--gray">{{ 'gameObservationRuleOffLabel'|trans }}</span>{% endif %}
+                            </td>
+                            <td>{{ row.value.family.labelKey|trans }}</td>
+                            {# A gesture carries the value it was posed with (±5/10/20), so its
+                               catalogue entry has none to show. #}
+                            <td class="text-end">{{ row.tunable ? row.value.points : '—' }}</td>
+                            <td class="text-end">{{ row.lines }}</td>
+                            <td class="text-end cm-gm-log__pts{{ row.points < 0 ? ' cm-gm-log__pts--neg' : (row.points == 0 ? ' cm-gm-log__pts--nil') }}">{{ row.points }}</td>
+                            <td class="text-end">{{ (row.share * 100)|round }} %</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {# ---- Per student: the ranking, named ---------------------------------------------------- #}
+    <div class="card" style="margin-top: 16px">
+        <div class="card-body">
+            <span class="cm-gm-label">{{ 'gameObservationRankingHeading'|trans }}</span>
+            <p class="cm-gm-section__hint">{{ 'gameObservationRankingHintText'|trans }}</p>
+            <table class="card-table" style="margin-top: 10px">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>{{ 'engagementStudentColumnLabel'|trans }}</th>
+                        <th class="text-end">{{ 'gameIndexLabel'|trans }}</th>
+                        {% for family in families %}
+                            <th class="text-end">{{ family.labelKey|trans }}</th>
+                        {% endfor %}
+                        <th class="text-end">{{ 'gameObservationWindowPointsColumnLabel'|trans }}</th>
+                        <th class="text-end">{{ 'gameLevelingXpTotalLabel'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in observation.rows %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>
+                                {{ row.student.displayName ?? row.student.username }}
+                                {%- if row.discreet %} <span class="cm-badge cm-badge--gray">{{ 'gameObservationDiscreetLabel'|trans }}</span>{% endif %}
+                            </td>
+                            <td class="text-end"><b>{{ row.index }}</b></td>
+                            {% for family in families %}
+                                {% set counts = row.standing.score.counts(family.value) %}
+                                <td class="text-end">
+                                    {% if counts %}
+                                        {{ (row.standing.score.rateOf(family.value) * 100)|round }} %
+                                        <span class="cm-gm-log__src">{{ row.standing.earnedIn(family.value) }}/{{ row.standing.possibleIn(family.value) }}</span>
+                                    {% else %}
+                                        <span class="cm-gm-log__src">{{ 'gameFamilyOutOfIndexLabel'|trans }}</span>
+                                    {% endif %}
+                                </td>
+                            {% endfor %}
+                            <td class="text-end">{{ row.windowPoints }}</td>
+                            <td class="text-end">
+                                {{ row.cursusPoints|number_format(0, ',', ' ') }}
+                                <span class="cm-gm-log__src">{{ 'gameLevelShortLabel'|trans({'%level%': row.level}) }}</span>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="9" class="text-secondary">{{ 'gameObservationNoStudentText'|trans }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {# ---- The class's journal ---------------------------------------------------------------- #}
+    <div class="card" style="margin-top: 16px">
+        <div class="card-body">
+            <div class="cm-card-toolbar" style="padding: 0 0 10px">
+                <span class="cm-gm-label">{{ 'gameObservationJournalHeading'|trans }}</span>
+                {# A GET form: it shows a result, it changes nothing. #}
+                <form method="get" style="margin-left: auto; display: flex; gap: 8px">
+                    {% if scope == 'year' %}<input type="hidden" name="scope" value="year">{% else %}<input type="hidden" name="month" value="{{ month.key }}">{% endif %}
+                    <select name="rule">
+                        <option value="">{{ 'gameObservationAllRulesLabel'|trans }}</option>
+                        {% for code, value in rules %}
+                            <option value="{{ code }}"{{ rule == code ? ' selected' }}>{{ ('gameRule.' ~ code)|trans }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="cm-btn cm-btn--outline">{{ 'activityFilterSubmitLabel'|trans }}</button>
+                </form>
+            </div>
+
+            {% if journal|length >= journalLimit %}
+                <div class="cm-note cm-note--gold">
+                    <span class="cm-note__icon">i</span>
+                    <span>{{ 'gameObservationJournalCappedText'|trans({'%limit%': journalLimit}) }}</span>
+                </div>
+            {% endif %}
+
+            <div class="cm-gm-log" style="margin-top: 10px">
+                {% for entry in journal %}
+                    <div class="cm-gm-log__row">
+                        <span class="cm-gm-log__date">{{ entry.occurredAt|date('d/m/Y') }}</span>
+                        <span class="cm-gm-log__rule">
+                            {{ entry.student.displayName ?? entry.student.username }} — {{ ('gameRule.' ~ entry.ruleCode)|trans }}
+                            {% if entry.reason %}<span class="cm-gm-log__src">{{ entry.reason }}</span>{% endif %}
+                            {% if entry.reversal %}<span class="cm-gm-log__src">{{ 'gameEntryReversalLabel'|trans }}</span>{% endif %}
+                        </span>
+                        <span class="cm-gm-log__fam">{{ entry.family.labelKey|trans }}</span>
+                        <span class="cm-gm-log__pts{{ entry.points > 0 ? '' : (entry.points < 0 ? ' cm-gm-log__pts--neg' : ' cm-gm-log__pts--nil') }}">{{ entry.points > 0 ? '+' }}{{ entry.points }}</span>
+                    </div>
+                {% else %}
+                    <p class="cm-gm-section__hint">{{ 'gameJournalEmptyText'|trans }}</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

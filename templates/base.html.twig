@@ -70,6 +70,17 @@
         {% endif %}
     </head>
     <body>
+        {# The deployment banner sits above everything, on every page, logged in or not: somebody on
+           the login screen while a deploy runs is exactly the person about to type a password into
+           a platform that is going to stop answering. It lives here rather than in the app shell so
+           there is one copy of it and the login screen is not a special case.
+
+           The controller sits on the wrapper and not on the banner, because it has to go on
+           watching a page that currently has no banner at all - which is every page, most of the
+           time. The wrapper is what it fills and empties. #}
+        <div data-controller="deployment-notice"
+             data-deployment-notice-url-value="{{ path('app_deployment_notice_status') }}">{{ deployment_notice_html()|raw }}</div>
+
         {% block body %}{% endblock %}
 
         {% if matomo_url and matomo_site_id %}

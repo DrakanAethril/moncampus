@@ -1,0 +1,170 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Step 4 when the paste - or the archive - held several quizzes. One screen for the whole batch:
+   a rail of the quizzes read, the current one's questions below, and a single confirmation.
+
+   What is deliberately NOT here is « ajouter à un quiz existant », the single-quiz screen's own
+   question. A dozen documents are a dozen quizzes; merging them into one existing bank is the
+   opposite of what pasting a dozen was for. The launch defaults are absent for the same kind of
+   reason - they are per-quiz settings with a sensible default, and thirteen copies of the same
+   panel is not a verification screen. Each quiz's own « Paramètres » answers them afterwards. #}
+
+{% block title %}{{ 'quizBatchPreviewPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'quizLibraryPageHeading'|trans, url: path('app_library_quiz')},
+        {label: 'zoneImportBreadcrumbLabel'|trans, url: path('app_library_quiz_assistant_paste')},
+        {label: 'quizBatchPreviewBreadcrumbLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'quizBatchPreviewPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% include '_wizard_steps.html.twig' with {
+        stepLabels: ['quizAssistantStep1Label'|trans, 'quizAssistantStep2Label'|trans, 'quizAssistantStep3Label'|trans, 'quizAssistantStep4Label'|trans],
+        currentStepIndex: 4,
+        stepCaptionKey: 'quizAssistantStepCaptionLabel',
+    } %}
+
+    <form method="post" action="{{ path('app_library_quiz_import_batch_confirm') }}"
+          data-controller="quiz-import-batch"
+          data-quiz-import-batch-one-label-value="{{ 'quizBatchConfirmOneTemplate'|trans({'%count%': '%count%'})|e('html_attr') }}"
+          data-quiz-import-batch-many-label-value="{{ 'quizBatchConfirmTemplate'|trans({'%count%': '%count%'})|e('html_attr') }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('quiz_import_batch') }}">
+
+        <div class="cm-note mb-3">
+            <span class="cm-note__icon">i</span>
+            <div>{{ 'quizBatchPreviewIntroTemplate'|trans({'%quizzes%': quizzes|length, '%questions%': questionTotal}) }}</div>
+        </div>
+
+        {# The extra destination, asked once for the whole batch: the documents came out of one
+           conversation about one séance, so the answer cannot differ from one to the next. #}
+        {% if attachTo %}
+            <div class="cm-note mb-3">
+                <span class="cm-note__icon">i</span>
+                <div>
+                    <label class="cm-rail__label d-inline-flex align-items-center gap-2" style="font-size: 13px;">
+                        <input type="checkbox" name="attach" value="1" checked>
+                        <span>{{ (attachTo.scope == 'seance' ? 'quizImportAttachSeanceTemplate' : 'quizImportAttachSequenceTemplate')|trans({'%title%': attachTo.title}) }}</span>
+                    </label>
+                    <div class="text-secondary small">{{ 'quizBatchAttachHint'|trans }}</div>
+                </div>
+            </div>
+        {% endif %}
+
+        {# The rail. Entries are buttons and not links: every panel is already on the page, and the
+           whole point of the batch is that reading the fourth quiz costs nothing. #}
+        <nav class="cm-rail" aria-label="{{ 'quizBatchRailLabel'|trans }}">
+            <span class="cm-rail__label">{{ 'quizBatchRailLabel'|trans }}</span>
+            {% for quiz in quizzes %}
+                {% set tone = quiz.payload.errors is not empty ? 'danger' : (quiz.incompleteCount > 0 ? 'warn' : 'ok') %}
+                <button type="button" class="cm-rail__item"
+                        data-quiz-import-batch-target="entry"
+                        data-action="quiz-import-batch#select"
+                        data-quiz-import-batch-index-param="{{ loop.index0 }}"
+                        title="{{ 'quizBatchRailEntryTitleTemplate'|trans({'%count%': quiz.questions|length, '%file%': quiz.payload.fileName}) }}">
+                    <span class="cm-rail__index">{{ loop.index }}</span>
+                    <span class="cm-rail__title">{{ quiz.payload.name }}</span>
+                    <span class="cm-rail__dot cm-rail__dot--{{ tone }}"></span>
+                </button>
+            {% endfor %}
+        </nav>
+
+        {% for quiz in quizzes %}
+            <div class="card" data-quiz-import-batch-target="panel" hidden>
+                <div class="card-body">
+                    <div class="cm-subhead">
+                        <div class="cm-subhead__title">{{ 'quizBatchPanelTitleTemplate'|trans({'%number%': loop.index, '%total%': quizzes|length}) }}</div>
+                        <div class="cm-subhead__hint">{{ quiz.payload.fileName }}</div>
+                    </div>
+
+                    {% if quiz.payload.errors is not empty %}
+                        {# Lines the reader could not use. Listed rather than blocking, exactly as on
+                           the single-quiz screen: one bad question must not cost the rest. #}
+                        <div class="alert alert-warning" role="alert">
+                            <div class="fw-medium mb-1">{{ 'quizImportPreviewSkippedTitleTemplate'|trans({'%count%': quiz.payload.errors|length}) }}</div>
+                            <ul class="mb-0 ps-3">
+                                {% for error in quiz.payload.errors|slice(0, 20) %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                            {% if quiz.payload.errors|length > 20 %}
+                                <div class="small mt-1">{{ 'quizImportPreviewSkippedMoreTemplate'|trans({'%count%': quiz.payload.errors|length - 20}) }}</div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    {% if quiz.incompleteCount > 0 %}
+                        <div class="cm-audio-warn mb-3">{{ 'quizImportPreviewIncompleteWarningTemplate'|trans({'%count%': quiz.incompleteCount}) }}</div>
+                    {% endif %}
+
+                    <div class="row g-4 align-items-start">
+                        <div class="col-12 col-lg-5 d-flex flex-column gap-3">
+                            <div class="cm-subhead">
+                                <div class="cm-subhead__title">{{ 'quizSettingsIdentityTitle'|trans }}</div>
+                                <div class="cm-subhead__hint">{{ 'quizImportPreviewIdentityHint'|trans }}</div>
+                            </div>
+                            <div>
+                                <label class="form-label" for="quiz-batch-name-{{ quiz.index }}">{{ 'quizTemplateNameFieldLabel'|trans }}</label>
+                                <input type="text" class="form-control" id="quiz-batch-name-{{ quiz.index }}"
+                                       name="names[{{ quiz.index }}]" maxlength="255" value="{{ quiz.payload.name }}">
+                            </div>
+                            <div>
+                                <label class="form-label" for="quiz-batch-subject-{{ quiz.index }}">{{ 'quizTemplateSubjectFieldLabel'|trans }}</label>
+                                <input type="text" class="form-control" id="quiz-batch-subject-{{ quiz.index }}"
+                                       name="subjects[{{ quiz.index }}]" maxlength="255" value="{{ quiz.payload.subject }}">
+                            </div>
+                            <div>
+                                <label class="form-label" for="quiz-batch-description-{{ quiz.index }}">{{ 'quizTemplateDescriptionFieldLabel'|trans }}</label>
+                                <textarea class="form-control" id="quiz-batch-description-{{ quiz.index }}"
+                                          name="descriptions[{{ quiz.index }}]" rows="3">{{ quiz.payload.description }}</textarea>
+                            </div>
+
+                            {# Taking one out of the batch, and nothing more: its payload stays where
+                               it is, so ticking it back costs a click rather than a new paste. #}
+                            <label class="cm-prog-row__check">
+                                <input type="checkbox" name="include[{{ quiz.index }}]" value="1" checked
+                                       data-quiz-import-batch-target="include"
+                                       data-action="quiz-import-batch#refresh">
+                                <span>{{ 'quizBatchIncludeLabel'|trans }}</span>
+                            </label>
+
+                            <div class="cm-note">
+                                <span class="cm-note__icon">i</span>
+                                <div>{{ 'quizBatchDefaultsNote'|trans }}</div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-lg-7 d-flex flex-column gap-2">
+                            <div class="cm-subhead">
+                                <div class="cm-subhead__title">{{ 'quizImportPreviewQuestionsTitleTemplate'|trans({'%count%': quiz.questions|length}) }}</div>
+                                <div class="cm-subhead__hint">{{ 'quizImportPreviewQuestionsHint'|trans }}</div>
+                            </div>
+                            <div class="d-flex flex-column gap-2" style="max-height: 640px; overflow-y: auto;">
+                                {% for question in quiz.questions %}
+                                    {% include 'library/_quiz_import_preview_question.html.twig' with {
+                                        question: question,
+                                        number: loop.index,
+                                        gap: quiz.gaps[loop.index0]|default(null),
+                                    } only %}
+                                {% endfor %}
+                            </div>
+                            <div class="text-secondary small">{{ 'quizImportPreviewEditLaterHint'|trans }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+
+        <div class="cm-audio-warn mt-3" data-quiz-import-batch-target="empty" hidden>{{ 'quizBatchNothingSelectedHint'|trans }}</div>
+
+        <div class="cm-actionbar">
+            <div class="cm-actionbar__buttons">
+                <a href="{{ path('app_library_quiz_assistant_paste') }}" class="btn btn-link">{{ 'quizBatchBackLabel'|trans }}</a>
+                <button type="submit" class="btn btn-primary" data-quiz-import-batch-target="submit">{{ 'quizBatchConfirmTemplate'|trans({'%count%': quizzes|length}) }}</button>
+            </div>
+        </div>
+    </form>
+{% endblock %}

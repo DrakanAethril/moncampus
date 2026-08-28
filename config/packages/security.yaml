@@ -61,6 +61,12 @@ security:
     # Note: Only the *first* matching rule is applied
     access_control:
         - { path: ^/login, roles: PUBLIC_ACCESS }
+        # The deployment banner's two routes. Public because the login screen polls the read one -
+        # somebody not yet logged in during a deploy is exactly who needs telling - and because the
+        # write one is authenticated by its own shared secret rather than by a session
+        # (App\Controller\DeploymentNoticeController): the caller is a GitHub runner, which has no
+        # account here and must never be given one.
+        - { path: ^/deployment/notice, roles: PUBLIC_ACCESS }
         - { path: ^/locale, roles: PUBLIC_ACCESS }
         # Must come before the generic '^/, roles: ROLE_USER' catch-all below, since #[IsGranted]
         # on the controller alone can't override that - App\Controller\PublicContactEmailController

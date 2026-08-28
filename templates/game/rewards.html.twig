@@ -53,14 +53,8 @@
                             <td class="cm-actions">
                                 {% if item.automatic %}
                                     {# Granted by the machine and by nothing else: a frame follows a
-                                       level, and the trophy follows a rank at the close of a month. #}
-                                    <span class="cm-badge cm-badge--blue">
-                                        {%- if item.level is not null -%}
-                                            {{ 'gameRewardAutomaticLevelLabel'|trans({'%level%': item.level}) }}
-                                        {%- else -%}
-                                            {{ 'gameRewardAutomaticTopLabel'|trans }}
-                                        {%- endif -%}
-                                    </span>
+                                       level, and a level follows the points already counted. #}
+                                    <span class="cm-badge cm-badge--blue">{{ 'gameRewardAutomaticLevelLabel'|trans({'%level%': item.level}) }}</span>
                                 {% else %}
                                     <form method="post" action="{{ path('app_program_game_rewards_grant', {id: program.id, itemId: item.id}) }}" class="cm-engagement-review">
                                         <input type="hidden" name="_token" value="{{ csrf_token('game_reward_grant') }}">

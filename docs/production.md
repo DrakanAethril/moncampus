@@ -119,6 +119,41 @@ Your server is up and running, and a HTTPS certificate has been automatically
 generated for you.
 Go to `https://your-domain-name.example.com` and enjoy!
 
+## Turning on the deployment banner
+
+While a deploy runs, everyone using the platform gets a strip at the top of the window saying it is
+about to restart (`App\Controller\DeploymentNoticeController`). It goes up at the same instant the
+Discord channel says the deploy started and comes down when the channel announces the outcome, so
+the two describe the same window.
+
+It needs one shared secret in two places, and they must hold the **same string**:
+
+```console
+# On the server, generate one and put it in .env.prod.local:
+php -r 'echo bin2hex(random_bytes(32)), "\n";'
+# DEPLOYMENT_NOTICE_TOKEN=<the value>
+```
+
+Then create a repository secret named `BEAUP_DEPLOYMENT_NOTICE_TOKEN` with that same value, in the
+`production` environment next to the VPN and SSH credentials. Nothing else to do - the two
+`deployment_notice.py` steps in `.github/workflows/deploy.yaml` do the rest.
+
+**Blank is safe and merely silent.** With no token set the write route answers 404, the workflow's
+two steps log a line and exit 0, and nobody ever sees a banner - a deploy is never held up by it.
+That is also what happens on the very first deploy after this feature ships, since the production
+still running at that moment does not know the route yet.
+
+**The banner cannot get stuck.** It is lowered on success, on failure and on a cancelled run, and
+past that it expires on its own after thirty minutes
+(`App\Service\DeploymentNoticeBoard::DEFAULT_WINDOW_MINUTES`) whatever the workflow did or did not
+manage to announce. To check the state by hand, or to take one down:
+
+```console
+curl -s https://your-domain-name.example.com/deployment/notice
+curl -s -X POST https://your-domain-name.example.com/deployment/notice \
+  -H "Authorization: Bearer $DEPLOYMENT_NOTICE_TOKEN" -d 'phase=success'
+```
+
 ## Generating the mobile-app JWT signing keypair
 
 The mobile apps (MonCampus, e-CO) authenticate via `POST /api/login`
@@ -402,8 +437,15 @@ Notes:
   state before installing the entry. `--program` narrows it to one formation.
 - **It also attributes the pseudonyms nobody chose within seven days**, in the same pass: it is the
   same question, asked of the same calendar.
-- A run on an establishment where `Feature::Game` is off for every role exits immediately, saying so.
-  Installing the entry before the game is switched on is harmless.
+- **A run where no formation has switched its game on exits immediately, saying so.** Installing the
+  entry before the game is switched on is harmless. The question it asks is « does any formation
+  play », deliberately **not** « does any role see the game » (which is what it asked until
+  2026-08-28): the role matrix holds no `ROLE_ADMIN` row by construction, so a **silent pilot** - the
+  game on for one class, `game` unticked for every managed role, read by the administration alone on
+  the Observation screen - answered « éteint pour tous les rôles » and was never closed. And an
+  unclosed month is not only an unranked one: collection runs either when a student opens their own
+  screen or inside a closure, so the pilot's ledger stayed empty, which is the one thing a pilot must
+  not do.
 
 > **Still not wired to any cron, and it should be:** `app:purge-platform-activity`, two sections up.
 > The campus game makes that gap wider rather than narrower - `GameEntry` is one row per credited

@@ -64,6 +64,13 @@ class FeatureCoverageTest extends KernelTestCase
                 // The three PublicContactEmailController screens, reached from a link in an e-mail
                 // and therefore possibly by somebody who is not signed in.
                 'app_profile_contact_email_confirm',
+                // The deployment banner. Its read route is polled by the login screen, so it is
+                // asked by visitors with no account; its write route is called by the deploy
+                // workflow, which has no account at all and is authenticated by a shared secret
+                // instead (App\Controller\DeploymentNoticeController). Neither is a feature an
+                // establishment runs - « la plateforme redémarre » is not switchable, and a
+                // catalogue entry could only ever hide the warning from the people who need it.
+                'app_deployment_notice_',
             ],
             // The mobile app's own account plumbing. Same reason as the row above, one step later:
             // an account that cannot read its profile cannot be told what it may see.

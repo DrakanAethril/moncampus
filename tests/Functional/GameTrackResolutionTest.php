@@ -75,6 +75,33 @@ class GameTrackResolutionTest extends FunctionalTestCase
         // A legitimate state: generic level wording, and no pseudonym at all.
         self::assertNull($this->resolver()->forStudent($student, $program));
         self::assertSame([], $this->resolver()->forProgram($program));
+        self::assertSame([], $this->resolver()->tracksForStudent($student, $program));
+    }
+
+    public function testAStudentWithNoOptionYetPlaysInEveryFiliereTheirClassHolds(): void
+    {
+        // The ordinary state of a first term: the class splits into SLAM and SISR, and this student
+        // is in neither yet. Answering them with no filière cost them both their level wording and
+        // their pseudonym, so they play in both until their option says which.
+        $student = $this->createUser(['ROLE_USER', 'ROLE_STUDENT'], 'track.unplaced');
+        $program = $this->createProgram([$student]);
+
+        $this->option($program, 'SLAM', GameTrack::Slam);
+        $this->option($program, 'SISR', GameTrack::Sisr);
+
+        self::assertSame([GameTrack::Slam, GameTrack::Sisr], $this->resolver()->tracksForStudent($student, $program));
+        self::assertSame(GameTrack::Slam, $this->resolver()->forStudent($student, $program), 'a screen with one slot takes the first');
+    }
+
+    public function testAnOptionThatNamesAFiliereStillAnswersAlone(): void
+    {
+        $student = $this->createUser(['ROLE_USER', 'ROLE_STUDENT'], 'track.placed');
+        $program = $this->createProgram([$student]);
+
+        $this->option($program, 'SLAM', GameTrack::Slam);
+        $this->enrol($program, $student, $this->option($program, 'SISR', GameTrack::Sisr));
+
+        self::assertSame([GameTrack::Sisr], $this->resolver()->tracksForStudent($student, $program));
     }
 
     private function option(Program $program, string $shortName, ?GameTrack $track): Option

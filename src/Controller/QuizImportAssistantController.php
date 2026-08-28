@@ -11,23 +11,27 @@ use App\Entity\User;
 use App\Enum\Feature;
 use App\Enum\QuestionType;
 use App\Enum\QuizAssistantPath;
+use App\Form\QuizArchiveImportType;
 use App\Repository\SeanceTemplateRepository;
 use App\Repository\SequenceTemplateRepository;
 use App\Security\Voter\SequenceTemplateVoter;
-use App\Service\InteractiveQuizImporterRegistry;
 use App\Service\MixedJsonImporter;
 use App\Service\PostValue;
 use App\Service\QueryValue;
 use App\Service\QuizAssistantRequest;
 use App\Service\QuizAssistantState;
 use App\Service\QuizCsvImportException;
+use App\Service\QuizImportArchive;
+use App\Service\QuizImportBatchReader;
 use App\Service\QuizImportImages;
 use App\Service\QuizImportSession;
 use App\Service\QuizPromptCatalog;
 use App\Service\QuizSourceContext;
 use App\Service\QuizSourceContextFactory;
+use App\Service\UploadIntake;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
+use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -48,13 +52,20 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  *
  * ① Que voulez-vous faire ? · ② Le prompt · ③ Coller · ④ Vérifier.
  *
- * **Step 4 is not here.** It is App\Controller\QuizImportController::preview(), unchanged and shared
- * with the CSV/Kahoot route: the assistant's job ends when a document has been parsed into the
- * session, and the tunnel that turns a payload into a QuizTemplate already exists, already offers
- * « rattacher à la séance … », and already counts incomplete questions. Duplicating it to own all
- * four steps would have been the expensive way to change nothing.
+ * **Step 4 is not here.** It is App\Controller\QuizImportController::preview() for one quiz -
+ * unchanged and shared with the CSV/Kahoot route - and App\Controller\QuizImportBatchController
+ * for several. The assistant's job ends when the documents have been parsed into the session: the
+ * tunnel that turns a payload into a QuizTemplate already exists, already offers « rattacher à la
+ * séance … », and already counts incomplete questions. Duplicating it to own all four steps would
+ * have been the expensive way to change nothing.
  *
- * Nothing is written before that preview is confirmed.
+ * **Step 3 has two doors and one landing.** A paste box holding several documents one under
+ * another, and a `.zip` of `.json` files, are the same batch by two routes - a model that produced
+ * a term's worth of quizzes answers in one message, and a teacher who saved them one at a time has
+ * files. Both come out of App\Service\QuizImportBatchReader as a list of payloads, and handOver()
+ * is the single place that decides which of the two verification screens the teacher lands on.
+ *
+ * Nothing is written before that verification is confirmed.
  */
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 #[RequiresFeature(Feature::QuizLibrary)]
@@ -211,7 +222,7 @@ class QuizImportAssistantController extends AbstractController
     #[Route(path: '/library/quiz/import/assistant/paste', name: 'app_library_quiz_assistant_paste', methods: ['GET', 'POST'])]
     public function paste(
         Request $request,
-        InteractiveQuizImporterRegistry $registry,
+        QuizImportBatchReader $batchReader,
         MixedJsonImporter $mixed,
         TranslatorInterface $translator,
     ): Response {
@@ -228,15 +239,11 @@ class QuizImportAssistantController extends AbstractController
             $json = trim((string) $request->request->get('json'));
 
             try {
-                $payload = $registry->forDocument($json, $mixed->family())
-                    ->parse($json, $translator->trans('zoneImportPastedFileName'));
-                $request->getSession()->set(QuizImportSession::PAYLOAD_KEY, $payload);
-                // The course travels with the document rather than in the URL: a query string does
-                // not survive the redirect the browser follows, and the preview needs it to offer
-                // « rattacher à la séance … ».
-                $request->getSession()->set(QuizImportSession::SOURCE_KEY, $state->scopeParams());
-
-                return $this->redirectToRoute('app_library_quiz_import_preview');
+                return $this->handOver(
+                    $request,
+                    $state,
+                    $batchReader->readPaste($json, $translator->trans('zoneImportPastedFileName')),
+                );
             } catch (QuizCsvImportException $exception) {
                 $error = $translator->trans($exception->getMessageKey(), $exception->getParameters());
             }
@@ -249,8 +256,104 @@ class QuizImportAssistantController extends AbstractController
             'currentStepIndex' => 3,
             'json' => '' !== $json ? $json : $mixed->exampleJson($example),
             'exampleLabels' => $mixed->exampleLabels(),
+            'archiveForm' => $this->createForm(QuizArchiveImportType::class)->createView(),
+            'maxDocuments' => QuizImportBatchReader::MAX_DOCUMENTS,
             'error' => $error,
         ], new Response(null, null === $error ? Response::HTTP_OK : Response::HTTP_UNPROCESSABLE_ENTITY));
+    }
+
+    /**
+     * Step 3 by the other door: a `.zip` of `.json` files, or a single `.json`.
+     *
+     * A model that produced ten quizzes rarely gives them back in one message, and a teacher who
+     * saved them one at a time has ten files rather than one paste. The archive is read into the
+     * same documents the paste box is cut into (App\Service\QuizImportArchive) and travels on
+     * through the same handOver(), so there is one batch and not two.
+     *
+     * Its own route rather than a second branch of paste(): the file crosses App\Form\FilePickerType,
+     * which stages it - bytes in the bucket, type checked, antivirus run - before this action is
+     * ever reached, and mixing that with the plain textarea POST would give the screen two answers
+     * to "was this submitted".
+     */
+    #[Route(path: '/library/quiz/import/assistant/archive', name: 'app_library_quiz_assistant_archive', methods: ['POST'])]
+    public function archive(
+        Request $request,
+        QuizImportArchive $archive,
+        QuizImportBatchReader $batchReader,
+        UploadIntake $uploadIntake,
+        TranslatorInterface $translator,
+    ): Response {
+        $state = $this->state($request);
+        if (null === $state->path || !$state->path->usesPrompt()) {
+            return $this->redirectToRoute('app_library_quiz_assistant');
+        }
+
+        $form = $this->createForm(QuizArchiveImportType::class);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $file = $uploadIntake->asLocalFile($form->get('file')->getData());
+
+            try {
+                $documents = 'zip' === strtolower($file->getClientOriginalExtension())
+                    ? $archive->documents($file->getPathname())
+                    : null;
+
+                return $this->handOver($request, $state, null === $documents
+                    // A single .json is a paste that travelled as a file - including one holding
+                    // several documents one under another, which is what a teacher saves when the
+                    // model answered with the lot.
+                    ? $batchReader->readPaste((string) file_get_contents($file->getPathname()), $file->getClientOriginalName())
+                    : $batchReader->read($documents));
+            } catch (QuizCsvImportException $exception) {
+                $form->addError(new FormError($translator->trans($exception->getMessageKey(), $exception->getParameters())));
+            }
+        }
+
+        $example = (string) $request->query->get('example', '');
+
+        return $this->render('library/quiz_assistant_paste.html.twig', [
+            'stepLabels' => $this->stepLabels($translator),
+            'currentStepIndex' => 3,
+            'json' => '',
+            'exampleLabels' => [],
+            'archiveForm' => $form->createView(),
+            'maxDocuments' => QuizImportBatchReader::MAX_DOCUMENTS,
+            'error' => null,
+        ], new Response(null, Response::HTTP_UNPROCESSABLE_ENTITY));
+    }
+
+    /**
+     * What both doors of step 3 do with what they read: put it in the session and send the teacher
+     * to the verification screen its shape calls for.
+     *
+     * One document is not a batch. It keeps the screen it has always had - the single-quiz preview,
+     * which is where « ajouter à un quiz existant » lives, and which a teacher converting one
+     * conversation must not be made to walk a rail for.
+     *
+     * @param list<array{format: string, name: string, subject: ?string, description: ?string, fileName: string, questions: list<array<string, mixed>>, errors: list<string>}> $payloads
+     */
+    private function handOver(Request $request, QuizAssistantState $state, array $payloads): Response
+    {
+        $session = $request->getSession();
+        // Never both: a batch left behind that the single preview picked up - or the reverse - is a
+        // teacher confirming a quiz they are not looking at.
+        $session->remove(QuizImportSession::PAYLOAD_KEY);
+        $session->remove(QuizImportSession::BATCH_KEY);
+        // The course travels with the documents rather than in the URL: a query string does not
+        // survive the redirect the browser follows, and the verification needs it to offer
+        // « rattacher à la séance … ».
+        $session->set(QuizImportSession::SOURCE_KEY, $state->scopeParams());
+
+        if (1 === \count($payloads)) {
+            $session->set(QuizImportSession::PAYLOAD_KEY, $payloads[0]);
+
+            return $this->redirectToRoute('app_library_quiz_import_preview');
+        }
+
+        $session->set(QuizImportSession::BATCH_KEY, $payloads);
+
+        return $this->redirectToRoute('app_library_quiz_import_batch');
     }
 
     /**
@@ -400,6 +503,10 @@ class QuizImportAssistantController extends AbstractController
     /** Where a teacher coming back to the front door should be offered to pick up. */
     private function resumeRoute(Request $request, QuizAssistantState $state): ?string
     {
+        if (\is_array($request->getSession()->get(QuizImportSession::BATCH_KEY))) {
+            return 'app_library_quiz_import_batch';
+        }
+
         if (\is_array($request->getSession()->get(QuizImportSession::PAYLOAD_KEY))) {
             return 'app_library_quiz_import_preview';
         }
