@@ -26,17 +26,35 @@ use App\Repository\ProgramStudentOptionRepository;
  * A student carrying two options that each name a filière is answered with the first in the
  * formation's own order. That is a data mistake rather than a case to model: a person is in SLAM or
  * in SISR, and the settings screen prints what each option resolves to so the mistake is visible.
+ *
+ * **A student whose option says nothing plays in every filière their formation holds.** A SIO
+ * student not yet placed in SLAM or in SISR is the ordinary case of a first term, and answering
+ * them with no filière at all cost them both their level wording and their pseudonym - the two
+ * things the univers decides. They draw from the two catalogues at once and read the two wordings
+ * of a level; the day their option is set, they are back to one.
  */
 final class GameTrackResolver
 {
-    /** @var array<string, GameTrack|null> */
+    /** @var array<string, list<GameTrack>> */
     private array $cache = [];
 
     public function __construct(private readonly ProgramStudentOptionRepository $studentOptions)
     {
     }
 
+    /** The one filière a student's screens are drawn in - the first of the ones they play in. */
     public function forStudent(User $student, Program $program): ?GameTrack
+    {
+        return $this->tracksForStudent($student, $program)[0] ?? null;
+    }
+
+    /**
+     * Every filière this student plays in - one when their option names it, all of the formation's
+     * when it does not.
+     *
+     * @return list<GameTrack>
+     */
+    public function tracksForStudent(User $student, Program $program): array
     {
         $key = $student->getId().'|'.$program->getId();
 
@@ -48,11 +66,13 @@ final class GameTrackResolver
             $track = $option->getGameTrack();
 
             if (null !== $track) {
-                return $this->cache[$key] = $track;
+                return $this->cache[$key] = [$track];
             }
         }
 
-        return $this->cache[$key] = $program->getGameTrack();
+        // Nothing on their own options: the formation's filières, which is both of them in a SIO
+        // class and the single fallback one in a class that does not split.
+        return $this->cache[$key] = $this->forProgram($program);
     }
 
     /**

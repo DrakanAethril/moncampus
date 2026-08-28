@@ -41,7 +41,7 @@ final class GameAliasDrawer
     /**
      * The student's alias for this period, drawn if it does not exist yet.
      *
-     * Returns null when the student's filière cannot be resolved, or when its catalogue is empty: the game
+     * Returns null when no filière at all can be resolved, or when their catalogues are empty: the game
      * then simply runs without pseudonyms, and the ranking shows real names to nobody because it
      * shows nothing at all (the settings screen can switch the ranking off for the same reason).
      */
@@ -54,14 +54,15 @@ final class GameAliasDrawer
         }
 
         // Per student, not per formation: in a SIO class the SLAM students draw from the SLAM
-        // catalogue and the SISR ones from theirs.
-        $track = $this->tracks->forStudent($student, $program);
+        // catalogue and the SISR ones from theirs - and a student whose option names neither draws
+        // from both, rather than from nothing at all.
+        $tracks = $this->tracks->tracksForStudent($student, $program);
 
-        if (null === $track) {
+        if ([] === $tracks) {
             return null;
         }
 
-        $available = $this->figures->availableFor($track, $program, $student);
+        $available = $this->figures->availableFor($tracks, $program, $student);
 
         if ([] === $available) {
             return null;

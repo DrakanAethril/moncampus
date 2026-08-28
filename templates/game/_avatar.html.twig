@@ -5,15 +5,17 @@
 
    Parameters: badge (App\Service\Game\GameBadge), small (bool), progress (bool - the band becomes a
    filled bar), tier (null|'bronze'|'silver'|'gold' - the frame laid over the ring, never replacing
-   it). #}
+   it), level (int - the level to *draw*, when it is not the one reached: that is what lets the
+   titles board show somebody their own face inside each of the six rings). #}
 {% set small = small|default(false) %}
 {% set progress = progress|default(false) %}
 {% set tier = tier|default(null) %}
+{% set shown_level = level|default(badge.level) %}
 {% set medals = {'bronze': '🥉', 'silver': '🥈', 'gold': '🥇'} %}
 
 {% set avatar %}
     <span class="cm-gm-av{{ small ? ' cm-gm-av--sm' }}">
-        <span class="cm-gm-av__ring" style="{{ game_level_style(badge.level) }}">
+        <span class="cm-gm-av__ring" style="{{ game_level_style(shown_level) }}">
             <span class="cm-gm-av__face"{% if badge.avatarUrl %} style="background-image: url({{ badge.avatarUrl }})"{% endif %}>{% if not badge.avatarUrl %}{{ badge.initials }}{% endif %}</span>
         </span>
         {% if progress %}
@@ -27,7 +29,7 @@
                 <span class="lb">{{ 'gameLevelShortLabel'|trans({'%level%': badge.level}) }}</span>
             </span>
         {% else %}
-            <span class="cm-gm-av__band" style="{{ game_band_style(badge.level) }}">{{ 'gameLevelBandLabel'|trans({'%level%': badge.level}) }}</span>
+            <span class="cm-gm-av__band" style="{{ game_band_style(shown_level) }}">{{ 'gameLevelBandLabel'|trans({'%level%': shown_level}) }}</span>
         {% endif %}
     </span>
 {% endset %}

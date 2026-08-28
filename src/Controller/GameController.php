@@ -162,7 +162,7 @@ class GameController extends AbstractController
                 'history' => $entries->journal($student, $program),
                 // The running total across every formation - what the level is made of.
                 'totalPoints' => $entries->sumForStudent($student),
-                'levels' => $board->boardFor($tracks->forStudent($student, $program)),
+                'levels' => $board->boardFor($tracks->tracksForStudent($student, $program)),
                 'shelf' => $rewards->shelfFor($student),
                 'team' => $teamBoard->forStudent($student, $program, $month->firstDay(), $month->lastMoment()),
                 'teamCount' => \count($teamBoard->teams($program, $month->firstDay(), $month->lastMoment())),
@@ -301,8 +301,8 @@ class GameController extends AbstractController
 
         return $this->render('game/levels.html.twig', [
             // The board is drawn in the reader's own filière, which in a SIO class is decided by
-            // their option and not by the class.
-            'entries' => $board->boardFor(null === $program ? null : $tracks->forStudent($student, $program)),
+            // their option and not by the class - and in both of them while that option says nothing.
+            'entries' => $board->boardFor(null === $program ? [] : $tracks->tracksForStudent($student, $program)),
             'badge' => $badges->forUser($student),
         ]);
     }

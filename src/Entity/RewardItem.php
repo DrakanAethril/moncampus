@@ -14,10 +14,14 @@ use Symfony\Component\Validator\Constraints as Assert;
 /**
  * One entry of a formation's reward catalogue (§5.5).
  *
- * The six level frames and the promotion trophy are **entries of this same catalogue**, granted by
- * the machine rather than by a hand. There is no separate mechanism for them, which is what stops
- * the automatic rewards and the hand-granted ones from drifting into two different ideas of what a
- * reward is.
+ * The six level frames are **entries of this same catalogue**, granted by the machine rather than by
+ * a hand. There is no separate mechanism for them, which is what stops the automatic rewards and the
+ * hand-granted ones from drifting into two different ideas of what a reward is.
+ *
+ * A « Trophée de promo » sat here too until 2026-08-28, marked automatic and granted to the head of
+ * the class. It was removed rather than fixed: the application does not hold every grade, so it
+ * cannot know who that is, and an automatic reward nothing can award is a promise on a screen. A
+ * formation that wants one creates it in its own catalogue and hands it over by name.
  */
 #[ORM\Entity(repositoryClass: RewardItemRepository::class)]
 #[ORM\Table(name: 'reward_item')]
@@ -29,7 +33,7 @@ class RewardItem
     #[ORM\Column]
     private ?int $id = null;
 
-    /** Null on the establishment-wide entries the four tiers are - they exist for every formation. */
+    /** Null on the establishment-wide entries the six frames are - they exist for every formation. */
     #[ORM\ManyToOne(targetEntity: Program::class)]
     #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
     private ?Program $program = null;
@@ -60,10 +64,6 @@ class RewardItem
 
     #[ORM\Column]
     private bool $active = true;
-
-    /** The tier this entry stands for, when it is one - `trophy` today, and nothing else. */
-    #[ORM\Column(name: 'tier_code', length: 20, nullable: true)]
-    private ?string $tierCode = null;
 
     /**
      * The level this entry is the frame of, 1 to 6, or null when it is not a frame.
@@ -168,10 +168,10 @@ class RewardItem
         return $this;
     }
 
-    /** Granted by the machine - a level frame, or the promotion trophy - rather than by a hand. */
+    /** Granted by the machine - a level frame, the only kind there is - rather than by a hand. */
     public function isAutomatic(): bool
     {
-        return null !== $this->level || null !== $this->tierCode;
+        return null !== $this->level;
     }
 
     public function getQuantity(): ?int
@@ -194,18 +194,6 @@ class RewardItem
     public function setActive(bool $active): static
     {
         $this->active = $active;
-
-        return $this;
-    }
-
-    public function getTierCode(): ?string
-    {
-        return $this->tierCode;
-    }
-
-    public function setTierCode(?string $tierCode): static
-    {
-        $this->tierCode = $tierCode;
 
         return $this;
     }

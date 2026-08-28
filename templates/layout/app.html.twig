@@ -663,9 +663,19 @@
                                            are made on (design/validated/feature-access.md §8.8), which
                                            is why the "admin has everything" rule is not negotiable. #}
                                         <a class="dropdown-item {{ current_route starts with 'app_features' ? 'active' }}" href="{{ path('app_features') }}">{{ 'featuresNavLabel'|trans }}</a>
+                                        {# The two tables the game is configured from, under their own
+                                           heading: they are the only settings entries that belong to
+                                           one feature rather than to the establishment's structure. #}
                                         {% if feature('game') %}
-                                            <a class="dropdown-item {{ current_route == 'app_settings_game_levels' ? 'active' }}" href="{{ path('app_settings_game_levels') }}">{{ 'gameLevelLabelsHeading'|trans }}</a>
-                                            <a class="dropdown-item {{ current_route starts with 'app_settings_game_figures' ? 'active' }}" href="{{ path('app_settings_game_figures') }}">{{ 'gameFiguresHeading'|trans }}</a>
+                                            <div class="dropend">
+                                                <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_settings_game_' ? 'active' }}" href="#settings-gamification" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                                    {{ 'gamificationNavLabel'|trans }}
+                                                </a>
+                                                <div class="dropdown-menu">
+                                                    <a class="dropdown-item {{ current_route == 'app_settings_game_levels' ? 'active' }}" href="{{ path('app_settings_game_levels') }}">{{ 'gameLevelsNavLabel'|trans }}</a>
+                                                    <a class="dropdown-item {{ current_route starts with 'app_settings_game_figures' ? 'active' }}" href="{{ path('app_settings_game_figures') }}">{{ 'gameFiguresNavLabel'|trans }}</a>
+                                                </div>
+                                            </div>
                                         {% endif %}
                                     {% endif %}
                                 </div>
