@@ -37,15 +37,36 @@ final class GameAccess
     }
 
     /**
-     * Whether the establishment runs a game at all, asked without a user.
+     * Whether any *role* sees the game - what a screen says about itself, never what a cron asks.
      *
-     * What a cron has instead of the half above: there is nobody logged in, so the role matrix is
-     * asked whether *any* role has the feature. A command that skipped the question would keep
-     * closing periods for a whole establishment that had switched the game off.
+     * The formation's own settings screen prints it: a class that has switched its game on while no
+     * role has the feature is playing in silence, for the administration alone.
      */
     public function isFeatureOpenForAnyone(): bool
     {
         return $this->features->isEnabledForAnyRole(Feature::Game);
+    }
+
+    /**
+     * Whether **any formation is playing** - the question a cron asks, and the true statement of
+     * « this establishment runs a game ».
+     *
+     * It used to ask isFeatureOpenForAnyone() instead, and that reading had a hole with a use: the
+     * role matrix deliberately holds no `ROLE_ADMIN` row (Feature::managedRoles()), so a formation
+     * run as a **silent pilot** - the game on for the class, off for every managed role, read by the
+     * administration alone - answered « éteint pour tous les rôles » and was never closed. No
+     * closure means no ranking, no level, and above all no collection: the ledger of the pilot
+     * stayed empty, which is the one thing a pilot must not do.
+     */
+    public function isRunningAnywhere(): bool
+    {
+        foreach ($this->programs->findAllActiveWithStudents() as $program) {
+            if ($program->isGameEnabled()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function isOpen(Program $program, ?User $user = null): bool

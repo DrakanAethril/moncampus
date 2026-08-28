@@ -312,6 +312,99 @@ class GameEntryRepository extends ServiceEntityRepository
     }
 
     /**
+     * What each rule actually paid a whole class over a window - the calibration reading.
+     *
+     * Lines **and** points, because they answer two different questions: a rule worth 60 that fired
+     * twice and a rule worth 5 that fired 300 times both weigh 300 points, and only the count says
+     * which of the two the barème should be argued about.
+     *
+     * @return array<string, array{lines: int, points: int}> keyed by rule code
+     */
+    public function sumByRule(Program $program, \DateTimeImmutable $from, \DateTimeImmutable $to): array
+    {
+        /** @var list<array{code: string, lines: int|string, total: string|int|null}> $rows */
+        $rows = $this->createQueryBuilder('e')
+            ->select('e.ruleCode AS code, COUNT(e.id) AS lines, SUM(e.points) AS total')
+            ->where('e.program = :program')
+            ->andWhere('e.occurredAt >= :from AND e.occurredAt <= :to')
+            ->groupBy('e.ruleCode')
+            ->setParameter('program', $program)
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
+            ->getQuery()
+            ->getArrayResult();
+
+        $totals = [];
+        foreach ($rows as $row) {
+            $totals[$row['code']] = ['lines' => (int) $row['lines'], 'points' => (int) $row['total']];
+        }
+
+        return $totals;
+    }
+
+    /**
+     * The whole class's journal over a window, most recent first - the observation screen's own
+     * reading, where the student's screens only ever show one person's.
+     *
+     * @return list<GameEntry>
+     */
+    public function journalForProgram(Program $program, \DateTimeImmutable $from, \DateTimeImmutable $to, ?string $ruleCode = null, ?int $limit = null): array
+    {
+        $query = $this->createQueryBuilder('e')
+            ->where('e.program = :program')
+            ->andWhere('e.occurredAt >= :from AND e.occurredAt <= :to')
+            ->orderBy('e.occurredAt', 'DESC')
+            ->addOrderBy('e.id', 'DESC')
+            ->setParameter('program', $program)
+            ->setParameter('from', $from)
+            ->setParameter('to', $to);
+
+        if (null !== $ruleCode && '' !== $ruleCode) {
+            $query->andWhere('e.ruleCode = :code')->setParameter('code', $ruleCode);
+        }
+
+        if (null !== $limit) {
+            $query->setMaxResults($limit);
+        }
+
+        /** @var list<GameEntry> $entries */
+        $entries = $query->getQuery()->getResult();
+
+        return $entries;
+    }
+
+    /**
+     * The cursus total of a whole class in one query - what the levels are made of, so **not**
+     * scoped to one formation even when the class being read is.
+     *
+     * @param list<User> $students
+     *
+     * @return array<int, int> student id => points, missing when they have never been credited
+     */
+    public function sumForStudents(array $students): array
+    {
+        if ([] === $students) {
+            return [];
+        }
+
+        /** @var list<array{student: int, total: string|int|null}> $rows */
+        $rows = $this->createQueryBuilder('e')
+            ->select('IDENTITY(e.student) AS student, SUM(e.points) AS total')
+            ->where('e.student IN (:students)')
+            ->groupBy('e.student')
+            ->setParameter('students', $students)
+            ->getQuery()
+            ->getArrayResult();
+
+        $totals = [];
+        foreach ($rows as $row) {
+            $totals[(int) $row['student']] = (int) $row['total'];
+        }
+
+        return $totals;
+    }
+
+    /**
      * One student's whole ledger, **across every formation they have passed through**.
      *
      * That is what a level is made of: a student keeps their points for the whole of their schooling,

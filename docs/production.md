@@ -402,8 +402,15 @@ Notes:
   state before installing the entry. `--program` narrows it to one formation.
 - **It also attributes the pseudonyms nobody chose within seven days**, in the same pass: it is the
   same question, asked of the same calendar.
-- A run on an establishment where `Feature::Game` is off for every role exits immediately, saying so.
-  Installing the entry before the game is switched on is harmless.
+- **A run where no formation has switched its game on exits immediately, saying so.** Installing the
+  entry before the game is switched on is harmless. The question it asks is « does any formation
+  play », deliberately **not** « does any role see the game » (which is what it asked until
+  2026-08-28): the role matrix holds no `ROLE_ADMIN` row by construction, so a **silent pilot** - the
+  game on for one class, `game` unticked for every managed role, read by the administration alone on
+  the Observation screen - answered « éteint pour tous les rôles » and was never closed. And an
+  unclosed month is not only an unranked one: collection runs either when a student opens their own
+  screen or inside a closure, so the pilot's ledger stayed empty, which is the one thing a pilot must
+  not do.
 
 > **Still not wired to any cron, and it should be:** `app:purge-platform-activity`, two sections up.
 > The campus game makes that gap wider rather than narrower - `GameEntry` is one row per credited
