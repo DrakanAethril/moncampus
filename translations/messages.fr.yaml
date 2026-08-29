@@ -375,7 +375,7 @@ ldapAccountActionDisableLabel: 'Désactivation'
 ldapAccountActionEnableLabel: 'Réactivation'
 ldapAccountActionLoginChangeLabel: 'Changement de login'
 ldapAccountRequestAlreadyPendingMessage: 'Une demande est déjà en cours sur ce compte.'
-ldapAccountLoginTakenMessage: 'Ce login est déjà pris par un compte ou par une demande de création.'
+ldapAccountLoginTakenMessage: "Ce login appartient à un autre compte, à une demande de création, ou à un compte qui l'a porté avant d'être renommé. Un login n'est jamais réattribué."
 ldapAccountLoginUnchangedMessage: "C'est déjà le login actuel de ce compte."
 ldapAccountLoginInvalidMessage: "Ce login n'est pas valide : minuscules, chiffres, point, tiret ou souligné, en commençant par une lettre."
 # Bandeau et modales des opérations de compte
@@ -3589,6 +3589,16 @@ emailAliasAddAction: 'Ajouter une adresse'
 emailAliasRemoveAction: "Retirer l'adresse"
 userEmailAliasesSectionTitle: 'Adresses Courrier école'
 userEmailAliasesSectionHint: "Toutes ces adresses reçoivent ; celle marquée par défaut est affichée à l'élève et sert à l'expédition. Les adresses composées depuis le nom ou reprises de l'identifiant suivent leur source et ne se modifient pas."
+userEmailAliasesArchivedTitle: 'Adresses retirées'
+userEmailAliasesArchivedHint: "Retirer une adresse de la liste ne la supprime pas : elle continue de recevoir, n'est plus utilisée pour écrire, et ne sera jamais réattribuée à un autre élève."
+
+# Historique des logins - templates/directory/user_form.html.twig, réservé aux administrateurs.
+# Formulé pour répondre à la question que la liste fait naître (« pourquoi ne puis-je pas réutiliser
+# celui-là »), pas pour décrire la table.
+userLoginHistoryTitle: 'Identifiants de ce compte'
+userLoginHistoryHint: "Tous les identifiants que ce compte a portés. Un identifiant libéré reste réservé à ce compte : personne d'autre ne pourra le porter, et ce compte peut le reprendre."
+userLoginHistoryCurrentLabel: 'actuel'
+userLoginHistoryReleasedLabel: 'libéré le %date%'
 userEmailAliasesEmptyLabel: "Aucune adresse Courrier école pour cet élève."
 userMailAliasNotProvisionedFlashMessage: "Le compte est créé, mais son adresse Courrier école n'a pas pu être composée depuis son état civil : ajoutez-la à la main depuis sa fiche."
 

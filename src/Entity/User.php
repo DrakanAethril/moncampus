@@ -143,6 +143,21 @@ class User implements UserInterface
     #[ORM\OrderBy(['createdAt' => 'ASC', 'id' => 'ASC'])]
     private Collection $emailAliases;
 
+    /**
+     * Every login this account has ever answered to - the current one, and the ones a rename
+     * displaced (App\Entity\UserLogin).
+     *
+     * **No cascade and no orphanRemoval, deliberately**, where the aliases above have both. That
+     * collection is driven by a screen and a row absent from a submission means "delete it"; this
+     * one is a ledger with a single writer (App\Service\UserLoginHistory) and nothing may take a
+     * line out of it - least of all a form that happened not to render one. A released login stays
+     * because it stays reserved: that is the whole point of the table.
+     *
+     * @var Collection<int, UserLogin>
+     */
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: UserLogin::class)]
+    private Collection $loginHistory;
+
     // UI preference (App\Controller\ProfileController), not LDAP-sourced - defaults to 'light',
     // matching what an anonymous visitor already gets on the public screens (templates/base.html.twig
     // leaves data-bs-theme unset with no cookie, which falls through to Tabler's light baseline),
@@ -238,6 +253,7 @@ class User implements UserInterface
         $this->username = $username;
         $this->manualGroups = new ArrayCollection();
         $this->emailAliases = new ArrayCollection();
+        $this->loginHistory = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -456,6 +472,26 @@ class User implements UserInterface
     public function setPrimaryAlias(?EmailAlias $primaryAlias): static
     {
         $this->primaryAlias = $primaryAlias;
+
+        return $this;
+    }
+
+    /** @return Collection<int, UserLogin> */
+    public function getLoginHistory(): Collection
+    {
+        return $this->loginHistory;
+    }
+
+    /**
+     * Only App\Service\UserLoginHistory should reach this - there is no remove() counterpart, and
+     * that absence is the invariant rather than an oversight.
+     */
+    public function addLoginHistoryEntry(UserLogin $entry): static
+    {
+        if (!$this->loginHistory->contains($entry)) {
+            $this->loginHistory->add($entry);
+            $entry->setUser($this);
+        }
 
         return $this;
     }

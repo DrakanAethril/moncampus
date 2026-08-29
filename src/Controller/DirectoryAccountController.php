@@ -19,6 +19,7 @@ use App\Service\LdapAccountStatusPresenter;
 use App\Service\LoginGenerator;
 use App\Service\PostValue;
 use App\Service\QueryValue;
+use App\Service\UserLoginHistory;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -214,9 +215,14 @@ class DirectoryAccountController extends AbstractController
     /**
      * "Is this login free?", asked while the administrator types.
      *
-     * Against **both** sources, which is App\Service\LoginGenerator::loginTaken()'s whole point: a
-     * login reserved by a creation that never went through is taken every bit as much as one
-     * somebody carries. It is also why an old login stays reserved for ever after a rename.
+     * Against **all three** sources, which is App\Service\LoginGenerator::loginTaken()'s whole
+     * point: a login reserved by a creation that never went through is taken every bit as much as
+     * one somebody carries, and so is one this platform renamed another account away from.
+     *
+     * The question is asked *for this account*, which is what produces the fourth answer: a login
+     * this very account used to answer to is `former` - free to take back, and free for nobody
+     * else. Saying so rather than plain `available` is the difference between an administrator
+     * typing an old login by accident and one deliberately putting it back.
      *
      * The answer is advisory. The request itself re-runs the same checks when it is posted, because
      * between typing and validating anything may have happened.
@@ -227,6 +233,7 @@ class DirectoryAccountController extends AbstractController
         UserRepository $users,
         LdapAccountRequestService $accountRequests,
         LoginGenerator $loginGenerator,
+        UserLoginHistory $loginHistory,
         int $id,
     ): JsonResponse {
         $user = $users->find($id) ?? throw $this->createNotFoundException();
@@ -244,9 +251,13 @@ class DirectoryAccountController extends AbstractController
             return $this->json(['login' => $login, 'state' => 'current']);
         }
 
+        if ($loginGenerator->loginTaken($login, [], $user)) {
+            return $this->json(['login' => $login, 'state' => 'taken']);
+        }
+
         return $this->json([
             'login' => $login,
-            'state' => $loginGenerator->loginTaken($login) ? 'taken' : 'available',
+            'state' => $loginHistory->holderOf($login) === $user ? 'former' : 'available',
         ]);
     }
 

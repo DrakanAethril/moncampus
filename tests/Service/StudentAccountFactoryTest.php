@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace App\Tests\Service;
 
 use App\Entity\LdapManageUser;
+use App\Entity\UserLogin;
+use App\Repository\UserLoginRepository;
 use App\Service\ContactEmailVerifier;
 use App\Service\LdapManageUserRoleResolver;
 use App\Service\LoginGenerator;
 use App\Service\NewAccountRequest;
 use App\Service\StudentAccountFactory;
 use App\Service\StudentMailProvisioner;
+use App\Service\UserLoginHistory;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 
@@ -165,7 +168,15 @@ class StudentAccountFactoryTest extends TestCase
 
         self::assertNull($account->directoryRequest);
         self::assertTrue($account->user->isTestUser());
-        self::assertSame([$account->user], $this->persisted);
+        // The account and the first line of its login ledger, and nothing else - no queue row.
+        self::assertSame([$account->user], array_values(array_filter(
+            $this->persisted,
+            static fn (object $row): bool => !$row instanceof UserLogin,
+        )));
+        self::assertContainsOnlyInstancesOf(UserLogin::class, array_filter(
+            $this->persisted,
+            static fn (object $row): bool => $row instanceof UserLogin,
+        ));
     }
 
     // The login is still generated and reserved: the record is still a record, and a namesake
@@ -209,6 +220,7 @@ class StudentAccountFactoryTest extends TestCase
             new LdapManageUserRoleResolver(),
             $this->contactEmailVerifier,
             $this->mailProvisioner,
+            new UserLoginHistory($this->createStub(UserLoginRepository::class), $this->entityManager),
         );
     }
 

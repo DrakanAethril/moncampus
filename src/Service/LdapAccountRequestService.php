@@ -21,11 +21,13 @@ use Doctrine\ORM\EntityManagerInterface;
  *  - **Nobody deactivates themselves.** Nothing technical stops it, which is exactly why it is
  *    stopped here: this platform has one administrator, and the screen that would undo it is the
  *    one they would have just locked themselves out of.
- *  - **A new login must be free, different and well-formed.** Free against both sources at once
- *    (LoginGenerator::loginTaken() reads User::$username *and* ldap_manage_user.login, so a login
- *    reserved by a creation that never went through counts as taken - which is also what keeps an
- *    old login reserved for ever after a rename). Well-formed because it is about to name a
- *    directory on a file server and sit inside a command line on a domain controller.
+ *  - **A new login must be free, different and well-formed.** Free against all three sources at
+ *    once (LoginGenerator::loginTaken() reads User::$username, ldap_manage_user.login and
+ *    user_login), so a login reserved by a creation that never went through counts as taken, and so
+ *    does one this platform renamed some other account away from. Free is asked **for this
+ *    account**, though: a login it held before is its own to take back, and only its own.
+ *    Well-formed because it is about to name a directory on a file server and sit inside a command
+ *    line on a domain controller.
  *
  * What it does *not* do is change anything on this side. Deactivation switches at the click, in the
  * controller, before this is even called; a rename switches only once the directory has confirmed,
@@ -131,7 +133,7 @@ class LdapAccountRequestService
             throw new LdapAccountRequestException('ldapAccountLoginUnchangedMessage');
         }
 
-        if ($this->loginGenerator->loginTaken($newLogin)) {
+        if ($this->loginGenerator->loginTaken($newLogin, [], $user)) {
             throw new LdapAccountRequestException('ldapAccountLoginTakenMessage');
         }
 
