@@ -34,6 +34,7 @@ class StudentAccountFactory
         private readonly LdapManageUserRoleResolver $roleResolver,
         private readonly ContactEmailVerifier $contactEmailVerifier,
         private readonly StudentMailProvisioner $mailProvisioner,
+        private readonly UserLoginHistory $loginHistory,
     ) {
     }
 
@@ -72,6 +73,11 @@ class StudentAccountFactory
         }
 
         $this->entityManager->persist($user);
+
+        // The account's first login goes into the ledger straight away: user_login is meant to hold
+        // *every* login an account ever answered to, and a row that only appears at the first
+        // rename would make the history start in the middle.
+        $this->loginHistory->record($user, $login);
 
         if (!$request->directoryAccount) {
             return new CreatedAccount($user, null);

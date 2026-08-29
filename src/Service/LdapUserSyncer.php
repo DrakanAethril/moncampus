@@ -40,6 +40,7 @@ class LdapUserSyncer
         #[\SensitiveParameter] private readonly string $ldapSearchPassword,
         private readonly string $ldapUserObjectClass,
         private readonly string $ldapUsernameAttribute,
+        private readonly UserLoginHistory $loginHistory,
     ) {
     }
 
@@ -76,6 +77,8 @@ class LdapUserSyncer
             $user = new User($username);
             $this->ldapUserMapper->apply($user, $entry);
             $this->entityManager->persist($user);
+            // The ledger starts at the account's first login, not at its first rename.
+            $this->loginHistory->record($user, $username);
             ++$createdCount;
         }
 

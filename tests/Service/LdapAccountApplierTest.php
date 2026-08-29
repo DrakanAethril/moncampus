@@ -6,11 +6,14 @@ namespace App\Tests\Service;
 
 use App\Entity\LdapManageAccount;
 use App\Entity\User;
+use App\Entity\UserLogin;
 use App\Enum\LdapAccountAction;
+use App\Repository\UserLoginRepository;
 use App\Repository\UserRepository;
 use App\Service\LdapAccountApplier;
 use App\Service\LdapAccountVerifier;
 use App\Service\StudentMailProvisioner;
+use App\Service\UserLoginHistory;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 
@@ -23,7 +26,13 @@ use PHPUnit\Framework\TestCase;
  */
 class LdapAccountApplierTest extends TestCase
 {
-    private function applier(?User $loginHolder = null, bool $verifies = false): LdapAccountApplier
+    /**
+     * @param ?User $loginHolder     who currently answers to the login being taken, if anybody
+     * @param ?User $historicHolder  who *used to* answer to it - just as disqualifying, and the
+     *                               reason `user_login` exists: a login another account was renamed
+     *                               away from is that account's for ever
+     */
+    private function applier(?User $loginHolder = null, bool $verifies = false, ?User $historicHolder = null): LdapAccountApplier
     {
         $verifier = $this->createStub(LdapAccountVerifier::class);
 
@@ -36,10 +45,16 @@ class LdapAccountApplierTest extends TestCase
         $users = $this->createStub(UserRepository::class);
         $users->method('findOneBy')->willReturn($loginHolder);
 
+        $logins = $this->createStub(UserLoginRepository::class);
+        $logins->method('findOneByLogin')->willReturnCallback(
+            fn (string $login): ?UserLogin => null === $historicHolder ? null : new UserLogin($historicHolder, $login),
+        );
+
         return new LdapAccountApplier(
             $verifier,
             $users,
             $this->createStub(StudentMailProvisioner::class),
+            new UserLoginHistory($logins, $this->createStub(EntityManagerInterface::class)),
             $this->createStub(EntityManagerInterface::class),
         );
     }
@@ -142,6 +157,58 @@ class LdapAccountApplierTest extends TestCase
 
         self::assertSame($stamped, $row->getAppliedAt());
         self::assertSame('cderoux', $user->getUsername());
+    }
+
+    /**
+     * A login another account was renamed *away from* is that account's for ever. Before
+     * `user_login` existed it was free the moment the rename applied, and whoever took it inherited
+     * the first person's mail - which is the whole reason for the table.
+     */
+    public function testARenameOntoALoginAnotherAccountUsedToHoldIsRefused(): void
+    {
+        $user = new User('croux');
+        $row = $this->rename($user, 'cderoux', verifiedAt: new \DateTimeImmutable());
+
+        $this->applier(historicHolder: new User('somebodyelse'))->process($row);
+
+        self::assertSame('croux', $user->getUsername());
+        self::assertNull($row->getAppliedAt());
+        self::assertSame(LdapAccountApplier::NOTE_LOGIN_TAKEN_LOCALLY, $row->getVerificationNote());
+    }
+
+    /**
+     * The symmetry the rule needs: reserved against everybody *else*. An account taking back a login
+     * it used to answer to is reviving its own row, not competing for somebody's.
+     */
+    public function testAnAccountMayTakeBackALoginItHeldBefore(): void
+    {
+        $user = new User('cderoux');
+        $row = $this->rename($user, 'croux', verifiedAt: new \DateTimeImmutable());
+
+        $this->applier(historicHolder: $user)->process($row);
+
+        self::assertSame('croux', $user->getUsername());
+        self::assertNotNull($row->getAppliedAt());
+        self::assertNull($row->getVerificationNote());
+    }
+
+    /** The login left behind is written down, not merely overwritten - the bug this table fixes. */
+    public function testTheDisplacedLoginIsRecordedAndReleased(): void
+    {
+        $user = new User('croux');
+        $row = $this->rename($user, 'cderoux', verifiedAt: new \DateTimeImmutable());
+
+        $this->applier()->process($row);
+
+        $byLogin = [];
+        foreach ($user->getLoginHistory() as $entry) {
+            $byLogin[$entry->getLogin()] = $entry;
+        }
+
+        self::assertArrayHasKey('croux', $byLogin, 'The login it was renamed away from survives.');
+        self::assertNotNull($byLogin['croux']->getReleasedAt());
+        self::assertArrayHasKey('cderoux', $byLogin);
+        self::assertTrue($byLogin['cderoux']->isCurrent());
     }
 
     /**

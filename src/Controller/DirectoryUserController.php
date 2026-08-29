@@ -35,6 +35,7 @@ use App\Service\NewAccountRequest;
 use App\Service\QueueStateFormatter;
 use App\Service\StudentAccountFactory;
 use App\Service\StudentMailAliasValidator;
+use App\Service\UserLoginHistory;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -159,6 +160,7 @@ class DirectoryUserController extends AbstractController
         LoginGenerator $loginGenerator,
         QueueStateFormatter $stateFormatter,
         StudentMailAliasValidator $aliasValidator,
+        UserLoginHistory $loginHistory,
         TranslatorInterface $translator,
         FileLibraryQuota $libraryQuota,
         FileLibraryVoter $libraryVoter,
@@ -223,6 +225,25 @@ class DirectoryUserController extends AbstractController
             ? $user->getEmailAliases()->filter(static fn ($alias) => !$alias->getOrigin()->isManageable())->toArray()
             : [];
 
+        // Addresses the account no longer writes from, kept because a local part is never handed to
+        // a second student (App\Entity\EmailAlias's own docblock says why, and reception still
+        // resolves them). They are pulled out of the collection *before* the form is built, so
+        // CollectionType never renders a row for them, and put straight back afterwards - the
+        // collection is orphanRemoval, so a row left out at flush time would be deleted, which is
+        // precisely the thing that must not happen.
+        $archivedAliases = $isStudent
+            ? $user->getEmailAliases()->filter(static fn ($alias) => !$alias->isActive())->toArray()
+            : [];
+
+        foreach ($archivedAliases as $archivedAlias) {
+            $user->removeEmailAlias($archivedAlias);
+        }
+
+        // The addresses the screen does let go of, as they stood before the submission: what is
+        // missing from the POST and present here is what the administrator removed, and removing is
+        // archiving (see applyEmailAliases()).
+        $editableAliasesBefore = $isStudent ? $user->getEmailAliases()->toArray() : [];
+
         // The quota is the administrator's alone, and only means anything for an account that has a
         // library at all - a student has none. Staff also reach this screen, and see the usage bar
         // without the field (see the template).
@@ -236,6 +257,12 @@ class DirectoryUserController extends AbstractController
         ]);
         // The field shows the override and nothing else: an empty box means "the platform default",
         // which is what the help text under it says.
+        // Back into the collection the moment the form has been built from it: they must be there
+        // at flush time, and they must not be there when the rows are created.
+        foreach ($archivedAliases as $archivedAlias) {
+            $user->addEmailAlias($archivedAlias);
+        }
+
         if ($quotaEditable) {
             $form->get('fileLibraryQuota')->setData(
                 null === $user->getFileLibraryQuotaBytes() ? '' : ByteSize::format($user->getFileLibraryQuotaBytes()),
@@ -246,7 +273,7 @@ class DirectoryUserController extends AbstractController
         // The addresses are checked alongside the form's own validation, and a refusal blocks the
         // whole screen from saving: an address turned down as a duplicate is not a detail to pass
         // over in silence while everything else goes through.
-        $aliasesAccepted = !$isStudent || !$form->isSubmitted() || $this->applyEmailAliases($form, $user, $aliasValidator, $translator, $lockedAliases);
+        $aliasesAccepted = !$isStudent || !$form->isSubmitted() || $this->applyEmailAliases($form, $user, $aliasValidator, $translator, $lockedAliases, $archivedAliases, $editableAliasesBefore);
         // Same rule for the quota: a size nobody can read stops the submission on the field rather
         // than being dropped in silence, which on a nullable column would read as "back to the
         // platform default".
@@ -297,6 +324,15 @@ class DirectoryUserController extends AbstractController
             'editedUser' => $user,
             'resolvedType' => $resolvedType,
             'showEmailAliases' => $isStudent,
+            // The archived addresses, read back after the submission so a row the administrator has
+            // just retired appears in the right block straight away rather than at the next load.
+            'archivedAliases' => $isStudent
+                ? $user->getEmailAliases()->filter(static fn ($alias) => !$alias->isActive())->toArray()
+                : [],
+            // Every login this account has answered to. Administrators only, like the rename that
+            // produces the history: the line exists to explain why an old login cannot be given to
+            // somebody else, and only an administrator is ever told that.
+            'loginHistory' => $this->isGranted('ROLE_ADMIN') ? $loginHistory->historyFor($user) : [],
             'studentMailDomain' => $studentMailDomain,
             'adGroupBuckets' => $adGroupBuckets,
             'manualGroupBuckets' => $groupRepository->findManuallyAssignableGroupedByType($adGroupNames),
@@ -402,18 +438,42 @@ class DirectoryUserController extends AbstractController
      * Takes over what edit()'s "Adresses Courrier école" section submitted: checks the typed
      * addresses, then settles which one is the primary.
      *
-     * @param list<EmailAlias> $lockedAliases the non-administrable addresses as they stood before
-     *                                        the submission
+     * **Nothing here ever deletes an address**, and that is the point rather than a precaution. A
+     * Courrier école local part is never handed to a second student: reception is catch-all, mail
+     * has already gone out to it, and a freed address would silently deliver one person's post to
+     * another. So the ✕ on a row archives it - `active` goes false, the row and its reservation
+     * stay, and the address goes on resolving on reception exactly as App\Entity\EmailAlias
+     * describes. The screen shows the archived ones back to the administrator underneath.
+     *
+     * @param list<EmailAlias> $lockedAliases         the non-administrable addresses as they stood
+     *                                                before the submission
+     * @param list<EmailAlias> $archivedAliases       the already-archived ones, which the form never
+     *                                                rendered and which must survive the flush
+     * @param list<EmailAlias> $editableAliasesBefore the rows the form did render, as they stood
+     *                                                before it - what is missing now was removed
      *
      * @return bool false when an address was refused, the error being then hung on the offending row
      */
-    private function applyEmailAliases(FormInterface $form, User $user, StudentMailAliasValidator $validator, TranslatorInterface $translator, array $lockedAliases): bool
+    private function applyEmailAliases(FormInterface $form, User $user, StudentMailAliasValidator $validator, TranslatorInterface $translator, array $lockedAliases, array $archivedAliases, array $editableAliasesBefore): bool
     {
         // A row missing from the POST reads as a deletion to CollectionType. The template only ever
         // renders the button on hand-typed addresses; the others are put back rather than refused,
         // the screen having never offered to remove them in the first place.
         foreach ($lockedAliases as $lockedAlias) {
             $user->addEmailAlias($lockedAlias);
+        }
+
+        foreach ($archivedAliases as $archivedAlias) {
+            $user->addEmailAlias($archivedAlias);
+        }
+
+        // What the administrator took out of the list. Archived rather than dropped, and archived
+        // before the validator runs so it still counts as an occupant of its local part.
+        foreach ($editableAliasesBefore as $before) {
+            if (!$user->getEmailAliases()->contains($before)) {
+                $before->setActive(false);
+                $user->addEmailAlias($before);
+            }
         }
 
         /** @var array<string, EmailAlias> $submitted */
@@ -459,17 +519,27 @@ class DirectoryUserController extends AbstractController
 
         $current = $user->getPrimaryAlias();
 
-        if (null !== $current && $user->getEmailAliases()->contains($current)) {
+        if (null !== $current && $current->isActive() && $user->getEmailAliases()->contains($current)) {
             return $current;
         }
 
+        // An archived address is never the one written from - that is what archiving means. It goes
+        // on receiving, so it is not gone; it simply stops being offered as the sending address,
+        // including as the fallback below. Archiving the current primary therefore moves the
+        // designation on rather than leaving the student writing from an address they retired.
         foreach ($user->getEmailAliases() as $alias) {
-            if (EmailAliasOrigin::Login !== $alias->getOrigin()) {
+            if ($alias->isActive() && EmailAliasOrigin::Login !== $alias->getOrigin()) {
                 return $alias;
             }
         }
 
-        return $user->getEmailAliases()->first() ?: null;
+        foreach ($user->getEmailAliases() as $alias) {
+            if ($alias->isActive()) {
+                return $alias;
+            }
+        }
+
+        return null;
     }
 
     // Désactiver / Réactiver / Changer le login live in App\Controller\DirectoryAccountController
