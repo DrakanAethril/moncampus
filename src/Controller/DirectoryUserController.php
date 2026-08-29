@@ -476,16 +476,55 @@ class DirectoryUserController extends AbstractController
             }
         }
 
-        /** @var array<string, EmailAlias> $submitted */
+        // FormInterface::getData() is mixed by design, and `data_class` is what makes this a row of
+        // the entity - stated once, here, rather than cast further in (CLAUDE.md, "Type at the
+        // boundary"). The keys are array-key rather than string because PHP renormalises the
+        // numeric-string row names Symfony hands out; see the violation loop below, where forgetting
+        // that answered 500 to every refused address.
+        /** @var array<array-key, EmailAlias> $submitted */
         $submitted = [];
         foreach ($form->get('emailAliases') as $key => $child) {
-            $submitted[$key] = $child->getData();
+            $data = $child->getData();
+
+            if ($data instanceof EmailAlias) {
+                $submitted[$key] = $data;
+            }
+        }
+
+        // Typing back an address this very student had retired brings **that row** back rather than
+        // adding a second one. Without this the submission would carry two entities for one local
+        // part and the unique index would answer with a 500 - and the row it collides with is the
+        // account's own, which no between-students check can see. It is the same shape as
+        // App\Service\UserLoginHistory: coming back to something of one's own revives it, never
+        // duplicates it, which is what keeps a uniqueness rule out of the way of a reversal.
+        $archivedByLocalPart = [];
+        foreach ($archivedAliases as $archivedAlias) {
+            $archivedByLocalPart[$archivedAlias->getLocalPart()] = $archivedAlias;
+        }
+
+        foreach ($submitted as $key => $alias) {
+            $revived = $archivedByLocalPart[$alias->getLocalPart()] ?? null;
+
+            if (null === $revived || $revived === $alias) {
+                continue;
+            }
+
+            $revived->setActive(true);
+            $user->removeEmailAlias($alias);
+            $submitted[$key] = $revived;
         }
 
         $violations = $validator->validate($user, $submitted);
 
         foreach ($violations as $key => $violation) {
-            $form->get('emailAliases')->get($key)->get('localPart')->addError(
+            // **`(string)`, and it is not cosmetic.** The row names Symfony hands out are the
+            // strings "0", "1", … - but $submitted above is a PHP array, and PHP renormalises a
+            // numeric-string key to an int the moment it is written. So the keys come back out as
+            // integers, and Form::get() accepts nothing but a string: every refused address raised
+            // a TypeError here instead of showing its message. The screen therefore answered 500 to
+            // a duplicate - the one case the whole validator exists for - and had done so since the
+            // feature shipped, which is exactly how a refusal path nobody exercises rots.
+            $form->get('emailAliases')->get((string) $key)->get('localPart')->addError(
                 new FormError($translator->trans($violation['message'], $violation['parameters'])),
             );
         }
