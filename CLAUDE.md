@@ -9,10 +9,10 @@ application (PHP ≥ 8.5.7, Doctrine ORM 3, MySQL 8) served by FrankenPHP/Caddy 
 JSON API consumed by two companion Flutter apps.
 
 It started life as the `dunglas/symfony-docker` template and still carries that Docker/Caddy plumbing,
-but the application itself is now the bulk of the repository: 769 PHP files / ~96k lines under `src/`,
-150 entities, 127 controllers, 676 routes, 153 migrations, 409 Twig templates, 83 Stimulus controllers.
+but the application itself is now the bulk of the repository: 1 496 PHP files / ~200k lines under `src/`,
+216 entities, 206 controllers, 1 015 routes, 227 migrations, 634 Twig templates, 157 Stimulus controllers.
 
-Every count in this file is a snapshot taken on **2026-08-10**. Treat them as orders of magnitude, not
+Every count in this file is a snapshot taken on **2026-08-29**. Treat them as orders of magnitude, not
 as facts: the `/technical` screen recounts the same things at each display (`App\Service\TechnicalProfile`)
 and is the one to trust when a number matters. The figures that report a *one-off measurement* — the
 112 PHPStan findings of the first run, the 46 files of the first CS Fixer pass, the 195/724/1397 of the
@@ -183,9 +183,10 @@ adding a tab or sub-feature to one of these areas, add a controller — don't gr
 `App\Controller\Settings\ProgramController` (the Formations settings tab) is a different class from
 `App\Controller\ProgramController` (a program's own screens); the namespace is what tells them apart.
 
-More generally, business rules belong in `src/Service/`, not in the controller. Controllers still hold
-far more logic than they should (~29k lines against ~16k of services) — when you touch a fat one,
-extract rather than extend.
+More generally, business rules belong in `src/Service/`, not in the controller. The ratio has turned
+over — ~52k lines of controllers against ~61k of services, where it was 29k against 16k on
+2026-08-10 — so the rule is now being followed rather than aspired to. Individual controllers are
+still fat; when you touch one, extract rather than extend.
 
 ### Cross-cutting building blocks
 
@@ -237,10 +238,11 @@ password hash is ever stored locally.
 `ROLE_STUDENT`, `ROLE_TUTOR` (external apprenticeship tutors), `ROLE_SUPPORT-TECH`, `ROLE_ECO`,
 `ROLE_EXTERNAL`. `ROLE_TUTOR` and `ROLE_EXTERNAL` are both excluded from message recipients.
 
-**Fine-grained checks** are Voters (`src/Security/Voter/`, 12 of them: Assignment, Evaluation,
-LessonLog, MessageThread, Progression, QuizTemplate, SequenceTemplate, SignupList, Ticket,
-InternshipTutorLink, EcoParcours, AudienceTargetable). New per-object rules belong in a Voter, not
-inline in a controller.
+**Fine-grained checks** are Voters (`src/Security/Voter/`, 23 of them: Assignment, AudienceTargetable,
+DocumentationArticle, EcoParcours, Evaluation, FileLibrary, GameGesture, GuestAccount, GuestConsole,
+InternshipTutorLink, LessonLog, MessageThread, Progression, ProxmoxHost, QuizFolder, QuizTemplate,
+SequenceInstance, SequenceTemplate, SignupList, Survey, SurveyFolder, Ticket, Wiki). New per-object
+rules belong in a Voter, not inline in a controller.
 
 `src/Security/Ldap*Syncer.php` also **writes** provisioning requests (`LdapManageUser`,
 `LdapManageGroup`, `LdapManagePassword`) that an external script at
@@ -272,8 +274,8 @@ Tabler behind rather than conforming to it.
 Current state, which is a deliberate in-between and not an inconsistency:
 - Tabler 1.4.0 CSS/JS are still vendored at `assets/tabler/{css,js}/tabler.min.*` and loaded by
   `templates/base.html.twig`; a lot of markup is still Bootstrap/Tabler-shaped.
-- On top of it, `assets/styles/app.css` (~5 800 lines) implements the handoff design system: 85
-  `--cm-*` custom properties (each declared twice, light and dark) used ~2 800 times, and some 1 600
+- On top of it, `assets/styles/app.css` (~9 600 lines) implements the handoff design system: 108
+  `--cm-*` custom properties (each declared twice, light and dark) used ~4 400 times, and some 2 760
   `cm-*` selectors (`cm-btn`, `cm-badge`, `cm-tabs`, `cm-actionbar`,
   `cm-action--{positive,danger,neutral,warning,off}`, …). New UI should use `cm-*`.
 - Fonts are **Source Sans 3** (body) and **Spectral** (headings), from Google Fonts — not Tabler's Inter.
@@ -333,7 +335,7 @@ tab for new 404s under `/hugerte/`.
 - **i18n**: `fr` is the default, `en` is the second locale. `LocaleSubscriber` resolves it in order:
   session (`_locale`), then the logged-in user's `locale`, and it runs late enough not to be overridden
   by the `_locale` route attribute. Translation keys are semantic camelCase (`studentWorkNavLabel`),
-  never the French sentence. Of 3 800 French keys, **572 have no English translation** — the
+  never the French sentence. Of 7 315 French keys, **676 have no English translation** — the
   configured `fallbacks: ['fr']` is what keeps those screens readable rather than showing raw keys.
 - **Forms**: checkbox groups rather than `<select multiple>`. Any select used for *input* needs a
   placeholder; selects used for *consultation* may start on the first entry. Picking Users (not
@@ -478,9 +480,10 @@ CI now gates `main` as well as `staging`, through the required status check on t
 rulesets table above. It is the same single job in both cases; what changed is that on `main` it runs
 *before* the merge rather than after.
 
-**Test coverage is thin but no longer absent** — 334 tests: unit tests over pure services, one test
-per Voter (`tests/Security/Voter/`), and a functional smoke test (`tests/Functional/`) that requests
-each main screen as a student / teacher / admin / tutor and pins the answer. Run them with
+**Test coverage is no longer thin** — 2 354 tests across 265 files, where there were 334 on
+2026-08-10: unit tests over pure services, one test per Voter (`tests/Security/Voter/`), and a
+functional smoke test (`tests/Functional/`) that requests each main screen as a student / teacher /
+admin / tutor and pins the answer. Run them with
 `docker compose exec -e APP_ENV=test php bin/phpunit`; **`tests/README.md` explains the one-off test-database
 setup they need**. Feature work is still verified in a real browser — the `browser-verify` skill drives
 a headless Chrome against the dev app, and `beaup-sqs-check` polls the Courrier école queues.
@@ -611,7 +614,7 @@ If a future migration set ever justifies another pass, run **one named rule at a
 prepared set: install as a dev dependency, `git checkout -- composer.json composer.lock` immediately
 after (`vendor/` stays), keep the throwaway `rector.php` out of the commit, then `composer install` to
 restore `vendor/`. And verify a form submission in a browser afterwards — that is precisely what the
-334 tests do not cover.
+test suite does not cover.
 
 **Error alerting** is Discord-only and prod-only: `config/packages/monolog.yaml`'s `when@prod` block
 sends anything error-and-worse to `App\Monolog\DiscordWebhookHandler`, which posts to the same webhook

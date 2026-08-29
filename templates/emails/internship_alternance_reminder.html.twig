@@ -7,7 +7,7 @@
 {% block banner %}{{ 'ufaAlternanceReminderEmailBanner'|trans }}{% endblock %}
 
 {% block body %}
-    <p style="margin: 0 0 16px;">{{ 'ufaAlternanceReminderEmailGreeting'|trans({'%name%': recipientFirstName}) }}</p>
+    <p style="margin: 0 0 16px;">{{ 'emailGreetingText'|trans }}</p>
     <p style="margin: 0 0 16px;">
         {% if period %}
             {{ 'ufaAlternanceReminderEmailPeriodBody'|trans({'%period%': period.name, '%deadline%': period.endDate|date('d/m/Y')})|raw }}

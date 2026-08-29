@@ -7,7 +7,7 @@
 {% block banner %}Rappel — Livret de l'alternant{% endblock %}
 
 {% block body %}
-    <p style="margin: 0 0 16px;">Bonjour {{ student.displayName ?? student.username }},</p>
+    <p style="margin: 0 0 16px;">{{ 'emailGreetingText'|trans }}</p>
     <p style="margin: 0 0 16px;">
         Vous n'avez pas encore complété votre auto-évaluation pour la période
         <strong>{{ period.name }}</strong> ({{ program.displayShortName }}).

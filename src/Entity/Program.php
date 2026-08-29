@@ -238,6 +238,16 @@ class Program
     #[ORM\Column(name: 'alternance_calendar_file_key', length: 255, nullable: true)]
     private ?string $alternanceCalendarFileKey = null;
 
+    // S3 key of the PDF dropped in UFA > Formations > « Documents » > « Emploi du temps ».
+    //
+    // **It has nothing to do with the platform's timetable** - no LessonSession, no Period, no
+    // Room. It is a document the UFA team keeps alongside the formation, named after what it
+    // usually contains and read by nobody but the tab that uploads it. Deliberately its own column
+    // rather than a row in a generic document table: there is one such document today, and the
+    // shape of a second one is not known yet.
+    #[ORM\Column(name: 'timetable_document_file_key', length: 255, nullable: true)]
+    private ?string $timetableDocumentFileKey = null;
+
     // Off by default: every Program uses the Centre de formation's shared SkillLevel
     // definition (Settings\SkillLevelController) unless it opts into fully defining its own instead
     // - see SkillLevelRepository::findAllActiveForProgramOrGlobal(), the single place
@@ -770,6 +780,18 @@ class Program
     public function setAlternanceCalendarFileKey(?string $alternanceCalendarFileKey): static
     {
         $this->alternanceCalendarFileKey = $alternanceCalendarFileKey;
+
+        return $this;
+    }
+
+    public function getTimetableDocumentFileKey(): ?string
+    {
+        return $this->timetableDocumentFileKey;
+    }
+
+    public function setTimetableDocumentFileKey(?string $timetableDocumentFileKey): static
+    {
+        $this->timetableDocumentFileKey = $timetableDocumentFileKey;
 
         return $this;
     }

@@ -1,9 +1,12 @@
-{# « Documents » - the alternance calendar, and only that. The mode selector of Paramètres >
-   Pédagogique > Formations is deliberately absent: dropping a PDF here *is* the choice of serving
-   it, and the controller switches the mode over on its own (App\Controller\Ufa\FormationDocumentController). #}
-<div class="card-body">
-    <p class="cm-hint">{{ 'ufaFormationDocumentsHelpText'|trans }}</p>
+{# « Documents » - two documents that share a tab and nothing else.
 
+   The alternance calendar is published: dropping a PDF here *is* the choice of serving it, so the
+   mode selector of Paramètres > Pédagogique > Formations is deliberately absent and the controller
+   switches the mode over on its own (App\Controller\Ufa\FormationDocumentController).
+
+   « Emploi du temps » is the opposite: a file nothing reads. It is not the platform's timetable, it
+   feeds no screen and no export, and the only way back to it is this tab. #}
+<div class="card-body">
     <div class="cm-subhead mb-3">
         <div class="cm-subhead__title">{{ 'programAlternanceCalendarFileFieldLabel'|trans }}</div>
     </div>
@@ -36,4 +39,34 @@
         </div>
         {{ form_rest(form) }}
     {{ form_end(form) }}
+
+    <hr class="my-4">
+
+    <div class="cm-subhead mb-3">
+        <div class="cm-subhead__title">{{ 'ufaFormationTimetableDocumentHeading'|trans }}</div>
+    </div>
+
+    <p class="cm-hint mb-3">{{ 'ufaFormationTimetableDocumentHelpText'|trans }}</p>
+
+    {% if program.timetableDocumentFileKey %}
+        <p class="mb-3">
+            <span class="cm-badge cm-badge--gold">{{ 'ufaFormationTimetableDocumentCurrentFileLabel'|trans }}</span>
+            <a href="{{ path('app_ufa_formation_timetable_document_pdf', {id: program.id}) }}" target="_blank" rel="noopener" class="ms-2">{{ 'ufaFormationTimetableDocumentOpenFileAction'|trans }}</a>
+        </p>
+    {% else %}
+        <p class="cm-hint mb-3">{{ 'ufaFormationTimetableDocumentNoFileText'|trans }}</p>
+    {% endif %}
+
+    {{ form_start(timetableForm) }}
+        {{ form_errors(timetableForm) }}
+        <div class="row">
+            <div class="col-md-8">{{ form_row(timetableForm.timetableDocumentFile) }}</div>
+        </div>
+        <div class="cm-actionbar">
+            <div class="cm-actionbar__buttons">
+                {{ form_widget(timetableForm.submit) }}
+            </div>
+        </div>
+        {{ form_rest(timetableForm) }}
+    {{ form_end(timetableForm) }}
 </div>

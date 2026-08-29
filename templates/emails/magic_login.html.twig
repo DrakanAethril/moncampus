@@ -7,7 +7,7 @@
 {% block banner %}Connexion{% endblock %}
 
 {% block body %}
-    <p style="margin: 0 0 16px;">Bonjour {{ user.firstname ?? user.username }},</p>
+    <p style="margin: 0 0 16px;">{{ 'emailGreetingText'|trans }}</p>
     <p style="margin: 0 0 16px;">
         Cliquez sur le bouton ci-dessous pour vous connecter à votre espace campus.
     </p>

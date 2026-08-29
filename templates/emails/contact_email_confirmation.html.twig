@@ -7,7 +7,7 @@
 {% block banner %}Confirmation d'e-mail{% endblock %}
 
 {% block body %}
-    <p style="margin: 0 0 16px;">Bonjour {{ user.firstname ?? user.username }},</p>
+    <p style="margin: 0 0 16px;">{{ 'emailGreetingText'|trans }}</p>
     <p style="margin: 0 0 16px;">
         Merci de confirmer que <strong>{{ user.pendingContactEmail }}</strong> est bien votre adresse de contact
         sur la plateforme, en cliquant sur le bouton ci-dessous.

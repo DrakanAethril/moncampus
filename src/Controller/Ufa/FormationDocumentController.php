@@ -10,11 +10,14 @@ use App\Entity\User;
 use App\Enum\Feature;
 use App\Enum\ProgramAlternanceCalendarMode;
 use App\Form\UfaAlternanceCalendarType;
+use App\Form\UfaTimetableDocumentType;
 use App\Repository\ProgramRepository;
+use App\Service\FileUploadService;
 use App\Service\ProgramPdfReplacer;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -33,6 +36,16 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * field, no mode selector (App\Form\UfaAlternanceCalendarType says why) - and the guard: this tab
  * follows `ufa_booklet`, the feature the UFA team is delivered, rather than the settings screens'
  * own reach.
+ *
+ * The tab also carries a second, unrelated document - « Emploi du temps ». That one is *only* a
+ * file: no other screen, export or API reads it, and it has no connection to the platform's own
+ * timetable (see App\Form\UfaTimetableDocumentType). It is served back by
+ * timetableDocumentPdf() below, behind the same guard as the tab, so a document the UFA team
+ * uploads for itself cannot be reached by the audiences the alternance calendar is published to.
+ *
+ * Two independent forms on one screen: each has its own type, so its own block prefix, and
+ * `handleRequest()` claims only the one whose name is in the payload. Saving one therefore never
+ * validates - nor clears - the other.
  */
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 #[RequiresFeature(Feature::UfaBooklet)]
@@ -45,6 +58,29 @@ class FormationDocumentController extends AbstractController
 
         $form = $this->createForm(UfaAlternanceCalendarType::class);
         $form->handleRequest($request);
+
+        $timetableForm = $this->createForm(UfaTimetableDocumentType::class);
+        $timetableForm->handleRequest($request);
+
+        if ($timetableForm->isSubmitted() && $timetableForm->isValid()) {
+            $replaced = $pdfReplacer->replace(
+                $timetableForm->get('timetableDocumentFile')->getData(),
+                ProgramPdfReplacer::TIMETABLE_DOCUMENT_PREFIX,
+                $program,
+                $program->getTimetableDocumentFileKey(),
+                $program->setTimetableDocumentFileKey(...),
+            );
+
+            if ($replaced) {
+                $program->setLastUpdatedBy($this->currentUser());
+                $program->setLastUpdatedDate(new \DateTimeImmutable());
+                $entityManager->flush();
+
+                $this->addFlash('success', 'ufaFormationTimetableDocumentSavedFlashMessage');
+            }
+
+            return $this->redirectToRoute('app_ufa_formation_documents', ['id' => $program->getId()]);
+        }
 
         if ($form->isSubmitted() && $form->isValid()) {
             $replaced = $pdfReplacer->replace(
@@ -75,7 +111,25 @@ class FormationDocumentController extends AbstractController
             'program' => $program,
             'activeTab' => 'documents',
             'form' => $form,
+            'timetableForm' => $timetableForm,
         ]);
+    }
+
+    /**
+     * Serves the « Emploi du temps » document back to the tab that uploaded it.
+     *
+     * Deliberately *not* modelled on app_program_alternance_calendar_pdf: that one is published to
+     * an audience and reads a VisibilityLevel, while this document has no audience at all. It
+     * inherits the class-level guard, which is the whole rule - whoever may open the tab may open
+     * the file, and nobody else.
+     */
+    #[Route(path: '/ufa/programs/{id}/documents/timetable/pdf', name: 'app_ufa_formation_timetable_document_pdf')]
+    public function timetableDocumentPdf(int $id, ProgramRepository $repository, FileUploadService $fileUploadService): Response
+    {
+        $program = $repository->find($id) ?? throw $this->createNotFoundException();
+        $key = $program->getTimetableDocumentFileKey() ?? throw $this->createNotFoundException();
+
+        return new RedirectResponse($fileUploadService->url($key));
     }
 
     private function currentUser(): User
