@@ -362,6 +362,51 @@
                            field a second time, in their default markup, below the card. #}
                         {% do form.emailAliases.setRendered %}
                         {% do form.primaryAliasKey.setRendered %}
+
+                        {# Retired addresses. Removing a row above does not delete it: a local part is
+                           never handed to a second student, and this block is where the ones taken
+                           out of the list go on being visible - still receiving, never written from,
+                           never reassignable. #}
+                        {% if archivedAliases|default([])|length > 0 %}
+                            <div class="cm-subhead mt-4 mb-2">
+                                <div class="cm-subhead__title">{{ 'userEmailAliasesArchivedTitle'|trans }}</div>
+                                <div class="cm-subhead__hint">{{ 'userEmailAliasesArchivedHint'|trans }}</div>
+                            </div>
+                            <ul class="cm-chip-list list-unstyled mb-0">
+                                {% for archived in archivedAliases %}
+                                    <li class="cm-chip">
+                                        <code>{{ archived.localPart }}@{{ studentMailDomain }}</code>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                {% endif %}
+
+                {# Every login this account has answered to. A released login is never given to
+                   anybody else (App\Entity\UserLogin), so the list is also the answer to "why can I
+                   not reuse that one" - and to "may this account have its old one back", which it
+                   may. #}
+                {% if loginHistory|default([])|length > 0 %}
+                    <div class="mt-4">
+                        <div class="cm-subhead mb-2">
+                            <div class="cm-subhead__title">{{ 'userLoginHistoryTitle'|trans }}</div>
+                            <div class="cm-subhead__hint">{{ 'userLoginHistoryHint'|trans }}</div>
+                        </div>
+                        <ul class="cm-chip-list list-unstyled mb-0">
+                            {% for entry in loginHistory %}
+                                <li class="cm-chip">
+                                    <code>{{ entry.login }}</code>
+                                    {% if entry.current %}
+                                        <span class="cm-badge cm-badge--gold">{{ 'userLoginHistoryCurrentLabel'|trans }}</span>
+                                    {% else %}
+                                        <span class="text-secondary small">
+                                            {{ 'userLoginHistoryReleasedLabel'|trans({'%date%': entry.releasedAt ? entry.releasedAt|date('d/m/Y') : '—'}) }}
+                                        </span>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
                     </div>
                 {% endif %}
 

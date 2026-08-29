@@ -6,6 +6,7 @@ namespace App\Security;
 
 use App\Entity\User;
 use App\Repository\UserRepository;
+use App\Service\UserLoginHistory;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Ldap\Entry;
 use Symfony\Component\Ldap\Exception\ConnectionException;
@@ -31,6 +32,7 @@ class LdapCredentialsVerifier
         private readonly string $ldapSearchDn,
         #[\SensitiveParameter] private readonly string $ldapSearchPassword,
         private readonly string $ldapUsernameAttribute,
+        private readonly UserLoginHistory $loginHistory,
     ) {
     }
 
@@ -68,10 +70,20 @@ class LdapCredentialsVerifier
             throw new UserNotFoundException(\sprintf('No LDAP entry found for username "%s".', $username));
         }
 
-        $user = $this->userRepository->findOneBy(['username' => $username]) ?? new User($username);
+        $existing = $this->userRepository->findOneBy(['username' => $username]);
+        $user = $existing ?? new User($username);
         $this->ldapUserMapper->apply($user, $entry);
 
         $this->entityManager->persist($user);
+
+        if (null === $existing) {
+            // Just-in-time provisioning is a creation like any other, and the ledger starts at the
+            // account's first login rather than at its first rename. Only on creation: an existing
+            // account already has its row, and asking on every single sign-in would buy a query per
+            // login for nothing.
+            $this->loginHistory->record($user, $username);
+        }
+
         $this->entityManager->flush();
 
         return $user;

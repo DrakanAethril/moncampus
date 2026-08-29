@@ -19,6 +19,7 @@ use App\Repository\RoomRepository;
 use App\Repository\TopicGroupRepository;
 use App\Repository\TopicRepository;
 use App\Repository\UserRepository;
+use App\Service\UserLoginHistory;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -249,6 +250,7 @@ class ImportEdtTimetableCommand extends Command
         private readonly TopicGroupRepository $topicGroupRepository,
         private readonly LessonTypeRepository $lessonTypeRepository,
         #[Autowire(param: 'kernel.project_dir')] private readonly string $projectDir,
+        private readonly UserLoginHistory $loginHistory,
     ) {
         parent::__construct();
     }
@@ -600,6 +602,8 @@ class ImportEdtTimetableCommand extends Command
                 $teacher->setFirstname($initial);
                 $teacher->setLastname($lastname);
                 $this->entityManager->persist($teacher);
+                // The ledger starts at the account's first login, whichever path created it.
+                $this->loginHistory->record($teacher, $username);
             }
 
             $roles = $teacher->getRoles();

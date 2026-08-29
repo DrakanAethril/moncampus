@@ -4,15 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repository is
 
-**MonCampus** — a campus-management platform, **mostly but not only pedagogical**: timetable, lesson log, assignments, gradebook, progressions and quizzes first, then apprenticeship tracking, student mail, directory, equipment loans, support and orienteering races. Deployed for *Institution Beaupeyrat*, which uses it — the application is not theirs. A single Symfony 8.1
+**MonCampus** — a campus-management platform, **mostly but not only pedagogical**: timetable, lesson log, assignments, gradebook, progressions, quizzes and surveys first, then apprenticeship tracking, student mail, directory, file library and wiki, a campus game, lab virtual machines, equipment loans, support and orienteering races. Deployed for *Institution Beaupeyrat*, which uses it — the application is not theirs. A single Symfony 8.1
 application (PHP ≥ 8.5.7, Doctrine ORM 3, MySQL 8) served by FrankenPHP/Caddy in worker mode, plus a
 JSON API consumed by two companion Flutter apps.
 
 It started life as the `dunglas/symfony-docker` template and still carries that Docker/Caddy plumbing,
-but the application itself is now the bulk of the repository: 769 PHP files / ~96k lines under `src/`,
-150 entities, 127 controllers, 676 routes, 153 migrations, 409 Twig templates, 83 Stimulus controllers.
+but the application itself is now the bulk of the repository: 1 496 PHP files / ~200k lines under `src/`,
+216 entities, 206 controllers, 1 015 routes, 227 migrations, 634 Twig templates, 157 Stimulus controllers.
 
-Every count in this file is a snapshot taken on **2026-08-10**. Treat them as orders of magnitude, not
+Every count in this file is a snapshot taken on **2026-08-29**. Treat them as orders of magnitude, not
 as facts: the `/technical` screen recounts the same things at each display (`App\Service\TechnicalProfile`)
 and is the one to trust when a number matters. The figures that report a *one-off measurement* — the
 112 PHPStan findings of the first run, the 46 files of the first CS Fixer pass, the 195/724/1397 of the
@@ -124,8 +124,59 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
 - **Outils** (teachers/staff) — tirage au sort, création de groupes (`GroupCreationService`),
   progression, bibliothèque (sequences/séances/phases + quiz library), enregistrements audio,
   cahier de texte, carnet de notes.
-- **Quiz** — `QuizTemplate`/`QuizQuestion` (library) → `QuizInstance` (launched snapshot) →
-  `QuizAttempt` (passation). Live multiplayer (`QuizLiveSession`) runs over Mercure/SSE.
+- **Quiz** — `QuizTemplate`/`QuizQuestion` (library, filed in `QuizFolder`s) → `QuizInstance`
+  (launched snapshot) → `QuizAttempt` (passation). Live multiplayer (`QuizLiveSession`) runs over
+  Mercure/SSE. The « mode contrôle » times each question **server-side**
+  (`QuizAttemptAnswer::$servedAt`, stamped only if null, so F5 cannot reset the clock) — the point of
+  that timing is to *exonerate*: three seconds on a question is proof nobody had time to look it up.
+- **Sondages** — the same three-step shape as Quiz, and deliberately so: `SurveyTemplate` (library,
+  `SurveyFolder`s) → `SurveyCampaign` (launched wave, carrying a frozen copy of the questions) →
+  `SurveyResponse`. `SurveySeries` replays a campaign to compare waves. Two things freeze at launch
+  and never move: the `SurveyTarget` (the denominator of the response rate) and `$anonymous` —
+  **anonymity is not a permission**, no name is stored, and staff are not exempt.
+- **Jeu du campus** — gamification, off by default per role. `GameEntry` is an **append-only**
+  ledger: no balance is stored anywhere, a family's points are the sum of its lines, and a
+  contested gesture is undone by an *inverse line* (`reversalOf`), never a delete. An entry carries
+  the date it happened on, so which month it counts towards is a *reading*, never a condition on
+  writing it. Ranking is on a **rate** over a calendar month (`GameMonthScore`), and
+  `app:game:close-month` is the cron that closes one. The six level thresholds are
+  establishment-wide, in `App\Service\Game\GameLevels`; `GameLevelLabel` holds only their *wording*
+  per filière — a threshold that moved between formations would make the avatar's ring mean nothing.
+- **Bibliothèque de fichiers et partages** — `FileLibraryNode`, one table for folders and files.
+  The library is **personal**: `owner` is the access model, not a scope to widen later
+  (`FileLibraryVoter`). `path` holds the ancestors' ids (`/12/48/`) so a subtree is one `LIKE`.
+  Sharing to a class, sharing a whole folder, and the content-sharing screens all hang off the same
+  node — no form on the platform carries bytes any more, uploads go through `FilePickerType` and
+  `/uploads/stage`.
+- **Wiki** — `Wiki`/`WikiNode`/`WikiRevision`/`WikiAttachment`. Two kinds, and the difference is
+  structural: a **Personal** wiki is one per owner (a UNIQUE index says so) and refuses members and
+  programs at the entity level; a **Shared** one takes members and/or whole classes and is never
+  scoped to a Program, so a cross-class wiki is legal. Sharing therefore always means creating a
+  Shared wiki, never widening a personal one. Mermaid diagrams are edited through an « object » and
+  stored self-contained — a `<style>` never survives the sanitizer.
+- **Base documentaire** — `DocumentationArticle`/`DocumentationTag`. `App\Service\DocumentationAccess`
+  is the single answer to "may this person read this article": three ANDed conditions — published and
+  inside its diffusion window, naming one of the reader's audiences, **and** posted on a perimeter
+  group among the reader's own groups or their ancestors (`DocumentationPerimeter` expands that).
+  Staff and admin skip all three. A tutor carries no perimeter group, so naming « Tuteurs » in the
+  visibility changes nothing until the annuaire gives them one — deliberate, not an oversight.
+- **Infrastructure et machines virtuelles** — the SISR side of the platform, and the only area that
+  drives hardware. `ProxmoxHost`/`ProxmoxOperation` talk to Proxmox VE; `VmBatch`/`VmBatchItem`
+  deploy one machine per student of a class, `GuestAccount` is the account created on each; the web
+  terminal is `ConsoleSession`/`ConsoleBroadcast`/`ConsoleSnippet` over SSH (**not** Proxmox's PTY).
+  Two rules the code depends on: **one pass does exactly one step** (`app:vm-batch:advance`, cron
+  every minute, is what makes a deployment survive a closed browser tab), and the application never
+  destroys a machine — an expired batch reminds, an administrator deletes in Proxmox.
+- **Agenda, Annonces, Listes d'inscription** — `AgendaEvent`, `Announcement`, `SignupList`; the
+  first two resolve who they are for through `AudienceResolver` like `MessageThread` does.
+- **Accès aux fonctionnalités** — `App\Enum\Feature` (49 cases) + `#[RequiresFeature]` +
+  `App\Security\FeatureAccess`: which features are lit, per role and per formation. Gestion >
+  Fonctionnalités is the screen. **The whole Pédagogie family is off by default**, with four
+  exceptions named in `Feature::defaultRoles()` (`student_work`, `shared_documents`, `wiki` for
+  students, `class_tools` for teachers) — so a screen answering 404 in dev is far more often an
+  unlit feature than a bug. `ROLE_ECO`, `ROLE_SUPPORT-TECH` and `ROLE_EXTERNAL` are delivered
+  nothing unless a feature names them. See the cross-cutting blocks below — a new controller needs
+  a `#[RequiresFeature]`.
 - **UFA** (apprenticeship unit) — `Internship*` entities: alternance periods, the 4-role signature
   wizard of the Livret Alternant, tutor links, evaluations, reminders, plus laptop loans
   (`Laptop`/`LaptopLoan`) and the UFA configuration screens.
@@ -183,9 +234,10 @@ adding a tab or sub-feature to one of these areas, add a controller — don't gr
 `App\Controller\Settings\ProgramController` (the Formations settings tab) is a different class from
 `App\Controller\ProgramController` (a program's own screens); the namespace is what tells them apart.
 
-More generally, business rules belong in `src/Service/`, not in the controller. Controllers still hold
-far more logic than they should (~29k lines against ~16k of services) — when you touch a fat one,
-extract rather than extend.
+More generally, business rules belong in `src/Service/`, not in the controller. The ratio has turned
+over — ~52k lines of controllers against ~61k of services, where it was 29k against 16k on
+2026-08-10 — so the rule is now being followed rather than aspired to. Individual controllers are
+still fat; when you touch one, extract rather than extend.
 
 ### Cross-cutting building blocks
 
@@ -202,6 +254,14 @@ Prefer these over re-implementing:
 - `App\Entity\AbstractStructureNode` — shared base of Section/Track/Cohort/Option/Modality.
 - `App\Service\FileUploadService` / `flysystem` `uploads.storage` — never write to the filesystem
   directly; uploads go to S3, URLs are built by the `file_url` Twig function.
+- `App\Attribute\RequiresFeature` + `App\Security\FeatureAccess` — "this screen belongs to that
+  feature; if it is off, it does not exist". Read on `kernel.controller` by `FeatureAccessSubscriber`,
+  which answers a **404, never a 403**: an extinguished screen does not exist, it is not forbidden.
+  **Every new controller needs one** — `tests/Functional/FeatureCoverageTest.php` fails on a route
+  that neither carries one, inherits one from its class, nor is named in its exemption list.
+- `App\Form\FilePickerType` — no form on this platform carries bytes. The picker
+  stages each file on its own XHR to `/uploads/stage` and the form submits signed tokens; the field
+  declares an `UploadPolicy`, not constraints.
 - Twig helpers in `src/Twig/`: `is_staff`, `is_program_teacher`, `file_url`, `avatar_url`,
   `visibility_allows`, `structure_nav_*`, `student_nav_*`, `ufa_nav_*`, `unread_message_thread_count`.
 
@@ -237,10 +297,11 @@ password hash is ever stored locally.
 `ROLE_STUDENT`, `ROLE_TUTOR` (external apprenticeship tutors), `ROLE_SUPPORT-TECH`, `ROLE_ECO`,
 `ROLE_EXTERNAL`. `ROLE_TUTOR` and `ROLE_EXTERNAL` are both excluded from message recipients.
 
-**Fine-grained checks** are Voters (`src/Security/Voter/`, 12 of them: Assignment, Evaluation,
-LessonLog, MessageThread, Progression, QuizTemplate, SequenceTemplate, SignupList, Ticket,
-InternshipTutorLink, EcoParcours, AudienceTargetable). New per-object rules belong in a Voter, not
-inline in a controller.
+**Fine-grained checks** are Voters (`src/Security/Voter/`, 23 of them: Assignment, AudienceTargetable,
+DocumentationArticle, EcoParcours, Evaluation, FileLibrary, GameGesture, GuestAccount, GuestConsole,
+InternshipTutorLink, LessonLog, MessageThread, Progression, ProxmoxHost, QuizFolder, QuizTemplate,
+SequenceInstance, SequenceTemplate, SignupList, Survey, SurveyFolder, Ticket, Wiki). New per-object
+rules belong in a Voter, not inline in a controller.
 
 `src/Security/Ldap*Syncer.php` also **writes** provisioning requests (`LdapManageUser`,
 `LdapManageGroup`, `LdapManagePassword`) that an external script at
@@ -272,8 +333,8 @@ Tabler behind rather than conforming to it.
 Current state, which is a deliberate in-between and not an inconsistency:
 - Tabler 1.4.0 CSS/JS are still vendored at `assets/tabler/{css,js}/tabler.min.*` and loaded by
   `templates/base.html.twig`; a lot of markup is still Bootstrap/Tabler-shaped.
-- On top of it, `assets/styles/app.css` (~5 800 lines) implements the handoff design system: 85
-  `--cm-*` custom properties (each declared twice, light and dark) used ~2 800 times, and some 1 600
+- On top of it, `assets/styles/app.css` (~9 600 lines) implements the handoff design system: 108
+  `--cm-*` custom properties (each declared twice, light and dark) used ~4 400 times, and some 2 760
   `cm-*` selectors (`cm-btn`, `cm-badge`, `cm-tabs`, `cm-actionbar`,
   `cm-action--{positive,danger,neutral,warning,off}`, …). New UI should use `cm-*`.
 - Fonts are **Source Sans 3** (body) and **Spectral** (headings), from Google Fonts — not Tabler's Inter.
@@ -333,7 +394,7 @@ tab for new 404s under `/hugerte/`.
 - **i18n**: `fr` is the default, `en` is the second locale. `LocaleSubscriber` resolves it in order:
   session (`_locale`), then the logged-in user's `locale`, and it runs late enough not to be overridden
   by the `_locale` route attribute. Translation keys are semantic camelCase (`studentWorkNavLabel`),
-  never the French sentence. Of 3 800 French keys, **572 have no English translation** — the
+  never the French sentence. Of 7 315 French keys, **676 have no English translation** — the
   configured `fallbacks: ['fr']` is what keeps those screens readable rather than showing raw keys.
 - **Forms**: checkbox groups rather than `<select multiple>`. Any select used for *input* needs a
   placeholder; selects used for *consultation* may start on the first entry. Picking Users (not
@@ -478,9 +539,10 @@ CI now gates `main` as well as `staging`, through the required status check on t
 rulesets table above. It is the same single job in both cases; what changed is that on `main` it runs
 *before* the merge rather than after.
 
-**Test coverage is thin but no longer absent** — 334 tests: unit tests over pure services, one test
-per Voter (`tests/Security/Voter/`), and a functional smoke test (`tests/Functional/`) that requests
-each main screen as a student / teacher / admin / tutor and pins the answer. Run them with
+**Test coverage is no longer thin** — 2 354 tests across 265 files, where there were 334 on
+2026-08-10: unit tests over pure services, one test per Voter (`tests/Security/Voter/`), and a
+functional smoke test (`tests/Functional/`) that requests each main screen as a student / teacher /
+admin / tutor and pins the answer. Run them with
 `docker compose exec -e APP_ENV=test php bin/phpunit`; **`tests/README.md` explains the one-off test-database
 setup they need**. Feature work is still verified in a real browser — the `browser-verify` skill drives
 a headless Chrome against the dev app, and `beaup-sqs-check` polls the Courrier école queues.
@@ -611,7 +673,7 @@ If a future migration set ever justifies another pass, run **one named rule at a
 prepared set: install as a dev dependency, `git checkout -- composer.json composer.lock` immediately
 after (`vendor/` stays), keep the throwaway `rector.php` out of the commit, then `composer install` to
 restore `vendor/`. And verify a form submission in a browser afterwards — that is precisely what the
-334 tests do not cover.
+test suite does not cover.
 
 **Error alerting** is Discord-only and prod-only: `config/packages/monolog.yaml`'s `when@prod` block
 sends anything error-and-worse to `App\Monolog\DiscordWebhookHandler`, which posts to the same webhook

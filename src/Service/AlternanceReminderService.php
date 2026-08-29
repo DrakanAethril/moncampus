@@ -54,7 +54,6 @@ class AlternanceReminderService
             ->subject($this->translator->trans('ufaAlternanceReminderEmailSubject'))
             ->htmlTemplate('emails/internship_alternance_reminder.html.twig')
             ->context([
-                'recipientFirstName' => $this->firstNameForStep($tutorLink, $step),
                 'period' => $period,
                 'ctaRoute' => $this->ctaRouteForStep($step),
                 // No route needs params yet (app_internship_tutor_home / app_home) - will gain
@@ -134,16 +133,6 @@ class AlternanceReminderService
             AlternanceReminderStep::EngagementStudent, AlternanceReminderStep::Student => $tutorLink->getStudent()?->getContactEmail(),
             AlternanceReminderStep::Supervisor => $tutorLink->getSupervisor()?->getContactEmail(),
             AlternanceReminderStep::Team, AlternanceReminderStep::EngagementCenter => null,
-        };
-    }
-
-    private function firstNameForStep(InternshipTutorLink $tutorLink, AlternanceReminderStep $step): string
-    {
-        return match ($step) {
-            AlternanceReminderStep::EngagementTutor, AlternanceReminderStep::Tutor => $tutorLink->getTutor()?->getFirstname() ?? '',
-            AlternanceReminderStep::EngagementStudent, AlternanceReminderStep::Student => $tutorLink->getStudent()?->getFirstname() ?? '',
-            AlternanceReminderStep::Supervisor => $tutorLink->getSupervisor()?->getFirstname() ?? '',
-            AlternanceReminderStep::Team, AlternanceReminderStep::EngagementCenter => '',
         };
     }
 

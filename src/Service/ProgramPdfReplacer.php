@@ -26,6 +26,8 @@ class ProgramPdfReplacer
 
     public const string ALTERNANCE_CALENDAR_PREFIX = 'programs/alternance-calendar/';
 
+    public const string TIMETABLE_DOCUMENT_PREFIX = 'programs/timetable-document/';
+
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly FileUploadService $fileUploadService,

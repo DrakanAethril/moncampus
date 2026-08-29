@@ -26,6 +26,30 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.08.29'
+      date: '2026-08-29'
+      summary: "Un identifiant de connexion et une adresse Courrier école appartiennent définitivement au compte qui les a portés : renommer un compte garde tout son historique et ne libère plus rien pour quelqu'un d'autre. Les messages envoyés par la plateforme s'ouvrent désormais sur « Bonjour, » sans prénom, et la description technique de l'application redit ce qu'elle est."
+      entries:
+          - type: modification
+            title: "Un identifiant de connexion n'est jamais réattribué"
+            detail: "Changer l'identifiant d'un compte conservait l'ancien nulle part, et il pouvait finir attribué à quelqu'un d'autre — qui héritait alors du courrier du premier. La fiche liste maintenant tous les identifiants qu'un compte a portés : aucun ne sera jamais donné à un autre compte, et celui à qui il appartient peut le reprendre."
+          - type: modification
+            title: "Une adresse Courrier école retirée est conservée"
+            detail: "Retirer une adresse de la liste ne l'efface plus : elle continue de recevoir, n'est plus utilisée pour écrire, et ne sera jamais attribuée à un autre élève. Les adresses retirées restent visibles sur la fiche, et la remettre dans la liste reprend la même."
+          - type: fix
+            title: "Une adresse déjà attribuée est refusée avec son message"
+            detail: "Saisir une adresse déjà portée par un autre élève faisait échouer l'enregistrement sans rien expliquer. Le refus s'affiche maintenant sur la ligne concernée, en nommant l'élève qui la détient."
+          - type: modification
+            title: "Les messages de la plateforme commencent par « Bonjour, »"
+            detail: "Le prénom du destinataire n'apparaît plus dans la formule d'ouverture : elle était trop familière pour une partie des personnes écrites, tuteurs et familles comprises."
+          - type: nouveaute
+            title: "Un emploi du temps en PDF sur une formation"
+            detail: "L'équipe UFA peut déposer un document d'emploi du temps sur une formation, à côté du calendrier de l'alternance. C'est un document à titre indicatif, sans lien avec l'emploi du temps de la plateforme, et il se consulte depuis la formation."
+          - type: modification
+            title: "La description technique redit ce qu'est l'application"
+            detail: "Son texte datait de mi-août : les sondages, le jeu du campus et les machines virtuelles de travaux pratiques y figurent maintenant, la liste des services extérieurs est complète et celle des traitements automatiques est exacte."
+          - type: interne
+            title: "La documentation du code remise à jour"
     - version: '2026.08.28'
       date: '2026-08-28'
       summary: "Un bandeau prévient désormais tout le monde qu'une mise à jour de la plateforme est en cours, quelques minutes avant le redémarrage qui la rend brièvement indisponible. Les quiz rédigés avec une IA s'importent par lots au lieu d'un par un, les filtres qui ne répondaient plus fonctionnent à nouveau, et le jeu du campus gagne le choix de son titre et un écran de suivi pour l'administration."

@@ -70,7 +70,6 @@ class AlternancePeriodChainNotifier
             ->subject($this->translator->trans('ufaAlternancePeriodTurnEmailSubject', ['%period%' => $period->getName()]))
             ->htmlTemplate('emails/internship_alternance_period_turn.html.twig')
             ->context([
-                'recipientFirstName' => $recipient->getFirstname(),
                 'role' => $role,
                 'periodName' => $period->getName(),
                 'studentName' => $student?->getDisplayName() ?? $student?->getUsername() ?? '',

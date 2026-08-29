@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Entity\User;
 use App\Repository\LdapManageUserRepository;
+use App\Repository\UserLoginRepository;
 use App\Repository\UserRepository;
 
 /**
@@ -18,15 +20,23 @@ use App\Repository\UserRepository;
  * ldap_manage_user (safe there since login was only ever written after a successful LDAP
  * create). Now that App\Controller\DirectoryUserController::new() reserves the login immediately
  * (before LDAP creation even runs), a collision would otherwise leave a User row permanently
- * bound to a login someone else already holds - so this checks both User::$username (the new
- * source of truth going forward) and ldap_manage_user.login (every login ever generated,
- * including old rows from before this User-first change and rows still pending/failed).
+ * bound to a login someone else already holds - so this checks User::$username (the truth about
+ * now), ldap_manage_user.login (every login ever generated, including old rows from before this
+ * User-first change and rows still pending/failed), and user_login (every login ever *assigned*,
+ * the ones a rename displaced included).
+ *
+ * That third source is what makes a rename final: before it existed, the login an account was
+ * renamed away from was reserved only if the account had been created through this platform - the
+ * one that put a row in ldap_manage_user. A second rename left the login in between reserved
+ * nowhere at all, and it could be handed to somebody else, who would then inherit the first
+ * person's mail.
  */
 class LoginGenerator
 {
     public function __construct(
         private readonly UserRepository $userRepository,
         private readonly LdapManageUserRepository $ldapManageUserRepository,
+        private readonly UserLoginRepository $userLoginRepository,
     ) {
     }
 
@@ -96,10 +106,34 @@ class LoginGenerator
     // It is also why an old login stays reserved for ever after a rename - ldap_manage_user keeps
     // its row.
     /** @param list<string> $reservedLogins */
-    public function loginTaken(string $login, array $reservedLogins = []): bool
+    /**
+     * Is this login somebody else's?
+     *
+     * `$for` is the account the question is asked *on behalf of*, and it is what makes a rename
+     * reversible: a login this very account held before is not taken **for it**, though it stays
+     * taken for everybody else for ever. Left null by the creation paths, which are asking about
+     * an account that does not exist yet and for which every occupied login is occupied.
+     *
+     * @param list<string> $reservedLogins as generate() above
+     */
+    public function loginTaken(string $login, array $reservedLogins = [], ?User $for = null): bool
     {
-        return \in_array($login, $reservedLogins, true)
-            || null !== $this->userRepository->findOneBy(['username' => $login])
-            || $this->ldapManageUserRepository->loginExists($login);
+        if (\in_array($login, $reservedLogins, true)) {
+            return true;
+        }
+
+        $holder = $this->userRepository->findOneBy(['username' => $login]);
+
+        if (null !== $holder) {
+            return $holder !== $for;
+        }
+
+        $previousHolder = $this->userLoginRepository->findOneByLogin($login)?->getUser();
+
+        if (null !== $previousHolder) {
+            return $previousHolder !== $for;
+        }
+
+        return $this->ldapManageUserRepository->loginExists($login);
     }
 }

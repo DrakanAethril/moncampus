@@ -35,6 +35,7 @@ class InternshipTutorProvisioningService
         private readonly LdapManageUserRoleResolver $roleResolver,
         private readonly ContactEmailVerifier $contactEmailVerifier,
         private readonly EntityManagerInterface $entityManager,
+        private readonly UserLoginHistory $loginHistory,
     ) {
     }
 
@@ -76,6 +77,9 @@ class InternshipTutorProvisioningService
         // form propagates here (see InternshipTutorLink::$testAlternance).
         $user->setTestUser($testUser);
         $this->contactEmailVerifier->markVerifiedByStaff($user);
+
+        // The ledger starts at the account's first login, not at its first rename.
+        $this->loginHistory->record($user, $login);
 
         $ldapUser->setLogin($login);
         $ldapUser->setUser($user);

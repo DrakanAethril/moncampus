@@ -375,7 +375,7 @@ ldapAccountActionDisableLabel: 'Désactivation'
 ldapAccountActionEnableLabel: 'Réactivation'
 ldapAccountActionLoginChangeLabel: 'Changement de login'
 ldapAccountRequestAlreadyPendingMessage: 'Une demande est déjà en cours sur ce compte.'
-ldapAccountLoginTakenMessage: 'Ce login est déjà pris par un compte ou par une demande de création.'
+ldapAccountLoginTakenMessage: "Ce login appartient à un autre compte, à une demande de création, ou à un compte qui l'a porté avant d'être renommé. Un login n'est jamais réattribué."
 ldapAccountLoginUnchangedMessage: "C'est déjà le login actuel de ce compte."
 ldapAccountLoginInvalidMessage: "Ce login n'est pas valide : minuscules, chiffres, point, tiret ou souligné, en commençant par une lettre."
 # Bandeau et modales des opérations de compte
@@ -1488,11 +1488,16 @@ ufaAlternanceRemindersSendButtonLabel: 'Envoyer les relances (%count%)'
 ufaAlternanceRemindersPickPeriodLabel: 'Choisissez une période pour afficher les non-soumis.'
 ufaAlternanceRemindersBulkSentFlashMessage: '{0}Aucune relance envoyée|{1}1 relance envoyée|]1,Inf[%count% relances envoyées'
 
+# Opening line shared by every transactional email (templates/emails/*.html.twig). Deliberately
+# impersonal: naming the reader reads as too familiar for part of the audience - tutors and
+# families are written to as much as students are. A mail that genuinely needs to name somebody
+# says so in its own body; this line stays neutral.
+emailGreetingText: 'Bonjour,'
+
 # Reminder email - templates/emails/internship_alternance_reminder.html.twig
 ufaAlternanceReminderEmailSubject: "Livret de l'alternant - une action est en attente"
 ufaAlternanceReminderEmailPreheader: 'Une action est en attente sur votre livret de suivi'
 ufaAlternanceReminderEmailBanner: 'Rappel — Livret de suivi'
-ufaAlternanceReminderEmailGreeting: 'Bonjour %name%,'
 ufaAlternanceReminderEmailPeriodBody: 'Une action est en attente de votre part pour la période <strong>%period%</strong>, avant le <strong>%deadline%</strong>.'
 ufaAlternanceReminderEmailEngagementBody: "La mise à disposition du livret est toujours en attente de votre signature."
 ufaAlternanceReminderEmailCtaLabel: 'Accéder au livret'
@@ -3584,6 +3589,16 @@ emailAliasAddAction: 'Ajouter une adresse'
 emailAliasRemoveAction: "Retirer l'adresse"
 userEmailAliasesSectionTitle: 'Adresses Courrier école'
 userEmailAliasesSectionHint: "Toutes ces adresses reçoivent ; celle marquée par défaut est affichée à l'élève et sert à l'expédition. Les adresses composées depuis le nom ou reprises de l'identifiant suivent leur source et ne se modifient pas."
+userEmailAliasesArchivedTitle: 'Adresses retirées'
+userEmailAliasesArchivedHint: "Retirer une adresse de la liste ne la supprime pas : elle continue de recevoir, n'est plus utilisée pour écrire, et ne sera jamais réattribuée à un autre élève."
+
+# Historique des logins - templates/directory/user_form.html.twig, réservé aux administrateurs.
+# Formulé pour répondre à la question que la liste fait naître (« pourquoi ne puis-je pas réutiliser
+# celui-là »), pas pour décrire la table.
+userLoginHistoryTitle: 'Identifiants de ce compte'
+userLoginHistoryHint: "Tous les identifiants que ce compte a portés. Un identifiant libéré reste réservé à ce compte : personne d'autre ne pourra le porter, et ce compte peut le reprendre."
+userLoginHistoryCurrentLabel: 'actuel'
+userLoginHistoryReleasedLabel: 'libéré le %date%'
 userEmailAliasesEmptyLabel: "Aucune adresse Courrier école pour cet élève."
 userMailAliasNotProvisionedFlashMessage: "Le compte est créé, mais son adresse Courrier école n'a pas pu être composée depuis son état civil : ajoutez-la à la main depuis sa fiche."
 
@@ -4331,7 +4346,7 @@ aboutVersionLabel: 'Version'
 # découpage tronc commun / SLAM / SISR. Tous les chiffres sont mesurés par
 # App\Service\TechnicalProfile, jamais saisis ici.
 technicalPageHeading: 'Description technique'
-technicalLedeText: "MonCampus est une application de gestion de campus, à dominante pédagogique : emploi du temps, cahier de texte, travaux à faire, carnet de notes, progressions, quiz, espaces de cours et wiki. Elle ne s'y limite pas — suivi de l'alternance, courrier des élèves, annuaire, base documentaire, prêt de matériel, support et courses d'orientation en font aussi partie. Son code source est public et sous licence libre : cette page décrit ce qu'il y a dedans, pour que les étudiants qui l'utilisent tous les jours puissent aussi l'étudier. Le découpage suit celui du référentiel du BTS SIO : un tronc commun, puis ce qui relève de l'option SLAM et ce qui relève de l'option SISR."
+technicalLedeText: "MonCampus est une application de gestion de campus, à dominante pédagogique : emploi du temps, cahier de texte, travaux à faire, carnet de notes, progressions, quiz, sondages, espaces de cours et wiki. Elle ne s'y limite pas — suivi de l'alternance, courrier des élèves, annuaire, base documentaire, jeu du campus, machines virtuelles de travaux pratiques, prêt de matériel, support et courses d'orientation en font aussi partie. Son code source est public et sous licence libre : cette page décrit ce qu'il y a dedans, pour que les étudiants qui l'utilisent tous les jours puissent aussi l'étudier. Le découpage suit celui du référentiel du BTS SIO : un tronc commun, puis ce qui relève de l'option SLAM et ce qui relève de l'option SISR."
 technicalMeasuredNoticeText: "Les chiffres de cette page sont comptés dans l'application au moment où vous l'affichez — entités déclarées à Doctrine, routes du routeur compilé, fichiers réellement déployés. Deux exceptions, mesurées le %date% : le nombre de commits et le nombre de tests, l'historique Git et le dossier des tests n'étant pas embarqués dans l'image de production."
 
 technicalVolumetryHeading: 'Volumétrie'
@@ -4370,30 +4385,17 @@ technicalCommonNatureSecondText: "Elle expose en plus une API JSON, consommée p
 
 technicalCommonStackHeading: 'Pile technique'
 technicalStackLanguageTerm: 'Langage'
-technicalStackLanguageText: 'PHP 8.5, en typage strict sur une partie du code. Les types de retour, les propriétés typées et les énumérations sont utilisés partout où ils apportent une garantie.'
 technicalStackFrameworkTerm: 'Cadriciel'
-technicalStackFrameworkText: "Symfony 8.1. Un cadriciel (framework) fournit la structure et les briques communes — routage, injection de dépendances, sécurité, formulaires — pour que le code écrit soit celui du métier et non celui de la plomberie."
 technicalStackPersistenceTerm: 'Persistance'
-technicalStackPersistenceText: "MySQL 8 avec Doctrine ORM 3. Un ORM (mapping objet-relationnel) traduit les objets PHP en lignes de tables et réciproquement, ce qui permet d'écrire des règles métier sans écrire de SQL à la main."
 technicalStackServerTerm: 'Serveur applicatif'
-technicalStackServerText: "FrankenPHP, un serveur écrit en Go qui embarque PHP et Caddy dans un seul processus. Il remplace le couple classique nginx + PHP-FPM."
 technicalStackFrontTerm: 'Interface'
-technicalStackFrontText: 'Twig pour les gabarits côté serveur, Hotwired (Turbo et Stimulus) pour le comportement côté navigateur. Aucun cadriciel monopage : le HTML est produit par le serveur.'
 technicalStackDirectoryTerm: 'Annuaire'
-technicalStackDirectoryText: "LDAP. Les comptes, les groupes et les droits viennent de l'annuaire de l'établissement ; l'application ne les invente pas."
 technicalStackServicesTerm: 'Services externes'
-technicalStackServicesText: 'AWS S3 (fichiers), SES et SQS (courrier), ClamAV (analyse antivirale des dépôts), Mercure (temps réel), Gotenberg (PDF), Matomo (mesure d’audience, soumise au consentement), Discord (alertes).'
 
 technicalCommonRequestHeading: "Le trajet d'une requête"
 technicalCommonRequestIntroText: "Comprendre ce trajet, c'est comprendre l'essentiel de l'architecture. Quand un utilisateur demande une page :"
-technicalCommonRequestStep1Text: "Caddy reçoit la requête HTTPS et la confie à PHP. Un unique fichier d'entrée, public/index.php, reçoit toutes les URL du site : c'est le patron « contrôleur frontal »."
-technicalCommonRequestStep2Text: "Le pare-feu de sécurité identifie l'utilisateur à partir de sa session, puis les règles d'accès vérifient que son rôle a le droit d'atteindre cette URL."
-technicalCommonRequestStep3Text: "Le routeur associe l'URL à une méthode de contrôleur et en extrait les paramètres. Le conteneur d'injection de dépendances construit les objets dont cette méthode a besoin et les lui passe en arguments."
-technicalCommonRequestStep4Text: "Le contrôleur délègue le travail à des services, qui interrogent la base via les repositories et manipulent des entités. Rien n'est écrit en base tant qu'un flush n'a pas été demandé."
-technicalCommonRequestStep5Text: "Le gabarit Twig produit le HTML, échappé par défaut, et la réponse repart. Côté navigateur, Turbo remplace le corps de la page sans rechargement complet."
 
 technicalCommonProjectHeading: 'Gestion de projet et versionnement'
-technicalCommonProjectText: "Le code vit dans un dépôt Git public. Trois niveaux de branches : les branches de travail, où l'on développe une fonctionnalité ; la branche staging, où tout est intégré ; la branche main, qui est ce qui tourne en production. Une fonctionnalité n'atteint jamais main directement."
 technicalCommonProjectSecondText: "Les commits sont signés cryptographiquement, la branche main est protégée par une règle qui impose une pull request dont l'intégration continue doit être verte, et chaque mise en production écrit son entrée dans le changelog. L'historique n'est jamais réécrit."
 
 technicalCommonSecurityHeading: 'Sécurité'
@@ -4476,7 +4478,7 @@ technicalSlamQualityStaticText: "L'analyse statique lit le code sans l'exécuter
 technicalSlamQualityStyleText: "Le style est imposé par un formateur automatique sur le jeu de règles Symfony. Il ne change jamais le comportement du programme : c'est un choix, pour que l'outil ne puisse pas casser ce qu'il reformate."
 
 technicalSlamTestsHeading: 'Tests'
-technicalSlamTestsIntroText: "%count% tests automatisés, de quatre natures différentes. Distinguer ces natures est plus utile que compter les tests : elles ne coûtent pas le même prix et ne protègent pas des mêmes accidents."
+technicalSlamTestsIntroText: "%count% tests automatisés, et cinq natures de vérification différentes. Distinguer ces natures est plus utile que compter les tests : elles ne coûtent pas le même prix et ne protègent pas des mêmes accidents."
 technicalTestUnitTerm: 'Tests unitaires'
 technicalTestUnitText: "vérifient une classe isolée, sans base de données ni serveur. Ses dépendances sont remplacées par des doublures. Rapides — la suite entière tourne en quelques secondes — ils servent à figer les règles de calcul : l'état d'un travail, le repli linguistique d'un article, la répartition d'un tirage."
 technicalTestVoterTerm: 'Tests de sécurité'
@@ -4493,7 +4495,6 @@ technicalSisrHeading: 'Option SISR — infrastructure, systèmes et réseaux'
 
 technicalSisrContainersHeading: 'Conteneurisation'
 technicalSisrContainersIntroText: "L'application ne s'installe pas sur un serveur : elle est empaquetée dans une image Docker, qui contient le serveur web, PHP, ses extensions et le code. La même image tourne sur le poste du développeur et en production, ce qui supprime la classe de pannes du « ça marche chez moi »."
-technicalSisrContainersStagesText: "L'image est construite en plusieurs étapes. Une étape de construction installe les outils, télécharge les dépendances et compile les assets ; l'image finale part d'une base Debian minimale et ne reçoit que le résultat. Les outils de construction ne sont donc pas embarqués en production — l'image est plus petite et sa surface d'attaque plus réduite. Le processus y tourne sous un compte non privilégié."
 technicalSisrContainersComposeText: "L'orchestration locale se fait avec Docker Compose, en fichiers superposés : un fichier de base, une surcouche de développement qui ajoute les services de substitution (base de données, annuaire, serveur de messagerie, stockage objet) et le débogueur pas-à-pas, une surcouche de production qui injecte les secrets depuis l'environnement et démarre l'antivirus. Ce dernier n'est pas dans le fichier de base à dessein : il réclame environ 1,5 Go de mémoire, que la chaîne d'intégration n'a aucune raison de payer à chaque exécution."
 
 technicalSisrServerHeading: 'Serveur applicatif'
@@ -4512,6 +4513,8 @@ technicalServiceAntivirusTerm: 'Analyse antivirale'
 technicalServiceAntivirusText: "ClamAV, dans son propre conteneur. L'application ne lui donne pas un chemin de fichier — les deux conteneurs ne partagent aucun disque — mais lui envoie les octets sur une connexion réseau et lit son verdict. Sa base de signatures, quelques centaines de méga-octets, est conservée dans un volume pour qu'une mise en production ne la retélécharge pas : le temps de ce téléchargement, tous les dépôts seraient refusés. En développement et en intégration continue, le service n'est pas démarré et l'analyse est simplement désactivée."
 technicalServiceMailTerm: 'Courrier'
 technicalServiceMailText: "Amazon SES pour l'envoi. Pour la réception, SES dépose le message dans un compartiment S3 et signale son arrivée dans une file SQS, qu'une tâche planifiée relève. Il n'y a pas de processus résident à surveiller."
+technicalServiceProxmoxTerm: 'Hyperviseur'
+technicalServiceProxmoxText: "Proxmox VE, le serveur de virtualisation de l'établissement. La plateforme pilote son API pour cloner, configurer et livrer les machines virtuelles de travaux pratiques, et ouvre une console SSH sur celles qui tournent. Les identifiants d'accès sont chiffrés en base plutôt que stockés en clair."
 technicalServiceMercureTerm: 'Temps réel'
 technicalServiceMercureText: "un hub Mercure diffuse les événements aux navigateurs par SSE (Server-Sent Events), une connexion HTTP maintenue ouverte du serveur vers le client. C'est ce qui fait vivre le classement d'un quiz en direct."
 technicalServicePdfTerm: 'Génération de PDF'
@@ -4520,7 +4523,6 @@ technicalServiceDiscordTerm: 'Notifications techniques'
 technicalServiceDiscordText: "Discord, alimenté par des liens de publication (webhooks), sert de canal d'exploitation : la chaîne de déploiement y annonce chaque mise en production — son démarrage, sa réussite avec le résumé de la version livrée, ou son échec avec le lien vers le journal — et l'application y pousse les erreurs survenues en production."
 
 technicalSisrPipelineHeading: "Intégration et déploiement continus"
-technicalSisrPipelineIntroText: "Le déploiement est automatisé de bout en bout par la forge. Rien ne se fait en se connectant au serveur pour copier des fichiers."
 technicalSisrPipelineStep1Text: "Le travail est intégré dans la branche staging, ce qui déclenche la chaîne d'intégration continue."
 technicalSisrPipelineStep2Text: "Une pull request est ouverte de staging vers main. Elle ne peut pas être fusionnée tant que la chaîne n'est pas verte : c'est la barrière avant la production."
 technicalSisrPipelineStep3Text: "La fusion dans main déclenche le déploiement. Le coureur de la forge monte un tunnel OpenVPN pour atteindre le réseau de l'établissement, puis se connecte en SSH par clé dédiée."
@@ -4530,11 +4532,9 @@ technicalSisrPipelineCiText: "La chaîne d'intégration, elle, monte la pile de 
 
 technicalSisrOpsHeading: 'Exploitation'
 technicalSisrOpsLogsText: "Les journaux sortent au format JSON sur la sortie d'erreur standard, où le moteur de conteneurs les collecte. En production, toute erreur de niveau erreur ou pire est en outre poussée dans un salon Discord, avec un étranglement qui empêche une rafale de saturer le canal."
-technicalSisrOpsCronText: "Les traitements récurrents — relève du courrier entrant, traitement des accusés de réception, purge du journal d'activité, import des emplois du temps — sont des commandes en ligne de commande déclenchées par des tâches planifiées, et non des démons. Une commande qui échoue est relancée au cycle suivant sans intervention."
+technicalSisrOpsCronText: "Les traitements récurrents — relève du courrier entrant, traitement des accusés de réception, suite d'un déploiement de machines virtuelles, application des opérations de comptes, clôture mensuelle du jeu du campus, purge du journal d'activité — sont des commandes en ligne de commande déclenchées par des tâches planifiées, et non des démons. Une commande qui échoue est relancée au cycle suivant sans intervention."
 
-technicalSourceHeading: 'Lire le code'
 technicalSourceText: "Le code source complet est public et publié sous licence AGPL-3.0. Cette licence impose que toute version modifiée mise à disposition sur un réseau publie elle aussi ses sources ; c'est la raison pour laquelle l'adresse du dépôt est accessible depuis l'application."
-technicalSourceLinkLabel: "Voir la page « À propos » et l'accès au code source"
 
 # Refonte de l'écran « Description technique » (design_handoff_description_technique). Les libellés
 # ci-dessous sont ceux que la maquette découpe : une étape porte désormais un titre, une description
@@ -7170,12 +7170,21 @@ homeReportProblemText: 'Un poste qui ne démarre pas, un vidéoprojecteur en pan
 homeReportProblemAction: 'Signaler un problème'
 ufaFormationDocumentsTabLabel: 'Documents'
 ufaFormationSkillsTabLabel: 'Compétences'
-ufaFormationDocumentsHelpText: 'Les documents de la formation que l''équipe UFA tient à jour. Le calendrier déposé ici est celui que les étudiants et les tuteurs ouvrent depuis la formation.'
 ufaFormationDocumentsCurrentFileLabel: 'Calendrier déposé'
 ufaFormationDocumentsOpenFileAction: 'Ouvrir le calendrier actuel'
 ufaFormationDocumentsNoFileText: 'Aucun calendrier déposé pour le moment.'
 ufaFormationDocumentsModeSwitchNoticeText: 'Cette formation affiche aujourd''hui le calendrier calculé à partir de ses périodes. Déposer un PDF ici le remplace : c''est le fichier qui sera servi. Pour revenir au calendrier calculé, passez par le paramétrage de la formation.'
 ufaFormationDocumentsSavedFlashMessage: 'Calendrier de l''alternance enregistré.'
+
+# « Emploi du temps » - templates/ufa/formation/_documents_content.html.twig. Purely declarative:
+# the wording must never suggest the platform's own timetable, which this document has no link to.
+ufaFormationTimetableDocumentHeading: 'Emploi du temps'
+ufaFormationTimetableDocumentHelpText: "Un document PDF déposé ici à titre indicatif. Il est sans lien avec l'emploi du temps de la plateforme : rien ne le lit, il reste consultable depuis cet onglet."
+ufaFormationTimetableDocumentFieldLabel: "Document d'emploi du temps (PDF)"
+ufaFormationTimetableDocumentCurrentFileLabel: 'Document déposé'
+ufaFormationTimetableDocumentOpenFileAction: 'Ouvrir le document actuel'
+ufaFormationTimetableDocumentNoFileText: 'Aucun document déposé pour le moment.'
+ufaFormationTimetableDocumentSavedFlashMessage: "Document d'emploi du temps enregistré."
 
 # Bibliothèque de sondages : le classement par dossiers
 surveyFolderRailTitleLabel: 'Dossiers'

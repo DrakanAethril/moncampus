@@ -39,6 +39,7 @@ class LdapAccountApplier
         private readonly LdapAccountVerifier $verifier,
         private readonly UserRepository $users,
         private readonly StudentMailProvisioner $mailProvisioner,
+        private readonly UserLoginHistory $loginHistory,
         private readonly EntityManagerInterface $entityManager,
     ) {
     }
@@ -73,12 +74,17 @@ class LdapAccountApplier
      * gesture backwards; all that is left is to record that the loop is closed.
      *
      * A rename is the opposite, and is the reason this method exists at all - the one action whose
-     * consequence on this side waits on the directory. It moves three things and leaves a fourth
+     * consequence on this side waits on the directory. It moves four things and leaves a fifth
      * alone:
      *
      *  - **`User::$username`**, which is the truth: the user provider looks accounts up by it and
      *    LdapCredentialsVerifier searches the directory by it. Rewriting it any earlier would make
      *    the account unreachable on both sides at once.
+     *  - **`user_login`**, where the login being left behind is released and the new one recorded.
+     *    The two are one write with the line above on purpose: a crash between them would leave the
+     *    account answering to a login its own history says it gave up. The released row is what
+     *    keeps the old login out of everybody else's reach for ever - and within this account's,
+     *    should somebody want it back.
      *  - **The session in progress**, which falls of its own accord at the next request, the
      *    provider no longer finding that name. Wanted, and announced in the modal.
      *  - **The School mail address derived from the login**, added if its local part is free.
@@ -107,17 +113,25 @@ class LdapAccountApplier
             return true;
         }
 
-        $holder = $this->users->findOneBy(['username' => $newLogin]);
+        $holder = $this->users->findOneBy(['username' => $newLogin])
+            ?? $this->loginHistory->holderOf($newLogin);
 
         if (null !== $holder && $holder !== $user) {
-            // The login was free when the request was posted (LdapAccountRequestService checks both
-            // sources) and somebody has taken it since. Refusing here rather than letting the unique
-            // constraint blow up in a cron: the directory has already renamed the entry, so this is
-            // a state a human has to look at, not one to crash on.
+            // The login was free when the request was posted (LdapAccountRequestService checks all
+            // three sources) and somebody has taken it since. The history counts here as much as a
+            // current username does: a login another account was renamed away from is that
+            // account's for ever, so handing it over would be exactly the theft this table exists
+            // to prevent. Refusing rather than letting the unique constraint blow up in a cron -
+            // the directory has already renamed the entry, so this is a state a human has to look
+            // at, not one to crash on.
             $request->setVerificationNote(self::NOTE_LOGIN_TAKEN_LOCALLY);
 
             return false;
         }
+
+        // Before setUsername(), so that the login being left behind is still readable: record()
+        // releases whatever row is open for this account, and that row carries the old login.
+        $this->loginHistory->record($user, $newLogin);
 
         $user->setUsername($newLogin);
         $this->mailProvisioner->addLoginAlias($user, $newLogin);
