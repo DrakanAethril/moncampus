@@ -1488,11 +1488,16 @@ ufaAlternanceRemindersSendButtonLabel: 'Envoyer les relances (%count%)'
 ufaAlternanceRemindersPickPeriodLabel: 'Choisissez une période pour afficher les non-soumis.'
 ufaAlternanceRemindersBulkSentFlashMessage: '{0}Aucune relance envoyée|{1}1 relance envoyée|]1,Inf[%count% relances envoyées'
 
+# Opening line shared by every transactional email (templates/emails/*.html.twig). Deliberately
+# impersonal: naming the reader reads as too familiar for part of the audience - tutors and
+# families are written to as much as students are. A mail that genuinely needs to name somebody
+# says so in its own body; this line stays neutral.
+emailGreetingText: 'Bonjour,'
+
 # Reminder email - templates/emails/internship_alternance_reminder.html.twig
 ufaAlternanceReminderEmailSubject: "Livret de l'alternant - une action est en attente"
 ufaAlternanceReminderEmailPreheader: 'Une action est en attente sur votre livret de suivi'
 ufaAlternanceReminderEmailBanner: 'Rappel — Livret de suivi'
-ufaAlternanceReminderEmailGreeting: 'Bonjour %name%,'
 ufaAlternanceReminderEmailPeriodBody: 'Une action est en attente de votre part pour la période <strong>%period%</strong>, avant le <strong>%deadline%</strong>.'
 ufaAlternanceReminderEmailEngagementBody: "La mise à disposition du livret est toujours en attente de votre signature."
 ufaAlternanceReminderEmailCtaLabel: 'Accéder au livret'
@@ -7155,12 +7160,21 @@ homeReportProblemText: 'Un poste qui ne démarre pas, un vidéoprojecteur en pan
 homeReportProblemAction: 'Signaler un problème'
 ufaFormationDocumentsTabLabel: 'Documents'
 ufaFormationSkillsTabLabel: 'Compétences'
-ufaFormationDocumentsHelpText: 'Les documents de la formation que l''équipe UFA tient à jour. Le calendrier déposé ici est celui que les étudiants et les tuteurs ouvrent depuis la formation.'
 ufaFormationDocumentsCurrentFileLabel: 'Calendrier déposé'
 ufaFormationDocumentsOpenFileAction: 'Ouvrir le calendrier actuel'
 ufaFormationDocumentsNoFileText: 'Aucun calendrier déposé pour le moment.'
 ufaFormationDocumentsModeSwitchNoticeText: 'Cette formation affiche aujourd''hui le calendrier calculé à partir de ses périodes. Déposer un PDF ici le remplace : c''est le fichier qui sera servi. Pour revenir au calendrier calculé, passez par le paramétrage de la formation.'
 ufaFormationDocumentsSavedFlashMessage: 'Calendrier de l''alternance enregistré.'
+
+# « Emploi du temps » - templates/ufa/formation/_documents_content.html.twig. Purely declarative:
+# the wording must never suggest the platform's own timetable, which this document has no link to.
+ufaFormationTimetableDocumentHeading: 'Emploi du temps'
+ufaFormationTimetableDocumentHelpText: "Un document PDF déposé ici à titre indicatif. Il est sans lien avec l'emploi du temps de la plateforme : rien ne le lit, il reste consultable depuis cet onglet."
+ufaFormationTimetableDocumentFieldLabel: "Document d'emploi du temps (PDF)"
+ufaFormationTimetableDocumentCurrentFileLabel: 'Document déposé'
+ufaFormationTimetableDocumentOpenFileAction: 'Ouvrir le document actuel'
+ufaFormationTimetableDocumentNoFileText: 'Aucun document déposé pour le moment.'
+ufaFormationTimetableDocumentSavedFlashMessage: "Document d'emploi du temps enregistré."
 
 # Bibliothèque de sondages : le classement par dossiers
 surveyFolderRailTitleLabel: 'Dossiers'

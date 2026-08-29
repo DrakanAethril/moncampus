@@ -106,7 +106,6 @@ class AlternanceEngagementService
             ->subject($this->translator->trans('ufaAlternanceEngagementInviteEmailSubject'))
             ->htmlTemplate('emails/internship_alternance_engagement_invite.html.twig')
             ->context([
-                'recipientFirstName' => $recipient->getFirstname(),
                 'role' => $role,
             ]));
     }
