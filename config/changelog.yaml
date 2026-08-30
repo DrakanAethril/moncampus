@@ -26,6 +26,20 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.08.30'
+      date: '2026-08-30'
+      summary: "Les quatre bibliothèques — fichiers, quiz, sondages et désormais séquences/séances — se rangent en dossiers de la même façon, avec les mêmes gestes pour créer, renommer et supprimer. Le menu du jeu du campus ne propose plus, aux classes qui n'y participent pas, des entrées qui ne menaient nulle part."
+      entries:
+          - type: nouveaute
+            title: "La bibliothèque de séquences et de séances se range en dossiers"
+            detail: "Une arborescence de dossiers à gauche, comme dans les bibliothèques de fichiers, de quiz et de sondages : on y crée des dossiers, on y déplace ses séquences, et une recherche par titre retrouve celle dont on a oublié le rangement. Une nouvelle séquence est créée dans le dossier ouvert. La colonne « Blocs » quitte la liste ; le filtre par compétence, lui, reste."
+          - type: modification
+            title: "Les quatre bibliothèques rangent leurs dossiers de la même façon"
+            detail: "Le même bouton « Nouveau dossier » au bas de l'arborescence, un crayon sur chaque dossier pour le renommer, une corbeille pour le supprimer. Les bibliothèques de quiz et de sondages gagnent la suppression, que seule celle des fichiers offrait ; le « + » qui créait un sous-dossier disparaît, le bouton du bas demandant déjà où le créer."
+          - type: fix
+            title: "Jeu du campus : deux entrées de menu ne menaient nulle part"
+            detail: "Pour une classe qui ne participe pas au jeu, « Observation » et « Récompenses » s'affichaient dans son menu et renvoyaient une page introuvable. Elles n'apparaissent désormais que si la classe y participe ; « Réglages », qui sert justement à l'y inscrire, reste toujours accessible."
+
     - version: '2026.08.29'
       date: '2026-08-29'
       summary: "Un identifiant de connexion et une adresse Courrier école appartiennent définitivement au compte qui les a portés : renommer un compte garde tout son historique et ne libère plus rien pour quelqu'un d'autre. Les messages envoyés par la plateforme s'ouvrent désormais sur « Bonjour, » sans prénom, et la description technique de l'application redit ce qu'elle est."
