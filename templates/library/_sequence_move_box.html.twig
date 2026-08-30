@@ -1,0 +1,43 @@
+{# « Déplacer vers… » - the folder tree as a flat, clickable list.
+
+   Here it is the *only* way to file a séquence, where the quiz and survey libraries also offer a drag
+   onto the rail: a séquence row already carries a drag, the ⠿ handle that orders the folder by hand,
+   and one row cannot mean two things while being dragged. It is the gesture that works when the
+   target is collapsed three branches away, on a touch screen, and from the keyboard - which is why
+   the other libraries kept it alongside their drag rather than instead of it. #}
+{% macro branch(rows, depth) %}
+    {% for row in rows %}
+        <li>
+            <button type="button" class="cm-seqlib__move-item" style="padding-left: {{ 10 + depth * 16 }}px"
+                    data-action="sequence-library#moveTo" data-target-id="{{ row.id }}">
+                <span class="cm-seqlib__node-ico" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"></path></svg>
+                </span>
+                {{ row.name }}
+            </button>
+        </li>
+        {% if row.children is not empty %}
+            {{ _self.branch(row.children, depth + 1) }}
+        {% endif %}
+    {% endfor %}
+{% endmacro %}
+
+<div class="cm-seqlib__move" data-sequence-library-target="move" hidden>
+    <div class="cm-seqlib__move-box">
+        <div class="cm-seqlib__move-head">
+            <h2 class="cm-seqlib__move-title" data-sequence-library-target="moveTitle"></h2>
+            <button type="button" class="cm-seqlib__move-close" data-action="sequence-library#closeMove" aria-label="{{ 'fileLibraryCloseAction'|trans }}">&times;</button>
+        </div>
+        <ul class="cm-seqlib__move-list">
+            <li>
+                <button type="button" class="cm-seqlib__move-item" data-action="sequence-library#moveTo" data-target-id="">
+                    <span class="cm-seqlib__node-ico" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"></path></svg>
+                    </span>
+                    {{ 'sequenceFolderRootLabel'|trans }}
+                </button>
+            </li>
+            {{ _self.branch(rail, 0) }}
+        </ul>
+    </div>
+</div>

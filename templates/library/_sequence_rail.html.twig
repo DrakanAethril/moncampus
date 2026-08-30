@@ -1,0 +1,56 @@
+{# The sequence library's rail - **the quiz library's rail, derived rather than reinvented**
+   (templates/library/_quiz_rail.html.twig). Same gestures, same states, class shapes mirroring
+   `cm-qlib__rail`, because there must not be four implementations of one tree in this application.
+
+   Two things are this library's own:
+
+     - the rail holds **folders only**. Séquences are the listing's business; a rail listing both
+       would be the same list twice;
+     - **nothing is dragged onto it but a folder.** A séquence row already has a drag - the ⠿ handle
+       that orders the folder's séquences by hand - and one row cannot mean two things while being
+       dragged. Filing a séquence is « Déplacer vers… », which is the gesture that works on a touch
+       screen and from the keyboard anyway.
+
+   `readonly` drops the acts the `sequence-library` controller answers. The search screen sets it,
+   because that controller is not on that screen - a button that does nothing is worse than an absent
+   one. Deleting a folder stays: it is a plain form. #}
+{% set readonly = readonly|default(false) %}
+<aside class="cm-seqlib__rail" data-controller="sequence-library-tree"
+       data-sequence-library-tree-folder-move-url-template-value="{{ path('app_library_sequences_folder_move', {folderId: '__FOLDER_ID__'}) }}"
+       data-sequence-library-tree-token-value="{{ csrf_token('sequence_folder') }}"
+       data-sequence-library-tree-refused-message-value="{{ 'sequenceFolderMoveRefusedMessage'|trans }}"
+       data-action="dragover->sequence-library-tree#dragOver dragleave->sequence-library-tree#dragLeave drop->sequence-library-tree#drop">
+
+    <div class="cm-seqlib__rail-head">
+        <span class="cm-seqlib__rail-title">{{ 'sequenceFolderRailTitleLabel'|trans }}</span>
+    </div>
+
+    <ul class="cm-seqlib__tree" data-sequence-library-tree-target="root">
+        {# The root itself is a drop target and a link: it is the only way to file a folder back out
+           of another one, this design having no « Déplacer vers la racine » of its own in the rail. #}
+        <li class="cm-seqlib__node" data-folder-id="">
+            <div class="cm-seqlib__node-row">
+                <span class="cm-seqlib__node-grip cm-seqlib__node-grip--fixed" aria-hidden="true"></span>
+                <span class="cm-seqlib__node-toggle cm-seqlib__node-toggle--empty" aria-hidden="true"></span>
+                <a class="cm-seqlib__node-link{{ currentFolder is empty ? ' is-current' }}" href="{{ path('app_library_sequences') }}">
+                    <span class="cm-seqlib__node-ico" aria-hidden="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"></path></svg>
+                    </span>
+                    <span class="cm-seqlib__node-title">{{ 'sequenceFolderRootLabel'|trans }}</span>
+                </a>
+            </div>
+        </li>
+
+        {% for row in rail %}
+            {% include 'library/_sequence_rail_node.html.twig' with {row: row, currentFolder: currentFolder|default(null), readonly: readonly} only %}
+        {% endfor %}
+    </ul>
+
+    {% if not readonly %}
+        <div class="cm-seqlib__rail-foot">
+            <button type="button" class="cm-btn cm-btn--sm cm-btn--outline"
+                    data-action="sequence-library#promptFolder"
+                    data-parent-id="{{ currentFolder ? currentFolder.id : '' }}">{{ 'sequenceFolderNewAction'|trans }}</button>
+        </div>
+    {% endif %}
+</aside>

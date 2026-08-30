@@ -123,7 +123,15 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   assignment) — put board logic there, not in the controller.
 - **Outils** (teachers/staff) — tirage au sort, création de groupes (`GroupCreationService`),
   progression, bibliothèque (sequences/séances/phases + quiz library), enregistrements audio,
-  cahier de texte, carnet de notes.
+  cahier de texte, carnet de notes. **Four libraries now carry the same folder tree** — fichiers,
+  quiz, sondages, séquences — and it is deliberately one design copied four times rather than one
+  shared implementation: `FileLibraryNode` → `QuizFolder` → `SurveyFolder` → `SequenceFolder`, each
+  with its own `*FolderManager`/`*FolderTree`/`*FolderVoter`, all delegating the path arithmetic to
+  `App\Service\FileLibraryTree`. Their rails must stay identical gesture for gesture: a « Nouveau
+  dossier » button pinned to the foot, and on each row a pencil (renommer) and a bin (supprimer).
+  The séquence library is the one that differs, and only there: a séquence row is dragged to
+  **reorder** the folder (the ⠿ handle), never to file it, so filing goes through « Déplacer vers… »
+  alone — one row cannot mean two things while being dragged.
 - **Quiz** — `QuizTemplate`/`QuizQuestion` (library, filed in `QuizFolder`s) → `QuizInstance`
   (launched snapshot) → `QuizAttempt` (passation). Live multiplayer (`QuizLiveSession`) runs over
   Mercure/SSE. The « mode contrôle » times each question **server-side**
@@ -297,11 +305,11 @@ password hash is ever stored locally.
 `ROLE_STUDENT`, `ROLE_TUTOR` (external apprenticeship tutors), `ROLE_SUPPORT-TECH`, `ROLE_ECO`,
 `ROLE_EXTERNAL`. `ROLE_TUTOR` and `ROLE_EXTERNAL` are both excluded from message recipients.
 
-**Fine-grained checks** are Voters (`src/Security/Voter/`, 23 of them: Assignment, AudienceTargetable,
+**Fine-grained checks** are Voters (`src/Security/Voter/`, 24 of them: Assignment, AudienceTargetable,
 DocumentationArticle, EcoParcours, Evaluation, FileLibrary, GameGesture, GuestAccount, GuestConsole,
 InternshipTutorLink, LessonLog, MessageThread, Progression, ProxmoxHost, QuizFolder, QuizTemplate,
-SequenceInstance, SequenceTemplate, SignupList, Survey, SurveyFolder, Ticket, Wiki). New per-object
-rules belong in a Voter, not inline in a controller.
+SequenceFolder, SequenceInstance, SequenceTemplate, SignupList, Survey, SurveyFolder, Ticket, Wiki).
+New per-object rules belong in a Voter, not inline in a controller.
 
 `src/Security/Ldap*Syncer.php` also **writes** provisioning requests (`LdapManageUser`,
 `LdapManageGroup`, `LdapManagePassword`) that an external script at
