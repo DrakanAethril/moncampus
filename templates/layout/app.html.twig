@@ -271,9 +271,19 @@
                                                         {# Settling the game - the barème, and the catalogue it hands out - is the
                                                            administration's while the game is being settled (2026-08-28), so that the
                                                            feature can be taken away from teachers entirely without leaving a menu
-                                                           entry that leads to a 403. #}
-                                                        {% set game_settles = feature('game') and is_granted('ROLE_ADMIN') %}
-                                                        {% if game_plays or game_settles %}
+                                                           entry that leads to a 403.
+
+                                                           **Two conditions and not one**, because the game has two switches and the
+                                                           screens do not stand on the same pair. « Réglages » is where a formation
+                                                           declares itself, so it must answer *before* it plays - GameSettingsController
+                                                           deliberately skips the conjunction for that reason. Observation and
+                                                           Récompenses read a game that is running: both ask GameAccess::isOpen(), which
+                                                           is `gameEnabled AND feature`, and answer 404 to a formation that has not
+                                                           switched itself on. Drawing all three on the feature alone put two dead
+                                                           entries in the menu of every class that does not play. #}
+                                                        {% set game_switches = feature('game') and is_granted('ROLE_ADMIN') %}
+                                                        {% set game_settles = game_switches and program.gameEnabled %}
+                                                        {% if game_plays or game_switches %}
                                                             <div class="dropend">
                                                                 <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_program_game' or current_route starts with 'app_game_engagements' or current_route == 'app_program_settings_game' ? 'active' }}" href="#nav-program-game-{{ program.id }}" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                                                                     {{ 'gameNavGroupLabel'|trans }}
@@ -289,6 +299,10 @@
                                                                            a silent pilot is visible from at all. #}
                                                                         <a class="dropdown-item {{ current_route starts with 'app_program_game_observation' ? 'active' }}" href="{{ path('app_program_game_observation', {id: program.id}) }}">{{ 'gameObservationHeading'|trans }}</a>
                                                                         <a class="dropdown-item {{ current_route starts with 'app_program_game_rewards' ? 'active' }}" href="{{ path('app_program_game_rewards', {id: program.id}) }}">{{ 'gameRewardsHeading'|trans }}</a>
+                                                                    {% endif %}
+                                                                    {% if game_switches %}
+                                                                        {# Last, and on its own condition: this is the switch, so it is the one
+                                                                           entry a formation that does not play still needs. #}
                                                                         <a class="dropdown-item {{ current_route == 'app_program_settings_game' ? 'active' }}" href="{{ path('app_program_settings_game', {id: program.id}) }}">{{ 'gameSettingsHeading'|trans }}</a>
                                                                     {% endif %}
                                                                 </div>
