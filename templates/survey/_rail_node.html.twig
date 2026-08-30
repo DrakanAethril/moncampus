@@ -11,7 +11,9 @@
 {% set expanded = hasChildren and currentFolder and (currentFolder.id == row.id or ('/' ~ row.id ~ '/') in currentFolder.path) %}
 <li class="cm-slib__node{{ hasChildren and not expanded ? ' is-collapsed' }}"
     data-survey-library-tree-target="node"
-    data-folder-id="{{ row.id }}" draggable="true">
+    {# `data-name` is what the rename prompt opens on: the controller reads it off the closest
+       element carrying a folder id, and the rail is one of the two places that element is a folder. #}
+    data-folder-id="{{ row.id }}" data-name="{{ row.name }}" draggable="true">
     <div class="cm-slib__node-row">
         <span class="cm-slib__node-grip" aria-hidden="true">
             <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor"><circle cx="3" cy="3" r="1.2"></circle><circle cx="7" cy="3" r="1.2"></circle><circle cx="3" cy="7" r="1.2"></circle><circle cx="7" cy="7" r="1.2"></circle><circle cx="3" cy="11" r="1.2"></circle><circle cx="7" cy="11" r="1.2"></circle></svg>
@@ -37,19 +39,39 @@
             <span class="cm-slib__node-title">{{ row.name }}</span>
         </a>
 
-        {# The one act that changes the tree from the rail itself, at the row it acts on rather than
-           in a bar at the top. Renaming and deleting live in the listing's row menu, where the folder
-           also appears - two places offering the same three acts is one place too many. #}
-        {% if not readonly|default(false) %}
+        {# The two acts that change the tree, at the row they act on rather than in a bar at the top -
+           the file library's rail, which has carried both since it was written.
+
+           Renaming rather than the « + » this used to carry: a sub-folder is created from the foot's
+           button, which already asks where, whereas renaming a folder had no gesture at all outside
+           the listing's row menu - and a rail row is where a badly named folder is actually noticed. #}
         <span class="cm-slib__node-actions">
-            <button type="button" class="cm-slib__node-action"
-                    title="{{ 'surveyFolderNewSubfolderAction'|trans }}"
-                    aria-label="{{ 'surveyFolderNewSubfolderOfAction'|trans({'%name%': row.name}) }}"
-                    data-action="survey-library#promptFolder" data-parent-id="{{ row.id }}">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
-            </button>
+            {# Hidden where the `survey-library` controller is not mounted - the search screen. A button that
+               does nothing is worse than an absent one. Deleting stays: it is a plain form. #}
+            {% if not readonly|default(false) %}
+                <button type="button" class="cm-slib__node-action"
+                        title="{{ 'surveyFolderRenameAction'|trans }}"
+                        aria-label="{{ 'surveyFolderRenameNamedAction'|trans({'%name%': row.name}) }}"
+                        data-action="survey-library#promptRenameFolder">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4l9.5-9.5a2.1 2.1 0 0 0-3-3L5 17v3"></path><path d="M13.5 6.5l3 3"></path></svg>
+                </button>
+            {% endif %}
+
+            <form method="post" action="{{ path('app_survey_folder_delete', {folderId: row.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('survey_folder') }}">
+                {# The confirmation says what becomes of the content rather than just naming the folder:
+                   deleting one **never deletes a model** here, everything inside moves up one level,
+                   and that is not what a file manager teaches. #}
+                <button type="submit" class="cm-slib__node-action cm-slib__node-action--danger"
+                        title="{{ 'surveyFolderDeleteAction'|trans }}"
+                        aria-label="{{ 'surveyFolderDeleteNamedAction'|trans({'%name%': row.name}) }}"
+                        data-controller="confirm-submit"
+                        data-confirm-submit-message-value="{{ 'surveyFolderDeleteConfirmText'|trans({'%name%': row.name}) }}"
+                        data-action="click->confirm-submit#confirm">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"></path></svg>
+                </button>
+            </form>
         </span>
-        {% endif %}
     </div>
 
     {% if hasChildren %}

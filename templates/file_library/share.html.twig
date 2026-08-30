@@ -25,7 +25,7 @@
 
 {% block main %}
     <div class="cm-flib">
-        {% include 'file_library/_rail.html.twig' with {rail: rail, quota: quota, currentFolder: currentFolder} %}
+        {% include 'file_library/_rail.html.twig' with {rail: rail, quota: quota, currentFolder: currentFolder, readonly: true} %}
 
         <div class="cm-flib__content">
             {# What sharing a folder means, said before the form rather than discovered afterwards:

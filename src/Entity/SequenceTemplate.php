@@ -32,6 +32,14 @@ class SequenceTemplate
     #[ORM\JoinColumn(name: 'teacher_id', nullable: false)]
     private ?User $teacher = null;
 
+    // The classement, null being the root of the library - the quiz library's arrangement exactly
+    // (App\Entity\QuizTemplate::$folder). `SET NULL` rather than a cascade because deleting a folder
+    // must never take a séquence with it; the promotion of the content is
+    // App\Service\SequenceFolderManager::delete()'s business, and this is only the last resort.
+    #[ORM\ManyToOne(targetEntity: SequenceFolder::class)]
+    #[ORM\JoinColumn(name: 'folder_id', nullable: true, onDelete: 'SET NULL')]
+    private ?SequenceFolder $folder = null;
+
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank]
     #[Assert\Length(max: 255)]
@@ -150,6 +158,18 @@ class SequenceTemplate
     public function getTeacher(): ?User
     {
         return $this->teacher;
+    }
+
+    public function getFolder(): ?SequenceFolder
+    {
+        return $this->folder;
+    }
+
+    public function setFolder(?SequenceFolder $folder): static
+    {
+        $this->folder = $folder;
+
+        return $this;
     }
 
     public function getTitre(): ?string

@@ -12,7 +12,9 @@
 {% set expanded = hasChildren and currentFolder and (currentFolder.id == row.id or ('/' ~ row.id ~ '/') in currentFolder.path) %}
 <li class="cm-flib__node{{ hasChildren and not expanded ? ' is-collapsed' }}"
     data-file-library-tree-target="node"
-    data-node-id="{{ row.id }}" draggable="true">
+    {# `data-node-name` is what the rename prompt opens on: the controller reads it off the closest
+       element carrying a node id, and the rail is one of the two places that element is a folder. #}
+    data-node-id="{{ row.id }}" data-node-name="{{ row.name }}" draggable="true">
     <div class="cm-flib__node-row">
         <span class="cm-flib__node-grip" aria-hidden="true">
             <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor"><circle cx="3" cy="3" r="1.2"></circle><circle cx="7" cy="3" r="1.2"></circle><circle cx="3" cy="7" r="1.2"></circle><circle cx="7" cy="7" r="1.2"></circle><circle cx="3" cy="11" r="1.2"></circle><circle cx="7" cy="11" r="1.2"></circle></svg>
@@ -38,14 +40,22 @@
             <span class="cm-flib__node-title">{{ row.name }}</span>
         </a>
 
-        {# The two acts that change the tree, at the row they act on rather than in a bar at the top. #}
+        {# The two acts that change the tree, at the row they act on rather than in a bar at the top.
+
+           Renaming rather than the « + » this used to carry: a sub-folder is created from the foot's
+           button, which already asks where, whereas renaming a folder had no gesture at all outside
+           the listing's row menu - and a rail row is where a badly named folder is actually noticed. #}
         <span class="cm-flib__node-actions">
-            <button type="button" class="cm-flib__node-action"
-                    title="{{ 'fileLibraryNewSubfolderAction'|trans }}"
-                    aria-label="{{ 'fileLibraryNewSubfolderOfAction'|trans({'%name%': row.name}) }}"
-                    data-action="file-library#promptFolder" data-parent-id="{{ row.id }}">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
-            </button>
+            {# Hidden where the `file-library` controller is not mounted - the read screens (recherche,
+               corbeille, partages). A button that does nothing is worse than an absent one. #}
+            {% if not readonly|default(false) %}
+                <button type="button" class="cm-flib__node-action"
+                        title="{{ 'fileLibraryRenameAction'|trans }}"
+                        aria-label="{{ 'fileLibraryRenameFolderNamedAction'|trans({'%name%': row.name}) }}"
+                        data-action="file-library#promptRename">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4l9.5-9.5a2.1 2.1 0 0 0-3-3L5 17v3"></path><path d="M13.5 6.5l3 3"></path></svg>
+                </button>
+            {% endif %}
 
             <form method="post" action="{{ path('app_file_library_node_delete', {nodeId: row.id}) }}">
                 <input type="hidden" name="_token" value="{{ csrf_token('file_library_node') }}">
@@ -66,7 +76,7 @@
     {% if hasChildren %}
         <ul class="cm-flib__tree cm-flib__tree--nested">
             {% for child in row.children %}
-                {% include 'file_library/_rail_node.html.twig' with {row: child, currentFolder: currentFolder} only %}
+                {% include 'file_library/_rail_node.html.twig' with {row: child, currentFolder: currentFolder, readonly: readonly|default(false)} only %}
             {% endfor %}
         </ul>
     {% endif %}

@@ -1,46 +1,65 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'librarySequencesPageHeading'|trans }}{% endblock %}
+{# The sequence library's listing, rebuilt on the quiz library's shape
+   (templates/library/quiz_list.html.twig): a rail of folders on the left, what the current folder
+   holds on the right - sub-folders first, then the séquences.
 
-{# Reached from the top bar's "Outils" menu since design_handoff_menu_outils - hence "Outils" as the
-   middle segment, the same trail the tools that go through the class picker already show. #}
+   What the classement did **not** change is the row: the same columns the flat list had, minus
+   « Blocs », which was the widest column and the one a séquence rarely carries. The tags themselves
+   are untouched - the filter bar above still narrows on them.
+
+   The ⠿ handle stays too, and that is the one place this library differs from the quiz and survey
+   ones: a séquence row is dragged to **reorder** the folder, never to file it elsewhere. Filing is
+   « Déplacer vers… », because one row cannot mean two things while being dragged. #}
+
+{% block title %}{{ currentFolder ? currentFolder.name : 'librarySequencesPageHeading'|trans }}{% endblock %}
+
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
-        {label: 'toolsNavLabel'|trans, url: path('app_library_sequences')},
-        {label: 'librarySequencesPageHeading'|trans, url: path('app_library_sequences')},
-    ]} %}
+    {% include 'library/_sequence_breadcrumb.html.twig' with {currentFolder: currentFolder, ancestors: ancestors} %}
 {% endblock %}
 
 {% block page_title %}
-    {{ 'librarySequencesPageHeading'|trans }}
+    {{ currentFolder ? currentFolder.name : 'librarySequencesPageHeading'|trans }}
     <span class="text-secondary fs-4 fw-normal ms-2">{{ sequenceTemplates|length }} {{ (sequenceTemplates|length > 1 ? 'librarySequencesCountPluralLabel' : 'librarySequencesCountSingularLabel')|trans }}</span>
 {% endblock %}
 
+{% block page_actions %}
+    {# GET, per the repository's rule for a "show me a result" form - a POST would have to redirect. #}
+    <form method="get" action="{{ path('app_library_sequences_search') }}" class="cm-seqlib__search">
+        <input type="search" name="q" class="form-control form-control-sm"
+               placeholder="{{ 'librarySequencesSearchPlaceholder'|trans }}"
+               aria-label="{{ 'librarySequencesSearchPlaceholder'|trans }}">
+    </form>
+{% endblock %}
+
 {% block main %}
+    {% set folderRoute = currentFolder ? 'app_library_sequences_folder' : 'app_library_sequences' %}
+    {% set folderRouteParams = currentFolder ? {folderId: currentFolder.id} : {} %}
     {% set selectedNiveau = selectedNiveauId ? (tagOptions.niveau|filter(tag => tag.id == selectedNiveauId)|first) : null %}
     {% set selectedOption = selectedOptionId ? (tagOptions.option|filter(tag => tag.id == selectedOptionId)|first) : null %}
     {% set selectedBloc = selectedBlocId ? (tagOptions.blocs|filter(tag => tag.id == selectedBlocId)|first) : null %}
-    {# Dragging only ever reassigns App\Entity\SequenceTemplate::$order across the teacher's whole
-       library (SequenceLibraryController::sequencesReorder()) - disabled under any filter, since
-       a filtered subset can't safely be given sequential positions without clobbering the order
-       of the hidden rows sitting between them. #}
+    {# Dragging only ever reassigns App\Entity\SequenceTemplate::$order among the rows of the folder
+       being looked at (SequenceLibraryController::sequencesReorder(), which touches only the ids it
+       is handed) - disabled under any filter, since a filtered subset can't safely be given
+       sequential positions without clobbering the order of the hidden rows sitting between them. #}
     {% set canReorder = not selectedNiveauId and not selectedOptionId and not selectedBlocId %}
 
     <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
         {% if selectedNiveau %}
-            <a href="{{ path('app_library_sequences', app.request.query.all|merge({niveau: null})) }}" class="badge bg-blue-lt" style="font-size: 12px; padding: 6px 11px;">{{ 'sequenceTemplateNiveauFieldLabel'|trans }} : {{ selectedNiveau.label }} ✕</a>
+            <a href="{{ path(folderRoute, folderRouteParams|merge(app.request.query.all|merge({niveau: null}))) }}" class="badge bg-blue-lt" style="font-size: 12px; padding: 6px 11px;">{{ 'sequenceTemplateNiveauFieldLabel'|trans }} : {{ selectedNiveau.label }} ✕</a>
         {% endif %}
         {% if selectedOption %}
-            <a href="{{ path('app_library_sequences', app.request.query.all|merge({option: null})) }}" class="badge bg-purple-lt" style="font-size: 12px; padding: 6px 11px;">{{ 'sequenceTemplateOptionFieldLabel'|trans }} : {{ selectedOption.label }} ✕</a>
+            <a href="{{ path(folderRoute, folderRouteParams|merge(app.request.query.all|merge({option: null}))) }}" class="badge bg-purple-lt" style="font-size: 12px; padding: 6px 11px;">{{ 'sequenceTemplateOptionFieldLabel'|trans }} : {{ selectedOption.label }} ✕</a>
         {% endif %}
         {% if selectedBloc %}
-            <a href="{{ path('app_library_sequences', app.request.query.all|merge({bloc: null})) }}" class="badge bg-green-lt" style="font-size: 12px; padding: 6px 11px;">{{ 'librarySequencesFilterBlocLabel'|trans }} : {{ selectedBloc.label }} ✕</a>
+            <a href="{{ path(folderRoute, folderRouteParams|merge(app.request.query.all|merge({bloc: null}))) }}" class="badge bg-green-lt" style="font-size: 12px; padding: 6px 11px;">{{ 'librarySequencesFilterBlocLabel'|trans }} : {{ selectedBloc.label }} ✕</a>
         {% endif %}
         <details class="d-inline-block">
             <summary class="btn btn-outline-primary btn-sm" style="list-style: none; cursor: pointer;">+ {{ 'librarySequencesFilterToggleLabel'|trans }}</summary>
             <div class="card mt-2" style="width: 900px; max-width: 100%;">
                 <div class="card-body">
+                    {# No action, so the filters stay inside the folder being looked at rather than
+                       jumping back to the root of the library. #}
                     <form method="get" class="row g-2 align-items-end">
                         <div class="col">
                             <label class="form-label" for="niveau">{{ 'sequenceTemplateNiveauFieldLabel'|trans }}</label>
@@ -73,7 +92,7 @@
                             <div class="btn-list flex-nowrap">
                                 <button type="submit" class="btn btn-primary">{{ 'librarySequencesFilterButtonLabel'|trans }}</button>
                                 {% if selectedNiveauId or selectedOptionId or selectedBlocId %}
-                                    <a href="{{ path('app_library_sequences') }}" class="btn btn-link">{{ 'librarySequencesFilterResetLabel'|trans }}</a>
+                                    <a href="{{ path(folderRoute, folderRouteParams) }}" class="btn btn-link">{{ 'librarySequencesFilterResetLabel'|trans }}</a>
                                 {% endif %}
                             </div>
                         </div>
@@ -83,52 +102,83 @@
         </details>
     </div>
 
-    <div class="card">
-        <div class="card-header d-flex justify-content-end gap-2">
-            {# The assistant asks "que voulez-vous faire ?" and offers the manual form as its second
-               answer, so both ways in stay reachable from here rather than one hiding behind the
-               other. #}
-            <a href="{{ path('app_library_sequences_assistant') }}" class="btn">{{ 'sequenceImportListButtonLabel'|trans }}</a>
-            <a href="{{ path('app_library_sequences_new') }}" class="btn btn-primary">{{ 'sequenceTemplateNewButtonLabel'|trans }}</a>
-        </div>
-        <div class="table-responsive">
-            <table class="table table-vcenter card-table table-hover">
-                <thead>
-                    <tr>
-                        <th>{{ 'librarySequencesTitreColumnLabel'|trans }}</th>
-                        <th>{{ 'sequenceTemplateNiveauFieldLabel'|trans }}</th>
-                        <th>{{ 'sequenceTemplateOptionFieldLabel'|trans }}</th>
-                        <th>{{ 'librarySequencesBlocsColumnLabel'|trans }}</th>
-                        <th>{{ 'librarySequencesSeanceCountColumnLabel'|trans }}</th>
-                        <th class="cm-actions"></th>
-                    </tr>
-                </thead>
-                <tbody{% if canReorder %} data-controller="sortable-reorder" data-sortable-reorder-url-value="{{ path('app_library_sequences_reorder') }}" data-sortable-reorder-token-value="{{ csrf_token('library_sequences_reorder') }}"{% endif %}>
-                    {% for sequenceTemplate in sequenceTemplates %}
-                        <tr{% if canReorder %} data-sortable-reorder-id-param="{{ sequenceTemplate.id }}"{% endif %}>
-                            <td>
-                                {% if canReorder %}<span class="sortable-reorder-handle" style="cursor: grab; color: var(--cm-faint, #8a99a6); margin-right: 6px;">⠿</span>{% endif %}<a href="{{ path('app_library_sequences_show', {id: sequenceTemplate.id}) }}" class="fw-bold">{{ sequenceTemplate.titre }}</a>
-                            </td>
-                            <td>{{ sequenceTemplate.niveau ? sequenceTemplate.niveau.label : '—' }}</td>
-                            <td>{{ sequenceTemplate.option ? sequenceTemplate.option.label : '—' }}</td>
-                            <td>
-                                {% for bloc in sequenceTemplate.blocs %}<span class="badge bg-blue-lt me-1">{{ bloc.label }}</span>{% else %}—{% endfor %}
-                            </td>
-                            <td>{{ sequenceTemplate.seanceTemplates|length }}</td>
-                            <td class="cm-actions">
-                                {% if is_granted('SEQUENCE_TEMPLATE_EDIT', sequenceTemplate) %}
-                                    <a href="{{ path('app_library_sequences_edit', {id: sequenceTemplate.id}) }}" class="cm-action--warning">{{ 'editActionLabel'|trans }}</a>
-                                    <a href="{{ path('app_library_sequences_instantiate', {id: sequenceTemplate.id}) }}" class="cm-action--positive">{{ 'sequenceInstantiateShortAction'|trans }}</a>
+    <div class="cm-seqlib"
+         data-controller="sequence-library"
+         data-sequence-library-folder-id-value="{{ currentFolder ? currentFolder.id : '' }}"
+         data-sequence-library-folder-url-value="{{ path('app_library_sequences_folder_new') }}"
+         data-sequence-library-folder-rename-url-template-value="{{ path('app_library_sequences_folder_rename', {folderId: '__FOLDER_ID__'}) }}"
+         data-sequence-library-folder-move-url-template-value="{{ path('app_library_sequences_folder_move', {folderId: '__FOLDER_ID__'}) }}"
+         data-sequence-library-sequence-move-url-template-value="{{ path('app_library_sequences_move', {id: '__ID__'}) }}"
+         data-sequence-library-token-value="{{ csrf_token('sequence_folder') }}"
+         data-sequence-library-labels-value="{{ {
+             folderPrompt: 'sequenceFolderNamePrompt'|trans,
+             renamePrompt: 'sequenceFolderRenamePrompt'|trans,
+             movePrompt: 'librarySequencesMovePromptTitle'|trans,
+             moveRefused: 'sequenceFolderMoveRefusedMessage'|trans,
+         }|json_encode|e('html_attr') }}">
+
+        {% include 'library/_sequence_rail.html.twig' with {rail: rail, currentFolder: currentFolder} %}
+
+        <div class="cm-seqlib__content">
+            <div class="card">
+                <div class="card-header d-flex justify-content-end gap-2">
+                    {# The assistant asks "que voulez-vous faire ?" and offers the manual form as its
+                       second answer, so both ways in stay reachable from here rather than one hiding
+                       behind the other. #}
+                    <a href="{{ path('app_library_sequences_assistant') }}" class="btn">{{ 'sequenceImportListButtonLabel'|trans }}</a>
+                    {# The new séquence lands in the folder being looked at, which is the whole point
+                       of being in one. #}
+                    <a href="{{ path('app_library_sequences_new', currentFolder ? {folder: currentFolder.id} : {}) }}" class="btn btn-primary">{{ 'sequenceTemplateNewButtonLabel'|trans }}</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table table-hover">
+                        <thead>
+                            <tr>
+                                <th>{{ 'librarySequencesTitreColumnLabel'|trans }}</th>
+                                <th>{{ 'sequenceTemplateNiveauFieldLabel'|trans }}</th>
+                                <th>{{ 'sequenceTemplateOptionFieldLabel'|trans }}</th>
+                                <th>{{ 'librarySequencesSeanceCountColumnLabel'|trans }}</th>
+                                <th class="cm-actions"></th>
+                            </tr>
+                        </thead>
+                        {# Two bodies rather than one, so the folders stay above the séquences whatever
+                           the drag does: only the second one is bound to the reorder controller, and
+                           a row dropped into it can never land between two folders. #}
+                        <tbody>
+                            {% for row in folderRows %}
+                                {% include 'library/_sequence_folder_row.html.twig' with {row: row} only %}
+                            {% endfor %}
+                        </tbody>
+                        <tbody{% if canReorder %} data-controller="sortable-reorder" data-sortable-reorder-url-value="{{ path('app_library_sequences_reorder') }}" data-sortable-reorder-token-value="{{ csrf_token('library_sequences_reorder') }}"{% endif %}>
+                            {% for sequenceTemplate in sequenceTemplates %}
+                                <tr{% if canReorder %} data-sortable-reorder-id-param="{{ sequenceTemplate.id }}"{% endif %} data-sequence-id="{{ sequenceTemplate.id }}" data-name="{{ sequenceTemplate.titre }}">
+                                    <td>
+                                        {% if canReorder %}<span class="sortable-reorder-handle" style="cursor: grab; color: var(--cm-faint, #8a99a6); margin-right: 6px;">⠿</span>{% endif %}<a href="{{ path('app_library_sequences_show', {id: sequenceTemplate.id}) }}" class="fw-bold">{{ sequenceTemplate.titre }}</a>
+                                    </td>
+                                    <td>{{ sequenceTemplate.niveau ? sequenceTemplate.niveau.label : '—' }}</td>
+                                    <td>{{ sequenceTemplate.option ? sequenceTemplate.option.label : '—' }}</td>
+                                    <td>{{ sequenceTemplate.seanceTemplates|length }}</td>
+                                    <td class="cm-actions">
+                                        {% if is_granted('SEQUENCE_TEMPLATE_EDIT', sequenceTemplate) %}
+                                            <a href="{{ path('app_library_sequences_edit', {id: sequenceTemplate.id}) }}" class="cm-action--warning">{{ 'editActionLabel'|trans }}</a>
+                                            <a href="{{ path('app_library_sequences_instantiate', {id: sequenceTemplate.id}) }}" class="cm-action--positive">{{ 'sequenceInstantiateShortAction'|trans }}</a>
+                                            <button type="button" class="cm-action--neutral" data-action="sequence-library#openMove">{{ 'librarySequencesMoveAction'|trans }}</button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% else %}
+                                {% if folderRows is empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-secondary">{{ currentFolder ? 'sequenceFolderEmptyText'|trans : 'librarySequencesEmptyMessage'|trans }}</td>
+                                    </tr>
                                 {% endif %}
-                            </td>
-                        </tr>
-                    {% else %}
-                        <tr>
-                            <td colspan="6" class="text-secondary">{{ 'librarySequencesEmptyMessage'|trans }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
+
+        {% include 'library/_sequence_move_box.html.twig' with {rail: rail} %}
     </div>
 {% endblock %}

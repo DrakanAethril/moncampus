@@ -1,0 +1,35 @@
+{# One folder of the listing - the quiz library's folder row (templates/library/_quiz_folder_row.html.twig)
+   under this screen's own columns: the ones that mean nothing for a container left empty rather than
+   invented, and the séquence count in the « Séances » column.
+
+   Folders are drawn **before** the séquences and never interleaved: a folder is a place and a
+   séquence is a thing, and a listing that mixes them makes the reader check the icon on every line.
+
+   The row's three acts are inline rather than behind a kebab, because that is what every other row of
+   this screen does - a folder row that hid its actions in a menu would read as a different table. #}
+<tr data-folder-id="{{ row.folder.id }}" data-name="{{ row.folder.name }}" draggable="true">
+    <td>
+        <span class="cm-seqlib__foldername">
+            <span class="cm-seqlib__node-ico" aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"></path></svg>
+            </span>
+            <a href="{{ path('app_library_sequences_folder', {folderId: row.folder.id}) }}" class="fw-bold">{{ row.folder.name }}</a>
+        </span>
+    </td>
+    <td class="text-secondary">—</td>
+    <td class="text-secondary">—</td>
+    <td class="text-secondary">{{ 'sequenceFolderSequenceCountLabel'|trans({'%count%': row.sequenceCount}) }}</td>
+    <td class="cm-actions">
+        <button type="button" class="cm-action--warning" data-action="sequence-library#promptRenameFolder">{{ 'sequenceFolderRenameAction'|trans }}</button>
+        <button type="button" class="cm-action--neutral" data-action="sequence-library#openMove">{{ 'librarySequencesMoveAction'|trans }}</button>
+        <form method="post" action="{{ path('app_library_sequences_folder_delete', {folderId: row.folder.id}) }}" class="d-inline">
+            <input type="hidden" name="_token" value="{{ csrf_token('sequence_folder') }}">
+            {# The confirmation says what becomes of the content rather than just naming the folder:
+               deleting one **never deletes a séquence** here, everything inside moves up one level. #}
+            <button type="submit" class="cm-action--danger"
+                    data-controller="confirm-submit"
+                    data-confirm-submit-message-value="{{ 'sequenceFolderDeleteConfirmText'|trans({'%name%': row.folder.name}) }}"
+                    data-action="click->confirm-submit#confirm">{{ 'sequenceFolderDeleteShortAction'|trans }}</button>
+        </form>
+    </td>
+</tr>

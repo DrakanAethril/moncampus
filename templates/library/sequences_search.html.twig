@@ -1,0 +1,70 @@
+{% extends 'layout/app.html.twig' %}
+
+{# The title search, over the whole library at once - what a classement takes away from a flat list and
+   has to give back. The rail stays, so the answer to « où est-elle rangée ? » is on the same screen as
+   the séquence that was looked for: each row names its folder and links to it. #}
+
+{% block title %}{{ 'librarySequencesSearchResultsHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'library/_sequence_breadcrumb.html.twig' with {currentFolder: null, ancestors: [], searchTerms: terms} %}
+{% endblock %}
+
+{% block page_title %}{{ 'librarySequencesSearchResultsHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    <form method="get" action="{{ path('app_library_sequences_search') }}" class="cm-seqlib__search">
+        <input type="search" name="q" value="{{ terms }}" class="form-control form-control-sm"
+               placeholder="{{ 'librarySequencesSearchPlaceholder'|trans }}"
+               aria-label="{{ 'librarySequencesSearchPlaceholder'|trans }}">
+    </form>
+    <a href="{{ path('app_library_sequences') }}" class="btn btn-outline-primary">{{ 'librarySequencesBackToLibraryAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    <div class="cm-seqlib">
+        {# Read-only: the acts of the rail answer a controller this screen does not carry. #}
+        {% include 'library/_sequence_rail.html.twig' with {rail: rail, currentFolder: null, readonly: true} %}
+
+        <div class="cm-seqlib__content">
+            <div class="card">
+                <div class="table-responsive">
+                    {% if terms is empty %}
+                        <p class="cm-seqlib__empty">{{ 'librarySequencesSearchPromptText'|trans }}</p>
+                    {% elseif sequenceTemplates is empty %}
+                        <p class="cm-seqlib__empty">{{ 'librarySequencesSearchEmptyText'|trans({'%terms%': terms}) }}</p>
+                    {% else %}
+                        <table class="table table-vcenter card-table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>{{ 'librarySequencesTitreColumnLabel'|trans }}</th>
+                                    <th>{{ 'librarySequencesFolderColumnLabel'|trans }}</th>
+                                    <th>{{ 'sequenceTemplateNiveauFieldLabel'|trans }}</th>
+                                    <th>{{ 'sequenceTemplateOptionFieldLabel'|trans }}</th>
+                                    <th>{{ 'librarySequencesSeanceCountColumnLabel'|trans }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sequenceTemplate in sequenceTemplates %}
+                                    <tr>
+                                        <td><a href="{{ path('app_library_sequences_show', {id: sequenceTemplate.id}) }}" class="fw-bold">{{ sequenceTemplate.titre }}</a></td>
+                                        <td>
+                                            {% if sequenceTemplate.folder %}
+                                                <a href="{{ path('app_library_sequences_folder', {folderId: sequenceTemplate.folder.id}) }}">{{ sequenceTemplate.folder.name }}</a>
+                                            {% else %}
+                                                <span class="text-secondary">{{ 'sequenceFolderRootLabel'|trans }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ sequenceTemplate.niveau ? sequenceTemplate.niveau.label : '—' }}</td>
+                                        <td>{{ sequenceTemplate.option ? sequenceTemplate.option.label : '—' }}</td>
+                                        <td>{{ sequenceTemplate.seanceTemplates|length }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
