@@ -14,6 +14,7 @@ use App\Entity\Program;
 use App\Entity\QuizTemplate;
 use App\Entity\SeancePhaseTemplate;
 use App\Entity\SeanceTemplate;
+use App\Entity\SequenceFolder;
 use App\Entity\SequenceTemplate;
 use App\Entity\User;
 use App\Enum\ContentShareScope;
@@ -33,6 +34,7 @@ use App\Repository\ProgramRepository;
 use App\Repository\QuizTemplateRepository;
 use App\Repository\SeancePhaseTemplateRepository;
 use App\Repository\SeanceTemplateRepository;
+use App\Repository\SequenceFolderRepository;
 use App\Repository\SequenceInstanceRepository;
 use App\Repository\SequenceTemplateRepository;
 use App\Security\Voter\SequenceTemplateVoter;
@@ -43,6 +45,7 @@ use App\Service\JsonRequestPayload;
 use App\Service\LibraryTagResolver;
 use App\Service\PostValue;
 use App\Service\QueryValue;
+use App\Service\SequenceFolderTree;
 use App\Service\SequenceInstantiationService;
 use App\Service\SequenceJsonExporter;
 use App\Service\SequencePromptCatalog;
@@ -70,10 +73,51 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 #[RequiresFeature(Feature::SequenceLibrary)]
 class SequenceLibraryController extends AbstractController
 {
+    use SequenceLibraryFolderTrait;
+
     private const string RESOURCE_UPLOAD_PREFIX = 'library-resources/';
 
+    /**
+     * The library's one listing screen, since the classement: a rail of folders on the left, what the
+     * current folder holds on the right - sub-folders first, then the séquences.
+     *
+     * The three tag filters narrow **the folder being looked at**, not the whole library: the folder
+     * is where the teacher is standing, and a filter that silently left it would make the rail's
+     * highlighted row a lie. Finding a séquence whose folder has been forgotten is search()'s job.
+     */
     #[Route(path: '/library/sequences', name: 'app_library_sequences')]
-    public function list(Request $request, SequenceTemplateRepository $repository, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
+    public function list(Request $request, SequenceTemplateRepository $repository, SequenceFolderRepository $folders, SequenceFolderTree $tree, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
+    {
+        return $this->browseSequences(null, $request, $repository, $folders, $tree, $niveauTagRepository, $optionTagRepository, $blocTagRepository);
+    }
+
+    #[Route(path: '/library/sequences/folder/{folderId}', name: 'app_library_sequences_folder', requirements: ['folderId' => '\d+'])]
+    public function folder(int $folderId, Request $request, SequenceTemplateRepository $repository, SequenceFolderRepository $folders, SequenceFolderTree $tree, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
+    {
+        return $this->browseSequences($this->loadSequenceFolder($folders, $folderId), $request, $repository, $folders, $tree, $niveauTagRepository, $optionTagRepository, $blocTagRepository);
+    }
+
+    /**
+     * The title search, over the whole library at once - the way back to a séquence whose folder the
+     * teacher has forgotten, which is what a classement takes away from a flat list.
+     *
+     * A GET, per the repository's rule for a "show me a result" form: a POST would have to redirect.
+     */
+    #[Route(path: '/library/sequences/search', name: 'app_library_sequences_search', methods: ['GET'])]
+    public function search(Request $request, SequenceTemplateRepository $repository, SequenceFolderRepository $folders, SequenceFolderTree $tree): Response
+    {
+        $teacher = $this->currentUser();
+        $terms = QueryValue::trimmed($request, 'q');
+
+        return $this->render('library/sequences_search.html.twig', [
+            'terms' => $terms,
+            'sequenceTemplates' => '' === $terms ? [] : $repository->searchByTitle($teacher, $terms),
+            'rail' => $this->sequenceRailTree($folders, $tree, $teacher),
+            'currentFolder' => null,
+        ]);
+    }
+
+    private function browseSequences(?SequenceFolder $folder, Request $request, SequenceTemplateRepository $repository, SequenceFolderRepository $folders, SequenceFolderTree $tree, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
     {
         $teacher = $this->currentUser();
         // nullableInt rather than getInt(), which throws on the empty string an unselected filter
@@ -88,7 +132,22 @@ class SequenceLibraryController extends AbstractController
         $bloc = null !== $blocId ? $blocTagRepository->find($blocId) : null;
 
         return $this->render('library/sequences.html.twig', [
-            'sequenceTemplates' => $repository->findForTeacher($teacher, $niveau, $option, $bloc),
+            'currentFolder' => $folder,
+            'ancestors' => $this->sequenceAncestorsOf($folders, $folder),
+            // Folders first, then séquences - two lists rather than one sorted set: a folder is a
+            // place and a séquence is a thing, and a listing that interleaves them makes the reader
+            // check the icon on every line.
+            'folderRows' => array_map(
+                static fn (SequenceFolder $child): array => [
+                    'folder' => $child,
+                    // At any depth, not just directly inside: a folder holding only sub-folders would
+                    // otherwise read as empty.
+                    'sequenceCount' => $repository->countInSubtree($child),
+                ],
+                $folders->findChildren($teacher, $folder),
+            ),
+            'sequenceTemplates' => $repository->findInFolder($teacher, $folder, $niveau, $option, $bloc),
+            'rail' => $this->sequenceRailTree($folders, $tree, $teacher),
             'tagOptions' => $this->libraryTagOptions($niveauTagRepository, $optionTagRepository, $blocTagRepository),
             'selectedNiveauId' => $niveau?->getId(),
             'selectedOptionId' => $option?->getId(),
@@ -98,14 +157,21 @@ class SequenceLibraryController extends AbstractController
 
     #[Route(path: '/library/sequences/new', name: 'app_library_sequences_new')]
     #[Route(path: '/library/sequences/{id}/edit', name: 'app_library_sequences_edit')]
-    public function form(Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $repository, LibraryTagResolver $tagResolver, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository, ?int $id = null): Response
+    public function form(Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $repository, SequenceFolderRepository $folders, LibraryTagResolver $tagResolver, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository, ?int $id = null): Response
     {
         $sequenceTemplate = null !== $id ? $this->findSequenceOrNotFound($repository, $id) : null;
         $isEdit = null !== $sequenceTemplate;
 
         if (!$isEdit) {
+            // « + Nouvelle séquence » from inside a folder files the séquence there, which is the
+            // whole point of being in one - the alternative has the teacher move every new séquence
+            // by hand. `form_start()` carries no action, so the folder survives the POST in the
+            // query string it was opened with.
+            $folder = $this->loadSequenceFolder($folders, QueryValue::nullableInt($request, 'folder'));
             $sequenceTemplate = new SequenceTemplate($this->currentUser());
-            $sequenceTemplate->setOrder(\count($repository->findForTeacher($this->currentUser())) + 1);
+            $sequenceTemplate->setFolder($folder);
+            // Last of its folder: the manual order is folder-local since the classement.
+            $sequenceTemplate->setOrder($repository->maxOrderIn($this->currentUser(), $folder) + 1);
         } else {
             $this->denyAccessUnlessGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
         }

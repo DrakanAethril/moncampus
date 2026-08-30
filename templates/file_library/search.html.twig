@@ -26,7 +26,7 @@
 
 {% block main %}
     <div class="cm-flib">
-        {% include 'file_library/_rail.html.twig' with {rail: rail, quota: quota, currentFolder: null} %}
+        {% include 'file_library/_rail.html.twig' with {rail: rail, quota: quota, currentFolder: null, readonly: true} %}
 
         <div class="cm-flib__content">
             {% if terms is empty %}

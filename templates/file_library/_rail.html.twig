@@ -12,7 +12,13 @@
        lives in the table, next to something you can act on;
      - the foot is **pinned to the bottom of the block** (`margin-top: auto`), and carries a button
        on the left and a link on the right: creating a folder is daily housekeeping, the corbeille is
-       a rarely-opened back door, and the difference should be visible without being read. #}
+       a rarely-opened back door, and the difference should be visible without being read.
+
+   `readonly` drops the acts the `file-library` controller answers - the quiz and survey rails carry
+   the same flag for the same reason. The recherche, corbeille and partages screens set it, because
+   that controller is mounted on the browse screen alone: a button that does nothing is worse than an
+   absent one. Deleting a folder stays, being a plain form that works on every screen. #}
+{% set readonly = readonly|default(false) %}
 <aside class="cm-flib__rail" data-controller="file-library-tree"
        data-file-library-tree-move-url-template-value="{{ path('app_file_library_node_move', {nodeId: '__NODE_ID__'}) }}"
        data-file-library-tree-token-value="{{ csrf_token('file_library_node') }}"
@@ -45,15 +51,17 @@
     {% else %}
         <ul class="cm-flib__tree" data-file-library-tree-target="root">
             {% for row in rail %}
-                {% include 'file_library/_rail_node.html.twig' with {row: row, currentFolder: currentFolder|default(null)} only %}
+                {% include 'file_library/_rail_node.html.twig' with {row: row, currentFolder: currentFolder|default(null), readonly: readonly} only %}
             {% endfor %}
         </ul>
     {% endif %}
 
     <div class="cm-flib__rail-foot">
-        <button type="button" class="cm-btn cm-btn--sm cm-btn--outline"
-                data-action="file-library#promptFolder"
-                data-parent-id="{{ currentFolder ? currentFolder.id : '' }}">{{ 'fileLibraryNewFolderAction'|trans }}</button>
+        {% if not readonly %}
+            <button type="button" class="cm-btn cm-btn--sm cm-btn--outline"
+                    data-action="file-library#promptFolder"
+                    data-parent-id="{{ currentFolder ? currentFolder.id : '' }}">{{ 'fileLibraryNewFolderAction'|trans }}</button>
+        {% endif %}
         <a href="{{ path('app_file_library_trash') }}" class="cm-flib__rail-link cm-flib__rail-link--end">{{ 'fileLibraryTrashNavLabel'|trans }}</a>
     </div>
 </aside>

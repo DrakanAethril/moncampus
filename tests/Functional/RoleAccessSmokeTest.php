@@ -321,6 +321,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/my-surveys' => 200,
             '/progression' => 403,
             '/library/sequences' => 403,
+            '/library/sequences/search' => 403,
             '/library/sequences/assistant' => 403,
             // Outils > Partages. A student is never a reader of a share, under any scope, and
             // neither is a tutor - the door says so once and ContentShareAccess says it again.
@@ -378,6 +379,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/assignments' => 200,
             '/progression' => 200,
             '/library/sequences' => 200,
+            '/library/sequences/search' => 200,
             '/library/sequences/assistant' => 200,
             '/shares' => 200,
             '/shares/mine' => 200,
@@ -521,6 +523,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/assignments' => 200,
             '/progression' => 200,
             '/library/sequences' => 200,
+            '/library/sequences/search' => 200,
             '/library/sequences/assistant' => 200,
             '/shares' => 200,
             '/shares/mine' => 200,
@@ -702,6 +705,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/assignments' => 403,
             '/progression' => 403,
             '/library/sequences' => 403,
+            '/library/sequences/search' => 403,
             '/library/sequences/assistant' => 403,
             // A tutor may be *targeted* by a survey - « Mes sondages » is their door, and their
             // only one (design/validated/surveys.md §11). The author's side is shut.

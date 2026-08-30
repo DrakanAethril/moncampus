@@ -7764,6 +7764,7 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
 .cm-qlib__node-actions { flex: none; display: flex; align-items: center; gap: 1px; }
 .cm-qlib__node-action { display: grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 5px; background: none; color: var(--cm-faint); cursor: pointer; }
 .cm-qlib__node-action:hover { background: var(--cm-surface-alt); color: var(--cm-brand-strong); }
+.cm-qlib__node-action--danger:hover { background: var(--cm-red-bg); color: var(--cm-red-tx); }
 
 .cm-qlib__content { background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 18px 20px 20px; }
 .cm-qlib__empty { margin: 8px 2px; font: 400 13.5px var(--cm-font-ui); color: var(--cm-faint); }
@@ -7855,6 +7856,7 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
 .cm-slib__node-actions { flex: none; display: flex; align-items: center; gap: 1px; }
 .cm-slib__node-action { display: grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 5px; background: none; color: var(--cm-faint); cursor: pointer; }
 .cm-slib__node-action:hover { background: var(--cm-surface-alt); color: var(--cm-brand-strong); }
+.cm-slib__node-action--danger:hover { background: var(--cm-red-bg); color: var(--cm-red-tx); }
 
 .cm-slib__content { background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 18px 20px 20px; }
 .cm-slib__empty { margin: 8px 2px; font: 400 13.5px var(--cm-font-ui); color: var(--cm-faint); }
@@ -7898,6 +7900,81 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
 @media (max-width: 991.98px) {
     .cm-slib { grid-template-columns: minmax(0, 1fr); }
     .cm-slib__rail { position: static; max-height: none; }
+}
+
+/* --- Bibliothèque de séquences : le classement par dossiers -------------------------------- */
+/* The quiz library's `.cm-qlib` rail under its own prefix, and **only the rail**: this screen keeps
+   its Tabler card and table, because the classement was asked to add a tree, not to redraw the rows.
+   So there is no `__table`, no `__ext` tile and no `__kebab` here - the listing's row is the one the
+   teacher already knows, minus the « Blocs » column. What is duplicated is the tree, the foot and
+   « Déplacer vers… », for the reason `.cm-flib` -> `.cm-qlib` -> `.cm-slib` already recorded: the
+   libraries look alike today and their listings are not the same table, so a single block would have
+   to be split again the first time one of them grows something the others have no use for. */
+
+.cm-seqlib { display: grid; grid-template-columns: 264px minmax(0, 1fr); gap: 22px; align-items: start; }
+.cm-seqlib__rail { position: sticky; top: 84px; max-height: calc(100vh - 104px); display: flex; flex-direction: column; background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 14px 12px; }
+
+.cm-seqlib__rail-head { display: flex; align-items: center; gap: 8px; padding: 0 4px 10px; border-bottom: 1px solid var(--cm-border-soft); }
+.cm-seqlib__rail-title { flex: 1; min-width: 0; font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Pinned to the bottom of the block rather than laid under the last folder: it acts on the *whole*
+   library. One entry and not the file library's two - there is no corbeille on this side. */
+.cm-seqlib__rail-foot { display: flex; align-items: center; padding-top: 10px; margin-top: auto; border-top: 1px solid var(--cm-border-soft); }
+
+.cm-seqlib__tree { list-style: none; margin: 10px 0 0; padding: 0; }
+/* `:not(--nested)` for the reason the wiki records: the two lists share a class, and setting one
+   overflow axis to anything but `visible` computes the other to `auto` - every branch would get a
+   stray horizontal scrollbar. `min-height: 0` is what makes a flex item actually shrink. */
+.cm-seqlib__tree:not(.cm-seqlib__tree--nested) { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.cm-seqlib__tree--nested { margin: 2px 0 2px 14px; border-left: 1px solid var(--cm-border-soft); padding-left: 6px; }
+.cm-seqlib__node { margin: 1px 0; }
+.cm-seqlib__node.is-dragging { opacity: 0.45; }
+/* One drop state, not the wiki's three: there is no re-order in this tree, so "between two folders"
+   means nothing - a drop is always *into*. */
+.cm-seqlib__node.is-drop-target > .cm-seqlib__node-row { background: var(--cm-blue-bg-soft); box-shadow: inset 0 0 0 1px var(--cm-brand); border-radius: 6px; }
+.cm-seqlib__node-row { display: flex; align-items: center; gap: 1px; min-width: 0; }
+.cm-seqlib__node-link { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; padding: 5px 6px; border-radius: 6px; font: 400 13px var(--cm-font-ui); color: var(--cm-text); text-decoration: none; }
+.cm-seqlib__node-link:hover { background: var(--cm-surface-alt); color: var(--cm-ink); }
+.cm-seqlib__node-link.is-current { background: var(--cm-blue-bg); color: var(--cm-blue-tx); font-weight: 600; }
+.cm-seqlib__node-ico { flex: none; display: grid; place-items: center; color: var(--cm-faint); }
+.cm-seqlib__node-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-seqlib__node-toggle { flex: none; display: grid; place-items: center; width: 14px; height: 18px; padding: 0; border: 0; background: none; color: var(--cm-faint); cursor: pointer; }
+.cm-seqlib__node-toggle svg { transform: rotate(90deg); transition: transform 0.12s ease; }
+.cm-seqlib__node.is-collapsed > .cm-seqlib__node-row .cm-seqlib__node-toggle svg { transform: rotate(0deg); }
+.cm-seqlib__node-toggle--empty { cursor: default; }
+.cm-seqlib__node.is-collapsed > .cm-seqlib__tree--nested { display: none; }
+.cm-seqlib__node-grip { flex: none; display: grid; place-items: center; width: 12px; color: var(--cm-disabled); cursor: grab; }
+.cm-seqlib__node-row:hover .cm-seqlib__node-grip { color: var(--cm-faint); }
+/* The root entry keeps the grip's width so its label lines up with every folder below it, and loses
+   the grab cursor: it receives a drop and is never itself dragged. */
+.cm-seqlib__node-grip--fixed { cursor: default; }
+.cm-seqlib__node-actions { flex: none; display: flex; align-items: center; gap: 1px; }
+.cm-seqlib__node-action { display: grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 5px; background: none; color: var(--cm-faint); cursor: pointer; }
+.cm-seqlib__node-action:hover { background: var(--cm-surface-alt); color: var(--cm-brand-strong); }
+.cm-seqlib__node-action--danger:hover { background: var(--cm-red-bg); color: var(--cm-red-tx); }
+
+/* The content column carries the screen's own card, so it needs no surface of its own - only the
+   `min-width: 0` that keeps a wide table inside the grid track instead of stretching it. */
+.cm-seqlib__content { min-width: 0; }
+.cm-seqlib__empty { margin: 14px 16px; font: 400 13.5px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-seqlib__search { min-width: 220px; }
+/* A folder row of the listing: the folder pictogram beside the name, nothing else - the row keeps the
+   table's own typography so it reads as one listing and not two. */
+.cm-seqlib__foldername { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+
+/* « Déplacer vers… » : the folder tree, flattened and indented, over the screen. A dialog rather than
+   a submenu because the list is as deep as the library is. */
+.cm-seqlib__move { position: fixed; inset: 0; z-index: 1080; display: grid; place-items: center; background: rgba(18, 52, 77, .55); padding: 20px; }
+.cm-seqlib__move-box { width: min(420px, 100%); max-height: min(70vh, 560px); display: flex; flex-direction: column; background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); box-shadow: 0 18px 48px rgba(18, 52, 77, .28); }
+.cm-seqlib__move-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--cm-border-soft); }
+.cm-seqlib__move-title { flex: 1; min-width: 0; margin: 0; font: 600 14px var(--cm-font-ui); color: var(--cm-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-seqlib__move-close { border: 0; background: none; color: var(--cm-faint); font-size: 22px; line-height: 1; cursor: pointer; }
+.cm-seqlib__move-list { flex: 1; min-height: 0; overflow-y: auto; list-style: none; margin: 0; padding: 8px 0; }
+.cm-seqlib__move-item { width: 100%; display: flex; align-items: center; gap: 8px; padding: 7px 10px; border: 0; background: none; font: 400 13px var(--cm-font-ui); color: var(--cm-text); text-align: left; cursor: pointer; }
+.cm-seqlib__move-item:hover { background: var(--cm-surface-alt); color: var(--cm-ink); }
+
+@media (max-width: 991.98px) {
+    .cm-seqlib { grid-template-columns: minmax(0, 1fr); }
+    .cm-seqlib__rail { position: static; max-height: none; }
 }
 
 /* --- The link: the picker's Bibliothèque tab, the usage panel, the deletion modal -------- */
