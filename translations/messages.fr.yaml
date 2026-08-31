@@ -1855,7 +1855,6 @@ lessonLogAttachmentSourceTypeLinkLabel: 'Lien'
 lessonLogAttachmentRemoveConfirmMessage: 'Retirer ce document ?'
 lessonLogAttachmentLabelFieldLabel: 'Nom du document'
 lessonLogAttachmentFileFieldLabel: 'Fichier'
-lessonLogAttachmentUrlFieldLabel: 'Ou lien externe'
 lessonLogAttachmentHelpText: 'Choisissez soit un fichier, soit un lien - pas les deux.'
 lessonLogAttachmentAddAction: 'Ajouter'
 lessonLogAttachmentInvalidTypeMessage: 'Ce type de fichier n''est pas autorisé.'
@@ -2081,7 +2080,6 @@ libraryResourceAddToggleLabel: 'Ajouter'
 libraryResourcesEmptyMessage: "Aucun document pour le moment."
 libraryResourceLabelFieldLabel: 'Nom du document'
 libraryResourceFileFieldLabel: 'Fichier'
-libraryResourceUrlFieldLabel: 'Ou lien externe'
 libraryResourceAddAction: 'Ajouter le document'
 libraryResourceInvalidTypeMessage: 'Ce type de fichier n''est pas autorisé.'
 libraryResourceSourceTypeUploadLabel: 'Fichier'
@@ -5767,6 +5765,17 @@ fileLibraryQuotaInvalidMessage: 'Quota illisible : écrivez par exemple « 2 Go 
 filePickerFromLibraryLabel: 'Depuis la bibliothèque'
 filePickerLibraryEmptyText: 'Aucun fichier dans ce dossier.'
 filePickerLibrarySearchPlaceholder: 'Rechercher dans ma bibliothèque…'
+# Le troisième onglet du composant : un document qui n'est pas un fichier à nous. Il était une
+# ligne sous le composant, ce qui le faisait lire comme un ajout tardif et masquait le fait qu'un
+# lien et un fichier s'excluent - le formulaire refuse les deux à la fois.
+filePickerLinkTabLabel: 'Lien externe'
+filePickerLinkPlaceholderText: 'https://…'
+filePickerLinkHelpText: "Un lien n'occupe aucun espace : rien n'est déposé sur la plateforme, et c'est le site d'origine qui décide de sa durée de vie."
+# La barre de sélection de l'onglet Bibliothèque, pour un champ qui accepte plusieurs fichiers.
+filePickerSelectAllAction: 'Tout sélectionner'
+filePickerSelectNoneAction: 'Tout désélectionner'
+filePickerAddSelectionAction: 'Ajouter la sélection'
+filePickerToggleBranchAction: 'Déplier ou replier ce dossier'
 fileLibraryUsageCountLabel: '{1}1 utilisation|]1,Inf[%count% utilisations'
 fileLibraryUsagePanelTitle: 'Utilisations'
 fileLibraryDeleteEverywhereAction: 'Supprimer partout'
