@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}Courrier école — dev{% endblock %}</title>
+    <title>{% block title %}Courrier pro — dev{% endblock %}</title>
     <style>
         :root { color-scheme: light dark; }
         body {
@@ -40,7 +40,7 @@
 </head>
 <body>
 <header>
-    <h1><a href="{{ path('dev_mail_inbox') }}" style="text-decoration:none">Courrier école</a></h1>
+    <h1><a href="{{ path('dev_mail_inbox') }}" style="text-decoration:none">Courrier pro</a></h1>
     <span class="muted">outil de développement · domaine <code>{{ domain }}</code></span>
 </header>
 {% block content %}{% endblock %}

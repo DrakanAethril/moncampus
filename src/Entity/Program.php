@@ -194,7 +194,7 @@ class Program
     private bool $assignmentManagementEnabled = true;
 
     /**
-     * The third axis of the feature system: the Courrier école is decided by the formation, not by
+     * The third axis of the feature system: the Courrier pro is decided by the formation, not by
      * the role or by the person (design/validated/feature-access.md, "Le troisième axe").
      *
      * A column next to the four booleans above rather than a generic table, because there is
@@ -207,7 +207,7 @@ class Program
      * mail piles up unread, and opening the formation later reveals the whole history with nothing
      * to replay (§8.6).
      *
-     * **Closed by default, and closed on every existing formation.** The Courrier école is not in
+     * **Closed by default, and closed on every existing formation.** The Courrier pro is not in
      * service in production, so there is nothing to seed and nobody loses an access the day it
      * arrives: each formation opens when the establishment decides (§12.1). The column was carried
      * open from lot 1 to lot 6 for one reason - the resolver reads this axis from the day it exists,

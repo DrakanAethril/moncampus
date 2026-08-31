@@ -30,7 +30,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * Courrier école on mobile (design_handoff_mobile, screens 5a-5d) - the phone counterpart of
+ * Courrier pro on mobile (design_handoff_mobile, screens 5a-5d) - the phone counterpart of
  * SchoolMailController and SchoolMailComposeController.
  *
  * Same two states as the web: as long as the practice application has not been validated the box

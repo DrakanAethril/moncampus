@@ -43,7 +43,7 @@ students, teachers, staff, and the external tutors who supervise apprentices.
   attachments, and a staff-side reading view.
 
 **Communication**
-- **Courrier école.** Real mailboxes for students on the school domain, inbound and outbound through
+- **Courrier pro.** Real mailboxes for students on the school domain, inbound and outbound through
   Amazon SES, with administrable aliases.
 - **Messagerie, annonces, agenda et listes d'inscription**, all addressed through the same audience
   resolver.

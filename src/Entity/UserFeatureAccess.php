@@ -19,7 +19,7 @@ use Doctrine\ORM\Mapping as ORM;
  * today" rather than "whatever it said the day somebody clicked".
  *
  * It is read one step before the formation flag, which is the whole point of §3.5: a student
- * looking for a company in a formation whose Courrier école is closed gets a mailbox, alone.
+ * looking for a company in a formation whose Courrier pro is closed gets a mailbox, alone.
  */
 #[ORM\Entity(repositoryClass: UserFeatureAccessRepository::class)]
 #[ORM\Table(name: 'user_feature_access')]
