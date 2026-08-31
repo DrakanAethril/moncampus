@@ -84,7 +84,7 @@ class BucketWritePathsTest extends TestCase
      * test, with no kernel booted, and a class that takes the S3 client is a class that can write
      * whether or not the container happens to wire it today.
      *
-     * **Courrier école is deliberately not in scope.** It holds an S3Client too, but a different
+     * **Courrier pro is deliberately not in scope.** It holds an S3Client too, but a different
      * one, on a separate AWS account and bucket (AWS_MAIL_*, SES/S3/SQS) - and the container tells
      * the two apart by the parameter *name*, `$mailS3Client` being bound to the named
      * `mail.s3_client` service in config/services.yaml while the plain type autowires the uploads

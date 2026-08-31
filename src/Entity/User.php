@@ -114,7 +114,7 @@ class User implements UserInterface
     private ?string $locale = null;
 
     /**
-     * The Courrier école address shown to the student and used as the sender of their applications.
+     * The Courrier pro address shown to the student and used as the sender of their applications.
      *
      * A student normally has several App\Entity\EmailAlias - their readable address, their login, and
      * the addresses kept after a change of civil status, which must keep delivering since they have

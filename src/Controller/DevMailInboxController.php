@@ -12,7 +12,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * DEVELOPMENT TOOL - views the mails caught by the Courrier école worker, to check end to end that a
+ * DEVELOPMENT TOOL - views the mails caught by the Courrier pro worker, to check end to end that a
  * message sent from an outside mailbox does reach the database, attached to the right student.
  *
  * This file is not versioned, on the same grounds as the seed commands: it has no business anywhere
@@ -20,7 +20,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * that exposes students' correspondence must never be able to answer in production, even behind an
  * authentication.
  *
- * The real screens of the Courrier école mailbox belong to part 2 of the handoff, still in design.
+ * The real screens of the Courrier pro mailbox belong to part 2 of the handoff, still in design.
  * Nothing here prefigures what they will be.
  */
 class DevMailInboxController extends AbstractController

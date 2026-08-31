@@ -1,6 +1,6 @@
 import { Controller } from '@hotwired/stimulus';
 
-// Annuaire > Utilisateurs - the "Adresses Courrier école" section of
+// Annuaire > Utilisateurs - the "Adresses Courrier pro" section of
 // templates/directory/user_form.html.twig. Row add/remove follows Symfony's documented
 // CollectionType "manual prototype" pattern (data-prototype/__name__ on the container), same as
 // evaluation_period_group_form_controller.js.

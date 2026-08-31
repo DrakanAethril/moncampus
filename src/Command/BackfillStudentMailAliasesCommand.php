@@ -25,7 +25,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  */
 #[AsCommand(
     name: 'app:mail:backfill-student-aliases',
-    description: 'Attribue leur adresse Courrier école aux élèves qui n\'en ont pas encore.',
+    description: 'Attribue leur adresse Courrier pro aux élèves qui n\'en ont pas encore.',
 )]
 class BackfillStudentMailAliasesCommand extends Command
 {
@@ -58,7 +58,7 @@ class BackfillStudentMailAliasesCommand extends Command
             return Command::SUCCESS;
         }
 
-        $io->title(sprintf('Adresses Courrier école — %d élève(s) actif(s)', \count($students)));
+        $io->title(sprintf('Adresses Courrier pro — %d élève(s) actif(s)', \count($students)));
 
         $rows = [];
         $created = 0;

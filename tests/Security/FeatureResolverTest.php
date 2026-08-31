@@ -118,7 +118,7 @@ class FeatureResolverTest extends TestCase
     }
 
     // 3. The override comes before the formation flag - §3.5, the student looking for a company in
-    // a formation whose Courrier école is closed.
+    // a formation whose Courrier pro is closed.
     public function testAnOverrideOpensAFeatureNoFormationOpens(): void
     {
         $resolver = $this->resolver(

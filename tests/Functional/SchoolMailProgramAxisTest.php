@@ -12,7 +12,7 @@ use App\Enum\FeatureAccessState;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * The third axis: the Courrier école is decided by the **formation**, not by the role or by the
+ * The third axis: the Courrier pro is decided by the **formation**, not by the role or by the
  * person (design/validated/feature-access.md, "Le troisième axe" and §3.4/3.5).
  *
  * Three rules, and each one is a decision somebody could reasonably have made the other way:
@@ -21,7 +21,7 @@ use Doctrine\ORM\EntityManagerInterface;
  * - a student enrolled in two formations reads their mail as soon as **one** of them opens it - a
  *   mailbox is not partitioned by formation and could not be;
  * - an **individual derogation opens the box against a closed formation**, which is what §3.5 exists
- *   for: the student looking for a company in a class that does not run the Courrier école.
+ *   for: the student looking for a company in a class that does not run the Courrier pro.
  *
  * What no test here asserts, because it must not happen: nothing on this axis touches the aliases.
  * Closing a formation closes the reading; the address goes on receiving (§8.6).

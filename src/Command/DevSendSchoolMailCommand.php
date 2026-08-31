@@ -27,7 +27,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
  *
  * Not versioned, like the other dev tools.
  */
-#[AsCommand(name: 'app:dev:send-school-mail', description: '[dev] Envoie un mail Courrier école à une adresse arbitraire.')]
+#[AsCommand(name: 'app:dev:send-school-mail', description: '[dev] Envoie un mail Courrier pro à une adresse arbitraire.')]
 class DevSendSchoolMailCommand extends Command
 {
     public function __construct(
@@ -46,7 +46,7 @@ class DevSendSchoolMailCommand extends Command
         $this
             ->addOption('student', null, InputOption::VALUE_REQUIRED, "Login de l'élève expéditeur", 'info3-001')
             ->addOption('to', null, InputOption::VALUE_REQUIRED, 'Adresse destinataire')
-            ->addOption('subject', null, InputOption::VALUE_REQUIRED, 'Objet', 'Test de boucle Courrier école');
+            ->addOption('subject', null, InputOption::VALUE_REQUIRED, 'Objet', 'Test de boucle Courrier pro');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

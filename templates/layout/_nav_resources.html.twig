@@ -23,7 +23,7 @@
 {% set resources_shared_documents = is_granted('ROLE_STUDENT') and not is_staff() and feature('shared_documents') %}
 {% set resources_my_vms = is_pure_student and feature('my_vms') and has_virtual_machines(app.user) %}
 {% set resources_school_mail = is_pure_student and feature('school_mail') %}
-{# « Candidatures » follows « Courrier école », condition for condition: an application is a mail
+{# « Candidatures » follows « Courrier pro », condition for condition: an application is a mail
    sent from the student's mailbox, and that screen is the list of those mails grouped by company.
    One source rather than two identical expressions that would drift - see
    App\Controller\MyJobApplicationController for the same decision on the route itself. #}

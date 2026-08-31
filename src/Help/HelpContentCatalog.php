@@ -809,7 +809,7 @@ final class HelpContentCatalog
                 [
                     'kind' => HelpArticleKind::Article,
                     'slug' => 'adresses-courrier-ecole',
-                    'title' => 'Les adresses Courrier école des élèves',
+                    'title' => 'Les adresses Courrier pro des élèves',
                     'audiences' => [HelpAudience::Staff],
                     'summary' => "Un élève peut porter plusieurs adresses de l'école, dont une par défaut. Elles s'administrent depuis sa fiche dans l'annuaire.",
                     'body' => <<<'HTML'
@@ -820,7 +820,7 @@ final class HelpContentCatalog
                         <h2>L'adresse par défaut</h2>
                         <p>Une adresse est marquée par défaut : c'est celle qui représente l'élève.</p>
                         <h2>Ce que l'élève en voit</h2>
-                        <p>Son écran <strong>Courrier école</strong> reçoit les messages arrivés sur ses adresses, avec leurs pièces jointes.</p>
+                        <p>Son écran <strong>Courrier pro</strong> reçoit les messages arrivés sur ses adresses, avec leurs pièces jointes.</p>
                         HTML,
                 ],
                 [

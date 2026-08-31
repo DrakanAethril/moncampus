@@ -26,6 +26,26 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.08.31'
+      date: '2026-08-31'
+      summary: "Le « Courrier école » s'appelle désormais « Courrier pro » : son ancien nom disait où la boîte était hébergée, pas à qui elle écrit, et se confondait avec la messagerie interne. La fenêtre qui sert à joindre un document présente ses trois provenances au même niveau — un fichier, la bibliothèque, un lien — et permet de rattacher tout un dossier d'un seul geste."
+      entries:
+          - type: modification
+            title: "Le « Courrier école » devient le « Courrier pro »"
+            detail: "Le nom se confondait avec la messagerie interne de l'établissement. « Courrier pro » dit ce que la boîte fait : elle n'écrit qu'à des adresses extérieures — entreprises, organismes — et chaque envoi se rattache à une démarche. Ni les adresses ni le fonctionnement ne changent."
+          - type: modification
+            title: "Joindre un document : les trois provenances au même niveau"
+            detail: "« Lien externe » rejoint « Déposer un fichier » et « Bibliothèque de fichiers » dans la même barre d'onglets, au lieu d'être une ligne à part sous le reste. Un lien et un fichier s'excluant, les présenter côte à côte le dit sans avoir à l'écrire."
+          - type: nouveaute
+            title: "Rattacher tout un dossier de la bibliothèque d'un seul geste"
+            detail: "Une case à cocher sur chaque fichier, un « Tout sélectionner » et un bouton qui ajoute la sélection : un dossier entier se joint d'un coup, en décochant au passage ce qui n'a rien à y faire. Sur les champs qui acceptent plusieurs documents."
+          - type: fix
+            title: "L'arborescence des dossiers ne défilait pas au moment de joindre un document"
+            detail: "Passé une dizaine de dossiers, les derniers étaient dessinés hors du cadre et devenaient inatteignables. Elle défile désormais, et se déplie dossier par dossier au lieu de s'ouvrir en entier."
+          - type: autre
+            title: "Nouvelles versions des applications mobiles"
+            detail: "MonCampus 2.6.1 et e-CO 1.1.1 sont disponibles au téléchargement."
+
     - version: '2026.08.30'
       date: '2026-08-30'
       summary: "Les quatre bibliothèques — fichiers, quiz, sondages et désormais séquences/séances — se rangent en dossiers de la même façon, avec les mêmes gestes pour créer, renommer et supprimer. Le menu du jeu du campus ne propose plus, aux classes qui n'y participent pas, des entrées qui ne menaient nulle part."

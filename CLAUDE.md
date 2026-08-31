@@ -192,7 +192,7 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   `TrainingApplication` (postulation with free-form attachments). Note: there is deliberately **no**
   Enterprise entity on this side — the job search names its own démarches; `Enterprise` belongs
   exclusively to UFA.
-- **Courrier école** — student mailboxes: `EmailAlias`, `EmailMessage`, `EmailAttachment`,
+- **Courrier pro** — student mailboxes: `EmailAlias`, `EmailMessage`, `EmailAttachment`,
   `EmailEvent`, suppressions. Inbound via SES→S3→SQS, outbound via SES.
 - **Messagerie** — `MessageThread`/`Message`, audience-resolved. Present on web, **not** exposed in the
   mobile app (code kept, tab replaced by Quiz).
@@ -320,7 +320,7 @@ New per-object rules belong in a Voter, not inline in a controller.
 | Service | Purpose | Env |
 |---|---|---|
 | AWS S3 | Uploads (attachments, audio, PDFs) — dev shares the bucket under `AWS_S3_PREFIX=dev/` | `AWS_S3_*`, `AWS_CLOUDFRONT_DOMAIN` |
-| AWS SES + S3 + SQS | Courrier école, inbound and outbound. **Separate AWS account** from the uploads bucket | `AWS_MAIL_*`, `AWS_SES_*`, `MAIL_STUDENT_DOMAIN` |
+| AWS SES + S3 + SQS | Courrier pro, inbound and outbound. **Separate AWS account** from the uploads bucket | `AWS_MAIL_*`, `AWS_SES_*`, `MAIL_STUDENT_DOMAIN` |
 | Gotenberg | HTML→PDF (Livret Alternant) | `GOTENBERG_URL` |
 | Mercure | Turbo streams + live quiz SSE | `MERCURE_URL`, `MERCURE_PUBLIC_URL` |
 | Matomo | Analytics, **consent-gated** (`requireConsent`, opt-in banner) | `MATOMO_URL`, `MATOMO_SITE_ID` |
@@ -553,7 +553,7 @@ functional smoke test (`tests/Functional/`) that requests each main screen as a 
 admin / tutor and pins the answer. Run them with
 `docker compose exec -e APP_ENV=test php bin/phpunit`; **`tests/README.md` explains the one-off test-database
 setup they need**. Feature work is still verified in a real browser — the `browser-verify` skill drives
-a headless Chrome against the dev app, and `beaup-sqs-check` polls the Courrier école queues.
+a headless Chrome against the dev app, and `beaup-sqs-check` polls the Courrier pro queues.
 
 When you add a screen or change who may reach one, extend `RoleAccessSmokeTest`'s table: it is the
 cheapest place in this repo to notice that a role gained or lost access by accident.

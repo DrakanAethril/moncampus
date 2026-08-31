@@ -7,7 +7,7 @@ namespace App\Service;
 use Aws\Sqs\SqsClient;
 
 /**
- * Builds the SQS client of the Courrier école (see config/services.yaml).
+ * Builds the SQS client of the Courrier pro (see config/services.yaml).
  *
  * Same pattern as App\Service\S3ClientFactory, and for the same reason: the `endpoint` option must be
  * *absent* and not empty for real AWS. It only exists here to leave the door open to a local emulator

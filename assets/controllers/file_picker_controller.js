@@ -23,7 +23,12 @@ import { Controller } from '@hotwired/stimulus';
 //     refused while they are still writing the title.
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
-    static targets = ['input', 'rows', 'tokens', 'drop', 'tabUpload', 'tabLibrary', 'libraryPane', 'libraryTree', 'libraryFiles', 'librarySearch'];
+    static targets = [
+        'input', 'rows', 'tokens', 'drop',
+        'tabUpload', 'tabLibrary', 'tabLink',
+        'libraryPane', 'libraryTree', 'libraryFiles', 'librarySearch', 'libraryBar', 'selectAll', 'addSelection',
+        'linkPane', 'linkInput',
+    ];
 
     static values = {
         multiple: Boolean,
@@ -45,7 +50,22 @@ export default class extends Controller {
         this.labels = { ...this.labelsValue };
         // One entry per row: {token, name, size, state, ratio, message, request}.
         this.files = this.restore();
+        // Which folders the reader has opened, by id. **Nothing is unfolded by default** - the tree
+        // is a rail, not a listing, and a library three levels deep opened flat is unreadable. The
+        // set survives a repaint (each folder click reloads the pane) the way the screen's own rail
+        // survives a page load: what is open is what leads to the folder being browsed, plus what
+        // the reader opened by hand.
+        this.expanded = new Set();
+        // The ids ticked in the current folder, for a multiple field. Cleared when the folder or the
+        // search changes: a selection spanning two folders is one nobody can see in full.
+        this.selection = new Set();
         this.render();
+
+        // A form redisplayed after a validation error with a link in it opens on the link: the tab
+        // that holds the value is the tab to be looking at.
+        // Opened, not focused: a focus on connect scrolls the page to whichever picker mounted last,
+        // which on a form carrying two of them is not where the reader was looking.
+        if (this.hasLinkInputTarget && this.linkInputTarget.value.trim() !== '') this.showPane('link');
     }
 
     disconnect() {
@@ -80,19 +100,30 @@ export default class extends Controller {
 
     // ---- The Bibliothèque tab -----------------------------------------------------------------
 
+    // The three tabs are one question - where does this document come from? - so one method sets the
+    // whole strip rather than each tab undoing what the others did.
+    showPane(which) {
+        this.dropTarget.hidden = which !== 'upload' || (!this.multipleValue && this.files.length > 0);
+        if (this.hasLibraryPaneTarget) this.libraryPaneTarget.hidden = which !== 'library';
+        if (this.hasLinkPaneTarget) this.linkPaneTarget.hidden = which !== 'link';
+
+        for (const [name, tab] of [['upload', this.tabUploadTarget], ['library', this.hasTabLibraryTarget ? this.tabLibraryTarget : null], ['link', this.hasTabLinkTarget ? this.tabLinkTarget : null]]) {
+            tab?.classList.toggle('cm-filepick__tab--on', name === which);
+        }
+    }
+
     showUpload() {
-        this.dropTarget.hidden = !this.multipleValue && this.files.length > 0;
-        if (this.hasLibraryPaneTarget) this.libraryPaneTarget.hidden = true;
-        this.tabUploadTarget.classList.add('cm-filepick__tab--on');
-        if (this.hasTabLibraryTarget) this.tabLibraryTarget.classList.remove('cm-filepick__tab--on');
+        this.showPane('upload');
     }
 
     showLibrary() {
-        this.dropTarget.hidden = true;
-        this.libraryPaneTarget.hidden = false;
-        this.tabUploadTarget.classList.remove('cm-filepick__tab--on');
-        this.tabLibraryTarget.classList.add('cm-filepick__tab--on');
+        this.showPane('library');
         this.loadLibrary();
+    }
+
+    showLink() {
+        this.showPane('link');
+        this.linkInputTarget.focus();
     }
 
     searchLibrary() {
@@ -104,12 +135,36 @@ export default class extends Controller {
 
     openLibraryFolder(event) {
         this.libraryFolderId = event.currentTarget.dataset.folderId ?? '';
+        // Opening a folder opens it in the tree too, so its own sub-folders are reachable without a
+        // second click on the triangle.
+        if (this.libraryFolderId) this.expanded.add(this.libraryFolderId);
         this.librarySearchTarget.value = '';
+        this.selection.clear();
         this.loadLibrary();
+    }
+
+    // The triangle. It folds a branch without navigating anywhere: opening a folder to see what is
+    // under it and going into it are two different intentions, and the rail of every library screen
+    // on this platform already separates them the same way.
+    toggleBranch(event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const item = event.currentTarget.closest('.cm-filepick__library-node');
+        const id = item?.dataset.folderId;
+
+        if (!id) return;
+
+        if (this.expanded.has(id)) this.expanded.delete(id);
+        else this.expanded.add(id);
+
+        item.classList.toggle('is-collapsed', !this.expanded.has(id));
+        event.currentTarget.setAttribute('aria-expanded', this.expanded.has(id) ? 'true' : 'false');
     }
 
     async loadLibrary({ q = '' } = {}) {
         const url = new URL(this.libraryUrlValue, window.location.origin);
+        this.selection.clear();
         if (q) url.searchParams.set('q', q);
         else if (this.libraryFolderId) url.searchParams.set('folder', this.libraryFolderId);
 
@@ -122,21 +177,111 @@ export default class extends Controller {
     }
 
     paintLibrary(data) {
+        const current = data.folderId == null ? '' : String(data.folderId);
+        // The branch leading to the folder being browsed is open whatever the reader has folded: it
+        // is the one branch that must show where they are. Computed while walking the tree, since
+        // the answer is "does this subtree contain the current folder".
+        this.openPath = new Set();
+        (data.folders ?? []).forEach((folder) => this.markPath(folder, current));
+
         const tree = document.createElement('ul');
         tree.className = 'cm-filepick__library-list';
-        tree.appendChild(this.buildFolderRow({ id: '', name: this.labels.libraryRoot }, 0));
-        (data.folders ?? []).forEach((folder) => this.appendFolder(tree, folder, 1));
+        tree.appendChild(this.buildRootRow(current));
+        (data.folders ?? []).forEach((folder) => tree.appendChild(this.buildFolderNode(folder, current, 0)));
         this.libraryTreeTarget.replaceChildren(tree);
 
-        const files = data.files ?? [];
+        this.paintLibraryFiles(data.files ?? []);
+    }
+
+    // True when this subtree holds the current folder; every folder on that way is remembered.
+    markPath(folder, current) {
+        const id = String(folder.id ?? '');
+        const inside = (folder.children ?? []).map((child) => this.markPath(child, current)).some(Boolean);
+
+        if (id === current || inside) this.openPath.add(id);
+
+        return id === current || inside;
+    }
+
+    buildRootRow(current) {
+        const item = this.el('li', 'cm-filepick__library-node');
+        const row = this.el('div', 'cm-filepick__library-row');
+        row.appendChild(this.el('span', 'cm-filepick__library-toggle cm-filepick__library-toggle--empty'));
+        row.appendChild(this.folderButton({ id: '', name: this.labels.libraryRoot }, current === ''));
+        item.appendChild(row);
+
+        return item;
+    }
+
+    buildFolderNode(folder, current, depth) {
+        const id = String(folder.id ?? '');
+        const children = folder.children ?? [];
+        // Collapsed unless the reader opened it, or it leads to the folder being browsed. That is
+        // the rail's own rule (templates/file_library/_rail_node.html.twig), which this tab was the
+        // only tree on the platform not to follow.
+        const open = this.expanded.has(id) || this.openPath.has(id);
+        const item = this.el('li', `cm-filepick__library-node${children.length > 0 && !open ? ' is-collapsed' : ''}`);
+        item.dataset.folderId = id;
+
+        const row = this.el('div', 'cm-filepick__library-row');
+        row.style.paddingLeft = `${depth * 12}px`;
+
+        if (children.length > 0) {
+            const toggle = this.el('button', 'cm-filepick__library-toggle');
+            toggle.type = 'button';
+            toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            toggle.setAttribute('aria-label', this.labels.toggleBranch);
+            toggle.innerHTML = '<svg width="9" height="9" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true"><path d="M3 1l5 4-5 4z"></path></svg>';
+            toggle.addEventListener('click', (event) => this.toggleBranch(event));
+            row.appendChild(toggle);
+        } else {
+            row.appendChild(this.el('span', 'cm-filepick__library-toggle cm-filepick__library-toggle--empty'));
+        }
+
+        row.appendChild(this.folderButton(folder, id === current));
+        item.appendChild(row);
+
+        if (children.length > 0) {
+            const list = this.el('ul', 'cm-filepick__library-list cm-filepick__library-list--nested');
+            children.forEach((child) => list.appendChild(this.buildFolderNode(child, current, depth + 1)));
+            item.appendChild(list);
+        }
+
+        return item;
+    }
+
+    folderButton(folder, isCurrent) {
+        const button = this.el('button', `cm-filepick__library-folder${isCurrent ? ' is-current' : ''}`, folder.name);
+        button.type = 'button';
+        button.dataset.folderId = folder.id ?? '';
+        button.addEventListener('click', (event) => this.openLibraryFolder(event));
+
+        return button;
+    }
+
+    // ---- The files of the folder ---------------------------------------------------------------
+
+    paintLibraryFiles(files) {
+        this.libraryFiles = files;
+
+        if (this.hasLibraryBarTarget) this.libraryBarTarget.hidden = !this.multipleValue || files.length === 0;
 
         if (files.length === 0) {
             this.libraryFilesTarget.replaceChildren(this.el('p', 'cm-filepick__library-empty', this.labels.libraryEmpty));
+            this.paintSelectionBar();
 
             return;
         }
 
-        this.libraryFilesTarget.replaceChildren(...files.map((file) => {
+        this.libraryFilesTarget.replaceChildren(...files.map((file) => this.buildLibraryFileRow(file)));
+        this.paintSelectionBar();
+    }
+
+    // A single-file field keeps the one-click row it has always had: ticking a box then pressing
+    // « Ajouter » to choose exactly one file is two gestures for what is one decision. The tick
+    // boxes exist for the case they were asked for - filing a whole folder at once.
+    buildLibraryFileRow(file) {
+        if (!this.multipleValue) {
             const row = this.el('button', 'cm-filepick__library-file');
             row.type = 'button';
             row.appendChild(this.extensionChip(file.name));
@@ -145,38 +290,85 @@ export default class extends Controller {
             row.addEventListener('click', () => this.link(file));
 
             return row;
-        }));
+        }
+
+        const row = this.el('label', 'cm-filepick__library-file cm-filepick__library-file--pick');
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        box.className = 'cm-filepick__library-check';
+        box.checked = this.selection.has(String(file.id));
+        box.addEventListener('change', () => {
+            if (box.checked) this.selection.add(String(file.id));
+            else this.selection.delete(String(file.id));
+            this.paintSelectionBar();
+        });
+
+        row.appendChild(box);
+        row.appendChild(this.extensionChip(file.name));
+        row.appendChild(this.el('span', 'cm-filepick__library-file-name', file.name));
+        row.appendChild(this.el('span', 'cm-filepick__meta', file.size));
+
+        return row;
     }
 
-    appendFolder(list, folder, depth) {
-        list.appendChild(this.buildFolderRow(folder, depth));
-        (folder.children ?? []).forEach((child) => this.appendFolder(list, child, depth + 1));
+    // « Tout sélectionner » ticks the folder's files; pressed again it unticks them. One button
+    // rather than two, because the second gesture is always undoing the first.
+    toggleAll() {
+        const all = (this.libraryFiles ?? []).map((file) => String(file.id));
+        const everything = all.length > 0 && all.every((id) => this.selection.has(id));
+
+        this.selection = new Set(everything ? [] : all);
+        this.libraryFilesTarget.querySelectorAll('.cm-filepick__library-check').forEach((box, index) => {
+            box.checked = this.selection.has(all[index]);
+        });
+        this.paintSelectionBar();
     }
 
-    buildFolderRow(folder, depth) {
-        const item = document.createElement('li');
-        const button = this.el('button', 'cm-filepick__library-folder', folder.name);
-        button.type = 'button';
-        button.style.paddingLeft = `${6 + depth * 12}px`;
-        button.dataset.folderId = folder.id ?? '';
-        button.addEventListener('click', (event) => this.openLibraryFolder(event));
-        item.appendChild(button);
+    addSelection() {
+        for (const file of this.libraryFiles ?? []) {
+            if (this.selection.has(String(file.id))) this.link(file, false);
+        }
 
-        return item;
+        this.selection.clear();
+        this.render();
+        this.showUpload();
+    }
+
+    paintSelectionBar() {
+        if (!this.hasLibraryBarTarget || this.libraryBarTarget.hidden) return;
+
+        const all = (this.libraryFiles ?? []).map((file) => String(file.id));
+        const everything = all.length > 0 && all.every((id) => this.selection.has(id));
+
+        this.selectAllTarget.textContent = everything ? this.labels.selectNone : this.labels.selectAll;
+        this.addSelectionTarget.textContent = this.selection.size > 0
+            ? `${this.labels.addSelection} (${this.selection.size})`
+            : this.labels.addSelection;
+        this.addSelectionTarget.disabled = this.selection.size === 0;
     }
 
     // Choosing a library file adds a chip **visibly not the same thing** as an uploaded one: the gold
     // pill says so, because deleting that file from the library later will remove it from here.
-    link(file) {
+    // `paint` is false when a whole selection is being added: repainting the list once per file
+    // would rebuild it as many times as there are ticked boxes, and adding the same file twice is
+    // now something a "tout sélectionner" makes easy - hence the guard, which the one-click row
+    // never needed.
+    link(file, paint = true) {
+        const token = this.constructor.LIBRARY_PREFIX + file.id;
+
         if (!this.multipleValue) this.files = [];
+        else if (this.files.some((row) => row.token === token)) return;
 
         this.files.push({
-            token: this.constructor.LIBRARY_PREFIX + file.id,
+            token,
             name: file.name,
             size: 0,
             sizeLabel: file.size,
             state: 'library',
         });
+
+        if (!paint) return;
+
         this.render();
         this.showUpload();
     }

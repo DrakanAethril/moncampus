@@ -1,6 +1,6 @@
 {% extends 'dev/mail_inbox/_base.html.twig' %}
 
-{% block title %}{{ message.subject|default('(sans objet)') }} — Courrier école dev{% endblock %}
+{% block title %}{{ message.subject|default('(sans objet)') }} — Courrier pro dev{% endblock %}
 
 {% block content %}
     <p><a href="{{ path('dev_mail_inbox') }}">← tous les messages</a></p>

@@ -10,7 +10,7 @@ use App\Service\StudentMailAddressGenerator;
 use PHPUnit\Framework\TestCase;
 
 /**
- * The composition rule of the « prenom.nom » addresses of the Courrier école.
+ * The composition rule of the « prenom.nom » addresses of the Courrier pro.
  *
  * It deserves pinning down here more than most, for a reason that has nothing technical about it:
  * the address produced ends up printed on CVs and recorded in company address books. Once issued,

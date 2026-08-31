@@ -1,9 +1,9 @@
 ---
 name: beaup-sqs-check
-description: Relève manuellement les files SQS du Courrier école en dev (mails entrants et statuts d'envoi SES), puis rend compte de ce qui a été capté. Utiliser quand on veut voir arriver un mail de test envoyé à une adresse @devetu.beaupeyrat.org, ou vérifier qu'une file n'est pas bloquée.
+description: Relève manuellement les files SQS du Courrier pro en dev (mails entrants et statuts d'envoi SES), puis rend compte de ce qui a été capté. Utiliser quand on veut voir arriver un mail de test envoyé à une adresse @devetu.beaupeyrat.org, ou vérifier qu'une file n'est pas bloquée.
 ---
 
-# Relever les files SQS du Courrier école (dev)
+# Relever les files SQS du Courrier pro (dev)
 
 En développement **rien ne tourne en tâche de fond** : depuis le passage en exécution
 périodique, la consommation des files est un cron en production et un geste manuel en local.
@@ -48,7 +48,7 @@ un bounce **permanent** ou une plainte inscrivent en plus l'adresse sur la liste
 locale, après quoi la rédaction refuse d'écrire vers elle. Les événements `Open` sont acquittés
 puis jetés : la partie 2 du handoff interdit la détection d'ouverture, quoi que SES publie.
 
-**Cette file travaille aussi en dev.** Le Courrier école a son propre transport (voir
+**Cette file travaille aussi en dev.** Le Courrier pro a son propre transport (voir
 `config/packages/mailer.yaml`) : ses mails partent par SES même en local, et seuls ceux-là — le
 reste de l'application continue d'atterrir dans Mailpit. C'est le configuration set `mail-dev`,
 posé en défaut sur l'identité côté SES, qui fait publier les événements ; l'application n'a rien à
@@ -91,7 +91,7 @@ réservé aux administrateurs, où on les rattache à un élève ou on les suppr
 
     http://localhost/admin/school-mail/unlinked
 
-Un mail rattaché à un élève apparaît directement dans sa boîte Courrier école (`/school-mail`),
+Un mail rattaché à un élève apparaît directement dans sa boîte Courrier pro (`/school-mail`),
 avec ses pièces jointes, désormais extraites à la réception.
 
 Une **réponse** d'entreprise, elle, ne demande rien à personne : son `In-Reply-To` reprend l'en-tête

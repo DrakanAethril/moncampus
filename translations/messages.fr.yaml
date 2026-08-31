@@ -1855,7 +1855,6 @@ lessonLogAttachmentSourceTypeLinkLabel: 'Lien'
 lessonLogAttachmentRemoveConfirmMessage: 'Retirer ce document ?'
 lessonLogAttachmentLabelFieldLabel: 'Nom du document'
 lessonLogAttachmentFileFieldLabel: 'Fichier'
-lessonLogAttachmentUrlFieldLabel: 'Ou lien externe'
 lessonLogAttachmentHelpText: 'Choisissez soit un fichier, soit un lien - pas les deux.'
 lessonLogAttachmentAddAction: 'Ajouter'
 lessonLogAttachmentInvalidTypeMessage: 'Ce type de fichier n''est pas autorisé.'
@@ -2081,7 +2080,6 @@ libraryResourceAddToggleLabel: 'Ajouter'
 libraryResourcesEmptyMessage: "Aucun document pour le moment."
 libraryResourceLabelFieldLabel: 'Nom du document'
 libraryResourceFileFieldLabel: 'Fichier'
-libraryResourceUrlFieldLabel: 'Ou lien externe'
 libraryResourceAddAction: 'Ajouter le document'
 libraryResourceInvalidTypeMessage: 'Ce type de fichier n''est pas autorisé.'
 libraryResourceSourceTypeUploadLabel: 'Fichier'
@@ -3570,7 +3568,7 @@ selfAssessmentTrackingEmptyLabel: "Aucun destinataire pour ce travail."
 selfAssessmentTrackingFootLabel: '%count% élèves, par nom A→Z · lignes ambrées = en attente'
 studentWorkSelfAssessmentStartAction: 'Estimer ma note'
 
-# Courrier école - alias d'adresse
+# Courrier pro - alias d'adresse
 emailAliasReservedLocalPart: "Cette adresse est réservée au fonctionnement du domaine et ne peut être attribuée."
 emailAliasMalformedLocalPart: "Une adresse ne peut contenir que des lettres non accentuées, des chiffres, des tirets et des points, sans point en bordure ni point doublé."
 emailAliasMissingDot: "Une adresse créée à la main doit comporter un point, sous la forme « quelquechose.quelquechose », pour ne pas se confondre avec une adresse de service de l'établissement."
@@ -3587,7 +3585,7 @@ emailAliasAddressColumnLabel: 'Adresse'
 emailAliasOriginColumnLabel: 'Origine'
 emailAliasAddAction: 'Ajouter une adresse'
 emailAliasRemoveAction: "Retirer l'adresse"
-userEmailAliasesSectionTitle: 'Adresses Courrier école'
+userEmailAliasesSectionTitle: 'Adresses Courrier pro'
 userEmailAliasesSectionHint: "Toutes ces adresses reçoivent ; celle marquée par défaut est affichée à l'élève et sert à l'expédition. Les adresses composées depuis le nom ou reprises de l'identifiant suivent leur source et ne se modifient pas."
 userEmailAliasesArchivedTitle: 'Adresses retirées'
 userEmailAliasesArchivedHint: "Retirer une adresse de la liste ne la supprime pas : elle continue de recevoir, n'est plus utilisée pour écrire, et ne sera jamais réattribuée à un autre élève."
@@ -3599,8 +3597,8 @@ userLoginHistoryTitle: 'Identifiants de ce compte'
 userLoginHistoryHint: "Tous les identifiants que ce compte a portés. Un identifiant libéré reste réservé à ce compte : personne d'autre ne pourra le porter, et ce compte peut le reprendre."
 userLoginHistoryCurrentLabel: 'actuel'
 userLoginHistoryReleasedLabel: 'libéré le %date%'
-userEmailAliasesEmptyLabel: "Aucune adresse Courrier école pour cet élève."
-userMailAliasNotProvisionedFlashMessage: "Le compte est créé, mais son adresse Courrier école n'a pas pu être composée depuis son état civil : ajoutez-la à la main depuis sa fiche."
+userEmailAliasesEmptyLabel: "Aucune adresse Courrier pro pour cet élève."
+userMailAliasNotProvisionedFlashMessage: "Le compte est créé, mais son adresse Courrier pro n'a pas pu être composée depuis son état civil : ajoutez-la à la main depuis sa fiche."
 
 # Candidatures — écran 2b « Mes démarches de recherche »
 myJobApplicationsPageHeading: 'Mes démarches de recherche'
@@ -3629,9 +3627,9 @@ jobApplicationOriginSpontaneousLabel: 'spontanée'
 jobApplicationOriginOfferLabel: 'via une offre'
 jobApplicationOriginManualLabel: 'ajoutée à la main'
 
-# Courrier école — écran 3b « boîte active »
-schoolMailPageHeading: 'Courrier école'
-schoolMailNavLabel: 'Courrier école'
+# Courrier pro — écran 3b « boîte active »
+schoolMailPageHeading: 'Courrier pro'
+schoolMailNavLabel: 'Courrier pro'
 jobApplicationsNavLabel: 'Candidatures'
 schoolMailIdentityBannerLabel: 'Vous écrivez en tant que'
 schoolMailInboxFolderLabel: 'Boîte de réception'
@@ -3657,7 +3655,7 @@ schoolMailDeliveryDelayedLabel: 'Retardé'
 schoolMailDeliveryBouncedLabel: "Échec d'envoi"
 schoolMailDeliveryComplainedLabel: 'Signalé comme indésirable'
 schoolMailDeliveryRejectedLabel: 'Rejeté'
-# Courrier école — écran 3d « rédaction d'un envoi » (rattachement 3g compris)
+# Courrier pro — écran 3d « rédaction d'un envoi » (rattachement 3g compris)
 schoolMailComposePageHeading: 'Envoyer un mail'
 schoolMailComposeAction: 'Écrire à une entreprise'
 schoolMailReplyAction: 'Répondre'
@@ -3678,9 +3676,9 @@ schoolMailComposeSendAction: 'Envoyer'
 schoolMailComposeVisibilityNoticeLabel: 'Une fois envoyé, ce mail sera visible par les enseignants de votre classe.'
 schoolMailSentFlash: 'Votre mail est parti.'
 schoolMailSearchClosedError: "Votre recherche a été marquée comme terminée : vous ne pouvez plus écrire à des entreprises."
-schoolMailNoMailboxError: "Aucune adresse Courrier école n'est encore attribuée à votre compte."
+schoolMailNoMailboxError: "Aucune adresse Courrier pro n'est encore attribuée à votre compte."
 schoolMailInvalidRecipientError: "L'adresse du destinataire n'est pas valide."
-schoolMailInternalRecipientError: "Le Courrier école n'écrit qu'à des adresses extérieures : pour joindre quelqu'un de l'établissement, utilisez la Messagerie."
+schoolMailInternalRecipientError: "Le Courrier pro n'écrit qu'à des adresses extérieures : pour joindre quelqu'un de l'établissement, utilisez la Messagerie."
 schoolMailMissingSubjectError: "L'objet est obligatoire."
 schoolMailMissingBodyError: 'Le message est vide.'
 schoolMailApplicationRequiredError: "Nommez la démarche à laquelle rattacher ce mail avant de l'envoyer."
@@ -3782,7 +3780,7 @@ schoolMailUnlinkedLinkedFlash: 'Le mail est rattaché.'
 schoolMailUnlinkedDeletedFlash: 'Le mail est retiré de la plateforme ; le brut reste archivé sur S3.'
 schoolMailUnlinkedDeleteConfirmMessage: 'Retirer ce mail de la plateforme ? Le brut restera archivé sur S3 et la suppression sera journalisée.'
 schoolMailUnlinkedFootnoteLabel: "Le catch-all SES reçoit tout le domaine : ce qui ne correspond ni à un Message-ID connu, ni à une adresse étudiante existante atterrit ici. « Rattacher » associe le mail à un étudiant (et, si besoin, à une candidature). « Supprimer » retire le mail de la plateforme (spam, erreur d'adressage) — action journalisée, le brut reste archivé sur S3."
-platformActivitySchoolMailUnlinkedDeletedText: '%user% a supprimé un mail non rattaché du Courrier école'
+platformActivitySchoolMailUnlinkedDeletedText: '%user% a supprimé un mail non rattaché du Courrier pro'
 
 # Workflow de postulation d'entraînement (design_handoff_workflow_postulation, écrans 7b-7c, 8a-8e)
 internshipAlternanceGroupNavLabel: 'Stages / Alternance'
@@ -3812,7 +3810,7 @@ trainingOfferCurrentDocumentLabel: 'actuel : %name%'
 trainingOfferValidatorsLabel: 'Enseignants valideurs'
 trainingOfferValidatorsHintLabel: 'Reçoivent et valident les postulations faites sur cette offre.'
 trainingOfferVisibilityLabel: 'Visibilité'
-trainingOfferVisibilityHintLabel: "L'offre apparaît dans le Courrier école des étudiants ayant <b>au moins un groupe en commun</b>."
+trainingOfferVisibilityHintLabel: "L'offre apparaît dans le Courrier pro des étudiants ayant <b>au moins un groupe en commun</b>."
 trainingOfferGroupsUncategorisedLabel: 'Autres groupes'
 trainingOfferSavedFlash: "L'offre est enregistrée."
 trainingOfferDeletedFlash: "L'offre est supprimée."
@@ -3910,7 +3908,7 @@ trainingReviewValidateAction: 'Valider'
 trainingReviewRefuseAction: 'Demander une correction'
 trainingReviewRemarkPlaceholder: 'Remarque (obligatoire pour une correction)'
 trainingReviewSubmitAction: 'Envoyer le retour'
-trainingReviewFooterNoticeLabel: "Les validations acquises sur une version précédente restent acquises. Le retour apparaît dans le Courrier école de l'étudiant — aucun mail réel n'est échangé."
+trainingReviewFooterNoticeLabel: "Les validations acquises sur une version précédente restent acquises. Le retour apparaît dans le Courrier pro de l'étudiant — aucun mail réel n'est échangé."
 trainingReviewSavedFlash: 'Votre retour est envoyé.'
 trainingReviewRemarkRequiredError: 'Une demande de correction sans remarque ne dit pas à l’étudiant quoi corriger.'
 trainingReviewNoDecisionError: 'Aucune décision : validez ou demandez une correction sur au moins un élément.'
@@ -4579,7 +4577,7 @@ technicalDataModelDomainLibraryLabel: 'Bibliothèque & progressions'
 technicalDataModelDomainQuizLabel: 'Quiz'
 technicalDataModelDomainUfaLabel: 'UFA & alternance'
 technicalDataModelDomainJobsearchLabel: "Stage & recherche d'emploi"
-technicalDataModelDomainMailLabel: 'Courrier école'
+technicalDataModelDomainMailLabel: 'Courrier pro'
 technicalDataModelDomainCommunicationLabel: 'Messagerie & annonces'
 technicalDataModelDomainEcoLabel: 'e-CO'
 technicalDataModelDomainSupportLabel: 'Support & plateforme'
@@ -5767,6 +5765,17 @@ fileLibraryQuotaInvalidMessage: 'Quota illisible : écrivez par exemple « 2 Go 
 filePickerFromLibraryLabel: 'Depuis la bibliothèque'
 filePickerLibraryEmptyText: 'Aucun fichier dans ce dossier.'
 filePickerLibrarySearchPlaceholder: 'Rechercher dans ma bibliothèque…'
+# Le troisième onglet du composant : un document qui n'est pas un fichier à nous. Il était une
+# ligne sous le composant, ce qui le faisait lire comme un ajout tardif et masquait le fait qu'un
+# lien et un fichier s'excluent - le formulaire refuse les deux à la fois.
+filePickerLinkTabLabel: 'Lien externe'
+filePickerLinkPlaceholderText: 'https://…'
+filePickerLinkHelpText: "Un lien n'occupe aucun espace : rien n'est déposé sur la plateforme, et c'est le site d'origine qui décide de sa durée de vie."
+# La barre de sélection de l'onglet Bibliothèque, pour un champ qui accepte plusieurs fichiers.
+filePickerSelectAllAction: 'Tout sélectionner'
+filePickerSelectNoneAction: 'Tout désélectionner'
+filePickerAddSelectionAction: 'Ajouter la sélection'
+filePickerToggleBranchAction: 'Déplier ou replier ce dossier'
 fileLibraryUsageCountLabel: '{1}1 utilisation|]1,Inf[%count% utilisations'
 fileLibraryUsagePanelTitle: 'Utilisations'
 fileLibraryDeleteEverywhereAction: 'Supprimer partout'
@@ -6423,7 +6432,7 @@ classImportAnotherFileAction: 'Changer de fichier'
 classImportDecisionPanelHint: "S'agit-il de la même personne physique ? Rien n'est présélectionné : un homonyme est fréquent d'une classe à l'autre."
 classImportReuseAccountLabel: 'Reprendre le compte %login%'
 classImportCreateNewAccountLabel: 'Créer un nouveau compte'
-classImportCreateNewAccountDetailText: "Un homonyme, pas la même personne. L'annuaire et le Courrier école numérotent déjà les homonymes."
+classImportCreateNewAccountDetailText: "Un homonyme, pas la même personne. L'annuaire et le Courrier pro numérotent déjà les homonymes."
 classImportAttachExplanationText: "Sera ajouté à %program%, avec les groupes cochés à l'étape 1. Adresse conservée."
 classImportReactivationWarningText: "Ne choisissez ceci que s'il s'agit bien de la même personne : le compte sera réactivé."
 classImportNotAStudentWarningText: "Ce compte n'est pas un compte étudiant ; le choisir bloquera l'import."
@@ -7119,8 +7128,8 @@ featureDirectoryLabel: 'Annuaire LDAP'
 featureAgendaLabel: 'Agenda'
 featureAnnouncementsLabel: 'Annonces'
 featureMessagingLabel: 'Messagerie interne'
-featureSchoolMailLabel: 'Courrier école — boîte étudiant'
-featureSchoolMailSupervisionLabel: 'Courrier école — courriers non rattachés'
+featureSchoolMailLabel: 'Courrier pro — boîte étudiant'
+featureSchoolMailSupervisionLabel: 'Courrier pro — courriers non rattachés'
 featureSignupListsLabel: 'Listes d''inscription'
 featureSupportLabel: 'Support / tickets'
 featureHelpLabel: 'Rubrique d''aide'
@@ -7156,7 +7165,7 @@ featureDefaultGivesOnText: '(affichée aujourd''hui)'
 featureDefaultGivesOffText: '(masquée aujourd''hui)'
 userColumnLabel: 'Personne'
 accessConditionGradeIgnoredWarning: 'Une ou plusieurs conditions portent sur une note obtenue, alors que le carnet de notes n''est plus en service. Elles sont ignorées : personne ne pourrait plus saisir la note qui les satisferait, et le contenu resterait verrouillé indéfiniment. Elles restent dans la liste et redeviendront actives si le carnet est réactivé.'
-programSchoolMailEnabledFieldLabel: 'Courrier école'
+programSchoolMailEnabledFieldLabel: 'Courrier pro'
 programSchoolMailEnabledFieldHelp: 'Les adresses des étudiants existent et reçoivent le courrier même lorsque cette option est fermée ; elle décide seulement de l''accès à la boîte. Ouvrir la formation plus tard leur montre tout l''historique, sans rien rejouer.'
 # Bandeau de déploiement : levé et baissé par le workflow de déploiement, aux deux instants où
 # Discord annonce le début et l'issue. Les durées viennent des quatorze déploiements mesurés entre

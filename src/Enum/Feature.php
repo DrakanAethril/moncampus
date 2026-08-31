@@ -163,7 +163,7 @@ enum Feature: string
     /**
      * Is this feature decided by the *formation* rather than by the role matrix?
      *
-     * Exactly one today - the Courrier école, whose switch is Program::$schoolMailEnabled next to
+     * Exactly one today - the Courrier pro, whose switch is Program::$schoolMailEnabled next to
      * the four booleans that area already carries. The program axis short-circuits the matrix: for
      * a scoped feature the answer is "does at least one of this person's formations open it",
      * multi-formation resolving to the most permissive (§3.4). Only the individual override, read

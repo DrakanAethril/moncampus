@@ -153,7 +153,7 @@ class FeatureAccess implements ResetInterface
             $this->matrix ??= $this->roleSettings->matrix(),
             $this->overrides->statesFor($user),
             // Only asked when the catalogue actually has a program-scoped feature, so an
-            // establishment that never opens the Courrier école pays no query for it.
+            // establishment that never opens the Courrier pro pays no query for it.
             $isAdmin ? [] : $this->openProgramFeatures($user),
         );
     }
