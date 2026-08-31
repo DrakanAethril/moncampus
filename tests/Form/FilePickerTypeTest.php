@@ -129,6 +129,27 @@ class FilePickerTypeTest extends TypeTestCase
     }
 
     /**
+     * The « Lien externe » tab **names a sibling field, it does not take its data**. That is the whole
+     * of what the option does: the widget draws that field inside the picker's tab strip, and the
+     * controllers that decide the file/url XOR keep reading `$form->get('url')` as they always did.
+     */
+    public function testTheExternalLinkOptionOnlyNamesASiblingField(): void
+    {
+        $view = $this->factory->create(FilePickerType::class, null, ['external_link' => 'url'])->createView();
+
+        self::assertSame('url', $view->vars['external_link']);
+        // And the field's own value is still a list of tokens, unchanged by the option.
+        $form = $this->factory->create(FilePickerType::class, null, ['external_link' => 'url']);
+        $form->submit(json_encode(['good-token']));
+        self::assertInstanceOf(StagedUpload::class, $form->getData());
+    }
+
+    public function testAFieldWithoutTheOptionOffersNoLinkTab(): void
+    {
+        self::assertNull($this->factory->create(FilePickerType::class)->createView()->vars['external_link']);
+    }
+
+    /**
      * @param array<string, mixed> $options
      *
      * @return list<\Symfony\Component\Validator\Constraint>

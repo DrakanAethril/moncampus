@@ -32,9 +32,15 @@ class LessonLogAttachmentType extends AbstractType
                 // here (design/validated/file-library.md, "The component"). A file picked there is a
                 // reference - it weighs once, and deleting it from the library removes it from here.
                 'library' => true,
+                // The « Lien externe » tab draws the `url` field below, in the picker's own tab strip
+                // rather than as a row under it: a file and a link are one question, and this form
+                // refuses both at once.
+                'external_link' => 'url',
             ])
             ->add('url', UrlType::class, [
-                'label' => 'lessonLogAttachmentUrlFieldLabel',
+                // No label: the tab that shows this field names it, and a title inside the pane
+                // would say it twice.
+                'label' => false,
                 'mapped' => false,
                 'required' => false,
             ])

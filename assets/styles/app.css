@@ -7979,21 +7979,51 @@ a.cm-wiki-list__title:hover { color: var(--cm-brand-strong); text-decoration: un
 
 /* --- The link: the picker's Bibliothèque tab, the usage panel, the deletion modal -------- */
 
-/* The tab strip's buttons are buttons now that one of them switches panes - reset to the tab's look
-   rather than the browser's. */
-.cm-filepick__tab { border: 0; background: none; cursor: pointer; }
+/* The tab strip's buttons are buttons now that they switch panes - reset to the tab's look rather
+   than the browser's. The underline is restated here: the `border: 0` this rule used to carry alone
+   also wiped the 2px transparent bottom border declared with the tab, so the active tab lost the
+   only mark that said which pane was showing. */
+.cm-filepick__tab { border: 0; border-bottom: 2px solid transparent; background: none; cursor: pointer; }
 .cm-filepick__library { padding: 14px; border-top: 1px solid var(--cm-border-soft); }
 .cm-filepick__library-search { margin-bottom: 10px; }
-.cm-filepick__library-body { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 12px; max-height: 260px; }
-.cm-filepick__library-tree { overflow-y: auto; border-right: 1px solid var(--cm-border-soft); padding-right: 8px; }
+/* **The height belongs to the two columns, not to the grid that holds them.** It used to sit on this
+   container, and a grid row is sized by its content: the tree grew to its natural 900-odd pixels,
+   the row grew with it, and the `max-height` only clipped what stuck out - so the lower half of the
+   tree was drawn outside the component and reachable by nothing, the `overflow-y: auto` never having
+   anything to scroll. Capping each column instead gives the overflow something to work on, and a
+   short library still takes only the room it needs. */
+.cm-filepick__library-body { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 12px; }
+.cm-filepick__library-tree { max-height: 260px; overflow-y: auto; border-right: 1px solid var(--cm-border-soft); padding-right: 8px; }
+.cm-filepick__library-col { max-height: 260px; min-height: 0; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .cm-filepick__library-list { list-style: none; margin: 0; padding: 0; }
-.cm-filepick__library-folder { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 5px 6px; border-radius: 6px; font: 400 12.5px var(--cm-font-ui); color: var(--cm-text); cursor: pointer; }
+/* The folded branch, exactly as the library's own rail draws it: one triangle rotated by CSS, so the
+   two states cannot drift apart the way two glyphs would. */
+.cm-filepick__library-node.is-collapsed > .cm-filepick__library-list--nested { display: none; }
+.cm-filepick__library-row { display: flex; align-items: center; gap: 2px; }
+.cm-filepick__library-toggle { flex: none; display: grid; place-items: center; width: 14px; height: 18px; padding: 0; border: 0; background: none; color: var(--cm-faint); cursor: pointer; }
+.cm-filepick__library-toggle svg { transform: rotate(90deg); transition: transform 0.12s ease; }
+.cm-filepick__library-node.is-collapsed > .cm-filepick__library-row .cm-filepick__library-toggle svg { transform: rotate(0deg); }
+.cm-filepick__library-toggle--empty { cursor: default; }
+.cm-filepick__library-folder { flex: 1; min-width: 0; display: block; text-align: left; border: 0; background: none; padding: 5px 6px; border-radius: 6px; font: 400 12.5px var(--cm-font-ui); color: var(--cm-text); cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cm-filepick__library-folder:hover { background: var(--cm-surface-alt); color: var(--cm-ink); }
-.cm-filepick__library-files { overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+.cm-filepick__library-folder.is-current { background: var(--cm-surface-alt); color: var(--cm-brand-strong); font-weight: 600; }
+/* The selection bar sits above the scrolling list, never inside it: a « Tout sélectionner » that
+   scrolls out of sight is one nobody finds. */
+.cm-filepick__library-bar { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.cm-filepick__library-selectall { border: 0; background: none; padding: 0; font: 600 12px var(--cm-font-ui); color: var(--cm-brand-strong); cursor: pointer; }
+.cm-filepick__library-selectall:hover { text-decoration: underline; }
+.cm-filepick__library-bar .cm-btn:disabled { opacity: .5; cursor: not-allowed; }
+.cm-filepick__library-files { min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
 .cm-filepick__library-file { display: flex; align-items: center; gap: 9px; width: 100%; text-align: left; border: 1px solid transparent; background: none; padding: 6px 8px; border-radius: 8px; cursor: pointer; }
 .cm-filepick__library-file:hover { background: var(--cm-surface-alt); border-color: var(--cm-border-soft); }
+.cm-filepick__library-file--pick { margin: 0; }
+.cm-filepick__library-check { flex: none; margin: 0; cursor: pointer; }
 .cm-filepick__library-file-name { flex: 1; min-width: 0; font: 600 12.5px var(--cm-font-ui); color: var(--cm-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cm-filepick__library-empty { margin: 8px 2px; font: 400 12.5px var(--cm-font-ui); color: var(--cm-faint); }
+
+/* The « Lien externe » pane: one field, and the sentence that says what a link costs. */
+.cm-filepick__link { padding: 14px; border-top: 1px solid var(--cm-border-soft); }
+.cm-filepick__link-help { margin: 8px 2px 0; font: 400 12px var(--cm-font-ui); color: var(--cm-faint); }
 
 /* The usage count is a button now: it opens the panel. It keeps the pill's look, because what it
    shows is still a count. */

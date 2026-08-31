@@ -6,6 +6,15 @@
    The hidden input is the field itself - it carries the signed tokens (and the `lib:<id>` entries of
    files linked from the library), and it is the only thing the form POST sends. #}
 {% block file_picker_widget %}
+    {# The « Lien externe » tab renders a **sibling field of the same form**, named by the
+       `external_link` option (App\Form\FilePickerType). Resolved here rather than in PHP because a
+       field rendered outside a form - a prototype, a preview - has no parent: the tab must then not
+       appear, not fail. Rendering the sibling's widget here is also what keeps `form_rest()` from
+       drawing it a second time at the foot of the form. #}
+    {% set link_field = null %}
+    {% if external_link is defined and external_link is not null and form.parent is not null and form.parent.children[external_link] is defined %}
+        {% set link_field = form.parent.children[external_link] %}
+    {% endif %}
     <div class="cm-filepick"
          data-controller="file-picker"
          data-file-picker-multiple-value="{{ multiple ? 'true' : 'false' }}"
@@ -29,6 +38,10 @@
              libraryEmpty: 'filePickerLibraryEmptyText'|trans,
              librarySearch: 'filePickerLibrarySearchPlaceholder'|trans,
              libraryRoot: 'fileLibraryRailTitleLabel'|trans,
+             toggleBranch: 'filePickerToggleBranchAction'|trans,
+             selectAll: 'filePickerSelectAllAction'|trans,
+             selectNone: 'filePickerSelectNoneAction'|trans,
+             addSelection: 'filePickerAddSelectionAction'|trans,
          }|json_encode|e('html_attr') }}">
 
         <div class="cm-filepick__tabs">
@@ -38,6 +51,12 @@
                answer. #}
             {% if library %}
                 <button type="button" class="cm-filepick__tab" data-file-picker-target="tabLibrary" data-action="file-picker#showLibrary">{{ 'filePickerLibraryTabLabel'|trans }}</button>
+            {% endif %}
+            {# Third source, at the same level as the other two: a document that is not a file of
+               ours. It used to be a row *under* the component, which read as an afterthought and hid
+               the fact that a link and a file are exclusive - the form refuses both. #}
+            {% if link_field is not null %}
+                <button type="button" class="cm-filepick__tab" data-file-picker-target="tabLink" data-action="file-picker#showLink">{{ 'filePickerLinkTabLabel'|trans }}</button>
             {% endif %}
         </div>
 
@@ -56,8 +75,32 @@
                        data-file-picker-target="librarySearch" data-action="input->file-picker#searchLibrary">
                 <div class="cm-filepick__library-body">
                     <div class="cm-filepick__library-tree" data-file-picker-target="libraryTree"></div>
-                    <div class="cm-filepick__library-files" data-file-picker-target="libraryFiles"></div>
+                    <div class="cm-filepick__library-col">
+                        {# The selection bar, for a field that takes several files: filing a whole
+                           folder is one gesture, and the checkboxes are what lets the two or three
+                           that do not belong be dropped before adding. It stays out of the scrolling
+                           list - a « Tout sélectionner » that scrolls away is one nobody finds. #}
+                        <div class="cm-filepick__library-bar" data-file-picker-target="libraryBar" hidden>
+                            <button type="button" class="cm-filepick__library-selectall" data-file-picker-target="selectAll" data-action="file-picker#toggleAll"></button>
+                            <button type="button" class="cm-btn cm-btn--sm cm-btn--primary" data-file-picker-target="addSelection" data-action="file-picker#addSelection"></button>
+                        </div>
+                        <div class="cm-filepick__library-files" data-file-picker-target="libraryFiles"></div>
+                    </div>
                 </div>
+            </div>
+        {% endif %}
+
+        {% if link_field is not null %}
+            {# The sibling field's own widget, drawn here. Its label is switched off at the call site:
+               the tab names it, and a second title inside the pane would say it twice. #}
+            <div class="cm-filepick__link" data-file-picker-target="linkPane" hidden>
+                {{ form_widget(link_field, {attr: link_field.vars.attr|merge({
+                    class: (link_field.vars.attr.class|default('')) ~ ' form-control',
+                    placeholder: 'filePickerLinkPlaceholderText'|trans,
+                    'data-file-picker-target': 'linkInput',
+                })}) }}
+                {{ form_errors(link_field) }}
+                <p class="cm-filepick__link-help">{{ 'filePickerLinkHelpText'|trans }}</p>
             </div>
         {% endif %}
 

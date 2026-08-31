@@ -84,6 +84,21 @@ use Symfony\Component\Validator\Constraints\NotBlank;
  * Files already attached from the library stay valid: the row carries its own storage key, copied
  * from the node.
  *
+ * ## The `external_link` option
+ *
+ * Names a **sibling field of the same form** - `'external_link' => 'url'` - which the widget then
+ * renders as a third tab beside « Déposer un fichier » and « Bibliothèque de fichiers ».
+ *
+ * The three are one question - *where does this document come from?* - and they were not one control:
+ * the link was a separate row under the component, which read as an afterthought and hid the fact
+ * that filling both is refused. The tabs say it by construction, one pane being visible at a time.
+ *
+ * **The URL stays that sibling field's own data.** This option moves where its widget is drawn, never
+ * who owns it: `$form->get('url')->getData()` answers exactly what it answered before, so the
+ * controllers that decide the file/url XOR are untouched. The template that used to draw the row
+ * simply stops doing so - the widget is rendered here, which marks it rendered, so `form_rest()`
+ * does not draw it a second time.
+ *
  * A file picked there is a **reference**: the row takes the node's own storage key and a foreign key
  * back to it, so the file weighs once and correcting it in the library corrects it everywhere - and
  * deleting it from the library removes it from here. That is the rule the chip's gold pill announces.
@@ -116,6 +131,10 @@ class FilePickerType extends AbstractType
         $view->vars['library'] = true === $options['library']
             && $this->featureAccess->isEnabled(Feature::FileLibrary)
             && $this->authorization->isGranted(FileLibraryVoter::LINK);
+        // The name of the sibling field carrying the link, or null. Resolved against the parent form
+        // in the template rather than here: a field rendered outside a form (a prototype, a preview)
+        // has no parent, and the tab must simply not appear rather than fail.
+        $view->vars['external_link'] = \is_string($options['external_link']) ? $options['external_link'] : null;
         $view->vars['max_bytes'] = $policy->maxSizeInBytes();
         $view->vars['extensions'] = $policy->extensions();
         // The `accept` attribute of the native picker: a courtesy that decides what the file dialog
@@ -133,6 +152,7 @@ class FilePickerType extends AbstractType
                 'max_size' => null,
                 'multiple' => false,
                 'library' => false,
+                'external_link' => null,
                 'compound' => false,
                 'required' => false,
                 // A token that does not resolve is a forged, tampered-with or foreign one - see
@@ -145,6 +165,7 @@ class FilePickerType extends AbstractType
             ->setAllowedTypes('max_size', ['null', 'string'])
             ->setAllowedTypes('multiple', 'bool')
             ->setAllowedTypes('library', 'bool')
+            ->setAllowedTypes('external_link', ['null', 'string'])
             // Built from the policy rather than written at the call site: stating a narrowing twice
             // is how the two come to disagree, and the `All` wrapper for a multiple field is exactly
             // the half that used to be forgotten.
