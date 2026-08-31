@@ -38,7 +38,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  */
 #[AsCommand(
     name: 'app:mail:consume-inbound',
-    description: 'Vide la file SQS des mails entrants du Courrier école (à appeler par cron).',
+    description: 'Vide la file SQS des mails entrants du Courrier pro (à appeler par cron).',
 )]
 class ConsumeInboundMailCommand extends Command
 {

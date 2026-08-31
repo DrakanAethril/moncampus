@@ -10,7 +10,7 @@ use App\Repository\EmailAliasRepository;
 use App\Util\SchoolMailLocalPart;
 
 /**
- * Checks a whole list of Courrier école addresses as an administration screen posted it - the
+ * Checks a whole list of Courrier pro addresses as an administration screen posted it - the
  * writing counterpart of App\Service\StudentMailAddressGenerator, which enforces the same rules
  * when it composes an address by itself.
  *

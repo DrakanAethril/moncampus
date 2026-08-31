@@ -117,7 +117,7 @@ class DirectoryUserController extends AbstractController
                 if ($account->schoolMailFailed) {
                     // A civil status that transliterates to nothing (or a hundredth namesake) is no
                     // reason to refuse the account: it is created without an address, and staff are
-                    // told to give it one by hand from the edit screen's "Adresses Courrier école"
+                    // told to give it one by hand from the edit screen's "Adresses Courrier pro"
                     // section.
                     $this->addFlash('warning', 'userMailAliasNotProvisionedFlashMessage');
                 }
@@ -435,11 +435,11 @@ class DirectoryUserController extends AbstractController
     }
 
     /**
-     * Takes over what edit()'s "Adresses Courrier école" section submitted: checks the typed
+     * Takes over what edit()'s "Adresses Courrier pro" section submitted: checks the typed
      * addresses, then settles which one is the primary.
      *
      * **Nothing here ever deletes an address**, and that is the point rather than a precaution. A
-     * Courrier école local part is never handed to a second student: reception is catch-all, mail
+     * Courrier pro local part is never handed to a second student: reception is catch-all, mail
      * has already gone out to it, and a freed address would silently deliver one person's post to
      * another. So the ✕ on a row archives it - `active` goes false, the row and its reservation
      * stay, and the address goes on resolving on reception exactly as App\Entity\EmailAlias

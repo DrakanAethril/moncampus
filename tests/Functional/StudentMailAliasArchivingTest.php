@@ -11,7 +11,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DomCrawler\Crawler;
 
 /**
- * Annuaire > fiche d'un élève > « Adresses Courrier école », on the refusal path.
+ * Annuaire > fiche d'un élève > « Adresses Courrier pro », on the refusal path.
  *
  * That path had never worked: the violations came back keyed by integers - PHP renormalises the
  * numeric-string row names Symfony hands out - and `Form::get()` takes nothing but a string, so
@@ -19,7 +19,7 @@ use Symfony\Component\DomCrawler\Crawler;
  * accept nothing and explain nothing, and had done so since the feature shipped. It is exactly the
  * kind of branch a smoke test on GET cannot reach, which is why it is pinned here.
  *
- * The archiving is the other half. A Courrier école local part is never handed to a second student,
+ * The archiving is the other half. A Courrier pro local part is never handed to a second student,
  * so removing a row does not delete it - and the corollary, which the unique index would otherwise
  * turn into a 500 of its own: typing back an address this same student had retired must revive that
  * row rather than add a second one for the same local part.

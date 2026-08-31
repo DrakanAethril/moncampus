@@ -30,7 +30,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  */
 #[AsCommand(
     name: 'app:mail:consume-events',
-    description: "Vide la file SQS des événements d'envoi SES du Courrier école (à appeler par cron).",
+    description: "Vide la file SQS des événements d'envoi SES du Courrier pro (à appeler par cron).",
 )]
 class ConsumeMailEventsCommand extends Command
 {

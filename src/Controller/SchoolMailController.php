@@ -152,7 +152,7 @@ class SchoolMailController extends AbstractController
         /** @var User $student */
         $student = $this->getUser();
 
-        // A locked mailbox holds nothing and sends nothing: opening "Courrier école" goes straight
+        // A locked mailbox holds nothing and sends nothing: opening "Courrier pro" goes straight
         // to the practice offers, the only way out of the lock, instead of showing an empty mailbox
         // behind a banner explaining it is empty (design_handoff_workflow_postulation, screen 8a).
         if ($this->lockChecker->isLocked($student)) {

@@ -133,7 +133,7 @@ class FeatureApiTest extends FunctionalTestCase
         $features = $this->features();
 
         foreach (Feature::cases() as $feature) {
-            // The Courrier école is not answered by the matrix at all: it is decided by the
+            // The Courrier pro is not answered by the matrix at all: it is decided by the
             // formation, and this student's opens it (see FunctionalTestCase::createProgram).
             // Switching every role off leaves it exactly where it was, which is the program axis
             // short-circuiting the matrix rather than a row that failed to be written.

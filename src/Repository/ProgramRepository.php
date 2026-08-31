@@ -43,7 +43,7 @@ class ProgramRepository extends ServiceEntityRepository
 
     /**
      * Does this person belong - as a student or as a teacher - to at least one formation whose
-     * Courrier école is open?
+     * Courrier pro is open?
      *
      * The formation axis of App\Security\FeatureAccess, and the "most permissive wins" of §3.4
      * written as SQL: a mailbox is not partitioned by formation and could not be, so one open

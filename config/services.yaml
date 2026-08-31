@@ -206,8 +206,8 @@ services:
             $proxmoxHttpClient: '@app.proxmox_http_client'
             $proxmoxTicketCache: '@cache.proxmox_ticket'
 
-    # --- Courrier école ---------------------------------------------------------------------
-    # The Courrier école storage and queues live in *another AWS account* than the uploads above
+    # --- Courrier pro ---------------------------------------------------------------------
+    # The Courrier pro storage and queues live in *another AWS account* than the uploads above
     # (the one carrying SES and the Route 53 zone) and in another region (eu-west-3, imposed by
     # SES reception, which requires a co-located bucket). Hence a second complete set of client
     # and credentials, rather than a prefix on the existing one: these are neither the same keys,

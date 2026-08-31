@@ -129,7 +129,7 @@ class ProgramType extends AbstractType
                 'label' => 'programAssignmentManagementFieldLabel',
                 'required' => false,
             ])
-            // The third axis of the feature system: the Courrier école is decided per formation
+            // The third axis of the feature system: the Courrier pro is decided per formation
             // rather than per role or per person (design/validated/feature-access.md, "Le troisième
             // axe"). The help line says what it does *not* do, because that is the half people get
             // wrong: the addresses exist and keep receiving whatever this box says - closing it
@@ -142,7 +142,7 @@ class ProgramType extends AbstractType
             // The campus game's second switch (design/validated/gamification.md §4, decision 1). It
             // is offered here as well as on the formation's own game settings screen, and both write
             // the same column: this form is where every per-formation switch of this application
-            // lives - the Courrier école right above it is the closest sibling - and it is the first
+            // lives - the Courrier pro right above it is the closest sibling - and it is the first
             // place somebody looks. The game screen keeps its own copy because it is where the rest
             // of the barème is, and because it has to say what this form cannot: that the feature
             // being off makes the box moot.

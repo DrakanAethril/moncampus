@@ -8,7 +8,7 @@ use App\Util\SchoolMailLocalPart;
 use PHPUnit\Framework\TestCase;
 
 /**
- * What a Courrier école local part is allowed to be.
+ * What a Courrier pro local part is allowed to be.
  *
  * The dot rule deserves pinning down for what it prevents more than for what it allows: reception
  * being catch-all, creating an alias amounts to manufacturing a sending identity on the school's

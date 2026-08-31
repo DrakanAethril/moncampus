@@ -296,7 +296,7 @@ real inbox.
    you've also individually verified as recipients. Request production access in the SES console
    before sending to real, unverified recipients (e.g. real staff/student addresses).
 
-## Collecting Courrier école inbound mail (cron)
+## Collecting Courrier pro inbound mail (cron)
 
 Students' school mailboxes (`@etu.beaupeyrat.org`) are captured by SES, dropped as raw `.eml`
 files into an S3 bucket, and announced on an SQS queue. Nothing is pushed at this application:

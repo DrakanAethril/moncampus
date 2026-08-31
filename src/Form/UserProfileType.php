@@ -23,7 +23,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 // change here - identifiant/prénom/nom/type/groupes d'annuaire are LDAP-owned and shown read-only
 // straight off the entity in the template, not routed through this form at all (per the design
 // handoff: they "ne font pas partie du formulaire soumis", not just disabled client-side).
-// The Courrier école addresses (emailAliases/primaryAliasKey) are the exception to that split:
+// The Courrier pro addresses (emailAliases/primaryAliasKey) are the exception to that split:
 // they're app-owned, not LDAP-owned, and only exist for student accounts - hence the
 // emailAliasesEditable option rather than an unconditional field.
 class UserProfileType extends AbstractType

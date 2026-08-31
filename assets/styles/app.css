@@ -1636,7 +1636,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     max-height: 9em; overflow-y: auto;
 }
 
-/* ---------- Courrier école addresses list (user edit screen, students only) ----------
+/* ---------- Courrier pro addresses list (user edit screen, students only) ----------
    A grid rather than a <table>: every row carries a form field, an error message under that field
    and a button, which table cells align badly. The columns are fixed at both ends (radio, origin,
    removal) and elastic in the middle, so the address - the only variable-length value - takes
