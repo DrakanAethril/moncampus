@@ -1,0 +1,43 @@
+{# One line of the verification screen, rendered from the transient entity the reader just built -
+   never from the raw payload. That is what makes this preview the question the respondent will get,
+   and what makes a type a model chose badly visible *before* anything is written.
+
+   An intertitle carries no number and no propositions: it is a line in the ordering and nothing
+   else, exactly as the editor's own list shows it (SurveyQuestionType::isAnswerable). #}
+<div class="card">
+    <div class="card-body py-3 d-flex flex-column gap-2">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            {% if question.type.isAnswerable %}
+                <span class="cm-qbank__index">Q{{ number }}</span>
+            {% endif %}
+            <span class="cm-badge {{ question.type.badgeClass }}">{{ question.type.labelKey|trans }}</span>
+            {% if question.type.supportsScale and question.isScale %}
+                <span class="cm-badge cm-badge--teal">{{ 'surveyQuestionScaleBadgeLabel'|trans }}</span>
+            {% endif %}
+            <span class="text-secondary small">
+                {%- if question.type.isAnswerable -%}
+                    {{ question.required ? 'surveyQuestionRequiredText'|trans : 'surveyQuestionOptionalText'|trans }}
+                {%- endif -%}
+                {%- if question.type.supportsChoiceBounds and question.maxChoices %} · {{ 'surveyQuestionMaxChoicesText'|trans({'%count%': question.maxChoices}) }}{% endif -%}
+            </span>
+        </div>
+
+        <div style="font-weight: 600;">{{ question.label }}</div>
+
+        {% if question.helpText %}
+            <div class="text-secondary small">{{ question.helpText }}</div>
+        {% endif %}
+
+        {% if question.type.hasAnswers %}
+            {# The propositions in their order, which on a scale IS their value - the low pole first
+               (SurveyAnswer::$orderIndex). #}
+            <ul class="mb-0 ps-3 small">
+                {% for answer in question.answers %}
+                    <li>{{ answer.label }}</li>
+                {% endfor %}
+            </ul>
+        {% elseif question.type.value == 'commentaire' %}
+            <div class="text-secondary small">{{ 'surveyImportPreviewFreeTextHint'|trans }}</div>
+        {% endif %}
+    </div>
+</div>

@@ -1,0 +1,149 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'surveyAssistantPromptPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'surveysPageHeading'|trans, url: path('app_surveys')},
+        {label: 'surveyAssistantBreadcrumbLabel'|trans, url: path('app_survey_import')},
+        {label: 'surveyAssistantPromptBreadcrumbLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'surveyAssistantPromptPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% include '_wizard_steps.html.twig' with {stepCaptionKey: 'surveyAssistantStepCaptionLabel'} %}
+
+    {# The step's own form carries nothing but its token; every field below joins it through
+       form="surveyAssistantPrompt". Wrapping the two columns in a <form> would nest it inside the
+       page's other forms - one of the two bug classes CLAUDE.md names for a small action inside a
+       form. #}
+    <form method="post" action="{{ path('app_survey_import_prompt') }}" id="surveyAssistantPrompt">
+        <input type="hidden" name="_token" value="{{ csrf_token('survey_import_prompt') }}">
+    </form>
+
+    {# The controller sits on the row that holds BOTH columns: a Stimulus target outside the element
+       carrying data-controller is never seen, which is exactly how the quiz assistant shipped a
+       prompt that kept its brackets whatever was typed. #}
+    <div class="row g-4 align-items-start"
+         data-controller="copy-block survey-prompt-builder"
+         {# e('html_attr') is not belt and braces: a heredoc rendered here is Markup, which automatic
+         escaping lets through, and the envelope's {"format":"…"} would close the attribute on its
+         first quote. #}
+         data-survey-prompt-builder-envelope-value="{{ promptEnvelope|e('html_attr') }}"
+         data-survey-prompt-builder-closing-value="{{ promptClosing|e('html_attr') }}"
+         data-survey-prompt-builder-fragments-value="{{ promptFragments|json_encode }}"
+         data-survey-prompt-builder-count-template-value="{{ 'quizImportPromptCountTemplate'|trans }}"
+         data-survey-prompt-builder-empty-value="{{ 'quizImportPromptEmptyText'|trans }}"
+         data-survey-prompt-builder-demand-template-value="{{ promptDemandTemplate|e('html_attr') }}"
+         data-survey-prompt-builder-demand-placeholders-value="{{ promptDemandPlaceholders|json_encode }}"
+         data-survey-prompt-builder-demand-extra-heading-value="{{ promptDemandExtraHeading }}">
+
+        {# ── Left column: what the author states ────────────────────────────────────────────── #}
+        <div class="col-12 col-lg-5 d-flex flex-column gap-3">
+            {% if path == pathSubject %}
+                <div class="card cm-audio-card">
+                    <div class="cm-audio-card__head">
+                        <span class="cm-audio-card__label">{{ 'surveyAssistantDemandSectionTitle'|trans }}</span>
+                    </div>
+                    <div class="cm-audio-card__body d-flex flex-column gap-2">
+                        <label class="form-label mb-0" for="demand_theme">{{ 'surveyAssistantDemandThemeLabel'|trans }}</label>
+                        <input class="form-control" id="demand_theme" name="demand[theme]" form="surveyAssistantPrompt"
+                               maxlength="255" value="{{ demand.theme }}"
+                               placeholder="{{ 'surveyAssistantDemandThemePlaceholder'|trans }}"
+                               data-survey-prompt-builder-target="demandField" data-demand-key="theme"
+                               data-action="input->survey-prompt-builder#refresh">
+
+                        {# The field that decides whether the survey is worth sending: what the author
+                           wants to *know*, not what the questions are about. #}
+                        <label class="form-label mb-0" for="demand_goal">{{ 'surveyAssistantDemandGoalLabel'|trans }}</label>
+                        <textarea class="form-control" id="demand_goal" name="demand[goal]" form="surveyAssistantPrompt"
+                                  rows="2" placeholder="{{ 'surveyAssistantDemandGoalPlaceholder'|trans }}"
+                                  data-survey-prompt-builder-target="demandField" data-demand-key="goal"
+                                  data-action="input->survey-prompt-builder#refresh">{{ demand.goal }}</textarea>
+
+                        <label class="form-label mb-0" for="demand_audience">{{ 'surveyAssistantDemandAudienceLabel'|trans }}</label>
+                        <input class="form-control" id="demand_audience" name="demand[audience]" form="surveyAssistantPrompt"
+                               maxlength="255" value="{{ demand.audience }}"
+                               placeholder="{{ 'surveyAssistantDemandAudiencePlaceholder'|trans }}"
+                               data-survey-prompt-builder-target="demandField" data-demand-key="audience"
+                               data-action="input->survey-prompt-builder#refresh">
+                    </div>
+                </div>
+
+                <div class="card cm-audio-card">
+                    <div class="cm-audio-card__head">
+                        <span class="cm-audio-card__label">{{ 'surveyAssistantCountSectionTitle'|trans }}</span>
+                    </div>
+                    <div class="cm-audio-card__body d-flex flex-column gap-2">
+                        <input class="form-control" type="number" min="1" max="{{ maxQuestionCount }}"
+                               id="demand_count" name="demand[questionCount]" form="surveyAssistantPrompt"
+                               aria-label="{{ 'surveyAssistantCountSectionTitle'|trans }}"
+                               value="{{ demand.questionCount }}" placeholder="12"
+                               data-survey-prompt-builder-target="demandField" data-demand-key="questionCount"
+                               data-action="input->survey-prompt-builder#refresh">
+                        <div class="text-secondary small">{{ 'surveyAssistantCountSectionHint'|trans }}</div>
+
+                        <label class="form-label mb-0" for="demand_extra">{{ 'surveyAssistantDemandExtraLabel'|trans }}</label>
+                        <textarea class="form-control" id="demand_extra" name="demand[extra]" form="surveyAssistantPrompt"
+                                  rows="3" placeholder="{{ 'surveyAssistantDemandExtraPlaceholder'|trans }}"
+                                  data-survey-prompt-builder-target="demandField" data-demand-key="extra"
+                                  data-action="input->survey-prompt-builder#refresh">{{ demand.extra }}</textarea>
+                    </div>
+                </div>
+            {% else %}
+                {# The transposition path states nothing: the author's own questionnaire carries the
+                   subject, the audience and the number of questions, and announcing any of them
+                   would invite a model to write the ones it thinks are missing. #}
+                <div class="cm-note">
+                    <span class="cm-note__icon">i</span>
+                    <div>{{ 'surveyAssistantTransposeNoteText'|trans }}</div>
+                </div>
+            {% endif %}
+
+            <div class="cm-note">
+                <span class="cm-note__icon">i</span>
+                <div>{{ 'surveyAssistantPrivacyNoteText'|trans }}</div>
+            </div>
+        </div>
+
+        {# ── Right column: the prompt that comes out ────────────────────────────────────────── #}
+        <div class="col-12 col-lg-7 d-flex flex-column gap-3">
+            <div class="cm-subhead">
+                <div class="cm-subhead__title">{{ 'surveyAssistantPromptSectionTitle'|trans }}</div>
+                <div class="cm-subhead__hint">
+                    {{ (path == pathTranspose ? 'surveyAssistantPromptSectionHintTranspose' : 'surveyAssistantPromptSectionHint')|trans }}
+                </div>
+            </div>
+
+            {# Ticking is what keeps the prompt usable: one type ticked gives exactly the « prompt for
+               that type », and a questionnaire that only wants des échelles has no use for the four
+               other fragments. #}
+            <div class="cm-audio-options">
+                {% for type in promptTypes %}
+                    <label class="cm-audio-option">
+                        <input type="checkbox" checked value="{{ type.value }}"
+                               data-survey-prompt-builder-target="type"
+                               data-action="change->survey-prompt-builder#refresh">
+                        {{ type.label }}
+                    </label>
+                {% endfor %}
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <span class="cm-audio-card__count" data-survey-prompt-builder-target="count"></span>
+                <button type="button" class="btn btn-sm ms-auto" data-action="click->copy-block#copy"
+                        data-copy-block-done-label-param="{{ 'zoneImportPromptCopiedLabel'|trans }}">{{ 'zoneImportPromptCopyLabel'|trans }}</button>
+            </div>
+            <pre class="cm-qimport-prompt" data-copy-block-target="source" data-survey-prompt-builder-target="output"></pre>
+        </div>
+    </div>
+
+    <div class="cm-actionbar">
+        <div class="cm-actionbar__buttons">
+            <a href="{{ path('app_survey_import') }}" class="btn btn-link">{{ 'surveyAssistantBackActionLabel'|trans }}</a>
+            <button type="submit" form="surveyAssistantPrompt" class="btn btn-primary">{{ 'surveyAssistantPromptContinueActionLabel'|trans }}</button>
+        </div>
+    </div>
+{% endblock %}

@@ -22,7 +22,9 @@
                placeholder="{{ 'surveyLibrarySearchPlaceholder'|trans }}"
                aria-label="{{ 'surveyLibrarySearchPlaceholder'|trans }}">
     </form>
-    {# The new model lands in the folder being looked at, which is the whole point of being in one. #}
+    {# Both doors carry the folder being looked at, which is the whole point of being in one: an
+       imported questionnaire is filed where the author was standing, exactly like a new one. #}
+    <a href="{{ path('app_survey_import', currentFolder ? {folder: currentFolder.id} : {}) }}" class="btn">{{ 'surveyImportButtonLabel'|trans }}</a>
     <a href="{{ path('app_survey_template_new', currentFolder ? {folder: currentFolder.id} : {}) }}" class="btn btn-primary">{{ 'surveyNewButtonLabel'|trans }}</a>
 {% endblock %}
 
