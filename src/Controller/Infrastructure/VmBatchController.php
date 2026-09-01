@@ -23,6 +23,7 @@ use App\Repository\UserRepository;
 use App\Repository\VmBatchItemRepository;
 use App\Repository\VmBatchRepository;
 use App\Security\Voter\ProxmoxHostVoter;
+use App\Service\Guest\StaleGuestAccountPruner;
 use App\Service\Proxmox\ProxmoxClientFactory;
 use App\Service\Proxmox\ProxmoxGuest;
 use App\Service\Proxmox\ProxmoxInventory;
@@ -457,12 +458,20 @@ class VmBatchController extends AbstractController
      * Removes the batch itself - the plan and its record, never the machines.
      *
      * The machines it created go on running on the hypervisor, untouched and unreachable from here
-     * afterwards; the screen says so before asking. The accounts already placed keep their rows and
-     * simply lose the batch they belonged to (`ON DELETE SET NULL`), because they describe accounts
-     * that exist on real machines and outlive the plan that put them there.
+     * afterwards; the screen says so before asking. The accounts on those machines keep their rows
+     * and simply lose the batch they belonged to (`ON DELETE SET NULL`), because they describe
+     * accounts that exist on real machines and outlive the plan that put them there.
+     *
+     * **The accounts of machines that no longer exist are removed instead**, and the hypervisor is
+     * asked which is which right here. They are the case that the paragraph above quietly got
+     * wrong: a machine destroyed in Proxmox leaves account rows that describe nothing, and deleting
+     * the batch takes away the last screen an administrator could have seen them on - while « Mes
+     * machines virtuelles », which is built from those very rows, goes on showing a card for a
+     * machine that exists nowhere. A host that does not answer decides nothing: its accounts are
+     * left alone, and `app:guest-accounts:prune` picks them up later.
      */
     #[Route(path: '/infrastructure/batches/{id}/remove', name: 'app_infrastructure_batch_remove', requirements: ['id' => '\d+'], methods: ['POST'])]
-    public function remove(Request $request, VmBatchRepository $batches, EntityManagerInterface $entityManager, int $id): Response
+    public function remove(Request $request, VmBatchRepository $batches, StaleGuestAccountPruner $pruner, EntityManagerInterface $entityManager, int $id): Response
     {
         // Read from the BODY, not the header: these two are ordinary form posts, while
         // assertValidInfrastructureToken() serves the fetch-driven actions of this area.
@@ -476,6 +485,9 @@ class VmBatchController extends AbstractController
         if (null !== $host) {
             $this->denyAccessUnlessGranted(ProxmoxHostVoter::PROVISION, $host);
         }
+
+        // Before the batch goes: once it is gone, findForBatch() has nothing left to ask about.
+        $pruner->pruneBatch($batch);
 
         $entityManager->remove($batch);
         $entityManager->flush();

@@ -130,12 +130,33 @@ class GuestAccountRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /** @return list<GuestAccount> */
     public function findForBatch(VmBatch $batch): array
     {
         return $this->createQueryBuilder('a')
             ->andWhere('a.batch = :batch')
             ->setParameter('batch', $batch)
             ->orderBy('a.vmid', 'ASC')
+            ->addOrderBy('a.login', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Every account MonCampus knows about, host first.
+     *
+     * For the maintenance sweep alone (App\Service\Guest\StaleGuestAccountPruner): no screen lists
+     * the accounts of the whole school, and the ordering is there so a pass groups its work - and
+     * its output - one hypervisor at a time.
+     *
+     * @return list<GuestAccount>
+     */
+    public function findAllOrdered(): array
+    {
+        return $this->createQueryBuilder('a')
+            ->leftJoin('a.host', 'h')->addSelect('h')
+            ->orderBy('h.label', 'ASC')
+            ->addOrderBy('a.vmid', 'ASC')
             ->addOrderBy('a.login', 'ASC')
             ->getQuery()
             ->getResult();

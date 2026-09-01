@@ -11,6 +11,8 @@ use App\Entity\User;
 use App\Entity\VmBatch;
 use App\Entity\VmBatchItem;
 use App\Enum\VmBatchItemStatus;
+use App\Service\Guest\GuestMachineIndex;
+use App\Service\Guest\GuestMachineLocator;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -35,6 +37,31 @@ class MyMachinesTest extends FunctionalTestCase
         // The login they will type, and the password field that is the whole reason for the screen.
         self::assertStringContainsString($account->getLogin(), $crawler->text());
         self::assertCount(1, $crawler->filter('input[type="password"][name="password"]'));
+    }
+
+    /**
+     * The machine was destroyed in Proxmox, and the card goes with it.
+     *
+     * This is the rule /infrastructure has always applied - nothing about a machine is stored, so
+     * one destroyed there simply stops being listed - and this screen used to be the exception,
+     * because it is built from account rows rather than from the hypervisor. The batch is deleted
+     * here too, which is what actually happens: an administrator removes the plan of a practical
+     * that is over, and until this the students kept a card for a machine that existed nowhere.
+     *
+     * The host answers here (an empty inventory), which is the whole difference with the test
+     * above: this one asserts on *gone*, that one runs against a host that says nothing at all.
+     */
+    public function testAMachineTheHypervisorNoLongerHoldsIsNotListed(): void
+    {
+        [$student] = $this->machineFor('celia.l');
+        $this->hypervisorHoldsNothing();
+        $this->client->loginUser($student);
+
+        $crawler = $this->client->request('GET', '/my/machines');
+
+        self::assertResponseIsSuccessful();
+        self::assertStringNotContainsString('poste-01', $crawler->text());
+        self::assertCount(0, $crawler->filter('input[type="password"][name="password"]'));
     }
 
     public function testSomebodyWithNoMachineIsToldSoRatherThanRefused(): void
@@ -95,6 +122,18 @@ class MyMachinesTest extends FunctionalTestCase
         $this->client->request('POST', '/my/machines/'.$account->getId().'/start');
 
         self::assertResponseStatusCodeSame(403);
+    }
+
+    /**
+     * A hypervisor that answers, and holds none of these machines - the state a destroyed machine
+     * leaves behind. Stubbed at App\Service\Guest\GuestMachineLocator rather than at the HTTP
+     * client, because what this test is about is the *decision* the screen makes on that answer.
+     */
+    private function hypervisorHoldsNothing(): void
+    {
+        $locator = $this->createStub(GuestMachineLocator::class);
+        $locator->method('index')->willReturn(new GuestMachineIndex());
+        static::getContainer()->set(GuestMachineLocator::class, $locator);
     }
 
     /** The token the screen renders, read back from the screen - the only one their session holds. */

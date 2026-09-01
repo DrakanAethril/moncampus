@@ -12,29 +12,34 @@ use App\Enum\ProxmoxAction;
 use App\Repository\GuestAccountRepository;
 use App\Repository\IpAllocationRepository;
 use App\Repository\ProxmoxOperationRepository;
-use App\Service\Proxmox\ProxmoxClientFactory;
-use App\Service\Proxmox\ProxmoxGuest;
-use App\Service\Proxmox\ProxmoxInventory;
-use App\Service\Proxmox\ProxmoxUnavailableException;
 
 /**
  * The machines one person holds an account on, ready to be shown.
  *
  * **One inventory call per host, never one per machine.** A class's worth of accounts can sit on a
  * single hypervisor, and asking it about each of them in turn is how a page becomes as slow as the
- * number of machines on it. The guests are read once and matched by (node, VMID).
+ * number of machines on it. The guests are read once, by App\Service\Guest\GuestMachineLocator,
+ * and matched by (host, VMID) - a VMID is unique across a cluster, and a machine migrated to
+ * another node is still the same machine.
  *
  * A host that cannot be reached is not an error here: its machines are listed with an unknown
  * status, which is what an unreachable hypervisor honestly means. Refusing to draw the page would
  * hide the machines of every *other* host along with it - and the person reading this screen has no
  * way to act on a hypervisor being down anyway.
+ *
+ * **A machine the hypervisor no longer holds is not listed at all**, and that is the same rule
+ * /infrastructure applies: nothing about a machine is stored, so one destroyed in Proxmox simply
+ * stops being listed. An account row outlives its machine - the batch that created it may be gone
+ * too - and until this filter existed it kept a card on a student's screen for a machine that no
+ * longer existed anywhere, with buttons that could only fail. Note the difference this leans on,
+ * which App\Service\Guest\GuestMachineIndex draws: gone means *a host that answered does not hold
+ * it*, never *a host that did not answer*.
  */
 class UserMachineFinder
 {
     public function __construct(
         private readonly GuestAccountRepository $accounts,
-        private readonly ProxmoxClientFactory $clientFactory,
-        private readonly ProxmoxInventory $inventory,
+        private readonly GuestMachineLocator $locator,
         private readonly ProxmoxOperationRepository $operations,
         private readonly IpAllocationRepository $allocations,
     ) {
@@ -49,8 +54,16 @@ class UserMachineFinder
             return [];
         }
 
+        $index = $this->locator->index($accounts);
+        // Judged before anything else is read: the machines that are gone must not weigh on the
+        // queries that follow, and an empty list after the filter is an empty screen, not an error.
+        $accounts = array_values(array_filter($accounts, static fn (GuestAccount $account): bool => !$index->isGone($account)));
+
+        if ([] === $accounts) {
+            return [];
+        }
+
         $hosts = $this->hostsOf($accounts);
-        $guests = $this->guestsByHost($hosts);
         $logins = $this->loginsByHost($hosts, $accounts);
         $pending = $this->pendingByHost($hosts);
         $addresses = $this->allocations->findAddressesForVmids(array_values(array_unique(
@@ -61,8 +74,7 @@ class UserMachineFinder
         foreach ($accounts as $account) {
             $host = $account->getHost();
             $hostId = $host?->getId() ?? 0;
-            $key = \sprintf('%d/%s/%d', $hostId, $account->getNode(), $account->getVmid());
-            $guest = $guests[$key] ?? null;
+            $guest = $index->machineOf($account);
             $item = $this->itemFor($account);
             $batch = $account->getBatch();
 
@@ -80,7 +92,7 @@ class UserMachineFinder
                 $item?->getIpAllocation()?->getIp() ?? $addresses[$account->getVmid()] ?? null,
                 $guest?->status,
                 $batch?->getLabel(),
-                $logins[$key] ?? [$account->getLogin()],
+                $logins[\sprintf('%d/%s/%d', $hostId, $account->getNode(), $account->getVmid())] ?? [$account->getLogin()],
                 // The hypervisor first, because it knows what the machine actually got; the batch
                 // is what was *asked for*, and it is all there is when the host cannot be reached.
                 $guest->maxMemoryBytes ?? (null !== $batch ? $batch->getMemoryMib() * 1024 * 1024 : null),
@@ -175,37 +187,6 @@ class UserMachineFinder
         }
 
         return $pending;
-    }
-
-    /**
-     * Every guest of every host these accounts sit on, keyed by host/node/VMID.
-     *
-     * @param array<int, ProxmoxHost> $hosts
-     *
-     * @return array<string, ProxmoxGuest>
-     */
-    private function guestsByHost(array $hosts): array
-    {
-        $guests = [];
-
-        foreach ($hosts as $host) {
-            foreach ($this->guestsOf($host) as $guest) {
-                $guests[\sprintf('%d/%s/%d', $host->getId() ?? 0, $guest->node, $guest->vmid)] = $guest;
-            }
-        }
-
-        return $guests;
-    }
-
-    /** @return list<ProxmoxGuest> */
-    private function guestsOf(ProxmoxHost $host): array
-    {
-        try {
-            return $this->inventory->guests($this->clientFactory->operate($host));
-        } catch (ProxmoxUnavailableException) {
-            // Unknown, not broken - see the class docblock.
-            return [];
-        }
     }
 
     /**

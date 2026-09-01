@@ -28,7 +28,7 @@ class GameObservationBoardTest extends FunctionalTestCase
         $student = $this->createUser(['ROLE_USER', 'ROLE_STUDENT'], 'obs.idle');
         $program = $this->playingProgram([$student]);
 
-        $this->credit($student, $program, GameRuleCatalog::WORK_ON_TIME, GameFamily::Work, 30, '-3 days');
+        $this->credit($student, $program, GameRuleCatalog::WORK_ON_TIME, GameFamily::Work, 30, $this->withinThisMonth());
 
         $rules = $this->board()->for($program, ...$this->thisMonth())->rules;
         $codes = array_map(static fn (array $row): string => $row['value']->code(), $rules);
@@ -51,9 +51,9 @@ class GameObservationBoardTest extends FunctionalTestCase
 
         // 60 paid once against 5 paid four times: the same order of magnitude of points, and two
         // very different things to say about the barème.
-        $this->credit($student, $program, GameRuleCatalog::ENGAGEMENT_CERTIFICATION, GameFamily::Engagement, 60, '-5 days');
+        $this->credit($student, $program, GameRuleCatalog::ENGAGEMENT_CERTIFICATION, GameFamily::Engagement, 60, $this->withinThisMonth());
         for ($i = 1; $i <= 4; ++$i) {
-            $this->credit($student, $program, GameRuleCatalog::ENGAGEMENT_WIKI, GameFamily::Engagement, 5, '-'.$i.' days');
+            $this->credit($student, $program, GameRuleCatalog::ENGAGEMENT_WIKI, GameFamily::Engagement, 5, $this->withinThisMonth($i));
         }
 
         $rules = $this->board()->for($program, ...$this->thisMonth())->rules;
@@ -72,8 +72,8 @@ class GameObservationBoardTest extends FunctionalTestCase
         $program = $this->playingProgram([$ahead, $behind]);
 
         // Earned last year: outside the window, and a level is never lost, so it still counts here.
-        $this->credit($ahead, $program, GameRuleCatalog::ENGAGEMENT_CERTIFICATION, GameFamily::Engagement, 400, '-8 months');
-        $this->credit($behind, $program, GameRuleCatalog::WORK_ON_TIME, GameFamily::Work, 30, '-2 days');
+        $this->credit($ahead, $program, GameRuleCatalog::ENGAGEMENT_CERTIFICATION, GameFamily::Engagement, 400, new \DateTimeImmutable('-8 months'));
+        $this->credit($behind, $program, GameRuleCatalog::WORK_ON_TIME, GameFamily::Work, 30, $this->withinThisMonth());
 
         $levels = $this->board()->for($program, ...$this->thisMonth())->levels;
 
@@ -94,7 +94,7 @@ class GameObservationBoardTest extends FunctionalTestCase
 
         // 10 / 60 / 900: a mean would answer 323 and be moved by the last student alone.
         foreach ([10, 60, 900] as $index => $points) {
-            $this->credit($students[$index], $program, GameRuleCatalog::WORK_ON_TIME, GameFamily::Work, $points, '-1 day');
+            $this->credit($students[$index], $program, GameRuleCatalog::WORK_ON_TIME, GameFamily::Work, $points, $this->withinThisMonth($index));
         }
 
         $now = new \DateTimeImmutable();
@@ -147,11 +147,24 @@ class GameObservationBoardTest extends FunctionalTestCase
         return $program;
     }
 
-    private function credit(User $student, Program $program, string $code, GameFamily $family, int $points, string $when): void
+    private function credit(User $student, Program $program, string $code, GameFamily $family, int $points, \DateTimeImmutable $when): void
     {
-        $entry = new GameEntry($student, $program, $family, $code, $points, new \DateTimeImmutable($when));
+        $entry = new GameEntry($student, $program, $family, $code, $points, $when);
         $this->entityManager()->persist($entry);
         $this->entityManager()->flush();
+    }
+
+    /**
+     * A moment inside the month being read, whatever day the suite is run on.
+     *
+     * Deliberately not « il y a trois jours »: the window is a **calendar month**, so on the first
+     * of a month that reads as last month and the entry lands outside what the board is asked
+     * about. Three tests failed exactly that way, on the 1st and only on the 1st. The rank spaces
+     * the entries by an hour, which is all they need to be distinct.
+     */
+    private function withinThisMonth(int $rank = 0): \DateTimeImmutable
+    {
+        return (new \DateTimeImmutable())->modify('first day of this month')->setTime(0, 0)->modify('+'.$rank.' hours');
     }
 
     /** @return array{\DateTimeImmutable, \DateTimeImmutable} */
