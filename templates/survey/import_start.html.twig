@@ -1,0 +1,74 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'surveyAssistantPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'surveysPageHeading'|trans, url: path('app_surveys')},
+        {label: 'surveyAssistantBreadcrumbLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'surveyAssistantPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% include '_wizard_steps.html.twig' with {stepCaptionKey: 'surveyAssistantStepCaptionLabel'} %}
+
+    {# Step 2 ends outside the application - the author leaves with a prompt and comes back with a
+       document, sometimes a quarter of an hour later. Landing back on the front door must not throw
+       that away. #}
+    {% if resumeRoute %}
+        <div class="cm-note mb-3">
+            <span class="cm-note__icon">i</span>
+            <div>
+                {{ 'surveyAssistantResumeNoteText'|trans }}
+                <a href="{{ path(resumeRoute) }}">{{ 'surveyAssistantResumeActionLabel'|trans }}</a>
+            </div>
+        </div>
+    {% endif %}
+
+    {# Two answers to one question. Each is a form rather than a link because the answer is written
+       into the session before anything else happens - the assistant must be resumable from the very
+       first click, and a GET that mutates state is a Back button away from a surprise. #}
+    <div class="d-flex flex-column gap-3">
+        <form method="post" action="{{ path('app_survey_import') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('survey_import_start') }}">
+            <input type="hidden" name="path" value="transpose">
+            <button type="submit" class="card cm-audio-card cm-import-choice w-100 text-start border-0">
+                <div class="cm-audio-card__body">
+                    <div class="cm-subhead">
+                        <div class="cm-subhead__title">{{ 'surveyAssistantPathTransposeTitle'|trans }}</div>
+                        <div class="cm-subhead__hint">{{ 'surveyAssistantPathTransposeHint'|trans }}</div>
+                    </div>
+                    <div class="cm-import-choice__meta">
+                        <span class="cm-audio-pill">{{ 'surveyAssistantPathTransposeDurationLabel'|trans }}</span>
+                        <span class="cm-import-choice__arrow" aria-hidden="true">→</span>
+                    </div>
+                </div>
+            </button>
+        </form>
+
+        {# Nothing to choose here: the fields are on step 2, next to the prompt they fill in - typing
+           them far from the text they produce is typing them blind. #}
+        <form method="post" action="{{ path('app_survey_import') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('survey_import_start') }}">
+            <input type="hidden" name="path" value="subject">
+            <button type="submit" class="card cm-audio-card cm-import-choice w-100 text-start border-0">
+                <div class="cm-audio-card__body">
+                    <div class="cm-subhead">
+                        <div class="cm-subhead__title">{{ 'surveyAssistantPathSubjectTitle'|trans }}</div>
+                        <div class="cm-subhead__hint">{{ 'surveyAssistantPathSubjectHint'|trans }}</div>
+                    </div>
+                    <div class="cm-import-choice__meta">
+                        <span class="cm-import-choice__arrow" aria-hidden="true">→</span>
+                    </div>
+                </div>
+            </button>
+        </form>
+    </div>
+
+    <div class="cm-note mt-3">
+        <span class="cm-note__icon">i</span>
+        <div>{{ 'surveyAssistantNoWriteNoteText'|trans }}</div>
+    </div>
+{% endblock %}

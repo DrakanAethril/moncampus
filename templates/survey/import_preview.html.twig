@@ -1,0 +1,120 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'surveyImportPreviewPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'surveysPageHeading'|trans, url: path('app_surveys')},
+        {label: 'surveyAssistantBreadcrumbLabel'|trans, url: path('app_survey_import')},
+        {label: 'surveyImportPreviewBreadcrumbLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'surveyImportPreviewPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+            {{ form_errors(form) }}
+
+            <div class="cm-note mb-3">
+                <span class="cm-note__icon">i</span>
+                <div>{{ 'surveyImportPreviewIntroTemplate'|trans({
+                    '%count%': previewQuestions|length,
+                    '%answerable%': answerableCount,
+                }) }}</div>
+            </div>
+
+            {% if payload.errors is not empty %}
+                {# Questions the reader could not use. Listed rather than blocking the import: one bad
+                   question must not cost the author the rest of the questionnaire. #}
+                <div class="alert alert-warning" role="alert">
+                    <div class="fw-medium mb-1">{{ 'surveyImportPreviewSkippedTitleTemplate'|trans({'%count%': payload.errors|length}) }}</div>
+                    <ul class="mb-0 ps-3">
+                        {% for error in payload.errors|slice(0, 20) %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                    {% if payload.errors|length > 20 %}
+                        <div class="small mt-1">{{ 'surveyImportPreviewSkippedMoreTemplate'|trans({'%count%': payload.errors|length - 20}) }}</div>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            {# The destination comes before everything else: a questionnaire is built in several goes,
+               so joining an existing model is a destination and not a second import. The Stimulus
+               controller is the quiz import's own - it reads radios named « destination » and a
+               « targetTemplate » select, which is exactly this form. #}
+            <div data-controller="quiz-import-destination">
+                <div class="cm-subhead">
+                    <div class="cm-subhead__title">{{ 'surveyImportDestinationSectionTitle'|trans }}</div>
+                </div>
+                <div class="cm-audio-modes mb-3">
+                    {% for choice in form.destination %}
+                        <label class="cm-audio-mode">
+                            {{ form_widget(choice, {attr: {'data-action': 'change->quiz-import-destination#refresh', 'data-quiz-import-destination-target': 'choice'}}) }}
+                            <span class="cm-audio-mode__dot"></span>
+                            <span>
+                                <span class="cm-audio-mode__label">{{ choice.vars.label|trans }}</span>
+                                <span class="d-block text-secondary small">{{ (choice.vars.value == 'new' ? 'surveyImportDestinationNewHint' : 'surveyImportDestinationExistingHint')|trans }}</span>
+                            </span>
+                        </label>
+                    {% endfor %}
+                </div>
+
+                <div class="row g-4 align-items-start">
+                    <div class="col-12 col-lg-5 d-flex flex-column gap-3">
+                        <div data-quiz-import-destination-target="existingPanel" hidden>
+                            {{ form_row(form.targetTemplate) }}
+                            {% if existingTemplates is empty %}
+                                <div class="text-secondary small">{{ 'surveyImportDestinationNoSurveyText'|trans }}</div>
+                            {% endif %}
+                            <div class="cm-note">
+                                <span class="cm-note__icon">i</span>
+                                <div>{{ 'surveyImportDestinationSnapshotNote'|trans }}</div>
+                            </div>
+                        </div>
+
+                        <div data-quiz-import-destination-target="newPanel">
+                            <div class="cm-subhead">
+                                <div class="cm-subhead__title">{{ 'surveyImportPreviewIdentityTitle'|trans }}</div>
+                                <div class="cm-subhead__hint">{{ 'surveyImportPreviewIdentityHint'|trans }}</div>
+                            </div>
+                            {{ form_row(form.name) }}
+                            {{ form_row(form.subject) }}
+                            {{ form_row(form.description) }}
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-lg-7 d-flex flex-column gap-2">
+                        <div class="cm-subhead">
+                            <div class="cm-subhead__title">{{ 'surveyImportPreviewQuestionsTitleTemplate'|trans({'%count%': previewQuestions|length}) }}</div>
+                            <div class="cm-subhead__hint">{{ 'surveyImportPreviewQuestionsHint'|trans }}</div>
+                        </div>
+                        <div class="d-flex flex-column gap-2" style="max-height: 640px; overflow-y: auto;">
+                            {% set number = 0 %}
+                            {% for question in previewQuestions %}
+                                {% if question.type.isAnswerable %}{% set number = number + 1 %}{% endif %}
+                                {% include 'survey/_import_preview_question.html.twig' with {question: question, number: number} only %}
+                            {% endfor %}
+                        </div>
+                        <div class="text-secondary small">{{ 'surveyImportPreviewEditLaterHint'|trans }}</div>
+                    </div>
+                </div>
+
+                <div class="cm-actionbar">
+                    <div class="cm-actionbar__buttons">
+                        <a href="{{ path('app_survey_import_paste') }}" class="btn btn-link">{{ 'surveyImportPreviewBackLabel'|trans }}</a>
+                        {# The button names where the questions are going - never a bare « Valider ». #}
+                        <button type="submit" class="btn btn-primary" data-quiz-import-destination-target="submit"
+                                data-new-label="{{ 'surveyImportPreviewConfirmTemplate'|trans({'%count%': previewQuestions|length}) }}"
+                                data-existing-label="{{ 'surveyImportPreviewConfirmIntoTemplate'|trans({'%count%': previewQuestions|length, '%name%': '__NAME__'}) }}">{{ 'surveyImportPreviewConfirmTemplate'|trans({'%count%': previewQuestions|length}) }}</button>
+                    </div>
+                </div>
+            </div>
+            {{ form_rest(form) }}
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}

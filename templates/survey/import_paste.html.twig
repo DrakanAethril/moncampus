@@ -1,0 +1,56 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'surveyAssistantPastePageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'surveysPageHeading'|trans, url: path('app_surveys')},
+        {label: 'surveyAssistantBreadcrumbLabel'|trans, url: path('app_survey_import')},
+        {label: 'surveyAssistantPasteBreadcrumbLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'surveyAssistantPastePageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% include '_wizard_steps.html.twig' with {stepCaptionKey: 'surveyAssistantStepCaptionLabel'} %}
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post" action="{{ path('app_survey_import_paste') }}" class="d-flex flex-column gap-3">
+                <input type="hidden" name="_token" value="{{ csrf_token('survey_import_paste') }}">
+
+                <div class="cm-subhead">
+                    <div class="cm-subhead__title">{{ 'surveyImportDocumentSectionTitle'|trans }}</div>
+                    <div class="cm-subhead__hint">{{ 'surveyImportDocumentSectionHint'|trans }}</div>
+                </div>
+
+                {% if error %}
+                    {# Rendered with a 422, never a 200: a POST answered 200 is thrown away by Turbo
+                       and the author would watch this message never appear. #}
+                    <div class="alert alert-danger" role="alert">{{ error }}</div>
+                {% endif %}
+
+                <textarea class="form-control font-monospace" name="json" rows="16"
+                          placeholder="{{ 'surveyAssistantPastePlaceholder'|trans }}" autofocus>{{ json }}</textarea>
+
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="text-secondary small">{{ 'zoneImportExamplesLabel'|trans }}</span>
+                    <a class="btn btn-sm" href="{{ path('app_survey_import_paste', {example: 1}) }}">{{ 'surveyImportExampleLabel'|trans }}</a>
+                </div>
+
+                <div class="cm-note">
+                    <span class="cm-note__icon">i</span>
+                    <div>{{ 'surveyImportNoWriteNoteText'|trans }}</div>
+                </div>
+
+                <div class="cm-actionbar">
+                    <div class="cm-actionbar__buttons">
+                        <a href="{{ path('app_survey_import_prompt') }}" class="btn btn-link">{{ 'surveyAssistantBackToPromptActionLabel'|trans }}</a>
+                        <button type="submit" class="btn btn-primary">{{ 'surveyImportAnalyseButtonLabel'|trans }}</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}
