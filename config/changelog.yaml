@@ -26,6 +26,20 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.01'
+      date: '2026-09-01'
+      summary: "Un questionnaire de sondage écrit avec une intelligence artificielle se reprend en quelques clics, sur le même parcours en quatre étapes que les quiz. Les machines virtuelles qui n'existent plus cessent d'apparaître dans les espaces des étudiants et des enseignants."
+      entries:
+          - type: nouveaute
+            title: "Importer un sondage produit par une intelligence artificielle"
+            detail: "Le même parcours que pour les quiz : on récupère un texte à donner à l'assistant de son choix, on colle sa réponse, on relit les questions reconnues, puis on valide. Le texte fourni interdit explicitement les questions de nom, de prénom, d'adresse ou de classe, pour qu'un sondage anonyme le reste. Une question mal formée est signalée et écartée sans faire échouer le reste."
+          - type: fix
+            title: "Les machines virtuelles supprimées disparaissent des espaces personnels"
+            detail: "Une machine qui n'existe plus continuait de s'afficher dans « Mes machines virtuelles », avec des boutons qui ne pouvaient qu'échouer. Elle n'y figure plus. Une machine dont le serveur est momentanément injoignable, elle, reste affichée avec un état inconnu : ne pas savoir n'est pas savoir qu'elle a disparu."
+          - type: interne
+            title: "Trois tests ne dépendent plus du jour du mois"
+            detail: "Ils échouaient le 1er, et seulement ce jour-là."
+
     - version: '2026.08.31'
       date: '2026-08-31'
       summary: "Le « Courrier école » s'appelle désormais « Courrier pro » : son ancien nom disait où la boîte était hébergée, pas à qui elle écrit, et se confondait avec la messagerie interne. La fenêtre qui sert à joindre un document présente ses trois provenances au même niveau — un fichier, la bibliothèque, un lien — et permet de rattacher tout un dossier d'un seul geste."

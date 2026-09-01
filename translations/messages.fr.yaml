@@ -6653,7 +6653,7 @@ vmBatchItemRemovedFlashMessage: 'La machine a été retirée du lot.'
 vmBatchItemNotRemovableFlashMessage: 'Cette machine n’est plus seulement prévue : sa création a déjà été lancée, et cette ligne est la seule trace de la machine correspondante.'
 vmBatchRemoveAction: 'Supprimer'
 vmBatchRemovedFlashMessage: 'Le lot a été supprimé.'
-vmBatchRemoveConfirmText: 'Supprimer ce lot ? Les machines déjà créées restent sur le serveur de virtualisation : seules la liste et son suivi disparaissent.'
+vmBatchRemoveConfirmText: 'Supprimer ce lot ? Les machines déjà créées restent sur le serveur de virtualisation : seules la liste et son suivi disparaissent. Les comptes déclarés dans des machines qui n''existent plus sont retirés des espaces des étudiants et des enseignants.'
 vmInstallLogToggleAction: 'Journal d’installation (%count% étapes)'
 vmInstallStepAddressReservedLabel: 'Adresse réservée'
 vmInstallStepAddressUnavailableLabel: 'Aucune adresse disponible'
@@ -7749,3 +7749,86 @@ librarySequencesSearchResultsHeading: 'Résultats de recherche'
 librarySequencesSearchPromptText: 'Saisissez un titre de séquence pour lancer la recherche.'
 librarySequencesSearchEmptyText: 'Aucune séquence ne correspond à « %terms% ».'
 librarySequencesBackToLibraryAction: 'Retour à la bibliothèque'
+
+# --- Import d'un sondage par IA (4 étapes, le parcours de l'assistant de quiz) -------------------
+surveyImportButtonLabel: 'Importer'
+surveyAssistantPageHeading: 'Un questionnaire — d''où vient-il ?'
+surveyAssistantBreadcrumbLabel: 'Import de sondage'
+surveyAssistantStepCaptionLabel: 'Étape %step% sur %total% · %name%'
+surveyAssistantStep1Label: 'Votre projet'
+surveyAssistantStep2Label: 'Le prompt'
+surveyAssistantStep3Label: 'Coller'
+surveyAssistantStep4Label: 'Vérifier'
+surveyAssistantResumeNoteText: 'Un import est en cours.'
+surveyAssistantResumeActionLabel: 'Reprendre où vous en étiez'
+surveyAssistantPathTransposeTitle: "J'ai déjà mon questionnaire, je veux l'importer"
+surveyAssistantPathTransposeHint: "Un questionnaire sur papier, un document Word ou PDF, un formulaire d'une autre plateforme. L'IA le met au format, elle n'invente aucune question."
+surveyAssistantPathTransposeDurationLabel: '~ 10 min'
+surveyAssistantPathSubjectTitle: 'Écrire un questionnaire sur un sujet que je précise'
+surveyAssistantPathSubjectHint: 'Vous dites le sujet, ce que vous voulez savoir et qui vous interrogez ; le questionnaire est écrit à partir de là.'
+surveyAssistantNoWriteNoteText: "Rien n'est créé tant que vous n'avez pas validé la dernière étape : le document est relu à l'écran, question par question, avant d'entrer dans votre bibliothèque."
+surveyAssistantPromptPageHeading: 'Voici comment demander votre questionnaire'
+surveyAssistantPromptBreadcrumbLabel: 'Le prompt'
+surveyAssistantPromptSectionTitle: 'Le prompt à copier'
+surveyAssistantPromptSectionHint: "Copiez ce texte dans l'IA de votre choix, puis revenez coller sa réponse à l'étape suivante."
+surveyAssistantPromptSectionHintTranspose: "Copiez ce texte dans l'IA de votre choix, joignez-lui votre questionnaire, puis revenez coller sa réponse à l'étape suivante."
+surveyAssistantDemandSectionTitle: 'Ma demande'
+surveyAssistantDemandThemeLabel: 'Sujet du sondage'
+surveyAssistantDemandThemePlaceholder: 'Satisfaction de la formation'
+surveyAssistantDemandGoalLabel: 'Ce que je veux savoir'
+surveyAssistantDemandGoalPlaceholder: "Ce qui bloque vraiment en cours de réseau, et ce qu'il faut changer au 2e semestre"
+surveyAssistantDemandAudienceLabel: 'Public interrogé'
+surveyAssistantDemandAudiencePlaceholder: 'BTS SIO 2e année, SISR'
+surveyAssistantCountSectionTitle: 'Nombre de questions'
+surveyAssistantCountSectionHint: "Au-delà d'une quinzaine, un sondage se termine de moins en moins."
+surveyAssistantDemandExtraLabel: 'Précisions (facultatif)'
+surveyAssistantDemandExtraPlaceholder: "Une partie sur l'alternance. Pas de question sur les enseignants nommément."
+surveyAssistantTransposeNoteText: "Vous transposez un questionnaire que vous avez déjà : il n'y a rien à préciser ici. Le sujet, le public et le nombre de questions sont dans votre document, et les annoncer inviterait l'IA à en écrire d'autres."
+surveyAssistantPrivacyNoteText: "Le prompt demande à l'IA de ne poser aucune question de nom, de prénom, d'adresse ou de classe : l'application sait déjà qui répond, et une campagne anonyme ne doit porter aucun de ces éléments."
+surveyAssistantBackActionLabel: 'Revenir à la question'
+surveyAssistantPromptContinueActionLabel: "J'ai copié le prompt, continuer"
+surveyAssistantPastePageHeading: "Collez ce que l'IA vous a rendu"
+surveyAssistantPasteBreadcrumbLabel: 'Coller'
+surveyAssistantPastePlaceholder: "Collez ici le JSON produit par l'IA…"
+surveyAssistantBackToPromptActionLabel: 'Revoir le prompt'
+surveyImportDocumentSectionTitle: 'Le document'
+surveyImportDocumentSectionHint: "Collez la réponse de l'IA telle quelle : les ``` autour du JSON et le texte d'accompagnement sont ignorés."
+surveyImportExampleLabel: 'Voir un exemple'
+surveyImportAnalyseButtonLabel: 'Analyser le document'
+surveyImportNoWriteNoteText: "Rien n'est créé à cette étape : le document est analysé, et l'import n'a lieu qu'après votre validation."
+surveyImportDefaultTemplateName: 'Sondage importé'
+surveyImportInvalidJsonError: "Ce texte n'est pas du JSON valide. Copiez la réponse de l'IA en entier, du premier { au dernier }."
+surveyImportWrongFormatError: 'Format attendu : %format%. Le document ne le déclare pas — vérifiez que vous avez bien copié la réponse au prompt ci-avant.'
+surveyImportNoQuestionError: 'Le document ne contient aucune question.'
+surveyImportNoUsableQuestionError: "Aucune question du document n'a pu être lue. Vérifiez que chaque question porte un « type » et un « label »."
+surveyImportTooManyQuestionsError: 'Le document contient plus de %max% questions.'
+surveyImportQuestionUnknownTypeError: 'Question %number% : type inconnu. Les types possibles sont unique, multiple, ordre, commentaire et titre.'
+surveyImportQuestionMissingLabelError: "Question %number% : l'énoncé est vide."
+surveyImportQuestionMissingAnswersError: 'Question %number% : il faut au moins deux propositions de réponse.'
+surveyImportExpiredFlashMessage: "L'import a expiré : recollez le document."
+surveyImportPreviewPageHeading: 'Vérifiez avant de créer'
+surveyImportPreviewBreadcrumbLabel: 'Vérifier'
+surveyImportPreviewIntroTemplate: '{1}1 ligne lue, dont %answerable% question.|]1,Inf[%count% lignes lues, dont %answerable% questions.'
+surveyImportPreviewSkippedTitleTemplate: '{1}1 question écartée|]1,Inf[%count% questions écartées'
+surveyImportPreviewSkippedMoreTemplate: '… et %count% autres.'
+surveyImportPreviewIdentityTitle: 'Le sondage'
+surveyImportPreviewIdentityHint: "Le nom et la description sont ceux proposés par l'IA : vous pouvez les réécrire ici."
+surveyImportPreviewQuestionsTitleTemplate: '{1}1 ligne|]1,Inf[%count% lignes'
+surveyImportPreviewQuestionsHint: 'Dans leur ordre, telles que les verra la personne qui répond.'
+surveyImportPreviewFreeTextHint: 'Réponse libre, sans propositions.'
+surveyImportPreviewEditLaterHint: "Tout reste modifiable dans l'éditeur après l'import."
+surveyImportPreviewBackLabel: 'Revenir au document'
+surveyImportPreviewConfirmTemplate: '{1}Créer le sondage (1 ligne)|]1,Inf[Créer le sondage (%count% lignes)'
+surveyImportPreviewConfirmIntoTemplate: '{1}Ajouter 1 ligne à « %name% »|]1,Inf[Ajouter %count% lignes à « %name% »'
+surveyImportDestinationSectionTitle: 'Où vont ces questions ?'
+surveyImportDestinationNewLabel: 'Un nouveau sondage'
+surveyImportDestinationNewHint: 'Créé dans le dossier où vous étiez, avec le nom ci-dessous.'
+surveyImportDestinationExistingLabel: 'Un sondage existant'
+surveyImportDestinationExistingHint: "Les questions sont ajoutées à la fin de celles qu'il contient déjà."
+surveyImportDestinationSelectLabel: 'Le sondage à compléter'
+surveyImportDestinationPlaceholder: 'Choisissez un sondage…'
+surveyImportDestinationMissingError: 'Choisissez le sondage à compléter.'
+surveyImportDestinationNoSurveyText: "Votre bibliothèque ne contient encore aucun sondage : créez-en un avec ces questions."
+surveyImportDestinationSnapshotNote: "Une campagne déjà lancée n'est pas touchée : elle porte sa propre copie des questions."
+surveyImportCreatedFlashMessage: 'Le sondage a été créé.'
+surveyImportAppendedFlashMessage: 'Les questions ont été ajoutées au sondage.'
