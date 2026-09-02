@@ -26,6 +26,14 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.02'
+      date: '2026-09-02'
+      summary: "L'import d'une classe accepte un mot de passe par défaut, affecté aux comptes qu'il crée. Le champ est facultatif : laissé vide, chaque compte reçoit comme avant un mot de passe tiré au hasard."
+      entries:
+          - type: nouveaute
+            title: "Un mot de passe par défaut à l'import d'une classe"
+            detail: "L'administration peut choisir le mot de passe initial des comptes créés par un import, plutôt que de relever celui que l'annuaire invente pour chacun. Il est saisi deux fois pour écarter la faute de frappe, et ne concerne que les comptes créés : un compte déjà connu garde le sien. La demande de changement à la première connexion reste cochée par défaut."
+
     - version: '2026.09.01'
       date: '2026-09-01'
       summary: "Un questionnaire de sondage écrit avec une intelligence artificielle se reprend en quelques clics, sur le même parcours en quatre étapes que les quiz. Les machines virtuelles qui n'existent plus cessent d'apparaître dans les espaces des étudiants et des enseignants."
