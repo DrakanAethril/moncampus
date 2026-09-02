@@ -38,6 +38,13 @@
 
                     {{ form_row(form.mustChangePassword) }}
 
+                    {# Optional: left blank, every created account gets the random password the
+                       directory script invents, exactly as before this field existed. #}
+                    <div class="row g-2">
+                        <div class="col-12 col-xl-6">{{ form_row(form.initialPassword.first) }}</div>
+                        <div class="col-12 col-xl-6">{{ form_row(form.initialPassword.second) }}</div>
+                    </div>
+
                     <div class="cm-note">
                         <span class="cm-note__icon">i</span>
                         <div>{{ 'classImportNoMailNoteText'|trans }}</div>

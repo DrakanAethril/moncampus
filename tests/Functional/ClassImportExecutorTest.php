@@ -82,6 +82,43 @@ class ClassImportExecutorTest extends FunctionalTestCase
         self::assertSame($option->getId(), $this->optionLinks($program, $user)[0]->getOption()?->getId());
     }
 
+    // The « mot de passe par défaut » of step ①: it reaches the queue row of every account the
+    // import CREATES, and it reaches it before the row is visible to the consumer script - a row
+    // seen with an empty column is an account created with a random password.
+    public function testTheInitialPasswordReachesTheQueueRowOfEveryCreatedAccount(): void
+    {
+        $program = $this->createProgram();
+
+        $batch = $this->import($program, [
+            $this->row(2, 'Delacroix', 'Ambre', 'ambre@example.org'),
+            $this->row(3, 'Ferreira', 'Lina', 'lina@example.org'),
+        ], 'Rentree-2026!x');
+
+        self::assertSame(2, $batch->getCreatedCount());
+
+        foreach ($batch->getLines() as $line) {
+            $request = $line->getLdapRequest();
+            self::assertInstanceOf(LdapManageUser::class, $request);
+            self::assertSame(0, $request->getState(), 'still pending: the script has not run');
+            self::assertSame('Rentree-2026!x', $this->decryptedInitialPassword($request));
+        }
+    }
+
+    // The ordinary case, and the one that must not change: no default password means the column
+    // stays NULL and the directory script goes on inventing one per account.
+    public function testWithoutAnInitialPasswordTheQueueRowCarriesNone(): void
+    {
+        $program = $this->createProgram();
+
+        $batch = $this->import($program, [$this->row(2, 'Delacroix', 'Ambre', 'ambre@example.org')]);
+
+        $line = $batch->getLines()->first();
+        self::assertNotFalse($line);
+        $request = $line->getLdapRequest();
+        self::assertInstanceOf(LdapManageUser::class, $request);
+        self::assertNull($this->decryptedInitialPassword($request));
+    }
+
     // A secretariat uploads the same list twice as a matter of course; the second time must write
     // nothing at all and say so, rather than duplicating a class.
     public function testReplayingTheSameFileWritesNothing(): void
@@ -189,12 +226,27 @@ class ClassImportExecutorTest extends FunctionalTestCase
     // --- helpers ---------------------------------------------------------------------------
 
     /** @param list<StudentRow> $rows */
-    private function import(Program $program, array $rows): StudentImportBatch
+    private function import(Program $program, array $rows, ?string $initialPassword = null): StudentImportBatch
     {
-        $batch = $this->executor->execute($this->analyze($program, $rows), $program, $this->operator, [], true);
+        $batch = $this->executor->execute($this->analyze($program, $rows), $program, $this->operator, [], true, $initialPassword);
         $this->entityManager->flush();
 
         return $batch;
+    }
+
+    /**
+     * Read back the way the consumer script reads it (functions.php's getUserLine()), which is the
+     * only thing that matters here: nothing on this side ever decrypts that column.
+     */
+    private function decryptedInitialPassword(LdapManageUser $request): ?string
+    {
+        /** @var string|null $value */
+        $value = $this->entityManager->getConnection()->fetchOne(
+            'SELECT CAST(AES_DECRYPT(password, :key) AS CHAR) FROM ldap_manage_user WHERE id = :id',
+            ['key' => $_ENV['AES_KEY'] ?? '', 'id' => $request->getId()],
+        ) ?: null;
+
+        return $value;
     }
 
     /** @param list<StudentRow> $rows */

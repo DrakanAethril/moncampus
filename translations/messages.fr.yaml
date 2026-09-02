@@ -6384,6 +6384,12 @@ classImportGroupsFieldLabel: "Groupes de l'annuaire attribués à chaque compte 
 classImportGroupsFieldHelpText: "Pré-cochés d'après la classe choisie. Le groupe principal « student » est ajouté par l'annuaire, il n'est pas listé ici."
 classImportGroupsNotFromColumnsHint: "Les groupes de l'annuaire ne sont pas déduits des colonnes d'options du fichier : ce sont deux notions distinctes."
 classImportNoMailNoteText: "Aucun courriel n'est envoyé : ni validation d'adresse, ni invitation, ni mot de passe."
+classImportInitialPasswordFieldLabel: 'Mot de passe par défaut (facultatif)'
+classImportInitialPasswordFieldHelpText: "Affecté aux seuls comptes créés par cet import. Laissé vide, chaque compte reçoit un mot de passe aléatoire. 12 caractères au minimum, avec majuscule, minuscule, chiffre et caractère spécial."
+classImportInitialPasswordConfirmationFieldLabel: 'Confirmation du mot de passe par défaut'
+classImportInitialPasswordMismatchMessage: 'Les deux mots de passe saisis ne sont pas identiques.'
+classImportInitialPasswordSetNoticeText: "Un mot de passe par défaut a été saisi : il sera affecté aux %count% comptes créés. Les comptes déjà connus gardent le leur."
+classImportInitialPasswordUnsetNoticeText: "Aucun mot de passe par défaut : chaque compte créé recevra un mot de passe aléatoire, comme d'habitude."
 classImportFileFieldLabel: 'Fichier (.csv)'
 classImportFileFieldHelpText: 'Liste de la classe, une ligne par étudiant. 2 Mo maximum, 300 lignes au plus.'
 classImportFileRequiredMessage: 'Choisissez un fichier à vérifier.'
