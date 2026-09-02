@@ -12,6 +12,7 @@ use App\Entity\QuizInstance;
 use App\Entity\User;
 use App\Enum\AttemptOrigin;
 use App\Enum\Feature;
+use App\Enum\QuizMode;
 use App\Form\QuizInstanceEditType;
 use App\Repository\ProgramRepository;
 use App\Repository\QuizAttemptRepository;
@@ -78,15 +79,20 @@ class ProgramQuizController extends AbstractController
     }
 
     // "Modifier" - the launch settings that can still change once the quiz is out (name, window,
-    // timers, scoring). See App\Form\QuizInstanceEditType for what is deliberately not editable and
-    // why; in short, anything that shaped the draw is frozen with the questions it produced.
+    // timers, scoring, and mode contrôle on an évaluation). See App\Form\QuizInstanceEditType for
+    // what is deliberately not editable and why; in short, anything that shaped the draw is frozen
+    // with the questions it produced.
     #[Route(path: '/programs/{id}/quiz/{instanceId}/edit', name: 'app_program_quiz_edit', requirements: ['instanceId' => '\d+'], methods: ['GET', 'POST'])]
     public function edit(int $id, int $instanceId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, StructureAccessChecker $accessChecker, QuizInstanceRepository $instanceRepository): Response
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
         $instance = $this->findInstanceOrNotFound($instanceRepository, $program, $instanceId);
 
-        $form = $this->createForm(QuizInstanceEditType::class, $instance);
+        // Mode contrôle only exists under Évaluation, and the mode is frozen at launch - so whether
+        // that block is on this screen at all is decided here, once.
+        $form = $this->createForm(QuizInstanceEditType::class, $instance, [
+            'supervisionEditable' => QuizMode::Evaluation === $instance->getMode(),
+        ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
