@@ -12,8 +12,13 @@ use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\PasswordType;
+use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotNull;
+use Symfony\Component\Validator\Constraints\Regex;
+use Symfony\Component\Validator\Constraints\When;
 
 /**
  * Step ① of the class import: where the students go, which directory groups their accounts get, and
@@ -80,6 +85,37 @@ class ClassImportStartType extends AbstractType
                 // Checked by default, as on the one-account screen: a freshly created account should
                 // require its holder to set their own password unless somebody says otherwise.
                 'data' => true,
+            ])
+            // Optional, and empty is the ordinary case: left blank, each created account gets the
+            // random password the directory script invents, exactly as before. Typed, that one is
+            // used instead - for the accounts this import CREATES and no other, which is why the
+            // confirmation field is not a courtesy: a typo would be discovered by thirty students
+            // at once, in front of a machine that only says « mot de passe incorrect ».
+            //
+            // Same rule as the self-service change of App\Form\ChangePasswordType - 12 characters,
+            // four families - but only when something was typed, hence the When: constraints on a
+            // RepeatedType run whether or not the field is filled.
+            ->add('initialPassword', RepeatedType::class, [
+                'type' => PasswordType::class,
+                'required' => false,
+                'invalid_message' => 'classImportInitialPasswordMismatchMessage',
+                'first_options' => [
+                    'label' => 'classImportInitialPasswordFieldLabel',
+                    'help' => 'classImportInitialPasswordFieldHelpText',
+                ],
+                'second_options' => ['label' => 'classImportInitialPasswordConfirmationFieldLabel'],
+                'constraints' => [
+                    new When(
+                        expression: 'value !== null and value !== ""',
+                        constraints: [
+                            new Length(min: 12, minMessage: 'newPasswordTooShortMessage'),
+                            new Regex(
+                                pattern: '/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/',
+                                message: 'newPasswordComplexityMessage',
+                            ),
+                        ],
+                    ),
+                ],
             ])
             ->add('file', FilePickerType::class, [
                 'label' => 'classImportFileFieldLabel',
