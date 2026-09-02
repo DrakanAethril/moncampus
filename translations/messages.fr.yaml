@@ -2790,6 +2790,7 @@ quizTimelineFastHintText: "Toutes les réponses sont justes et très rapides, qu
 quizInstanceEditAction: 'Modifier le quiz'
 quizInstanceEditPageHeading: 'Modifier le quiz'
 quizInstanceEditLead: "Seuls les réglages qui n'affectent pas le tirage sont modifiables : les questions, leur nombre et la répartition des difficultés ont été figés au lancement."
+quizInstanceEditSupervisionNoteText: "Le mode contrôle se change en cours de route : le journal conserve les événements bruts et les seuils sont relus à l'affichage. Deux effets sont immédiats — les sorties déjà enregistrées comptent pour un « rendre après N sorties » choisi maintenant, et une copie en cours peut donc être rendue aussitôt ; une passation déjà ouverte affichera « repris ailleurs » et reprendra la main en un clic."
 quizInstanceUpdatedFlashMessage: 'Le quiz a été modifié.'
 quizInstanceDeactivateAction: 'Désactiver le quiz'
 quizInstanceDeactivateConfirmMessage: "Désactiver ce quiz ? Il disparaîtra de l'espace des étudiants, qui ne pourront plus y accéder. Les tentatives et les statistiques déjà enregistrées sont conservées."

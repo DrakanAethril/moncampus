@@ -28,7 +28,51 @@
                     <div class="col-md-6">{{ form_row(form.scoring) }}</div>
                     <div class="col-md-6">{{ form_row(form.scoreVisibleImmediately) }}</div>
                 </div>
-                <div class="d-flex justify-content-between">
+
+                {# Mode contrôle - present only on an évaluation, the mode having been frozen at
+                   launch. Editable because nothing here rewrites anything: the journal holds raw
+                   page events and every threshold is read back at display time. The two real
+                   consequences are named in the note rather than forbidden by the form. #}
+                {% if form.supervised is defined %}
+                    <div class="mt-3" data-controller="quiz-supervision-launch">
+                        <div data-quiz-supervision-launch-target="block">
+                            <div class="cm-subhead">
+                                <div class="cm-subhead__title">{{ 'quizLaunchSupervisionTitle'|trans }}</div>
+                                <div class="cm-subhead__hint">{{ 'quizLaunchSupervisionHint'|trans }}</div>
+                            </div>
+                            <div class="d-flex flex-column gap-3 mt-2">
+                                {{ form_row(form.supervised, {row_attr: {class: 'form-switch'}, help: 'quizLaunchSupervisedFieldHint'|trans, attr: {'data-quiz-supervision-launch-target': 'toggle', 'data-action': 'change->quiz-supervision-launch#refresh'}}) }}
+
+                                <div class="d-flex flex-column gap-2 d-none" data-quiz-supervision-launch-target="settings">
+                                    <label class="form-label mb-0">{{ 'quizLaunchSupervisionPolicyFieldLabel'|trans }}</label>
+                                    {% for choice in form.supervisionPolicy %}
+                                        <label class="cm-radiocard">
+                                            {{ form_widget(choice, {attr: {'data-quiz-supervision-launch-target': 'policy', 'data-action': 'change->quiz-supervision-launch#refresh'}}) }}
+                                            <span class="cm-radiocard__dot"></span>
+                                            <span>
+                                                <span class="cm-radiocard__title d-block">{{ choice.vars.label|trans }}</span>
+                                                <span class="cm-radiocard__desc">{{ (choice.vars.value == 'log' ? 'quizSupervisionPolicyLogDescription' : (choice.vars.value == 'warn' ? 'quizSupervisionPolicyWarnDescription' : 'quizSupervisionPolicyAutosubmitDescription'))|trans }}</span>
+                                            </span>
+                                        </label>
+                                    {% endfor %}
+
+                                    <div class="d-none" style="max-width: 200px;" data-quiz-supervision-launch-target="submitAt">
+                                        {{ form_row(form.supervisionSubmitAt, {help: 'quizLaunchSupervisionSubmitAtFieldHint'|trans}) }}
+                                    </div>
+                                    <div style="max-width: 260px;">
+                                        {{ form_row(form.supervisionExitSeconds, {help: 'quizLaunchSupervisionExitSecondsFieldHint'|trans}) }}
+                                    </div>
+                                </div>
+
+                                <div class="cm-note">
+                                    <span class="cm-note__icon">i</span>
+                                    <div>{{ 'quizInstanceEditSupervisionNoteText'|trans }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+                <div class="d-flex justify-content-between mt-3">
                     <a href="{{ path('app_program_quiz_show', {id: program.id, instanceId: quizInstance.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
                     {{ form_widget(form.submit) }}
                 </div>

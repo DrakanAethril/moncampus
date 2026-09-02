@@ -2365,6 +2365,7 @@ quizTimelineFastHintText: "Every answer right and very fast, the hard questions 
 quizInstanceEditAction: 'Edit the quiz'
 quizInstanceEditPageHeading: 'Edit the quiz'
 quizInstanceEditLead: 'Only the settings that do not affect the draw can be changed: the questions, how many there are and the difficulty split were frozen at launch.'
+quizInstanceEditSupervisionNoteText: "Supervision can be changed while the quiz is out: the journal keeps the raw events and the thresholds are read back at display time. Two effects are immediate - the exits already recorded count towards a 'hand in after N exits' chosen now, so a paper being written can be handed in at once; and an attempt already open will show 'resumed elsewhere' and take the hand back in one click."
 quizInstanceUpdatedFlashMessage: 'The quiz was updated.'
 quizInstanceDeactivateAction: 'Deactivate the quiz'
 quizInstanceDeactivateConfirmMessage: "Deactivate this quiz? It will disappear from the students' area and they will no longer be able to reach it. The attempts and statistics already recorded are kept."
