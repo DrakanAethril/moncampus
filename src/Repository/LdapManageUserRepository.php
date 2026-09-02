@@ -15,9 +15,33 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class LdapManageUserRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
-    {
+    public function __construct(
+        ManagerRegistry $registry,
+        private readonly string $ldapPasswordAesKey,
+    ) {
         parent::__construct($registry, LdapManageUser::class);
+    }
+
+    /**
+     * Pre-fills the initial password of a queued account creation - the class import's « mot de
+     * passe par défaut », and the only thing this application ever puts in that column.
+     *
+     * Write-only, exactly like App\Repository\LdapManagePasswordRepository::setRequestedPassword()
+     * one queue over, and for the same reason: the operator typed a password that has to survive
+     * until the consumer script picks the row up, and nothing here ever reads it back. Left NULL -
+     * which is still the default - the script invents one of its own instead.
+     *
+     * Encrypted MySQL-side because the key derivation has to stay there (see AES_KEY's .env
+     * comment), hence raw DBAL rather than a mapped Doctrine property. Call it inside the caller's
+     * transaction, after the row has an id and before the commit: a row visible to the consumer
+     * with its password column still empty would be created with a random password instead.
+     */
+    public function setInitialPassword(LdapManageUser $request, #[\SensitiveParameter] string $password): void
+    {
+        $this->getEntityManager()->getConnection()->executeStatement(
+            'UPDATE ldap_manage_user SET password = AES_ENCRYPT(:password, :key) WHERE id = :id',
+            ['password' => $password, 'key' => $this->ldapPasswordAesKey, 'id' => $request->getId()],
+        );
     }
 
     public function countAll(?string $search = null): int

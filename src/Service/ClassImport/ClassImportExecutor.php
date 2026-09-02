@@ -13,6 +13,7 @@ use App\Entity\User;
 use App\Enum\ClassImportAction;
 use App\Enum\StudentImportLineAction;
 use App\Repository\GroupRepository;
+use App\Repository\LdapManageUserRepository;
 use App\Repository\ModalityRepository;
 use App\Repository\OptionRepository;
 use App\Repository\UserRepository;
@@ -42,13 +43,19 @@ class ClassImportExecutor
         private readonly ContactEmailVerifier $contactEmailVerifier,
         private readonly UserRepository $userRepository,
         private readonly GroupRepository $groupRepository,
+        private readonly LdapManageUserRepository $ldapManageUserRepository,
         private readonly OptionRepository $optionRepository,
         private readonly ModalityRepository $modalityRepository,
     ) {
     }
 
     /**
-     * @param list<string> $groups directory groups step ① ticked
+     * @param list<string> $groups         directory groups step ① ticked
+     * @param string|null  $initialPassword the « mot de passe par défaut » step ① typed, or null to
+     *                                     leave every created account the random password the
+     *                                     directory script invents for itself. Reaches only the
+     *                                     accounts this import creates - an account it recognises
+     *                                     keeps the password its holder already uses
      *
      * @throws ClassImportNotExecutableException
      */
@@ -58,6 +65,7 @@ class ClassImportExecutor
         User $operator,
         array $groups,
         bool $mustChangePassword,
+        #[\SensitiveParameter] ?string $initialPassword = null,
     ): StudentImportBatch {
         if (!$analysis->isImportable()) {
             throw new ClassImportNotExecutableException();
@@ -71,7 +79,7 @@ class ClassImportExecutor
         // same.
         $directoryAccount = !$program->isTestProgram();
 
-        $this->entityManager->wrapInTransaction(function () use ($analysis, $program, $operator, $groups, $mustChangePassword, $batch, $directoryAccount): void {
+        $this->entityManager->wrapInTransaction(function () use ($analysis, $program, $operator, $groups, $mustChangePassword, $initialPassword, $batch, $directoryAccount): void {
             $this->entityManager->persist($batch);
 
             $counts = [
@@ -80,6 +88,8 @@ class ClassImportExecutor
                 StudentImportLineAction::Update->value => 0,
             ];
             $reservedLogins = [];
+            /** @var list<\App\Entity\LdapManageUser> $createdRequests */
+            $createdRequests = [];
 
             foreach ($analysis->students as $student) {
                 $action = StudentImportLineAction::fromAnalysis($student->action);
@@ -105,8 +115,14 @@ class ClassImportExecutor
                 $program->addStudent($user);
                 $this->addValues($program, $user, $student);
 
+                if (null !== $ldapRequest) {
+                    $createdRequests[] = $ldapRequest;
+                }
+
                 $this->entityManager->persist(new StudentImportBatchLine($batch, $user, $action, $ldapRequest));
             }
+
+            $this->applyInitialPassword($createdRequests, $initialPassword);
 
             $batch
                 ->setCreatedCount($counts[StudentImportLineAction::Create->value])
@@ -116,6 +132,32 @@ class ClassImportExecutor
         });
 
         return $batch;
+    }
+
+    /**
+     * The one thing the import writes outside Doctrine, and it writes it inside the transaction on
+     * purpose.
+     *
+     * The queue row has to exist before it can be updated (the column is encrypted MySQL-side, so
+     * there is nothing to set on the entity), hence the flush; and it must not be *visible* to the
+     * consumer script before the password is on it, hence still being inside the transaction. The
+     * script claims a row the moment it sees one in state 0, and a row claimed with an empty
+     * password column is an account created with a random password - the exact thing the operator
+     * typed a password to avoid.
+     *
+     * @param list<\App\Entity\LdapManageUser> $requests
+     */
+    private function applyInitialPassword(array $requests, #[\SensitiveParameter] ?string $initialPassword): void
+    {
+        if (null === $initialPassword || [] === $requests) {
+            return;
+        }
+
+        $this->entityManager->flush();
+
+        foreach ($requests as $request) {
+            $this->ldapManageUserRepository->setInitialPassword($request, $initialPassword);
+        }
     }
 
     /**

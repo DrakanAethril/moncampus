@@ -212,6 +212,18 @@
         <div class="card-footer">
             <form method="post" action="{{ path('app_directory_class_import_confirm') }}">
                 <input type="hidden" name="_token" value="{{ csrf_token('class_import_confirm') }}">
+                {% if analysis.importable and analysis.createCount > 0 %}
+                    <div class="cm-note">
+                        <span class="cm-note__icon">i</span>
+                        <div>
+                            {% if hasInitialPassword %}
+                                {{ 'classImportInitialPasswordSetNoticeText'|trans({'%count%': analysis.createCount}) }}
+                            {% else %}
+                                {{ 'classImportInitialPasswordUnsetNoticeText'|trans }}
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
                 {% if analysis.importable %}
                     <label class="form-check">
                         <input class="form-check-input" type="checkbox" name="confirmed" value="1" required>

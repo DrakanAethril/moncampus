@@ -63,7 +63,15 @@ class DirectoryClassImportController extends AbstractController
     /** The file's own name, kept only so every screen can say which file this is about. */
     private const string FILE_SESSION_KEY = 'class_import_file';
 
-    /** The destination class and what step ① said should happen to the accounts it creates. */
+    /**
+     * The destination class and what step ① said should happen to the accounts it creates.
+     *
+     * Carries the « mot de passe par défaut » when one was typed - the only place on this platform
+     * where a password waits anywhere other than the directory queue it is on its way to. It waits
+     * for the length of the verification screen, in the server-side session and never in a field
+     * the browser renders, and is dropped with the rest of the wizard the moment the import runs.
+     * Coming back to step ① is therefore typing it again, which is the right price.
+     */
     private const string SETTINGS_SESSION_KEY = 'class_import_settings';
 
     /** line => the account the operator recognised, or null for "namesake, create a new account". */
@@ -104,6 +112,7 @@ class DirectoryClassImportController extends AbstractController
                     'program' => $program->getId(),
                     'groups' => $this->submittedGroups($form),
                     'mustChangePassword' => FormValue::bool($form, 'mustChangePassword'),
+                    'initialPassword' => self::submittedInitialPassword($form),
                 ]);
                 // A new file starts from a blank slate: a decision taken about line 12 of the
                 // previous one says nothing about line 12 of this one.
@@ -138,6 +147,9 @@ class DirectoryClassImportController extends AbstractController
             'context' => $context,
             'program' => $program,
             'groups' => $this->sessionGroups($request),
+            // Whether one was typed, never which one: the screen has to say the choice was taken,
+            // and has nothing to gain from showing the password back.
+            'hasInitialPassword' => null !== $this->sessionInitialPassword($request),
         ]);
     }
 
@@ -244,7 +256,14 @@ class DirectoryClassImportController extends AbstractController
         $mustChangePassword = \is_array($settings) && true === ($settings['mustChangePassword'] ?? null);
 
         try {
-            $batch = $executor->execute($analysis, $program, $operator, $this->sessionGroups($request), $mustChangePassword);
+            $batch = $executor->execute(
+                $analysis,
+                $program,
+                $operator,
+                $this->sessionGroups($request),
+                $mustChangePassword,
+                $this->sessionInitialPassword($request),
+            );
         } catch (ClassImportNotExecutableException) {
             $this->addFlash('danger', 'classImportNoLongerImportableFlashMessage');
 
@@ -459,6 +478,14 @@ class DirectoryClassImportController extends AbstractController
         return $decisions;
     }
 
+    private function sessionInitialPassword(Request $request): ?string
+    {
+        $settings = $request->getSession()->get(self::SETTINGS_SESSION_KEY);
+        $password = \is_array($settings) ? $settings['initialPassword'] ?? null : null;
+
+        return \is_string($password) && '' !== $password ? $password : null;
+    }
+
     /** @return list<string> */
     private function sessionGroups(Request $request): array
     {
@@ -466,6 +493,17 @@ class DirectoryClassImportController extends AbstractController
         $groups = \is_array($settings) ? ($settings['groups'] ?? null) : null;
 
         return array_values(array_filter(\is_array($groups) ? $groups : [], \is_string(...)));
+    }
+
+    /**
+     * Null rather than '' when nothing was typed: "aucun mot de passe par défaut" is a state the
+     * session should say once, not one every reader has to test for twice.
+     */
+    private static function submittedInitialPassword(FormInterface $form): ?string
+    {
+        $password = FormValue::string($form, 'initialPassword');
+
+        return '' !== $password ? $password : null;
     }
 
     /** @return list<string> */

@@ -71,17 +71,20 @@ class LdapManageUser
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $login = null;
 
-    // Never touched by this application - neither written before the consumer script runs nor read
-    // after. create_user.sh's password is invented by that script (manage_user.php's own
-    // generateUserPassword()), which used to store it back here AES_ENCRYPT'd as a record; as of
-    // 2026-08-24 it clears the column instead, and Version20260824140000 wiped what a year of
-    // account creation had accumulated. The column stays only because the consumer script's schema
-    // (the ldap-manage Scripts project's init.sql) declares it.
+    // Write-only, and only sometimes written. Left NULL - which is the ordinary case and the
+    // default - create_user.sh's password is invented by the consumer script (manage_user.php's own
+    // generateUserPassword()). Filled, by App\Repository\LdapManageUserRepository::
+    // setInitialPassword() alone, it carries the « mot de passe par défaut » the class import's
+    // operator typed across the asynchronous gap, and the script applies that one instead of
+    // generating its own - the same shape App\Entity\LdapManagePassword::$password has one queue
+    // over, and the same lifetime: the script clears the column as its last act, whether the
+    // creation succeeded or failed.
     //
-    // Deliberately without accessors, unlike every other column here: a getter would be a read
-    // path, and the whole point is that there is nothing to read. Contrast
-    // App\Entity\LdapManagePassword::$password, where the column does have a job - carrying a
-    // user-chosen password across the asynchronous gap - and is cleared just the same afterwards.
+    // Until 2026-09-02 the column was never written at all, only cleared: the script used to store
+    // its generated password back here as a record, and stopped on 2026-08-24 (Version20260824140000
+    // wiped what a year of account creation had accumulated). That record is what must not come
+    // back. Hence no accessor, unlike every other column here - a getter would be a read path, and
+    // there is deliberately nothing to read.
     #[ORM\Column(type: Types::BINARY, length: 255, nullable: true)]
     private mixed $password = null;
 
