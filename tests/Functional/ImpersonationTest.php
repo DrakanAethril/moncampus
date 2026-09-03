@@ -80,7 +80,13 @@ class ImpersonationTest extends FunctionalTestCase
         $this->client->request('GET', '/impersonate/search?q=impersonation');
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
 
-        $labels = array_column(json_decode((string) $this->client->getResponse()->getContent(), true)['results'], 'text');
+        // Typed at the boundary rather than indexed straight into: json_decode() answers mixed,
+        // which is what this repository reads through JsonRequestPayload everywhere else.
+        $payload = json_decode((string) $this->client->getResponse()->getContent(), true);
+        self::assertIsArray($payload);
+        self::assertIsArray($payload['results']);
+
+        $labels = array_column($payload['results'], 'text');
         self::assertNotEmpty(preg_grep('/impersonation\.student/', $labels));
         // Neither another administrator nor the administrator asking.
         self::assertEmpty(preg_grep('/impersonation\.admin/', $labels));
