@@ -112,6 +112,13 @@ class FeatureCoverageTest extends KernelTestCase
                 // (course space, sequences, quiz). Each of those doors is guarded on its own; the
                 // sub-editor behind them belongs to no one of them.
                 'app_access_condition',
+                // « Se connecter en tant que » - App\Controller\ImpersonationController. Not a
+                // feature an establishment runs: one administrator uses it to reproduce what
+                // somebody is describing, and a catalogue entry could only ever take away the tool
+                // used to answer them. Guarded by ROLE_ADMIN on both routes and by
+                // App\Security\ImpersonationSubscriber on the switch itself.
+                'app_impersonate',
+                'app_impersonate_search',
                 // Dev-machine only: App\Controller\DevMailInboxController stands in for Mailpit and
                 // is not something the establishment runs.
                 'dev_mail_inbox',

@@ -7843,3 +7843,17 @@ surveyImportDestinationNoSurveyText: "Votre bibliothèque ne contient encore auc
 surveyImportDestinationSnapshotNote: "Une campagne déjà lancée n'est pas touchée : elle porte sa propre copie des questions."
 surveyImportCreatedFlashMessage: 'Le sondage a été créé.'
 surveyImportAppendedFlashMessage: 'Les questions ont été ajoutées au sondage.'
+
+# « Se connecter en tant que » - administrateurs uniquement, depuis le menu profil.
+impersonateNavLabel: 'Se connecter en tant que'
+impersonateModalTitle: "Se connecter en tant qu'un autre compte"
+impersonateCloseLabel: 'Fermer'
+impersonateUserFieldLabel: 'Le compte à utiliser'
+impersonateUserPlaceholder: 'Cherchez un nom ou un identifiant…'
+impersonateUserHelpText: "Les comptes administrateurs ne sont pas proposés, ni les comptes désactivés."
+impersonateWarningText: "Vous verrez la plateforme comme cette personne la voit, et tout ce que vous ferez sera enregistré à son nom. Un bandeau rouge vous le rappellera, avec le lien pour revenir à votre compte."
+impersonateSubmitAction: 'Se connecter'
+impersonateUnavailableFlashMessage: "Ce compte ne peut pas être utilisé."
+impersonateBannerBadge: 'Compte emprunté'
+impersonateBannerText: 'Vous utilisez le compte de %name% (%login%).'
+impersonateBannerExitAction: 'Revenir à mon compte (%name%)'
