@@ -2852,6 +2852,8 @@ programQuizTrapQuestionBadgeLabel: 'QUESTION PIÈGE'
 programQuizQuestionResultsFooterHintText: 'Les questions sous 30 % de réussite sont marquées « question piège » — à revoir en cours ou à reformuler.'
 programQuizRelaunchInProgressFlashMessage: 'Cet étudiant a déjà une tentative en cours - impossible de relancer.'
 programQuizRelaunchedFlashMessage: 'Le quiz a été relancé pour cet étudiant.'
+programQuizRelaunchConfirmMessage: "Accorder une nouvelle tentative à %student% ? La copie déjà rendue est conservée, mais c'est la nouvelle tentative qui deviendra la note retenue."
+programQuizRelaunchGrantedNotice: 'Votre enseignant vous a accordé une nouvelle tentative.'
 programQuizBackToResultsAction: '← Retour aux résultats'
 programQuizAttemptsHeadingTemplate: 'Tentatives — %student%'
 programQuizAttemptColumnLabel: 'Tentative'

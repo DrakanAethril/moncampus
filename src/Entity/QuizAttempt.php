@@ -196,13 +196,48 @@ class QuizAttempt
     {
         $globalMinutes = $this->quizInstance->getGlobalTimeMinutes();
         $globalLimit = null !== $globalMinutes ? $this->startedAt->modify(\sprintf('+%d minutes', $globalMinutes)) : null;
-        $closesAt = $this->quizInstance->getClosesAt();
+        // A retry a teacher granted deliberately outlives the instance's closing date. « Relancer »
+        // is what repairs a mis-click, a browser that crashed or a machine that died, and that is
+        // almost always noticed once the quiz has shut - clamped to closesAt, the granted attempt
+        // would be past its limit the instant it was created, and the student would open it only to
+        // be told it was interrupted. Its own budget still applies: a granted attempt is still an
+        // évaluation, it is only the class-wide deadline that has already served its purpose.
+        $closesAt = AttemptOrigin::Relance === $this->origin ? null : $this->quizInstance->getClosesAt();
 
         if (null === $globalLimit) {
             return $closesAt;
         }
 
         return null === $closesAt ? $globalLimit : min($globalLimit, $closesAt);
+    }
+
+    /**
+     * Has any of this attempt's questions ever been on screen?
+     *
+     * Read from the answers' own $servedAt rather than from a flag of its own: that instant is
+     * stamped on every display, web and mobile alike (QuizAttemptAnswer::markServed()), so there is
+     * nothing here that a second client could forget to write.
+     */
+    public function hasBeenServed(): bool
+    {
+        foreach ($this->attemptAnswers as $attemptAnswer) {
+            if (null !== $attemptAnswer->getServedAt()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Moves the attempt's start to now - only ever called on a teacher-granted retry the student
+     * has not opened yet, see App\Service\QuizAttemptStarter.
+     */
+    public function restartClock(\DateTimeImmutable $now): static
+    {
+        $this->startedAt = $now;
+
+        return $this;
     }
 
     public function getOrigin(): AttemptOrigin

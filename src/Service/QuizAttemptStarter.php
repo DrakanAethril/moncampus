@@ -8,6 +8,7 @@ use App\Entity\QuizAttempt;
 use App\Entity\QuizAttemptAnswer;
 use App\Entity\QuizInstance;
 use App\Entity\User;
+use App\Enum\AttemptOrigin;
 use App\Enum\QuizMode;
 use App\Repository\QuizAttemptRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -42,6 +43,16 @@ class QuizAttemptStarter
     {
         $inProgress = $this->attemptRepository->findInProgress($instance, $student);
         if (null !== $inProgress) {
+            // A retry a teacher granted (« Relancer ») is created by the teacher's click, which can
+            // be minutes or days before the student sits back down: its clock has to start here, at
+            // the first opening, or a global time budget would be spent waiting. Only while nothing
+            // has been served - past that, the attempt is an ordinary one being resumed and when it
+            // started is a fact, not a convenience.
+            if (AttemptOrigin::Relance === $inProgress->getOrigin() && !$inProgress->hasBeenServed()) {
+                $inProgress->restartClock(new \DateTimeImmutable());
+                $this->entityManager->flush();
+            }
+
             return ['attempt' => $inProgress, 'concluded' => false];
         }
 
