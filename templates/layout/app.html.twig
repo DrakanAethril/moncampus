@@ -129,6 +129,20 @@
                                so the students using this app are also its readership. #}
                             <a href="{{ path('app_technical') }}" class="dropdown-item">{{ 'technicalPageHeading'|trans }}</a>
                             <a href="{{ path('app_about') }}" class="dropdown-item">{{ 'aboutNavLabel'|trans }}</a>
+                            {# « Se connecter en tant que » - administrators only, and the one entry
+                               of this menu that is not about the account it belongs to. It is not a
+                               Feature and carries no catalogue entry (see
+                               App\Controller\ImpersonationController): there is nothing here for an
+                               establishment to switch on.
+
+                               `not is_granted('IS_IMPERSONATOR')` is belt and braces - an
+                               impersonating session already holds the target's roles, so ROLE_ADMIN
+                               is false anyway - but it says in one place what the rule is: one hop,
+                               never a chain. #}
+                            {% if is_granted('ROLE_ADMIN') and not is_granted('IS_IMPERSONATOR') %}
+                                <div class="dropdown-divider"></div>
+                                <a href="#" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#impersonation-modal">{{ 'impersonateNavLabel'|trans }}</a>
+                            {% endif %}
                             <div class="dropdown-divider"></div>
                             {# data-turbo-prefetch="false": Turbo prefetches a link's href on hover by
                                default - for most links that's harmless, but /logout is a GET route
@@ -702,6 +716,23 @@
                 </div>
             </div>
         </header>
+        {# « Vous utilisez le compte de … ». Above every other strip and impossible to miss, because
+           the whole risk of impersonating somebody is forgetting that you are: from here on every
+           gesture is written into the platform under their name, and the screen otherwise looks
+           exactly like the administrator's own.
+
+           `impersonation_exit_path()` appends `_switch_user=_exit` to the page currently open, so
+           the way back is always one click from wherever the administrator wandered to.
+           data-turbo-prefetch="false" for the same reason /logout carries it: Turbo fetches a
+           link's href on hover, which would end the impersonation without a click. #}
+        {% if is_granted('IS_IMPERSONATOR') %}
+            {% set impersonator = app.token.originalToken.user %}
+            <div class="cm-impersonation d-print-none" role="status">
+                <span class="cm-impersonation__badge">{{ 'impersonateBannerBadge'|trans }}</span>
+                <span>{{ 'impersonateBannerText'|trans({'%name%': app.user.displayName ?? app.user.username, '%login%': app.user.username}) }}</span>
+                <a href="{{ impersonation_exit_path() }}" data-turbo-prefetch="false">{{ 'impersonateBannerExitAction'|trans({'%name%': impersonator.displayName ?? impersonator.username}) }}</a>
+            </div>
+        {% endif %}
         {# Students and teachers only, and permanently: the establishment keeps its school records in
            another tool, and this platform is the pedagogical one. Staff and administrators are the
            people who already know that, so the bar would only take a strip of screen from them.
@@ -717,6 +748,9 @@
             <div class="alert alert-warning mb-0 rounded-0 text-center justify-content-center d-print-none" role="alert">
                 <strong>{{ 'testProgramBannerText'|trans({'%name%': current_test_program.displayShortName}) }}</strong>
             </div>
+        {% endif %}
+        {% if is_granted('ROLE_ADMIN') and not is_granted('IS_IMPERSONATOR') %}
+            {% include 'layout/_impersonation_modal.html.twig' %}
         {% endif %}
         <div class="page-wrapper">
             {% block page_header %}

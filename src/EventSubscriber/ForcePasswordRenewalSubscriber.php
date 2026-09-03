@@ -45,6 +45,15 @@ class ForcePasswordRenewalSubscriber implements EventSubscriberInterface
             return;
         }
 
+        // Not while an administrator is impersonating this account (« Se connecter en tant que »):
+        // the restricted session is a rule about the *person* whose password it is, and the
+        // administrator standing in their place has neither their password nor any business
+        // renewing it. Without this, impersonating somebody who has never signed in traps the
+        // administrator on a screen that would file an LDAP password change under a third name.
+        if ($this->security->isGranted('IS_IMPERSONATOR')) {
+            return;
+        }
+
         $route = $event->getRequest()->attributes->get('_route');
         if (\in_array($route, self::ALLOWED_ROUTES, true)) {
             return;

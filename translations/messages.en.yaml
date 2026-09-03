@@ -7023,3 +7023,17 @@ surveyImportDestinationNoSurveyText: 'Your library holds no survey yet: create o
 surveyImportDestinationSnapshotNote: 'A campaign already launched is untouched: it carries its own copy of the questions.'
 surveyImportCreatedFlashMessage: 'The survey has been created.'
 surveyImportAppendedFlashMessage: 'The questions have been added to the survey.'
+
+# « Se connecter en tant que » - administrators only, from the profile menu.
+impersonateNavLabel: 'Sign in as'
+impersonateModalTitle: 'Sign in as another account'
+impersonateCloseLabel: 'Close'
+impersonateUserFieldLabel: 'The account to use'
+impersonateUserPlaceholder: 'Search for a name or a login…'
+impersonateUserHelpText: 'Administrator accounts are not offered, nor are deactivated ones.'
+impersonateWarningText: 'You will see the platform as this person sees it, and everything you do will be recorded under their name. A red banner will say so, with the link back to your own account.'
+impersonateSubmitAction: 'Sign in'
+impersonateUnavailableFlashMessage: 'This account cannot be used.'
+impersonateBannerBadge: 'Borrowed account'
+impersonateBannerText: 'You are using %name%’s account (%login%).'
+impersonateBannerExitAction: 'Back to my account (%name%)'
