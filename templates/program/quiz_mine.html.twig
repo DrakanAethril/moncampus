@@ -56,16 +56,23 @@
                                     {% if not row.instance.secondsPerQuestion and not row.instance.globalTimeMinutes %}—{% endif %}
                                 </td>
                                 <td>
-                                    {% if row.attempt %}
-                                        <span class="badge bg-green-lt">{{ 'programQuizDoneStatusTemplate'|trans({'%correct%': row.attempt.correctCountLabel, '%total%': row.attempt.questionTotal}) }}</span>
-                                    {% elseif row.inProgress %}
+                                    {# An attempt open right now wins over the copy already handed in, and the order
+                                       matters only in one case: a teacher granted a new attempt over a finished
+                                       évaluation. Read the other way round, the row would keep announcing TERMINÉ on
+                                       a quiz the student is being asked to sit again. #}
+                                    {% if row.inProgress %}
                                         <span class="badge bg-blue-lt">{{ 'programQuizInProgressStatusLabel'|trans }}</span>
+                                        {% if row.inProgress.origin.value == 'relance' %}
+                                            <div class="text-secondary small">{{ 'programQuizRelaunchGrantedNotice'|trans }}</div>
+                                        {% endif %}
+                                    {% elseif row.attempt %}
+                                        <span class="badge bg-green-lt">{{ 'programQuizDoneStatusTemplate'|trans({'%correct%': row.attempt.correctCountLabel, '%total%': row.attempt.questionTotal}) }}</span>
                                     {% else %}
                                         <span class="badge bg-warning-lt">{{ 'programQuizTodoStatusLabel'|trans }}</span>
                                     {% endif %}
                                 </td>
                                 <td class="cm-actions">
-                                    {% if row.attempt %}
+                                    {% if row.attempt and not row.inProgress %}
                                         <a href="{{ path('app_program_quiz_result', {id: program.id, instanceId: row.instance.id, attemptId: row.attempt.id}) }}" class="cm-action--neutral">{{ 'programQuizViewCopyAction'|trans }}</a>
                                     {% elseif row.lockedBy is not empty %}
                                         {# The row stays and carries the gesture that opens it - the
@@ -76,8 +83,15 @@
                                                 {{ reason }}
                                             </span>
                                         {% endfor %}
+                                    {% elseif row.inProgress %}
+                                        {# Deliberately not behind openNow: an attempt already open outlives the
+                                           window on the server too (QuizAttemptStarter resumes it before asking the
+                                           clock, and ProgramQuizAttemptController::closedResponse() lets it
+                                           through), so a new attempt a teacher granted after the closing date is
+                                           reachable rather than a row saying « Fermé » over a quiz to sit again. #}
+                                        <a href="{{ path('app_program_quiz_take', {id: program.id, instanceId: row.instance.id}) }}" class="cm-action--positive">{{ 'programQuizResumeAction'|trans }}</a>
                                     {% elseif row.instance.openNow %}
-                                        <a href="{{ path('app_program_quiz_take', {id: program.id, instanceId: row.instance.id}) }}" class="cm-action--positive">{{ row.inProgress ? 'programQuizResumeAction'|trans : 'programQuizStartAction'|trans }}</a>
+                                        <a href="{{ path('app_program_quiz_take', {id: program.id, instanceId: row.instance.id}) }}" class="cm-action--positive">{{ 'programQuizStartAction'|trans }}</a>
                                     {% else %}
                                         <span class="text-secondary">{{ 'programQuizClosedLabel'|trans }}</span>
                                     {% endif %}
