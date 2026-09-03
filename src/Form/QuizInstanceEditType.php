@@ -92,6 +92,13 @@ class QuizInstanceEditType extends AbstractType
                 'label' => 'quizLaunchScoreVisibleImmediatelyFieldLabel',
                 'required' => false,
             ])
+            // Editable after the launch like the rest of this form, and usefully so: it is the
+            // switch a teacher reaches for once the last group has sat the same subject.
+            ->add('correctionVisible', CheckboxType::class, [
+                'label' => 'quizLaunchCorrectionVisibleFieldLabel',
+                'help' => 'quizLaunchCorrectionVisibleFieldHelp',
+                'required' => false,
+            ])
         ;
 
         // Absent rather than hidden on an entraînement: « le mode contrôle n'existe qu'en

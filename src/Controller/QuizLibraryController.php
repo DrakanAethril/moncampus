@@ -496,6 +496,7 @@ class QuizLibraryController extends AbstractController
                 globalTimeMinutes: $form->get('globalTimeMinutes')->getData(),
                 scoring: $form->get('scoring')->getData(),
                 scoreVisibleImmediately: (bool) $form->get('scoreVisibleImmediately')->getData(),
+                correctionVisible: (bool) $form->get('correctionVisible')->getData(),
                 name: FormValue::trimmed($form, 'name'),
                 // The block is only rendered under Évaluation, and its value is only read there:
                 // switching back to Entraînement puts supervised back to false on the server, not
