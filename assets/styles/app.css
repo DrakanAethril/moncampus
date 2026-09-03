@@ -1433,6 +1433,46 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-globalnotice a { color: var(--cm-notice-link); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
 .cm-globalnotice a:hover { color: #fff; }
 
+/* ---------- « Vous utilisez le compte de … » (impersonation) ----------
+   Under the navbar and above every other strip, in the red pair rather than the blue of
+   .cm-globalnotice or the amber of .cm-deploynotice and the « ZONE DE TEST » bar: the three others
+   state something about the platform, this one states that the screen is not showing the reader's
+   own account, and a fourth band of the same colour would be read as another one of them.
+
+   Sticky, and for a stronger reason than the deploy notice: an administrator who scrolls the
+   warning away goes on acting under somebody else's name with nothing on screen saying so. */
+.cm-impersonation {
+    position: sticky;
+    top: 0;
+    z-index: 1040;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 9px 20px;
+    background: var(--cm-red-bg);
+    color: var(--cm-red-tx);
+    border-bottom: 2px solid #c0604f;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.45;
+    text-align: center;
+}
+.cm-impersonation__badge {
+    padding: 2px 9px;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+/* The way back is the only thing on the strip meant to be clicked, so it is underlined and bolder
+   than the sentence it follows - same treatment as .cm-globalnotice's own link. */
+.cm-impersonation a { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+.cm-impersonation a:hover { color: inherit; text-decoration-thickness: 2px; }
+
 /* ---------- Breadcrumb + page head (sub-pages only, never menu root pages) ----------
    Every segment (including the current page) is a real <a href>. */
 /* Colors and separators aligned on 25e-pret-formulaire.png: parent links in brand blue, current

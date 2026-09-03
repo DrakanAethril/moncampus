@@ -491,7 +491,7 @@ class QuizController extends AbstractController
 
     /**
      * The end screen: the score if the teacher publishes it, plus the full per-question correction
-     * in entraînement (the only mode that shows it - see ProgramQuizAttemptController::correction()).
+     * when the quiz allows it (QuizInstance::isCorrectionReadable() - on by default, in both modes).
      */
     #[Route(path: '/api/quiz/attempt/{attemptId}/result', name: 'api_quiz_result', requirements: ['attemptId' => '\d+'], methods: ['GET'])]
     public function result(int $attemptId, ProgramRepository $programRepository, QuizAttemptRepository $attemptRepository, QuizAttemptGrader $grader): JsonResponse
@@ -507,7 +507,10 @@ class QuizController extends AbstractController
         $scoreVisible = $isPractice || $instance->isScoreVisibleImmediately();
 
         $correction = [];
-        if ($isPractice) {
+        // The same answer the web screen reads, from the same method rather than from a second copy
+        // of the rule: an évaluation now hands its correction out too when the launch says so, and
+        // the app already renders whatever arrives here.
+        if ($instance->isCorrectionReadable()) {
             foreach ($attempt->getAttemptAnswers() as $attemptAnswer) {
                 $question = $attemptAnswer->getInstanceQuestion();
                 $selectedIds = array_map(
@@ -594,8 +597,8 @@ class QuizController extends AbstractController
             }
         }
 
-        // The per-question time, on its own axis: an évaluation gets no correction list at all, and
-        // the time is still the student's to read - a deferred score does not defer it.
+        // The per-question time, on its own axis: it is still the student's to read when no
+        // correction list comes with it - a deferred score does not defer it.
         $timings = [];
         foreach ($attempt->getAttemptAnswers() as $index => $attemptAnswer) {
             $timings[] = [

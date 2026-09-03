@@ -139,6 +139,17 @@ class QuizInstance implements AccessConditionHost
     #[ORM\Column(name: 'score_visible_immediately', options: ['default' => true])]
     private bool $scoreVisibleImmediately = true;
 
+    /**
+     * Whether the student reads their own copy question by question once it is handed in - the very
+     * screen the teacher gets from « Voir la copie », not a second, poorer one.
+     *
+     * On by default, in both modes: a corrected copy nobody may look at teaches nothing, and an
+     * entraînement's correction has been unconditional since the quizzes shipped. Unchecking it is
+     * the exception a teacher takes when the same subject is still to be sat by another group.
+     */
+    #[ORM\Column(name: 'correction_visible', options: ['default' => true])]
+    private bool $correctionVisible = true;
+
     // ---- Mode contrôle (évaluation only) ----
     /**
      * Whether this évaluation is supervised: the page-event journal is kept, the student is told so
@@ -469,6 +480,38 @@ class QuizInstance implements AccessConditionHost
         $this->scoreVisibleImmediately = $scoreVisibleImmediately;
 
         return $this;
+    }
+
+    public function isCorrectionVisible(): bool
+    {
+        return $this->correctionVisible;
+    }
+
+    public function setCorrectionVisible(bool $correctionVisible): static
+    {
+        $this->correctionVisible = $correctionVisible;
+
+        return $this;
+    }
+
+    /**
+     * May the student actually read their correction now? The single answer, asked by the web
+     * passation (App\Controller\ProgramQuizAttemptController) and by the mobile API
+     * (App\Controller\Api\QuizController) alike, for the reason StudentQuizBoard's docblock
+     * gives about its own screens: a rule applied on one side only is how two screens come to
+     * announce different things.
+     *
+     * The deferred score is what makes the second half necessary. A per-question breakdown says ✓
+     * or ✕ on every line, so handing it out while « Score visible » is off would publish the mark
+     * the teacher chose to hold back - by another route, and without saying so. The correction
+     * therefore waits for the score rather than overruling it, and appears on its own the day the
+     * teacher ticks the score back on. An entraînement has nothing to hold back: its score is
+     * always out.
+     */
+    public function isCorrectionReadable(): bool
+    {
+        return $this->correctionVisible
+            && (QuizMode::Entrainement === $this->mode || $this->scoreVisibleImmediately);
     }
 
     /**

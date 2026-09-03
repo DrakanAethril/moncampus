@@ -2611,6 +2611,8 @@ quizLaunchOpensAtFieldLabel: 'Ouverture'
 quizLaunchClosesAtFieldLabel: 'Fermeture'
 quizLaunchScoringFieldLabel: 'Barème'
 quizLaunchScoreVisibleImmediatelyFieldLabel: "Score visible par l'étudiant dès la fin du questionnaire"
+quizLaunchCorrectionVisibleFieldLabel: "Correction visible par l'étudiant à la fin"
+quizLaunchCorrectionVisibleFieldHelp: "L'étudiant relit sa copie question par question, comme vous la voyez. Décochez si la même épreuve reste à passer par un autre groupe : vous pourrez la rouvrir ensuite depuis « Modifier »."
 quizLaunchQuestionCountFieldLabel: 'Nombre de questions tirées'
 quizLaunchSameQuestionsForAllFieldLabel: 'Mêmes questions pour tous les étudiants'
 quizLaunchQuestionOrderPerStudentFieldLabel: 'Ordre des questions différent pour chaque étudiant'
@@ -2686,6 +2688,8 @@ programQuizSingleAttemptHintText: 'Une seule tentative — la réponse est enreg
 programQuizNextQuestionAction: 'Question suivante →'
 programQuizFinishAction: 'Terminer'
 programQuizCorrectionBreadcrumbLabel: 'Correction'
+programQuizCorrectionSectionTitle: 'Votre copie'
+programQuizCorrectionSectionHint: 'Chaque question, votre réponse et celle qui était attendue.'
 programQuizCorrectionHeadingTemplate: '%name% — correction'
 programQuizAttemptMetaTemplate: 'Entraînement · tentative n°%number% · %date%'
 programQuizRetryAction: 'Refaire une tentative'
@@ -2790,6 +2794,7 @@ quizTimelineFastHintText: "Toutes les réponses sont justes et très rapides, qu
 quizInstanceEditAction: 'Modifier le quiz'
 quizInstanceEditPageHeading: 'Modifier le quiz'
 quizInstanceEditLead: "Seuls les réglages qui n'affectent pas le tirage sont modifiables : les questions, leur nombre et la répartition des difficultés ont été figés au lancement."
+quizInstanceEditSupervisionNoteText: "Le mode contrôle se change en cours de route : le journal conserve les événements bruts et les seuils sont relus à l'affichage. Deux effets sont immédiats — les sorties déjà enregistrées comptent pour un « rendre après N sorties » choisi maintenant, et une copie en cours peut donc être rendue aussitôt ; une passation déjà ouverte affichera « repris ailleurs » et reprendra la main en un clic."
 quizInstanceUpdatedFlashMessage: 'Le quiz a été modifié.'
 quizInstanceDeactivateAction: 'Désactiver le quiz'
 quizInstanceDeactivateConfirmMessage: "Désactiver ce quiz ? Il disparaîtra de l'espace des étudiants, qui ne pourront plus y accéder. Les tentatives et les statistiques déjà enregistrées sont conservées."
@@ -7838,3 +7843,17 @@ surveyImportDestinationNoSurveyText: "Votre bibliothèque ne contient encore auc
 surveyImportDestinationSnapshotNote: "Une campagne déjà lancée n'est pas touchée : elle porte sa propre copie des questions."
 surveyImportCreatedFlashMessage: 'Le sondage a été créé.'
 surveyImportAppendedFlashMessage: 'Les questions ont été ajoutées au sondage.'
+
+# « Se connecter en tant que » - administrateurs uniquement, depuis le menu profil.
+impersonateNavLabel: 'Se connecter en tant que'
+impersonateModalTitle: "Se connecter en tant qu'un autre compte"
+impersonateCloseLabel: 'Fermer'
+impersonateUserFieldLabel: 'Le compte à utiliser'
+impersonateUserPlaceholder: 'Cherchez un nom ou un identifiant…'
+impersonateUserHelpText: "Les comptes administrateurs ne sont pas proposés, ni les comptes désactivés."
+impersonateWarningText: "Vous verrez la plateforme comme cette personne la voit, et tout ce que vous ferez sera enregistré à son nom. Un bandeau rouge vous le rappellera, avec le lien pour revenir à votre compte."
+impersonateSubmitAction: 'Se connecter'
+impersonateUnavailableFlashMessage: "Ce compte ne peut pas être utilisé."
+impersonateBannerBadge: 'Compte emprunté'
+impersonateBannerText: 'Vous utilisez le compte de %name% (%login%).'
+impersonateBannerExitAction: 'Revenir à mon compte (%name%)'

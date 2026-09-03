@@ -1,0 +1,41 @@
+{# « Se connecter en tant que ». Lives in the app shell rather than on a screen because the entry
+   that opens it is in the profile menu, which is on every authenticated page.
+
+   Rendered for administrators only, and never while one is already impersonating somebody: the
+   session's roles are then the target's, so the entry is gone from the menu anyway - but the markup
+   would otherwise still be sitting in the page of an account that has no business seeing it. #}
+<div class="modal fade" id="impersonation-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" action="{{ path('app_impersonate') }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('impersonate') }}">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ 'impersonateModalTitle'|trans }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'impersonateCloseLabel'|trans }}"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label required" for="impersonation-user">{{ 'impersonateUserFieldLabel'|trans }}</label>
+                        {# tomselect + ajax, this repository's rule for picking Users. The endpoint
+                           answers active non-administrator accounts only - the same filter the
+                           submit is re-checked against, and the same one the firewall enforces. #}
+                        <select id="impersonation-user" name="user"
+                                data-controller="tom-select"
+                                data-tom-select-url-value="{{ path('app_impersonate_search') }}"
+                                data-tom-select-placeholder-value="{{ 'impersonateUserPlaceholder'|trans }}"></select>
+                        <span class="form-hint">{{ 'impersonateUserHelpText'|trans }}</span>
+                    </div>
+
+                    <div class="alert alert-warning mb-0" role="note">{{ 'impersonateWarningText'|trans }}</div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="cm-btn cm-btn--outline" data-bs-dismiss="modal">{{ 'cancelAction'|trans }}</button>
+                    <button type="submit" class="cm-btn cm-btn--primary">{{ 'impersonateSubmitAction'|trans }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

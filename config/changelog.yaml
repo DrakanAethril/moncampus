@@ -26,6 +26,20 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.03'
+      date: '2026-09-03'
+      summary: "À la fin d'une évaluation, l'étudiant relit sa copie corrigée question par question, et plus seulement son pourcentage. Le mode contrôle, lui, se règle désormais sur une évaluation déjà lancée."
+      entries:
+          - type: nouveaute
+            title: "L'étudiant relit sa copie corrigée"
+            detail: "« Voir ma copie » ne montrait qu'un score : la correction s'y affiche maintenant question par question, telle que l'enseignant la lit. Elle est proposée par défaut, se décoche à tout moment, et attend le score — tant que celui-ci est retenu, la correction l'est aussi, puisqu'un ✓ ou un ✕ par question dit déjà la note."
+          - type: modification
+            title: 'Le mode contrôle se règle après le lancement'
+            detail: "Surveillance, politique, seuil de sortie et remise automatique se décidaient au seul moment du lancement. Ils se modifient désormais sur une évaluation en cours : les seuils sont relus à l'affichage, donc rien de ce qui a déjà été enregistré n'est réécrit."
+          - type: fix
+            title: "« Score visible » s'ouvrait décoché au lancement"
+            detail: "L'interrupteur s'affichait éteint alors que l'option est bien active par défaut, ce qui menait à lancer une évaluation sans score visible en croyant le contraire."
+
     - version: '2026.09.02'
       date: '2026-09-02'
       summary: "L'import d'une classe accepte un mot de passe par défaut, affecté aux comptes qu'il crée. Le champ est facultatif : laissé vide, chaque compte reçoit comme avant un mot de passe tiré au hasard."

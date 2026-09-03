@@ -55,8 +55,18 @@ security:
             logout:
                 path: app_logout
 
-            # https://symfony.com/doc/current/security/impersonating_user.html
-            # switch_user: true
+            # « Se connecter en tant que » - App\Controller\ImpersonationController, reachable from
+            # the profile menu and from nowhere else. Administrators only, and deliberately not a
+            # Feature: an establishment does not "run" impersonation, and a catalogue entry could
+            # only ever switch off the one tool used to reproduce what somebody else is seeing.
+            #
+            # `role` is the only thing standing between any account and every other one, so it names
+            # ROLE_ADMIN rather than the default ROLE_ALLOWED_TO_SWITCH: no LDAP group maps to that
+            # name here, and a role nothing grants would have made this look guarded while being
+            # guarded by nothing. The other half of the rule - never impersonate another
+            # administrator - cannot be expressed here at all, because access_control decides on the
+            # *impersonator*, not on the target: App\Security\ImpersonationSubscriber does it.
+            switch_user: { role: ROLE_ADMIN }
 
     # Note: Only the *first* matching rule is applied
     access_control:
