@@ -106,6 +106,18 @@ class ProgramQuizAttemptController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
+        // A window that has shut is not a permission problem, and must not read as one: until this
+        // stood here, a closed quiz let the student through the contract and answered a bare
+        // « Access Denied » to the POST that followed. Nothing upstream had asked - isOpenFor() is
+        // the access-condition gate alone, and knows nothing of opensAt/closesAt.
+        //
+        // An attempt already open is deliberately not caught: a student whose window shuts mid-quiz
+        // finishes it, which is QuizAttemptStarter's rule too.
+        $closed = $this->closedResponse($program, $instance, $attemptRepository);
+        if (null !== $closed) {
+            return $closed;
+        }
+
         // The entry contract of a supervised évaluation - what is recorded, who reads it, for how
         // long - shown before anything exists. « Rien n'est enregistré avant que vous ne cliquiez
         // sur Commencer » is only true if the attempt itself is not created yet, which is why this
@@ -149,7 +161,7 @@ class ProgramQuizAttemptController extends AbstractController
      */
     #[Route(path: '/programs/{id}/quiz/{instanceId}/start', name: 'app_program_quiz_start', requirements: ['instanceId' => '\d+'], methods: ['POST'])]
     #[IsGranted('ROLE_STUDENT')]
-    public function start(int $id, int $instanceId, Request $request, ProgramRepository $repository, QuizInstanceRepository $instanceRepository, StudentQuizBoard $quizBoard, QuizAttemptStarter $attemptStarter, QuizAttemptSessionLock $sessionLock): Response
+    public function start(int $id, int $instanceId, Request $request, ProgramRepository $repository, QuizInstanceRepository $instanceRepository, QuizAttemptRepository $attemptRepository, StudentQuizBoard $quizBoard, QuizAttemptStarter $attemptStarter, QuizAttemptSessionLock $sessionLock): Response
     {
         $program = $this->findProgramForStudentOrNotFound($id, $repository);
         $instance = $this->findInstanceOrNotFound($instanceRepository, $program, $instanceId);
@@ -159,6 +171,13 @@ class ProgramQuizAttemptController extends AbstractController
         }
         if (!$quizBoard->isOpenFor($instance, $this->currentUser())) {
             throw $this->createAccessDeniedException();
+        }
+
+        // The same reading as take()'s, and it is this one that was actually met: the contract page
+        // was opened while the quiz was still on, « Commencer » pressed after it had shut.
+        $closed = $this->closedResponse($program, $instance, $attemptRepository);
+        if (null !== $closed) {
+            return $closed;
         }
 
         try {
@@ -479,6 +498,30 @@ class ProgramQuizAttemptController extends AbstractController
             // its author: the student was warned it would happen, and is owed the sentence.
             'autoSubmitted' => $supervisionNotice->wasAutoSubmitted($attempt),
         ]);
+    }
+
+    /**
+     * What answers a student who reaches a quiz whose window has shut: their copy if they handed one
+     * in, and otherwise « Quiz », which lists their class's quizzes with the closed ones among them.
+     * Never a 403 - being late is not being forbidden, and the two look identical on screen.
+     *
+     * Returns null when there is nothing to say, so the caller reads as a guard.
+     */
+    private function closedResponse(Program $program, QuizInstance $instance, QuizAttemptRepository $attemptRepository): ?Response
+    {
+        if ($instance->isOpenNow() || null !== $attemptRepository->findInProgress($instance, $this->currentUser())) {
+            return null;
+        }
+
+        $concluded = $attemptRepository->findLastConcluded($instance, $this->currentUser());
+
+        if (null !== $concluded) {
+            return $this->redirectToRoute('app_program_quiz_result', ['id' => $program->getId(), 'instanceId' => $instance->getId(), 'attemptId' => $concluded->getId()]);
+        }
+
+        $this->addFlash('warning', 'programQuizClosedFlashMessage');
+
+        return $this->redirectToRoute('app_program_quiz_mine', ['id' => $program->getId()]);
     }
 
     private function redirectToQuestion(Program $program, QuizInstance $instance, QuizAttempt $attempt, int $position): Response

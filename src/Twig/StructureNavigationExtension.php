@@ -84,6 +84,7 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
             new TwigFunction('program_nav_has_entries', $this->hasNavEntries(...)),
             new TwigFunction('student_nav_programs', $this->getStudentPrograms(...)),
             new TwigFunction('student_nav_alternance_program', $this->getStudentAlternanceProgram(...)),
+            new TwigFunction('student_nav_quiz_programs', $this->getStudentQuizPrograms(...)),
         ];
     }
 
@@ -104,6 +105,32 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
         }
 
         return $this->studentPrograms = $this->programRepository->findAllActiveForStudent($user);
+    }
+
+    /**
+     * The student's classes that have a quiz to show - what « Ressources > Quiz » is drawn from.
+     *
+     * It exists because the entry it replaces was unreachable: « Quiz » lives in the per-class
+     * submenu, and that whole submenu is hidden from a pure student since the student bar was
+     * rewritten (2026-08-17). A launched quiz then had no door at all - a travail à faire pointing
+     * at it was the only way in, and a student who had answered could no longer reach their copy.
+     *
+     * Kept on presence rather than on a per-instance verdict: the access conditions are the screen's
+     * to apply (App\Service\StudentQuizBoard), and asking the gate here would run them for every
+     * class on every page of the platform.
+     *
+     * @return list<Program>
+     */
+    public function getStudentQuizPrograms(): array
+    {
+        if (!$this->featureAccess->isEnabled(Feature::QuizTake)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $this->getStudentPrograms(),
+            fn (Program $program): bool => $this->hasQuizInstances($program),
+        ));
     }
 
     // "Mon alternance" shows only for a student actually tagged with their class's alternance
