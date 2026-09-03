@@ -104,9 +104,20 @@ class QuizLaunchType extends AbstractType
                 'label' => 'quizLaunchScoringFieldLabel',
                 'data' => QuizScoring::Note20,
             ])
+            // Both switches carry `data`, and they have to: this form is built on null (there is
+            // no instance yet), so without it a checkbox opens unticked whatever the entity's own
+            // default says - and the two would then disagree with the edit form, which is bound to
+            // the instance and does show them on.
             ->add('scoreVisibleImmediately', CheckboxType::class, [
                 'label' => 'quizLaunchScoreVisibleImmediatelyFieldLabel',
                 'required' => false,
+                'data' => true,
+            ])
+            ->add('correctionVisible', CheckboxType::class, [
+                'label' => 'quizLaunchCorrectionVisibleFieldLabel',
+                'help' => 'quizLaunchCorrectionVisibleFieldHelp',
+                'required' => false,
+                'data' => true,
             ])
             ->add('questionCount', IntegerType::class, [
                 'label' => 'quizLaunchQuestionCountFieldLabel',

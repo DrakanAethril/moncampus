@@ -13,6 +13,11 @@
 {% block page_title %}{{ quizInstance.name }}{% endblock %}
 
 {% block main %}
+    {# « Voir la copie » leads here, so here is where the copy has to be: the very breakdown the
+       teacher reads on their own screen, from the same partial, when the launch allows it
+       (QuizInstance::isCorrectionReadable()). Without it this page is a percentage and nothing
+       else - the student learns their mark and not one thing they got wrong. #}
+    {% set correction = quizInstance.correctionReadable %}
     <div class="d-flex justify-content-center">
         <div class="card" style="width: 560px; max-width: 100%;">
             <div class="card-body text-center d-flex flex-column align-items-center gap-3 py-5">
@@ -35,9 +40,18 @@
         </div>
     </div>
 
-    {# The time per question, shown even when the score is deferred: the time is not the mark, and
-       an évaluation has no correction screen where it could otherwise appear. #}
-    {% set timed = attempt.attemptAnswers|filter(a => a.elapsedMs is not null) %}
+    {% if correction %}
+        <div class="cm-subhead mt-4">
+            <div class="cm-subhead__title">{{ 'programQuizCorrectionSectionTitle'|trans }}</div>
+            <div class="cm-subhead__hint">{{ 'programQuizCorrectionSectionHint'|trans }}</div>
+        </div>
+        {% include 'program/_quiz_attempt_breakdown.html.twig' with {attempt: attempt} %}
+    {% endif %}
+
+    {# The time per question, shown even when the score is deferred: the time is not the mark, and a
+       copy read without its correction has nowhere else to show it. Dropped as soon as the
+       breakdown is out, which carries the same figure on every line. #}
+    {% set timed = correction ? [] : attempt.attemptAnswers|filter(a => a.elapsedMs is not null) %}
     {% if timed|length %}
         <div class="d-flex justify-content-center mt-3">
             <div class="card" style="width: 560px; max-width: 100%;">

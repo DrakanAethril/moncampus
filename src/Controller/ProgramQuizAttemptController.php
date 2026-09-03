@@ -427,8 +427,9 @@ class ProgramQuizAttemptController extends AbstractController
         return $this->redirectToOutcome($program, $instance, $attempt);
     }
 
-    // 1m - entraînement only (see design/design_campus_manager/README.md: "la correction est
-    // disponible uniquement en mode entraînement").
+    // 1m - the entraînement's own correction screen. Évaluation has one too since « vue de la
+    // correction à la fin », but it is served inside the result screen rather than here: « Voir la
+    // copie » is the one gesture, and it must not lead to a page carrying only a percentage.
     #[Route(path: '/programs/{id}/quiz/{instanceId}/attempt/{attemptId}/correction', name: 'app_program_quiz_correction', requirements: ['instanceId' => '\d+', 'attemptId' => '\d+'])]
     #[IsGranted('ROLE_STUDENT')]
     public function correction(int $id, int $instanceId, int $attemptId, ProgramRepository $repository, QuizInstanceRepository $instanceRepository, QuizAttemptRepository $attemptRepository): Response
@@ -438,6 +439,11 @@ class ProgramQuizAttemptController extends AbstractController
         $attempt = $this->findOwnAttemptOrNotFound($attemptRepository, $instance, $attemptId);
 
         if (QuizMode::Entrainement !== $instance->getMode()) {
+            throw $this->createAccessDeniedException();
+        }
+        // Asked at the door as well as at the link, for the reason StudentQuizBoard gives about its
+        // own: a screen whose address is one redirect away is one a student can type back in.
+        if (!$instance->isCorrectionReadable()) {
             throw $this->createAccessDeniedException();
         }
         if (!$attempt->isConcluded()) {
@@ -487,7 +493,11 @@ class ProgramQuizAttemptController extends AbstractController
 
     private function redirectToOutcome(Program $program, QuizInstance $instance, QuizAttempt $attempt): Response
     {
-        $route = QuizMode::Entrainement === $instance->getMode() ? 'app_program_quiz_correction' : 'app_program_quiz_result';
+        // The result screen is where a correction that is not to be read lands: it says the copy was
+        // handed in, and carries the breakdown itself when the quiz does allow it.
+        $route = QuizMode::Entrainement === $instance->getMode() && $instance->isCorrectionReadable()
+            ? 'app_program_quiz_correction'
+            : 'app_program_quiz_result';
 
         return $this->redirectToRoute($route, ['id' => $program->getId(), 'instanceId' => $instance->getId(), 'attemptId' => $attempt->getId()]);
     }

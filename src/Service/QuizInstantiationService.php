@@ -72,6 +72,10 @@ class QuizInstantiationService
         QuizSupervisionPolicy $supervisionPolicy = QuizSupervisionPolicy::Warn,
         int $supervisionExitSeconds = 8,
         ?int $supervisionSubmitAt = null,
+        // Last rather than next to $scoreVisibleImmediately where it belongs by subject: the live
+        // concours calls this method positionally, and slipping a parameter into the middle would
+        // silently hand it $name's argument.
+        bool $correctionVisible = true,
     ): QuizInstance {
         $firstTemplate = $templates[0];
 
@@ -95,6 +99,7 @@ class QuizInstantiationService
         $instance->setGlobalTimeMinutes($globalTimeMinutes);
         $instance->setScoring($scoring);
         $instance->setScoreVisibleImmediately($scoreVisibleImmediately);
+        $instance->setCorrectionVisible($correctionVisible);
         // « Le mode contrôle n'existe qu'en Évaluation » applied where the instance is built, so no
         // caller can launch a supervised entraînement by forgetting the rule.
         $instance->setSupervised($supervised && QuizMode::Evaluation === $mode);

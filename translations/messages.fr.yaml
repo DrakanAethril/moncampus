@@ -2611,6 +2611,8 @@ quizLaunchOpensAtFieldLabel: 'Ouverture'
 quizLaunchClosesAtFieldLabel: 'Fermeture'
 quizLaunchScoringFieldLabel: 'Barème'
 quizLaunchScoreVisibleImmediatelyFieldLabel: "Score visible par l'étudiant dès la fin du questionnaire"
+quizLaunchCorrectionVisibleFieldLabel: "Correction visible par l'étudiant à la fin"
+quizLaunchCorrectionVisibleFieldHelp: "L'étudiant relit sa copie question par question, comme vous la voyez. Décochez si la même épreuve reste à passer par un autre groupe : vous pourrez la rouvrir ensuite depuis « Modifier »."
 quizLaunchQuestionCountFieldLabel: 'Nombre de questions tirées'
 quizLaunchSameQuestionsForAllFieldLabel: 'Mêmes questions pour tous les étudiants'
 quizLaunchQuestionOrderPerStudentFieldLabel: 'Ordre des questions différent pour chaque étudiant'
@@ -2686,6 +2688,8 @@ programQuizSingleAttemptHintText: 'Une seule tentative — la réponse est enreg
 programQuizNextQuestionAction: 'Question suivante →'
 programQuizFinishAction: 'Terminer'
 programQuizCorrectionBreadcrumbLabel: 'Correction'
+programQuizCorrectionSectionTitle: 'Votre copie'
+programQuizCorrectionSectionHint: 'Chaque question, votre réponse et celle qui était attendue.'
 programQuizCorrectionHeadingTemplate: '%name% — correction'
 programQuizAttemptMetaTemplate: 'Entraînement · tentative n°%number% · %date%'
 programQuizRetryAction: 'Refaire une tentative'
