@@ -62,6 +62,10 @@
                 {# "Le rendu reste modifiable jusqu'à l'échéance" - the modal is where each
                    expectation is replaced, so the button opens it rather than a bare file picker. #}
                 <button type="button" class="cm-tw-btn cm-tw-btn--ghost" data-action="student-work#openBrief" data-url="{{ path('app_student_work_brief', {assignmentId: assignment.id}) }}">{{ 'studentWorkEditSubmissionAction'|trans }}</button>
+            {% elseif assignment.quizInstance %}
+                {# A quiz already answered still has a copy to read, and « Quiz » is where it lives -
+                   the row otherwise ends on a tag and no way back to what was handed in. #}
+                <a class="cm-tw-btn cm-tw-btn--ghost" href="{{ path('app_program_quiz_mine', {id: assignment.program.id}) }}">{{ 'programQuizViewCopyAction'|trans }}</a>
             {% elseif assignment.nature.expectsSelfDeclaration %}
                 {% include 'student/_work_done_form.html.twig' with {assignment: assignment, undo: true} %}
             {% endif %}
@@ -75,7 +79,16 @@
             {% elseif assignment.nature.expectsSelfAssessment %}
                 <a class="cm-tw-btn cm-tw-btn--primary" href="{{ path('app_student_self_assessment', {assignmentId: assignment.id}) }}">{{ 'studentWorkSelfAssessmentStartAction'|trans }}</a>
             {% elseif assignment.quizInstance %}
-                <a class="cm-tw-btn cm-tw-btn--primary" href="{{ path('app_program_quiz_take', {id: assignment.program.id, instanceId: assignment.quizInstance.id}) }}">{{ 'studentWorkQuizLaunchAction'|trans }}</a>
+                {# The quiz's own window, which is not the travail's échéance: the two are set apart
+                   and nothing keeps them in step, so a travail still open can point at a quiz that
+                   has shut. Drawing the button anyway is how two students met a bare « Access
+                   Denied » on POST /start - the row says « Fermé » and leads to « Quiz », where a
+                   copy already handed in stays readable. #}
+                {% if assignment.quizInstance.openNow %}
+                    <a class="cm-tw-btn cm-tw-btn--primary" href="{{ path('app_program_quiz_take', {id: assignment.program.id, instanceId: assignment.quizInstance.id}) }}">{{ 'studentWorkQuizLaunchAction'|trans }}</a>
+                {% else %}
+                    <a class="cm-tw-btn cm-tw-btn--ghost" href="{{ path('app_program_quiz_mine', {id: assignment.program.id}) }}">{{ 'studentWorkQuizClosedAction'|trans }}</a>
+                {% endif %}
             {% elseif assignment.nature.expectsListening %}
                 {# The listening happens inside the panel, so this opens the same one "Voir la
                    consigne" does - it is there to say the travail is done by listening. #}

@@ -1,8 +1,12 @@
 {% extends 'layout/app.html.twig' %}
 
-{# « Consulter » from the list (2b): the state of the submissions, student by student. The full
-   follow-up screen - reminders, corrections, grading - is outside the handoff's scope; what is laid
-   down here is where the link leads and how the submissions read. #}
+{# « Consulter » from the list (2b): where every student stands, one by one. The full follow-up
+   screen - reminders, corrections, grading - is outside the handoff's scope; what is laid down here
+   is where the link leads and how the class's state reads.
+
+   The rows come from App\Service\AssignmentFollowUpBoard, which reads the proof each nature
+   actually produces. This template must never go back to reading `row.submission` alone: six
+   natures out of eleven never produce a deposit. #}
 
 {% block title %}{{ assignment.title }}{% endblock %}
 
@@ -60,6 +64,9 @@
         </div>
     {% endif %}
 
+    {# One line per student, read from whatever this nature accepts as proof - a deposit, a quiz
+       attempt, a response, a listening, a watching, a validated estimate, a declaration. The
+       vocabulary follows the nature too: « Non rendu » under a quiz was the screen's own bug. #}
     <div class="card">
         <div class="table-responsive">
             <table class="table table-vcenter card-table">
@@ -67,19 +74,34 @@
                     <tr>
                         <th>{{ 'assignmentStudentColumnLabel'|trans }}</th>
                         <th>{{ 'assignmentSubmissionStatusColumnLabel'|trans }}</th>
-                        <th>{{ 'assignmentSubmittedAtColumnLabel'|trans }}</th>
+                        <th>{{ assignment.nature.followUpDateColumnLabelKey|trans }}</th>
+                        {% if assignment.quizInstance %}
+                            <th>{{ 'assignmentFollowUpScoreColumnLabel'|trans }}</th>
+                            <th class="cm-actions"></th>
+                        {% endif %}
                     </tr>
                 </thead>
                 <tbody>
                     {% for row in rows %}
                         <tr>
                             <td>{{ row.student.displayName ?? row.student.username }}</td>
-                            <td><span class="badge {{ row.status.badgeClass }}">{{ row.status.labelKey|trans }}</span></td>
-                            <td>{{ row.submission ? row.submission.submittedAt|date('d/m/Y H:i') : '—' }}</td>
+                            <td><span class="badge {{ row.status.badgeClass }}">{{ row.statusLabelKey|trans }}</span></td>
+                            <td>{{ row.doneAt ? row.doneAt|date('d/m/Y H:i') : '—' }}</td>
+                            {% if assignment.quizInstance %}
+                                <td>{{ row.scorePercent is not null ? row.scorePercent|round ~ ' %' : '—' }}</td>
+                                <td class="cm-actions">
+                                    {# The copy itself lives on the quiz's own follow-up, which is where
+                                       every attempt of that student is listed - this is a door onto it,
+                                       not a second reading of it. #}
+                                    {% if row.attempt %}
+                                        <a class="cm-action--neutral" href="{{ path('app_program_quiz_student_attempts', {id: assignment.program.id, instanceId: assignment.quizInstance.id, studentId: row.student.id}) }}">{{ 'assignmentFollowUpViewCopyAction'|trans }}</a>
+                                    {% endif %}
+                                </td>
+                            {% endif %}
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="3" class="text-secondary">{{ 'assignmentShowNoAudienceMessage'|trans }}</td>
+                            <td colspan="{{ assignment.quizInstance ? 5 : 3 }}" class="text-secondary">{{ 'assignmentShowNoAudienceMessage'|trans }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>

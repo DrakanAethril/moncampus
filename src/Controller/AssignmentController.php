@@ -17,12 +17,10 @@ use App\Entity\VideoResource;
 use App\Enum\AssignmentAttachmentSourceType;
 use App\Enum\AssignmentAudienceType;
 use App\Enum\AssignmentNature;
-use App\Enum\AssignmentSubmissionStatus;
 use App\Enum\Feature;
 use App\Enum\LessonLogSection;
 use App\Form\AssignmentWizardType;
 use App\Repository\AssignmentRepository;
-use App\Repository\AssignmentSubmissionRepository;
 use App\Repository\AudioRecordingRepository;
 use App\Repository\FileLibraryNodeRepository;
 use App\Repository\GroupBatchRepository;
@@ -34,6 +32,7 @@ use App\Repository\VideoResourceRepository;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\FileLibraryVoter;
 use App\Service\AssignmentAudienceResolver;
+use App\Service\AssignmentFollowUpBoard;
 use App\Service\AssignmentNatureFields;
 use App\Service\AssignmentNatureRequirements;
 use App\Service\AssignmentProgressSummarizer;
@@ -279,6 +278,8 @@ class AssignmentController extends AbstractController
 
             $entityManager->flush();
 
+            $this->warnAboutQuizWindow($saved);
+
             // An edit, or a creation started from a séance, goes back where it came from: the
             // séance shows the assignment in its part, and that is the confirmation. The 2a
             // confirmation screen closes a creation that had no screen of origin.
@@ -312,6 +313,23 @@ class AssignmentController extends AbstractController
         ]);
     }
 
+    /**
+     * A quiz's own window and the travail's échéance are two settings, and nothing keeps them in
+     * step: a quiz that closes first leaves the work standing on the student's list with no way to
+     * answer it. Said once, at the moment the pair is decided, and never as an error - a teacher may
+     * well want the quiz shut before the work is due.
+     *
+     * The reverse case is silent on purpose: a quiz still open after the deadline takes nothing away.
+     */
+    private function warnAboutQuizWindow(Assignment $assignment): void
+    {
+        $closesAt = $assignment->getQuizInstance()?->getClosesAt();
+
+        if (null !== $closesAt && $closesAt < $assignment->getDueDate()) {
+            $this->addFlash('warning', 'assignmentQuizClosesBeforeDueDateFlashMessage');
+        }
+    }
+
     /** The publication confirmation screen - a page in its own right, reached by redirect. */
     #[Route(path: '/assignments/{id}/published', name: 'app_assignment_published', methods: ['GET'], requirements: ['id' => '\d+'])]
     public function published(int $id, AssignmentRepository $assignmentRepository, ProgramRepository $programRepository, AssignmentAudienceResolver $audienceResolver): Response
@@ -330,35 +348,19 @@ class AssignmentController extends AbstractController
      * the state of the submissions, student by student.
      */
     #[Route(path: '/assignments/{id}', name: 'app_assignment_show', methods: ['GET'], requirements: ['id' => '\d+'])]
-    public function show(int $id, AssignmentRepository $assignmentRepository, ProgramRepository $programRepository, AssignmentSubmissionRepository $submissionRepository, AssignmentAudienceResolver $audienceResolver, AssignmentProgressSummarizer $summarizer): Response
+    public function show(int $id, AssignmentRepository $assignmentRepository, ProgramRepository $programRepository, AssignmentAudienceResolver $audienceResolver, AssignmentProgressSummarizer $summarizer, AssignmentFollowUpBoard $followUpBoard): Response
     {
         $assignment = $this->findOrNotFound($id, $assignmentRepository, $programRepository);
 
         $audience = $audienceResolver->resolveAudience($assignment);
         usort($audience, static fn (User $a, User $b): int => ($a->getDisplayName() ?? $a->getUsername()) <=> ($b->getDisplayName() ?? $b->getUsername()));
-        $submissionsByStudentId = $submissionRepository->findAllByStudentIdForAssignment($assignment);
 
-        $rows = array_map(static function (User $student) use ($assignment, $submissionsByStudentId): array {
-            // An assignment spelling out several expected productions holds one submission per
-            // production; the status reads on the first of them, which is when the student engaged.
-            $submissions = $submissionsByStudentId[$student->getId()] ?? [];
-            $submission = $submissions[0] ?? null;
-
-            return [
-                'student' => $student,
-                'submission' => $submission,
-                'submissions' => $submissions,
-                'status' => match (true) {
-                    null === $submission => AssignmentSubmissionStatus::Missing,
-                    $assignment->isLate($submission->getSubmittedAt()) => AssignmentSubmissionStatus::Late,
-                    default => AssignmentSubmissionStatus::Submitted,
-                },
-            ];
-        }, $audience);
-
+        // Not the deposits: whatever this nature accepts as proof. Six natures out of eleven never
+        // produce a deposit, and reading only those is what made this table announce « Non rendu »
+        // to a whole class under a progress line saying they had answered.
         return $this->render('assignment/show.html.twig', [
             'assignment' => $assignment,
-            'rows' => $rows,
+            'rows' => $followUpBoard->rows($assignment, $audience),
             'details' => $this->audienceDetails($assignment, $audienceResolver),
             'progress' => $summarizer->summarize([$assignment])[$assignment->getId()] ?? null,
         ]);
