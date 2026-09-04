@@ -6,12 +6,15 @@ namespace App\Controller;
 
 use App\Enum\DeploymentOutcome;
 use App\Service\DeploymentNoticeBoard;
+use App\Service\QueryValue;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Contracts\Translation\LocaleAwareInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * The two ends of the « une mise à jour est en cours » banner: what the deploy workflow calls to
@@ -36,9 +39,14 @@ use Symfony\Component\Routing\Attribute\Route;
  */
 class DeploymentNoticeController extends AbstractController
 {
+    /**
+     * @param list<string> $enabledLocales
+     */
     public function __construct(
         #[Autowire(env: 'DEPLOYMENT_NOTICE_TOKEN')] private readonly string $token,
         private readonly DeploymentNoticeBoard $board,
+        private readonly TranslatorInterface $translator,
+        #[Autowire('%kernel.enabled_locales%')] private readonly array $enabledLocales,
     ) {
     }
 
@@ -48,8 +56,10 @@ class DeploymentNoticeController extends AbstractController
      * drift from the server-rendered version sitting on the page next to it.
      */
     #[Route(path: '/deployment/notice', name: 'app_deployment_notice_status', methods: ['GET'])]
-    public function status(): JsonResponse
+    public function status(Request $request): JsonResponse
     {
+        $this->speak(QueryValue::trimmed($request, 'locale'));
+
         $notice = $this->board->current();
 
         $response = new JsonResponse([
@@ -104,6 +114,29 @@ class DeploymentNoticeController extends AbstractController
         // « nothing was open » is not an error: a run replayed after its notice expired, or an end
         // announced twice, both mean the same thing to the workflow - there is no banner up.
         return new JsonResponse(['deploying' => false, 'closed' => $this->board->close($outcome)]);
+    }
+
+    /**
+     * The language to answer in, named by the caller rather than read off the session.
+     *
+     * The poll deliberately sends no cookie (assets/controllers/deployment_notice_controller.js):
+     * that is what keeps a banner check every 60s per tab from opening - and locking, and endlessly
+     * postponing the expiry of - the reader's session. It costs the one thing the cookie carried
+     * that this answer needs, so the page states it instead.
+     *
+     * Checked against the configured locales rather than trusted: this is a public route, and a
+     * locale is passed straight to the translator. Anything else leaves the default in place, which
+     * is the same French the fallback would have produced anyway.
+     */
+    private function speak(string $locale): void
+    {
+        if ('' === $locale || !\in_array($locale, $this->enabledLocales, true)) {
+            return;
+        }
+
+        if ($this->translator instanceof LocaleAwareInterface) {
+            $this->translator->setLocale($locale);
+        }
     }
 
     private function isAuthorised(Request $request): bool

@@ -33,6 +33,9 @@ export default class extends Controller {
 
     async poll() {
         // A hidden tab is a tab nobody is losing work in; it will ask again when it comes back.
+        // Safe to skip now that this request no longer carries a session - while it did, this
+        // early return was the difference between a tab whose login never expired and a tab whose
+        // login expired in 24 minutes, which is not a rule anybody wrote.
         if (document.hidden) {
             return;
         }
@@ -40,7 +43,20 @@ export default class extends Controller {
         let payload;
 
         try {
-            const response = await fetch(this.urlValue, { headers: { Accept: 'application/json' } });
+            // `credentials: 'omit'` is what keeps this poll out of the session entirely: with no
+            // cookie there is nothing for App\EventSubscriber\LocaleSubscriber to open and nothing
+            // for the firewall to reload, so a banner check every 60s per tab neither takes the
+            // session's exclusive lock nor keeps postponing its expiry. The endpoint is public and
+            // deliberately anonymous (App\Controller\DeploymentNoticeController) - it says nothing
+            // a visitor cannot already see on the page it sits on.
+            //
+            // The one thing the cookie carried and this has to replace is the reader's language,
+            // hence the parameter: the answer is the banner already rendered, and it must not
+            // start speaking French to somebody the page next to it is speaking English to.
+            const url = new URL(this.urlValue, window.location.href);
+            url.searchParams.set('locale', document.documentElement.lang);
+
+            const response = await fetch(url, { headers: { Accept: 'application/json' }, credentials: 'omit' });
             if (!response.ok) {
                 return;
             }

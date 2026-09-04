@@ -15,6 +15,29 @@ framework:
         handler_id: null
         save_path: '%kernel.project_dir%/var/sessions/%kernel.environment%'
 
+        # Both were PHP's own defaults until now, i.e. nobody had ever decided them. Stated here
+        # because they are the two halves of one answer to "how long does staying logged in last",
+        # and because the number that was inherited - 1440s, 24 minutes - is far shorter than a
+        # single lesson.
+        #
+        # cookie_lifetime 0 keeps the cookie a browser-session cookie: closing the browser logs
+        # out. That is the half worth keeping as it was - on a shared classroom machine it is the
+        # only thing that reliably ends a session somebody walked away from.
+        #
+        # gc_maxlifetime is real idle time now, and is measured against the last *request*, not
+        # the last keystroke: a student writing a postulation, a teacher filling a cahier de texte
+        # entry or a carnet de notes column sends nothing at all for as long as they type. It used
+        # to be propped up by the deployment-notice poll touching the session every 60s, which
+        # made the true lifetime "unlimited while the tab is visible, 24 minutes once it is
+        # hidden" - not a policy, an accident, and the one that produced the reported logouts.
+        # That poll no longer opens a session (App\Controller\DeploymentNoticeController), so this
+        # value is now the whole rule. 8 hours is a school day.
+        #
+        # Note PHP's GC is probabilistic (gc_probability/gc_divisor, 1/1000 by default): a session
+        # is *eligible* for collection after this delay, not collected at it.
+        cookie_lifetime: 0
+        gc_maxlifetime: 28800
+
     # Switches off the `Link: rel="preload"` HTTP header Symfony adds automatically (WebLink) as a
     # duplicate of the HTML. For each stylesheet of the importmap, AssetMapper ALREADY writes a
     # <link rel="stylesheet"> in <head> *and* registers a WebLink preload for the same URL
