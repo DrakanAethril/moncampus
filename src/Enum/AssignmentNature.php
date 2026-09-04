@@ -94,6 +94,52 @@ enum AssignmentNature: string
         };
     }
 
+    /**
+     * What « fait » is called on this nature, in the teacher's follow-up screen. A quiz is answered,
+     * a recording is listened to, a deposit is handed in: the three read differently, and the screen
+     * that says « Non rendu » about a quiz is the screen that is wrong.
+     */
+    public function followUpDoneLabelKey(): string
+    {
+        return match ($this) {
+            self::ToSubmit => 'assignmentSubmissionStatusSubmittedLabel',
+            self::Quiz, self::Survey => 'assignmentFollowUpAnsweredLabel',
+            self::Listening => 'assignmentFollowUpListenedLabel',
+            self::Watching => 'assignmentFollowUpWatchedLabel',
+            self::SelfAssessment => 'assignmentFollowUpSelfAssessedLabel',
+            self::ToRevise, self::ToPrepare, self::ToRead, self::Exercices, self::Autre => 'assignmentFollowUpDoneLabel',
+        };
+    }
+
+    /** And what it is called while nothing has come - the same vocabulary, negated. */
+    public function followUpPendingLabelKey(): string
+    {
+        return match ($this) {
+            self::ToSubmit => 'assignmentSubmissionStatusMissingLabel',
+            self::Quiz, self::Survey => 'assignmentFollowUpNotAnsweredLabel',
+            self::Listening => 'assignmentFollowUpNotListenedLabel',
+            self::Watching => 'assignmentFollowUpNotWatchedLabel',
+            self::SelfAssessment => 'assignmentFollowUpNotSelfAssessedLabel',
+            self::ToRevise, self::ToPrepare, self::ToRead, self::Exercices, self::Autre => 'assignmentFollowUpNotDoneLabel',
+        };
+    }
+
+    /**
+     * The header of the date column beside it. « Déposé le » over a column holding the moment a quiz
+     * was handed in reads as a deposit that never happened.
+     */
+    public function followUpDateColumnLabelKey(): string
+    {
+        return match ($this) {
+            self::ToSubmit => 'assignmentSubmittedAtColumnLabel',
+            self::Quiz, self::Survey => 'assignmentFollowUpAnsweredAtColumnLabel',
+            self::Listening => 'assignmentFollowUpListenedAtColumnLabel',
+            self::Watching => 'assignmentFollowUpWatchedAtColumnLabel',
+            self::SelfAssessment => 'assignmentFollowUpSelfAssessedAtColumnLabel',
+            self::ToRevise, self::ToPrepare, self::ToRead, self::Exercices, self::Autre => 'assignmentFollowUpDoneAtColumnLabel',
+        };
+    }
+
     public function expectsSubmission(): bool
     {
         return self::ToSubmit === $this;

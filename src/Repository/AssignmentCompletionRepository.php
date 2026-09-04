@@ -82,6 +82,30 @@ class AssignmentCompletionRepository extends ServiceEntityRepository
         return $dates;
     }
 
+    /**
+     * Who declared this one assignment done, and when - the teacher's follow-up reads a whole class
+     * at once, where findDoneDates() reads one student across a whole list.
+     *
+     * @return array<int, \DateTimeImmutable> student id => declaration date
+     */
+    public function findDoneDatesByStudentIdForAssignment(Assignment $assignment): array
+    {
+        /** @var list<array{studentId: int|string, doneAt: \DateTimeImmutable}> $rows */
+        $rows = $this->createQueryBuilder('c')
+            ->select('IDENTITY(c.student) AS studentId', 'c.doneAt AS doneAt')
+            ->where('c.assignment = :assignment')
+            ->setParameter('assignment', $assignment)
+            ->getQuery()
+            ->getResult();
+
+        $dates = [];
+        foreach ($rows as $row) {
+            $dates[(int) $row['studentId']] = $row['doneAt'];
+        }
+
+        return $dates;
+    }
+
     /** Has at least one student declared this assignment done? */
     public function hasAnyForAssignment(Assignment $assignment): bool
     {

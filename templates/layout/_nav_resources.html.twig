@@ -13,7 +13,8 @@
    Parameters (passed with `only`): current_route, is_pure_student. #}
 {% set resources_is_active = current_route starts with 'app_resources_' or current_route starts with 'app_documentation' or current_route starts with 'app_wiki'
     or current_route starts with 'app_student_shared_document' or current_route starts with 'app_school_mail' or current_route starts with 'app_training_'
-    or current_route == 'app_my_job_applications' or current_route starts with 'app_my_courses' %}
+    or current_route == 'app_my_job_applications' or current_route starts with 'app_my_courses'
+    or (is_pure_student and current_route starts with 'app_program_quiz_') %}
 {# Each entry's condition is read once into a variable, and the same variables decide both whether
    the entry renders and whether the dropdown renders at all. Written the other way round - a
    summary boolean beside the conditions it summarises - the two drift the first time an entry is
@@ -30,10 +31,16 @@
 {% set resources_job_applications = resources_school_mail %}
 {% set resources_wiki = not is_granted('ROLE_TUTOR') and not is_granted('ROLE_EXTERNAL') and feature('wiki') %}
 {% set resources_course_space = is_granted('ROLE_STUDENT') and not is_staff() and feature('course_space') %}
+{# « Quiz », and only for somebody who has one - same posture as « Mes machines virtuelles » and the
+   shared wikis above. The entry is here rather than in the class submenu because that submenu is
+   hidden from a pure student since 2026-08-17: a quiz launched for a class then had no door at all,
+   and neither did the copy of a quiz already answered. The list it opens carries the closed ones
+   too, which is where a correction is read back. #}
+{% set resources_quiz_programs = is_pure_student ? student_nav_quiz_programs() : [] %}
 {% set resources_documentation = feature('documentation') %}
 {% set resources_apps = is_granted('ROLE_ADMIN') %}
 {% if resources_shared_documents or resources_my_vms or resources_school_mail or resources_job_applications
-    or resources_wiki or resources_course_space or resources_documentation or resources_apps %}
+    or resources_wiki or resources_course_space or resources_quiz_programs is not empty or resources_documentation or resources_apps %}
 <li class="nav-item dropdown {{ resources_is_active ? 'active' }}">
     <a class="nav-link dropdown-toggle" href="#navbar-resources" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ resources_is_active ? ' aria-current="page"' }}>
         <span class="nav-link-title">{{ 'resourcesNavLabel'|trans }}</span>
@@ -93,6 +100,22 @@
            and the old label promised a course space that this screen is only one face of. #}
         {% if resources_course_space %}
             <a class="dropdown-item {{ current_route starts with 'app_my_courses' ? 'active' }}" href="{{ path('app_my_courses') }}">{{ 'courseSpaceNavLabel'|trans }}</a>
+        {% endif %}
+        {# One class, one flat entry; several, one entry each - the dropend only appears when there
+           is actually a choice to make. #}
+        {% if resources_quiz_programs|length == 1 %}
+            <a class="dropdown-item {{ current_route starts with 'app_program_quiz_' ? 'active' }}" href="{{ path('app_program_quiz_mine', {id: resources_quiz_programs[0].id}) }}">{{ 'programQuizNavLabel'|trans }}</a>
+        {% elseif resources_quiz_programs|length > 1 %}
+            <div class="dropend">
+                <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_program_quiz_' ? 'active' }}" href="#navbar-resources-quiz" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                    {{ 'programQuizNavLabel'|trans }}
+                </a>
+                <div class="dropdown-menu">
+                    {% for program in resources_quiz_programs %}
+                        <a class="dropdown-item {{ current_route starts with 'app_program_quiz_' and app.request.attributes.get('id') == program.id ? 'active' }}" href="{{ path('app_program_quiz_mine', {id: program.id}) }}">{{ program.displayShortName }}</a>
+                    {% endfor %}
+                </div>
+            </div>
         {% endif %}
         {% if resources_documentation %}
             <a class="dropdown-item {{ current_route starts with 'app_documentation' ? 'active' }}" href="{{ path('app_documentation') }}">{{ 'documentationNavLabel'|trans }}</a>

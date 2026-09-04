@@ -16,6 +16,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -57,6 +58,28 @@ class StagedUploadController extends AbstractController
             return $this->refuse($translator, 'stagedUploadMissingFileError');
         }
 
+        /** @var User $user */
+        $user = $this->getUser();
+
+        // Everything the session is needed for has now happened - the CSRF token above and the
+        // token this line reloads - and everything still to come is slow: a ClamAV scan (30s
+        // timeout) then up to 200 Mo written to S3. Sessions are native files, so PHP holds an
+        // EXCLUSIVE lock on sess_<id> for the whole of a request that leaves one open, and every
+        // other request presenting the same cookie waits on it - measured: a session locked for 8s
+        // makes /login itself answer in 7.6s instead of 0.13s.
+        //
+        // That is what turned a slow upload into a browser that appears frozen. The picker fires
+        // one of these per file, in parallel (assets/controllers/file_picker_controller.js), so N
+        // attachments serialised into N scans-plus-transfers before the tab could do anything at
+        // all - including navigating away, and including reaching the login form after being
+        // logged out. Closing the browser looked like the cure only because cookie_lifetime is 0:
+        // it dropped the cookie, so the next request took a fresh session and no lock.
+        //
+        // Nothing below reads or writes the session; should something ever need to, Symfony
+        // restarts it on demand (and would take the lock again, which is the point of doing this
+        // as late as possible and no later).
+        $this->releaseSessionLock($request);
+
         $policy = UploadPolicy::platform()->withMaxSize((string) $this->ceilingFor($request));
         $violations = $validator->validate($file, new AllowedUpload($policy));
 
@@ -72,9 +95,6 @@ class StagedUploadController extends AbstractController
                 'message' => (string) $violation->getMessage(),
             ], Response::HTTP_BAD_REQUEST);
         }
-
-        /** @var User $user */
-        $user = $this->getUser();
 
         try {
             $staged = $store->stage($file, (int) $user->getId());
@@ -135,6 +155,22 @@ class StagedUploadController extends AbstractController
         $hint = PostValue::int($request, 'maxBytes');
 
         return $hint > 0 && $hint < $platform ? $hint : $platform;
+    }
+
+    /**
+     * Writes the session back and closes it, so the exclusive lock PHP's native file handler holds
+     * on it is released before the slow part of the request rather than after.
+     *
+     * Guarded on Session rather than SessionInterface only because isStarted() lives on the former;
+     * saving a session that was never started would restart it, which is the opposite of the point.
+     */
+    private function releaseSessionLock(Request $request): void
+    {
+        $session = $request->hasSession() ? $request->getSession() : null;
+
+        if ($session instanceof Session && $session->isStarted()) {
+            $session->save();
+        }
     }
 
     private function refuse(TranslatorInterface $translator, string $key): JsonResponse

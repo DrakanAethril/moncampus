@@ -141,6 +141,18 @@
                                         {% else %}
                                             <a href="{{ path('app_program_quiz_attempt_show', {id: program.id, instanceId: quizInstance.id, attemptId: row.retained.id}) }}" class="cm-action--neutral">{{ 'programQuizViewStudentCopyAction'|trans }}</a>
                                         {% endif %}
+                                        {% if quizInstance.mode.value == 'evaluation' %}
+                                            {# The way back out of « une seule tentative » - a mis-click, a browser that
+                                               crashed, a laptop that died. Only offered in évaluation: an entraînement
+                                               is retaken by the student themselves, so the button would mean nothing
+                                               there. Nothing is erased - the copy already handed in stays readable in
+                                               the student's history, and the mark on this row is simply the last
+                                               concluded attempt, which the new one will become in its turn. #}
+                                            <form method="post" action="{{ path('app_program_quiz_relaunch', {id: program.id, instanceId: quizInstance.id, studentId: row.student.id}) }}" onsubmit="return confirm('{{ 'programQuizRelaunchConfirmMessage'|trans({'%student%': row.student.displayName ?? row.student.username})|e('js') }}')">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('quiz_relaunch') }}">
+                                                <button type="submit" class="cm-action--warning" style="background:none;border:0;padding:0;">{{ 'programQuizRelaunchAction'|trans }}</button>
+                                            </form>
+                                        {% endif %}
                                     </td>
                                 {% else %}
                                     <td class="text-secondary" colspan="3">—</td>

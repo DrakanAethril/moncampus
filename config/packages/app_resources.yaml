@@ -6,8 +6,8 @@ parameters:
     app.resources:
         moncampus:
             name: 'MonCampus'
-            version: '2.6.1'
-            updated_at: '2026-08-31'
+            version: '2.6.2'
+            updated_at: '2026-09-04'
             android_size: '55 Mo'
             ios_size: '44 Mo'
             ios_bundle_id: 'fr.beaupeyrat.moncampus'

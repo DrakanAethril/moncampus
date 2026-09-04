@@ -93,11 +93,20 @@ class QuizInstanceRepository extends ServiceEntityRepository
     // nav entry" cache - a single DISTINCT query covering every Program at once (not one COUNT
     // per Program row) since the nav renders on every authenticated page for every visible
     // Program.
-    /** @return list<int> */
+    /**
+     * The same set findActiveForProgram() would return, clause for clause: a Live session is played
+     * from its own screen and a deactivated instance is gone from the list, so a class holding only
+     * those has nothing to show and must not carry the entry - it would open on an empty table.
+     *
+     * @return list<int>
+     */
     public function findProgramIdsWithInstances(): array
     {
         $rows = $this->createQueryBuilder('i')
             ->select('DISTINCT IDENTITY(i.program) AS programId')
+            ->where('i.mode != :live')
+            ->andWhere('i.deactivatedAt IS NULL')
+            ->setParameter('live', QuizMode::Live)
             ->getQuery()
             ->getScalarResult();
 

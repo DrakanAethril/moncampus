@@ -26,6 +26,28 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.04'
+      date: '2026-09-04'
+      summary: "On ne se retrouve plus déconnecté au bout d'une vingtaine de minutes de rédaction, et l'envoi d'une pièce jointe ne fige plus la page. Côté quiz, le suivi d'un travail reconnaît enfin toutes les natures, et un étudiant peut être relancé depuis la liste des participants."
+      entries:
+          - type: fix
+            title: 'Les déconnexions en pleine saisie'
+            detail: "Une session s'interrompait après une vingtaine de minutes sans clic — soit le temps de rédiger une candidature ou de remplir un cahier de texte sans rien envoyer. Elle tient désormais une journée de cours ; fermer le navigateur déconnecte toujours. L'envoi de pièces jointes, par ailleurs, ne fige plus le reste de la page pendant le transfert : c'est ce qui donnait l'impression, en se reconnectant, que plus rien ne répondait."
+          - type: fix
+            title: "Le suivi d'un travail reconnaît toutes les natures"
+            detail: "Le tableau de suivi ne regardait que les dépôts de fichiers. Six natures sur onze n'en produisent jamais — quiz, sondage, écoute, visionnage, autoévaluation, travail simplement déclaré fait — si bien qu'une classe entière apparaissait « Non rendu » sous une ligne d'avancement qui annonçait, elle, presque tout le monde. Les deux lisent maintenant la même chose, avec le vocabulaire de la nature concernée, et la ligne d'un quiz mène à la copie."
+          - type: modification
+            title: 'Relancer un étudiant depuis la liste des participants'
+            detail: "« Relancer » n'était proposé que sur la ligne d'un étudiant qui n'avait jamais commencé, là où il ne sert à rien. Le bouton est maintenant sur la ligne d'une copie rendue, en évaluation seulement. Et la tentative accordée est réellement jouable : elle n'expire plus avec la fermeture du quiz — le cas courant, puisqu'on s'aperçoit du problème après — et son temps part de l'ouverture par l'étudiant, non du clic de l'enseignant."
+          - type: nouveaute
+            title: "Une entrée « Quiz » pour l'étudiant"
+            detail: "Depuis la refonte de sa barre de navigation, l'étudiant n'avait plus aucune porte vers ses quiz, ni vers la correction des anciens. Elle est de retour dans ses ressources."
+          - type: fix
+            title: 'Un quiz fermé le dit, au lieu de refuser'
+            detail: "Entrer dans un quiz dont la date est passée répondait par un refus sec. L'étudiant est désormais renvoyé vers sa copie, ou vers ses quiz. À la création d'un travail, un avertissement signale le cas où le quiz ferme avant l'échéance donnée aux étudiants."
+          - type: autre
+            title: 'MonCampus pour Android 2.6.2'
+
     - version: '2026.09.03'
       date: '2026-09-03'
       summary: "À la fin d'une évaluation, l'étudiant relit sa copie corrigée question par question, et plus seulement son pourcentage. Le mode contrôle, lui, se règle désormais sur une évaluation déjà lancée."
