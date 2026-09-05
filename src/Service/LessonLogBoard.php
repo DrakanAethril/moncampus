@@ -77,6 +77,44 @@ final class LessonLogBoard
     }
 
     /**
+     * The tag on a row of the period screen, in one of three words.
+     *
+     * The two-state badge above stays the authority on « rempli »: only the account of the lesson
+     * makes a log kept. What the third state adds is the difference between a séance nobody has
+     * touched and one where the work was given but the lesson not yet written up - a teacher
+     * scanning the week wants those two apart, and the older screen could only call both « vide ».
+     *
+     * @param bool $hasExtras whether a document or an assignment hangs off the séance
+     */
+    public function sessionStateOf(?string $before, ?string $during, ?string $after, bool $hasExtras): string
+    {
+        if ('filled' === $this->stateOf($during)) {
+            return 'filled';
+        }
+
+        $started = $hasExtras
+            || 'filled' === $this->stateOf($before)
+            || 'filled' === $this->stateOf($after);
+
+        return $started ? 'partial' : 'empty';
+    }
+
+    /**
+     * The same three states read on one part of the cahier de texte - the dot of the preview's
+     * « avant / pendant / après » rows.
+     *
+     * @param bool $hasExtras whether a document or an assignment hangs off that part
+     */
+    public function sectionStateOf(?string $content, bool $hasExtras): string
+    {
+        if ('filled' === $this->stateOf($content)) {
+            return 'filled';
+        }
+
+        return $hasExtras ? 'partial' : 'empty';
+    }
+
+    /**
      * The Monday a day belongs to, at midnight - the key the list groups its rows under, and the
      * shape every date handled here takes.
      */

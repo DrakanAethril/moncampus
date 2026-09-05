@@ -136,4 +136,36 @@ class LessonLogBoardTest extends TestCase
         // before a colon, and that sentence is a kept log.
         self::assertSame('filled', $this->board->stateOf("<p>Chapitre 3\u{00A0}: les boucles</p>"));
     }
+
+    // --- The three-state tag of the period screen ---
+
+    public function testASeanceIsFilledWhenWhatWasTaughtIsWrittenDown(): void
+    {
+        // Same authority as the two-state badge above: only the « pendant » part says the log was
+        // kept. What is added here is a middle state, not a second definition of « rempli ».
+        self::assertSame('filled', $this->board->sessionStateOf('', '<p>Boucles imbriquées</p>', '', false));
+        self::assertSame('filled', $this->board->sessionStateOf('', '<p>Boucles imbriquées</p>', '', true));
+    }
+
+    public function testASeanceIsPartialWhenSomethingWasStartedButNotTheAccountOfTheLesson(): void
+    {
+        self::assertSame('partial', $this->board->sessionStateOf('<p>Lire le chapitre 3</p>', '', '', false));
+        self::assertSame('partial', $this->board->sessionStateOf('', '', '<p>Compte rendu de TP</p>', false));
+        // A document or an assignment hung on the séance is a start too, with nothing typed.
+        self::assertSame('partial', $this->board->sessionStateOf('', '', '', true));
+    }
+
+    public function testASeanceIsEmptyWhenNothingWasEverPutOnIt(): void
+    {
+        self::assertSame('empty', $this->board->sessionStateOf(null, null, null, false));
+        self::assertSame('empty', $this->board->sessionStateOf('<p>&nbsp;</p>', '<p><br></p>', '   ', false));
+    }
+
+    public function testASectionReadsTheSameThreeStatesOnItsOwnContent(): void
+    {
+        self::assertSame('filled', $this->board->sectionStateOf('<p>TP VLAN</p>', false));
+        // Nothing typed, but a document or an assignment is hanging there: the part is not blank.
+        self::assertSame('partial', $this->board->sectionStateOf('<p>&nbsp;</p>', true));
+        self::assertSame('empty', $this->board->sectionStateOf(null, false));
+    }
 }

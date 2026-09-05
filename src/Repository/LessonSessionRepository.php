@@ -9,6 +9,7 @@ use App\Entity\LessonSession;
 use App\Entity\Program;
 use App\Entity\Topic;
 use App\Entity\User;
+use App\Service\LessonLogTwinRule;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\QueryBuilder;
@@ -282,11 +283,15 @@ class LessonSessionRepository extends ServiceEntityRepository
     public function findAllForTeacherBetween(User $teacher, \DateTimeImmutable $from, \DateTimeImmutable $to): array
     {
         return $this->createQueryBuilder('l')
-            ->addSelect('p', 'r', 'lt', 'o')
+            ->addSelect('p', 'r', 'lt', 'o', 'tp')
             ->innerJoin('l.program', 'p')
             ->leftJoin('l.classRoom', 'r')
             ->leftJoin('l.lessonType', 'lt')
             ->leftJoin('l.options', 'o')
+            // The matière is what every row of the cahier de texte's period screen prints under the
+            // hour, and what LessonSession::getDisplayName() reads on the timetable's own events -
+            // a to-one join, so it costs no extra row and spares one query per séance.
+            ->leftJoin('l.topic', 'tp')
             ->where('l.teacher = :teacher')
             ->andWhere('l.day BETWEEN :from AND :to')
             ->setParameter('teacher', $teacher)
@@ -483,6 +488,41 @@ class LessonSessionRepository extends ServiceEntityRepository
             // A co-animated matière is split by construction, so a whole-class créneau is not a
             // twin of anything.
             .' AND SIZE(l.options) > 0';
+    }
+
+    /**
+     * The « créneaux jumeaux » of a séance: the same lesson happening at the same hour to the other
+     * half of the same class, given by somebody else (App\Service\LessonLogTwinRule).
+     *
+     * The query only narrows - same program, same day - and the rule decides. That split is
+     * deliberate: the definition of a twin lives in exactly one place, and rewriting it in DQL here
+     * would make it live in two. A day of one class is a handful of rows, so there is nothing to
+     * gain by pushing the comparison into SQL.
+     *
+     * @return list<LessonSession>
+     */
+    public function findTwinsOf(LessonSession $session): array
+    {
+        if (null === $session->getProgram() || null === $session->getDay()) {
+            return [];
+        }
+
+        $candidates = $this->createQueryBuilder('l')
+            ->addSelect('o')
+            ->leftJoin('l.options', 'o')
+            ->where('l.program = :program')
+            ->andWhere('l.day = :day')
+            ->andWhere('l.id != :session')
+            ->setParameter('program', $session->getProgram())
+            ->setParameter('day', $session->getDay())
+            ->setParameter('session', $session->getId())
+            ->getQuery()
+            ->getResult();
+
+        return array_values(array_filter(
+            $candidates,
+            static fn (LessonSession $candidate): bool => LessonLogTwinRule::isTwinOf($session, $candidate),
+        ));
     }
 
     public function findComparableFilledSessions(LessonSession $session, int $limit = 20): array
