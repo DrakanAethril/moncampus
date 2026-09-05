@@ -1,5 +1,8 @@
 import { Controller } from '@hotwired/stimulus';
 
+// Where a batch's refused files wait out the reload its successful siblings trigger.
+const REFUSALS_KEY = 'file-library:refusals';
+
 // The library's screen: importing files into the current folder, renaming, replacing, and the
 // full-frame preview.
 //
@@ -11,7 +14,7 @@ import { Controller } from '@hotwired/stimulus';
 //
 // The table itself is never repainted: a save reloads the screen. Three things change at once on a
 // move or an upload - the rail, the table and the quota bar - and rebuilding three from one answer
-// is how they come to disagree.
+// is how they come to disagree. That reload is per **batch**, never per file - see settleBatch().
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['input', 'uploads', 'table', 'viewer', 'viewerBody', 'viewerName', 'viewerCount', 'viewerDownload',
@@ -35,6 +38,12 @@ export default class extends Controller {
     connect() {
         this.labels = { ...this.labelsValue };
         this.pending = [];
+        // A batch is one gesture, so it gets one reload - see settleBatch(). Until every file has
+        // settled there is nothing to reload *for*, and reloading early would cancel the siblings.
+        this.inFlight = 0;
+        this.batchSucceeded = false;
+        this.refusals = [];
+        this.repaintCarriedRefusals();
         // Set when the picker is opened by "Remplacer" on a row rather than by "Importer" - the same
         // input serves both, and this is what tells them apart when the file comes back.
         this.replacingNodeId = null;
@@ -89,6 +98,7 @@ export default class extends Controller {
         const row = this.buildUploadRow(file.name);
         this.uploadsTarget.hidden = false;
         this.pending.push(row);
+        this.inFlight += 1;
 
         if (file.size > this.maxBytesValue) {
             this.fail(row, this.labels.networkError);
@@ -144,7 +154,7 @@ export default class extends Controller {
             return;
         }
 
-        window.location.reload();
+        this.succeed(row);
     }
 
     async claim(token, duration, onConflict = '') {
@@ -416,7 +426,7 @@ export default class extends Controller {
 
         this.uploadsTarget.appendChild(row);
 
-        return { element: row, fill, state };
+        return { element: row, fill, state, name };
     }
 
     paint(row, ratio) {
@@ -424,8 +434,81 @@ export default class extends Controller {
     }
 
     fail(row, message) {
+        this.paintFailure(row, message);
+        // Carried across the reload the successful siblings are about to trigger - see settleBatch().
+        this.refusals.push({ name: row.name, message });
+        this.settleOne(false);
+    }
+
+    paintFailure(row, message) {
         row.element.classList.add('is-failed');
         row.state.textContent = message;
+    }
+
+    // The row says so and then waits: the screen only reloads once its siblings have settled too,
+    // and a file left saying "Envoi…" for that whole time reads as one that is stuck.
+    succeed(row) {
+        this.paint(row, 1);
+        row.state.textContent = this.labels.done;
+        this.settleOne(true);
+    }
+
+    settleOne(ok) {
+        this.inFlight -= 1;
+        this.batchSucceeded = this.batchSucceeded || ok;
+        this.settleBatch();
+    }
+
+    /**
+     * One reload for the whole batch, and not before the last file has settled.
+     *
+     * Each file has its own `staged()`, so reloading from inside one of them cancels every sibling
+     * still in flight - measured 2026-09-06 with five staggered files: the 1 Mo one landed at 8.9 s,
+     * reloaded at 9.5 s, and the four others never reached the server at all. One file arrived, and
+     * the screen looked as though only one had ever been chosen. It stayed hidden for as long as it
+     * did because a batch used to finish all at once: with nginx buffering a request body in full
+     * before passing it upstream, five transfers ended within milliseconds of each other and the
+     * siblings' claims were already sent when the reload fired. Turning `proxy_request_buffering`
+     * off (needed so a 200 Mo video is not spooled to disk first) let them finish minutes apart,
+     * which is what exposed the race rather than what caused it.
+     *
+     * Nothing to reload for when every file was refused: the rows carry their reasons and the table
+     * has not changed. When some succeeded and some did not, the reload has to happen - the table is
+     * never repainted here - so the refusals travel with it rather than being wiped by it.
+     */
+    settleBatch() {
+        if (this.inFlight > 0 || !this.batchSucceeded) return;
+
+        this.carryRefusals();
+        window.location.reload();
+    }
+
+    // Session storage, and read once: this is a handover between two paints of the same screen, not
+    // state. A browser that refuses it loses the refusal messages and nothing else.
+    carryRefusals() {
+        if (0 === this.refusals.length) return;
+
+        try {
+            window.sessionStorage.setItem(REFUSALS_KEY, JSON.stringify(this.refusals));
+        } catch {
+            // Private browsing, or storage disabled - the successful files still land.
+        }
+    }
+
+    repaintCarriedRefusals() {
+        let carried = [];
+
+        try {
+            carried = JSON.parse(window.sessionStorage.getItem(REFUSALS_KEY) ?? '[]');
+            window.sessionStorage.removeItem(REFUSALS_KEY);
+        } catch {
+            return;
+        }
+
+        if (!Array.isArray(carried) || 0 === carried.length) return;
+
+        this.uploadsTarget.hidden = false;
+        carried.forEach(({ name, message }) => this.paintFailure(this.buildUploadRow(String(name ?? '')), String(message ?? '')));
     }
 
     el(tag, className, text) {
