@@ -1,0 +1,117 @@
+{# Standalone print document (no base.html.twig) - rendered by Gotenberg for the « Émargement PDF »
+   button of the two class lists (App\Controller\ProgramPeopleExportController). Every asset() call
+   is prefixed with assetBase: Gotenberg has no browser origin of its own.
+
+   The sheet is an official document meant to be signed on paper, so the establishment's identity
+   block is the same one the Qualiopi/signature exports print (templates/program/exports/
+   _institution_letterhead.html.twig) - reproduced here rather than included, that partial being a
+   <tr> of somebody else's table.
+
+   Two lines are deliberately left blank: the title of what is being signed for, and the date. The
+   sheet is printed once and reused, and pre-filling either would decide for whoever prints it. #}
+{% set assetBase = assetBaseUrl|default('') %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>{{ documentTitle }}</title>
+<style>
+    @page { size: A4; margin: 12mm 12mm 14mm; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; box-sizing: border-box; }
+    body { margin: 0; font-family: 'DejaVu Sans', Carlito, Calibri, 'Segoe UI', sans-serif; color: #1b2430; font-size: 10pt; line-height: 1.35; }
+
+    .head { display: flex; align-items: center; gap: 6mm; border: 0.6pt solid #1b2430; padding: 3mm 4mm; }
+    .head__logo { width: 30mm; flex: 0 0 30mm; }
+    .head__logo img { width: 100%; display: block; }
+    .head__id { flex: 1; text-align: center; }
+    .head__name { font-size: 12pt; font-weight: 700; }
+    .head__legal { font-size: 7.5pt; line-height: 1.4; margin-top: 1.5mm; }
+
+    .doc-title { text-align: center; font-size: 13pt; font-weight: 700; letter-spacing: 0.4pt; margin: 6mm 0 1mm; text-transform: uppercase; }
+    .doc-class { text-align: center; font-size: 10.5pt; margin-bottom: 5mm; }
+
+    .fields { display: flex; gap: 6mm; margin-bottom: 4mm; }
+    .field { display: flex; align-items: flex-end; gap: 2mm; }
+    .field--wide { flex: 1; }
+    .field--date { flex: 0 0 62mm; }
+    .field__label { font-weight: 700; white-space: nowrap; }
+    .field__blank { flex: 1; border-bottom: 0.6pt solid #1b2430; height: 6mm; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 0.6pt solid #1b2430; padding: 1.5mm 2mm; }
+    thead th { background: #eef3f9; font-size: 9pt; text-align: left; }
+    .col-num { width: 10mm; text-align: center; }
+    .col-name { width: 45%; }
+    .col-sign { }
+    tbody td { height: 12mm; vertical-align: middle; }
+    tbody .col-num { text-align: center; color: #55637a; font-size: 9pt; }
+    tbody .col-name { font-size: 11pt; }
+
+    .closing { margin-top: 6mm; display: flex; justify-content: flex-end; }
+    .closing__box { width: 70mm; }
+    .closing__label { font-weight: 700; font-size: 9pt; margin-bottom: 1mm; }
+    .closing__blank { border: 0.6pt solid #1b2430; height: 22mm; }
+
+    .empty { margin-top: 6mm; font-style: italic; color: #55637a; }
+</style>
+</head>
+<body>
+
+<div class="head">
+    <div class="head__logo"><img src="{{ assetBase }}{{ asset('images/beaupeyrat-logo.png') }}" alt="Institution Beaupeyrat"></div>
+    <div class="head__id">
+        <div class="head__name">Institution Beaupeyrat &ndash; Centre de formation</div>
+        <div class="head__legal">
+            9ter rue Pétiniaud Beaupeyrat &ndash; 87036 Limoges Cedex<br>
+            Siret : 775 716 715 00013 &ndash; APE 8531 Z<br>
+            Déclaration d'activité enregistrée sous le n° 748 700 407 87 auprès du Préfet de la région Nouvelle Aquitaine.
+        </div>
+    </div>
+</div>
+
+<div class="doc-title">{{ 'attendanceSheetDocumentTitle'|trans }}</div>
+<div class="doc-class">{{ program.displayName }}{% if program.displayShortName != program.displayName %} ({{ program.displayShortName }}){% endif %}</div>
+
+<div class="fields">
+    <div class="field field--wide">
+        <span class="field__label">{{ 'attendanceSheetSubjectFieldLabel'|trans }}</span>
+        <span class="field__blank"></span>
+    </div>
+    <div class="field field--date">
+        <span class="field__label">{{ 'attendanceSheetDateFieldLabel'|trans }}</span>
+        <span class="field__blank"></span>
+    </div>
+</div>
+
+{% if names|length > 0 %}
+    <table>
+        <thead>
+            <tr>
+                <th class="col-num">{{ 'attendanceSheetNumberColumnLabel'|trans }}</th>
+                <th class="col-name">{{ 'attendanceSheetNameColumnLabel'|trans }}</th>
+                <th class="col-sign">{{ 'attendanceSheetSignatureColumnLabel'|trans }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for name in names %}
+                <tr>
+                    <td class="col-num">{{ loop.index }}</td>
+                    <td class="col-name">{{ name }}</td>
+                    <td class="col-sign"></td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p class="empty">{{ 'attendanceSheetEmptyLabel'|trans }}</p>
+{% endif %}
+
+<div class="closing">
+    <div class="closing__box">
+        <div class="closing__label">{{ 'attendanceSheetCertifierLabel'|trans }}</div>
+        <div class="closing__blank"></div>
+    </div>
+</div>
+
+</body>
+</html>

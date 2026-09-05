@@ -1,0 +1,26 @@
+{# Gotenberg's own running footer - a COMPLETE, standalone document, same three constraints as
+   templates/program/referential/_tsf_footer.html.twig: it inherits nothing, it needs an explicit
+   font-size, and it is a TABLE rather than flexbox, sized in mm against the printable width
+   (A4's 210mm less the two 12mm side margins declared by the exporter). #}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<style>
+    body { margin: 0; font-family: 'DejaVu Sans', 'Segoe UI', Arial, sans-serif;
+           font-size: 7.5pt; color: #6b7688; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    table.f { width: 186mm; margin: 0 auto; border-collapse: collapse; border-top: 0.5pt solid #d3dae4; }
+    table.f td { padding-top: 1.2mm; }
+    .f__mid { color: #8a93a3; }
+</style>
+</head>
+<body>
+<table class="f">
+    <tr>
+        <td align="left">{{ docTitle }}</td>
+        <td align="center" class="f__mid">Édité le {{ generatedAt|date('d/m/Y') }}</td>
+        <td align="right"><span class="pageNumber"></span>/<span class="totalPages"></span></td>
+    </tr>
+</table>
+</body>
+</html>

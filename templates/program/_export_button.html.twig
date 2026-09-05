@@ -1,0 +1,17 @@
+{# The « Exporter » button of the two class lists, right-aligned on the title line. One partial for
+   both screens: the two menus offer the same two gestures, only the routes differ.
+
+   Shown by the same two conditions the routes are guarded by (App\Controller\
+   ProgramPeopleExportController) - the feature, and staff/admin. A button nobody may follow is
+   worse than no button. #}
+{% if is_staff() and feature('class_list_exports') %}
+    <div class="dropdown">
+        <button type="button" class="cm-btn cm-btn--primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+            {{ 'exportButtonLabel'|trans }}
+        </button>
+        <div class="dropdown-menu dropdown-menu-end">
+            <a class="dropdown-item" href="{{ path(attendancePdfRoute, {id: program.id}) }}" data-turbo="false">{{ 'exportAttendanceSheetActionLabel'|trans }}</a>
+            <a class="dropdown-item" href="{{ path(csvRoute, {id: program.id}) }}" data-turbo="false">{{ 'exportCsvActionLabel'|trans }}</a>
+        </div>
+    </div>
+{% endif %}
