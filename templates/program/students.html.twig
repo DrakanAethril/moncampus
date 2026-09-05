@@ -1,7 +1,26 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'programStudentsPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {# Accueil › <classe> › Liste des étudiants: the trail follows the nav, which reaches this
+       screen through the class's own submenu. The class segment points at this very page, that
+       being the address the whole application already uses for "the class". #}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.displayShortName, url: path('app_program_students', {id: program.id})},
+        {label: 'programStudentsPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
 {% block page_title %}{{ 'programStudentsPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
+
+{% block page_actions %}
+    {% include 'program/_export_button.html.twig' with {
+        program: program,
+        attendancePdfRoute: 'app_program_students_attendance_pdf',
+        csvRoute: 'app_program_students_csv',
+    } %}
+{% endblock %}
 
 {% block main %}
     {% if students|length > 0 %}
