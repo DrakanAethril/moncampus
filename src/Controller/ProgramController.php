@@ -7,7 +7,6 @@ namespace App\Controller;
 use App\Attribute\RequiresFeature;
 use App\Entity\LessonSession;
 use App\Entity\Program;
-use App\Entity\User;
 use App\Enum\Feature;
 use App\Enum\ProgramAlternanceCalendarMode;
 use App\Repository\LessonSessionRepository;
@@ -16,6 +15,7 @@ use App\Repository\ProgramRepository;
 use App\Repository\ProgramStudentOptionRepository;
 use App\Repository\ProgramTeacherOptionRepository;
 use App\Security\StructureAccessChecker;
+use App\Service\ClassRoster;
 use App\Service\FileUploadService;
 use App\Service\GotenbergClient;
 use App\Service\GotenbergUnavailableException;
@@ -38,42 +38,30 @@ class ProgramController extends AbstractController
     use ProgramFeatureGuardTrait;
 
     #[Route(path: '/programs/{id}/students', name: 'app_program_students')]
-    public function students(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, ProgramStudentOptionRepository $studentOptionRepository): Response
+    public function students(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, ProgramStudentOptionRepository $studentOptionRepository, ClassRoster $roster): Response
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
 
         return $this->render('program/students.html.twig', [
             'program' => $program,
-            'students' => $this->sortedByName($program->getStudents()->toArray()),
+            'students' => $roster->ordered($program->getStudents()->toArray()),
             'optionsByStudentId' => $studentOptionRepository->findOptionsByStudentForProgram($program),
         ]);
     }
 
     #[Route(path: '/programs/{id}/teachers', name: 'app_program_teachers')]
-    public function teachers(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, ProgramTeacherOptionRepository $teacherOptionRepository): Response
+    public function teachers(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, ProgramTeacherOptionRepository $teacherOptionRepository, ClassRoster $roster): Response
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
 
         return $this->render('program/teachers.html.twig', [
             'program' => $program,
-            'teachers' => $this->sortedByName($program->getTeachers()->toArray()),
+            'teachers' => $roster->ordered($program->getTeachers()->toArray()),
             'optionsByTeacherId' => $teacherOptionRepository->findOptionsByTeacherForProgram($program),
             // Students see "S. Tharaud" instead of "Sébastien Tharaud" - teachers/staff viewing
             // this same page (e.g. a teacher checking their own team) still see the full name.
             'politeNames' => $this->isGranted('ROLE_STUDENT'),
         ]);
-    }
-
-    /**
-     * @param list<User> $users
-     *
-     * @return list<User>
-     */
-    private function sortedByName(array $users): array
-    {
-        usort($users, static fn (User $a, User $b): int => ($a->getDisplayName() ?? $a->getUsername()) <=> ($b->getDisplayName() ?? $b->getUsername()));
-
-        return $users;
     }
 
     #[RequiresFeature(Feature::Timetable)]

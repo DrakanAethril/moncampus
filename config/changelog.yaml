@@ -26,6 +26,29 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.05'
+      date: '2026-09-05'
+      summary: "La liste des étudiants ou des enseignants d'une classe s'exporte, en feuille d'émargement prête à signer ou en fichier tableur, et se range désormais par nom de famille. Côté fichiers, choisir plusieurs documents d'un coup ne les perd plus en route, et un envoi refusé le dit clairement au lieu de parler de connexion."
+      entries:
+          - type: nouveaute
+            title: "Exporter la liste d'une classe"
+            detail: "Les listes d'étudiants et d'enseignants d'une formation proposent un bouton « Exporter » : soit une feuille d'émargement en PDF, à l'en-tête de l'établissement, avec une ligne d'objet et une ligne de date à remplir et une case de signature par personne ; soit la liste en fichier tableur. Celui des étudiants reprend le format attendu par l'import d'une classe, de sorte qu'un export puisse être réimporté tel quel. Réservé à l'administration."
+          - type: modification
+            title: 'Les listes de classe sont rangées par nom de famille'
+            detail: "Elles suivaient l'ordre du prénom : une feuille d'émargement imprimée ne présentait donc pas les personnes dans le même ordre que l'écran dont elle sortait. Les noms restent affichés comme avant, seul le classement change."
+          - type: fix
+            title: "Envoyer plusieurs fichiers d'un coup"
+            detail: "Le premier fichier arrivé rafraîchissait la page et interrompait les autres : sur cinq documents choisis ensemble, un seul était conservé. Les cinq passent désormais, et la page n'attend que la fin du lot pour se rafraîchir."
+          - type: fix
+            title: 'Un envoi refusé le dit clairement'
+            detail: "Un fichier refusé à l'arrivée s'affichait comme une panne de connexion, ce qui envoyait chercher un problème inexistant de son côté. Le refus est maintenant annoncé pour ce qu'il est."
+          - type: fix
+            title: "L'écran de partage d'un document à une classe"
+            detail: 'Sa mise en page était brouillée depuis les écrans de partage de contenu.'
+          - type: fix
+            title: 'Les zones de remarque de la relecture'
+            detail: "À la relecture d'une postulation, les zones de remarque étaient trop étroites pour ce qu'on y écrit."
+
     - version: '2026.09.04'
       date: '2026-09-04'
       summary: "On ne se retrouve plus déconnecté au bout d'une vingtaine de minutes de rédaction, et l'envoi d'une pièce jointe ne fige plus la page. Côté quiz, le suivi d'un travail reconnaît enfin toutes les natures, et un étudiant peut être relancé depuis la liste des participants."

@@ -1033,6 +1033,44 @@ class RoleAccessSmokeTest extends FunctionalTestCase
     }
 
     /**
+     * The « Exporter » button of the two class lists, whose routes carry two guards rather than one
+     * and are therefore worth a table of their own: the `IsGranted` says staff and admin, and
+     * App\Enum\Feature::ClassListExports says whether the establishment runs the exports at all.
+     *
+     * The émargement PDF is deliberately absent: it goes through Gotenberg, which is a second
+     * container, and a smoke test that needs one proves the wrong thing when it fails. What the
+     * guards do is the same on both routes - they are the same two attributes on the same class.
+     */
+    public function testClassListExportsAreStaffAndAdminOnly(): void
+    {
+        $programId = $this->program->getId();
+        $csv = [
+            sprintf('/programs/%d/students/list.csv', $programId) => 200,
+            sprintf('/programs/%d/teachers/list.csv', $programId) => 200,
+        ];
+
+        $this->assertScreens($this->admin, $csv);
+        $this->assertScreens($this->createUser(['ROLE_USER', 'ROLE_STAFF'], 'smoke.export.staff'), $csv);
+        $this->assertScreens($this->createUser(['ROLE_USER', 'ROLE_STAFF-LEAD'], 'smoke.export.stafflead'), $csv);
+
+        // A 403, not a 404: the fixture opens the whole catalogue, so the feature is on and it is
+        // the role that refuses.
+        $refused = array_map(static fn (): int => 403, $csv);
+        foreach ([$this->student, $this->teacher, $this->tutor] as $user) {
+            $this->assertScreens($user, $refused);
+        }
+
+        // The other half of the rule, and the one that says the two guards are not the same
+        // question: an establishment that has not switched the exports on answers a staff member a
+        // 404 - the screen does not exist - where a student is refused a screen that does.
+        $this->switchOffEveryRole(Feature::ClassListExports);
+        $this->assertScreens(
+            $this->createUser(['ROLE_USER', 'ROLE_STAFF'], 'smoke.export.staff.off'),
+            array_map(static fn (): int => 404, $csv),
+        );
+    }
+
+    /**
      * The console, one line per role - and the student's line is the one this table exists for.
      *
      * `/console/{id}` is reached *through an account*, so the id here is a real GuestAccount owned

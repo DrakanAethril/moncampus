@@ -4663,6 +4663,9 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
   border-radius: 8px; padding: 6px 12px; font: 600 12px var(--cm-font-ui); color: var(--cm-text); cursor: pointer;
 }
 .cm-training-verdict__choice:has(input:checked) { border-color: var(--cm-brand); background: var(--cm-mail-tint-bg); color: var(--cm-brand-strong); }
+/* The remark box is a block on its own, not an inline field: without a width it falls back to the
+   textarea's default column count and leaves the right of the panel empty. */
+.cm-training-verdict .cm-compose__textarea { display: block; width: 100%; }
 .cm-training-previous {
   border: 1px solid #e0b25f; background: #fffdf6; color: #8a6a1f; border-radius: 8px;
   padding: 10px 13px; margin-bottom: 12px; font-size: 12.5px; line-height: 1.55;
@@ -8104,8 +8107,12 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-share { display: flex; flex-direction: column; gap: 20px; max-width: 620px; margin-bottom: 32px; }
 .cm-share__field { border: 0; padding: 0; margin: 0; }
 .cm-share__field .form-label { display: block; margin-bottom: 4px; font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
-.cm-share__scope { display: flex; flex-direction: column; gap: 20px; }
-.cm-share__scope[hidden] { display: none; }
+/* One block per class, revealed by the `shared-document` controller. Named after the program and
+   not after a « scope »: the content-sharing modal further down owns `.cm-share__scope`, and the
+   two used to collide - the block inherited that card's two-column grid, which stretched the
+   options and squeezed the modalities into a narrow tower. */
+.cm-share__program { display: flex; flex-direction: column; gap: 20px; }
+.cm-share__program[hidden] { display: none; }
 .cm-share__help { margin: 0 0 8px; font-size: 12px; color: var(--cm-faint); }
 /* What sharing a folder means, above the form. Gold rather than grey: it is not help text about
    a field, it is the scope of what the teacher is about to do. */

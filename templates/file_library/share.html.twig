@@ -58,7 +58,7 @@
                     </div>
 
                     {% for target in targets %}
-                        <div class="cm-share__scope" data-shared-document-target="scope" data-program-id="{{ target.program.id }}" hidden>
+                        <div class="cm-share__program" data-shared-document-target="scope" data-program-id="{{ target.program.id }}" hidden>
                             {# Checkbox groups rather than a multi-select, per the repository's rule.
                                Leaving a group empty is what targets the whole class - said in the
                                help text, because a set of unticked boxes reads as "nobody". #}

@@ -488,9 +488,23 @@ export default class extends Controller {
         }
 
         // The server names what it refused, in the reader's own language, and that message is the
-        // row's. A reply with no message is one that never reached the application - which under
-        // FrankenPHP is what an oversized POST looks like.
-        this.settle(row, 'refused', data?.message ?? this.labels.networkError);
+        // row's. A reply with no message never reached the application at all - see refusalMessage().
+        this.settle(row, 'refused', data?.message ?? this.refusalMessage(request, data));
+    }
+
+    /**
+     * What to say when the reply carries no message of its own.
+     *
+     * A 413 is the reverse proxy in front of the application, not the application: production sits
+     * behind nginx, whose `client_max_body_size` bounds a request body before FrankenPHP ever sees
+     * it (measured 2026-09-05: every upload over 1 Mo was turned away this way, while
+     * `upload_max_filesize` said 200M). A body that does not parse is the same class of answer -
+     * the 200-with-an-HTML-page FrankenPHP gives a POST over `post_max_size` - and both mean the
+     * bytes never reached a controller. Saying "check your connection" there sends the reader after
+     * a problem they do not have.
+     */
+    refusalMessage(request, data) {
+        return 413 === request.status || null === data ? this.labels.serverRefused : this.labels.networkError;
     }
 
     settle(row, state, message) {

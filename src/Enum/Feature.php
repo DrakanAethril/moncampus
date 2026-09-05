@@ -61,6 +61,7 @@ enum Feature: string
     case SelfAssessment = 'self_assessment';
     case ProgramReporting = 'program_reporting';
     case ProgramExports = 'program_exports';
+    case ClassListExports = 'class_list_exports';
     case ProgramFinancial = 'program_financial';
     case Directory = 'directory';
 
@@ -129,8 +130,8 @@ enum Feature: string
 
             self::Timetable, self::TimetableSettings, self::EvaluationPlanning,
             self::GradebookEntry, self::GradebookStudent, self::SelfAssessment,
-            self::ProgramReporting, self::ProgramExports, self::ProgramFinancial,
-            self::Directory => FeatureFamily::Schooling,
+            self::ProgramReporting, self::ProgramExports, self::ClassListExports,
+            self::ProgramFinancial, self::Directory => FeatureFamily::Schooling,
 
             self::Agenda, self::Announcements, self::Messaging, self::SchoolMail,
             self::SchoolMailSupervision, self::SignupLists, self::Support,
@@ -205,6 +206,7 @@ enum Feature: string
             self::SelfAssessment => 'featureSelfAssessmentLabel',
             self::ProgramReporting => 'featureProgramReportingLabel',
             self::ProgramExports => 'featureProgramExportsLabel',
+            self::ClassListExports => 'featureClassListExportsLabel',
             self::ProgramFinancial => 'featureProgramFinancialLabel',
             self::Directory => 'featureDirectoryLabel',
             self::Agenda => 'featureAgendaLabel',
@@ -297,6 +299,12 @@ enum Feature: string
 
             // e-CO is what ROLE_ECO exists for.
             self::Eco => ['ROLE_ECO'],
+
+            // The two class lists are the establishment's own directory rather than a teaching
+            // tool (see the nav's comment on them), and so is exporting one: an émargement sheet
+            // and a file of names, addresses and options. The routes are staff/admin either way -
+            // this line only says which of those two the establishment delivers it to by default.
+            self::ClassListExports => ['ROLE_STAFF', 'ROLE_STAFF-LEAD'],
 
             default => null,
         };
