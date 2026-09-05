@@ -22,7 +22,8 @@
             </span>
             <span class="cm-sa-hero__title">{{ evaluation.name }}</span>
             <span class="cm-sa-hero__meta">
-                {% if assignment.description %}{{ assignment.description|striptags }} — {% endif %}
+                {% set description = assignment.description|plain_text %}
+                {% if description %}{{ description }} — {% endif %}
                 {{ 'selfAssessmentHeroScaleLabel'|trans({'%scale%': evaluation.scale, '%count%': questions|length}) }}
             </span>
         </div>

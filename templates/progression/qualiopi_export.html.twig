@@ -336,6 +336,9 @@
         } %}
         {% for label, value in fields %}
             {% if value is not empty %}
+                {# |striptags with a tag list then |raw, deliberately: this one *renders* the HTML
+                   rather than flattening it, so the entities are interpreted by the browser and
+                   there is nothing for plain_text to fix. Only a bare |striptags is the bug. #}
                 <div class="qp-field"><span class="qp-field__l">{{ label }} :</span> <span class="qp-prose">{{ value|striptags('<p><br><ul><ol><li><strong><em>')|raw }}</span></div>
             {% endif %}
         {% endfor %}
@@ -472,11 +475,15 @@
                     <tbody>
                     {% for phase in seance.phases %}
                         <tr>
-                            <td><strong>{{ phase.name }}</strong>{% if phase.contenu is not empty %}<br><span class="qp-muted">{{ phase.contenu|striptags }}</span>{% endif %}</td>
+                            {# plain_text rather than |striptags: these carry the editor's HTML, whose
+                               entities striptags would leave for the escaper to print as their code.
+                               It also answers empty on a `<p>&nbsp;</p>`, which `is not empty` does not. #}
+                            {% set contenu = phase.contenu|plain_text %}
+                            <td><strong>{{ phase.name }}</strong>{% if contenu %}<br><span class="qp-muted">{{ contenu }}</span>{% endif %}</td>
                             <td>{{ phase.minutes is not null ? phase.minutes|duration_minutes : '—' }}</td>
-                            <td>{{ phase.teacher is not empty ? phase.teacher|striptags : '—' }}</td>
-                            <td>{{ phase.student is not empty ? phase.student|striptags : '—' }}</td>
-                            <td>{{ phase.means is not empty ? phase.means|striptags : '—' }}</td>
+                            <td>{{ phase.teacher|plain_text ?: '—' }}</td>
+                            <td>{{ phase.student|plain_text ?: '—' }}</td>
+                            <td>{{ phase.means|plain_text ?: '—' }}</td>
                         </tr>
                     {% endfor %}
                     </tbody>
