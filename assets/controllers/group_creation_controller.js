@@ -14,7 +14,7 @@ export default class extends Controller {
         'mixiteFreeBtn', 'mixiteMixedBtn', 'mixiteHomoBtn',
         'pairASelect', 'pairBSelect', 'pairChips',
         'error', 'reshuffleBtn', 'summary', 'nameFormatSelect',
-        'toolbar', 'lotNameInput', 'grid', 'dndHint', 'emptyState',
+        'toolbar', 'lotNameInput', 'updateButton', 'saveButton', 'grid', 'dndHint', 'emptyState',
         'lotsBar', 'lotsChips', 'sharedLotsBar', 'sharedLotsChips',
         'shareButton', 'shareModal', 'shareModalBody', 'shareList', 'shareCheckbox',
         'fullscreen', 'fullscreenTitle', 'fullscreenGrid',
@@ -30,6 +30,7 @@ export default class extends Controller {
         shareableTeachers: Array,
         generateUrl: String,
         saveLotUrl: String,
+        updateLotUrl: String,
         deleteLotUrl: String,
         shareLotUrl: String,
         csrfToken: String,
@@ -50,10 +51,19 @@ export default class extends Controller {
         this.lots = [...this.lotsValue];
         this.sharedLots = [...this.sharedLotsValue];
         this.pendingDeleteLotId = null;
-        // Which saved lot the grid is currently showing, or null when it shows something that has
-        // no database row yet (a fresh draw, an edited lot, a colleague's read-only lot). Sharing
-        // hands over the row, so this is exactly what gates the "Partager" button.
+        // Which of one's OWN saved lots the grid came from, or null when it came from a fresh draw
+        // or from a colleague's read-only lot. It survives every edit made afterwards, because
+        // "Mettre à jour" is precisely the gesture for « these new groups replace the old ones » -
+        // losing the row on the first drag would hide the button exactly when it is wanted.
         this.currentLotId = null;
+        // Whether any saved lot at all is on screen, one's own or a colleague's - what turns
+        // "Enregistrer les groupes" into "Dupliquer". A colleague's lot loaded here can only ever
+        // become a lot of one's own, which is a duplication too.
+        this.lotLoaded = false;
+        // Whether the grid has diverged from the row it came from (a drag, a new draw). Sharing
+        // hands over the row rather than the screen, so this is what gates "Partager": a lot may
+        // only be shared while the two still say the same thing.
+        this.lotDirty = false;
         // Shortened names by default: the group cards are read from across a room, and a class
         // knows its own first names. Applies to the cards, the fullscreen view and the exports -
         // NOT to the absent/pair pickers below, where a surname is what tells two "Célia L." apart.
@@ -402,7 +412,9 @@ export default class extends Controller {
         if (!rebrasser) {
             this.lockedIndices = new Set();
         }
-        this.setCurrentLot(null);
+        // A fresh draw over a loaded lot is still that lot's screen: rebrasser puis mettre à jour
+        // is an ordinary move, and the name is right there in the field to say which lot it is.
+        this.markLotDirty();
         this.renderGroups();
         this.renderSummary();
     }
@@ -525,8 +537,9 @@ export default class extends Controller {
         const [member] = this.groups[fromIndex].splice(memberIndex, 1);
         this.groups[targetIndex].push(member);
         this.dragId = null;
-        // The grid no longer matches the saved row, so it is not that lot any more until re-saved.
-        this.setCurrentLot(null);
+        // The grid no longer matches the saved row - but it is still that lot's screen, and
+        // "Mettre à jour" is how it gets written back.
+        this.markLotDirty();
         this.renderGroups();
     }
 
@@ -572,6 +585,11 @@ export default class extends Controller {
 
     // The second banner - a colleague's lot, loadable and re-savable under one's own name, but
     // never renamed, re-shared or deleted from here: those all act on the owner's row.
+    //
+    // Whose lot it is stays in the chip's tooltip rather than being printed beside its name: the
+    // banner is already titled « Groupes partagés avec moi », so a name on every chip crowds the
+    // only thing being chosen between - the lot's own name - to repeat what the row's presence
+    // already says.
     renderSharedLotsBar() {
         this.sharedLotsBarTarget.hidden = this.sharedLots.length === 0;
         this.sharedLotsChipsTarget.replaceChildren();
@@ -588,11 +606,6 @@ export default class extends Controller {
             load.addEventListener('click', () => this.loadLot(lot, false));
             chip.appendChild(load);
 
-            const owner = document.createElement('span');
-            owner.className = 'cm-grp-lot-chip__owner';
-            owner.textContent = lot.ownerName;
-            chip.appendChild(owner);
-
             this.sharedLotsChipsTarget.appendChild(chip);
         }
     }
@@ -601,15 +614,46 @@ export default class extends Controller {
         this.groups = lot.groups.map((group) => group.map((student) => ({ ...student, optionId: student.optionIds?.[0] ?? student.optionId ?? null })));
         this.lockedIndices = new Set();
         this.lotNameInputTarget.value = lot.name;
-        this.setCurrentLot(owned ? lot.id : null);
+        this.setCurrentLot(owned ? lot.id : null, { loaded: true });
         this.renderGroups();
     }
 
-    setCurrentLot(lotId) {
+    // The single place the three lot flags are written, so the toolbar can never disagree with the
+    // state: `owned` is the row "Mettre à jour" would write to, `loaded` says a saved lot is what
+    // is on screen at all, `dirty` says the screen has moved away from it since.
+    setCurrentLot(lotId, { loaded = lotId !== null, dirty = false } = {}) {
         this.currentLotId = lotId;
+        this.lotLoaded = loaded;
+        this.lotDirty = dirty;
+        this.refreshLotButtons();
+    }
+
+    // Marks the screen as no longer being what the row says, without forgetting which row it came
+    // from - a drag, a re-draw. Nothing to do when the screen came from no row at all.
+    markLotDirty() {
+        if (!this.lotDirty) {
+            this.lotDirty = true;
+            this.refreshLotButtons();
+        }
+    }
+
+    refreshLotButtons() {
+        if (this.hasUpdateButtonTarget) {
+            this.updateButtonTarget.hidden = this.currentLotId === null;
+        }
+
+        if (this.hasSaveButtonTarget) {
+            this.saveButtonTarget.textContent = this.lotLoaded ? this.labelsValue.duplicateLotButton : this.labelsValue.saveLotButton;
+            this.saveButtonTarget.title = this.lotLoaded ? this.labelsValue.duplicateLotTitle : this.labelsValue.saveLotTitle;
+        }
+
         if (this.hasShareButtonTarget) {
-            this.shareButtonTarget.disabled = lotId === null;
-            this.shareButtonTarget.title = lotId === null ? this.labelsValue.shareLotUnsavedMessage : '';
+            // Shareable only while the row and the screen still say the same thing: what a
+            // colleague would open is the row, and being handed groups one was never shown is
+            // worse than a disabled button.
+            const shareable = this.currentLotId !== null && !this.lotDirty;
+            this.shareButtonTarget.disabled = !shareable;
+            this.shareButtonTarget.title = shareable ? '' : this.labelsValue.shareLotUnsavedMessage;
         }
     }
 
@@ -671,6 +715,9 @@ export default class extends Controller {
             : this.labelsValue.lotSharedToast.replace('%name%', lot.name).replace('%count%', data.sharedWith.length));
     }
 
+    // "Enregistrer les groupes" on a fresh draw, "Dupliquer" once a saved lot is on screen - one
+    // endpoint, because both create a row: the wording says which of the two the teacher meant, and
+    // the server disambiguates the name when the copy is spelled like its original.
     async saveLot() {
         if (!this.groups) return;
 
@@ -695,19 +742,55 @@ export default class extends Controller {
             return;
         }
 
-        const existingIndex = this.lots.findIndex((lot) => lot.id === data.id);
-        // Overwriting a lot by re-using its name keeps its recipients: the row is the same row, and
-        // the server never touched the share table here.
-        const savedLot = { id: data.id, name: data.name, groups: this.groups, sharedWith: existingIndex === -1 ? [] : (this.lots[existingIndex].sharedWith ?? []) };
-        if (existingIndex === -1) {
-            this.lots.push(savedLot);
-        } else {
-            this.lots[existingIndex] = savedLot;
-        }
+        // A brand-new row, shared with nobody: a copy inherits its original's groups, never its
+        // recipients - who a colleague may read is the owner's decision, made lot by lot.
+        this.lots.push({ id: data.id, name: data.name, groups: this.groups, sharedWith: [] });
+        // The name the server actually kept, which is not always the one typed: a copy spelled
+        // like an existing lot comes back numbered, and the field has to say so.
         this.lotNameInputTarget.value = data.name;
         this.setCurrentLot(data.id);
         this.renderLotsBar();
         this.showToast(this.labelsValue.lotSavedToast.replace('%name%', data.name));
+    }
+
+    // "Mettre à jour" - the loaded lot's own row takes the name and the composition on screen. Only
+    // ever reachable while one of one's own lots is loaded (the button is hidden otherwise), and the
+    // server re-checks that anyway by scoping the lookup to the owner.
+    async updateLot() {
+        if (!this.groups || this.currentLotId === null) return;
+
+        const lot = this.ownedLot(this.currentLotId);
+        if (!lot) return;
+
+        const url = this.updateLotUrlValue.replace('__LOT_ID__', String(lot.id));
+        let response;
+        try {
+            response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': this.csrfTokenValue },
+                body: JSON.stringify({ name: this.lotNameInputTarget.value.trim(), groups: this.groups.map((group) => group.map((m) => m.id)) }),
+            });
+        } catch (e) {
+            this.renderError(this.labelsValue.networkErrorMessage);
+
+            return;
+        }
+
+        const data = await response.json().catch(() => null);
+        if (!response.ok || !data || data.error) {
+            this.renderError(data?.error ?? this.labelsValue.networkErrorMessage);
+
+            return;
+        }
+
+        // The row is the same row: its recipients are untouched, and the server never went near
+        // the share table here.
+        lot.name = data.name;
+        lot.groups = this.groups;
+        this.lotNameInputTarget.value = data.name;
+        this.setCurrentLot(lot.id, { loaded: true });
+        this.renderLotsBar();
+        this.showToast(this.labelsValue.lotUpdatedToast.replace('%name%', data.name));
     }
 
     openDeleteLotModal(lot) {

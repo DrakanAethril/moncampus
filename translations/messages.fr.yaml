@@ -2344,7 +2344,7 @@ programToolsShareLotModalBody: 'Choisissez les enseignants de la classe qui pour
 programToolsShareLotHintLabel: "Les enseignants choisis verront ces groupes dans « Groupes partagés avec moi ». Ils pourront les ouvrir, mais ni les renommer ni les supprimer."
 programToolsShareLotNoTeacherMessage: "Aucun autre enseignant n'est rattaché à cette classe pour le moment."
 programToolsShareLotConfirmAction: 'Partager'
-programToolsShareLotUnsavedMessage: 'Enregistrez les groupes pour pouvoir les partager.'
+programToolsShareLotUnsavedMessage: 'Enregistrez ou mettez à jour les groupes pour pouvoir les partager.'
 programToolsSharedLotOwnerTitle: 'Partagé par %name%'
 programToolsSharedCountBadgeLabel: '%count% partage(s)'
 programToolsLotSharedToast: 'Groupes « %name% » partagés avec %count% enseignant(s)'
@@ -2353,6 +2353,12 @@ programToolsDeleteLotAction: 'Supprimer'
 programToolsFullscreenTitleFallback: 'Groupes — %program%'
 programToolsLotNamePlaceholder: 'Nom des groupes (ex. TP réseau — S2)'
 programToolsSaveLotButtonLabel: 'Enregistrer les groupes'
+programToolsUpdateLotButtonLabel: 'Mettre à jour'
+programToolsUpdateLotTitle: "Enregistrer le nom et la composition affichés à la place des groupes existants"
+programToolsDuplicateLotButtonLabel: 'Dupliquer'
+programToolsDuplicateLotTitle: "Créer de nouveaux groupes à partir de ce qui est affiché, sans toucher aux groupes existants"
+programToolsSaveLotTitle: 'Enregistrer les groupes affichés'
+programToolsLotUpdatedToast: 'Groupes « %name% » mis à jour'
 programToolsExportPdfButtonLabel: 'Exporter en PDF'
 programToolsDndHintLabel: "Glissez-déposez un élève d'un groupe à l'autre pour ajuster. Verrouillez un groupe pour le préserver lors d'un rebrassage."
 programToolsEmptyStateLabel: 'Réglez les paramètres à gauche puis cliquez sur « Créer les groupes ».'

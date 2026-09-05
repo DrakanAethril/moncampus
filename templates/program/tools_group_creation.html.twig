@@ -26,6 +26,7 @@
              data-group-creation-shareable-teachers-value="{{ shareableTeachers|json_encode }}"
              data-group-creation-generate-url-value="{{ path('app_program_tools_group_creation_generate', {id: program.id}) }}"
              data-group-creation-save-lot-url-value="{{ path('app_program_tools_group_creation_save_lot', {id: program.id}) }}"
+             data-group-creation-update-lot-url-value="{{ path('app_program_tools_group_creation_update_lot', {id: program.id, lotId: '__LOT_ID__'}) }}"
              data-group-creation-delete-lot-url-value="{{ path('app_program_tools_group_creation_delete_lot', {id: program.id, lotId: '__LOT_ID__'}) }}"
              data-group-creation-share-lot-url-value="{{ path('app_program_tools_group_creation_share_lot', {id: program.id, lotId: '__LOT_ID__'}) }}"
              data-group-creation-csrf-token-value="{{ csrf_token('program_group_creation') }}"
@@ -54,6 +55,11 @@
                  lotUnsharedToast: 'programToolsLotUnsharedToast'|trans,
                  shareLotUnsavedMessage: 'programToolsShareLotUnsavedMessage'|trans,
                  lotSavedToast: 'programToolsLotSavedToast'|trans,
+                 lotUpdatedToast: 'programToolsLotUpdatedToast'|trans,
+                 saveLotButton: 'programToolsSaveLotButtonLabel'|trans,
+                 duplicateLotButton: 'programToolsDuplicateLotButtonLabel'|trans,
+                 saveLotTitle: 'programToolsSaveLotTitle'|trans,
+                 duplicateLotTitle: 'programToolsDuplicateLotTitle'|trans,
                  lotDeletedToast: 'programToolsLotDeletedToast'|trans,
                  deleteLotConfirmBody: 'programToolsDeleteLotConfirmBody'|trans,
                  fullscreenTitleFallback: 'programToolsFullscreenTitleFallback'|trans({'%program%': program.displayShortName}),
@@ -134,7 +140,12 @@
                     <div class="cm-grp-toolbar" data-group-creation-target="toolbar" hidden>
                         <div class="cm-grp-toolbar__row">
                             <input type="text" class="form-control form-control-sm" placeholder="{{ 'programToolsLotNamePlaceholder'|trans }}" data-group-creation-target="lotNameInput">
-                            <button type="button" class="btn btn-outline-warning btn-sm" data-action="click->group-creation#saveLot">{{ 'programToolsSaveLotButtonLabel'|trans }}</button>
+                            {# Only while one of one's OWN saved lots is on screen: it writes over
+                               that row, and a colleague's row is not one's to write over. #}
+                            <button type="button" class="btn btn-outline-warning btn-sm" data-group-creation-target="updateButton" data-action="click->group-creation#updateLot" title="{{ 'programToolsUpdateLotTitle'|trans }}" hidden>{{ 'programToolsUpdateLotButtonLabel'|trans }}</button>
+                            {# Reads « Dupliquer » as soon as a saved lot is on screen - it always
+                               creates a second row, and only its wording tells the two apart. #}
+                            <button type="button" class="btn btn-outline-warning btn-sm" data-group-creation-target="saveButton" data-action="click->group-creation#saveLot" title="{{ 'programToolsSaveLotTitle'|trans }}">{{ 'programToolsSaveLotButtonLabel'|trans }}</button>
                             <span class="cm-grp-toolbar__spacer"></span>
                             <button type="button" class="btn btn-outline-secondary btn-sm" data-action="click->group-creation#goFullscreen">
                                 <svg class="icon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-maximize"></use></svg>
