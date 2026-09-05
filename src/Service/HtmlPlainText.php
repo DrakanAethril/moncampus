@@ -23,19 +23,85 @@ namespace App\Service;
  */
 class HtmlPlainText
 {
+    // A newline that survives the whitespace collapsing - see linesFromHtml().
+    private const string KEPT_BREAK = "\x00";
+
     public function fromHtml(?string $html): ?string
+    {
+        $text = $this->decode($this->untag($html));
+        if (null === $text) {
+            return null;
+        }
+
+        $text = trim(preg_replace('/\s+/u', ' ', $text) ?? $text);
+
+        return '' === $text ? null : $text;
+    }
+
+    /**
+     * The same text, with the document's own paragraphs kept as line breaks - for a body shown at
+     * length rather than in one line (a mail with no plain-text part, say, rendered through
+     * |nl2br). Only *blocks* break the line: an inline <strong> inside a sentence keeps it one
+     * sentence, and the source's own indentation is not a break at all - it says how the HTML was
+     * typed, never how it reads.
+     */
+    public function linesFromHtml(?string $html): ?string
+    {
+        if (null === $html) {
+            return null;
+        }
+
+        // Inside <pre>, a newline is content - some mailers send a plain-text body wrapped in one,
+        // and flattening it would turn the whole message into a single line. Everywhere else HTML
+        // collapses whitespace, so the source's own indentation is not a break the reader should
+        // see: it says how the HTML was typed. Parked on a character that cannot appear in text.
+        $kept = preg_replace_callback(
+            '#<pre\b[^>]*>.*?</pre>#is',
+            static fn (array $match): string => str_replace("\n", self::KEPT_BREAK, $match[0]),
+            $html,
+        ) ?? $html;
+        $broken = str_replace(["\r\n", "\r", "\n"], ' ', $kept);
+
+        // Then the document's own line breaks: <br> and the closing tag of each block. A list item
+        // and a table row take one line; a paragraph takes a blank line after it.
+        $broken = preg_replace('#<br\s*/?>#i', "\n", $broken) ?? $broken;
+        $broken = preg_replace('#</(li|tr)\s*>#i', "\n", $broken) ?? $broken;
+        $broken = preg_replace('#</(p|div|h[1-6]|blockquote|pre)\s*>#i', "\n\n", $broken) ?? $broken;
+
+        $text = $this->decode($this->untag($broken));
+        if (null === $text) {
+            return null;
+        }
+
+        // Horizontal whitespace only, so the breaks just inserted survive; then a run of blank
+        // lines becomes one blank line - an HTML mail is full of empty wrapper blocks, and the
+        // reader must not have to scroll past them.
+        $text = preg_replace('/[^\S\n]+/u', ' ', $text) ?? $text;
+        $text = preg_replace('/ *\n[ \n]*\n */u', "\n\n", $text) ?? $text;
+        $text = trim(preg_replace('/ *\n */u', "\n", $text) ?? $text);
+        $text = str_replace(self::KEPT_BREAK, "\n", $text);
+
+        return '' === $text ? null : $text;
+    }
+
+    /** Every tag becomes a space; script and style lose their body with them. */
+    private function untag(?string $html): ?string
     {
         if (null === $html || '' === trim($html)) {
             return null;
         }
 
         $stripped = preg_replace('#<(script|style)\b[^>]*>.*?</\1>#is', ' ', $html) ?? $html;
-        $stripped = preg_replace('/<[^>]*>/', ' ', $stripped) ?? $stripped;
 
-        $text = html_entity_decode($stripped, \ENT_QUOTES | \ENT_HTML5, 'UTF-8');
-        $text = str_replace("\u{a0}", ' ', $text);
-        $text = trim(preg_replace('/\s+/u', ' ', $text) ?? $text);
+        return preg_replace('/<[^>]*>/', ' ', $stripped) ?? $stripped;
+    }
 
-        return '' === $text ? null : $text;
+    private function decode(?string $text): ?string
+    {
+        if (null === $text) {
+            return null;
+        }
+
+        return str_replace("\u{a0}", ' ', html_entity_decode($text, \ENT_QUOTES | \ENT_HTML5, 'UTF-8'));
     }
 }

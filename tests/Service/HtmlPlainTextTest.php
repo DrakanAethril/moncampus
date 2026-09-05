@@ -75,4 +75,50 @@ class HtmlPlainTextTest extends TestCase
         // Decoded, never re-parsed: the caller escapes it as the text it is.
         self::assertSame('<script>alert(1)</script>', $this->plain->fromHtml('<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>'));
     }
+
+    // ---------- linesFromHtml(): the same flattening, keeping the paragraphs ----------
+
+    public function testAParagraphBoundaryBecomesALineBreak(): void
+    {
+        self::assertSame("Bonjour,\n\nVoici le dossier.", $this->plain->linesFromHtml('<p>Bonjour,</p><p>Voici le dossier.</p>'));
+    }
+
+    public function testABreakTagIsOneLineBreak(): void
+    {
+        self::assertSame("Ligne 1\nLigne 2", $this->plain->linesFromHtml('Ligne 1<br>Ligne 2'));
+    }
+
+    public function testEachListItemGetsItsOwnLine(): void
+    {
+        self::assertSame("CV\nLettre", $this->plain->linesFromHtml('<ul><li>CV</li><li>Lettre</li></ul>'));
+    }
+
+    public function testEntitiesAreDecodedHereToo(): void
+    {
+        self::assertSame('Réponse à votre candidature', $this->plain->linesFromHtml('<p>R&eacute;ponse &agrave; votre candidature</p>'));
+    }
+
+    public function testAnInlineTagIsNotALineBreak(): void
+    {
+        // Only blocks break the line - a bold word inside a sentence keeps it one sentence.
+        self::assertSame('Merci pour votre candidature', $this->plain->linesFromHtml('<p>Merci pour <strong>votre</strong> candidature</p>'));
+    }
+
+    public function testABlankRunOfParagraphsDoesNotPileUpEmptyLines(): void
+    {
+        // An HTML mail is full of empty wrapper blocks; the reader must not scroll past them.
+        self::assertSame("Objet\n\nCorps", $this->plain->linesFromHtml('<p>Objet</p><p></p><p>&nbsp;</p><div></div><p>Corps</p>'));
+    }
+
+    public function testTheSourcesOwnIndentationIsNotALineBreak(): void
+    {
+        // The newlines that matter are the document's blocks, never how the HTML was typed.
+        self::assertSame('Une seule phrase', $this->plain->linesFromHtml("<p>Une\n   seule\n   phrase</p>"));
+    }
+
+    public function testAnEmptyBodyAnswersNullHereToo(): void
+    {
+        self::assertNull($this->plain->linesFromHtml('<p>&nbsp;</p>'));
+        self::assertNull($this->plain->linesFromHtml(null));
+    }
 }

@@ -19,6 +19,9 @@ use Twig\TwigFilter;
  *
  * The filter answers null on an empty field, so `{{ content|plain_text ?: 'nothing yet'|trans }}`
  * is the whole pattern - HugeRTE's `<p>&nbsp;</p>` counts as empty.
+ *
+ * `plain_text_lines` is the same thing for a body shown at length rather than in one line: it keeps
+ * the document's own paragraphs as line breaks, for a `|nl2br` further down the chain.
  */
 class TextExtension extends AbstractExtension
 {
@@ -31,6 +34,7 @@ class TextExtension extends AbstractExtension
     {
         return [
             new TwigFilter('plain_text', $this->plainText->fromHtml(...)),
+            new TwigFilter('plain_text_lines', $this->plainText->linesFromHtml(...)),
         ];
     }
 }
