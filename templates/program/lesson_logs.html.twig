@@ -125,7 +125,10 @@
                             <span class="cm-session__dot cm-session__dot--{{ content ? 'filled' : 'empty' }}"></span>
                             <div class="cm-work-card__body">
                                 <div class="cm-work__title">{{ section.labelKey|trans }}</div>
-                                <div class="cm-work__meta text-truncate">{{ content ? content|striptags : 'lessonLogsSectionEmptyLabel'|trans }}</div>
+                                {# plain_text, never |striptags: the content is HugeRTE's HTML, and
+                                   striptags leaves its entities behind for the template to escape,
+                                   so « Séance » would print as "S&eacute;ance". #}
+                                <div class="cm-work__meta text-truncate">{{ content|plain_text ?: 'lessonLogsSectionEmptyLabel'|trans }}</div>
                                 {# Read tracking of this part's assignments: this is where one comes to
                                    see where the class stands, without having to open the séance. #}
                                 {% for work in worksBySection[section.value]|default([]) %}
