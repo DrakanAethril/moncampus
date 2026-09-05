@@ -350,7 +350,10 @@ class SignupListController extends AbstractController
                 fputcsv($handle, [
                     $user->getDisplayName() ?? $user->getUsername(),
                     $user->getUsername(),
-                    $user->getEmail() ?? '',
+                    // The contact address, never User::$email: that one is the directory's own
+                    // internal address, rewritten on every login and not necessarily read by
+                    // anyone. Whoever exports this list does so to write to the people on it.
+                    $user->getContactEmail() ?? '',
                     $registration->getRegisteredAt()->format('d/m/Y H:i'),
                 ], ';');
             }
