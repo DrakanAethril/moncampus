@@ -288,7 +288,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // Teaching and back-office areas: a student must never get in.
             '/timetable' => 403,
             '/assignments' => 403,
-            '/tools/lesson-log' => 403,
+            '/lesson-log' => 403,
             '/tools/gradebook' => 403,
             '/tools/quiz-live' => 403,
             '/tools/job-search-tracking' => 403,
@@ -439,12 +439,15 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/student-work' => 403,
             '/school-mail' => 403,
             '/my/applications' => 403,
-            // The three class pickers of the Outils menu. They render rather than redirect here
+            // The cahier de texte asks for no class at all - it lists the teacher's own séances of
+            // the week, every class together, and an empty week is a state of the screen rather
+            // than a redirect.
+            '/lesson-log' => 200,
+            // The class pickers of the Outils menu. They render rather than redirect here
             // because Program::$visibility defaults to StaffAdmin, which puts the fixture's own
             // class out of findAllForTeacher's reach: the picker has nothing to offer and says so
             // (toolsNoVisibleClassMessage). A 403 would be the regression - having no class to
             // work on is a setting on the class, not a permission the teacher lacks.
-            '/tools/lesson-log' => 200,
             '/tools/gradebook' => 200,
             '/tools/quiz-live' => 200,
             '/tools/job-search-tracking' => 200,
@@ -578,8 +581,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/wiki/shared' => 200,
             '/wiki/students' => 200,
             '/wiki/new' => 200,
+            // The cahier de texte lists whoever is looking at their own séances, staff included -
+            // it hands over to no class.
+            '/lesson-log' => 200,
             // Staff pick a class first, so these hand over to the program-scoped screen.
-            '/tools/lesson-log' => 302,
             '/tools/gradebook' => 302,
             '/tools/quiz-live' => 302,
             '/tools/job-search-tracking' => 302,
@@ -800,7 +805,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/help' => 404,
             '/timetable' => 404,
             '/tools/file-library' => 404,
-            '/tools/lesson-log' => 404,
+            '/lesson-log' => 404,
             '/tools/gradebook' => 404,
             '/shares' => 404,
             '/messages' => 404,

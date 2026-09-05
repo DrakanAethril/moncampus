@@ -531,7 +531,7 @@
                                     {% if tools_follow %}
                                     {% if tools_run or tools_prepare %}<div class="dropdown-divider"></div>{% endif %}
                                     <h6 class="dropdown-header">{{ 'toolsGroupFollowStudentsLabel'|trans }}</h6>
-                                    {% if feature('lesson_log') %}<a class="dropdown-item {{ current_route == 'app_tools_lesson_log' ? 'active' }}" href="{{ path('app_tools_lesson_log') }}">{{ 'lessonLogPageHeading'|trans }}</a>{% endif %}
+                                    {% if feature('lesson_log') %}<a class="dropdown-item {{ current_route == 'app_lesson_logs' ? 'active' }}" href="{{ path('app_lesson_logs') }}">{{ 'lessonLogPageHeading'|trans }}</a>{% endif %}
                                     {% if feature('student_work') %}<a class="dropdown-item" href="{{ path('app_assignments') }}">{{ 'toolsStudentWorkNavLabel'|trans }}</a>{% endif %}
                                     {% if feature('quiz_library') %}<a class="dropdown-item {{ current_route == 'app_tools_quiz' ? 'active' }}" href="{{ path('app_tools_quiz') }}">{{ 'quizTrackingPageHeading'|trans }}</a>{% endif %}
                                     {% if feature('gradebook_entry') %}<a class="dropdown-item {{ current_route == 'app_tools_gradebook' ? 'active' }}" href="{{ path('app_tools_gradebook') }}">{{ 'gradebookNavLabel'|trans }}</a>{% endif %}

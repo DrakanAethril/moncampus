@@ -1,0 +1,156 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'lessonLogPageHeading'|trans }}{% endblock %}
+
+{# Two segments: the screen hangs straight off Accueil. The class is no longer a level one passes
+   through to reach it - it is the left column's own grouping. #}
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'lessonLogPageHeading'|trans, url: path('app_lesson_logs')},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'lessonLogPageHeading'|trans }}{% endblock %}
+
+{% set currentWeek = weekStart|date('Y-m-d') %}
+{% set periodLabel = weekStart|localized_date('d MMMM') ~ ' – ' ~ weekEnd|localized_date('d MMM y') %}
+
+{% block page_actions %}
+    {# The period, and nothing else: the old matière/classe selector is gone from the title line
+       (the class is carried by the list now). Both arrows and every week of the popover are real
+       links - only the server holds another week's séances - while walking the months is not, since
+       it must not change the period until a week is actually clicked. #}
+    <div class="cm-cdt-period"
+         data-controller="lesson-log-period"
+         data-lesson-log-period-week-value="{{ currentWeek }}"
+         data-lesson-log-period-today-value="{{ today|date('Y-m-d') }}"
+         data-lesson-log-period-locale-value="{{ app.request.locale }}">
+        <div class="cm-cdt-period__group">
+            <a class="cm-cdt-period__arrow"
+               href="{{ path('app_lesson_logs', {view: viewMode, week: previousWeek|date('Y-m-d'), seance: selectedId}) }}"
+               aria-label="{{ 'lessonLogsBoardPreviousWeekLabel'|trans }}" title="{{ 'lessonLogsBoardPreviousWeekLabel'|trans }}">‹</a>
+            <button type="button" class="cm-cdt-period__label"
+                    data-action="lesson-log-period#toggle"
+                    aria-label="{{ 'lessonLogsWeekRangeLabel'|trans({'%start%': weekStart|date('d/m/Y'), '%end%': weekEnd|date('d/m/Y')}) }}">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"></rect><path d="M3.5 10h17M8.5 3.5v3M15.5 3.5v3"></path></svg>
+                {{ periodLabel }}<span class="cm-cdt-period__caret">▾</span>
+            </button>
+            <a class="cm-cdt-period__arrow"
+               href="{{ path('app_lesson_logs', {view: viewMode, week: nextWeek|date('Y-m-d'), seance: selectedId}) }}"
+               aria-label="{{ 'lessonLogsBoardNextWeekLabel'|trans }}" title="{{ 'lessonLogsBoardNextWeekLabel'|trans }}">›</a>
+        </div>
+        <div class="cm-cdt-pop" hidden data-lesson-log-period-target="pop">
+            <div class="cm-cdt-pop__head">
+                <button type="button" class="cm-cdt-pop__nav" data-action="lesson-log-period#previousMonth"
+                        aria-label="{{ 'lessonLogsBoardPreviousMonthLabel'|trans }}">‹</button>
+                <span class="cm-cdt-pop__month" data-lesson-log-period-target="month"></span>
+                <button type="button" class="cm-cdt-pop__nav" data-action="lesson-log-period#nextMonth"
+                        aria-label="{{ 'lessonLogsBoardNextMonthLabel'|trans }}">›</button>
+            </div>
+            {# Monday first, in the reader's own language - « L M M J V S D » in French. #}
+            <div class="cm-cdt-pop__dows">
+                {% for offset in 0..6 %}
+                    <span>{{ weekStart|date_modify('+' ~ offset ~ ' days')|localized_date('EEEEE') }}</span>
+                {% endfor %}
+            </div>
+            <div class="cm-cdt-pop__weeks" data-lesson-log-period-target="weeks"></div>
+            {# Rendered here rather than in the controller so their wording stays translated. #}
+            <div class="cm-cdt-pop__shortcuts">
+                {% for key, week in shortcutWeeks %}
+                    <a class="cm-cdt-pop__shortcut {{ week|date('Y-m-d') == currentWeek ? 'is-active' }}"
+                       href="{{ path('app_lesson_logs', {view: viewMode, week: week|date('Y-m-d'), seance: selectedId}) }}">
+                        {{ ('lessonLogsBoardWeek' ~ key|capitalize ~ 'Shortcut')|trans }}
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block main %}
+    <div class="cm-cdt" data-controller="lesson-log-board">
+        <div class="cm-cdt-card {{ viewMode == modeChronological ? 'cm-cdt-card--flush' }}">
+            <div class="cm-cdt-modes">
+                <div class="cm-cdt-modes__track">
+                    {# Links, not buttons: the grouping is remembered server-side for the next
+                       visit, and carrying the week and the séance across keeps the period and the
+                       preview exactly where they were. #}
+                    <a class="cm-cdt-modes__tab {{ viewMode == modeClass ? 'is-active' }}"
+                       href="{{ path('app_lesson_logs', {view: modeClass, week: currentWeek, seance: selectedId}) }}">{{ 'lessonLogsBoardByClassTab'|trans }}</a>
+                    <a class="cm-cdt-modes__tab {{ viewMode == modeChronological ? 'is-active' }}"
+                       href="{{ path('app_lesson_logs', {view: modeChronological, week: currentWeek, seance: selectedId}) }}">{{ 'lessonLogsBoardChronologicalTab'|trans }}</a>
+                </div>
+            </div>
+
+            {% if emptyDate %}
+                {# A link named a day the viewer has no séance on. Said in a sentence: an untouched
+                   list would read as a broken link rather than as a free day. #}
+                <p class="cm-cdt-notice mb-0">{{ 'lessonLogsBoardNoSessionOnDateMessage'|trans({'%date%': emptyDay|localized_date('EEEE dd MMMM')}) }}</p>
+            {% endif %}
+
+            {% if viewMode == modeClass %}
+                <div class="cm-cdt-classes">
+                    {% for group in classGroups %}
+                        {% set isOpen = group.program.id == openClassId %}
+                        <div class="cm-cdt-class {{ isOpen ? 'is-open' }}" data-lesson-log-board-target="classItem">
+                            <button type="button" class="cm-cdt-class__head" data-action="lesson-log-board#toggleClass">
+                                <span class="cm-cdt-class__name">{{ group.program.displayShortName }}</span>
+                                <span class="cm-cdt-class__caret" data-caret>{{ isOpen ? '▴' : '▾' }}</span>
+                            </button>
+                            <div class="cm-cdt-class__body" data-body {{ isOpen ? '' : 'hidden' }}>
+                                {% for row in group.rows %}
+                                    {% include 'lesson_log/_seance_row.html.twig' with {
+                                        row: row,
+                                        selectedId: selectedId,
+                                        flat: false,
+                                        heading: row.session.day|localized_date('EEE dd MMM') ~ ' · ' ~ row.session.startHour|date('H:i') ~ '–' ~ row.session.endHour|date('H:i'),
+                                    } only %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <p class="cm-cdt-empty mb-0">{{ 'lessonLogsBoardNoSessionThisWeekMessage'|trans }}</p>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="cm-cdt-days">
+                    {% for group in dayGroups %}
+                        {% set dayKey = group.day|date('Y-m-d') %}
+                        {% set isOpen = dayKey in openDays %}
+                        <div class="cm-cdt-day {{ isOpen ? 'is-open' }}" data-lesson-log-board-target="dayItem">
+                            <button type="button" class="cm-cdt-day__head" data-action="lesson-log-board#toggleDay">
+                                <span class="cm-cdt-day__label">{{ group.day|localized_date('EEEE dd MMMM') }}</span>
+                                <span class="cm-cdt-day__caret" data-caret>{{ isOpen ? '▴' : '▾' }}</span>
+                            </button>
+                            <div class="cm-cdt-day__body" data-body {{ isOpen ? '' : 'hidden' }}>
+                                {% for row in group.rows %}
+                                    {% include 'lesson_log/_seance_row.html.twig' with {
+                                        row: row,
+                                        selectedId: selectedId,
+                                        flat: true,
+                                        heading: row.session.program.displayShortName ~ ' · ' ~ row.session.startHour|date('H:i') ~ '–' ~ row.session.endHour|date('H:i'),
+                                    } only %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <p class="cm-cdt-empty mb-0">{{ 'lessonLogsBoardNoSessionThisWeekMessage'|trans }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div>
+            {# Every séance's block is rendered and all but one hidden: picking a row must not send
+               the browser back to the server (handoff, « pas de navigation de page »). #}
+            {% for group in classGroups %}
+                {% for row in group.rows %}
+                    {% include 'lesson_log/_detail.html.twig' with {row: row, selectedId: selectedId, sections: sections} only %}
+                {% endfor %}
+            {% endfor %}
+            <div class="cm-cdt-card" data-lesson-log-board-target="placeholder" {{ selectedId ? 'hidden' : '' }}>
+                <p class="cm-cdt-empty mb-0">{{ 'lessonLogsBoardNoSelectionMessage'|trans }}</p>
+            </div>
+        </div>
+    </div>
+{% endblock %}

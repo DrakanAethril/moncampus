@@ -87,6 +87,30 @@ class AssignmentRepository extends ServiceEntityRepository
     }
 
     /**
+     * The same list over a whole set of créneaux - the period screen shows every séance of the week
+     * at once, and asking séance by séance would be one query per row.
+     *
+     * @param list<LessonSession> $sessions
+     *
+     * @return list<Assignment>
+     */
+    public function findForLessonSessions(array $sessions): array
+    {
+        if ([] === $sessions) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('a')
+            ->addSelect('o')
+            ->leftJoin('a.options', 'o')
+            ->where('a.lessonSession IN (:sessions)')
+            ->setParameter('sessions', $sessions)
+            ->orderBy('a.dueDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * All of a student's work, overdue included - what the « Travail à réaliser » page (4a) shows,
      * unlike the dashboard card, which sticks to what is coming.
      * Membership of the audience is still filtered by the caller through AssignmentAudienceResolver.

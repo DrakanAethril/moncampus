@@ -107,6 +107,23 @@
     --cm-vm-stop-tx: #a8443a;
     --cm-vm-stop-bd: #e2ccc8;
     --cm-vm-stop-bg: #fdf4f3;
+    /* Cahier de texte, période screen (design_handoff_cahier_de_texte_seances): the handoff's own
+       values, kept exact rather than rounded onto a neighbouring token - same treatment as the
+       --cm-vm-* block above, and for the same reason. The tag colours it does NOT restate are
+       --cm-vm-ok-* and --cm-vm-gold-*, whose hexes are already the ones it asks for. */
+    --cm-cdt-open-bd: #a8cbe8;
+    --cm-cdt-row-hover: #f8fafc;
+    --cm-cdt-sel-bg: #12344d;
+    --cm-cdt-sel-tx: #ffffff;
+    --cm-cdt-sel-dim: #9fb4c6;
+    --cm-cdt-sel-ok-bg: rgba(127, 195, 161, .18);
+    --cm-cdt-sel-ok-tx: #7fc3a1;
+    --cm-cdt-sel-warn-bg: rgba(219, 179, 95, .18);
+    --cm-cdt-sel-warn-tx: #dbb35f;
+    --cm-cdt-sel-off-bg: rgba(255, 255, 255, .1);
+    --cm-cdt-sel-off-tx: #cfdde9;
+    --cm-cdt-cal-weekend: #b4bfc9;
+    --cm-cdt-cal-sunday: #7fa3c0;
     --cm-radius: 10px;
     --cm-radius-sm: 8px;
     --cm-shadow-pop: 0 12px 28px rgba(18, 52, 77, .18);
@@ -204,6 +221,22 @@
     --cm-positive-tx: #4caf7a;
     --cm-action-main: #74b0da;
     --cm-action-danger: #d98f7f;
+
+    /* The selected row of the cahier de texte reads as « darker than the card » in the light theme;
+       on a dark page the same idea has to go the other way, so it lifts instead of sinking. */
+    --cm-cdt-open-bd: #3c6a90;
+    --cm-cdt-row-hover: #212d39;
+    --cm-cdt-sel-bg: #1d3a52;
+    --cm-cdt-sel-tx: #eaf2f8;
+    --cm-cdt-sel-dim: #9fb4c6;
+    --cm-cdt-sel-ok-bg: rgba(76, 175, 122, .2);
+    --cm-cdt-sel-ok-tx: #7fc3a1;
+    --cm-cdt-sel-warn-bg: rgba(219, 179, 95, .2);
+    --cm-cdt-sel-warn-tx: #dbb35f;
+    --cm-cdt-sel-off-bg: rgba(255, 255, 255, .08);
+    --cm-cdt-sel-off-tx: #c3d0da;
+    --cm-cdt-cal-weekend: #55697a;
+    --cm-cdt-cal-sunday: #7fa3c0;
 
     --cm-mail-tint-bg: #1c3247;
     --cm-mail-tint-border: #2f4d68;
@@ -9739,3 +9772,231 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-figtable th:nth-child(4), .cm-figtable td:nth-child(4) { width: 200px; }
 .cm-figtable td { vertical-align: top; }
 .cm-figtable input[type="text"], .cm-figtable textarea { width: 100%; }
+
+/* ==========================================================================
+   Cahier de texte - the period screen (design_handoff_cahier_de_texte_seances)
+   One teacher's séances of one week, every class together: the period selector on the title line,
+   the list on the left in either of two groupings, the selected séance's three parts on the right.
+   Sizes are the handoff's own; the colours go through the --cm-cdt-* tokens declared at the top of
+   this file so the screen follows the theme.
+   ========================================================================== */
+
+/* --- Period selector, pushed right on the title line --- */
+.cm-cdt-period { position: relative; font-family: var(--cm-font-ui); }
+.cm-cdt-period__group {
+    display: flex; align-items: center; background: var(--cm-surface);
+    border: 1px solid var(--cm-border); border-radius: 9px; overflow: hidden;
+}
+.cm-cdt-period.is-open .cm-cdt-period__group { border-color: var(--cm-brand); box-shadow: 0 1px 2px rgba(0, 0, 0, .05); }
+.cm-cdt-period__arrow {
+    display: grid; place-items: center; width: 34px; height: 38px; flex: none;
+    border: 0; background: var(--cm-surface); color: var(--cm-muted); font-size: 14px;
+    text-decoration: none; cursor: pointer;
+}
+.cm-cdt-period__arrow:first-child { border-right: 1px solid var(--cm-border-soft); }
+.cm-cdt-period__arrow:last-child { border-left: 1px solid var(--cm-border-soft); }
+.cm-cdt-period__arrow:hover { background: var(--cm-bg); color: var(--cm-brand-strong); }
+.cm-cdt-period__label {
+    display: flex; align-items: center; gap: 9px; white-space: nowrap;
+    border: 0; background: var(--cm-surface); color: var(--cm-ink);
+    height: 38px; padding: 0 14px; font: 600 13px var(--cm-font-ui); cursor: pointer;
+}
+.cm-cdt-period__label:hover { background: var(--cm-bg); }
+.cm-cdt-period__label svg { flex: none; stroke: var(--cm-brand); }
+.cm-cdt-period__caret { font-weight: 400; color: var(--cm-faint); }
+.cm-cdt-period.is-open .cm-cdt-period__label { background: var(--cm-blue-bg-soft); color: var(--cm-brand-strong); }
+.cm-cdt-period.is-open .cm-cdt-period__caret { color: var(--cm-cdt-open-bd); }
+
+/* --- The month popover: weeks are picked whole, never a single day --- */
+.cm-cdt-pop {
+    position: absolute; top: 44px; right: 0; z-index: 30; width: 288px;
+    background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: 11px;
+    box-shadow: 0 18px 40px rgba(18, 52, 77, .18);
+    padding: 14px; display: flex; flex-direction: column; gap: 10px;
+}
+.cm-cdt-pop[hidden] { display: none !important; }
+.cm-cdt-pop__head { display: flex; align-items: center; gap: 8px; }
+.cm-cdt-pop__nav {
+    border: 0; background: var(--cm-bg); color: var(--cm-muted);
+    border-radius: 6px; width: 26px; height: 26px; flex: none; cursor: pointer;
+}
+.cm-cdt-pop__nav:hover { color: var(--cm-brand-strong); }
+.cm-cdt-pop__month {
+    flex: 1; text-align: center; font: 600 13px var(--cm-font-ui); color: var(--cm-ink);
+    /* Intl gives « août 2026 » in French, and the calendar's heading is a title. */
+    text-transform: capitalize;
+}
+.cm-cdt-pop__weeks { display: flex; flex-direction: column; gap: 2px; }
+.cm-cdt-pop__dows {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;
+    font: 600 10.5px var(--cm-font-ui); color: var(--cm-faint); text-align: center;
+}
+.cm-cdt-pop__week {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;
+    padding: 0 4px; border: 1px solid transparent; cursor: pointer;
+    text-decoration: none; color: inherit;
+}
+.cm-cdt-pop__week.is-current {
+    background: var(--cm-blue-bg-soft); border-color: var(--cm-cdt-open-bd);
+    border-radius: 8px; padding: 3px;
+}
+.cm-cdt-pop__day {
+    height: 30px; display: grid; place-items: center; border-radius: 6px;
+    font: 400 12.5px var(--cm-font-ui); color: var(--cm-text);
+}
+.cm-cdt-pop__day--weekend { color: var(--cm-cdt-cal-weekend); }
+.cm-cdt-pop__week:not(.is-current):hover .cm-cdt-pop__day { background: var(--cm-bg); }
+.cm-cdt-pop__week.is-current .cm-cdt-pop__day { font-weight: 600; color: var(--cm-brand-strong); }
+.cm-cdt-pop__week.is-current .cm-cdt-pop__day--outside { color: var(--cm-faint); }
+.cm-cdt-pop__week.is-current .cm-cdt-pop__day--weekend { color: var(--cm-cdt-cal-sunday); }
+/* Today keeps its filled square in either row, selected or not. */
+.cm-cdt-pop__day.is-today { background: var(--cm-brand); color: #fff; font-weight: 700; }
+.cm-cdt-pop__shortcuts {
+    display: flex; align-items: center; gap: 8px;
+    border-top: 1px solid var(--cm-border-soft); padding-top: 10px;
+}
+.cm-cdt-pop__shortcut {
+    flex: 1; text-align: center; text-decoration: none;
+    border: 1px solid var(--cm-border); background: var(--cm-surface); color: var(--cm-text);
+    border-radius: 8px; padding: 7px 0; font: 600 12px var(--cm-font-ui); cursor: pointer;
+}
+.cm-cdt-pop__shortcut:hover { background: var(--cm-bg); color: var(--cm-brand-strong); }
+.cm-cdt-pop__shortcut.is-active {
+    border-color: var(--cm-cdt-open-bd); background: var(--cm-blue-bg-soft); color: var(--cm-brand-strong);
+}
+
+/* --- Page grid: the list, then the selected séance --- */
+.cm-cdt { display: grid; grid-template-columns: 330px 1fr; gap: 16px; align-items: start; font-family: var(--cm-font-ui); }
+.cm-cdt-card {
+    background: var(--cm-surface); border: 1px solid var(--cm-border);
+    border-radius: 11px; display: flex; flex-direction: column;
+}
+/* Day headers go edge to edge, so the chronological card has to clip them at its own corners. */
+.cm-cdt-card--flush { overflow: hidden; }
+/* Both the séance blocks and the « rien de sélectionné » card are toggled through the `hidden`
+   attribute, which a display:flex would otherwise win against. */
+.cm-cdt-card[hidden] { display: none !important; }
+
+/* --- Segmented control: which grouping the left column uses --- */
+.cm-cdt-modes { padding: 12px; border-bottom: 1px solid var(--cm-border-soft); }
+.cm-cdt-modes__track { display: flex; background: var(--cm-bg); border-radius: 8px; padding: 3px; gap: 3px; }
+.cm-cdt-modes__tab {
+    flex: 1; text-align: center; text-decoration: none; border: 0; background: transparent;
+    color: var(--cm-muted); border-radius: 6px; padding: 6px 0;
+    font: 600 12.5px var(--cm-font-ui); cursor: pointer;
+}
+.cm-cdt-modes__tab:hover { color: var(--cm-brand-strong); }
+.cm-cdt-modes__tab.is-active {
+    background: var(--cm-surface); color: var(--cm-brand-strong); box-shadow: 0 1px 2px rgba(0, 0, 0, .08);
+}
+
+/* --- By class: an accordion, one class open at a time --- */
+.cm-cdt-classes { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.cm-cdt-class { border: 1px solid var(--cm-border); border-radius: 10px; }
+.cm-cdt-class.is-open { border-color: var(--cm-cdt-open-bd); overflow: hidden; }
+.cm-cdt-class__head {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    padding: 11px 13px; border: 0; border-radius: 10px; background: transparent;
+    text-align: left; cursor: pointer;
+}
+.cm-cdt-class:not(.is-open) .cm-cdt-class__head:hover { background: var(--cm-bg); }
+.cm-cdt-class.is-open .cm-cdt-class__head { background: var(--cm-blue-bg-soft); border-radius: 0; }
+.cm-cdt-class__name { font: 600 14px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-cdt-class.is-open .cm-cdt-class__name { color: var(--cm-brand-strong); }
+.cm-cdt-class__caret { margin-left: auto; font-size: 11px; color: var(--cm-faint); }
+.cm-cdt-class.is-open .cm-cdt-class__caret { color: var(--cm-cdt-open-bd); }
+.cm-cdt-class__body { padding: 6px; display: flex; flex-direction: column; gap: 3px; background: var(--cm-surface); }
+.cm-cdt-class__body[hidden] { display: none !important; }
+
+/* --- Chronological: days edge to edge, each folding on its own --- */
+.cm-cdt-days { display: flex; flex-direction: column; }
+.cm-cdt-day__head {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    padding: 8px 16px; border: 0; border-bottom: 1px solid var(--cm-border-soft);
+    background: var(--cm-surface-soft); text-align: left; cursor: pointer;
+}
+.cm-cdt-day:not(.is-open) .cm-cdt-day__head:hover { background: var(--cm-bg); }
+.cm-cdt-day__label {
+    font: 700 11px var(--cm-font-ui); color: var(--cm-muted);
+    letter-spacing: .6px; text-transform: uppercase;
+}
+.cm-cdt-day__caret { margin-left: auto; font-size: 11px; color: var(--cm-faint); }
+.cm-cdt-day__body[hidden] { display: none !important; }
+/* The list ends on a rule that would draw the card's own border twice. */
+.cm-cdt-day:last-child:not(.is-open) .cm-cdt-day__head { border-bottom: 0; }
+.cm-cdt-day:last-child .cm-cdt-seance--flat:last-child { border-bottom: 0; }
+
+/* --- One séance in the list --- */
+.cm-cdt-seance {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    border: 0; background: transparent; text-align: left; cursor: pointer;
+    padding: 9px 11px; border-radius: 8px;
+}
+.cm-cdt-seance:hover { background: var(--cm-bg); }
+/* Chronological rows sit edge to edge and are separated by a rule instead of by a gap. */
+.cm-cdt-seance--flat { padding: 10px 16px; border-radius: 0; border-bottom: 1px solid var(--cm-border-faint); }
+.cm-cdt-seance--flat:hover { background: var(--cm-cdt-row-hover); }
+.cm-cdt-seance__body { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+.cm-cdt-seance__head { font: 600 12.5px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-cdt-seance__topic { font-size: 11.5px; color: var(--cm-faint); }
+.cm-cdt-seance.is-selected { background: var(--cm-cdt-sel-bg); }
+.cm-cdt-seance.is-selected:hover { background: var(--cm-cdt-sel-bg); }
+.cm-cdt-seance.is-selected .cm-cdt-seance__head { color: var(--cm-cdt-sel-tx); }
+.cm-cdt-seance.is-selected .cm-cdt-seance__topic { color: var(--cm-cdt-sel-dim); }
+
+/* --- The state tag: three words, and a lighter set of them on a selected row --- */
+.cm-cdt-tag {
+    margin-left: auto; flex: none; display: inline-flex;
+    padding: 3px 9px; border-radius: 999px; font: 600 11px var(--cm-font-ui);
+}
+.cm-cdt-tag--filled { background: var(--cm-vm-ok-bg); color: var(--cm-vm-ok-tx); }
+.cm-cdt-tag--partial { background: var(--cm-vm-gold-bg); color: var(--cm-vm-gold-tx); }
+.cm-cdt-tag--empty { background: var(--cm-bg); color: var(--cm-muted); }
+.is-selected .cm-cdt-tag--filled { background: var(--cm-cdt-sel-ok-bg); color: var(--cm-cdt-sel-ok-tx); }
+.is-selected .cm-cdt-tag--partial { background: var(--cm-cdt-sel-warn-bg); color: var(--cm-cdt-sel-warn-tx); }
+.is-selected .cm-cdt-tag--empty { background: var(--cm-cdt-sel-off-bg); color: var(--cm-cdt-sel-off-tx); }
+
+/* --- The selected séance, on the right --- */
+.cm-cdt-detail { display: flex; flex-direction: column; }
+.cm-cdt-detail[hidden] { display: none !important; }
+.cm-cdt-detail__head {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 20px; border-bottom: 1px solid var(--cm-border-soft);
+}
+.cm-cdt-detail__titles { display: flex; flex-direction: column; min-width: 0; }
+.cm-cdt-detail__title { font: 600 16px var(--cm-font-title); color: var(--cm-ink); }
+.cm-cdt-detail__meta { font-size: 12.5px; color: var(--cm-faint); }
+.cm-cdt-detail__open {
+    margin-left: auto; flex: none; text-decoration: none;
+    background: var(--cm-brand); color: #fff; border-radius: 8px;
+    padding: 9px 18px; font: 600 13px var(--cm-font-ui);
+}
+.cm-cdt-detail__open:hover { background: var(--cm-brand-strong); color: #fff; }
+.cm-cdt-detail__body { padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+.cm-cdt-part {
+    display: flex; align-items: center; gap: 12px;
+    border: 1px solid var(--cm-border); border-radius: 10px;
+    padding: 12px 15px; background: var(--cm-vm-soft);
+}
+.cm-cdt-part__dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--cm-border); }
+.cm-cdt-part__dot--filled { background: var(--cm-vm-ok-tx); }
+.cm-cdt-part__dot--partial { background: var(--cm-gold); }
+.cm-cdt-part__body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.cm-cdt-part__title { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-cdt-part__summary {
+    font-size: 12px; color: var(--cm-faint);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cm-cdt-part .cm-badge { flex: none; }
+
+/* --- Nothing to show: an empty week, or a day the link named that carries no séance --- */
+.cm-cdt-notice {
+    padding: 11px 16px; border-bottom: 1px solid var(--cm-border-soft);
+    background: var(--cm-blue-bg-soft); color: var(--cm-brand-strong);
+    font: 600 12.5px var(--cm-font-ui);
+}
+.cm-cdt-empty { padding: 22px 16px; text-align: center; font-size: 12.5px; color: var(--cm-muted); }
+
+@media (max-width: 1100px) {
+    .cm-cdt { grid-template-columns: 1fr; }
+}
