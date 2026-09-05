@@ -119,7 +119,7 @@ export default class extends Controller {
         const data = this.parseJson(request.responseText);
 
         if (request.status < 200 || request.status >= 300 || !data?.token) {
-            this.fail(row, data?.message ?? this.labels.networkError);
+            this.fail(row, data?.message ?? this.refusalMessage(request, data));
 
             return;
         }
@@ -434,6 +434,21 @@ export default class extends Controller {
         if (text != null) node.textContent = text;
 
         return node;
+    }
+
+    /**
+     * What to say when the reply carries no message of its own.
+     *
+     * A 413 is the reverse proxy in front of the application, not the application: production sits
+     * behind nginx, whose `client_max_body_size` bounds a request body before FrankenPHP ever sees
+     * it (measured 2026-09-05: every upload over 1 Mo was turned away this way, while
+     * `upload_max_filesize` said 200M). A body that does not parse is the same class of answer -
+     * the 200-with-an-HTML-page FrankenPHP gives a POST over `post_max_size` - and both mean the
+     * bytes never reached a controller. Saying "check your connection" there sends the reader after
+     * a problem they do not have.
+     */
+    refusalMessage(request, data) {
+        return 413 === request.status || null === data ? this.labels.serverRefused : this.labels.networkError;
     }
 
     parseJson(text) {
