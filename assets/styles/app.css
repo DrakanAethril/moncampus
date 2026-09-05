@@ -4663,6 +4663,9 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
   border-radius: 8px; padding: 6px 12px; font: 600 12px var(--cm-font-ui); color: var(--cm-text); cursor: pointer;
 }
 .cm-training-verdict__choice:has(input:checked) { border-color: var(--cm-brand); background: var(--cm-mail-tint-bg); color: var(--cm-brand-strong); }
+/* The remark box is a block on its own, not an inline field: without a width it falls back to the
+   textarea's default column count and leaves the right of the panel empty. */
+.cm-training-verdict .cm-compose__textarea { display: block; width: 100%; }
 .cm-training-previous {
   border: 1px solid #e0b25f; background: #fffdf6; color: #8a6a1f; border-radius: 8px;
   padding: 10px 13px; margin-bottom: 12px; font-size: 12.5px; line-height: 1.55;
