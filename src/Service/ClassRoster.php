@@ -7,13 +7,16 @@ namespace App\Service;
 use App\Entity\User;
 
 /**
- * How a class's people are ordered and named **on a document**, which is not how the two list
- * screens draw them.
+ * How a class's people are ordered, and how they are named on a document.
  *
- * The screens sort on the display name, which starts with the first name: a wall of cards is read
- * by looking, not by scanning a column. A printed émargement sheet and an exported file are read
- * the other way round - somebody looks for a surname down a column, and a roll ordered by first
- * name is unusable for that. So both exports sort on the surname, and the sheet prints it first.
+ * **The surname decides the order**, everywhere the same people are listed: the two class lists
+ * (App\Controller\ProgramController), the émargement sheet and the CSV exports. They used to sort
+ * on the display name, which starts with the first name - so « Zoé Aubert » came after « Anne
+ * Zambelli », and the printed roll and the screen it was printed from disagreed about who came
+ * first. One rule, one class.
+ *
+ * Naming is the half that still differs, deliberately: a card shows « Zoé Aubert », a signed
+ * document leads with « AUBERT Zoé », which is the spelling somebody scans a column for.
  *
  * The fallback is the display name kept whole, then the login: an account LDAP never named
  * (neither `sn` nor `givenName`) must still occupy its own line rather than an empty one.
