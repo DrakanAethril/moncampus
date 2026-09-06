@@ -3919,7 +3919,7 @@ trainingApplicationResubmittedFlash: 'Votre postulation est repartie en relectur
 trainingApplicationPageHeading: 'Retour sur votre postulation'
 trainingApplicationVersionLabel: 'version %version%'
 trainingApplicationFeedbackTitle: "Retours de l'enseignant"
-trainingApplicationReplaceFilesLabel: 'Joindre un fichier remplace ceux déjà envoyés — sans rien joindre, ils repartent tels quels.'
+trainingApplicationAttachmentsHintLabel: "Cliquez sur une pièce jointe pour la relire, sur le × pour la retirer du prochain envoi. Ce que vous laissez repart tel quel."
 trainingApplicationResubmitHintLabel: "Seul l'élément corrigé repart en relecture — les validations acquises le restent. La postulation repasse à l'état « Renvoyée » chez le valideur."
 trainingApplicationResubmitAction: 'Renvoyer en validation'
 trainingApplicationAwaitingReviewText: 'Votre postulation est en attente de relecture par un enseignant.'
@@ -3937,6 +3937,8 @@ trainingReviewPageHeading: 'Postulation — %student%'
 trainingReviewBreadcrumbLabel: "Traiter une postulation"
 trainingReviewOfferLabel: 'Offre « %offer% »'
 trainingReviewPanelTitle: 'Validation'
+trainingReviewFeedbackSentLabel: 'Retours faits le %date% par %name%'
+trainingReviewUnknownValidatorLabel: 'un valideur'
 trainingReviewPreviousRemarkLabel: 'Votre remarque (v%version%)'
 trainingReviewAcquiredLabel: 'Validé (v%version%)'
 trainingReviewCorrectedLabel: 'corrigé en v%version%'

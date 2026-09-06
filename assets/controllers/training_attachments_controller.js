@@ -39,6 +39,13 @@ export default class extends Controller {
         this.sync();
     }
 
+    // A file sent in an earlier round: it exists on the server, so taking it off means dropping the
+    // hidden field that would have carried it into the next version, not touching `input.files`.
+    // Nothing is deleted - the version that was reviewed keeps its own list.
+    drop(event) {
+        event.currentTarget.closest('.cm-postul__chip').remove();
+    }
+
     sync() {
         const transfer = new DataTransfer();
         this.files.forEach((file) => transfer.items.add(file));
@@ -48,8 +55,11 @@ export default class extends Controller {
 
     // The add button stays where the markup put it, last: the chips are inserted before it, so a
     // newly joined file appears next to the ones already there rather than after the way in.
+    //
+    // Only the chips this controller painted are swept: the ones Twig rendered stand for files that
+    // are already on the server, and repainting the list must not take them off the resend.
     render() {
-        this.chipsTarget.querySelectorAll('.cm-postul__chip').forEach((chip) => chip.remove());
+        this.chipsTarget.querySelectorAll('.cm-postul__chip--new').forEach((chip) => chip.remove());
 
         const button = this.chipsTarget.querySelector('.cm-postul__attach');
         this.files.forEach((file, index) => this.chipsTarget.insertBefore(this.buildChip(file, index), button));
@@ -57,7 +67,7 @@ export default class extends Controller {
 
     buildChip(file, index) {
         const chip = document.createElement('span');
-        chip.className = 'cm-postul__chip';
+        chip.className = 'cm-postul__chip cm-postul__chip--new';
 
         const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         icon.setAttribute('width', '12');

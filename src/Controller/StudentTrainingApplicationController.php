@@ -176,11 +176,33 @@ class StudentTrainingApplicationController extends AbstractController
             $files,
             (string) $request->request->get('body', ''),
             (string) $request->request->get('subject', ''),
+            $this->keptAttachmentIds($request),
         );
 
         $this->addFlash('success', 'trainingApplicationResubmittedFlash');
 
         return $this->redirectToRoute('app_training_application', ['id' => $application->getId()]);
+    }
+
+    /**
+     * A file the student joined, re-read from the screen that carries it.
+     *
+     * The point is not archival: a correction asked for on a CV is acted on by opening that CV,
+     * replacing it, and joining the new one - so the document has to be reachable from the very
+     * screen where the remark is read, rather than from wherever the student happens to keep it.
+     */
+    #[Route(path: '/school-mail/validation/applications/{id}/documents/{attachmentId}', name: 'app_training_application_document', requirements: ['id' => '\d+', 'attachmentId' => '\d+'], methods: ['GET'])]
+    public function attachment(TrainingApplication $application, int $attachmentId): Response
+    {
+        $this->denyUnlessOwned($application);
+
+        foreach ($application->getCurrentVersion()?->getAttachments() ?? [] as $attachment) {
+            if ($attachment->getId() === $attachmentId) {
+                return $this->redirect($this->fileUploadService->url($attachment->getStorageKey()));
+            }
+        }
+
+        throw $this->createNotFoundException();
     }
 
     /** The offer PDF, the only thing a student reads before applying. */
@@ -210,6 +232,27 @@ class StudentTrainingApplicationController extends AbstractController
             $request->files->all()['attachments'] ?? [],
             static fn ($file): bool => $file instanceof UploadedFile,
         ));
+    }
+
+    /**
+     * The already-sent files the student left in place, named by the chips that survived the ×.
+     *
+     * An empty list is a real answer - "I removed them all" - and is why the field is read here
+     * rather than inferred from the absence of new uploads.
+     *
+     * @return list<int>
+     */
+    private function keptAttachmentIds(Request $request): array
+    {
+        $ids = [];
+
+        foreach ($request->request->all('keep') as $value) {
+            if (is_numeric($value)) {
+                $ids[] = (int) $value;
+            }
+        }
+
+        return $ids;
     }
 
     /**

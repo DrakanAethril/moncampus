@@ -78,10 +78,12 @@ class TrainingApplicationWorkflow
     /**
      * Screen 8e: the student replaces what was refused and hands the application back.
      *
-     * @param list<UploadedFile> $files the files joined to this new version; empty means "the ones
-     *                                  already validated are fine", and they carry over as they are
+     * @param list<UploadedFile> $files              the files joined on top of the ones kept, possibly none
+     * @param ?list<int>         $keptAttachmentIds the previous version's attachments the student
+     *                                              left in place; null means the screen did not say,
+     *                                              and they all carry over
      */
-    public function resubmit(TrainingApplication $application, array $files, ?string $body = null, ?string $subject = null): void
+    public function resubmit(TrainingApplication $application, array $files, ?string $body = null, ?string $subject = null, ?array $keptAttachmentIds = null): void
     {
         $previous = $application->getCurrentVersion();
 
@@ -93,15 +95,19 @@ class TrainingApplicationWorkflow
             ->setBody(null !== $body && '' !== trim($body) ? $body : (string) $previous?->getBody())
             ->setSignatureSnapshot($this->signatureText($application->getStudent()));
 
-        // Nothing joined this time means nothing was to be replaced: the files already read carry
-        // over as they are, since only what was refused goes back for review.
-        if ([] === $files) {
-            foreach ($previous?->getAttachments() ?? [] as $attachment) {
-                $version->addAttachment(new TrainingApplicationAttachment($attachment->getStorageKey(), $attachment->getName()));
+        // The kept files first, then the new ones: joining a document adds to what was already read
+        // rather than sweeping it away, and only the × on a chip removes anything. A carried-over
+        // file becomes a row of its own pointing at the same object - the previous version keeps
+        // its list intact, so what a validator read stays exactly what they read.
+        foreach ($previous?->getAttachments() ?? [] as $attachment) {
+            if (null !== $keptAttachmentIds && !\in_array($attachment->getId(), $keptAttachmentIds, true)) {
+                continue;
             }
-        } else {
-            $this->attachFiles($application->getStudent(), $version, $files);
+
+            $version->addAttachment(new TrainingApplicationAttachment($attachment->getStorageKey(), $attachment->getName()));
         }
+
+        $this->attachFiles($application->getStudent(), $version, $files);
 
         $application->addVersion($version);
         $application->setState(TrainingApplicationState::Resent);
@@ -137,12 +143,25 @@ class TrainingApplicationWorkflow
             }
 
             $remark = trim((string) ($submitted['remark'] ?? ''));
+            $remark = '' === $remark ? null : $remark;
+            $standing = $application->getReviewFor($element);
+
+            // A verdict reposted word for word is not a new verdict. The screen hands back the
+            // standing correction pre-filled, so a validator who opens the application to re-read
+            // it and saves would otherwise redate their own feedback without changing a word of it
+            // - and the banner naming who wrote it, and when, would move for nothing.
+            if (null !== $standing
+                && $standing->getVersionNumber() === $versionNumber
+                && $standing->getDecision() === $decision
+                && $standing->getRemark() === $remark) {
+                continue;
+            }
 
             $application->addReview(
                 (new TrainingApplicationReview())
                     ->setElement($element)
                     ->setDecision($decision)
-                    ->setRemark('' === $remark ? null : $remark)
+                    ->setRemark($remark)
                     ->setValidator($validator)
                     ->setVersionNumber($versionNumber)
             );
