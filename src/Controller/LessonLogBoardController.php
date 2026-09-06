@@ -17,6 +17,8 @@ use App\Enum\LessonLogVisibility;
 use App\Repository\AssignmentRepository;
 use App\Repository\LessonLogRepository;
 use App\Repository\LessonSessionRepository;
+use App\Repository\ProgramRepository;
+use App\Security\StructureAccessChecker;
 use App\Service\LessonLogBoard;
 use App\Service\LessonLogPeriodBoard;
 use App\Service\QueryValue;
@@ -28,23 +30,33 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * The cahier de texte's own screen: a teacher's séances of one week, every class together
- * (design/design_handoff_cahier_de_texte_seances).
+ * The cahier de texte, in one screen and two scopes: a teacher's séances of one week, every class
+ * together (`/lesson-log`) or narrowed to one (`/programs/{id}/lesson-log`) -
+ * design/design_handoff_cahier_de_texte_seances.
  *
- * It replaces the class picker one used to pass through: the class is no longer a question asked
- * before the screen, it is the left column's own grouping. Nothing is asked on arrival at all - the
- * current week, grouped by class - and both of the things a link can name are optional refinements
- * of that:
+ * **One screen, deliberately.** The class-scoped address used to open a different screen of its own
+ * (the course view of design_handoff_cahier_de_texte 1b, with its « séances de toute la formation »
+ * switch); it is now the same screen with the class picker on its title line set to that class, and
+ * the switch is gone - showing a colleague's séances will come back elsewhere. Two screens for one
+ * question is what this replaces.
  *
- *  - `?class=<id>` opens that class's accordion, still in the by-class list;
+ * Nothing is asked on arrival: the current week, every class, grouped by class. Two things a link
+ * can name refine that:
+ *
+ *  - the **class** is the route, and the picker navigates between the two addresses. A scoped
+ *    screen forces the chronological list - a by-class accordion of one class would be a single
+ *    group holding everything - and says so on the greyed-out tab;
  *  - `?date=<Y-m-d>` switches to the chronological list, moves the period to the calendar week
  *    holding that day, and unfolds it. A day with no séance is said in a sentence rather than left
  *    to read as a broken link.
  *
+ * `?class=` was a third way of naming the class and is now only a redirect onto the route: one
+ * address per screen, and no rule left to arbitrate between the two.
+ *
  * Everything the left column can do without the server - unfolding, switching séance - is done in
  * the browser (assets/controllers/lesson_log_board_controller.js), so the whole week is rendered at
  * once: one query per kind of thing, never one per séance. What does need the server is the period
- * itself, and those are plain links.
+ * and the class, and those are plain links.
  *
  * This is a reading screen. Writing happens on the séance page, and who may write there is
  * App\Security\LessonLogEditors' question, not this one's.
@@ -63,9 +75,64 @@ class LessonLogBoardController extends AbstractController
      */
     private const string VIEW_MODE_KEY = 'lesson_log.view_mode';
 
+    public function __construct(private readonly StructureAccessChecker $accessChecker)
+    {
+    }
+
     #[Route(path: '/lesson-log', name: 'app_lesson_logs', methods: ['GET'])]
     public function index(
         Request $request,
+        LessonSessionRepository $lessonSessionRepository,
+        LessonLogRepository $lessonLogRepository,
+        AssignmentRepository $assignmentRepository,
+        LessonLogPeriodBoard $periodBoard,
+        LessonLogBoard $board,
+    ): Response {
+        // `?class=` used to be a second way of naming the class. It is the route now, and a link
+        // still carrying it is sent there rather than quietly ignored.
+        $classId = QueryValue::nullableInt($request, 'class');
+        if (null !== $classId) {
+            return $this->redirectToRoute('app_program_lesson_logs', ['id' => $classId] + $this->carriedOver($request));
+        }
+
+        return $this->board($request, null, $lessonSessionRepository, $lessonLogRepository, $assignmentRepository, $periodBoard, $board);
+    }
+
+    /**
+     * The same screen narrowed to one class - what the picker on the title line navigates to, and
+     * where a séance's breadcrumb comes back to.
+     *
+     * The right to open it is the class's teaching team plus staff, exactly as the course view it
+     * replaces required. It carries no `timetableManagementEnabled` guard any more: that guard
+     * belonged to a timetable-management screen, the séance page itself never had one, and this is
+     * now a reading of the viewer's own séances.
+     */
+    #[Route(path: '/programs/{id}/lesson-log', name: 'app_program_lesson_logs', methods: ['GET'], requirements: ['id' => '\\d+'])]
+    public function forProgram(
+        int $id,
+        Request $request,
+        ProgramRepository $programRepository,
+        LessonSessionRepository $lessonSessionRepository,
+        LessonLogRepository $lessonLogRepository,
+        AssignmentRepository $assignmentRepository,
+        LessonLogPeriodBoard $periodBoard,
+        LessonLogBoard $board,
+    ): Response {
+        $program = $programRepository->find($id) ?? throw $this->createNotFoundException();
+
+        if (!$this->accessChecker->isProgramTeacher($program)) {
+            throw $this->createAccessDeniedException();
+        }
+
+        return $this->board($request, $program, $lessonSessionRepository, $lessonLogRepository, $assignmentRepository, $periodBoard, $board);
+    }
+
+    /**
+     * @param ?Program $program the class the screen is narrowed to, null for every class at once
+     */
+    private function board(
+        Request $request,
+        ?Program $program,
         LessonSessionRepository $lessonSessionRepository,
         LessonLogRepository $lessonLogRepository,
         AssignmentRepository $assignmentRepository,
@@ -77,7 +144,6 @@ class LessonLogBoardController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $classId = QueryValue::nullableInt($request, 'class');
         $date = $this->readDay($request, 'date');
         $week = $this->readDay($request, 'week');
         $requestedMode = QueryValue::trimmed($request, 'view');
@@ -88,20 +154,35 @@ class LessonLogBoardController extends AbstractController
         $weekEnd = $weekStart->modify('+6 days');
 
         $sessions = $lessonSessionRepository->findAllForTeacherBetween($viewer, $weekStart, $weekEnd);
+        if (null !== $program) {
+            $sessions = array_values(array_filter(
+                $sessions,
+                static fn (LessonSession $session): bool => $session->getProgram()?->getId() === $program->getId(),
+            ));
+        }
         $rows = $this->rowsFor($sessions);
 
-        $viewMode = $periodBoard->viewMode(
-            '' === $requestedMode ? null : $requestedMode,
-            $classId,
-            $date,
-            $this->rememberedViewMode($request),
-        );
-        $this->rememberViewMode($request, $viewMode);
+        // One class, one group: the accordion would hold everything and close nothing, so the
+        // scoped screen has only the chronological list and the other tab is greyed out. The mode
+        // the user last chose is left untouched - they did not ask to change it.
+        $viewMode = null !== $program
+            ? LessonLogPeriodBoard::MODE_CHRONOLOGICAL
+            : $periodBoard->viewMode('' === $requestedMode ? null : $requestedMode, $date, $this->rememberedViewMode($request));
 
-        $selectedId = $periodBoard->selectedSession($rows, QueryValue::nullableInt($request, 'seance'), $classId, $date);
+        if (null === $program) {
+            $this->rememberViewMode($request, $viewMode);
+        }
+
+        $selectedId = $periodBoard->selectedSession($rows, QueryValue::nullableInt($request, 'seance'), $date);
         $decorated = $this->decorate($sessions, $lessonLogRepository, $assignmentRepository, $board);
 
         return $this->render('lesson_log/board.html.twig', [
+            'program' => $program,
+            // Every class the viewer actually has a créneau in, whatever the week - the picker must
+            // not lose an option as one walks through a holiday. Ordered by short name, and never
+            // widened to the classes one merely has the right to look at: a class one does not
+            // teach would open on an empty screen.
+            'pickerPrograms' => $lessonSessionRepository->findDistinctProgramsForTeacher($viewer),
             'weekStart' => $weekStart,
             'weekEnd' => $weekEnd,
             'previousWeek' => $weekStart->modify('-7 days'),
@@ -118,7 +199,7 @@ class LessonLogBoardController extends AbstractController
             'modeClass' => LessonLogPeriodBoard::MODE_CLASS,
             'modeChronological' => LessonLogPeriodBoard::MODE_CHRONOLOGICAL,
             'selectedId' => $selectedId,
-            'openClassId' => $periodBoard->openClass($rows, $classId, $selectedId),
+            'openClassId' => $periodBoard->openClass($rows, $selectedId),
             'openDays' => $periodBoard->openDays($rows, $date, $selectedId),
             // A day named in the link that the viewer has no séance on. Not the same thing as an
             // empty week, and the screen says the two differently.
@@ -128,6 +209,27 @@ class LessonLogBoardController extends AbstractController
             'dayGroups' => $this->groupByDay($decorated),
             'sections' => LessonLogSection::cases(),
         ]);
+    }
+
+    /**
+     * What a redirect off `?class=` keeps: the period and the séance, so that an old link lands on
+     * the same week it named rather than on today's.
+     *
+     * @return array<string, string|int>
+     */
+    private function carriedOver(Request $request): array
+    {
+        $carried = [];
+        foreach (['week', 'date'] as $key) {
+            $day = $this->readDay($request, $key);
+            if (null !== $day) {
+                $carried[$key] = $day;
+            }
+        }
+
+        $seance = QueryValue::nullableInt($request, 'seance');
+
+        return null === $seance ? $carried : $carried + ['seance' => $seance];
     }
 
     /**

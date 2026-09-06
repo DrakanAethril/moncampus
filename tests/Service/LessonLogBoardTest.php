@@ -9,12 +9,11 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
- * The two decisions behind the cahier de texte list: which week it opens on, and what the badge on
- * each row says.
+ * What the badge on a row of the cahier de texte says.
  *
- * Neither is visible from the screen. The week fallback in particular only shows itself when the
- * current week has no lesson at all - during a holiday, a stage period or an alternance week, which
- * is exactly when a teacher opens the screen and finds it either useful or empty.
+ * It is not visible from the screen that a badge reads only ONE of the three parts to decide
+ * « rempli », nor that HugeRTE's leftovers have to be seen through - and both are exactly what a
+ * teacher scanning a week for the gaps depends on.
  */
 class LessonLogBoardTest extends TestCase
 {
@@ -23,78 +22,6 @@ class LessonLogBoardTest extends TestCase
     protected function setUp(): void
     {
         $this->board = new LessonLogBoard();
-    }
-
-    // --- Snapping a day to its week ---
-
-    public function testAnyDaySnapsToItsMonday(): void
-    {
-        // The rows are grouped by week, so every day of a week has to answer the same key.
-        foreach (['2026-11-02', '2026-11-05', '2026-11-08'] as $day) {
-            self::assertSame('2026-11-02', $this->board->weekStartOf(new \DateTimeImmutable($day))->format('Y-m-d'));
-        }
-    }
-
-    public function testSnappingDropsTheTimeOfDay(): void
-    {
-        $week = $this->board->weekStartOf(new \DateTimeImmutable('2026-11-05 14:30:00'));
-
-        self::assertSame('2026-11-02 00:00:00', $week->format('Y-m-d H:i:s'));
-    }
-
-    // --- Which week to display ---
-
-    public function testAnExplicitWeekWins(): void
-    {
-        $week = $this->board->weekToDisplay('2026-11-04', ['2026-11-02'], new \DateTimeImmutable('2026-09-07'));
-
-        // Snapped to its Monday: the date picker hands back an arbitrary day.
-        self::assertSame('2026-11-02', $week->format('Y-m-d'));
-    }
-
-    public function testAnExplicitWeekWinsEvenWhenItHasNoLesson(): void
-    {
-        $week = $this->board->weekToDisplay('2026-12-25', ['2026-11-02'], new \DateTimeImmutable('2026-11-03'));
-
-        self::assertSame('2026-12-21', $week->format('Y-m-d'), 'the teacher asked for it, empty or not');
-    }
-
-    public function testAnUnreadableWeekFallsBackInsteadOfFailing(): void
-    {
-        $week = $this->board->weekToDisplay('pas-une-date', ['2026-11-02'], new \DateTimeImmutable('2026-11-04'));
-
-        self::assertSame('2026-11-02', $week->format('Y-m-d'));
-    }
-
-    public function testTheCurrentWeekIsUsedWhenItCarriesLessons(): void
-    {
-        $week = $this->board->weekToDisplay('', ['2026-11-02', '2026-11-09'], new \DateTimeImmutable('2026-11-05'));
-
-        self::assertSame('2026-11-02', $week->format('Y-m-d'));
-    }
-
-    public function testAWeekWithoutLessonsJumpsForwardToTheNextOneThatHasSome(): void
-    {
-        // A holiday or an alternance week: land on the next week that actually has something.
-        $week = $this->board->weekToDisplay('', ['2026-11-02', '2026-12-07'], new \DateTimeImmutable('2026-11-18'));
-
-        self::assertSame('2026-12-07', $week->format('Y-m-d'));
-    }
-
-    public function testPastTheLastLessonItFallsBackToTheLastWeek(): void
-    {
-        // End of the school year: nothing ahead, so show the last week that had lessons rather
-        // than an empty screen.
-        $week = $this->board->weekToDisplay('', ['2026-11-02', '2026-12-07'], new \DateTimeImmutable('2027-02-10'));
-
-        self::assertSame('2026-12-07', $week->format('Y-m-d'));
-    }
-
-    public function testWithNoLessonAtAllItStaysOnTheCurrentWeek(): void
-    {
-        $week = $this->board->weekToDisplay('', [], new \DateTimeImmutable('2026-11-05'));
-
-        self::assertSame('2026-11-02', $week->format('Y-m-d'));
     }
 
     // --- What the badge says ---

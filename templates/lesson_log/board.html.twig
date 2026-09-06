@@ -1,22 +1,49 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'lessonLogPageHeading'|trans }}{% endblock %}
+{# The two addresses of this one screen. Every link below is built against whichever is current, so
+   moving the period or the séance never silently drops the class. #}
+{% set boardRoute = program ? 'app_program_lesson_logs' : 'app_lesson_logs' %}
+{% set boardParams = program ? {id: program.id} : {} %}
 
-{# Two segments: the screen hangs straight off Accueil. The class is no longer a level one passes
-   through to reach it - it is the left column's own grouping. #}
+{% block title %}{{ 'lessonLogPageHeading'|trans }}{% if program %} - {{ program.displayShortName }}{% endif %}{% endblock %}
+
+{# Two segments on the all-classes screen, which hangs straight off Accueil; three once a class is
+   picked, that being one level down. #}
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
+    {% set segments = [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
         {label: 'lessonLogPageHeading'|trans, url: path('app_lesson_logs')},
-    ]} %}
+    ] %}
+    {% if program %}
+        {% set segments = segments|merge([{label: program.displayShortName, url: path('app_program_lesson_logs', {id: program.id})}]) %}
+    {% endif %}
+    {% include '_breadcrumb.html.twig' with {segments: segments} %}
 {% endblock %}
-{% block page_title %}{{ 'lessonLogPageHeading'|trans }}{% endblock %}
+{% block page_title %}{{ 'lessonLogPageHeading'|trans }}{% if program %} <span class="cm-cdt-title-class">› {{ program.displayShortName }}</span>{% endif %}{% endblock %}
 
 {% set currentWeek = weekStart|date('Y-m-d') %}
 {% set periodLabel = weekStart|localized_date('d MMMM') ~ ' – ' ~ weekEnd|localized_date('d MMM y') %}
 
 {% block page_actions %}
-    {# The period, and nothing else: the old matière/classe selector is gone from the title line
+    {# The class, then the period. The handoff had dropped the class selector from the title line
+       because the left column carries it - it comes back only because the class-scoped address is
+       this same screen now, and something has to navigate between the two. Offered only when the
+       viewer teaches somewhere: an empty picker would be a control that answers nothing. #}
+    {% if pickerPrograms|length %}
+        <div class="cm-cdt-classpick" data-controller="select-navigate">
+            <select class="cm-cdt-classpick__select" aria-label="{{ 'lessonLogsBoardClassPickerLabel'|trans }}"
+                    data-action="change->select-navigate#go">
+                <option value="{{ path('app_lesson_logs') }}" {{ program ? '' : 'selected' }}>{{ 'lessonLogsBoardAllClassesOption'|trans }}</option>
+                {% for candidate in pickerPrograms %}
+                    <option value="{{ path('app_program_lesson_logs', {id: candidate.id}) }}"
+                            {{ program and program.id == candidate.id ? 'selected' : '' }}>{{ candidate.displayShortName }}</option>
+                {% endfor %}
+            </select>
+            <span class="cm-cdt-classpick__caret" aria-hidden="true">▾</span>
+        </div>
+    {% endif %}
+
+    {# The period: the old matière/classe selector is gone from the title line
        (the class is carried by the list now). Both arrows and every week of the popover are real
        links - only the server holds another week's séances - while walking the months is not, since
        it must not change the period until a week is actually clicked. #}
@@ -27,7 +54,7 @@
          data-lesson-log-period-locale-value="{{ app.request.locale }}">
         <div class="cm-cdt-period__group">
             <a class="cm-cdt-period__arrow"
-               href="{{ path('app_lesson_logs', {view: viewMode, week: previousWeek|date('Y-m-d'), seance: selectedId}) }}"
+               href="{{ path(boardRoute, boardParams|merge({view: viewMode, week: previousWeek|date('Y-m-d'), seance: selectedId})) }}"
                aria-label="{{ 'lessonLogsBoardPreviousWeekLabel'|trans }}" title="{{ 'lessonLogsBoardPreviousWeekLabel'|trans }}">‹</a>
             <button type="button" class="cm-cdt-period__label"
                     data-action="lesson-log-period#toggle"
@@ -36,7 +63,7 @@
                 {{ periodLabel }}<span class="cm-cdt-period__caret">▾</span>
             </button>
             <a class="cm-cdt-period__arrow"
-               href="{{ path('app_lesson_logs', {view: viewMode, week: nextWeek|date('Y-m-d'), seance: selectedId}) }}"
+               href="{{ path(boardRoute, boardParams|merge({view: viewMode, week: nextWeek|date('Y-m-d'), seance: selectedId})) }}"
                aria-label="{{ 'lessonLogsBoardNextWeekLabel'|trans }}" title="{{ 'lessonLogsBoardNextWeekLabel'|trans }}">›</a>
         </div>
         <div class="cm-cdt-pop" hidden data-lesson-log-period-target="pop">
@@ -58,7 +85,7 @@
             <div class="cm-cdt-pop__shortcuts">
                 {% for key, week in shortcutWeeks %}
                     <a class="cm-cdt-pop__shortcut {{ week|date('Y-m-d') == currentWeek ? 'is-active' }}"
-                       href="{{ path('app_lesson_logs', {view: viewMode, week: week|date('Y-m-d'), seance: selectedId}) }}">
+                       href="{{ path(boardRoute, boardParams|merge({view: viewMode, week: week|date('Y-m-d'), seance: selectedId})) }}">
                         {{ ('lessonLogsBoardWeek' ~ key|capitalize ~ 'Shortcut')|trans }}
                     </a>
                 {% endfor %}
@@ -74,11 +101,19 @@
                 <div class="cm-cdt-modes__track">
                     {# Links, not buttons: the grouping is remembered server-side for the next
                        visit, and carrying the week and the séance across keeps the period and the
-                       preview exactly where they were. #}
-                    <a class="cm-cdt-modes__tab {{ viewMode == modeClass ? 'is-active' }}"
-                       href="{{ path('app_lesson_logs', {view: modeClass, week: currentWeek, seance: selectedId}) }}">{{ 'lessonLogsBoardByClassTab'|trans }}</a>
+                       preview exactly where they were.
+                       Scoped to one class, grouping by class would draw a single group holding
+                       everything, so the tab is greyed out and says why rather than disappearing -
+                       the control has to keep showing which of the two one is on. #}
+                    {% if program %}
+                        <span class="cm-cdt-modes__tab is-disabled" title="{{ 'lessonLogsBoardByClassUnavailableHint'|trans }}"
+                              aria-disabled="true">{{ 'lessonLogsBoardByClassTab'|trans }}</span>
+                    {% else %}
+                        <a class="cm-cdt-modes__tab {{ viewMode == modeClass ? 'is-active' }}"
+                           href="{{ path('app_lesson_logs', {view: modeClass, week: currentWeek, seance: selectedId}) }}">{{ 'lessonLogsBoardByClassTab'|trans }}</a>
+                    {% endif %}
                     <a class="cm-cdt-modes__tab {{ viewMode == modeChronological ? 'is-active' }}"
-                       href="{{ path('app_lesson_logs', {view: modeChronological, week: currentWeek, seance: selectedId}) }}">{{ 'lessonLogsBoardChronologicalTab'|trans }}</a>
+                       href="{{ path(boardRoute, boardParams|merge({view: modeChronological, week: currentWeek, seance: selectedId})) }}">{{ 'lessonLogsBoardChronologicalTab'|trans }}</a>
                 </div>
             </div>
 
