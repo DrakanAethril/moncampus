@@ -93,11 +93,22 @@ class ClassListCsvExporterTest extends TestCase
         // Neither givenName nor sn: getDisplayName() answers null, and a row of two empty cells and
         // an address names nobody.
         $user = new User('jdoe');
-        $user->setEmail('john.doe@example.org');
+        $user->setContactEmail('john.doe@example.org');
 
         $csv = $this->exporter->teachers([$user]);
 
         self::assertStringContainsString('jdoe;;john.doe@example.org', $csv);
+    }
+
+    public function testTheFileCarriesTheContactAddressRatherThanTheDirectorysOwn(): void
+    {
+        // User::$email is LDAP's internal address, rewritten on every login and not necessarily
+        // read by anyone; the import matches an account on its contact address alone, so writing
+        // the other one produces a file that round-trips to nobody.
+        $csv = $this->exporter->students([$this->student(1, 'Martin', 'Dupont', 'martin.dupont@example.org')], [], []);
+
+        self::assertStringContainsString('martin.dupont@example.org', $csv);
+        self::assertStringNotContainsString('@ldap.', $csv);
     }
 
     public function testTeachersCarryTheThreeColumnsAndNothingElse(): void
@@ -123,7 +134,9 @@ class ClassListCsvExporterTest extends TestCase
         $user = new User(strtolower($firstname.'.'.$lastname));
         $user->setFirstname($firstname);
         $user->setLastname($lastname);
-        $user->setEmail($email);
+        $user->setContactEmail($email);
+        // The directory's own address, deliberately different: the file must carry the contact one.
+        $user->setEmail(str_replace('@', '@ldap.', $email));
 
         $reflection = new \ReflectionProperty(User::class, 'id');
         $reflection->setValue($user, $id);

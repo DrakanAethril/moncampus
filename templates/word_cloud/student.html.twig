@@ -1,0 +1,66 @@
+{% extends 'layout/app.html.twig' %}
+
+{# The student's side of a word cloud: the question, a box to write in, and what they have already
+   sent. It is what the créa's « Vue étudiant » card rehearses, at full size.
+
+   No access code, no QR code: the design took both out, and the class the cloud is asking is
+   already known. #}
+{% block title %}{{ cloud.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: cloud.name, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ cloud.name }}{% endblock %}
+
+{% block main %}
+    <div class="cm-wc-student">
+        <div class="cm-wc-card cm-wc-card--pad">
+            <span class="cm-wc-preview__question">{{ cloud.question }}</span>
+
+            {% if canSubmit and remainingBoxes > 0 %}
+                <form method="post" action="{{ path('app_my_word_cloud_submit', {id: cloud.id}) }}" class="cm-wc-preview__frame">
+                    <input type="hidden" name="_token" value="{{ csrf_token('word_cloud_submit') }}">
+                    <div class="cm-wc-preview__boxes">
+                        {# One box per word still allowed, and a single one when the cloud is
+                           « Illimités » - a page of thirty boxes is not what unlimited is for. #}
+                        {% for index in 1..remainingBoxes %}
+                            <input type="text" name="words[]" class="cm-wc-preview__box"
+                                   maxlength="30" autocomplete="off"
+                                   placeholder="{{ 'wordCloudPreviewPlaceholderLabel'|trans({'%number%': index}) }}"
+                                   aria-label="{{ 'wordCloudPreviewPlaceholderLabel'|trans({'%number%': index}) }}">
+                        {% endfor %}
+                    </div>
+                    <button type="submit" class="cm-wc-btn cm-wc-btn--lead">{{ 'wordCloudSendAction'|trans }}</button>
+                </form>
+            {% elseif not canSubmit %}
+                {# The period is refused by the server, not merely hidden here - this only explains
+                   why the boxes are gone. #}
+                <div class="cm-wc-student__closed">{{ (status.value == 'scheduled' ? 'wordCloudNotOpenYetMessage' : 'wordCloudClosedMessage')|trans }}</div>
+            {% else %}
+                <div class="cm-wc-student__closed">{{ 'wordCloudQuotaReachedMessage'|trans }}</div>
+            {% endif %}
+
+            {% if own|length > 0 %}
+                <span class="cm-wc-label">{{ 'wordCloudYourWordsLabel'|trans }}</span>
+                <div class="cm-wc-student__own">
+                    {% for submission in own %}
+                        <span class="cm-wc-wordchip {{ submission.moderationState.value == 'rejected' ? 'cm-wc-wordchip--rejected' }}">{{ submission.text }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        {# Only when the teacher asked for it: « Les étudiants voient le nuage sur leur écran » is
+           off by default, because a cloud on every desk is a cloud nobody looks up from. #}
+        {% if board is not null %}
+            <div class="cm-wc-card cm-wc-card--pad">
+                <span class="cm-wc-label">{{ 'wordCloudClassCloudLabel'|trans }}</span>
+                {% include 'word_cloud/_cloud.html.twig' with {words: words, scale: scale, frameClass: 'cm-wc-cloud--preview'} %}
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

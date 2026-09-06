@@ -1,0 +1,19 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set isNew = cloud.id is null %}
+
+{% block title %}{{ (isNew ? 'wordCloudNewPageHeading' : 'wordCloudEditPageHeading')|trans }} - {{ program.displayShortName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'word_cloud/_breadcrumb.html.twig' with {program: program, cloud: isNew ? null : cloud, newLabel: 'wordCloudNewBreadcrumbLabel'|trans} %}
+{% endblock %}
+
+{% block page_title %}
+    {{ (isNew ? 'wordCloudNewPageHeading' : 'wordCloudEditPageHeading')|trans({'%program%': program.displayShortName}) }}
+{% endblock %}
+
+{% block main %}
+    {{ form_start(form) }}
+        {% include 'word_cloud/_form.html.twig' %}
+    {{ form_end(form) }}
+{% endblock %}

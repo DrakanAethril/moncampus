@@ -1,0 +1,122 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ cloud.name }} - {{ program.displayShortName }}{% endblock %}
+
+{% block page_breadcrumb %}{% include 'word_cloud/_breadcrumb.html.twig' %}{% endblock %}
+
+{% block page_title %}
+    <span class="cm-wc-title">
+        {{ cloud.name }}
+        {# The tag carries the countdown as well as the state: « ferme dans 6 min » is what a
+           teacher glances at, and it is the same figure the extend button acts on. #}
+        <span class="cm-wc-tag {{ status.badgeModifier }}" data-word-cloud-live-target="status">
+            {% if remainingSeconds is not null and status.value == 'open' %}
+                {{ 'wordCloudStatusOpenClosingLabel'|trans({'%minutes%': (remainingSeconds / 60)|round(0, 'ceil')}) }}
+            {% else %}
+                {{ status.labelKey|trans }}
+            {% endif %}
+        </span>
+    </span>
+{% endblock %}
+
+{% block page_actions %}
+    <div class="cm-wc-actions">
+        {% if status.value != 'open' %}
+            <form method="post" action="{{ path('app_program_word_cloud_open', {id: program.id, cloudId: cloud.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('word_cloud_pilot') }}">
+                <button type="submit" class="cm-wc-btn">{{ 'wordCloudOpenAction'|trans }}</button>
+            </form>
+        {% endif %}
+        {% if cloud.closesAt %}
+            <form method="post" action="{{ path('app_program_word_cloud_extend', {id: program.id, cloudId: cloud.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('word_cloud_pilot') }}">
+                <button type="submit" class="cm-wc-btn">{{ 'wordCloudExtendAction'|trans }}</button>
+            </form>
+        {% endif %}
+        {% if status.value == 'open' %}
+            <form method="post" action="{{ path('app_program_word_cloud_close', {id: program.id, cloudId: cloud.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('word_cloud_pilot') }}">
+                <button type="submit" class="cm-wc-btn">{{ 'wordCloudCloseAction'|trans }}</button>
+            </form>
+        {% endif %}
+        <a class="cm-wc-btn cm-wc-btn--gold" href="{{ path('app_program_word_cloud_projection', {id: program.id, cloudId: cloud.id}) }}">⛶ {{ 'wordCloudProjectAction'|trans }}</a>
+        <a class="cm-wc-btn" href="{{ path('app_program_word_cloud_follow_up', {id: program.id, cloudId: cloud.id}) }}">{{ 'wordCloudFollowUpAction'|trans }}</a>
+    </div>
+{% endblock %}
+
+{% block main %}
+    <div class="cm-wc-pilot"
+         data-controller="word-cloud-live"
+         data-word-cloud-live-mercure-url-value="{{ mercurePublicUrl }}"
+         data-word-cloud-live-topic-value="{{ topic }}"
+         data-word-cloud-live-moderate-url-value="{{ path('app_program_word_cloud_moderate', {id: program.id, cloudId: cloud.id, submissionId: 0}) }}"
+         data-word-cloud-live-csrf-token-value="{{ csrf_token('word_cloud_pilot') }}"
+         data-word-cloud-live-meta-template-value="{{ 'wordCloudMetaLabel'|trans({'%words%': '%words%', '%submissions%': '%submissions%', '%participants%': '%participants%'}) }}"
+         data-word-cloud-live-participants-template-value="{{ 'wordCloudParticipantsAndWordsLabel'|trans({'%submissions%': '%submissions%'}) }}">
+        <div class="cm-wc-card cm-wc-pilot__main">
+            <div class="cm-wc-questionline">
+                <span class="cm-wc-question">{{ cloud.question }}</span>
+                <span class="cm-wc-meta" data-word-cloud-live-target="meta">{{ 'wordCloudMetaLabel'|trans({
+                    '%words%': board.distinctWords,
+                    '%submissions%': board.submissionCount,
+                    '%participants%': board.participantCount,
+                }) }}</span>
+            </div>
+            {% include 'word_cloud/_cloud.html.twig' with {words: words, scale: scale, frameClass: 'cm-wc-cloud--preview'} %}
+            <div class="cm-wc-flux">
+                <span class="cm-wc-label">{{ 'wordCloudLatestWordsLabel'|trans }}</span>
+                <span class="cm-wc-flux" data-word-cloud-live-target="latest" data-render="chip">
+                    {% for word in board.latest %}
+                        <span class="cm-wc-fluxchip">{{ word.text }}<span>{{ word.author }}</span></span>
+                    {% endfor %}
+                </span>
+            </div>
+        </div>
+
+        <div class="cm-wc-pilot__side">
+            {# The moderation card only exists when the cloud asks for one: with the setting off,
+                every word is in the cloud the moment it is written, and an empty « À valider »
+                would be a promise nothing keeps. #}
+            {% if cloud.moderation %}
+                <div class="cm-wc-card cm-wc-card--pad">
+                    <span class="cm-wc-label">{{ 'wordCloudToModerateLabel'|trans }}</span>
+                    <div class="cm-wc-pending" data-word-cloud-live-target="pending" data-empty-label="{{ 'wordCloudNothingToModerateLabel'|trans }}">
+                        {% for submission in pending %}
+                            {% include 'word_cloud/_pending_item.html.twig' with {submission: submission} only %}
+                        {% else %}
+                            <span class="cm-wc-list__cell" data-word-cloud-live-target="pendingEmpty">{{ 'wordCloudNothingToModerateLabel'|trans }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="cm-wc-card cm-wc-card--pad">
+                <span class="cm-wc-label">{{ 'wordCloudParticipationLabel'|trans }}</span>
+                <div class="cm-wc-part">
+                    <span class="cm-wc-part__count" data-word-cloud-live-target="participants">{{ board.participantCount }}</span>
+                    <span class="cm-wc-part__unit" data-word-cloud-live-target="participantsUnit">{{ 'wordCloudParticipantsAndWordsLabel'|trans({'%submissions%': board.submissionCount}) }}</span>
+                </div>
+                <div class="cm-wc-silent">
+                    <div class="cm-wc-silent__head">
+                        <span class="cm-wc-label">{{ 'wordCloudSilentLabel'|trans }}</span>
+                        <span class="cm-wc-silent__count">{{ silent|length }}</span>
+                        {% if silent|length > 0 %}
+                            <form method="post" action="{{ path('app_program_word_cloud_remind', {id: program.id, cloudId: cloud.id}) }}" class="ms-auto">
+                                <input type="hidden" name="_token" value="{{ csrf_token('word_cloud_pilot') }}">
+                                <button type="submit" class="cm-wc-silent__relaunch">{{ 'wordCloudRemindAction'|trans }}</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                    {% for student in silent %}
+                        <div class="cm-wc-silent__item">
+                            <span class="cm-wc-silent__name">{{ student.displayName ?? student.username }}</span>
+                            <span class="cm-wc-silent__dash">—</span>
+                        </div>
+                    {% else %}
+                        <span class="cm-wc-list__cell">{{ 'wordCloudEverybodyAnsweredLabel'|trans }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

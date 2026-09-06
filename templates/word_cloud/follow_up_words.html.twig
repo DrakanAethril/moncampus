@@ -1,0 +1,67 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ cloud.name }} - {{ 'wordCloudByWordTabLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}{% include 'word_cloud/_breadcrumb.html.twig' %}{% endblock %}
+
+{% block page_title %}
+    <span class="cm-wc-title">
+        {{ cloud.name }}
+        <span class="cm-wc-tag {{ status.badgeModifier }}">
+            {% if status.value == 'closed' and cloud.closesAt %}
+                {{ 'wordCloudStatusClosedAtLabel'|trans({'%moment%': (cloud.closedAt ?? cloud.closesAt)|date('d/m/Y H:i')}) }}
+            {% else %}
+                {{ status.labelKey|trans }}
+            {% endif %}
+        </span>
+    </span>
+{% endblock %}
+
+{% block page_actions %}
+    <div class="cm-wc-actions">
+        <a class="cm-wc-btn cm-wc-btn--gold" href="{{ path('app_program_word_cloud_projection', {id: program.id, cloudId: cloud.id}) }}">⛶ {{ 'wordCloudReprojectAction'|trans }}</a>
+        <a class="cm-wc-btn" href="{{ path('app_program_word_cloud_export_csv', {id: program.id, cloudId: cloud.id}) }}">{{ 'wordCloudExportCsvAction'|trans }}</a>
+        <a class="cm-wc-btn" href="{{ path('app_program_word_cloud_export_pdf', {id: program.id, cloudId: cloud.id}) }}">{{ 'wordCloudExportPdfAction'|trans }}</a>
+        {# « Relancer la question » duplicates rather than reopens: the point is to compare two
+           moments, and reopening would merge them into one. #}
+        <form method="post" action="{{ path('app_program_word_cloud_duplicate', {id: program.id, cloudId: cloud.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('word_cloud') }}">
+            <button type="submit" class="cm-wc-btn">{{ 'wordCloudRelaunchAction'|trans }}</button>
+        </form>
+    </div>
+{% endblock %}
+
+{% block main %}
+    {% include 'word_cloud/_follow_up_head.html.twig' %}
+
+    <div class="cm-wc-card cm-wc-card--flush mt-3 cm-wc-scroll" data-controller="word-cloud-follow-up">
+        {% include 'word_cloud/_follow_up_toolbar.html.twig' with {byWord: true, program: program, cloud: cloud, query: query} %}
+        <div>
+            <div class="cm-wc-words__head">
+                <span>{{ 'wordCloudColumnWordLabel'|trans }}</span>
+                <span>{{ 'wordCloudColumnCitationsLabel'|trans }}</span>
+                <span>{{ 'wordCloudColumnWeightLabel'|trans }}</span>
+                <span></span>
+            </div>
+            {% for row in wordRows %}
+                {# One word open at a time: the contributors of two words side by side answer no
+                   question the list itself does not already answer better. #}
+                <div class="cm-wc-words__group" data-word-cloud-follow-up-target="group">
+                    <div class="cm-wc-words__row" data-action="click->word-cloud-follow-up#toggle" role="button" tabindex="0" aria-expanded="false">
+                        <span class="cm-wc-words__word">{{ row.word }}</span>
+                        <span class="cm-wc-words__count">{{ row.count }}</span>
+                        <span class="cm-wc-bar"><span class="cm-wc-bar__fill" style="width: {{ row.share }}%;"></span></span>
+                        <span class="cm-wc-words__chev" data-word-cloud-follow-up-target="chevron">▼</span>
+                    </div>
+                    <div class="cm-wc-contribs" data-word-cloud-follow-up-target="panel" hidden>
+                        {% for contributor in row.contributors %}
+                            <span class="cm-wc-contrib">{{ contributor.name }}<span>{{ contributor.time }}</span></span>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% else %}
+                <div class="cm-wc-empty">{{ (query ? 'wordCloudNoSearchResultMessage' : 'wordCloudNoWordsMessage')|trans }}</div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

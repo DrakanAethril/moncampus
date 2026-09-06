@@ -288,11 +288,15 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // Teaching and back-office areas: a student must never get in.
             '/timetable' => 403,
             '/assignments' => 403,
-            '/tools/lesson-log' => 403,
+            '/lesson-log' => 403,
             '/tools/gradebook' => 403,
             '/tools/quiz-live' => 403,
             '/tools/job-search-tracking' => 403,
             '/tools/quiz' => 403,
+            // The word cloud is the one « Animer la classe » tool a student writes into, and the
+            // picker is still not theirs: what they reach is /my/word-clouds/{id}, from the banner
+            // on their dashboard. Piloting and writing are two doors, and this is the wrong one.
+            '/tools/word-cloud' => 403,
             // The frise of a supervised copy: the teachers of the formation and the staff read it,
             // never the student it is about.
             $this->timelinePath => 403,
@@ -439,15 +443,19 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/student-work' => 403,
             '/school-mail' => 403,
             '/my/applications' => 403,
-            // The three class pickers of the Outils menu. They render rather than redirect here
+            // The cahier de texte asks for no class at all - it lists the teacher's own séances of
+            // the week, every class together, and an empty week is a state of the screen rather
+            // than a redirect.
+            '/lesson-log' => 200,
+            // The class pickers of the Outils menu. They render rather than redirect here
             // because Program::$visibility defaults to StaffAdmin, which puts the fixture's own
             // class out of findAllForTeacher's reach: the picker has nothing to offer and says so
             // (toolsNoVisibleClassMessage). A 403 would be the regression - having no class to
             // work on is a setting on the class, not a permission the teacher lacks.
-            '/tools/lesson-log' => 200,
             '/tools/gradebook' => 200,
             '/tools/quiz-live' => 200,
             '/tools/job-search-tracking' => 200,
+            '/tools/word-cloud' => 200,
             // Not a picker: the cross-class quiz list renders whatever the viewer teaches, empty
             // included, so it answers 200 rather than handing over to a class.
             '/tools/quiz' => 200,
@@ -578,11 +586,14 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/wiki/shared' => 200,
             '/wiki/students' => 200,
             '/wiki/new' => 200,
+            // The cahier de texte lists whoever is looking at their own séances, staff included -
+            // it hands over to no class.
+            '/lesson-log' => 200,
             // Staff pick a class first, so these hand over to the program-scoped screen.
-            '/tools/lesson-log' => 302,
             '/tools/gradebook' => 302,
             '/tools/quiz-live' => 302,
             '/tools/job-search-tracking' => 302,
+            '/tools/word-cloud' => 302,
             '/tools/quiz' => 200,
             // Staff read the frise too: StructureAccessChecker::isProgramTeacher() bypasses for them.
             $this->timelinePath => 200,
@@ -780,6 +791,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             Feature::Messaging,
             Feature::SignupLists,
             Feature::Eco,
+            Feature::WordCloud,
         );
 
         // A 403 here would mean the role was refused before the feature was ever read, which is a
@@ -800,7 +812,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/help' => 404,
             '/timetable' => 404,
             '/tools/file-library' => 404,
-            '/tools/lesson-log' => 404,
+            '/tools/word-cloud' => 404,
+            '/lesson-log' => 404,
             '/tools/gradebook' => 404,
             '/shares' => 404,
             '/messages' => 404,

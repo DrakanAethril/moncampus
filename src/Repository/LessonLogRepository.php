@@ -48,4 +48,28 @@ class LessonLogRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * The cahiers de texte of a given set of créneaux, attachments included - what the period screen
+     * needs, where findForProgram() is scoped to one class and this one spans every class a teacher
+     * has that week.
+     *
+     * @param list<LessonSession> $sessions
+     *
+     * @return list<LessonLog>
+     */
+    public function findForSessions(array $sessions): array
+    {
+        if ([] === $sessions) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('l')
+            ->addSelect('a')
+            ->leftJoin('l.attachments', 'a')
+            ->where('l.lessonSession IN (:sessions)')
+            ->setParameter('sessions', $sessions)
+            ->getQuery()
+            ->getResult();
+    }
 }

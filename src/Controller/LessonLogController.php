@@ -34,7 +34,6 @@ use App\Security\Voter\LessonLogVoter;
 use App\Service\AssignmentAudienceResolver;
 use App\Service\Console\ConsoleLessonLogDraft;
 use App\Service\FileUploadService;
-use App\Service\LessonLogBoard;
 use App\Service\LessonLogImporter;
 use App\Service\QueryValue;
 use App\Service\SeanceContentResolver;
@@ -49,9 +48,11 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 // The "cahier de texte" for a single LessonSession - see design/validated/lesson-log-cahier-de-texte.md.
 // Reachable from the timetable (both the read-only student/teacher page and the staff settings
-// tab) via LessonSessionEventFormatter's logUrl. Unlike ProgramTimetableSettingsController, this
-// isn't staff-only: viewing follows program visibility, editing is staff-or-the-session's-own-
-// teacher (see LessonLogVoter), so access is checked per-route rather than class-wide.
+// tab) via LessonSessionEventFormatter's logUrl, and from the list of séances
+// (App\Controller\LessonLogBoardController, which owns both of the list's addresses). Unlike
+// ProgramTimetableSettingsController, this isn't staff-only: viewing follows program visibility,
+// writing is for whoever delivers the séance (see LessonLogVoter and App\Security\LessonLogEditors),
+// so access is checked per-route rather than class-wide.
 #[RequiresFeature(Feature::LessonLog)]
 class LessonLogController extends AbstractController
 {
@@ -63,131 +64,6 @@ class LessonLogController extends AbstractController
     {
     }
 
-    /**
-     * Course view (design_handoff_cahier_de_texte 1b): where a program's cahier de texte stands,
-     * séance by séance. A screen for navigating and spotting the gaps, not for editing - entry
-     * happens on the séance page, which every row links to.
-     */
-    #[Route(path: '/programs/{id}/lesson-log', name: 'app_program_lesson_logs')]
-    public function courseView(int $id, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, AssignmentRepository $assignmentRepository, AssignmentViewRepository $viewRepository, AssignmentCompletionRepository $completionRepository, LessonLogAttachmentViewRepository $attachmentViewRepository, ProgramStudentOptionRepository $studentOptionRepository, AssignmentAudienceResolver $audienceResolver, LessonLogBoard $board): Response
-    {
-        $program = $this->findOrNotFound($id, $repository);
-        $this->assertProgramFeatureEnabled($program->isTimetableManagementEnabled());
-
-        // A teacher screen, and not a « list » version of the cahier de texte: it shows every
-        // séance regardless of the visibility set part by part, and the class's read tracking with
-        // it. So it closes itself to students rather than filtering itself.
-        if (!$this->accessChecker->isProgramTeacher($program)) {
-            throw $this->createAccessDeniedException();
-        }
-
-        $sessions = $lessonSessionRepository->findForProgram($program);
-        usort($sessions, static fn (LessonSession $a, LessonSession $b): int => [$a->getDay(), $a->getStartHour()] <=> [$b->getDay(), $b->getStartHour()]);
-
-        // A lesson log belongs to whoever taught the session: showing a teacher the whole class's
-        // timetable would bury their own sessions under their colleagues'. Own sessions by default,
-        // the switch opens it back up to the class as a whole - for the head teacher checking that
-        // the log is being kept, and for whoever covers an absent colleague.
-        $viewer = $this->getUser();
-        $mine = array_values(array_filter(
-            $sessions,
-            static fn (LessonSession $session): bool => $session->getTeacher() === $viewer,
-        ));
-
-        // Whoever teaches nothing here - a head of studies, an administrator - would otherwise land
-        // on an empty screen with every arrow dead, and no way to guess the switch is what fixes
-        // it. They get the whole class instead, which is the only thing the log can mean for them.
-        $mineOnly = [] !== $mine && !$request->query->getBoolean('all');
-        $sessions = $mineOnly ? $mine : $sessions;
-
-        $logsBySessionId = [];
-        foreach ($lessonLogRepository->findForProgram($program) as $log) {
-            $logsBySessionId[$log->getLessonSession()?->getId()] = $log;
-        }
-
-        // A whole year of sessions doesn't fit in one column, so the list is cut into weeks and
-        // only the selected one is rendered.
-        $rowsByWeek = [];
-        foreach ($sessions as $session) {
-            $day = $session->getDay();
-            if (null === $day) {
-                continue;
-            }
-
-            $log = $logsBySessionId[$session->getId()] ?? null;
-            $rowsByWeek[$board->weekStartOf($day)->format('Y-m-d')][] = [
-                'session' => $session,
-                'log' => $log,
-                'state' => $board->stateOf($log?->getContent(LessonLogSection::During)),
-            ];
-        }
-        ksort($rowsByWeek);
-
-        $week = $board->weekToDisplay(QueryValue::string($request, 'week'), array_keys($rowsByWeek), new \DateTimeImmutable('today'));
-        $rows = $rowsByWeek[$week->format('Y-m-d')] ?? [];
-        $filled = \count(array_filter($rows, static fn (array $row): bool => 'filled' === $row['state']));
-
-        // The séance put in preview: the one asked for, else the first unfilled one, else the last
-        // - what a teacher comes looking for when opening this screen.
-        // Scoped to the displayed week, otherwise the preview would describe a session that isn't
-        // in the list.
-        $selectedId = QueryValue::int($request, 'seance');
-        $selected = null;
-        foreach ($rows as $row) {
-            if ($row['session']->getId() === $selectedId) {
-                $selected = $row;
-            }
-        }
-        foreach ($rows as $row) {
-            $selected ??= 'empty' === $row['state'] ? $row : null;
-        }
-        // The week can be empty (holidays, internship), in which case there is nothing to preview.
-        $selected ??= [] === $rows ? null : $rows[array_key_last($rows)];
-
-        // Read tracking for the previewed séance: this is where one comes to see where the class
-        // stands, so it may as well be said here rather than forcing the séance open to find out.
-        $selectedSession = $selected['session'] ?? null;
-        $selectedWorks = null !== $selectedSession ? $this->worksBySection($assignmentRepository, $selectedSession) : [];
-
-        // The arrows jump to weeks that actually have class with this program - a holiday or
-        // internship week is not something to click through one week at a time. They therefore
-        // stop at the program's own bounds on their own, since no session exists beyond them.
-        $weeks = array_keys($rowsByWeek);
-        $current = $week->format('Y-m-d');
-        // ?->getDay() would not save us here: reading a missing array key raises first.
-        $lowerBounds = array_filter([$program->getEffectiveStartDate(), ($sessions[0] ?? null)?->getDay()]);
-        $upperBounds = array_filter([$program->getEffectiveEndDate(), ($sessions[array_key_last($sessions)] ?? null)?->getDay()]);
-        $previousWeeks = array_filter($weeks, static fn (string $candidate): bool => $candidate < $current);
-        $nextWeeks = array_filter($weeks, static fn (string $candidate): bool => $candidate > $current);
-
-        return $this->render('program/lesson_logs.html.twig', [
-            'program' => $program,
-            'rows' => $rows,
-            'filled' => $filled,
-            'mineOnly' => $mineOnly,
-            'week' => $week,
-            'weekEnd' => $week->modify('+6 days'),
-            'previousWeek' => [] === $previousWeeks ? null : end($previousWeeks),
-            'nextWeek' => [] === $nextWeeks ? null : reset($nextWeeks),
-            // Calendar bounds: the program's dates WIDENED to whatever the timetable actually
-            // holds. The dates alone would be wrong in both directions - too narrow to reach a
-            // session scheduled outside them (which happens), and too wide to be worth clamping to
-            // if the timetable stops early. Empty weeks in between stay reachable on purpose:
-            // seeing that a week is empty is an answer too.
-            'weekPickerMin' => [] === $lowerBounds ? null : min($lowerBounds),
-            'weekPickerMax' => [] === $upperBounds ? null : max($upperBounds),
-            'selected' => $selected,
-            'sections' => LessonLogSection::cases(),
-            'worksBySection' => $selectedWorks,
-            'workTracking' => null !== $selectedSession ? $this->workTracking($selectedWorks, $viewRepository, $completionRepository, $audienceResolver) : [],
-            'documentTracking' => null !== ($selected['log'] ?? null) ? $this->attachmentTracking($selected['log'], $selectedSession, $attachmentViewRepository, $studentOptionRepository) : null,
-        ]);
-    }
-
-    /**
-     * The Monday of a date's week, at midnight - the key sessions are grouped under, and the form
-     * the week travels in through the URL.
-     */
     #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log', name: 'app_program_timetable_session_log', methods: ['GET', 'POST'])]
     public function show(int $id, int $sessionId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, LessonLogRepository $lessonLogRepository, AssignmentRepository $assignmentRepository, ProgressionSeancePlacementRepository $placementRepository, AssignmentCompletionRepository $completionRepository, AssignmentViewRepository $viewRepository, LessonLogAttachmentViewRepository $attachmentViewRepository, ProgramStudentOptionRepository $studentOptionRepository, AssignmentAudienceResolver $audienceResolver, LessonLogImporter $importer, SeanceContentResolver $seanceContentResolver, ConsoleLessonLogDraft $consoleImporter): Response
     {

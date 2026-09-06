@@ -26,6 +26,35 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.06'
+      date: '2026-09-06'
+      summary: "Un nouvel outil pour animer la classe : l'enseignant pose une question, chacun répond en quelques mots depuis son écran ou son téléphone, et le nuage se forme au tableau, les mots les plus cités en grand. Le cahier de texte, de son côté, s'ouvre directement sur les séances de la semaine sans plus demander de quelle classe il s'agit."
+      entries:
+          - type: nouveaute
+            title: 'Nuage de mots'
+            detail: "Dans les outils de l'enseignant, à côté du tirage au sort et de la création de groupes. On pose une question et on ouvre la réponse pour la durée qu'on veut — dix minutes, la séance en cours, ou jusqu'à ce qu'on la ferme soi-même. Les étudiants répondent depuis leur espace ou depuis l'application mobile ; le nuage se projette au tableau et grandit à chaque mot, seul ou accompagné du classement des plus cités. On peut relire les mots avant qu'ils s'affichent, relancer ceux qui n'ont rien envoyé, et retrouver ensuite qui a proposé quoi et à quelle heure."
+          - type: modification
+            title: 'Le cahier de texte ne demande plus de choisir une classe'
+            detail: "Il s'ouvre sur les séances de la semaine en cours, toutes classes ensemble et groupées par classe. Un sélecteur permet de se réduire à une seule quand c'est ce qu'on cherche."
+          - type: modification
+            title: 'Le cahier de texte se remplit par qui assure la séance'
+            detail: "Y écrivent l'enseignant du créneau, celui d'un créneau jumeau et, sur une progression co-animée, tout enseignant nommé dessus. L'administration continue de tout lire."
+          - type: nouveaute
+            title: 'Mettre à jour ou dupliquer un lot de groupes'
+            detail: "Un lot enregistré peut désormais être réécrit tel quel, ou recopié dans un nouveau lot. Réenregistrer sous un nom déjà pris ne remplace plus silencieusement l'ancien : le nom est suffixé, « TP réseau » puis « TP réseau (2) »."
+          - type: fix
+            title: "L'adresse de contact dans les listes et les exports"
+            detail: "Les inscriptions et les exports de listes de classe reprenaient l'adresse de l'établissement au lieu de l'adresse de contact renseignée par la personne."
+          - type: fix
+            title: 'Des codes à la place des accents dans les aperçus'
+            detail: "Certains résumés affichaient « S&eacute;ance » plutôt que « Séance »."
+          - type: interne
+            title: "Le nuage de mots résiste à une panne de son canal temps réel"
+            detail: "Un mot restait enregistré mais l'écran annonçait une erreur, et le pilotage refusait de s'afficher au lieu de se passer des mises à jour automatiques."
+          - type: autre
+            title: "L'application mobile passe en 2.7.0"
+            detail: "Elle prévient quand un nuage de mots est ouvert et permet d'y répondre. À télécharger depuis la page Ressources."
+
     - version: '2026.09.05'
       date: '2026-09-05'
       summary: "La liste des étudiants ou des enseignants d'une classe s'exporte, en feuille d'émargement prête à signer ou en fichier tableur, et se range désormais par nom de famille. Côté fichiers, choisir plusieurs documents d'un coup ne les perd plus en route, et un envoi refusé le dit clairement au lieu de parler de connexion."

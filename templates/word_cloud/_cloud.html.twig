@@ -1,0 +1,15 @@
+{# The cloud itself.
+
+   Each word carries the size App\Service\WordCloud\WordCloudWeighting gave it and the rung of the
+   colour ladder it sits on. The rule lives in PHP alone, so the pilot preview, the board and the
+   live refresh can never draw the same cloud differently; the *colour* of a rung is a class, left
+   to the stylesheet, because the pilot preview sits on a white card in the light theme and on a
+   dark one in the other.
+
+   The words arrive already laid out centre-outwards, so a centred flex-wrap puts the most cited
+   ones in the middle of the block. #}
+<div class="cm-wc-cloud {{ frameClass|default('') }}" data-word-cloud-live-target="cloud" data-scale="{{ scale.value }}">
+    {% for word in words %}
+        <span class="cm-wc-word cm-wc-word--{{ word.step }}" style="font-size: {{ word.size }}px;">{{ word.word }}</span>
+    {% endfor %}
+</div>

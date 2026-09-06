@@ -21,7 +21,11 @@ use Symfony\Component\Validator\Constraints as Assert;
  *
  * A lot belongs to the teacher who saved it, and $sharedTeachers is the list of colleagues they
  * have opened it to - read-only for those colleagues, who see it under "Groupes partagés avec moi"
- * and may load it, but never rename, re-share or delete it.
+ * and may load it, but never rename, update, re-share or delete it. Loading one and saving makes a
+ * lot of one's own, which is why the tool's save button reads « Dupliquer » there.
+ *
+ * Two lots of one teacher on one Program never carry the same name (App\Service\GroupBatchNaming):
+ * the tool's banner is nothing but those names, so identical chips would be indistinguishable.
  */
 #[ORM\Entity(repositoryClass: GroupBatchRepository::class)]
 #[ORM\Table(name: 'group_batch')]

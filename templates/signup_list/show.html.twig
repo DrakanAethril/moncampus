@@ -101,7 +101,9 @@
                             <tr>
                                 <td>{{ registration.user.displayName ?? registration.user.username }}</td>
                                 <td>{{ registration.user.username }}</td>
-                                <td>{{ registration.user.email ?? '—' }}</td>
+                                {# contactEmail, never user.email: the latter is the directory's
+                                   internal address, not one anyone necessarily reads. #}
+                                <td>{{ registration.user.contactEmail ?? '—' }}</td>
                                 <td>{{ registration.registeredAt|date('d/m/Y H:i') }}</td>
                                 {# Ticked after the fact by whoever manages the list. Nothing here
                                    records an absence: an unticked line means « nobody said ». #}

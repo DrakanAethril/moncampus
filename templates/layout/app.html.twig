@@ -461,13 +461,14 @@
                            the three: a header with nothing under it and a menu that opens on
                            nothing are the same defect, and both become reachable as soon as an
                            establishment switches a few of these off. #}
-                        {% set tools_run = feature('class_tools') or feature('quiz_live') %}
+                        {% set tools_run = feature('class_tools') or feature('word_cloud') or feature('quiz_live') %}
                         {% set tools_prepare = feature('progression') or feature('sequence_library') or feature('quiz_library')
                             or feature('file_library') or feature('surveys') or feature('content_sharing') or feature('audio') %}
                         {% set tools_follow = feature('lesson_log') or feature('student_work') or feature('quiz_library')
                             or feature('gradebook_entry') or feature('job_search') %}
                         {% if (is_granted('ROLE_TEACHER') or is_staff()) and (tools_run or tools_prepare or tools_follow) %}
                             {% set tools_is_active = current_route starts with 'app_tools_'
+                                or current_route starts with 'app_program_word_cloud'
                                 or current_route starts with 'app_audio_recording'
                                 or current_route starts with 'app_progression'
                                 or current_route starts with 'app_library_'
@@ -484,6 +485,14 @@
                                     {% if feature('class_tools') %}
                                         <a class="dropdown-item {{ current_route == 'app_tools_random_draw' ? 'active' }}" href="{{ path('app_tools_random_draw') }}">{{ 'programToolsRandomDrawNavLabel'|trans }}</a>
                                         <a class="dropdown-item {{ current_route == 'app_tools_group_creation' ? 'active' }}" href="{{ path('app_tools_group_creation') }}">{{ 'programToolsGroupCreationNavLabel'|trans }}</a>
+                                    {% endif %}
+                                    {# Right after « Création de groupes », and gated on its own
+                                       feature rather than on class_tools: the word cloud is the one
+                                       tool of this group the class itself writes into, so it is
+                                       delivered to both sides of the room and switchable on its
+                                       own. #}
+                                    {% if feature('word_cloud') %}
+                                        <a class="dropdown-item {{ current_route starts with 'app_tools_word_cloud' or current_route starts with 'app_program_word_cloud' ? 'active' }}" href="{{ path('app_tools_word_cloud') }}">{{ 'wordCloudNavLabel'|trans }}</a>
                                     {% endif %}
                                     {% if feature('quiz_live') %}
                                         <a class="dropdown-item {{ current_route == 'app_tools_quiz_live' ? 'active' }}" href="{{ path('app_tools_quiz_live') }}">{{ 'quizLiveNavLabel'|trans }}</a>
@@ -531,7 +540,7 @@
                                     {% if tools_follow %}
                                     {% if tools_run or tools_prepare %}<div class="dropdown-divider"></div>{% endif %}
                                     <h6 class="dropdown-header">{{ 'toolsGroupFollowStudentsLabel'|trans }}</h6>
-                                    {% if feature('lesson_log') %}<a class="dropdown-item {{ current_route == 'app_tools_lesson_log' ? 'active' }}" href="{{ path('app_tools_lesson_log') }}">{{ 'lessonLogPageHeading'|trans }}</a>{% endif %}
+                                    {% if feature('lesson_log') %}<a class="dropdown-item {{ current_route == 'app_lesson_logs' ? 'active' }}" href="{{ path('app_lesson_logs') }}">{{ 'lessonLogPageHeading'|trans }}</a>{% endif %}
                                     {% if feature('student_work') %}<a class="dropdown-item" href="{{ path('app_assignments') }}">{{ 'toolsStudentWorkNavLabel'|trans }}</a>{% endif %}
                                     {% if feature('quiz_library') %}<a class="dropdown-item {{ current_route == 'app_tools_quiz' ? 'active' }}" href="{{ path('app_tools_quiz') }}">{{ 'quizTrackingPageHeading'|trans }}</a>{% endif %}
                                     {% if feature('gradebook_entry') %}<a class="dropdown-item {{ current_route == 'app_tools_gradebook' ? 'active' }}" href="{{ path('app_tools_gradebook') }}">{{ 'gradebookNavLabel'|trans }}</a>{% endif %}

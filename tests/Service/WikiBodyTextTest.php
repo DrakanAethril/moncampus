@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Service;
 
+use App\Service\HtmlPlainText;
 use App\Service\WikiBodyText;
 use PHPUnit\Framework\TestCase;
 
@@ -18,33 +19,33 @@ class WikiBodyTextTest extends TestCase
 {
     public function testTagsAreDroppedAndTheirTextKept(): void
     {
-        self::assertSame('Adressage IP', (new WikiBodyText())->fromHtml('<h1>Adressage</h1><p><strong>IP</strong></p>'));
+        self::assertSame('Adressage IP', (new WikiBodyText(new HtmlPlainText()))->fromHtml('<h1>Adressage</h1><p><strong>IP</strong></p>'));
     }
 
     public function testABlockBoundaryIsAWordBoundary(): void
     {
-        self::assertSame('Réseaux Sécurité', (new WikiBodyText())->fromHtml('<p>Réseaux</p><p>Sécurité</p>'));
+        self::assertSame('Réseaux Sécurité', (new WikiBodyText(new HtmlPlainText()))->fromHtml('<p>Réseaux</p><p>Sécurité</p>'));
     }
 
     public function testTheTagNameItselfIsNeverIndexed(): void
     {
         // The whole reason this column exists: "table" must find the word, not the markup.
-        self::assertSame('Une cellule', (new WikiBodyText())->fromHtml('<table><tr><td>Une cellule</td></tr></table>'));
+        self::assertSame('Une cellule', (new WikiBodyText(new HtmlPlainText()))->fromHtml('<table><tr><td>Une cellule</td></tr></table>'));
     }
 
     public function testScriptAndStyleContentIsDroppedRatherThanIndexed(): void
     {
-        self::assertSame('Visible', (new WikiBodyText())->fromHtml('<style>.a{color:red}</style><p>Visible</p><script>alert(1)</script>'));
+        self::assertSame('Visible', (new WikiBodyText(new HtmlPlainText()))->fromHtml('<style>.a{color:red}</style><p>Visible</p><script>alert(1)</script>'));
     }
 
     public function testEntitiesAreDecodedSoASearchMatchesWhatTheReaderSees(): void
     {
-        self::assertSame('R&D « test »', (new WikiBodyText())->fromHtml('<p>R&amp;D &laquo;&nbsp;test&nbsp;&raquo;</p>'));
+        self::assertSame('R&D « test »', (new WikiBodyText(new HtmlPlainText()))->fromHtml('<p>R&amp;D &laquo;&nbsp;test&nbsp;&raquo;</p>'));
     }
 
     public function testAnEmptyOrBlankBodyProducesNothingToIndex(): void
     {
-        $text = new WikiBodyText();
+        $text = new WikiBodyText(new HtmlPlainText());
 
         self::assertNull($text->fromHtml(null));
         self::assertNull($text->fromHtml(''));

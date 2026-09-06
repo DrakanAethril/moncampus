@@ -1,0 +1,14 @@
+{# One séance in the left column. The two groupings print a different first line - the by-class one
+   already says which class it is, the chronological one already says which day - so the row takes
+   its heading from the caller rather than working it out again. #}
+<button type="button"
+        class="cm-cdt-seance {{ flat ? 'cm-cdt-seance--flat' }} {{ row.session.id == selectedId ? 'is-selected' }}"
+        data-lesson-log-board-target="seance"
+        data-seance-id="{{ row.session.id }}"
+        data-action="lesson-log-board#select">
+    <span class="cm-cdt-seance__body">
+        <span class="cm-cdt-seance__head">{{ heading }}</span>
+        <span class="cm-cdt-seance__topic">{{ row.session.displayName }}</span>
+    </span>
+    <span class="cm-cdt-tag cm-cdt-tag--{{ row.state }}">{{ ('lessonLogsState' ~ row.state|capitalize ~ 'Label')|trans }}</span>
+</button>

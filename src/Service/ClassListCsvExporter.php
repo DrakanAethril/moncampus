@@ -17,6 +17,12 @@ use App\Entity\User;
  * a class and re-importing it must be a round trip - that is what makes this file usable to move a
  * class from one year to the next, and why nothing is prettified here.
  *
+ * The `mail` column is the **contact address** (User::getContactEmail()), on both sides: the import
+ * matches an existing account on it and fills it in (ClassImportContextFactory, ClassImportExecutor
+ * ::fillContactEmail()), and User::$email is the directory's internal address nobody necessarily
+ * reads. Writing that one here produced a file whose addresses matched no account on the way back
+ * in. Whenever a screen or a file says « adresse mail » on this platform, it is the contact one.
+ *
  * A student holding two options gets **two `option` columns**, not one cell with a separator: the
  * reader matches a whole cell against an option's name or short name, so « SLAM + SISR » would come
  * back as an unknown value and block the whole file. Duplicate headers cost nothing - free columns
@@ -65,7 +71,7 @@ class ClassListCsvExporter
             $modalities = $this->labels($modalitiesByStudentId[$id] ?? []);
 
             $rows[] = array_merge(
-                [$this->roster->surname($student), $this->roster->given($student), $student->getEmail() ?? ''],
+                [$this->roster->surname($student), $this->roster->given($student), $student->getContactEmail() ?? ''],
                 array_pad($options, $optionColumns, ''),
                 array_pad($modalities, $modalityColumns, ''),
             );
@@ -80,7 +86,7 @@ class ClassListCsvExporter
         $rows = [['nom', 'prenom', 'mail']];
 
         foreach ($teachers as $teacher) {
-            $rows[] = [$this->roster->surname($teacher), $this->roster->given($teacher), $teacher->getEmail() ?? ''];
+            $rows[] = [$this->roster->surname($teacher), $this->roster->given($teacher), $teacher->getContactEmail() ?? ''];
         }
 
         return $this->render($rows);

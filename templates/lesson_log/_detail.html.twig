@@ -1,0 +1,62 @@
+{# The selected séance, on the right: its three parts, each with the state of what is written in it
+   and the visibility it carries for the class. A reading block - entry happens on the séance page,
+   which the header's button opens. #}
+<div class="cm-cdt-card cm-cdt-detail"
+     data-lesson-log-board-target="detail"
+     data-seance-id="{{ row.session.id }}"
+     {{ row.session.id == selectedId ? '' : 'hidden' }}>
+    <div class="cm-cdt-detail__head">
+        <span class="cm-cdt-detail__titles">
+            <span class="cm-cdt-detail__title">
+                {{- row.session.day|localized_date('EEEE dd MMMM') }} · {{ row.session.startHour|date('H:i') }} – {{ row.session.endHour|date('H:i') }}
+                {{- row.session.classRoom ? ' · ' ~ row.session.classRoom.name -}}
+            </span>
+            <span class="cm-cdt-detail__meta">
+                {{- row.session.program.displayShortName }} · {{ row.session.displayName }}
+                {{- row.session.title and row.session.topic ? ' · ' ~ row.session.title -}}
+            </span>
+        </span>
+        <a class="cm-cdt-detail__open" href="{{ path('app_program_timetable_session_log', {id: row.session.program.id, sessionId: row.session.id}) }}">
+            {{ 'lessonLogsOpenSessionAction'|trans }} ↗
+        </a>
+    </div>
+    <div class="cm-cdt-detail__body">
+        {% for section in sections %}
+            {% set part = row.sections[section.value] %}
+            {# What the part says, in one line: the work given, then the text, then how many
+               documents hang off it. Built as a list and joined so that an absent piece leaves no
+               stray separator behind.
+               plain_text, never |striptags: the content is HugeRTE's HTML, and striptags leaves its
+               entities for the template to escape, so « Séance » would print as "S&eacute;ance". #}
+            {% set pieces = [] %}
+            {% if part.works|length %}
+                {% set pieces = pieces|merge([
+                    'lessonLogsPartWorksLabel'|trans({'%count%': part.works|length}) ~ ' — ' ~ part.works|map(work => work.title)|join(', ')
+                ]) %}
+            {% endif %}
+            {% if part.content|plain_text %}
+                {% set pieces = pieces|merge([part.content|plain_text]) %}
+            {% endif %}
+            {% if part.attachments|length %}
+                {% set pieces = pieces|merge(['lessonLogsPartDocumentsLabel'|trans({'%count%': part.attachments|length})]) %}
+            {% endif %}
+
+            <div class="cm-cdt-part">
+                <span class="cm-cdt-part__dot cm-cdt-part__dot--{{ part.state }}"></span>
+                <span class="cm-cdt-part__body">
+                    {# The créa's own shorter wording: this screen states the part, where the séance
+                       page's own heading has to say « contenu réalisé » next to the editor. #}
+                    <span class="cm-cdt-part__title">{{ ('lessonLogsPart' ~ section.value|capitalize ~ 'TitleLabel')|trans }}</span>
+                    <span class="cm-cdt-part__summary">{{ pieces|join(' · ') ?: 'lessonLogsSectionEmptyLabel'|trans }}</span>
+                </span>
+                {% if part.visibility %}
+                    {% include 'program/_lesson_log_visibility_badge.html.twig' with {
+                        visibility: part.visibility, visibleAt: part.visibleAt
+                    } only %}
+                {% else %}
+                    <span class="cm-badge cm-badge--gray">{{ 'lessonLogVisibilityHiddenBadge'|trans }}</span>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+</div>

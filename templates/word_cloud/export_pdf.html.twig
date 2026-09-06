@@ -1,0 +1,95 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ cloud.name }} - {{ program.displayShortName }}{% endblock %}
+
+{% block body %}
+    {# The printable record of one cloud: the figures, the words with their contributors, and the
+       whole class - those who wrote nothing included, which is the half a list of participants
+       cannot show.
+
+       Plain administrative sheet, same conventions as program/tools_group_creation_pdf.html.twig:
+       A4 print rules honoured because GotenbergClient passes preferCssPageSize=true, no branded
+       cover, and a <meta charset> because without one Chromium guesses GBK and the accents come out
+       as ideograms. #}
+    <meta charset="utf-8">
+    <style>
+        @page { size: A4; margin: 15mm 12mm; }
+
+        body { font-family: Arial, sans-serif; font-size: 11px; color: #333; }
+        h1 { font-size: 18px; margin: 0 0 4px; }
+        h2 { font-size: 13px; margin: 20px 0 8px; }
+        .question { font-size: 13px; color: #1c2b36; margin: 0 0 4px; }
+        .meta { color: #667382; margin-bottom: 16px; }
+        .stats { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+        .stats td { border: 1px solid #ccc; padding: 8px 10px; width: 25%; }
+        .stats b { display: block; font-size: 18px; color: #12507e; }
+        table.rows { width: 100%; border-collapse: collapse; }
+        table.rows th, table.rows td {
+            border-bottom: 1px solid #e2e8ee; padding: 6px 8px; text-align: left; vertical-align: top;
+        }
+        table.rows th { font-size: 10px; text-transform: uppercase; color: #667382; }
+        tr { break-inside: avoid; }
+        .who { color: #667382; }
+        .rejected { color: #a43e2e; text-decoration: line-through; }
+        .none { color: #99a5b1; }
+    </style>
+
+    <h1>{{ cloud.name }}</h1>
+    <p class="question">{{ cloud.question }}</p>
+    <p class="meta">{{ program.displayShortName }} — {{ 'wordCloudPdfExportedOnLabel'|trans({'%date%': date|date('d/m/Y H:i')}) }}</p>
+
+    <table class="stats">
+        <tr>
+            <td><b>{{ board.participantCount }}</b>{{ 'wordCloudStatParticipantsLabel'|trans }}</td>
+            <td><b>{{ board.submissionCount }}</b>{{ 'wordCloudStatSubmissionsLabel'|trans }}</td>
+            <td><b>{{ board.distinctWords }}</b>{{ 'wordCloudStatDistinctLabel'|trans }}</td>
+            <td><b>{{ board.mostCitedWord ?? '—' }}</b>{{ 'wordCloudStatMostCitedLabel'|trans }}</td>
+        </tr>
+    </table>
+
+    <h2>{{ 'wordCloudByWordTabLabel'|trans }}</h2>
+    <table class="rows">
+        <tr>
+            <th>{{ 'wordCloudColumnWordLabel'|trans }}</th>
+            <th>{{ 'wordCloudColumnCitationsLabel'|trans }}</th>
+            <th>{{ 'wordCloudColumnContributorsLabel'|trans }}</th>
+        </tr>
+        {% for row in wordRows %}
+            <tr>
+                <td>{{ row.word }}</td>
+                <td>{{ row.count }}</td>
+                <td class="who">
+                    {%- for contributor in row.contributors -%}
+                        {{ contributor.name }} ({{ contributor.time }}){{ not loop.last ? ', ' }}
+                    {%- endfor -%}
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="3" class="none">{{ 'wordCloudNoWordsMessage'|trans }}</td></tr>
+        {% endfor %}
+    </table>
+
+    <h2>{{ 'wordCloudByStudentTabLabel'|trans }}</h2>
+    <table class="rows">
+        <tr>
+            <th>{{ 'wordCloudColumnStudentLabel'|trans }}</th>
+            <th>{{ 'wordCloudColumnStatusLabel'|trans }}</th>
+            <th>{{ 'wordCloudColumnProposalsLabel'|trans }}</th>
+            <th>{{ 'wordCloudColumnLastSentLabel'|trans }}</th>
+        </tr>
+        {% for row in studentRows %}
+            <tr>
+                <td>{{ row.student.displayName ?? row.student.username }}</td>
+                <td>{{ (row.participated ? 'wordCloudParticipatedLabel' : 'wordCloudNoAnswerLabel')|trans }}</td>
+                <td>
+                    {%- for word in row.words -%}
+                        <span class="{{ word.rejected ? 'rejected' }}">{{ word.text }}</span>{{ not loop.last ? ', ' }}
+                    {%- else -%}
+                        <span class="none">—</span>
+                    {%- endfor -%}
+                </td>
+                <td>{{ row.lastSubmittedAt ? row.lastSubmittedAt|date('d/m/Y H:i') : '—' }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endblock %}

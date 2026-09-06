@@ -1,0 +1,12 @@
+{# One word waiting to be let into the cloud. Refusing keeps it in the history and stops its author
+   from sending it straight back - it leaves the cloud, not the record. #}
+<div class="cm-wc-pending__item" data-word-cloud-live-target="pendingItem" data-submission="{{ submission.id }}">
+    <span class="cm-wc-pending__body">
+        <span class="cm-wc-pending__word">{{ submission.text }}</span>
+        <span class="cm-wc-pending__who">{{ submission.student.displayName ?? submission.student.username }}</span>
+    </span>
+    <span class="cm-wc-pending__acts">
+        <button type="button" class="cm-wc-pending__btn cm-wc-pending__btn--ok" data-action="word-cloud-live#approve" title="{{ 'wordCloudApproveAction'|trans }}" aria-label="{{ 'wordCloudApproveAction'|trans }}">✓</button>
+        <button type="button" class="cm-wc-pending__btn cm-wc-pending__btn--no" data-action="word-cloud-live#reject" title="{{ 'wordCloudRejectAction'|trans }}" aria-label="{{ 'wordCloudRejectAction'|trans }}">✕</button>
+    </span>
+</div>

@@ -17,6 +17,7 @@ use App\Repository\ProgramStudentOptionRepository;
 use App\Security\StructureAccessChecker;
 use App\Service\GotenbergClient;
 use App\Service\GotenbergUnavailableException;
+use App\Service\GroupBatchNaming;
 use App\Service\GroupCreationRequest;
 use App\Service\GroupCreationService;
 use App\Service\JsonRequestPayload;
@@ -192,7 +193,7 @@ class ProgramToolsController extends AbstractController
     }
 
     #[Route(path: '/programs/{id}/tools/group-creation/batches', name: 'app_program_tools_group_creation_save_lot', methods: ['POST'])]
-    public function saveLot(int $id, Request $request, ProgramRepository $repository, StructureAccessChecker $accessChecker, GroupBatchRepository $groupBatchRepository, EntityManagerInterface $entityManager): JsonResponse
+    public function saveLot(int $id, Request $request, ProgramRepository $repository, StructureAccessChecker $accessChecker, GroupBatchRepository $groupBatchRepository, GroupBatchNaming $naming, EntityManagerInterface $entityManager): JsonResponse
     {
         $program = $this->findForTeacherOrStaff($id, $repository, $accessChecker);
         $this->assertCsrf($request->headers->get('X-CSRF-Token'));
@@ -209,29 +210,66 @@ class ProgramToolsController extends AbstractController
         }
 
         $teacher = $this->currentUser();
+        $lots = $groupBatchRepository->findAllForTeacherAndProgram($teacher, $program);
 
-        // Re-saving under a name that already exists overwrites that lot, matching the design's
-        // own "same name = replace" expectation - never two lots with the same name.
-        $existing = null;
-        foreach ($groupBatchRepository->findAllForTeacherAndProgram($teacher, $program) as $lot) {
-            if ($lot->getName() === $name) {
-                $existing = $lot;
-
-                break;
-            }
-        }
-
-        if (null !== $existing) {
-            $existing->setGroups($groups);
-            $batch = $existing;
-        } else {
-            $batch = new GroupBatch($program, $teacher, $name, $groups);
-            $entityManager->persist($batch);
-        }
-
+        // This endpoint always *creates*, including under a name that is already taken - which is
+        // « Dupliquer ». It used to overwrite the lot carrying that name instead, and that rule had
+        // to go the day duplicating became a button of its own: it would silently eat the very copy
+        // the teacher just asked for. Overwriting now has its own endpoint (updateLot()), and the
+        // names are kept apart by GroupBatchNaming rather than by collapsing two lots into one.
+        $batch = new GroupBatch($program, $teacher, $naming->unique($name, array_map(
+            static fn (GroupBatch $lot): string => $lot->getName(),
+            $lots,
+        )), $groups);
+        $entityManager->persist($batch);
         $entityManager->flush();
 
         return $this->json(['id' => $batch->getId(), 'name' => $batch->getName()]);
+    }
+
+    // « Mettre à jour » - the loaded lot's own row takes the name and the composition currently on
+    // screen, in place. Both travel together on purpose: renaming and re-arranging are one gesture
+    // for the teacher (they are looking at one set of groups), and splitting them would mean a
+    // screen that is half saved.
+    //
+    // findOneForTeacherAndProgram() scopes to the OWNER, which is what forbids updating a lot a
+    // colleague shared with you - loading that one and saving makes a lot of your own, the way it
+    // always did.
+    #[Route(path: '/programs/{id}/tools/group-creation/batches/{lotId}/update', name: 'app_program_tools_group_creation_update_lot', methods: ['POST'])]
+    public function updateLot(int $id, int $lotId, Request $request, ProgramRepository $repository, StructureAccessChecker $accessChecker, GroupBatchRepository $groupBatchRepository, GroupBatchNaming $naming, EntityManagerInterface $entityManager): JsonResponse
+    {
+        $program = $this->findForTeacherOrStaff($id, $repository, $accessChecker);
+        $this->assertCsrf($request->headers->get('X-CSRF-Token'));
+
+        $teacher = $this->currentUser();
+        $lot = $groupBatchRepository->findOneForTeacherAndProgram($lotId, $teacher, $program) ?? throw $this->createNotFoundException();
+
+        $payload = JsonRequestPayload::fromRequest($request);
+
+        $groups = $payload->intLists('groups');
+        if ([] === $groups) {
+            return $this->json(['error' => 'Aucun groupe à enregistrer.'], 422);
+        }
+
+        // An empty field keeps the name the lot already carries, rather than stamping today's date
+        // over it the way saving a brand-new lot does: emptying the box is how you rename nothing.
+        $name = trim($payload->string('name'));
+        if ('' !== $name) {
+            // Its own name is left out of the taken list - otherwise re-saving without renaming
+            // would push the lot to « (2) » by itself.
+            $lot->setName($naming->unique($name, array_values(array_map(
+                static fn (GroupBatch $other): string => $other->getName(),
+                array_filter(
+                    $groupBatchRepository->findAllForTeacherAndProgram($teacher, $program),
+                    static fn (GroupBatch $other): bool => $other !== $lot,
+                ),
+            ))));
+        }
+
+        $lot->setGroups($groups);
+        $entityManager->flush();
+
+        return $this->json(['id' => $lot->getId(), 'name' => $lot->getName()]);
     }
 
     #[Route(path: '/programs/{id}/tools/group-creation/batches/{lotId}/delete', name: 'app_program_tools_group_creation_delete_lot', methods: ['POST'])]

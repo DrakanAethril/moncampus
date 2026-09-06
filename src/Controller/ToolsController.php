@@ -51,6 +51,13 @@ class ToolsController extends AbstractController
         return $this->renderPicker($repository, 'app_program_tools_group_creation', 'programToolsGroupCreationNavLabel');
     }
 
+    #[RequiresFeature(Feature::WordCloud)]
+    #[Route(path: '/tools/word-cloud', name: 'app_tools_word_cloud', methods: ['GET'])]
+    public function wordCloud(ProgramRepository $repository): Response
+    {
+        return $this->renderPicker($repository, 'app_program_word_clouds', 'wordCloudNavLabel');
+    }
+
     // The live contest is the one quiz screen that needs a class: a session is played by the
     // students of one Program, unlike the quiz library which is the teacher's own and reached
     // straight from the menu. It hands over to the class's list of contests, running ones first,
@@ -63,17 +70,12 @@ class ToolsController extends AbstractController
         return $this->renderPicker($repository, 'app_program_quiz_live_history', 'quizLiveNavLabel');
     }
 
-    // Both of these live behind a class's timetable (a lesson log hangs off a LessonSession, a
-    // gradebook off the evaluations of a Program that has one), so both target routes reject a class
-    // whose timetable management is off - hence the filter, without which the picker would offer
-    // classes that answer 404.
-    #[RequiresFeature(Feature::LessonLog)]
-    #[Route(path: '/tools/lesson-log', name: 'app_tools_lesson_log', methods: ['GET'])]
-    public function lessonLog(ProgramRepository $repository): Response
-    {
-        return $this->renderPicker($repository, 'app_program_lesson_logs', 'lessonLogPageHeading', timetableOnly: true);
-    }
-
+    // The cahier de texte used to be picked here too, and no longer is: its own screen
+    // (App\Controller\LessonLogBoardController) lists every class a teacher has that week, so the
+    // class stopped being a question asked before the screen and became the list's own grouping.
+    // The gradebook still lives behind a class's timetable - it hangs off the evaluations of a
+    // Program that has one - so the target route rejects a class whose timetable management is off,
+    // hence the filter, without which the picker would offer classes that answer 404.
     #[RequiresFeature(Feature::GradebookEntry)]
     #[Route(path: '/tools/gradebook', name: 'app_tools_gradebook', methods: ['GET'])]
     public function gradebook(ProgramRepository $repository): Response

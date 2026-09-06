@@ -33,7 +33,7 @@
     </div>
 
     <div class="cm-mail-thread__body">
-        <div class="cm-mail-thread__text">{{ (message.textBody ?: message.htmlBody|striptags)|nl2br }}</div>
+        <div class="cm-mail-thread__text">{{ (message.textBody ?: message.htmlBody|plain_text_lines)|nl2br }}</div>
 
         {% if message.deleted %}
             {# Restoring puts the mail back into the folder its direction dictates - a bin has no

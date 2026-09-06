@@ -11,29 +11,20 @@ namespace App\Service;
  * "table" finds the word rather than every page holding a table. It is rebuilt on every save
  * rather than derived at query time - the read side is where a wiki is used.
  *
- * &nbsp; is folded to an ordinary space on purpose: HugeRTE emits it constantly (French
- * typography puts one before every ':' and inside guillemets), and a search for "test" must match
- * a page that wrote "«&nbsp;test&nbsp;»".
+ * The flattening itself is App\Service\HtmlPlainText's, shared with every screen that shows a
+ * preview line of the same editor's HTML: entities decoded, &nbsp; folded to an ordinary space
+ * (French typography puts one before every ':' and inside guillemets, and a search for "test" must
+ * match a page that wrote "«&nbsp;test&nbsp;»"). This class stays because *what the column is for*
+ * is a wiki question, and only the mechanics were ever general.
  */
 class WikiBodyText
 {
+    public function __construct(private readonly HtmlPlainText $plainText)
+    {
+    }
+
     public function fromHtml(?string $html): ?string
     {
-        if (null === $html || '' === trim($html)) {
-            return null;
-        }
-
-        // Script and style carry text that is not content - indexing a CSS rule would only make
-        // the search answer nonsense.
-        $stripped = preg_replace('#<(script|style)\b[^>]*>.*?</\1>#is', ' ', $html) ?? $html;
-
-        // Every tag becomes a space rather than nothing: two adjacent blocks are two words.
-        $stripped = preg_replace('/<[^>]*>/', ' ', $stripped) ?? $stripped;
-
-        $text = html_entity_decode($stripped, \ENT_QUOTES | \ENT_HTML5, 'UTF-8');
-        $text = str_replace("\u{a0}", ' ', $text);
-        $text = trim(preg_replace('/\s+/u', ' ', $text) ?? $text);
-
-        return '' === $text ? null : $text;
+        return $this->plainText->fromHtml($html);
     }
 }

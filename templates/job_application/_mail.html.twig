@@ -18,5 +18,5 @@
         {{ 'schoolMailToLabel'|trans }} {{ message.toAddresses|join(', ') }}
     </div>
     {# Text, never the sender's HTML: this body comes from outside. #}
-    <div class="cm-sheet__mail-body">{{ (message.textBody ?: message.htmlBody|striptags)|nl2br }}</div>
+    <div class="cm-sheet__mail-body">{{ (message.textBody ?: message.htmlBody|plain_text_lines)|nl2br }}</div>
 </div>

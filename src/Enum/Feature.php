@@ -48,6 +48,7 @@ enum Feature: string
     case Documentation = 'documentation';
     case Surveys = 'surveys';
     case ClassTools = 'class_tools';
+    case WordCloud = 'word_cloud';
     case TsfReferential = 'tsf_referential';
     case Game = 'game';
 
@@ -126,7 +127,7 @@ enum Feature: string
             self::Progression, self::SequenceLibrary, self::SequenceImport, self::CourseSpace,
             self::Video, self::Audio, self::FileLibrary, self::SharedDocuments,
             self::ContentSharing, self::Wiki, self::Documentation, self::Surveys,
-            self::ClassTools, self::TsfReferential, self::Game => FeatureFamily::Pedagogy,
+            self::ClassTools, self::WordCloud, self::TsfReferential, self::Game => FeatureFamily::Pedagogy,
 
             self::Timetable, self::TimetableSettings, self::EvaluationPlanning,
             self::GradebookEntry, self::GradebookStudent, self::SelfAssessment,
@@ -196,6 +197,7 @@ enum Feature: string
             self::Documentation => 'featureDocumentationLabel',
             self::Surveys => 'featureSurveysLabel',
             self::ClassTools => 'featureClassToolsLabel',
+            self::WordCloud => 'featureWordCloudLabel',
             self::TsfReferential => 'featureTsfReferentialLabel',
             self::Game => 'featureGameLabel',
             self::Timetable => 'featureTimetableLabel',
@@ -286,6 +288,12 @@ enum Feature: string
             // card in the annuaire.
             self::StudentWork, self::SharedDocuments, self::Wiki => ['ROLE_STUDENT'],
             self::ClassTools => ['ROLE_TEACHER'],
+
+            // The word cloud is the one tool of « Animer la classe » the class itself writes into,
+            // so it is delivered to both sides of the room at once. Splitting it would have been
+            // worse than useless: a cloud lit for teachers alone is a question nobody can answer,
+            // and one lit for students alone is a question nobody can ask.
+            self::WordCloud => ['ROLE_TEACHER', 'ROLE_STUDENT'],
 
             // The student's own corner of the app. « Candidatures » follows school_mail on the
             // route itself (App\Controller\MyJobApplicationController), and these three travel
