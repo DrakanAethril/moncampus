@@ -11,6 +11,9 @@ use App\Repository\ProgramRepository;
 use App\Repository\WordCloudRepository;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\WordCloudVoter;
+use App\Service\WordCloud\WordCloudLiveNotifier;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Mercure\Authorization;
 
 /**
  * The lookups every screen of the tool starts with, and the CSRF check every one of its POSTs ends
@@ -51,6 +54,31 @@ trait WordCloudControllerTrait
         $this->denyAccessUnlessGranted(WordCloudVoter::PILOT, $cloud);
 
         return $cloud;
+    }
+
+    /**
+     * Scopes an httpOnly cookie to this cloud's topic, and says whether the screen may open a live
+     * feed at all.
+     *
+     * **A board that cannot subscribe still has to render.** Minting the cookie fails whenever the
+     * hub sits on a different second-level domain from the request - a legitimate deployment, and
+     * the shape CI happens to run in - and letting that bubble up took the whole pilot screen down
+     * with the live updates: no cloud, no moderation queue, no participation, over a refresh
+     * mechanism. Answering false instead leaves the screen whole and simply static, which is what
+     * it already is on every reload.
+     *
+     * An EventSource is not opened when this is false: the subscription would be refused, and a
+     * browser retries a refused SSE connection for ever.
+     */
+    private function grantLiveSubscription(Request $request, Authorization $authorization, WordCloudLiveNotifier $notifier, WordCloud $cloud): bool
+    {
+        try {
+            $authorization->setCookie($request, [$notifier->topic($cloud)], [], [], 'subscriber');
+
+            return true;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     private function assertCsrf(string $tokenId, ?string $token): void

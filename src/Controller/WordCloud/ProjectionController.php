@@ -65,7 +65,7 @@ class ProjectionController extends AbstractController
 
         $board = $this->board->build($cloud);
 
-        $mercureAuthorization->setCookie($request, [$this->liveNotifier->topic($cloud)], [], [], 'subscriber');
+        $live = $this->grantLiveSubscription($request, $mercureAuthorization, $this->liveNotifier, $cloud);
 
         return $this->render('word_cloud/projection.html.twig', [
             'program' => $program,
@@ -75,8 +75,10 @@ class ProjectionController extends AbstractController
             'scale' => $scale,
             'words' => $this->weighting->layout($board->words, $scale),
             'status' => $this->schedule->status($cloud->window(), new \DateTimeImmutable()),
-            'mercurePublicUrl' => $hub->getPublicUrl(),
-            'topic' => $this->liveNotifier->topic($cloud),
+            // Empty when the subscription could not be granted: the template then draws the board
+            // without mounting the live controller, rather than opening a stream that is refused.
+            'mercurePublicUrl' => $live ? $hub->getPublicUrl() : '',
+            'topic' => $live ? $this->liveNotifier->topic($cloud) : '',
         ]);
     }
 }
