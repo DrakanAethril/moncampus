@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional;
 
+use App\Entity\LessonLog;
 use App\Entity\LessonSession;
 use App\Entity\Program;
 use App\Entity\Topic;
@@ -75,6 +76,32 @@ class LessonLogBoardTest extends FunctionalTestCase
         $entityManager->flush();
 
         return $session;
+    }
+
+    public function testThePreviewKeepsTheFormattingTheEditorGaveTheContent(): void
+    {
+        // The preview used to flatten the cahier de texte into one stripped, nowrap line. It read
+        // as a different text from the one that was written - and, a nowrap child setting the
+        // min-content width of its column, it pushed the whole screen past the viewport and carried
+        // « Ouvrir la séance » off the right edge with it.
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $session = $this->addSession($this->monday, $this->weekStart()->modify('+4 days'), 'Supervision');
+
+        $log = new LessonLog($session);
+        $log->setCreatedBy($this->teacher);
+        $log->setContenuRealise('<p><strong>Chapitre 3</strong> — le <u>routage inter-VLAN</u></p><ul><li>Adressage</li></ul>');
+        $entityManager->persist($log);
+        $entityManager->flush();
+
+        $this->client->loginUser($this->teacher);
+        $crawler = $this->client->request('GET', '/lesson-log?seance='.$session->getId());
+
+        self::assertResponseIsSuccessful();
+        $content = $crawler->filter('.cm-cdt-detail:not([hidden]) .cm-cdt-part__content');
+        self::assertCount(1, $content);
+        self::assertStringContainsString('<strong>Chapitre 3</strong>', $content->html());
+        self::assertStringContainsString('<u>routage inter-VLAN</u>', $content->html());
+        self::assertStringContainsString('<li>Adressage</li>', $content->html());
     }
 
     public function testItOpensOnTheCurrentWeekGroupedByClassWithoutAskingForOne(): void
