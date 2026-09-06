@@ -196,6 +196,67 @@ class LessonLogBoardTest extends FunctionalTestCase
         self::assertCount(1, $crawler->filter('.cm-cdt-days .cm-cdt-empty'));
     }
 
+    public function testASeanceInTheLinkBringsItsOwnWeekAlongWithIt(): void
+    {
+        // A séance five weeks away, named by a link that says nothing about the period - a
+        // bookmark, the way back up from the séance page, the address a previous visit left behind.
+        // The period has to follow it: the séance was otherwise silently swapped for the current
+        // week's first one, and nothing on the screen led to the one that was named.
+        $day = $this->weekStart()->modify('+35 days');
+        $session = $this->addSession($this->monday, $day, 'Supervision');
+
+        $this->client->loginUser($this->teacher);
+        $crawler = $this->client->request('GET', '/lesson-log?seance='.$session->getId());
+
+        self::assertResponseIsSuccessful();
+        self::assertSame(
+            $day->modify('monday this week')->format('Y-m-d'),
+            $crawler->filter('[data-lesson-log-period-week-value]')->attr('data-lesson-log-period-week-value'),
+        );
+        // And it is that séance which is previewed, with the way into it on screen.
+        self::assertSame((string) $session->getId(), $crawler->filter('.cm-cdt-seance.is-selected')->attr('data-seance-id'));
+        self::assertStringContainsString(
+            '/programs/'.$this->monday->getId().'/timetable/sessions/'.$session->getId().'/log',
+            (string) $crawler->filter('.cm-cdt-detail:not([hidden]) .cm-cdt-detail__open')->attr('href'),
+        );
+    }
+
+    public function testAnExplicitWeekStillWinsOverTheSeanceInTheLink(): void
+    {
+        // What the ‹ › arrows produce: they carry the séance of the week they are leaving, and the
+        // period must not be pulled straight back to it.
+        $session = $this->addSession($this->monday, $this->weekStart()->modify('+35 days'), 'Supervision');
+        $nextWeek = $this->weekStart()->modify('+7 days');
+
+        $this->client->loginUser($this->teacher);
+        $crawler = $this->client->request('GET', '/lesson-log?week='.$nextWeek->format('Y-m-d').'&seance='.$session->getId());
+
+        self::assertResponseIsSuccessful();
+        self::assertSame(
+            $nextWeek->format('Y-m-d'),
+            $crawler->filter('[data-lesson-log-period-week-value]')->attr('data-lesson-log-period-week-value'),
+        );
+    }
+
+    public function testASeanceTheViewerDoesNotDeliverLeavesThePeriodWhereItIs(): void
+    {
+        // A colleague's séance names a week this screen could not show anyway - the list holds the
+        // viewer's own créneaux. Moving the period would only land on an empty week.
+        $colleague = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'other.teacher');
+        $session = $this->addSession($this->monday, $this->weekStart()->modify('+35 days'), 'Supervision');
+        $session->setTeacher($colleague);
+        static::getContainer()->get(EntityManagerInterface::class)->flush();
+
+        $this->client->loginUser($this->teacher);
+        $crawler = $this->client->request('GET', '/lesson-log?seance='.$session->getId());
+
+        self::assertResponseIsSuccessful();
+        self::assertSame(
+            $this->weekStart()->format('Y-m-d'),
+            $crawler->filter('[data-lesson-log-period-week-value]')->attr('data-lesson-log-period-week-value'),
+        );
+    }
+
     public function testASeanceOfSomebodyElseIsNotOnTheScreen(): void
     {
         $colleague = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'colleague');

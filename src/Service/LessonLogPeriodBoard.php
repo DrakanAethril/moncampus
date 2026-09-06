@@ -64,10 +64,20 @@ final class LessonLogPeriodBoard
      * An explicit `week` wins over an incoming `date`, and that order is what makes the ‹ › arrows
      * work: they move the week while the date that opened the screen stays in the URL, and the
      * period would otherwise spring back to it at every click.
+     *
+     * `$seanceDay` comes last of the three and is the day the séance a link names falls on. A link
+     * that names a séance without naming a period is asking for that séance, so the period follows
+     * it: it is the only thing that makes `?seance=` an address one can come back to, rather than a
+     * parameter silently dropped in favour of the current week's first séance. It stays behind
+     * `week`, which is what the ‹ › arrows carry alongside the séance they are leaving.
+     *
+     * @param ?string $seanceDay the `Y-m-d` of the séance `?seance=` names, when it is one of the
+     *                           viewer's own - null when the link names none, or names one the
+     *                           screen could not show anyway
      */
-    public function weekStart(?string $week, ?string $date, \DateTimeImmutable $today): \DateTimeImmutable
+    public function weekStart(?string $week, ?string $date, ?string $seanceDay, \DateTimeImmutable $today): \DateTimeImmutable
     {
-        foreach ([$week, $date] as $candidate) {
+        foreach ([$week, $date, $seanceDay] as $candidate) {
             if (null === $candidate || '' === $candidate) {
                 continue;
             }
