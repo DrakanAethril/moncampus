@@ -75,13 +75,25 @@
                         {% endif %}
                     </div>
                     <div class="cm-postul__chips" data-training-attachments-target="chips">
-                        {# What was already read, named rather than linked: the files a validator
-                           opens live behind their own route, and a student re-reads their documents
-                           where they keep them. #}
+                        {# What was already read, each one openable: a remark on a document is acted
+                           on by re-reading that document, and the student should not have to go
+                           looking for their own file elsewhere to answer it.
+
+                           The × removes it from the next send, and the hidden field is what says so:
+                           a chip that survives posts its id, so an empty list means "I took them all
+                           off" rather than "the screen said nothing". #}
                         {% for attachment in application.currentVersion.attachments %}
                             <span class="cm-postul__chip cm-postul__chip--sent">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg>
-                                <span>{{ attachment.name }}</span>
+                                <a class="cm-postul__chiplink" target="_blank" rel="noopener"
+                                   href="{{ path('app_training_application_document', {id: application.id, attachmentId: attachment.id}) }}">{{ attachment.name }}</a>
+                                {% if canResend %}
+                                    <input type="hidden" name="keep[]" value="{{ attachment.id }}">
+                                    <button type="button" class="cm-postul__chipremove"
+                                            data-action="training-attachments#drop"
+                                            title="{{ 'trainingApplyRemoveAttachmentAction'|trans }}"
+                                            aria-label="{{ 'trainingApplyRemoveAttachmentAction'|trans }} {{ attachment.name }}">×</button>
+                                {% endif %}
                             </span>
                         {% endfor %}
                         {% if canResend %}
@@ -97,7 +109,7 @@
                                data-training-attachments-target="input"
                                data-action="change->training-attachments#added"
                                aria-label="{{ 'trainingApplyAttachAction'|trans }}">
-                        <p class="cm-postul__note">{{ 'trainingApplicationReplaceFilesLabel'|trans }}</p>
+                        <p class="cm-postul__note">{{ 'trainingApplicationAttachmentsHintLabel'|trans }}</p>
                     {% endif %}
                 </div>
             </form>

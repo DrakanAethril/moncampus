@@ -26,6 +26,20 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.06.3'
+      date: '2026-09-06'
+      summary: "Les pièces jointes d'une postulation d'entraînement se relisent, se retirent et se remplacent une par une avant de renvoyer, sans plus perdre celles déjà relues. Côté enseignant, le panneau de validation dit maintenant qui a écrit les retours en cours, et quand."
+      entries:
+          - type: modification
+            title: 'Les pièces jointes se relisent et se remplacent une par une'
+            detail: "Chaque document joint s'ouvre depuis l'écran de retour, se retire d'une croix, et d'autres se joignent avant de renvoyer : ce qui reste part tel quel."
+          - type: fix
+            title: 'Joindre un document au renvoi efface les précédents'
+            detail: "Les pièces déjà relues disparaissaient de la postulation dès qu'un nouveau fichier était joint."
+          - type: modification
+            title: "L'enseignant voit la date et l'auteur des retours en cours"
+            detail: "Le panneau de validation les annonce tant que l'étudiant ne les a pas traités ; jusque-là, ils restent modifiables."
+
     - version: '2026.09.06.2'
       date: '2026-09-06'
       summary: "Le parcours de la postulation d'entraînement se resserre : l'étudiant corrige son mail là où il l'a écrit, et l'enseignant voit d'un coup d'œil, classe par classe, qui doit encore postuler, qui attend un retour et qui est en train de corriger. Deux corrections au cahier de texte complètent la livraison."
