@@ -10,6 +10,7 @@ use App\Entity\Program;
 use App\Entity\QuizLiveSession;
 use App\Entity\Ticket;
 use App\Entity\User;
+use App\Entity\WordCloud;
 use App\Enum\StudentWorkState;
 use App\Repository\AgendaEventRepository;
 use App\Repository\InternshipEvaluationPeriodRepository;
@@ -23,6 +24,7 @@ use App\Repository\QuizLiveSessionRepository;
 use App\Repository\RoomRepository;
 use App\Repository\SurveyTargetRepository;
 use App\Repository\TicketRepository;
+use App\Repository\WordCloudRepository;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\AudienceTargetableVoter;
 use App\Service\AlternancePeriodWizardService;
@@ -31,6 +33,7 @@ use App\Service\StudentAlternanceProgramResolver;
 use App\Service\StudentWorkBoard;
 use App\Service\StudentWorkRow;
 use App\Service\TicketStatusFormatter;
+use App\Service\WordCloud\WordCloudAudience;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\HttpFoundation\Request;
@@ -66,6 +69,8 @@ class HomeController extends AbstractController
         private readonly InternshipLivretEngagementRepository $engagementRepository,
         private readonly PlatformActivityRepository $platformActivityRepository,
         private readonly QuizLiveSessionRepository $quizLiveSessionRepository,
+        private readonly WordCloudRepository $wordCloudRepository,
+        private readonly WordCloudAudience $wordCloudAudience,
         private readonly InternshipStudentEvaluationRepository $studentEvaluationRepository,
         private readonly AlternancePeriodWizardService $wizardService,
         private readonly StructureAccessChecker $structureAccessChecker,
@@ -296,6 +301,18 @@ class HomeController extends AbstractController
             }
         }
 
+        // A word cloud open right now is the same kind of thing as a live contest: something the
+        // class is doing at this moment, on the other side of the projector. The audience is
+        // re-checked here rather than in the query - a cloud can be aimed at one option of the
+        // class, and « Répondre » on a question that is not yours would be a dead end.
+        $wordCloud = null;
+        foreach ($this->wordCloudRepository->findOpenForPrograms($programs, $now) as $candidate) {
+            if ($this->wordCloudAudience->includes($candidate, $student)) {
+                $wordCloud = $candidate;
+                break;
+            }
+        }
+
         return [
             'programs' => $programs,
             'programMeta' => $programMeta,
@@ -304,7 +321,7 @@ class HomeController extends AbstractController
             'daySessions' => $daySessions,
             'workRows' => $workRows,
             'alternance' => $alternance,
-            'banner' => $this->buildStudentBanner($workRows, $alternance, $liveSession),
+            'banner' => $this->buildStudentBanner($workRows, $alternance, $liveSession, $wordCloud),
         ];
     }
 
@@ -391,10 +408,16 @@ class HomeController extends AbstractController
      *
      * @param list<StudentWorkRow> $workRows deadlines still to answer, earliest first
      */
-    private function buildStudentBanner(array $workRows, ?array $alternance, ?QuizLiveSession $liveSession): ?array
+    private function buildStudentBanner(array $workRows, ?array $alternance, ?QuizLiveSession $liveSession, ?WordCloud $wordCloud = null): ?array
     {
         if (null !== $liveSession) {
             return ['type' => 'quizLive', 'session' => $liveSession];
+        }
+
+        // Just under the live contest, and for the same reason it is at the top: both are happening
+        // in the room right now, and everything below the two is due later.
+        if (null !== $wordCloud) {
+            return ['type' => 'wordCloud', 'wordCloud' => $wordCloud];
         }
 
         if (null !== $alternance && $alternance['yourTurn']) {

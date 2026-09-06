@@ -1,0 +1,57 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'wordCloudNavLabel'|trans }} - {{ program.displayShortName }}{% endblock %}
+
+{% block page_breadcrumb %}{% include 'word_cloud/_breadcrumb.html.twig' %}{% endblock %}
+{% block page_title %}{{ 'wordCloudNavLabel'|trans }}{% endblock %}
+
+{% block page_actions %}
+    <a class="cm-wc-btn cm-wc-btn--lead" href="{{ path('app_program_word_cloud_new', {id: program.id}) }}">{{ 'wordCloudNewAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    <div class="cm-wc-card cm-wc-card--flush cm-wc-scroll">
+        <div>
+            <div class="cm-wc-list__head">
+                <span>{{ 'wordCloudColumnCloudLabel'|trans }}</span>
+                <span>{{ 'wordCloudColumnProgramLabel'|trans }}</span>
+                <span>{{ 'wordCloudColumnAvailabilityLabel'|trans }}</span>
+                <span>{{ 'wordCloudColumnParticipationLabel'|trans }}</span>
+                <span>{{ 'wordCloudColumnStatusLabel'|trans }}</span>
+                <span></span>
+            </div>
+            {% for row in rows %}
+                {% set cloud = row.cloud %}
+                <div class="cm-wc-list__row">
+                    <span class="cm-wc-list__name">
+                        <b>{{ cloud.name }}</b>
+                        <span>{{ cloud.question }}</span>
+                    </span>
+                    <span class="cm-wc-list__cell">{{ cloud.program.displayShortName }}</span>
+                    <span class="cm-wc-list__cell">{% include 'word_cloud/_availability.html.twig' with {cloud: cloud} only %}</span>
+                    {# « ne pas afficher le nombre d'étudiants par classe »: a participation count,
+                       never a fraction of the roster. A cloud nobody has answered yet shows a dash
+                       rather than a zero, which would read as a result. #}
+                    <span class="cm-wc-list__cell">
+                        {{ row.participants > 0 ? 'wordCloudParticipantsCountLabel'|trans({'%count%': row.participants}) : '—' }}
+                    </span>
+                    <span><span class="cm-wc-tag {{ row.status.badgeModifier }}">{{ row.status.labelKey|trans }}</span></span>
+                    <span class="cm-wc-list__act">
+                        {# The row's action says where it leads, and that depends on where the cloud
+                           stands: a closed one is read, a running one is steered, a scheduled one is
+                           still being written. #}
+                        {% if row.status.value == 'closed' %}
+                            <a class="cm-wc-btn cm-wc-btn--row" href="{{ path('app_program_word_cloud_follow_up', {id: program.id, cloudId: cloud.id}) }}">{{ 'wordCloudFollowUpAction'|trans }}</a>
+                        {% elseif row.status.value == 'open' %}
+                            <a class="cm-wc-btn cm-wc-btn--row" href="{{ path('app_program_word_cloud_pilot', {id: program.id, cloudId: cloud.id}) }}">{{ 'wordCloudPilotAction'|trans }}</a>
+                        {% else %}
+                            <a class="cm-wc-btn cm-wc-btn--row" href="{{ path('app_program_word_cloud_edit', {id: program.id, cloudId: cloud.id}) }}">{{ 'wordCloudEditAction'|trans }}</a>
+                        {% endif %}
+                    </span>
+                </div>
+            {% else %}
+                <div class="cm-wc-empty">{{ 'wordCloudNoneYetMessage'|trans }}</div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

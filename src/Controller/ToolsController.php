@@ -51,6 +51,13 @@ class ToolsController extends AbstractController
         return $this->renderPicker($repository, 'app_program_tools_group_creation', 'programToolsGroupCreationNavLabel');
     }
 
+    #[RequiresFeature(Feature::WordCloud)]
+    #[Route(path: '/tools/word-cloud', name: 'app_tools_word_cloud', methods: ['GET'])]
+    public function wordCloud(ProgramRepository $repository): Response
+    {
+        return $this->renderPicker($repository, 'app_program_word_clouds', 'wordCloudNavLabel');
+    }
+
     // The live contest is the one quiz screen that needs a class: a session is played by the
     // students of one Program, unlike the quiz library which is the teacher's own and reached
     // straight from the menu. It hands over to the class's list of contests, running ones first,

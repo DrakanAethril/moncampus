@@ -1,0 +1,72 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ cloud.name }} - {{ 'wordCloudByStudentTabLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}{% include 'word_cloud/_breadcrumb.html.twig' %}{% endblock %}
+
+{% block page_title %}
+    <span class="cm-wc-title">
+        {{ cloud.name }}
+        <span class="cm-wc-tag {{ status.badgeModifier }}">
+            {% if status.value == 'closed' and cloud.closesAt %}
+                {{ 'wordCloudStatusClosedAtLabel'|trans({'%moment%': (cloud.closedAt ?? cloud.closesAt)|date('d/m/Y H:i')}) }}
+            {% else %}
+                {{ status.labelKey|trans }}
+            {% endif %}
+        </span>
+    </span>
+{% endblock %}
+
+{% block page_actions %}
+    <div class="cm-wc-actions">
+        <a class="cm-wc-btn" href="{{ path('app_program_word_cloud_export_csv', {id: program.id, cloudId: cloud.id}) }}">{{ 'wordCloudExportCsvAction'|trans }}</a>
+        <a class="cm-wc-btn" href="{{ path('app_program_word_cloud_export_pdf', {id: program.id, cloudId: cloud.id}) }}">{{ 'wordCloudExportPdfAction'|trans }}</a>
+        {% if silentCount > 0 %}
+            <form method="post" action="{{ path('app_program_word_cloud_remind', {id: program.id, cloudId: cloud.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('word_cloud_pilot') }}">
+                <input type="hidden" name="back" value="students">
+                <button type="submit" class="cm-wc-btn">{{ 'wordCloudMessageSilentAction'|trans }}</button>
+            </form>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block main %}
+    {% include 'word_cloud/_follow_up_head.html.twig' %}
+
+    <div class="cm-wc-card cm-wc-card--flush mt-3 cm-wc-scroll">
+        {% include 'word_cloud/_follow_up_toolbar.html.twig' with {byWord: false, program: program, cloud: cloud, query: query} %}
+        <div>
+            <div class="cm-wc-students__head">
+                <span>{{ 'wordCloudColumnStudentLabel'|trans }}</span>
+                <span>{{ 'wordCloudColumnStatusLabel'|trans }}</span>
+                <span>{{ 'wordCloudColumnWordsLabel'|trans }}</span>
+                <span>{{ 'wordCloudColumnProposalsLabel'|trans }}</span>
+                <span>{{ 'wordCloudColumnLastSentLabel'|trans }}</span>
+            </div>
+            {# Every student of the audience, those who wrote nothing included - they are the point
+               of this tab, not its remainder. #}
+            {% for row in studentRows %}
+                <div class="cm-wc-students__row">
+                    <span class="cm-wc-students__name"><b>{{ row.student.displayName ?? row.student.username }}</b></span>
+                    <span>
+                        <span class="cm-wc-tag {{ row.participated ? 'cm-wc-tag--open' : 'cm-wc-tag--silent' }}">
+                            {{ (row.participated ? 'wordCloudParticipatedLabel' : 'wordCloudNoAnswerLabel')|trans }}
+                        </span>
+                    </span>
+                    <span class="cm-wc-students__nb">{{ row.wordCount }}</span>
+                    <span class="cm-wc-students__words">
+                        {% for word in row.words %}
+                            <span class="cm-wc-wordchip {{ word.rejected ? 'cm-wc-wordchip--rejected' }}">{{ word.text }}</span>
+                        {% else %}
+                            <span class="cm-wc-dash">—</span>
+                        {% endfor %}
+                    </span>
+                    <span class="cm-wc-students__last">{{ row.lastSubmittedAt ? row.lastSubmittedAt|date('H:i') : '—' }}</span>
+                </div>
+            {% else %}
+                <div class="cm-wc-empty">{{ (query ? 'wordCloudNoSearchResultMessage' : 'wordCloudNoStudentsMessage')|trans }}</div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{# The four indicator cards and the segmented control, shared by both follow-up tabs.
+
+   Built once so the two screens cannot announce different totals for the same cloud - they are two
+   readings of one table, and the figures at the top are the place where that would first show. #}
+<div class="cm-wc-stats">
+    <div class="cm-wc-card cm-wc-stat">
+        <span class="cm-wc-stat__value cm-wc-stat__value--blue">{{ board.participantCount }}</span>
+        <span class="cm-wc-stat__label">{{ 'wordCloudStatParticipantsLabel'|trans }}</span>
+    </div>
+    <div class="cm-wc-card cm-wc-stat">
+        <span class="cm-wc-stat__value">{{ board.submissionCount }}</span>
+        <span class="cm-wc-stat__label">{{ 'wordCloudStatSubmissionsLabel'|trans }}</span>
+    </div>
+    <div class="cm-wc-card cm-wc-stat">
+        <span class="cm-wc-stat__value">{{ board.distinctWords }}</span>
+        <span class="cm-wc-stat__label">{{ 'wordCloudStatDistinctLabel'|trans }}</span>
+    </div>
+    <div class="cm-wc-card cm-wc-stat">
+        <span class="cm-wc-stat__value cm-wc-stat__value--gold">{{ board.mostCitedWord ?? '—' }}</span>
+        <span class="cm-wc-stat__label">{{ 'wordCloudStatMostCitedLabel'|trans }}</span>
+    </div>
+</div>

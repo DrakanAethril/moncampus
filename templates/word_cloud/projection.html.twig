@@ -1,0 +1,85 @@
+{% extends 'base.html.twig' %}
+
+{# The board. It extends base.html.twig rather than the app shell, like the login screen does: there
+   is no navbar, no breadcrumb and no chrome of any kind on a wall at the back of a classroom -
+   everything on it is either the question or an answer to it.
+
+   No access code and no QR code, deliberately: the design took both out, the students reach the
+   cloud from their own space and the class is already known. #}
+{% block title %}{{ cloud.name }}{% endblock %}
+
+{% block body %}
+<div class="cm-wc-board {{ mode.value == 'with_latest' ? 'cm-wc-board--panel' }}"
+     data-controller="word-cloud-live word-cloud-projection"
+     data-word-cloud-live-mercure-url-value="{{ mercurePublicUrl }}"
+     data-word-cloud-live-topic-value="{{ topic }}"
+     data-word-cloud-live-meta-template-value="{{ 'wordCloudMetaLabel'|trans({'%words%': '%words%', '%submissions%': '%submissions%', '%participants%': '%participants%'}) }}">
+
+    {# The two controls of the board, in one bar so they cannot overlap each other or the kicker.
+       The mode stays switchable while projecting: a teacher who sees the room reading the wrong
+       thing should not have to close the board to change it. #}
+    <div class="cm-wc-board__controls">
+        <a href="{{ path('app_program_word_cloud_projection', {id: program.id, cloudId: cloud.id, mode: 'cloud_only'}) }}"
+           class="{{ mode.value == 'cloud_only' ? 'is-on' }}">{{ 'wordCloudProjectionCloudOnlyLabel'|trans }}</a>
+        <a href="{{ path('app_program_word_cloud_projection', {id: program.id, cloudId: cloud.id, mode: 'with_latest'}) }}"
+           class="{{ mode.value == 'with_latest' ? 'is-on' }}">{{ 'wordCloudProjectionWithLatestLabel'|trans }}</a>
+        <a class="cm-wc-board__exit" href="{{ path('app_program_word_cloud_pilot', {id: program.id, cloudId: cloud.id}) }}"
+           data-action="word-cloud-projection#leave">⛶ {{ 'wordCloudExitFullscreenAction'|trans }}</a>
+    </div>
+
+    <div class="cm-wc-board__left">
+        <div class="cm-wc-board__topline">
+            <span class="cm-wc-board__kicker">{{ program.displayShortName }} · {{ cloud.name }}</span>
+            <span class="cm-wc-board__meta" data-word-cloud-live-target="meta">{{ 'wordCloudMetaLabel'|trans({
+                '%words%': board.distinctWords,
+                '%submissions%': board.submissionCount,
+                '%participants%': board.participantCount,
+            }) }}</span>
+        </div>
+        <div class="cm-wc-board__question">{{ cloud.question }}</div>
+        {# An empty cloud shows the question and nothing else - « ne rien inventer comme contenu de
+           remplissage ». The words appear as they are written. #}
+        {% include 'word_cloud/_cloud.html.twig' with {words: words, scale: scale, frameClass: 'cm-wc-board__cloud'} %}
+        {% if mode.value != 'with_latest' %}
+            <div class="cm-wc-board__foot">
+                {% if status.value == 'open' %}
+                    <span class="cm-wc-board__live"></span>
+                    <span class="cm-wc-board__livetx">{{ 'wordCloudSubmissionsOpenLabel'|trans }}</span>
+                {% else %}
+                    <span class="cm-wc-board__livetx">{{ status.labelKey|trans }}</span>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+    {% if mode.value == 'with_latest' %}
+        <div class="cm-wc-board__side">
+            <div class="cm-wc-top">
+                <span class="cm-wc-board__panelhead">{{ 'wordCloudMostCitedLabel'|trans }}</span>
+                {# The heading sits outside the live target: the controller replaces the target's
+                   children wholesale at every submission, and a heading inside it would be swept
+                   away with the first new word. #}
+                <div class="cm-wc-top" data-word-cloud-live-target="top">
+                {% for entry in board.top %}
+                    <div class="cm-wc-top__row">
+                        <div class="cm-wc-top__line">
+                            <span class="cm-wc-top__word">{{ entry.word }}</span>
+                            <span class="cm-wc-top__count">{{ entry.count }}</span>
+                        </div>
+                        <div class="cm-wc-top__bar"><span class="cm-wc-top__fill" style="width: {{ entry.share }}%;"></span></div>
+                    </div>
+                {% endfor %}
+                </div>
+            </div>
+            <div class="cm-wc-board__latest">
+                <span class="cm-wc-board__panelhead">{{ 'wordCloudLatestArrivalsLabel'|trans }}</span>
+                <div class="cm-wc-board__latest" data-word-cloud-live-target="latest" data-render="plain">
+                {% for word in board.latest %}
+                    <b>{{ word.text }}</b>
+                {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
