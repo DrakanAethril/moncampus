@@ -14,11 +14,11 @@ namespace App\Service;
  * that is all any of them looks at, which is also what makes the incoming-link rules testable
  * without a timetable.
  *
- * The one thing it deliberately does NOT do is jump to a week that has lessons, unlike
- * LessonLogBoard::weekToDisplay(): this screen answers « the current week », and a week without
- * séance is an answer rather than a miss. It is the whole teacher's timetable here, not one class's,
- * so an empty week means a holiday - and moving the period without being asked would make the ‹ ›
- * arrows unusable.
+ * The one thing it deliberately does NOT do is jump to a week that has lessons, which the course
+ * view this replaced used to: the screen answers « the current week », and a week without séance is
+ * an answer rather than a miss. It is the whole teacher's timetable here, not one class's, so an
+ * empty week means a holiday - and moving the period without being asked would make the ‹ › arrows
+ * unusable.
  *
  * @phpstan-type SessionRow array{id: int, classId: int, day: string}
  */
@@ -34,15 +34,18 @@ final class LessonLogPeriodBoard
      * Which list the left column shows.
      *
      * The order is « what was clicked, then what was asked for in the link, then what the last
-     * visit left behind ». A date outranks a class because the two are not exclusive - the class
-     * only says which accordion opens - and a day is precisely what the chronological list is for.
+     * visit left behind ». A date makes it chronological because that list is precisely what a day
+     * is for.
+     *
+     * Only ever asked on the all-classes screen: scoped to one class
+     * (`/programs/{id}/lesson-log`), the by-class accordion would be a single group holding
+     * everything, so that screen forces MODE_CHRONOLOGICAL without consulting anyone.
      *
      * @param ?string $requested  the `view` parameter, i.e. the segmented control
-     * @param ?int    $classId    the `class` parameter of an incoming link
      * @param ?string $date       the `date` parameter of an incoming link
      * @param ?string $remembered the mode this user last chose
      */
-    public function viewMode(?string $requested, ?int $classId, ?string $date, ?string $remembered): string
+    public function viewMode(?string $requested, ?string $date, ?string $remembered): string
     {
         if (\in_array($requested, [self::MODE_CLASS, self::MODE_CHRONOLOGICAL], true)) {
             return $requested;
@@ -50,10 +53,6 @@ final class LessonLogPeriodBoard
 
         if (null !== $date) {
             return self::MODE_CHRONOLOGICAL;
-        }
-
-        if (null !== $classId) {
-            return self::MODE_CLASS;
         }
 
         return self::MODE_CHRONOLOGICAL === $remembered ? self::MODE_CHRONOLOGICAL : self::MODE_CLASS;
@@ -94,7 +93,7 @@ final class LessonLogPeriodBoard
      *
      * @param list<SessionRow> $rows by day, then by hour
      */
-    public function selectedSession(array $rows, ?int $requested, ?int $classId, ?string $date): ?int
+    public function selectedSession(array $rows, ?int $requested, ?string $date): ?int
     {
         foreach ($rows as $row) {
             if ($row['id'] === $requested) {
@@ -103,11 +102,13 @@ final class LessonLogPeriodBoard
         }
 
         if (null !== $date) {
-            return $this->firstIdWhere($rows, static fn (array $row): bool => $row['day'] === $date);
-        }
+            foreach ($rows as $row) {
+                if ($row['day'] === $date) {
+                    return $row['id'];
+                }
+            }
 
-        if (null !== $classId) {
-            return $this->firstIdWhere($rows, static fn (array $row): bool => $row['classId'] === $classId);
+            return null;
         }
 
         return $rows[0]['id'] ?? null;
@@ -115,21 +116,13 @@ final class LessonLogPeriodBoard
 
     /**
      * The one class unfolded in the by-class list - a single value, since opening a class closes
-     * the previous one.
-     *
-     * A class with no séance this week has no header in the list at all, so it cannot be the one
-     * open however loudly the link asks for it.
+     * the previous one. It follows the séance being previewed, so that what the right-hand block
+     * describes is always visible in the left column.
      *
      * @param list<SessionRow> $rows
      */
-    public function openClass(array $rows, ?int $classId, ?int $selectedId): ?int
+    public function openClass(array $rows, ?int $selectedId): ?int
     {
-        foreach ($rows as $row) {
-            if ($row['classId'] === $classId) {
-                return $classId;
-            }
-        }
-
         foreach ($rows as $row) {
             if ($row['id'] === $selectedId) {
                 return $row['classId'];
@@ -184,21 +177,6 @@ final class LessonLogPeriodBoard
         }
 
         return true;
-    }
-
-    /**
-     * @param list<SessionRow>      $rows
-     * @param callable(SessionRow): bool $matches
-     */
-    private function firstIdWhere(array $rows, callable $matches): ?int
-    {
-        foreach ($rows as $row) {
-            if ($matches($row)) {
-                return $row['id'];
-            }
-        }
-
-        return null;
     }
 
     private function mondayOf(\DateTimeImmutable $date): \DateTimeImmutable

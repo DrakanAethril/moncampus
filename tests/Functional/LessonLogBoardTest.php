@@ -14,10 +14,10 @@ use Doctrine\ORM\EntityManagerInterface;
 /**
  * The cahier de texte's landing screen, driven through real requests.
  *
- * What is pinned here is what a link can ask of it, because that is the part no unit test can see:
- * that arriving with nothing lands on the current week grouped by class, that `?class=` unfolds a
- * class, that `?date=` switches to the chronological list on the right week, and that a date the
- * teacher has no séance on says so rather than showing a silent list.
+ * What is pinned here is what an address can ask of it, because that is the part no unit test can
+ * see: that arriving with nothing lands on the current week grouped by class, that the class-scoped
+ * route is this same screen narrowed and locked to the chronological list, that `?date=` moves the
+ * period, and that a date the teacher has no séance on says so rather than showing a silent list.
  */
 class LessonLogBoardTest extends FunctionalTestCase
 {
@@ -91,17 +91,62 @@ class LessonLogBoardTest extends FunctionalTestCase
         self::assertCount(1, $crawler->filter('.cm-cdt-seance.is-selected'));
     }
 
-    public function testAClassInTheLinkIsTheOneUnfolded(): void
+    public function testTheClassScopedRouteIsTheSameScreenNarrowedToThatClass(): void
     {
         $this->client->loginUser($this->teacher);
-        $crawler = $this->client->request('GET', '/lesson-log?class='.$this->wednesday->getId());
+        $crawler = $this->client->request('GET', '/programs/'.$this->wednesday->getId().'/lesson-log');
 
         self::assertResponseIsSuccessful();
-        self::assertSame('Par classe', trim($crawler->filter('.cm-cdt-modes__tab.is-active')->text()));
-        self::assertStringContainsString(
-            'Réseaux',
-            $crawler->filter('.cm-cdt-class.is-open')->text(),
+        // Its own séance, and not the other class's.
+        self::assertStringContainsString('Réseaux', $crawler->filter('.cm-cdt-days')->text());
+        self::assertStringNotContainsString('Cybersécurité', $crawler->filter('.cm-cdt-days')->text());
+        // Grouping by class inside one class draws a single group holding everything, so the tab
+        // stays on screen and leads nowhere.
+        self::assertSame('Chronologique', trim($crawler->filter('.cm-cdt-modes__tab.is-active')->text()));
+        self::assertCount(1, $crawler->filter('.cm-cdt-modes__tab.is-disabled'));
+        self::assertCount(0, $crawler->filter('.cm-cdt-classes'));
+    }
+
+    public function testTheClassPickerNamesTheClassOnScreen(): void
+    {
+        $this->client->loginUser($this->teacher);
+        $crawler = $this->client->request('GET', '/programs/'.$this->wednesday->getId().'/lesson-log');
+
+        $selected = $crawler->filter('.cm-cdt-classpick__select option[selected]');
+        self::assertSame(
+            '/programs/'.$this->wednesday->getId().'/lesson-log',
+            $selected->attr('value'),
         );
+        // Both classes are offered whatever the week, plus the way back to all of them.
+        self::assertCount(3, $crawler->filter('.cm-cdt-classpick__select option'));
+    }
+
+    public function testTheAllClassesScreenPreselectsThatOption(): void
+    {
+        $this->client->loginUser($this->teacher);
+        $crawler = $this->client->request('GET', '/lesson-log');
+
+        self::assertSame('/lesson-log', $crawler->filter('.cm-cdt-classpick__select option[selected]')->attr('value'));
+    }
+
+    public function testTheOldClassParameterIsSentToTheRoute(): void
+    {
+        // One address per screen: `?class=` was a second way of naming the class and is now only a
+        // way in. The week it named travels with it, so an old link does not land on today.
+        $this->client->loginUser($this->teacher);
+        $this->client->request('GET', '/lesson-log?class='.$this->wednesday->getId().'&week=2026-09-07');
+
+        self::assertResponseRedirects('/programs/'.$this->wednesday->getId().'/lesson-log?week=2026-09-07');
+    }
+
+    public function testAClassTheViewerDoesNotTeachIsRefused(): void
+    {
+        $outsider = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'outsider');
+
+        $this->client->loginUser($outsider);
+        $this->client->request('GET', '/programs/'.$this->wednesday->getId().'/lesson-log');
+
+        self::assertResponseStatusCodeSame(403);
     }
 
     public function testADateInTheLinkOpensTheChronologicalListOnThatDay(): void
