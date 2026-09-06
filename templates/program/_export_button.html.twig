@@ -1,17 +1,86 @@
 {# The « Exporter » button of the two class lists, right-aligned on the title line. One partial for
    both screens: the two menus offer the same two gestures, only the routes differ.
 
+   The third entry, « Liste pour pointage », belongs to the student list alone and appears only when
+   the caller names its route - a checklist of teachers is not a thing anybody asked for, and an
+   entry that only some callers can honour is better absent than broken.
+
    Shown by the same two conditions the routes are guarded by (App\Controller\
    ProgramPeopleExportController) - the feature, and staff/admin. A button nobody may follow is
    worse than no button. #}
 {% if is_staff() and feature('class_list_exports') %}
+    {% set checklistRoute = checklistRoute|default(null) %}
     <div class="dropdown">
         <button type="button" class="cm-btn cm-btn--primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
             {{ 'exportButtonLabel'|trans }}
         </button>
         <div class="dropdown-menu dropdown-menu-end">
             <a class="dropdown-item" href="{{ path(attendancePdfRoute, {id: program.id}) }}" data-turbo="false">{{ 'exportAttendanceSheetActionLabel'|trans }}</a>
+            {% if checklistRoute %}
+                <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#checklist-export-modal">{{ 'exportChecklistActionLabel'|trans }}</button>
+            {% endif %}
             <a class="dropdown-item" href="{{ path(csvRoute, {id: program.id}) }}" data-turbo="false">{{ 'exportCsvActionLabel'|trans }}</a>
         </div>
     </div>
+
+    {% if checklistRoute %}
+        {# A GET form, so the modal's whole answer is the query string the export route reads
+           (App\Service\ChecklistSheetOptions) - nothing to store, and no POST for Turbo to have to
+           redirect. data-turbo="false" because what comes back is a file, not a page. #}
+        <div class="modal fade" id="checklist-export-modal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <form class="modal-content" method="get" action="{{ path(checklistRoute, {id: program.id}) }}"
+                      data-turbo="false"
+                      data-controller="checklist-export"
+                      data-checklist-export-max-columns-value="{{ constant('App\\Service\\ChecklistSheetOptions::MAX_COLUMNS') }}">
+                    <div class="modal-header">
+                        <h5 class="modal-title">{{ 'checklistExportModalTitle'|trans }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'checklistExportCloseLabel'|trans }}"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-secondary">{{ 'checklistExportModalHelpText'|trans }}</p>
+
+                        <div class="mb-3">
+                            <label class="form-label">{{ 'checklistExportOrientationFieldLabel'|trans }}</label>
+                            <div>
+                                <label class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="orientation" value="portrait" checked>
+                                    <span class="form-check-label">{{ 'checklistExportOrientationPortraitLabel'|trans }}</span>
+                                </label>
+                                <label class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="orientation" value="landscape">
+                                    <span class="form-check-label">{{ 'checklistExportOrientationLandscapeLabel'|trans }}</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <label class="form-label">{{ 'checklistExportColumnsFieldLabel'|trans }}</label>
+                        <div data-checklist-export-target="rows">
+                            {# The first row is server-rendered so the modal is usable with no JS at
+                               all: one column, typed and submitted. The controller clones it. #}
+                            <div class="input-group mb-2" data-checklist-export-target="row">
+                                <input type="text" class="form-control" name="columns[]" maxlength="{{ constant('App\\Service\\ChecklistSheetOptions::MAX_COLUMN_LENGTH') }}"
+                                       placeholder="{{ 'checklistExportColumnPlaceholder'|trans }}">
+                                <button type="button" class="btn btn-icon cm-action cm-action--danger" data-action="checklist-export#removeRow"
+                                        aria-label="{{ 'checklistExportRemoveColumnAction'|trans }}" title="{{ 'checklistExportRemoveColumnAction'|trans }}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0"/><path d="M10 11l0 6"/><path d="M14 11l0 6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <button type="button" class="cm-btn cm-btn--outline" data-action="checklist-export#addRow" data-checklist-export-target="addButton">
+                            {{ 'checklistExportAddColumnAction'|trans }}
+                        </button>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="cm-btn cm-btn--outline" data-bs-dismiss="modal">{{ 'cancelAction'|trans }}</button>
+                        {# Dismissed on click: what comes back is a file, so the browser never
+                           navigates and the modal would otherwise stay open over the list it just
+                           printed. Bootstrap's dismiss does not preventDefault on a button, so the
+                           form still submits. #}
+                        <button type="submit" class="cm-btn cm-btn--primary" data-bs-dismiss="modal">{{ 'checklistExportSubmitAction'|trans }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    {% endif %}
 {% endif %}

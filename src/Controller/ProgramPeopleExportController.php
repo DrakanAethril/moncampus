@@ -12,12 +12,15 @@ use App\Repository\ProgramRepository;
 use App\Repository\ProgramStudentModalityRepository;
 use App\Repository\ProgramStudentOptionRepository;
 use App\Service\AttendanceSheetExporter;
+use App\Service\ChecklistSheetExporter;
+use App\Service\ChecklistSheetOptions;
 use App\Service\ClassListCsvExporter;
 use App\Service\ClassRoster;
 use App\Service\GotenbergUnavailableException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\HttpFoundation\HeaderUtils;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -25,8 +28,9 @@ use Symfony\Component\String\Slugger\SluggerInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * The « Exporter » button of the two class lists: an émargement sheet to print and sign, and the
- * list itself as CSV.
+ * The « Exporter » button of the two class lists: an émargement sheet to print and sign, the list
+ * itself as CSV, and - on the student list alone - a « Liste pour pointage », the same names with
+ * the columns of the day next to them.
  *
  * Staff and admin only, like the two screens the button sits on - those lists hold the class's
  * people, which is the establishment's own directory rather than a teaching tool (see the nav's own
@@ -34,7 +38,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * establishment runs the exports at all, and the two are not the same question: a staff member of
  * an establishment that has not switched them on gets a 404, not a 403.
  *
- * Its own controller rather than four more actions on the already fat ProgramController: the two
+ * Its own controller rather than five more actions on the already fat ProgramController: the two
  * lists are one screen each, and this is a third thing - a file-handing tool with its own guard.
  */
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
@@ -44,6 +48,7 @@ class ProgramPeopleExportController extends AbstractController
     public function __construct(
         private readonly ClassListCsvExporter $csvExporter,
         private readonly AttendanceSheetExporter $attendanceSheetExporter,
+        private readonly ChecklistSheetExporter $checklistSheetExporter,
         private readonly ClassRoster $roster,
         private readonly SluggerInterface $slugger,
         private readonly TranslatorInterface $translator,
@@ -92,6 +97,39 @@ class ProgramPeopleExportController extends AbstractController
         $program = $this->findOrNotFound($id, $repository);
 
         return $this->attendanceSheet($program, $this->roster->ordered($program->getTeachers()->toArray()), 'enseignants', 'app_program_teachers');
+    }
+
+    /**
+     * The « Liste pour pointage »: the same class, printed as a blank to tick, with the columns the
+     * modal asked for. GET like its neighbours, and for the same reason - it hands back a file
+     * rather than changing anything - which is also why the modal is a GET form: the whole request
+     * is its query string, and nothing is stored between two printings.
+     */
+    #[Route(path: '/programs/{id}/students/checklist.pdf', name: 'app_program_students_checklist_pdf', methods: ['GET'])]
+    public function studentsChecklistSheet(int $id, Request $request, ProgramRepository $repository): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+        $title = sprintf('%s — %s', $this->translator->trans('checklistSheetDocumentTitle'), $program->getDisplayShortName());
+
+        try {
+            $pdf = $this->checklistSheetExporter->export(
+                $program,
+                array_map($this->roster->documentName(...), $this->roster->ordered($program->getStudents()->toArray())),
+                ChecklistSheetOptions::fromRequest($request),
+                $title,
+                $this->renderView(...),
+                new \DateTimeImmutable('today'),
+            );
+        } catch (GotenbergUnavailableException) {
+            $this->addFlash('error', 'checklistSheetPdfExportFailedFlashMessage');
+
+            return $this->redirectToRoute('app_program_students', ['id' => $program->getId()]);
+        }
+
+        return new Response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $this->filename($program, 'pointage-etudiants', 'pdf')),
+        ]);
     }
 
     /** @param list<User> $people */
