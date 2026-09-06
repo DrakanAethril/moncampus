@@ -72,6 +72,21 @@
                     <span class="cm-training-badge ms-auto">{{ application.validatedCount }} / {{ elements|length }}</span>
                 </div>
 
+                {# The corrections are already out and the student is working on them. Dating them
+                   and naming their author is what tells this validator whether they are re-reading
+                   their own words or somebody else's - any validator on the offer may review, so
+                   the panel below is not necessarily theirs. Sending again amends what is written
+                   there, as long as the student has not resent. #}
+                {% set feedback = application.state.value == 'corrections_requested' ? application.lastReviewForCurrentVersion : null %}
+                {% if feedback %}
+                    <div class="cm-training-feedback">
+                        {{ 'trainingReviewFeedbackSentLabel'|trans({
+                            '%date%': feedback.decidedAt|date('d/m/Y'),
+                            '%name%': feedback.validator ? (feedback.validator.displayName ?? feedback.validator.username) : 'trainingReviewUnknownValidatorLabel'|trans,
+                        }) }}
+                    </div>
+                {% endif %}
+
                 {% if error %}
                     <div class="cm-compose__error" role="alert">{{ error|trans }}</div>
                 {% endif %}

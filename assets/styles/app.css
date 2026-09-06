@@ -4700,6 +4700,10 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
   border: 0; background: none; padding: 0; margin-left: 2px;
   color: var(--cm-faint); cursor: pointer; font-size: 14px; line-height: 1;
 }
+/* A file already sent reads as a link, because it is one: the remark asking for a correction is
+   answered by opening the document it speaks about. */
+.cm-postul__chiplink { color: inherit; text-decoration: none; border-bottom: 1px dotted currentColor; }
+.cm-postul__chiplink:hover { color: var(--cm-brand-strong); }
 .cm-postul__chipremove:hover { color: var(--cm-red-tx); }
 /* Dashed, and the only way in: one entry point that takes any number of files, never a slot per
    kind of document. */
@@ -4730,6 +4734,14 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
    already sent carry no ×, because there is nothing to take back - joining a file replaces the
    list, it does not edit it. */
 .cm-postul__chip--sent { color: var(--cm-muted); background: var(--cm-surface-soft); }
+/* Screen 8d: who wrote the corrections the student is working on, and when. It sits at the head of
+   the validation panel because it dates what the rest of the panel says - a validator reopening the
+   application has to know whether they are reading their own words or somebody else's. */
+.cm-training-feedback {
+  margin: 12px 18px; padding: 9px 12px;
+  border: 1px solid #f0e0c0; border-radius: 8px; background: #fffdf6;
+  font-size: 12.5px; color: #8a6a1f; line-height: 1.5;
+}
 .cm-training-verdict__remark { margin: 7px 0 0; font-size: 12.5px; color: var(--cm-text); line-height: 1.55; }
 .cm-training-verdict__remark--muted { color: var(--cm-faint); }
 /* The state reads in the colour of what it asks for: green nothing to do, amber your turn, grey
@@ -4829,7 +4841,9 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 
 [data-bs-theme=dark] .cm-training-check.is-refused,
 [data-bs-theme=dark] .cm-training-previous,
+[data-bs-theme=dark] .cm-training-feedback,
 [data-bs-theme=dark] .cm-training-queue__head { background: #3c3117; }
+[data-bs-theme=dark] .cm-training-feedback { border-color: #5a4a20; color: #e0b25f; }
 [data-bs-theme=dark] .cm-training-unlocked { background: #1d3327; border-color: #2e5c44; color: #8cc3a2; }
 /* #8a6a1f is amber read on paper: on the dark surface it sinks into the background, so the "your
    turn" state takes the same lighter amber the rest of the dark theme uses. */

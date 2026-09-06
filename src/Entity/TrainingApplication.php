@@ -190,6 +190,29 @@ class TrainingApplication
         return $latest;
     }
 
+    /**
+     * The feedback that is currently standing: the most recent verdict taken on the version the
+     * student last sent. It is what screen 8d's banner names - who wrote the corrections the
+     * student is working on, and when - and it exists whenever the ball is in their court.
+     */
+    public function getLastReviewForCurrentVersion(): ?TrainingApplicationReview
+    {
+        $latest = null;
+        $number = $this->getVersionNumber();
+
+        foreach ($this->reviews as $review) {
+            if ($review->getVersionNumber() !== $number) {
+                continue;
+            }
+
+            if (null === $latest || $review->getDecidedAt() > $latest->getDecidedAt()) {
+                $latest = $review;
+            }
+        }
+
+        return $latest;
+    }
+
     public function isValidated(TrainingApplicationElement $element): bool
     {
         return TrainingApplicationDecision::Validated === $this->getReviewFor($element)?->getDecision();
