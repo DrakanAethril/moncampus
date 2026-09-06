@@ -81,13 +81,15 @@ class TrainingApplicationWorkflow
      * @param list<UploadedFile> $files the files joined to this new version; empty means "the ones
      *                                  already validated are fine", and they carry over as they are
      */
-    public function resubmit(TrainingApplication $application, array $files, ?string $body = null): void
+    public function resubmit(TrainingApplication $application, array $files, ?string $body = null, ?string $subject = null): void
     {
         $previous = $application->getCurrentVersion();
 
+        // An empty field is never a correction: it is a screen that did not carry the value, and
+        // the previous version's own text is what stands.
         $version = (new TrainingApplicationVersion())
             ->setNumber(($previous?->getNumber() ?? 0) + 1)
-            ->setSubject($previous?->getSubject())
+            ->setSubject(null !== $subject && '' !== trim($subject) ? $subject : $previous?->getSubject())
             ->setBody(null !== $body && '' !== trim($body) ? $body : (string) $previous?->getBody())
             ->setSignatureSnapshot($this->signatureText($application->getStudent()));
 
