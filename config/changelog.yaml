@@ -48,6 +48,9 @@ releases:
           - type: fix
             title: 'Des codes à la place des accents dans les aperçus'
             detail: "Certains résumés affichaient « S&eacute;ance » plutôt que « Séance »."
+          - type: interne
+            title: "Le nuage de mots résiste à une panne de son canal temps réel"
+            detail: "Un mot restait enregistré mais l'écran annonçait une erreur, et le pilotage refusait de s'afficher au lieu de se passer des mises à jour automatiques."
           - type: autre
             title: "L'application mobile passe en 2.7.0"
             detail: "Elle prévient quand un nuage de mots est ouvert et permet d'y répondre. À télécharger depuis la page Ressources."
