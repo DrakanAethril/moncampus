@@ -146,11 +146,17 @@ class LessonLogBoardController extends AbstractController
 
         $date = $this->readDay($request, 'date');
         $week = $this->readDay($request, 'week');
+        $requestedSeance = QueryValue::nullableInt($request, 'seance');
         $requestedMode = QueryValue::trimmed($request, 'view');
 
         $today = new \DateTimeImmutable('today');
-        $thisWeek = $periodBoard->weekStart(null, null, $today);
-        $weekStart = $periodBoard->weekStart($week, $date, $today);
+        $thisWeek = $periodBoard->weekStart(null, null, null, $today);
+        $weekStart = $periodBoard->weekStart(
+            $week,
+            $date,
+            $this->dayOfOwnSession($lessonSessionRepository, $viewer, $program, $requestedSeance),
+            $today,
+        );
         $weekEnd = $weekStart->modify('+6 days');
 
         $sessions = $lessonSessionRepository->findAllForTeacherBetween($viewer, $weekStart, $weekEnd);
@@ -173,7 +179,7 @@ class LessonLogBoardController extends AbstractController
             $this->rememberViewMode($request, $viewMode);
         }
 
-        $selectedId = $periodBoard->selectedSession($rows, QueryValue::nullableInt($request, 'seance'), $date);
+        $selectedId = $periodBoard->selectedSession($rows, $requestedSeance, $date);
         $decorated = $this->decorate($sessions, $lessonLogRepository, $assignmentRepository, $board);
 
         return $this->render('lesson_log/board.html.twig', [
@@ -209,6 +215,36 @@ class LessonLogBoardController extends AbstractController
             'dayGroups' => $this->groupByDay($decorated),
             'sections' => LessonLogSection::cases(),
         ]);
+    }
+
+    /**
+     * The day the séance `?seance=` names falls on, when it is one the viewer delivers - what lets
+     * the period follow a link that names a séance rather than a week.
+     *
+     * Without it, `?seance=` only ever selected something inside the current week: a séance from any
+     * other week was quietly swapped for that week's first one, so the screen showed a séance nobody
+     * asked for and offered no way at all to reach the one that was named.
+     *
+     * Answers null rather than moving the period for a séance the screen could not show anyway - an
+     * id that names nothing, a colleague's créneau, or, on the class-scoped address, another class's
+     * séance. Landing on an empty week would only replace one silence with another.
+     */
+    private function dayOfOwnSession(LessonSessionRepository $sessions, User $viewer, ?Program $program, ?int $sessionId): ?string
+    {
+        if (null === $sessionId) {
+            return null;
+        }
+
+        $session = $sessions->find($sessionId);
+        if (null === $session || $session->getTeacher() !== $viewer) {
+            return null;
+        }
+
+        if (null !== $program && $session->getProgram()?->getId() !== $program->getId()) {
+            return null;
+        }
+
+        return $session->getDay()?->format('Y-m-d');
     }
 
     /**

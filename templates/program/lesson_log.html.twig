@@ -4,12 +4,13 @@
 
 {% block page_breadcrumb %}
     {# The « vue cours » segment only leads to a teacher screen: for a student the trail stops at
-       the timetable, which they came from. #}
+       the timetable, which they came from. It carries the séance so that going back up lands on the
+       week and the row one came from, rather than on the current week's first séance. #}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
         {label: 'programTimetableNavLabel'|trans, url: path('app_program_timetable', {id: program.id})},
     ]|merge(canViewTeacherTools ? [
-        {label: session.displayName ~ ' — ' ~ program.displayShortName, url: path('app_program_lesson_logs', {id: program.id})},
+        {label: session.displayName ~ ' — ' ~ program.displayShortName, url: path('app_program_lesson_logs', {id: program.id, seance: session.id})},
     ] : [])|merge([
         {label: 'lessonLogSessionOfLabel'|trans({'%date%': session.day|date('d/m/Y')}), url: app.request.requestUri},
     ])} %}
