@@ -80,7 +80,7 @@ class LessonLogPeriodBoardTest extends TestCase
     {
         // Deliberately not a sliding seven-day window, and deliberately no jump to the next week
         // that has class: the screen answers « this week », and an empty week is an answer.
-        $week = $this->board->weekStart(null, null, new \DateTimeImmutable('2026-09-05'));
+        $week = $this->board->weekStart(null, null, null, new \DateTimeImmutable('2026-09-05'));
 
         self::assertSame('2026-08-31', $week->format('Y-m-d'));
     }
@@ -88,13 +88,13 @@ class LessonLogPeriodBoardTest extends TestCase
     public function testAnyDayOfTheWeekAsksForTheSameWeek(): void
     {
         foreach (['2026-08-31', '2026-09-03', '2026-09-06'] as $day) {
-            self::assertSame('2026-08-31', $this->board->weekStart($day, null, new \DateTimeImmutable('2026-01-01'))->format('Y-m-d'));
+            self::assertSame('2026-08-31', $this->board->weekStart($day, null, null, new \DateTimeImmutable('2026-01-01'))->format('Y-m-d'));
         }
     }
 
     public function testADateBringsItsOwnWeekAlongWithIt(): void
     {
-        $week = $this->board->weekStart(null, '2026-09-02', new \DateTimeImmutable('2026-11-30'));
+        $week = $this->board->weekStart(null, '2026-09-02', null, new \DateTimeImmutable('2026-11-30'));
 
         self::assertSame('2026-08-31', $week->format('Y-m-d'));
     }
@@ -103,21 +103,47 @@ class LessonLogPeriodBoardTest extends TestCase
     {
         // The ‹ › arrows move the week while the incoming date stays in the URL; without this the
         // period would spring back to the date at every click.
-        $week = $this->board->weekStart('2026-09-07', '2026-09-02', new \DateTimeImmutable('2026-11-30'));
+        $week = $this->board->weekStart('2026-09-07', '2026-09-02', null, new \DateTimeImmutable('2026-11-30'));
 
         self::assertSame('2026-09-07', $week->format('Y-m-d'));
     }
 
     public function testAnUnreadableWeekFallsBackInsteadOfFailing(): void
     {
-        $week = $this->board->weekStart('not-a-date', null, new \DateTimeImmutable('2026-09-05'));
+        $week = $this->board->weekStart('not-a-date', null, null, new \DateTimeImmutable('2026-09-05'));
+
+        self::assertSame('2026-08-31', $week->format('Y-m-d'));
+    }
+
+    public function testTheSeanceALinkNamesBringsItsOwnWeekAlongWithIt(): void
+    {
+        // The whole point of `?seance=` being an address one can come back to: without this the
+        // period stayed on the current week, the séance that was named was not in it, and the screen
+        // previewed that week's first séance instead - with no way at all of reaching the named one.
+        $week = $this->board->weekStart(null, null, '2026-09-02', new \DateTimeImmutable('2026-11-30'));
+
+        self::assertSame('2026-08-31', $week->format('Y-m-d'));
+    }
+
+    public function testAnExplicitWeekWinsOverTheSeance(): void
+    {
+        // The ‹ › arrows carry the séance of the week they are leaving; it must not pull the period
+        // straight back to it.
+        $week = $this->board->weekStart('2026-09-07', null, '2026-09-02', new \DateTimeImmutable('2026-11-30'));
+
+        self::assertSame('2026-09-07', $week->format('Y-m-d'));
+    }
+
+    public function testADateWinsOverTheSeance(): void
+    {
+        $week = $this->board->weekStart(null, '2026-09-02', '2026-11-16', new \DateTimeImmutable('2026-01-01'));
 
         self::assertSame('2026-08-31', $week->format('Y-m-d'));
     }
 
     public function testTheWeekIsAlwaysMidnight(): void
     {
-        self::assertSame('00:00:00', $this->board->weekStart(null, '2026-09-02 17:45:00', new \DateTimeImmutable('now'))->format('H:i:s'));
+        self::assertSame('00:00:00', $this->board->weekStart(null, '2026-09-02 17:45:00', null, new \DateTimeImmutable('now'))->format('H:i:s'));
     }
 
     // --- Which séance is previewed ---

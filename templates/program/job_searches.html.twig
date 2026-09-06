@@ -94,6 +94,7 @@
                 <tbody>
                     {% for row in rows %}
                         {% set student = row.student %}
+                        {% set application = row.pendingApplication %}
                         <tr>
                             <td>
                                 <span class="cm-jobsearch-student">
@@ -101,27 +102,45 @@
                                     {{ student.displayName ?? student.username }}
                                 </span>
                             </td>
-                            <td>{{ row.stats.sent }}</td>
-                            <td>{{ row.stats.delivered }}</td>
-                            <td{{ row.stats.failed > 0 ? ' class="cm-jobsearch-failed"' }}>{{ row.stats.failed }}</td>
-                            <td>{{ row.stats.replies }}</td>
-                            <td>{{ row.stats.lastSentAt ? row.stats.lastSentAt|date('d/m') : '—' }}</td>
+                            {# A locked mailbox has sent nothing at all: four zeros would read as a
+                               student who never tried, when they simply cannot yet. #}
+                            <td>{{ row.mailboxOpen ? row.stats.sent : '—' }}</td>
+                            <td>{{ row.mailboxOpen ? row.stats.delivered : '—' }}</td>
+                            <td{{ row.mailboxOpen and row.stats.failed > 0 ? ' class="cm-jobsearch-failed"' }}>{{ row.mailboxOpen ? row.stats.failed : '—' }}</td>
+                            <td>{{ row.mailboxOpen ? row.stats.replies : '—' }}</td>
+                            <td>{{ row.mailboxOpen and row.stats.lastSentAt ? row.stats.lastSentAt|date('d/m') : '—' }}</td>
                             <td class="text-end">
                                 <span class="cm-jobsearch-actions">
-                                    {% if row.closedSearch %}
-                                        <span class="cm-badge cm-badge--green">{{ 'jobSearchClosedBadgeLabel'|trans }}</span>
-                                        {# Undoing a closure has to be possible from the same row that closed it. #}
-                                        <form method="post" action="{{ path('app_program_job_search_reopen', {id: program.id, studentId: student.id}) }}">
-                                            <input type="hidden" name="_token" value="{{ csrf_token('job_search_reopen') }}">
-                                            <button type="submit" class="cm-jobsearch-link">{{ 'jobSearchReopenAction'|trans }}</button>
-                                        </form>
+                                    {% if not row.mailboxOpen %}
+                                        {# Before the mailbox opens, the only gesture that means
+                                           anything is the one on the practice application. #}
+                                        {% if application is null %}
+                                            <span class="cm-jobsearch-idle">{{ 'jobSearchTrackingAwaitingApplicationLabel'|trans }}</span>
+                                        {% elseif row.canReviewPending %}
+                                            <a class="cm-jobapp-row__link" href="{{ path('app_training_application_review', {id: application.id}) }}">
+                                                {{ (application.state.isAwaitingReview ? 'trainingQueueReviewAction' : 'jobSearchTrackingReviewFeedbackAction')|trans }}
+                                            </a>
+                                        {% else %}
+                                            {# Not a validator on that offer: the state, without a
+                                               link that would only answer 403. #}
+                                            <span class="cm-jobsearch-idle">{{ application.state.labelKey|trans }}</span>
+                                        {% endif %}
                                     {% else %}
-                                        <form method="post" action="{{ path('app_program_job_search_close', {id: program.id, studentId: student.id}) }}">
-                                            <input type="hidden" name="_token" value="{{ csrf_token('job_search_close') }}">
-                                            <button type="submit" class="cm-jobsearch-link">{{ 'jobSearchCloseAction'|trans }}</button>
-                                        </form>
+                                        {% if row.closedSearch %}
+                                            <span class="cm-badge cm-badge--green">{{ 'jobSearchClosedBadgeLabel'|trans }}</span>
+                                            {# Undoing a closure has to be possible from the same row that closed it. #}
+                                            <form method="post" action="{{ path('app_program_job_search_reopen', {id: program.id, studentId: student.id}) }}">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('job_search_reopen') }}">
+                                                <button type="submit" class="cm-jobsearch-link">{{ 'jobSearchReopenAction'|trans }}</button>
+                                            </form>
+                                        {% else %}
+                                            <form method="post" action="{{ path('app_program_job_search_close', {id: program.id, studentId: student.id}) }}">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('job_search_close') }}">
+                                                <button type="submit" class="cm-jobsearch-link">{{ 'jobSearchCloseAction'|trans }}</button>
+                                            </form>
+                                        {% endif %}
+                                        <a class="cm-jobapp-row__link" href="{{ path('app_student_job_applications', {id: student.id}) }}">{{ 'jobSearchTrackingSheetAction'|trans }}</a>
                                     {% endif %}
-                                    <a class="cm-jobapp-row__link" href="{{ path('app_student_job_applications', {id: student.id}) }}">{{ 'jobSearchTrackingSheetAction'|trans }}</a>
                                 </span>
                             </td>
                         </tr>

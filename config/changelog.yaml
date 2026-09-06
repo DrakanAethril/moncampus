@@ -26,6 +26,23 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.06.2'
+      date: '2026-09-06'
+      summary: "Le parcours de la postulation d'entraînement se resserre : l'étudiant corrige son mail là où il l'a écrit, et l'enseignant voit d'un coup d'œil, classe par classe, qui doit encore postuler, qui attend un retour et qui est en train de corriger. Deux corrections au cahier de texte complètent la livraison."
+      entries:
+          - type: modification
+            title: "Corriger une postulation se fait sur l'écran où on l'a écrite"
+            detail: "Le mail revient prérempli et modifiable, objet compris, avec les remarques de l'enseignant en regard de chaque élément à reprendre ; le bouton d'envoi devient « Renvoyer en validation »."
+          - type: modification
+            title: 'Le suivi des recherches dit où en est chaque postulation'
+            detail: "Tant que l'envoi vers de vraies entreprises n'est pas déverrouillé, la ligne d'un étudiant n'affiche plus des zéros mais son état : en attente de postulation, à traiter, ou un retour déjà fait — que l'enseignant peut alors relire tel qu'il l'a écrit."
+          - type: fix
+            title: "L'aperçu du cahier de texte garde la mise en forme"
+            detail: "Gras, listes et paragraphes s'affichent comme ils ont été écrits, et un contenu un peu long n'élargit plus la carte au-delà de la fenêtre."
+          - type: fix
+            title: "Le cahier de texte s'ouvre sur la semaine de la séance demandée"
+            detail: "Un lien qui nomme une séance amène désormais sa semaine avec lui, et le retour depuis la séance retombe sur la même ligne."
+
     - version: '2026.09.06'
       date: '2026-09-06'
       summary: "Un nouvel outil pour animer la classe : l'enseignant pose une question, chacun répond en quelques mots depuis son écran ou son téléphone, et le nuage se forme au tableau, les mots les plus cités en grand. Le cahier de texte, de son côté, s'ouvre directement sur les séances de la semaine sans plus demander de quelle classe il s'agit."

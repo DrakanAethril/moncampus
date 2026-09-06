@@ -4522,6 +4522,8 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
   font: 600 12px var(--cm-font-ui); color: var(--cm-faint); white-space: nowrap;
 }
 .cm-jobsearch-link:hover { color: var(--cm-brand-strong); text-decoration: underline; }
+/* A row whose mailbox is not open yet: a state, not an action - so it must not look clickable. */
+.cm-jobsearch-idle { font: 600 12px var(--cm-font-ui); color: var(--cm-disabled); white-space: nowrap; }
 
 /* -- Student application sheet (screen 2a) ---------------------------------- */
 .cm-sheet { display: grid; grid-template-columns: 1fr 330px; gap: 14px; align-items: start; }
@@ -4724,17 +4726,16 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 }
 .cm-training-unlocked a { margin-left: auto; }
 
-.cm-training-summary { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 12.5px; color: var(--cm-muted); }
-.cm-training-feedback { border-color: #e0b25f; }
-.cm-training-feedback__title { font: 600 13.5px var(--cm-font-ui); color: #8a6a1f; }
-.cm-training-feedback__item { margin: 0 0 8px; font-size: 13px; color: var(--cm-text); line-height: 1.55; }
-
-.cm-training-history { margin-top: 16px; }
-.cm-training-history__label { font: 600 11px var(--cm-font-ui); letter-spacing: .6px; text-transform: uppercase; color: var(--cm-faint); margin-bottom: 8px; }
-.cm-training-history__row { display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: var(--cm-muted); padding: 3px 0; }
-.cm-training-history__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cm-faint); flex: none; }
-.cm-training-history__dot.is-validated { background: #1f7a54; }
-.cm-training-history__dot.is-refused { background: #e0b25f; }
+/* Screen 8e: the validator's answer beside the mail it speaks about. The chips of the files
+   already sent carry no ×, because there is nothing to take back - joining a file replaces the
+   list, it does not edit it. */
+.cm-postul__chip--sent { color: var(--cm-muted); background: var(--cm-surface-soft); }
+.cm-training-verdict__remark { margin: 7px 0 0; font-size: 12.5px; color: var(--cm-text); line-height: 1.55; }
+.cm-training-verdict__remark--muted { color: var(--cm-faint); }
+/* The state reads in the colour of what it asks for: green nothing to do, amber your turn, grey
+   waiting on somebody else. */
+.cm-training-verdict__state.is-refused { color: #8a6a1f; }
+.cm-training-verdict__state.is-pending { color: var(--cm-faint); }
 
 /* Screen 8c: the queue sits at the head of the class tracking page, in the amber of things that
    wait on somebody. */
@@ -4830,6 +4831,9 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 [data-bs-theme=dark] .cm-training-previous,
 [data-bs-theme=dark] .cm-training-queue__head { background: #3c3117; }
 [data-bs-theme=dark] .cm-training-unlocked { background: #1d3327; border-color: #2e5c44; color: #8cc3a2; }
+/* #8a6a1f is amber read on paper: on the dark surface it sinks into the background, so the "your
+   turn" state takes the same lighter amber the rest of the dark theme uses. */
+[data-bs-theme=dark] .cm-training-verdict__state.is-refused { color: #e0b25f; }
 
 /* ============================================================================
    Création d'un travail (2a) and the assignment list (2b)
@@ -9951,7 +9955,12 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 }
 
 /* --- Page grid: the list, then the selected séance --- */
+/* min-width: 0 on the columns, not decoration: a grid track sizes itself to its content's
+   min-content width by default, so any child that refuses to wrap makes the whole grid wider than
+   the page. The séance preview holds a teacher's own prose, and one long line of it used to push
+   « Ouvrir la séance » past the right edge behind a page-wide horizontal scrollbar. */
 .cm-cdt { display: grid; grid-template-columns: 330px 1fr; gap: 16px; align-items: start; font-family: var(--cm-font-ui); }
+.cm-cdt > * { min-width: 0; }
 .cm-cdt-card {
     background: var(--cm-surface); border: 1px solid var(--cm-border);
     border-radius: 11px; display: flex; flex-direction: column;
@@ -10062,21 +10071,35 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 }
 .cm-cdt-detail__open:hover { background: var(--cm-brand-strong); color: #fff; }
 .cm-cdt-detail__body { padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+/* Aligned to the top rather than centred: the part now carries the cahier de texte as it was
+   written, so it is as tall as that content - a dot and a badge floating at its middle would no
+   longer read as belonging to the line they label. */
 .cm-cdt-part {
-    display: flex; align-items: center; gap: 12px;
+    display: flex; align-items: flex-start; gap: 12px;
     border: 1px solid var(--cm-border); border-radius: 10px;
     padding: 12px 15px; background: var(--cm-vm-soft);
 }
-.cm-cdt-part__dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--cm-border); }
+/* The dot and the badge sit on the title's own line, which the flex box no longer centres them on. */
+.cm-cdt-part__dot { flex: none; width: 9px; height: 9px; margin-top: 6px; border-radius: 50%; background: var(--cm-border); }
 .cm-cdt-part__dot--filled { background: var(--cm-vm-ok-tx); }
 .cm-cdt-part__dot--partial { background: var(--cm-gold); }
 .cm-cdt-part__body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
 .cm-cdt-part__title { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+/* The one-line pieces: how many travaux, how many documents, or that nothing is written yet. */
 .cm-cdt-part__summary {
     font-size: 12px; color: var(--cm-faint);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.cm-cdt-part .cm-badge { flex: none; }
+/* The content itself, with the formatting the editor gave it. No border and no ground of its own -
+   it is already inside the part's box - and a long word or a pasted URL breaks rather than widening
+   the card. A table pasted from elsewhere scrolls inside this box, never taking the page with it. */
+.cm-cdt-part__content {
+    margin-top: 4px; border: 0; padding: 0; background: transparent;
+    font-size: 12.5px; color: var(--cm-text);
+    overflow-wrap: anywhere; overflow-x: auto;
+}
+.cm-cdt-part__content > :last-child { margin-bottom: 0; }
+.cm-cdt-part .cm-badge { flex: none; margin-top: 1px; }
 
 /* --- Nothing to show: an empty week, or a day the link named that carries no séance --- */
 .cm-cdt-notice {
