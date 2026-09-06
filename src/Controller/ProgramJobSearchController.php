@@ -7,8 +7,10 @@ namespace App\Controller;
 use App\Attribute\RequiresFeature;
 use App\Entity\JobSearch;
 use App\Entity\Program;
+use App\Entity\TrainingApplication;
 use App\Entity\User;
 use App\Enum\Feature;
+use App\Enum\TrainingApplicationState;
 use App\Repository\EmailMessageRepository;
 use App\Repository\JobSearchRepository;
 use App\Repository\ProgramRepository;
@@ -57,6 +59,10 @@ class ProgramJobSearchController extends AbstractController
         $students = $this->sortedStudents($program);
         $stats = $this->messageRepository->statsForStudents($students);
         $closed = $this->searchRepository->findClosedIndexedByStudentId($students);
+        $applications = $this->trainingApplicationRepository->findForStudentsIndexedByStudentId($students);
+
+        /** @var User $viewer */
+        $viewer = $this->getUser();
 
         $rows = [];
         $totals = ['delivered' => 0, 'failed' => 0, 'replies' => 0];
@@ -68,15 +74,23 @@ class ProgramJobSearchController extends AbstractController
             $totals['failed'] += $studentStats['failed'];
             $totals['replies'] += $studentStats['replies'];
 
+            // A mailbox nobody has unlocked has never sent anything, so its counters say nothing:
+            // the row says where the practice application stands instead. The newest one is the
+            // one that matters - it is the one the student is writing and a validator would open.
+            $studentApplications = $applications[$student->getId()] ?? [];
+            $mailboxOpen = $this->isMailboxOpen($studentApplications);
+            $pending = $mailboxOpen ? null : ($studentApplications[0] ?? null);
+
             $rows[] = [
                 'student' => $student,
                 'stats' => $studentStats,
                 'closedSearch' => $closed[$student->getId()] ?? null,
+                'mailboxOpen' => $mailboxOpen,
+                'pendingApplication' => $pending,
+                // Whether *this* teacher may open it: the review screen is the validators' own.
+                'canReviewPending' => null !== $pending && true === $pending->getOffer()?->hasValidator($viewer),
             ];
         }
-
-        /** @var User $viewer */
-        $viewer = $this->getUser();
 
         // Screen 8c: the practice applications waiting on this viewer, on top of the tracking page.
         // Only for someone who validates at least one offer - for anybody else the block would be
@@ -149,6 +163,23 @@ class ProgramJobSearchController extends AbstractController
         }
 
         return $this->redirectToRoute('app_program_job_searches', ['id' => $program->getId()]);
+    }
+
+    /**
+     * The same rule as App\Service\SchoolMailLockChecker, read off rows already in memory: a
+     * fully validated practice application is what unlocks writing to real companies.
+     *
+     * @param list<TrainingApplication> $applications
+     */
+    private function isMailboxOpen(array $applications): bool
+    {
+        foreach ($applications as $application) {
+            if (TrainingApplicationState::Validated === $application->getState()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** @return list<User> */

@@ -4522,6 +4522,8 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
   font: 600 12px var(--cm-font-ui); color: var(--cm-faint); white-space: nowrap;
 }
 .cm-jobsearch-link:hover { color: var(--cm-brand-strong); text-decoration: underline; }
+/* A row whose mailbox is not open yet: a state, not an action - so it must not look clickable. */
+.cm-jobsearch-idle { font: 600 12px var(--cm-font-ui); color: var(--cm-disabled); white-space: nowrap; }
 
 /* -- Student application sheet (screen 2a) ---------------------------------- */
 .cm-sheet { display: grid; grid-template-columns: 1fr 330px; gap: 14px; align-items: start; }

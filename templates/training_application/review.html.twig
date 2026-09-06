@@ -93,18 +93,22 @@
                         </div>
 
                         {% if not validated %}
+                            {# A correction asked for on this very version is still standing: the
+                               screen shows it back as it was written, so a validator reopening the
+                               application reads their own words rather than an empty box. #}
+                            {% set standing = application.isRefused(element) %}
                             <div class="cm-training-verdict__actions">
                                 <label class="cm-training-verdict__choice">
                                     <input type="radio" name="decision_{{ element.value }}" value="validated">
                                     <span>{{ 'trainingReviewValidateAction'|trans }}</span>
                                 </label>
                                 <label class="cm-training-verdict__choice">
-                                    <input type="radio" name="decision_{{ element.value }}" value="refused">
+                                    <input type="radio" name="decision_{{ element.value }}" value="refused"{{ standing ? ' checked' }}>
                                     <span>{{ 'trainingReviewRefuseAction'|trans }}</span>
                                 </label>
                             </div>
                             <textarea name="remark_{{ element.value }}" rows="2" class="cm-compose__textarea"
-                                      placeholder="{{ 'trainingReviewRemarkPlaceholder'|trans }}"></textarea>
+                                      placeholder="{{ 'trainingReviewRemarkPlaceholder'|trans }}">{{ standing ? review.remark }}</textarea>
                         {% endif %}
                     </div>
                 {% endfor %}
