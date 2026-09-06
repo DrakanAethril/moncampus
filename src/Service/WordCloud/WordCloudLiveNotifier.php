@@ -6,6 +6,7 @@ namespace App\Service\WordCloud;
 
 use App\Entity\WordCloud;
 use App\Enum\WordCloudScale;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
 
@@ -27,6 +28,7 @@ class WordCloudLiveNotifier
         private readonly HubInterface $hub,
         private readonly WordCloudBoard $board,
         private readonly WordCloudWeighting $weighting,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -35,13 +37,32 @@ class WordCloudLiveNotifier
         return \sprintf('/word-clouds/%d', (int) $cloud->getId());
     }
 
+    /**
+     * Tells whoever is watching. **Never fails the thing it is reporting on.**.
+     *
+     * The word is already committed by the time this runs, so letting a hub that is down bubble up
+     * would answer 500 to a student whose word was in fact taken - the worst of both, since they
+     * would write it again and be told they already had. A board that missed an update catches up
+     * on its next load; a submission refused for something that worked is not recoverable from the
+     * screen.
+     *
+     * `\Throwable` rather than the Mercure exception hierarchy: what comes back from an unreachable
+     * hub depends on the transport underneath, and the answer here is the same whatever it is.
+     */
     public function publish(WordCloud $cloud): void
     {
-        $this->hub->publish(new Update(
-            $this->topic($cloud),
-            json_encode($this->snapshot($cloud), \JSON_THROW_ON_ERROR),
-            true,
-        ));
+        try {
+            $this->hub->publish(new Update(
+                $this->topic($cloud),
+                json_encode($this->snapshot($cloud), \JSON_THROW_ON_ERROR),
+                true,
+            ));
+        } catch (\Throwable $exception) {
+            $this->logger->warning('The word cloud board could not be told of a change.', [
+                'wordCloud' => $cloud->getId(),
+                'exception' => $exception,
+            ]);
+        }
     }
 
     /**
