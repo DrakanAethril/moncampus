@@ -1,0 +1,151 @@
+{# **The reusable creation component.**
+
+   The handoff asks for the creation process to be a component rather than a page: « appelable en
+   page dédiée comme ici, mais aussi en modale ou en panneau depuis une séance, le cahier de texte,
+   etc. ». This partial plus App\Form\WordCloudType and the `word-cloud-form` Stimulus controller
+   are that component. A new host includes it inside its own <form> and posts to the same route -
+   there is nothing page-specific below.
+
+   Parameters: `form` (a WordCloudType view), `programOptions` (class id => option ids, for the
+   chips to follow the class), and optionally `showPreview` (the « Vue étudiant » card, on by
+   default) and `cancelUrl`. #}
+{% set showPreview = showPreview|default(true) %}
+<div class="cm-wc-form"
+     data-controller="word-cloud-form"
+     data-word-cloud-form-program-options-value="{{ programOptions|json_encode }}"
+     data-word-cloud-form-placeholder-value="{{ 'wordCloudPreviewPlaceholderLabel'|trans }}">
+    <div class="cm-wc-card cm-wc-form__main">
+        <div class="cm-wc-field">
+            {{ form_label(form.name) }}
+            {{ form_widget(form.name) }}
+            {{ form_errors(form.name) }}
+        </div>
+        <div class="cm-wc-field">
+            {{ form_label(form.question) }}
+            {{ form_widget(form.question, {attr: {'data-word-cloud-form-target': 'question', 'data-action': 'input->word-cloud-form#questionChanged'}}) }}
+            {{ form_errors(form.question) }}
+        </div>
+
+        <div class="cm-wc-grid2">
+            <div class="cm-wc-field">
+                {{ form_label(form.program) }}
+                {{ form_widget(form.program, {attr: {'data-word-cloud-form-target': 'program', 'data-action': 'change->word-cloud-form#programChanged'}}) }}
+            </div>
+            {# The chips of every class on offer live in the DOM at once; only those of the class
+               currently picked stay visible, and the server re-checks the pairing on submit. #}
+            <div class="cm-wc-field" data-word-cloud-form-target="optionsField">
+                {{ form_label(form.options) }}
+                <div class="cm-wc-chips">
+                    {% for option in form.options %}
+                        {# The box is written out rather than rendered through form_widget().
+
+                           Bootstrap's checkbox widget wraps the input in a .form-check and prints
+                           the label itself, from the form's own variables - so `label: false` at
+                           render time does not remove it, and the chip came out reading « SLAM
+                           SLAM » with a <label> nested inside a <label>. Writing the input keeps
+                           the markup the handoff draws; `setRendered` tells Twig it has been
+                           handled, so form_end() does not print it a second time. #}
+                        {% do option.setRendered %}
+                        <label class="cm-wc-chip" data-word-cloud-form-target="optionChip" data-option="{{ option.vars.value }}">
+                            <input type="checkbox" id="{{ option.vars.id }}" name="{{ option.vars.full_name }}" value="{{ option.vars.value }}"{{ option.vars.checked ? ' checked' }}>
+                            {{ option.vars.label }}
+                        </label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="cm-wc-field">
+            <label>{{ 'wordCloudPeriodFieldLabel'|trans }}</label>
+            <div class="cm-wc-period" data-word-cloud-form-target="period">
+                <span class="cm-wc-period__word">{{ 'wordCloudPeriodFromLabel'|trans }}</span>
+                {{ form_widget(form.opensAt.date, {attr: {'data-word-cloud-form-target': 'opensDate'}}) }}
+                {{ form_widget(form.opensAt.time, {attr: {'data-word-cloud-form-target': 'opensTime'}}) }}
+                <span class="cm-wc-period__word">{{ 'wordCloudPeriodToLabel'|trans }}</span>
+                {{ form_widget(form.closesAt.date, {attr: {'data-word-cloud-form-target': 'closesDate'}}) }}
+                {{ form_widget(form.closesAt.time, {attr: {'data-word-cloud-form-target': 'closesTime'}}) }}
+            </div>
+            {# Three shortcuts, one choice: two of them write the boxes above, the third says the
+               clock will not open this cloud at all. #}
+            <div class="cm-wc-shortcuts">
+                <button type="button" class="cm-wc-chip cm-wc-chip--sm" data-action="word-cloud-form#openNowTenMinutes">{{ 'wordCloudShortcutTenMinutesLabel'|trans }}</button>
+                <button type="button" class="cm-wc-chip cm-wc-chip--sm" data-action="word-cloud-form#currentLesson"
+                        data-word-cloud-form-target="lessonShortcut"
+                        data-opens="{{ currentLesson|default(null) ? currentLesson.opensAt|date('Y-m-d H:i') }}"
+                        data-closes="{{ currentLesson|default(null) ? currentLesson.closesAt|date('Y-m-d H:i') }}"
+                        {{ currentLesson|default(null) is null ? 'disabled' }}>{{ 'wordCloudShortcutCurrentLessonLabel'|trans }}</button>
+                <button type="button" class="cm-wc-chip cm-wc-chip--sm" data-word-cloud-form-target="manualChip" data-action="word-cloud-form#toggleManual">{{ 'wordCloudShortcutManualLabel'|trans }}</button>
+            </div>
+            {% do form.manualOpening.setRendered %}
+            <input type="checkbox" hidden id="{{ form.manualOpening.vars.id }}" name="{{ form.manualOpening.vars.full_name }}" value="1"{{ form.manualOpening.vars.checked ? ' checked' }} data-word-cloud-form-target="manual">
+        </div>
+
+        <div class="cm-wc-grid2">
+            <div class="cm-wc-field">
+                <label>{{ 'wordCloudWordsPerStudentFieldLabel'|trans }}</label>
+                <div class="cm-wc-stepper" data-word-cloud-form-target="stepper">
+                    <button type="button" class="cm-wc-stepper__btn" data-action="word-cloud-form#decrement" aria-label="{{ 'wordCloudWordsPerStudentDecreaseLabel'|trans }}">&minus;</button>
+                    <div class="cm-wc-stepper__value" data-word-cloud-form-target="wordsValue">3</div>
+                    <button type="button" class="cm-wc-stepper__btn" data-action="word-cloud-form#increment" aria-label="{{ 'wordCloudWordsPerStudentIncreaseLabel'|trans }}">+</button>
+                    {# « Illimités » empties the field rather than writing a large number: null is
+                       what unlimited means everywhere else in this tool. #}
+                    <button type="button" class="cm-wc-chip cm-wc-chip--sm" data-word-cloud-form-target="unlimitedChip" data-action="word-cloud-form#toggleUnlimited">{{ 'wordCloudUnlimitedLabel'|trans }}</button>
+                </div>
+                {% do form.wordsPerStudent.setRendered %}
+                <input type="hidden" id="{{ form.wordsPerStudent.vars.id }}" name="{{ form.wordsPerStudent.vars.full_name }}" value="{{ form.wordsPerStudent.vars.value }}" data-word-cloud-form-target="words">
+                {{ form_errors(form.wordsPerStudent) }}
+            </div>
+            <div class="cm-wc-field">
+                {{ form_label(form.wordLength) }}
+                {{ form_widget(form.wordLength) }}
+            </div>
+        </div>
+
+        <div class="cm-wc-field">
+            {{ form_label(form.projectionMode) }}
+            <div class="cm-wc-modes">
+                {% for mode in form.projectionMode %}
+                    {% do mode.setRendered %}
+                    <label class="cm-wc-mode">
+                        <input type="radio" id="{{ mode.vars.id }}" name="{{ mode.vars.full_name }}" value="{{ mode.vars.value }}"{{ mode.vars.checked ? ' checked' }}>
+                        <span class="cm-wc-mode__dot"></span>
+                        <span>{{ mode.vars.label|trans }}</span>
+                    </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="cm-wc-switches">
+            {% for switch in [form.groupVariants, form.moderation, form.visibleToStudents] %}
+                {% do switch.setRendered %}
+                <label class="cm-wc-switch">
+                    <input type="checkbox" id="{{ switch.vars.id }}" name="{{ switch.vars.full_name }}" value="1"{{ switch.vars.checked ? ' checked' }}>
+                    <span class="cm-wc-switch__track"><span class="cm-wc-switch__knob"></span></span>
+                    <span>{{ switch.vars.label|trans }}</span>
+                </label>
+            {% endfor %}
+        </div>
+
+        <div class="cm-wc-formfoot">
+            <a class="cm-wc-btn" href="{{ cancelUrl|default(path('app_program_word_clouds', {id: program.id})) }}">{{ 'cancelAction'|trans }}</a>
+            <button type="submit" class="cm-wc-btn cm-wc-btn--gold">{{ 'wordCloudSaveAction'|trans }}</button>
+            {# The two footer buttons are one form and two intents: « Créer et ouvrir » carries the
+               flag the controller reads, and on a manual cloud it is the only thing that ever opens
+               it. #}
+            <button type="submit" class="cm-wc-btn cm-wc-btn--primary" name="openNow" value="1">{{ 'wordCloudCreateAndOpenAction'|trans }}</button>
+        </div>
+    </div>
+
+    {% if showPreview %}
+        <div class="cm-wc-card cm-wc-card--pad cm-wc-preview">
+            <span class="cm-wc-label">{{ 'wordCloudStudentPreviewLabel'|trans }}</span>
+            {# A rehearsal, not a control: nothing here is submitted, it shows what the class will
+               be looking at while the teacher writes the question. #}
+            <div class="cm-wc-preview__frame" aria-hidden="true">
+                <span class="cm-wc-preview__question" data-word-cloud-form-target="previewQuestion">{{ form.question.vars.value }}</span>
+                <div class="cm-wc-preview__boxes" data-word-cloud-form-target="previewBoxes"></div>
+                <span class="cm-wc-btn cm-wc-btn--lead">{{ 'wordCloudSendAction'|trans }}</span>
+            </div>
+        </div>
+    {% endif %}
+</div>

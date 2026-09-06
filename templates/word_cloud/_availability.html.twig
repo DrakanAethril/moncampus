@@ -1,0 +1,15 @@
+{# « Disponibilité » in one line: the window, or the fact that there is not one.
+
+   A manual cloud says « Ouverture manuelle » rather than showing dates nothing will act on - the
+   whole point of the setting is that the clock does not decide. #}
+{%- if cloud.manualOpening and cloud.openedAt is null -%}
+    {{ 'wordCloudManualOpeningFieldLabel'|trans }}
+{%- elseif cloud.manualOpening -%}
+    {{ 'wordCloudOpenedAtLabel'|trans({'%moment%': cloud.openedAt|date('d/m/Y H:i')}) }}
+{%- elseif cloud.opensAt and cloud.closesAt -%}
+    {{ cloud.opensAt|date('d/m/Y H:i') }} → {{ cloud.closesAt|date('H:i') }}
+{%- elseif cloud.opensAt -%}
+    {{ cloud.opensAt|date('d/m/Y H:i') }}
+{%- else -%}
+    —
+{%- endif -%}

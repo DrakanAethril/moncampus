@@ -1,0 +1,14 @@
+{# The segmented control and the search box.
+
+   The form is a GET: it shows a result rather than changing anything, and a POST handled by Turbo
+   would have to redirect to say the same thing. The search carries across both tabs, which is why
+   the segmented control's two links carry the current query. #}
+<div class="cm-wc-toolbar">
+    <div class="cm-wc-seg">
+        <a class="{{ byWord ? 'is-on' }}" href="{{ path('app_program_word_cloud_follow_up', {id: program.id, cloudId: cloud.id, q: query}) }}">{{ 'wordCloudByWordTabLabel'|trans }}</a>
+        <a class="{{ byWord ? '' : 'is-on' }}" href="{{ path('app_program_word_cloud_follow_up_students', {id: program.id, cloudId: cloud.id, q: query}) }}">{{ 'wordCloudByStudentTabLabel'|trans }}</a>
+    </div>
+    <form method="get" class="ms-auto">
+        <input type="search" name="q" class="cm-wc-search" value="{{ query }}" placeholder="{{ 'wordCloudSearchPlaceholder'|trans }}" aria-label="{{ 'wordCloudSearchPlaceholder'|trans }}">
+    </form>
+</div>

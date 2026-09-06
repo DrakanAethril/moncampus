@@ -35,6 +35,17 @@
                 <span class="cm-dash-banner__action">
                     <a href="{{ path('app_program_quiz_live_join', {id: banner_session.quizInstance.program.id, sessionId: banner_session.id}) }}" class="cm-btn cm-btn--gold">{{ 'homeStudentBannerQuizLiveAction'|trans }}</a>
                 </span>
+            {% elseif student.banner.type == 'wordCloud' %}
+                {# The same shape as the live contest above, and directly under it: a word cloud
+                   open right now is the class doing something in the room, not a deadline. #}
+                {% set banner_cloud = student.banner.wordCloud %}
+                <span class="cm-dash-banner__body">
+                    <span class="cm-dash-banner__title">{{ 'homeStudentBannerWordCloudTitle'|trans }}</span>
+                    <span class="cm-dash-banner__text">{{ banner_cloud.question }} · {{ banner_cloud.program.displayShortName }}</span>
+                </span>
+                <span class="cm-dash-banner__action">
+                    <a href="{{ path('app_my_word_cloud', {id: banner_cloud.id}) }}" class="cm-btn cm-btn--gold">{{ 'homeStudentBannerWordCloudAction'|trans }}</a>
+                </span>
             {% elseif student.banner.type == 'alternanceYourTurn' %}
                 <span class="cm-dash-banner__body">
                     <span class="cm-dash-banner__title">{{ 'homeStudentBannerAlternanceTitle'|trans }}</span>

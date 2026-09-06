@@ -1,0 +1,18 @@
+{# The tool's trail, shared by its seven screens: Accueil › <classe> › Outils › Nuage de mots, then
+   the cloud's own name on the screens that are about one cloud.
+
+   Built here once and extended with |merge by the callers rather than written out on each screen -
+   the same pattern as templates/audio_recording/_breadcrumb.html.twig. Every segment stays a real
+   <a href>, the last one carrying .current, per the application-wide convention. #}
+{% set segments = [
+    {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {label: program.displayShortName, url: path('app_program_students', {id: program.id})},
+    {label: 'programToolsNavLabel'|trans, url: path('app_program_word_clouds', {id: program.id})},
+    {label: 'wordCloudNavLabel'|trans, url: path('app_program_word_clouds', {id: program.id})},
+] %}
+{% if cloud is defined and cloud is not null and cloud.id %}
+    {% set segments = segments|merge([{label: cloud.name, url: path('app_program_word_cloud_pilot', {id: program.id, cloudId: cloud.id})}]) %}
+{% elseif newLabel is defined %}
+    {% set segments = segments|merge([{label: newLabel, url: app.request.requestUri}]) %}
+{% endif %}
+{% include '_breadcrumb.html.twig' with {segments: segments} %}
