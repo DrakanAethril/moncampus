@@ -1,9 +1,12 @@
 {# Screen 8e - the feedback on a practice application, and the resend
    (design_handoff_workflow_postulation).
 
-   What was asked for, what is already acquired, the file to replace, and a dated history. The list
-   of what stays validated matters as much as the corrections: a student who reads "1 correction"
-   next to "mail, signature and CV already validated" knows they are nearly through. #}
+   The compose screen of screen 8b, filled in with what was sent, and the validator's answer beside
+   it. Reading the remark and correcting the paragraph it speaks about are the same gesture, so they
+   are the same screen: the mail is rewritten where it was written, not described in a box.
+
+   Nothing here recounts the exchanges. A student has one thing to do - fix what came back - and a
+   dated list of who validated what on which version answers a question they are not asking. #}
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'trainingApplicationPageHeading'|trans }}{% endblock %}
@@ -17,98 +20,133 @@
     ]} %}
 {% endblock %}
 
-{% block page_title %}{{ 'trainingApplicationPageHeading'|trans }}{% endblock %}
+{% block page_title %}
+    {{ 'trainingApplicationPageHeading'|trans }}
+    <span class="cm-jobapp-chip cm-jobapp-chip--{{ application.state.chipVariant }}">{{ application.state.labelKey|trans }}</span>
+    <span class="cm-training-badge">{{ 'trainingApplicationVersionLabel'|trans({'%version%': application.versionNumber}) }}</span>
+{% endblock %}
 
 {% block main %}
-    {% set refused = application.refusedElements %}
-    {% set validatedElements = elements|filter(e => application.isValidated(e)) %}
+    <div class="cm-sheet">
+        <div class="cm-sheet__main">
+            {# The resend posts the whole mail again, so the fields carry the last round's text
+               rather than starting empty - what is not corrected has to travel back unchanged. When
+               the ball is not in the student's court, the same card is read-only: there is nothing
+               to send, and the controller would refuse it anyway. #}
+            <form method="post" action="{{ path('app_training_application_resubmit', {id: application.id}) }}"
+                  enctype="multipart/form-data" class="cm-postul" data-controller="training-attachments"
+                  data-training-attachments-remove-label-value="{{ 'trainingApplyRemoveAttachmentAction'|trans }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('training_resubmit') }}">
 
-    <div class="cm-training-summary">
-        <span class="cm-jobapp-chip cm-jobapp-chip--{{ application.state.chipVariant }}">{{ application.state.labelKey|trans }}</span>
-        <span class="cm-training-summary__offer">{{ 'trainingApplicationOfferLabel'|trans({'%offer%': application.offer.title}) }}</span>
-        <span class="cm-training-summary__version">{{ 'trainingApplicationVersionLabel'|trans({'%version%': application.versionNumber}) }}</span>
-    </div>
+                <div class="cm-postul__fields">
+                    <div class="cm-postul__row">
+                        <span class="cm-postul__label">{{ 'schoolMailComposeToLabel'|trans }}</span>
+                        <span class="cm-training-chip">{{ 'trainingApplyOfferChipLabel'|trans({'%offer%': application.offer.title}) }}</span>
+                    </div>
 
-    {% if refused|length > 0 %}
-        <div class="card cm-training-feedback mt-3">
-            <div class="cm-jobapp-head">
-                <span class="cm-training-feedback__title">{{ 'trainingApplicationCorrectionsTitle'|trans({'%count%': refused|length}) }}</span>
-                {% if validatedElements|length > 0 %}
-                    <span class="cm-badge cm-badge--green ms-auto">
-                        {{ 'trainingApplicationAlreadyValidatedLabel'|trans({'%elements%': validatedElements|map(e => e.labelKey|trans)|join(', ')}) }}
-                    </span>
-                {% endif %}
-            </div>
-            <div class="card-body">
-                {% for element in refused %}
+                    <div class="cm-postul__row">
+                        <label class="cm-postul__label" for="training-resend-subject">{{ 'schoolMailComposeSubjectLabel'|trans }}</label>
+                        <input type="text" id="training-resend-subject" name="subject" value="{{ values.subject }}"
+                               required class="cm-postul__input"{{ canResend ? '' : ' readonly' }}>
+                    </div>
+                </div>
+
+                <textarea name="body" rows="14" required class="cm-postul__textarea"
+                          aria-label="{{ 'trainingApplyBodyLabel'|trans }}"{{ canResend ? '' : ' readonly' }}>{{ values.body }}</textarea>
+
+                {# The signature as it reads today, since that is the one the resend will carry - the
+                   link under the card is what changes it. #}
+                <div class="cm-postul__signature">
+                    <b>{{ signature.name }}</b>
+                    {% if signature.formation %}<br>{{ signature.formation }} — Institution Beaupeyrat{% endif %}
+                    {% if signature.address or signature.phone %}
+                        <br>{{ [signature.address, signature.phone]|filter(v => v)|join(' · ') }}
+                    {% endif %}
+                    {% if signature.linkedin or signature.github %}
+                        <br>{{ [signature.linkedin, signature.github]|filter(v => v)|join(' · ') }}
+                    {% endif %}
+                </div>
+
+                <div class="cm-postul__attachments">
+                    <div class="cm-postul__attachhead">
+                        <span class="cm-postul__attachlabel">{{ 'trainingApplyAttachmentsLabel'|trans }}</span>
+                        {% if canResend %}
+                            <button type="submit" class="cm-postul__send">{{ 'trainingApplicationResubmitAction'|trans }}</button>
+                        {% endif %}
+                    </div>
+                    <div class="cm-postul__chips" data-training-attachments-target="chips">
+                        {# What was already read, named rather than linked: the files a validator
+                           opens live behind their own route, and a student re-reads their documents
+                           where they keep them. #}
+                        {% for attachment in application.currentVersion.attachments %}
+                            <span class="cm-postul__chip cm-postul__chip--sent">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg>
+                                <span>{{ attachment.name }}</span>
+                            </span>
+                        {% endfor %}
+                        {% if canResend %}
+                            <button type="button" class="cm-postul__attach" data-action="training-attachments#pick">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+                                {{ 'trainingApplyAttachAction'|trans }}
+                            </button>
+                        {% endif %}
+                    </div>
+                    {% if canResend %}
+                        <input type="file" name="attachments[]" multiple accept="application/pdf"
+                               class="cm-postul__file"
+                               data-training-attachments-target="input"
+                               data-action="change->training-attachments#added"
+                               aria-label="{{ 'trainingApplyAttachAction'|trans }}">
+                        <p class="cm-postul__note">{{ 'trainingApplicationReplaceFilesLabel'|trans }}</p>
+                    {% endif %}
+                </div>
+            </form>
+
+            <p class="cm-postul__note">
+                {{ 'trainingApplySignatureNoticeLabel'|trans }}
+                <a href="{{ path('app_school_mail_signature') }}">{{ 'trainingApplyEditSignatureAction'|trans }}</a>.
+            </p>
+        </div>
+
+        <aside class="cm-sheet__side">
+            <div class="card">
+                <div class="cm-jobapp-head">
+                    <span class="cm-jobapp-head__title">{{ 'trainingApplicationFeedbackTitle'|trans }}</span>
+                    <span class="cm-training-badge ms-auto">{{ application.validatedCount }} / {{ elements|length }}</span>
+                </div>
+
+                {% for element in elements %}
                     {% set review = application.getReviewFor(element) %}
-                    <p class="cm-training-feedback__item">
-                        <b>{{ element.labelKey|trans }}</b> — « {{ review.remark }} »
-                    </p>
+                    {% set validated = application.isValidated(element) %}
+                    {% set refused = application.isRefused(element) %}
+                    <div class="cm-training-verdict{{ validated ? ' is-validated' }}">
+                        <div class="cm-training-verdict__head">
+                            <span class="cm-training-check__icon{{ validated ? ' is-validated' : (refused ? ' is-refused' : '') }}">{{ validated ? '✓' : (refused ? '!' : '·') }}</span>
+                            <b>{{ element.labelKey|trans }}</b>
+                            <span class="cm-training-verdict__state{{ refused ? ' is-refused' : (validated ? '' : ' is-pending') }}">
+                                {{ element.stateLabelKey(validated ? 'validated' : (refused ? 'correction' : 'pending'))|trans }}
+                            </span>
+                        </div>
+                        {% if review and review.remark %}
+                            <p class="cm-training-verdict__remark">« {{ review.remark }} »</p>
+                        {% elseif not validated and not refused %}
+                            <p class="cm-training-verdict__remark cm-training-verdict__remark--muted">{{ 'trainingElementPendingHintLabel'|trans }}</p>
+                        {% endif %}
+                    </div>
                 {% endfor %}
-            </div>
-        </div>
 
-        <form method="post" action="{{ path('app_training_application_resubmit', {id: application.id}) }}"
-              enctype="multipart/form-data" class="card mt-3">
-            <input type="hidden" name="_token" value="{{ csrf_token('training_resubmit') }}">
-            <div class="cm-jobapp-head">
-                <span class="cm-jobapp-head__title">{{ 'trainingApplicationResubmitTitle'|trans }}</span>
+                <div class="cm-compose__footer">
+                    <span class="cm-compose__notes">
+                        {% if canResend %}
+                            {{ 'trainingApplicationResubmitHintLabel'|trans }}
+                        {% elseif application.state.value == 'validated' %}
+                            {{ 'trainingApplicationValidatedText'|trans }}
+                        {% else %}
+                            {{ 'trainingApplicationAwaitingReviewText'|trans }}
+                        {% endif %}
+                    </span>
+                </div>
             </div>
-            <div class="card-body">
-                {% if refused|filter(e => not e.isFile)|length > 0 %}
-                    {# The mail and the signature are corrected by rewriting, not by uploading:
-                       the signature travels with the body, so both come back through this box. #}
-                    <label class="cm-compose__create-field mb-3">
-                        <span>{{ 'trainingApplicationRewriteLabel'|trans({'%element%': refused|filter(e => not e.isFile)|map(e => e.labelKey|trans)|join(', ')}) }}</span>
-                        <textarea name="body" rows="10" class="cm-compose__textarea">{{ application.currentVersion.body }}</textarea>
-                    </label>
-                {% endif %}
-                {% if refused|filter(e => e.isFile)|length > 0 %}
-                    {# A refused document is fixed by joining the files again - all of them, since
-                       the application no longer has a designated CV or cover letter to replace on
-                       its own (design_handoff_postulation_redaction). Leaving the field empty keeps
-                       the files already read. #}
-                    <label class="cm-compose__create-field mb-3">
-                        <span>{{ 'trainingApplicationReplaceFilesLabel'|trans }}</span>
-                        <input type="file" name="attachments[]" accept="application/pdf" multiple>
-                    </label>
-                {% endif %}
-                <p class="cm-compose__hint">{{ 'trainingApplicationResubmitHintLabel'|trans }}</p>
-                <button type="submit" class="cm-btn cm-btn--primary">{{ 'trainingApplicationResubmitAction'|trans }}</button>
-            </div>
-        </form>
-    {% else %}
-        <div class="card mt-3">
-            <div class="card-body text-secondary">
-                {{ (application.state.value == 'validated'
-                    ? 'trainingApplicationValidatedText'
-                    : 'trainingApplicationAwaitingReviewText')|trans }}
-            </div>
-        </div>
-    {% endif %}
-
-    <div class="cm-training-history">
-        <div class="cm-training-history__label">{{ 'trainingApplicationHistoryLabel'|trans }}</div>
-        {% for review in application.reviews|reverse %}
-            <div class="cm-training-history__row">
-                <span class="cm-training-history__dot{{ review.decision.value == 'validated' ? ' is-validated' : ' is-refused' }}"></span>
-                {{ review.decidedAt|date('d/m H:i') }} —
-                {% set historyKey = review.decision.value == 'validated'
-                    ? (review.element.isFeminine ? 'trainingHistoryValidatedFeminineText' : 'trainingHistoryValidatedText')
-                    : 'trainingHistoryRefusedText' %}
-                {{ historyKey|trans({
-                    '%element%': review.element.labelKey|trans,
-                    '%validator%': review.validator ? (review.validator.displayName ?? review.validator.username) : '',
-                }) }}
-            </div>
-        {% endfor %}
-        {% for version in application.versions|reverse %}
-            <div class="cm-training-history__row">
-                <span class="cm-training-history__dot"></span>
-                {{ version.submittedAt|date('d/m H:i') }} —
-                {{ 'trainingHistorySubmittedText'|trans({'%version%': version.number}) }}
-            </div>
-        {% endfor %}
+        </aside>
     </div>
 {% endblock %}

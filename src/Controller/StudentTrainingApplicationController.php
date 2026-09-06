@@ -125,9 +125,24 @@ class StudentTrainingApplicationController extends AbstractController
     {
         $this->denyUnlessOwned($application);
 
+        /** @var User $student */
+        $student = $this->getUser();
+        $version = $application->getCurrentVersion();
+
+        // The same screen as the compose one, filled in with what was sent: a student who has to
+        // correct a paragraph rewrites their mail there, rather than describing the correction in
+        // a box of its own.
         return $this->render('training_application/show.html.twig', [
             'application' => $application,
             'elements' => TrainingApplicationElement::all(),
+            'values' => [
+                'subject' => (string) $version?->getSubject(),
+                'body' => (string) $version?->getBody(),
+            ],
+            // The live signature, not the version's snapshot: it is the one that will travel with
+            // the resend, and the link under the mail is there to change it.
+            'signature' => $this->signatureBuilder->build($student, $this->mailboxResolver->addressFor($student)),
+            'canResend' => TrainingApplicationState::CorrectionsRequested === $application->getState(),
         ]);
     }
 
@@ -160,6 +175,7 @@ class StudentTrainingApplicationController extends AbstractController
             $application,
             $files,
             (string) $request->request->get('body', ''),
+            (string) $request->request->get('subject', ''),
         );
 
         $this->addFlash('success', 'trainingApplicationResubmittedFlash');

@@ -4724,17 +4724,16 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 }
 .cm-training-unlocked a { margin-left: auto; }
 
-.cm-training-summary { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 12.5px; color: var(--cm-muted); }
-.cm-training-feedback { border-color: #e0b25f; }
-.cm-training-feedback__title { font: 600 13.5px var(--cm-font-ui); color: #8a6a1f; }
-.cm-training-feedback__item { margin: 0 0 8px; font-size: 13px; color: var(--cm-text); line-height: 1.55; }
-
-.cm-training-history { margin-top: 16px; }
-.cm-training-history__label { font: 600 11px var(--cm-font-ui); letter-spacing: .6px; text-transform: uppercase; color: var(--cm-faint); margin-bottom: 8px; }
-.cm-training-history__row { display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: var(--cm-muted); padding: 3px 0; }
-.cm-training-history__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cm-faint); flex: none; }
-.cm-training-history__dot.is-validated { background: #1f7a54; }
-.cm-training-history__dot.is-refused { background: #e0b25f; }
+/* Screen 8e: the validator's answer beside the mail it speaks about. The chips of the files
+   already sent carry no ×, because there is nothing to take back - joining a file replaces the
+   list, it does not edit it. */
+.cm-postul__chip--sent { color: var(--cm-muted); background: var(--cm-surface-soft); }
+.cm-training-verdict__remark { margin: 7px 0 0; font-size: 12.5px; color: var(--cm-text); line-height: 1.55; }
+.cm-training-verdict__remark--muted { color: var(--cm-faint); }
+/* The state reads in the colour of what it asks for: green nothing to do, amber your turn, grey
+   waiting on somebody else. */
+.cm-training-verdict__state.is-refused { color: #8a6a1f; }
+.cm-training-verdict__state.is-pending { color: var(--cm-faint); }
 
 /* Screen 8c: the queue sits at the head of the class tracking page, in the amber of things that
    wait on somebody. */
@@ -4830,6 +4829,9 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 [data-bs-theme=dark] .cm-training-previous,
 [data-bs-theme=dark] .cm-training-queue__head { background: #3c3117; }
 [data-bs-theme=dark] .cm-training-unlocked { background: #1d3327; border-color: #2e5c44; color: #8cc3a2; }
+/* #8a6a1f is amber read on paper: on the dark surface it sinks into the background, so the "your
+   turn" state takes the same lighter amber the rest of the dark theme uses. */
+[data-bs-theme=dark] .cm-training-verdict__state.is-refused { color: #e0b25f; }
 
 /* ============================================================================
    Création d'un travail (2a) and the assignment list (2b)

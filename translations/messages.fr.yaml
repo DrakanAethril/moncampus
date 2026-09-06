@@ -3756,7 +3756,6 @@ schoolMailSignatureLinkedinLabel: 'LinkedIn'
 schoolMailSignatureGithubLabel: 'GitHub'
 schoolMailSignatureEmptyPlaceholder: '(vide)'
 schoolMailSignatureAppendedNoticeLabel: 'Cette signature est ajoutée à chaque mail que vous envoyez à une entreprise.'
-schoolMailSignatureDefaultNoticeLabel: "Videz un champ pour retirer la ligne correspondante ; « Rétablir la signature par défaut » revient à celle de l'établissement."
 schoolMailSignatureSavedFlash: 'Votre signature est enregistrée.'
 schoolMailSignatureResetAction: 'Rétablir la signature par défaut'
 schoolMailSignatureResetFlash: "Signature par défaut de l'établissement rétablie."
@@ -3916,22 +3915,13 @@ trainingApplicationSubmittedFlash: 'Votre postulation est partie en relecture.'
 trainingApplicationResubmittedFlash: 'Votre postulation est repartie en relecture.'
 
 trainingApplicationPageHeading: 'Retour sur votre postulation'
-trainingApplicationOfferLabel: 'Offre « %offer% »'
 trainingApplicationVersionLabel: 'version %version%'
-trainingApplicationCorrectionsTitle: '{1}1 correction demandée|]1,Inf[ %count% corrections demandées'
-trainingApplicationAlreadyValidatedLabel: 'Déjà validés : %elements%'
-trainingApplicationResubmitTitle: 'Renvoyer la postulation'
-trainingApplicationReplaceFilesLabel: 'Joindre à nouveau vos documents (PDF) — laissez vide pour garder ceux déjà lus'
-trainingApplicationRewriteLabel: 'Corriger : %element%'
+trainingApplicationFeedbackTitle: "Retours de l'enseignant"
+trainingApplicationReplaceFilesLabel: 'Joindre un fichier remplace ceux déjà envoyés — sans rien joindre, ils repartent tels quels.'
 trainingApplicationResubmitHintLabel: "Seul l'élément corrigé repart en relecture — les validations acquises le restent. La postulation repasse à l'état « Renvoyée » chez le valideur."
-trainingApplicationResubmitAction: 'Renvoyer la postulation'
+trainingApplicationResubmitAction: 'Renvoyer en validation'
 trainingApplicationAwaitingReviewText: 'Votre postulation est en attente de relecture par un enseignant.'
 trainingApplicationValidatedText: "Les quatre éléments sont validés : l'envoi vers de vraies entreprises est déverrouillé."
-trainingApplicationHistoryLabel: 'Historique'
-trainingHistorySubmittedText: 'postulation envoyée (v%version%)'
-trainingHistoryValidatedText: '%element% validé par %validator%'
-trainingHistoryValidatedFeminineText: '%element% validée par %validator%'
-trainingHistoryRefusedText: 'correction demandée sur %element% par %validator%'
 
 trainingQueueTitle: "Postulations d'entraînement à traiter"
 trainingQueueValidatorLabel: '{1}vous êtes valideur sur 1 offre|]1,Inf[ vous êtes valideur sur %count% offres'
