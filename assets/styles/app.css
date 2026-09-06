@@ -9951,7 +9951,12 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 }
 
 /* --- Page grid: the list, then the selected séance --- */
+/* min-width: 0 on the columns, not decoration: a grid track sizes itself to its content's
+   min-content width by default, so any child that refuses to wrap makes the whole grid wider than
+   the page. The séance preview holds a teacher's own prose, and one long line of it used to push
+   « Ouvrir la séance » past the right edge behind a page-wide horizontal scrollbar. */
 .cm-cdt { display: grid; grid-template-columns: 330px 1fr; gap: 16px; align-items: start; font-family: var(--cm-font-ui); }
+.cm-cdt > * { min-width: 0; }
 .cm-cdt-card {
     background: var(--cm-surface); border: 1px solid var(--cm-border);
     border-radius: 11px; display: flex; flex-direction: column;
@@ -10062,21 +10067,35 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 }
 .cm-cdt-detail__open:hover { background: var(--cm-brand-strong); color: #fff; }
 .cm-cdt-detail__body { padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+/* Aligned to the top rather than centred: the part now carries the cahier de texte as it was
+   written, so it is as tall as that content - a dot and a badge floating at its middle would no
+   longer read as belonging to the line they label. */
 .cm-cdt-part {
-    display: flex; align-items: center; gap: 12px;
+    display: flex; align-items: flex-start; gap: 12px;
     border: 1px solid var(--cm-border); border-radius: 10px;
     padding: 12px 15px; background: var(--cm-vm-soft);
 }
-.cm-cdt-part__dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--cm-border); }
+/* The dot and the badge sit on the title's own line, which the flex box no longer centres them on. */
+.cm-cdt-part__dot { flex: none; width: 9px; height: 9px; margin-top: 6px; border-radius: 50%; background: var(--cm-border); }
 .cm-cdt-part__dot--filled { background: var(--cm-vm-ok-tx); }
 .cm-cdt-part__dot--partial { background: var(--cm-gold); }
 .cm-cdt-part__body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
 .cm-cdt-part__title { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+/* The one-line pieces: how many travaux, how many documents, or that nothing is written yet. */
 .cm-cdt-part__summary {
     font-size: 12px; color: var(--cm-faint);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.cm-cdt-part .cm-badge { flex: none; }
+/* The content itself, with the formatting the editor gave it. No border and no ground of its own -
+   it is already inside the part's box - and a long word or a pasted URL breaks rather than widening
+   the card. A table pasted from elsewhere scrolls inside this box, never taking the page with it. */
+.cm-cdt-part__content {
+    margin-top: 4px; border: 0; padding: 0; background: transparent;
+    font-size: 12.5px; color: var(--cm-text);
+    overflow-wrap: anywhere; overflow-x: auto;
+}
+.cm-cdt-part__content > :last-child { margin-bottom: 0; }
+.cm-cdt-part .cm-badge { flex: none; margin-top: 1px; }
 
 /* --- Nothing to show: an empty week, or a day the link named that carries no séance --- */
 .cm-cdt-notice {
