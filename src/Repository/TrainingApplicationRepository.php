@@ -73,6 +73,48 @@ class TrainingApplicationRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Every practice application of a whole class, newest first, indexed by student id.
+     *
+     * The tracking screen (1a) reads it to say, row by row, where each student stands before their
+     * mailbox opens: no application yet, one waiting on a validator, or one waiting on its author.
+     * The offer's validators come along because the row has to know whether *this* teacher may act.
+     *
+     * @param list<User> $students
+     *
+     * @return array<int, list<TrainingApplication>>
+     */
+    public function findForStudentsIndexedByStudentId(array $students): array
+    {
+        if ([] === $students) {
+            return [];
+        }
+
+        /** @var list<TrainingApplication> $applications */
+        $applications = $this->createQueryBuilder('a')
+            ->addSelect('o', 'ov', 'v')
+            ->join('a.offer', 'o')
+            ->leftJoin('o.validators', 'ov')
+            ->leftJoin('a.versions', 'v')
+            ->andWhere('a.student IN (:students)')
+            ->setParameter('students', $students)
+            ->orderBy('a.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+
+        $indexed = [];
+
+        foreach ($applications as $application) {
+            $studentId = $application->getStudent()?->getId();
+
+            if (null !== $studentId) {
+                $indexed[$studentId][] = $application;
+            }
+        }
+
+        return $indexed;
+    }
+
     /** Does this student have a fully validated application - the one fact that unlocks sending? */
     public function hasValidatedApplication(User $student): bool
     {

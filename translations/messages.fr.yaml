@@ -3775,6 +3775,8 @@ jobSearchTrackingRepliesColumnLabel: 'Réponses reçues'
 jobSearchTrackingLastSentColumnLabel: 'Dernier envoi'
 jobSearchTrackingSearchesColumnLabel: 'Recherches'
 jobSearchTrackingSheetAction: 'Voir la fiche'
+jobSearchTrackingAwaitingApplicationLabel: 'En attente de postulation'
+jobSearchTrackingReviewFeedbackAction: 'Revoir le retour'
 jobSearchTrackingEmptyLabel: 'Aucun étudiant dans cette classe.'
 jobSearchTrackingFootnoteLabel: "Compteurs factuels uniquement — envois, délivrance, échecs et réponses reçues ; le contenu des réponses n'est pas analysé. « Marquer terminé » clôt la recherche de l'étudiant : sa boîte reste consultable, l'envoi est désactivé et il sort des rappels."
 jobSearchCloseAction: 'Marquer terminé'
