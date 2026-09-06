@@ -76,7 +76,7 @@ class PilotController extends AbstractController
         $board = $this->board->buildFrom($cloud, $rows);
         $roster = $this->audience->students($cloud);
 
-        $mercureAuthorization->setCookie($request, [$this->liveNotifier->topic($cloud)], [], [], 'subscriber');
+        $live = $this->grantLiveSubscription($request, $mercureAuthorization, $this->liveNotifier, $cloud);
 
         return $this->render('word_cloud/pilot.html.twig', [
             'program' => $program,
@@ -92,8 +92,10 @@ class PilotController extends AbstractController
             )),
             'silent' => $this->followUp->silentStudents($roster, $rows),
             'rosterSize' => \count($roster),
-            'mercurePublicUrl' => $hub->getPublicUrl(),
-            'topic' => $this->liveNotifier->topic($cloud),
+            // Empty when the subscription could not be granted: the template then draws the board
+            // without mounting the live controller, rather than opening a stream that is refused.
+            'mercurePublicUrl' => $live ? $hub->getPublicUrl() : '',
+            'topic' => $live ? $this->liveNotifier->topic($cloud) : '',
         ]);
     }
 

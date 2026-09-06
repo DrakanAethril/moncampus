@@ -124,6 +124,27 @@ class WordCloudSubmissionTest extends FunctionalTestCase
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
     }
 
+    /**
+     * The screen renders whether or not it can subscribe to the live feed.
+     *
+     * Minting the subscription cookie fails when the hub sits on a different second-level domain
+     * from the request, and that used to take the whole screen down with it - no cloud, no
+     * moderation queue, no participation, over a refresh mechanism. Found by CI, which runs in
+     * exactly that shape.
+     */
+    public function testThePilotScreenStillRendersWhenTheLiveFeedCannotBeSubscribedTo(): void
+    {
+        $cloud = $this->openCloud();
+        $path = '/programs/'.$cloud->getProgram()->getId().'/tools/word-clouds/'.$cloud->getId();
+
+        $this->client->loginUser($this->teacher);
+        // A hub on another domain: the cookie cannot be scoped, the board simply stays static.
+        $this->client->request('GET', $path, [], [], ['HTTP_HOST' => 'elsewhere.example']);
+
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        self::assertStringContainsString('cm-wc-cloud', (string) $this->client->getResponse()->getContent());
+    }
+
     /** Writing and running are two doors: being in the class opens neither the other. */
     public function testAStudentOfTheClassIsRefusedThePilotScreen(): void
     {
