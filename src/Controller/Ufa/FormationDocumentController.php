@@ -38,11 +38,14 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * follows `ufa_booklet`, the feature the UFA team is delivered, rather than the settings screens'
  * own reach.
  *
- * The tab also carries a second, unrelated document - « Emploi du temps ». That one is *only* a
- * file: no other screen, export or API reads it, and it has no connection to the platform's own
- * timetable (see App\Form\UfaTimetableDocumentType). It is served back by
- * timetableDocumentPdf() below, behind the same guard as the tab, so a document the UFA team
- * uploads for itself cannot be reached by the audiences the alternance calendar is published to.
+ * The tab also carries a second document - « Emploi du temps ». It has no connection to the
+ * platform's own timetable (see App\Form\UfaTimetableDocumentType): it is a file, and depositing
+ * it is what makes section II.2 of the Livret de l'alternant exist - the booklet then runs
+ * Calendrier / Emploi du temps / Modalités d'examen, and shows the file itself
+ * (App\Service\InternshipBookletBuilder, App\Service\InternshipBookletPdfExporter). A formation
+ * with no such document keeps the booklet it has always had. So the alternant and their tutor read
+ * this file through their own booklet; timetableDocumentPdf() below is the UFA team's own door onto
+ * it, behind the tab's guard.
  *
  * Two independent forms on one screen: each has its own type, so its own block prefix, and
  * `handleRequest()` claims only the one whose name is in the payload. Saving one therefore never

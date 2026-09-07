@@ -1342,6 +1342,7 @@ ufaAlternanceLivretSectionUsageLabel: 'Modalités d’utilisation du livret'
 ufaAlternanceLivretSectionWorkloadLabel: 'Durée de travail'
 ufaAlternanceLivretSectionPedagogicalLabel: 'Informations pédagogiques'
 ufaAlternanceLivretSectionCalendarLabel: 'Calendrier d’alternance'
+ufaAlternanceLivretSectionTimetableLabel: 'Emploi du temps'
 ufaAlternanceLivretSectionExamLabel: 'Modalités d’examen'
 ufaAlternanceLivretSectionFollowUpLabel: 'Suivi de la formation'
 ufaAlternanceLivretEmptySectionNote: "Sections vides tant que la donnée n'est pas saisie : le livret se remplit au fil des points de suivi."
@@ -1624,6 +1625,7 @@ internshipBookletDownloadPdfButtonLabel: 'Télécharger le PDF'
 pdfExportLoadingLabel: 'Génération du PDF…'
 internshipBookletPdfExportFailedFlashMessage: "Le PDF n'a pas pu être généré. Veuillez réessayer plus tard."
 internshipBookletCalendarFileLinkLabel: "Ouvrir le calendrier d'alternance (PDF)"
+internshipBookletTimetableFileLinkLabel: "Ouvrir l'emploi du temps (PDF)"
 internshipBookletStudentSectionHeading: 'Alternant'
 internshipBookletNameLabel: 'Nom Prénom'
 internshipBookletEmailLabel: 'Email'

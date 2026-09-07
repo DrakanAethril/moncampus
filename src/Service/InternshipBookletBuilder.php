@@ -162,6 +162,11 @@ class InternshipBookletBuilder
             ? $program->getAlternanceCalendarFileKey()
             : null;
 
+        // "Emploi du temps" section II.2: unlike the calendar there is no mode to consult - the
+        // document deposited in UFA > Formations > Documents is the whole condition. A formation
+        // that has none keeps the booklet it has always had, with the exam modalities as II.2.
+        $timetableFileKey = $program->getTimetableDocumentFileKey();
+
         return [
             'tutorLink' => $tutorLink,
             'program' => $program,
@@ -186,6 +191,12 @@ class InternshipBookletBuilder
             'calendarFileUrl' => null !== $calendarFileKey ? $this->fileUploadService->url($calendarFileKey) : null,
             'calendarMonths' => (null === $calendarFileKey && null !== $startDate && null !== $endDate) ? $this->calendarBuilder->build($startDate, $endDate, $rawPeriods) : [],
             'calendarLegend' => null === $calendarFileKey ? $this->calendarBuilder->buildLegend($rawPeriods) : [],
+            // Same pair as the calendar's, and for the same reason: the key is what
+            // InternshipBookletPdfExporter merges into the exported PDF, the url what the on-screen
+            // booklet embeds. Both null when the formation deposited no timetable, which is what
+            // the template reads to decide whether the section exists at all.
+            'timetableFileKey' => $timetableFileKey,
+            'timetableFileUrl' => null !== $timetableFileKey ? $this->fileUploadService->url($timetableFileKey) : null,
         ];
     }
 
