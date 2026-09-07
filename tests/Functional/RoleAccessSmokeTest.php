@@ -646,15 +646,21 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->assertScreens($this->teacher, array_fill_keys($screens, 403));
         $this->assertScreens($this->student, array_fill_keys($screens, 403));
 
-        // The « Emploi du temps » document of the Documents tab is served by its own route, and it
-        // is the only file on that tab with no audience at all: unlike the alternance calendar,
-        // which reads a VisibilityLevel, this one is readable by exactly whoever may open the tab.
-        // 404 for the admin because this program has no such document, 403 for everyone else -
-        // the class guard answers before the action ever looks for a file.
-        $timetableDocument = sprintf('/ufa/programs/%d/documents/timetable/pdf', $programId);
-        $this->assertScreens($this->admin, [$timetableDocument => 404]);
-        $this->assertScreens($this->teacher, [$timetableDocument => 403]);
-        $this->assertScreens($this->student, [$timetableDocument => 403]);
+        // The Documents tab's own doors onto its two files: a screen that frames one, and the two
+        // routes that serve them. They are readable by exactly whoever may open the tab - the
+        // alternance calendar has a published route elsewhere that reads a VisibilityLevel, but
+        // *these* answer to the class guard alone. 404 for the admin because this program carries
+        // neither file, 403 for everyone else - the guard answers before the action ever looks for
+        // one.
+        $documentFiles = [
+            sprintf('/ufa/programs/%d/documents/calendar/view', $programId),
+            sprintf('/ufa/programs/%d/documents/timetable/view', $programId),
+            sprintf('/ufa/programs/%d/documents/calendar/pdf', $programId),
+            sprintf('/ufa/programs/%d/documents/timetable/pdf', $programId),
+        ];
+        $this->assertScreens($this->admin, array_fill_keys($documentFiles, 404));
+        $this->assertScreens($this->teacher, array_fill_keys($documentFiles, 403));
+        $this->assertScreens($this->student, array_fill_keys($documentFiles, 403));
     }
 
     public function testTutorScreens(): void
