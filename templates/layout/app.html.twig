@@ -385,6 +385,17 @@
                                 <div class="dropdown-menu">
                                     {% if feature('ufa_booklet') %}
                                     <a class="dropdown-item {{ current_route == 'app_ufa' ? 'active' }}" href="{{ path('app_ufa') }}">{{ 'ufaDashboardNavLabel'|trans }}</a>
+                                    <div class="dropend">
+                                        <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_ufa_configuration' ? 'active' }}" href="#navbar-ufa-configuration" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                            {{ 'ufaConfigurationNavLabel'|trans }}
+                                        </a>
+                                        <div class="dropdown-menu">
+                                            <a class="dropdown-item {{ current_route starts with 'app_ufa_configuration_formation_center' ? 'active' }}" href="{{ path('app_ufa_configuration_formation_center') }}">{{ 'ufaConfigurationFormationCenterNavLabel'|trans }}</a>
+                                            <a class="dropdown-item {{ current_route starts with 'app_ufa_configuration_contract_modalities' ? 'active' }}" href="{{ path('app_ufa_configuration_contract_modalities') }}">{{ 'ufaConfigurationContractModalitiesNavLabel'|trans }}</a>
+                                            <a class="dropdown-item {{ current_route starts with 'app_ufa_configuration_behavior' ? 'active' }}" href="{{ path('app_ufa_configuration_behavior') }}">{{ 'ufaConfigurationBehaviorNavLabel'|trans }}</a>
+                                            <a class="dropdown-item {{ current_route starts with 'app_ufa_configuration_contract_import' ? 'active' }}" href="{{ path('app_ufa_configuration_contract_import') }}">{{ 'ufaConfigurationContractImportNavLabel'|trans }}</a>
+                                        </div>
+                                    </div>
                                     {% set ufa_formations_list = ufa_nav_formations() %}
                                     {# Purely a list: no "Nouvelle UFA" entry here, one does not create a UFA.
                                        A UFA is a program carrying the alternance modality, so it is born of the
@@ -411,17 +422,6 @@
                                         </div>
                                     </div>
                                     {% endif %}
-                                    <div class="dropend">
-                                        <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_ufa_configuration' ? 'active' }}" href="#navbar-ufa-configuration" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
-                                            {{ 'ufaConfigurationNavLabel'|trans }}
-                                        </a>
-                                        <div class="dropdown-menu">
-                                            <a class="dropdown-item {{ current_route starts with 'app_ufa_configuration_formation_center' ? 'active' }}" href="{{ path('app_ufa_configuration_formation_center') }}">{{ 'ufaConfigurationFormationCenterNavLabel'|trans }}</a>
-                                            <a class="dropdown-item {{ current_route starts with 'app_ufa_configuration_contract_modalities' ? 'active' }}" href="{{ path('app_ufa_configuration_contract_modalities') }}">{{ 'ufaConfigurationContractModalitiesNavLabel'|trans }}</a>
-                                            <a class="dropdown-item {{ current_route starts with 'app_ufa_configuration_behavior' ? 'active' }}" href="{{ path('app_ufa_configuration_behavior') }}">{{ 'ufaConfigurationBehaviorNavLabel'|trans }}</a>
-                                            <a class="dropdown-item {{ current_route starts with 'app_ufa_configuration_contract_import' ? 'active' }}" href="{{ path('app_ufa_configuration_contract_import') }}">{{ 'ufaConfigurationContractImportNavLabel'|trans }}</a>
-                                        </div>
-                                    </div>
                                     {% endif %}
                                     {% if feature('laptop_loans') %}
                                     <h6 class="dropdown-header">{{ 'ufaEquipmentGroupLabel'|trans }}</h6>
