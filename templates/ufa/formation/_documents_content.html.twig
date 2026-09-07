@@ -5,7 +5,10 @@
    switches the mode over on its own (App\Controller\Ufa\FormationDocumentController).
 
    « Emploi du temps » is the opposite: a file nothing reads. It is not the platform's timetable, it
-   feeds no screen and no export, and the only way back to it is this tab. #}
+   feeds no screen and no export, and the only way back to it is this tab.
+
+   Both « Ouvrir » links open a screen of the application rather than the file itself - see
+   App\Controller\Ufa\FormationDocumentController::documentView(). #}
 <div class="card-body">
     <div class="cm-subhead mb-3">
         <div class="cm-subhead__title">{{ 'programAlternanceCalendarFileFieldLabel'|trans }}</div>
@@ -14,7 +17,7 @@
     {% if program.alternanceCalendarFileKey %}
         <p class="mb-3">
             <span class="cm-badge cm-badge--gold">{{ 'ufaFormationDocumentsCurrentFileLabel'|trans }}</span>
-            <a href="{{ path('app_program_alternance_calendar_pdf', {id: program.id}) }}" target="_blank" rel="noopener" class="ms-2">{{ 'ufaFormationDocumentsOpenFileAction'|trans }}</a>
+            <a href="{{ path('app_ufa_formation_document_view', {id: program.id, document: 'calendar'}) }}" target="_blank" rel="noopener" class="ms-2">{{ 'ufaFormationDocumentsOpenFileAction'|trans }}</a>
         </p>
     {% else %}
         <p class="cm-hint mb-3">{{ 'ufaFormationDocumentsNoFileText'|trans }}</p>
@@ -51,7 +54,7 @@
     {% if program.timetableDocumentFileKey %}
         <p class="mb-3">
             <span class="cm-badge cm-badge--gold">{{ 'ufaFormationTimetableDocumentCurrentFileLabel'|trans }}</span>
-            <a href="{{ path('app_ufa_formation_timetable_document_pdf', {id: program.id}) }}" target="_blank" rel="noopener" class="ms-2">{{ 'ufaFormationTimetableDocumentOpenFileAction'|trans }}</a>
+            <a href="{{ path('app_ufa_formation_document_view', {id: program.id, document: 'timetable'}) }}" target="_blank" rel="noopener" class="ms-2">{{ 'ufaFormationTimetableDocumentOpenFileAction'|trans }}</a>
         </p>
     {% else %}
         <p class="cm-hint mb-3">{{ 'ufaFormationTimetableDocumentNoFileText'|trans }}</p>

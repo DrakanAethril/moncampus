@@ -15,7 +15,7 @@
                     <div class="list-group-item d-flex justify-content-between align-items-center px-0">
                         <div>
                             {% if resource.type.value == 'upload' %}
-                                <a href="{{ file_url(resource.storageKey) }}" target="_blank" rel="noopener">{{ resource.label }}</a>
+                                <a href="{{ download_url(resource.storageKey, resource.label) }}" target="_blank" rel="noopener">{{ resource.label }}</a>
                             {% else %}
                                 <a href="{{ resource.url }}" target="_blank" rel="noopener">{{ resource.label }}</a>
                             {% endif %}

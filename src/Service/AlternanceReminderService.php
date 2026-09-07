@@ -92,7 +92,7 @@ class AlternanceReminderService
 
     // Sends to every link among $tutorLinks whose current status for $period is genuinely the
     // tutor's or the student's turn (the only two roles 26i's "non-soumis" list targets, per the
-    // spec - team/supervisor/engagement steps aren't part of the grouped relance screen).
+    // spec - supervisor/engagement steps aren't part of the grouped relance screen).
     /**
      * @param list<InternshipTutorLink> $tutorLinks
      */
@@ -132,7 +132,7 @@ class AlternanceReminderService
             AlternanceReminderStep::EngagementTutor, AlternanceReminderStep::Tutor => $tutorLink->getTutor()?->getContactEmail(),
             AlternanceReminderStep::EngagementStudent, AlternanceReminderStep::Student => $tutorLink->getStudent()?->getContactEmail(),
             AlternanceReminderStep::Supervisor => $tutorLink->getSupervisor()?->getContactEmail(),
-            AlternanceReminderStep::Team, AlternanceReminderStep::EngagementCenter => null,
+            AlternanceReminderStep::EngagementCenter => null,
         };
     }
 

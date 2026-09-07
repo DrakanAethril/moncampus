@@ -142,12 +142,12 @@ class InternshipTutorController extends AbstractController
                 fn (InternshipTutorLink $tutorLink): array => [
                     'id' => $tutorLink->getId(),
                     'isInactive' => null !== $tutorLink->getInactiveDate(),
-                    // Doubles as the entry point to this student's pedagogical-team remarks -
-                    // rendered as trusted HTML by the 'html' render keyword on this column (see
+                    // Doubles as the entry point to this alternance's own dossier - rendered as
+                    // trusted HTML by the 'html' render keyword on this column (see
                     // _tutors_content.html.twig), same technique as skillGroupsData()'s 'label'.
                     'studentName' => sprintf(
                         '<a href="%s">%s</a>',
-                        htmlspecialchars($this->generateUrl('app_ufa_formation_tutors_team_evaluations', ['id' => $program->getId(), 'tutorLinkId' => $tutorLink->getId()])),
+                        htmlspecialchars($this->generateUrl('app_ufa_alternance_show', ['id' => $tutorLink->getId()])),
                         htmlspecialchars($this->userLabel($tutorLink->getStudent())),
                     ),
                     'tutorName' => $this->userLabel($tutorLink->getTutor()),

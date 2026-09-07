@@ -27,6 +27,19 @@
                     <div class="col-md-2">{{ form_row(form.code) }}</div>
                     <div class="col-md-10">{{ form_row(form.label) }}</div>
                 </div>
+                <div class="row">
+                    <div class="col-12">
+                        {{ form_label(form.descriptionHtml) }}
+                        {{ form_errors(form.descriptionHtml) }}
+                        {{ form_widget(form.descriptionHtml, {attr: {
+                            rows: 4,
+                            class: 'd-none',
+                            'data-controller': 'hugerte-editor',
+                            'data-hugerte-editor-height-value': 180,
+                        }}) }}
+                        {{ form_help(form.descriptionHtml) }}
+                    </div>
+                </div>
 
                 <div class="cm-subhead mt-4">
                     <div class="cm-subhead__title">{{ 'skillOrganisationSectionTitle'|trans }}</div>

@@ -19,7 +19,6 @@ use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\ProgramRepository;
 use App\Service\AlternanceEngagementService;
-use App\Service\AlternancePeriodChainNotifier;
 use App\Service\AlternancePeriodWizardService;
 use App\Service\AlternanceTutorWizardStepBuilder;
 use App\Service\GotenbergUnavailableException;
@@ -89,7 +88,7 @@ class ProgramInternshipEvaluationController extends AbstractController
     // equivalent is Ufa\PeriodWizardController::periodAlternant().
     #[Route(path: '/programs/{id}/internship/my-evaluations/{periodId}/{step}', name: 'app_program_internship_my_evaluation_step', requirements: ['periodId' => '\d+', 'step' => 'comportement|competences|forces|remarques'])]
     #[IsGranted('ROLE_STUDENT')]
-    public function myEvaluationStep(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipStudentEvaluationRepository $evaluationRepository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, AlternancePeriodWizardService $wizardService, AlternancePeriodChainNotifier $chainNotifier, UfaActivityRecorder $activityRecorder, TranslatorInterface $translator): Response
+    public function myEvaluationStep(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipEvaluationPeriodRepository $evaluationPeriodRepository, InternshipStudentEvaluationRepository $evaluationRepository, InternshipTutorLinkRepository $tutorLinkRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, AlternancePeriodWizardService $wizardService, UfaActivityRecorder $activityRecorder, TranslatorInterface $translator): Response
     {
         $program = $this->findProgramForStudentOrNotFound($id, $repository);
         $evaluationPeriod = $evaluationPeriodRepository->find($periodId) ?? throw $this->createNotFoundException();
@@ -112,7 +111,7 @@ class ProgramInternshipEvaluationController extends AbstractController
             $form->handleRequest($request);
             if ($form->isSubmitted() && $form->isValid()) {
                 // See InternshipTutorEvaluationController::periodStep(): only the transition to
-                // "signed" triggers the notice to the next role.
+                // "signed" is worth journalling.
                 $wasSigned = $evaluation->isSigned();
                 $evaluation->setValidationDate(new \DateTimeImmutable());
                 $evaluation->setLastEditedBy($student);
@@ -124,7 +123,6 @@ class ProgramInternshipEvaluationController extends AbstractController
                 $entityManager->flush();
 
                 if (!$wasSigned) {
-                    $chainNotifier->notifyReferentTeachersAfterStudentSignature($tutorLink, $evaluationPeriod);
                     $activityRecorder->record(UfaActivityType::PeriodStudentSigned, $tutorLink, $student, $evaluationPeriod);
                 }
 

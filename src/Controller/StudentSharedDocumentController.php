@@ -98,7 +98,7 @@ class StudentSharedDocumentController extends AbstractController
                 throw $this->createNotFoundException();
             }
 
-            return $this->redirect($fileUploads->url($node->getStorageKey()));
+            return $this->redirect($fileUploads->downloadUrl($node->getStorageKey(), $node->getName()));
         }
 
         return $this->render('student_shared_document/folder.html.twig', [

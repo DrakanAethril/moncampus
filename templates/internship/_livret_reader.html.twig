@@ -1,8 +1,10 @@
 {# Booklet reader: table of contents on the left, the real document in an iframe on the right (see
    assets/controllers/livret_reader_controller.js). Shared by the staff screen
    (ufa/alternance/livret.html.twig) and the tutor's (internship_tutor/booklet.html.twig), which only
-   differ by their header and by the iframe's route - hence the only two parameters expected:
-   `frameUrl` and `periods`. #}
+   differ by their header and by the iframe's route - hence the parameters expected: `frameUrl`,
+   `periods`, and `hasTimetableDocument` (whether the formation deposited an emploi du temps, which
+   is what adds a II.2 to the document and pushes the exam modalities to II.3). #}
+{% set hasTimetableDocument = hasTimetableDocument|default(false) %}
 <div class="row" data-controller="livret-reader">
     <div class="col-md-3">
         <div class="card">
@@ -17,7 +19,10 @@
                 <a href="#section-i-6" class="list-group-item list-group-item-action ps-4" data-action="click->livret-reader#navigate">6. {{ 'ufaAlternanceLivretSectionWorkloadLabel'|trans }}</a>
                 <a href="#section-ii" class="list-group-item list-group-item-action fw-bold" data-action="click->livret-reader#navigate">II. {{ 'ufaAlternanceLivretSectionPedagogicalLabel'|trans }}</a>
                 <a href="#section-ii-1" class="list-group-item list-group-item-action ps-4" data-action="click->livret-reader#navigate">1. {{ 'ufaAlternanceLivretSectionCalendarLabel'|trans }}</a>
-                <a href="#section-ii-2" class="list-group-item list-group-item-action ps-4" data-action="click->livret-reader#navigate">2. {{ 'ufaAlternanceLivretSectionExamLabel'|trans }}</a>
+                {% if hasTimetableDocument %}
+                    <a href="#section-ii-2" class="list-group-item list-group-item-action ps-4" data-action="click->livret-reader#navigate">2. {{ 'ufaAlternanceLivretSectionTimetableLabel'|trans }}</a>
+                {% endif %}
+                <a href="#section-ii-{{ hasTimetableDocument ? 3 : 2 }}" class="list-group-item list-group-item-action ps-4" data-action="click->livret-reader#navigate">{{ hasTimetableDocument ? 3 : 2 }}. {{ 'ufaAlternanceLivretSectionExamLabel'|trans }}</a>
                 <a href="#section-iii" class="list-group-item list-group-item-action fw-bold" data-action="click->livret-reader#navigate">III. {{ 'ufaAlternanceLivretSectionFollowUpLabel'|trans }}</a>
                 {% for period in periods %}
                     <a href="#section-period-{{ loop.index }}" class="list-group-item list-group-item-action ps-4" data-action="click->livret-reader#navigate">{{ period.name }}</a>

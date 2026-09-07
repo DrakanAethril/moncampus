@@ -185,8 +185,10 @@ class FileLibraryNodeController extends AbstractController
     }
 
     /**
-     * The download: a redirect to the CDN address, exactly as every other stored file of this
-     * application is served. Nothing is proxied through PHP.
+     * The download: a redirect to the object's own address, signed for a few minutes so it can carry
+     * the row's name (App\Service\DownloadFilename). Nothing is proxied through PHP - what the
+     * signature buys is that the file is saved as « Cours de gestion.pdf » rather than under the
+     * hexadecimal it is stored as.
      */
     #[Route(path: '/{nodeId}/download', name: 'app_file_library_node_download', requirements: ['nodeId' => '\d+'], methods: ['GET'])]
     public function download(int $nodeId, FileUploadService $fileUploads): Response
@@ -197,7 +199,7 @@ class FileLibraryNodeController extends AbstractController
             throw $this->createNotFoundException();
         }
 
-        return $this->redirect($fileUploads->url($node->getStorageKey()));
+        return $this->redirect($fileUploads->downloadUrl($node->getStorageKey(), $node->getName()));
     }
 
     private function parentFromRequest(Request $request): ?FileLibraryNode

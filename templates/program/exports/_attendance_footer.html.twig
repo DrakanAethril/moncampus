@@ -1,7 +1,11 @@
 {# Gotenberg's own running footer - a COMPLETE, standalone document, same three constraints as
    templates/program/referential/_tsf_footer.html.twig: it inherits nothing, it needs an explicit
    font-size, and it is a TABLE rather than flexbox, sized in mm against the printable width
-   (A4's 210mm less the two 12mm side margins declared by the exporter). #}
+   (A4's 210mm less the two 12mm side margins declared by the exporter).
+
+   Which is why the band's width is a parameter: the émargement sheet is always portrait, the
+   « Liste pour pointage » may be landscape, and a band still 186mm wide on a 297mm page would sit
+   left of the text it underlines. #}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -9,7 +13,7 @@
 <style>
     body { margin: 0; font-family: 'DejaVu Sans', 'Segoe UI', Arial, sans-serif;
            font-size: 7.5pt; color: #6b7688; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    table.f { width: 186mm; margin: 0 auto; border-collapse: collapse; border-top: 0.5pt solid #d3dae4; }
+    table.f { width: {{ bandWidth|default('186mm') }}; margin: 0 auto; border-collapse: collapse; border-top: 0.5pt solid #d3dae4; }
     table.f td { padding-top: 1.2mm; }
     .f__mid { color: #8a93a3; }
 </style>

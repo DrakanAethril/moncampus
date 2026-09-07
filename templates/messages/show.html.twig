@@ -90,7 +90,7 @@
                             <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
                                 <div class="cm-mail-attachments-label">{{ message.attachments|length }} {{ 'messageAttachmentsFieldLabel'|trans }}</div>
                                 {% for attachment in message.attachments %}
-                                    <a href="{{ file_url(attachment.storageKey) }}" class="cm-mail-attachment" target="_blank">
+                                    <a href="{{ download_url(attachment.storageKey, attachment.originalFilename) }}" class="cm-mail-attachment" target="_blank">
                                         <span class="cm-mail-attachment__type">{{ attachment.originalFilename|split('.')|last|default('')|slice(0, 4)|upper }}</span>
                                         <span style="min-width:0">
                                             <span class="cm-mail-attachment__name" style="display:block">{{ attachment.originalFilename }}</span>

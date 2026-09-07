@@ -107,7 +107,7 @@ class TrainingApplicationReviewController extends AbstractController
 
         foreach ($application->getCurrentVersion()?->getAttachments() ?? [] as $attachment) {
             if ($attachment->getId() === $attachmentId) {
-                return $this->redirect($this->fileUploadService->url($attachment->getStorageKey()));
+                return $this->redirect($this->fileUploadService->downloadUrl($attachment->getStorageKey(), $attachment->getName()));
             }
         }
 

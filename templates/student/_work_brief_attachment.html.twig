@@ -9,7 +9,7 @@
         <span class="cm-tw-attachment__name">{{ attachment.label }}</span>
         {% if isLink %}<span class="cm-tw-attachment__meta">{{ attachment.url }}</span>{% endif %}
     </span>
-    <a class="cm-tw-link" href="{{ isLink ? attachment.url : file_url(attachment.storageKey) }}" target="_blank" rel="noopener">
+    <a class="cm-tw-link" href="{{ isLink ? attachment.url : download_url(attachment.storageKey, attachment.label) }}" target="_blank" rel="noopener">
         {{ (isLink ? 'studentWorkOpenLinkAction' : 'studentWorkDownloadAction')|trans }}
     </a>
 </div>

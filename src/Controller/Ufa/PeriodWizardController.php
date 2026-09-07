@@ -7,21 +7,16 @@ namespace App\Controller\Ufa;
 use App\Attribute\RequiresFeature;
 use App\Entity\InternshipStudentEvaluation;
 use App\Entity\InternshipSupervisorEvaluation;
-use App\Entity\InternshipTeamEvaluation;
 use App\Entity\InternshipTutorEvaluation;
-use App\Entity\Program;
 use App\Entity\User;
 use App\Enum\Feature;
 use App\Enum\UfaActivityType;
 use App\Form\InternshipStudentEvaluationType;
-use App\Form\InternshipTeamEvaluationType;
 use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipStudentEvaluationRepository;
 use App\Repository\InternshipSupervisorEvaluationRepository;
-use App\Repository\InternshipTeamEvaluationRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
-use App\Security\StructureAccessChecker;
 use App\Service\AlternancePeriodChainNotifier;
 use App\Service\AlternancePeriodWizardService;
 use App\Service\AlternanceTutorWizardStepBuilder;
@@ -38,9 +33,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * The evaluation wizard of a period, in its four role variants (tutor, apprentice, teaching team,
- * follow-up officer). Only periodEquipe() is open to teachers; the other three stay reserved for
- * staff.
+ * The evaluation wizard of a period, in its three role variants (tutor, apprentice, follow-up
+ * officer), all three reserved for staff.
  *
  * Split out of the former UfaAlternanceController - the routes, their names and their
  * bodies are unchanged; only the class hosting them is new.
@@ -119,7 +113,7 @@ class PeriodWizardController extends AbstractController
     // evaluation read-only, step 4 is the alternant's own remarksText + signature.
     #[Route(path: '/ufa/alternances/{id}/periods/{periodId}/student/{step}', name: 'app_ufa_alternance_period_alternant', requirements: ['id' => '\d+', 'periodId' => '\d+', 'step' => 'comportement|competences|forces|remarques'])]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
-    public function periodAlternant(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, AlternancePeriodWizardService $wizardService, AlternanceTutorWizardStepBuilder $stepBuilder, AlternancePeriodChainNotifier $chainNotifier, UfaActivityRecorder $activityRecorder, TranslatorInterface $translator): Response
+    public function periodAlternant(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, AlternancePeriodWizardService $wizardService, AlternanceTutorWizardStepBuilder $stepBuilder, UfaActivityRecorder $activityRecorder, TranslatorInterface $translator): Response
     {
         $tutorLink = $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
         $period = $periodRepository->find($periodId) ?? throw $this->createNotFoundException();
@@ -142,7 +136,6 @@ class PeriodWizardController extends AbstractController
             $form->handleRequest($request);
             if ($form->isSubmitted() && $form->isValid()) {
                 if ($this->persistStudentStep($entityManager, $studentEvaluation, $request, $this->currentUser())) {
-                    $chainNotifier->notifyReferentTeachersAfterStudentSignature($tutorLink, $period);
                     $activityRecorder->record(UfaActivityType::PeriodStudentSigned, $tutorLink, $this->currentUser(), $period);
                 }
 
@@ -213,93 +206,6 @@ class PeriodWizardController extends AbstractController
         return !$wasSigned;
     }
 
-    // Équipe pédagogique wizard (30c/30d) - staff-only, no self-service duality. Steps 1-2 are the
-    // same read-only tutor grids as the alternant's; step 3 groups the tutor's strengths/
-    // weaknesses/goals + the tutor's and alternant's own remarks, always read-only here (the
-    // chargé de suivi's step 3, periodSuivi() below, reuses the same partial in editable mode);
-    // step 4 is the team's own remark + signature.
-    #[Route(path: '/ufa/alternances/{id}/periods/{periodId}/team/{step}', name: 'app_ufa_alternance_period_equipe', requirements: ['id' => '\d+', 'periodId' => '\d+', 'step' => 'comportement|competences|forces|remarques'])]
-    public function periodEquipe(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, InternshipTeamEvaluationRepository $teamEvaluationRepository, AlternancePeriodWizardService $wizardService, StructureAccessChecker $accessChecker, UfaActivityRecorder $activityRecorder, TranslatorInterface $translator): Response
-    {
-        $tutorLink = $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
-        $period = $periodRepository->find($periodId) ?? throw $this->createNotFoundException();
-        $student = $tutorLink->getStudent() ?? throw $this->createNotFoundException();
-
-        // Teachers (non-staff) may only act on alternances of a Program they actually teach -
-        // isProgramTeacher() short-circuits to true for staff.
-        if (!$accessChecker->isProgramTeacher($tutorLink->getProgram())) {
-            throw $this->createAccessDeniedException();
-        }
-
-        // Non-staff teachers can't reach the staff alternance screens - send them back to their
-        // dashboard instead of app_ufa_alternance_show (403 for them).
-        $fallbackRedirect = $accessChecker->isStaff()
-            ? $this->redirectToRoute('app_ufa_alternance_show', ['id' => $tutorLink->getId()])
-            : $this->redirectToRoute('app_home');
-
-        if (!$wizardService->isTeamStepOpen($tutorLink, $period)) {
-            $this->addFlash('warning', 'ufaAlternanceWizardStepNotOpenFlashMessage');
-
-            return $fallbackRedirect;
-        }
-
-        $tutorEvaluation = $tutorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $period);
-        $studentEvaluation = $studentEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $period);
-        $teamEvaluation = $teamEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $period)
-            ?? new InternshipTeamEvaluation($student, $tutorLink->getProgram(), $period);
-        $readOnly = $wizardService->isTeamStepReadOnly($tutorLink, $period);
-
-        $form = $this->createForm(InternshipTeamEvaluationType::class, $teamEvaluation);
-        if ('remarques' === $step && !$readOnly) {
-            $form->handleRequest($request);
-            if ($form->isSubmitted() && $form->isValid()) {
-                $wasSigned = $teamEvaluation->isSigned();
-                $teamEvaluation->setValidationDate(new \DateTimeImmutable());
-                $teamEvaluation->setSignedAt(new \DateTimeImmutable());
-                $teamEvaluation->setSignedBy($this->currentUser());
-                if (null === $teamEvaluation->getCreatedBy()) {
-                    $teamEvaluation->setCreatedBy($this->currentUser());
-                }
-                $entityManager->persist($teamEvaluation);
-                $entityManager->flush();
-
-                if (!$wasSigned) {
-                    $activityRecorder->record(UfaActivityType::PeriodTeamSigned, $tutorLink, $this->currentUser(), $period);
-                }
-
-                // The only one of a period's four signatures to leave with no message: a teacher was
-                // sent back to their dashboard without knowing whether their entry had been taken
-                // into account. The other three roles have had their flash for a long time.
-                $this->addFlash('success', 'ufaAlternanceWizardEquipeSignedFlashMessage');
-
-                return $fallbackRedirect;
-            }
-        }
-
-        $steps = AlternanceTutorWizardStepBuilder::STEPS;
-        $stepIndex = array_search($step, $steps, true);
-
-        return $this->render('ufa/alternance/period_equipe.html.twig', [
-            'tutorLink' => $tutorLink,
-            'period' => $period,
-            'step' => $step,
-            'form' => $form,
-            ...$wizardService->evaluationsFor($tutorLink, $period),
-            'tutorEvaluation' => $tutorEvaluation,
-            'studentEvaluation' => $studentEvaluation,
-            'teamEvaluation' => $teamEvaluation,
-            'readOnly' => $readOnly,
-            'backPath' => $stepIndex > 0 ? $this->generateUrl('app_ufa_alternance_period_equipe', ['id' => $tutorLink->getId(), 'periodId' => $period->getId(), 'step' => $steps[$stepIndex - 1]]) : null,
-            'stepLabels' => [
-                $translator->trans('ufaAlternanceWizardStepComportementLabel'),
-                $translator->trans('ufaAlternanceWizardStepCompetencesLabel'),
-                $translator->trans('ufaAlternanceWizardStepEquipeGroupedLabel'),
-                $translator->trans('ufaAlternanceWizardStepEquipeRemarquesLabel'),
-            ],
-            'currentStepIndex' => $stepIndex + 1,
-        ]);
-    }
-
     // Chargé de suivi wizard (31a/31c/31d) - staff-only. Steps 1-2 reuse the exact same step
     // forms as the tuteur's own wizard (AlternanceTutorWizardStepBuilder), over the same
     // InternshipTutorEvaluation entity, but always editable with "Enregistrer cette étape" rather
@@ -308,7 +214,7 @@ class PeriodWizardController extends AbstractController
     // 4 "Clôture" has no fields, one click both signs and closes the period.
     #[Route(path: '/ufa/alternances/{id}/periods/{periodId}/supervisor/{step}', name: 'app_ufa_alternance_period_suivi', requirements: ['id' => '\d+', 'periodId' => '\d+', 'step' => 'comportement|competences|forces|remarques'])]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
-    public function periodSuivi(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, InternshipTeamEvaluationRepository $teamEvaluationRepository, InternshipSupervisorEvaluationRepository $supervisorEvaluationRepository, AlternancePeriodWizardService $wizardService, AlternanceTutorWizardStepBuilder $stepBuilder, #[Target('app.message_body')] HtmlSanitizerInterface $sanitizer, UfaActivityRecorder $activityRecorder, TranslatorInterface $translator): Response
+    public function periodSuivi(int $id, int $periodId, string $step, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, InternshipSupervisorEvaluationRepository $supervisorEvaluationRepository, AlternancePeriodWizardService $wizardService, AlternanceTutorWizardStepBuilder $stepBuilder, #[Target('app.message_body')] HtmlSanitizerInterface $sanitizer, UfaActivityRecorder $activityRecorder, TranslatorInterface $translator): Response
     {
         $tutorLink = $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
         $period = $periodRepository->find($periodId) ?? throw $this->createNotFoundException();
@@ -322,7 +228,6 @@ class PeriodWizardController extends AbstractController
 
         $tutorEvaluation = $stepBuilder->findOrPrepare($tutorLink, $period);
         $studentEvaluation = $studentEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $period) ?? new InternshipStudentEvaluation($student, $tutorLink->getProgram(), $period);
-        $teamEvaluation = $teamEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $period) ?? new InternshipTeamEvaluation($student, $tutorLink->getProgram(), $period);
         $supervisorEvaluation = $supervisorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $period) ?? new InternshipSupervisorEvaluation($tutorLink, $period);
         $isClosed = $wizardService->isPeriodClosed($tutorLink, $period);
 
@@ -353,13 +258,8 @@ class PeriodWizardController extends AbstractController
                 if (null === $studentEvaluation->getCreatedBy()) {
                     $studentEvaluation->setCreatedBy($this->currentUser());
                 }
-                $teamEvaluation->setRemarksText($sanitizer->sanitize((string) $request->request->get('teamRemarksText')));
-                if (null === $teamEvaluation->getCreatedBy()) {
-                    $teamEvaluation->setCreatedBy($this->currentUser());
-                }
                 $entityManager->persist($tutorEvaluation);
                 $entityManager->persist($studentEvaluation);
-                $entityManager->persist($teamEvaluation);
                 $entityManager->flush();
 
                 return $this->redirectToRoute('app_ufa_alternance_period_suivi', ['id' => $tutorLink->getId(), 'periodId' => $period->getId(), 'step' => 'save' === $request->request->get('action') ? $step : 'remarques']);
@@ -393,7 +293,6 @@ class PeriodWizardController extends AbstractController
             'form' => $form,
             'tutorEvaluation' => $tutorEvaluation,
             'studentEvaluation' => $studentEvaluation,
-            'teamEvaluation' => $teamEvaluation,
             'supervisorEvaluation' => $supervisorEvaluation,
             'readOnly' => $isClosed,
             'backPath' => $stepIndex > 0 ? $this->generateUrl('app_ufa_alternance_period_suivi', ['id' => $tutorLink->getId(), 'periodId' => $period->getId(), 'step' => $steps[$stepIndex - 1]]) : null,

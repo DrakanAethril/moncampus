@@ -10,7 +10,6 @@ use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipLivretEngagementRepository;
 use App\Repository\InternshipStudentEvaluationRepository;
 use App\Repository\InternshipSupervisorEvaluationRepository;
-use App\Repository\InternshipTeamEvaluationRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -18,8 +17,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * Single source of truth for "what step is this alternance/period at, and is it late" - replaces
  * the ad-hoc submitted|late|pending match-arms duplicated across Program\InternshipEvaluationStatusController's
  * staff status screens. Walks, in order: the 3 engagement signatures, then for each active
- * InternshipEvaluationPeriod (oldest first): tutor signedAt -> student signedAt -> team signedAt
- * -> supervisor closedAt. Lateness is always computed live against now() (isPast()-style, no
+ * InternshipEvaluationPeriod (oldest first): tutor signedAt -> student signedAt -> supervisor
+ * closedAt. Lateness is always computed live against now() (isPast()-style, no
  * cron) - see the feature's plan doc, decision #2.
  */
 class AlternancePeriodStatusResolver
@@ -29,7 +28,6 @@ class AlternancePeriodStatusResolver
         private readonly InternshipEvaluationPeriodRepository $evaluationPeriodRepository,
         private readonly InternshipTutorEvaluationRepository $tutorEvaluationRepository,
         private readonly InternshipStudentEvaluationRepository $studentEvaluationRepository,
-        private readonly InternshipTeamEvaluationRepository $teamEvaluationRepository,
         private readonly InternshipSupervisorEvaluationRepository $supervisorEvaluationRepository,
         private readonly TranslatorInterface $translator,
     ) {
@@ -63,7 +61,7 @@ class AlternancePeriodStatusResolver
     }
 
     // Scoped to one already-known period - used for the per-period rows on 34a, where each
-    // period shows its own 4-role progress strip regardless of whether earlier periods are done.
+    // period shows its own 3-role progress strip regardless of whether earlier periods are done.
     public function resolveStepForPeriod(InternshipTutorLink $tutorLink, InternshipEvaluationPeriod $period): AlternanceStepStatus
     {
         if (null !== $tutorLink->getInactiveDate()) {
@@ -174,11 +172,6 @@ class AlternancePeriodStatusResolver
             return new AlternanceStepStatus(AlternanceStepStatus::STEP_STUDENT, $isPast, $student, $dueDate, $period);
         }
 
-        $teamEvaluation = $this->teamEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $period);
-        if (null === $teamEvaluation || !$teamEvaluation->isSigned()) {
-            return new AlternanceStepStatus(AlternanceStepStatus::STEP_TEAM, $isPast, null, $dueDate, $period);
-        }
-
         $supervisorEvaluation = $this->supervisorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $period);
         if (null === $supervisorEvaluation || !$supervisorEvaluation->isClosed()) {
             return new AlternanceStepStatus(AlternanceStepStatus::STEP_SUPERVISOR, $isPast, $tutorLink->getSupervisor(), $dueDate, $period);
@@ -193,7 +186,6 @@ class AlternancePeriodStatusResolver
             AlternanceStepStatus::STEP_ENGAGEMENT_TUTOR, AlternanceStepStatus::STEP_TUTOR => 'ufaAlternanceBadgeRoleTutorLabel',
             AlternanceStepStatus::STEP_ENGAGEMENT_STUDENT, AlternanceStepStatus::STEP_STUDENT => 'ufaAlternanceBadgeRoleStudentLabel',
             AlternanceStepStatus::STEP_ENGAGEMENT_CENTER => 'ufaAlternanceBadgeRoleCenterLabel',
-            AlternanceStepStatus::STEP_TEAM => 'ufaAlternanceBadgeRoleTeamLabel',
             AlternanceStepStatus::STEP_SUPERVISOR => 'ufaAlternanceBadgeRoleSupervisorLabel',
             default => 'ufaAlternanceBadgeRoleTutorLabel',
         });

@@ -385,6 +385,17 @@
                                 <div class="dropdown-menu">
                                     {% if feature('ufa_booklet') %}
                                     <a class="dropdown-item {{ current_route == 'app_ufa' ? 'active' }}" href="{{ path('app_ufa') }}">{{ 'ufaDashboardNavLabel'|trans }}</a>
+                                    <div class="dropend">
+                                        <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_ufa_configuration' ? 'active' }}" href="#navbar-ufa-configuration" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                            {{ 'ufaConfigurationNavLabel'|trans }}
+                                        </a>
+                                        <div class="dropdown-menu">
+                                            <a class="dropdown-item {{ current_route starts with 'app_ufa_configuration_formation_center' ? 'active' }}" href="{{ path('app_ufa_configuration_formation_center') }}">{{ 'ufaConfigurationFormationCenterNavLabel'|trans }}</a>
+                                            <a class="dropdown-item {{ current_route starts with 'app_ufa_configuration_contract_modalities' ? 'active' }}" href="{{ path('app_ufa_configuration_contract_modalities') }}">{{ 'ufaConfigurationContractModalitiesNavLabel'|trans }}</a>
+                                            <a class="dropdown-item {{ current_route starts with 'app_ufa_configuration_behavior' ? 'active' }}" href="{{ path('app_ufa_configuration_behavior') }}">{{ 'ufaConfigurationBehaviorNavLabel'|trans }}</a>
+                                            <a class="dropdown-item {{ current_route starts with 'app_ufa_configuration_contract_import' ? 'active' }}" href="{{ path('app_ufa_configuration_contract_import') }}">{{ 'ufaConfigurationContractImportNavLabel'|trans }}</a>
+                                        </div>
+                                    </div>
                                     {% set ufa_formations_list = ufa_nav_formations() %}
                                     {# Purely a list: no "Nouvelle UFA" entry here, one does not create a UFA.
                                        A UFA is a program carrying the alternance modality, so it is born of the
@@ -411,17 +422,6 @@
                                         </div>
                                     </div>
                                     {% endif %}
-                                    <div class="dropend">
-                                        <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_ufa_configuration' ? 'active' }}" href="#navbar-ufa-configuration" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
-                                            {{ 'ufaConfigurationNavLabel'|trans }}
-                                        </a>
-                                        <div class="dropdown-menu">
-                                            <a class="dropdown-item {{ current_route starts with 'app_ufa_configuration_formation_center' ? 'active' }}" href="{{ path('app_ufa_configuration_formation_center') }}">{{ 'ufaConfigurationFormationCenterNavLabel'|trans }}</a>
-                                            <a class="dropdown-item {{ current_route starts with 'app_ufa_configuration_contract_modalities' ? 'active' }}" href="{{ path('app_ufa_configuration_contract_modalities') }}">{{ 'ufaConfigurationContractModalitiesNavLabel'|trans }}</a>
-                                            <a class="dropdown-item {{ current_route starts with 'app_ufa_configuration_behavior' ? 'active' }}" href="{{ path('app_ufa_configuration_behavior') }}">{{ 'ufaConfigurationBehaviorNavLabel'|trans }}</a>
-                                            <a class="dropdown-item {{ current_route starts with 'app_ufa_configuration_contract_import' ? 'active' }}" href="{{ path('app_ufa_configuration_contract_import') }}">{{ 'ufaConfigurationContractImportNavLabel'|trans }}</a>
-                                        </div>
-                                    </div>
                                     {% endif %}
                                     {% if feature('laptop_loans') %}
                                     <h6 class="dropdown-header">{{ 'ufaEquipmentGroupLabel'|trans }}</h6>
@@ -730,8 +730,12 @@
            gesture is written into the platform under their name, and the screen otherwise looks
            exactly like the administrator's own.
 
-           `impersonation_exit_path()` appends `_switch_user=_exit` to the page currently open, so
-           the way back is always one click from wherever the administrator wandered to.
+           `impersonation_exit_path()` is given the home page rather than left to default to the
+           page currently open: the administrator is standing on a screen the *impersonated* account
+           may reach, and coming back to it under their own roles is how one leaves impersonation
+           onto a 403 or a 404 - a student's « Mon travail », a teacher's carnet de notes. The way
+           back is still one click from wherever the administrator wandered to; it just always lands
+           on Accueil.
            data-turbo-prefetch="false" for the same reason /logout carries it: Turbo fetches a
            link's href on hover, which would end the impersonation without a click. #}
         {% if is_granted('IS_IMPERSONATOR') %}
@@ -739,7 +743,7 @@
             <div class="cm-impersonation d-print-none" role="status">
                 <span class="cm-impersonation__badge">{{ 'impersonateBannerBadge'|trans }}</span>
                 <span>{{ 'impersonateBannerText'|trans({'%name%': app.user.displayName ?? app.user.username, '%login%': app.user.username}) }}</span>
-                <a href="{{ impersonation_exit_path() }}" data-turbo-prefetch="false">{{ 'impersonateBannerExitAction'|trans({'%name%': impersonator.displayName ?? impersonator.username}) }}</a>
+                <a href="{{ impersonation_exit_path(path('app_home')) }}" data-turbo-prefetch="false">{{ 'impersonateBannerExitAction'|trans({'%name%': impersonator.displayName ?? impersonator.username}) }}</a>
             </div>
         {% endif %}
         {# Students and teachers only, and permanently: the establishment keeps its school records in

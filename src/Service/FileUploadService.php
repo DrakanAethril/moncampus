@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use Aws\S3\S3Client;
 use League\Flysystem\FilesystemException;
 use League\Flysystem\FilesystemOperator;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -18,14 +19,34 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
  * Origin Access Control is what's allowed to read it. url() just builds the CloudFront URL - no
  * signing, no byte-proxying - falling back to a direct bucket URL only where no CloudFront domain
  * is configured.
+ *
+ * downloadUrl() is the one exception, and only to the *signing* half: a file that carries a name of
+ * its own is handed over as a short-lived signed S3 address, because that is the only way to say
+ * what the download should be called. Still no bytes through PHP.
  */
 class FileUploadService
 {
+    /**
+     * A download address signed when the reader clicks - a controller redirect. It is followed
+     * within the second, so minutes are already generous.
+     */
+    public const string CLICK_LIFETIME = '+15 minutes';
+
+    /**
+     * A download address signed *into a page*, which has to outlive the page it sits in - a tab
+     * left open over a weekend, or a Turbo snapshot restored by the back button. Seven days is what
+     * S3 allows at most, and the honest comparison is not with a shorter signature: it is with the
+     * permanent, unauthenticated CDN address this replaces.
+     */
+    public const string PAGE_LIFETIME = '+7 days';
+
     public function __construct(
         private readonly FilesystemOperator $uploadsStorage,
         private readonly AntivirusScanner $antivirus,
         private readonly ObjectStore $objectStore,
+        private readonly S3Client $s3Client,
         private readonly string $awsS3Bucket,
+        private readonly string $awsS3Prefix,
         private readonly string $awsS3PublicEndpoint,
         private readonly string $awsCloudfrontDomain,
     ) {
@@ -167,6 +188,39 @@ class FileUploadService
     public function read(string $key): string
     {
         return $this->uploadsStorage->read($key);
+    }
+
+    /**
+     * The address to hand a reader who is **downloading** a file that has a name of its own - a
+     * library node, and anything shared from one.
+     *
+     * url() cannot answer this. It gives out the CloudFront address, and the object behind it is
+     * stored under a random key: `Content-Disposition: attachment` with no filename leaves the
+     * browser to name the download from the last segment of the URL, so the student saves
+     * `ca7cfc9b4cea16f5ec59a50fdd001830.pdf`. This signs a short-lived S3 request instead, whose
+     * `response-content-disposition` carries the name the teacher gave the row. CloudFront cannot
+     * do it: it forwards no query string, so the same parameter on the CDN address answers 403.
+     *
+     * What is *not* changed is whether the file opens or downloads - that stays
+     * App\Service\UploadPolicy's answer, the same one the object itself was written with, so a PDF
+     * still opens in the tab and merely saves under the right name from there.
+     *
+     * The signature is deliberately short-lived. The CDN address it replaces is permanent and
+     * unauthenticated, so this is the more closed of the two, not the more open one.
+     */
+    public function downloadUrl(string $key, string $name, string $lifetime = self::CLICK_LIFETIME): string
+    {
+        $disposition = UploadPolicy::servesInline($key) ? 'inline' : 'attachment';
+
+        $command = $this->s3Client->getCommand('GetObject', [
+            'Bucket' => $this->awsS3Bucket,
+            // The raw client, unlike Flysystem, is not scoped by the environment prefix - see
+            // App\Service\ObjectStore, which prepends it for the same reason.
+            'Key' => $this->awsS3Prefix.$key,
+            'ResponseContentDisposition' => DownloadFilename::header($disposition, DownloadFilename::sanitize($name, $key)),
+        ]);
+
+        return (string) $this->s3Client->createPresignedRequest($command, $lifetime)->getUri();
     }
 
     public function url(string $key): string

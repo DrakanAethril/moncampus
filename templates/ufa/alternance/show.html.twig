@@ -121,8 +121,7 @@
                         {% set roleLinks = [
                             {label: 'ufaAlternanceRoleTutorLabel'|trans, url: path('app_ufa_alternance_period_tuteur', {id: tutorLink.id, periodId: row.period.id, step: 'comportement'}), signedAt: row.tutorEvaluation ? row.tutorEvaluation.signedAt : null, reached: true},
                             {label: 'ufaAlternanceRoleStudentLabel'|trans, url: path('app_ufa_alternance_period_alternant', {id: tutorLink.id, periodId: row.period.id, step: 'comportement'}), signedAt: row.studentEvaluation ? row.studentEvaluation.signedAt : null, reached: row.tutorEvaluation and row.tutorEvaluation.signedAt},
-                            {label: 'ufaAlternanceRoleTeamLabel'|trans, url: path('app_ufa_alternance_period_equipe', {id: tutorLink.id, periodId: row.period.id, step: 'comportement'}), signedAt: row.teamEvaluation ? row.teamEvaluation.signedAt : null, reached: row.studentEvaluation and row.studentEvaluation.signedAt},
-                            {label: 'ufaAlternanceRoleSupervisorLabel'|trans, url: path('app_ufa_alternance_period_suivi', {id: tutorLink.id, periodId: row.period.id, step: 'comportement'}), signedAt: row.supervisorEvaluation ? row.supervisorEvaluation.closedAt : null, reached: row.teamEvaluation and row.teamEvaluation.signedAt},
+                            {label: 'ufaAlternanceRoleSupervisorLabel'|trans, url: path('app_ufa_alternance_period_suivi', {id: tutorLink.id, periodId: row.period.id, step: 'comportement'}), signedAt: row.supervisorEvaluation ? row.supervisorEvaluation.closedAt : null, reached: row.studentEvaluation and row.studentEvaluation.signedAt},
                         ] %}
                         <div class="cm-role-progress" style="justify-content: flex-start;">
                             {% for role in roleLinks %}

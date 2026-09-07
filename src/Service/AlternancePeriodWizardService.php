@@ -7,18 +7,16 @@ namespace App\Service;
 use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipStudentEvaluation;
 use App\Entity\InternshipSupervisorEvaluation;
-use App\Entity\InternshipTeamEvaluation;
 use App\Entity\InternshipTutorEvaluation;
 use App\Entity\InternshipTutorLink;
 use App\Repository\InternshipLivretEngagementRepository;
 use App\Repository\InternshipStudentEvaluationRepository;
 use App\Repository\InternshipSupervisorEvaluationRepository;
-use App\Repository\InternshipTeamEvaluationRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
 
 /**
- * Cross-role gating + read-only rules shared by every one of the 4 per-period guided journeys
- * (Tuteur/Alternant/Équipe pédagogique/Chargé de suivi) and both of their portals (staff
+ * Cross-role gating + read-only rules shared by every one of the 3 per-period guided journeys
+ * (Tuteur/Alternant/Chargé de suivi) and both of their portals (staff
  * "on-behalf" in Ufa\PeriodWizardController, self-service in InternshipTutorEvaluationController/
  * ProgramInternshipEvaluationController) - see the feature's plan doc, §Phase 5, for why the
  * within-one-role step order (1→2→3→4) is deliberately NOT enforced here: decision #3 makes a
@@ -31,16 +29,15 @@ class AlternancePeriodWizardService
         private readonly InternshipLivretEngagementRepository $engagementRepository,
         private readonly InternshipTutorEvaluationRepository $tutorEvaluationRepository,
         private readonly InternshipStudentEvaluationRepository $studentEvaluationRepository,
-        private readonly InternshipTeamEvaluationRepository $teamEvaluationRepository,
         private readonly InternshipSupervisorEvaluationRepository $supervisorEvaluationRepository,
     ) {
     }
 
-    // The 4 per-role evaluations for one (tutorLink, period) - feeds the wizards' shared
+    // The 3 per-role evaluations for one (tutorLink, period) - feeds the wizards' shared
     // role-progress strip so every role's chip shows its real signed/pending state, whichever
     // role's wizard is being viewed (each wizard action otherwise only loads its own role's
     // entity).
-    /** @return array{tutorEvaluation: ?InternshipTutorEvaluation, studentEvaluation: ?InternshipStudentEvaluation, teamEvaluation: ?InternshipTeamEvaluation, supervisorEvaluation: ?InternshipSupervisorEvaluation} */
+    /** @return array{tutorEvaluation: ?InternshipTutorEvaluation, studentEvaluation: ?InternshipStudentEvaluation, supervisorEvaluation: ?InternshipSupervisorEvaluation} */
     public function evaluationsFor(InternshipTutorLink $tutorLink, InternshipEvaluationPeriod $period): array
     {
         $student = $tutorLink->getStudent();
@@ -48,7 +45,6 @@ class AlternancePeriodWizardService
         return [
             'tutorEvaluation' => $this->tutorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $period),
             'studentEvaluation' => null !== $student ? $this->studentEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $period) : null,
-            'teamEvaluation' => null !== $student ? $this->teamEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $period) : null,
             'supervisorEvaluation' => $this->supervisorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $period),
         ];
     }
@@ -73,20 +69,13 @@ class AlternancePeriodWizardService
         return $this->tutorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $period)?->isSigned() ?? false;
     }
 
-    // Équipe pédagogique may start once the alternant has signed their own step 4.
-    public function isTeamStepOpen(InternshipTutorLink $tutorLink, InternshipEvaluationPeriod $period): bool
-    {
-        $student = $tutorLink->getStudent();
-
-        return null !== $student && ($this->studentEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $period)?->isSigned() ?? false);
-    }
-
-    // Chargé de suivi may start once the équipe pédagogique has signed their own step 4.
+    // Chargé de suivi may start once the alternant has signed their own step 4 - the last
+    // signature before the closure, the teaching team's step having been removed from the chain.
     public function isSupervisorStepOpen(InternshipTutorLink $tutorLink, InternshipEvaluationPeriod $period): bool
     {
         $student = $tutorLink->getStudent();
 
-        return null !== $student && ($this->teamEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $period)?->isSigned() ?? false);
+        return null !== $student && ($this->studentEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $period)?->isSigned() ?? false);
     }
 
     // True once the tuteur's own step 4 signature is recorded, OR the period is closed - either
@@ -109,16 +98,5 @@ class AlternancePeriodWizardService
         $student = $tutorLink->getStudent();
 
         return null !== $student && ($this->studentEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $period)?->isSigned() ?? false);
-    }
-
-    public function isTeamStepReadOnly(InternshipTutorLink $tutorLink, InternshipEvaluationPeriod $period): bool
-    {
-        if ($this->isPeriodClosed($tutorLink, $period)) {
-            return true;
-        }
-
-        $student = $tutorLink->getStudent();
-
-        return null !== $student && ($this->teamEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $period)?->isSigned() ?? false);
     }
 }

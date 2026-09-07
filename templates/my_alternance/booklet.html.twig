@@ -29,5 +29,6 @@
     {% include 'internship/_livret_reader.html.twig' with {
         frameUrl: path('app_program_internship_my_booklet_frame', {id: program.id}),
         periods: periods,
+        hasTimetableDocument: program.timetableDocumentFileKey is not null,
     } only %}
 {% endblock %}

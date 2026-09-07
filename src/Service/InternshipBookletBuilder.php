@@ -23,7 +23,6 @@ use App\Repository\InternshipOptionLegalNameRepository;
 use App\Repository\InternshipProgramInfoRepository;
 use App\Repository\InternshipStudentEvaluationRepository;
 use App\Repository\InternshipSupervisorEvaluationRepository;
-use App\Repository\InternshipTeamEvaluationRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\PeriodRepository;
 use App\Repository\ProgramStudentOptionRepository;
@@ -52,7 +51,6 @@ class InternshipBookletBuilder
         private readonly InternshipEvaluationPeriodRepository $evaluationPeriodRepository,
         private readonly InternshipTutorEvaluationRepository $tutorEvaluationRepository,
         private readonly InternshipStudentEvaluationRepository $studentEvaluationRepository,
-        private readonly InternshipTeamEvaluationRepository $teamEvaluationRepository,
         private readonly InternshipSupervisorEvaluationRepository $supervisorEvaluationRepository,
         private readonly ProgramStudentOptionRepository $studentOptionRepository,
         private readonly InternshipOptionExamModalityRepository $optionExamModalityRepository,
@@ -136,13 +134,11 @@ class InternshipBookletBuilder
                 $supervisorEvaluation = $this->supervisorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $evaluationPeriod);
                 $tutorEvaluation = $this->tutorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $evaluationPeriod);
                 $studentEvaluation = $this->studentEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $evaluationPeriod);
-                $teamEvaluation = $this->teamEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $evaluationPeriod);
 
                 return [
                     'period' => $evaluationPeriod,
                     'tutorEvaluation' => $tutorEvaluation?->isSigned() ? $tutorEvaluation : null,
                     'studentEvaluation' => $studentEvaluation?->isSigned() ? $studentEvaluation : null,
-                    'teamEvaluation' => $teamEvaluation?->isSigned() ? $teamEvaluation : null,
                     'supervisorEvaluation' => $supervisorEvaluation,
                 ];
             },
@@ -161,6 +157,11 @@ class InternshipBookletBuilder
         $calendarFileKey = ProgramAlternanceCalendarMode::File === $program->getAlternanceCalendarMode()
             ? $program->getAlternanceCalendarFileKey()
             : null;
+
+        // "Emploi du temps" section II.2: unlike the calendar there is no mode to consult - the
+        // document deposited in UFA > Formations > Documents is the whole condition. A formation
+        // that has none keeps the booklet it has always had, with the exam modalities as II.2.
+        $timetableFileKey = $program->getTimetableDocumentFileKey();
 
         return [
             'tutorLink' => $tutorLink,
@@ -186,6 +187,12 @@ class InternshipBookletBuilder
             'calendarFileUrl' => null !== $calendarFileKey ? $this->fileUploadService->url($calendarFileKey) : null,
             'calendarMonths' => (null === $calendarFileKey && null !== $startDate && null !== $endDate) ? $this->calendarBuilder->build($startDate, $endDate, $rawPeriods) : [],
             'calendarLegend' => null === $calendarFileKey ? $this->calendarBuilder->buildLegend($rawPeriods) : [],
+            // Same pair as the calendar's, and for the same reason: the key is what
+            // InternshipBookletPdfExporter merges into the exported PDF, the url what the on-screen
+            // booklet embeds. Both null when the formation deposited no timetable, which is what
+            // the template reads to decide whether the section exists at all.
+            'timetableFileKey' => $timetableFileKey,
+            'timetableFileUrl' => null !== $timetableFileKey ? $this->fileUploadService->url($timetableFileKey) : null,
         ];
     }
 

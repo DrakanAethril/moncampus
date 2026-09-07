@@ -58,6 +58,15 @@ class Skill
     #[ORM\Column(name: '`order`')]
     private int $order = 0;
 
+    /**
+     * The short explanation shown right under the competency's label wherever it is rated - the
+     * booklet and the tutor's evaluation screens. HugeRTE HTML, and deliberately distinct from
+     * $occupationDescription: that one belongs to the referential fiche and is never shown to a
+     * tutor, this one exists so the person rating knows what the wording covers.
+     */
+    #[ORM\Column(name: 'description_html', type: Types::TEXT, nullable: true)]
+    private ?string $descriptionHtml = null;
+
     /** "Description métier" - what the occupation does, from the referential. */
     #[ORM\Column(name: 'occupation_description', type: Types::TEXT, nullable: true)]
     private ?string $occupationDescription = null;
@@ -179,6 +188,18 @@ class Skill
     public function setOrder(int $order): static
     {
         $this->order = $order;
+
+        return $this;
+    }
+
+    public function getDescriptionHtml(): ?string
+    {
+        return $this->descriptionHtml;
+    }
+
+    public function setDescriptionHtml(?string $descriptionHtml): static
+    {
+        $this->descriptionHtml = $descriptionHtml;
 
         return $this;
     }

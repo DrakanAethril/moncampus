@@ -3555,6 +3555,15 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-wizard-readonly-value { background: var(--cm-surface-alt); color: var(--cm-brand-strong); font-weight: 600; border-radius: 6px; padding: 6px 10px; display: inline-block; }
 .cm-wizard-readonly-block { background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); border-radius: 8px; padding: 12px 14px; }
 
+/* A competency's own explanation (Skill::$descriptionHtml), under its label on every screen that
+   rates it. It holds HugeRTE HTML, so the paragraph margins have to be flattened: a one-sentence
+   description would otherwise push the rating control a whole line away from its row. */
+.cm-skill-description { font-size: 12.5px; color: var(--cm-muted); margin-top: 2px; }
+.cm-skill-description > :first-child { margin-top: 0; }
+.cm-skill-description > :last-child { margin-bottom: 0; }
+.cm-skill-description p { margin-bottom: 4px; }
+.cm-skill-description ul, .cm-skill-description ol { margin-bottom: 4px; padding-left: 18px; }
+
 /* ==========================================================================
    Dashboards par profil (design/design_handoff_dashboards)
    ========================================================================== */

@@ -57,7 +57,7 @@
                                 {% if row.submissions|reduce((total, submission) => total + submission.files|length, 0) > 0 %}
                                     {% for submission in row.submissions %}
                                         {% for file in submission.files %}
-                                            <a href="{{ file_url(file.storageKey) }}" target="_blank" rel="noopener" class="d-block">{{ file.originalFilename }}</a>
+                                            <a href="{{ download_url(file.storageKey, file.originalFilename) }}" target="_blank" rel="noopener" class="d-block">{{ file.originalFilename }}</a>
                                         {% endfor %}
                                     {% endfor %}
                                 {% else %}
