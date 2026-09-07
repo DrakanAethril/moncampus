@@ -25,7 +25,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * « UFA > Configuration > Importer des contrats » - the bulk load of the school's apprenticeship
+ * « UFA > Configuration > Importer Charlemagne Entreprises » - the bulk load of the school's apprenticeship
  * export into alternances, in three deliberate moves: ① dépôt du fichier · ② analyse à blanc,
  * validée par l'opérateur · ③ import.
  *

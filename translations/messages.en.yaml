@@ -4531,8 +4531,8 @@ contentVisibilityNotYoursNoteText: 'This séquence was instantiated by another t
 sequencePublicationUpdatedFlashMessage: 'The opening to students has been updated.'
 
 # --- UFA > Configuration > Import contracts ---
-ufaConfigurationContractImportNavLabel: 'Import contracts'
-ufaContractImportPageHeading: 'Import contracts'
+ufaConfigurationContractImportNavLabel: 'Import Charlemagne Entreprises'
+ufaContractImportPageHeading: 'Import Charlemagne Entreprises'
 ufaContractImportFileSectionTitle: 'The alternance file'
 ufaContractImportFileSectionHint: "The school's export, one line per apprenticeship contract."
 ufaContractImportFileFieldLabel: 'File (.xlsx)'
