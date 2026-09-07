@@ -56,15 +56,27 @@
 {% endmacro %}
 
 {# Which slice of the booklet to render. 'all' (default) = everything, which is the web view and the
-   usual PDF export. When the alternation calendar is an uploaded PDF file, the export cannot pass it
-   through this HTML: App\Service\InternshipBookletPdfExporter then renders 'before' then 'after' and
-   merges [before, file, after], the file taking the place of the Calendrier page.
-   A slice only cuts at that boundary, nowhere else. #}
+   usual PDF export. Two sections of chapter II can be uploaded PDF files - the alternance calendar
+   (II.1) and the emploi du temps (II.2) - and the export cannot pass a PDF through this HTML:
+   App\Service\InternshipBookletPdfExporter renders the slices around them and merges the files in
+   between. Hence three cut points rather than two:
+     - 'before'           : everything up to page 9, stopping short of the Calendrier page
+     - 'before-timetable' : the same plus the generated Calendrier page, for a formation whose
+                            calendar is a grid but whose emploi du temps is a file
+     - 'after'            : chapter II's Modalités d'examen onwards
+   A slice only cuts at those boundaries, nowhere else. #}
 {% set slice = bookletSlice|default('all') %}
 {# Pages added by this file beyond the single page the generated calendar used to take. The
    booklet's page numbers are hard-coded (footers and table of contents), so they have to be shifted
    by hand for everything following the Calendrier section. #}
 {% set calendarExtraPages = calendarExtraPages|default(0) %}
+{# Pages taken by the « Emploi du temps » section: none at all when the formation deposited no such
+   document (the booklet then reads exactly as it always has, examen back to II.2), one in the web
+   view where the file is embedded in a single page, and the file's own page count on export, where
+   the document itself is merged in at that place. #}
+{% set timetablePages = timetablePages|default(timetableFileUrl ? 1 : 0) %}
+{# What everything after chapter II.2 has to shift by. #}
+{% set pageShift = calendarExtraPages + timetablePages %}
 {# Export partiel : the id of the single InternshipEvaluationPeriod to keep, or null for the whole
    booklet. A partial export is the cover page, that one period's own pages, and the back cover -
    nothing else. The period pages keep the page numbers they have in the full booklet (the loop
@@ -104,9 +116,16 @@
         {label: '6. Durée de travail', page: 7, indent: 8, weight: 400, color: '#1b2430'},
         {label: 'II. Informations pédagogiques', page: 10, indent: 0, weight: 700, color: '#1F4E79'},
         {label: '1. Calendrier d’alternance', page: 10, indent: 8, weight: 400, color: '#1b2430'},
-        {label: '2. Modalités d’examen', page: 11 + calendarExtraPages, indent: 8, weight: 400, color: '#1b2430'},
-        {label: 'III. Suivi de la formation', page: 12 + calendarExtraPages, indent: 0, weight: 700, color: '#1F4E79'},
     ] %}
+    {# The emploi du temps only exists as a section when the formation deposited one, and it is what
+       pushes the exam modalities from 2 to 3 - hence a merge rather than a second full listing. #}
+    {% if timetableFileUrl %}
+        {% set toc = toc|merge([{label: '2. Emploi du temps', page: 11 + calendarExtraPages, indent: 8, weight: 400, color: '#1b2430'}]) %}
+    {% endif %}
+    {% set toc = toc|merge([
+        {label: (timetableFileUrl ? '3' : '2') ~ '. Modalités d’examen', page: 11 + pageShift, indent: 8, weight: 400, color: '#1b2430'},
+        {label: 'III. Suivi de la formation', page: 12 + pageShift, indent: 0, weight: 700, color: '#1F4E79'},
+    ]) %}
     {% for t in toc %}
         <div style="display: flex; align-items: baseline; gap: 3mm; font-size: 12pt; margin: 1.6mm 0; padding-left: {{ t.indent }}mm;">
             <span style="font-weight: {{ t.weight }}; color: {{ t.color }};">{{ t.label }}</span>
@@ -340,7 +359,7 @@
 
 {% endif %}{# end of the "before" slice #}
 
-{% if slice == 'all' and partialPeriodId is null %}
+{% if slice in ['all', 'before-timetable'] and partialPeriodId is null %}
   <!-- PAGE 10 - II. Informations pedagogiques / Calendrier -->
   {% if calendarFileUrl %}
     {# The program's calendar is an uploaded PDF: it is displayed as is rather than regenerating a
@@ -398,13 +417,40 @@
   {% endif %}
 {% endif %}{# end of the Calendrier page #}
 
-{% if slice != 'before' %}
+{% if slice == 'all' and partialPeriodId is null and timetableFileUrl %}
+  <!-- PAGE 11 - Emploi du temps -->
+  {# The formation deposited a timetable in UFA > Formations > Documents. Like the uploaded
+     calendar above, it is embedded here in the browser's PDF reader, while on export it is the file
+     itself that is merged at this place and this block never appears. A formation without one has
+     no such section at all - the booklet goes straight from the calendar to the exam modalities. #}
+  <div class="lv-page">
+    <div class="lv-corner">{{ studentName }}</div>
+    <h2 class="lv-h2" id="section-ii-2">2. Emploi du temps</h2>
+    <div style="text-align: center; font-weight: 700; font-size: 13pt; color: #1b2430;">{{ program.displayName }} &ndash; Emploi du temps</div>
+    <object data="{{ timetableFileUrl }}" type="application/pdf" style="flex: 1; width: 100%; min-height: 180mm; border: 0.5pt solid #c9d2de; margin-top: 3mm;">
+      {# Same fallback as the calendar's: anything that does not display PDFs inline (a browser
+         print of the web booklet included) still gets a usable link. #}
+      <div style="padding: 6mm; text-align: center;">
+        <a href="{{ timetableFileUrl }}" target="_blank" rel="noopener">{{ 'internshipBookletTimetableFileLinkLabel'|trans }}</a>
+      </div>
+    </object>
+    <div style="text-align: center; font-size: 8.5pt; color: #7a8699; margin-top: 2mm;">
+      <a href="{{ timetableFileUrl }}" target="_blank" rel="noopener">{{ 'internshipBookletTimetableFileLinkLabel'|trans }}</a>
+    </div>
+    <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page {{ 11 + calendarExtraPages }}</span></div>
+  </div>
+{% endif %}{# end of the Emploi du temps page #}
+
+{% if slice in ['all', 'after'] %}
 
   {% if partialPeriodId is null %}
   <!-- PAGE 11 - Modalites d'examen -->
   <div class="lv-page">
     <div class="lv-corner">{{ studentName }}</div>
-    <h2 class="lv-h2" id="section-ii-2">2. Modalit&eacute;s d&rsquo;examen</h2>
+    {# Numbered 3 rather than 2 when an emploi du temps is in the way, and the anchor follows the
+       number - templates/internship/_livret_reader.html.twig points its table of contents at the
+       same pair. #}
+    <h2 class="lv-h2" id="section-ii-{{ timetableFileUrl ? 3 : 2 }}">{{ timetableFileUrl ? 3 : 2 }}. Modalit&eacute;s d&rsquo;examen</h2>
     <div style="font-family: 'Times New Roman', Times, serif; font-size: 10.5pt; line-height: 1.35;">
       <div style="text-align: center; font-weight: 700; font-size: 13pt;">{{ program.displayName }}</div>
       <div style="text-align: center; font-size: 12pt; margin-bottom: 4mm;">Modalit&eacute;s d&rsquo;&eacute;valuation des comp&eacute;tences et organisation de l&rsquo;&eacute;preuve</div>
@@ -419,7 +465,7 @@
         {% endif %}
       {% endfor %}
     </div>
-    <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page {{ 11 + calendarExtraPages }}</span></div>
+    <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page {{ 11 + pageShift }}</span></div>
   </div>
 
   <!-- PAGE 12 - III. Suivi de la formation -->
@@ -440,7 +486,7 @@
     <p style="margin: 1mm 0;">2 visites annuelles (in-situ ou visio ou rdv t&eacute;l&eacute;phonique) permettent aux trois parties de se rencontrer.</p>
     <p style="margin: 1mm 0;">Deux conseils de classe par an permettent de formaliser la progression des alternants. Un rendez-vous individuel leur est d&eacute;di&eacute;.</p>
     <p style="margin: 5mm 0 1mm; font-weight: 700; color: #1F4E79;">3) Le tuteur informe l&rsquo;&eacute;tablissement scolaire sur le d&eacute;roulement de l&rsquo;alternance via le livret de suivi et tout moyen qu&rsquo;il jugera n&eacute;cessaire pour assurer une bonne communication avec l&rsquo;&eacute;cole</p>
-    <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page {{ 12 + calendarExtraPages }}</span></div>
+    <div class="lv-footer"><span>{{ studentName }}</span><span>{{ bookletFooterTitle }} / page {{ 12 + pageShift }}</span></div>
   </div>
   {% endif %}{# end of pages 11 and 12, skipped by a partial export #}
 
@@ -450,7 +496,7 @@
 
   <!-- PAGES 13+ - un bloc de 5 pages par periode de suivi -->
   {% for entry in periods %}
-    {% set pageBase = 13 + calendarExtraPages + loop.index0 * 5 %}
+    {% set pageBase = 13 + pageShift + loop.index0 * 5 %}
     {% set period = entry.period %}
     {% set tutorEvaluation = entry.tutorEvaluation %}
     {% set studentEvaluation = entry.studentEvaluation %}

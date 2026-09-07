@@ -26,5 +26,6 @@
     {% include 'internship/_livret_reader.html.twig' with {
         frameUrl: path('app_internship_tutor_booklet_frame', {tutorLinkId: tutorLink.id}),
         periods: periods,
+        hasTimetableDocument: tutorLink.program.timetableDocumentFileKey is not null,
     } only %}
 {% endblock %}
