@@ -22,6 +22,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * UFA > Formations > une formation > « Documents ».
@@ -124,12 +125,15 @@ class FormationDocumentController extends AbstractController
      * the file, and nobody else.
      */
     #[Route(path: '/ufa/programs/{id}/documents/timetable/pdf', name: 'app_ufa_formation_timetable_document_pdf')]
-    public function timetableDocumentPdf(int $id, ProgramRepository $repository, FileUploadService $fileUploadService): Response
+    public function timetableDocumentPdf(int $id, ProgramRepository $repository, FileUploadService $fileUploadService, TranslatorInterface $translator): Response
     {
         $program = $repository->find($id) ?? throw $this->createNotFoundException();
         $key = $program->getTimetableDocumentFileKey() ?? throw $this->createNotFoundException();
 
-        return new RedirectResponse($fileUploadService->url($key));
+        return new RedirectResponse($fileUploadService->downloadUrl(
+            $key,
+            $translator->trans('programTimetableDocumentFilename', ['%program%' => $program->getShortName()]),
+        ));
     }
 
     private function currentUser(): User

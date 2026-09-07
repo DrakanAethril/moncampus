@@ -23,7 +23,7 @@
                         <div class="d-flex flex-wrap gap-1">
                             {% for attachment in signupList.attachments %}
                                 <div class="btn-group">
-                                    <a href="{{ file_url(attachment.storageKey) }}" class="btn btn-outline-secondary btn-sm" target="_blank">{{ attachment.originalFilename }}</a>
+                                    <a href="{{ download_url(attachment.storageKey, attachment.originalFilename) }}" class="btn btn-outline-secondary btn-sm" target="_blank">{{ attachment.originalFilename }}</a>
                                     <form method="post" action="{{ path('app_signup_lists_attachments_remove', {id: signupList.id, attachmentId: attachment.id}) }}" onsubmit="return confirm('{{ 'removeConfirmMessage'|trans|e('js') }}')">
                                         <input type="hidden" name="_token" value="{{ csrf_token('signup_list_remove_attachment') }}">
                                         <button type="submit" class="btn btn-outline-danger btn-sm">&times;</button>

@@ -29,6 +29,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\String\Slugger\AsciiSlugger;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 // Reached via the Section > Année scolaire > Classe nav menu. The "Paramétrage" entry lives in
 // App\Controller\Program\Settings* instead, since it's grown into its own tabbed feature.
@@ -94,13 +95,18 @@ class ProgramController extends AbstractController
     // know which mode is configured.
     #[RequiresFeature(Feature::MyAlternance)]
     #[Route(path: '/programs/{id}/alternance-calendar/pdf', name: 'app_program_alternance_calendar_pdf')]
-    public function alternanceCalendarPdf(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, PeriodRepository $periodRepository, InternshipCalendarBuilder $calendarBuilder, GotenbergClient $gotenbergClient, FileUploadService $fileUploadService): Response
+    public function alternanceCalendarPdf(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, PeriodRepository $periodRepository, InternshipCalendarBuilder $calendarBuilder, GotenbergClient $gotenbergClient, FileUploadService $fileUploadService, TranslatorInterface $translator): Response
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
         $this->assertProgramFeatureEnabled($program->getAlternanceCalendarVisibility()->allowsRoles($this->getUser()?->getRoles() ?? []));
 
         if (ProgramAlternanceCalendarMode::File === $program->getAlternanceCalendarMode() && null !== $program->getAlternanceCalendarFileKey()) {
-            return new RedirectResponse($fileUploadService->url($program->getAlternanceCalendarFileKey()));
+            // See ProgramSyllabusController: an uploaded document carries no name, so the
+            // formation lends it one.
+            return new RedirectResponse($fileUploadService->downloadUrl(
+                $program->getAlternanceCalendarFileKey(),
+                $translator->trans('programAlternanceCalendarDocumentFilename', ['%program%' => $program->getShortName()]),
+            ));
         }
 
         $startDate = $program->getEffectiveStartDate();

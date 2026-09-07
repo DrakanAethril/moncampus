@@ -198,7 +198,7 @@ class StudentTrainingApplicationController extends AbstractController
 
         foreach ($application->getCurrentVersion()?->getAttachments() ?? [] as $attachment) {
             if ($attachment->getId() === $attachmentId) {
-                return $this->redirect($this->fileUploadService->url($attachment->getStorageKey()));
+                return $this->redirect($this->fileUploadService->downloadUrl($attachment->getStorageKey(), $attachment->getName()));
             }
         }
 
@@ -217,7 +217,7 @@ class StudentTrainingApplicationController extends AbstractController
             throw $this->createNotFoundException();
         }
 
-        return $this->redirect($this->fileUploadService->url($offer->getDocumentKey()));
+        return $this->redirect($this->fileUploadService->downloadUrl($offer->getDocumentKey(), $offer->getTitle()));
     }
 
     /**

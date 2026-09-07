@@ -298,7 +298,7 @@ class LessonLogController extends AbstractController
         }
 
         $target = LessonLogAttachmentSourceType::Upload === $attachment->getType() && null !== $attachment->getStorageKey()
-            ? $fileUploadService->url($attachment->getStorageKey())
+            ? $fileUploadService->downloadUrl($attachment->getStorageKey(), (string) $attachment->getLabel())
             : (string) $attachment->getUrl();
 
         return $this->redirect($target);
