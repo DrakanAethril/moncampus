@@ -1,6 +1,16 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ ticket.subject }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        isHandler
+            ? {label: 'ticketQueuePageHeading'|trans, url: path('app_tickets_queue')}
+            : {label: 'myTicketsPageHeading'|trans, url: path('app_tickets')},
+        {label: ticket.subject, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
 {% block page_title %}
     {{ ticket.subject }}
     <span class="badge {{ statusClass }} align-middle ms-2">{{ statusLabel }}</span>
