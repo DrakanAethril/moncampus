@@ -26,6 +26,37 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.07'
+      date: '2026-09-07'
+      summary: "Le livret de l'alternant s'enrichit : l'emploi du temps de la formation y prend place, chaque compétence peut porter une description, et le bilan d'une période va désormais du tuteur à l'alternant puis au centre de formation. Ailleurs, les fichiers téléchargés arrivent enfin sous leur vrai nom, et la liste des étudiants s'imprime en feuille de pointage."
+      entries:
+          - type: nouveaute
+            title: "Une description sous le nom d'une compétence du livret"
+            detail: "Le texte saisi avec la compétence accompagne son intitulé dans le livret et sur les écrans où le tuteur la note."
+          - type: nouveaute
+            title: "L'emploi du temps de la formation dans le livret de l'alternant"
+            detail: "Le document déposé pour la formation devient une section du livret, entre le calendrier d'alternance et les modalités d'examen."
+          - type: modification
+            title: "Le bilan d'une période ne passe plus par l'équipe pédagogique"
+            detail: "La chaîne de signature va du tuteur à l'alternant, puis directement au centre de formation."
+          - type: nouveaute
+            title: "Consulter les documents d'une formation sans les télécharger"
+          - type: nouveaute
+            title: 'Une liste pour pointage aux colonnes que vous choisissez'
+            detail: "La liste des étudiants s'imprime avec autant de colonnes vides que voulu — passeport, vaccins, acompte — et l'orientation de page qui convient."
+          - type: fix
+            title: 'Un fichier téléchargé garde son nom'
+            detail: "Les pièces jointes et documents arrivaient sous leur nom de stockage ; ils reprennent partout le nom sous lequel ils ont été déposés."
+          - type: fix
+            title: "Quitter un compte emprunté ramène à l'accueil"
+            detail: "Le retour se faisait sur la page consultée, souvent interdite au compte retrouvé, et s'achevait sur une erreur de droits."
+          - type: modification
+            title: "Le fil d'Ariane apparaît sur la fiche d'un ticket"
+          - type: modification
+            title: "L'entrée d'import de contrats prend le nom de Charlemagne Entreprises"
+          - type: modification
+            title: 'La configuration passe au-dessus des formations dans le menu Alternance'
+
     - version: '2026.09.06.3'
       date: '2026-09-06'
       summary: "Les pièces jointes d'une postulation d'entraînement se relisent, se retirent et se remplacent une par une avant de renvoyer, sans plus perdre celles déjà relues. Côté enseignant, le panneau de validation dit maintenant qui a écrit les retours en cours, et quand."
