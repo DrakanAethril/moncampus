@@ -5307,9 +5307,9 @@ contentVisibilityHelpText: "Une séquence masquée n'apparaît pas du tout dans 
 contentVisibilityNotYoursNoteText: "Cette séquence a été instanciée par un autre enseignant : lui seul, ou l'administration, décide de son ouverture aux étudiants."
 sequencePublicationUpdatedFlashMessage: "L'ouverture aux étudiants a été mise à jour."
 
-# --- UFA > Configuration > Importer des contrats ---
-ufaConfigurationContractImportNavLabel: 'Importer des contrats'
-ufaContractImportPageHeading: 'Importer des contrats'
+# --- UFA > Configuration > Importer Charlemagne Entreprises ---
+ufaConfigurationContractImportNavLabel: 'Importer Charlemagne Entreprises'
+ufaContractImportPageHeading: 'Importer Charlemagne Entreprises'
 ufaContractImportFileSectionTitle: "Le fichier d'alternances"
 ufaContractImportFileSectionHint: "L'export de l'établissement, une ligne par contrat d'apprentissage."
 ufaContractImportFileFieldLabel: 'Fichier (.xlsx)'
