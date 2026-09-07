@@ -1,0 +1,6 @@
+{# The competency's own explanation (Skill::$descriptionHtml), rendered under its label on every
+   screen where it is rated - the tuteur wizard, the tutor's standalone evaluation form and the
+   read-only replay of a signed evaluation. HugeRTE HTML, hence |raw. Expects: skill. #}
+{% if skill.descriptionHtml is not empty %}
+    <div class="cm-skill-description">{{ skill.descriptionHtml|raw }}</div>
+{% endif %}

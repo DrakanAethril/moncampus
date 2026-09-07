@@ -34,6 +34,14 @@ class SkillType extends AbstractType
                 // blank submissions on this non-nullable property - see TextType::buildForm().
                 'empty_data' => '',
             ])
+            ->add('descriptionHtml', TextareaType::class, [
+                // Rich text, unlike the three assessment strands below: this one is read by the
+                // tutor while they rate, so it is allowed the emphasis and bullets a sentence of
+                // guidance needs.
+                'label' => 'skillDescriptionFieldLabel',
+                'help' => 'skillDescriptionFieldHelp',
+                'required' => false,
+            ])
             ->add('code', TextType::class, [
                 'label' => 'skillCodeFieldLabel',
                 'help' => 'skillCodeFieldHelp',

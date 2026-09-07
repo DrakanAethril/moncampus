@@ -37,6 +37,12 @@
     .lv-corner { display: flex; justify-content: flex-end; font-size: 9pt; color: #7a8699; }
     .lv-h1 { color: #1F4E79; font-size: 18pt; margin: 6mm 0 4mm; }
     .lv-h2 { color: #2E74B5; font-size: 13pt; margin: 3mm 0 3mm; }
+    /* The competency's own explanation, under its label in the two "compétences" grids. Smaller
+       and grey so the rated wording stays the thing the eye lands on; the HugeRTE paragraph
+       margins are flattened, otherwise one sentence adds a blank line to every row. */
+    .lv-skill-desc { font-size: 8pt; color: #5c6a7d; margin-top: 0.6mm; }
+    .lv-skill-desc p { margin: 0; }
+    .lv-skill-desc ul, .lv-skill-desc ol { margin: 0; padding-left: 4mm; }
     .lv-footer { margin-top: auto; padding-top: 4mm; border-top: 0.5pt solid #c9d2de; display: flex; justify-content: space-between; font-size: 9pt; color: #7a8699; }
     .lv-th-main { background: #1F4E79; color: #ffffff; text-align: left; padding: 2mm 3mm; font-size: 11pt; border: 0.5pt solid #1F4E79; }
     .lv-td-label { border: 0.5pt solid #8aa2bd; background: #eef3f9; font-weight: 700; padding: 2mm 3mm; }
@@ -573,7 +579,7 @@
             {% for skill in group.skills %}
               {% set selectedSkillLevel = tutorEvaluation ? tutorEvaluation.getSkillLevelFor(skill) : null %}
               <tr>
-                <td style="border: 0.5pt solid #8aa2bd; padding: 1.5mm 2mm 1.5mm 6mm; height: 9mm;">&#10148;&nbsp; {{ skill.label }}</td>
+                <td style="border: 0.5pt solid #8aa2bd; padding: 1.5mm 2mm 1.5mm 6mm; height: 9mm;">&#10148;&nbsp; {{ skill.label }}{% if skill.descriptionHtml is not empty %}<div class="lv-skill-desc">{{ skill.descriptionHtml|raw }}</div>{% endif %}</td>
                 {% for skillLevel in skillLevels %}
                   <td style="border: 0.5pt solid #8aa2bd; {% if selectedSkillLevel and selectedSkillLevel.id == skillLevel.id %}background: {{ skillLevel.color }}; color: #ffffff; font-weight: 700; text-align: center;{% endif %}">{% if selectedSkillLevel and selectedSkillLevel.id == skillLevel.id %}&#10003;{% endif %}</td>
                 {% endfor %}
@@ -600,7 +606,7 @@
             {% for skill in group.skills %}
               {% set selectedSkillLevel = tutorEvaluation ? tutorEvaluation.getSkillLevelFor(skill) : null %}
               <tr>
-                <td style="border: 0.5pt solid #8aa2bd; padding: 1.5mm 2mm 1.5mm 6mm; height: 9mm;">&#10148;&nbsp; {{ skill.label }}</td>
+                <td style="border: 0.5pt solid #8aa2bd; padding: 1.5mm 2mm 1.5mm 6mm; height: 9mm;">&#10148;&nbsp; {{ skill.label }}{% if skill.descriptionHtml is not empty %}<div class="lv-skill-desc">{{ skill.descriptionHtml|raw }}</div>{% endif %}</td>
                 {% for skillLevel in skillLevels %}
                   <td style="border: 0.5pt solid #8aa2bd; {% if selectedSkillLevel and selectedSkillLevel.id == skillLevel.id %}background: {{ skillLevel.color }}; color: #ffffff; font-weight: 700; text-align: center;{% endif %}">{% if selectedSkillLevel and selectedSkillLevel.id == skillLevel.id %}&#10003;{% endif %}</td>
                 {% endfor %}

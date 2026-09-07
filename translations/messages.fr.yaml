@@ -1129,6 +1129,8 @@ skillLabelColumnLabel: 'Compétence'
 newSkillPageHeading: 'Nouvelle compétence'
 editSkillPageHeading: 'Modifier la compétence'
 skillLabelFieldLabel: 'Compétence'
+skillDescriptionFieldLabel: 'Description'
+skillDescriptionFieldHelp: "Facultatif. S'affiche sous le nom de la compétence dans le livret de l'alternant et sur les écrans d'évaluation."
 skillCreatedFlashMessage: 'La compétence a été ajoutée avec succès.'
 skillUpdatedFlashMessage: 'La compétence a été modifiée avec succès.'
 
