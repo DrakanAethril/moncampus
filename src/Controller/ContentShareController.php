@@ -628,9 +628,9 @@ class ContentShareController extends AbstractController
     }
 
     /**
-     * A shared file hands over the CDN address, exactly as every other stored file of this
-     * application is served; a shared folder lists **its own** subtree, and its rows come back here
-     * with `?node=` to download one.
+     * A shared file hands over the object's own address, signed for a few minutes so the download
+     * carries the library row's name rather than its storage key; a shared folder lists **its own**
+     * subtree, and its rows come back here with `?node=` to download one.
      */
     private function openFile(ContentShare $share, Request $request, FileUploadService $fileUploads, FileLibraryNodeRepository $nodes): Response
     {
@@ -649,7 +649,7 @@ class ContentShareController extends AbstractController
                 throw $this->createNotFoundException();
             }
 
-            return $this->redirect($fileUploads->url($node->getStorageKey()));
+            return $this->redirect($fileUploads->downloadUrl($node->getStorageKey(), $node->getName()));
         }
 
         return $this->render('content_share/read_folder.html.twig', [
