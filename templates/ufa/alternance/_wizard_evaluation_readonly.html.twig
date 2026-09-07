@@ -9,7 +9,7 @@
         {% include 'ufa/alternance/_readonly_value_chip.html.twig' with {
             label: behaviorEvaluation.behaviorCriteria.label,
             value: behaviorEvaluation.behaviorLevel ? behaviorEvaluation.behaviorLevel.label : null,
-        } %}
+        } only %}
     {% endfor %}
 {% elseif step == 'competences' %}
     {% set currentGroupId = null %}
@@ -20,9 +20,10 @@
         {% endif %}
         {% include 'ufa/alternance/_readonly_value_chip.html.twig' with {
             label: skillEvaluation.skill.label,
+            description: skillEvaluation.skill.descriptionHtml,
             value: skillEvaluation.skillLevel ? skillEvaluation.skillLevel.label : null,
             color: skillEvaluation.skillLevel ? skillEvaluation.skillLevel.color : null,
-        } %}
+        } only %}
     {% endfor %}
 {% elseif step == 'forces' %}
     <div class="cm-wizard-readonly-block mb-3">

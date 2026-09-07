@@ -1061,6 +1061,8 @@ skillLabelColumnLabel: 'Skill'
 newSkillPageHeading: 'New skill'
 editSkillPageHeading: 'Edit skill'
 skillLabelFieldLabel: 'Skill'
+skillDescriptionFieldLabel: 'Description'
+skillDescriptionFieldHelp: "Optional. Shown under the skill's name in the apprentice booklet and on the evaluation screens."
 skillCreatedFlashMessage: 'The skill was added successfully.'
 skillUpdatedFlashMessage: 'The skill was updated successfully.'
 

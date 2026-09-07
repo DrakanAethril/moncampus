@@ -37,7 +37,10 @@
                         {% set currentGroupId = skillGroup.id %}
                     {% endif %}
                     <div class="row mb-2 align-items-center">
-                        <div class="col-md-8">{{ skillEntry.vars.data.skill.label }}</div>
+                        <div class="col-md-8">
+                            {{ skillEntry.vars.data.skill.label }}
+                            {% include 'internship/_skill_description.html.twig' with {skill: skillEntry.vars.data.skill} only %}
+                        </div>
                         <div class="col-md-4">{{ form_row(skillEntry.skillLevel, {label: false}) }}</div>
                     </div>
                 {% endfor %}
