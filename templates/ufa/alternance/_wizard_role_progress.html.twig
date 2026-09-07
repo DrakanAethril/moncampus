@@ -1,13 +1,12 @@
 {#
-    4-role progress strip shared by the tuteur/alternant/équipe/chargé de suivi wizards (28-31).
-    Expects: tutorEvaluation, studentEvaluation, teamEvaluation, supervisorEvaluation (any may be
-    null - not yet created/reached).
+    3-role progress strip shared by the tuteur/alternant/chargé de suivi wizards (28-31).
+    Expects: tutorEvaluation, studentEvaluation, supervisorEvaluation (any may be null - not yet
+    created/reached).
 #}
 {% set roles = [
     {key: 'tutor', label: 'ufaAlternanceRoleTutorLabel'|trans, signedAt: tutorEvaluation ? tutorEvaluation.signedAt : null, reached: true},
     {key: 'student', label: 'ufaAlternanceRoleStudentLabel'|trans, signedAt: studentEvaluation ? studentEvaluation.signedAt : null, reached: tutorEvaluation and tutorEvaluation.signedAt},
-    {key: 'team', label: 'ufaAlternanceRoleTeamLabel'|trans, signedAt: teamEvaluation ? teamEvaluation.signedAt : null, reached: studentEvaluation and studentEvaluation.signedAt},
-    {key: 'supervisor', label: 'ufaAlternanceRoleSupervisorLabel'|trans, signedAt: supervisorEvaluation ? supervisorEvaluation.closedAt : null, reached: teamEvaluation and teamEvaluation.signedAt},
+    {key: 'supervisor', label: 'ufaAlternanceRoleSupervisorLabel'|trans, signedAt: supervisorEvaluation ? supervisorEvaluation.closedAt : null, reached: studentEvaluation and studentEvaluation.signedAt},
 ] %}
 <div class="cm-role-progress">
     {% for role in roles %}

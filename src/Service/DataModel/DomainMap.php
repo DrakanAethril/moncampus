@@ -59,7 +59,7 @@ final class DomainMap
             'InternshipBehaviorCriteria', 'InternshipBehaviorLevel', 'InternshipEvaluationPeriod',
             'InternshipFormationCenter', 'InternshipLivretEngagement', 'InternshipOptionExamModality',
             'InternshipOptionLegalName', 'InternshipProgramInfo', 'InternshipReminder',
-            'InternshipStudentEvaluation', 'InternshipSupervisorEvaluation', 'InternshipTeamEvaluation',
+            'InternshipStudentEvaluation', 'InternshipSupervisorEvaluation',
             'InternshipTutorEvaluation', 'InternshipTutorEvaluationBehavior', 'InternshipTutorEvaluationSkill',
             'InternshipTutorLink',
             'Laptop', 'LaptopConditionType', 'LaptopLoan', 'UfaActivity',

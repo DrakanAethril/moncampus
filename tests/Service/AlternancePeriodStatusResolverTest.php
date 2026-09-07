@@ -8,7 +8,6 @@ use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipLivretEngagement;
 use App\Entity\InternshipStudentEvaluation;
 use App\Entity\InternshipSupervisorEvaluation;
-use App\Entity\InternshipTeamEvaluation;
 use App\Entity\InternshipTutorEvaluation;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Program;
@@ -17,7 +16,6 @@ use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipLivretEngagementRepository;
 use App\Repository\InternshipStudentEvaluationRepository;
 use App\Repository\InternshipSupervisorEvaluationRepository;
-use App\Repository\InternshipTeamEvaluationRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
 use App\Service\AlternancePeriodStatusResolver;
 use App\Service\AlternanceStepStatus;
@@ -39,7 +37,6 @@ class AlternancePeriodStatusResolverTest extends TestCase
     private InternshipEvaluationPeriodRepository&Stub $periodRepository;
     private InternshipTutorEvaluationRepository&Stub $tutorEvaluationRepository;
     private InternshipStudentEvaluationRepository&Stub $studentEvaluationRepository;
-    private InternshipTeamEvaluationRepository&Stub $teamEvaluationRepository;
     private InternshipSupervisorEvaluationRepository&Stub $supervisorEvaluationRepository;
     private AlternancePeriodStatusResolver $resolver;
 
@@ -49,7 +46,6 @@ class AlternancePeriodStatusResolverTest extends TestCase
         $this->periodRepository = $this->createStub(InternshipEvaluationPeriodRepository::class);
         $this->tutorEvaluationRepository = $this->createStub(InternshipTutorEvaluationRepository::class);
         $this->studentEvaluationRepository = $this->createStub(InternshipStudentEvaluationRepository::class);
-        $this->teamEvaluationRepository = $this->createStub(InternshipTeamEvaluationRepository::class);
         $this->supervisorEvaluationRepository = $this->createStub(InternshipSupervisorEvaluationRepository::class);
 
         $translator = $this->createStub(TranslatorInterface::class);
@@ -60,7 +56,6 @@ class AlternancePeriodStatusResolverTest extends TestCase
             $this->periodRepository,
             $this->tutorEvaluationRepository,
             $this->studentEvaluationRepository,
-            $this->teamEvaluationRepository,
             $this->supervisorEvaluationRepository,
             $translator,
         );
@@ -78,7 +73,6 @@ class AlternancePeriodStatusResolverTest extends TestCase
             $this->periodRepository,
             $this->tutorEvaluationRepository,
             $this->studentEvaluationRepository,
-            $this->teamEvaluationRepository,
             $this->supervisorEvaluationRepository,
             $this->createStub(TranslatorInterface::class),
         );
@@ -182,10 +176,6 @@ class AlternancePeriodStatusResolverTest extends TestCase
         $signedStudentEvaluation = $this->createStub(InternshipStudentEvaluation::class);
         $signedStudentEvaluation->method('isSigned')->willReturn(true);
         $this->studentEvaluationRepository->method('findOneForStudentAndEvaluationPeriod')->willReturn($signedStudentEvaluation);
-
-        $signedTeamEvaluation = $this->createStub(InternshipTeamEvaluation::class);
-        $signedTeamEvaluation->method('isSigned')->willReturn(true);
-        $this->teamEvaluationRepository->method('findOneForStudentAndEvaluationPeriod')->willReturn($signedTeamEvaluation);
 
         $closedSupervisorEvaluation = $this->createStub(InternshipSupervisorEvaluation::class);
         $closedSupervisorEvaluation->method('isClosed')->willReturn(true);

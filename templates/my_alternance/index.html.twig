@@ -80,7 +80,6 @@
                                 {% include '_alternance_chain.html.twig' with {
                                     tutorEvaluation: row.tutorEvaluation,
                                     studentEvaluation: row.studentEvaluation,
-                                    teamEvaluation: row.teamEvaluation,
                                     supervisorEvaluation: row.supervisorEvaluation,
                                     viewer: 'student',
                                     periodStart: row.status == 'notOpen' ? row.period.startDate : null,

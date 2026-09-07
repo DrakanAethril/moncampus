@@ -23,7 +23,6 @@ use App\Repository\InternshipOptionLegalNameRepository;
 use App\Repository\InternshipProgramInfoRepository;
 use App\Repository\InternshipStudentEvaluationRepository;
 use App\Repository\InternshipSupervisorEvaluationRepository;
-use App\Repository\InternshipTeamEvaluationRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\PeriodRepository;
 use App\Repository\ProgramStudentOptionRepository;
@@ -52,7 +51,6 @@ class InternshipBookletBuilder
         private readonly InternshipEvaluationPeriodRepository $evaluationPeriodRepository,
         private readonly InternshipTutorEvaluationRepository $tutorEvaluationRepository,
         private readonly InternshipStudentEvaluationRepository $studentEvaluationRepository,
-        private readonly InternshipTeamEvaluationRepository $teamEvaluationRepository,
         private readonly InternshipSupervisorEvaluationRepository $supervisorEvaluationRepository,
         private readonly ProgramStudentOptionRepository $studentOptionRepository,
         private readonly InternshipOptionExamModalityRepository $optionExamModalityRepository,
@@ -136,13 +134,11 @@ class InternshipBookletBuilder
                 $supervisorEvaluation = $this->supervisorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $evaluationPeriod);
                 $tutorEvaluation = $this->tutorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $evaluationPeriod);
                 $studentEvaluation = $this->studentEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $evaluationPeriod);
-                $teamEvaluation = $this->teamEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $evaluationPeriod);
 
                 return [
                     'period' => $evaluationPeriod,
                     'tutorEvaluation' => $tutorEvaluation?->isSigned() ? $tutorEvaluation : null,
                     'studentEvaluation' => $studentEvaluation?->isSigned() ? $studentEvaluation : null,
-                    'teamEvaluation' => $teamEvaluation?->isSigned() ? $teamEvaluation : null,
                     'supervisorEvaluation' => $supervisorEvaluation,
                 ];
             },

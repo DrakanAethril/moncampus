@@ -101,9 +101,6 @@ homeNoSessionsTodayMessage: "Aucun cours aujourd'hui."
 homeSessionOngoingLabel: 'En cours'
 homeStudentWorkCardTitle: 'Travail à réaliser'
 homeStudentWorkEmptyMessage: 'Rien à faire pour le moment.'
-homeTeacherBannerLivretsTitle: '%count% livret(s) attendent vos remarques'
-homeTeacherBannerLivretsDeadline: 'avant le %date%'
-homeTeacherBannerLivretsAction: 'Saisir les remarques'
 homeTeacherLessonLogLabel: 'Cahier de texte'
 homeTeacherNextDayCardTitle: 'Prochaine journée :'
 homeTeacherNextSessionsByClassCardTitle: 'Mes prochaines séances par classe'
@@ -1281,13 +1278,11 @@ ufaExamModalityDefaultBlockTitle: 'Modalités par défaut de la formation'
 ufaAlternanceRoleTutorLabel: 'Tuteur'
 ufaAlternanceRoleStudentLabel: 'Alternant'
 ufaAlternanceRoleCenterLabel: 'Représentant du centre de formation'
-ufaAlternanceRoleTeamLabel: 'Équipe pédagogique'
 ufaAlternanceRoleSupervisorLabel: 'Chargé de suivi'
 
 # Suivi du livret badge - AlternancePeriodStatusResolver::badgeFor()
 ufaAlternanceBadgeRoleTutorLabel: 'tuteur'
 ufaAlternanceBadgeRoleStudentLabel: 'alternant'
-ufaAlternanceBadgeRoleTeamLabel: 'équipe pédago.'
 ufaAlternanceBadgeRoleSupervisorLabel: 'chargé de suivi'
 ufaAlternanceBadgeRoleCenterLabel: 'centre de formation'
 ufaAlternanceStatusInactiveBadgeLabel: 'Alternance inactive'
@@ -1413,14 +1408,7 @@ ufaAlternanceWizardAlternantReadHelpText: "Prenez connaissance de l'évaluation 
 ufaAlternanceWizardAlternantSignHelpText: 'La signature transmet le livret à l’équipe pédagogique'
 ufaAlternanceWizardAlternantSignButtonLabel: 'Signer et transmettre'
 
-# Équipe pédagogique (30c/30d) - templates/ufa/alternance/period_equipe.html.twig
-ufaAlternanceWizardStepEquipeGroupedLabel: 'Remarques tuteur et alternant'
-ufaAlternanceWizardStepEquipeRemarquesLabel: "Remarques de l'équipe"
-ufaAlternanceWizardReadOnlyGroupedLabel: 'Lecture seule — tuteur et alternant'
-ufaAlternanceWizardEquipeReadHelpText: "Prenez connaissance de l'évaluation du tuteur avant de continuer"
-ufaAlternanceWizardEquipeGroupedHelpText: 'Volets renseignés par le tuteur puis l’alternant — consultation seule'
-ufaAlternanceWizardEquipeSignHelpText: "La validation ouvre la signature du chargé de suivi, qui clôt la période"
-ufaAlternanceWizardEquipeSignButtonLabel: 'Signer et transmettre'
+# Volet groupé des remarques - templates/ufa/alternance/_wizard_remarks_grouped.html.twig
 ufaAlternanceWizardGroupedStrengthsLabel: 'Points forts'
 ufaAlternanceWizardGroupedWeaknessesLabel: 'Points faibles'
 ufaAlternanceWizardGroupedGoalsLabel: 'Objectifs à atteindre à la prochaine visite'
@@ -1435,7 +1423,6 @@ ufaAlternanceWizardSuiviClotureSignatureBoxLabel: 'Chargé de suivi du centre de
 ufaAlternanceWizardSuiviClotureSignatureNoteLabel: 'La signature fige les quatre contributions et clôt la période'
 ufaAlternanceWizardSuiviCloseButtonLabel: 'Signer et clôturer la période'
 ufaAlternanceWizardSuiviClosedFlashMessage: 'La période a été clôturée.'
-ufaAlternanceWizardEquipeSignedFlashMessage: "Les remarques de l'équipe pédagogique ont été enregistrées et signées."
 
 # Suivi de l'alternance (34a/34b) - templates/ufa/alternance/show.html.twig
 ufaAlternanceActionConsultLivretLabel: 'Consulter le livret'
@@ -1513,7 +1500,6 @@ ufaAlternancePeriodTurnEmailSubject: "Livret de l'alternant - %period% : c'est �
 ufaAlternancePeriodTurnEmailPreheader: 'Une saisie est attendue sur le livret de suivi'
 ufaAlternancePeriodTurnEmailBanner: 'Livret de suivi — période d’évaluation'
 ufaAlternancePeriodTurnEmailStudentBody: "Votre tuteur en entreprise vient de signer son évaluation pour la période <strong>%period%</strong>. À vous de remplir votre partie du livret de suivi."
-ufaAlternancePeriodTurnEmailTeamBody: "%student% (%formation%) vient de signer son évaluation pour la période <strong>%period%</strong>. C’est au tour de l’équipe pédagogique de remplir sa partie du livret de suivi."
 ufaActivityEngagementSignedTutorText: 'Le tuteur %tutor% a signé la mise à disposition du livret de %student%'
 ufaActivityEngagementSignedStudentText: "%student% a signé la mise à disposition de son livret"
 ufaActivityEngagementSignedCenterText: '%actor% a signé la mise à disposition du livret de %student% pour le centre de formation'
@@ -1594,10 +1580,6 @@ internshipTutorEvaluationSavedFlashMessage: "L'évaluation a été enregistrée 
 internshipStudentEvaluationSavedFlashMessage: 'Vos remarques ont été enregistrées avec succès.'
 internshipStudentEvaluationWaitingForTutorLabel: 'En attente du tuteur'
 internshipStudentEvaluationLockedFlashMessage: "Vous ne pouvez pas encore saisir votre évaluation pour cette période : votre tuteur doit d'abord remplir la sienne."
-internshipTeamEvaluationsPageHeading: "Livret Alternant - Suivi de l'équipe pédagogique"
-internshipTeamEvaluatePageHeading: "Remarques de l'équipe pédagogique"
-internshipTeamEvaluationRemarksFieldLabel: 'Remarques'
-internshipTeamEvaluationSavedFlashMessage: 'Les remarques ont été enregistrées avec succès.'
 internshipTutorEvaluationsStatusButtonLabel: 'Évaluations tuteurs'
 internshipTutorEvaluationsStatusPageHeading: 'Statut des évaluations tuteur'
 internshipTutorEvaluationsStatusEmptyMessage: "Aucun tuteur ou aucune période d'évaluation active."
@@ -1632,7 +1614,6 @@ internshipBookletEmailLabel: 'Email'
 internshipBookletEmployerSectionHeading: 'Employeur'
 internshipBookletTutorLabel: 'Nom du tuteur'
 internshipBookletFormationCenterSectionHeading: 'Le centre de formation'
-internshipBookletTeamSectionHeading: "Remarques de l'équipe pédagogique"
 internshipBookletFilledByLabel: 'Rempli par %name% le %date%'
 
 laptopsNavLabel: 'Ordinateurs portables'

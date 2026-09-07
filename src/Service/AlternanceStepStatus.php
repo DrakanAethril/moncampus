@@ -20,7 +20,6 @@ final readonly class AlternanceStepStatus
     public const STEP_ENGAGEMENT_CENTER = 'engagement_center';
     public const STEP_TUTOR = 'tutor';
     public const STEP_STUDENT = 'student';
-    public const STEP_TEAM = 'team';
     public const STEP_SUPERVISOR = 'supervisor';
     public const STEP_CLOSED = 'closed';
     public const STEP_NOT_OPENED = 'not_opened';

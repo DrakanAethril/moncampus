@@ -15,7 +15,6 @@ use App\Enum\StudentWorkState;
 use App\Repository\AgendaEventRepository;
 use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipLivretEngagementRepository;
-use App\Repository\InternshipStudentEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\LessonSessionRepository;
 use App\Repository\PlatformActivityRepository;
@@ -71,7 +70,6 @@ class HomeController extends AbstractController
         private readonly QuizLiveSessionRepository $quizLiveSessionRepository,
         private readonly WordCloudRepository $wordCloudRepository,
         private readonly WordCloudAudience $wordCloudAudience,
-        private readonly InternshipStudentEvaluationRepository $studentEvaluationRepository,
         private readonly AlternancePeriodWizardService $wizardService,
         private readonly StructureAccessChecker $structureAccessChecker,
         private readonly NameColorGenerator $nameColorGenerator,
@@ -494,23 +492,11 @@ class HomeController extends AbstractController
             .$class['program']->getShortName();
         usort($classes, static fn (array $a, array $b): int => $sortKey($a) <=> $sortKey($b));
 
-        // "Des livrets attendent vos remarques" (ens-b): each pending item carries its tutorLink
-        // so the banner can deep-link into the équipe pédagogique wizard.
-        $alternancePrograms = array_values(array_filter($programs, static fn (Program $program): bool => $program->isInternshipManagementEnabled()));
-        $pendingTeam = [];
-        foreach ($this->studentEvaluationRepository->findSignedAwaitingTeamForPrograms($alternancePrograms) as $evaluation) {
-            $tutorLink = $this->tutorLinkRepository->findOneForStudentAndProgram($evaluation->getStudent(), $evaluation->getProgram());
-            if (null !== $tutorLink) {
-                $pendingTeam[] = ['evaluation' => $evaluation, 'tutorLink' => $tutorLink];
-            }
-        }
-
         return [
             'day' => $day,
             'dayIsToday' => $day->format('Y-m-d') === $today->format('Y-m-d'),
             'daySessions' => $daySessions,
             'classes' => $classes,
-            'pendingTeam' => $pendingTeam,
         ];
     }
 

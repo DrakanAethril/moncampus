@@ -15,7 +15,6 @@ use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipReminderRepository;
 use App\Repository\InternshipStudentEvaluationRepository;
 use App\Repository\InternshipSupervisorEvaluationRepository;
-use App\Repository\InternshipTeamEvaluationRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\ProgramRepository;
@@ -137,17 +136,17 @@ class AlternanceController extends AbstractController
     }
 
     // "Suivi de l'alternance" (34a/34b) - the per-alternance hub: contextual relance banner,
-    // engagement summary, and one row per period whose 4-role chain links into each role's wizard.
+    // engagement summary, and one row per period whose 3-role chain links into each role's wizard.
     #[Route(path: '/ufa/alternances/{id}', name: 'app_ufa_alternance_show', requirements: ['id' => '\d+'])]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
-    public function show(int $id, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, AlternancePeriodStatusResolver $statusResolver, AlternanceEngagementService $engagementService, InternshipReminderRepository $reminderRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, InternshipTeamEvaluationRepository $teamEvaluationRepository, InternshipSupervisorEvaluationRepository $supervisorEvaluationRepository): Response
+    public function show(int $id, InternshipTutorLinkRepository $tutorLinkRepository, InternshipEvaluationPeriodRepository $periodRepository, AlternancePeriodStatusResolver $statusResolver, AlternanceEngagementService $engagementService, InternshipReminderRepository $reminderRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, InternshipStudentEvaluationRepository $studentEvaluationRepository, InternshipSupervisorEvaluationRepository $supervisorEvaluationRepository): Response
     {
         $tutorLink = $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
         $student = $tutorLink->getStudent();
         $currentStatus = $statusResolver->resolveCurrentStep($tutorLink);
         $engagement = $engagementService->findOrCreate($tutorLink);
 
-        // The 4 per-role evaluations are loaded per period to feed each row's role-progress strip
+        // The 3 per-role evaluations are loaded per period to feed each row's role-progress strip
         // (34a) - the same chips as the wizards' own header, here doubling as the navigation into
         // each role's wizard.
         $periodRows = array_map(
@@ -157,7 +156,6 @@ class AlternanceController extends AbstractController
                 'badge' => $statusResolver->badgeFor($statusResolver->resolveStepForPeriod($tutorLink, $period)),
                 'tutorEvaluation' => $tutorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $period),
                 'studentEvaluation' => null !== $student ? $studentEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $period) : null,
-                'teamEvaluation' => null !== $student ? $teamEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $period) : null,
                 'supervisorEvaluation' => $supervisorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $period),
             ],
             $periodRepository->findAllActiveForProgram($tutorLink->getProgram()),
