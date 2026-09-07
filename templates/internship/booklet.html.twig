@@ -500,7 +500,6 @@
     {% set period = entry.period %}
     {% set tutorEvaluation = entry.tutorEvaluation %}
     {% set studentEvaluation = entry.studentEvaluation %}
-    {% set teamEvaluation = entry.teamEvaluation %}
     {% set supervisorEvaluation = entry.supervisorEvaluation %}
 
     {# A partial export walks every period all the same, so pageBase above keeps counting, and
@@ -642,28 +641,24 @@
       <div style="border: 0.5pt solid #8aa2bd; height: 42mm; padding: 2mm 3mm; white-space: pre-line;">{{ tutorEvaluation ? tutorEvaluation.remarksText : '' }}</div>
       <div style="font-weight: 700; color: #1F4E79; margin: 5mm 0 1.5mm;">REMARQUES DE L&rsquo;ALTERNANT ET ATTENDUS</div>
       <div style="border: 0.5pt solid #8aa2bd; height: 42mm; padding: 2mm 3mm; white-space: pre-line;">{{ studentEvaluation ? studentEvaluation.remarksText : '' }}</div>
-      <div style="font-weight: 700; color: #1F4E79; margin: 5mm 0 1.5mm;">REMARQUES DE L&rsquo;&Eacute;QUIPE P&Eacute;DAGOGIQUE ET ATTENDUS</div>
-      <div style="border: 0.5pt solid #8aa2bd; height: 42mm; padding: 2mm 3mm; white-space: pre-line;">{{ teamEvaluation ? teamEvaluation.remarksText : '' }}</div>
       <div style="font-weight: 700; color: #1F4E79; margin: 6mm 0 1.5mm; text-align: center;">SIGNATURES</div>
       {# The electronic signatures the period wizard collected are reported here, the same way
          page 9 reports the booklet's own engagement signatures: without this a period signed by
          everyone and closed still printed empty boxes. One column per role that actually signs,
-         in the order the wizard collects them - so the pedagogical team has its own column here,
-         where the paper booklet only drew three. The chargé de suivi has no evaluation of their
-         own: their signature rides on the closing act (InternshipSupervisorEvaluation). #}
+         in the order the wizard collects them - the same three the paper booklet draws. The
+         chargé de suivi has no evaluation of their own: their signature rides on the closing act
+         (InternshipSupervisorEvaluation). #}
       {% set periodSignatures = [
         {at: tutorEvaluation ? tutorEvaluation.signedAt : null, by: tutorEvaluation ? tutorEvaluation.signedBy : null},
         {at: studentEvaluation ? studentEvaluation.signedAt : null, by: studentEvaluation ? studentEvaluation.signedBy : null},
-        {at: teamEvaluation ? teamEvaluation.signedAt : null, by: teamEvaluation ? teamEvaluation.signedBy : null},
         {at: supervisorEvaluation ? supervisorEvaluation.supervisorSignedAt : null, by: supervisorEvaluation ? supervisorEvaluation.supervisorSignedBy : null},
       ] %}
       <table style="text-align: center;">
         <thead>
           <tr>
-            <th style="border: 0.5pt solid #8aa2bd; background: #1F4E79; color: #ffffff; padding: 2mm; width: 25%;">Tuteur</th>
-            <th style="border: 0.5pt solid #8aa2bd; background: #1F4E79; color: #ffffff; padding: 2mm; width: 25%;">Alternant</th>
-            <th style="border: 0.5pt solid #8aa2bd; background: #1F4E79; color: #ffffff; padding: 2mm; width: 25%;">&Eacute;quipe p&eacute;dagogique</th>
-            <th style="border: 0.5pt solid #8aa2bd; background: #1F4E79; color: #ffffff; padding: 2mm; width: 25%;">Charg&eacute;(e) de suivi du centre de formation</th>
+            <th style="border: 0.5pt solid #8aa2bd; background: #1F4E79; color: #ffffff; padding: 2mm; width: 33%;">Tuteur</th>
+            <th style="border: 0.5pt solid #8aa2bd; background: #1F4E79; color: #ffffff; padding: 2mm; width: 33%;">Alternant</th>
+            <th style="border: 0.5pt solid #8aa2bd; background: #1F4E79; color: #ffffff; padding: 2mm; width: 34%;">Charg&eacute;(e) de suivi du centre de formation</th>
           </tr>
         </thead>
         <tbody>

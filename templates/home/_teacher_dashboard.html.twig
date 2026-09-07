@@ -1,26 +1,5 @@
-{# Teacher (ens-a/b) - équipe pédagogique banner, events, day sessions + Mes classes. #}
+{# Teacher (ens-a/b) - events, day sessions + Mes classes. #}
 {% set weekday_labels = ['mondayLabel', 'tuesdayLabel', 'wednesdayLabel', 'thursdayLabel', 'fridayLabel', 'saturdayLabel', 'sundayLabel'] %}
-
-{% if teacher.pendingTeam is not empty %}
-    {% set first_pending = teacher.pendingTeam|first %}
-    <div class="cm-dash-banner">
-        <span class="cm-dash-banner__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 8v5"></path><path d="M12 16.5v.01"></path><circle cx="12" cy="12" r="9"></circle></svg></span>
-        <span class="cm-dash-banner__body">
-            <span class="cm-dash-banner__title">{{ 'homeTeacherBannerLivretsTitle'|trans({'%count%': teacher.pendingTeam|length}) }}</span>
-            <span class="cm-dash-banner__text">
-                {{ first_pending.evaluation.evaluationPeriod.name }} —
-                {# Parentheses required, not style: Twig 3.15 deprecates leaving "??" unparenthesised
-                   inside an arrow function, because the next major changes its precedence against
-                   the arrow - "item => (a ?? b)" today, "(item => a) ?? b" tomorrow. #}
-                {{ teacher.pendingTeam|map(item => (item.evaluation.student.displayName ?? item.evaluation.student.username))|join(', ') }},
-                {{ 'homeTeacherBannerLivretsDeadline'|trans({'%date%': first_pending.evaluation.evaluationPeriod.endDate|date('d/m/Y')}) }}
-            </span>
-        </span>
-        <span class="cm-dash-banner__action">
-            <a href="{{ path('app_ufa_alternance_period_equipe', {id: first_pending.tutorLink.id, periodId: first_pending.evaluation.evaluationPeriod.id, step: 'comportement'}) }}" class="cm-btn cm-btn--gold">{{ 'homeTeacherBannerLivretsAction'|trans }}</a>
-        </span>
-    </div>
-{% endif %}
 
 {# The events row belongs to the agenda, not to the dashboard: with the agenda switched off it
    goes with it, rather than leaving a strip whose « Voir l'agenda » link answers 404. #}

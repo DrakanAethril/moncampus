@@ -20,6 +20,9 @@ enum UfaActivityType: string
     case EngagementSignedCenter = 'engagement_signed_center';
     case PeriodTutorSigned = 'period_tutor_signed';
     case PeriodStudentSigned = 'period_student_signed';
+    // No longer recorded: the teaching team's step was taken out of the signature chain. The case
+    // stays so the rows already written keep reading - a journal is not rewritten by a change of
+    // process.
     case PeriodTeamSigned = 'period_team_signed';
     case PeriodSupervisorClosed = 'period_supervisor_closed';
     case ReminderSent = 'reminder_sent';

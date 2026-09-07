@@ -16,7 +16,7 @@ use Symfony\Component\Validator\Constraints as Assert;
  * no way to mark which Period actually represented company time, so the tutor's own evaluation
  * screen ended up asking for an evaluation against every active Period in the Program's calendar,
  * vacations included. This entity replaces Period on InternshipTutorEvaluation/
- * InternshipStudentEvaluation/InternshipTeamEvaluation's own $evaluationPeriod field.
+ * InternshipStudentEvaluation's own $evaluationPeriod field.
  */
 #[ORM\Entity(repositoryClass: InternshipEvaluationPeriodRepository::class)]
 #[ORM\Table(name: 'internship_evaluation_period')]

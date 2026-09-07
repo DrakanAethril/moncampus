@@ -1,8 +1,7 @@
 {% extends 'emails/_layout.html.twig' %}
 
 {# The "it's your turn" mail of the evaluation-period chaining - sent by
-   App\Service\AlternancePeriodChainNotifier when the previous signature has just been affixed.
-   role = 'student' (the tutor has signed) or 'team' (the apprentice has signed). #}
+   App\Service\AlternancePeriodChainNotifier to the apprentice, once the tutor has signed. #}
 {% block subject %}{{ 'ufaAlternancePeriodTurnEmailSubject'|trans({'%period%': periodName}) }}{% endblock %}
 
 {% block preheader %}{{ 'ufaAlternancePeriodTurnEmailPreheader'|trans }}{% endblock %}
@@ -12,11 +11,7 @@
 {% block body %}
     <p style="margin: 0 0 16px;">{{ 'emailGreetingText'|trans }}</p>
     <p style="margin: 0 0 16px;">
-        {% if role == 'student' %}
-            {{ 'ufaAlternancePeriodTurnEmailStudentBody'|trans({'%period%': periodName})|raw }}
-        {% else %}
-            {{ 'ufaAlternancePeriodTurnEmailTeamBody'|trans({'%period%': periodName, '%student%': studentName, '%formation%': programName})|raw }}
-        {% endif %}
+        {{ 'ufaAlternancePeriodTurnEmailStudentBody'|trans({'%period%': periodName})|raw }}
     </p>
     <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 24px 0;">
         <tr>

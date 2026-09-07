@@ -13,7 +13,7 @@ use Doctrine\ORM\Mapping as ORM;
  * InternshipTutorLink's livret - the 4th and last role in the period's signature sequence (after
  * tutor, student, team). Doesn't carry its own remarks: steps 1-2 of its wizard directly edit the
  * shared InternshipTutorEvaluation's behavior/skill collections, step 3 edits the shared
- * InternshipTutorEvaluation/InternshipStudentEvaluation/InternshipTeamEvaluation remarks, and this
+ * InternshipTutorEvaluation/InternshipStudentEvaluation remarks, and this
  * row only exists to record the final "Signer et clôturer la période" act. $closedAt !== null is
  * the single source of truth that freezes the whole period read-only for every other role.
  */
