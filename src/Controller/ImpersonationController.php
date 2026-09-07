@@ -34,7 +34,9 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  *   query parameter on *any* URL and therefore reachable without passing through here at all.
  *
  * Leaving needs no route: `impersonation_exit_path()` in the banner appends `_switch_user=_exit` to
- * whatever page the administrator is standing on.
+ * a URL. The banner passes the home page rather than letting it default to the page currently open,
+ * because that page was reached with the target's roles: handing it back to the administrator's own
+ * is how leaving impersonation lands on a 403 or a 404.
  */
 #[IsGranted('ROLE_ADMIN')]
 class ImpersonationController extends AbstractController

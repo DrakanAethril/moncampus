@@ -7,8 +7,8 @@ namespace App\Tests\Functional;
 use App\Entity\User;
 
 /**
- * « Se connecter en tant que » - the four answers that make the gesture safe, pinned by request
- * rather than read off the configuration.
+ * « Se connecter en tant que » - the answers that make the gesture safe, pinned by request rather
+ * than read off the configuration.
  *
  * The switch is a query parameter on any URL of the application, so none of these rules can be
  * verified by opening the picker: what has to hold is what the firewall does when
@@ -40,6 +40,26 @@ class ImpersonationTest extends FunctionalTestCase
         $this->client->request('GET', '/?_switch_user=_exit');
         self::assertSame(302, $this->client->getResponse()->getStatusCode());
         self::assertSame('impersonation.admin', $this->currentUsername());
+    }
+
+    /**
+     * The way out always names the home page, never the screen being looked at.
+     *
+     * The screens reached while impersonating are the *target's*: « Mon travail », « Mes machines
+     * virtuelles », a student dashboard. Handing the same URL back to the administrator's own roles
+     * is how leaving impersonation lands on a 403 or a 404 instead of on the platform.
+     */
+    public function testTheExitLinkAlwaysGoesHome(): void
+    {
+        $this->client->loginUser($this->admin);
+        $this->client->request('GET', '/?_switch_user=impersonation.student');
+
+        $crawler = $this->client->request('GET', '/profile');
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+
+        $exit = $crawler->filter('.cm-impersonation a');
+        self::assertCount(1, $exit);
+        self::assertSame('/?_switch_user=_exit', $exit->attr('href'));
     }
 
     /**
