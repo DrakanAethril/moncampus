@@ -117,6 +117,63 @@ class FormationDocumentController extends AbstractController
     }
 
     /**
+     * Shows one of the tab's two documents inside the application rather than handing the browser a
+     * bare file.
+     *
+     * The tab used to link straight at the PDF. That opens a new tab on a route which immediately
+     * redirects to a signed storage URL, so the reader lands on a page with no application around
+     * it and, because the only entry in that tab's history is a redirect back onto the same file,
+     * no way back either - « revenir en arrière » simply replays the redirect. Framing the document
+     * in an ordinary screen gives it a title, the breadcrumb it hangs off, and a history entry that
+     * behaves like every other.
+     *
+     * One route for both documents: they differ by which column they read and how they are named,
+     * and nothing else.
+     */
+    #[Route(path: '/ufa/programs/{id}/documents/{document}/view', name: 'app_ufa_formation_document_view', requirements: ['document' => 'calendar|timetable'])]
+    public function documentView(int $id, string $document, ProgramRepository $repository): Response
+    {
+        $program = $repository->find($id) ?? throw $this->createNotFoundException();
+        $isCalendar = 'calendar' === $document;
+
+        if (null === ($isCalendar ? $program->getAlternanceCalendarFileKey() : $program->getTimetableDocumentFileKey())) {
+            throw $this->createNotFoundException();
+        }
+
+        return $this->render('ufa/formation/document_view.html.twig', [
+            'program' => $program,
+            'heading' => $isCalendar ? 'programAlternanceCalendarNavLabel' : 'ufaFormationTimetableDocumentHeading',
+            'frameUrl' => $this->generateUrl(
+                $isCalendar ? 'app_ufa_formation_calendar_document_pdf' : 'app_ufa_formation_timetable_document_pdf',
+                ['id' => $program->getId()],
+            ),
+        ]);
+    }
+
+    /**
+     * Serves the alternance calendar *file* back to the tab that uploaded it.
+     *
+     * Deliberately *not* app_program_alternance_calendar_pdf, which is the published door: that one
+     * is gated on the `my_alternance` feature and on the formation's own visibility tiers, and in
+     * Period mode it answers with the calendar it generates rather than with the file. This tab
+     * shows what was deposited in it, to whoever may open the tab - the class-level guard is the
+     * whole rule - so it reads the column directly.
+     */
+    #[Route(path: '/ufa/programs/{id}/documents/calendar/pdf', name: 'app_ufa_formation_calendar_document_pdf')]
+    public function calendarDocumentPdf(int $id, ProgramRepository $repository, FileUploadService $fileUploadService, TranslatorInterface $translator): Response
+    {
+        $program = $repository->find($id) ?? throw $this->createNotFoundException();
+
+        return $this->serveDocument(
+            $program->getAlternanceCalendarFileKey(),
+            'programAlternanceCalendarDocumentFilename',
+            $program,
+            $fileUploadService,
+            $translator,
+        );
+    }
+
+    /**
      * Serves the « Emploi du temps » document back to the tab that uploaded it.
      *
      * Deliberately *not* modelled on app_program_alternance_calendar_pdf: that one is published to
@@ -128,11 +185,27 @@ class FormationDocumentController extends AbstractController
     public function timetableDocumentPdf(int $id, ProgramRepository $repository, FileUploadService $fileUploadService, TranslatorInterface $translator): Response
     {
         $program = $repository->find($id) ?? throw $this->createNotFoundException();
-        $key = $program->getTimetableDocumentFileKey() ?? throw $this->createNotFoundException();
+
+        return $this->serveDocument(
+            $program->getTimetableDocumentFileKey(),
+            'programTimetableDocumentFilename',
+            $program,
+            $fileUploadService,
+            $translator,
+        );
+    }
+
+    /**
+     * An uploaded document carries no name of its own - the key is a timestamp - so the formation
+     * lends it one on the way out (see App\Service\DownloadFilename).
+     */
+    private function serveDocument(?string $key, string $filenameKey, Program $program, FileUploadService $fileUploadService, TranslatorInterface $translator): Response
+    {
+        $key ?? throw $this->createNotFoundException();
 
         return new RedirectResponse($fileUploadService->downloadUrl(
             $key,
-            $translator->trans('programTimetableDocumentFilename', ['%program%' => $program->getShortName()]),
+            $translator->trans($filenameKey, ['%program%' => $program->getShortName()]),
         ));
     }
 

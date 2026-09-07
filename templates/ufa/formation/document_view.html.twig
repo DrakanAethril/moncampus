@@ -1,0 +1,31 @@
+{# One of the « Documents » tab's two files, shown inside the application.
+
+   The reader gets the screen's own title, the breadcrumb back to the tab that carries the file, and
+   an ordinary history entry - which the bare file did not have: a route that redirects to a signed
+   storage URL leaves a tab whose only way back is that same redirect.
+
+   Two parameters, because the two documents differ by nothing else: `heading` names the file and
+   `frameUrl` serves it (App\Controller\Ufa\FormationDocumentController). #}
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ heading|trans }} - {{ program.displayShortName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'ufaNavLabel'|trans, url: path('app_ufa')},
+        {label: 'ufaFormationsNavLabel'|trans, url: path('app_ufa')},
+        {label: program.displayShortName, url: path('app_ufa_formation_documents', {id: program.id})},
+        {label: 'ufaFormationDocumentsTabLabel'|trans, url: path('app_ufa_formation_documents', {id: program.id})},
+        {label: heading|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ heading|trans }} - {{ program.displayShortName }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        {# Same frame as the Livret reader (templates/internship/_livret_reader.html.twig): the
+           browser's own PDF viewer, with its zoom, its search and its download button. #}
+        <iframe src="{{ frameUrl }}" title="{{ heading|trans }}" style="width: 100%; height: 80vh; border: 0; background: #e8eef3;"></iframe>
+    </div>
+{% endblock %}
