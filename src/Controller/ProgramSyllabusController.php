@@ -17,6 +17,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 // Read-only display of a Program's full curriculum (Topic/TopicGroup) - see
 // App\Controller\ProgramTimetableSettingsController for the staff CRUD that manages this same
@@ -32,12 +33,17 @@ class ProgramSyllabusController extends AbstractController
     // instead of the Topic/TopicGroup page, so the nav entry never needs to know which mode is
     // configured.
     #[Route(path: '/programs/{id}/syllabus', name: 'app_program_syllabus')]
-    public function show(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, TopicRepository $topicRepository, TopicHourStatsCalculator $hourStatsCalculator, FileUploadService $fileUploadService): Response
+    public function show(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, TopicRepository $topicRepository, TopicHourStatsCalculator $hourStatsCalculator, FileUploadService $fileUploadService, TranslatorInterface $translator): Response
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
 
         if (ProgramSyllabusMode::File === $program->getSyllabusMode() && null !== $program->getSyllabusFileKey()) {
-            return new RedirectResponse($fileUploadService->url($program->getSyllabusFileKey()));
+            // The uploaded PDF has no name of its own - the formation names it, otherwise it is
+            // saved under the storage key.
+            return new RedirectResponse($fileUploadService->downloadUrl(
+                $program->getSyllabusFileKey(),
+                $translator->trans('programSyllabusDocumentFilename', ['%program%' => $program->getShortName()]),
+            ));
         }
 
         $topics = $topicRepository->findAllForProgramOrderedByTopicGroup($program);

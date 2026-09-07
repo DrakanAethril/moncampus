@@ -151,7 +151,7 @@
                 {% for resource in seanceInstance.libraryResourceInstances %}
                     <div class="list-group-item px-0">
                         {% if resource.type.value == 'upload' %}
-                            <a href="{{ file_url(resource.storageKey) }}" target="_blank" rel="noopener">{{ resource.label }}</a>
+                            <a href="{{ download_url(resource.storageKey, resource.label) }}" target="_blank" rel="noopener">{{ resource.label }}</a>
                         {% else %}
                             <a href="{{ resource.url }}" target="_blank" rel="noopener">{{ resource.label }}</a>
                         {% endif %}

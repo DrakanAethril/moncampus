@@ -151,7 +151,7 @@ class StudentCourseSpaceController extends AbstractController
 
         $target = LibraryResourceSourceType::Link === $resource->getType()
             ? (string) $resource->getUrl()
-            : $fileUploadService->url((string) $resource->getStorageKey());
+            : $fileUploadService->downloadUrl((string) $resource->getStorageKey(), (string) $resource->getLabel());
 
         return $this->redirect($target);
     }

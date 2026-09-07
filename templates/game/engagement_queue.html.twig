@@ -48,7 +48,7 @@
                                 {% if declaration.attachments|length %}
                                     <span class="cm-gm-log__src">
                                         {% for attachment in declaration.attachments %}
-                                            <a href="{{ file_url(attachment.storageKey) }}" target="_blank" rel="noopener">{{ attachment.name }}</a>{{ not loop.last ? ' · ' }}
+                                            <a href="{{ download_url(attachment.storageKey, attachment.name) }}" target="_blank" rel="noopener">{{ attachment.name }}</a>{{ not loop.last ? ' · ' }}
                                         {% endfor %}
                                     </span>
                                 {% else %}

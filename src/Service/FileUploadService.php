@@ -26,6 +26,20 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
  */
 class FileUploadService
 {
+    /**
+     * A download address signed when the reader clicks - a controller redirect. It is followed
+     * within the second, so minutes are already generous.
+     */
+    public const string CLICK_LIFETIME = '+15 minutes';
+
+    /**
+     * A download address signed *into a page*, which has to outlive the page it sits in - a tab
+     * left open over a weekend, or a Turbo snapshot restored by the back button. Seven days is what
+     * S3 allows at most, and the honest comparison is not with a shorter signature: it is with the
+     * permanent, unauthenticated CDN address this replaces.
+     */
+    public const string PAGE_LIFETIME = '+7 days';
+
     public function __construct(
         private readonly FilesystemOperator $uploadsStorage,
         private readonly AntivirusScanner $antivirus,
@@ -194,7 +208,7 @@ class FileUploadService
      * The signature is deliberately short-lived. The CDN address it replaces is permanent and
      * unauthenticated, so this is the more closed of the two, not the more open one.
      */
-    public function downloadUrl(string $key, string $name): string
+    public function downloadUrl(string $key, string $name, string $lifetime = self::CLICK_LIFETIME): string
     {
         $disposition = UploadPolicy::servesInline($key) ? 'inline' : 'attachment';
 
@@ -206,7 +220,7 @@ class FileUploadService
             'ResponseContentDisposition' => DownloadFilename::header($disposition, DownloadFilename::sanitize($name, $key)),
         ]);
 
-        return (string) $this->s3Client->createPresignedRequest($command, '+15 minutes')->getUri();
+        return (string) $this->s3Client->createPresignedRequest($command, $lifetime)->getUri();
     }
 
     public function url(string $key): string

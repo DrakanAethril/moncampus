@@ -1958,6 +1958,11 @@ assignmentSubmissionInvalidTypeMessage: "Ce type de fichier n'est pas autorisé.
 libraryNavLabel: 'Bibliothèque de Séquences/Séances'
 programSequencesNavLabel: 'Séquences instanciées'
 programSyllabusPageHeading: 'Syllabus'
+# The name a downloaded programme-level PDF lands under - these three documents are uploaded
+# files with no name of their own, so the formation names them.
+programSyllabusDocumentFilename: 'Syllabus - %program%'
+programAlternanceCalendarDocumentFilename: "Calendrier d'alternance - %program%"
+programTimetableDocumentFilename: 'Emploi du temps - %program%'
 syllabusTotalHoursLabel: 'Volume total'
 syllabusCmHoursLabel: 'Volume CM'
 syllabusTdHoursLabel: 'Volume TD'

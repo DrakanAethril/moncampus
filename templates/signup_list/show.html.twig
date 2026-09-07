@@ -53,7 +53,7 @@
             {% if signupList.attachments|length > 0 %}
                 <div class="mt-3 d-flex flex-wrap gap-1">
                     {% for attachment in signupList.attachments %}
-                        <a href="{{ file_url(attachment.storageKey) }}" class="btn btn-outline-secondary btn-sm" target="_blank">{{ attachment.originalFilename }}</a>
+                        <a href="{{ download_url(attachment.storageKey, attachment.originalFilename) }}" class="btn btn-outline-secondary btn-sm" target="_blank">{{ attachment.originalFilename }}</a>
                     {% endfor %}
                 </div>
             {% endif %}
