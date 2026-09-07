@@ -730,8 +730,12 @@
            gesture is written into the platform under their name, and the screen otherwise looks
            exactly like the administrator's own.
 
-           `impersonation_exit_path()` appends `_switch_user=_exit` to the page currently open, so
-           the way back is always one click from wherever the administrator wandered to.
+           `impersonation_exit_path()` is given the home page rather than left to default to the
+           page currently open: the administrator is standing on a screen the *impersonated* account
+           may reach, and coming back to it under their own roles is how one leaves impersonation
+           onto a 403 or a 404 - a student's « Mon travail », a teacher's carnet de notes. The way
+           back is still one click from wherever the administrator wandered to; it just always lands
+           on Accueil.
            data-turbo-prefetch="false" for the same reason /logout carries it: Turbo fetches a
            link's href on hover, which would end the impersonation without a click. #}
         {% if is_granted('IS_IMPERSONATOR') %}
@@ -739,7 +743,7 @@
             <div class="cm-impersonation d-print-none" role="status">
                 <span class="cm-impersonation__badge">{{ 'impersonateBannerBadge'|trans }}</span>
                 <span>{{ 'impersonateBannerText'|trans({'%name%': app.user.displayName ?? app.user.username, '%login%': app.user.username}) }}</span>
-                <a href="{{ impersonation_exit_path() }}" data-turbo-prefetch="false">{{ 'impersonateBannerExitAction'|trans({'%name%': impersonator.displayName ?? impersonator.username}) }}</a>
+                <a href="{{ impersonation_exit_path(path('app_home')) }}" data-turbo-prefetch="false">{{ 'impersonateBannerExitAction'|trans({'%name%': impersonator.displayName ?? impersonator.username}) }}</a>
             </div>
         {% endif %}
         {# Students and teachers only, and permanently: the establishment keeps its school records in
