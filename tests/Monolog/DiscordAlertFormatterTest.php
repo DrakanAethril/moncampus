@@ -34,6 +34,29 @@ class DiscordAlertFormatterTest extends TestCase
         self::assertStringContainsString('Exception : RuntimeException — tests/Monolog/DiscordAlertFormatterTest.php:', $content);
     }
 
+    public function testItFillsInThePlaceholdersOfAPsr3Message(): void
+    {
+        // The exact record Symfony\Component\Console\EventListener\ErrorListener logs when a
+        // command throws - which reached the channel as raw {command}/{message} for as long as the
+        // formatter read the message unprocessed, naming neither the cron that failed nor why.
+        $content = $this->format(new LogRecord(
+            new \DateTimeImmutable(),
+            'console',
+            Level::Critical,
+            'Error thrown while running command "{command}". Message: "{message}"',
+            [
+                'exception' => new \RuntimeException('An exception occurred in the driver: SQLSTATE[HY000] [2002] Connection refused'),
+                'command' => 'app:vm-batch:advance',
+                'message' => 'An exception occurred in the driver: SQLSTATE[HY000] [2002] Connection refused',
+            ],
+        ));
+
+        self::assertStringContainsString('command "app:vm-batch:advance"', $content);
+        self::assertStringContainsString('[2002] Connection refused', $content);
+        self::assertStringNotContainsString('{command}', $content);
+        self::assertStringNotContainsString('{message}', $content);
+    }
+
     public function testItReportsTheRequestPathWithoutItsQueryString(): void
     {
         $request = Request::create('https://moncampus.example/login/magic/check?token=secret-magic-token');

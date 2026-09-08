@@ -32,6 +32,30 @@ class DiscordWebhookHandlerTest extends TestCase
         self::assertStringContainsString('Uncaught PHP Exception RuntimeException', $this->decodedBody(0)['content']);
     }
 
+    public function testThePostedAlertNamesTheFailingCommandRatherThanItsPlaceholder(): void
+    {
+        $this->handler()->handle($this->record(
+            'Error thrown while running command "{command}". Message: "{message}"',
+            context: ['command' => 'app:mail:consume-inbound', 'message' => 'Connection refused'],
+        ));
+
+        self::assertStringContainsString('command "app:mail:consume-inbound"', $this->decodedBody(0)['content']);
+    }
+
+    public function testTwoCommandsFailingTheSameWayShareOneCooldown(): void
+    {
+        // The throttle reads the message *template*, so the interpolation the formatter does must
+        // not turn one incident into one alert per command.
+        $handler = $this->handler();
+        $start = new \DateTimeImmutable('2026-08-09 10:00:00');
+        $template = 'Error thrown while running command "{command}". Message: "{message}"';
+
+        $handler->handle($this->record($template, $start, ['command' => 'app:mail:consume-inbound', 'message' => 'Connection refused']));
+        $handler->handle($this->record($template, $start->modify('+1 second'), ['command' => 'app:vm-batch:advance', 'message' => 'Connection refused']));
+
+        self::assertCount(1, $this->requests);
+    }
+
     public function testTheSameErrorRepeatingIsPostedOnceUntilItsCooldownExpires(): void
     {
         $handler = $this->handler();
@@ -89,8 +113,11 @@ class DiscordWebhookHandlerTest extends TestCase
         );
     }
 
-    private function record(string $message, ?\DateTimeImmutable $at = null): LogRecord
+    /**
+     * @param array<string, mixed> $context
+     */
+    private function record(string $message, ?\DateTimeImmutable $at = null, array $context = []): LogRecord
     {
-        return new LogRecord($at ?? new \DateTimeImmutable(), 'request', Level::Critical, $message);
+        return new LogRecord($at ?? new \DateTimeImmutable(), 'request', Level::Critical, $message, $context);
     }
 }
