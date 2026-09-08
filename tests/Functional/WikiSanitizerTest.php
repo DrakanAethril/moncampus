@@ -127,6 +127,26 @@ class WikiSanitizerTest extends KernelTestCase
         self::assertStringContainsString('class="katex"', $html);
     }
 
+    /**
+     * Aligning an image is an inline style on the image itself: HugeRTE's aligncenter format writes
+     * `display:block` plus the two auto margins on the <img>, and alignleft/alignright write a
+     * `float`. Neither is a class and neither wraps the image in anything, so `style` has to be
+     * allowed on `img` - without it the author centred a picture, saved, and got it back flush left.
+     */
+    public function testAnImageKeepsTheAlignmentTheEditorWroteOnIt(): void
+    {
+        $html = $this->sanitizer()->sanitize(
+            '<p><img src="https://cdn.example.org/schema.png" alt="Schéma"'
+            .' style="display: block; margin-left: auto; margin-right: auto;" width="480"></p>'
+            .'<p><img src="https://cdn.example.org/logo.png" style="float: right;"></p>',
+        );
+
+        self::assertStringContainsString('margin-left: auto', $html);
+        self::assertStringContainsString('margin-right: auto', $html);
+        self::assertStringContainsString('float: right', $html);
+        self::assertStringContainsString('width="480"', $html);
+    }
+
     public function testCalloutsCodeSamplesAndAccordionsSurvive(): void
     {
         $html = $this->sanitizer()->sanitize(
