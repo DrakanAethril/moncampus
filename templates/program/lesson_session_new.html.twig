@@ -1,6 +1,16 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ (isEdit ? 'editLessonSessionPageHeading' : 'newLessonSessionPageHeading')|trans }} - {{ program.displayShortName }}{% endblock %}
+{% block page_breadcrumb %}
+    {# Same two middle segments as the parent screen (templates/program/timetable_settings.html.twig),
+       so going back up lands on the timetable this séance belongs to. #}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'programSettingsTimetableTabLabel'|trans, url: path('app_program_timetable_settings', {id: program.id})},
+        {label: program.displayShortName, url: path('app_program_timetable_settings', {id: program.id})},
+        {label: (isEdit ? 'editLessonSessionPageHeading' : 'newLessonSessionPageHeading')|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
 {% block page_title %}{{ (isEdit ? 'editLessonSessionPageHeading' : 'newLessonSessionPageHeading')|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block main %}
