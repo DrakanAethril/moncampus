@@ -13,7 +13,8 @@
             </span>
             <span class="cm-cdt-detail__meta">
                 {{- row.session.program.displayShortName }} · {{ row.session.displayName }}
-                {{- row.session.title and row.session.topic ? ' · ' ~ row.session.title -}}
+                {# displayName is the title when there is one, so the matière is what completes it. #}
+                {{- row.session.title and row.session.topic ? ' · ' ~ row.session.topic.name -}}
             </span>
         </span>
         <a class="cm-cdt-detail__open" href="{{ path('app_program_timetable_session_log', {id: row.session.program.id, sessionId: row.session.id}) }}">

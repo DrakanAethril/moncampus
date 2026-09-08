@@ -289,8 +289,8 @@ class LessonSessionRepository extends ServiceEntityRepository
             ->leftJoin('l.lessonType', 'lt')
             ->leftJoin('l.options', 'o')
             // The matière is what every row of the cahier de texte's period screen prints under the
-            // hour, and what LessonSession::getDisplayName() reads on the timetable's own events -
-            // a to-one join, so it costs no extra row and spares one query per séance.
+            // hour, and what LessonSession::getDisplayName() falls back to on the timetable's own
+            // events - a to-one join, so it costs no extra row and spares one query per séance.
             ->leftJoin('l.topic', 'tp')
             ->where('l.teacher = :teacher')
             ->andWhere('l.day BETWEEN :from AND :to')
