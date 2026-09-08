@@ -7097,7 +7097,7 @@ checklistExportRemoveColumnAction: 'Remove this column'
 checklistExportSubmitAction: 'Generate the PDF'
 checklistSheetDocumentTitle: 'Checklist sheet'
 checklistSheetSubjectFieldLabel: 'Subject:'
-checklistSheetEmptyLabel: 'No student is enrolled in this program.'
+checklistSheetEmptyLabel: 'Nobody is enrolled in this program.'
 checklistSheetPdfExportFailedFlashMessage: 'The checklist sheet could not be generated. Please try again in a moment.'
 
 # --- Nuage de mots (design_handoff_nuage_de_mots) -------------------------------------------

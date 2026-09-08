@@ -7897,7 +7897,7 @@ attendanceSheetEmptyLabel: 'Aucune personne inscrite dans cette formation.'
 attendanceSheetPdfExportFailedFlashMessage: "La feuille d'émargement n'a pas pu être générée. Réessayez dans quelques instants."
 exportChecklistActionLabel: 'Liste pour pointage'
 checklistExportModalTitle: 'Liste pour pointage'
-checklistExportModalHelpText: "La liste des étudiants de la classe, avec une colonne vide à cocher pour chaque intitulé que vous ajoutez : passeport, vaccins, acompte…"
+checklistExportModalHelpText: "La liste de la classe, avec une colonne vide à cocher pour chaque intitulé que vous ajoutez : passeport, vaccins, acompte…"
 checklistExportCloseLabel: 'Fermer'
 checklistExportOrientationFieldLabel: 'Orientation de la page'
 checklistExportOrientationPortraitLabel: 'Portrait'
@@ -7909,7 +7909,7 @@ checklistExportRemoveColumnAction: 'Retirer cette colonne'
 checklistExportSubmitAction: 'Générer le PDF'
 checklistSheetDocumentTitle: 'Liste pour pointage'
 checklistSheetSubjectFieldLabel: 'Objet :'
-checklistSheetEmptyLabel: 'Aucun étudiant inscrit dans cette formation.'
+checklistSheetEmptyLabel: 'Aucune personne inscrite dans cette formation.'
 checklistSheetPdfExportFailedFlashMessage: "La liste pour pointage n'a pas pu être générée. Réessayez dans quelques instants."
 
 # --- Nuage de mots (design_handoff_nuage_de_mots) -------------------------------------------
