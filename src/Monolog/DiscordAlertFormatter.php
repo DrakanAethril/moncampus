@@ -6,6 +6,7 @@ namespace App\Monolog;
 
 use Monolog\Formatter\FormatterInterface;
 use Monolog\LogRecord;
+use Monolog\Processor\PsrLogMessageProcessor;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -23,15 +24,27 @@ class DiscordAlertFormatter implements FormatterInterface
     private const int MAX_CONTENT_LENGTH = 1900;
     private const int MAX_MESSAGE_LENGTH = 900;
 
+    private readonly PsrLogMessageProcessor $interpolator;
+
     public function __construct(
         private readonly RequestStack $requestStack,
         #[Autowire(param: 'kernel.environment')] private readonly string $environment,
         #[Autowire(param: 'kernel.project_dir')] private readonly string $projectDir,
     ) {
+        $this->interpolator = new PsrLogMessageProcessor();
     }
 
     public function format(LogRecord $record): string
     {
+        // PSR-3 placeholders. monolog-bundle only pushes its PsrLogMessageProcessor onto the
+        // handlers it builds itself: a "type: service" handler is aliased straight to our service
+        // (MonologExtension::buildHandler returns before that point), so the record arrives here
+        // with its {command}/{message} intact while the stderr handler shows them filled in - and
+        // an unfilled console alert names neither the command that failed nor the driver error.
+        // Doing it here rather than on the handler keeps the throttle signature on the message
+        // *template*, so a hundred variants of one error still count as one error.
+        $record = ($this->interpolator)($record);
+
         // Same "[DEV] " prefix as App\Service\TicketDiscordNotifier, for the same reason: dev and
         // production may legitimately point at the same webhook.
         $lines = [\sprintf(
