@@ -150,7 +150,15 @@ framework:
                 # nothing legitimate needs this one.
                 drop_elements: [iframe, video, audio, source, track, embed, object, canvas, image]
                 allow_attributes:
-                    style: [span, p, h1, h2, h3, h4, li, blockquote, table, col, td, th, div,
+                    # `img` is in this list for one reason, and it is not decoration: aligning an
+                    # image in the editor is an INLINE STYLE on the image itself, not a class and
+                    # not a wrapper. HugeRTE's aligncenter format writes
+                    # `display:block;margin-left:auto;margin-right:auto` on the <img>, and
+                    # alignleft/alignright write `float`. Without `img` here the whole declaration
+                    # was dropped on save, so an image the author had just centred came back
+                    # flush left on the read screen and in the PDF - the editor was telling the
+                    # truth about a formatting the storage refused.
+                    style: [span, p, h1, h2, h3, h4, li, blockquote, table, col, td, th, div, img,
                             svg, g, path, rect, circle, ellipse, line, polyline, polygon, text, tspan, marker]
                     # Outline anchors (h2/h3, stamped by App\Service\WikiPageOutline at read time),
                     # named anchors the `anchor` plugin writes, and the ids Mermaid's own markup

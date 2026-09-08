@@ -59,7 +59,7 @@ class LessonSession
     private ?string $length = null;
 
     // Optional - a session is expected to have a title OR a topic (enforced by the form, not
-    // here), falling back to the topic's own name for display when title is blank.
+    // here); when it carries one, it is the title that names the slot on screen (getDisplayName()).
     #[ORM\Column(length: 255, nullable: true)]
     #[Assert\Length(max: 255)]
     private ?string $title = null;
@@ -185,18 +185,20 @@ class LessonSession
         return $this;
     }
 
-    // The matière first, the title only failing that: a timetable announces what is taught in it, and
-    // a slot with no matière (a meeting, a mock exam) has only its title to give.
+    // The title first, the matière only failing that: a title is typed for one slot in particular,
+    // so it says something the matière cannot - a mock exam, a meeting, the one session of the week
+    // that is not the ordinary course - and a slot with no title has only its matière to give.
     //
-    // The opposite held until now, and two modules took advantage of it to copy a séance's name into
-    // that title - the old « planifier une séance » screen, then the validation of a progression
-    // séquence. Neither writes any more, and two migrations gave their matière back to the slots
-    // whose title was still the séance's exact name; what remains are those whose copy has drifted
-    // since (séance renamed, séance deleted), which no rule on the data tells apart from a title
-    // typed by hand. Hence the display rule, which covers them all.
+    // Two modules used to write that title themselves, copying a séance's name into it: the old
+    // « planifier une séance » screen, then the validation of a progression séquence. Neither writes
+    // any more, and two migrations (Version20260802120000, Version20260802160000) cleared the copies
+    // that were still the séance's exact name. What may remain is a copy that has drifted since
+    // (séance renamed, séance deleted), which no rule on the data tells apart from a title typed by
+    // hand - such a slot shows its stale title rather than its matière, and clearing the title is
+    // what gives it back.
     public function getDisplayName(): string
     {
-        return $this->topic?->getName() ?? $this->title ?? '—';
+        return $this->title ?? $this->topic?->getName() ?? '—';
     }
 
     public function getTopic(): ?Topic

@@ -12,6 +12,9 @@ use App\Enum\ProxmoxAction;
 use App\Repository\GuestAccountRepository;
 use App\Repository\IpAllocationRepository;
 use App\Repository\ProxmoxOperationRepository;
+use App\Service\Proxmox\ProxmoxClientFactory;
+use App\Service\Proxmox\ProxmoxOperationTracker;
+use App\Service\Proxmox\ProxmoxUnavailableException;
 
 /**
  * The machines one person holds an account on, ready to be shown.
@@ -42,6 +45,8 @@ class UserMachineFinder
         private readonly GuestMachineLocator $locator,
         private readonly ProxmoxOperationRepository $operations,
         private readonly IpAllocationRepository $allocations,
+        private readonly ProxmoxOperationTracker $tracker,
+        private readonly ProxmoxClientFactory $clientFactory,
     ) {
     }
 
@@ -65,7 +70,7 @@ class UserMachineFinder
 
         $hosts = $this->hostsOf($accounts);
         $logins = $this->loginsByHost($hosts, $accounts);
-        $pending = $this->pendingByHost($hosts);
+        $pending = $this->pendingByHost($hosts, $accounts);
         $addresses = $this->allocations->findAddressesForVmids(array_values(array_unique(
             array_map(static fn (GuestAccount $account): int => $account->getVmid(), $accounts),
         )));
@@ -130,6 +135,29 @@ class UserMachineFinder
     }
 
     /**
+     * The machines these accounts sit on, as VMIDs per host - the set two lookups now narrow
+     * themselves with, one query and one hypervisor call at a time rather than one per machine.
+     *
+     * @param list<GuestAccount> $accounts
+     *
+     * @return array<int, array<int, int>>
+     */
+    private function vmidsByHost(array $accounts): array
+    {
+        $vmids = [];
+
+        foreach ($accounts as $account) {
+            $host = $account->getHost();
+
+            if (null !== $host && null !== $host->getId()) {
+                $vmids[$host->getId()][$account->getVmid()] = $account->getVmid();
+            }
+        }
+
+        return $vmids;
+    }
+
+    /**
      * Every login declared on the machines concerned, keyed the same way as the guests.
      *
      * The whole point of « Comptes » on a card is that it lists the machine's accounts and not the
@@ -142,16 +170,7 @@ class UserMachineFinder
      */
     private function loginsByHost(array $hosts, array $accounts): array
     {
-        $vmids = [];
-
-        foreach ($accounts as $account) {
-            $host = $account->getHost();
-
-            if (null !== $host && null !== $host->getId()) {
-                $vmids[$host->getId()][$account->getVmid()] = $account->getVmid();
-            }
-        }
-
+        $vmids = $this->vmidsByHost($accounts);
         $logins = [];
 
         foreach ($hosts as $hostId => $host) {
@@ -166,21 +185,50 @@ class UserMachineFinder
     /**
      * The power action still under way on each machine, per host.
      *
+     * **Each one is asked about before it is believed**, exactly as the operations journal does it:
+     * an open row says a request went out, never that it is still going. Nothing else on this
+     * screen's side of the application ever closed such a row - the journal is under
+     * /infrastructure, which is ROLE_ADMIN - so a student's own start stayed « Démarrage… » until
+     * an administrator happened to open a screen they cannot reach, and the card's auto-refresh
+     * reloaded the page for ever on a machine that had been up for an hour.
+     *
+     * A host that will not answer is not an error here either: the row stays open, and
+     * App\Service\Guest\UserMachine holds the second half of the rule - a machine that already
+     * answers `running` has started, whatever its task still says.
+     *
      * @param array<int, ProxmoxHost> $hosts
+     * @param list<GuestAccount>      $accounts
      *
      * @return array<int, array<int, ProxmoxAction>>
      */
-    private function pendingByHost(array $hosts): array
+    private function pendingByHost(array $hosts, array $accounts): array
     {
+        $wanted = $this->vmidsByHost($accounts);
         $pending = [];
 
         foreach ($hosts as $hostId => $host) {
             foreach ($this->operations->findUnsettledByVmid($host) as $vmid => $operation) {
                 $action = $operation->getAction();
 
-                // Only the four that move a machine between on and off. A clone or a provisioning
-                // run is somebody else's business and says nothing about this card's state.
-                if ($action->isPowerAction()) {
+                // Only the four that move a machine between on and off, and only on the machines
+                // this screen is about. A clone, a provisioning run, or somebody else's class being
+                // started says nothing about this card's state - and asking the hypervisor about it
+                // would be one HTTP call spent on a row nobody here will read.
+                if (!$action->isPowerAction() || !isset($wanted[$hostId][$vmid])) {
+                    continue;
+                }
+
+                try {
+                    // By action rather than by convenience: Proxmox reads back your own tasks for
+                    // free and charges Sys.Audit for anybody else's.
+                    $this->tracker->resolve($operation, $this->clientFactory->forAction($host, $action));
+                } catch (ProxmoxUnavailableException) {
+                    // Left open on purpose: the tracker alone decides when an unreachable host
+                    // turns into `unknown`, and that is a matter of elapsed time, not of one
+                    // failed poll.
+                }
+
+                if (!$operation->getStatus()->isSettled()) {
                     $pending[$hostId][$vmid] = $action;
                 }
             }

@@ -29,8 +29,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * The « Exporter » button of the two class lists: an émargement sheet to print and sign, the list
- * itself as CSV, and - on the student list alone - a « Liste pour pointage », the same names with
- * the columns of the day next to them.
+ * itself as CSV, and a « Liste pour pointage » - the same names with the columns of the day next to
+ * them.
  *
  * Staff and admin only, like the two screens the button sits on - those lists hold the class's
  * people, which is the establishment's own directory rather than a teaching tool (see the nav's own
@@ -109,12 +109,27 @@ class ProgramPeopleExportController extends AbstractController
     public function studentsChecklistSheet(int $id, Request $request, ProgramRepository $repository): Response
     {
         $program = $this->findOrNotFound($id, $repository);
+
+        return $this->checklistSheet($program, $this->roster->ordered($program->getStudents()->toArray()), $request, 'etudiants', 'app_program_students');
+    }
+
+    #[Route(path: '/programs/{id}/teachers/checklist.pdf', name: 'app_program_teachers_checklist_pdf', methods: ['GET'])]
+    public function teachersChecklistSheet(int $id, Request $request, ProgramRepository $repository): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+
+        return $this->checklistSheet($program, $this->roster->ordered($program->getTeachers()->toArray()), $request, 'enseignants', 'app_program_teachers');
+    }
+
+    /** @param list<User> $people */
+    private function checklistSheet(Program $program, array $people, Request $request, string $kind, string $backRoute): Response
+    {
         $title = sprintf('%s — %s', $this->translator->trans('checklistSheetDocumentTitle'), $program->getDisplayShortName());
 
         try {
             $pdf = $this->checklistSheetExporter->export(
                 $program,
-                array_map($this->roster->documentName(...), $this->roster->ordered($program->getStudents()->toArray())),
+                array_map($this->roster->documentName(...), $people),
                 ChecklistSheetOptions::fromRequest($request),
                 $title,
                 $this->renderView(...),
@@ -123,12 +138,12 @@ class ProgramPeopleExportController extends AbstractController
         } catch (GotenbergUnavailableException) {
             $this->addFlash('error', 'checklistSheetPdfExportFailedFlashMessage');
 
-            return $this->redirectToRoute('app_program_students', ['id' => $program->getId()]);
+            return $this->redirectToRoute($backRoute, ['id' => $program->getId()]);
         }
 
         return new Response($pdf, 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $this->filename($program, 'pointage-etudiants', 'pdf')),
+            'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $this->filename($program, 'pointage-'.$kind, 'pdf')),
         ]);
     }
 

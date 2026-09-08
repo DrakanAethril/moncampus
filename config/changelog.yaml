@@ -26,6 +26,27 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.08'
+      date: '2026-09-08'
+      summary: "Le titre donné à un créneau d'emploi du temps passe devant la matière : c'est lui qui s'affiche partout dès qu'il est saisi. La liste pour pointage s'ouvre aussi aux enseignants, et trois corrections rendent leur place à l'alignement des images du wiki et à l'état réel des machines virtuelles."
+      entries:
+          - type: modification
+            title: "Le titre d'un créneau prime sur la matière"
+            detail: "Un créneau dont le titre est renseigné l'affiche désormais partout — emploi du temps, tableau de bord, application mobile, cahier de texte — la matière ne servant plus que de repli."
+          - type: nouveaute
+            title: "Une liste pour pointage à partir de la liste des enseignants"
+            detail: "L'export était réservé à la liste des étudiants ; il s'obtient maintenant depuis les deux listes d'une classe, avec les mêmes options."
+          - type: fix
+            title: "Une machine virtuelle ne reste plus indéfiniment « Démarrage… »"
+            detail: "La carte suit maintenant la fin réelle du démarrage, et annonce un état inconnu plutôt qu'une transition sans fin quand la machine ne répond pas."
+          - type: fix
+            title: "L'alignement d'une image est conservé dans le wiki"
+            detail: "Une image centrée ou alignée à droite revenait collée à gauche après enregistrement."
+          - type: modification
+            title: "Un fil d'Ariane sur le formulaire d'une séance"
+          - type: interne
+            title: "Les alertes techniques nomment de nouveau l'erreur qu'elles signalent"
+
     - version: '2026.09.07'
       date: '2026-09-07'
       summary: "Le livret de l'alternant s'enrichit : l'emploi du temps de la formation y prend place, chaque compétence peut porter une description, et le bilan d'une période va désormais du tuteur à l'alternant puis au centre de formation. Ailleurs, les fichiers téléchargés arrivent enfin sous leur vrai nom, et la liste des étudiants s'imprime en feuille de pointage."
