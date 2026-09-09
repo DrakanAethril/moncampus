@@ -288,6 +288,8 @@ class TicketController extends AbstractController
         $originalStatus = $ticket->getStatus();
         $originalPriority = $ticket->getPriority();
         $originalAssignee = $ticket->getAssignee();
+        $originalCategory = $ticket->getCategory();
+        $originalLocation = $this->locationLabel($ticket);
 
         $form = $this->createForm(TicketManageType::class, $ticket);
         $form->handleRequest($request);
@@ -330,6 +332,29 @@ class TicketController extends AbstractController
                     $ticket,
                     $currentUser,
                     sprintf('%s → %s', $this->userLabel($originalAssignee), $this->userLabel($ticket->getAssignee())),
+                    TicketComment::VISIBILITY_INTERNAL,
+                );
+            }
+
+            if ($ticket->getCategory() !== $originalCategory) {
+                $this->logSystemComment(
+                    $entityManager,
+                    $ticket,
+                    $currentUser,
+                    sprintf('%s → %s', $originalCategory?->getName() ?? '—', $ticket->getCategory()?->getName() ?? '—'),
+                    TicketComment::VISIBILITY_INTERNAL,
+                );
+            }
+
+            // Compared on the rendered label rather than field by field: room and otherLocation
+            // are two ways of writing the same single "lieu", and swapping one for the other
+            // without changing what it reads as is not a change worth a line in the thread.
+            if ($this->locationLabel($ticket) !== $originalLocation) {
+                $this->logSystemComment(
+                    $entityManager,
+                    $ticket,
+                    $currentUser,
+                    sprintf('%s → %s', $originalLocation, $this->locationLabel($ticket)),
                     TicketComment::VISIBILITY_INTERNAL,
                 );
             }
@@ -423,7 +448,7 @@ class TicketController extends AbstractController
                 htmlspecialchars($ticket->getSubject()),
             ),
             'categoryName' => $ticket->getCategory()?->getName() ?? '—',
-            'location' => $ticket->getRoom()?->getName() ?? $ticket->getOtherLocation() ?? '—',
+            'location' => $this->locationLabel($ticket),
             'reporterName' => $this->reporterLabel($ticket),
             'assigneeName' => null !== $ticket->getAssignee() ? $this->userLabel($ticket->getAssignee()) : '—',
             'statusLabel' => $statusFormatter->statusLabel($ticket->getStatus()),
@@ -476,6 +501,11 @@ class TicketController extends AbstractController
         $user = $this->getUser();
 
         return $user;
+    }
+
+    private function locationLabel(Ticket $ticket): string
+    {
+        return $ticket->getRoom()?->getName() ?? $ticket->getOtherLocation() ?? '—';
     }
 
     private function userLabel(?User $user): string

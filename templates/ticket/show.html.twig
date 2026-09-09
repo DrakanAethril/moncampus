@@ -126,6 +126,9 @@
                             {{ form_errors(manageForm) }}
                             {{ form_row(manageForm.status) }}
                             {{ form_row(manageForm.priority) }}
+                            {{ form_row(manageForm.category) }}
+                            {{ form_row(manageForm.room) }}
+                            {{ form_row(manageForm.otherLocation) }}
                             <div class="mb-3">
                                 <label class="form-label" for="assignee">{{ 'ticketAssigneeFieldLabel'|trans }}</label>
                                 <select id="assignee" name="assignee" class="form-select"
