@@ -14,6 +14,7 @@ use App\Repository\LessonSessionRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\ProgramStudentModalityRepository;
 use App\Repository\ProgramStudentOptionRepository;
+use App\Service\FormValue;
 use App\Service\GotenbergUnavailableException;
 use App\Service\QueryValue;
 use App\Service\TsfFicheExporter;
@@ -41,13 +42,13 @@ class ProgramExportsController extends AbstractController
     public function signature(int $id, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, ProgramStudentOptionRepository $studentOptionRepository, ProgramStudentModalityRepository $studentModalityRepository): Response
     {
         $program = $this->findOrNotFound($id, $repository);
-        $form = $this->createForm(ExportDateRangeType::class);
+        $form = $this->createForm(ExportDateRangeType::class, null, ['with_alternance_only' => true]);
         $form->handleRequest($request);
 
         $sheets = [];
         if ($form->isSubmitted() && $form->isValid()) {
             $sessions = $lessonSessionRepository->findForProgramBetween($program, $form->get('startDay')->getData(), $form->get('endDay')->getData());
-            $sheets = $this->buildSignatureSheets($program, $sessions, $studentOptionRepository, $studentModalityRepository);
+            $sheets = $this->buildSignatureSheets($program, $sessions, $studentOptionRepository, $studentModalityRepository, FormValue::bool($form, 'alternanceOnly'));
         }
 
         return $this->render('program/exports.html.twig', [
@@ -141,7 +142,7 @@ class ProgramExportsController extends AbstractController
      *
      * @return list<array{optionLabel: ?string, day: string, sessions: list<array>, students: list<User>}>
      */
-    private function buildSignatureSheets(Program $program, array $sessions, ProgramStudentOptionRepository $studentOptionRepository, ProgramStudentModalityRepository $studentModalityRepository): array
+    private function buildSignatureSheets(Program $program, array $sessions, ProgramStudentOptionRepository $studentOptionRepository, ProgramStudentModalityRepository $studentModalityRepository, bool $alternanceOnly): array
     {
         $formatSession = static fn (LessonSession $session): array => [
             'startHour' => $session->getStartHour()->format('H:i'),
@@ -150,10 +151,13 @@ class ProgramExportsController extends AbstractController
             'teacherName' => null !== $session->getTeacher() ? ($session->getTeacher()->getDisplayName() ?? $session->getTeacher()->getUsername()) : '—',
         ];
 
-        // Signature sheets are apprenticeship paperwork: only the students following the program's
-        // alternance modality (Modality::$isAlternance) belong on them, never the initial-training
-        // students sitting in the very same sessions.
-        $students = $this->alternanceStudents($program, $studentModalityRepository);
+        // Signature sheets are apprenticeship paperwork by default: only the students following the
+        // program's alternance modality (Modality::$isAlternance) belong on them, never the
+        // initial-training students sitting in the very same sessions. The tab's own checkbox is
+        // what widens that to the whole class, for the formations that sign everybody.
+        $students = $alternanceOnly
+            ? $this->alternanceStudents($program, $studentModalityRepository)
+            : array_values($program->getStudents()->toArray());
 
         // A sheet nobody has to sign is a blank page, so a program running no alternance at all
         // exports nothing rather than one empty sheet per day.
