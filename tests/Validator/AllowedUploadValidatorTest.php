@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Validator;
 
+use App\Entity\FileLibraryNode;
+use App\Entity\User;
+use App\Enum\FileLibraryNodeType;
+use App\Service\StagedUpload;
 use App\Service\UploadPolicy;
 use App\Validator\AllowedUpload;
 use PHPUnit\Framework\TestCase;
@@ -98,6 +102,65 @@ class AllowedUploadValidatorTest extends TestCase
         self::assertNotSame([], $this->violations($file, $tiny));
     }
 
+    public function testAStagedUploadIsCheckedAgainstTheSamePolicy(): void
+    {
+        $staged = new StagedUpload('token', 'staged/abc.pdf', 'rapport.pdf', 'application/pdf', 1024);
+
+        self::assertSame([], $this->violations($staged, new AllowedUpload(UploadPolicy::documents())));
+        self::assertSame(
+            [UploadPolicy::VIOLATION_UNSUPPORTED],
+            $this->violations($staged, new AllowedUpload(UploadPolicy::images())),
+        );
+    }
+
+    public function testALibraryFileIsValidatedRatherThanCrashing(): void
+    {
+        // The shape that used to reach here unhandled: a file picked from the bibliothèque de
+        // fichiers is the node itself, and the validator answered it with an UnexpectedTypeException
+        // - a 500 on every form offering the library tab.
+        $node = $this->libraryFile('rapport.pdf', 'application/pdf', 1024);
+
+        self::assertSame([], $this->violations($node, new AllowedUpload(UploadPolicy::documents())));
+    }
+
+    public function testALibraryFileOutsideTheFieldNarrowingIsRefused(): void
+    {
+        $node = $this->libraryFile('rapport.pdf', 'application/pdf', 1024);
+
+        // A link is not an exemption: an images-only field refuses a linked PDF exactly as it
+        // refuses an uploaded one.
+        self::assertSame(
+            [UploadPolicy::VIOLATION_UNSUPPORTED],
+            $this->violations($node, new AllowedUpload(UploadPolicy::images())),
+        );
+    }
+
+    public function testALibraryFileIsJudgedOnItsUploadedNameNotOnItsDisplayName(): void
+    {
+        // A library file is renameable to anything - the display name is a label, not a filename -
+        // so the extension the policy reads is the one it arrived with.
+        $node = $this->libraryFile('rapport.pdf', 'application/pdf', 1024)->setName('Cours de réseau');
+
+        self::assertSame([], $this->violations($node, new AllowedUpload(UploadPolicy::documents())));
+    }
+
+    public function testALibraryFileOverTheFieldCeilingIsRefused(): void
+    {
+        $node = $this->libraryFile('film.mp4', 'video/mp4', 50 * 1024 * 1024);
+
+        self::assertSame(
+            ['uploadPolicyTooLargeMessage'],
+            $this->violations($node, new AllowedUpload(UploadPolicy::platform()->withMaxSize('20M'))),
+        );
+    }
+
+    public function testALibraryFileWithNoRecordedTypeIsLeftToTheExtensionRules(): void
+    {
+        $node = $this->libraryFile('rapport.pdf', null, 1024);
+
+        self::assertSame([], $this->violations($node, new AllowedUpload(UploadPolicy::documents())));
+    }
+
     public function testNullIsLeftToNotBlankAndNotNull(): void
     {
         self::assertSame([], $this->violations(null, new AllowedUpload()));
@@ -115,6 +178,16 @@ class AllowedUploadValidatorTest extends TestCase
     private function validator(): ValidatorInterface
     {
         return Validation::createValidator();
+    }
+
+    /** A library file as the picker submits it: the node itself, resolved from its `lib:48` token. */
+    private function libraryFile(string $originalName, ?string $mimeType, int $sizeBytes): FileLibraryNode
+    {
+        return (new FileLibraryNode(new User('tharaud'), FileLibraryNodeType::File, $originalName))
+            ->setOriginalName($originalName)
+            ->setMimeType($mimeType)
+            ->setSizeBytes($sizeBytes)
+            ->setStorageKey('file-library/'.$originalName);
     }
 
     private function upload(string $clientName, string $contents): UploadedFile

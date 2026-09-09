@@ -633,7 +633,7 @@ class AssignmentController extends AbstractController
      */
     private function applyAttachments(Assignment $assignment, \Symfony\Component\Form\FormInterface $form, UploadIntake $uploadIntake): void
     {
-        /** @var list<StagedUpload> $files */
+        /** @var list<StagedUpload|FileLibraryNode> $files */
         $files = $form->get('attachmentFiles')->getData() ?? [];
 
         foreach ($files as $file) {

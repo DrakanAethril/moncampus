@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Attribute\RequiresFeature;
 use App\Entity\Assignment;
+use App\Entity\FileLibraryNode;
 use App\Entity\LessonLog;
 use App\Entity\LessonLogAttachment;
 use App\Entity\LessonLogAttachmentView;
@@ -517,7 +518,7 @@ class LessonLogController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            /** @var StagedUpload|null $file */
+            /** @var StagedUpload|FileLibraryNode|null $file */
             $file = $form->get('file')->getData();
             $url = $form->get('url')->getData();
             $label = $form->get('label')->getData();

@@ -741,7 +741,7 @@ class SequenceLibraryController extends AbstractController
             return;
         }
 
-        /** @var \App\Service\StagedUpload|null $file */
+        /** @var \App\Service\StagedUpload|\App\Entity\FileLibraryNode|null $file */
         $file = $form->get('file')->getData();
         $url = $form->get('url')->getData();
 

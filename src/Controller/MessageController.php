@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Attribute\RequiresFeature;
 use App\Entity\AudienceTargetable;
+use App\Entity\FileLibraryNode;
 use App\Entity\Message;
 use App\Entity\MessageAttachment;
 use App\Entity\MessageThread;
@@ -560,7 +561,7 @@ class MessageController extends AbstractController
         return $recipientRepository->findOneForUserAndThread($this->currentUser(), $thread) ?? throw $this->createNotFoundException();
     }
 
-    /** @param list<StagedUpload>|null $files */
+    /** @param list<StagedUpload|FileLibraryNode>|null $files */
     private function persistAttachments(Message $message, ?array $files, UploadIntake $uploadIntake, EntityManagerInterface $entityManager): void
     {
         foreach ($files ?? [] as $file) {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Validator;
 
+use App\Entity\FileLibraryNode;
 use App\Service\AntivirusScanner;
 use App\Service\ClamAvUnavailableException;
 use App\Service\InfectedUploadException;
@@ -55,7 +56,29 @@ class AllowedUploadValidator extends ConstraintValidator
         // of questions, asked of values the server itself recorded. One instanceof here is what
         // lets every field keep its own narrowing with no change to the field.
         if ($value instanceof StagedUpload) {
-            $this->validateStaged($value, $constraint);
+            $this->validateStored($value->originalName, $value->mimeType, $value->size, $value->originalName, $constraint);
+
+            return;
+        }
+
+        // The third shape, and the one that carries nothing at all: a file the account already owns
+        // in its bibliothèque de fichiers, which the field *links* rather than uploads
+        // (design/validated/file-library.md, "The `library` option"). It arrives as the node itself -
+        // App\Form\DataTransformer\StagedUploadTransformer resolved `lib:48` and re-checked whose
+        // library it is - so what is left to ask is the field's own question, exactly as for a
+        // staged upload: does this policy accept that kind of file.
+        if ($value instanceof FileLibraryNode) {
+            $this->validateStored(
+                // The *uploaded* name, not the display one. A library file is renameable to anything,
+                // « Cours de réseau » with no extension included, and refusing it over a label its
+                // owner chose would be refusing it for the wrong reason.
+                $value->getOriginalName() ?? $value->getName(),
+                $value->getMimeType(),
+                $value->getSizeBytes() ?? 0,
+                // What the violation names is what the picker shows.
+                $value->getName(),
+                $constraint,
+            );
 
             return;
         }
@@ -93,26 +116,33 @@ class AllowedUploadValidator extends ConstraintValidator
     }
 
     /**
-     * A file that reached the bucket before the form was submitted.
+     * A file whose bytes are already in the bucket: staged by the picker before the form was
+     * submitted, or linked from the bibliothèque de fichiers.
      *
      * Two differences from the branch above, both of them consequences of the bytes being gone:
      *
      * - **size is compared here rather than delegated to Assert\File**, which needs a path on disk.
      *   The number comes from the request that carried the bytes, not from the client;
      * - **nothing is re-sniffed and nothing is re-scanned.** App\Service\StagedUploadStore did both
-     *   at staging time, before writing, and the sniffed type travels inside the signed token. A
-     *   second scan would mean pulling the object back out of S3 to learn what is already known.
+     *   before writing - at staging time, and again for the file that entered the library the same
+     *   way - and the sniffed type was recorded with the object. A second scan would mean pulling it
+     *   back out of S3 to learn what is already known.
      *
-     * What is *not* different is the decision: the same policy, so a field that narrows to PDF
-     * still refuses a staged .docx, and refuses it with the same message.
+     * What is *not* different is the decision: the same policy, so a field that narrows to PDF still
+     * refuses a .docx it did not carry, and refuses it with the same message.
+     *
+     * @param string  $name       the name the policy reads, extension included
+     * @param ?string $mimeType   the type read from the bytes when they were written, null when none
+     *                            was recorded - the extension rules then decide alone
+     * @param string  $reportedAs the name the violation shows the user
      */
-    private function validateStaged(StagedUpload $staged, AllowedUpload $constraint): void
+    private function validateStored(string $name, ?string $mimeType, int $size, string $reportedAs, AllowedUpload $constraint): void
     {
         $limit = $constraint->policy->maxSizeInBytes();
 
-        if ($staged->size > $limit) {
+        if ($size > $limit) {
             $this->context->buildViolation('uploadPolicyTooLargeMessage')
-                ->setParameter('{{ name }}', $this->formatValue($staged->originalName))
+                ->setParameter('{{ name }}', $this->formatValue($reportedAs))
                 ->setParameter('{{ limit }}', $this->formatValue($this->megabytes($limit)))
                 ->setCode('uploadPolicyTooLargeMessage')
                 ->addViolation();
@@ -120,11 +150,11 @@ class AllowedUploadValidator extends ConstraintValidator
             return;
         }
 
-        $reason = $constraint->policy->refusalReason($staged->originalName, '' === $staged->mimeType ? null : $staged->mimeType);
+        $reason = $constraint->policy->refusalReason($name, '' === $mimeType ? null : $mimeType);
 
         if (null !== $reason) {
             $this->context->buildViolation($reason)
-                ->setParameter('{{ name }}', $this->formatValue($staged->originalName))
+                ->setParameter('{{ name }}', $this->formatValue($reportedAs))
                 ->setCode($reason)
                 ->addViolation();
         }
