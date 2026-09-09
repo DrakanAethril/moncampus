@@ -143,6 +143,12 @@ final class UploadPolicy
         'ini' => ['text/plain'],
         'pcap' => ['application/vnd.tcpdump.pcap', 'application/octet-stream'],
         'pcapng' => ['application/vnd.tcpdump.pcap', 'application/octet-stream'],
+        // An OpenVPN profile is a plain-text config file, certificates and key included as inline
+        // PEM blocks - fileinfo answers text/plain for every shape of it, whether it opens on a
+        // directive, on a comment or straight on a certificate. The second type is what a MIME
+        // database maps the extension to; fileinfo never produces it, and it costs nothing to
+        // accept from a client that sends it.
+        'ovpn' => ['text/plain', 'application/x-openvpn-profile'],
         'ipynb' => ['application/json', 'text/plain'],
 
         // Inert sources. `php` stays allowed on purpose: this is object storage behind a CDN,
@@ -342,6 +348,13 @@ final class UploadPolicy
             'pdf', 'jpg', 'jpeg', 'png', 'webp',
             'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx',
             'txt', 'zip',
+            // Not a document, and here on purpose. The library accepts an .ovpn, shares it to a
+            // class and offers it in the picker's « Bibliothèque de fichiers » tab; a narrowing
+            // that refused it would turn a file the platform stores into one that cannot be
+            // attached anywhere - the picker would let it be chosen and the form would then refuse
+            // it, which is the worst of the two answers. It circulates as course material on the
+            // SISR side exactly as a capture or a syllabus does.
+            'ovpn',
         );
     }
 
