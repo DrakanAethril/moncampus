@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Wiki;
 
 use App\Attribute\RequiresFeature;
+use App\Entity\FileLibraryNode;
 use App\Entity\User;
 use App\Entity\Wiki;
 use App\Entity\WikiAttachment;
@@ -91,7 +92,7 @@ class WikiContentController extends AbstractController
             return $this->redirectToRoute('app_wiki_page', ['id' => $id, 'nodeId' => $nodeId]);
         }
 
-        /** @var list<StagedUpload> $files */
+        /** @var list<StagedUpload|FileLibraryNode> $files */
         $files = $form->get('files')->getData();
         $position = \count($node->getAttachments());
         $accepted = 0;

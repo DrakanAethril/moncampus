@@ -151,6 +151,23 @@ class UploadPolicyTest extends TestCase
         self::assertTrue(UploadPolicy::platform()->accepts('index.php', 'text/plain'));
     }
 
+    public function testAnOpenVpnProfileIsAcceptedEverywhereTheLibraryOffersIt(): void
+    {
+        // The library stores an .ovpn, shares it to a class and offers it in the picker's
+        // « Bibliothèque de fichiers » tab. A narrowing that refused it would let the file be
+        // *chosen* and then refuse the form - so `documents` carries it too, and this is what says
+        // the two halves cannot drift apart again.
+        self::assertTrue(UploadPolicy::platform()->accepts('campus.ovpn', 'text/plain'));
+        self::assertTrue(UploadPolicy::documents()->accepts('campus.ovpn', 'text/plain'));
+        // Every shape of the file sniffs as text - directives, comments, or an inline PEM block -
+        // and fileinfo occasionally has nothing to say at all.
+        self::assertTrue(UploadPolicy::documents()->accepts('campus.ovpn', null));
+        // The cross-check still holds: an executable wearing the name is refused like any other.
+        self::assertFalse(UploadPolicy::platform()->accepts('campus.ovpn', 'application/x-dosexec'));
+        // And it is handed over as a download rather than opened on the CDN domain.
+        self::assertFalse(UploadPolicy::servesInline('campus.ovpn'));
+    }
+
     public function testAnUnknownSniffedTypeLeavesTheExtensionRuleAlone(): void
     {
         // fileinfo occasionally has nothing to say. The cross-check exists to catch a lie, and

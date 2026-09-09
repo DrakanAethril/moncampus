@@ -8,6 +8,12 @@
             <div class="col-md-3">
                 {{ form_row(form.endDay) }}
             </div>
+            <div class="col-md-4">
+                {# Aligned with the two date fields rather than under them: an empty label keeps the
+                   box on the same baseline as the inputs it qualifies. #}
+                <div class="form-label">&nbsp;</div>
+                {{ form_row(form.alternanceOnly) }}
+            </div>
             <div class="col-md-2 mb-3">
                 <div class="form-label">&nbsp;</div>
                 {{ form_widget(form.submit, {attr: {class: 'form-control'}}) }}
