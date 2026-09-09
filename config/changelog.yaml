@@ -26,6 +26,19 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.09'
+      date: '2026-09-09'
+      summary: "Une feuille d'émargement peut désormais couvrir toute la classe et plus seulement ses alternants. La bibliothèque de fichiers accepte les profils de connexion sécurisée, et un document choisi depuis la bibliothèque ne fait plus échouer l'envoi du formulaire."
+      entries:
+          - type: nouveaute
+            title: "Une feuille d'émargement pour toute la classe"
+            detail: "Une case permet de choisir entre les seuls alternants, comme jusqu'ici, et l'ensemble des étudiants de la formation."
+          - type: fix
+            title: "Un document choisi dans la bibliothèque n'interrompt plus l'envoi"
+            detail: "Sur les formulaires qui proposent l'onglet « Bibliothèque de fichiers », y prendre un document faisait échouer l'enregistrement ; le fichier lié est maintenant contrôlé comme un fichier déposé."
+          - type: modification
+            title: "Les profils de connexion sécurisée sont acceptés dans la bibliothèque"
+
     - version: '2026.09.08'
       date: '2026-09-08'
       summary: "Le titre donné à un créneau d'emploi du temps passe devant la matière : c'est lui qui s'affiche partout dès qu'il est saisi. La liste pour pointage s'ouvre aussi aux enseignants, et trois corrections rendent leur place à l'alignement des images du wiki et à l'état réel des machines virtuelles."
