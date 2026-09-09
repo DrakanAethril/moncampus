@@ -678,7 +678,7 @@ class QuizLibraryController extends AbstractController
             $this->applyMatching($question, $request, $fileUploadService, $matchingImageStore);
             $this->applyNumeric($question, $request);
 
-            /** @var \App\Service\StagedUpload|null $imageFile */
+            /** @var \App\Service\StagedUpload|\App\Entity\FileLibraryNode|null $imageFile */
             $imageFile = $form->get('imageFile')->getData();
             $removeImage = (bool) $form->get('removeImage')->getData();
 
