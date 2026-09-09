@@ -1021,6 +1021,9 @@ exportStartDayFieldLabel: 'Date de début'
 exportEndDayFieldLabel: 'Date de fin'
 exportGenerateAction: 'Générer'
 exportAlternanceOnlyFieldLabel: 'Inclure uniquement les alternants'
+exportsSignaturePdfButtonLabel: 'Export PDF'
+signatureSheetsPdfEmptyFlashMessage: "Aucune feuille d'émargement à exporter sur cette période."
+signatureSheetsPdfExportFailedFlashMessage: "Les feuilles d'émargement n'ont pas pu être générées. Réessayez dans quelques instants."
 signatureScheduleColumnLabel: 'Horaire'
 signatureTitleColumnLabel: 'Cours'
 signatureTeacherColumnLabel: 'Intervenant'
