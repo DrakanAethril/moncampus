@@ -20,8 +20,12 @@ const frLocale = frLocaleModule.code ? frLocaleModule : frLocaleModule.default;
  *  - editable (settings/timetable tab): click a session to edit it (via event.url), drag to
  *    reschedule (persisted through moveUrlTemplate), select an empty slot to create one.
  *  - read-only (student/teacher-facing page): otherwise pure display, but clicking a session
- *    navigates to its cahier de texte (extendedProps.logUrl) - view/edit access there is decided
- *    server-side per session (see LessonLogVoter), not by this page being read-only.
+ *    navigates to its cahier de texte (extendedProps.logUrl).
+ *
+ * Whether that second click exists at all is the server's answer, never this controller's:
+ * LessonSessionEventFormatter omits logUrl for a viewer who could not open the cahier de texte
+ * (feature off, or LessonLogVoter refusing), and a session without one is inert and shows no
+ * pointer - an emploi du temps stays perfectly readable to somebody who has nothing but it.
  */
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
@@ -78,6 +82,7 @@ export default class extends Controller {
             headerToolbar: { left: 'prev,next today', center: 'title', right: '' },
             eventSources: [{ url: this.feedUrlValue, method: 'POST' }],
             eventContent: (arg) => this.renderEvent(arg),
+            eventClassNames: (arg) => this.eventClasses(arg),
             eventDidMount: (arg) => this.onEventDidMount(arg),
             editable: this.editableValue,
             eventStartEditable: this.editableValue,
@@ -103,6 +108,12 @@ export default class extends Controller {
             .join(' · ');
 
         return { html: `<b>${arg.event.title}</b>${details ? `<br/><i>${details}</i>` : ''}` };
+    }
+
+    // Only a session the server actually handed a destination for looks clickable: FullCalendar's
+    // own `cursor: pointer` rule keys off an href, which a read-only event does not carry.
+    eventClasses(arg) {
+        return !this.editableValue && arg.event.extendedProps.logUrl ? ['cm-calendar__event--clickable'] : [];
     }
 
     // Tags every rendered event element with its legend key and applies the current filter state

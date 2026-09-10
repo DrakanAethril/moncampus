@@ -3970,6 +3970,15 @@ trainingReviewFooterNoticeLabel: "Les validations acquises sur une version préc
 trainingReviewSavedFlash: 'Votre retour est envoyé.'
 trainingReviewRemarkRequiredError: 'Une demande de correction sans remarque ne dit pas à l’étudiant quoi corriger.'
 trainingReviewNoDecisionError: 'Aucune décision : validez ou demandez une correction sur au moins un élément.'
+trainingReviewHistoryTitle: 'Versions précédentes'
+trainingReviewHistoryCountLabel: '%count% envoi(s) avant celui-ci'
+trainingReviewHistorySentLabel: 'Envoyée le %date%'
+trainingReviewHistorySubjectLabel: 'Objet'
+trainingReviewHistoryBodyLabel: 'Mail'
+trainingReviewHistorySignatureLabel: 'Signature'
+trainingReviewHistoryAttachmentsLabel: 'Pièces jointes'
+trainingReviewHistoryNoAttachmentLabel: 'Aucune pièce jointe'
+trainingReviewHistoryEmptyLabel: 'Non renseigné'
 
 schoolMailLockedError: "Votre envoi est encore verrouillé : faites valider votre mail, votre CV, votre LM et votre signature en postulant sur une offre d'entraînement."
 

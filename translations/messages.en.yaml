@@ -3546,6 +3546,15 @@ trainingReviewFooterNoticeLabel: 'Validations acquired on an earlier version sta
 trainingReviewSavedFlash: 'Your feedback has been sent.'
 trainingReviewRemarkRequiredError: 'A correction request without a remark does not tell the student what to fix.'
 trainingReviewNoDecisionError: 'No decision taken: validate or request a correction on at least one element.'
+trainingReviewHistoryTitle: 'Earlier versions'
+trainingReviewHistoryCountLabel: '%count% send(s) before this one'
+trainingReviewHistorySentLabel: 'Sent on %date%'
+trainingReviewHistorySubjectLabel: 'Subject'
+trainingReviewHistoryBodyLabel: 'Mail'
+trainingReviewHistorySignatureLabel: 'Signature'
+trainingReviewHistoryAttachmentsLabel: 'Attachments'
+trainingReviewHistoryNoAttachmentLabel: 'No attachment'
+trainingReviewHistoryEmptyLabel: 'Not filled in'
 
 schoolMailLockedError: 'Sending is still locked: have your mail, CV, cover letter and signature validated by applying to a practice offer.'
 

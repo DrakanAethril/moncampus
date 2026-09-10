@@ -62,6 +62,62 @@
                     </div>
                 </div>
             </div>
+
+            {# What was sent before, version by version, most recent first. The remark alone does not
+               say what it was written about: « raccourcissez le second paragraphe » only means
+               something next to the paragraph it named. Each version is folded shut, because the one
+               being judged is the one above and the history must not push it off the screen. #}
+            {% set previousVersions = application.previousVersions %}
+            {% if previousVersions %}
+                <div class="card cm-training-history">
+                    <div class="cm-jobapp-head">
+                        <span class="cm-jobapp-head__title">{{ 'trainingReviewHistoryTitle'|trans }}</span>
+                        <span class="cm-jobapp-head__count">{{ 'trainingReviewHistoryCountLabel'|trans({'%count%': previousVersions|length}) }}</span>
+                    </div>
+                    <div class="card-body">
+                        {% for previous in previousVersions %}
+                            <details class="cm-training-history__version">
+                                <summary class="cm-training-history__summary">
+                                    <span class="cm-training-badge">v{{ previous.number }}</span>
+                                    <span class="cm-training-history__date">{{ 'trainingReviewHistorySentLabel'|trans({'%date%': previous.submittedAt|date('d/m/Y H:i')}) }}</span>
+                                </summary>
+
+                                <div class="cm-training-history__field">
+                                    <span class="cm-training-history__label">{{ 'trainingReviewHistorySubjectLabel'|trans }}</span>
+                                    <div class="cm-training-history__value">{{ previous.subject ?: 'trainingReviewHistoryEmptyLabel'|trans }}</div>
+                                </div>
+
+                                <div class="cm-training-history__field">
+                                    <span class="cm-training-history__label">{{ 'trainingReviewHistoryBodyLabel'|trans }}</span>
+                                    <div class="cm-sheet__mail-body">{{ previous.body|nl2br }}</div>
+                                </div>
+
+                                <div class="cm-training-history__field">
+                                    <span class="cm-training-history__label">{{ 'trainingReviewHistorySignatureLabel'|trans }}</span>
+                                    {% if previous.signatureSnapshot %}
+                                        <div class="cm-compose__signature">{{ previous.signatureSnapshot|nl2br }}</div>
+                                    {% else %}
+                                        <div class="cm-training-history__value">{{ 'trainingReviewHistoryEmptyLabel'|trans }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="cm-training-history__field">
+                                    <span class="cm-training-history__label">{{ 'trainingReviewHistoryAttachmentsLabel'|trans }}</span>
+                                    {% if previous.attachments|length %}
+                                        <div class="cm-schoolmail-attachments">
+                                            {% for attachment in previous.attachments %}
+                                                <a class="cm-schoolmail-attachment" href="{{ path('app_training_application_file', {id: application.id, attachmentId: attachment.id}) }}" target="_blank" rel="noopener">{{ attachment.name }}</a>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <div class="cm-training-history__value">{{ 'trainingReviewHistoryNoAttachmentLabel'|trans }}</div>
+                                    {% endif %}
+                                </div>
+                            </details>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
         </div>
 
         <aside class="cm-sheet__side">

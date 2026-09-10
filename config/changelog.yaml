@@ -26,6 +26,16 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.10.2'
+      date: '2026-09-10'
+      summary: "L'écran de correction d'une postulation donne maintenant à lire les versions précédentes de la candidature, pièces jointes comprises, pour que les remarques déjà faites gardent leur objet sous les yeux. L'emploi du temps, lui, ne propose plus d'ouvrir un cahier de texte auquel on n'a pas accès."
+      entries:
+          - type: modification
+            title: "Les versions précédentes d'une postulation sous celle qu'on corrige"
+            detail: "Chaque envoi antérieur se déplie tel qu'il est parti ce jour-là — objet, message, signature et pièces jointes, toutes téléchargeables."
+          - type: fix
+            title: "L'emploi du temps ne renvoie plus vers un cahier de texte inaccessible"
+            detail: "Une séance dont le cahier de texte n'est pas ouvert à l'étudiant n'est plus cliquable, là où le clic menait à une page d'erreur."
     - version: '2026.09.10'
       date: '2026-09-10'
       summary: "Un travail à quiz se convertit désormais en note du carnet, en reprenant ce que le quiz a compté pour chaque étudiant. Les feuilles d'émargement s'exportent en PDF, chaque champ de mot de passe gagne un œil d'affichage, et quatre corrections rendent leur place à la consigne d'un travail, au wiki, au support et à l'emploi du temps."

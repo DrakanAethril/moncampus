@@ -97,6 +97,11 @@ class TrainingApplicationReviewController extends AbstractController
      * Addressed by the attachment's own id rather than by a document type: since
      * design_handoff_postulation_redaction, a student joins as many untyped files as they like, and
      * there is no longer a "the CV" of an application to point at.
+     *
+     * Every version is searched, not only the one under review: screen 8d hands back what was sent
+     * before, and a file listed there that answers 404 would make the history a decoration. A
+     * carried-over file is a row of its own on each version anyway, so the id names one version's
+     * list and never widens what a validator may read.
      */
     #[Route(path: '/applications/{id}/documents/{attachmentId}', name: 'app_training_application_file', requirements: ['id' => '\d+', 'attachmentId' => '\d+'], methods: ['GET'])]
     public function attachment(TrainingApplication $application, int $attachmentId): Response
@@ -105,9 +110,11 @@ class TrainingApplicationReviewController extends AbstractController
         $viewer = $this->getUser();
         $this->denyUnlessValidator($application, $viewer);
 
-        foreach ($application->getCurrentVersion()?->getAttachments() ?? [] as $attachment) {
-            if ($attachment->getId() === $attachmentId) {
-                return $this->redirect($this->fileUploadService->downloadUrl($attachment->getStorageKey(), $attachment->getName()));
+        foreach ($application->getVersions() as $version) {
+            foreach ($version->getAttachments() as $attachment) {
+                if ($attachment->getId() === $attachmentId) {
+                    return $this->redirect($this->fileUploadService->downloadUrl($attachment->getStorageKey(), $attachment->getName()));
+                }
             }
         }
 

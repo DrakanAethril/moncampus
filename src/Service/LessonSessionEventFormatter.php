@@ -6,7 +6,11 @@ namespace App\Service;
 
 use App\Entity\LessonSession;
 use App\Entity\Option;
+use App\Enum\Feature;
+use App\Security\FeatureAccess;
+use App\Security\Voter\LessonLogVoter;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 
 /**
  * Maps a LessonSession to the FullCalendar event JSON shape, shared between the editable
@@ -24,6 +28,8 @@ class LessonSessionEventFormatter
     public function __construct(
         private readonly UrlGeneratorInterface $urlGenerator,
         private readonly NameColorGenerator $colorGenerator,
+        private readonly FeatureAccess $featureAccess,
+        private readonly AuthorizationCheckerInterface $authorization,
     ) {
     }
 
@@ -63,17 +69,13 @@ class LessonSessionEventFormatter
                 // App\Controller\TeacherTimetableController's cross-Program personal feed.
                 'program' => $session->getProgram()->getDisplayShortName(),
                 'topic' => $session->getTopic()?->getName(),
-                // Always included, even on the editable (staff) feed - unused there today (the
-                // whole event already links to the edit-session-details form via 'url' below), but
-                // harmless, and keeps this method the single source of truth for the route instead
-                // of duplicating app_program_timetable_session_log generation elsewhere. Consumed
-                // by the read-only feed's eventClick handler (assets/controllers/lesson_timetable_controller.js)
-                // for the cahier de texte entry point, since visibility to view/edit it is
-                // decided per-session by LessonLogVoter, not by editable/read-only feed mode.
-                'logUrl' => $this->urlGenerator->generate('app_program_timetable_session_log', [
-                    'id' => $session->getProgram()->getId(),
-                    'sessionId' => $session->getId(),
-                ]),
+                // The cahier de texte entry point, consumed by the read-only feed's eventClick
+                // handler (assets/controllers/lesson_timetable_controller.js). Keeping the route
+                // generated here rather than in the calendar makes this method the single source
+                // of truth for it - which is also why the *right* to follow it is answered here:
+                // see logUrl() below. Null means "this séance is not clickable", and the calendar
+                // then offers no click at all.
+                'logUrl' => $this->logUrl($session),
             ],
         ];
 
@@ -85,6 +87,34 @@ class LessonSessionEventFormatter
         }
 
         return $event;
+    }
+
+    /**
+     * The cahier de texte of this séance, **or null when the viewer could not open it**.
+     *
+     * A calendar that offers a click the destination refuses is worse than one that offers none:
+     * for a student whose `lesson_log` is off - which is the delivered default, the whole Pedagogy
+     * family being unlit - every séance of an otherwise perfectly readable emploi du temps answered
+     * a 404. So the two conditions of the destination are asked here, in the same order it asks
+     * them: App\EventSubscriber\FeatureAccessSubscriber's feature gate, then LessonLogVoter::VIEW.
+     *
+     * The voter is asked per session rather than per program because that is the question it
+     * answers; it costs nothing, both feeds having already loaded their Programs.
+     */
+    private function logUrl(LessonSession $session): ?string
+    {
+        if (!$this->featureAccess->isEnabled(Feature::LessonLog)) {
+            return null;
+        }
+
+        if (!$this->authorization->isGranted(LessonLogVoter::VIEW, $session)) {
+            return null;
+        }
+
+        return $this->urlGenerator->generate('app_program_timetable_session_log', [
+            'id' => $session->getProgram()->getId(),
+            'sessionId' => $session->getId(),
+        ]);
     }
 
     private function optionsLabel(LessonSession $session): ?string

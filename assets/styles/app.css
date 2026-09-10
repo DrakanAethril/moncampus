@@ -1139,6 +1139,10 @@ h1, h2, h3, h4,
 .cm-calendar .fc-col-header-cell-cushion,
 .cm-calendar .fc-timegrid-slot-label-cushion { color: var(--cm-muted); font: 600 13px var(--cm-font-ui); }
 .cm-calendar .fc-event { border-radius: 6px; border-left: 3px solid; padding: 3px 6px; font: 400 11.5px var(--cm-font-ui); }
+/* Set by lesson_timetable_controller.js on the read-only calendars, and only on a session whose
+   cahier de texte the viewer may actually open: FullCalendar's own pointer rule keys off an href,
+   which those events do not carry. A session with nothing behind it stays an arrow. */
+.cm-calendar .fc-event.cm-calendar__event--clickable { cursor: pointer; }
 .cm-calendar .fc-toolbar-title { font: 600 19px var(--cm-font-title); color: var(--cm-ink); }
 
 /* Clickable timetable legend swatches (program/_timetable_legend.html.twig,
@@ -4816,6 +4820,34 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
   border: 1px solid #e0b25f; background: #fffdf6; color: #8a6a1f; border-radius: 8px;
   padding: 10px 13px; margin-bottom: 12px; font-size: 12.5px; line-height: 1.55;
 }
+
+/* -- Screen 8d: what was sent before ----------------------------------------
+   A card of its own under the version being judged, one folded row per earlier send. Folded,
+   because the version under review is the one above it: an expanded history would push the mail a
+   validator has to read off the screen on the second resend. */
+.cm-training-history { margin-top: 16px; }
+.cm-training-history__version { border-bottom: 1px solid var(--cm-border-faint); padding: 10px 0; }
+.cm-training-history__version:last-of-type { border-bottom: 0; padding-bottom: 0; }
+.cm-training-history__version:first-of-type { padding-top: 0; }
+.cm-training-history__summary {
+  display: flex; align-items: center; gap: 10px; cursor: pointer; list-style: none;
+  font: 600 12.5px var(--cm-font-ui); color: var(--cm-ink);
+}
+.cm-training-history__summary::-webkit-details-marker { display: none; }
+/* The triangle is drawn here rather than left to the browser: Safari's own marker sits on the
+   baseline of a flex row and pushes the badge down by a pixel. */
+.cm-training-history__summary::before {
+  content: '▸'; color: var(--cm-faint); font-size: 11px; transition: transform .15s ease;
+}
+.cm-training-history__version[open] .cm-training-history__summary::before { transform: rotate(90deg); }
+.cm-training-history__date { color: var(--cm-faint); font-weight: 400; font-size: 11.5px; }
+.cm-training-history__field { margin-top: 12px; padding-left: 21px; }
+.cm-training-history__label {
+  display: block; font: 700 10.5px var(--cm-font-ui); letter-spacing: .5px; text-transform: uppercase;
+  color: var(--cm-faint); margin-bottom: 4px;
+}
+.cm-training-history__value { font-size: 12.5px; color: var(--cm-text); line-height: 1.6; }
+.cm-training-history__field .cm-sheet__mail-body { margin-top: 0; }
 
 /* The review panel is narrow: its footer stacks instead of squeezing the button to three lines. */
 .cm-sheet__side .cm-compose__footer { flex-direction: column; align-items: stretch; gap: 10px; }
