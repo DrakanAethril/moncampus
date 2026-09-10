@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\Program;
-use App\Entity\User;
 
 /**
  * Renders templates/program/exports/signature_sheets.html.twig and converts it to PDF via Gotenberg
@@ -17,13 +16,14 @@ use App\Entity\User;
  * per day - per option, when the formation has any - the day's créneaux as columns, one row per
  * student to sign in. The sheets are built by App\Controller\ProgramExportsController and handed
  * over untouched, so the preview and the file can never disagree about who is on them: the exporter
- * decides nothing but how they land on a page.
+ * decides nothing but how they land on a page - not even how a student is named, App\Service\
+ * ClassRoster having spelled the rows before they got here.
  *
  * Landscape, unlike its two portrait neighbours: this sheet is a grid whose width grows with the
  * day, and a name plus half a dozen créneaux does not fit across an A4 standing up.
  *
  * @phpstan-type SignatureSheetSession array{startHour: string, endHour: string, title: string, teacherName: string}
- * @phpstan-type SignatureSheet array{optionLabel: string|null, day: string, sessions: list<SignatureSheetSession>, students: list<User>}
+ * @phpstan-type SignatureSheet array{optionLabel: string|null, day: string, sessions: list<SignatureSheetSession>, studentNames: list<string>}
  */
 class SignatureSheetExporter
 {

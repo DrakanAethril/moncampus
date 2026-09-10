@@ -97,9 +97,9 @@
                 </tr>
             </thead>
             <tbody>
-                {% for student in sheet.students %}
+                {% for name in sheet.studentNames %}
                     <tr>
-                        <td class="col-name">{{ student.displayName ?? student.username }}</td>
+                        <td class="col-name">{{ name }}</td>
                         {% for session in sheet.sessions %}
                             <td></td>
                         {% endfor %}

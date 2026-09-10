@@ -14,6 +14,7 @@ use App\Repository\LessonSessionRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\ProgramStudentModalityRepository;
 use App\Repository\ProgramStudentOptionRepository;
+use App\Service\ClassRoster;
 use App\Service\FormValue;
 use App\Service\GotenbergUnavailableException;
 use App\Service\QueryValue;
@@ -44,7 +45,7 @@ class ProgramExportsController extends AbstractController
 
     #[Route(path: '/programs/{id}/exports', name: 'app_program_exports')]
     #[Route(path: '/programs/{id}/exports/signature', name: 'app_program_exports_signature')]
-    public function signature(int $id, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, ProgramStudentOptionRepository $studentOptionRepository, ProgramStudentModalityRepository $studentModalityRepository): Response
+    public function signature(int $id, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, ProgramStudentOptionRepository $studentOptionRepository, ProgramStudentModalityRepository $studentModalityRepository, ClassRoster $roster): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $form = $this->createForm(ExportDateRangeType::class, null, ['with_alternance_only' => true]);
@@ -53,7 +54,7 @@ class ProgramExportsController extends AbstractController
         $sheets = [];
         if ($form->isSubmitted() && $form->isValid()) {
             $sessions = $lessonSessionRepository->findForProgramBetween($program, $form->get('startDay')->getData(), $form->get('endDay')->getData());
-            $sheets = $this->buildSignatureSheets($program, $sessions, $studentOptionRepository, $studentModalityRepository, FormValue::bool($form, 'alternanceOnly'));
+            $sheets = $this->buildSignatureSheets($program, $sessions, $studentOptionRepository, $studentModalityRepository, $roster, FormValue::bool($form, 'alternanceOnly'));
         }
 
         return $this->render('program/exports.html.twig', [
@@ -74,7 +75,7 @@ class ProgramExportsController extends AbstractController
      * whole request is its query string.
      */
     #[Route(path: '/programs/{id}/exports/signature.pdf', name: 'app_program_exports_signature_pdf', methods: ['GET'])]
-    public function signaturePdf(int $id, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, ProgramStudentOptionRepository $studentOptionRepository, ProgramStudentModalityRepository $studentModalityRepository, SignatureSheetExporter $exporter, SluggerInterface $slugger, TranslatorInterface $translator): Response
+    public function signaturePdf(int $id, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, ProgramStudentOptionRepository $studentOptionRepository, ProgramStudentModalityRepository $studentModalityRepository, ClassRoster $roster, SignatureSheetExporter $exporter, SluggerInterface $slugger, TranslatorInterface $translator): Response
     {
         $program = $this->findOrNotFound($id, $repository);
 
@@ -86,7 +87,7 @@ class ProgramExportsController extends AbstractController
         $sheets = [];
         if ($form->isSubmitted() && $form->isValid()) {
             $sessions = $lessonSessionRepository->findForProgramBetween($program, $form->get('startDay')->getData(), $form->get('endDay')->getData());
-            $sheets = $this->buildSignatureSheets($program, $sessions, $studentOptionRepository, $studentModalityRepository, FormValue::bool($form, 'alternanceOnly'));
+            $sheets = $this->buildSignatureSheets($program, $sessions, $studentOptionRepository, $studentModalityRepository, $roster, FormValue::bool($form, 'alternanceOnly'));
         }
 
         // A file with no page in it is worse than a refusal that says so: the screen keeps its form
@@ -201,7 +202,7 @@ class ProgramExportsController extends AbstractController
      *
      * @return list<SignatureSheet>
      */
-    private function buildSignatureSheets(Program $program, array $sessions, ProgramStudentOptionRepository $studentOptionRepository, ProgramStudentModalityRepository $studentModalityRepository, bool $alternanceOnly): array
+    private function buildSignatureSheets(Program $program, array $sessions, ProgramStudentOptionRepository $studentOptionRepository, ProgramStudentModalityRepository $studentModalityRepository, ClassRoster $roster, bool $alternanceOnly): array
     {
         $formatSession = static fn (LessonSession $session): array => [
             'startHour' => $session->getStartHour()->format('H:i'),
@@ -214,9 +215,13 @@ class ProgramExportsController extends AbstractController
         // program's alternance modality (Modality::$isAlternance) belong on them, never the
         // initial-training students sitting in the very same sessions. The tab's own checkbox is
         // what widens that to the whole class, for the formations that sign everybody.
-        $students = $alternanceOnly
+        // Ordered here rather than per sheet: App\Service\ClassRoster is the one rule for how a
+        // class is listed, so the surname decides the order and « AUBERT Zoé » is the spelling this
+        // signed document is signed under - the same as the class lists' own émargement sheet. The
+        // per-option lists below inherit that order by being filled from this one.
+        $students = $roster->ordered($alternanceOnly
             ? $this->alternanceStudents($program, $studentModalityRepository)
-            : array_values($program->getStudents()->toArray());
+            : array_values($program->getStudents()->toArray()));
 
         // A sheet nobody has to sign is a blank page, so a program running no alternance at all
         // exports nothing rather than one empty sheet per day.
@@ -232,7 +237,7 @@ class ProgramExportsController extends AbstractController
 
             $sheets = [];
             foreach ($sessionsByDay as $day => $daySessions) {
-                $sheets[] = ['optionLabel' => null, 'day' => $day, 'sessions' => $daySessions, 'students' => $students];
+                $sheets[] = ['optionLabel' => null, 'day' => $day, 'sessions' => $daySessions, 'studentNames' => array_map($roster->documentName(...), $students)];
             }
 
             return $sheets;
@@ -269,6 +274,10 @@ class ProgramExportsController extends AbstractController
                 continue;
             }
 
+            // Spelled once per option rather than once per day: every sheet of an option carries
+            // the same names.
+            $optionStudentNames = array_map($roster->documentName(...), $optionStudents);
+
             foreach ($daysForOption as $day) {
                 $daySessions = array_merge($commonSessionsByDay[$day] ?? [], $sessionsByOptionAndDay[$option->getId()][$day] ?? []);
 
@@ -276,7 +285,7 @@ class ProgramExportsController extends AbstractController
                     'optionLabel' => $option->getShortName(),
                     'day' => $day,
                     'sessions' => $daySessions,
-                    'students' => $optionStudents,
+                    'studentNames' => $optionStudentNames,
                 ];
             }
         }
