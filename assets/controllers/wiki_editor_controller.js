@@ -186,6 +186,7 @@ export default class extends Controller {
                     setupEditor.save();
                     this.renderKatexIntoField();
                 });
+                this.registerTabIndent(setupEditor);
                 this.registerCallouts(setupEditor);
                 this.registerWikiLink(setupEditor);
                 this.registerKatex(setupEditor);
@@ -265,6 +266,59 @@ export default class extends Controller {
 
     label(key, fallback) {
         return this.labelsValue[key] ?? fallback;
+    }
+
+    // --- Tabulation ----------------------------------------------------------------------
+
+    /**
+     * Tab types an indent inside the content area instead of leaving it.
+     *
+     * A wiki page is written, not filled in: the body is the last field of the form, and a Tab that
+     * moves the focus out of it in the middle of a paragraph costs more than the tab stop it saves.
+     * Two places keep Tab's own meaning and are left alone, because there it already indents
+     * something: inside a list item (one level deeper) and inside a table cell (the next cell).
+     *
+     * What gets inserted depends on where: real spaces inside a <pre>, which is a whitespace element
+     * for both HugeRTE's serializer and the browser, so four of them survive the save and copy out
+     * of a code block as four spaces; non-breaking ones elsewhere, since ordinary spaces in prose
+     * would collapse into a single one the moment the page is displayed.
+     *
+     * The text node is inserted through the range rather than through insertContent(): the latter
+     * parses an HTML fragment, and the whitespace to preserve is precisely what parsing normalises.
+     * The transact() wrapper is what makes the indent a single Ctrl+Z, and what fires the `change`
+     * the editor's own listener needs to write the field back.
+     *
+     * Focus can still leave the editor with Shift+Tab, which is deliberately not intercepted.
+     */
+    registerTabIndent(editor) {
+        editor.on('keydown', (event) => {
+            if ('Tab' !== event.key || event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) {
+                return;
+            }
+
+            const node = editor.selection.getNode();
+
+            if (editor.dom.getParent(node, 'li,td,th')) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const spaces = editor.dom.getParent(node, 'pre,code') ? '    ' : '\u00a0\u00a0\u00a0\u00a0';
+
+            editor.undoManager.transact(() => {
+                const range = editor.selection.getRng();
+                const text = editor.getDoc().createTextNode(spaces);
+
+                range.deleteContents();
+                range.insertNode(text);
+                range.setStartAfter(text);
+                range.setEndAfter(text);
+                editor.selection.setRng(range);
+            });
+
+            editor.nodeChanged();
+        });
     }
 
     // --- Callouts ------------------------------------------------------------------------
