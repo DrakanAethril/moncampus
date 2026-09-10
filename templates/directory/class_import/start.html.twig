@@ -41,8 +41,8 @@
                     {# Optional: left blank, every created account gets the random password the
                        directory script invents, exactly as before this field existed. #}
                     <div class="row g-2">
-                        <div class="col-12 col-xl-6">{{ form_row(form.initialPassword.first) }}</div>
-                        <div class="col-12 col-xl-6">{{ form_row(form.initialPassword.second) }}</div>
+                        <div class="col-12 col-xl-6">{{ include('partials/_password_field.html.twig', {field: form.initialPassword.first}) }}</div>
+                        <div class="col-12 col-xl-6">{{ include('partials/_password_field.html.twig', {field: form.initialPassword.second}) }}</div>
                     </div>
 
                     <div class="cm-note">
