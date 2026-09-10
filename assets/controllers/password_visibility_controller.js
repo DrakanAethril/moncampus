@@ -7,10 +7,14 @@ export default class extends Controller {
     toggle(event) {
         event.preventDefault();
 
-        const isHidden = this.inputTarget.type === 'password';
-        this.inputTarget.type = isHidden ? 'text' : 'password';
-        this.shownIconTarget.classList.toggle('d-none', !isHidden);
-        this.hiddenIconTarget.classList.toggle('d-none', isHidden);
-        event.currentTarget.setAttribute('aria-pressed', isHidden ? 'true' : 'false');
+        // The button always shows the gesture it offers, never the state it is in: a masked
+        // password carries the open eye ("show it"), a revealed one the struck-through eye
+        // ("hide it again"). Both classList calls take the same flag, since the icon that
+        // disappears is exactly the one the other replaces.
+        const willReveal = 'password' === this.inputTarget.type;
+        this.inputTarget.type = willReveal ? 'text' : 'password';
+        this.shownIconTarget.classList.toggle('d-none', willReveal);
+        this.hiddenIconTarget.classList.toggle('d-none', !willReveal);
+        event.currentTarget.setAttribute('aria-pressed', willReveal ? 'true' : 'false');
     }
 }

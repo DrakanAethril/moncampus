@@ -399,6 +399,28 @@ h1, h2, h3, h4,
    plus the legend's. Wrap the choices in .cm-choice-group to keep only the legend's. */
 .cm-choice-group .form-check-label.required::after { content: none; }
 
+/* Every field where somebody types their own password carries a reveal control, so a typed
+   password can always be read back before it is submitted (login, forced renewal, profile).
+   The auth card has its own token-scoped markup for it (.cm-authcard__eye); this is the same
+   gesture for the Tabler-shaped forms of the authenticated shell, driven by the same
+   password_visibility_controller.js. */
+.cm-password-field { position: relative; }
+/* The eye sits inside the field, so the text must stop before it. */
+.cm-password-field .form-control { padding-right: 40px; }
+.cm-password-field__eye {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    background: none; border: 0; padding: 0; cursor: pointer; color: var(--cm-muted); line-height: 0;
+}
+/* The vendored Tabler sprite carries no fill/stroke of its own, so a symbol used outside the
+   auth card (which sets them for its own icons) would paint as a solid black blob. */
+.cm-password-field__eye .icon {
+    width: 18px; height: 18px;
+    fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
+.cm-password-field__eye:focus-visible {
+    outline: 0; border-radius: 4px; box-shadow: 0 0 0 3px rgba(27, 107, 168, .25);
+}
+
 .form-control, .form-select { font-size: 13.5px; }
 .form-control { padding: 9px 12px; }
 /* The select arrow is painted as a background image on the right: its room must stay. */
@@ -1008,6 +1030,10 @@ h1, h2, h3, h4,
 .cm-authcard__strength-label { font: 600 11.5px var(--cm-font-ui); color: var(--cm-auth-footer-tx); white-space: nowrap; }
 
 /* ---------- Confirmation field match indicator (17) ---------- */
+/* The confirmation field carries both the reveal control and this indicator, so the indicator is
+   pulled inside the field, immediately left of the eye, rather than pushed beside it. */
+.cm-authcard__input--confirm { padding-right: 62px; }
+.cm-authcard__input-wrap .cm-authcard__match-icon { position: absolute; right: 42px; margin-left: 0; }
 .cm-authcard__match-icon { margin-left: auto; font-size: 14px; line-height: 1; }
 .cm-authcard__match-icon--ok { color: var(--cm-positive-tx); }
 .cm-authcard__match-icon--bad { color: var(--cm-red-tx); }
