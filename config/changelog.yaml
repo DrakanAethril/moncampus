@@ -26,6 +26,34 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.10'
+      date: '2026-09-10'
+      summary: "Un travail à quiz se convertit désormais en note du carnet, en reprenant ce que le quiz a compté pour chaque étudiant. Les feuilles d'émargement s'exportent en PDF, chaque champ de mot de passe gagne un œil d'affichage, et quatre corrections rendent leur place à la consigne d'un travail, au wiki, au support et à l'emploi du temps."
+      entries:
+          - type: nouveaute
+            title: "Convertir un travail à quiz en note du carnet"
+            detail: "Le travail affiche la note telle que le quiz l'a comptée et la même ramenée sur 20 ; la conversion demande une note pour chaque étudiant qui n'en a pas, et peut être relancée pour rattraper un retardataire."
+          - type: nouveaute
+            title: "Les feuilles d'émargement s'exportent en PDF"
+            detail: "Un bouton « Export PDF » à côté de « Générer » produit le document tel qu'il est affiché, une feuille par page."
+          - type: modification
+            title: "Un œil d'affichage sur chaque champ de mot de passe"
+            detail: "Le champ de confirmation en avait besoin autant que l'autre : il existe pour attraper une faute de frappe qu'on ne peut pas relire. Le pictogramme change enfin d'état quand on l'actionne."
+          - type: modification
+            title: "La catégorie et le lieu d'un ticket sont modifiables"
+          - type: modification
+            title: "La tabulation indente dans l'éditeur du wiki"
+            detail: "Elle ne fait plus sortir du champ en cours de saisie."
+          - type: fix
+            title: "La consigne et les pièces jointes d'un travail s'affichent correctement"
+            detail: "La consigne était rendue sans sa mise en forme, et les documents joints n'apparaissaient pas sur le détail."
+          - type: fix
+            title: "Les noms des feuilles d'émargement suivent la liste de classe"
+            detail: "Même orthographe et même ordre que la liste de classe, l'aperçu et le document ne pouvant plus diverger."
+          - type: fix
+            title: "Retirer une séance ramène sur sa semaine"
+            detail: "Le retour se faisait sur la semaine courante plutôt que sur celle de la séance."
+
     - version: '2026.09.09'
       date: '2026-09-09'
       summary: "Une feuille d'émargement peut désormais couvrir toute la classe et plus seulement ses alternants. La bibliothèque de fichiers accepte les profils de connexion sécurisée, et un document choisi depuis la bibliothèque ne fait plus échouer l'envoi du formulaire."
