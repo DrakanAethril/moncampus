@@ -27,9 +27,10 @@
                         - {% for option in assignment.options %}<span class="badge bg-blue-lt me-1">{{ option.shortName }}</span>{% endfor %}
                     {% endif %}
                 </dd>
-                {% if assignment.description %}
+                {# HugeRTE-authored HTML, printed as such rather than shown as markup. #}
+                {% if assignment.description|trim is not empty %}
                     <dt class="col-3">{{ 'assignmentDescriptionFieldLabel'|trans }}</dt>
-                    <dd class="col-9" style="white-space: pre-wrap;">{{ assignment.description }}</dd>
+                    <dd class="col-9">{{ assignment.description|raw }}</dd>
                 {% endif %}
             </dl>
         </div>
