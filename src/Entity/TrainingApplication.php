@@ -153,6 +153,32 @@ class TrainingApplication
         return $this->getCurrentVersion()?->getNumber() ?? 1;
     }
 
+    /**
+     * Everything the student sent before the version under review, most recent first.
+     *
+     * A validator reading a resend needs the version they commented on, not only the remark they
+     * left on it: "raccourcissez le second paragraphe" only means something next to the paragraph
+     * it was written about. The list is built here rather than sorted in the template, because the
+     * association carries no ORM order and the numbers are what say which came first.
+     *
+     * @return list<TrainingApplicationVersion>
+     */
+    public function previousVersions(): array
+    {
+        $current = $this->getCurrentVersion();
+        $previous = [];
+
+        foreach ($this->versions as $version) {
+            if ($version !== $current) {
+                $previous[] = $version;
+            }
+        }
+
+        usort($previous, static fn (TrainingApplicationVersion $a, TrainingApplicationVersion $b): int => $b->getNumber() <=> $a->getNumber());
+
+        return $previous;
+    }
+
     /** @return Collection<int, TrainingApplicationReview> */
     public function getReviews(): Collection
     {
