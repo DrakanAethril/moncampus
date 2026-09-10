@@ -46,6 +46,17 @@ final class PostValue
         return is_numeric($value) ? (int) $value : null;
     }
 
+    /**
+     * A decimal field - a barème, a coefficient. Read through is_numeric like its int twin, so the
+     * empty select and the junk value both fall back rather than answering 0.
+     */
+    public static function float(Request $request, string $key, float $default = 0.0): float
+    {
+        $value = self::raw($request, $key);
+
+        return is_numeric($value) ? (float) $value : $default;
+    }
+
     public static function string(Request $request, string $key, string $default = ''): string
     {
         $value = self::raw($request, $key);

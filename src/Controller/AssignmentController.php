@@ -8,15 +8,22 @@ use App\Attribute\RequiresFeature;
 use App\Entity\Assignment;
 use App\Entity\AssignmentAttachment;
 use App\Entity\AudioRecording;
+use App\Entity\Evaluation;
 use App\Entity\FileLibraryNode;
 use App\Entity\LessonSession;
 use App\Entity\Option;
 use App\Entity\Program;
+use App\Entity\Topic;
 use App\Entity\User;
 use App\Entity\VideoResource;
 use App\Enum\AssignmentAttachmentSourceType;
 use App\Enum\AssignmentAudienceType;
+use App\Enum\AssignmentMissingGradeChoice;
 use App\Enum\AssignmentNature;
+use App\Enum\EvaluationModality;
+use App\Enum\EvaluationNature;
+use App\Enum\EvaluationStatus;
+use App\Enum\EvaluationType;
 use App\Enum\Feature;
 use App\Enum\LessonLogSection;
 use App\Form\AssignmentWizardType;
@@ -30,12 +37,16 @@ use App\Repository\TopicRepository;
 use App\Repository\UserRepository;
 use App\Repository\VideoResourceRepository;
 use App\Security\StructureAccessChecker;
+use App\Security\Voter\EvaluationVoter;
 use App\Security\Voter\FileLibraryVoter;
 use App\Service\AssignmentAudienceResolver;
 use App\Service\AssignmentFollowUpBoard;
+use App\Service\AssignmentFollowUpRow;
+use App\Service\AssignmentGradeConversionSettings;
 use App\Service\AssignmentNatureFields;
 use App\Service\AssignmentNatureRequirements;
 use App\Service\AssignmentProgressSummarizer;
+use App\Service\AssignmentQuizGradeConverter;
 use App\Service\AssignmentWizardContext;
 use App\Service\FileLibraryWorkFactory;
 use App\Service\FileUploadService;
@@ -348,22 +359,288 @@ class AssignmentController extends AbstractController
      * the state of the submissions, student by student.
      */
     #[Route(path: '/assignments/{id}', name: 'app_assignment_show', methods: ['GET'], requirements: ['id' => '\d+'])]
-    public function show(int $id, AssignmentRepository $assignmentRepository, ProgramRepository $programRepository, AssignmentAudienceResolver $audienceResolver, AssignmentProgressSummarizer $summarizer, AssignmentFollowUpBoard $followUpBoard): Response
+    public function show(int $id, AssignmentRepository $assignmentRepository, ProgramRepository $programRepository, TopicRepository $topicRepository, AssignmentAudienceResolver $audienceResolver, AssignmentProgressSummarizer $summarizer, AssignmentFollowUpBoard $followUpBoard): Response
     {
         $assignment = $this->findOrNotFound($id, $assignmentRepository, $programRepository);
 
         $audience = $audienceResolver->resolveAudience($assignment);
         usort($audience, static fn (User $a, User $b): int => ($a->getDisplayName() ?? $a->getUsername()) <=> ($b->getDisplayName() ?? $b->getUsername()));
 
+        $rows = $followUpBoard->rows($assignment, $audience);
+        $conversionTopics = $this->conversionTopics($assignment, $topicRepository);
+        $conversionEvaluation = $this->activeGradebookEvaluation($assignment);
+
         // Not the deposits: whatever this nature accepts as proof. Six natures out of eleven never
         // produce a deposit, and reading only those is what made this table announce « Non rendu »
         // to a whole class under a progress line saying they had answered.
         return $this->render('assignment/show.html.twig', [
             'assignment' => $assignment,
-            'rows' => $followUpBoard->rows($assignment, $audience),
+            'rows' => $rows,
             'details' => $this->audienceDetails($assignment, $audienceResolver),
             'progress' => $summarizer->summarize([$assignment])[$assignment->getId()] ?? null,
+            // « Convertir en note »: offered only where there is both something to convert (a quiz,
+            // the one thing a travail carries that already holds a number) and a carnet to file it
+            // in - a matière whose titulaire is the reader, which is exactly what
+            // App\Security\Voter\EvaluationVoter::MANAGE asks and the reason staff never see the
+            // button.
+            'canConvertToGrade' => $assignment->feedsGradebookFromQuiz() && [] !== $conversionTopics,
+            'conversionTopics' => $conversionTopics,
+            'conversionEvaluation' => $conversionEvaluation,
+            'conversionDefaults' => [] === $conversionTopics
+                ? null
+                : $this->conversionDefaults($assignment, $rows, $conversionTopics[0], $conversionEvaluation),
         ]);
+    }
+
+    /**
+     * « Convertir en note »: the quiz's marks written into the carnet de notes, one evaluation for
+     * the whole travail.
+     *
+     * Everything the modal answers is read here and handed to App\Service\AssignmentQuizGradeConverter;
+     * which attempt makes the mark is not among them - the rows below are the follow-up board's own,
+     * so the carnet receives the very number the table above it prints.
+     */
+    #[Route(path: '/assignments/{id}/gradebook', name: 'app_assignment_gradebook_convert', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function convertToGrade(
+        int $id,
+        Request $request,
+        AssignmentRepository $assignmentRepository,
+        ProgramRepository $programRepository,
+        TopicRepository $topicRepository,
+        AssignmentAudienceResolver $audienceResolver,
+        AssignmentFollowUpBoard $followUpBoard,
+        AssignmentQuizGradeConverter $converter,
+    ): Response {
+        $assignment = $this->findOrNotFound($id, $assignmentRepository, $programRepository);
+        $this->assertConversionCsrf($request);
+
+        // A travail with nothing to convert has no such gesture at all - the button is absent, so
+        // the route answers as if it did not exist rather than explaining itself.
+        if (!$assignment->feedsGradebookFromQuiz()) {
+            throw $this->createNotFoundException();
+        }
+
+        $redirect = $this->redirectToRoute('app_assignment_show', ['id' => $assignment->getId()]);
+        $topics = $this->conversionTopics($assignment, $topicRepository);
+        $topicId = PostValue::int($request, 'topic');
+        $topic = null;
+
+        foreach ($topics as $candidate) {
+            if ($candidate->getId() === $topicId) {
+                $topic = $candidate;
+            }
+        }
+
+        // The matière carries the whole permission: EvaluationVoter::MANAGE opens to the Topic's own
+        // titulaire and to nobody else, staff included, so a matière absent from this list is a
+        // carnet this teacher does not hold.
+        if (null === $topic) {
+            $this->addFlash('error', 'assignmentGradeConversionTopicRequiredFlashMessage');
+
+            return $redirect;
+        }
+
+        // An evaluation already linked belongs to whoever holds its matière; a travail passed from
+        // hand to hand must never let a colleague rewrite it.
+        $existing = $this->activeGradebookEvaluation($assignment);
+        if (null !== $existing) {
+            $this->denyAccessUnlessGranted(EvaluationVoter::MANAGE, $existing);
+        }
+
+        $audience = $audienceResolver->resolveAudience($assignment);
+        usort($audience, static fn (User $a, User $b): int => ($a->getDisplayName() ?? $a->getUsername()) <=> ($b->getDisplayName() ?? $b->getUsername()));
+        $rows = $followUpBoard->rows($assignment, $audience);
+
+        $scale = PostValue::float($request, 'scale', 20.0);
+        $name = PostValue::trimmed($request, 'name');
+        $date = $this->conversionDate($request, 'date') ?? $assignment->getDueDate();
+
+        if ('' === $name || $scale < 1.0 || null === $date) {
+            $this->addFlash('error', 'assignmentGradeConversionInvalidFlashMessage');
+
+            return $redirect;
+        }
+
+        $missingChoices = $this->missingChoices($request);
+
+        // Nothing is written while a single student is unaccounted for: the modal asks about each of
+        // them by name precisely because none of the three answers is a sane default.
+        if (!$converter->plan($rows, $scale, $missingChoices)->isComplete()) {
+            $this->addFlash('error', 'assignmentGradeConversionMissingChoicesFlashMessage');
+
+            return $redirect;
+        }
+
+        $settings = new AssignmentGradeConversionSettings(
+            $topic,
+            $name,
+            $date,
+            EvaluationType::tryFrom(PostValue::string($request, 'type')) ?? EvaluationType::Written,
+            EvaluationNature::tryFrom(PostValue::string($request, 'nature')),
+            EvaluationModality::tryFrom(PostValue::string($request, 'modality')) ?? EvaluationModality::Individual,
+            EvaluationStatus::tryFrom(PostValue::string($request, 'status')) ?? EvaluationStatus::Planned,
+            $scale,
+            max(0.5, PostValue::float($request, 'coefficient', 1.0)),
+            PostValue::bool($request, 'countsOutOf20'),
+            PostValue::bool($request, 'hasScheduledVisibility') ? $this->conversionDate($request, 'visibleAt') : null,
+        );
+
+        $wasLinked = null !== $existing;
+        $evaluation = $converter->convert($assignment, $rows, $settings, $missingChoices, $this->currentUser());
+
+        $this->addFlash('success', $wasLinked ? 'assignmentGradeConversionUpdatedFlashMessage' : 'assignmentGradeConversionCreatedFlashMessage');
+
+        return $this->redirectToRoute('app_program_gradebook', ['id' => $assignment->getProgram()->getId(), 'topic' => $evaluation->getTopic()?->getId()]);
+    }
+
+    /**
+     * The values « Convertir en note » opens on - the same object the modal will send back.
+     *
+     * A travail already converted opens on its evaluation as it stands, so a second pass is a
+     * correction of what is there rather than a fresh guess; an unconverted one opens on what the
+     * travail itself knows: its title, its échéance, its matière, and the carnet's own D+1
+     * visibility convention - time enough to look the marks over before the class sees them.
+     *
+     * @param list<AssignmentFollowUpRow> $rows
+     */
+    private function conversionDefaults(Assignment $assignment, array $rows, Topic $topic, ?Evaluation $evaluation): AssignmentGradeConversionSettings
+    {
+        if (null !== $evaluation) {
+            return new AssignmentGradeConversionSettings(
+                $evaluation->getTopic() ?? $topic,
+                $evaluation->getName(),
+                $evaluation->getDate() ?? $assignment->getDueDate() ?? new \DateTimeImmutable(),
+                $evaluation->getType(),
+                $evaluation->getNature(),
+                $evaluation->getModality(),
+                $evaluation->getStatus(),
+                $evaluation->getScale(),
+                $evaluation->getCoefficient(),
+                $evaluation->countsOutOf20(),
+                $evaluation->getVisibleAt(),
+            );
+        }
+
+        return new AssignmentGradeConversionSettings(
+            $assignment->getTopic() ?? $topic,
+            (string) $assignment->getTitle(),
+            $assignment->getDueDate() ?? new \DateTimeImmutable(),
+            EvaluationType::Written,
+            null,
+            // A travail handed in by group is marked once for the whole group, which is exactly what
+            // EvaluationModality::Group means in the carnet - the same reading
+            // App\Service\AssignmentGradebookLinker makes for a dépôt.
+            AssignmentAudienceType::GroupBatch === $assignment->getAudienceType() ? EvaluationModality::Group : EvaluationModality::Individual,
+            EvaluationStatus::Planned,
+            $this->defaultConversionScale($assignment, $rows),
+            1.0,
+            true,
+            new \DateTimeImmutable('+24 hours'),
+        );
+    }
+
+    /**
+     * The matières this travail could be filed under, from the reader's own carnet.
+     *
+     * A travail already attached to a matière offers that one alone - and offers nothing at all when
+     * its titulaire is somebody else. A travail attached to none (Assignment::$topic is never asked
+     * for, only deduced from the séance it came from) offers every matière the reader holds in this
+     * class, which is what the modal asks about.
+     *
+     * @return list<Topic>
+     */
+    private function conversionTopics(Assignment $assignment, TopicRepository $topicRepository): array
+    {
+        $own = $topicRepository->findForTeacherInProgram($assignment->getProgram(), $this->currentUser());
+        $topic = $assignment->getTopic();
+
+        if (null === $topic) {
+            return $own;
+        }
+
+        return array_values(array_filter($own, static fn (Topic $candidate): bool => $candidate->getId() === $topic->getId()));
+    }
+
+    /**
+     * The barème the modal opens on: the quiz's own total when every retained attempt agrees on it.
+     *
+     * They only disagree where « mêmes questions pour tous » is open and a question was weighted -
+     * two draws then add up to different totals, and no single number is the quiz's. The instance's
+     * question count is used as the opening figure there, the field staying the teacher's to set:
+     * each mark is a rule of three against the attempt's own total, so any barème is honest.
+     *
+     * @param list<AssignmentFollowUpRow> $rows
+     */
+    private function defaultConversionScale(Assignment $assignment, array $rows): float
+    {
+        $totals = [];
+
+        foreach ($rows as $row) {
+            $total = $row->getPointsAvailable();
+            if (null !== $total && $total > 0) {
+                $totals[$total] = true;
+            }
+        }
+
+        if (1 === \count($totals)) {
+            return (float) array_key_first($totals);
+        }
+
+        return (float) ($assignment->getQuizInstance()?->getQuestionCount() ?? 20);
+    }
+
+    /** The linked evaluation, unless the teacher has since taken it out of the carnet. */
+    private function activeGradebookEvaluation(Assignment $assignment): ?Evaluation
+    {
+        $evaluation = $assignment->getGradebookEvaluation();
+
+        return null !== $evaluation && null === $evaluation->getInactiveDate() ? $evaluation : null;
+    }
+
+    /**
+     * What the teacher answered for each student who did not sit the quiz, read off `missing[<id>]`.
+     *
+     * Anything unreadable is dropped rather than defaulted: a student whose answer did not arrive
+     * must come back as unresolved, so the conversion refuses instead of inventing a zero for them.
+     *
+     * @return array<int, AssignmentMissingGradeChoice>
+     */
+    private function missingChoices(Request $request): array
+    {
+        $choices = [];
+
+        foreach (PostValue::all($request, 'missing') as $studentId => $raw) {
+            $choice = \is_scalar($raw) ? AssignmentMissingGradeChoice::tryFrom((string) $raw) : null;
+
+            if (is_numeric($studentId) && null !== $choice) {
+                $choices[(int) $studentId] = $choice;
+            }
+        }
+
+        return $choices;
+    }
+
+    /** A `datetime-local` / `date` field, absent or unparseable meaning « nothing given ». */
+    private function conversionDate(Request $request, string $key): ?\DateTimeImmutable
+    {
+        $raw = PostValue::trimmed($request, $key);
+
+        if ('' === $raw) {
+            return null;
+        }
+
+        try {
+            return new \DateTimeImmutable($raw);
+        } catch (\Exception) {
+            return null;
+        }
+    }
+
+    private function assertConversionCsrf(Request $request): void
+    {
+        if (!$this->isCsrfTokenValid('assignment_gradebook_convert', PostValue::string($request, '_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
     }
 
     /**

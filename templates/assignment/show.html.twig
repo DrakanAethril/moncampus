@@ -40,6 +40,16 @@
                 <span class="cm-worksummary__label">{{ 'assignmentProgressColumnLabel'|trans }}</span>
                 <span class="cm-worksummary__value">{{ progress ? progress.key|trans(progress.params) : '—' }}</span>
             </div>
+            {# « Convertir en note », pinned to the right of the banner. Present on a quiz alone: it
+               is the only thing a travail carries that already holds a number for every student, and
+               only for the titulaire of a matière, the carnet being that one teacher's. #}
+            {% if canConvertToGrade %}
+                <div class="cm-worksummary__action">
+                    <button type="button" class="cm-btn cm-btn--primary" data-bs-toggle="modal" data-bs-target="#assignment-grade-conversion-modal">
+                        {{ (conversionEvaluation ? 'assignmentGradeConversionUpdateAction' : 'assignmentGradeConversionAction')|trans }}
+                    </button>
+                </div>
+            {% endif %}
         </div>
     </div>
 
@@ -77,6 +87,12 @@
                         <th>{{ assignment.nature.followUpDateColumnLabelKey|trans }}</th>
                         {% if assignment.quizInstance %}
                             <th>{{ 'assignmentFollowUpScoreColumnLabel'|trans }}</th>
+                            {# The mark as the quiz counted it, then the same mark on 20. The
+                               denominator is the student's own draw and not a class-wide total:
+                               with « mêmes questions pour tous » open, two students are not
+                               marked out of the same number of points. #}
+                            <th>{{ 'assignmentFollowUpPointsColumnLabel'|trans }}</th>
+                            <th>{{ 'assignmentFollowUpScoreOn20ColumnLabel'|trans }}</th>
                             <th class="cm-actions"></th>
                         {% endif %}
                     </tr>
@@ -89,6 +105,8 @@
                             <td>{{ row.doneAt ? row.doneAt|date('d/m/Y H:i') : '—' }}</td>
                             {% if assignment.quizInstance %}
                                 <td>{{ row.scorePercent is not null ? row.scorePercent|round ~ ' %' : '—' }}</td>
+                                <td>{{ row.hasMark ? row.pointsEarnedLabel ~ ' / ' ~ row.pointsAvailable : '—' }}</td>
+                                <td>{{ row.scoreOn20 is not null ? row.scoreOn20|number_format(2, ',', ' ') ~ ' / 20' : '—' }}</td>
                                 <td class="cm-actions">
                                     {# The copy itself lives on the quiz's own follow-up, which is where
                                        every attempt of that student is listed - this is a door onto it,
@@ -101,11 +119,15 @@
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="{{ assignment.quizInstance ? 5 : 3 }}" class="text-secondary">{{ 'assignmentShowNoAudienceMessage'|trans }}</td>
+                            <td colspan="{{ assignment.quizInstance ? 7 : 3 }}" class="text-secondary">{{ 'assignmentShowNoAudienceMessage'|trans }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
+
+    {% if canConvertToGrade %}
+        {% include 'assignment/_grade_conversion_modal.html.twig' %}
+    {% endif %}
 {% endblock %}

@@ -364,6 +364,25 @@ class Assignment implements AccessConditionHost
         return $this;
     }
 
+    /**
+     * Whether this travail can be turned into a gradebook evaluation on its own - « Convertir en
+     * note » on the follow-up screen.
+     *
+     * The condition is the quiz, and not the nature: a quiz is the only thing a travail carries
+     * that already holds a number for every student. A lecture, a dépôt or a déclaration produce a
+     * date and nothing else, and an autoévaluation is the mirror gesture - the student estimating
+     * an evaluation that already exists. Asked of the quiz rather than of AssignmentNature::Quiz
+     * for the same reason App\Service\AssignmentFollowUpBoard does: the evidence is what the
+     * assignment carries, never what somebody typed on it.
+     *
+     * A travail marked « Non noté » is excluded: it was announced as carrying no mark, and the
+     * gradebook is not the place to go back on that.
+     */
+    public function feedsGradebookFromQuiz(): bool
+    {
+        return null !== $this->quizInstance && $this->graded;
+    }
+
     public function isGradingVisibleToStudents(): bool
     {
         return $this->gradingVisibleToStudents;
