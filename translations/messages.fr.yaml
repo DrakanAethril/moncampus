@@ -1021,6 +1021,9 @@ exportStartDayFieldLabel: 'Date de début'
 exportEndDayFieldLabel: 'Date de fin'
 exportGenerateAction: 'Générer'
 exportAlternanceOnlyFieldLabel: 'Inclure uniquement les alternants'
+exportsSignaturePdfButtonLabel: 'Export PDF'
+signatureSheetsPdfEmptyFlashMessage: "Aucune feuille d'émargement à exporter sur cette période."
+signatureSheetsPdfExportFailedFlashMessage: "Les feuilles d'émargement n'ont pas pu être générées. Réessayez dans quelques instants."
 signatureScheduleColumnLabel: 'Horaire'
 signatureTitleColumnLabel: 'Cours'
 signatureTeacherColumnLabel: 'Intervenant'
@@ -1930,6 +1933,32 @@ assignmentFollowUpDoneAtColumnLabel: 'Fait le'
 assignmentFollowUpBelowThresholdLabel: 'Répondu, sous le seuil'
 assignmentFollowUpScoreColumnLabel: 'Score'
 assignmentFollowUpViewCopyAction: 'Voir la copie'
+assignmentFollowUpPointsColumnLabel: 'Note'
+assignmentFollowUpScoreOn20ColumnLabel: 'Sur 20'
+assignmentGradeConversionAction: 'Convertir en note'
+assignmentGradeConversionCloseLabel: 'Fermer'
+assignmentGradeConversionUpdateAction: 'Mettre à jour les notes'
+assignmentGradeConversionModalTitle: "Créer l'évaluation dans le carnet de notes"
+assignmentGradeConversionUpdateModalTitle: "Mettre à jour l'évaluation du carnet de notes"
+assignmentGradeConversionModalIntro: "Les notes du quiz sont reportées dans le carnet de notes de la matière. Chaque note est ramenée au barème choisi ci-dessous."
+assignmentGradeConversionUpdateWarning: "Ce travail est déjà relié à une évaluation. La mise à jour recalcule toutes les notes depuis le quiz : une note retouchée à la main dans le carnet sera écrasée."
+assignmentGradeConversionTopicFieldLabel: 'Matière'
+assignmentGradeConversionTopicPlaceholder: 'Choisir une matière'
+assignmentGradeConversionTopicHelpText: "Le carnet de notes appartient à la matière : l'évaluation sera créée dans celui-ci."
+assignmentGradeConversionScaleHelpText: "Barème de l'évaluation. La note de chaque étudiant est ramenée à ce barème depuis le total de points de son propre tirage."
+assignmentGradeConversionMissingSectionTitle: "Étudiants n'ayant pas réalisé le travail"
+assignmentGradeConversionMissingSectionHint: "Chaque étudiant doit être renseigné : un zéro est une note, une absence est un fait, « non évalué » n'est ni l'un ni l'autre."
+assignmentGradeConversionMissingZeroLabel: 'Zéro'
+assignmentGradeConversionMissingAbsentLabel: 'Absent'
+assignmentGradeConversionMissingNotEvaluatedLabel: 'Non évalué'
+assignmentGradeConversionMissingNoneMessage: "Tous les étudiants ont une note : rien à décider ici."
+assignmentGradeConversionSubmitAction: "Créer l'évaluation"
+assignmentGradeConversionSubmitUpdateAction: 'Mettre à jour'
+assignmentGradeConversionCreatedFlashMessage: "L'évaluation a été créée dans le carnet de notes avec les notes du quiz."
+assignmentGradeConversionUpdatedFlashMessage: "Les notes de l'évaluation ont été mises à jour depuis le quiz."
+assignmentGradeConversionTopicRequiredFlashMessage: "Choisissez une matière dont vous tenez le carnet de notes."
+assignmentGradeConversionInvalidFlashMessage: "L'évaluation n'a pas pu être créée : vérifiez le nom, la date et le barème."
+assignmentGradeConversionMissingChoicesFlashMessage: "Rien n'a été écrit : certains étudiants sans note n'ont pas été renseignés."
 myAssignmentsPageHeading: 'Mes devoirs'
 myAssignmentsEmptyMessage: "Aucun devoir pour le moment."
 assignmentSubmitButtonLabel: 'Rendre'

@@ -8,15 +8,30 @@
             <div class="col-md-3">
                 {{ form_row(form.endDay) }}
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                 {# Aligned with the two date fields rather than under them: an empty label keeps the
                    box on the same baseline as the inputs it qualifies. #}
                 <div class="form-label">&nbsp;</div>
                 {{ form_row(form.alternanceOnly) }}
             </div>
-            <div class="col-md-2 mb-3">
+            {# The two gestures share one column and one form. « Export PDF » is a second submitter
+               rather than a form of its own: formaction points the very same query string (dates +
+               « alternants seulement ») at the PDF route, so the file can never be built from
+               parameters other than the ones on screen.
+
+               data-turbo="false" because what comes back is a file, not a page - Turbo would try to
+               render the PDF as a document and the download would never start. #}
+            <div class="col-md-3 mb-3">
                 <div class="form-label">&nbsp;</div>
-                {{ form_widget(form.submit, {attr: {class: 'form-control'}}) }}
+                <div class="d-flex gap-2">
+                    {{ form_widget(form.submit, {attr: {class: 'cm-btn cm-btn--primary flex-fill'}}) }}
+                    <button type="submit" class="cm-btn cm-btn--outline flex-fill"
+                            formaction="{{ path('app_program_exports_signature_pdf', {id: program.id}) }}"
+                            data-turbo="false">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /><path d="M12 17v-6" /><path d="M9.5 14.5l2.5 2.5l2.5 -2.5" /></svg>
+                        {{ 'exportsSignaturePdfButtonLabel'|trans }}
+                    </button>
+                </div>
             </div>
         </div>
         {{ form_rest(form) }}

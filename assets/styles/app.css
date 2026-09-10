@@ -399,6 +399,32 @@ h1, h2, h3, h4,
    plus the legend's. Wrap the choices in .cm-choice-group to keep only the legend's. */
 .cm-choice-group .form-check-label.required::after { content: none; }
 
+/* Every field where somebody types their own password carries a reveal control, so a typed
+   password can always be read back before it is submitted (login, forced renewal, profile).
+   The auth card has its own token-scoped markup for it (.cm-authcard__eye); this is the same
+   gesture for the Tabler-shaped forms of the authenticated shell, driven by the same
+   password_visibility_controller.js. */
+.cm-password-field { position: relative; }
+/* The eye sits inside the field, so the text must stop before it. Matched on the element rather
+   than on .form-control, since the wrapper also has to serve the fields this app styles itself
+   (.cm-vmcard__input on « Mes machines virtuelles »). */
+.cm-password-field > input { padding-right: 40px; }
+.cm-password-field__eye {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    background: none; border: 0; padding: 0; cursor: pointer; color: var(--cm-muted); line-height: 0;
+}
+/* The vendored Tabler sprite carries no fill/stroke of its own, so a symbol used outside the
+   auth card (which sets them for its own icons) would paint as a solid black blob. */
+.cm-password-field__eye .icon {
+    width: 18px; height: 18px;
+    fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
+.cm-password-field__eye:focus-visible {
+    outline: 0; border-radius: 4px; box-shadow: 0 0 0 3px rgba(27, 107, 168, .25);
+}
+/* A field nobody may type in has nothing to reveal either. */
+.cm-password-field__eye:disabled { opacity: .45; cursor: default; }
+
 .form-control, .form-select { font-size: 13.5px; }
 .form-control { padding: 9px 12px; }
 /* The select arrow is painted as a background image on the right: its room must stay. */
@@ -1008,6 +1034,10 @@ h1, h2, h3, h4,
 .cm-authcard__strength-label { font: 600 11.5px var(--cm-font-ui); color: var(--cm-auth-footer-tx); white-space: nowrap; }
 
 /* ---------- Confirmation field match indicator (17) ---------- */
+/* The confirmation field carries both the reveal control and this indicator, so the indicator is
+   pulled inside the field, immediately left of the eye, rather than pushed beside it. */
+.cm-authcard__input--confirm { padding-right: 62px; }
+.cm-authcard__input-wrap .cm-authcard__match-icon { position: absolute; right: 42px; margin-left: 0; }
 .cm-authcard__match-icon { margin-left: auto; font-size: 14px; line-height: 1; }
 .cm-authcard__match-icon--ok { color: var(--cm-positive-tx); }
 .cm-authcard__match-icon--bad { color: var(--cm-red-tx); }
@@ -5148,6 +5178,13 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-worksummary__label { display: block; font: 600 11px var(--cm-font-ui); color: var(--cm-faint); letter-spacing: .4px; text-transform: uppercase; }
 .cm-worksummary__value { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
 .cm-worksummary__own-due { color: #8a6a1f; font-weight: 600; }
+/* « Convertir en note » sits at the far right of the banner, whatever the number of facts to its left. */
+.cm-worksummary__action { margin-left: auto; align-self: center; }
+
+/* A modal whose body is a long form. Bootstrap's own `modal-dialog-scrollable` leaves the body at
+   its full content height here - the dialog is capped, the body is not, so the footer's buttons end
+   up below the fold with nothing to scroll. The cap is stated on the body itself instead. */
+.cm-modal--tall .modal-body { max-height: 60vh; overflow-y: auto; }
 
 @media (max-width: 992px) {
   .cm-wizard { grid-template-columns: 1fr; }
@@ -8928,6 +8965,9 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-vmcard__pw--off { opacity: .55; }
 .cm-vmcard__pwlabel { font: 600 12px var(--cm-font-ui); color: var(--cm-muted); }
 .cm-vmcard__pwrow { display: flex; gap: 9px; }
+/* The input no longer sits directly in the row - its reveal wrapper does, and inherits the slot. */
+.cm-vmcard__pwrow .cm-password-field { flex: 1; min-width: 0; }
+.cm-vmcard__pwrow .cm-vmcard__input { width: 100%; }
 .cm-vmcard__input {
     flex: 1; min-width: 0;
     border: 1px solid var(--cm-border); border-radius: 8px;

@@ -266,12 +266,20 @@ class ProgramTimetableSettingsController extends AbstractController
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
+        // Read before the removal: the session is gone by the time we build the redirect, and
+        // the agenda must reopen on the week the session was on so its disappearance is visible
+        // - see timetableTab()'s "focus" handling above.
+        $focus = $lessonSession->getDay()?->format('Y-m-d');
+
         $entityManager->remove($lessonSession);
         $entityManager->flush();
 
         $this->addFlash('success', 'lessonSessionRemovedFlashMessage');
 
-        return $this->redirectToRoute('app_program_timetable_settings', ['id' => $program->getId()]);
+        return $this->redirectToRoute('app_program_timetable_settings', [
+            'id' => $program->getId(),
+            'focus' => $focus,
+        ]);
     }
 
     // Builder page for the "semaine type" bulk-apply tool - a Monday-Saturday pattern of draft

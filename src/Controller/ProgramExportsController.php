@@ -14,9 +14,11 @@ use App\Repository\LessonSessionRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\ProgramStudentModalityRepository;
 use App\Repository\ProgramStudentOptionRepository;
+use App\Service\ClassRoster;
 use App\Service\FormValue;
 use App\Service\GotenbergUnavailableException;
 use App\Service\QueryValue;
+use App\Service\SignatureSheetExporter;
 use App\Service\TsfFicheExporter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -26,11 +28,15 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\String\Slugger\SluggerInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 // The per-program "Exports" page reached via the Section > Année scolaire > Classe nav menu -
 // staff/admin only, same reasoning as ProgramReportingController. Each tab is a one-off
 // generate-on-submit tool (not persisted, unlike the "Comptes rendus" settings tab): pick some
 // parameters, get a printable/reviewable result back on the same page.
+/**
+ * @phpstan-import-type SignatureSheet from SignatureSheetExporter
+ */
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 #[RequiresFeature(Feature::ProgramExports)]
 class ProgramExportsController extends AbstractController
@@ -39,7 +45,7 @@ class ProgramExportsController extends AbstractController
 
     #[Route(path: '/programs/{id}/exports', name: 'app_program_exports')]
     #[Route(path: '/programs/{id}/exports/signature', name: 'app_program_exports_signature')]
-    public function signature(int $id, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, ProgramStudentOptionRepository $studentOptionRepository, ProgramStudentModalityRepository $studentModalityRepository): Response
+    public function signature(int $id, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, ProgramStudentOptionRepository $studentOptionRepository, ProgramStudentModalityRepository $studentModalityRepository, ClassRoster $roster): Response
     {
         $program = $this->findOrNotFound($id, $repository);
         $form = $this->createForm(ExportDateRangeType::class, null, ['with_alternance_only' => true]);
@@ -48,7 +54,7 @@ class ProgramExportsController extends AbstractController
         $sheets = [];
         if ($form->isSubmitted() && $form->isValid()) {
             $sessions = $lessonSessionRepository->findForProgramBetween($program, $form->get('startDay')->getData(), $form->get('endDay')->getData());
-            $sheets = $this->buildSignatureSheets($program, $sessions, $studentOptionRepository, $studentModalityRepository, FormValue::bool($form, 'alternanceOnly'));
+            $sheets = $this->buildSignatureSheets($program, $sessions, $studentOptionRepository, $studentModalityRepository, $roster, FormValue::bool($form, 'alternanceOnly'));
         }
 
         return $this->render('program/exports.html.twig', [
@@ -56,6 +62,60 @@ class ProgramExportsController extends AbstractController
             'activeTab' => 'signature',
             'form' => $form,
             'sheets' => $sheets,
+        ]);
+    }
+
+    /**
+     * The same sheets, handed back as a PDF instead of drawn on the page - the tab's « Export PDF »
+     * button, which is a second submitter of the very form the « Générer » one submits, so the two
+     * read the same date range and the same « alternants seulement » box.
+     *
+     * A GET, like its TSF neighbour: this hands back a file rather than changing anything, and a
+     * POST handled by Turbo would have to redirect. Nothing is stored between two printings - the
+     * whole request is its query string.
+     */
+    #[Route(path: '/programs/{id}/exports/signature.pdf', name: 'app_program_exports_signature_pdf', methods: ['GET'])]
+    public function signaturePdf(int $id, Request $request, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, ProgramStudentOptionRepository $studentOptionRepository, ProgramStudentModalityRepository $studentModalityRepository, ClassRoster $roster, SignatureSheetExporter $exporter, SluggerInterface $slugger, TranslatorInterface $translator): Response
+    {
+        $program = $this->findOrNotFound($id, $repository);
+
+        $form = $this->createForm(ExportDateRangeType::class, null, ['with_alternance_only' => true]);
+        $form->handleRequest($request);
+
+        // Re-read through the form rather than off the query string: an « Export PDF » clicked on a
+        // half-filled range must be refused exactly where « Générer » would have refused it.
+        $sheets = [];
+        if ($form->isSubmitted() && $form->isValid()) {
+            $sessions = $lessonSessionRepository->findForProgramBetween($program, $form->get('startDay')->getData(), $form->get('endDay')->getData());
+            $sheets = $this->buildSignatureSheets($program, $sessions, $studentOptionRepository, $studentModalityRepository, $roster, FormValue::bool($form, 'alternanceOnly'));
+        }
+
+        // A file with no page in it is worse than a refusal that says so: the screen keeps its form
+        // and its message, rather than handing back an empty PDF.
+        if ([] === $sheets) {
+            $this->addFlash('danger', 'signatureSheetsPdfEmptyFlashMessage');
+
+            return $this->redirectToRoute('app_program_exports_signature', ['id' => $program->getId()]);
+        }
+
+        $title = sprintf('%s — %s', $translator->trans('attendanceSheetDocumentTitle'), $program->getDisplayShortName());
+
+        try {
+            $pdf = $exporter->export($program, $sheets, $title, $this->renderView(...), new \DateTimeImmutable('today'));
+        } catch (GotenbergUnavailableException) {
+            // Same handling as the other Gotenberg exports: the screen says so and stays where it
+            // was, rather than answering a 500 whose cause is a container being restarted.
+            $this->addFlash('danger', 'signatureSheetsPdfExportFailedFlashMessage');
+
+            return $this->redirectToRoute('app_program_exports_signature', ['id' => $program->getId()]);
+        }
+
+        return new Response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => HeaderUtils::makeDisposition(
+                HeaderUtils::DISPOSITION_ATTACHMENT,
+                sprintf('emargement-%s.pdf', (string) $slugger->slug($program->getDisplayShortName())->lower()),
+            ),
         ]);
     }
 
@@ -140,9 +200,9 @@ class ProgramExportsController extends AbstractController
     /**
      * @param list<LessonSession> $sessions
      *
-     * @return list<array{optionLabel: ?string, day: string, sessions: list<array>, students: list<User>}>
+     * @return list<SignatureSheet>
      */
-    private function buildSignatureSheets(Program $program, array $sessions, ProgramStudentOptionRepository $studentOptionRepository, ProgramStudentModalityRepository $studentModalityRepository, bool $alternanceOnly): array
+    private function buildSignatureSheets(Program $program, array $sessions, ProgramStudentOptionRepository $studentOptionRepository, ProgramStudentModalityRepository $studentModalityRepository, ClassRoster $roster, bool $alternanceOnly): array
     {
         $formatSession = static fn (LessonSession $session): array => [
             'startHour' => $session->getStartHour()->format('H:i'),
@@ -155,9 +215,13 @@ class ProgramExportsController extends AbstractController
         // program's alternance modality (Modality::$isAlternance) belong on them, never the
         // initial-training students sitting in the very same sessions. The tab's own checkbox is
         // what widens that to the whole class, for the formations that sign everybody.
-        $students = $alternanceOnly
+        // Ordered here rather than per sheet: App\Service\ClassRoster is the one rule for how a
+        // class is listed, so the surname decides the order and « AUBERT Zoé » is the spelling this
+        // signed document is signed under - the same as the class lists' own émargement sheet. The
+        // per-option lists below inherit that order by being filled from this one.
+        $students = $roster->ordered($alternanceOnly
             ? $this->alternanceStudents($program, $studentModalityRepository)
-            : array_values($program->getStudents()->toArray());
+            : array_values($program->getStudents()->toArray()));
 
         // A sheet nobody has to sign is a blank page, so a program running no alternance at all
         // exports nothing rather than one empty sheet per day.
@@ -173,7 +237,7 @@ class ProgramExportsController extends AbstractController
 
             $sheets = [];
             foreach ($sessionsByDay as $day => $daySessions) {
-                $sheets[] = ['optionLabel' => null, 'day' => $day, 'sessions' => $daySessions, 'students' => $students];
+                $sheets[] = ['optionLabel' => null, 'day' => $day, 'sessions' => $daySessions, 'studentNames' => array_map($roster->documentName(...), $students)];
             }
 
             return $sheets;
@@ -210,6 +274,10 @@ class ProgramExportsController extends AbstractController
                 continue;
             }
 
+            // Spelled once per option rather than once per day: every sheet of an option carries
+            // the same names.
+            $optionStudentNames = array_map($roster->documentName(...), $optionStudents);
+
             foreach ($daysForOption as $day) {
                 $daySessions = array_merge($commonSessionsByDay[$day] ?? [], $sessionsByOptionAndDay[$option->getId()][$day] ?? []);
 
@@ -217,7 +285,7 @@ class ProgramExportsController extends AbstractController
                     'optionLabel' => $option->getShortName(),
                     'day' => $day,
                     'sessions' => $daySessions,
-                    'students' => $optionStudents,
+                    'studentNames' => $optionStudentNames,
                 ];
             }
         }

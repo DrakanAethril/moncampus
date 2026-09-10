@@ -1,0 +1,213 @@
+{# « Convertir en note »: the quiz's marks carried into the carnet de notes as one evaluation.
+
+   The fields are the carnet's own creation form (App\Form\EvaluationFormType), minus the détail du
+   barème - an evaluation marked by a quiz would offer rubric columns nobody will ever fill. Written
+   by hand rather than through a FormType, like the other modals of this app: the interesting half of
+   the form is the list of students at the bottom, which no Evaluation ever carries.
+
+   Every field opens on `conversionDefaults`, an App\Service\AssignmentGradeConversionSettings - the
+   very object the form posts back. A travail already converted therefore opens on its evaluation as
+   it stands, and this template never has to know which of the two cases it is rendering.
+
+   The list of students is the reason the modal exists at all. Every student without a mark is named
+   and must be answered for one by one, with no default: a zero is a mark and drags an average down,
+   an absence is a fact about the day, « non évalué » is neither. Guessing would invent marks nobody
+   entered, so the radios are `required` here and App\Service\AssignmentGradeConversionPlanner
+   refuses again server side. #}
+{% set missingRows = rows|filter(row => not row.hasMark) %}
+{% set isUpdate = conversionEvaluation is not null %}
+{# Pre-selected only where the matière is already settled. A travail carrying none opens on the
+   placeholder, `required` doing the rest: filing it under whichever matière happened to come first
+   would be answering the question the modal is here to ask. #}
+{% set settledTopic = isUpdate ? conversionEvaluation.topic : assignment.topic %}
+
+<div class="modal fade cm-modal--tall" id="assignment-grade-conversion-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" action="{{ path('app_assignment_gradebook_convert', {id: assignment.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('assignment_gradebook_convert') }}">
+
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title">{{ (isUpdate ? 'assignmentGradeConversionUpdateModalTitle' : 'assignmentGradeConversionModalTitle')|trans }}</h5>
+                        <div class="text-secondary">{{ assignment.title }}</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'assignmentGradeConversionCloseLabel'|trans }}"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p class="text-secondary">{{ 'assignmentGradeConversionModalIntro'|trans }}</p>
+
+                    {% if isUpdate %}
+                        <div class="alert alert-warning" role="note">{{ 'assignmentGradeConversionUpdateWarning'|trans }}</div>
+                    {% endif %}
+
+                    {# The matière is never asked of the teacher when the travail already carries one
+                       - it came from the séance it was given in. It is asked here, and only here,
+                       when it carries none: without it there is no carnet to file the evaluation in. #}
+                    <div class="cm-gb-fieldset">
+                        <label class="cm-gb-label" for="assignment-grade-topic">{{ 'assignmentGradeConversionTopicFieldLabel'|trans }}</label>
+                        {% if conversionTopics|length > 1 %}
+                            <select class="form-select" id="assignment-grade-topic" name="topic" required>
+                                <option value="">{{ 'assignmentGradeConversionTopicPlaceholder'|trans }}</option>
+                                {% for topic in conversionTopics %}
+                                    <option value="{{ topic.id }}" {{ settledTopic and settledTopic.id == topic.id ? 'selected' }}>{{ topic.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <span class="form-hint">{{ 'assignmentGradeConversionTopicHelpText'|trans }}</span>
+                        {% else %}
+                            <input type="hidden" name="topic" value="{{ conversionTopics[0].id }}">
+                            <span class="cm-worksummary__value" id="assignment-grade-topic">{{ conversionTopics[0].name }}</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="cm-gb-fieldrow">
+                        <div class="cm-gb-fieldset">
+                            <label class="cm-gb-label" for="assignment-grade-name">{{ 'evaluationNameFieldLabel'|trans }}</label>
+                            <input type="text" class="form-control" id="assignment-grade-name" name="name" maxlength="255" required
+                                   value="{{ conversionDefaults.name }}">
+                        </div>
+                        <div class="cm-gb-fieldset">
+                            <label class="cm-gb-label" for="assignment-grade-date">{{ 'evaluationDateFieldLabel'|trans }}</label>
+                            <input type="date" class="form-control" id="assignment-grade-date" name="date" required
+                                   value="{{ conversionDefaults.date|date('Y-m-d') }}">
+                        </div>
+                    </div>
+
+                    <div class="cm-gb-fieldset">
+                        <span class="cm-gb-label">{{ 'evaluationTypeFieldLabel'|trans }}</span>
+                        <div class="cm-gb-seg">
+                            {% for case in enum_cases('App\\Enum\\EvaluationType') %}
+                                <label class="cm-gb-seg__opt">
+                                    <input type="radio" name="type" value="{{ case.value }}" {{ conversionDefaults.type.value == case.value ? 'checked' }}>
+                                    {{ case.labelKey|trans }}
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="cm-gb-fieldrow">
+                        <div class="cm-gb-fieldset">
+                            <span class="cm-gb-label">{{ 'evaluationModalityFieldLabel'|trans }}</span>
+                            <div class="cm-gb-seg">
+                                {% for case in enum_cases('App\\Enum\\EvaluationModality') %}
+                                    <label class="cm-gb-seg__opt">
+                                        <input type="radio" name="modality" value="{{ case.value }}" {{ conversionDefaults.modality.value == case.value ? 'checked' }}>
+                                        {{ case.labelKey|trans }}
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="cm-gb-fieldset">
+                            <span class="cm-gb-label">{{ 'evaluationStatusFieldLabel'|trans }}</span>
+                            <div class="cm-gb-seg">
+                                {% for case in enum_cases('App\\Enum\\EvaluationStatus') %}
+                                    <label class="cm-gb-seg__opt">
+                                        <input type="radio" name="status" value="{{ case.value }}" {{ conversionDefaults.status.value == case.value ? 'checked' }}>
+                                        {{ case.labelKey|trans }}
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    {# Optional, as in the carnet: an evaluation that belongs to no progression has no
+                       nature at all, and that is a valid state rather than a gap to fill. #}
+                    <div class="cm-gb-fieldset">
+                        <span class="cm-gb-label">{{ 'evaluationNatureFieldLabel'|trans }}</span>
+                        <div class="cm-gb-seg">
+                            {% for case in enum_cases('App\\Enum\\EvaluationNature') %}
+                                <label class="cm-gb-seg__opt">
+                                    <input type="radio" name="nature" value="{{ case.value }}" {{ conversionDefaults.nature is not null and conversionDefaults.nature.value == case.value ? 'checked' }}>
+                                    {{ case.labelKey|trans }}
+                                </label>
+                            {% endfor %}
+                            <label class="cm-gb-seg__opt">
+                                <input type="radio" name="nature" value="" {{ conversionDefaults.nature is null ? 'checked' }}>
+                                {{ 'evaluationNatureNoneLabel'|trans }}
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="cm-gb-fieldrow">
+                        <div class="cm-gb-fieldset">
+                            <label class="cm-gb-label" for="assignment-grade-scale">{{ 'evaluationScaleFieldLabel'|trans }}</label>
+                            <input type="number" class="form-control" id="assignment-grade-scale" name="scale" min="1" step="0.5" required
+                                   value="{{ conversionDefaults.scale }}">
+                            <span class="form-hint">{{ 'assignmentGradeConversionScaleHelpText'|trans }}</span>
+                        </div>
+                        <div class="cm-gb-fieldset">
+                            <label class="cm-gb-label" for="assignment-grade-coefficient">{{ 'evaluationCoefficientFieldLabel'|trans }}</label>
+                            <input type="number" class="form-control" id="assignment-grade-coefficient" name="coefficient" min="0.5" step="0.5" required
+                                   value="{{ conversionDefaults.coefficient }}">
+                        </div>
+                    </div>
+
+                    <div class="cm-gb-fieldset">
+                        <label class="form-check">
+                            <input class="form-check-input" type="checkbox" name="countsOutOf20" value="1" {{ conversionDefaults.countsOutOf20 ? 'checked' }}>
+                            <span class="form-check-label">{{ 'evaluationCountsOutOf20FieldLabel'|trans }}</span>
+                        </label>
+                        <span class="form-hint">{{ 'evaluationCountsOutOf20FieldHelpText'|trans }}</span>
+                    </div>
+
+                    {# Scheduled at D+1 by default, the carnet's own convention: time enough to look
+                       the marks over before the class sees them. #}
+                    <div class="cm-gb-fieldset" data-controller="checkbox-reveal">
+                        <label class="form-check">
+                            <input class="form-check-input" type="checkbox" name="hasScheduledVisibility" value="1"
+                                   data-checkbox-reveal-target="toggle" data-action="change->checkbox-reveal#refresh"
+                                   {{ conversionDefaults.visibleAt is not null ? 'checked' }}>
+                            <span class="form-check-label">{{ 'evaluationHasScheduledVisibilityFieldLabel'|trans }}</span>
+                        </label>
+                        <div data-checkbox-reveal-target="panel">
+                            <input type="datetime-local" class="form-control" name="visibleAt"
+                                   aria-label="{{ 'evaluationVisibleAtFieldLabel'|trans }}"
+                                   value="{{ (conversionDefaults.visibleAt ?? date('+24 hours'))|date('Y-m-d\\TH:i') }}">
+                            <span class="form-hint">{{ 'evaluationVisibleAtFieldHelpText'|trans }}</span>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="cm-gb-fieldset">
+                        <span class="cm-gb-label">{{ 'assignmentGradeConversionMissingSectionTitle'|trans }}</span>
+                        {% if missingRows is empty %}
+                            <p class="text-secondary">{{ 'assignmentGradeConversionMissingNoneMessage'|trans }}</p>
+                        {% else %}
+                            <p class="form-hint">{{ 'assignmentGradeConversionMissingSectionHint'|trans }}</p>
+                            <div class="table-responsive">
+                                <table class="table table-vcenter">
+                                    <tbody>
+                                        {% for row in missingRows %}
+                                            <tr>
+                                                <td>{{ row.student.displayName ?? row.student.username }}</td>
+                                                <td>
+                                                    <div class="cm-gb-seg">
+                                                        {% for case in enum_cases('App\\Enum\\AssignmentMissingGradeChoice') %}
+                                                            <label class="cm-gb-seg__opt">
+                                                                <input type="radio" name="missing[{{ row.student.id }}]" value="{{ case.value }}" required>
+                                                                {{ case.labelKey|trans }}
+                                                            </label>
+                                                        {% endfor %}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="cm-btn cm-btn--outline" data-bs-dismiss="modal">{{ 'cancelAction'|trans }}</button>
+                    <button type="submit" class="cm-btn cm-btn--primary">
+                        {{ (isUpdate ? 'assignmentGradeConversionSubmitUpdateAction' : 'assignmentGradeConversionSubmitAction')|trans }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
