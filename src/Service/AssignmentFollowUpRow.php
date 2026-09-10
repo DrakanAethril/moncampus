@@ -44,4 +44,43 @@ final class AssignmentFollowUpRow
     {
         return $this->attempt?->getScorePercent();
     }
+
+    /**
+     * The mark as the quiz itself counted it - « 12 / 15 », points earned over points available.
+     *
+     * Read off the attempt and not off the instance: with « mêmes questions pour tous » open, each
+     * student is drawn their own set (App\Service\QuizDrawService), and a weighted question makes
+     * two draws add up to different totals. The denominator therefore belongs to the attempt, and
+     * a screen showing one class-wide total would be writing a fraction nobody was marked on.
+     */
+    public function getPointsEarnedLabel(): ?string
+    {
+        return $this->attempt?->getCorrectCountLabel();
+    }
+
+    public function getPointsEarned(): ?float
+    {
+        return $this->attempt?->getCorrectCount();
+    }
+
+    public function getPointsAvailable(): ?int
+    {
+        return $this->attempt?->getQuestionTotal();
+    }
+
+    public function getScoreOn20(): ?float
+    {
+        return $this->attempt?->getScoreOn20();
+    }
+
+    /**
+     * Whether this line carries a number the carnet de notes could take as a mark. False for a
+     * student who never sat the quiz, and false too for an attempt concluded before the score
+     * column existed, which has points but nothing to divide them by - « Convertir en note » asks
+     * about both rather than counting either as a zero.
+     */
+    public function hasMark(): bool
+    {
+        return null !== $this->getPointsEarned() && ($this->getPointsAvailable() ?? 0) > 0;
+    }
 }
