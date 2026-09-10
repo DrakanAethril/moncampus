@@ -76,7 +76,7 @@
                 <div class="col-md-4" data-proxmox-host-form-target="tokenNameField">{{ form_row(form.tokenName) }}</div>
             </div>
             <div class="row g-3">
-                <div class="col-12">{{ form_row(form.secret) }}</div>
+                <div class="col-12">{{ include('partials/_password_field.html.twig', {field: form.secret}) }}</div>
             </div>
         </fieldset>
 
@@ -99,7 +99,7 @@
                 <div class="col-md-4">{{ form_row(form.provisionUsername) }}</div>
                 <div class="col-md-2">{{ form_row(form.provisionRealm) }}</div>
                 <div class="col-md-3">{{ form_row(form.provisionTokenName) }}</div>
-                <div class="col-md-3">{{ form_row(form.provisionSecret) }}</div>
+                <div class="col-md-3">{{ include('partials/_password_field.html.twig', {field: form.provisionSecret}) }}</div>
             </div>
         </fieldset>
 

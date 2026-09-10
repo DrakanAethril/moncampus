@@ -405,8 +405,10 @@ h1, h2, h3, h4,
    gesture for the Tabler-shaped forms of the authenticated shell, driven by the same
    password_visibility_controller.js. */
 .cm-password-field { position: relative; }
-/* The eye sits inside the field, so the text must stop before it. */
-.cm-password-field .form-control { padding-right: 40px; }
+/* The eye sits inside the field, so the text must stop before it. Matched on the element rather
+   than on .form-control, since the wrapper also has to serve the fields this app styles itself
+   (.cm-vmcard__input on « Mes machines virtuelles »). */
+.cm-password-field > input { padding-right: 40px; }
 .cm-password-field__eye {
     position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
     background: none; border: 0; padding: 0; cursor: pointer; color: var(--cm-muted); line-height: 0;
@@ -420,6 +422,8 @@ h1, h2, h3, h4,
 .cm-password-field__eye:focus-visible {
     outline: 0; border-radius: 4px; box-shadow: 0 0 0 3px rgba(27, 107, 168, .25);
 }
+/* A field nobody may type in has nothing to reveal either. */
+.cm-password-field__eye:disabled { opacity: .45; cursor: default; }
 
 .form-control, .form-select { font-size: 13.5px; }
 .form-control { padding: 9px 12px; }
@@ -8954,6 +8958,9 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-vmcard__pw--off { opacity: .55; }
 .cm-vmcard__pwlabel { font: 600 12px var(--cm-font-ui); color: var(--cm-muted); }
 .cm-vmcard__pwrow { display: flex; gap: 9px; }
+/* The input no longer sits directly in the row - its reveal wrapper does, and inherits the slot. */
+.cm-vmcard__pwrow .cm-password-field { flex: 1; min-width: 0; }
+.cm-vmcard__pwrow .cm-vmcard__input { width: 100%; }
 .cm-vmcard__input {
     flex: 1; min-width: 0;
     border: 1px solid var(--cm-border); border-radius: 8px;

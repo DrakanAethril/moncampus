@@ -81,12 +81,26 @@
                           data-url="{{ path('app_my_machines_password', {id: account.id}) }}">
                         <label class="cm-vmcard__pwlabel" for="password-{{ account.id }}">{{ 'myMachinePasswordFieldLabel'|trans }}</label>
                         <div class="cm-vmcard__pwrow">
-                            <input id="password-{{ account.id }}" type="password" name="password" class="cm-vmcard__input"
-                                   autocomplete="new-password" minlength="12" required
-                                   data-my-machines-target="password"
-                                   data-action="input->my-machines#validate"
-                                   {{ canSetPassword ? '' : 'disabled' }}
-                                   placeholder="{{ 'myMachinePasswordPlaceholder'|trans }}">
+                            {# Typed blind, this password is then typed again at a login prompt that
+                               only ever says « mot de passe incorrect » - so it is readable back
+                               here, before it is set. #}
+                            <div class="cm-password-field" data-controller="password-visibility">
+                                <input id="password-{{ account.id }}" type="password" name="password" class="cm-vmcard__input"
+                                       autocomplete="new-password" minlength="12" required
+                                       data-my-machines-target="password"
+                                       data-password-visibility-target="input"
+                                       data-action="input->my-machines#validate"
+                                       {{ canSetPassword ? '' : 'disabled' }}
+                                       placeholder="{{ 'myMachinePasswordPlaceholder'|trans }}">
+                                <button type="button" class="cm-password-field__eye" aria-pressed="false"
+                                        title="{{ 'togglePasswordVisibilityHint'|trans }}"
+                                        aria-label="{{ 'togglePasswordVisibilityHint'|trans }}"
+                                        data-action="password-visibility#toggle"
+                                        {{ canSetPassword ? '' : 'disabled' }}>
+                                    <svg class="icon" data-password-visibility-target="shownIcon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-eye"></use></svg>
+                                    <svg class="icon d-none" data-password-visibility-target="hiddenIcon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-eye-off"></use></svg>
+                                </button>
+                            </div>
                             {# Inactive until the twelve characters are there, which is what the
                                placeholder announces - the reference carries the constraint on the
                                field itself rather than in a grey line underneath. #}
