@@ -45,7 +45,7 @@
                     </label>
                     <div class="cm-authcard__input-wrap">
                         <input type="password" id="password" name="_password" class="cm-authcard__input cm-authcard__input--password" placeholder="{{ 'passwordFieldPlaceholder'|trans }}" autocomplete="current-password" data-password-visibility-target="input">
-                        <button type="button" class="cm-authcard__eye" aria-pressed="false" title="{{ 'togglePasswordVisibilityHint'|trans }}" data-action="password-visibility#toggle">
+                        <button type="button" class="cm-authcard__eye" aria-pressed="false" title="{{ 'togglePasswordVisibilityHint'|trans }}" aria-label="{{ 'togglePasswordVisibilityHint'|trans }}" data-action="password-visibility#toggle">
                             <svg class="icon" data-password-visibility-target="shownIcon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-eye"></use></svg>
                             <svg class="icon d-none" data-password-visibility-target="hiddenIcon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-eye-off"></use></svg>
                         </button>
