@@ -1139,6 +1139,10 @@ h1, h2, h3, h4,
 .cm-calendar .fc-col-header-cell-cushion,
 .cm-calendar .fc-timegrid-slot-label-cushion { color: var(--cm-muted); font: 600 13px var(--cm-font-ui); }
 .cm-calendar .fc-event { border-radius: 6px; border-left: 3px solid; padding: 3px 6px; font: 400 11.5px var(--cm-font-ui); }
+/* Set by lesson_timetable_controller.js on the read-only calendars, and only on a session whose
+   cahier de texte the viewer may actually open: FullCalendar's own pointer rule keys off an href,
+   which those events do not carry. A session with nothing behind it stays an arrow. */
+.cm-calendar .fc-event.cm-calendar__event--clickable { cursor: pointer; }
 .cm-calendar .fc-toolbar-title { font: 600 19px var(--cm-font-title); color: var(--cm-ink); }
 
 /* Clickable timetable legend swatches (program/_timetable_legend.html.twig,
