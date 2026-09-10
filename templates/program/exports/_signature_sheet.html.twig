@@ -46,9 +46,9 @@
                 <td colspan="{{ 8 - sheet.sessions|length }}"></td>
             {% endif %}
         </tr>
-        {% for student in sheet.students %}
+        {% for name in sheet.studentNames %}
             <tr>
-                <td class="text-center align-middle fs-2" colspan="2">{{ student.displayName ?? student.username }}</td>
+                <td class="text-center align-middle fs-2" colspan="2">{{ name }}</td>
                 {% for session in sheet.sessions %}
                     <td></td>
                 {% endfor %}
