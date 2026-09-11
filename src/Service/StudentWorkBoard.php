@@ -7,6 +7,7 @@ namespace App\Service;
 use App\Entity\Assignment;
 use App\Entity\AssignmentExpectedProduction;
 use App\Entity\AssignmentSubmission;
+use App\Entity\Program;
 use App\Entity\QuizAttempt;
 use App\Entity\User;
 use App\Enum\StudentWorkState;
@@ -57,7 +58,15 @@ class StudentWorkBoard
     public function build(User $student, ?\DateTimeImmutable $now = null): array
     {
         $now ??= new \DateTimeImmutable();
-        $programs = $this->programRepository->findAllActiveForStudent($student);
+        // Only the formations that run « Devoirs » here: the flag is cumulative with the feature,
+        // exactly like « Visibilité de l'emploi du temps » next to it. It was applied on the
+        // writing side alone (App\Controller\ProgramAssignmentController answers 404 without it),
+        // so a formation switched off kept showing its students the works given before - and this
+        // board is what the screen, the dashboard card and the mobile feed all read.
+        $programs = array_values(array_filter(
+            $this->programRepository->findAllActiveForStudent($student),
+            static fn (Program $program): bool => $program->isAssignmentManagementEnabled(),
+        ));
 
         $assignments = array_values(array_filter(
             $this->assignmentRepository->findVisibleForPrograms($programs, $now),

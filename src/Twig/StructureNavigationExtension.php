@@ -13,6 +13,7 @@ use App\Repository\ProgramRepository;
 use App\Repository\QuizInstanceRepository;
 use App\Repository\SectionRepository;
 use App\Security\FeatureAccess;
+use App\Security\ProgramTimetableAccess;
 use App\Security\StructureAccessChecker;
 use App\Service\StudentAlternanceProgramResolver;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -63,6 +64,7 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
         private readonly StudentAlternanceProgramResolver $alternanceProgramResolver,
         private readonly FeatureAccess $featureAccess,
         private readonly VisibilityExtension $visibility,
+        private readonly ProgramTimetableAccess $timetableAccess,
     ) {
     }
 
@@ -164,9 +166,7 @@ class StructureNavigationExtension extends AbstractExtension implements ResetInt
             return true;
         }
 
-        if ($this->featureAccess->isEnabled(Feature::Timetable)
-            && $program->isTimetableManagementEnabled()
-            && $this->visibility->allows($program->getTimetableVisibility())) {
+        if ($this->timetableAccess->isVisible($program)) {
             return true;
         }
 

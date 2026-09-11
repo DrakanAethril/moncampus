@@ -8,8 +8,10 @@
 {# Both columns read the timetable: the teacher's own day, and the next session of each of their
    classes. With « Emploi du temps » switched off there is no timetable to read them from - the
    establishment keeps it elsewhere - so the strip goes rather than showing hours nobody maintains
-   here, with a « Cahier de texte » link that would answer 404 on top. #}
-{% if feature('timetable') %}
+   here, with a « Cahier de texte » link that would answer 404 on top. Same outcome, and for the
+   same reason, when every formation this teacher works in reserves its timetable to the staff:
+   HomeController::buildTeacherData answers one flag for the two cases. #}
+{% if teacher.showTimetable %}
 <div class="cm-dash-cols">
     <div class="card">
         <div class="card-header">
@@ -78,7 +80,7 @@
                                not offered at all. With the two lists and the syllabus reserved to
                                administrators, a teacher's quick links can now be empty. #}
                             {% set quick_links = is_granted('ROLE_ADMIN')
-                                or (feature('timetable') and program.timetableManagementEnabled and visibility_allows(program.timetableVisibility))
+                                or timetable_visible(program)
                                 or (feature('gradebook_entry') and program.timetableManagementEnabled)
                                 or (feature('my_alternance') and visibility_allows(program.alternanceCalendarVisibility))
                                 or feature('class_tools') %}
@@ -96,7 +98,7 @@
                                             <a class="dropdown-item" href="{{ path('app_program_students', {id: program.id}) }}">{{ 'programStudentsNavLabel'|trans }}</a>
                                             <a class="dropdown-item" href="{{ path('app_program_teachers', {id: program.id}) }}">{{ 'programTeachersNavLabel'|trans }}</a>
                                         {% endif %}
-                                        {% if feature('timetable') and program.timetableManagementEnabled and visibility_allows(program.timetableVisibility) %}
+                                        {% if timetable_visible(program) %}
                                             <a class="dropdown-item" href="{{ path('app_program_timetable', {id: program.id}) }}">{{ 'programTimetableNavLabel'|trans }}</a>
                                         {% endif %}
                                         {# « Carnet de notes » - the establishment keeps its grades elsewhere, so this
@@ -111,10 +113,11 @@
                                         {% if feature('class_tools') %}
                                             <a class="dropdown-item" href="{{ path('app_program_tools_random_draw', {id: program.id}) }}">{{ 'programToolsNavLabel'|trans }}</a>
                                         {% endif %}
-                                        {# Administrators only, and no longer reading syllabusVisibility -
-                                           the setting stays in Formation > Paramétrage but nothing
-                                           applies it for now. #}
-                                        {% if is_granted('ROLE_ADMIN') and feature('progression') %}
+                                        {# Administrators only, on the same conditions as the class submenu
+                                           of the top bar - and as the screen itself, which answers 404 to a
+                                           formation whose syllabus is « Masqué » or whose timetable is not
+                                           managed here. #}
+                                        {% if is_granted('ROLE_ADMIN') and feature('progression') and program.timetableManagementEnabled and visibility_allows(program.syllabusVisibility) %}
                                             <a class="dropdown-item" href="{{ path('app_program_syllabus', {id: program.id}) }}"{% if program.syllabusMode.value == 'file' %} target="_blank" rel="noopener"{% endif %}>{{ 'programSyllabusNavLabel'|trans }}</a>
                                         {% endif %}
                                     </div>

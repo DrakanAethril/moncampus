@@ -44,6 +44,24 @@ enum VisibilityLevel: string
         };
     }
 
+    /**
+     * The tiers a viewer carrying these roles may see - allowsRoles() read the other way round,
+     * for the queries that have to filter on the column itself rather than on an entity already
+     * in memory (see App\Repository\LessonSessionRepository's dashboard queries). Hidden never
+     * comes back, so a restricted formation drops out of a day the same way it drops out of a nav.
+     *
+     * @param list<string> $roles
+     *
+     * @return list<self>
+     */
+    public static function allowedFor(array $roles): array
+    {
+        return array_values(array_filter(
+            self::cases(),
+            static fn (self $level): bool => $level->allowsRoles($roles),
+        ));
+    }
+
     /** @param list<string> $roles */
     public function allowsRoles(array $roles): bool
     {
