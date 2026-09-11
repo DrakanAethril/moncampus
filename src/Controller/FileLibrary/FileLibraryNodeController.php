@@ -189,17 +189,47 @@ class FileLibraryNodeController extends AbstractController
      * the row's name (App\Service\DownloadFilename). Nothing is proxied through PHP - what the
      * signature buys is that the file is saved as « Cours de gestion.pdf » rather than under the
      * hexadecimal it is stored as.
+     *
+     * It is signed as an **attachment**, whatever the type: an entry that says « Télécharger » must
+     * download. A PDF served inline opened in the browser's viewer instead, which is the reading
+     * gesture and already has its own entry right above - « Aperçu », whose address is open()
+     * below.
      */
     #[Route(path: '/{nodeId}/download', name: 'app_file_library_node_download', requirements: ['nodeId' => '\d+'], methods: ['GET'])]
     public function download(int $nodeId, FileUploadService $fileUploads): Response
     {
-        $node = $this->loadNode($this->nodes, $nodeId);
+        $file = $this->fileToServe($nodeId);
 
-        if (null === $node || !$node->isFile() || null === $node->getStorageKey() || $node->isDeleted()) {
+        return $this->redirect($fileUploads->attachmentUrl($file['key'], $file['name']));
+    }
+
+    /**
+     * The same object, signed the other way: the type decides whether it opens or downloads, so a
+     * PDF renders in the viewer's iframe and a video plays. This is what a file's *name* leads to,
+     * on the listing as on the search screen, and what the viewer reads through
+     * `data-preview-url` - the gesture is « ouvrir », and it is the one that has not changed.
+     */
+    #[Route(path: '/{nodeId}/open', name: 'app_file_library_node_open', requirements: ['nodeId' => '\d+'], methods: ['GET'])]
+    public function open(int $nodeId, FileUploadService $fileUploads): Response
+    {
+        $file = $this->fileToServe($nodeId);
+
+        return $this->redirect($fileUploads->downloadUrl($file['key'], $file['name']));
+    }
+
+    /**
+     * @return array{key: string, name: string}
+     */
+    private function fileToServe(int $nodeId): array
+    {
+        $node = $this->loadNode($this->nodes, $nodeId);
+        $key = $node?->getStorageKey();
+
+        if (null === $node || !$node->isFile() || null === $key || $node->isDeleted()) {
             throw $this->createNotFoundException();
         }
 
-        return $this->redirect($fileUploads->downloadUrl($node->getStorageKey(), $node->getName()));
+        return ['key' => $key, 'name' => $node->getName()];
     }
 
     private function parentFromRequest(Request $request): ?FileLibraryNode

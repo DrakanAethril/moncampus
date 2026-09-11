@@ -8,6 +8,7 @@ use App\Attribute\RequiresFeature;
 use App\Entity\User;
 use App\Enum\Feature;
 use App\Repository\ProgramRepository;
+use App\Security\ProgramTimetableAccess;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -24,13 +25,16 @@ class StudentTimetableController extends AbstractController
 {
     #[Route(path: '/my/timetable', name: 'app_my_timetable')]
     #[IsGranted('ROLE_STUDENT')]
-    public function __invoke(ProgramRepository $programRepository): Response
+    public function __invoke(ProgramRepository $programRepository, ProgramTimetableAccess $timetableAccess): Response
     {
         /** @var User $user */
         $user = $this->getUser();
 
+        // A formation whose « Visibilité de l'emploi du temps » leaves this student out is not a
+        // candidate: forwarding to it would answer 404 one redirect later, and it must not be the
+        // one that answers for a student who has another formation they may read.
         foreach ($programRepository->findAllActiveForStudent($user) as $program) {
-            if ($program->isTimetableManagementEnabled()) {
+            if ($timetableAccess->isVisible($program)) {
                 return $this->redirectToRoute('app_program_timetable', ['id' => $program->getId()]);
             }
         }

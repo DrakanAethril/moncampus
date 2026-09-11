@@ -10,6 +10,7 @@ use App\Entity\FileLibraryNode;
 use App\Entity\LessonSession;
 use App\Entity\Option;
 use App\Entity\Program;
+use App\Entity\QuizInstance;
 use App\Entity\Topic;
 use App\Entity\VideoResource;
 use App\Enum\AssignmentAudienceType;
@@ -46,6 +47,7 @@ final class AssignmentWizardContext
         public readonly ?AudioRecording $audioRecording = null,
         public readonly ?VideoResource $videoResource = null,
         public readonly ?FileLibraryNode $libraryNode = null,
+        public readonly ?QuizInstance $quizInstance = null,
     ) {
     }
 
@@ -152,6 +154,37 @@ final class AssignmentWizardContext
             null,
             null,
             $node,
+        );
+    }
+
+    /**
+     * From a quiz already launched (« Convertir en note » on the quiz's results screen): the class
+     * comes from the instance, the nature is no longer a choice - it is that quiz - and the
+     * instance's name is the title the teacher would have typed.
+     *
+     * The travail is the carrier the conversion needs: the marks are written into the carnet from
+     * App\Entity\Assignment, so a quiz launched on its own has to be given one before it can be
+     * converted. Nothing is created here - this entry point only opens the wizard on what the quiz
+     * already knows, and the teacher still publishes it.
+     *
+     * The matière is deliberately not guessed from QuizInstance::$subject, which is free text: the
+     * conversion modal asks for it, and a wrong carnet is worse than an empty field.
+     */
+    public static function forQuizInstance(QuizInstance $instance, string $returnUrl, string $mode = self::MODE_PAGE): self
+    {
+        return new self(
+            $instance->getProgram(),
+            [],
+            AssignmentAudienceType::Program,
+            null,
+            null,
+            null,
+            $returnUrl,
+            $mode,
+            null,
+            null,
+            null,
+            $instance,
         );
     }
 

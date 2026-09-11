@@ -39,9 +39,10 @@ class EvaluationRepository extends ServiceEntityRepository
      * The evaluations of one class, as the "condition sur une note" picker offers them - the
      * gradebook read the other way round, by program rather than by matière.
      *
-     * A teacher is only offered their own: a condition names an evaluation somebody has to grade,
-     * and a matière is one teacher's gradebook (Topic::$teacher). Staff, who own no matière, get
-     * the whole class instead of an empty list.
+     * A teacher is only offered the matières they hold: a condition names an evaluation somebody
+     * has to grade, and a matière is its titulaires' gradebook (Topic::$teachers) - a co-titulaire's
+     * evaluations included, since they read them. Staff, who hold no matière, get the whole class
+     * instead of an empty list.
      *
      * @return list<Evaluation>
      */
@@ -58,7 +59,7 @@ class EvaluationRepository extends ServiceEntityRepository
             ->addOrderBy('e.date', 'ASC');
 
         if (null !== $teacher) {
-            $qb->andWhere('t.teacher = :teacher')->setParameter('teacher', $teacher);
+            $qb->andWhere(':teacher MEMBER OF t.teachers')->setParameter('teacher', $teacher);
         }
 
         return $qb->getQuery()->getResult();

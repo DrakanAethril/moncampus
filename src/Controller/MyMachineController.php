@@ -200,7 +200,7 @@ class MyMachineController extends AbstractController
             }
         }
 
-        return $allocations->findAddressForVmid($account->getVmid());
+        return $allocations->findAddressForVmid($account->getHost(), $account->getVmid());
     }
 
     private function currentUser(): User

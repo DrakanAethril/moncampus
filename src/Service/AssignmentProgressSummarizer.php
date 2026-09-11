@@ -105,7 +105,7 @@ class AssignmentProgressSummarizer
                     'alert' => false,
                     'muted' => false,
                 ],
-                AssignmentNature::ToRead === $assignment->getNature() && $assignment->isReadTrackingEnabled() => [
+                $assignment->readsByOpening() => [
                     'key' => 'assignmentProgressReadLabel',
                     'params' => ['%done%' => $viewCounts[$id] ?? 0, '%total%' => $audienceSize],
                     'alert' => false,

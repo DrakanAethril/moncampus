@@ -6,6 +6,7 @@ namespace App\Twig;
 
 use App\Entity\User;
 use App\Enum\VisibilityLevel;
+use App\Security\ProgramTimetableAccess;
 use Symfony\Bundle\SecurityBundle\Security;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
@@ -17,8 +18,10 @@ use Twig\TwigFunction;
 // rendering vs. PHP picker queries), same underlying VisibilityLevel::allowsRoles() logic.
 class VisibilityExtension extends AbstractExtension
 {
-    public function __construct(private readonly Security $security)
-    {
+    public function __construct(
+        private readonly Security $security,
+        private readonly ProgramTimetableAccess $timetableAccess,
+    ) {
     }
 
     #[\Override]
@@ -26,6 +29,11 @@ class VisibilityExtension extends AbstractExtension
     {
         return [
             new TwigFunction('visibility_allows', $this->allows(...)),
+            // The whole rule for one nav entry rather than its tier alone: feature + management
+            // flag + tier, from the same service the screens and the feeds ask. The three were
+            // spelled out inline in three templates, and the one that forgot the tier is how a
+            // formation reserved to the administration ended up on its students' bar.
+            new TwigFunction('timetable_visible', $this->timetableAccess->isVisible(...)),
         ];
     }
 

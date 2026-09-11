@@ -13,6 +13,7 @@ use App\Entity\FileLibraryNode;
 use App\Entity\LessonSession;
 use App\Entity\Option;
 use App\Entity\Program;
+use App\Entity\QuizInstance;
 use App\Entity\Topic;
 use App\Entity\User;
 use App\Entity\VideoResource;
@@ -26,6 +27,7 @@ use App\Enum\EvaluationStatus;
 use App\Enum\EvaluationType;
 use App\Enum\Feature;
 use App\Enum\LessonLogSection;
+use App\Enum\QuizMode;
 use App\Form\AssignmentWizardType;
 use App\Repository\AssignmentRepository;
 use App\Repository\AudioRecordingRepository;
@@ -33,6 +35,7 @@ use App\Repository\FileLibraryNodeRepository;
 use App\Repository\GroupBatchRepository;
 use App\Repository\LessonSessionRepository;
 use App\Repository\ProgramRepository;
+use App\Repository\QuizInstanceRepository;
 use App\Repository\TopicRepository;
 use App\Repository\UserRepository;
 use App\Repository\VideoResourceRepository;
@@ -98,6 +101,7 @@ class AssignmentController extends AbstractController
         private readonly AssignmentNatureFields $natureFields,
         private readonly FileLibraryNodeRepository $libraryNodes,
         private readonly FileLibraryWorkFactory $workFactory,
+        private readonly QuizInstanceRepository $quizInstances,
     ) {
     }
 
@@ -241,6 +245,7 @@ class AssignmentController extends AbstractController
             'natures' => match (true) {
                 null !== $context->audioRecording => [AssignmentNature::Listening],
                 null !== $context->videoResource => [AssignmentNature::Watching],
+                null !== $context->quizInstance => [AssignmentNature::Quiz],
                 default => AssignmentNature::forLessonLog(),
             },
         ]);
@@ -728,6 +733,26 @@ class AssignmentController extends AbstractController
             }
         }
 
+        // From a quiz already launched, « Convertir en note » on its results screen: the marks are
+        // written into the carnet from a travail, so the quiz needs one before it can be converted.
+        // As above, the id in the query string decides nothing - the instance still has to belong to
+        // a class one teaches.
+        $quizInstanceId = QueryValue::int($request, 'quiz');
+        if (0 !== $quizInstanceId) {
+            $instance = $this->quizInstances->find($quizInstanceId);
+
+            // A concours live is run together at the appointed time; it is not given out to do, and
+            // AssignmentWizardType leaves it out of « Quiz relié » for that reason. Accepting it here
+            // would open the wizard on a quiz its own field refuses.
+            if ($instance instanceof QuizInstance && QuizMode::Live !== $instance->getMode() && $this->isAmong($instance->getProgram(), $programs)) {
+                return AssignmentWizardContext::forQuizInstance(
+                    $instance,
+                    $this->generateUrl('app_program_quiz_show', ['id' => $instance->getProgram()?->getId(), 'instanceId' => $instance->getId()]),
+                    $mode,
+                );
+            }
+        }
+
         // From a file of the teacher's own library. The Voter is what makes "their own" true: a node
         // id in a query string is not a permission.
         $libraryNodeId = QueryValue::int($request, 'libraryNode');
@@ -811,6 +836,8 @@ class AssignmentController extends AbstractController
         $assignment->setNature(match (true) {
             null !== $context->audioRecording => AssignmentNature::Listening,
             null !== $context->videoResource => AssignmentNature::Watching,
+            // Born of a quiz already launched, a travail is that quiz and nothing else.
+            null !== $context->quizInstance => AssignmentNature::Quiz,
             // A file of the library says what kind of work it is: a video is a watching, an audio
             // file a listening, anything else a to-submit.
             null !== $context->libraryNode => $this->workFactory->natureFor($context->libraryNode),
@@ -818,9 +845,11 @@ class AssignmentController extends AbstractController
         });
         $assignment->setAudioRecording($context->audioRecording);
         $assignment->setVideoResource($context->videoResource);
+        $assignment->setQuizInstance($context->quizInstance);
         $assignment->setTitle(
             $context->audioRecording?->getName()
             ?? $context->videoResource?->getName()
+            ?? $context->quizInstance?->getName()
             // The file's name without its extension, which is what the teacher would have typed.
             ?? (null === $context->libraryNode ? null : $this->workFactory->titleFor($context->libraryNode)),
         );
@@ -959,11 +988,7 @@ class AssignmentController extends AbstractController
         }
 
         $program = $assignment->getProgram();
-        $topics = null === $program ? [] : $topicRepository->findBy([
-            'program' => $program,
-            'teacher' => $this->currentUser(),
-            'inactiveDate' => null,
-        ]);
+        $topics = null === $program ? [] : $topicRepository->findForTeacherInProgram($program, $this->currentUser());
 
         $assignment->setTopic(1 === \count($topics) ? $topics[0] : null);
     }

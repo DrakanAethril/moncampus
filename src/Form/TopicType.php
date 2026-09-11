@@ -67,10 +67,10 @@ class TopicType extends AbstractType
                 'scale' => 2,
                 'html5' => false,
             ])
-            // Not a form field: "teacher" is picked via an ajax tom-select field embedded
-            // directly in topic_new.html.twig (resolved from a top-level "teacher" POST field by
-            // ProgramTimetableSettingsController), same convention as LessonSessionType's teacher
-            // field - only the program's own teachers are eligible.
+            // Not a form field: the titulaires are picked via an ajax multi tom-select embedded
+            // directly in topic_new.html.twig (resolved from a top-level "teachers" POST field by
+            // ProgramTimetableSettingsController::applyTopicTeachers()), same convention as
+            // LessonSessionType's teacher field - only the program's own teachers are eligible.
             ->add('description', TextareaType::class, [
                 'label' => 'topicDescriptionFieldLabel',
                 'required' => false,

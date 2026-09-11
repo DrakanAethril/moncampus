@@ -9,6 +9,7 @@ use App\Entity\LessonSession;
 use App\Entity\Program;
 use App\Entity\Topic;
 use App\Entity\User;
+use App\Enum\VisibilityLevel;
 use App\Service\LessonLogTwinRule;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\Types\Types;
@@ -90,6 +91,38 @@ class LessonSessionRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * How many créneaux each teacher holds in each matière of one Program - the raw material of
+     * App\Service\TopicPrincipalTeacher, which is how the app answers "one name for this matière"
+     * without storing a principal titulaire next to the list of them.
+     *
+     * Counted in DQL rather than PHP-side, unlike findHoursByTopicForProgram() above: a count of
+     * rows is a count, where a sum of LessonSession::$length is a sum of DECIMAL strings.
+     *
+     * @return array<int, array<int, int>> Topic id => (teacher id => number of créneaux)
+     */
+    public function countSessionsByTopicAndTeacherForProgram(Program $program): array
+    {
+        /** @var list<array{topicId: int|string|null, teacherId: int|string|null, total: int|string}> $rows */
+        $rows = $this->createQueryBuilder('l')
+            ->select('IDENTITY(l.topic) AS topicId', 'IDENTITY(l.teacher) AS teacherId', 'COUNT(l.id) AS total')
+            ->where('l.program = :program')
+            ->andWhere('l.topic IS NOT NULL')
+            ->andWhere('l.teacher IS NOT NULL')
+            ->groupBy('l.topic')
+            ->addGroupBy('l.teacher')
+            ->setParameter('program', $program)
+            ->getQuery()
+            ->getResult();
+
+        $counts = [];
+        foreach ($rows as $row) {
+            $counts[(int) $row['topicId']][(int) $row['teacherId']] = (int) $row['total'];
+        }
+
+        return $counts;
+    }
+
     // Same PHP-side aggregation approach as App\Service\ProgramFinancialCalculator::getHoursPerLessonType()
     // (LessonSession::$length is manually entered, there's no DQL SUM() equivalent elsewhere in
     // the app) - powers the "planned/scheduled hours" column on the Topics settings tab. Sessions
@@ -142,10 +175,14 @@ class LessonSessionRepository extends ServiceEntityRepository
 
     // Powers the teacher home dashboard's "upcoming sessions" widget - a teacher's own sessions
     // across every Program they teach, unlike findForProgramBetween() which is scoped to one.
-    /** @return list<LessonSession> */
-    public function findUpcomingForTeacher(User $teacher, \DateTimeImmutable $from, \DateTimeImmutable $to): array
+    /**
+     * @param list<VisibilityLevel>|null $visibleTiers
+     *
+     * @return list<LessonSession>
+     */
+    public function findUpcomingForTeacher(User $teacher, \DateTimeImmutable $from, \DateTimeImmutable $to, ?array $visibleTiers = null): array
     {
-        return $this->createQueryBuilder('l')
+        $queryBuilder = $this->createQueryBuilder('l')
             ->addSelect('p', 'r', 't')
             ->innerJoin('l.program', 'p')
             ->leftJoin('l.classRoom', 'r')
@@ -156,7 +193,9 @@ class LessonSessionRepository extends ServiceEntityRepository
             ->setParameter('from', $from)
             ->setParameter('to', $to)
             ->orderBy('l.day', 'ASC')
-            ->addOrderBy('l.startHour', 'ASC')
+            ->addOrderBy('l.startHour', 'ASC');
+
+        return $this->restrictToVisibleTimetables($queryBuilder, $visibleTiers)
             ->getQuery()
             ->getResult();
     }
@@ -165,10 +204,14 @@ class LessonSessionRepository extends ServiceEntityRepository
     // day's sessions for a teacher, test Programs left out. Deliberately not the same query as
     // findAllForTeacherBetween() - the dashboard answers "what am I actually teaching", while the
     // teacher's own timetable must keep showing test Programs so they can be worked on there.
-    /** @return list<LessonSession> */
-    public function findForTeacherOnDayMatchingTestMode(User $teacher, \DateTimeImmutable $day): array
+    /**
+     * @param list<VisibilityLevel>|null $visibleTiers
+     *
+     * @return list<LessonSession>
+     */
+    public function findForTeacherOnDayMatchingTestMode(User $teacher, \DateTimeImmutable $day, ?array $visibleTiers = null): array
     {
-        return $this->createQueryBuilder('l')
+        $queryBuilder = $this->createQueryBuilder('l')
             ->addSelect('p', 'r', 'lt', 'o')
             ->innerJoin('l.program', 'p')
             ->leftJoin('l.classRoom', 'r')
@@ -180,7 +223,9 @@ class LessonSessionRepository extends ServiceEntityRepository
             ->setParameter('teacher', $teacher)
             ->setParameter('day', $day)
             ->setParameter('testMode', $teacher->isTestUser())
-            ->orderBy('l.startHour', 'ASC')
+            ->orderBy('l.startHour', 'ASC');
+
+        return $this->restrictToVisibleTimetables($queryBuilder, $visibleTiers)
             ->getQuery()
             ->getResult();
     }
@@ -189,9 +234,10 @@ class LessonSessionRepository extends ServiceEntityRepository
     // out), or null when they have none left - the dashboard's day column falls back to that day
     // instead of dead-ending on an empty "aucun cours aujourd'hui" whenever today happens to be
     // free. Unbounded on purpose: the point is to find the next teaching day however far off it is.
-    public function findNextSessionDayForTeacher(User $teacher, \DateTimeImmutable $day): ?\DateTimeImmutable
+    /** @param list<VisibilityLevel>|null $visibleTiers */
+    public function findNextSessionDayForTeacher(User $teacher, \DateTimeImmutable $day, ?array $visibleTiers = null): ?\DateTimeImmutable
     {
-        $nextDay = $this->createQueryBuilder('l')
+        $queryBuilder = $this->createQueryBuilder('l')
             ->select('MIN(l.day)')
             ->innerJoin('l.program', 'p')
             ->where('l.teacher = :teacher')
@@ -199,7 +245,9 @@ class LessonSessionRepository extends ServiceEntityRepository
             ->andWhere('p.testProgram = :testMode')
             ->setParameter('teacher', $teacher)
             ->setParameter('day', $day)
-            ->setParameter('testMode', $teacher->isTestUser())
+            ->setParameter('testMode', $teacher->isTestUser());
+
+        $nextDay = $this->restrictToVisibleTimetables($queryBuilder, $visibleTiers)
             ->getQuery()
             ->getSingleScalarResult();
 
@@ -217,11 +265,13 @@ class LessonSessionRepository extends ServiceEntityRepository
      * day then startHour makes "first seen" the right one - a Program can only appear on days at
      * or after its own earliest remaining day.
      *
+     * @param list<VisibilityLevel>|null $visibleTiers
+     *
      * @return array<int, LessonSession> keyed by Program id
      */
-    public function findNextSessionPerProgramForTeacher(User $teacher, \DateTimeImmutable $today, \DateTimeImmutable $now): array
+    public function findNextSessionPerProgramForTeacher(User $teacher, \DateTimeImmutable $today, \DateTimeImmutable $now, ?array $visibleTiers = null): array
     {
-        $rows = $this->upcomingForTeacherQueryBuilder($teacher, $today, $now)
+        $rows = $this->upcomingForTeacherQueryBuilder($teacher, $today, $now, $visibleTiers)
             ->select('IDENTITY(l.program) AS programId', 'MIN(l.day) AS nextDay')
             ->groupBy('l.program')
             ->getQuery()
@@ -231,7 +281,11 @@ class LessonSessionRepository extends ServiceEntityRepository
             return [];
         }
 
-        $sessions = $this->upcomingForTeacherQueryBuilder($teacher, $today, $now)
+        // Annotated rather than inferred: the shared skeleton now passes through
+        // restrictToVisibleTimetables(), and a QueryBuilder returned by a method is one PHPStan's
+        // Doctrine extension can no longer read the DQL of.
+        /** @var list<LessonSession> $sessions */
+        $sessions = $this->upcomingForTeacherQueryBuilder($teacher, $today, $now, $visibleTiers)
             ->addSelect('p', 'r', 't')
             ->leftJoin('l.classRoom', 'r')
             ->leftJoin('l.topic', 't')
@@ -254,14 +308,41 @@ class LessonSessionRepository extends ServiceEntityRepository
         return $nextByProgramId;
     }
 
+    /**
+     * The viewer-dependent half of "may this person see this formation's timetable", written as
+     * SQL: App\Security\ProgramTimetableAccess::visibleTiers() hands over the tiers its reader is
+     * admitted to, and a formation that does not manage its timetable here drops out with them.
+     *
+     * It belongs in the query rather than in a filter applied to the result, because of the day
+     * fallbacks: "today is free, here is the next teaching day" has to skip a formation the reader
+     * cannot see *before* picking the day, otherwise it lands them on a day showing nothing.
+     *
+     * Null leaves the query untouched - the management screens, the exports and the imports read
+     * every session whoever is asking, which is a different question from what a reader may see.
+     *
+     * @param list<VisibilityLevel>|null $visibleTiers
+     */
+    private function restrictToVisibleTimetables(QueryBuilder $queryBuilder, ?array $visibleTiers, string $programAlias = 'p'): QueryBuilder
+    {
+        if (null === $visibleTiers) {
+            return $queryBuilder;
+        }
+
+        return $queryBuilder
+            ->andWhere($programAlias.'.timetableManagementEnabled = true')
+            ->andWhere($programAlias.'.timetableVisibility IN (:visibleTiers)')
+            ->setParameter('visibleTiers', $visibleTiers);
+    }
+
     // Shared skeleton of the two findNextSessionPerProgramForTeacher() queries: this teacher's
     // sessions that are still ahead, test Programs excluded. $now is bound as a TIME rather than
     // left to Doctrine's datetime inference - end_hour is a TIME column, and MySQL turns a full
     // "Y-m-d H:i:s" string compared against one into a truncation warning plus NULL, i.e. a filter
     // that silently matches nothing.
-    private function upcomingForTeacherQueryBuilder(User $teacher, \DateTimeImmutable $today, \DateTimeImmutable $now): QueryBuilder
+    /** @param list<VisibilityLevel>|null $visibleTiers */
+    private function upcomingForTeacherQueryBuilder(User $teacher, \DateTimeImmutable $today, \DateTimeImmutable $now, ?array $visibleTiers = null): QueryBuilder
     {
-        return $this->createQueryBuilder('l')
+        $queryBuilder = $this->createQueryBuilder('l')
             ->innerJoin('l.program', 'p')
             ->where('l.teacher = :teacher')
             ->andWhere('p.testProgram = :testMode')
@@ -270,6 +351,8 @@ class LessonSessionRepository extends ServiceEntityRepository
             ->setParameter('today', $today)
             ->setParameter('now', $now, Types::TIME_IMMUTABLE)
             ->setParameter('testMode', $teacher->isTestUser());
+
+        return $this->restrictToVisibleTimetables($queryBuilder, $visibleTiers);
     }
 
     // Powers the teacher's personal cross-Program timetable (App\Controller\TeacherTimetableController)
@@ -279,10 +362,14 @@ class LessonSessionRepository extends ServiceEntityRepository
     // row already matches the given $teacher), but scoped across every Program a teacher teaches
     // in and bounded by the calendar's currently visible date range instead - unlike
     // findForProgram(), a teacher's whole multi-year session history would otherwise load at once.
-    /** @return list<LessonSession> */
-    public function findAllForTeacherBetween(User $teacher, \DateTimeImmutable $from, \DateTimeImmutable $to): array
+    /**
+     * @param list<VisibilityLevel>|null $visibleTiers
+     *
+     * @return list<LessonSession>
+     */
+    public function findAllForTeacherBetween(User $teacher, \DateTimeImmutable $from, \DateTimeImmutable $to, ?array $visibleTiers = null): array
     {
-        return $this->createQueryBuilder('l')
+        $queryBuilder = $this->createQueryBuilder('l')
             ->addSelect('p', 'r', 'lt', 'o', 'tp')
             ->innerJoin('l.program', 'p')
             ->leftJoin('l.classRoom', 'r')
@@ -298,7 +385,9 @@ class LessonSessionRepository extends ServiceEntityRepository
             ->setParameter('from', $from)
             ->setParameter('to', $to)
             ->orderBy('l.day', 'ASC')
-            ->addOrderBy('l.startHour', 'ASC')
+            ->addOrderBy('l.startHour', 'ASC');
+
+        return $this->restrictToVisibleTimetables($queryBuilder, $visibleTiers)
             ->getQuery()
             ->getResult();
     }
@@ -355,10 +444,14 @@ class LessonSessionRepository extends ServiceEntityRepository
     // (design_handoff_dashboards staff-a): every session of one day across every active Program,
     // fetch-joined down to the cohort (whose color paints the matrix rows/legend). Test Programs
     // are left out, same rule as the teacher dashboard's own queries.
-    /** @return list<LessonSession> */
-    public function findAllForDay(\DateTimeImmutable $day, bool $testMode = false): array
+    /**
+     * @param list<VisibilityLevel>|null $visibleTiers
+     *
+     * @return list<LessonSession>
+     */
+    public function findAllForDay(\DateTimeImmutable $day, bool $testMode = false, ?array $visibleTiers = null): array
     {
-        return $this->createQueryBuilder('l')
+        $queryBuilder = $this->createQueryBuilder('l')
             ->addSelect('p', 'c', 'ct', 'r', 't', 'te')
             ->innerJoin('l.program', 'p')
             ->innerJoin('p.cohort', 'c')
@@ -372,7 +465,9 @@ class LessonSessionRepository extends ServiceEntityRepository
             ->setParameter('day', $day)
             ->setParameter('testMode', $testMode)
             ->orderBy('p.shortName', 'ASC')
-            ->addOrderBy('l.startHour', 'ASC')
+            ->addOrderBy('l.startHour', 'ASC');
+
+        return $this->restrictToVisibleTimetables($queryBuilder, $visibleTiers)
             ->getQuery()
             ->getResult();
     }
@@ -380,16 +475,19 @@ class LessonSessionRepository extends ServiceEntityRepository
     // Sibling of findAllForDay() for the staff dashboard's day fallback: the next day after $day
     // carrying a session in any active, non-test Program, or null when there is none left - same
     // filters as findAllForDay(), so the day it hands back can never render an empty matrix.
-    public function findNextSessionDayForAnyProgram(\DateTimeImmutable $day, bool $testMode = false): ?\DateTimeImmutable
+    /** @param list<VisibilityLevel>|null $visibleTiers */
+    public function findNextSessionDayForAnyProgram(\DateTimeImmutable $day, bool $testMode = false, ?array $visibleTiers = null): ?\DateTimeImmutable
     {
-        $nextDay = $this->createQueryBuilder('l')
+        $queryBuilder = $this->createQueryBuilder('l')
             ->select('MIN(l.day)')
             ->innerJoin('l.program', 'p')
             ->where('l.day > :day')
             ->andWhere('p.inactiveDate IS NULL')
             ->andWhere('p.testProgram = :testMode')
             ->setParameter('day', $day)
-            ->setParameter('testMode', $testMode)
+            ->setParameter('testMode', $testMode);
+
+        $nextDay = $this->restrictToVisibleTimetables($queryBuilder, $visibleTiers)
             ->getQuery()
             ->getSingleScalarResult();
 
@@ -430,16 +528,19 @@ class LessonSessionRepository extends ServiceEntityRepository
     // arrow. Both back the same rule: the arrows step from one day that actually has classes to
     // the next, never through the empty days in between (weekends, holidays, alternance weeks),
     // and hand back null when there is nothing further that way - which is what disables the arrow.
-    public function findPreviousSessionDayForAnyProgram(\DateTimeImmutable $day, bool $testMode = false): ?\DateTimeImmutable
+    /** @param list<VisibilityLevel>|null $visibleTiers */
+    public function findPreviousSessionDayForAnyProgram(\DateTimeImmutable $day, bool $testMode = false, ?array $visibleTiers = null): ?\DateTimeImmutable
     {
-        $previousDay = $this->createQueryBuilder('l')
+        $queryBuilder = $this->createQueryBuilder('l')
             ->select('MAX(l.day)')
             ->innerJoin('l.program', 'p')
             ->where('l.day < :day')
             ->andWhere('p.inactiveDate IS NULL')
             ->andWhere('p.testProgram = :testMode')
             ->setParameter('day', $day)
-            ->setParameter('testMode', $testMode)
+            ->setParameter('testMode', $testMode);
+
+        $previousDay = $this->restrictToVisibleTimetables($queryBuilder, $visibleTiers)
             ->getQuery()
             ->getSingleScalarResult();
 

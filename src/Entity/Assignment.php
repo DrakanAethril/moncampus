@@ -431,6 +431,43 @@ class Assignment implements AccessConditionHost
         return $this;
     }
 
+    /**
+     * Whether this travail is settled by the opening rather than by a declaration - the « À lire »
+     * with its read tracking on, and it alone.
+     *
+     * The flag used to be read in one place only, the « Avancement » sentence of the list, while
+     * the follow-up table went on reading « marquer comme fait ». The screen then announced « lu par
+     * 12 / 19 » over nineteen lines all saying « Non fait », with no way to name the twelve. Both
+     * sides ask this one question now: an opening is an observed fact, dated, that the student does
+     * not choose to produce, and it is the only thing this nature counts.
+     */
+    public function readsByOpening(): bool
+    {
+        return AssignmentNature::ToRead === $this->nature && $this->readTrackingEnabled;
+    }
+
+    /**
+     * What « fait » is called on this travail, in the teacher's follow-up - the nature's vocabulary,
+     * except where the opening is the proof: « Lu » is what a tracked reading says, and « Fait »
+     * over a column filled with opening dates says something nobody declared.
+     */
+    public function followUpDoneLabelKey(): string
+    {
+        return $this->readsByOpening() ? 'assignmentFollowUpReadLabel' : $this->nature->followUpDoneLabelKey();
+    }
+
+    /** And what it is called while nothing has come - the same vocabulary, negated. */
+    public function followUpPendingLabelKey(): string
+    {
+        return $this->readsByOpening() ? 'assignmentFollowUpNotReadLabel' : $this->nature->followUpPendingLabelKey();
+    }
+
+    /** The header of the date column beside it. */
+    public function followUpDateColumnLabelKey(): string
+    {
+        return $this->readsByOpening() ? 'assignmentFollowUpReadAtColumnLabel' : $this->nature->followUpDateColumnLabelKey();
+    }
+
     /** @return Collection<int, AssignmentExpectedProduction> */
     public function getExpectedProductions(): Collection
     {

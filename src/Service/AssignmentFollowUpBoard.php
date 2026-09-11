@@ -10,6 +10,7 @@ use App\Entity\User;
 use App\Enum\AssignmentFollowUpStatus;
 use App\Repository\AssignmentCompletionRepository;
 use App\Repository\AssignmentSubmissionRepository;
+use App\Repository\AssignmentViewRepository;
 use App\Repository\AudioListenProgressRepository;
 use App\Repository\QuizAttemptRepository;
 use App\Repository\SelfAssessmentRepository;
@@ -34,6 +35,7 @@ class AssignmentFollowUpBoard
 {
     public function __construct(
         private readonly AssignmentSubmissionRepository $submissionRepository,
+        private readonly AssignmentViewRepository $viewRepository,
         private readonly QuizAttemptRepository $attemptRepository,
         private readonly SelfAssessmentRepository $selfAssessmentRepository,
         private readonly AssignmentCompletionRepository $completionRepository,
@@ -89,6 +91,13 @@ class AssignmentFollowUpBoard
             }
 
             return $this->datedRows($assignment, $audience, $dates);
+        }
+
+        // The « À lire » whose read tracking is on: its proof is the opening, which is what the
+        // « Avancement » sentence above the table has always counted. Reading the declaration here
+        // instead is what printed « lu par 12 / 19 » over nineteen lines all saying « Non fait ».
+        if ($assignment->readsByOpening()) {
+            return $this->datedRows($assignment, $audience, $this->viewRepository->findFirstViewDatesByStudentIdForAssignment($assignment));
         }
 
         return $this->datedRows($assignment, $audience, $this->completionRepository->findDoneDatesByStudentIdForAssignment($assignment));
@@ -293,7 +302,7 @@ class AssignmentFollowUpBoard
     private function labelKeyOf(Assignment $assignment, AssignmentFollowUpStatus $status): string
     {
         return AssignmentFollowUpStatus::Pending === $status
-            ? $assignment->getNature()->followUpPendingLabelKey()
-            : $assignment->getNature()->followUpDoneLabelKey();
+            ? $assignment->followUpPendingLabelKey()
+            : $assignment->followUpDoneLabelKey();
     }
 }

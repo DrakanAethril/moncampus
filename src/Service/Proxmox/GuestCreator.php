@@ -36,6 +36,12 @@ use Symfony\Component\Lock\LockFactory;
  *  - **the operation row is opened before the first call**, so a creation that vanishes into a dead
  *    network still records who asked for it.
  *
+ * One more thing happens the moment the creation is accepted, and it belongs here rather than in
+ * any caller: the VMID is handed over. Proxmox gives a number back as soon as a machine is deleted,
+ * so a creation that is accepted at a VMID proves the previous holder is gone - and everything
+ * MonCampus still records under it has to be let go before the new machine starts answering for it.
+ * See App\Service\Proxmox\VmidHandover.
+ *
  * An ISO installation cannot be configured at all - there is no cloud-init drive to write into - so
  * the address is reserved and the values are handed to a human to type. That path is not marginal:
  * with no Windows template in the fleet it is half the machines.
@@ -48,6 +54,7 @@ class GuestCreator
         private readonly ProxmoxInventory $inventory,
         private readonly ProxmoxOperationTracker $tracker,
         private readonly IpAllocator $allocator,
+        private readonly VmidHandover $handover,
         private readonly GuestNetworkConfigurator $configurator,
         private readonly GuestAuthorizedKeys $authorizedKeys,
         private readonly LockFactory $lockFactory,
@@ -105,6 +112,11 @@ class GuestCreator
                 : $this->createBlank($client, $host, $request);
 
             $this->tracker->accepted($operation, $upid);
+            // The hypervisor accepting a creation at this VMID is the proof that nobody held it:
+            // whatever the platform still records under it belongs to a machine that is gone, and
+            // read as current it makes the new machine answer for its predecessor. Swept *before*
+            // the address below is stamped with the number, which is what tells the two apart.
+            $this->handover->reclaim($host, $request->vmid);
             $this->allocator->assign($allocation, $request->vmid, $request->node, $operation);
 
             return $operation;

@@ -71,9 +71,7 @@ class UserMachineFinder
         $hosts = $this->hostsOf($accounts);
         $logins = $this->loginsByHost($hosts, $accounts);
         $pending = $this->pendingByHost($hosts, $accounts);
-        $addresses = $this->allocations->findAddressesForVmids(array_values(array_unique(
-            array_map(static fn (GuestAccount $account): int => $account->getVmid(), $accounts),
-        )));
+        $addresses = $this->addressesByHost($hosts, $accounts);
         $machines = [];
 
         foreach ($accounts as $account) {
@@ -94,7 +92,7 @@ class UserMachineFinder
                 // The batch's own allocation first, the registry as the fallback - the same order
                 // MyMachineController uses to decide where to open an SSH session, because a card
                 // showing one address while the password went to another is a bug nobody can see.
-                $item?->getIpAllocation()?->getIp() ?? $addresses[$account->getVmid()] ?? null,
+                $item?->getIpAllocation()?->getIp() ?? $addresses[$hostId][$account->getVmid()] ?? null,
                 $guest?->status,
                 $batch?->getLabel(),
                 $logins[\sprintf('%d/%s/%d', $hostId, $account->getNode(), $account->getVmid())] ?? [$account->getLogin()],
@@ -155,6 +153,31 @@ class UserMachineFinder
         }
 
         return $vmids;
+    }
+
+    /**
+     * Where each machine answers, per host.
+     *
+     * Per host and not in one sweep by VMID, for the reason this whole class keys on (host, VMID):
+     * a VMID is unique inside one cluster and nowhere else, and the registry keeps the rows of the
+     * machines that held a number before the current one. Asked by the number alone it answered a
+     * student's card with a dead machine's address.
+     *
+     * @param array<int, ProxmoxHost> $hosts
+     * @param list<GuestAccount>      $accounts
+     *
+     * @return array<int, array<int, string>> host id => vmid => address
+     */
+    private function addressesByHost(array $hosts, array $accounts): array
+    {
+        $vmids = $this->vmidsByHost($accounts);
+        $addresses = [];
+
+        foreach ($hosts as $hostId => $host) {
+            $addresses[$hostId] = $this->allocations->findAddressesForVmids($host, array_values($vmids[$hostId] ?? []));
+        }
+
+        return $addresses;
     }
 
     /**

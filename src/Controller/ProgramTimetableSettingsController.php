@@ -94,18 +94,23 @@ class ProgramTimetableSettingsController extends AbstractController
         $program = $this->findOrNotFound($id, $repository);
 
         // Read-only: the teaching team roster is derived from the program's existing Topics
-        // (discipline -> teacher) rather than a separate entity - see the entity docblocks for
+        // (discipline -> titulaires) rather than a separate entity - see the entity docblocks for
         // why this isn't duplicated here.
         $topicsByTeacher = [];
         foreach ($topicRepository->findAllActiveForProgram($program) as $topic) {
-            $teacher = $topic->getTeacher();
-            $key = $teacher?->getId() ?? 0;
+            // A matière held by two titulaires is listed under each of them - the roster answers
+            // "what does this person teach here", and both answers are true.
+            $teachers = $topic->getOrderedTeachers();
 
-            if (!isset($topicsByTeacher[$key])) {
-                $topicsByTeacher[$key] = ['teacher' => $teacher, 'topics' => []];
+            foreach ([] !== $teachers ? $teachers : [null] as $teacher) {
+                $key = $teacher?->getId() ?? 0;
+
+                if (!isset($topicsByTeacher[$key])) {
+                    $topicsByTeacher[$key] = ['teacher' => $teacher, 'topics' => []];
+                }
+
+                $topicsByTeacher[$key]['topics'][] = $topic;
             }
-
-            $topicsByTeacher[$key]['topics'][] = $topic;
         }
 
         return $this->render('program/timetable_settings.html.twig', [
@@ -429,7 +434,7 @@ class ProgramTimetableSettingsController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             /** @var Topic $entity */
             $entity = $form->getData();
-            $entity->setTeacher($this->resolveProgramTeacher($program, $request->request->get('teacher')));
+            $this->applyTopicTeachers($entity, $program, $request->request->all('teachers'));
             $this->stampAuditFields($entity, $isEdit);
 
             $entityManager->persist($entity);
@@ -451,6 +456,31 @@ class ProgramTimetableSettingsController extends AbstractController
     // other deactivate actions) - same reasoning as removeLessonSession() above: the Topics tab
     // is now a single server-rendered page (see topicsTab()), not an ajax-paginated DataTable, so
     // there's no client-side table to reload in place after the action.
+    /**
+     * Replaces the matière's titulaires with what was posted - removing the ones that left rather
+     * than only adding, since this screen is the whole statement of who holds the matière.
+     *
+     * A removed titulaire keeps every evaluation they posed (Evaluation::$createdBy, which is what
+     * App\Security\Voter\EvaluationVoter reads): the carnet does not lose a column because
+     * somebody stopped teaching the matière - they simply stop being able to write in it.
+     *
+     * @param list<mixed> $postedTeacherIds
+     */
+    private function applyTopicTeachers(Topic $topic, Program $program, array $postedTeacherIds): void
+    {
+        $picked = $this->resolveProgramTeachers($program, $postedTeacherIds);
+
+        foreach ($topic->getTeachers()->toArray() as $current) {
+            if (!\in_array($current, $picked, true)) {
+                $topic->removeTeacher($current);
+            }
+        }
+
+        foreach ($picked as $teacher) {
+            $topic->addTeacher($teacher);
+        }
+    }
+
     #[Route(path: '/programs/{id}/settings/topics/{topicId}/deactivate', name: 'app_program_timetable_settings_topics_deactivate', methods: ['POST'])]
     public function deactivateTopic(int $id, int $topicId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, TopicRepository $topicRepository): Response
     {
@@ -589,6 +619,31 @@ class ProgramTimetableSettingsController extends AbstractController
         }
 
         return null;
+    }
+
+    /**
+     * The titulaires posted by the multi tom-select of the matière form. Only the program's own
+     * teachers are eligible, same "the server re-checks what the field offered" rule as
+     * resolveProgramTeacher() above - a posted id that is not one of them is dropped in silence
+     * rather than refused, since the field could not have offered it in the first place.
+     *
+     * @return list<User>
+     */
+    private function resolveProgramTeachers(Program $program, mixed $teacherIds): array
+    {
+        if (!\is_array($teacherIds)) {
+            return [];
+        }
+
+        $resolved = [];
+        foreach ($teacherIds as $teacherId) {
+            $teacher = $this->resolveProgramTeacher($program, $teacherId);
+            if (null !== $teacher && !\in_array($teacher, $resolved, true)) {
+                $resolved[] = $teacher;
+            }
+        }
+
+        return $resolved;
     }
 
     private function stampAuditFields(object $entity, bool $isEdit): void

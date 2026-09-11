@@ -44,7 +44,7 @@ class ConsoleWallReader
     {
         $vmid = $item->getVmid() ?? 0;
         $name = $item->getGuestName();
-        $ip = $item->getIpAllocation()?->getIp() ?? $this->allocations->findAddressForVmid($vmid);
+        $ip = $item->getIpAllocation()?->getIp() ?? $this->allocations->findAddressForVmid($item->getBatch()?->getHost(), $vmid);
 
         if (null === $ip) {
             return ['ok' => false, 'name' => $name, 'vmid' => $vmid, 'lines' => '', 'state' => 'unknown'];

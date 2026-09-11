@@ -182,7 +182,7 @@ class ProgressionController extends AbstractController
     }
 
     // 3c - the full-page creation form. The matière list is deliberately restricted to Topics this
-    // teacher owns that have no progression yet ("couples sans progression uniquement").
+    // teacher holds that have no progression yet ("couples sans progression uniquement").
     #[Route(path: '/progression/new', name: 'app_progression_new', methods: ['GET', 'POST'])]
     public function create(Request $request): Response
     {
@@ -231,6 +231,7 @@ class ProgressionController extends AbstractController
             // chip's data-cohort-id into 0..n and stopped it matching the topic rows.
             'cohorts' => $this->distinctCohorts($candidates),
             'hoursByTopicId' => $this->hoursByTopicId($candidates),
+            'heldByColleague' => $this->topicsHeldByColleague($teacher, $schoolYear),
         ]);
     }
 
@@ -1042,6 +1043,35 @@ class ProgressionController extends AbstractController
             $this->topicRepository->findForTeacherInSchoolYear($teacher, $schoolYear),
             fn (Topic $topic): bool => null === $this->progressionRepository->findOneForTopic($topic),
         ));
+    }
+
+    /**
+     * The matières this teacher holds whose progression is somebody else's - the case a matière with
+     * two titulaires creates, and the one thing 3c must not answer by simply dropping the row.
+     *
+     * A matière has one plan (Progression is a OneToOne on Topic, see design/validated/
+     * co-animation.md): the second titulaire does not create a second one, they are named on the
+     * existing one as a co-animateur. So the screen says whose it is and stops there - the naming
+     * is the owner's gesture, made from their own progression.
+     *
+     * @return list<array{topic: Topic, owner: User}>
+     */
+    private function topicsHeldByColleague(User $teacher, SchoolYear $schoolYear): array
+    {
+        $rows = [];
+
+        foreach ($this->topicRepository->findForTeacherInSchoolYear($teacher, $schoolYear) as $topic) {
+            $progression = $this->progressionRepository->findOneForTopic($topic);
+            $owner = $progression?->getTeacher();
+
+            if (null === $progression || null === $owner || $owner === $teacher || $progression->isCoTeacher($teacher)) {
+                continue;
+            }
+
+            $rows[] = ['topic' => $topic, 'owner' => $owner];
+        }
+
+        return $rows;
     }
 
     /**
