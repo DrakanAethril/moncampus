@@ -203,15 +203,32 @@ class FileUploadService
      *
      * What is *not* changed is whether the file opens or downloads - that stays
      * App\Service\UploadPolicy's answer, the same one the object itself was written with, so a PDF
-     * still opens in the tab and merely saves under the right name from there.
+     * still opens in the tab and merely saves under the right name from there. A link whose label
+     * says « Télécharger » wants the other answer: that one is attachmentUrl().
      *
      * The signature is deliberately short-lived. The CDN address it replaces is permanent and
      * unauthenticated, so this is the more closed of the two, not the more open one.
      */
     public function downloadUrl(string $key, string $name, string $lifetime = self::CLICK_LIFETIME): string
     {
-        $disposition = UploadPolicy::servesInline($key) ? 'inline' : 'attachment';
+        return $this->presignedUrl($key, $name, UploadPolicy::servesInline($key) ? 'inline' : 'attachment', $lifetime);
+    }
 
+    /**
+     * The same address, forced to `attachment`: the browser saves the file instead of opening it,
+     * whatever the type says.
+     *
+     * This is what a « Télécharger » entry needs. downloadUrl() leaves the choice to the type, so a
+     * PDF opens in the viewer - which is the right answer for a name link or a preview, and the
+     * wrong one for a menu entry that names the gesture.
+     */
+    public function attachmentUrl(string $key, string $name, string $lifetime = self::CLICK_LIFETIME): string
+    {
+        return $this->presignedUrl($key, $name, 'attachment', $lifetime);
+    }
+
+    private function presignedUrl(string $key, string $name, string $disposition, string $lifetime): string
+    {
         $command = $this->s3Client->getCommand('GetObject', [
             'Bucket' => $this->awsS3Bucket,
             // The raw client, unlike Flysystem, is not scoped by the environment prefix - see
