@@ -27,12 +27,19 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * inside machines Proxmox has already answered it does not hold. A host that does not answer decides
  * nothing at all - those accounts are counted apart and left exactly as they are.
  *
- * Not a cron. Run it after a session of deleting batches, or when « Mes machines » shows something
- * /infrastructure does not. `--dry-run` names every row it would remove; run that first.
+ * It also forgets the rows of a machine that was *replaced* rather than merely deleted: Proxmox
+ * hands a VMID back when a machine goes, a later batch takes the number, and the previous class's
+ * accounts go on being filed under it - which is how a deployment came to create a former class's
+ * students on a new machine. That half is decided from the platform's own records and needs no
+ * hypervisor. See App\Service\Guest\StaleGuestAccountPruner.
+ *
+ * Not a cron. Run it after a session of deleting batches, after redeploying onto numbers that were
+ * freed, or when « Mes machines » shows something /infrastructure does not. `--dry-run` names every
+ * row it would remove; run that first.
  */
 #[AsCommand(
     name: 'app:guest-accounts:prune',
-    description: 'Supprime les comptes déclarés dans des machines qui n\'existent plus sur le serveur de virtualisation.',
+    description: 'Supprime les comptes déclarés dans des machines qui n\'existent plus, ou dont le numéro a été repris par un autre lot.',
 )]
 class PruneGuestAccountsCommand extends Command
 {
@@ -80,7 +87,7 @@ class PruneGuestAccountsCommand extends Command
         }
 
         if ([] === $report->stale) {
-            $io->success('Aucun compte orphelin.');
+            $io->success('Aucun compte à oublier.');
 
             return Command::SUCCESS;
         }
@@ -91,7 +98,7 @@ class PruneGuestAccountsCommand extends Command
             return Command::SUCCESS;
         }
 
-        $io->success(\sprintf('%d compte(s) orphelin(s) supprimé(s).', \count($report->stale)));
+        $io->success(\sprintf('%d compte(s) supprimé(s).', \count($report->stale)));
 
         return Command::SUCCESS;
     }

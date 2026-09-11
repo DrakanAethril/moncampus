@@ -115,7 +115,7 @@ class ConsoleBroadcaster
         foreach ($this->itemsOf($batch) as $item) {
             $vmid = $item->getVmid() ?? 0;
             $name = $item->getGuestName();
-            $ip = $item->getIpAllocation()?->getIp() ?? $this->allocations->findAddressForVmid($vmid);
+            $ip = $item->getIpAllocation()?->getIp() ?? $this->allocations->findAddressForVmid($batch->getHost(), $vmid);
 
             if (null === $ip) {
                 $results[] = ['vmid' => $vmid, 'name' => $name, 'ok' => false, 'message' => $this->translator->trans('consoleBroadcastNoAddressLabel')];

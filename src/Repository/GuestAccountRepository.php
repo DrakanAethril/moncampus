@@ -47,6 +47,27 @@ class GuestAccountRepository extends ServiceEntityRepository
     }
 
     /**
+     * Every account recorded under one machine's number, whatever node it was declared on.
+     *
+     * Node-blind on purpose, which findForMachine() cannot be: this is the sweep that runs when a
+     * *new* machine takes a VMID (App\Service\Proxmox\VmidHandover), and what it has to find is
+     * precisely the rows the previous occupant left - including the ones it left on another node.
+     *
+     * @return list<GuestAccount>
+     */
+    public function findForVmid(ProxmoxHost $host, int $vmid): array
+    {
+        return $this->createQueryBuilder('a')
+            ->andWhere('a.host = :host')
+            ->andWhere('a.vmid = :vmid')
+            ->setParameter('host', $host)
+            ->setParameter('vmid', $vmid)
+            ->orderBy('a.login', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * The logins declared on several machines of one host at once, keyed by `node/vmid`.
      *
      * The plural of findForMachine(), and it exists for « Mes machines virtuelles »: that screen

@@ -7,6 +7,8 @@ namespace App\Tests\Service\Proxmox;
 use App\Entity\IpAllocation;
 use App\Entity\IpRange;
 use App\Entity\ProxmoxHost;
+use App\Entity\ProxmoxOperation;
+use App\Enum\ProxmoxAction;
 use App\Service\Guest\AuthorizedKeySet;
 use App\Service\Guest\GuestAuthorizedKeys;
 use App\Service\Network\GuestNetworkConfigurator;
@@ -20,6 +22,7 @@ use App\Service\Proxmox\ProxmoxOperationTracker;
 use App\Service\Proxmox\ProxmoxResponse;
 use App\Service\Proxmox\ProxmoxScopeGuard;
 use App\Service\Proxmox\ProxmoxUnavailableException;
+use App\Service\Proxmox\VmidHandover;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
@@ -42,6 +45,9 @@ use Symfony\Component\Lock\SharedLockInterface;
  */
 class GuestCreatorTest extends TestCase
 {
+    /** Set by the one test that watches the VMID being handed over; a stub everywhere else. */
+    private ?VmidHandover $handover = null;
+
     /** What a cloud-init drive looks like in a VM's configuration - the bus varies, the word does not. */
     private const string CLOUD_INIT_DRIVE = 'local-lvm:vm-9000-cloudinit,media=cdrom';
 
@@ -138,6 +144,7 @@ class GuestCreatorTest extends TestCase
             new ProxmoxInventory(),
             $tracker,
             $this->createStub(IpAllocator::class),
+            $this->handover ?? $this->createStub(VmidHandover::class),
             // The real one: it is pure, and the payload it builds is precisely what the wiring
             // tests below are about.
             new GuestNetworkConfigurator(),
@@ -201,6 +208,62 @@ class GuestCreatorTest extends TestCase
         } catch (\Throwable) {
             // The imitated client answers nothing to the clone, which fails - after the quota.
         }
+    }
+
+    /**
+     * A VMID is a slot, not a machine, and this is where the platform stops confusing the two.
+     *
+     * Proxmox hands a number back the moment a machine is deleted, and the platform's own records
+     * of that machine - its address in the registry, the accounts declared inside it - stay filed
+     * under the number. A later batch takes it, and those rows are then read as describing the new
+     * machine: the accounts screen offered a former class's students on it and the registry
+     * answered with the dead machine's address, so every gesture ran against the wrong host.
+     *
+     * The clone being accepted is the proof that nobody held the number, which is why the handover
+     * is asked for here and not on a schedule.
+     */
+    public function testAcceptingACreationHandsTheVmidOverFromWhoeverHeldItBefore(): void
+    {
+        $host = $this->host(null);
+
+        $handover = $this->createMock(VmidHandover::class);
+        $handover->expects(self::once())
+            ->method('reclaim')
+            ->with($host, 250)
+            ->willReturn(['addresses' => 1, 'accounts' => 3]);
+        $this->handover = $handover;
+
+        $client = $this->createMock(ProxmoxClient::class);
+        $client->method('get')->willReturn(ProxmoxResponse::fromData([]));
+        $client->expects(self::once())
+            ->method('post')
+            ->with('/nodes/pve/qemu/9001/clone')
+            ->willReturn(ProxmoxResponse::fromData('UPID:pve:0000:clone'));
+
+        $tracker = $this->createMock(ProxmoxOperationTracker::class);
+        $tracker->method('begin')->willReturn(new ProxmoxOperation($host, ProxmoxAction::Clone, null));
+
+        $this->creator($client, $tracker)->create($host, $this->request(), new IpAllocation($this->range(), '10.30.0.10'), null);
+    }
+
+    /** A creation the hypervisor refused proves nothing about the number - so nothing is let go. */
+    public function testACreationThatIsRefusedHandsNothingOver(): void
+    {
+        $handover = $this->createMock(VmidHandover::class);
+        $handover->expects(self::never())->method('reclaim');
+        $this->handover = $handover;
+
+        $client = $this->createMock(ProxmoxClient::class);
+        $client->method('get')->willReturn(ProxmoxResponse::fromData([]));
+        $client->method('post')->willThrowException(new ProxmoxUnavailableException('VM 250 already exists'));
+
+        $host = $this->host(null);
+        $tracker = $this->createMock(ProxmoxOperationTracker::class);
+        $tracker->method('begin')->willReturn(new ProxmoxOperation($host, ProxmoxAction::Clone, null));
+
+        $this->expectException(ProxmoxUnavailableException::class);
+
+        $this->creator($client, $tracker)->create($host, $this->request(), new IpAllocation($this->range(), '10.30.0.10'), null);
     }
 
     /**

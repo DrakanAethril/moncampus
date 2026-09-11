@@ -76,6 +76,45 @@ class VmBatchItemRepository extends ServiceEntityRepository
     }
 
     /**
+     * Which batch built the machine that holds each (host, VMID) *now*.
+     *
+     * The same map as findBatchesByHostAndVmid(), narrowed to the items whose machine actually
+     * exists - and that narrowing is the whole point. **A plan is not a machine**: VMIDs are chosen
+     * against what the hypervisor reports at planning time, and when it cannot be reached the
+     * planner says so and picks anyway. A batch nobody ever deployed must therefore never be read
+     * as the current holder of a number another batch is running on.
+     *
+     * Failed items are left out for the same reason in the other direction: a clone the hypervisor
+     * refused opens an operation row too, so « it has an operation » proves nothing. What proves a
+     * machine exists is the item having got past the creation call.
+     *
+     * @return array<int, array<int, int>> host id => vmid => batch id
+     */
+    public function findDeployedBatchIdsByHostAndVmid(): array
+    {
+        /** @var list<array{hostId: int, vmid: int, batchId: int}> $rows */
+        $rows = $this->createQueryBuilder('i')
+            ->select('IDENTITY(b.host) AS hostId', 'i.vmid AS vmid', 'b.id AS batchId')
+            ->join('i.batch', 'b')
+            ->andWhere('i.vmid IS NOT NULL')
+            ->andWhere('i.status IN (:existing)')
+            ->setParameter('existing', [VmBatchItemStatus::Creating, VmBatchItemStatus::Created, VmBatchItemStatus::Provisioned])
+            ->orderBy('i.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $map = [];
+
+        foreach ($rows as $row) {
+            // Latest wins, like findOneForMachine()'s id DESC: a VMID Proxmox handed back and a
+            // later deployment took belongs to that deployment, and to nothing before it.
+            $map[$row['hostId']][$row['vmid']] = $row['batchId'];
+        }
+
+        return $map;
+    }
+
+    /**
      * The items a "resume" should try again - the ones that never started and the ones that failed.
      * Anything already created is left alone, which is what makes resuming safe to press twice.
      *

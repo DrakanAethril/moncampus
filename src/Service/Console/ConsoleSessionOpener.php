@@ -201,7 +201,7 @@ class ConsoleSessionOpener
     private function addressOf(ProxmoxHost $host, int $vmid): ?string
     {
         return $this->items->findOneForMachine($host, $vmid)?->getIpAllocation()?->getIp()
-            ?? $this->allocations->findAddressForVmid($vmid);
+            ?? $this->allocations->findAddressForVmid($host, $vmid);
     }
 
     private function nameOf(ProxmoxHost $host, int $vmid): ?string
