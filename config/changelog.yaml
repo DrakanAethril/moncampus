@@ -26,6 +26,28 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.11'
+      date: '2026-09-11'
+      summary: "Une matière peut désormais être tenue par plusieurs enseignants : chacun lit tout le carnet de notes de la matière et ne modifie que les évaluations qu'il a lui-même posées. Cinq corrections l'accompagnent, dont la visibilité de l'emploi du temps d'une formation, qui n'était pas respectée partout."
+      entries:
+          - type: nouveaute
+            title: "Plusieurs enseignants sur une même matière"
+            detail: "Les titulaires d'une matière se saisissent sur l'écran de la matière. Chacun voit l'ensemble de son carnet de notes, et ne modifie que les évaluations dont il est l'auteur ; la grille indique colonne par colonne à qui appartient chacune."
+          - type: modification
+            title: "Convertir en note depuis l'écran de résultats d'un quiz"
+            detail: "Le lien mène au travail qui porte le quiz, ou ouvre la création d'un travail sur lui quand aucun ne le nomme."
+          - type: fix
+            title: "La visibilité de l'emploi du temps d'une formation est respectée partout"
+            detail: "Une formation dont l'emploi du temps est réservé à l'administration ne le sert plus à ses étudiants, ni sur l'accueil, ni dans la barre, ni dans l'application mobile. Même correction pour les travaux à faire et l'entrée « Syllabus »."
+          - type: fix
+            title: "Le suivi d'un travail « À lire » nomme les étudiants qui l'ont ouvert"
+            detail: "Le tableau affichait « Non fait » pour tout le monde pendant que le bandeau comptait les lectures ; il parle maintenant le même langage, « Lu » et « Lu le »."
+          - type: fix
+            title: "« Télécharger » enregistre le fichier, même un PDF"
+            detail: "Un PDF s'ouvrait dans la visionneuse du navigateur au lieu d'être enregistré. L'aperçu et le clic sur le nom du fichier continuent de l'afficher."
+          - type: fix
+            title: "Les comptes d'une machine virtuelle ne se mélangent plus avec ceux d'une machine détruite"
+            detail: "Un numéro de machine rendu puis réattribué faisait remonter les étudiants et l'adresse de l'occupante précédente."
     - version: '2026.09.10.2'
       date: '2026-09-10'
       summary: "L'écran de correction d'une postulation donne maintenant à lire les versions précédentes de la candidature, pièces jointes comprises, pour que les remarques déjà faites gardent leur objet sous les yeux. L'emploi du temps, lui, ne propose plus d'ouvrir un cahier de texte auquel on n'a pas accès."
