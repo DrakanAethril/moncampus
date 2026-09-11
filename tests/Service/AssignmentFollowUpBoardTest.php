@@ -22,6 +22,7 @@ use App\Enum\AssignmentNature;
 use App\Enum\AttemptStatus;
 use App\Repository\AssignmentCompletionRepository;
 use App\Repository\AssignmentSubmissionRepository;
+use App\Repository\AssignmentViewRepository;
 use App\Repository\AudioListenProgressRepository;
 use App\Repository\QuizAttemptRepository;
 use App\Repository\SelfAssessmentRepository;
@@ -184,10 +185,70 @@ class AssignmentFollowUpBoardTest extends TestCase
     }
 
     /**
+     * The « À lire » with its read tracking on: the opening is the proof, which is what the
+     * « Avancement » sentence above the table counts. Reading the declaration here instead is what
+     * printed « lu par 12 / 19 » over nineteen lines all saying « Non fait », with no way to name
+     * the twelve.
+     */
+    public function testATrackedReadingIsReadThroughItsOpeningsAndNotThroughDeclarations(): void
+    {
+        $assignment = $this->assignment(AssignmentNature::ToRead);
+
+        $rows = $this->rows(
+            $assignment,
+            views: [(int) $this->marie->getId() => new \DateTimeImmutable('2026-09-08 15:42')],
+            completions: [(int) $this->paul->getId() => new \DateTimeImmutable('2026-09-09 08:00')],
+        );
+
+        $this->assertSame(AssignmentFollowUpStatus::Done, $rows[0]->status);
+        $this->assertSame('assignmentFollowUpReadLabel', $rows[0]->statusLabelKey);
+        $this->assertEquals(new \DateTimeImmutable('2026-09-08 15:42'), $rows[0]->doneAt);
+
+        // Paul declared it done without ever opening it - a declaration is not an opening, and the
+        // column says « Lu le ».
+        $this->assertSame(AssignmentFollowUpStatus::Pending, $rows[1]->status);
+        $this->assertSame('assignmentFollowUpNotReadLabel', $rows[1]->statusLabelKey);
+        $this->assertNull($rows[1]->doneAt);
+    }
+
+    /** Tracking off: the travail goes back to being settled by the student's word. */
+    public function testAReadingWithoutTrackingStillReadsTheDeclaration(): void
+    {
+        $assignment = $this->assignment(AssignmentNature::ToRead);
+        $assignment->setReadTrackingEnabled(false);
+
+        $rows = $this->rows(
+            $assignment,
+            views: [(int) $this->marie->getId() => new \DateTimeImmutable('2026-09-08 15:42')],
+            completions: [(int) $this->paul->getId() => new \DateTimeImmutable('2026-09-09 08:00')],
+        );
+
+        $this->assertSame(AssignmentFollowUpStatus::Pending, $rows[0]->status);
+        $this->assertSame('assignmentFollowUpNotDoneLabel', $rows[0]->statusLabelKey);
+        $this->assertSame(AssignmentFollowUpStatus::Done, $rows[1]->status);
+        $this->assertSame('assignmentFollowUpDoneLabel', $rows[1]->statusLabelKey);
+    }
+
+    /** The three wordings the screen asks the assignment for, rather than its nature. */
+    public function testATrackedReadingNamesItsColumnAfterTheOpening(): void
+    {
+        $assignment = $this->assignment(AssignmentNature::ToRead);
+
+        $this->assertTrue($assignment->readsByOpening());
+        $this->assertSame('assignmentFollowUpReadAtColumnLabel', $assignment->followUpDateColumnLabelKey());
+
+        $assignment->setReadTrackingEnabled(false);
+
+        $this->assertFalse($assignment->readsByOpening());
+        $this->assertSame('assignmentFollowUpDoneAtColumnLabel', $assignment->followUpDateColumnLabelKey());
+    }
+
+    /**
      * @param list<QuizAttempt>                     $attempts
      * @param array<int, list<AssignmentSubmission>> $submissions
      * @param array<int, SelfAssessment>            $selfAssessments
      * @param array<int, \DateTimeImmutable>        $completions
+     * @param array<int, \DateTimeImmutable>        $views
      * @param list<SurveyTarget>                    $surveyTargets
      *
      * @return list<AssignmentFollowUpRow>
@@ -199,6 +260,7 @@ class AssignmentFollowUpBoardTest extends TestCase
         array $selfAssessments = [],
         array $completions = [],
         array $surveyTargets = [],
+        array $views = [],
     ): array {
         $submissionRepository = $this->createStub(AssignmentSubmissionRepository::class);
         $submissionRepository->method('findAllByStudentIdForAssignment')->willReturn($submissions);
@@ -215,8 +277,12 @@ class AssignmentFollowUpBoardTest extends TestCase
         $surveyTargetRepository = $this->createStub(SurveyTargetRepository::class);
         $surveyTargetRepository->method('findAllFor')->willReturn($surveyTargets);
 
+        $viewRepository = $this->createStub(AssignmentViewRepository::class);
+        $viewRepository->method('findFirstViewDatesByStudentIdForAssignment')->willReturn($views);
+
         $board = new AssignmentFollowUpBoard(
             $submissionRepository,
+            $viewRepository,
             $attemptRepository,
             $selfAssessmentRepository,
             $completionRepository,

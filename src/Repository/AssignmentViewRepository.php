@@ -26,6 +26,34 @@ class AssignmentViewRepository extends ServiceEntityRepository
     }
 
     /**
+     * When each student of one assignment first opened it - the date the follow-up screen prints
+     * under « Lu le », and the detail of the count below.
+     *
+     * The first opening and not the last: it says when the student took notice of the travail,
+     * which is what the reading is being credited for. Coming back to it later does not make it
+     * read a second time.
+     *
+     * @return array<int, \DateTimeImmutable> student identifier => when they first opened it
+     */
+    public function findFirstViewDatesByStudentIdForAssignment(Assignment $assignment): array
+    {
+        /** @var list<array{studentId: int|string, firstViewedAt: \DateTimeImmutable}> $rows */
+        $rows = $this->createQueryBuilder('v')
+            ->select('IDENTITY(v.student) AS studentId', 'v.firstViewedAt')
+            ->where('v.assignment = :assignment')
+            ->setParameter('assignment', $assignment)
+            ->getQuery()
+            ->getResult();
+
+        $dates = [];
+        foreach ($rows as $row) {
+            $dates[(int) $row['studentId']] = $row['firstViewedAt'];
+        }
+
+        return $dates;
+    }
+
+    /**
      * How many distinct students opened each assignment, in one query rather than one per assignment
      * - the tracking is displayed for a whole séance at a time.
      *
