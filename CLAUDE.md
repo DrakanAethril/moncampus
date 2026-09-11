@@ -256,6 +256,11 @@ Prefer these over re-implementing:
   `isProgramVisible()` (enrolled student *or* teacher, staff bypass), `isProgramTeacher()` (stricter,
   students excluded), `isProgramReferentTeacher()` (deliberately **not** staff-bypassed),
   `matchesTestMode()`.
+- `App\Security\ProgramTimetableAccess` — "may this person see this formation's timetable": the
+  feature, `Program::$timetableManagementEnabled` **and** `Program::$timetableVisibility`, ANDed.
+  A per-formation setting is always *cumulative* with the feature, never overridden by it — read
+  it from this one place (Twig: `timetable_visible(program)`), and hand `visibleTiers()` to a
+  query that has to pick a day before it knows what the reader may see.
 - `App\Service\AudienceResolver` + the `AudienceTargetable` interface — the shared "who is this
   addressed to" rule for `MessageThread`, `Announcement`, `AgendaEvent`.
 - `App\Entity\AuditableTrait` — created/updated/inactivated by whom and when; mixed into

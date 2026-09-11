@@ -24,6 +24,7 @@ use App\Repository\RoomRepository;
 use App\Repository\SurveyTargetRepository;
 use App\Repository\TicketRepository;
 use App\Repository\WordCloudRepository;
+use App\Security\ProgramTimetableAccess;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\AudienceTargetableVoter;
 use App\Service\AlternancePeriodWizardService;
@@ -72,6 +73,7 @@ class HomeController extends AbstractController
         private readonly WordCloudAudience $wordCloudAudience,
         private readonly AlternancePeriodWizardService $wizardService,
         private readonly StructureAccessChecker $structureAccessChecker,
+        private readonly ProgramTimetableAccess $timetableAccess,
         private readonly NameColorGenerator $nameColorGenerator,
         private readonly RoomRepository $roomRepository,
         private readonly StudentAlternanceProgramResolver $alternanceProgramResolver,
@@ -247,14 +249,21 @@ class HomeController extends AbstractController
         // the next day that does, so a free day shows the next lesson day instead of nothing.
         // $programs is already scoped to this student's side of the test fence, so a test student
         // looks for its next lesson day among test formations only.
+        //
+        // Read from the formations whose timetable this student may actually see, not from all of
+        // theirs: « Visibilité de l'emploi du temps » is cumulative with the feature, so a
+        // formation set to « Admin only » keeps its day out of the card the same way it keeps its
+        // entry out of the nav. Only the timetable narrows - the work, the alternance and the rest
+        // of the dashboard keep reading $programs.
+        $timetablePrograms = $this->timetableAccess->filterPrograms($programs);
         $day = $today;
-        $daySessions = $this->sessionsForProgramsOnDay($programs, $today);
+        $daySessions = $this->sessionsForProgramsOnDay($timetablePrograms, $today);
 
         if ([] === $daySessions) {
-            $nextDay = $this->lessonSessionRepository->findNextSessionDayForPrograms($programs, $today);
+            $nextDay = $this->lessonSessionRepository->findNextSessionDayForPrograms($timetablePrograms, $today);
             if (null !== $nextDay) {
                 $day = $nextDay;
-                $daySessions = $this->sessionsForProgramsOnDay($programs, $nextDay);
+                $daySessions = $this->sessionsForProgramsOnDay($timetablePrograms, $nextDay);
             }
         }
 
@@ -317,6 +326,9 @@ class HomeController extends AbstractController
             'day' => $day,
             'dayIsToday' => $day->format('Y-m-d') === $today->format('Y-m-d'),
             'daySessions' => $daySessions,
+            // Whether the day card is drawn at all: with no formation opening its timetable to
+            // this student, there is nothing to read there and the work list takes the whole width.
+            'showTimetable' => [] !== $timetablePrograms,
             'workRows' => $workRows,
             'alternance' => $alternance,
             'banner' => $this->buildStudentBanner($workRows, $alternance, $liveSession, $wordCloud),
@@ -455,22 +467,28 @@ class HomeController extends AbstractController
         // Day column: today, or - when today has no session at all - the next day that does, so a
         // free day shows the next teaching day instead of nothing. "Aucun cours aujourd'hui" is
         // then only shown when there is genuinely nothing left ahead either.
+        // Both cards read only the formations whose timetable this teacher may see: the tier is
+        // cumulative with the feature (see App\Security\ProgramTimetableAccess), and it is passed
+        // into the queries rather than filtered afterwards so that the "next teaching day"
+        // fallback below skips a formation set out of reach instead of landing on its day.
+        $visibleTiers = $this->timetableAccess->visibleTiers();
+        $timetablePrograms = $this->timetableAccess->filterPrograms($programs);
         $day = $today;
-        $daySessions = $this->lessonSessionRepository->findForTeacherOnDayMatchingTestMode($teacher, $today);
+        $daySessions = $this->lessonSessionRepository->findForTeacherOnDayMatchingTestMode($teacher, $today, $visibleTiers);
         if ([] === $daySessions) {
-            $nextDay = $this->lessonSessionRepository->findNextSessionDayForTeacher($teacher, $today);
+            $nextDay = $this->lessonSessionRepository->findNextSessionDayForTeacher($teacher, $today, $visibleTiers);
             if (null !== $nextDay) {
                 $day = $nextDay;
-                $daySessions = $this->lessonSessionRepository->findForTeacherOnDayMatchingTestMode($teacher, $nextDay);
+                $daySessions = $this->lessonSessionRepository->findForTeacherOnDayMatchingTestMode($teacher, $nextDay, $visibleTiers);
             }
         }
 
         // "Mes prochaines séances par classe": one row per class that still has a session ahead,
         // carrying that session's matière/date/salle. A class with nothing left ahead drops out.
-        $nextSessionByProgramId = $this->lessonSessionRepository->findNextSessionPerProgramForTeacher($teacher, $today, $now);
+        $nextSessionByProgramId = $this->lessonSessionRepository->findNextSessionPerProgramForTeacher($teacher, $today, $now, $visibleTiers);
 
         $classes = [];
-        foreach ($programs as $program) {
+        foreach ($timetablePrograms as $program) {
             $nextSession = $nextSessionByProgramId[$program->getId()] ?? null;
             if (null === $nextSession) {
                 continue;
@@ -497,6 +515,9 @@ class HomeController extends AbstractController
             'dayIsToday' => $day->format('Y-m-d') === $today->format('Y-m-d'),
             'daySessions' => $daySessions,
             'classes' => $classes,
+            // Same question as on the student dashboard: with every formation's timetable out of
+            // this teacher's reach, the strip goes rather than announcing an empty day.
+            'showTimetable' => [] !== $timetablePrograms,
         ];
     }
 
@@ -545,13 +566,17 @@ class HomeController extends AbstractController
     {
         $day = $requestedDay ?? $today;
         $testMode = $this->structureAccessChecker->isTestViewer();
-        $sessions = $this->lessonSessionRepository->findAllForDay($day, $testMode);
+        // The matrix is the establishment's day, but it is still a timetable being read: a
+        // formation reserved to the administration stays out of a staff member's matrix, arrows
+        // included, exactly as it stays out of their nav.
+        $visibleTiers = $this->timetableAccess->visibleTiers();
+        $sessions = $this->lessonSessionRepository->findAllForDay($day, $testMode, $visibleTiers);
 
         if (null === $requestedDay && [] === $sessions) {
-            $nextDay = $this->lessonSessionRepository->findNextSessionDayForAnyProgram($today, $testMode);
+            $nextDay = $this->lessonSessionRepository->findNextSessionDayForAnyProgram($today, $testMode, $visibleTiers);
             if (null !== $nextDay) {
                 $day = $nextDay;
-                $sessions = $this->lessonSessionRepository->findAllForDay($nextDay, $testMode);
+                $sessions = $this->lessonSessionRepository->findAllForDay($nextDay, $testMode, $visibleTiers);
             }
         }
 
@@ -568,8 +593,8 @@ class HomeController extends AbstractController
             'view' => $view,
             // Null on either side disables that arrow rather than hiding it, so the control keeps
             // its width and the date stops jumping sideways as you walk through the year.
-            'previousDay' => $this->lessonSessionRepository->findPreviousSessionDayForAnyProgram($day, $testMode),
-            'nextDay' => $this->lessonSessionRepository->findNextSessionDayForAnyProgram($day, $testMode),
+            'previousDay' => $this->lessonSessionRepository->findPreviousSessionDayForAnyProgram($day, $testMode, $visibleTiers),
+            'nextDay' => $this->lessonSessionRepository->findNextSessionDayForAnyProgram($day, $testMode, $visibleTiers),
             'axis' => $axis,
             'rows' => $rows,
             // The legend mirrors the rows: same keys, same colors, and it doubles as a switch.

@@ -14,6 +14,7 @@ use App\Repository\PeriodRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\ProgramStudentOptionRepository;
 use App\Repository\ProgramTeacherOptionRepository;
+use App\Security\ProgramTimetableAccess;
 use App\Security\StructureAccessChecker;
 use App\Service\ClassRoster;
 use App\Service\FileUploadService;
@@ -67,20 +68,25 @@ class ProgramController extends AbstractController
 
     #[RequiresFeature(Feature::Timetable)]
     #[Route(path: '/programs/{id}/timetable', name: 'app_program_timetable')]
-    public function timetable(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker): Response
+    public function timetable(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, ProgramTimetableAccess $timetableAccess): Response
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
-        $this->assertProgramFeatureEnabled($program->isTimetableManagementEnabled());
+        // The feature being lit for a role never overrides what the formation decided: the tier
+        // is the second half of the same rule, and the screen answers 404 without it - see
+        // App\Security\ProgramTimetableAccess.
+        $this->assertProgramFeatureEnabled($timetableAccess->isVisible($program));
 
         return $this->render('program/timetable.html.twig', ['program' => $program]);
     }
 
     #[RequiresFeature(Feature::Timetable)]
     #[Route(path: '/programs/{id}/timetable/feed', name: 'app_program_timetable_feed')]
-    public function timetableFeed(int $id, Request $request, ProgramRepository $repository, StructureAccessChecker $accessChecker, LessonSessionRepository $lessonSessionRepository, LessonSessionEventFormatter $eventFormatter): JsonResponse
+    public function timetableFeed(int $id, Request $request, ProgramRepository $repository, StructureAccessChecker $accessChecker, ProgramTimetableAccess $timetableAccess, LessonSessionRepository $lessonSessionRepository, LessonSessionEventFormatter $eventFormatter): JsonResponse
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
-        $this->assertProgramFeatureEnabled($program->isTimetableManagementEnabled());
+        // The feed carries the same sessions as the screen and answers the same way - guarding the
+        // page alone would leave the data one URL away.
+        $this->assertProgramFeatureEnabled($timetableAccess->isVisible($program));
         [$start, $end] = $this->calendarFeedRange($request);
         $sessions = $lessonSessionRepository->findForProgramBetween($program, $start, $end);
 

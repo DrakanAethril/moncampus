@@ -10,6 +10,7 @@ use App\Entity\User;
 use App\Enum\Feature;
 use App\Repository\LessonSessionRepository;
 use App\Repository\ProgramRepository;
+use App\Security\ProgramTimetableAccess;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,14 +26,17 @@ use Symfony\Component\Routing\Attribute\Route;
 #[RequiresFeature(Feature::Timetable)]
 class TimetableController extends AbstractController
 {
-    public function __invoke(Request $request, ProgramRepository $programRepository, LessonSessionRepository $lessonSessionRepository): JsonResponse
+    public function __invoke(Request $request, ProgramRepository $programRepository, LessonSessionRepository $lessonSessionRepository, ProgramTimetableAccess $timetableAccess): JsonResponse
     {
         $user = $this->currentUser();
         [$from, $to] = $this->dateRange($request);
 
+        // The mobile feed is a timetable like the web's, so it answers the same rule: the feature
+        // being lit never overrides the formation's own « Visibilité de l'emploi du temps ». The
+        // app would otherwise carry in a pocket exactly what the browser refuses to show.
         $sessions = match (true) {
-            $this->isGranted('ROLE_STUDENT') => $this->sessionsForStudent($user, $from, $to, $programRepository, $lessonSessionRepository),
-            $this->isGranted('ROLE_TEACHER') => $lessonSessionRepository->findUpcomingForTeacher($user, $from, $to),
+            $this->isGranted('ROLE_STUDENT') => $this->sessionsForStudent($user, $from, $to, $programRepository, $lessonSessionRepository, $timetableAccess),
+            $this->isGranted('ROLE_TEACHER') => $lessonSessionRepository->findUpcomingForTeacher($user, $from, $to, $timetableAccess->visibleTiers()),
             default => [],
         };
 
@@ -63,11 +67,13 @@ class TimetableController extends AbstractController
     }
 
     /** @return list<LessonSession> */
-    private function sessionsForStudent(User $user, \DateTimeImmutable $from, \DateTimeImmutable $to, ProgramRepository $programRepository, LessonSessionRepository $lessonSessionRepository): array
+    private function sessionsForStudent(User $user, \DateTimeImmutable $from, \DateTimeImmutable $to, ProgramRepository $programRepository, LessonSessionRepository $lessonSessionRepository, ProgramTimetableAccess $timetableAccess): array
     {
         $program = $programRepository->findActiveForStudent($user);
 
-        return null !== $program ? $lessonSessionRepository->findForProgramBetween($program, $from, $to) : [];
+        return null !== $program && $timetableAccess->isVisible($program)
+            ? $lessonSessionRepository->findForProgramBetween($program, $from, $to)
+            : [];
     }
 
     /** @return array{id: int, title: string, day: string, startTime: string, endTime: string, teacher: string|null, room: string|null, color: string, program: string} */

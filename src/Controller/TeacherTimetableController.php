@@ -9,6 +9,7 @@ use App\Entity\Program;
 use App\Entity\User;
 use App\Enum\Feature;
 use App\Repository\LessonSessionRepository;
+use App\Security\ProgramTimetableAccess;
 use App\Service\LessonSessionEventFormatter;
 use App\Service\NameColorGenerator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -31,7 +32,7 @@ class TeacherTimetableController extends AbstractController
     use CalendarFeedRangeTrait;
 
     #[Route(path: '/timetable', name: 'app_teacher_timetable')]
-    public function index(LessonSessionRepository $repository, NameColorGenerator $colorGenerator): Response
+    public function index(LessonSessionRepository $repository, NameColorGenerator $colorGenerator, ProgramTimetableAccess $timetableAccess): Response
     {
         // Same color a session gets on the calendar itself (LessonSessionEventFormatter's
         // colorByProgram mode) - computed once here from the exact same generator so a legend
@@ -43,17 +44,21 @@ class TeacherTimetableController extends AbstractController
                 'name' => $program->getDisplayShortName(),
                 'color' => $colorGenerator->generate($program->getShortName()),
             ],
-            $repository->findDistinctProgramsForTeacher($this->currentUser()),
+            // A formation that does not open its timetable to this teacher is not in the legend,
+            // for the same reason its events are not in the feed below: the tier is cumulative
+            // with the feature, and a swatch for a formation with no events would name what the
+            // week deliberately does not show.
+            $timetableAccess->filterPrograms($repository->findDistinctProgramsForTeacher($this->currentUser())),
         );
 
         return $this->render('teacher/timetable.html.twig', ['formations' => $formations]);
     }
 
     #[Route(path: '/timetable/feed', name: 'app_teacher_timetable_feed')]
-    public function feed(Request $request, LessonSessionRepository $repository, LessonSessionEventFormatter $eventFormatter): JsonResponse
+    public function feed(Request $request, LessonSessionRepository $repository, LessonSessionEventFormatter $eventFormatter, ProgramTimetableAccess $timetableAccess): JsonResponse
     {
         [$start, $end] = $this->calendarFeedRange($request);
-        $sessions = $repository->findAllForTeacherBetween($this->currentUser(), $start, $end);
+        $sessions = $repository->findAllForTeacherBetween($this->currentUser(), $start, $end, $timetableAccess->visibleTiers());
 
         return $this->json(array_map(
             static fn ($session): array => $eventFormatter->format($session, editable: false, colorByProgram: true),
