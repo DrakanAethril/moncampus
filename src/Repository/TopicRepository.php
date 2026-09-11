@@ -39,7 +39,8 @@ class TopicRepository extends ServiceEntityRepository
      * The matières one teacher holds with one class - the choices of a séquence's "Créneaux
      * utilisés" when it reaches beyond the progression's own matière (see
      * App\Service\ProgressionSlotPool). Narrowed to the teacher rather than to the Program on
-     * purpose: widening a placement must never be a way into a colleague's créneaux.
+     * purpose: widening a placement must never be a way into a colleague's créneaux - a matière
+     * with two titulaires answers for both, which is what holding it together means.
      *
      * @return list<Topic>
      */
@@ -47,7 +48,7 @@ class TopicRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('t')
             ->where('t.program = :program')
-            ->andWhere('t.teacher = :teacher')
+            ->andWhere(':teacher MEMBER OF t.teachers')
             ->andWhere('t.inactiveDate IS NULL')
             ->setParameter('program', $program)
             ->setParameter('teacher', $teacher)
@@ -126,9 +127,9 @@ class TopicRepository extends ServiceEntityRepository
      * screen 3a lists one row per Topic that has a progression, 3c offers the ones that don't yet
      * (design/design_handoff_progression/README.md §3, "couples sans progression uniquement").
      *
-     * Keyed on Topic::$teacher rather than Program::$teachers on purpose: being attached to a
-     * class does not make a matière yours, owning the Topic does (same rule the Carnet de notes
-     * already applies - see App\Entity\Evaluation's docblock).
+     * Keyed on Topic::$teachers rather than Program::$teachers on purpose: being attached to a
+     * class does not make a matière yours, being named a titulaire of it does (same rule the
+     * Carnet de notes already applies - see App\Entity\Evaluation's docblock).
      *
      * @return list<Topic>
      */
@@ -138,7 +139,7 @@ class TopicRepository extends ServiceEntityRepository
             ->addSelect('p', 'c')
             ->innerJoin('t.program', 'p')
             ->innerJoin('p.cohort', 'c')
-            ->where('t.teacher = :teacher')
+            ->where(':teacher MEMBER OF t.teachers')
             ->andWhere('t.inactiveDate IS NULL')
             ->andWhere('p.schoolYear = :schoolYear')
             ->andWhere('p.inactiveDate IS NULL')
@@ -151,8 +152,8 @@ class TopicRepository extends ServiceEntityRepository
     }
 
     /**
-     * The matières one teacher may file a shared document under, for one class: the ones they own
-     * (Topic::$teacher, the strict rule findForTeacherInProgram() applies) **plus** the ones they
+     * The matières one teacher may file a shared document under, for one class: the ones they hold
+     * (Topic::$teachers, the strict rule findForTeacherInProgram() applies) **plus** the ones they
      * actually hold créneaux in, which is how a colleague's matière comes to be taught by them.
      *
      * Deliberately **not** narrowed to matières with sessions still to come: a document belonging to
@@ -166,7 +167,7 @@ class TopicRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('t')
             ->where('t.program = :program')
             ->andWhere('t.inactiveDate IS NULL')
-            ->andWhere('t.teacher = :teacher OR EXISTS (SELECT 1 FROM App\Entity\LessonSession ls WHERE ls.topic = t AND ls.teacher = :teacher)')
+            ->andWhere(':teacher MEMBER OF t.teachers OR EXISTS (SELECT 1 FROM App\Entity\LessonSession ls WHERE ls.topic = t AND ls.teacher = :teacher)')
             ->setParameter('program', $program)
             ->setParameter('teacher', $teacher)
             ->orderBy('t.name', 'ASC')

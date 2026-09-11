@@ -108,7 +108,7 @@ class QuizResultsGradeConversionLinkTest extends FunctionalTestCase
         $group->setCreatedBy($teacher);
         $topic = new Topic('Matière de test', $program, $group);
         $topic->setCreatedBy($teacher);
-        $topic->setTeacher($teacher);
+        $topic->addTeacher($teacher);
 
         $this->em()->persist($group);
         $this->em()->persist($topic);

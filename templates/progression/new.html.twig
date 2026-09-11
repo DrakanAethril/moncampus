@@ -13,8 +13,28 @@
 {% block page_title %}{{ 'progressionNewPageHeading'|trans }}{% endblock %}
 
 {% block main %}
+    {# A matière held with a colleague has ONE plan, and the second titulaire joins it rather than
+       starting another (design/validated/co-animation.md) - so the row is named here instead of
+       simply disappearing from the list above. #}
+    {% set heldByColleagueBlock %}
+        {% if heldByColleague is not empty %}
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h3 class="h4">{{ 'progressionTopicHeldByColleagueHeading'|trans }}</h3>
+                    <p class="text-secondary">{{ 'progressionTopicHeldByColleagueHint'|trans }}</p>
+                    <ul class="mb-0">
+                        {% for row in heldByColleague %}
+                            <li>{{ row.topic.program.displayShortName }} · {{ row.topic.name }} — {{ row.owner.displayName ?? row.owner.username }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        {% endif %}
+    {% endset %}
+
     {% if candidates is empty %}
         <div class="card"><div class="card-body text-secondary">{{ 'progressionNoAvailableTopicLabel'|trans }}</div></div>
+        {{ heldByColleagueBlock }}
     {% else %}
         <form method="post"
               class="card"
@@ -141,5 +161,6 @@
                 </div>
             </template>
         </form>
+        {{ heldByColleagueBlock }}
     {% endif %}
 {% endblock %}

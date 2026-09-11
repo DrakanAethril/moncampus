@@ -77,7 +77,7 @@
                             <span class="d-flex flex-column gap-1 text-start">
                                 <span class="cm-gb-subject__name">{{ subject.topic.name }}</span>
                                 <span class="cm-gb-subject__sub">
-                                    {% if subject.topic.teacher %}{{ subject.topic.teacher.displayName ?? subject.topic.teacher.username }} · {% endif %}
+                                    {% for teacher in subject.topic.orderedTeachers %}{{ teacher.displayName ?? teacher.username }}{{ loop.last ? ' · ' : ', ' }}{% endfor %}
                                     {{ 'gradebookStudentEvaluationsCountLabel'|trans({'%count%': subject.rows|length}) }}
                                     · {{ 'gradebookCoefficientShortLabel'|trans }} {{ subject.topic.coefficient }}
                                 </span>

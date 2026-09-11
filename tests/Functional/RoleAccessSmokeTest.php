@@ -941,7 +941,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $entityManager->persist($topicGroup);
 
         $topic = new Topic('Matière co-animée', $this->program, $topicGroup);
-        $topic->setTeacher($this->teacher);
+        $topic->addTeacher($this->teacher);
         $topic->setCreatedBy($this->admin);
         $entityManager->persist($topic);
 

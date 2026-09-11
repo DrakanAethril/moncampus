@@ -79,12 +79,13 @@ class ProgramGradebookController extends AbstractController
         }
 
         // A referent teacher of the class, and staff, read the whole class's carnet, every Topic
-        // included - but only the matières they teach themselves stay editable (see $canEdit
+        // included - but only the evaluations they posed themselves stay editable (see $canEdit
         // below, and the EvaluationVoter::MANAGE checks every write route keeps). A plain teacher
-        // still only ever sees their own matières.
+        // still only ever sees the matières they hold - all of them, a matière shared with a
+        // co-titulaire included.
         $topics = $accessChecker->isStaff() || $accessChecker->isProgramReferentTeacher($program)
             ? $topicRepository->findAllActiveForProgram($program)
-            : array_values(array_filter($topicRepository->findAllActiveForProgram($program), static fn (Topic $topic): bool => $topic->getTeacher() === $user));
+            : array_values(array_filter($topicRepository->findAllActiveForProgram($program), static fn (Topic $topic): bool => $topic->hasTeacher($user)));
 
         if ([] === $topics) {
             return $this->render('program/gradebook_empty.html.twig', ['program' => $program]);
@@ -92,7 +93,10 @@ class ProgramGradebookController extends AbstractController
 
         $requestedTopicId = QueryValue::int($request, 'topic', 0);
         $topic = current(array_filter($topics, static fn (Topic $t): bool => $t->getId() === $requestedTopicId)) ?: $topics[0];
-        $canEdit = $this->canEditTopic($topic);
+        // Whether this reader may *add* to the matière. Whether they may edit what is already in it
+        // is asked column by column, in evaluationJson() below - a co-titulaire's evaluation is
+        // read-only even inside a matière they hold.
+        $canEdit = $this->isTopicTitulaire($topic);
 
         $evaluations = $evaluationRepository->findActiveForTopicOrderedByDate($topic);
         $gradesByEvaluation = [];
@@ -111,6 +115,10 @@ class ProgramGradebookController extends AbstractController
                 fn (Evaluation $e): array => $this->evaluationJson($e, $gradesByEvaluation[$e->getId()], $calculator, $now),
                 $evaluations,
             ),
+            // The matière's titulaires, named under its heading: with two of them the grid mixes
+            // two people's columns, and « évaluation de X » on a read-only column only reads as an
+            // explanation once the class's team is on screen.
+            'topicTeachers' => $topic->getOrderedTeachers(),
             'rosterJson' => $this->rosterJson($program, $studentOptionRepository),
             'gradesJson' => $this->gradesJson($evaluations, $gradesByEvaluation, $calculator),
             'canEdit' => $canEdit,
@@ -426,13 +434,15 @@ class ProgramGradebookController extends AbstractController
         $program = $this->findVisibleProgram($id, $programRepository, $accessChecker);
         $evaluation = $this->findEvaluationOrNotFound($evaluationRepository, $program, $evaluationId);
 
-        // Not EvaluationVoter::MANAGE, unlike every write route here: a referent teacher or staff
-        // reaches this screen read-only for a colleague's matière (the grid opens onto it), while
-        // saveGrade()/saveRubricAnswer() stay MANAGE-only. Deliberately not EvaluationVoter::VIEW
-        // either - that attribute also lets an enrolled student through, and this screen shows the
-        // whole class's grades.
-        $canEdit = $this->canEditTopic($evaluation->getTopic());
-        if (!$canEdit && !$this->canReadOtherTopics($program, $accessChecker)) {
+        // MANAGE decides whether the inputs are live, not whether the screen opens: a referent
+        // teacher, staff, and a co-titulaire of the matière all reach it read-only (the grid opens
+        // onto it), while saveGrade()/saveRubricAnswer() stay MANAGE-only. Deliberately not
+        // EvaluationVoter::VIEW to open it either - that attribute also lets an enrolled student
+        // through, and this screen shows the whole class's grades.
+        $canEdit = $this->isGranted(EvaluationVoter::MANAGE, $evaluation);
+        if (!$canEdit
+            && !$this->isTopicTitulaire($evaluation->getTopic())
+            && !$this->canReadOtherTopics($program, $accessChecker)) {
             throw $this->createAccessDeniedException();
         }
 
@@ -625,9 +635,15 @@ class ProgramGradebookController extends AbstractController
 
     private function evaluationJson(Evaluation $evaluation, array $grades, EvaluationAverageCalculator $calculator, \DateTimeImmutable $now): array
     {
+        $author = $evaluation->getCreatedBy();
+
         return [
             'id' => $evaluation->getId(),
             'name' => $evaluation->getName(),
+            // Read-only for everyone but the colleague who posed it (EvaluationVoter::MANAGE, which
+            // every write route re-asks - this is what the grid draws, not what it enforces).
+            'editable' => $this->isGranted(EvaluationVoter::MANAGE, $evaluation),
+            'authorName' => null !== $author ? ($author->getDisplayName() ?? $author->getUsername()) : null,
             'type' => $evaluation->getType()->value,
             // Optional D/F/S pastille on the column header - null for any evaluation that isn't
             // tied to a progression (see App\Enum\EvaluationNature).
@@ -678,19 +694,18 @@ class ProgramGradebookController extends AbstractController
     }
 
     /**
-     * Same rule as EvaluationVoter::MANAGE, asked about a Topic instead of one Evaluation - used to
-     * render the grid read-only for a referent teacher looking at a colleague's matière (the voter
-     * still guards every write route on its own).
+     * Is the reader one of the matière's titulaires - the first half of EvaluationVoter::MANAGE,
+     * asked about a Topic instead of one Evaluation. It answers "may they add an evaluation here",
+     * and nothing more: what is already in the carnet is editable by its author alone, which the
+     * voter decides evaluation by evaluation and which every write route goes through.
+     *
+     * A referent teacher of the class and staff alike read the other matières without writing them
+     * - see canReadOtherTopics() below, and the voter, which carries no staff bypass on MANAGE for
+     * the same reason.
      */
-    /**
-     * Grades are entered by the one teacher who holds the matière, and by nobody else. A referent
-     * teacher of the class and staff alike read the other matières without writing them - see
-     * canReadTopic() below and App\Security\Voter\EvaluationVoter, which every write route goes
-     * through and which carries no staff bypass on MANAGE for the same reason.
-     */
-    private function canEditTopic(?Topic $topic): bool
+    private function isTopicTitulaire(?Topic $topic): bool
     {
-        return null !== $topic && $topic->getTeacher() === $this->currentUser();
+        return null !== $topic && $topic->hasTeacher($this->currentUser());
     }
 
     /** Who reads a matière they do not teach: staff, and the referent teachers of the class. */

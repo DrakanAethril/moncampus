@@ -91,6 +91,38 @@ class LessonSessionRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * How many créneaux each teacher holds in each matière of one Program - the raw material of
+     * App\Service\TopicPrincipalTeacher, which is how the app answers "one name for this matière"
+     * without storing a principal titulaire next to the list of them.
+     *
+     * Counted in DQL rather than PHP-side, unlike findHoursByTopicForProgram() above: a count of
+     * rows is a count, where a sum of LessonSession::$length is a sum of DECIMAL strings.
+     *
+     * @return array<int, array<int, int>> Topic id => (teacher id => number of créneaux)
+     */
+    public function countSessionsByTopicAndTeacherForProgram(Program $program): array
+    {
+        /** @var list<array{topicId: int|string|null, teacherId: int|string|null, total: int|string}> $rows */
+        $rows = $this->createQueryBuilder('l')
+            ->select('IDENTITY(l.topic) AS topicId', 'IDENTITY(l.teacher) AS teacherId', 'COUNT(l.id) AS total')
+            ->where('l.program = :program')
+            ->andWhere('l.topic IS NOT NULL')
+            ->andWhere('l.teacher IS NOT NULL')
+            ->groupBy('l.topic')
+            ->addGroupBy('l.teacher')
+            ->setParameter('program', $program)
+            ->getQuery()
+            ->getResult();
+
+        $counts = [];
+        foreach ($rows as $row) {
+            $counts[(int) $row['topicId']][(int) $row['teacherId']] = (int) $row['total'];
+        }
+
+        return $counts;
+    }
+
     // Same PHP-side aggregation approach as App\Service\ProgramFinancialCalculator::getHoursPerLessonType()
     // (LessonSession::$length is manually entered, there's no DQL SUM() equivalent elsewhere in
     // the app) - powers the "planned/scheduled hours" column on the Topics settings tab. Sessions

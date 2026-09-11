@@ -65,9 +65,23 @@ class Topic
     #[Assert\GreaterThan(0)]
     private float $coefficient = 1.0;
 
-    #[ORM\ManyToOne(targetEntity: User::class)]
-    #[ORM\JoinColumn(name: 'teacher_id', nullable: true)]
-    private ?User $teacher = null;
+    /**
+     * The titulaires of the matière - several, since a matière can be held by two teachers who
+     * each keep their own carnet de notes inside it (see App\Security\Voter\EvaluationVoter,
+     * which opens reading to all of them and writing to the author of each evaluation alone).
+     *
+     * A plain ManyToMany with no position column: where a single name is needed - the Livret
+     * alternant's « Formateur » cell, the author of an evaluation born of a travail - it is
+     * *derived* from the timetable by App\Service\TopicPrincipalTeacher rather than stored, so
+     * there is no second truth to keep in step with the créneaux.
+     *
+     * @var Collection<int, User>
+     */
+    #[ORM\ManyToMany(targetEntity: User::class)]
+    #[ORM\JoinTable(name: 'topic_teacher')]
+    #[ORM\JoinColumn(name: 'topic_id', onDelete: 'CASCADE')]
+    #[ORM\InverseJoinColumn(name: 'teacher_id', onDelete: 'CASCADE')]
+    private Collection $teachers;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
@@ -87,6 +101,7 @@ class Topic
         $this->name = $name;
         $this->creationDate = new \DateTimeImmutable();
         $this->evaluations = new ArrayCollection();
+        $this->teachers = new ArrayCollection();
         $this->setProgram($program);
         $this->setTopicGroup($topicGroup);
     }
@@ -197,16 +212,53 @@ class Topic
         return $this;
     }
 
-    public function getTeacher(): ?User
+    /** @return Collection<int, User> */
+    public function getTeachers(): Collection
     {
-        return $this->teacher;
+        return $this->teachers;
     }
 
-    public function setTeacher(?User $teacher): static
+    public function addTeacher(?User $teacher): static
     {
-        $this->teacher = $teacher;
+        if (null !== $teacher && !$this->teachers->contains($teacher)) {
+            $this->teachers->add($teacher);
+        }
 
         return $this;
+    }
+
+    public function removeTeacher(User $teacher): static
+    {
+        $this->teachers->removeElement($teacher);
+
+        return $this;
+    }
+
+    public function hasTeacher(User $teacher): bool
+    {
+        return $this->teachers->contains($teacher);
+    }
+
+    public function hasTeachers(): bool
+    {
+        return !$this->teachers->isEmpty();
+    }
+
+    /**
+     * The titulaires in display order - alphabetical, so the same matière never names them in two
+     * different orders from one screen to the next (a ManyToMany carries no order of its own).
+     *
+     * @return list<User>
+     */
+    public function getOrderedTeachers(): array
+    {
+        $teachers = $this->teachers->toArray();
+        usort($teachers, static fn (User $a, User $b): int => strcasecmp(
+            $a->getDisplayName() ?? $a->getUsername(),
+            $b->getDisplayName() ?? $b->getUsername(),
+        ));
+
+        return $teachers;
     }
 
     public function getDescription(): ?string
