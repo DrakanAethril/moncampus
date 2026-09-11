@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Infrastructure;
 
 use App\Attribute\RequiresFeature;
+use App\Entity\ProxmoxHost;
 use App\Enum\Feature;
 use App\Enum\GuestAccountOrigin;
 use App\Repository\GuestAccountRepository;
@@ -70,7 +71,7 @@ class GuestAccountController extends AbstractController
         $host = $this->findHostOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(ProxmoxHostVoter::VIEW, $host);
 
-        $ip = $allocations->findAddressForVmid($vmid);
+        $ip = $allocations->findAddressForVmid($host, $vmid);
         $plan = null;
         $failure = null;
 
@@ -121,7 +122,7 @@ class GuestAccountController extends AbstractController
         $this->denyAccessUnlessGranted(ProxmoxHostVoter::OPERATE, $host);
 
         try {
-            $shell = $this->shellFor($shellFactory, $allocations, $vmid);
+            $shell = $this->shellFor($shellFactory, $allocations, $host, $vmid);
             $plan = $service->refresh($shell, $host, $node, $vmid);
             $applied = $service->apply($shell, $host, $node, $vmid, \sprintf('vm-%d', $vmid), $plan, $this->currentUser());
             $shell->disconnect();
@@ -191,7 +192,7 @@ class GuestAccountController extends AbstractController
         $login = JsonRequestPayload::fromRequest($request)->string('login');
 
         try {
-            $shell = $this->shellFor($shellFactory, $allocations, $vmid);
+            $shell = $this->shellFor($shellFactory, $allocations, $host, $vmid);
             $service->remove($shell, $host, $node, $vmid, $login);
             $shell->disconnect();
         } catch (GuestUnreachableException|GuestCommandFailedException|PlatformKeyUnavailableException|\InvalidArgumentException $exception) {
@@ -251,7 +252,7 @@ class GuestAccountController extends AbstractController
         $login = JsonRequestPayload::fromRequest($request)->string('login');
 
         try {
-            $shell = $this->shellFor($shellFactory, $allocations, $vmid);
+            $shell = $this->shellFor($shellFactory, $allocations, $host, $vmid);
             $password = $service->resetPassword($shell, $login);
             $shell->disconnect();
         } catch (GuestUnreachableException|GuestCommandFailedException|PlatformKeyUnavailableException|\InvalidArgumentException $exception) {
@@ -262,9 +263,11 @@ class GuestAccountController extends AbstractController
     }
 
     /** @throws GuestUnreachableException|PlatformKeyUnavailableException */
-    private function shellFor(GuestShellFactory $shellFactory, IpAllocationRepository $allocations, int $vmid): GuestShell
+    private function shellFor(GuestShellFactory $shellFactory, IpAllocationRepository $allocations, ProxmoxHost $host, int $vmid): GuestShell
     {
-        $ip = $allocations->findAddressForVmid($vmid);
+        // Host-scoped, never by number alone: a VMID is unique inside one cluster, and the registry
+        // keeps the rows of the machines that held it before this one.
+        $ip = $allocations->findAddressForVmid($host, $vmid);
 
         if (null === $ip) {
             // The registry is how anything here knows where a machine is; a machine created by hand

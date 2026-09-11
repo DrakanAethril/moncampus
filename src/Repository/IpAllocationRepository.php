@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\IpAllocation;
 use App\Entity\IpRange;
+use App\Entity\ProxmoxHost;
 use App\Entity\ProxmoxOperation;
 use App\Enum\IpAllocationOrigin;
 use App\Enum\IpAllocationStatus;
@@ -135,22 +136,43 @@ class IpAllocationRepository extends ServiceEntityRepository
     }
 
     /**
-     * The address a machine is holding, by VMID.
+     * The address a machine is holding, by host and VMID.
      *
      * This is how anything that needs to *reach* a machine finds it: Proxmox stores no address that
      * MonCampus can query cheaply per guest, and the registry does. A machine created by hand has
      * no row here until the scan adopts one, which is correct - nothing here knows how to reach it
      * either.
+     *
+     * **A VMID names a slot, not a machine**, and the two rules below are what keeps that slot from
+     * answering for its previous occupant:
+     *
+     *  - **scoped by host**, because a VMID is only unique within a cluster - two hypervisors both
+     *    numbering a machine 9002 is the ordinary case, not an accident;
+     *  - **latest wins**, because a number freed in Proxmox is handed out again. A registry row
+     *    survives the machine that carried it (nothing here destroys machines, and the deletion
+     *    happened in Proxmox), so a reused VMID has two live rows and the older one points at an
+     *    address the new machine never had. Without the ordering the answer was whichever row MySQL
+     *    happened to return first, which in practice was the dead one - and every account gesture
+     *    then ran against the wrong address, reporting accounts as missing on a machine that has
+     *    them. Same rule, same reason, as App\Repository\VmBatchItemRepository::findOneForMachine().
      */
-    public function findAddressForVmid(int $vmid): ?string
+    public function findAddressForVmid(?ProxmoxHost $host, int $vmid): ?string
     {
+        if (null === $host) {
+            return null;
+        }
+
         /** @var list<array{ip: string}> $rows */
         $rows = $this->createQueryBuilder('a')
             ->select('a.ip')
+            ->join('a.range', 'r')
+            ->andWhere('r.host = :host')
             ->andWhere('a.vmid = :vmid')
             ->andWhere('a.status != :released')
+            ->setParameter('host', $host)
             ->setParameter('vmid', $vmid)
             ->setParameter('released', IpAllocationStatus::Released)
+            ->orderBy('a.id', 'DESC')
             ->setMaxResults(1)
             ->getQuery()
             ->getArrayResult();
@@ -159,17 +181,44 @@ class IpAllocationRepository extends ServiceEntityRepository
     }
 
     /**
-     * The addresses of several machines at once, keyed by VMID.
+     * Every live registry row for one machine's number, newest first.
      *
-     * The plural of findAddressForVmid(), for « Mes machines virtuelles »: a machine declared
-     * outside a batch has no item to carry its address, so the registry is the only place it is
-     * written - and asking machine by machine would put a query inside the loop.
+     * What App\Service\Proxmox\VmidHandover sweeps: when a new machine takes a VMID, whatever is
+     * still recorded under it belongs to the one that held it before.
+     *
+     * @return list<IpAllocation>
+     */
+    public function findLiveForVmid(ProxmoxHost $host, int $vmid): array
+    {
+        return $this->createQueryBuilder('a')
+            ->join('a.range', 'r')
+            ->andWhere('r.host = :host')
+            ->andWhere('a.vmid = :vmid')
+            ->andWhere('a.status != :released')
+            ->setParameter('host', $host)
+            ->setParameter('vmid', $vmid)
+            ->setParameter('released', IpAllocationStatus::Released)
+            ->orderBy('a.id', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * The addresses of several machines of one host at once, keyed by VMID.
+     *
+     * The plural of findAddressForVmid(), for « Mes machines virtuelles » and the machines list: a
+     * machine declared outside a batch has no item to carry its address, so the registry is the
+     * only place it is written - and asking machine by machine would put a query inside the loop.
+     *
+     * Scoped by host and newest-first for the reasons the singular states: a VMID is unique inside
+     * one cluster and nowhere else, and a number handed out again answers for the machine holding
+     * it now, never for the one it buried.
      *
      * @param list<int> $vmids
      *
      * @return array<int, string>
      */
-    public function findAddressesForVmids(array $vmids): array
+    public function findAddressesForVmids(ProxmoxHost $host, array $vmids): array
     {
         if ([] === $vmids) {
             return [];
@@ -178,19 +227,22 @@ class IpAllocationRepository extends ServiceEntityRepository
         /** @var list<array{ip: string, vmid: int}> $rows */
         $rows = $this->createQueryBuilder('a')
             ->select('a.ip AS ip', 'a.vmid AS vmid')
+            ->join('a.range', 'r')
+            ->andWhere('r.host = :host')
             ->andWhere('a.vmid IN (:vmids)')
             ->andWhere('a.status != :released')
+            ->setParameter('host', $host)
             ->setParameter('vmids', $vmids)
             ->setParameter('released', IpAllocationStatus::Released)
-            ->orderBy('a.id', 'ASC')
+            ->orderBy('a.id', 'DESC')
             ->getQuery()
             ->getResult();
 
         $byVmid = [];
 
         foreach ($rows as $row) {
-            // First wins, like the singular's setMaxResults(1): a machine with two live
-            // allocations is a registry to repair, not a card to draw twice.
+            // Newest first and first wins, like the singular's ORDER BY + setMaxResults(1): the
+            // older rows of a reused VMID describe a machine that no longer exists.
             $byVmid[$row['vmid']] ??= $row['ip'];
         }
 

@@ -160,13 +160,11 @@ class GuestController extends AbstractController
             'filters' => ['q' => $search, 'host' => $hostId, 'status' => $status, 'batch' => $batchId],
             'page' => min($page, $pageCount),
             'pageCount' => $pageCount,
-            // One query for the whole list, like the operations above: the address a machine holds
-            // is the one thing on this screen the hypervisor does not know - it lives in the
-            // address registry, keyed by VMID.
-            'addresses' => $allocations->findAddressesForVmids(array_map(
-                static fn (array $row): int => $row['guest']->vmid,
-                $rows,
-            )),
+            // One query per host of the page, like the operations above: the address a machine
+            // holds is the one thing on this screen the hypervisor does not know - it lives in the
+            // address registry, keyed by host *and* VMID, since a VMID is only unique within a
+            // cluster and the registry outlives the machines that held one before.
+            'addresses' => $this->addressesOf($allocations, $rows),
         ]);
     }
 
@@ -238,6 +236,39 @@ class GuestController extends AbstractController
         }
 
         throw new ProxmoxUnavailableException('proxmoxGuestGoneMessage');
+    }
+
+    /**
+     * The address of each machine of the page, keyed `host id/vmid`.
+     *
+     * Grouped by host first so the registry is asked once per hypervisor rather than once per
+     * machine - and so it is asked the only question it can answer correctly: a VMID on its own
+     * names a slot that several machines have occupied in turn.
+     *
+     * @param list<array{host: ProxmoxHost, guest: ProxmoxGuest, ...}> $rows
+     *
+     * @return array<string, string>
+     */
+    private function addressesOf(IpAllocationRepository $allocations, array $rows): array
+    {
+        $hosts = [];
+        $vmids = [];
+
+        foreach ($rows as $row) {
+            $hostId = (int) $row['host']->getId();
+            $hosts[$hostId] = $row['host'];
+            $vmids[$hostId][$row['guest']->vmid] = $row['guest']->vmid;
+        }
+
+        $addresses = [];
+
+        foreach ($hosts as $hostId => $host) {
+            foreach ($allocations->findAddressesForVmids($host, array_values($vmids[$hostId])) as $vmid => $ip) {
+                $addresses[\sprintf('%d/%d', $hostId, $vmid)] = $ip;
+            }
+        }
+
+        return $addresses;
     }
 
     private function matchesFilters(ProxmoxGuest $guest, string $search, string $status): bool

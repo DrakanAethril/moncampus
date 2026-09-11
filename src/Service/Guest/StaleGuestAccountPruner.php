@@ -7,6 +7,7 @@ namespace App\Service\Guest;
 use App\Entity\GuestAccount;
 use App\Entity\VmBatch;
 use App\Repository\GuestAccountRepository;
+use App\Repository\VmBatchItemRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -26,12 +27,26 @@ use Doctrine\ORM\EntityManagerInterface;
  * The one rule this must never break: an unreachable host decides nothing. See
  * App\Service\Guest\GuestMachineIndex - not knowing is not the same as knowing it is gone, and this
  * class is the one place where getting that difference wrong would be irreversible.
+ *
+ * **A machine can also disappear without its number disappearing with it**, and that is the second
+ * rule here. Proxmox hands a VMID back the moment a machine is deleted, so a later deployment takes
+ * the number and the hypervisor answers « yes, 9002 is here » about a machine that has nothing to do
+ * with the rows still filed under it. The account rows of the previous occupant then read as current:
+ * the accounts screen offers to create a former class's students on the machine, and does.
+ *
+ * App\Service\Proxmox\VmidHandover closes that at the source, when the new machine is created. This
+ * is the other half, for the rows a deployment made obsolete before the handover existed: an account
+ * whose batch is not the batch that built the machine now holding its (host, VMID) describes a
+ * machine that is gone, and no hypervisor needs to be asked to know it. An account filed under no
+ * batch at all, or under a number no deployment claims, is left exactly where it is - this decides
+ * only what it can decide.
  */
 class StaleGuestAccountPruner
 {
     public function __construct(
         private readonly GuestMachineLocator $locator,
         private readonly GuestAccountRepository $accounts,
+        private readonly VmBatchItemRepository $items,
         private readonly EntityManagerInterface $entityManager,
     ) {
     }
@@ -48,12 +63,18 @@ class StaleGuestAccountPruner
         }
 
         $index = $this->locator->index($accounts);
+        $occupants = $this->items->findDeployedBatchIdsByHostAndVmid();
         $stale = [];
         $undecided = [];
         $kept = 0;
 
         foreach ($accounts as $account) {
-            if ($index->isGone($account)) {
+            // Asked before the hypervisor's answer, and independent of it: a number taken over by a
+            // later deployment is decided from the platform's own records, so an unreachable host
+            // does not turn a certainty into a wait.
+            if ($this->isSuperseded($account, $occupants)) {
+                $stale[] = $account;
+            } elseif ($index->isGone($account)) {
                 $stale[] = $account;
             } elseif ($index->isUnanswered($account)) {
                 $undecided[] = $account;
@@ -63,6 +84,30 @@ class StaleGuestAccountPruner
         }
 
         return new StaleGuestAccountReport($stale, $undecided, $kept);
+    }
+
+    /**
+     * Whether the machine this account names is now held by a different deployment.
+     *
+     * Both sides must be known for the answer to be yes: an account filed under no batch says
+     * nothing about which deployment built the machine, and a (host, VMID) no deployed item claims
+     * says nothing about who holds it. Either way the row is left alone - this is a sweep, and a
+     * sweep that guesses is a sweep nobody dares run.
+     *
+     * @param array<int, array<int, int>> $occupants host id => vmid => batch id
+     */
+    private function isSuperseded(GuestAccount $account, array $occupants): bool
+    {
+        $batchId = $account->getBatch()?->getId();
+        $hostId = $account->getHost()?->getId();
+
+        if (null === $batchId || null === $hostId) {
+            return false;
+        }
+
+        $current = $occupants[$hostId][$account->getVmid()] ?? null;
+
+        return null !== $current && $current !== $batchId;
     }
 
     /**

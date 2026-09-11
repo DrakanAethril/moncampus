@@ -207,7 +207,10 @@ class RotatePlatformKeyCommand extends Command
         $machines = [];
 
         foreach ($this->accounts->findAll() as $account) {
-            $key = $account->getVmid();
+            // Host *and* VMID, never the number alone: a VMID is unique inside one cluster, so two
+            // hypervisors numbering a machine 9002 is ordinary - and deduplicating on the number
+            // alone silently dropped the second one, leaving a machine without the new key.
+            $key = \sprintf('%d/%d', $account->getHost()?->getId() ?? 0, $account->getVmid());
 
             if (isset($seen[$key])) {
                 continue;
@@ -215,7 +218,7 @@ class RotatePlatformKeyCommand extends Command
 
             // The registry is what knows where a machine is: Proxmox has no per-guest address
             // that can be read cheaply, and this is the whole reason the registry exists.
-            $ip = $this->allocations->findAddressForVmid($account->getVmid());
+            $ip = $this->allocations->findAddressForVmid($account->getHost(), $account->getVmid());
 
             if (null === $ip) {
                 continue;

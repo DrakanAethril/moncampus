@@ -94,7 +94,7 @@
                                    already a filter and a line of the host header, whereas the
                                    address is what somebody reading this row is about to type
                                    somewhere else - hence the copy button next to it. #}
-                                {% set ip = addresses[guest.vmid]|default(null) %}
+                                {% set ip = addresses[host.id ~ '/' ~ guest.vmid]|default(null) %}
                                 <div class="cm-guest__sub cm-guest__ip">
                                     {% if ip %}
                                         <span class="cm-mono">{{ ip }}</span>
