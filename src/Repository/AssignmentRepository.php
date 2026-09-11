@@ -8,6 +8,7 @@ use App\Entity\Assignment;
 use App\Entity\Evaluation;
 use App\Entity\LessonSession;
 use App\Entity\Program;
+use App\Entity\QuizInstance;
 use App\Entity\User;
 use App\Enum\AssignmentNature;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -84,6 +85,32 @@ class AssignmentRepository extends ServiceEntityRepository
             ->orderBy('a.dueDate', 'ASC')
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * The travail carrying a quiz already launched, if there is one - what « Convertir en note » on
+     * the quiz's results screen needs to know: the conversion is a gesture of the travail, so the
+     * screen either sends the teacher to it or offers to create it.
+     *
+     * Nothing forbids two travaux from naming the same quiz, so the choice is stated rather than
+     * left to the database: the one already converted first - it is the one the carnet reads - then
+     * the most recent. A HIDDEN alias carries the ranking, an ORDER BY on the association itself
+     * sorting on the foreign key.
+     */
+    public function findCarryingQuizInstance(QuizInstance $instance): ?Assignment
+    {
+        /** @var ?Assignment $assignment */
+        $assignment = $this->createQueryBuilder('a')
+            ->addSelect('CASE WHEN a.gradebookEvaluation IS NULL THEN 1 ELSE 0 END AS HIDDEN converted')
+            ->where('a.quizInstance = :instance')
+            ->setParameter('instance', $instance)
+            ->orderBy('converted', 'ASC')
+            ->addOrderBy('a.id', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        return $assignment;
     }
 
     /**

@@ -14,9 +14,12 @@ use App\Enum\AttemptOrigin;
 use App\Enum\Feature;
 use App\Enum\QuizMode;
 use App\Form\QuizInstanceEditType;
+use App\Repository\AssignmentRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\QuizAttemptRepository;
 use App\Repository\QuizInstanceRepository;
+use App\Repository\TopicRepository;
+use App\Security\FeatureAccess;
 use App\Security\StructureAccessChecker;
 use App\Service\QuizDrawService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -49,7 +52,7 @@ class ProgramQuizController extends AbstractController
 
     // Screens 1f/1g - one route, two tabs (?tab=student|question), each with its own "Trier par".
     #[Route(path: '/programs/{id}/quiz/{instanceId}', name: 'app_program_quiz_show', requirements: ['instanceId' => '\d+'])]
-    public function show(int $id, int $instanceId, Request $request, ProgramRepository $repository, StructureAccessChecker $accessChecker, QuizInstanceRepository $instanceRepository, QuizAttemptRepository $attemptRepository): Response
+    public function show(int $id, int $instanceId, Request $request, ProgramRepository $repository, StructureAccessChecker $accessChecker, QuizInstanceRepository $instanceRepository, QuizAttemptRepository $attemptRepository, AssignmentRepository $assignmentRepository, TopicRepository $topicRepository, FeatureAccess $featureAccess): Response
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
         $instance = $this->findInstanceOrNotFound($instanceRepository, $program, $instanceId);
@@ -75,7 +78,58 @@ class ProgramQuizController extends AbstractController
             'kpis' => $this->buildKpis($program, $studentRows),
             'studentRows' => $studentRows,
             'questionRows' => $questionRows,
+            'conversion' => $this->conversionLink($program, $instance, $assignmentRepository, $topicRepository, $featureAccess),
         ]);
+    }
+
+    /**
+     * « Convertir en note » on the results screen: where the gesture is carried out, or null when it
+     * is not on offer here.
+     *
+     * The conversion itself belongs to the travail (App\Controller\AssignmentController), which is
+     * the only thing that holds a matière, a barème and an audience - so this screen does not convert
+     * anything, it leads to where one converts. Two destinations, one for each state a quiz can be
+     * in: the travail that already carries it, or the wizard opened on it when there is none.
+     *
+     * The conditions repeat, on purpose, the ones the button itself answers to: a travail explicitly
+     * marked « Non noté » is left alone (Assignment::feedsGradebookFromQuiz(), the gradebook is not
+     * the place to go back on that), the reader must be the titulaire of a matière of the class -
+     * which is what makes the carnet theirs, and why staff never see this - and « Travail à faire »
+     * must be lit, the destination answering a 404 otherwise.
+     *
+     * @return array{url: string, converted: bool}|null
+     */
+    private function conversionLink(Program $program, QuizInstance $instance, AssignmentRepository $assignmentRepository, TopicRepository $topicRepository, FeatureAccess $featureAccess): ?array
+    {
+        // A concours live is played together and never given out as a travail: « Quiz relié » leaves
+        // it out, so there is nothing to lead to.
+        if (QuizMode::Live === $instance->getMode()
+            || !$featureAccess->isEnabled(Feature::StudentWork)
+            || [] === $topicRepository->findForTeacherInProgram($program, $this->currentUser())) {
+            return null;
+        }
+
+        $assignment = $assignmentRepository->findCarryingQuizInstance($instance);
+
+        if (null === $assignment) {
+            return [
+                'url' => $this->generateUrl('app_assignment_new', ['quiz' => $instance->getId()]),
+                'converted' => false,
+            ];
+        }
+
+        if (!$assignment->feedsGradebookFromQuiz()) {
+            return null;
+        }
+
+        $evaluation = $assignment->getGradebookEvaluation();
+
+        return [
+            'url' => $this->generateUrl('app_assignment_show', ['id' => $assignment->getId()]),
+            // Already in the carnet: the travail's own button then reads « Mettre à jour les notes »,
+            // and this one says the same thing rather than promising a first conversion.
+            'converted' => null !== $evaluation && null === $evaluation->getInactiveDate(),
+        ];
     }
 
     // "Modifier" - the launch settings that can still change once the quiz is out (name, window,
