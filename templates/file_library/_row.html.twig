@@ -13,7 +13,8 @@
 <tr class="cm-flib__row{{ node.type.value == 'folder' ? ' is-folder' }}"
     data-node-id="{{ node.id }}"
     data-node-name="{{ node.name }}"
-    {% if previewable %}data-preview-url="{{ path('app_file_library_node_download', {nodeId: node.id}) }}"{% endif %}
+    {% if node.type.value == 'file' %}data-download-url="{{ path('app_file_library_node_download', {nodeId: node.id}) }}"{% endif %}
+    {% if previewable %}data-preview-url="{{ path('app_file_library_node_open', {nodeId: node.id}) }}"{% endif %}
     draggable="true">
     <td>
         <span class="cm-flib__name">
@@ -27,7 +28,7 @@
                 {% if previewable %}
                     <button type="button" class="cm-flib__namelink" data-action="file-library#preview">{{ node.name }}</button>
                 {% else %}
-                    <a href="{{ path('app_file_library_node_download', {nodeId: node.id}) }}">{{ node.name }}</a>
+                    <a href="{{ path('app_file_library_node_open', {nodeId: node.id}) }}">{{ node.name }}</a>
                 {% endif %}
             {% endif %}
         </span>

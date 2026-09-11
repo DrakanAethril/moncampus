@@ -361,7 +361,10 @@ export default class extends Controller {
         // The counter reads over the *previewable* files of the folder, not over its rows: "3 / 6"
         // where the table has eight lines is the honest number, since two of them cannot be opened.
         this.viewerCountTarget.textContent = `${this.previewIndex + 1} / ${this.previewable.length}`;
-        this.viewerDownloadTarget.href = url;
+        // The viewer's own « Télécharger » points at the download route, not at the address the
+        // frame is showing: that one is signed inline so the PDF renders here, and following it
+        // would only re-open what is already open.
+        this.viewerDownloadTarget.href = row.dataset.downloadUrl;
 
         this.viewerBodyTarget.replaceChildren(this.buildPreviewElement(url, extension, name));
         this.viewerTarget.hidden = false;

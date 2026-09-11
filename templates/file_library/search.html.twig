@@ -52,7 +52,7 @@
                                             {% if node.type.value == 'folder' %}
                                                 <a href="{{ path('app_file_library_folder', {nodeId: node.id}) }}">{{ node.name }}</a>
                                             {% else %}
-                                                <a href="{{ path('app_file_library_node_download', {nodeId: node.id}) }}">{{ node.name }}</a>
+                                                <a href="{{ path('app_file_library_node_open', {nodeId: node.id}) }}">{{ node.name }}</a>
                                             {% endif %}
                                         </span>
                                     </td>
