@@ -18,9 +18,14 @@ use Symfony\Component\Validator\Constraints as Assert;
 /**
  * One graded assessment within a Topic (Carnet de notes - design/design_handoff_projet/
  * PROMPT_CLAUDE_CODE_carnet_de_notes.md). Anchored to Topic rather than a dedicated
- * (Program, teacher, subject) composite - Topic::$teacher already uniquely identifies "this
- * teacher teaches this class x matière" (see App\Controller\ProgramTimetableSettingsController::
- * teamTab()), so a Topic *is* one teacher's gradebook.
+ * (Program, teacher, subject) composite - Topic::$teachers names who holds "this class x matière"
+ * (see App\Controller\ProgramTimetableSettingsController::teamTab()), so a Topic *is* the
+ * gradebook of that matière.
+ *
+ * A matière can have several titulaires, and then the carnet is shared for reading and split for
+ * writing: $createdBy is the one thing that says whose evaluation this is, and
+ * App\Security\Voter\EvaluationVoter reads it as the write permission - a co-titulaire sees the
+ * column and never edits it.
  *
  * Deliberately carries no App\Entity\EvaluationPeriod link - which period an evaluation belongs to
  * is computed dynamically from $date against the Program's EvaluationPeriodGroup (if any), not

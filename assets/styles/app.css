@@ -2655,6 +2655,12 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     color: var(--cm-gold-tx); background: var(--cm-gold-bg); border-radius: 5px; padding: 2px 5px;
     align-self: flex-start; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
 }
+/* Whose column this is, on a matière held by two titulaires - only ever drawn on the columns the
+   reader does not own, so its absence means "mine". */
+.cm-gb-evauthor {
+    font: 600 9px var(--cm-font-ui); color: var(--cm-muted); line-height: 1.3;
+    white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+}
 .cm-gb-evactions { margin-top: auto; display: flex; align-items: center; gap: 4px; }
 .cm-gb-iconbtn {
     display: grid; place-items: center; border: 1px solid var(--cm-border); background: var(--cm-surface);

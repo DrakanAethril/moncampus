@@ -57,6 +57,7 @@ class InternshipBookletBuilder
         private readonly InternshipOptionLegalNameRepository $optionLegalNameRepository,
         private readonly InternshipCalendarBuilder $calendarBuilder,
         private readonly FileUploadService $fileUploadService,
+        private readonly TopicPrincipalTeacher $principalTeacher,
     ) {
     }
 
@@ -203,6 +204,10 @@ class InternshipBookletBuilder
      * broken alphabetically rather than left to row order, so the same booklet exported twice
      * never names two different people.
      *
+     * A matière held by several titulaires is counted once, for its principal - the one holding the
+     * most of its créneaux (App\Service\TopicPrincipalTeacher). Counting all of them would make a
+     * shared matière weigh double and hand the group to whoever happens to share one.
+     *
      * Null when the group has no subjects, or none of them has a teacher: the row is printed with
      * an empty Formateur cell rather than dropped, since the group is still part of the
      * curriculum the alternant is shown.
@@ -214,7 +219,7 @@ class InternshipBookletBuilder
         /** @var array<int, array{teacher: User, count: int}> $byTeacherId */
         $byTeacherId = [];
         foreach ($topics as $topic) {
-            $teacher = $topic->getTeacher();
+            $teacher = $this->principalTeacher->resolve($topic);
             if (null === $teacher) {
                 continue;
             }

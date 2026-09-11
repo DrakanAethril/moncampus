@@ -70,16 +70,22 @@
                     </div>
                 {% endif %}
 
-                {# A referent consulting a colleague's matière creates nothing: instead, the screen says
-                   who the matière belongs to (see ProgramGradebookController::grid()). #}
+                {# A titulaire of the matière adds to it - a co-titulaire included, each column staying
+                   its own author's (see ProgramGradebookController::grid()). A referent or staff
+                   consulting the matière creates nothing: the screen names who holds it instead. #}
                 {% if canEdit %}
-                    <a href="{{ path('app_program_gradebook_evaluation_new', {id: program.id, topic: topic.id}) }}" class="btn btn-primary ms-auto">
+                    {% if topicTeachers|length > 1 %}
+                        <span class="badge bg-blue-lt ms-auto me-2">
+                            {{ 'gradebookSharedTopicBadgeLabel'|trans({'%teachers%': topicTeachers|map(t => t.displayName ?? t.username)|join(', ')}) }}
+                        </span>
+                    {% endif %}
+                    <a href="{{ path('app_program_gradebook_evaluation_new', {id: program.id, topic: topic.id}) }}" class="btn btn-primary {{ topicTeachers|length > 1 ? '' : 'ms-auto' }}">
                         {{ 'gradebookNewEvaluationButtonLabel'|trans }}
                     </a>
                 {% else %}
                     <span class="badge bg-secondary-lt ms-auto">
-                        {% if topic.teacher %}
-                            {{ 'gradebookReadOnlyTopicBadgeLabel'|trans({'%teacher%': topic.teacher.displayName ?? topic.teacher.username}) }}
+                        {% if topicTeachers is not empty %}
+                            {{ 'gradebookReadOnlyTopicBadgeLabel'|trans({'%teacher%': topicTeachers|map(t => t.displayName ?? t.username)|join(', ')}) }}
                         {% else %}
                             {{ 'gradebookReadOnlyBadgeLabel'|trans }}
                         {% endif %}

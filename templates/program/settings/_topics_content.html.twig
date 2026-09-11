@@ -79,8 +79,8 @@
 
 <div class="card"
      data-controller="topics-table"
-     data-topics-table-option-column-value="7"
-     data-topics-table-group-column-value="8"
+     data-topics-table-option-column-value="8"
+     data-topics-table-group-column-value="9"
      data-topics-table-topic-count-label-value="{{ 'syllabusTopicCountLabel'|trans }}"
      {# The coefficient (column 1) is deliberately left out of the totals: a sum of coefficients means
         nothing, and the summed cells are suffixed « H » anyway. #}
@@ -97,6 +97,7 @@
                     <th>{{ 'topicTargetTpHoursColumnLabel'|trans }}</th>
                     <th>{{ 'topicTotalTargetHoursColumnLabel'|trans }}</th>
                     <th>{{ 'topicPlannedHoursColumnLabel'|trans }}</th>
+                    <th>{{ 'topicTeachersColumnLabel'|trans }}</th>
                     {# Two hidden columns follow (sort keys, not shown to the user - the group's own
                        badges/name are only ever shown once, on RowGroup's own header row, not per
                        topic): the group's own Option short name(s) - primary sort - and the group's
@@ -118,6 +119,15 @@
                         <td>{{ topic.targetTpHours }}</td>
                         <td>{{ topic.totalTargetHours }}</td>
                         <td class="fw-bold {{ plannedHours == topic.totalTargetHours ? 'text-success' : 'text-danger' }}">{{ plannedHours }}</td>
+                        {# A matière can be held by several titulaires - the only screen that says
+                           so, since nothing else in this table names a person. #}
+                        <td class="text-wrap">
+                            {% if topic.teachers is empty %}
+                                <span class="text-secondary">{{ 'programInternshipTeamNoTeacherLabel'|trans }}</span>
+                            {% else %}
+                                {{ topic.orderedTeachers|map(t => t.displayName ?? t.username)|join(', ') }}
+                            {% endif %}
+                        </td>
                         <td>{{ groupOptions|map(o => o.shortName)|join(', ') }}</td>
                         <td>{{ topic.topicGroup.name }}</td>
                         <td class="cm-actions">
@@ -133,6 +143,7 @@
             <tfoot>
                 <tr>
                     <th>{{ 'topicGrandTotalLabel'|trans }}</th>
+                    <th></th>
                     <th></th>
                     <th></th>
                     <th></th>

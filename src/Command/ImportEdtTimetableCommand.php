@@ -673,10 +673,15 @@ class ImportEdtTimetableCommand extends Command
      */
     private function resolveTopics(array $grid, array $programs, User $author): void
     {
-        $mainTeacher = [];
+        // Every teacher the EDT names on the matière, not just the majority one: a matière held by
+        // two of them has two titulaires, and each keeps their own evaluations in the class's
+        // carnet de notes (Topic::$teachers).
+        $seenTeachers = [];
         foreach ($grid as $cell) {
             $key = $this->topicKey($cell['classe'], $cell['matiere']);
-            $mainTeacher[$key][$cell['profs'][0]] = ($mainTeacher[$key][$cell['profs'][0]] ?? 0) + 1;
+            foreach ($cell['profs'] as $name) {
+                $seenTeachers[$key][$name] = true;
+            }
         }
 
         foreach ($grid as $cell) {
@@ -705,8 +710,15 @@ class ImportEdtTimetableCommand extends Command
                 ?? new Topic($cell['matiere'], $program);
             $topic->setCreatedBy($author);
             $topic->setTopicGroup($this->topicGroups[$groupKey]);
-            arsort($mainTeacher[$key]);
-            $topic->setTeacher($this->teachers[array_key_first($mainTeacher[$key])] ?? null);
+
+            // Adds, never removes. A co-titularité typed by the administration on the Matières
+            // screen has to survive the next timetable import - the EDT knows who stands in the
+            // créneaux, it does not know who the school decided holds the matière. A teacher who
+            // left is taken off by hand, on that same screen.
+            foreach (array_keys($seenTeachers[$key] ?? []) as $name) {
+                $topic->addTeacher($this->teachers[$name] ?? null);
+            }
+
             $this->entityManager->persist($topic);
             $this->topics[$key] = $topic;
         }

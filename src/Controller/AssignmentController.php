@@ -988,11 +988,7 @@ class AssignmentController extends AbstractController
         }
 
         $program = $assignment->getProgram();
-        $topics = null === $program ? [] : $topicRepository->findBy([
-            'program' => $program,
-            'teacher' => $this->currentUser(),
-            'inactiveDate' => null,
-        ]);
+        $topics = null === $program ? [] : $topicRepository->findForTeacherInProgram($program, $this->currentUser());
 
         $assignment->setTopic(1 === \count($topics) ? $topics[0] : null);
     }

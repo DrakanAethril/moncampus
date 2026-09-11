@@ -26,8 +26,10 @@ use Doctrine\ORM\EntityManagerInterface;
  */
 class AssignmentGradebookLinker
 {
-    public function __construct(private readonly EntityManagerInterface $entityManager)
-    {
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+        private readonly TopicPrincipalTeacher $principalTeacher,
+    ) {
     }
 
     public function ensureEvaluationExists(Assignment $assignment): ?Evaluation
@@ -44,9 +46,13 @@ class AssignmentGradebookLinker
 
         $evaluation = new Evaluation($topic, (string) $assignment->getTitle(), $assignment->getDueDate() ?? new \DateTimeImmutable());
         // The evaluation is born of the assignment, so it is credited to whoever gave it - the
-        // student whose deposit happens to trigger it is not its author. Non-null in the database,
-        // hence the fallback on the subject's teacher for the odd assignment with no creator.
-        $evaluation->setCreatedBy($assignment->getCreatedBy() ?? $topic->getTeacher());
+        // student whose deposit happens to trigger it is not its author. That authorship is also
+        // the write permission on the column (App\Security\Voter\EvaluationVoter), so on a matière
+        // held by two titulaires it decides which of them may fill it in.
+        //
+        // Non-null in the database, hence the fallback on the matière's principal titulaire for the
+        // odd assignment with no creator.
+        $evaluation->setCreatedBy($assignment->getCreatedBy() ?? $this->principalTeacher->resolve($topic));
         $evaluation->setStatus(EvaluationStatus::Planned);
         $evaluation->setLessonSession($assignment->getLessonSession());
         // A submission per group is graded once for the whole group: the submission's grade feeds the

@@ -180,7 +180,7 @@ class ProgressionTrameImportTest extends FunctionalTestCase
         $entityManager->persist($group);
 
         $topic = new Topic($name, $program, $group);
-        $topic->setTeacher($teacher);
+        $topic->addTeacher($teacher);
         $topic->setCreatedBy($teacher);
         $entityManager->persist($topic);
 

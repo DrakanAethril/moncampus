@@ -229,9 +229,17 @@ export default class extends Controller {
             head.appendChild(badge);
         }
 
+        // A matière held by two titulaires mixes their columns: the one that is not this reader's
+        // says whose it is, which is the only thing that makes its greyed-out actions readable.
+        if (this.editableValue && !evaluation.editable && evaluation.authorName) {
+            const author = this.el('div', 'cm-gb-evauthor', evaluation.authorName);
+            author.title = evaluation.authorName;
+            head.appendChild(author);
+        }
+
         const actions = this.el('div', 'cm-gb-evactions');
 
-        if (this.editableValue) {
+        if (evaluation.editable) {
             actions.appendChild(this.linkButton(
                 this.entryUrlTemplateValue.replace('__EVAL_ID__', evaluation.id),
                 'cm-gb-iconbtn cm-gb-iconbtn--primary',
@@ -262,7 +270,9 @@ export default class extends Controller {
     // ---- Cellules -------------------------------------------------------------------------
 
     buildCell(evaluation, student, colIndex, rowIndex, evals, order) {
-        const td = this.el('div', `cm-gb-cell${this.editableValue ? '' : ' cm-gb-cell--readonly'}`);
+        // Editability is a property of the column, not of the grid: inside one matière, a
+        // co-titulaire's evaluation is read-only for this reader (EvaluationVoter::MANAGE).
+        const td = this.el('div', `cm-gb-cell${evaluation.editable ? '' : ' cm-gb-cell--readonly'}`);
 
         const key = `${evaluation.id}:${student.id}`;
         if (this.editing === key) {
@@ -285,7 +295,7 @@ export default class extends Controller {
             // An evaluation with a rubric is not entered in the grid: the cell opens the entry
             // screen, where each question has its box. Reachable read-only as well.
             td.addEventListener('click', () => { window.location.href = entryUrl; });
-        } else if (this.editableValue) {
+        } else if (evaluation.editable) {
             td.addEventListener('click', () => this.openCell(evaluation, student));
         }
 
@@ -311,7 +321,7 @@ export default class extends Controller {
     }
 
     openCell(evaluation, student) {
-        if (!this.editableValue) return;
+        if (!evaluation.editable) return;
 
         const cell = this.grades[evaluation.id]?.[student.id];
         this.editing = `${evaluation.id}:${student.id}`;
@@ -393,6 +403,14 @@ export default class extends Controller {
         else if (key === 'ArrowLeft') nextCol -= 1;
         else if (key === 'ArrowDown' || key === 'Enter') nextRow += 1;
         else if (key === 'ArrowUp') nextRow -= 1;
+
+        // Left/right walks over a colleague's columns instead of stopping on one: inside a matière
+        // held by two titulaires they sit among this reader's own, and a cursor that died on the
+        // first of them would make the keyboard useless.
+        const step = key === 'ArrowRight' ? 1 : (key === 'ArrowLeft' ? -1 : 0);
+        while (step !== 0 && nextCol >= 0 && nextCol < evals.length && !evals[nextCol].editable) {
+            nextCol += step;
+        }
 
         this.commitCell(evaluation, student).then(() => {
             if (nextCol < 0 || nextCol >= evals.length || nextRow < 0 || nextRow >= order.length) return;
