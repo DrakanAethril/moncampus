@@ -7,6 +7,7 @@ namespace App\Controller\Api;
 use App\Attribute\RequiresFeature;
 use App\Entity\Assignment;
 use App\Entity\AssignmentAttachment;
+use App\Entity\AssignmentCompletion;
 use App\Entity\AssignmentView;
 use App\Entity\AudioRecordingFile;
 use App\Entity\Program;
@@ -15,6 +16,7 @@ use App\Entity\VideoResourceFile;
 use App\Enum\AssignmentNature;
 use App\Enum\Feature;
 use App\Enum\StudentWorkState;
+use App\Repository\AssignmentCompletionRepository;
 use App\Repository\AssignmentRepository;
 use App\Repository\AssignmentViewRepository;
 use App\Repository\ProgramRepository;
@@ -149,6 +151,69 @@ class WorkController extends AbstractController
             'audioFiles' => $this->formatAudioFiles($assignment, $student, $listenTracker, $audioUploadService),
             'videoFiles' => $this->formatVideoFiles($assignment, $student, $watchTracker, $videoUploadService),
         ]);
+    }
+
+    /**
+     * Opening one support of a travail, from the phone - the twin of
+     * App\Controller\StudentWorkController::openAttachment(), writing the very same two rows.
+     *
+     * It answers the address rather than redirecting to it: this API is Bearer-JWT, and the phone
+     * hands the document to the system browser, which carries no token - a redirect route would
+     * answer 401 the moment it left the app. So the app calls this, then launches what comes back.
+     *
+     * Like its web twin it writes the AssignmentView, and on a « À lire » and that nature alone the
+     * AssignmentCompletion: the reading is the work, and a student who only ever reads on their
+     * phone would otherwise never finish anything - the same reason the two player routes below
+     * write.
+     */
+    #[IsGranted('ROLE_STUDENT')]
+    #[Route(path: '/api/student-work/{assignmentId}/attachments/{attachmentId}/open', name: 'api_student_work_attachment_open', methods: ['POST'], requirements: ['assignmentId' => '\d+', 'attachmentId' => '\d+'])]
+    public function openAttachment(
+        int $assignmentId,
+        int $attachmentId,
+        AssignmentRepository $assignmentRepository,
+        AssignmentViewRepository $viewRepository,
+        AssignmentCompletionRepository $completionRepository,
+        AssignmentAudienceResolver $audienceResolver,
+        EntityManagerInterface $entityManager,
+        FileUploadService $fileUploadService,
+    ): JsonResponse {
+        $student = $this->currentUser();
+        $assignment = $assignmentRepository->find($assignmentId);
+
+        if (null === $assignment || !$assignment->isVisibleFor() || !$audienceResolver->isInAudience($assignment, $student)) {
+            throw $this->createNotFoundException();
+        }
+
+        $attachment = null;
+        foreach ($assignment->getAttachments() as $candidate) {
+            if ($candidate->getId() === $attachmentId) {
+                $attachment = $candidate;
+            }
+        }
+
+        if (null === $attachment) {
+            throw $this->createNotFoundException();
+        }
+
+        $view = $viewRepository->findOneFor($assignment, $student);
+        $view ? $view->registerView() : $entityManager->persist(new AssignmentView($assignment, $student));
+
+        if ($assignment->getNature()->expectsReading() && null === $completionRepository->findOneFor($assignment, $student)) {
+            $entityManager->persist(new AssignmentCompletion($assignment, $student));
+        }
+
+        $entityManager->flush();
+
+        if ($attachment->isLink()) {
+            return $this->json(['url' => $attachment->getUrl()]);
+        }
+
+        $key = $attachment->getStorageKey() ?? throw $this->createNotFoundException();
+
+        // The signed, named address the web hands out, not the raw CDN one of formatAttachment():
+        // the file then reaches the phone under the name the teacher gave the row.
+        return $this->json(['url' => $fileUploadService->downloadUrl($key, $attachment->getLabel())]);
     }
 
     /**
@@ -387,6 +452,7 @@ class WorkController extends AbstractController
                 ? (float) $assignment->getMinimumScorePercent()
                 : null,
             'readingUrl' => $readingUrl,
+            'readingAttachmentId' => $this->readingAttachmentIdOf($assignment),
             'expectationCount' => \count($item->expectations),
         ];
     }
@@ -425,12 +491,22 @@ class WorkController extends AbstractController
         ];
     }
 
-    /** @return array{label: string, url: ?string, kind: string} */
+    /**
+     * `id` is what lets the phone open the support through openAttachment() rather than launching
+     * the address itself - which is the whole of the tracking on this side.
+     *
+     * `url` stays alongside it, and is deliberately not removed: an APK is side-loaded here, so
+     * older builds are still in students' hands and they know no other field. They open the
+     * document with no trace, exactly as they did before - degraded, never broken.
+     *
+     * @return array{id: ?int, label: string, url: ?string, kind: string}
+     */
     private function formatAttachment(AssignmentAttachment $attachment, FileUploadService $fileUploadService): array
     {
         $extension = strtoupper(pathinfo($attachment->getLabel(), \PATHINFO_EXTENSION));
 
         return [
+            'id' => $attachment->getId(),
             'label' => $attachment->getLabel(),
             'url' => $attachment->isLink()
                 ? $attachment->getUrl()
@@ -441,8 +517,25 @@ class WorkController extends AbstractController
     }
 
     /**
-     * A reading is "Lire"-able on mobile only when the teacher attached a link to follow; a
-     * reading built out of an uploaded file is opened from the sheet like any other attachment.
+     * The lone support of a reading, which the row's « Lire » opens through openAttachment() - the
+     * document being what settles a « À lire », whether it is a file or a link. Null as soon as
+     * there are several: the phone then opens the sheet, where each of them is listed, rather than
+     * choosing for the student which one they read. That is the rule the web's dashboard card
+     * follows too (templates/student/_work_reading_link.html.twig).
+     */
+    private function readingAttachmentIdOf(Assignment $assignment): ?int
+    {
+        if (AssignmentNature::ToRead !== $assignment->getNature() || 1 !== $assignment->getAttachments()->count()) {
+            return null;
+        }
+
+        return $assignment->getAttachments()->first()->getId();
+    }
+
+    /**
+     * The address of a reading's link, kept for the builds installed before readingAttachmentId
+     * existed - see formatAttachment(). They launch it themselves and leave no trace, which is what
+     * they already did; a newer build ignores this field entirely.
      */
     private function readingUrlOf(Assignment $assignment): ?string
     {

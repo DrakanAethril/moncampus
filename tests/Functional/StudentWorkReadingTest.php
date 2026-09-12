@@ -14,6 +14,7 @@ use App\Enum\AssignmentNature;
 use App\Repository\AssignmentCompletionRepository;
 use App\Repository\AssignmentViewRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 
 /**
  * A « À lire » is settled by its document being opened, and by nothing else the student has to
@@ -119,6 +120,47 @@ class StudentWorkReadingTest extends FunctionalTestCase
 
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
         self::assertStringContainsString($link, (string) $this->client->getResponse()->getContent());
+    }
+
+    /**
+     * The phone settles a reading the same way, through the twin route - it answers the address
+     * instead of redirecting to it, the system browser carrying no Bearer token.
+     */
+    public function testThePhoneSettlesTheReadingTheSameWay(): void
+    {
+        $student = $this->createUser(['ROLE_USER', 'ROLE_STUDENT', 'ROLE_CAMPUS'], 'reading.student');
+        $assignment = $this->reading($this->createProgram([$student]), $student);
+        $attachment = $assignment->getAttachments()->first();
+
+        $token = static::getContainer()->get(JWTTokenManagerInterface::class)->create($student);
+        $this->client->setServerParameter('HTTP_AUTHORIZATION', 'Bearer '.$token);
+        $this->client->request('POST', sprintf('/api/student-work/%d/attachments/%d/open', $assignment->getId(), $attachment->getId()));
+
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        self::assertSame(
+            ['url' => 'https://example.org/chapitre-3'],
+            json_decode((string) $this->client->getResponse()->getContent(), true),
+        );
+        self::assertNotNull(static::getContainer()->get(AssignmentCompletionRepository::class)->findOneFor($assignment, $student));
+        self::assertNotNull(static::getContainer()->get(AssignmentViewRepository::class)->findOneFor($assignment, $student));
+    }
+
+    /**
+     * And the row the phone draws names that support, so its « Lire » has something to open - null
+     * as soon as there are several, where the sheet takes over.
+     */
+    public function testThePhoneListNamesTheLoneSupportOfAReading(): void
+    {
+        $student = $this->createUser(['ROLE_USER', 'ROLE_STUDENT', 'ROLE_CAMPUS'], 'reading.student');
+        $assignment = $this->reading($this->createProgram([$student]), $student);
+        $attachment = $assignment->getAttachments()->first();
+
+        $token = static::getContainer()->get(JWTTokenManagerInterface::class)->create($student);
+        $this->client->setServerParameter('HTTP_AUTHORIZATION', 'Bearer '.$token);
+        $this->client->request('GET', '/api/student-work');
+
+        $payload = json_decode((string) $this->client->getResponse()->getContent(), true);
+        self::assertSame($attachment->getId(), $payload['items'][0]['readingAttachmentId']);
     }
 
     /** A published travail carrying one support - a link, so the test needs no object storage. */
