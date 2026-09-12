@@ -8,6 +8,7 @@ use App\Entity\User;
 use App\Enum\PlatformActivityType;
 use App\Service\PlatformActivityRecorder;
 use App\Service\PostValue;
+use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -40,7 +41,23 @@ class LdapAuthenticator extends AbstractLoginFormAuthenticator
         private readonly LdapCredentialsVerifier $credentialsVerifier,
         private readonly UrlGeneratorInterface $urlGenerator,
         private readonly PlatformActivityRecorder $activityRecorder,
+        private readonly Security $security,
     ) {
+    }
+
+    /**
+     * A POST to /login from somebody who is already logged in is not a login attempt: it is that
+     * form coming back out of the browser's history - the back button restores the page as it was
+     * left, fields and all - and being submitted a second time. There are no credentials to check
+     * there (nobody re-typed any), so declining the request hands it to the /login route itself,
+     * and App\Controller\SecurityController::login() sends them to their dashboard.
+     *
+     * Ordered after parent::supports() on purpose: reading the token marks the session as used,
+     * which would defeat the firewall's `lazy: true` on every other request of the application.
+     */
+    public function supports(Request $request): bool
+    {
+        return parent::supports($request) && null === $this->security->getUser();
     }
 
     public function authenticate(Request $request): Passport
