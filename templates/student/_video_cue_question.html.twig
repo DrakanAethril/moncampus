@@ -75,17 +75,10 @@
                 matching_choices: matchingChoices,
             } only %}
         {% elseif question.type.value == 'ordre' %}
-            <div class="cm-answers" data-controller="quiz-reorder" data-quiz-reorder-field-name-value="answers">
-                {% for answer in answers %}
-                    <div class="cm-answer-row" data-quiz-reorder-target="row">
-                        <span class="cm-qbank__index">{{ loop.index }}</span>
-                        <span class="cm-answer-input" style="cursor:default;">{{ answer.label }}</span>
-                        <input type="hidden" name="answers[]" value="{{ answer.id }}" data-quiz-reorder-target="input">
-                        <button type="button" class="cm-answer-move" data-action="click->quiz-reorder#moveUp">▲</button>
-                        <button type="button" class="cm-answer-move" data-action="click->quiz-reorder#moveDown">▼</button>
-                    </div>
-                {% endfor %}
-            </div>
+            {% include 'program/_quiz_ordre_take.html.twig' with {
+                answers: answers,
+                field_name: 'answers[]',
+            } only %}
         {% else %}
             {% set inputType = question.type.value == 'qcm_multi' ? 'checkbox' : 'radio' %}
             <div class="d-flex flex-column gap-2">

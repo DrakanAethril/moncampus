@@ -2147,6 +2147,16 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-answer-position { display: none; flex: none; width: auto; }
 .cm-answers--ordre .cm-answer-position { display: inline-block; }
 
+/* The "ordre" question as the student answers it (.cm-order, templates/program/_quiz_ordre_take).
+   The row is draggable *and* keeps its two arrows: the ranking has to be doable from the keyboard
+   as much as with the mouse. The cursor is on the row, so the label inherits it rather than
+   turning back into a text caret over the one part the student aims at. */
+.cm-order__row { cursor: grab; }
+.cm-order__row.is-dragging { opacity: .5; cursor: grabbing; }
+.cm-order__row:active { cursor: grabbing; }
+.cm-order__handle { flex: none; color: var(--cm-border); letter-spacing: -2px; }
+.cm-order__row .cm-answer-move { cursor: pointer; }
+
 /* ==========================================================================
    Texte à trous (.cm-blanks-*, .cm-chip, .cm-toggle) - design/design_handoff_quiz,
    screens 2a/2b (editor) and 2c/2d (attempt).

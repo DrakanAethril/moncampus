@@ -2735,7 +2735,7 @@ programQuizLastScoreColumnLabel: 'Dernier'
 programQuizPerAttemptLabel: 'questions / tentative'
 programQuizTrainAction: "S'entraîner"
 programQuizProgressTemplate: 'Question %position% / %total%'
-programQuizOrdreHintText: 'Classez les propositions dans le bon ordre à l’aide des flèches.'
+programQuizOrdreHintText: 'Classez les propositions dans le bon ordre en les faisant glisser, ou à l’aide des flèches.'
 programQuizSingleAttemptHintText: 'Une seule tentative — la réponse est enregistrée au passage à la question suivante'
 programQuizNextQuestionAction: 'Question suivante →'
 programQuizFinishAction: 'Terminer'
