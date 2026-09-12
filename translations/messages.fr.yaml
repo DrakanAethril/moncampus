@@ -638,6 +638,7 @@ cohortsTabLabel: 'Classes'
 roomsTabLabel: 'Salles'
 optionsTabLabel: 'Options'
 modalitiesTabLabel: 'Modalités'
+accommodationsTabLabel: 'Aménagements'
 schoolYearsTabLabel: 'Années scolaires'
 programsTabLabel: 'Formations'
 periodGroupsTabLabel: 'Groupes de périodes'
@@ -717,6 +718,7 @@ addTrackButtonLabel: 'Ajouter une filière'
 addCohortButtonLabel: 'Ajouter une classe'
 addOptionButtonLabel: 'Ajouter une option'
 addModalityButtonLabel: 'Ajouter une modalité'
+addAccommodationButtonLabel: 'Ajouter un aménagement'
 addSchoolYearButtonLabel: 'Ajouter une année scolaire'
 addProgramButtonLabel: 'Ajouter une formation'
 addRoomButtonLabel: 'Ajouter une salle'
@@ -729,6 +731,7 @@ newTrackPageHeading: 'Nouvelle filière'
 newCohortPageHeading: 'Nouvelle classe'
 newOptionPageHeading: 'Nouvelle option'
 newModalityPageHeading: 'Nouvelle modalité'
+newAccommodationPageHeading: 'Nouvel aménagement'
 newSchoolYearPageHeading: 'Nouvelle année scolaire'
 newProgramPageHeading: 'Nouvelle formation'
 newRoomPageHeading: 'Nouvelle salle'
@@ -741,6 +744,7 @@ trackCreatedFlashMessage: 'La filière a été ajoutée avec succès.'
 cohortCreatedFlashMessage: 'La classe a été ajoutée avec succès.'
 optionCreatedFlashMessage: "L'option a été ajoutée avec succès."
 modalityCreatedFlashMessage: 'La modalité a été ajoutée avec succès.'
+accommodationCreatedFlashMessage: "L'aménagement a été ajouté avec succès."
 schoolYearCreatedFlashMessage: "L'année scolaire a été ajoutée avec succès."
 programCreatedFlashMessage: 'La formation a été ajoutée avec succès.'
 roomCreatedFlashMessage: 'La salle a été ajoutée avec succès.'
@@ -753,6 +757,7 @@ editTrackPageHeading: 'Modifier la filière'
 editCohortPageHeading: 'Modifier la classe'
 editOptionPageHeading: "Modifier l'option"
 editModalityPageHeading: 'Modifier la modalité'
+editAccommodationPageHeading: "Modifier l'aménagement"
 editSchoolYearPageHeading: "Modifier l'année scolaire"
 editProgramPageHeading: 'Modifier la formation'
 editRoomPageHeading: 'Modifier la salle'
@@ -765,6 +770,7 @@ trackUpdatedFlashMessage: 'La filière a été mise à jour avec succès.'
 cohortUpdatedFlashMessage: 'La classe a été mise à jour avec succès.'
 optionUpdatedFlashMessage: "L'option a été mise à jour avec succès."
 modalityUpdatedFlashMessage: 'La modalité a été mise à jour avec succès.'
+accommodationUpdatedFlashMessage: "L'aménagement a été mis à jour avec succès."
 schoolYearUpdatedFlashMessage: "L'année scolaire a été mise à jour avec succès."
 programUpdatedFlashMessage: 'La formation a été mise à jour avec succès.'
 roomUpdatedFlashMessage: 'La salle a été mise à jour avec succès.'
@@ -8108,3 +8114,14 @@ wordCloudRefusalAlreadyProposedMessage: 'Vous avez déjà proposé ce mot.'
 wordCloudRefusalQuotaReachedMessage: 'Vous avez envoyé tous vos mots.'
 homeStudentBannerWordCloudTitle: 'Un nuage de mots est ouvert'
 homeStudentBannerWordCloudAction: 'Répondre'
+
+# Aménagements (Paramètres > Configuration, fiche annuaire, quiz)
+accommodationQuizExtraTimeFieldLabel: 'Ajout de temps sur les quiz (%)'
+accommodationQuizExtraTimeFieldHelpText: "Pourcentage de temps supplémentaire accordé sur le temps total du quiz et sur chaque question. Laisser vide si cet aménagement ne modifie pas les durées. Exemple : 33,33 pour un tiers-temps."
+accommodationQuizExtraTimeColumnLabel: 'Ajout de temps sur les quiz'
+userAccommodationsFieldLabel: 'Aménagements'
+userAccommodationsSectionTitle: 'Aménagements'
+userAccommodationsSectionHint: "Aménagements accordés à cet étudiant pour ses besoins particuliers. Le catalogue se gère dans Paramètres › Configuration › Aménagements."
+accommodationExtraTimeGrantedLabel: 'Temps supplémentaire : %percent%'
+accommodationExtraTimeStudentNotice: "Vous bénéficiez de %percent% de temps supplémentaire : les durées affichées en tiennent déjà compte."
+accommodationStudentBadgeLabel: 'Aménagement'

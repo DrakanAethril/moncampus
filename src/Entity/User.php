@@ -212,6 +212,18 @@ class User implements UserInterface
     #[ORM\JoinTable(name: 'user_group')]
     private Collection $manualGroups;
 
+    // The accommodations granted to this person (« aménagements »), e.g. a third more time on timed
+    // quizzes. Granted from the annuaire fiche, never by LDAP sync: it says what this app owes the
+    // account, not who the person is - same reasoning as $testUser and $inactiveDate below.
+    //
+    // Nothing reads this collection directly except App\Service\Accommodation\AccommodationResolver,
+    // which is what combines the rows into a profile and drops the deactivated ones. Consumers ask
+    // the profile - see App\Service\Accommodation\AccommodationProfile.
+    /** @var Collection<int, Accommodation> */
+    #[ORM\ManyToMany(targetEntity: Accommodation::class)]
+    #[ORM\JoinTable(name: 'user_accommodation')]
+    private Collection $accommodations;
+
     // Forces the next login through /password/renewal (App\Controller\PasswordRenewalController) -
     // set e.g. after a staff-driven reset (App\Controller\DirectoryPasswordController), cleared once
     // the user has submitted a new password there. Enforced app-wide by
@@ -254,6 +266,7 @@ class User implements UserInterface
         $this->manualGroups = new ArrayCollection();
         $this->emailAliases = new ArrayCollection();
         $this->loginHistory = new ArrayCollection();
+        $this->accommodations = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -641,6 +654,28 @@ class User implements UserInterface
     public function removeManualGroup(Group $group): static
     {
         $this->manualGroups->removeElement($group);
+
+        return $this;
+    }
+
+    /** @return Collection<int, Accommodation> */
+    public function getAccommodations(): Collection
+    {
+        return $this->accommodations;
+    }
+
+    public function addAccommodation(Accommodation $accommodation): static
+    {
+        if (!$this->accommodations->contains($accommodation)) {
+            $this->accommodations->add($accommodation);
+        }
+
+        return $this;
+    }
+
+    public function removeAccommodation(Accommodation $accommodation): static
+    {
+        $this->accommodations->removeElement($accommodation);
 
         return $this;
     }

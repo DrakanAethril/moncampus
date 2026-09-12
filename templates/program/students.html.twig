@@ -27,7 +27,7 @@
     {% if students|length > 0 %}
         <div class="row row-cards">
             {% for student in students %}
-                {{ include('program/_user_card.html.twig', {user: student, options: optionsByStudentId[student.id] ?? []}) }}
+                {{ include('program/_user_card.html.twig', {user: student, options: optionsByStudentId[student.id] ?? [], accommodation: accommodationsByStudentId[student.id] ?? null}) }}
             {% endfor %}
         </div>
     {% else %}

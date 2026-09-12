@@ -335,6 +335,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,
+            // Paramètres > Configuration > Aménagements - the catalogue of what may be granted to a
+            // student with particular needs. Refused to the student side and to the teaching side
+            // alike: who holds one is health-adjacent, and only the administration decides it.
+            '/settings/structure/accommodations' => 403,
             '/features' => 403,
             '/directory/users' => 403,
             '/ufa' => 403,
@@ -478,6 +482,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,
+            '/settings/structure/accommodations' => 403,
             '/features' => 403,
             '/settings/groups' => 403,
             '/settings/groups/hierarchy' => 403,
@@ -513,6 +518,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             $this->gameSettingsPath => 200,
             '/settings/configuration' => 200,
             '/settings/teaching' => 200,
+            '/settings/structure/accommodations' => 200,
             // Groups are admin-only, deliberately stricter than the rest of Settings - see
             // App\Controller\SettingsGroupsController's own note.
             '/settings/groups' => 200,
@@ -754,6 +760,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,
+            '/settings/structure/accommodations' => 403,
             '/features' => 403,
             '/directory/users' => 403,
             '/ufa' => 403,

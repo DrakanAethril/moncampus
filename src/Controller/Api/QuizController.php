@@ -22,6 +22,7 @@ use App\Repository\ProgramRepository;
 use App\Repository\QuizAttemptRepository;
 use App\Repository\QuizInstanceRepository;
 use App\Repository\QuizLiveSessionRepository;
+use App\Service\Accommodation\AccommodationResolver;
 use App\Service\FileUploadService;
 use App\Service\JsonRequestPayload;
 use App\Service\QuizAttemptConcluder;
@@ -72,6 +73,7 @@ class QuizController extends AbstractController
         private readonly QuizAttemptConcluder $concluder,
         private readonly QuizQuestionPayload $questionPayloadBuilder,
         private readonly TranslatorInterface $translator,
+        private readonly AccommodationResolver $accommodations,
     ) {
     }
 
@@ -92,6 +94,11 @@ class QuizController extends AbstractController
         if (null === $program) {
             return $this->json(['program' => null, 'liveSession' => null, 'evaluations' => [], 'practice' => []]);
         }
+
+        // The durations on these cards are the ones this student will actually be given: no attempt
+        // exists yet to read a frozen percentage off, so the accommodation is asked live. An app
+        // that announced 30 s and then counted 40 would be its own bug report.
+        $profile = $this->accommodations->forUser($student);
 
         $liveSession = $liveSessionRepository->findActiveForProgram($program);
         $evaluations = [];
@@ -114,8 +121,12 @@ class QuizController extends AbstractController
                     'instanceId' => $instance->getId(),
                     'name' => $instance->getName(),
                     'questionCount' => $instance->getQuestionCount(),
-                    'secondsPerQuestion' => $instance->getSecondsPerQuestion(),
-                    'globalTimeMinutes' => $instance->getGlobalTimeMinutes(),
+                    'secondsPerQuestion' => $profile->applyToSeconds($instance->getSecondsPerQuestion()),
+                    // Still minutes, as the key has always been - the extra time is applied to the
+                    // seconds and rounded back up to a whole minute so the card never announces
+                    // less than the clock will grant.
+                    'globalTimeMinutes' => self::minutesFrom($profile->applyToMinutesAsSeconds($instance->getGlobalTimeMinutes())),
+                    'extraTimePercent' => $profile->hasQuizExtraTime() ? $profile->quizExtraTimePercent : null,
                     'closesAt' => $instance->getClosesAt()?->format(\DateTimeInterface::ATOM),
                     'openNow' => $instance->isOpenNow(),
                     'inProgress' => null !== $inProgress,
@@ -150,7 +161,8 @@ class QuizController extends AbstractController
                 'instanceId' => $instance->getId(),
                 'name' => $instance->getName(),
                 'questionCount' => $instance->getQuestionCount(),
-                'secondsPerQuestion' => $instance->getSecondsPerQuestion(),
+                'secondsPerQuestion' => $profile->applyToSeconds($instance->getSecondsPerQuestion()),
+                'extraTimePercent' => $profile->hasQuizExtraTime() ? $profile->quizExtraTimePercent : null,
                 'openNow' => $instance->isOpenNow(),
                 'inProgress' => null !== $inProgress,
                 'attemptCount' => \count($concluded),
@@ -327,7 +339,10 @@ class QuizController extends AbstractController
         $attemptAnswer->markServed($now);
         $entityManager->flush();
 
-        $questionSeconds = $question->resolveSeconds($instance->getSecondsPerQuestion());
+        // The budget this copy gets, accommodation included - App\Entity\QuizAttempt::allowedSeconds()
+        // is the single place that applies it, so the countdown the app shows and the refusal the
+        // server makes below are computed from the same number.
+        $questionSeconds = $attempt->allowedSeconds($question->resolveSeconds($instance->getSecondsPerQuestion()));
 
         return $this->json([
             'concluded' => false,
@@ -339,8 +354,11 @@ class QuizController extends AbstractController
             // Kept for older builds of the app, which read it as THE per-question time; new builds
             // read secondsForQuestion, which is the one that accounts for the question's own mode
             // (null = no limit at all, so no countdown for this question).
-            'secondsPerQuestion' => $instance->getSecondsPerQuestion(),
+            'secondsPerQuestion' => $attempt->allowedSeconds($instance->getSecondsPerQuestion()),
             'secondsForQuestion' => $questionSeconds,
+            // What the accommodation added, so the app can say so rather than let the student
+            // wonder why their clock differs from their neighbour's. Null when nothing was granted.
+            'extraTimePercent' => $attempt->extraTimePercentValue() > 0 ? $attempt->extraTimePercentValue() : null,
             // What is actually left of that budget, counted from the first display. An app that
             // reads it stops handing out a fresh countdown on every reopening; one that does not
             // simply keeps the behaviour it had, and the server refuses the late answer anyway.
@@ -383,7 +401,7 @@ class QuizController extends AbstractController
         // The per-question budget, refused server-side exactly as on the web: nothing recorded, and
         // the app is told where to go next rather than left on a question it can no longer answer.
         $now = new \DateTimeImmutable();
-        if (QuizQuestionBudget::isLate($attemptAnswer->getServedAt(), $question->resolveSeconds($attempt->getQuizInstance()->getSecondsPerQuestion()), $now)) {
+        if (QuizQuestionBudget::isLate($attemptAnswer->getServedAt(), $attempt->allowedSeconds($question->resolveSeconds($attempt->getQuizInstance()->getSecondsPerQuestion())), $now)) {
             $isLastQuestion = $position + 1 >= \count($attemptAnswers);
             if ($isLastQuestion) {
                 $this->concluder->conclude($attempt, AttemptStatus::Termine);
@@ -695,6 +713,16 @@ class QuizController extends AbstractController
         if (!$program->getStudents()->contains($this->currentUser())) {
             throw $this->createNotFoundException();
         }
+    }
+
+    /**
+     * A budget expressed back in whole minutes, rounded **up**: the hub's card has always spoken in
+     * minutes, and a third more on 25 min is 33 min 20 s - announcing 33 would be announcing less
+     * than the clock actually grants.
+     */
+    private static function minutesFrom(?int $seconds): ?int
+    {
+        return null === $seconds ? null : (int) ceil($seconds / 60);
     }
 
     private function currentUser(): User

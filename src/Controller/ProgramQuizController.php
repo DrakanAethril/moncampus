@@ -21,6 +21,7 @@ use App\Repository\QuizInstanceRepository;
 use App\Repository\TopicRepository;
 use App\Security\FeatureAccess;
 use App\Security\StructureAccessChecker;
+use App\Service\Accommodation\AccommodationResolver;
 use App\Service\QuizDrawService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -207,7 +208,7 @@ class ProgramQuizController extends AbstractController
     // if the student already has an attempt in progress - relaunching over an active attempt would
     // just orphan it.
     #[Route(path: '/programs/{id}/quiz/{instanceId}/relaunch/{studentId}', name: 'app_program_quiz_relaunch', requirements: ['instanceId' => '\d+', 'studentId' => '\d+'], methods: ['POST'])]
-    public function relaunch(int $id, int $instanceId, int $studentId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, StructureAccessChecker $accessChecker, QuizInstanceRepository $instanceRepository, QuizAttemptRepository $attemptRepository, QuizDrawService $drawService): Response
+    public function relaunch(int $id, int $instanceId, int $studentId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, StructureAccessChecker $accessChecker, QuizInstanceRepository $instanceRepository, QuizAttemptRepository $attemptRepository, QuizDrawService $drawService, AccommodationResolver $accommodations): Response
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
         $instance = $this->findInstanceOrNotFound($instanceRepository, $program, $instanceId);
@@ -239,6 +240,10 @@ class ProgramQuizController extends AbstractController
         $attempt->setAttemptNumber($priorCount + 1);
         $attempt->setOrigin(AttemptOrigin::Relance);
         $attempt->setShuffleSeed(random_int(1, 2_147_483_647));
+        // Frozen here as it is on an ordinary attempt, and re-read when the student opens it
+        // (App\Service\QuizAttemptStarter restarts the clock at that moment too) - « Relancer » can
+        // be clicked days before anybody sits back down.
+        $attempt->setExtraTimePercent($accommodations->forUser($student)->quizExtraTimeForStorage());
 
         foreach ($drawService->drawQuestions($attempt) as $position => $question) {
             $attemptAnswer = new QuizAttemptAnswer($attempt, $question);

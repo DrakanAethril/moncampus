@@ -19,6 +19,7 @@ use App\Repository\ProgramRepository;
 use App\Repository\QuizAttemptRepository;
 use App\Repository\QuizInstanceRepository;
 use App\Repository\QuizLiveSessionRepository;
+use App\Service\Accommodation\AccommodationResolver;
 use App\Service\PostValue;
 use App\Service\QuizAttemptConcluder;
 use App\Service\QuizAttemptGrader;
@@ -49,7 +50,7 @@ class ProgramQuizAttemptController extends AbstractController
 {
     #[Route(path: '/programs/{id}/quiz/mine', name: 'app_program_quiz_mine')]
     #[IsGranted('ROLE_STUDENT')]
-    public function myQuizzes(int $id, ProgramRepository $repository, StudentQuizBoard $quizBoard, QuizAttemptRepository $attemptRepository, QuizLiveSessionRepository $liveSessionRepository): Response
+    public function myQuizzes(int $id, ProgramRepository $repository, StudentQuizBoard $quizBoard, QuizAttemptRepository $attemptRepository, QuizLiveSessionRepository $liveSessionRepository, AccommodationResolver $accommodations): Response
     {
         $program = $this->findProgramForStudentOrNotFound($id, $repository);
         $student = $this->currentUser();
@@ -87,6 +88,10 @@ class ProgramQuizAttemptController extends AbstractController
             'evaluations' => $evaluations,
             'trainings' => $trainings,
             'activeLiveSession' => $activeLiveSession,
+            // The durations this student will actually be given. No attempt exists yet to read a
+            // frozen percentage off, so the aménagement is asked live - a list announcing 30 s in
+            // front of a clock that grants 40 is a screen contradicting itself.
+            'accommodation' => $accommodations->forUser($student),
         ]);
     }
 
@@ -95,7 +100,7 @@ class ProgramQuizAttemptController extends AbstractController
     // App\Enum\AttemptOrigin::Relance, a later phase) and redirects to its first question.
     #[Route(path: '/programs/{id}/quiz/{instanceId}/take', name: 'app_program_quiz_take', requirements: ['instanceId' => '\d+'])]
     #[IsGranted('ROLE_STUDENT')]
-    public function take(int $id, int $instanceId, Request $request, ProgramRepository $repository, QuizInstanceRepository $instanceRepository, QuizAttemptRepository $attemptRepository, StudentQuizBoard $quizBoard, QuizAttemptStarter $attemptStarter, QuizAttemptSessionLock $sessionLock): Response
+    public function take(int $id, int $instanceId, Request $request, ProgramRepository $repository, QuizInstanceRepository $instanceRepository, QuizAttemptRepository $attemptRepository, StudentQuizBoard $quizBoard, QuizAttemptStarter $attemptStarter, QuizAttemptSessionLock $sessionLock, AccommodationResolver $accommodations): Response
     {
         $program = $this->findProgramForStudentOrNotFound($id, $repository);
         $instance = $this->findInstanceOrNotFound($instanceRepository, $program, $instanceId);
@@ -130,6 +135,9 @@ class ProgramQuizAttemptController extends AbstractController
             return $this->render('program/quiz_contract.html.twig', [
                 'program' => $program,
                 'quizInstance' => $instance,
+                // The contract states the durations, so it states the ones this student gets - the
+                // whole point of the screen is that nothing on the other side of it is a surprise.
+                'accommodation' => $accommodations->forUser($this->currentUser()),
             ]);
         }
 
@@ -245,7 +253,10 @@ class ProgramQuizAttemptController extends AbstractController
         // Facts, never an accusation - see App\Service\QuizSupervisionNotice.
         $countedAbsences = $instance->isSupervised() ? $supervisionNotice->countedAbsences($attempt) : [];
 
-        $questionSeconds = $question->resolveSeconds($instance->getSecondsPerQuestion());
+        // The budget this copy gets, aménagement included - App\Entity\QuizAttempt::allowedSeconds()
+        // is the single place that applies it, so the countdown on screen and the refusal the
+        // server makes in answer() below are computed from the same number.
+        $questionSeconds = $attempt->allowedSeconds($question->resolveSeconds($instance->getSecondsPerQuestion()));
 
         return $this->render('program/quiz_question.html.twig', [
             'program' => $program,
@@ -318,7 +329,7 @@ class ProgramQuizAttemptController extends AbstractController
         // empty. Refusing without advancing would leave them stuck on a question they can no longer
         // answer.
         $now = new \DateTimeImmutable();
-        if (QuizQuestionBudget::isLate($attemptAnswer->getServedAt(), $question->resolveSeconds($instance->getSecondsPerQuestion()), $now)) {
+        if (QuizQuestionBudget::isLate($attemptAnswer->getServedAt(), $attempt->allowedSeconds($question->resolveSeconds($instance->getSecondsPerQuestion())), $now)) {
             $this->addFlash('warning', 'programQuizAnswerTooLateFlashMessage');
 
             return $this->afterQuestion($program, $instance, $attempt, $position, \count($attemptAnswers));
