@@ -1990,6 +1990,15 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-draw-card--fs .cm-draw-autosave,
 .cm-draw-card--fs .cm-draw-saveline { display: none; }
 
+/* Confirmation before dropping a saved draw - same panel as « Création de groupes »'s, kept in
+   this section rather than shared with it: one prefix per area, as elsewhere in this file. */
+.cm-draw-modal-backdrop { position: fixed; inset: 0; background: rgba(9, 26, 40, .55); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 1070; }
+.cm-draw-modal-backdrop[hidden] { display: none; }
+.cm-draw-modal { background: var(--cm-surface); border-radius: 14px; padding: 26px 28px; width: 380px; max-width: calc(100vw - 60px); box-shadow: 0 24px 60px rgba(0, 0, 0, .35); display: flex; flex-direction: column; gap: 14px; }
+.cm-draw-modal__title { font: 600 17px var(--cm-font-title); color: var(--cm-ink); }
+.cm-draw-modal__body { font-size: 13.5px; color: var(--cm-muted); line-height: 1.6; }
+.cm-draw-modal__actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
+
 .cm-draw-toast {
     position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: var(--cm-navy); color: #fff;
     padding: 11px 22px; border-radius: 10px; font: 600 13px var(--cm-font-ui); box-shadow: 0 10px 30px rgba(0, 0, 0, .3); z-index: 1080;

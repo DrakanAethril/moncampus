@@ -56,6 +56,7 @@
                  drawRenamedToast: 'programToolsDrawRenamedToast'|trans,
                  drawDeletedToast: 'programToolsDrawDeletedToast'|trans,
                  drawDuplicateNameToast: 'programToolsDrawDuplicateNameToast'|trans,
+                 deleteDrawConfirmBody: 'programToolsDeleteDrawConfirmBody'|trans,
                  saveDrawButton: 'programToolsSaveDrawButtonLabel'|trans,
                  saveDrawAsNewButton: 'programToolsSaveDrawAsNewButtonLabel'|trans,
                  autosaveTemplate: 'programToolsDrawAutosaveTemplateLabel'|trans,
@@ -145,6 +146,20 @@
                     <div class="cm-draw-overlay__eyebrow">{{ 'programToolsWinnerEyebrowLabel'|trans }}</div>
                     <div class="cm-draw-overlay__name" data-random-draw-target="winnerName"></div>
                     <div class="cm-draw-overlay__hint">{{ 'programToolsWinnerHintLabel'|trans }}</div>
+                </div>
+            </div>
+
+            {# Deleting a saved draw throws away the memory of who has already been called, which
+               nothing on this screen can give back - so it is asked for, the way « Création de
+               groupes » asks before dropping a lot. #}
+            <div class="cm-draw-modal-backdrop" data-random-draw-target="confirmModal" data-action="click->random-draw#cancelDelete" hidden>
+                <div class="cm-draw-modal" data-action="click->random-draw#stopPropagation">
+                    <div class="cm-draw-modal__title">{{ 'programToolsDeleteDrawConfirmTitle'|trans }}</div>
+                    <div class="cm-draw-modal__body" data-random-draw-target="confirmModalBody"></div>
+                    <div class="cm-draw-modal__actions">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-action="click->random-draw#cancelDelete">{{ 'cancelAction'|trans }}</button>
+                        <button type="button" class="btn btn-danger btn-sm" data-action="click->random-draw#confirmDelete">{{ 'programToolsDeleteDrawAction'|trans }}</button>
+                    </div>
                 </div>
             </div>
 
