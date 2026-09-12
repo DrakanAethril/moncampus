@@ -13,6 +13,7 @@ use App\Enum\AssignmentAudienceType;
 use App\Enum\AssignmentNature;
 use App\Repository\AssignmentCompletionRepository;
 use App\Repository\AssignmentViewRepository;
+use App\Service\JsonRequestPayload;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 
@@ -159,8 +160,11 @@ class StudentWorkReadingTest extends FunctionalTestCase
         $this->client->setServerParameter('HTTP_AUTHORIZATION', 'Bearer '.$token);
         $this->client->request('GET', '/api/student-work');
 
-        $payload = json_decode((string) $this->client->getResponse()->getContent(), true);
-        self::assertSame($attachment->getId(), $payload['items'][0]['readingAttachmentId']);
+        // Read through the app's own typed reader rather than indexed straight into: json_decode()
+        // answers mixed, and « type at the boundary » is this repository's standing rule for it.
+        $items = JsonRequestPayload::fromJson((string) $this->client->getResponse()->getContent())->objects('items');
+        self::assertNotEmpty($items);
+        self::assertSame($attachment->getId(), $items[0]->int('readingAttachmentId'));
     }
 
     /** A published travail carrying one support - a link, so the test needs no object storage. */

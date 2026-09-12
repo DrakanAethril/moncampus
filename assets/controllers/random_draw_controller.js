@@ -18,7 +18,7 @@ export default class extends Controller {
         'card', 'slot', 'optionSelect', 'nameFormatSelect', 'repeatSwitch', 'remaining', 'fsRemaining',
         'winnerOverlay', 'winnerName', 'confetti',
         'savesBar', 'savesChips', 'drawnBlock', 'drawnChips', 'autosaveNotice', 'autosaveText',
-        'saveLine', 'nameInput', 'saveButton', 'closeButton', 'toast',
+        'saveLine', 'nameInput', 'saveButton', 'closeButton', 'confirmModal', 'confirmModalBody', 'toast',
     ];
 
     static values = {
@@ -51,6 +51,7 @@ export default class extends Controller {
         this.draws = this.drawsValue.map((draw) => ({ ...draw }));
         this.currentDrawId = null;
         this.editingDrawId = null;
+        this.pendingDeleteDrawId = null;
 
         // The trail is rendered by templates/_breadcrumb.html.twig, outside this controller's
         // element - resuming a draw never reloads the page, so the fifth segment (« … › Tirage au
@@ -336,7 +337,7 @@ export default class extends Controller {
             this.labelsValue.deleteDrawTitle,
             draw.name,
             '<path d="M3 6h18"></path><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path>',
-            () => this.deleteDraw(draw),
+            () => this.openDeleteModal(draw),
         ));
 
         return chip;
@@ -574,7 +575,40 @@ export default class extends Controller {
         this.showToast(this.labelsValue.drawRenamedToast.replace('%name%', response.name));
     }
 
-    async deleteDraw(draw) {
+    // Built out of text nodes rather than an innerHTML template: the name is the teacher's own
+    // wording and has no business being parsed as markup.
+    openDeleteModal(draw) {
+        this.pendingDeleteDrawId = draw.id;
+
+        const [before, after] = this.labelsValue.deleteDrawConfirmBody.split('%name%');
+        const name = document.createElement('b');
+        name.textContent = draw.name;
+        this.confirmModalBodyTarget.replaceChildren(
+            document.createTextNode(before ?? ''),
+            name,
+            document.createTextNode(after ?? ''),
+        );
+        this.confirmModalTarget.hidden = false;
+    }
+
+    cancelDelete() {
+        this.pendingDeleteDrawId = null;
+        this.confirmModalTarget.hidden = true;
+    }
+
+    // The backdrop closes the modal; the panel itself must not, so its own clicks stop here.
+    stopPropagation(event) {
+        event.stopPropagation();
+    }
+
+    async confirmDelete() {
+        const draw = this.draws.find((candidate) => candidate.id === this.pendingDeleteDrawId);
+        this.confirmModalTarget.hidden = true;
+        this.pendingDeleteDrawId = null;
+        if (!draw) {
+            return;
+        }
+
         const response = await this.post(this.deleteUrlValue.replace('__DRAW_ID__', String(draw.id)), {});
         if (!response) {
             return;
