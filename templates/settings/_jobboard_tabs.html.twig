@@ -1,0 +1,9 @@
+{# The two faces of Configuration > Jobboard, side by side. The nav's submenu points at one tab
+   each; the strip is what says they are one screen with two jobs - the key handed to the agent, and
+   the file loaded by hand. #}
+{% include '_tabs.html.twig' with {
+    tabs: [
+        {url: path('app_settings_jobboard_api'), label: 'jobboardApiNavLabel'|trans, active: activeTab == 'api'},
+        {url: path('app_settings_jobboard_import'), label: 'jobboardImportNavLabel'|trans, active: activeTab == 'import'},
+    ],
+} only %}

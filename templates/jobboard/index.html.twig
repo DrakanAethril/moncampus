@@ -1,0 +1,122 @@
+{% extends 'layout/app.html.twig' %}
+{% import 'jobboard/_multiselect.html.twig' as widget %}
+
+{% block title %}{{ 'jobboardNavLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'jobboardNavLabel'|trans, url: path('app_jobboard')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'jobboardNavLabel'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="cm-jb" data-controller="jobboard"
+         data-jobboard-offers-url-value="{{ path('app_jobboard_offers') }}"
+         data-jobboard-detail-url-value="{{ path('app_jobboard_offer', {id: '0'}) }}"
+         data-jobboard-cursor-value="{{ page.nextCursor }}">
+
+        {# A GET form, deliberately: the filtered list is a result to show, not a change to record,
+           so it stays bookmarkable and Turbo has nothing to redirect. #}
+        <form class="cm-jb-filters" method="get" action="{{ path('app_jobboard') }}" data-jobboard-target="form">
+            <div class="cm-jb-filters__head">
+                <span class="cm-jb-filters__title">{{ 'jobboardFiltersHeading'|trans }}</span>
+                {# Always drawn, as the handoff draws it: a link that appears only once something
+                   is ticked is a link nobody learns is there. It is dimmed when there is nothing
+                   to reset. #}
+                <a class="cm-jb-filters__reset{{ filters.isEmpty ? ' is-idle' }}" href="{{ path('app_jobboard') }}">{{ 'jobboardFiltersResetAction'|trans }}</a>
+            </div>
+
+            <div class="cm-jb-filters__row">
+                <div class="cm-jb-filter cm-jb-filter--dept">
+                    <label class="cm-jb-filter__label" for="jb-dept">{{ 'jobboardFilterDepartementLabel'|trans }}</label>
+                    <input id="jb-dept" type="text" name="dept" maxlength="3" placeholder="33"
+                           value="{{ filters.departement }}" data-action="change->jobboard#submit">
+                </div>
+                <div class="cm-jb-filter cm-jb-filter--since">
+                    <label class="cm-jb-filter__label" for="jb-since">{{ 'jobboardFilterFirstSeenLabel'|trans }}</label>
+                    <input id="jb-since" type="date" name="vue"
+                           value="{{ filters.firstSeenFrom ? filters.firstSeenFrom|date('Y-m-d') }}"
+                           data-action="change->jobboard#submit">
+                </div>
+            </div>
+
+            {{ widget.multiselect('contrat', 'jobboardFilterContractLabel'|trans, 'jobboardFilterContractPlaceholder'|trans,
+                contracts|map(c => {value: c.value, label: c.labelKey|trans}),
+                filters.contracts|map(c => c.value)) }}
+
+            {{ widget.multiselect('categorie', 'jobboardFilterCategoryLabel'|trans, 'jobboardFilterCategoryPlaceholder'|trans,
+                categories|map(c => {value: c, label: c|upper}),
+                filters.categories) }}
+
+            {{ widget.multiselect('teletravail', 'jobboardFilterRemoteLabel'|trans, 'jobboardFilterRemotePlaceholder'|trans,
+                remotes|map(r => {value: r.value, label: r.labelKey|trans}),
+                filters.remotes|map(r => r.value)) }}
+
+            {{ widget.multiselect('pays', 'jobboardFilterCountryLabel'|trans, 'jobboardFilterCountryPlaceholder'|trans,
+                countries|map(c => {value: c, label: c}),
+                filters.countries|map(c => c.value)) }}
+
+            {{ widget.multiselect('region', 'jobboardFilterRegionLabel'|trans, 'jobboardFilterRegionPlaceholder'|trans,
+                regions|map(r => {value: r, label: r}),
+                filters.regions) }}
+
+            {# « Filières » appears as soon as the reader has more than one, whoever they are - the
+               controller decides that, not the role. It lists their own filières and no others. #}
+            {% if sections is not empty %}
+                {{ widget.multiselect('filiere', 'jobboardFilterSectionLabel'|trans, 'jobboardFilterSectionPlaceholder'|trans,
+                    sections|map(s => {value: s.id, label: s.name}),
+                    filters.sectionIds) }}
+            {% endif %}
+
+            {# Source and Accès BTS: administrators only. They are also stripped server-side for
+               everybody else, so typing them into the address bar changes nothing. #}
+            {% if isAdmin %}
+                {{ widget.multiselect('source', 'jobboardFilterSourceLabel'|trans, 'jobboardFilterSourcePlaceholder'|trans,
+                    sources|map(s => {value: s.value, label: s.label}),
+                    filters.sources|map(s => s.value)) }}
+
+                {{ widget.multiselect('acces', 'jobboardFilterBtsAccessLabel'|trans, 'jobboardFilterBtsAccessPlaceholder'|trans,
+                    btsAccessValues|map(a => {value: a.value, label: a.labelKey|trans}),
+                    filters.btsAccess|map(a => a.value)) }}
+            {% endif %}
+        </form>
+
+        <section class="cm-jb-list">
+            <div class="cm-jb-head">
+                <div class="cm-jb-cell">{{ 'jobboardColumnPositionLabel'|trans }}</div>
+                <div class="cm-jb-cell">{{ 'jobboardColumnPlaceLabel'|trans }}</div>
+                <div class="cm-jb-cell">{{ 'jobboardColumnContractLabel'|trans }}</div>
+                <div class="cm-jb-cell">{{ 'jobboardColumnLevelLabel'|trans }}</div>
+                <div class="cm-jb-cell">{{ 'jobboardColumnRemoteLabel'|trans }}</div>
+                {# The only sorted column, and the only order this screen has: date de publication
+                   décroissante. The arrow says so; nothing here is clickable, because a second
+                   order would need a second cursor. #}
+                <div class="cm-jb-cell cm-jb-cell--date is-sorted">{{ 'jobboardColumnPublishedLabel'|trans }} ↓</div>
+            </div>
+
+            <div class="cm-jb-rows" data-jobboard-target="rows">
+                {% include 'jobboard/_rows.html.twig' with {page: page, isAdmin: isAdmin} %}
+            </div>
+
+            {% if page.offers is empty %}
+                <p class="cm-jb-empty" data-jobboard-target="empty">{{ 'jobboardEmptyListText'|trans }}</p>
+            {% endif %}
+
+            {% if page.nextCursor %}
+                <div class="cm-jb-more">
+                    <button type="button" class="cm-jb-more__button" data-jobboard-target="more" data-action="jobboard#loadMore">
+                        {{ 'jobboardLoadMoreAction'|trans({'%count%': 40}) }}
+                    </button>
+                </div>
+            {% endif %}
+
+            {# The overlay and the panel live inside the list card: the detail opens *over* the list
+               (position:absolute on this section), it is not a page of its own. #}
+            <div class="cm-jb-veil" data-jobboard-target="veil" data-action="click->jobboard#closeDetail" hidden></div>
+            <aside class="cm-jb-panel" data-jobboard-target="panel" hidden aria-live="polite"></aside>
+        </section>
+    </div>
+{% endblock %}

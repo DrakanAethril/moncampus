@@ -1,0 +1,130 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'jobboardSettingsHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'settingsConfigurationNavLabel'|trans, url: path('app_settings_configuration')},
+        {label: 'jobboardSettingsHeading'|trans, url: path('app_settings_jobboard_api')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'jobboardSettingsHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% include 'settings/_jobboard_tabs.html.twig' with {activeTab: 'api'} only %}
+
+    <div class="card cm-card--tabbed" style="padding: 18px">
+        {# Shown once and never again: the row keeps a selector and a hash, and nothing on this
+           platform reads a secret back. Printed here rather than in a flash because it must be
+           selectable and copyable. #}
+        {% if secret %}
+            <div class="cm-note cm-note--gold" style="margin-bottom: 18px">
+                <span class="cm-note__icon">!</span>
+                <span>
+                    <b>{{ 'jobboardTokenSecretHeading'|trans }}</b><br>
+                    <code class="cm-jb-secret">{{ secret }}</code><br>
+                    {{ 'jobboardTokenSecretWarningText'|trans }}
+                </span>
+            </div>
+        {% endif %}
+
+        <div class="cm-subhead" style="margin-bottom: 14px">
+            <div class="cm-subhead__title">{{ 'jobboardTokenListHeading'|trans }}</div>
+            <div class="cm-subhead__hint">{{ 'jobboardTokenListHintText'|trans }}</div>
+        </div>
+
+        <table class="card-table">
+            <thead>
+                <tr>
+                    <th>{{ 'jobboardTokenLabelColumn'|trans }}</th>
+                    <th>{{ 'jobboardTokenSectionColumn'|trans }}</th>
+                    <th>{{ 'jobboardTokenCreatedColumn'|trans }}</th>
+                    <th>{{ 'jobboardTokenLastUsedColumn'|trans }}</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for token in tokens %}
+                    <tr class="{{ token.revoked ? 'cm-jb-token--revoked' }}">
+                        <td class="text-ink">{{ token.label }}</td>
+                        <td>{{ token.section.name }}</td>
+                        <td>{{ token.createdAt|localized_date('d MMM y') }}{% if token.createdBy %} · {{ token.createdBy.displayName ?? token.createdBy.username }}{% endif %}</td>
+                        <td>
+                            {% if token.lastUsedAt %}
+                                {{ token.lastUsedAt|localized_date('d MMM y') }}{% if token.lastUsedIp %} · {{ token.lastUsedIp }}{% endif %}
+                            {% else %}
+                                <span class="text-secondary">{{ 'jobboardTokenNeverUsedText'|trans }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="cm-actions">
+                            {% if token.revoked %}
+                                <span class="text-secondary">{{ 'jobboardTokenRevokedText'|trans({'%date%': token.revokedAt|localized_date('d MMM y')}) }}</span>
+                            {% else %}
+                                <form method="post" action="{{ path('app_settings_jobboard_token_revoke', {id: token.id}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('jobboard_token_revoke') }}">
+                                    <button type="submit" class="cm-action cm-action--danger"
+                                            data-controller="confirm-submit"
+                                            data-confirm-submit-message-value="{{ 'jobboardTokenRevokeConfirmText'|trans({'%label%': token.label}) }}"
+                                            data-action="click->confirm-submit#confirm">{{ 'jobboardTokenRevokeAction'|trans }}</button>
+                                </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="5" class="text-secondary">{{ 'jobboardTokenListEmptyText'|trans }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="cm-subhead" style="margin: 24px 0 14px">
+            <div class="cm-subhead__title">{{ 'jobboardTokenNewHeading'|trans }}</div>
+            <div class="cm-subhead__hint">{{ 'jobboardTokenNewHintText'|trans }}</div>
+        </div>
+
+        <form method="post" action="{{ path('app_settings_jobboard_token_create') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('jobboard_token_create') }}">
+            <div class="cm-formgrid">
+                <label class="cm-field">
+                    <span class="cm-field__label">{{ 'jobboardTokenLabelColumn'|trans }} <span class="req">*</span></span>
+                    <input type="text" name="label" maxlength="120" required placeholder="{{ 'jobboardTokenLabelPlaceholder'|trans }}">
+                </label>
+                <label class="cm-field">
+                    <span class="cm-field__label">{{ 'jobboardTokenSectionColumn'|trans }} <span class="req">*</span></span>
+                    <select name="section" required>
+                        {# A select used for input: it starts on nothing. The filière is the whole
+                           meaning of the key and must never be picked by accident. #}
+                        <option value="">{{ 'jobboardTokenSectionPlaceholder'|trans }}</option>
+                        {% for section in sections %}
+                            <option value="{{ section.id }}">{{ section.name }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+            </div>
+            <div class="cm-actionbar">
+                <div class="cm-actionbar__buttons">
+                    <button type="submit" class="cm-btn cm-btn--primary">{{ 'jobboardTokenCreateAction'|trans }}</button>
+                </div>
+            </div>
+        </form>
+
+        <div class="cm-subhead" style="margin: 24px 0 14px">
+            <div class="cm-subhead__title">{{ 'jobboardInstructionsHeading'|trans }}</div>
+            <div class="cm-subhead__hint">{{ 'jobboardInstructionsHintText'|trans }}</div>
+        </div>
+
+        {# Generated from the enums the validator itself uses - never typed by hand, or it would be
+           wrong the day a source is added, and wrong where nobody re-reads it. #}
+        <div data-controller="copy-block">
+            <textarea class="cm-jb-instructions" rows="16" readonly data-copy-block-target="source">{{ instructions }}</textarea>
+            <div class="cm-actionbar">
+                <div class="cm-actionbar__meta">{{ 'jobboardInstructionsNoSecretText'|trans }}</div>
+                <div class="cm-actionbar__buttons">
+                    <button type="button" class="cm-btn" data-action="click->copy-block#copy"
+                            data-copy-block-done-label-param="{{ 'jobboardInstructionsCopiedText'|trans }}">{{ 'jobboardInstructionsCopyAction'|trans }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

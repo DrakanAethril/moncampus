@@ -39,8 +39,13 @@
 {% set resources_quiz_programs = is_pure_student ? student_nav_quiz_programs() : [] %}
 {% set resources_documentation = feature('documentation') %}
 {% set resources_apps = is_granted('ROLE_ADMIN') %}
+{# « Jobboard », last entry and student-only here: every other profile reads it from Outils >
+   « Au-delà d'un diplôme ». Two doors rather than one because they are two different gestures - a
+   student looks for a contract, a teacher looks at what the market is asking of their class. #}
+{% set resources_jobboard = is_pure_student and feature('jobboard') %}
 {% if resources_shared_documents or resources_my_vms or resources_school_mail or resources_job_applications
-    or resources_wiki or resources_course_space or resources_quiz_programs is not empty or resources_documentation or resources_apps %}
+    or resources_wiki or resources_course_space or resources_quiz_programs is not empty or resources_documentation or resources_apps
+    or resources_jobboard %}
 <li class="nav-item dropdown {{ resources_is_active ? 'active' }}">
     <a class="nav-link dropdown-toggle" href="#navbar-resources" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ resources_is_active ? ' aria-current="page"' }}>
         <span class="nav-link-title">{{ 'resourcesNavLabel'|trans }}</span>
@@ -125,6 +130,9 @@
         {% if resources_apps %}
             <a class="dropdown-item {{ current_route == 'app_resources_mobile' ? 'active' }}" href="{{ path('app_resources_mobile') }}">{{ 'resourcesMobileAppNavLabel'|trans }}</a>
             <a class="dropdown-item {{ current_route == 'app_resources_eco' ? 'active' }}" href="{{ path('app_resources_eco') }}">{{ 'resourcesEcoAppNavLabel'|trans }}</a>
+        {% endif %}
+        {% if resources_jobboard %}
+            <a class="dropdown-item {{ current_route starts with 'app_jobboard' ? 'active' }}" href="{{ path('app_jobboard') }}">{{ 'jobboardNavLabel'|trans }}</a>
         {% endif %}
     </div>
 </li>
