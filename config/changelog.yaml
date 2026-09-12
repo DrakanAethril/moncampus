@@ -26,6 +26,22 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.12'
+      date: '2026-09-12'
+      summary: "Un tirage au sort s'enregistre désormais sous un nom et se reprend plus tard, avec la liste des élèves déjà tirés. Lire le document d'un travail « À lire » suffit à le régler, les propositions d'une question « ordre » se classent à la souris, et revenir sur le formulaire de connexion en étant déjà connecté ramène à l'accueil."
+      entries:
+          - type: nouveaute
+            title: "Enregistrer un tirage au sort et le reprendre plus tard"
+            detail: "Un tirage nommé garde son option de filtrage, sa remise en jeu et la liste ordonnée des élèves déjà tirés, et se retrouve depuis n'importe quel poste — ce qu'un tirage sans remise étalé sur plusieurs séances perdait jusqu'ici en fermant l'onglet. Chaque tirage se renomme, et se supprime après confirmation : les élèves déjà tirés ne se rattrapent pas."
+          - type: modification
+            title: "Lire le document d'un travail « À lire » suffit à le régler"
+            detail: "Ouvrir le document — depuis l'accueil, depuis la consigne ou depuis la page du travail — marque le travail comme fait, pour cette nature de travail et pour elle seule : un « À réviser » portant le même document reste à déclarer. Depuis le téléphone aussi, avec la version Android remise à jour sur la page Ressources."
+          - type: modification
+            title: "Les propositions d'une question « ordre » se classent à la souris"
+            detail: "La ligne se déplace par glisser-déposer et garde ses flèches, le classement devant rester faisable au clavier. Le rang affiché se met à jour à chaque déplacement, là où il pouvait rester faux après une flèche."
+          - type: fix
+            title: "Le formulaire de connexion ramène à l'accueil quand on est déjà connecté"
+            detail: "Y revenir par le bouton « précédent » du navigateur affichait une connexion déjà faite, dont le bouton ne menait nulle part."
     - version: '2026.09.11'
       date: '2026-09-11'
       summary: "Une matière peut désormais être tenue par plusieurs enseignants : chacun lit tout le carnet de notes de la matière et ne modifie que les évaluations qu'il a lui-même posées. Cinq corrections l'accompagnent, dont la visibilité de l'emploi du temps d'une formation, qui n'était pas respectée partout."

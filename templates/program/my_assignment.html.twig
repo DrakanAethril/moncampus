@@ -41,7 +41,7 @@
                                 {{ attachment.label }}
                                 {%- if attachment.isLink %} <span class="text-secondary">— {{ attachment.url }}</span>{% endif %}
                             </span>
-                            <a href="{{ attachment.isLink ? attachment.url : download_url(attachment.storageKey, attachment.label) }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">
+                            <a href="{{ path('app_student_work_attachment', {assignmentId: assignment.id, attachmentId: attachment.id}) }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">
                                 {{ (attachment.isLink ? 'studentWorkOpenLinkAction' : 'studentWorkDownloadAction')|trans }}
                             </a>
                         </div>

@@ -182,6 +182,20 @@ enum AssignmentNature: string
     }
 
     /**
+     * A reading, the one nature whose document *is* the work: opening it settles the travail
+     * (App\Controller\StudentWorkController::openAttachment), wherever the student clicked from.
+     *
+     * Unlike the expectsX() predicates above, this one does **not** take the nature out of
+     * expectsSelfDeclaration(): a reading with nothing attached - « lisez le chapitre 3 du manuel »
+     * - has no document to open and is settled the way it always was, by the student's word. Which
+     * is why the rule is read here and not by asking whether an attachment exists.
+     */
+    public function expectsReading(): bool
+    {
+        return self::ToRead === $this;
+    }
+
+    /**
      * A survey carries its own proof of completion too - the response itself, recorded on
      * survey_target.responded_at - hence its exclusion from expectsSelfDeclaration() above. That
      * exclusion is the single most expensive trap of design/validated/surveys.md (§7.7): without

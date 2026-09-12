@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Attribute\RequiresFeature;
 use App\Entity\Assignment;
+use App\Entity\AssignmentAttachment;
 use App\Entity\AssignmentCompletion;
 use App\Entity\AssignmentDismissal;
 use App\Entity\AssignmentSubmission;
@@ -131,6 +132,59 @@ class StudentWorkController extends AbstractController
             'audioFiles' => null === $recording ? [] : $recording->getFilesFor($student),
             'audioProgress' => null === $recording ? [] : $listenTracker->progressPercents($recording, $student),
         ]);
+    }
+
+    /**
+     * A support attached to the travail, opened through the platform rather than straight from S3.
+     *
+     * The address it redirects to is the very one the row used to carry - the signed S3 request, or
+     * the teacher's link - so nothing changes about *reading* the file. What changes is that the
+     * click now passes through here, which is the only way the platform can see it, and two things
+     * are written on the way:
+     *
+     * - the AssignmentView, exactly as opening the consigne panel writes it, so that opening the
+     *   document from the dashboard card and opening it from the travail leave the same trace and
+     *   feed the same « ouvert par » in the teacher's follow-up;
+     * - on a « À lire », and on that nature alone, the completion: the reading *is* the work, so
+     *   the document being opened settles it and the student has nothing left to declare. A « À
+     *   réviser » carrying the same PDF is not done for having been downloaded, which is why the
+     *   rule names the nature rather than the attachment.
+     *
+     * Nothing is ever taken back here - re-reading a document is not undoing the work, and the way
+     * back stays the student's own « Pas encore fait » (toggleDone). A « À lire » with no document
+     * at all is settled the way it always was, by declaration: there is nothing to open.
+     */
+    #[Route(path: '/student-work/{assignmentId}/attachment/{attachmentId}', name: 'app_student_work_attachment', methods: ['GET'], requirements: ['assignmentId' => '\d+', 'attachmentId' => '\d+'])]
+    public function openAttachment(
+        int $assignmentId,
+        int $attachmentId,
+        EntityManagerInterface $entityManager,
+        AssignmentRepository $assignmentRepository,
+        AssignmentViewRepository $viewRepository,
+        AssignmentCompletionRepository $completionRepository,
+        AssignmentAudienceResolver $audienceResolver,
+        FileUploadService $fileUploadService,
+    ): Response {
+        $student = $this->currentUser();
+        $assignment = $this->findVisibleAssignmentOrNotFound($assignmentId, $assignmentRepository, $audienceResolver);
+        $attachment = $this->findAttachmentOrNotFound($assignment, $attachmentId);
+
+        $view = $viewRepository->findOneFor($assignment, $student);
+        $view ? $view->registerView() : $entityManager->persist(new AssignmentView($assignment, $student));
+
+        if ($assignment->getNature()->expectsReading() && null === $completionRepository->findOneFor($assignment, $student)) {
+            $entityManager->persist(new AssignmentCompletion($assignment, $student));
+        }
+
+        $entityManager->flush();
+
+        if ($attachment->isLink()) {
+            return $this->redirect((string) $attachment->getUrl());
+        }
+
+        $key = $attachment->getStorageKey() ?? throw $this->createNotFoundException();
+
+        return $this->redirect($fileUploadService->downloadUrl($key, $attachment->getLabel()));
     }
 
     /**
@@ -520,6 +574,18 @@ class StudentWorkController extends AbstractController
         foreach ($recording->getFilesFor($this->currentUser()) as $file) {
             if ($file->getId() === $fileId) {
                 return $file;
+            }
+        }
+
+        throw $this->createNotFoundException();
+    }
+
+    /** The support, and the right to open it: one of this assignment's own. */
+    private function findAttachmentOrNotFound(Assignment $assignment, int $attachmentId): AssignmentAttachment
+    {
+        foreach ($assignment->getAttachments() as $attachment) {
+            if ($attachment->getId() === $attachmentId) {
+                return $attachment;
             }
         }
 

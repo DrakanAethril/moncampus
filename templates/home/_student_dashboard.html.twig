@@ -210,6 +210,13 @@
                                     </span>
                                 </span>
                                 <span class="ms-auto d-flex align-items-center gap-2">
+                                    {# A « À lire » is read from here: the document opens in one click, and that
+                                       click is what settles the travail, so the line leaves the card of its own
+                                       accord rather than standing there as « À lire » once it has been read
+                                       (App\Controller\StudentWorkController::openAttachment). #}
+                                    {% if assignment.nature.expectsReading %}
+                                        {% include 'student/_work_reading_link.html.twig' with {assignment: assignment, link_class: 'cm-inline-add'} only %}
+                                    {% endif %}
                                     {% if multi %}<span class="cm-dot-badge"><span class="cm-dot-badge__dot" style="background: {{ student.programMeta[assignment.program.id].color }}"></span>{{ assignment.program.displayShortName }}</span>{% endif %}
                                     <span class="cm-badge {{ assignment.nature.badgeClass }}">{{ assignment.nature.labelKey|trans }}</span>
                                 </span>

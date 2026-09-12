@@ -14,6 +14,22 @@ export default class extends Controller {
         'usernameInput', 'magicLinkEmailInput', 'passwordSubmitButton', 'passwordSubmitSpinner',
     ];
 
+    connect() {
+        // A page the browser restores from its back/forward cache comes back exactly as it was
+        // left - including the submit button this controller disabled on the way out - and Stimulus
+        // does not re-connect on such a restore, so nothing would ever re-enable it: pressing
+        // "Se connecter" after going back then does literally nothing. `pageshow` is the only event
+        // that fires in that case. (The server-side half of going back while still logged in is
+        // App\Controller\SecurityController::login(), which redirects to the dashboard - but a
+        // restored page never asks the server anything, hence this.)
+        this.resetOnPageShow = () => this.resetPasswordSubmitButton();
+        window.addEventListener('pageshow', this.resetOnPageShow);
+    }
+
+    disconnect() {
+        window.removeEventListener('pageshow', this.resetOnPageShow);
+    }
+
     switchToPassword(event) {
         if (event) event.preventDefault();
         this.activate(false);
@@ -69,5 +85,10 @@ export default class extends Controller {
     submitPasswordForm() {
         this.passwordSubmitButtonTarget.disabled = true;
         this.passwordSubmitSpinnerTarget.classList.remove('d-none');
+    }
+
+    resetPasswordSubmitButton() {
+        this.passwordSubmitButtonTarget.disabled = false;
+        this.passwordSubmitSpinnerTarget.classList.add('d-none');
     }
 }

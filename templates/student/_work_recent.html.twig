@@ -15,5 +15,10 @@
         {{ missed
             ? 'studentWorkExpectedOnLabel'|trans({'%date%': item.dueDate|localized_date('EEE dd MMM')})
             : 'studentWorkFinishedOnLabel'|trans({'%date%': (item.finishedAt ?? item.dueDate)|localized_date('EEE dd MMM')}) }}
+        {# A reading stays readable once it is behind the student: the document is the travail, and a
+           work « fait » whose document has become unreachable is the column saying it was read and
+           refusing to show what. This is the only action the column carries, here and in the
+           unabridged history, which has no consigne panel to open. #}
+        {%- if assignment.nature.expectsReading %} · {% include 'student/_work_reading_link.html.twig' with {assignment: assignment, reread: true} only %}{% endif -%}
     </span>
 </div>

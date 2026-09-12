@@ -53,6 +53,10 @@
        A background colour and nothing else here: the text keeps the ink it already had. */
     --cm-highlight-bg: #fdf1cf; --cm-highlight-tx: inherit;
     --cm-gold-bg: #f5e9cf;   --cm-gold-tx: #7a5417;
+    /* Paler than --cm-gold-bg, which fills a gold badge: this is the ground of a gold element
+       *selected but at rest* - the chip of the saved draw currently open. Same role as
+       --cm-blue-bg-soft above. */
+    --cm-gold-bg-soft: #fdf8ee;
     --cm-green-bg: #e3ede6;  --cm-green-tx: #25543c;
     --cm-red-bg: #f5e0dc;    --cm-red-tx: #a43e2e;
     --cm-purple-bg: #e9e2f0; --cm-purple-tx: #4e3a66;
@@ -235,6 +239,7 @@
        highlights on a deep gold and states its own ink instead of inheriting. */
     --cm-highlight-bg: #5a4a1c; --cm-highlight-tx: #f6e8c4;
     --cm-gold-bg: #3c3117;   --cm-gold-tx: #e0bc6d;
+    --cm-gold-bg-soft: #2a2312;
     --cm-gold-deep: #d9b46b;
     --cm-green-bg: #1d3327;  --cm-green-tx: #8cc3a2;
     --cm-red-bg: #40221c;    --cm-red-tx: #e09384;
@@ -1914,6 +1919,92 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 @keyframes cm-draw-pop-in { from { transform: scale(.55); opacity: 0; } }
 @keyframes cm-draw-jitter { 0% { transform: translateY(-2px); } 50% { transform: translateY(2px); } 100% { transform: translateY(-2px); } }
 
+/* ---------- Tirages enregistrés (design/design_handoff_choix_aleatoire_saved) ----------
+   The banner above the card, the list of students already called inside it, and the save row that
+   closes it. A rule of this file's own applies throughout: a class carrying `display` outranks the
+   user agent's `[hidden] { display: none }`, so every block the controller toggles needs its own
+   [hidden] rule next to it. */
+.cm-draw-saves {
+    background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
+    padding: 12px 16px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 16px;
+}
+.cm-draw-saves[hidden] { display: none; }
+.cm-draw-saves__label { font: 700 11px var(--cm-font-ui); color: var(--cm-faint); text-transform: uppercase; letter-spacing: .5px; flex: none; padding-top: 2px; }
+.cm-draw-saves__chips { display: flex; flex-wrap: wrap; gap: 9px; flex: 1 1 auto; min-width: 0; }
+
+.cm-draw-save-chip { display: inline-flex; align-items: stretch; border: 1px solid var(--cm-border); border-radius: var(--cm-radius); overflow: hidden; background: var(--cm-surface); }
+/* The draw currently open: gold border and gold ground, the same pair the tool already uses to say
+   "this is the live thing" on the slot itself. */
+.cm-draw-save-chip.is-active { border-color: var(--cm-gold); background: var(--cm-gold-bg-soft); }
+.cm-draw-save-chip__load { display: flex; flex-direction: column; gap: 2px; padding: 8px 13px; border: 0; background: none; text-align: left; cursor: pointer; }
+.cm-draw-save-chip__load:hover { background: var(--cm-blue-bg-soft); }
+.cm-draw-save-chip__name { font: 600 13px var(--cm-font-ui); color: var(--cm-blue-tx); }
+.cm-draw-save-chip__meta { font-size: 11.5px; color: var(--cm-faint); }
+/* 32px wide minimum: these two are the only pointer targets on the chip that are not the chip
+   itself, and a pencil drawn at 13px is not a thing anybody can hit. */
+.cm-draw-save-chip__icon {
+    display: inline-flex; align-items: center; justify-content: center; min-width: 32px; padding: 0 10px;
+    border: 0; border-left: 1px solid var(--cm-border-soft); background: none; color: var(--cm-muted); cursor: pointer;
+}
+.cm-draw-save-chip__icon:hover { background: var(--cm-bg); color: var(--cm-blue-tx); }
+.cm-draw-save-chip__icon--danger { color: var(--cm-red-tx); }
+.cm-draw-save-chip__icon--danger:hover { background: var(--cm-red-bg); color: var(--cm-red-tx); }
+.cm-draw-save-chip--editing { align-items: center; gap: 7px; padding: 7px 9px; }
+.cm-draw-save-chip__input { width: 190px; border: 1px solid var(--cm-gold); border-radius: 7px; padding: 6px 9px; font: 600 12.5px var(--cm-font-ui); color: var(--cm-ink); background: var(--cm-surface); }
+.cm-draw-save-chip__ok, .cm-draw-save-chip__cancel { border: 0; background: none; padding: 0 2px; font: 600 12.5px var(--cm-font-ui); cursor: pointer; }
+.cm-draw-save-chip__ok { color: var(--cm-blue-tx); }
+.cm-draw-save-chip__ok:hover { text-decoration: underline; }
+.cm-draw-save-chip__cancel { color: var(--cm-faint); }
+.cm-draw-save-chip__cancel:hover { color: var(--cm-muted); }
+
+.cm-draw-drawn { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-top: 1px solid var(--cm-border-soft); padding-top: 15px; }
+.cm-draw-drawn[hidden] { display: none; }
+.cm-draw-drawn__label { font: 700 11px var(--cm-font-ui); color: var(--cm-faint); text-transform: uppercase; letter-spacing: .5px; flex: none; }
+.cm-draw-drawn__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.cm-draw-drawn__chip { border: 1px solid var(--cm-border); background: var(--cm-surface-alt); border-radius: 14px; padding: 4px 11px; font: 600 12.5px var(--cm-font-ui); color: var(--cm-muted); }
+
+.cm-draw-autosave { display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--cm-border-soft); padding-top: 15px; font-size: 12.5px; color: var(--cm-muted); }
+.cm-draw-autosave[hidden] { display: none; }
+.cm-draw-autosave svg { color: var(--cm-positive-tx); flex: none; }
+
+.cm-draw-saveline { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; border-top: 1px solid var(--cm-border-soft); padding-top: 15px; }
+/* Right under the autosave line, which already carries the rule: two rules in a row would read as
+   an empty band rather than as two blocks. */
+.cm-draw-saveline--attached { border-top: 0; padding-top: 2px; }
+.cm-draw-saveline__input { flex: 1; min-width: 0; max-width: 340px; }
+.cm-draw-saveline__btn {
+    flex: none; border: 1px solid var(--cm-gold); background: var(--cm-surface); color: var(--cm-gold-deep);
+    border-radius: var(--cm-radius-sm); padding: 9px 14px; font: 600 12.5px var(--cm-font-ui); cursor: pointer;
+}
+.cm-draw-saveline__btn:hover { background: var(--cm-gold-bg-soft); }
+.cm-draw-saveline__close {
+    margin-left: auto; border: 0; background: none; padding: 0; color: var(--cm-faint);
+    font: 600 12.5px var(--cm-font-ui); text-decoration: underline; cursor: pointer;
+}
+.cm-draw-saveline__close:hover { color: var(--cm-brand-strong); }
+.cm-draw-saveline__close[hidden] { display: none; }
+
+/* The projector shows the draw and nothing else: everything that is a setting or a form stays on
+   the ordinary screen, the way the toolbar and the controls already do. */
+.cm-draw-card--fs .cm-draw-drawn,
+.cm-draw-card--fs .cm-draw-autosave,
+.cm-draw-card--fs .cm-draw-saveline { display: none; }
+
+/* Confirmation before dropping a saved draw - same panel as « Création de groupes »'s, kept in
+   this section rather than shared with it: one prefix per area, as elsewhere in this file. */
+.cm-draw-modal-backdrop { position: fixed; inset: 0; background: rgba(9, 26, 40, .55); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 1070; }
+.cm-draw-modal-backdrop[hidden] { display: none; }
+.cm-draw-modal { background: var(--cm-surface); border-radius: 14px; padding: 26px 28px; width: 380px; max-width: calc(100vw - 60px); box-shadow: 0 24px 60px rgba(0, 0, 0, .35); display: flex; flex-direction: column; gap: 14px; }
+.cm-draw-modal__title { font: 600 17px var(--cm-font-title); color: var(--cm-ink); }
+.cm-draw-modal__body { font-size: 13.5px; color: var(--cm-muted); line-height: 1.6; }
+.cm-draw-modal__actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
+
+.cm-draw-toast {
+    position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: var(--cm-navy); color: #fff;
+    padding: 11px 22px; border-radius: 10px; font: 600 13px var(--cm-font-ui); box-shadow: 0 10px 30px rgba(0, 0, 0, .3); z-index: 1080;
+}
+.cm-draw-toast[hidden] { display: none; }
+
 /* ==========================================================================
    Outils > Création de groupes (.cm-grp-*) - ported from design/design_campus_manager/designs/
    Outils pédagogiques.dc.html's "Création de groupes" page.
@@ -2146,6 +2237,16 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-answers--vraifaux .cm-answer-input { color: var(--cm-faint); }
 .cm-answer-position { display: none; flex: none; width: auto; }
 .cm-answers--ordre .cm-answer-position { display: inline-block; }
+
+/* The "ordre" question as the student answers it (.cm-order, templates/program/_quiz_ordre_take).
+   The row is draggable *and* keeps its two arrows: the ranking has to be doable from the keyboard
+   as much as with the mouse. The cursor is on the row, so the label inherits it rather than
+   turning back into a text caret over the one part the student aims at. */
+.cm-order__row { cursor: grab; }
+.cm-order__row.is-dragging { opacity: .5; cursor: grabbing; }
+.cm-order__row:active { cursor: grabbing; }
+.cm-order__handle { flex: none; color: var(--cm-border); letter-spacing: -2px; }
+.cm-order__row .cm-answer-move { cursor: pointer; }
 
 /* ==========================================================================
    Texte à trous (.cm-blanks-*, .cm-chip, .cm-toggle) - design/design_handoff_quiz,
