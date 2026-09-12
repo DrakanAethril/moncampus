@@ -1,0 +1,227 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Service\Jobboard;
+
+use App\Entity\JobboardBatch;
+use App\Entity\JobboardOffer;
+use App\Entity\JobboardToken;
+use App\Entity\Section;
+use App\Enum\JobboardLevelSource;
+use App\Enum\JobboardRemote;
+use App\Enum\JobboardSource;
+use App\Repository\JobboardOfferRepository;
+use App\Service\Jobboard\IngestOutcome;
+use App\Service\Jobboard\IngestReport;
+use App\Service\Jobboard\JobboardRejection;
+use App\Service\Jobboard\OfferIngestor;
+use App\Service\Jobboard\OfferPayloadParser;
+use Doctrine\ORM\EntityManagerInterface;
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\Clock\MockClock;
+
+/**
+ * The rules that decide what an offer becomes when it comes back.
+ *
+ * This is where the value of the whole feature sits, and it is all asymmetry: a second, more
+ * thorough pass enriches a row, a hurried one never degrades it. And above everything else,
+ * `premiere_vue` never moves - no site can give it back.
+ */
+class OfferIngestorTest extends TestCase
+{
+    private Section $section;
+
+    private MockClock $clock;
+
+    protected function setUp(): void
+    {
+        $this->section = new Section('BTS SIO');
+        $this->clock = new MockClock('2026-09-12 10:00:00');
+    }
+
+    public function testAnUnknownOfferIsCreatedAndStampedNow(): void
+    {
+        $report = $this->ingest(null, $this->offer());
+
+        $this->assertSame(1, $report->created());
+        $this->assertSame(IngestOutcome::Created, $report->lines[0]->outcome);
+    }
+
+    public function testAKnownOfferIsReviewedAndItsFirstSeenDateNeverMoves(): void
+    {
+        $stored = $this->stored();
+        $before = $stored->getFirstSeenAt();
+
+        $this->clock->modify('+3 days');
+        $report = $this->ingest($stored, $this->offer(['poste' => 'Technicien réseau']));
+
+        $this->assertSame(1, $report->reviewed());
+        $this->assertEquals($before, $stored->getFirstSeenAt());
+        $this->assertSame('2026-09-15', $stored->getLastSeenAt()->format('Y-m-d'));
+        $this->assertSame('Technicien réseau', $stored->getPosition());
+    }
+
+    public function testALevelReadOnTheAdvertReplacesAnEstimatedOne(): void
+    {
+        $stored = $this->stored();
+        $stored->setLevel('Bac+2')->setLevelSource(JobboardLevelSource::Estime);
+
+        $this->ingest($stored, $this->offer(['niveau' => 'Bac+3 à Bac+5', 'niveau_source' => 'annonce']));
+
+        $this->assertSame('Bac+3 à Bac+5', $stored->getLevel());
+        $this->assertSame(JobboardLevelSource::Annonce, $stored->getLevelSource());
+    }
+
+    public function testAnEstimatedLevelNeverReplacesOneReadOnTheAdvert(): void
+    {
+        $stored = $this->stored();
+        $stored->setLevel('Bac+2')->setLevelSource(JobboardLevelSource::Annonce);
+
+        $this->ingest($stored, $this->offer(['niveau' => 'Non précisé', 'niveau_source' => 'estime']));
+
+        $this->assertSame('Bac+2', $stored->getLevel());
+        $this->assertSame(JobboardLevelSource::Annonce, $stored->getLevelSource());
+    }
+
+    public function testAnExactDateReplacesAnApproximateOne(): void
+    {
+        $stored = $this->stored();
+        $stored->setPublication(new \DateTimeImmutable('2026-09-01'), true);
+
+        $this->ingest($stored, $this->offer(['date_publication' => '2026-08-01', 'date_publication_approx' => false]));
+
+        $this->assertSame('2026-08-01', $stored->getPublishedAt()?->format('Y-m-d'));
+        $this->assertFalse($stored->isPublishedAtApprox());
+    }
+
+    /**
+     * The trap the data contract names: several sites republish old adverts with a fresh « il y a
+     * 2 heures ». That value must never overwrite a date somebody read on the offer's own page.
+     */
+    public function testAnApproximateDateNeverReplacesAnExactOne(): void
+    {
+        $stored = $this->stored();
+        $stored->setPublication(new \DateTimeImmutable('2026-08-01'), false);
+
+        $this->ingest($stored, $this->offer(['date_publication' => '2026-09-12', 'date_publication_approx' => true]));
+
+        $this->assertSame('2026-08-01', $stored->getPublishedAt()?->format('Y-m-d'));
+        $this->assertFalse($stored->isPublishedAtApprox());
+    }
+
+    public function testAPassWithNoDateErasesNothing(): void
+    {
+        $stored = $this->stored();
+        $stored->setPublication(new \DateTimeImmutable('2026-08-01'), false);
+
+        $this->ingest($stored, $this->offer(['date_publication' => null]));
+
+        $this->assertSame('2026-08-01', $stored->getPublishedAt()?->format('Y-m-d'));
+    }
+
+    public function testAStatedRemoteValueReplacesNonPrecise(): void
+    {
+        $stored = $this->stored();
+
+        $this->ingest($stored, $this->offer(['teletravail' => 'total']));
+
+        $this->assertSame(JobboardRemote::Total, $stored->getRemote());
+    }
+
+    /** « non précisé » is not « aucun », and it must never overwrite an answer somebody found. */
+    public function testNonPreciseNeverReplacesAStatedRemoteValue(): void
+    {
+        $stored = $this->stored();
+        $stored->setRemote(JobboardRemote::Partiel);
+
+        $this->ingest($stored, $this->offer(['teletravail' => 'non_precise']));
+
+        $this->assertSame(JobboardRemote::Partiel, $stored->getRemote());
+    }
+
+    public function testAnOfferAlreadyClosedIsNotReopenedByComingBack(): void
+    {
+        $stored = $this->stored();
+        $stored->close(new \DateTimeImmutable('2026-09-05'));
+
+        $this->ingest($stored, $this->offer());
+
+        $this->assertTrue($stored->isClosed());
+    }
+
+    public function testAMalformedOfferDoesNotTakeTheOthersWithIt(): void
+    {
+        $report = $this->ingest(null, $this->offer(), $this->offer(['contrat' => 'freelance', 'source_ref' => '2']));
+
+        $this->assertSame(1, $report->created());
+        $this->assertSame(1, $report->rejected());
+        $this->assertSame(JobboardRejection::UnknownContract, $report->rejectedLines()[0]->reason);
+    }
+
+    public function testTheSameOfferTwiceInOneCallIsRefusedOnce(): void
+    {
+        $report = $this->ingest(null, $this->offer(), $this->offer());
+
+        $this->assertSame(1, $report->created());
+        $this->assertSame(JobboardRejection::DuplicateInBatch, $report->rejectedLines()[0]->reason);
+    }
+
+    /**
+     * @param array<string, mixed> ...$rows
+     */
+    private function ingest(?JobboardOffer $stored, array ...$rows): IngestReport
+    {
+        $repository = $this->createStub(JobboardOfferRepository::class);
+        $repository->method('findOneByIdentity')->willReturn($stored);
+
+        $ingestor = new OfferIngestor(
+            new OfferPayloadParser($this->clock),
+            $repository,
+            $this->createStub(EntityManagerInterface::class),
+            $this->clock,
+        );
+
+        return $ingestor->ingest($this->batch(), array_values($rows));
+    }
+
+    private function batch(): JobboardBatch
+    {
+        return JobboardBatch::forToken(new JobboardToken('Veille', $this->section, 'selector', 'hash', null));
+    }
+
+    private function stored(): JobboardOffer
+    {
+        return new JobboardOffer(
+            $this->section,
+            JobboardSource::Hellowork,
+            '83313525',
+            new \DateTimeImmutable('2026-07-01 08:00:00'),
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $overrides
+     *
+     * @return array<string, mixed>
+     */
+    private function offer(array $overrides = []): array
+    {
+        return array_merge([
+            'source' => 'hellowork',
+            'source_ref' => '83313525',
+            'url' => 'https://www.hellowork.com/fr-fr/emplois/83313525.html',
+            'poste' => 'Technicien informatique',
+            'entreprise' => 'Astek',
+            'categorie' => 'sisr',
+            'contrat' => 'cdi',
+            'pays' => 'France',
+            'niveau' => 'Bac+2',
+            'niveau_source' => 'annonce',
+            'acces_bts' => 'accessible',
+            'teletravail' => 'non_precise',
+            'date_publication' => '2026-09-12',
+            'date_publication_approx' => false,
+        ], $overrides);
+    }
+}

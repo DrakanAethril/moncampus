@@ -15,6 +15,19 @@ security:
             # Ensure dev tools and static assets are always allowed
             pattern: ^/(_profiler|_wdt|assets|build)/
             security: false
+        # The veille's ingestion endpoints. A firewall of their own, with the security system off,
+        # because the collecting agent presents its key as a plain `Authorization: Bearer` and the
+        # `api` firewall below would hand that straight to LexikJWT - which answers « Invalid JWT
+        # Token » before the controller is ever reached. There is nobody to authenticate here in
+        # Symfony's sense: no account, no user provider, no token. The key is checked by hand in
+        # App\Service\Jobboard\IngestAuthenticator, which is the whole of the door.
+        #
+        # Must precede `api_login` and `api`: firewalls are matched in order and the first pattern
+        # wins. With security off, access_control does not apply to these paths either - this
+        # firewall is the rule.
+        jobboard_ingest:
+            pattern: ^/api/jobboard
+            security: false
         # Mobile app (moncampus-mobile) login: POST /api/login, LDAP-authenticated (via the same
         # LdapCredentialsVerifier the web firewall below uses) and stateless - see
         # App\Security\ApiLdapAuthenticator. Must come before the "api" firewall since Symfony

@@ -1,0 +1,45 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'jobboardImportResultHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'settingsConfigurationNavLabel'|trans, url: path('app_settings_configuration')},
+        {label: 'jobboardSettingsHeading'|trans, url: path('app_settings_jobboard_import')},
+        {label: 'jobboardImportResultHeading'|trans, url: path('app_settings_jobboard_import_result')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'jobboardImportResultHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card" style="padding: 18px">
+        <div class="cm-subhead" style="margin-bottom: 14px">
+            <div class="cm-subhead__title">{{ 'jobboardImportResultDoneText'|trans({'%section%': section}) }}</div>
+            <div class="cm-subhead__hint">{{ 'jobboardImportResultHintText'|trans }}</div>
+        </div>
+
+        <div class="cm-loan-summary" style="grid-template-columns: repeat(3, 1fr)">
+            <div>
+                <span class="cm-loan-summary__label">{{ 'jobboardOutcomeCreatedLabel'|trans }}</span>
+                <span class="cm-loan-summary__value">{{ created }}</span>
+            </div>
+            <div>
+                <span class="cm-loan-summary__label">{{ 'jobboardOutcomeReviewedLabel'|trans }}</span>
+                <span class="cm-loan-summary__value">{{ reviewed }}</span>
+            </div>
+            <div>
+                <span class="cm-loan-summary__label">{{ 'jobboardOutcomeRejectedLabel'|trans }}</span>
+                <span class="cm-loan-summary__value{{ rejected > 0 ? ' cm-loan-summary__value--late' }}">{{ rejected }}</span>
+            </div>
+        </div>
+
+        <div class="cm-actionbar">
+            <div class="cm-actionbar__buttons">
+                <a class="cm-btn" href="{{ path('app_settings_jobboard_import') }}">{{ 'jobboardImportAgainAction'|trans }}</a>
+                <a class="cm-btn cm-btn--primary" href="{{ path('app_jobboard') }}">{{ 'jobboardImportSeeBoardAction'|trans }}</a>
+            </div>
+        </div>
+    </div>
+{% endblock %}

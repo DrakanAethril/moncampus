@@ -1,0 +1,41 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'jobboardSettingsHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'settingsConfigurationNavLabel'|trans, url: path('app_settings_configuration')},
+        {label: 'jobboardSettingsHeading'|trans, url: path('app_settings_jobboard_import')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'jobboardSettingsHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% include 'settings/_jobboard_tabs.html.twig' with {activeTab: 'import'} only %}
+
+    <div class="card cm-card--tabbed" style="padding: 18px">
+        <div class="cm-subhead" style="margin-bottom: 14px">
+            <div class="cm-subhead__title">{{ 'jobboardImportHeading'|trans }}</div>
+            <div class="cm-subhead__hint">{{ 'jobboardImportHintText'|trans }}</div>
+        </div>
+
+        {# Said here because it is the question somebody asks before clicking: re-importing the same
+           file changes nothing. The first-seen date of an offer already known does not move. #}
+        <div class="cm-note" style="margin-bottom: 18px">
+            <span class="cm-note__icon">i</span>
+            <span>{{ 'jobboardImportReplayNoteText'|trans }}</span>
+        </div>
+
+        {{ form_start(form) }}
+            {{ form_row(form.section) }}
+            {{ form_row(form.file) }}
+            <div class="cm-actionbar">
+                <div class="cm-actionbar__buttons">
+                    <button type="submit" class="cm-btn cm-btn--primary">{{ 'jobboardImportAnalyseAction'|trans }}</button>
+                </div>
+            </div>
+        {{ form_end(form) }}
+    </div>
+{% endblock %}

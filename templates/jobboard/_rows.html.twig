@@ -1,0 +1,49 @@
+{# The rows of the list, rendered here and nowhere else: the first page and « Afficher 40 offres de
+   plus » both come through this file, so a row cannot say two different things depending on which
+   door it came from. That is also what keeps the source out of a non-administrator's screen - there
+   is only one rendering path to keep the rule in. #}
+{% for offer in page.offers %}
+    <div class="cm-jb-row" role="button" tabindex="0"
+         data-jobboard-target="row"
+         data-id="{{ offer.id }}"
+         data-action="click->jobboard#openDetail keydown->jobboard#keyDetail">
+        <div class="cm-jb-cell cm-jb-cell--position">
+            <span class="cm-jb-position">{{ offer.position }}</span>
+            <span class="cm-jb-subline">
+                {% if offer.category %}
+                    <span class="cm-jb-tag cm-jb-tag--cat{{ offer.category == 'sisr' ? ' cm-jb-tag--cat-sisr' }}">{{ offer.category|upper }}</span>
+                {% endif %}
+                <span class="cm-jb-company">{{ offer.company }}</span>
+            </span>
+        </div>
+        <div class="cm-jb-cell cm-jb-cell--place">
+            {{ offer.city ?? offer.region ?? '—' }}{% if offer.departement %} ({{ offer.departement }}){% endif %}
+        </div>
+        <div class="cm-jb-cell">
+            <span class="cm-jb-tag cm-jb-tag--contract cm-jb-tag--{{ offer.contract.slug }}">{{ offer.contract.labelKey|trans }}</span>
+        </div>
+        <div class="cm-jb-cell cm-jb-cell--level">
+            {{ offer.level }}
+            {# The golden ≈ of an estimated level. It is the point of storing niveau_source at all:
+               the uncertainty stays visible instead of being drowned in the column. #}
+            {% if offer.levelSource.value == 'estime' %}
+                <span class="cm-jb-approx" title="{{ 'jobboardLevelEstimatedTitle'|trans }}" aria-label="{{ 'jobboardLevelEstimatedTitle'|trans }}">≈</span>
+            {% endif %}
+        </div>
+        <div class="cm-jb-cell">
+            {# Nothing at all when the advert did not raise the subject: « non précisé » is not
+               « aucun », and a grey « Aucun » tag would answer a question nobody asked. #}
+            {% if offer.remote.isStated %}
+                <span class="cm-jb-tag cm-jb-tag--remote cm-jb-tag--remote-{{ offer.remote.value }}">{{ offer.remote.labelKey|trans }}</span>
+            {% endif %}
+        </div>
+        <div class="cm-jb-cell cm-jb-cell--date">
+            {% if offer.publishedAt %}
+                {% if offer.publishedAtApprox %}<span class="cm-jb-approx" title="{{ 'jobboardDateApproxTitle'|trans }}" aria-label="{{ 'jobboardDateApproxTitle'|trans }}">≈</span> {% endif %}
+                {{ offer.publishedAt|localized_date('d MMM') }}
+            {% else %}
+                —
+            {% endif %}
+        </div>
+    </div>
+{% endfor %}

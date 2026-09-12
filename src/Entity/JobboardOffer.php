@@ -1,0 +1,436 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Entity;
+
+use App\Enum\JobboardBtsAccess;
+use App\Enum\JobboardContract;
+use App\Enum\JobboardCountry;
+use App\Enum\JobboardLevelSource;
+use App\Enum\JobboardRemote;
+use App\Enum\JobboardSource;
+use App\Repository\JobboardOfferRepository;
+use Doctrine\DBAL\Types\Types;
+use Doctrine\ORM\Mapping as ORM;
+
+/**
+ * One job offer, **inside one filière**.
+ *
+ * The identity is the triple (section, source, source_ref), and that is a decision rather than a
+ * convenience: the same advert pushed by two filières' agents makes two rows, each with its own
+ * first-seen date. One row shared between filières would make `premiere_vue` mean "the first time
+ * *anybody* saw it", which is not the question the screen answers.
+ *
+ * **`premiere_vue` is written once and never moves.** No site can give it back: if it is lost, it is
+ * lost for good, and it is the only field here that cannot be rebuilt by collecting again. There is
+ * deliberately no setter for it.
+ *
+ * Everything else follows the asymmetry of App\Service\Jobboard\OfferIngestor: a second, more
+ * thorough pass may enrich a row, a hurried pass may never degrade what was verified.
+ */
+#[ORM\Entity(repositoryClass: JobboardOfferRepository::class)]
+#[ORM\Table(name: 'jobboard_offer')]
+#[ORM\UniqueConstraint(name: 'uniq_jobboard_offer_identity', columns: ['section_id', 'source', 'source_ref'])]
+#[ORM\Index(name: 'idx_jobboard_offer_listing', columns: ['section_id', 'closed_at', 'sort_date', 'id'])]
+#[ORM\Index(name: 'idx_jobboard_offer_first_seen', columns: ['section_id', 'first_seen_at'])]
+#[ORM\Index(name: 'idx_jobboard_offer_departement', columns: ['section_id', 'departement'])]
+#[ORM\Index(name: 'idx_jobboard_offer_contract', columns: ['section_id', 'contract'])]
+class JobboardOffer
+{
+    /**
+     * The date offers with no publication date are sorted under. Not "today" and not null: a row
+     * with no date must land at the far end of a date-descending list and stay there, and a NULL in
+     * an ORDER BY is sorted differently depending on the engine's mood.
+     */
+    public const string UNDATED_SORT_DATE = '1000-01-01';
+
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column]
+    private ?int $id = null;
+
+    // The filière, decided by the ingestion token and by nothing else - never deduced from the
+    // advert's content (design/validated/jobboard.md §3.1).
+    #[ORM\ManyToOne(targetEntity: Section::class)]
+    #[ORM\JoinColumn(name: 'section_id', nullable: false, onDelete: 'CASCADE')]
+    private Section $section;
+
+    #[ORM\Column(length: 32, enumType: JobboardSource::class)]
+    private JobboardSource $source;
+
+    #[ORM\Column(name: 'source_ref', length: 190)]
+    private string $sourceRef;
+
+    #[ORM\Column(length: 1000)]
+    private string $url = '';
+
+    #[ORM\Column(length: 255)]
+    private string $position = '';
+
+    #[ORM\Column(length: 255)]
+    private string $company = '';
+
+    // Free text, not an enum, and that is a reading of the data contract itself: it lists what must
+    // be refused and `categorie` is not in it. It is the agent's own classification, and "sisr"
+    // will mean nothing the day the MCO veille pushes its first batch.
+    #[ORM\Column(length: 32, nullable: true)]
+    private ?string $category = null;
+
+    #[ORM\Column(length: 16, enumType: JobboardContract::class)]
+    private JobboardContract $contract;
+
+    #[ORM\Column(length: 16, enumType: JobboardCountry::class)]
+    private JobboardCountry $country;
+
+    #[ORM\Column(length: 120, nullable: true)]
+    private ?string $region = null;
+
+    // A string, never an integer: "01" must stay "01", and 2A/2B are not numbers at all.
+    #[ORM\Column(length: 3, nullable: true)]
+    private ?string $departement = null;
+
+    #[ORM\Column(length: 120, nullable: true)]
+    private ?string $city = null;
+
+    #[ORM\Column(length: 120)]
+    private string $level = '';
+
+    #[ORM\Column(name: 'level_source', length: 16, enumType: JobboardLevelSource::class)]
+    private JobboardLevelSource $levelSource;
+
+    #[ORM\Column(name: 'bts_access', length: 16, enumType: JobboardBtsAccess::class)]
+    private JobboardBtsAccess $btsAccess;
+
+    #[ORM\Column(length: 16, enumType: JobboardRemote::class)]
+    private JobboardRemote $remote;
+
+    #[ORM\Column(name: 'published_at', type: Types::DATE_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $publishedAt = null;
+
+    #[ORM\Column(name: 'published_at_approx')]
+    private bool $publishedAtApprox = true;
+
+    // Written by the application on every save, never by a column DEFAULT: a DEFAULT only lives for
+    // the duration of its ALTER and then reads as schema drift.
+    #[ORM\Column(name: 'sort_date', type: Types::DATE_IMMUTABLE)]
+    private \DateTimeImmutable $sortDate;
+
+    #[ORM\Column(length: 500, nullable: true)]
+    private ?string $note = null;
+
+    /** @var array<array-key, mixed>|null */
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $raw = null;
+
+    #[ORM\Column(name: 'first_seen_at', type: Types::DATETIME_IMMUTABLE)]
+    private \DateTimeImmutable $firstSeenAt;
+
+    #[ORM\Column(name: 'last_seen_at', type: Types::DATETIME_IMMUTABLE)]
+    private \DateTimeImmutable $lastSeenAt;
+
+    // An offer taken off the site is closed, never deleted. How long an advert stays online is an
+    // information in itself, and nothing here ever erases a row.
+    #[ORM\Column(name: 'closed_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $closedAt = null;
+
+    // The same advert published on two sites arrives as two rows and stays as two rows. This column
+    // is where a future rapprochement would designate the canonical one; nothing writes it and
+    // nothing reads it today, deliberately (design/validated/jobboard.md §3.6): an automatic merge
+    // that hid a line would eventually hide the wrong one.
+    #[ORM\ManyToOne(targetEntity: self::class)]
+    #[ORM\JoinColumn(name: 'canonical_id', nullable: true, onDelete: 'SET NULL')]
+    private ?self $canonical = null;
+
+    public function __construct(
+        Section $section,
+        JobboardSource $source,
+        string $sourceRef,
+        \DateTimeImmutable $firstSeenAt,
+    ) {
+        $this->section = $section;
+        $this->source = $source;
+        $this->sourceRef = $sourceRef;
+        $this->firstSeenAt = $firstSeenAt;
+        $this->lastSeenAt = $firstSeenAt;
+        $this->contract = JobboardContract::Autre;
+        $this->country = JobboardCountry::France;
+        $this->levelSource = JobboardLevelSource::Estime;
+        $this->btsAccess = JobboardBtsAccess::Accessible;
+        $this->remote = JobboardRemote::NonPrecise;
+        $this->sortDate = new \DateTimeImmutable(self::UNDATED_SORT_DATE);
+    }
+
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
+    public function getSection(): Section
+    {
+        return $this->section;
+    }
+
+    public function getSource(): JobboardSource
+    {
+        return $this->source;
+    }
+
+    public function getSourceRef(): string
+    {
+        return $this->sourceRef;
+    }
+
+    public function getUrl(): string
+    {
+        return $this->url;
+    }
+
+    public function setUrl(string $url): static
+    {
+        $this->url = $url;
+
+        return $this;
+    }
+
+    public function getPosition(): string
+    {
+        return $this->position;
+    }
+
+    public function setPosition(string $position): static
+    {
+        $this->position = $position;
+
+        return $this;
+    }
+
+    public function getCompany(): string
+    {
+        return $this->company;
+    }
+
+    public function setCompany(string $company): static
+    {
+        $this->company = $company;
+
+        return $this;
+    }
+
+    public function getCategory(): ?string
+    {
+        return $this->category;
+    }
+
+    public function setCategory(?string $category): static
+    {
+        $this->category = $category;
+
+        return $this;
+    }
+
+    public function getContract(): JobboardContract
+    {
+        return $this->contract;
+    }
+
+    public function setContract(JobboardContract $contract): static
+    {
+        $this->contract = $contract;
+
+        return $this;
+    }
+
+    public function getCountry(): JobboardCountry
+    {
+        return $this->country;
+    }
+
+    public function setCountry(JobboardCountry $country): static
+    {
+        $this->country = $country;
+
+        return $this;
+    }
+
+    public function getRegion(): ?string
+    {
+        return $this->region;
+    }
+
+    public function setRegion(?string $region): static
+    {
+        $this->region = $region;
+
+        return $this;
+    }
+
+    public function getDepartement(): ?string
+    {
+        return $this->departement;
+    }
+
+    public function setDepartement(?string $departement): static
+    {
+        $this->departement = $departement;
+
+        return $this;
+    }
+
+    public function getCity(): ?string
+    {
+        return $this->city;
+    }
+
+    public function setCity(?string $city): static
+    {
+        $this->city = $city;
+
+        return $this;
+    }
+
+    public function getLevel(): string
+    {
+        return $this->level;
+    }
+
+    public function setLevel(string $level): static
+    {
+        $this->level = $level;
+
+        return $this;
+    }
+
+    public function getLevelSource(): JobboardLevelSource
+    {
+        return $this->levelSource;
+    }
+
+    public function setLevelSource(JobboardLevelSource $levelSource): static
+    {
+        $this->levelSource = $levelSource;
+
+        return $this;
+    }
+
+    public function getBtsAccess(): JobboardBtsAccess
+    {
+        return $this->btsAccess;
+    }
+
+    public function setBtsAccess(JobboardBtsAccess $btsAccess): static
+    {
+        $this->btsAccess = $btsAccess;
+
+        return $this;
+    }
+
+    public function getRemote(): JobboardRemote
+    {
+        return $this->remote;
+    }
+
+    public function setRemote(JobboardRemote $remote): static
+    {
+        $this->remote = $remote;
+
+        return $this;
+    }
+
+    public function getPublishedAt(): ?\DateTimeImmutable
+    {
+        return $this->publishedAt;
+    }
+
+    public function isPublishedAtApprox(): bool
+    {
+        return $this->publishedAtApprox;
+    }
+
+    /**
+     * The publication date and its precision move together, and `sortDate` with them - three fields
+     * that must never be able to disagree, which is why there is one setter and not three.
+     */
+    public function setPublication(?\DateTimeImmutable $publishedAt, bool $approx): static
+    {
+        $this->publishedAt = $publishedAt;
+        $this->publishedAtApprox = $approx;
+        $this->sortDate = $publishedAt ?? new \DateTimeImmutable(self::UNDATED_SORT_DATE);
+
+        return $this;
+    }
+
+    public function getSortDate(): \DateTimeImmutable
+    {
+        return $this->sortDate;
+    }
+
+    public function getNote(): ?string
+    {
+        return $this->note;
+    }
+
+    public function setNote(?string $note): static
+    {
+        $this->note = $note;
+
+        return $this;
+    }
+
+    /** @return array<array-key, mixed>|null */
+    public function getRaw(): ?array
+    {
+        return $this->raw;
+    }
+
+    /** @param array<array-key, mixed>|null $raw */
+    public function setRaw(?array $raw): static
+    {
+        $this->raw = $raw;
+
+        return $this;
+    }
+
+    public function getFirstSeenAt(): \DateTimeImmutable
+    {
+        return $this->firstSeenAt;
+    }
+
+    public function getLastSeenAt(): \DateTimeImmutable
+    {
+        return $this->lastSeenAt;
+    }
+
+    public function markSeen(\DateTimeImmutable $at): static
+    {
+        $this->lastSeenAt = $at;
+
+        return $this;
+    }
+
+    public function getClosedAt(): ?\DateTimeImmutable
+    {
+        return $this->closedAt;
+    }
+
+    public function isClosed(): bool
+    {
+        return null !== $this->closedAt;
+    }
+
+    /**
+     * Closing is idempotent and one-way here: a row already closed keeps the date it was closed on,
+     * and an offer that reappears in a later batch is **not** reopened by that alone.
+     */
+    public function close(\DateTimeImmutable $at): static
+    {
+        $this->closedAt ??= $at;
+
+        return $this;
+    }
+
+    public function getCanonical(): ?self
+    {
+        return $this->canonical;
+    }
+}
