@@ -11,6 +11,7 @@ use App\Entity\User;
 use App\Enum\AttemptOrigin;
 use App\Enum\QuizMode;
 use App\Repository\QuizAttemptRepository;
+use App\Service\Accommodation\AccommodationResolver;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -28,6 +29,7 @@ class QuizAttemptStarter
         private readonly EntityManagerInterface $entityManager,
         private readonly QuizAttemptRepository $attemptRepository,
         private readonly QuizDrawService $drawService,
+        private readonly AccommodationResolver $accommodations,
     ) {
     }
 
@@ -50,6 +52,10 @@ class QuizAttemptStarter
             // started is a fact, not a convenience.
             if (AttemptOrigin::Relance === $inProgress->getOrigin() && !$inProgress->hasBeenServed()) {
                 $inProgress->restartClock(new \DateTimeImmutable());
+                // The time granted is re-read with the clock, and for the same reason: both are
+                // being set at the moment the student actually sits down, not at the moment the
+                // teacher clicked « Relancer ». An accommodation decided in between counts.
+                $inProgress->setExtraTimePercent($this->accommodations->forUser($student)->quizExtraTimeForStorage());
                 $this->entityManager->flush();
             }
 
@@ -75,6 +81,9 @@ class QuizAttemptStarter
         // Capped at a signed 32-bit INT (the column's SQL type) - plenty of entropy for a
         // non-cryptographic deterministic-shuffle seed (see QuizDrawService).
         $attempt->setShuffleSeed(random_int(1, 2_147_483_647));
+        // What this student's aménagements come to, frozen on the copy - see
+        // App\Entity\QuizAttempt::$extraTimePercent for why it is not re-read at every request.
+        $attempt->setExtraTimePercent($this->accommodations->forUser($student)->quizExtraTimeForStorage());
 
         // Every question row is created up front, so "the current question" is simply the first
         // unanswered one - see QuizAttemptAnswer's class docblock.

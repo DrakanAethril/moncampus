@@ -325,6 +325,37 @@
                     </div>
                 </div>
 
+                {# « Aménagements » - students only, and only in edit mode: the field is added by
+                   App\Form\UserProfileType, which backs the edit form alone. Chips rather than a
+                   multi-select, the same pattern the manual groups above use. The block disappears
+                   entirely when the establishment has defined no accommodation yet - an empty
+                   heading would only ask a question the screen cannot answer, and Paramètres >
+                   Configuration > Aménagements is where the catalogue is written. #}
+                {% if showAccommodations|default(false) and form.accommodations is defined %}
+                    {# Marked rendered whether or not the block below is drawn: a compound field
+                       with zero children never derives "rendered" from them, and form_rest() would
+                       leak its default label/widget markup at the foot of the card - the very trap
+                       the manual-group chips above document. #}
+                    {% do form.accommodations.setRendered %}
+                {% endif %}
+                {% if showAccommodations|default(false) and form.accommodations is defined and form.accommodations.children|length > 0 %}
+                    <div class="mt-4">
+                        <div class="cm-subhead mb-3">
+                            <div class="cm-subhead__title">{{ 'userAccommodationsSectionTitle'|trans }}</div>
+                            <div class="cm-subhead__hint">{{ 'userAccommodationsSectionHint'|trans }}</div>
+                        </div>
+                        <div class="cm-groupchips__list">
+                            {% for child in form.accommodations.children %}
+                                <label class="cm-groupchip">
+                                    {{ form_widget(child, {attr: {class: 'cm-groupchip__input'}}) }}
+                                    <span class="cm-groupchip__box"></span>
+                                    {{ child.vars.label }}
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
                 {# School mail addresses - students only (App\Controller\DirectoryUserController::edit()).
                    The domain is not a choice: it comes from MAIL_STUDENT_DOMAIN, the same database
                    serving both development and production (App\Entity\EmailAlias). #}

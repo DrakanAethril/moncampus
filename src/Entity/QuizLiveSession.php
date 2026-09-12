@@ -191,6 +191,13 @@ class QuizLiveSession
     // Server-authoritative lock, same "client ticks, server checks" split as
     // QuizAttempt::isPastTimeLimit()/quiz_passation_controller.js - a submitAnswer() POST arriving
     // after this is rejected even if the client's own countdown was slightly behind.
+    //
+    // **A student's « ajout de temps » is deliberately not applied here**, and this is the only
+    // timed quiz surface where it is not. A concours live is one clock for the whole room: the host
+    // opens a question, the projector counts it down and everybody's answer closes at the same
+    // instant. Stretching one participant's phase would either hold the room or leave them
+    // answering a question that has already been corrected on screen. What an aménagement is for -
+    // composing an évaluation without the clock deciding the mark - is not what a live round is.
     public function isQuestionTimeUp(): bool
     {
         if (LiveSessionStatus::Question !== $this->status || null === $this->phaseStartedAt) {

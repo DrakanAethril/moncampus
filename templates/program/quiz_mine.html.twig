@@ -27,6 +27,12 @@
                 </div>
             </div>
         {% endif %}
+        {# Said once, at the top, rather than on every row: the durations in the table below already
+           include the aménagement, and a student who reads a longer time than the one announced in
+           class deserves to know why. #}
+        {% if accommodation.hasQuizExtraTime %}
+            <p class="text-secondary small mb-0">{{ 'accommodationExtraTimeStudentNotice'|trans({'%percent%': accommodation.quizExtraTimeLabel}) }}</p>
+        {% endif %}
         <div class="card">
             <div class="card-header">
                 <h3 class="card-title">{{ 'programQuizEvaluationsSectionTitle'|trans }}</h3>
@@ -51,8 +57,10 @@
                                 </td>
                                 <td>{{ row.instance.opensAt ? row.instance.opensAt|date('d/m H:i') : '—' }} → {{ row.instance.closesAt ? row.instance.closesAt|date('d/m H:i') : '—' }}</td>
                                 <td>
-                                    {% if row.instance.secondsPerQuestion %}{{ row.instance.secondsPerQuestion }} {{ 'programQuizSecondsPerQuestionLabel'|trans }}{% endif %}
-                                    {% if row.instance.globalTimeMinutes %}{{ row.instance.globalTimeMinutes }} {{ 'programQuizMinutesGlobalLabel'|trans }}{% endif %}
+                                    {# Aménagement applied: the column announces what this student gets, not
+                                       what the quiz was set to - see App\Service\Accommodation\AccommodationProfile. #}
+                                    {% if row.instance.secondsPerQuestion %}{{ accommodation.applyToSeconds(row.instance.secondsPerQuestion) }} {{ 'programQuizSecondsPerQuestionLabel'|trans }}{% endif %}
+                                    {% if row.instance.globalTimeMinutes %}{{ (accommodation.applyToMinutesAsSeconds(row.instance.globalTimeMinutes) / 60)|round(0, 'ceil') }} {{ 'programQuizMinutesGlobalLabel'|trans }}{% endif %}
                                     {% if not row.instance.secondsPerQuestion and not row.instance.globalTimeMinutes %}—{% endif %}
                                 </td>
                                 <td>

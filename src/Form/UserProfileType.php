@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Form;
 
+use App\Entity\Accommodation;
 use App\Entity\Group;
 use App\Entity\User;
 use Doctrine\ORM\EntityRepository;
@@ -97,6 +98,30 @@ class UserProfileType extends AbstractType
             ]);
         }
 
+        // « Aménagements » - what this app owes the account, not who the person is, and offered on
+        // student accounts only: every criterion an accommodation carries so far steers work a
+        // student does. Multiple/expanded rather than a <select multiple>, per the platform's own
+        // form convention, and rendered as the same chips the manual groups use.
+        //
+        // Only rows still active are offered: a deactivated accommodation stays on the accounts
+        // that already hold it (App\Service\Accommodation\AccommodationResolver drops its effect)
+        // but must not be handed out again. EntityType leaves an already-selected choice that is
+        // missing from the list alone at submission time - it is the POST that decides - so a row
+        // deactivated after the fiche was opened does not silently revoke anything either.
+        if ($options['accommodationsEditable']) {
+            $builder->add('accommodations', EntityType::class, [
+                'class' => Accommodation::class,
+                'query_builder' => static fn (EntityRepository $er) => $er->createQueryBuilder('a')
+                    ->where('a.inactiveDate IS NULL')
+                    ->orderBy('a.name', 'ASC'),
+                'choice_label' => 'name',
+                'label' => 'userAccommodationsFieldLabel',
+                'multiple' => true,
+                'expanded' => true,
+                'required' => false,
+            ]);
+        }
+
         // School mail addresses only exist for students: for any other account type the field is
         // not added at all, rather than rendered hidden - a collection with allow_delete would wipe
         // the rows missing from the POST if it were present without being displayed.
@@ -150,5 +175,9 @@ class UserProfileType extends AbstractType
         // administrator's alone (design/validated/file-library.md).
         $resolver->setDefault('fileLibraryQuotaEditable', false);
         $resolver->setAllowedTypes('fileLibraryQuotaEditable', 'bool');
+        // Whether the « Aménagements » chips are offered - student accounts only, same test as
+        // emailAliasesEditable above.
+        $resolver->setDefault('accommodationsEditable', false);
+        $resolver->setAllowedTypes('accommodationsEditable', 'bool');
     }
 }
