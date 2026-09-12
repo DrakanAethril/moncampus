@@ -2,6 +2,9 @@
 
 {% block title %}{{ 'programToolsRandomDrawPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
 
+{# The trail gains a fifth segment while a saved draw is open - « … › Tirage au sort › Oral anglais ».
+   Resuming a draw never reloads the page, so that last segment is written by random_draw_controller.js
+   rather than here; on arrival no draw is open and the trail is the four it has always been. #}
 {% block page_breadcrumb %}
     {% include '_breadcrumb.html.twig' with {segments: [
         {label: 'homeNavLabel'|trans, url: path('app_home')},
@@ -18,9 +21,17 @@
             <div class="card-body text-secondary">{{ 'programToolsNoStudentsMessage'|trans }}</div>
         </div>
     {% else %}
-        <div class="card cm-draw-card"
-             data-controller="random-draw"
+        {# The controller root is the whole tool, banner included - the card alone cannot be it any
+           more, since « Tirages enregistrés » sits above it. Fullscreen still applies to the card
+           (the `card` target), never to this wrapper. #}
+        <div data-controller="random-draw"
              data-random-draw-students-value="{{ students|json_encode }}"
+             data-random-draw-draws-value="{{ draws|json_encode }}"
+             data-random-draw-save-url-value="{{ path('app_program_tools_random_draw_save', {id: program.id}) }}"
+             data-random-draw-rename-url-value="{{ path('app_program_tools_random_draw_rename', {id: program.id, drawId: '__DRAW_ID__'}) }}"
+             data-random-draw-update-url-value="{{ path('app_program_tools_random_draw_update', {id: program.id, drawId: '__DRAW_ID__'}) }}"
+             data-random-draw-delete-url-value="{{ path('app_program_tools_random_draw_delete', {id: program.id, drawId: '__DRAW_ID__'}) }}"
+             data-random-draw-csrf-token-value="{{ csrf_token('program_random_draw') }}"
              data-random-draw-labels-value="{{ {
                  ready: 'programToolsSlotReadyLabel'|trans,
                  allDrawn: 'programToolsSlotAllDrawnLabel'|trans,
@@ -31,63 +42,113 @@
                  studentWordPlural: 'programToolsStudentWordPluralLabel'|trans,
                  drawnWordSingular: 'programToolsDrawnWordSingularLabel'|trans,
                  drawnWordPlural: 'programToolsDrawnWordPluralLabel'|trans,
+                 allStudentsOption: 'programToolsAllStudentsOptionLabel'|trans,
+                 drawMetaWithRepeat: 'programToolsDrawMetaWithRepeatLabel'|trans,
+                 drawMetaTemplate: 'programToolsDrawMetaTemplateLabel'|trans,
+                 loadDrawTitle: 'programToolsLoadDrawTitle'|trans,
+                 renameDrawTitle: 'programToolsRenameDrawTitle'|trans,
+                 deleteDrawTitle: 'programToolsDeleteDrawTitle'|trans,
+                 renameConfirmLabel: 'programToolsRenameConfirmLabel'|trans,
+                 renameCancelLabel: 'programToolsRenameCancelLabel'|trans,
+                 renameFieldLabel: 'programToolsRenameFieldLabel'|trans,
+                 drawResumedToast: 'programToolsDrawResumedToast'|trans,
+                 drawSavedToast: 'programToolsDrawSavedToast'|trans,
+                 drawRenamedToast: 'programToolsDrawRenamedToast'|trans,
+                 drawDeletedToast: 'programToolsDrawDeletedToast'|trans,
+                 drawDuplicateNameToast: 'programToolsDrawDuplicateNameToast'|trans,
+                 saveDrawButton: 'programToolsSaveDrawButtonLabel'|trans,
+                 saveDrawAsNewButton: 'programToolsSaveDrawAsNewButtonLabel'|trans,
+                 autosaveTemplate: 'programToolsDrawAutosaveTemplateLabel'|trans,
+                 networkErrorMessage: 'programToolsNetworkErrorMessage'|trans,
              }|json_encode }}">
-            <div class="card-body cm-draw-body">
-                <div class="cm-draw-toolbar">
-                    <button type="button" class="btn btn-outline-warning btn-sm" data-action="random-draw#toggleFullscreen">
-                        <svg class="icon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-maximize"></use></svg>
-                        {{ 'programToolsFullscreenButtonLabel'|trans }}
-                    </button>
-                </div>
 
-                <div class="cm-draw-slot" data-random-draw-target="slot">{{ 'programToolsSlotReadyLabel'|trans }}</div>
+            <div class="cm-draw-saves" data-random-draw-target="savesBar"{{ draws is empty ? ' hidden' }}>
+                <span class="cm-draw-saves__label">{{ 'programToolsSavedDrawsLabel'|trans }}</span>
+                <div class="cm-draw-saves__chips" data-random-draw-target="savesChips"></div>
+            </div>
 
-                <div class="cm-draw-controls">
-                    {% if program.options is not empty %}
+            <div class="card cm-draw-card" data-random-draw-target="card">
+                <div class="card-body cm-draw-body">
+                    <div class="cm-draw-toolbar">
+                        <button type="button" class="btn btn-outline-warning btn-sm" data-action="random-draw#toggleFullscreen">
+                            <svg class="icon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-maximize"></use></svg>
+                            {{ 'programToolsFullscreenButtonLabel'|trans }}
+                        </button>
+                    </div>
+
+                    <div class="cm-draw-slot" data-random-draw-target="slot">{{ 'programToolsSlotReadyLabel'|trans }}</div>
+
+                    <div class="cm-draw-controls">
+                        {% if program.options is not empty %}
+                            <div class="cm-draw-option">
+                                <span class="cm-draw-option__label">{{ 'programToolsOptionFieldLabel'|trans }}</span>
+                                <select class="form-select form-select-sm" data-random-draw-target="optionSelect" data-action="random-draw#setOption">
+                                    <option value="all">{{ 'programToolsAllStudentsOptionLabel'|trans }}</option>
+                                    {% for option in program.options %}
+                                        <option value="{{ option.id }}">{{ option.shortName }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        {% endif %}
                         <div class="cm-draw-option">
-                            <span class="cm-draw-option__label">{{ 'programToolsOptionFieldLabel'|trans }}</span>
-                            <select class="form-select form-select-sm" data-random-draw-target="optionSelect" data-action="random-draw#setOption">
-                                <option value="all">{{ 'programToolsAllStudentsOptionLabel'|trans }}</option>
-                                {% for option in program.options %}
-                                    <option value="{{ option.id }}">{{ option.shortName }}</option>
-                                {% endfor %}
+                            <span class="cm-draw-option__label">{{ 'programToolsNameFormatFieldLabel'|trans }}</span>
+                            <select class="form-select form-select-sm" data-random-draw-target="nameFormatSelect" data-action="random-draw#setNameFormat">
+                                <option value="short">{{ 'programToolsNameFormatShortLabel'|trans }}</option>
+                                <option value="full">{{ 'programToolsNameFormatFullLabel'|trans }}</option>
                             </select>
                         </div>
-                    {% endif %}
-                    <div class="cm-draw-option">
-                        <span class="cm-draw-option__label">{{ 'programToolsNameFormatFieldLabel'|trans }}</span>
-                        <select class="form-select form-select-sm" data-random-draw-target="nameFormatSelect" data-action="random-draw#setNameFormat">
-                            <option value="short">{{ 'programToolsNameFormatShortLabel'|trans }}</option>
-                            <option value="full">{{ 'programToolsNameFormatFullLabel'|trans }}</option>
-                        </select>
+                        {# click-> is required here (unlike the <button>/<select> actions elsewhere on this
+                           page) - Stimulus only infers a default event for a handful of tags (button, a,
+                           form, select, input, textarea, details); a plain <div> has no default, so
+                           without this prefix the click silently never fires the action at all. #}
+                        <div class="cm-draw-switch" data-random-draw-target="repeatSwitch" data-action="click->random-draw#toggleRepeat"></div>
+                        <span class="cm-draw-switch__label">{{ 'programToolsAllowRepeatLabel'|trans }}</span>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-action="random-draw#reset">{{ 'programToolsResetButtonLabel'|trans }}</button>
+                        <span class="cm-draw-remaining" data-random-draw-target="remaining"></span>
+                        <button type="button" class="btn btn-primary cm-draw-button" data-action="random-draw#draw">{{ 'programToolsDrawButtonLabel'|trans }}</button>
                     </div>
-                    {# click-> is required here (unlike the <button>/<select> actions elsewhere on this
-                       page) - Stimulus only infers a default event for a handful of tags (button, a,
-                       form, select, input, textarea, details); a plain <div> has no default, so
-                       without this prefix the click silently never fires the action at all. #}
-                    <div class="cm-draw-switch" data-random-draw-target="repeatSwitch" data-action="click->random-draw#toggleRepeat"></div>
-                    <span class="cm-draw-switch__label">{{ 'programToolsAllowRepeatLabel'|trans }}</span>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-action="random-draw#reset">{{ 'programToolsResetButtonLabel'|trans }}</button>
-                    <span class="cm-draw-remaining" data-random-draw-target="remaining"></span>
-                    <button type="button" class="btn btn-primary cm-draw-button" data-action="random-draw#draw">{{ 'programToolsDrawButtonLabel'|trans }}</button>
+
+                    <div class="cm-draw-fs-actions">
+                        <button type="button" class="cm-draw-fs-exit" data-action="random-draw#toggleFullscreen">
+                            <svg class="icon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-minimize"></use></svg>
+                            {{ 'programToolsExitFullscreenButtonLabel'|trans }}
+                        </button>
+                        <button type="button" class="cm-draw-fs-button" data-action="random-draw#draw">{{ 'programToolsDrawButtonLabel'|trans }}</button>
+                        <div class="cm-draw-fs-remaining" data-random-draw-target="fsRemaining"></div>
+                    </div>
+
+                    {# Hidden with replacement on: « déjà tirés » is the memory of who is out of the
+                       pool, and with replacement nobody ever is. #}
+                    <div class="cm-draw-drawn" data-random-draw-target="drawnBlock" hidden>
+                        <span class="cm-draw-drawn__label">{{ 'programToolsAlreadyDrawnLabel'|trans }}</span>
+                        <div class="cm-draw-drawn__chips" data-random-draw-target="drawnChips"></div>
+                    </div>
+
+                    <div class="cm-draw-autosave" data-random-draw-target="autosaveNotice" hidden>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg>
+                        <span data-random-draw-target="autosaveText"></span>
+                    </div>
+
+                    <div class="cm-draw-saveline" data-random-draw-target="saveLine">
+                        <input type="text" class="form-control form-control-sm cm-draw-saveline__input"
+                               placeholder="{{ 'programToolsDrawNamePlaceholder'|trans }}"
+                               aria-label="{{ 'programToolsDrawNameFieldLabel'|trans }}"
+                               data-random-draw-target="nameInput"
+                               data-action="keydown.enter->random-draw#saveDraw">
+                        <button type="button" class="cm-draw-saveline__btn" data-random-draw-target="saveButton" data-action="random-draw#saveDraw">{{ 'programToolsSaveDrawButtonLabel'|trans }}</button>
+                        <button type="button" class="cm-draw-saveline__close" data-random-draw-target="closeButton" data-action="random-draw#closeDraw" hidden>{{ 'programToolsCloseDrawLabel'|trans }}</button>
+                    </div>
                 </div>
 
-                <div class="cm-draw-fs-actions">
-                    <button type="button" class="cm-draw-fs-exit" data-action="random-draw#toggleFullscreen">
-                        <svg class="icon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-minimize"></use></svg>
-                        {{ 'programToolsExitFullscreenButtonLabel'|trans }}
-                    </button>
-                    <button type="button" class="cm-draw-fs-button" data-action="random-draw#draw">{{ 'programToolsDrawButtonLabel'|trans }}</button>
-                    <div class="cm-draw-fs-remaining" data-random-draw-target="fsRemaining"></div>
+                <div class="cm-draw-overlay" data-random-draw-target="winnerOverlay" data-action="click->random-draw#closeWinner" hidden>
+                    <div class="cm-draw-overlay__confetti" data-random-draw-target="confetti"></div>
+                    <div class="cm-draw-overlay__eyebrow">{{ 'programToolsWinnerEyebrowLabel'|trans }}</div>
+                    <div class="cm-draw-overlay__name" data-random-draw-target="winnerName"></div>
+                    <div class="cm-draw-overlay__hint">{{ 'programToolsWinnerHintLabel'|trans }}</div>
                 </div>
             </div>
 
-            <div class="cm-draw-overlay" data-random-draw-target="winnerOverlay" data-action="click->random-draw#closeWinner" hidden>
-                <div class="cm-draw-overlay__confetti" data-random-draw-target="confetti"></div>
-                <div class="cm-draw-overlay__eyebrow">{{ 'programToolsWinnerEyebrowLabel'|trans }}</div>
-                <div class="cm-draw-overlay__name" data-random-draw-target="winnerName"></div>
-                <div class="cm-draw-overlay__hint">{{ 'programToolsWinnerHintLabel'|trans }}</div>
-            </div>
+            <div class="cm-draw-toast" data-random-draw-target="toast" role="status" hidden></div>
         </div>
     {% endif %}
 {% endblock %}

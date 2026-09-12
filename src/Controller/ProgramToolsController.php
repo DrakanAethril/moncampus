@@ -8,12 +8,14 @@ use App\Attribute\RequiresFeature;
 use App\Entity\GroupBatch;
 use App\Entity\Option;
 use App\Entity\Program;
+use App\Entity\RandomDraw;
 use App\Entity\User;
 use App\Enum\Feature;
 use App\Enum\GroupCreationMode;
 use App\Repository\GroupBatchRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\ProgramStudentOptionRepository;
+use App\Repository\RandomDrawRepository;
 use App\Security\StructureAccessChecker;
 use App\Service\GotenbergClient;
 use App\Service\GotenbergUnavailableException;
@@ -30,6 +32,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\String\Slugger\AsciiSlugger;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 // Classroom-facing tools reached via the per-program "Outils" nav flyout (between Emploi du temps
 // and Syllabus, see templates/layout/app.html.twig) - teacher/staff-only unlike the rest of that
@@ -40,9 +43,10 @@ use Symfony\Component\String\Slugger\AsciiSlugger;
 class ProgramToolsController extends AbstractController
 {
     private const string GROUP_CREATION_CSRF_TOKEN_ID = 'program_group_creation';
+    private const string RANDOM_DRAW_CSRF_TOKEN_ID = 'program_random_draw';
 
     #[Route(path: '/programs/{id}/tools/random-draw', name: 'app_program_tools_random_draw')]
-    public function randomDraw(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, ProgramStudentOptionRepository $studentOptionRepository): Response
+    public function randomDraw(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, ProgramStudentOptionRepository $studentOptionRepository, RandomDrawRepository $randomDrawRepository): Response
     {
         $program = $this->findForTeacherOrStaff($id, $repository, $accessChecker);
         $optionsByStudentId = $studentOptionRepository->findOptionsByStudentForProgram($program);
@@ -64,10 +68,175 @@ class ProgramToolsController extends AbstractController
             $this->sortedByName($program->getStudents()->toArray()),
         );
 
+        $rosterIds = array_column($students, 'id');
+
         return $this->render('program/tools_random_draw.html.twig', [
             'program' => $program,
             'students' => $students,
+            'draws' => array_map(
+                fn (RandomDraw $draw): array => $this->drawPayload($draw, $rosterIds),
+                $randomDrawRepository->findAllForTeacherAndProgram($this->currentUser(), $program),
+            ),
         ]);
+    }
+
+    // « Enregistrer ce tirage » and « Enregistrer comme nouveau tirage » - one endpoint, because
+    // both create a row. The same reflex as saveLot(): a name already taken is disambiguated rather
+    // than made to overwrite, or the duplication button would eat the very copy it was asked for.
+    // An empty field is not an error either - a teacher who just wants the draw kept gets « Tirage
+    // du 12/09/2026 » and can rename it later from the banner.
+    #[Route(path: '/programs/{id}/tools/random-draw/draws', name: 'app_program_tools_random_draw_save', methods: ['POST'])]
+    public function saveDraw(int $id, Request $request, ProgramRepository $repository, StructureAccessChecker $accessChecker, ProgramStudentOptionRepository $studentOptionRepository, RandomDrawRepository $randomDrawRepository, GroupBatchNaming $naming, TranslatorInterface $translator, EntityManagerInterface $entityManager): JsonResponse
+    {
+        $program = $this->findForTeacherOrStaff($id, $repository, $accessChecker);
+        $this->assertRandomDrawCsrf($request);
+
+        $teacher = $this->currentUser();
+        $payload = JsonRequestPayload::fromRequest($request);
+
+        $name = trim($payload->string('name'));
+        if ('' === $name) {
+            $name = \sprintf('%s %s', $translator->trans('programToolsDefaultDrawNamePrefix'), (new \DateTimeImmutable())->format('d/m/Y'));
+        }
+
+        $draw = new RandomDraw($program, $teacher, $naming->unique($name, array_map(
+            static fn (RandomDraw $other): string => $other->getName(),
+            $randomDrawRepository->findAllForTeacherAndProgram($teacher, $program),
+        )));
+        $this->applyDrawState($draw, $payload, $program, $studentOptionRepository);
+
+        $entityManager->persist($draw);
+        $entityManager->flush();
+
+        return $this->json($this->drawPayload($draw, $this->rosterIds($program)));
+    }
+
+    // The only place a name is REFUSED rather than numbered: renaming is a correction, and silently
+    // turning « Oral anglais » into « Oral anglais (2) » because that name is already in the banner
+    // would leave the teacher looking at two chips they cannot tell apart, which is the exact
+    // outcome the rule exists to prevent. The browser says so and keeps the field open.
+    #[Route(path: '/programs/{id}/tools/random-draw/draws/{drawId}/rename', name: 'app_program_tools_random_draw_rename', methods: ['POST'])]
+    public function renameDraw(int $id, int $drawId, Request $request, ProgramRepository $repository, StructureAccessChecker $accessChecker, RandomDrawRepository $randomDrawRepository, EntityManagerInterface $entityManager): JsonResponse
+    {
+        $program = $this->findForTeacherOrStaff($id, $repository, $accessChecker);
+        $this->assertRandomDrawCsrf($request);
+
+        $teacher = $this->currentUser();
+        $draw = $randomDrawRepository->findOneForTeacherAndProgram($drawId, $teacher, $program) ?? throw $this->createNotFoundException();
+
+        $name = trim(JsonRequestPayload::fromRequest($request)->string('name'));
+        if ('' === $name) {
+            return $this->json(['error' => 'Nom vide.'], 422);
+        }
+
+        foreach ($randomDrawRepository->findAllForTeacherAndProgram($teacher, $program) as $other) {
+            if ($other !== $draw && mb_strtolower($other->getName()) === mb_strtolower($name)) {
+                return $this->json(['error' => 'duplicate_name'], 409);
+            }
+        }
+
+        $draw->setName($name)->touch();
+        $entityManager->flush();
+
+        return $this->json($this->drawPayload($draw, $this->rosterIds($program)));
+    }
+
+    // The autosave. Called on every draw, reset, option change and replacement toggle while a saved
+    // draw is open - which is what makes the tool survive the browser tab, the whole point of the
+    // feature. Deliberately idempotent and total: the browser sends the state it is looking at, and
+    // the row becomes exactly that, rather than a diff nobody could replay.
+    #[Route(path: '/programs/{id}/tools/random-draw/draws/{drawId}/update', name: 'app_program_tools_random_draw_update', methods: ['POST'])]
+    public function updateDraw(int $id, int $drawId, Request $request, ProgramRepository $repository, StructureAccessChecker $accessChecker, ProgramStudentOptionRepository $studentOptionRepository, RandomDrawRepository $randomDrawRepository, EntityManagerInterface $entityManager): JsonResponse
+    {
+        $program = $this->findForTeacherOrStaff($id, $repository, $accessChecker);
+        $this->assertRandomDrawCsrf($request);
+
+        $draw = $randomDrawRepository->findOneForTeacherAndProgram($drawId, $this->currentUser(), $program) ?? throw $this->createNotFoundException();
+        $this->applyDrawState($draw, JsonRequestPayload::fromRequest($request), $program, $studentOptionRepository);
+        $entityManager->flush();
+
+        return $this->json($this->drawPayload($draw, $this->rosterIds($program)));
+    }
+
+    #[Route(path: '/programs/{id}/tools/random-draw/draws/{drawId}/delete', name: 'app_program_tools_random_draw_delete', methods: ['POST'])]
+    public function deleteDraw(int $id, int $drawId, Request $request, ProgramRepository $repository, StructureAccessChecker $accessChecker, RandomDrawRepository $randomDrawRepository, EntityManagerInterface $entityManager): JsonResponse
+    {
+        $program = $this->findForTeacherOrStaff($id, $repository, $accessChecker);
+        $this->assertRandomDrawCsrf($request);
+
+        $draw = $randomDrawRepository->findOneForTeacherAndProgram($drawId, $this->currentUser(), $program) ?? throw $this->createNotFoundException();
+        $entityManager->remove($draw);
+        $entityManager->flush();
+
+        return $this->json(['success' => true]);
+    }
+
+    /**
+     * The state the browser is looking at, written onto the row. The Option is re-read from the
+     * Program rather than trusted, and the drawn ids are filtered against the roster: an id the
+     * class no longer holds is dropped here as well as on the way out, so a student who left
+     * between two lessons never comes back through a stale payload.
+     */
+    private function applyDrawState(RandomDraw $draw, JsonRequestPayload $payload, Program $program, ProgramStudentOptionRepository $studentOptionRepository): void
+    {
+        $optionId = $payload->int('optionId');
+        $option = null;
+        if (null !== $optionId) {
+            foreach ($program->getOptions() as $candidate) {
+                if ($candidate->getId() === $optionId) {
+                    $option = $candidate;
+                    break;
+                }
+            }
+        }
+
+        $rosterIds = $this->rosterIds($program);
+        $drawnIds = array_values(array_unique(array_filter(
+            $payload->ids('drawnIds'),
+            static fn (int $studentId): bool => \in_array($studentId, $rosterIds, true),
+        )));
+
+        $draw->setOption($option)
+            ->setAllowRepeat($payload->bool('allowRepeat'))
+            ->setDrawnStudentIds($drawnIds)
+            ->touch();
+    }
+
+    /**
+     * @param list<int> $rosterIds
+     *
+     * @return array{id: ?int, name: string, optionId: ?int, allowRepeat: bool, drawnIds: list<int>}
+     */
+    private function drawPayload(RandomDraw $draw, array $rosterIds): array
+    {
+        return [
+            'id' => $draw->getId(),
+            'name' => $draw->getName(),
+            'optionId' => $draw->getOption()?->getId(),
+            'allowRepeat' => $draw->isAllowRepeat(),
+            // Silently ignored on resume, as the handoff asks: a student the class no longer holds
+            // is not an error to report, it is a line that has stopped meaning anything.
+            'drawnIds' => array_values(array_filter(
+                $draw->getDrawnStudentIds(),
+                static fn (int $studentId): bool => \in_array($studentId, $rosterIds, true),
+            )),
+        ];
+    }
+
+    /** @return list<int> */
+    private function rosterIds(Program $program): array
+    {
+        return array_values(array_map(
+            static fn (User $student): int => $student->getId(),
+            $program->getStudents()->toArray(),
+        ));
+    }
+
+    private function assertRandomDrawCsrf(Request $request): void
+    {
+        if (!$this->isCsrfTokenValid(self::RANDOM_DRAW_CSRF_TOKEN_ID, $request->headers->get('X-CSRF-Token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
     }
 
     // See design/design_campus_manager/PROMPT_CLAUDE_CODE_groupes.md for the full spec this
