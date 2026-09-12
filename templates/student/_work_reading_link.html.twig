@@ -1,0 +1,26 @@
+{# The way into a « À lire »'s document, from wherever the travail is read - the dashboard card and
+   the « Derniers travaux » column both include this rather than building their own href, because
+   the address is the feature: it goes through
+   App\Controller\StudentWorkController::openAttachment, which is what makes the reading count the
+   same whichever screen it was clicked from.
+
+   One support: straight to it. Several: the travail's own page, where each of them carries the same
+   tracked address - picking one for the student would be choosing what they read.
+
+   `reread` only changes the wording: the column of finished travaux offers the document again, and
+   « Lire le document » there would suggest it is still owed. #}
+{% set attachments = assignment.attachments %}
+
+{% if attachments|length > 0 %}
+    {% if attachments|length == 1 %}
+        <a href="{{ path('app_student_work_attachment', {assignmentId: assignment.id, attachmentId: attachments|first.id}) }}"
+           class="{{ link_class|default('cm-tw-link') }}" target="_blank" rel="noopener">
+            {{ (reread|default(false) ? 'studentWorkRereadDocumentAction' : 'studentWorkReadDocumentAction')|trans }}
+        </a>
+    {% else %}
+        <a href="{{ path('app_program_my_assignment', {id: assignment.program.id, assignmentId: assignment.id}) }}"
+           class="{{ link_class|default('cm-tw-link') }}">
+            {{ 'studentWorkReadDocumentsAction'|trans }}
+        </a>
+    {% endif %}
+{% endif %}
