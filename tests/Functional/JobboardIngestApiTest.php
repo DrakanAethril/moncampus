@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional;
 
+use App\Entity\JobboardSource;
 use App\Entity\JobboardToken;
 use App\Entity\Section;
 use App\Entity\Track;
@@ -117,6 +118,59 @@ class JobboardIngestApiTest extends FunctionalTestCase
         $this->assertResponseIsSuccessful();
         $this->assertSame(1, $this->payload()['created'] ?? null);
         $this->assertSame(1, $this->payload()['rejected'] ?? null);
+    }
+
+    /**
+     * The refusal that cost real offers, gone. A site nobody declared used to answer
+     * `unknown_source` line by line, and nothing here keeps what it refuses - so a whole pass on a
+     * new board was lost until somebody shipped a deploy.
+     */
+    public function testAnOfferFromAnUnknownSiteIsFiledRatherThanRefused(): void
+    {
+        $this->token();
+        $batch = $this->openBatch();
+
+        $this->call('POST', '/api/jobboard/batches/'.$batch.'/offers', [
+            $this->offer([
+                'source' => 'Welcome to the Jungle',
+                'source_ref' => 'WTTJ-1',
+                'url' => 'https://www.welcometothejungle.com/fr/companies/x/jobs/y',
+            ]),
+        ], 'key-1');
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSame(1, $this->payload()['created'] ?? null);
+
+        $source = static::getContainer()->get(EntityManagerInterface::class)
+            ->getRepository(JobboardSource::class)
+            ->findOneBy(['slug' => 'welcometothejungle']);
+
+        $this->assertInstanceOf(JobboardSource::class, $source);
+        $this->assertSame(['welcometothejungle.com'], $source->getDomains());
+        $this->assertTrue($source->isDiscoveredByAgent());
+    }
+
+    /**
+     * And the same rule read from the other end: the URL decides, so a batch whose `source` is
+     * misspelt no longer forks the site into a second row.
+     */
+    public function testAMisspeltSiteNameIsFiledUnderTheSiteItsUrlPointsAt(): void
+    {
+        // HelloWork must already be there for the question to mean anything: on an empty table
+        // there is nothing for the host to point at, and the misspelling would simply be the name
+        // of a new site - which is the *other* half of the rule, tested just above.
+        $this->jobboardSource();
+        $this->token();
+        $batch = $this->openBatch();
+
+        $this->call('POST', '/api/jobboard/batches/'.$batch.'/offers', [$this->offer(['source' => 'hellowrk'])], 'key-1');
+
+        $this->assertResponseIsSuccessful();
+
+        $offers = $this->payload()['offers'] ?? [];
+        $this->assertIsArray($offers);
+        $this->assertIsArray($offers[0] ?? null);
+        $this->assertSame('hellowork', $offers[0]['source'] ?? null);
     }
 
     public function testABatchOpenedByAnotherKeyDoesNotExist(): void

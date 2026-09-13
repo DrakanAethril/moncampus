@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Enum\JobboardSource;
 use App\Repository\JobboardCursorRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
@@ -21,7 +20,7 @@ use Doctrine\ORM\Mapping as ORM;
  */
 #[ORM\Entity(repositoryClass: JobboardCursorRepository::class)]
 #[ORM\Table(name: 'jobboard_cursor')]
-#[ORM\UniqueConstraint(name: 'uniq_jobboard_cursor_scope', columns: ['track_id', 'source', 'search'])]
+#[ORM\UniqueConstraint(name: 'uniq_jobboard_cursor_scope', columns: ['track_id', 'source_id', 'search'])]
 class JobboardCursor
 {
     #[ORM\Id]
@@ -33,7 +32,8 @@ class JobboardCursor
     #[ORM\JoinColumn(name: 'track_id', nullable: false, onDelete: 'CASCADE')]
     private Track $track;
 
-    #[ORM\Column(length: 32, enumType: JobboardSource::class)]
+    #[ORM\ManyToOne(targetEntity: JobboardSource::class)]
+    #[ORM\JoinColumn(name: 'source_id', nullable: false, onDelete: 'RESTRICT')]
     private JobboardSource $source;
 
     #[ORM\Column(length: 190)]
@@ -89,6 +89,17 @@ class JobboardCursor
     public function getUpdatedAt(): \DateTimeImmutable
     {
         return $this->updatedAt;
+    }
+
+    /**
+     * Re-filed under another site, which only ever happens when two rows for one site are merged.
+     * The bookmark itself does not move: it is the same search, at the same point.
+     */
+    public function moveToSource(JobboardSource $source): static
+    {
+        $this->source = $source;
+
+        return $this;
     }
 
     public function moveTo(?string $lastRef, ?\DateTimeImmutable $lastPublishedAt): static

@@ -8,7 +8,6 @@ use App\Command\PurgePlatformActivityCommand;
 use App\Entity\JobboardOffer;
 use App\Entity\Track;
 use App\Entity\User;
-use App\Enum\JobboardSource;
 use App\Repository\JobboardOfferRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -100,7 +99,7 @@ class JobboardRetentionTest extends FunctionalTestCase
 
     private function offer(Track $track, string $ref, ?string $published, string $firstSeen = '-30 months'): JobboardOffer
     {
-        $offer = new JobboardOffer($track, JobboardSource::Hellowork, $ref, new \DateTimeImmutable($firstSeen));
+        $offer = new JobboardOffer($track, $this->jobboardSource(), $ref, new \DateTimeImmutable($firstSeen));
         $offer->setUrl('https://www.hellowork.com/fr-fr/emplois/'.$ref.'.html')->setPosition('Technicien')->setCompany('Astek');
 
         if (null !== $published) {

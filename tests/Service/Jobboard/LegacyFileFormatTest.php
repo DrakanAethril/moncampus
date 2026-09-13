@@ -9,7 +9,6 @@ use App\Enum\JobboardContract;
 use App\Enum\JobboardCountry;
 use App\Enum\JobboardLevelSource;
 use App\Enum\JobboardRemote;
-use App\Enum\JobboardSource;
 use App\Service\Jobboard\LegacyFileFormat;
 use App\Service\Jobboard\OfferPayloadParser;
 use PHPUnit\Framework\TestCase;
@@ -25,15 +24,18 @@ use Symfony\Component\Clock\MockClock;
  *
  * The sheet itself is checked for completeness rather than wording: every source and every
  * enumerated value must appear, because the whole reason it is generated is that a hand-written one
- * loses a case the day one is added.
+ * loses a case the day one is added - and since the list of sites became a table, "a case is added"
+ * means a row an administrator never touched.
  */
 class LegacyFileFormatTest extends TestCase
 {
+    use SourceTableTrait;
+
     private const string NOW = '2026-09-13 09:00:00';
 
     public function testEveryOfferOfTheExampleGoesThroughTheImportsOwnParser(): void
     {
-        $parser = new OfferPayloadParser(new MockClock(self::NOW));
+        $parser = new OfferPayloadParser(new MockClock(self::NOW), $this->resolver());
 
         foreach ($this->offers() as $index => $offer) {
             $payload = $parser->parse($offer, legacy: true);
@@ -47,7 +49,7 @@ class LegacyFileFormatTest extends TestCase
     /** No publication date, and it must stay that way: an offer nobody dated is a normal offer. */
     public function testTheSecondOfferCarriesTheHolesARealAdvertHas(): void
     {
-        $payload = (new OfferPayloadParser(new MockClock(self::NOW)))->parse($this->offers()[1], legacy: true);
+        $payload = (new OfferPayloadParser(new MockClock(self::NOW), $this->resolver()))->parse($this->offers()[1], legacy: true);
 
         $this->assertNull($payload->publishedAt);
         $this->assertTrue($payload->publishedAtApprox);
@@ -72,9 +74,9 @@ class LegacyFileFormatTest extends TestCase
     {
         $markdown = $this->format()->markdown();
 
-        foreach (JobboardSource::cases() as $source) {
-            $this->assertStringContainsString($source->legacyPrefix().'-…', $markdown);
-            $this->assertStringContainsString($source->label(), $markdown);
+        foreach ($this->sourceTable() as $source) {
+            $this->assertStringContainsString($source->getLegacyPrefix().'-…', $markdown);
+            $this->assertStringContainsString($source->getLabel(), $markdown);
         }
 
         $values = [
@@ -113,6 +115,6 @@ class LegacyFileFormatTest extends TestCase
 
     private function format(): LegacyFileFormat
     {
-        return new LegacyFileFormat(new MockClock(self::NOW));
+        return new LegacyFileFormat(new MockClock(self::NOW), $this->sourceRepository());
     }
 }

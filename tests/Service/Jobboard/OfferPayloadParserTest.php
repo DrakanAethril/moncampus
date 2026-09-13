@@ -8,7 +8,6 @@ use App\Enum\JobboardContract;
 use App\Enum\JobboardCountry;
 use App\Enum\JobboardLevelSource;
 use App\Enum\JobboardRemote;
-use App\Enum\JobboardSource;
 use App\Service\Jobboard\JobboardRejection;
 use App\Service\Jobboard\OfferPayloadParser;
 use App\Service\Jobboard\OfferRejectedException;
@@ -22,18 +21,20 @@ use Symfony\Component\Clock\MockClock;
  */
 class OfferPayloadParserTest extends TestCase
 {
+    use SourceTableTrait;
+
     private OfferPayloadParser $parser;
 
     protected function setUp(): void
     {
-        $this->parser = new OfferPayloadParser(new MockClock('2026-09-12 10:00:00'));
+        $this->parser = new OfferPayloadParser(new MockClock('2026-09-12 10:00:00'), $this->resolver());
     }
 
     public function testItReadsACompleteOffer(): void
     {
         $payload = $this->parser->parse($this->offer());
 
-        $this->assertSame(JobboardSource::Hellowork, $payload->source);
+        $this->assertSame('hellowork', $payload->source->getSlug());
         $this->assertSame('83313525', $payload->sourceRef);
         $this->assertSame(JobboardContract::Cdd, $payload->contract);
         $this->assertSame(JobboardCountry::France, $payload->country);
@@ -81,9 +82,61 @@ class OfferPayloadParserTest extends TestCase
         $this->assertSame('2026-09-12', $this->parser->parse($this->offer(['date_publication' => '2026-09-12']))->publishedAt?->format('Y-m-d'));
     }
 
-    public function testItRefusesAnUrlThatDoesNotBelongToItsSource(): void
+    /**
+     * The check that used to refuse this offer, turned around. The URL is the truth and the
+     * declared name is a hint, so an offer labelled `hellowork` on a Meteojob URL is filed under
+     * Meteojob instead of being refused - and the offer survives, which is the whole point of
+     * opening the list.
+     */
+    public function testTheUrlDecidesTheSourceWhateverTheNameSays(): void
     {
-        $this->assertRejects(JobboardRejection::UrlDomainMismatch, ['url' => 'https://www.meteojob.com/jobs/1']);
+        $payload = $this->parser->parse($this->offer(['url' => 'https://www.meteojob.com/jobs/1']));
+
+        $this->assertSame('meteojob', $payload->source->getSlug());
+    }
+
+    /**
+     * The same rule read from the other end: a typo in the declared name costs nothing, because
+     * nothing is decided on it when the host is known. Before, every offer of that batch was
+     * refused one by one with `unknown_source`.
+     */
+    public function testATypoInTheDeclaredNameCannotForkASite(): void
+    {
+        $payload = $this->parser->parse($this->offer(['source' => 'hellowrk']));
+
+        $this->assertSame('hellowork', $payload->source->getSlug());
+    }
+
+    /** A site nobody declared is created from its domain, never refused. */
+    public function testAnUnknownSiteIsCreatedFromItsDomain(): void
+    {
+        $payload = $this->parser->parse($this->offer([
+            'source' => 'Welcome to the Jungle',
+            'url' => 'https://www.welcometothejungle.com/fr/companies/x/jobs/y',
+        ]));
+
+        $this->assertSame('welcometothejungle', $payload->source->getSlug());
+        $this->assertSame('Welcome to the Jungle', $payload->source->getLabel());
+        $this->assertSame(['welcometothejungle.com'], $payload->source->getDomains());
+    }
+
+    /** Two offers of the same new site, inside one batch, are one source and not two. */
+    public function testANewSiteIsCreatedOnlyOnce(): void
+    {
+        $first = $this->parser->parse($this->offer(['source' => 'Indeed', 'url' => 'https://fr.indeed.com/viewjob?jk=1']));
+        $second = $this->parser->parse($this->offer(['source' => 'Indeed', 'url' => 'https://fr.indeed.com/viewjob?jk=2']));
+
+        $this->assertSame($first->source, $second->source);
+    }
+
+    /**
+     * What survives of the old URL check: a link that is not a link. The value is rendered as an
+     * `href` on the detail panel, so the scheme is part of the question.
+     */
+    public function testItRefusesAnUrlThatIsNotALink(): void
+    {
+        $this->assertRejects(JobboardRejection::InvalidUrl, ['url' => "voir sur le site de l'entreprise"]);
+        $this->assertRejects(JobboardRejection::InvalidUrl, ['url' => 'javascript:alert(1)']);
     }
 
     public function testItAcceptsASubdomainOfTheSource(): void
@@ -93,7 +146,7 @@ class OfferPayloadParserTest extends TestCase
             'url' => 'https://candidat.francetravail.fr/offres/recherche/detail/212WTTG',
         ]));
 
-        $this->assertSame(JobboardSource::FranceTravail, $payload->source);
+        $this->assertSame('francetravail', $payload->source->getSlug());
     }
 
     public function testItRefusesAnAbsentLevelSource(): void
@@ -110,7 +163,6 @@ class OfferPayloadParserTest extends TestCase
         $this->assertRejects(JobboardRejection::UnknownContract, ['contrat' => 'freelance']);
         $this->assertRejects(JobboardRejection::UnknownCountry, ['pays' => 'Allemagne']);
         $this->assertRejects(JobboardRejection::UnknownRemote, ['teletravail' => 'parfois']);
-        $this->assertRejects(JobboardRejection::UnknownSource, ['source' => 'indeed']);
     }
 
     /**
@@ -179,7 +231,7 @@ class OfferPayloadParserTest extends TestCase
         ], legacy: true);
 
         $this->assertSame('83313525', $payload->sourceRef);
-        $this->assertSame(JobboardSource::Hellowork, $payload->source);
+        $this->assertSame('hellowork', $payload->source->getSlug());
         $this->assertSame(JobboardContract::Cdi, $payload->contract);
         $this->assertSame('sisr', $payload->category);
         $this->assertSame(JobboardRemote::NonPrecise, $payload->remote);

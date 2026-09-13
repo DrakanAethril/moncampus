@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Service\Jobboard;
 
 use App\Enum\JobboardContract;
-use App\Enum\JobboardSource;
 use App\Service\Jobboard\OfferFilters;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
@@ -41,10 +40,22 @@ class OfferFiltersTest extends TestCase
 
     public function testItDropsValuesOutsideTheirEnumeration(): void
     {
-        $filters = OfferFilters::fromRequest(Request::create('/jobboard?contrat=cdi,freelance&source=hellowork,indeed'));
+        $filters = OfferFilters::fromRequest(Request::create('/jobboard?contrat=cdi,freelance'));
 
         $this->assertSame([JobboardContract::Cdi], $filters->contracts);
-        $this->assertSame([JobboardSource::Hellowork], $filters->sources);
+    }
+
+    /**
+     * The sources are the one multi-valued filter with nothing to check them against: the list of
+     * sites is a table now, so a slug that matches no row simply selects nothing. Filtering them
+     * here would mean re-reading that table on every request to answer a question the `IN` clause
+     * already answers.
+     */
+    public function testSourceSlugsTravelAsTheyAreWritten(): void
+    {
+        $filters = OfferFilters::fromRequest(Request::create('/jobboard?source=hellowork,Indeed'));
+
+        $this->assertSame(['hellowork', 'indeed'], $filters->sources);
     }
 
     public function testCategoriesAreLoweredSoTheyMatchWhatIsStored(): void
