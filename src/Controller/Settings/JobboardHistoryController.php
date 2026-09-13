@@ -15,7 +15,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  *
  * Read-only, and deliberately so: nothing on this screen can be corrected, because the figures it
  * prints were counted at the moment the offers were filed and are the only record of it. The one
- * question it answers is « la veille a-t-elle tourné, et qu'a-t-elle rapporté ».
+ * question it answers is « la veille a-t-elle tourné, et qu'a-t-elle rapporté » - and, since the
+ * list of sites was opened, a second one: « qu'a-t-elle décidé toute seule ».
  *
  * Administrators only and without a `#[RequiresFeature]`, like the two tabs beside it: no setting
  * made here may close the screen the settings are made on.
@@ -31,6 +32,10 @@ class JobboardHistoryController extends AbstractController
             // Handed to the template so the « only the last N » line cannot drift from the number
             // actually applied.
             'limit' => JobboardHistory::DEFAULT_LIMIT,
+            // The second list of this screen: what the source resolution decided by itself. It
+            // belongs here rather than on the sources tab because it is dated and attributable -
+            // it says which pass attached a domain, which the sources tab cannot.
+            'learnings' => $history->learnings(),
         ]);
     }
 }

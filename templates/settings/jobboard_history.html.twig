@@ -28,7 +28,7 @@
                 <tr>
                     <th>{{ 'jobboardHistoryDateColumn'|trans }}</th>
                     <th>{{ 'jobboardHistoryOriginColumn'|trans }}</th>
-                    <th>{{ 'jobboardTokenSectionColumn'|trans }}</th>
+                    <th>{{ 'jobboardTokenTrackColumn'|trans }}</th>
                     <th class="text-end">{{ 'jobboardHistoryAddedColumn'|trans }}</th>
                     <th class="text-end">{{ 'jobboardHistoryDuplicateColumn'|trans }}</th>
                     <th class="text-end">{{ 'jobboardHistoryRemovedColumn'|trans }}</th>
@@ -79,5 +79,67 @@
                 <div class="cm-actionbar__meta">{{ 'jobboardHistoryTruncatedText'|trans({'%count%': limit}) }}</div>
             </div>
         {% endif %}
+
+        {# The second list, and the reason it exists: the resolution never refuses an offer whose
+           site it does not know, so the only way to see what it decided is to read it here. Nothing
+           on this block is a warning - the offers concerned were filed like the others. #}
+        <div class="cm-subhead" style="margin-top: 26px; margin-bottom: 14px">
+            <div class="cm-subhead__title">{{ 'jobboardHistoryLearningHeading'|trans }}</div>
+            <div class="cm-subhead__hint">{{ 'jobboardHistoryLearningHintText'|trans }}</div>
+        </div>
+
+        <table class="card-table">
+            <thead>
+                <tr>
+                    <th>{{ 'jobboardHistoryDateColumn'|trans }}</th>
+                    <th>{{ 'jobboardHistoryLearningKindColumn'|trans }}</th>
+                    <th>{{ 'jobboardHistoryLearningSourceColumn'|trans }}</th>
+                    <th>{{ 'jobboardHistoryLearningDomainColumn'|trans }}</th>
+                    <th>{{ 'jobboardHistoryLearningDeclaredColumn'|trans }}</th>
+                    <th>{{ 'jobboardHistoryOriginColumn'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for learning in learnings %}
+                    <tr>
+                        <td class="text-ink">{{ learning.learnedAt|localized_date('d MMM y HH:mm') }}</td>
+                        <td>
+                            <span class="cm-badge cm-badge--{{ learning.kind.value == 'source_created' ? 'purple' : 'teal' }}">
+                                {{ learning.kind.labelKey|trans }}
+                            </span>
+                        </td>
+                        <td class="text-ink">{{ learning.source.label }}</td>
+                        <td><code>{{ learning.domain }}</code></td>
+                        {# The declared name is printed even when it was ignored: « déclaré hellowork,
+                           domaine bit.ly » is what makes a wrong attachment readable at a glance. #}
+                        <td class="text-secondary">{{ learning.declared }}</td>
+                        <td>
+                            {% if learning.batch.token %}
+                                <span class="cm-badge cm-badge--blue">{{ 'jobboardHistoryOriginApiLabel'|trans }}</span>
+                                <span class="text-ink">{{ learning.batch.token.label }}</span>
+                            {% else %}
+                                <span class="cm-badge cm-badge--gold">{{ 'jobboardHistoryOriginImportLabel'|trans }}</span>
+                                <span class="text-ink">
+                                    {% if learning.batch.importedBy %}
+                                        {{ learning.batch.importedBy.displayName ?? learning.batch.importedBy.username }}
+                                    {% else %}
+                                        {{ 'jobboardHistoryImporterUnknownText'|trans }}
+                                    {% endif %}
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="6" class="text-secondary">{{ 'jobboardHistoryLearningEmptyText'|trans }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="cm-actionbar">
+            <div class="cm-actionbar__meta">{{ 'jobboardHistoryLearningFooterText'|trans }}</div>
+            <div class="cm-actionbar__buttons">
+                <a class="cm-btn" href="{{ path('app_settings_jobboard_sources') }}">{{ 'jobboardHistoryLearningSourcesAction'|trans }}</a>
+            </div>
+        </div>
     </div>
 {% endblock %}

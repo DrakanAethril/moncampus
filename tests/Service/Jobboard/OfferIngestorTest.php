@@ -10,6 +10,7 @@ use App\Entity\JobboardSource;
 use App\Entity\JobboardToken;
 use App\Entity\Section;
 use App\Entity\Track;
+use App\Enum\JobboardLearningKind;
 use App\Enum\JobboardLevelSource;
 use App\Enum\JobboardRemote;
 use App\Repository\JobboardOfferRepository;
@@ -171,21 +172,110 @@ class OfferIngestorTest extends TestCase
     }
 
     /**
+     * A site nobody had declared is filed, not refused - and the pass says so. The count of offers
+     * does not move: one creation can serve four hundred of them, so it is a fact about the deposit
+     * and never an outcome of a line.
+     */
+    public function testADepositSaysWhichSiteItInvented(): void
+    {
+        $report = $this->ingest(null, $this->offer([
+            'source' => 'Welcome to the Jungle',
+            'url' => 'https://fr.welcometothejungle.com/jobs/1',
+        ]));
+
+        $this->assertSame(1, $report->created());
+        $this->assertCount(1, $report->learned);
+        $this->assertSame(JobboardLearningKind::SourceCreated, $report->learned[0]->kind);
+        $this->assertSame('welcometothejungle.com', $report->learned[0]->domain);
+        $this->assertSame(['sources' => [[
+            'kind' => 'source_created',
+            'source' => 'welcometothejungle',
+            'declared' => 'Welcome to the Jungle',
+            'domain' => 'welcometothejungle.com',
+        ]]], array_intersect_key($report->toArray(), ['sources' => null]));
+    }
+
+    /**
+     * The gesture that deserves a screen: a known name on an unknown host glues that host's domain
+     * onto the site, and every later offer from behind it files there without a word.
+     */
+    public function testADepositSaysWhichDomainItAttached(): void
+    {
+        $report = $this->ingest(null, $this->offer([
+            'source' => 'hellowork',
+            'url' => 'https://bit.ly/an-offer',
+        ]));
+
+        $this->assertSame(1, $report->created());
+        $this->assertCount(1, $report->learned);
+        $this->assertSame(JobboardLearningKind::DomainAttached, $report->learned[0]->kind);
+        $this->assertSame('hellowork', $report->learned[0]->source->getSlug());
+        $this->assertSame('bit.ly', $report->learned[0]->domain);
+        $this->assertSame('hellowork', $report->learned[0]->declared);
+    }
+
+    /** An ordinary pass decides nothing, and must not print a diagnostic saying it did. */
+    public function testADepositOnAKnownHostLearnsNothing(): void
+    {
+        $this->assertSame([], $this->ingest(null, $this->offer())->learned);
+    }
+
+    /** Forty offers of one new site are one creation, on screen as in the table. */
+    public function testTheSameNewSiteIsLearnedOnce(): void
+    {
+        $report = $this->ingest(null,
+            $this->offer(['source' => 'Indeed', 'source_ref' => '1', 'url' => 'https://fr.indeed.com/1']),
+            $this->offer(['source' => 'Indeed', 'source_ref' => '2', 'url' => 'https://fr.indeed.com/2']),
+        );
+
+        $this->assertSame(2, $report->created());
+        $this->assertCount(1, $report->learned);
+    }
+
+    /**
+     * The dry run of the import screen announces what the real pass will learn and writes nothing -
+     * neither the site it named nor the record of having named it.
+     */
+    public function testTheDryRunAnnouncesWhatItWillLearnAndPersistsNothing(): void
+    {
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->never())->method('persist');
+
+        $report = $this->ingestor(null, $entityManager)->analyse($this->track, [$this->offer([
+            'source' => 'Welcome to the Jungle',
+            'url' => 'https://fr.welcometothejungle.com/jobs/1',
+        ])]);
+
+        $this->assertCount(1, $report->learned);
+        $this->assertSame(JobboardLearningKind::SourceCreated, $report->learned[0]->kind);
+    }
+
+    /**
      * @param array<string, mixed> ...$rows
      */
     private function ingest(?JobboardOffer $stored, array ...$rows): IngestReport
     {
+        return $this->ingestor($stored)->ingest($this->batch(), array_values($rows));
+    }
+
+    /**
+     * One resolver for the parser and for the ingestor, because the journal of what a pass learned
+     * lives on it: two instances would parse against one table and drain the other, which is
+     * exactly the bug this shape prevents.
+     */
+    private function ingestor(?JobboardOffer $stored, ?EntityManagerInterface $entityManager = null): OfferIngestor
+    {
         $repository = $this->createStub(JobboardOfferRepository::class);
         $repository->method('findOneByIdentity')->willReturn($stored);
+        $resolver = $this->resolver();
 
-        $ingestor = new OfferIngestor(
-            new OfferPayloadParser($this->clock, $this->resolver()),
+        return new OfferIngestor(
+            new OfferPayloadParser($this->clock, $resolver),
             $repository,
-            $this->createStub(EntityManagerInterface::class),
+            $entityManager ?? $this->createStub(EntityManagerInterface::class),
             $this->clock,
+            $resolver,
         );
-
-        return $ingestor->ingest($this->batch(), array_values($rows));
     }
 
     private function batch(): JobboardBatch
