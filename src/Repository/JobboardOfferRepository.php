@@ -31,6 +31,43 @@ class JobboardOfferRepository extends ServiceEntityRepository
     }
 
     /**
+     * Retention: an advert older than the threshold is deleted, for good.
+     *
+     * **It is the one place on this side that deletes an offer**, and the distinction with
+     * `close()` is the whole point: a closed offer is one that left its site and is kept because
+     * how long it stayed online is an information; a purged offer is one nobody will ever consult
+     * again, and keeping the row would only make `premiere_vue` a promise about a market that no
+     * longer exists.
+     *
+     * The date read is the publication date, and an offer that never carried one is judged on the
+     * day it was first seen. That fallback is not a nicety: `sort_date` holds 1000-01-01 for an
+     * undated offer, deliberately, so it lands at the far end of a date-descending list - a
+     * threshold read against *that* column would delete every undated offer on the first run.
+     */
+    public function countPublishedBefore(\DateTimeImmutable $threshold): int
+    {
+        return (int) $this->olderThan($threshold)
+            ->select('COUNT(o.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    public function deletePublishedBefore(\DateTimeImmutable $threshold): int
+    {
+        return (int) $this->olderThan($threshold)
+            ->delete()
+            ->getQuery()
+            ->execute();
+    }
+
+    private function olderThan(\DateTimeImmutable $threshold): QueryBuilder
+    {
+        return $this->createQueryBuilder('o')
+            ->andWhere('(o.publishedAt IS NOT NULL AND o.publishedAt < :threshold) OR (o.publishedAt IS NULL AND o.firstSeenAt < :threshold)')
+            ->setParameter('threshold', $threshold);
+    }
+
+    /**
      * Every offer of one batch's filière matching a list of (source, ref) pairs, keyed by
      * `source|ref` - what a closing call needs so it can answer line by line without one query per
      * line.

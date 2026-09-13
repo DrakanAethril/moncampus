@@ -748,6 +748,7 @@
                                             <div class="dropdown-menu">
                                                 <a class="dropdown-item {{ current_route starts with 'app_settings_jobboard_api' or current_route starts with 'app_settings_jobboard_token' ? 'active' }}" href="{{ path('app_settings_jobboard_api') }}">{{ 'jobboardApiNavLabel'|trans }}</a>
                                                 <a class="dropdown-item {{ current_route starts with 'app_settings_jobboard_import' ? 'active' }}" href="{{ path('app_settings_jobboard_import') }}">{{ 'jobboardImportNavLabel'|trans }}</a>
+                                                <a class="dropdown-item {{ current_route starts with 'app_settings_jobboard_history' ? 'active' }}" href="{{ path('app_settings_jobboard_history') }}">{{ 'jobboardHistoryNavLabel'|trans }}</a>
                                             </div>
                                         </div>
                                     {% endif %}

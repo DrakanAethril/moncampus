@@ -11016,3 +11016,8 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
     .cm-jb-head .cm-jb-cell:nth-child(5), .cm-jb-row .cm-jb-cell:nth-child(5) { display: none; }
     .cm-jb-panel { width: 100%; }
 }
+
+/* ---------- Configuration > Jobboard > Historique ---------- */
+/* A refusal is the one figure on that screen worth looking at twice; the other three are the
+   ordinary shape of a passage. */
+.cm-jb-history__rejected { color: var(--cm-red-tx); font-weight: 600; }
