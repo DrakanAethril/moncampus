@@ -10849,7 +10849,14 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
     --cm-jb-field-bd: #3d4f5c;
 }
 
-.cm-jb { display: flex; gap: 18px; align-items: flex-start; }
+.cm-jb {
+    display: flex; gap: 18px; align-items: flex-start;
+    /* Measured, not guessed: 146 px of navbar + breadcrumb + page title above the card, and the
+       24 px .page-body leaves under it. Take exactly that out of the window and the card fills the
+       central zone with no window scrollbar of its own - which is the point, the scrollbar must
+       belong to the offers and to nothing else. */
+    --cm-jb-card-top: 170px;
+}
 
 /* ---------- Filter column ---------- */
 .cm-jb-filters {
@@ -10926,9 +10933,13 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-jb-list {
     flex: 1; min-width: 0; position: relative; background: var(--cm-surface);
     border: 1px solid var(--cm-border); border-radius: 12px; overflow: hidden;
+    /* The card is the central zone, not a 560px window onto it: it fills the screen even when
+       ten offers do not fill it, and it grows past the fold when four hundred do. The list has
+       exactly one scrollbar, the browser's own. */
+    min-height: calc(100dvh - var(--cm-jb-card-top));
 }
 .cm-jb-head, .cm-jb-row {
-    display: grid; grid-template-columns: minmax(0, 1fr) 148px 104px 116px 92px 84px 84px; gap: 12px;
+    display: grid; grid-template-columns: minmax(0, 1fr) 148px 104px 92px 84px 84px; gap: 12px;
     align-items: center; padding: 7px 18px;
 }
 .cm-jb-head {
@@ -10940,7 +10951,6 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 /* Two date columns side by side: « Publiée » is the advert's own word and reads as secondary,
    « Repérée » is the platform's observation and the order of the list. */
 .cm-jb-row .cm-jb-cell--published { color: var(--cm-faint); }
-.cm-jb-rows { max-height: 560px; overflow-y: auto; }
 .cm-jb-row { border-bottom: 1px solid var(--cm-border-faint); cursor: pointer; font-size: 12.5px; color: var(--cm-text); }
 .cm-jb-row:hover { background: var(--cm-surface-alt); }
 .cm-jb-row.is-open { background: var(--cm-blue-bg-soft); }
@@ -10953,7 +10963,7 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 }
 .cm-jb-subline { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .cm-jb-company { font-size: 12px; color: var(--cm-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cm-jb-cell--place, .cm-jb-cell--level { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-jb-cell--place { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* The golden ≈ - an estimated level, an approximate date. It is small on purpose and it is never
    a colour anything else uses on this screen. */
 .cm-jb-approx { font-weight: 600; font-size: 12px; color: var(--cm-gold); }
@@ -10980,9 +10990,18 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-jb-tag--remote-aucun { background: var(--cm-surface-alt); border-color: var(--cm-border); color: var(--cm-muted); }
 
 /* ---------- Detail panel, over the list ---------- */
-.cm-jb-veil { position: absolute; inset: 0; z-index: 30; background: rgba(18, 52, 77, .16); }
+.cm-jb-veil { position: fixed; inset: 0; z-index: 30; background: rgba(18, 52, 77, .16); }
+/* Fixed, not absolute: the card is now as tall as the list, and a panel bounded by it would either
+   be four screens high or carry a scrollbar of its own. Fixed gives it the central zone and nothing
+   else, whatever the reader has scrolled past. The controller writes the three custom properties on
+   opening (and on scroll/resize) so the panel stays flush with the list card's own right edge
+   rather than flying off to the edge of a 2 560 px screen. */
 .cm-jb-panel {
-    position: absolute; top: 0; right: 0; bottom: 0; width: 404px; max-width: 100%; z-index: 31;
+    position: fixed; z-index: 31;
+    top: var(--cm-jb-panel-top, 18px);
+    right: var(--cm-jb-panel-right, 18px);
+    bottom: var(--cm-jb-panel-bottom, 18px);
+    width: var(--cm-jb-panel-width, 404px); max-width: calc(100vw - 36px);
     background: var(--cm-surface); border: 1px solid var(--cm-jb-field-bd); border-radius: 12px;
     box-shadow: -12px 0 32px rgba(18, 52, 77, .18); padding: 18px; overflow-y: auto;
     display: flex; flex-direction: column; gap: 14px;
@@ -11014,13 +11033,14 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 @media (max-width: 980px) {
     .cm-jb { flex-direction: column; }
     .cm-jb-filters { width: 100%; }
-    /* Narrow: Niveau, Télétravail and « Publiée » go; the sorted column never does - a list must
-       not hide the column it is ordered on. */
+    /* Narrow: Télétravail and « Publiée » go; the sorted column never does - a list must not hide
+       the column it is ordered on. */
     .cm-jb-head, .cm-jb-row { grid-template-columns: minmax(0, 1fr) 120px 92px 88px; }
-    .cm-jb-head .cm-jb-cell:nth-child(4), .cm-jb-row .cm-jb-cell--level,
-    .cm-jb-head .cm-jb-cell:nth-child(5), .cm-jb-row .cm-jb-cell:nth-child(5),
+    .cm-jb-head .cm-jb-cell:nth-child(4), .cm-jb-row .cm-jb-cell:nth-child(4),
     .cm-jb-cell--published { display: none; }
-    .cm-jb-panel { width: 100%; }
+    /* Stacked, the card no longer starts a third of the way down the page. */
+    .cm-jb-list { min-height: 0; }
+    .cm-jb-panel { width: auto; left: 18px; }
 }
 
 /* ---------- Configuration > Jobboard > Historique ---------- */

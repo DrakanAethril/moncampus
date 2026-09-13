@@ -89,7 +89,8 @@
                 <div class="cm-jb-cell">{{ 'jobboardColumnPositionLabel'|trans }}</div>
                 <div class="cm-jb-cell">{{ 'jobboardColumnPlaceLabel'|trans }}</div>
                 <div class="cm-jb-cell">{{ 'jobboardColumnContractLabel'|trans }}</div>
-                <div class="cm-jb-cell">{{ 'jobboardColumnLevelLabel'|trans }}</div>
+                {# « Niveau » is deliberately not a column here: the estimate is kept in the database
+                   but it is not shown, neither in the list nor in the detail. #}
                 <div class="cm-jb-cell">{{ 'jobboardColumnRemoteLabel'|trans }}</div>
                 <div class="cm-jb-cell cm-jb-cell--date cm-jb-cell--published">{{ 'jobboardColumnPublishedLabel'|trans }}</div>
                 {# The only sorted column, and the only order this screen has: date de repérage
