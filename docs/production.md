@@ -328,6 +328,12 @@ Notes:
 - Requires `AWS_MAIL_*` and `MAIL_STUDENT_DOMAIN` in `.env.prod.local` (see
   `.env.prod.local.example`). Without them the command exits cleanly with a warning, so installing
   the cron entry before the credentials is harmless.
+- **`app:mail:reconcile` is the safety net behind this one**, nightly: it lists what SES dropped
+  under `incoming/` and replays whatever never reached the database, S3 being the source of truth.
+  A pass that had to replay anything **rings the support Discord channel** (it logs at *error*
+  level, which is this platform's only alerting threshold) - the messages are recovered either way,
+  but the alert is what says the normal path above dropped them. `--since` bounds the scan, seven
+  days by default; widen it after an incident, the run costs nothing on objects already stored.
 
 ## Retention: platform log, console transcripts and jobboard offers (cron)
 
