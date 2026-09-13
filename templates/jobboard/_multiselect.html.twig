@@ -1,0 +1,41 @@
+{# The tag-style multiple selector of the handoff (screenshots/02-selecteur-multiple.png), used by
+   every filter of the column: a field showing the chosen values as removable tags, and a menu of
+   checkboxes underneath. One menu open at a time - jobboard_controller.js closes the others.
+
+   The value travels in a single hidden input, comma-separated, which is what makes a filtered list
+   bookmarkable and what App\Service\Jobboard\OfferFilters reads back.
+
+   The field is a div rather than a button: it carries the × of each tag, and a button inside a
+   button is not markup a browser agrees to render. Keyboard support is therefore explicit -
+   Enter/Space open it, Escape closes it, the tags' × are reachable in the tab order. #}
+{% macro multiselect(name, label, placeholder, options, selected) %}
+    <div class="cm-jb-filter" data-jobboard-target="select">
+        <span class="cm-jb-filter__label" id="jb-label-{{ name }}">{{ label }}</span>
+        <input type="hidden" name="{{ name }}" value="{{ selected|join(',') }}" data-jobboard-target="value">
+        <div class="cm-jb-select" role="button" tabindex="0" aria-haspopup="listbox" aria-expanded="false"
+             aria-labelledby="jb-label-{{ name }}"
+             data-action="click->jobboard#toggleMenu keydown->jobboard#keyMenu">
+            {% if selected is empty %}
+                <span class="cm-jb-select__placeholder">{{ placeholder }}</span>
+            {% else %}
+                {% for option in options|filter(option => option.value in selected) %}
+                    <span class="cm-jb-tag">{{ option.label }}<button type="button" class="cm-jb-tag__remove"
+                            data-value="{{ option.value }}"
+                            data-action="jobboard#removeValue"
+                            aria-label="{{ 'jobboardFilterRemoveValueAction'|trans({'%value%': option.label}) }}">×</button></span>
+                {% endfor %}
+            {% endif %}
+            <span class="cm-jb-select__chevron" aria-hidden="true">▾</span>
+        </div>
+        <div class="cm-jb-menu" role="listbox" data-jobboard-target="menu">
+            {% for option in options %}
+                <label class="cm-jb-option{{ option.value in selected ? ' is-on' }}">
+                    <input type="checkbox" value="{{ option.value }}"{{ option.value in selected ? ' checked' }}
+                           data-action="jobboard#pickValue">
+                    <span class="cm-jb-check" aria-hidden="true"></span>
+                    <span class="cm-jb-option__label">{{ option.label }}</span>
+                </label>
+            {% endfor %}
+        </div>
+    </div>
+{% endmacro %}

@@ -28,6 +28,11 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Meant for a nightly cron. `--since` bounds the scan to recent objects, which is what a nightly run
  * wants; a full sweep stays possible by passing a wide window after an incident.
+ *
+ * **A pass that had to replay anything rings the support Discord channel.** That is the point of the
+ * command rather than a side effect: it recovers the messages, but somebody still has to know the
+ * normal path dropped them, and a safety net nobody hears catch anything is indistinguishable from
+ * one that never catches.
  */
 #[AsCommand(
     name: 'app:mail:reconcile',
@@ -116,8 +121,20 @@ class ReconcileInboundMailCommand extends Command
 
         // A reconciliation that had work to do is a signal in itself: the normal path lost
         // something, and that deserves to be visible outside this console.
+        //
+        // At **error** level, deliberately, and not because the run went badly - it did not, and
+        // the exit code below is unaffected. Error-and-worse is this platform's only alerting
+        // threshold (config/packages/monolog.yaml, when@prod → App\Monolog\DiscordWebhookHandler);
+        // a warning reaches stderr alone, i.e. the server's Docker logs, which is where the silence
+        // this command exists to break would simply have moved. The thing in error here is the
+        // inbound pipeline, not this pass.
+        //
+        // The count is a PSR-3 placeholder rather than a concatenation: the Discord handler's
+        // throttle signature is computed on the message *template*, so two nights in a row stay one
+        // signature and the second is held back by the five-minute cooldown only if it lands within
+        // it - which a nightly cron never does.
         if ($replayed > 0 && !$dryRun) {
-            $this->logger->warning('School mail: reconciliation had to replay objects the queue never delivered.', [
+            $this->logger->error('School mail: reconciliation replayed {replayed} object(s) the queue never delivered - the normal inbound path lost them.', [
                 'replayed' => $replayed,
             ]);
         }

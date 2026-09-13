@@ -85,6 +85,7 @@ enum Feature: string
     case LaptopLoans = 'laptop_loans';
     case TrainingOffers = 'training_offers';
     case JobSearch = 'job_search';
+    case Jobboard = 'jobboard';
 
     // --- Technique ---------------------------------------------------------------------------
 
@@ -139,7 +140,7 @@ enum Feature: string
             self::Help => FeatureFamily::Communication,
 
             self::UfaBooklet, self::MyAlternance, self::TutorEvaluations, self::LaptopLoans,
-            self::TrainingOffers, self::JobSearch => FeatureFamily::Alternance,
+            self::TrainingOffers, self::JobSearch, self::Jobboard => FeatureFamily::Alternance,
 
             self::MyVms, self::Infrastructure, self::GuestConsole, self::Eco,
             self::ActivityHistory => FeatureFamily::Technical,
@@ -225,6 +226,7 @@ enum Feature: string
             self::LaptopLoans => 'featureLaptopLoansLabel',
             self::TrainingOffers => 'featureTrainingOffersLabel',
             self::JobSearch => 'featureJobSearchLabel',
+            self::Jobboard => 'featureJobboardLabel',
             self::MyVms => 'featureMyVmsLabel',
             self::Infrastructure => 'featureInfrastructureLabel',
             self::GuestConsole => 'featureGuestConsoleLabel',
@@ -301,6 +303,12 @@ enum Feature: string
             // was sent. The teachers' tracking screens go with them - reading what a class did is
             // no longer offered by the role, only by an individual derogation.
             self::SchoolMail, self::TrainingOffers, self::JobSearch => ['ROLE_STUDENT'],
+
+            // The Jobboard is named by no role at all, which - with defaultForRoles() answering
+            // false - means nobody is delivered it and the administrator is the only one who sees
+            // it on the day it ships. That is the request, and it is also the only safe default:
+            // the offers arrive from an outside agent, and an establishment decides for itself when
+            // its students are shown them.
 
             // The machines are handed out in class, so the two roles that sit in one.
             self::MyVms => ['ROLE_STUDENT', 'ROLE_TEACHER'],

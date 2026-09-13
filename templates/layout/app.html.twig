@@ -472,7 +472,14 @@
                             or feature('file_library') or feature('surveys') or feature('content_sharing') or feature('audio') %}
                         {% set tools_follow = feature('lesson_log') or feature('student_work') or feature('quiz_library')
                             or feature('gradebook_entry') or feature('job_search') %}
-                        {% if (is_granted('ROLE_TEACHER') or is_staff()) and (tools_run or tools_prepare or tools_follow) %}
+                        {# « Au-delà d'un diplôme » - what happens to a student after the formation.
+                           A group of its own rather than an entry under « Suivre les étudiants »:
+                           the jobboard is not about following anybody, it is the market the class
+                           is being prepared for. It joins the union below for the same reason as
+                           the other three: a menu that opens on nothing is the same defect as a
+                           header with nothing under it. #}
+                        {% set tools_beyond = feature('jobboard') %}
+                        {% if (is_granted('ROLE_TEACHER') or is_staff()) and (tools_run or tools_prepare or tools_follow or tools_beyond) %}
                             {% set tools_is_active = current_route starts with 'app_tools_'
                                 or current_route starts with 'app_program_word_cloud'
                                 or current_route starts with 'app_audio_recording'
@@ -480,7 +487,8 @@
                                 or current_route starts with 'app_library_'
                                 or current_route starts with 'app_file_library'
                                 or current_route starts with 'app_shares'
-                                or current_route starts with 'app_survey' %}
+                                or current_route starts with 'app_survey'
+                                or current_route starts with 'app_jobboard' %}
                             <li class="nav-item dropdown {{ tools_is_active ? 'active' }}">
                                 <a class="nav-link dropdown-toggle" href="#navbar-tools" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ tools_is_active ? ' aria-current="page"' }}>
                                     <span class="nav-link-title">{{ 'toolsNavLabel'|trans }}</span>
@@ -551,6 +559,11 @@
                                     {% if feature('quiz_library') %}<a class="dropdown-item {{ current_route == 'app_tools_quiz' ? 'active' }}" href="{{ path('app_tools_quiz') }}">{{ 'quizTrackingPageHeading'|trans }}</a>{% endif %}
                                     {% if feature('gradebook_entry') %}<a class="dropdown-item {{ current_route == 'app_tools_gradebook' ? 'active' }}" href="{{ path('app_tools_gradebook') }}">{{ 'gradebookNavLabel'|trans }}</a>{% endif %}
                                     {% if feature('job_search') %}<a class="dropdown-item {{ current_route == 'app_tools_job_search' ? 'active' }}" href="{{ path('app_tools_job_search') }}">{{ 'jobSearchTrackingNavLabel'|trans }}</a>{% endif %}
+                                    {% endif %}
+                                    {% if tools_beyond %}
+                                    {% if tools_run or tools_prepare or tools_follow %}<div class="dropdown-divider"></div>{% endif %}
+                                    <h6 class="dropdown-header">{{ 'toolsGroupBeyondDiplomaLabel'|trans }}</h6>
+                                    <a class="dropdown-item {{ current_route starts with 'app_jobboard' ? 'active' }}" href="{{ path('app_jobboard') }}">{{ 'jobboardNavLabel'|trans }}</a>
                                     {% endif %}
                                 </div>
                             </li>
@@ -723,6 +736,21 @@
                                                 </div>
                                             </div>
                                         {% endif %}
+                                        {# Jobboard, at the foot: the keys handed to the collecting
+                                           agent and the manual import. No feature guard, like every
+                                           other entry of this menu - no setting may close the screen
+                                           the settings are made on - and unfolded rather than flat
+                                           because the two screens are two different jobs. #}
+                                        <div class="dropend">
+                                            <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_settings_jobboard' ? 'active' }}" href="#settings-jobboard" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                                {{ 'jobboardNavLabel'|trans }}
+                                            </a>
+                                            <div class="dropdown-menu">
+                                                <a class="dropdown-item {{ current_route starts with 'app_settings_jobboard_api' or current_route starts with 'app_settings_jobboard_token' ? 'active' }}" href="{{ path('app_settings_jobboard_api') }}">{{ 'jobboardApiNavLabel'|trans }}</a>
+                                                <a class="dropdown-item {{ current_route starts with 'app_settings_jobboard_import' ? 'active' }}" href="{{ path('app_settings_jobboard_import') }}">{{ 'jobboardImportNavLabel'|trans }}</a>
+                                                <a class="dropdown-item {{ current_route starts with 'app_settings_jobboard_history' ? 'active' }}" href="{{ path('app_settings_jobboard_history') }}">{{ 'jobboardHistoryNavLabel'|trans }}</a>
+                                            </div>
+                                        </div>
                                     {% endif %}
                                 </div>
                             </li>

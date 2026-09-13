@@ -1,0 +1,34 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set pageLabel = (isEdit ? 'editAccommodationPageHeading' : 'newAccommodationPageHeading')|trans %}
+{% set entityName = isEdit ? form.vars.data.name : null %}
+
+{% block title %}{{ pageLabel }}{{ entityName ? ' - ' ~ entityName }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'configurationPageHeading'|trans, url: path('app_settings_structure_accommodations')},
+        {label: entityName ?? pageLabel, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ pageLabel }}{{ entityName ? ' - ' ~ entityName }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+                {{ form_errors(form) }}
+                <div class="row">
+                    <div class="col-md-6">{{ form_row(form.name) }}</div>
+                    <div class="col-md-6">{{ form_row(form.quizExtraTimePercent) }}</div>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <a href="{{ path('app_settings_structure_accommodations') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {{ form_widget(form.submit, {'label': isEdit ? 'submitEditAction' : 'submitCreateAction'}) }}
+                </div>
+                {{ form_rest(form) }}
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}

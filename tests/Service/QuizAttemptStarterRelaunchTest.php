@@ -15,6 +15,7 @@ use App\Entity\User;
 use App\Enum\AttemptOrigin;
 use App\Enum\QuizMode;
 use App\Repository\QuizAttemptRepository;
+use App\Service\Accommodation\AccommodationResolver;
 use App\Service\QuizAttemptStarter;
 use App\Service\QuizDrawService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -98,6 +99,9 @@ class QuizAttemptStarterRelaunchTest extends TestCase
             $this->createStub(EntityManagerInterface::class),
             $repository,
             $this->createStub(QuizDrawService::class),
+            // The real one: it reads the student's own (empty) collection of aménagements and
+            // answers « no extra time », which is what these two cases are about anyway.
+            new AccommodationResolver(),
         );
     }
 }

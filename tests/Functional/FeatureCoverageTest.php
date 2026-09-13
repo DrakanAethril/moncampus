@@ -77,6 +77,14 @@ class FeatureCoverageTest extends KernelTestCase
             'the account plumbing the mobile app needs to start at all' => [
                 'api_profile_',
             ],
+            // The veille's ingestion endpoints. The collecting agent has no account either: it
+            // presents one key, checked by hand in App\Service\Jobboard\IngestAuthenticator, and
+            // that key is what decides the filière of everything it deposits. The resolver would
+            // see an anonymous visitor, fall back on the catalogue (`jobboard` is off by default)
+            // and shut the door on the one caller these routes exist for.
+            'the collecting agent holds no account' => [
+                'api_jobboard_',
+            ],
             // e-CO runners have **no account at all** - they authenticate by join token, checked by
             // hand in EcoRunnerApiController. The resolver would see an anonymous visitor, fall back
             // on the catalogue (`eco` is off by default) and 404 every runner in a race.

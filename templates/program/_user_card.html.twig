@@ -2,7 +2,11 @@
    assigned Options (see templates/program/students.html.twig and teachers.html.twig, backed by
    ProgramStudentOptionRepository/ProgramTeacherOptionRepository respectively). `politeNames`
    (bool) is also optional - when true, shows User::getPoliteDisplayName() ("S. Tharaud") instead
-   of the full name (see ProgramController::teachers(), the only caller that sets it). #}
+   of the full name (see ProgramController::teachers(), the only caller that sets it).
+   `accommodation` (string) is optional too: the extra time this student is granted, already
+   worded (« 33,33 % »). It only ever reaches the template when the reader is on the teaching side -
+   ProgramController::students() builds the map empty for anybody else, so a classmate is not sent
+   it at all. #}
 {% set card_avatar_url = avatar_url(user) %}
 {% set card_use_polite_name = politeNames is defined and politeNames %}
 {% set card_display_name = (card_use_polite_name ? user.politeDisplayName : user.displayName)|default(user.username) %}
@@ -13,6 +17,12 @@
             <span class="avatar avatar-xl mb-3"{% if card_avatar_url %} style="background-image: url({{ card_avatar_url }})"{% endif %}>{% if not card_avatar_url %}{{ card_initials }}{% endif %}</span>
             <h3 class="m-0 mb-1">{{ card_display_name }}</h3>
             <div class="text-secondary">{{ user.username }}</div>
+
+            {% if accommodation is defined and accommodation %}
+                <div class="mt-2">
+                    <span class="cm-badge cm-badge--gold">{{ 'accommodationStudentBadgeLabel'|trans }} · {{ 'accommodationExtraTimeGrantedLabel'|trans({'%percent%': accommodation}) }}</span>
+                </div>
+            {% endif %}
 
             {% if options is defined and options|length > 0 %}
                 <div class="mt-3">

@@ -328,16 +328,28 @@ Notes:
 - Requires `AWS_MAIL_*` and `MAIL_STUDENT_DOMAIN` in `.env.prod.local` (see
   `.env.prod.local.example`). Without them the command exits cleanly with a warning, so installing
   the cron entry before the credentials is harmless.
+- **`app:mail:reconcile` is the safety net behind this one**, nightly: it lists what SES dropped
+  under `incoming/` and replays whatever never reached the database, S3 being the source of truth.
+  A pass that had to replay anything **rings the support Discord channel** (it logs at *error*
+  level, which is this platform's only alerting threshold) - the messages are recovered either way,
+  but the alert is what says the normal path above dropped them. `--since` bounds the scan, seven
+  days by default; widen it after an incident, the run costs nothing on objects already stored.
 
-## Retention: platform log and console transcripts (cron)
+## Retention: platform log, console transcripts and jobboard offers (cron)
 
-`app:purge-platform-activity` deletes two families of rows that nothing else ever removes:
+`app:purge-platform-activity` deletes the families of rows that nothing else ever removes:
 
 - **`PlatformActivity`, beyond 12 months.** One row per login. Untidy if it grows for ever, and
   nothing worse.
 - **`ConsoleSession`, beyond 90 days** - and with it the transcript each one carries, which is up to
   256 KiB of what was on somebody's screen during a session opened on an account with passwordless
   `sudo`.
+- **`QuizAttemptEvent`, beyond 12 months** - the mode contrôle's supervision journal, whose duration
+  is announced to the student on the entry contract of a supervised évaluation.
+- **`JobboardOffer`, beyond 12 months** - an advert published more than a year ago is a job that was
+  filled long ago. Not to be confused with *closing* an offer: an offer that left its site keeps its
+  row, because how long it stayed online is an information. The date read is the publication date,
+  and an offer that never carried one is judged on the day it was first seen.
 
 **Volume is not the argument.** A transcript measures a couple of kibibytes in practice, and a year
 of them would be a handful of megabytes. The argument is that the journal at
@@ -356,8 +368,9 @@ Notes:
 - **Count before deleting the first time.** `--dry-run` reports what each threshold would remove
   without touching anything, which on a host where this has never run is worth reading once: the
   bulk of it will be `PlatformActivity` rows nobody has purged since the table was created.
-- **Both retentions are options**, `--months` and `--console-days`, so a shorter or longer window is
-  a crontab edit rather than a deploy. The defaults are the documented ones.
+- **Every retention is an option**, `--months`, `--console-days` and `--jobboard-months`, so a
+  shorter or longer window is a crontab edit rather than a deploy. The defaults are the documented
+  ones (`--months` covers both the platform log and the supervision journal).
 - **No `flock` needed, and no `LockableTrait` either** - unlike the three `app:mail:*` commands, this
   one does not lock itself. At one run a day two of them cannot meet; that is the only reason it is
   safe, so a schedule tighter than the command's own runtime would need the lock added first.

@@ -8,6 +8,7 @@ use App\Enum\AttemptOrigin;
 use App\Enum\AttemptStatus;
 use App\Enum\QuizReviewOutcome;
 use App\Repository\QuizAttemptRepository;
+use App\Service\Accommodation\ExtraTime;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -61,6 +62,23 @@ class QuizAttempt
 
     #[ORM\Column(name: 'started_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $startedAt;
+
+    /**
+     * The « ajout de temps » this student held when the attempt was drawn, as a percentage - frozen
+     * here rather than re-read from App\Entity\User::$accommodations at every request, for three
+     * separate reasons.
+     *
+     * The clock must not move: an accommodation granted, edited or withdrawn while somebody is
+     * composing would otherwise shorten or lengthen a copy already under way. It must be readable
+     * afterwards: what time a copy was given is part of how it is read, and the accommodation may
+     * well have been withdrawn by then. And it keeps getTimeLimitAt() an entity method - the two
+     * clients already ask this object for the deadline, and neither can call a service to get it.
+     *
+     * Null on every attempt that predates the feature, and on every student without one - the same
+     * thing here, because both mean "the quiz's own durations, unchanged".
+     */
+    #[ORM\Column(name: 'extra_time_percent', type: Types::DECIMAL, precision: 5, scale: 2, nullable: true)]
+    private ?string $extraTimePercent = null;
 
     /**
      * Which browser session owns this attempt, on a supervised évaluation - see
@@ -191,11 +209,22 @@ class QuizAttempt
      * Exposed because the mobile app counts down against a wall-clock deadline rather than
      * re-asking the server every second - it needs the same instant isPastTimeLimit() compares to,
      * not a duration it would have to re-derive.
+     *
+     * **The closing date slides for a copy that was granted extra time**, by exactly the seconds
+     * that were added to its own budget - never by a percentage of a calendar instant, which would
+     * mean nothing. Without it the accommodation would be eaten by the window in the ordinary case:
+     * a class that all starts together at 9h30 on a 30-minute quiz closing at 10h00 would give the
+     * student with a third more exactly the same half hour as everybody else, which is the one
+     * outcome granting it was meant to prevent. There is precedent right below: a teacher-granted
+     * retry already outlives the closing date. A quiz with no global budget has no duration to
+     * grow, so its closing date stands as the class-wide window it is.
      */
     public function getTimeLimitAt(): ?\DateTimeImmutable
     {
         $globalMinutes = $this->quizInstance->getGlobalTimeMinutes();
-        $globalLimit = null !== $globalMinutes ? $this->startedAt->modify(\sprintf('+%d minutes', $globalMinutes)) : null;
+        $baseSeconds = null === $globalMinutes ? null : $globalMinutes * 60;
+        $allowedSeconds = $this->allowedSeconds($baseSeconds);
+        $globalLimit = null !== $allowedSeconds ? $this->startedAt->modify(\sprintf('+%d seconds', $allowedSeconds)) : null;
         // A retry a teacher granted deliberately outlives the instance's closing date. « Relancer »
         // is what repairs a mis-click, a browser that crashed or a machine that died, and that is
         // almost always noticed once the quiz has shut - clamped to closesAt, the granted attempt
@@ -203,6 +232,11 @@ class QuizAttempt
         // be told it was interrupted. Its own budget still applies: a granted attempt is still an
         // évaluation, it is only the class-wide deadline that has already served its purpose.
         $closesAt = AttemptOrigin::Relance === $this->origin ? null : $this->quizInstance->getClosesAt();
+
+        $grantedSeconds = ExtraTime::addedSeconds($baseSeconds, $this->extraTimePercentValue());
+        if (null !== $closesAt && $grantedSeconds > 0) {
+            $closesAt = $closesAt->modify(\sprintf('+%d seconds', $grantedSeconds));
+        }
 
         if (null === $globalLimit) {
             return $closesAt;
@@ -227,6 +261,44 @@ class QuizAttempt
         }
 
         return false;
+    }
+
+    public function getExtraTimePercent(): ?string
+    {
+        return $this->extraTimePercent;
+    }
+
+    public function setExtraTimePercent(?string $extraTimePercent): static
+    {
+        $this->extraTimePercent = $extraTimePercent;
+
+        return $this;
+    }
+
+    /** The extra time granted to this copy, as a number. 0.0 when there is none. */
+    public function extraTimePercentValue(): float
+    {
+        return (float) ($this->extraTimePercent ?? '0');
+    }
+
+    /** « 33,33 % », for the teacher's copy screen. Null when this copy was given the ordinary time. */
+    public function extraTimePercentLabel(): ?string
+    {
+        $percent = $this->extraTimePercentValue();
+
+        return $percent > 0 ? ExtraTime::percentLabel($percent) : null;
+    }
+
+    /**
+     * A time budget as this copy actually gets it: the quiz's own seconds, plus whatever the
+     * student's accommodation adds, rounded up to the second. **Every reader of a per-question
+     * budget goes through here** - the web passation, the mobile API and the answer that arrives
+     * late all have to agree on the same number or the server refuses answers its own client sent
+     * on time.
+     */
+    public function allowedSeconds(?int $seconds): ?int
+    {
+        return ExtraTime::apply($seconds, $this->extraTimePercentValue());
     }
 
     /**

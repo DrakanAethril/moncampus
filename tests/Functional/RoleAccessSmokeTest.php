@@ -265,6 +265,15 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/changelog' => 200,
             // Open to every role on purpose: the source is public and the students are its readers.
             '/technical' => 200,
+            // Jobboard. This base class opens the whole catalogue, so what is pinned here is the
+            // role axis: a student may read the board (their own filière's offers, which is
+            // JobboardPerimeterTest's business), and the two configuration screens are an
+            // administrator's. That the feature ships **off for every role** is the matrix's
+            // business and is pinned by FeatureDefaultsTest.
+            '/jobboard' => 200,
+            '/settings/jobboard/api' => 403,
+            '/settings/jobboard/import' => 403,
+            '/settings/jobboard/history' => 403,
             '/technical/data-model' => 200,
             '/resources/mobile-app' => 200,
             // The documentation base is open to every account - what narrows it is the perimeter
@@ -335,6 +344,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,
+            // Paramètres > Configuration > Aménagements - the catalogue of what may be granted to a
+            // student with particular needs. Refused to the student side and to the teaching side
+            // alike: who holds one is health-adjacent, and only the administration decides it.
+            '/settings/structure/accommodations' => 403,
             '/features' => 403,
             '/directory/users' => 403,
             '/ufa' => 403,
@@ -423,6 +436,12 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/changelog' => 200,
             // Open to every role on purpose: the source is public and the students are its readers.
             '/technical' => 200,
+            // Jobboard: the board is readable, the keys handed to the collecting agent are not a
+            // teacher's business.
+            '/jobboard' => 200,
+            '/settings/jobboard/api' => 403,
+            '/settings/jobboard/import' => 403,
+            '/settings/jobboard/history' => 403,
             '/technical/data-model' => 200,
             '/resources/mobile-app' => 200,
             // A teacher reads the base and writes in it, on their own perimeter; the reading
@@ -478,6 +497,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,
+            '/settings/structure/accommodations' => 403,
             '/features' => 403,
             '/settings/groups' => 403,
             '/settings/groups/hierarchy' => 403,
@@ -513,6 +533,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             $this->gameSettingsPath => 200,
             '/settings/configuration' => 200,
             '/settings/teaching' => 200,
+            '/settings/structure/accommodations' => 200,
             // Groups are admin-only, deliberately stricter than the rest of Settings - see
             // App\Controller\SettingsGroupsController's own note.
             '/settings/groups' => 200,
@@ -571,6 +592,13 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/changelog' => 200,
             // Open to every role on purpose: the source is public and the students are its readers.
             '/technical' => 200,
+            // Jobboard. The administrator has every feature by construction, so the board opens
+            // even though nobody is delivered it - and the two configuration screens are theirs
+            // alone: the ingestion keys, and the manual import of a file of offers.
+            '/jobboard' => 200,
+            '/settings/jobboard/api' => 200,
+            '/settings/jobboard/import' => 200,
+            '/settings/jobboard/history' => 200,
             '/technical/data-model' => 200,
             // Writing the help is an admin's job, and only an admin's.
             '/help/manage' => 200,
@@ -702,6 +730,13 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/changelog' => 200,
             // Open to every role on purpose: the source is public and the students are its readers.
             '/technical' => 200,
+            // Jobboard: with the catalogue open the door is open, and what a tutor then reads is
+            // nothing at all - they belong to no formation, so their perimeter is empty. An empty
+            // board rather than a 404: the feature exists, it simply has nothing for them.
+            '/jobboard' => 200,
+            '/settings/jobboard/api' => 403,
+            '/settings/jobboard/import' => 403,
+            '/settings/jobboard/history' => 403,
             '/technical/data-model' => 200,
             '/resources/mobile-app' => 200,
             // Same door as everyone else: a tutor reaches the base and finds it empty for as
@@ -754,6 +789,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/help/manage' => 403,
             '/settings/configuration' => 403,
             '/settings/teaching' => 403,
+            '/settings/structure/accommodations' => 403,
             '/features' => 403,
             '/directory/users' => 403,
             '/ufa' => 403,

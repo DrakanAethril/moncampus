@@ -16,6 +16,7 @@ use App\Repository\ProgramStudentOptionRepository;
 use App\Repository\ProgramTeacherOptionRepository;
 use App\Security\ProgramTimetableAccess;
 use App\Security\StructureAccessChecker;
+use App\Service\Accommodation\AccommodationResolver;
 use App\Service\ClassRoster;
 use App\Service\FileUploadService;
 use App\Service\GotenbergClient;
@@ -40,14 +41,30 @@ class ProgramController extends AbstractController
     use ProgramFeatureGuardTrait;
 
     #[Route(path: '/programs/{id}/students', name: 'app_program_students')]
-    public function students(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, ProgramStudentOptionRepository $studentOptionRepository, ClassRoster $roster): Response
+    public function students(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, ProgramStudentOptionRepository $studentOptionRepository, ClassRoster $roster, AccommodationResolver $accommodations): Response
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
+        $students = $roster->ordered($program->getStudents()->toArray());
+
+        // Who holds an aménagement is shown to the teaching side only - this screen is reached by
+        // the class's own students too (findOrDenyAccess() lets an enrolled student in), and a
+        // classmate's particular needs are none of their business. Built here rather than hidden in
+        // the template on purpose: what a student must not see, a student is not sent.
+        $accommodationsByStudentId = [];
+        if ($accessChecker->isProgramTeacher($program)) {
+            foreach ($students as $student) {
+                $label = $accommodations->forUser($student)->quizExtraTimeLabel();
+                if (null !== $label) {
+                    $accommodationsByStudentId[$student->getId()] = $label;
+                }
+            }
+        }
 
         return $this->render('program/students.html.twig', [
             'program' => $program,
-            'students' => $roster->ordered($program->getStudents()->toArray()),
+            'students' => $students,
             'optionsByStudentId' => $studentOptionRepository->findOptionsByStudentForProgram($program),
+            'accommodationsByStudentId' => $accommodationsByStudentId,
         ]);
     }
 

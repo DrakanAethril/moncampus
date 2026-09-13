@@ -29,6 +29,7 @@ trait SettingsTabTrait
         'rooms' => 'configuration',
         'options' => 'configuration',
         'modalities' => 'configuration',
+        'accommodations' => 'configuration',
         'lesson_types' => 'configuration',
         'skill_levels' => 'configuration',
         'period_types' => 'configuration',

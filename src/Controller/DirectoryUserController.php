@@ -254,6 +254,9 @@ class DirectoryUserController extends AbstractController
             'adGroupNames' => $adGroupNames,
             'emailAliasesEditable' => $isStudent,
             'fileLibraryQuotaEditable' => $quotaEditable,
+            // « Aménagements », students only - the criteria an accommodation carries all steer
+            // work a student does. See App\Form\UserProfileType.
+            'accommodationsEditable' => $isStudent,
         ]);
         // The field shows the override and nothing else: an empty box means "the platform default",
         // which is what the help text under it says.
@@ -324,6 +327,7 @@ class DirectoryUserController extends AbstractController
             'editedUser' => $user,
             'resolvedType' => $resolvedType,
             'showEmailAliases' => $isStudent,
+            'showAccommodations' => $isStudent,
             // The archived addresses, read back after the submission so a row the administrator has
             // just retired appears in the right block straight away rather than at the next load.
             'archivedAliases' => $isStudent

@@ -10821,3 +10821,203 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
   .cm-wc-scroll { overflow-x: auto; }
   .cm-wc-scroll > * { min-width: 860px; }
 }
+
+/* =========================================================================================
+   Jobboard - design/jobboard/design_handoff_jobboard (README.md is authoritative for every
+   value below). Two columns: a 252px filter card and the list, the detail panel opening over
+   the list rather than as a page of its own.
+   ========================================================================================= */
+:root {
+    /* The contract colours of the handoff's own table. They live in tokens rather than in the
+       template because the same tag is drawn in the list and in the panel. */
+    --cm-jb-alternance-bg: #f6e3b8; --cm-jb-alternance-bd: #c9a04e; --cm-jb-alternance-tx: #6f5316;
+    --cm-jb-stage-bg: #cfeadd;      --cm-jb-stage-bd: #6cb694;      --cm-jb-stage-tx: #17603f;
+    --cm-jb-cdi-bg: #d5e7f5;        --cm-jb-cdi-bd: #7fb0d6;        --cm-jb-cdi-tx: #0e405f;
+    --cm-jb-cdd-bg: #f7ddd6;        --cm-jb-cdd-bd: #d79582;        --cm-jb-cdd-tx: #8a3d28;
+    --cm-jb-autre-bg: #eef2f6;      --cm-jb-autre-bd: #c2ccd4;      --cm-jb-autre-tx: #3d4f5c;
+    /* The field border of the handoff (#c2ccd4), used by every input and menu of the filter column. */
+    --cm-jb-field-bd: #c2ccd4;
+}
+[data-bs-theme="dark"] {
+    /* Same five contracts, re-grounded: the hue is what carries the meaning, so it is kept and only
+       the lightness is swapped - a gold tag stays gold in the dark. */
+    --cm-jb-alternance-bg: #3a2f18; --cm-jb-alternance-bd: #8a6f34; --cm-jb-alternance-tx: #e8cf9a;
+    --cm-jb-stage-bg: #1c3a2c;      --cm-jb-stage-bd: #4a8468;      --cm-jb-stage-tx: #a9dcc3;
+    --cm-jb-cdi-bg: #17303f;        --cm-jb-cdi-bd: #4a7a9c;        --cm-jb-cdi-tx: #b7d8ef;
+    --cm-jb-cdd-bg: #3d241c;        --cm-jb-cdd-bd: #a06a56;        --cm-jb-cdd-tx: #efc2b2;
+    --cm-jb-autre-bg: #263340;      --cm-jb-autre-bd: #3d4f5c;      --cm-jb-autre-tx: #c3cfd9;
+    --cm-jb-field-bd: #3d4f5c;
+}
+
+.cm-jb { display: flex; gap: 18px; align-items: flex-start; }
+
+/* ---------- Filter column ---------- */
+.cm-jb-filters {
+    width: 252px; flex: none; background: var(--cm-surface); border: 1px solid var(--cm-border);
+    border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 14px;
+}
+.cm-jb-filters__head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.cm-jb-filters__title {
+    font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 1.6px;
+    color: var(--cm-gold-deep);
+}
+.cm-jb-filters__reset { font-weight: 600; font-size: 11.5px; color: var(--cm-faint); text-decoration: none; }
+.cm-jb-filters__reset:hover { color: var(--cm-brand-strong); }
+/* Nothing ticked yet: the link stays in place - it is part of the header the reader learns - but
+   it stops asking to be clicked. */
+.cm-jb-filters__reset.is-idle { color: var(--cm-disabled); }
+.cm-jb-filters__row { display: flex; gap: 10px; }
+.cm-jb-filter { display: flex; flex-direction: column; gap: 5px; position: relative; min-width: 0; }
+.cm-jb-filter--dept { width: 86px; flex: none; }
+.cm-jb-filter--since { flex: 1; min-width: 0; }
+.cm-jb-filter__label {
+    font-weight: 600; font-size: 10.5px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--cm-faint);
+}
+.cm-jb-filter input[type="text"], .cm-jb-filter input[type="date"] {
+    width: 100%; min-height: 34px; border: 1px solid var(--cm-jb-field-bd); border-radius: 9px; padding: 5px 9px;
+    font-size: 12.5px; color: var(--cm-ink); background: var(--cm-surface);
+}
+.cm-jb-filter input:focus { outline: none; border-color: var(--cm-brand); }
+
+/* ---------- Tag-style multiple selector ---------- */
+.cm-jb-select {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-height: 34px;
+    border: 1px solid var(--cm-jb-field-bd); background: var(--cm-surface); border-radius: 9px; padding: 5px 9px;
+    cursor: pointer;
+}
+.cm-jb-filter.is-open .cm-jb-select { border-color: var(--cm-brand); }
+.cm-jb-select:focus-visible { outline: 2px solid var(--cm-brand); outline-offset: 1px; }
+.cm-jb-select__placeholder { font-size: 12.5px; color: var(--cm-disabled); }
+.cm-jb-select__chevron { margin-left: auto; color: var(--cm-faint); font-size: 11px; }
+.cm-jb-tag {
+    font-weight: 600; font-size: 11.5px; border-radius: 6px; padding: 2px 7px; flex: none;
+    white-space: nowrap; display: inline-flex; align-items: center; gap: 4px;
+    background: var(--cm-mail-tint-bg); border: 1px solid var(--cm-mail-tint-border); color: var(--cm-blue-tx);
+}
+.cm-jb-tag__remove {
+    border: 0; background: none; padding: 0; line-height: 1; cursor: pointer; color: inherit;
+    font-size: 13px; min-width: 12px;
+}
+.cm-jb-menu {
+    display: none; position: absolute; top: 100%; left: 0; right: 0; margin-top: 4px; z-index: 40;
+    background: var(--cm-surface); border: 1px solid var(--cm-jb-field-bd); border-radius: 9px;
+    box-shadow: 0 10px 24px rgba(18, 52, 77, .16); max-height: 208px; overflow: auto; padding: 4px;
+}
+.cm-jb-filter.is-open .cm-jb-menu { display: block; }
+.cm-jb-option {
+    display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 7px;
+    cursor: pointer; font-size: 12.5px; color: var(--cm-ink); min-width: 0; margin: 0;
+}
+.cm-jb-option:hover { background: var(--cm-surface-alt); }
+.cm-jb-option.is-on { font-weight: 600; }
+.cm-jb-option input { position: absolute; opacity: 0; width: 0; height: 0; }
+.cm-jb-check {
+    flex: none; width: 15px; height: 15px; border-radius: 4px; display: grid; place-items: center;
+    border: 1px solid var(--cm-jb-field-bd); background: var(--cm-surface);
+}
+.cm-jb-check::after { content: "✓"; font-size: 10px; line-height: 1; color: transparent; }
+.cm-jb-option input:checked + .cm-jb-check { border-color: var(--cm-brand); background: var(--cm-brand); }
+.cm-jb-option input:checked + .cm-jb-check::after { color: #fff; }
+.cm-jb-option input:focus-visible + .cm-jb-check { outline: 2px solid var(--cm-brand); outline-offset: 1px; }
+.cm-jb-option__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- List ---------- */
+.cm-jb-list {
+    flex: 1; min-width: 0; position: relative; background: var(--cm-surface);
+    border: 1px solid var(--cm-border); border-radius: 12px; overflow: hidden;
+}
+.cm-jb-head, .cm-jb-row {
+    display: grid; grid-template-columns: minmax(0, 1fr) 176px 104px 132px 96px 88px; gap: 12px;
+    align-items: center; padding: 7px 18px;
+}
+.cm-jb-head {
+    font-weight: 600; font-size: 10.5px; text-transform: uppercase; letter-spacing: .7px;
+    color: var(--cm-faint); border-bottom: 1px solid var(--cm-border-soft); padding-top: 12px; padding-bottom: 12px;
+}
+.cm-jb-head .is-sorted, .cm-jb-cell--date { text-align: right; }
+.cm-jb-head .is-sorted { color: var(--cm-brand-strong); }
+.cm-jb-rows { max-height: 560px; overflow-y: auto; }
+.cm-jb-row { border-bottom: 1px solid var(--cm-border-faint); cursor: pointer; font-size: 12.5px; color: var(--cm-text); }
+.cm-jb-row:hover { background: var(--cm-surface-alt); }
+.cm-jb-row.is-open { background: var(--cm-blue-bg-soft); }
+.cm-jb-row:focus-visible { outline: 2px solid var(--cm-brand); outline-offset: -2px; }
+.cm-jb-cell { min-width: 0; }
+.cm-jb-cell--position { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cm-jb-position {
+    font-weight: 600; font-size: 13px; color: var(--cm-ink);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cm-jb-subline { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.cm-jb-company { font-size: 12px; color: var(--cm-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-jb-cell--place, .cm-jb-cell--level { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The golden ≈ - an estimated level, an approximate date. It is small on purpose and it is never
+   a colour anything else uses on this screen. */
+.cm-jb-approx { font-weight: 600; font-size: 12px; color: var(--cm-gold); }
+.cm-jb-empty { text-align: center; font-size: 13px; color: var(--cm-faint); padding: 28px 18px; margin: 0; }
+.cm-jb-more { display: flex; justify-content: center; padding: 14px; border-top: 1px solid var(--cm-border-soft); }
+.cm-jb-more__button {
+    border: 1px solid var(--cm-jb-field-bd); background: var(--cm-surface); color: var(--cm-brand-strong);
+    border-radius: 9px; padding: 7px 16px; font-weight: 600; font-size: 12.5px; cursor: pointer;
+}
+.cm-jb-more__button:hover { background: var(--cm-surface-alt); }
+
+/* ---------- Tags ---------- */
+.cm-jb-tag--cat { background: var(--cm-surface-alt); border-color: var(--cm-border); color: var(--cm-muted); font-size: 10.5px; }
+.cm-jb-tag--cat-sisr { background: var(--cm-mail-tint-bg); border-color: var(--cm-mail-tint-border); color: var(--cm-blue-tx); }
+.cm-jb-tag--contract { font-size: 10.5px; padding: 2px 8px; }
+.cm-jb-tag--alternance { background: var(--cm-jb-alternance-bg); border-color: var(--cm-jb-alternance-bd); color: var(--cm-jb-alternance-tx); }
+.cm-jb-tag--stage { background: var(--cm-jb-stage-bg); border-color: var(--cm-jb-stage-bd); color: var(--cm-jb-stage-tx); }
+.cm-jb-tag--cdi { background: var(--cm-jb-cdi-bg); border-color: var(--cm-jb-cdi-bd); color: var(--cm-jb-cdi-tx); }
+.cm-jb-tag--cdd { background: var(--cm-jb-cdd-bg); border-color: var(--cm-jb-cdd-bd); color: var(--cm-jb-cdd-tx); }
+.cm-jb-tag--autre { background: var(--cm-jb-autre-bg); border-color: var(--cm-jb-autre-bd); color: var(--cm-jb-autre-tx); }
+.cm-jb-tag--remote { font-size: 10.5px; }
+.cm-jb-tag--remote-total { background: var(--cm-green-bg); border-color: var(--cm-jb-stage-bd); color: var(--cm-green-tx); }
+.cm-jb-tag--remote-partiel { background: var(--cm-mail-tint-bg); border-color: var(--cm-mail-tint-border); color: var(--cm-blue-tx); }
+.cm-jb-tag--remote-aucun { background: var(--cm-surface-alt); border-color: var(--cm-border); color: var(--cm-muted); }
+
+/* ---------- Detail panel, over the list ---------- */
+.cm-jb-veil { position: absolute; inset: 0; z-index: 30; background: rgba(18, 52, 77, .16); }
+.cm-jb-panel {
+    position: absolute; top: 0; right: 0; bottom: 0; width: 404px; max-width: 100%; z-index: 31;
+    background: var(--cm-surface); border: 1px solid var(--cm-jb-field-bd); border-radius: 12px;
+    box-shadow: -12px 0 32px rgba(18, 52, 77, .18); padding: 18px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 14px;
+}
+.cm-jb-panel__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.cm-jb-panel__title { font-family: Spectral, Georgia, serif; font-weight: 600; font-size: 16px; color: var(--cm-ink); margin: 0; }
+.cm-jb-panel__company { font-size: 12.5px; color: var(--cm-muted); margin: 2px 0 0; }
+.cm-jb-panel__close {
+    border: 0; background: none; font-size: 20px; line-height: 1; color: var(--cm-faint);
+    cursor: pointer; padding: 0 4px; min-width: 32px; min-height: 32px;
+}
+.cm-jb-panel__close:hover { color: var(--cm-ink); }
+.cm-jb-panel__tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.cm-jb-panel__lines { margin: 0; }
+.cm-jb-panel__line {
+    display: flex; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--cm-border-faint); font-size: 12.5px;
+}
+.cm-jb-panel__line dt { width: 118px; flex: none; color: var(--cm-faint); font-weight: 400; }
+.cm-jb-panel__line dd { margin: 0; color: var(--cm-ink); min-width: 0; }
+.cm-jb-panel__hint { color: var(--cm-faint); }
+.cm-jb-panel__note {
+    background: var(--cm-surface-alt); border-left: 3px solid var(--cm-gold); border-radius: 0 8px 8px 0;
+    padding: 10px 12px; font-size: 12.5px; line-height: 1.6; color: var(--cm-text); margin: 0;
+}
+.cm-jb-panel__foot { margin-top: auto; }
+.cm-jb-panel__link { width: 100%; justify-content: center; }
+
+/* Narrow screens: the filter card goes above the list, and the panel takes the whole card. */
+@media (max-width: 980px) {
+    .cm-jb { flex-direction: column; }
+    .cm-jb-filters { width: 100%; }
+    .cm-jb-head, .cm-jb-row { grid-template-columns: minmax(0, 1fr) 120px 92px 88px; }
+    .cm-jb-head .cm-jb-cell:nth-child(4), .cm-jb-row .cm-jb-cell--level,
+    .cm-jb-head .cm-jb-cell:nth-child(5), .cm-jb-row .cm-jb-cell:nth-child(5) { display: none; }
+    .cm-jb-panel { width: 100%; }
+}
+
+/* ---------- Configuration > Jobboard > Historique ---------- */
+/* A refusal is the one figure on that screen worth looking at twice; the other three are the
+   ordinary shape of a passage. */
+.cm-jb-history__rejected { color: var(--cm-red-tx); font-weight: 600; }

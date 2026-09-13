@@ -31,16 +31,19 @@
                         <div class="text-secondary text-uppercase small fw-bold" style="letter-spacing:.5px;">{{ 'quizContractQuestionsLabel'|trans }}</div>
                         <div style="font: 600 20px var(--cm-font-title); color: var(--cm-ink);">{{ quizInstance.questionCount }}</div>
                     </div>
+                    {# The durations announced are the ones this student gets: the aménagement is
+                       applied here, not after Commencer - a contract that stated somebody else's
+                       time would be the one thing this screen must never do. #}
                     {% if quizInstance.secondsPerQuestion %}
                         <div class="col-6 col-lg-3">
                             <div class="text-secondary text-uppercase small fw-bold" style="letter-spacing:.5px;">{{ 'quizContractPerQuestionLabel'|trans }}</div>
-                            <div style="font: 600 20px var(--cm-font-title); color: var(--cm-ink);">{{ quizInstance.secondsPerQuestion }} s</div>
+                            <div style="font: 600 20px var(--cm-font-title); color: var(--cm-ink);">{{ accommodation.applyToSeconds(quizInstance.secondsPerQuestion) }} s</div>
                         </div>
                     {% endif %}
                     {% if quizInstance.globalTimeMinutes %}
                         <div class="col-6 col-lg-3">
                             <div class="text-secondary text-uppercase small fw-bold" style="letter-spacing:.5px;">{{ 'quizContractTotalTimeLabel'|trans }}</div>
-                            <div style="font: 600 20px var(--cm-font-title); color: var(--cm-ink);">{{ quizInstance.globalTimeMinutes }} min</div>
+                            <div style="font: 600 20px var(--cm-font-title); color: var(--cm-ink);">{{ (accommodation.applyToMinutesAsSeconds(quizInstance.globalTimeMinutes) / 60)|round(0, 'ceil') }} min</div>
                         </div>
                     {% endif %}
                     <div class="col-6 col-lg-3">
@@ -48,6 +51,10 @@
                         <div style="font: 600 20px var(--cm-font-title); color: var(--cm-ink);">1</div>
                     </div>
                 </div>
+
+                {% if accommodation.hasQuizExtraTime and (quizInstance.secondsPerQuestion or quizInstance.globalTimeMinutes) %}
+                    <p class="text-secondary small mb-0">{{ 'accommodationExtraTimeStudentNotice'|trans({'%percent%': accommodation.quizExtraTimeLabel}) }}</p>
+                {% endif %}
 
                 <div class="cm-audio-warn">
                     <div class="fw-medium">{{ 'quizContractHeadingText'|trans }}</div>
