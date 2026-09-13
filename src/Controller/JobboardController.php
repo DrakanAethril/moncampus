@@ -10,7 +10,6 @@ use App\Enum\Feature;
 use App\Enum\JobboardBtsAccess;
 use App\Enum\JobboardContract;
 use App\Enum\JobboardRemote;
-use App\Enum\JobboardSource;
 use App\Service\Jobboard\JobboardOfferFinder;
 use App\Service\Jobboard\JobboardPerimeter;
 use App\Service\Jobboard\OfferFilters;
@@ -64,7 +63,7 @@ class JobboardController extends AbstractController
             'categories' => $finder->distinctValues($reader, 'category'),
             'regions' => $finder->distinctValues($reader, 'region'),
             'countries' => $finder->distinctValues($reader, 'country'),
-            'sources' => $admin ? $this->sourceChoices($finder->distinctValues($reader, 'source')) : [],
+            'sources' => $admin ? $finder->sources($reader) : [],
         ]);
     }
 
@@ -114,28 +113,5 @@ class JobboardController extends AbstractController
         $user = $this->getUser();
 
         return $user instanceof User ? $user : null;
-    }
-
-    /**
-     * The sources actually present, as enum cases - the menu shows trade names, the query string
-     * carries slugs.
-     *
-     * @param list<string> $values
-     *
-     * @return list<JobboardSource>
-     */
-    private function sourceChoices(array $values): array
-    {
-        $sources = [];
-
-        foreach ($values as $value) {
-            $source = JobboardSource::tryFrom($value);
-
-            if (null !== $source) {
-                $sources[] = $source;
-            }
-        }
-
-        return $sources;
     }
 }

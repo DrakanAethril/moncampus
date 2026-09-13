@@ -1,0 +1,155 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'jobboardSettingsHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'settingsConfigurationNavLabel'|trans, url: path('app_settings_configuration')},
+        {label: 'jobboardSettingsHeading'|trans, url: path('app_settings_jobboard_sources')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'jobboardSettingsHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% include 'settings/_jobboard_tabs.html.twig' with {activeTab: 'sources'} only %}
+
+    <div class="card cm-card--tabbed" style="padding: 18px">
+        <div class="cm-subhead" style="margin-bottom: 14px">
+            <div class="cm-subhead__title">{{ 'jobboardSourceListHeading'|trans }}</div>
+            <div class="cm-subhead__hint">{{ 'jobboardSourceListHintText'|trans }}</div>
+        </div>
+
+        <table class="card-table">
+            <thead>
+                <tr>
+                    <th>{{ 'jobboardSourceLabelColumn'|trans }}</th>
+                    <th>{{ 'jobboardSourceDomainsColumn'|trans }}</th>
+                    <th>{{ 'jobboardSourceRefRuleColumn'|trans }}</th>
+                    <th>{{ 'jobboardSourceOffersColumn'|trans }}</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for source in sources %}
+                    {% set offers = offerCounts[source.id]|default(0) %}
+                    {% set cursors = cursorCounts[source.id]|default(0) %}
+                    <tr>
+                        <td class="text-ink">
+                            {{ source.label }}
+                            <div class="text-secondary"><code>{{ source.slug }}</code>{% if source.legacyPrefix %} · <code>{{ source.legacyPrefix }}-…</code>{% endif %}</div>
+                        </td>
+                        <td>
+                            {% for domain in source.domains %}
+                                <div>{{ domain }}</div>
+                            {% else %}
+                                {# A site first met through a cursor has no domain yet: its next offer attaches one. #}
+                                <span class="text-secondary">{{ 'jobboardSourceNoDomainText'|trans }}</span>
+                            {% endfor %}
+                        </td>
+                        <td>{{ source.refRule ?? '—' }}</td>
+                        <td>
+                            {{ offers }}
+                            {% if source.discoveredByAgent %}
+                                <div class="text-secondary">{{ 'jobboardSourceDiscoveredText'|trans({'%date%': source.discoveredAt|localized_date('d MMM y')}) }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="cm-actions">
+                            <a class="cm-action cm-action--neutral" href="{{ path('app_settings_jobboard_sources', {edit: source.id}) }}">{{ 'jobboardSourceEditAction'|trans }}</a>
+                            {% if offers == 0 and cursors == 0 %}
+                                <form method="post" action="{{ path('app_settings_jobboard_source_delete', {id: source.id}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('jobboard_source_delete') }}">
+                                    <button type="submit" class="cm-action cm-action--danger"
+                                            data-controller="confirm-submit"
+                                            data-confirm-submit-message-value="{{ 'jobboardSourceDeleteConfirmText'|trans({'%label%': source.label}) }}"
+                                            data-action="click->confirm-submit#confirm">{{ 'jobboardSourceDeleteAction'|trans }}</button>
+                                </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="5" class="text-secondary">{{ 'jobboardSourceListEmptyText'|trans }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="cm-subhead" style="margin: 24px 0 14px">
+            <div class="cm-subhead__title">{{ edited ? 'jobboardSourceEditHeading'|trans({'%label%': edited.label}) : 'jobboardSourceNewHeading'|trans }}</div>
+            <div class="cm-subhead__hint">{{ edited ? 'jobboardSourceEditHintText'|trans : 'jobboardSourceNewHintText'|trans }}</div>
+        </div>
+
+        <form method="post" action="{{ edited ? path('app_settings_jobboard_source_update', {id: edited.id}) : path('app_settings_jobboard_source_create') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('jobboard_source_save') }}">
+            <div class="cm-formgrid">
+                <label class="cm-field">
+                    <span class="cm-field__label">{{ 'jobboardSourceLabelColumn'|trans }} <span class="req">*</span></span>
+                    <input type="text" name="label" maxlength="64" required value="{{ edited ? edited.label }}" placeholder="{{ 'jobboardSourceLabelPlaceholder'|trans }}">
+                </label>
+                <label class="cm-field">
+                    <span class="cm-field__label">{{ 'jobboardSourceLegacyPrefixLabel'|trans }}</span>
+                    <input type="text" name="legacy_prefix" maxlength="8" value="{{ edited ? edited.legacyPrefix }}" placeholder="{{ 'jobboardSourceLegacyPrefixPlaceholder'|trans }}">
+                </label>
+            </div>
+            <label class="cm-field">
+                <span class="cm-field__label">{{ 'jobboardSourceDomainsColumn'|trans }}</span>
+                <textarea name="domains" rows="2" placeholder="{{ 'jobboardSourceDomainsPlaceholder'|trans }}">{{ edited ? edited.domains|join("\n") }}</textarea>
+                <span class="cm-field__help">{{ 'jobboardSourceDomainsHelpText'|trans }}</span>
+            </label>
+            <label class="cm-field">
+                <span class="cm-field__label">{{ 'jobboardSourceRefRuleColumn'|trans }}</span>
+                <input type="text" name="ref_rule" maxlength="255" value="{{ edited ? edited.refRule }}" placeholder="{{ 'jobboardSourceRefRulePlaceholder'|trans }}">
+                <span class="cm-field__help">{{ 'jobboardSourceRefRuleHelpText'|trans }}</span>
+            </label>
+            <div class="cm-actionbar">
+                <div class="cm-actionbar__buttons">
+                    {% if edited %}
+                        <a class="cm-btn cm-btn--outline" href="{{ path('app_settings_jobboard_sources') }}">{{ 'cancelAction'|trans }}</a>
+                    {% endif %}
+                    <button type="submit" class="cm-btn cm-btn--primary">{{ edited ? 'jobboardSourceUpdateAction'|trans : 'jobboardSourceCreateAction'|trans }}</button>
+                </div>
+            </div>
+        </form>
+
+        {# Merging is the repair for the one thing the open list can produce: the same site under two
+           names, because a pass declared it differently before any domain was known. #}
+        {% if sources|length > 1 %}
+            <div class="cm-subhead" style="margin: 24px 0 14px">
+                <div class="cm-subhead__title">{{ 'jobboardSourceMergeHeading'|trans }}</div>
+                <div class="cm-subhead__hint">{{ 'jobboardSourceMergeHintText'|trans }}</div>
+            </div>
+
+            <form method="post" action="{{ path('app_settings_jobboard_source_merge') }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('jobboard_source_merge') }}">
+                <div class="cm-formgrid">
+                    <label class="cm-field">
+                        <span class="cm-field__label">{{ 'jobboardSourceMergeFromLabel'|trans }} <span class="req">*</span></span>
+                        <select name="from" required>
+                            <option value="">{{ 'jobboardSourceMergePlaceholder'|trans }}</option>
+                            {% for source in sources %}
+                                <option value="{{ source.id }}">{{ source.label }} ({{ offerCounts[source.id]|default(0) }})</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label class="cm-field">
+                        <span class="cm-field__label">{{ 'jobboardSourceMergeIntoLabel'|trans }} <span class="req">*</span></span>
+                        <select name="into" required>
+                            <option value="">{{ 'jobboardSourceMergePlaceholder'|trans }}</option>
+                            {% for source in sources %}
+                                <option value="{{ source.id }}">{{ source.label }} ({{ offerCounts[source.id]|default(0) }})</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                </div>
+                <div class="cm-actionbar">
+                    <div class="cm-actionbar__buttons">
+                        <button type="submit" class="cm-btn cm-btn--primary"
+                                data-controller="confirm-submit"
+                                data-confirm-submit-message-value="{{ 'jobboardSourceMergeConfirmText'|trans }}"
+                                data-action="click->confirm-submit#confirm">{{ 'jobboardSourceMergeAction'|trans }}</button>
+                    </div>
+                </div>
+            </form>
+        {% endif %}
+    </div>
+{% endblock %}

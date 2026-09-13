@@ -6,12 +6,12 @@ namespace App\Tests\Service\Jobboard;
 
 use App\Entity\JobboardBatch;
 use App\Entity\JobboardOffer;
+use App\Entity\JobboardSource;
 use App\Entity\JobboardToken;
 use App\Entity\Section;
 use App\Entity\Track;
 use App\Enum\JobboardLevelSource;
 use App\Enum\JobboardRemote;
-use App\Enum\JobboardSource;
 use App\Repository\JobboardOfferRepository;
 use App\Service\Jobboard\IngestOutcome;
 use App\Service\Jobboard\IngestReport;
@@ -31,6 +31,8 @@ use Symfony\Component\Clock\MockClock;
  */
 class OfferIngestorTest extends TestCase
 {
+    use SourceTableTrait;
+
     private Track $track;
 
     private MockClock $clock;
@@ -177,7 +179,7 @@ class OfferIngestorTest extends TestCase
         $repository->method('findOneByIdentity')->willReturn($stored);
 
         $ingestor = new OfferIngestor(
-            new OfferPayloadParser($this->clock),
+            new OfferPayloadParser($this->clock, $this->resolver()),
             $repository,
             $this->createStub(EntityManagerInterface::class),
             $this->clock,
@@ -195,7 +197,7 @@ class OfferIngestorTest extends TestCase
     {
         return new JobboardOffer(
             $this->track,
-            JobboardSource::Hellowork,
+            new JobboardSource('hellowork', 'HelloWork', ['hellowork.com']),
             '83313525',
             new \DateTimeImmutable('2026-07-01 08:00:00'),
         );

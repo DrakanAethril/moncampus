@@ -8,7 +8,6 @@ use App\Command\PurgePlatformActivityCommand;
 use App\Entity\JobboardOffer;
 use App\Entity\Track;
 use App\Entity\User;
-use App\Enum\JobboardSource;
 use App\Repository\JobboardOfferRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -16,10 +15,9 @@ use Doctrine\ORM\EntityManagerInterface;
  * The retention `app:purge-platform-activity` applies to the jobboard, and the one trap it must not
  * fall into.
  *
- * **`sort_date` is not the date to read.** An undated offer carries 1000-01-01 there, deliberately,
- * so it lands at the far end of a date-descending list - a threshold read against that column would
- * take out every undated offer on the first run. The date read is the publication date, and when
- * there is none, the day the offer was first seen.
+ * **The publication date is what is read, and the first-seen date when there is none.** Half the
+ * sources publish no date at all, and a threshold read against a column that is null for them would
+ * either spare them for ever or take them out on the first run, depending on the engine.
  *
  * And purging is not closing: an offer that left its site keeps its row, because how long it stayed
  * online is an information. Only age decides here.
@@ -101,7 +99,7 @@ class JobboardRetentionTest extends FunctionalTestCase
 
     private function offer(Track $track, string $ref, ?string $published, string $firstSeen = '-30 months'): JobboardOffer
     {
-        $offer = new JobboardOffer($track, JobboardSource::Hellowork, $ref, new \DateTimeImmutable($firstSeen));
+        $offer = new JobboardOffer($track, $this->jobboardSource(), $ref, new \DateTimeImmutable($firstSeen));
         $offer->setUrl('https://www.hellowork.com/fr-fr/emplois/'.$ref.'.html')->setPosition('Technicien')->setCompany('Astek');
 
         if (null !== $published) {

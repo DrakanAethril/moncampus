@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Service\Jobboard;
 
+use App\Entity\JobboardSource;
 use App\Enum\JobboardBtsAccess;
 use App\Enum\JobboardContract;
 use App\Enum\JobboardCountry;
 use App\Enum\JobboardLevelSource;
 use App\Enum\JobboardRemote;
-use App\Enum\JobboardSource;
+use App\Repository\JobboardSourceRepository;
 use Symfony\Component\Clock\ClockInterface;
 
 /**
@@ -17,8 +18,9 @@ use Symfony\Component\Clock\ClockInterface;
  * two-offer file that goes through it unchanged.
  *
  * The sibling of App\Service\Jobboard\IngestInstructions and generated the same way, from the
- * enums OfferPayloadParser validates against: a format sheet typed by hand is wrong the day a
- * source is added, and wrong on the screen where somebody is about to trust it. What differs is
+ * enums OfferPayloadParser validates against and from the sources table it resolves against: a
+ * format sheet typed by hand is wrong the day a source is added, and wrong on the screen where
+ * somebody is about to trust it. What differs is
  * the door it describes - the **legacy** shape of the file the veille already produces (`{meta,
  * offres}`, an `id` prefixed by the source, `date_approx`, `date_reperage`), not the API's.
  *
@@ -32,20 +34,27 @@ final readonly class LegacyFileFormat
     /** A file bigger than this is not a legacy export, it is a mistake. Stated on the screen. */
     public const int MAX_ROWS = 2000;
 
-    public function __construct(private ClockInterface $clock)
-    {
+    public function __construct(
+        private ClockInterface $clock,
+        private JobboardSourceRepository $sources,
+    ) {
     }
 
     public function markdown(): string
     {
+        $prefixed = array_values(array_filter(
+            $this->sources->findAllOrdered(),
+            static fn (JobboardSource $source): bool => null !== $source->getLegacyPrefix(),
+        ));
+
         $sources = implode("\n", array_map(
             static fn (JobboardSource $source): string => \sprintf(
                 '| `%s-…` | %s | %s |',
-                $source->legacyPrefix(),
-                $source->label(),
-                $source->refRule(),
+                (string) $source->getLegacyPrefix(),
+                $source->getLabel(),
+                $source->getRefRule() ?? '—',
             ),
-            JobboardSource::cases(),
+            $prefixed,
         ));
 
         $contracts = $this->quoted(JobboardContract::values());
@@ -76,7 +85,7 @@ final readonly class LegacyFileFormat
             |---|---|---|
             | `id` | oui | l'identifiant préfixé de la source (`hw-83313525`) — voir le tableau plus bas |
             | `source` | oui | le nom du site, en toutes lettres (`HelloWork`) ou en minuscules (`hellowork`) |
-            | `url` | oui | doit appartenir au domaine de la source déclarée |
+            | `url` | oui | le lien de l'annonce, en `http`/`https` : c'est lui qui décide de la source |
             | `poste` | oui | l'intitulé tel qu'affiché |
             | `entreprise` | oui | `"Non précisée"` est une valeur acceptée |
             | `categorie` | non | texte libre, votre classement (`sisr`, `slam`, `mixte`, …) |
@@ -108,15 +117,21 @@ final readonly class LegacyFileFormat
             |---|---|---|
             {$sources}
 
+            Un site absent de ce tableau n'est pas refusé : son `id` est alors conservé tel quel,
+            préfixe compris. Si ce fichier en contient un, déclarez son préfixe dans
+            « Configuration > Jobboard > Sources » **avant** l'import — sinon les mêmes offres
+            réimportées plus tard, une fois le préfixe connu, feront des doublons.
+
             ## Ce qui est refusé, ligne par ligne
 
             - une `date_publication` dans le futur ;
-            - un `contrat`, `pays`, `teletravail`, `niveau_source`, `acces_bts` ou `source` hors de
-              sa liste ;
+            - un `contrat`, `pays`, `teletravail`, `niveau_source` ou `acces_bts` hors de sa liste ;
             - un `niveau_source` absent ;
             - un `departement` renseigné alors que le pays n'est pas la France, ou hors format ;
-            - une `url` dont le domaine ne correspond pas à la source déclarée ;
+            - une `url` qui n'est pas un lien (`http`/`https` et un domaine lisible) ;
             - un champ obligatoire vide.
+
+            La `source` n'est pas un motif de refus : un site inconnu est créé, jamais rejeté.
 
             **Une ligne refusée ne fait jamais échouer le fichier** : l'analyse les nomme toutes
             avant que quoi que ce soit ne soit écrit, et les autres offres sont importées.

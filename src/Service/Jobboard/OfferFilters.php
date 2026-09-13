@@ -8,7 +8,6 @@ use App\Enum\JobboardBtsAccess;
 use App\Enum\JobboardContract;
 use App\Enum\JobboardCountry;
 use App\Enum\JobboardRemote;
-use App\Enum\JobboardSource;
 use App\Service\QueryValue;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -35,8 +34,10 @@ final readonly class OfferFilters
      * @param list<JobboardRemote>   $remotes
      * @param list<JobboardCountry>  $countries
      * @param list<string>           $regions
-     * @param list<int>              $trackIds
-     * @param list<JobboardSource>   $sources
+     * @param list<int>               $trackIds
+     * @param list<string>            $sources   slugs of App\Entity\JobboardSource, never enum cases:
+     *                                           the list of sites is a table now, and a filter may not
+     *                                           be the one place that still believes it is closed
      * @param list<JobboardBtsAccess> $btsAccess
      */
     public function __construct(
@@ -68,7 +69,7 @@ final readonly class OfferFilters
             countries: self::enums($request, 'pays', JobboardCountry::class),
             regions: self::strings($request, 'region', 120),
             trackIds: array_values(array_filter(array_map(intval(...), self::strings($request, 'filiere', 12)))),
-            sources: self::enums($request, 'source', JobboardSource::class),
+            sources: array_map(mb_strtolower(...), self::strings($request, 'source', 32)),
             btsAccess: self::enums($request, 'acces', JobboardBtsAccess::class),
         );
     }

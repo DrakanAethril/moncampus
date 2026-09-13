@@ -4,16 +4,21 @@ declare(strict_types=1);
 
 namespace App\Service\Jobboard;
 
+use App\Entity\JobboardSource;
 use App\Enum\JobboardBtsAccess;
 use App\Enum\JobboardContract;
 use App\Enum\JobboardCountry;
 use App\Enum\JobboardLevelSource;
 use App\Enum\JobboardRemote;
-use App\Enum\JobboardSource;
 
 /**
  * One offer, read and typed, on its way in. Nothing here is `mixed` any more: the boundary is
  * OfferPayloadParser, and no cast happens further in.
+ *
+ * `source` is the one field here that is not read off the payload but *resolved* from it: the URL
+ * decides which site an offer belongs to, and an unknown one is created rather than refused. The
+ * entity may therefore be brand new and not yet flushed - that is normal, and it is the ingestor
+ * that owns the transaction it lands in.
  *
  * `firstSeenAt` is the one field the collecting agent never sends - it is the platform's own
  * stamp. Only the manual import fills it, because the legacy file carries a `date_reperage` that
@@ -49,6 +54,6 @@ final readonly class OfferPayload
     /** The key this offer is filed under, inside one filière. */
     public function identity(): string
     {
-        return $this->source->value.'|'.$this->sourceRef;
+        return $this->source->getSlug().'|'.$this->sourceRef;
     }
 }

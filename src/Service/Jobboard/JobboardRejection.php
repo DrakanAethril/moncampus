@@ -14,11 +14,16 @@ namespace App\Service\Jobboard;
  * What is deliberately absent is as telling as what is here: a missing publication date, an empty
  * city, a company reading « Non précisée » and an unknown `categorie` are all normal situations,
  * and none of them has a code.
+ *
+ * **Two codes were removed the day the list of sites was opened** - `unknown_source` and
+ * `url_domain_mismatch`. They were the two refusals that cost real offers: a site the veille had
+ * just met was refused until somebody shipped a deploy, and nothing here keeps what it refused.
+ * What replaces them is a resolution, not a check (App\Service\Jobboard\JobboardSourceResolver),
+ * and the only thing still refused about a link is that it is not one - `invalid_url`.
  */
 enum JobboardRejection: string
 {
     case MissingField = 'missing_field';
-    case UnknownSource = 'unknown_source';
     case UnknownContract = 'unknown_contract';
     case UnknownCountry = 'unknown_country';
     case UnknownRemote = 'unknown_remote';
@@ -26,7 +31,7 @@ enum JobboardRejection: string
     case UnknownBtsAccess = 'unknown_bts_access';
     case DepartementOutsideFrance = 'departement_outside_france';
     case InvalidDepartement = 'invalid_departement';
-    case UrlDomainMismatch = 'url_domain_mismatch';
+    case InvalidUrl = 'invalid_url';
     case InvalidDate = 'invalid_date';
     case PublishedInFuture = 'published_in_future';
     case RawTooLarge = 'raw_too_large';
@@ -36,7 +41,6 @@ enum JobboardRejection: string
     {
         return match ($this) {
             self::MissingField => 'jobboardRejectMissingFieldLabel',
-            self::UnknownSource => 'jobboardRejectUnknownSourceLabel',
             self::UnknownContract => 'jobboardRejectUnknownContractLabel',
             self::UnknownCountry => 'jobboardRejectUnknownCountryLabel',
             self::UnknownRemote => 'jobboardRejectUnknownRemoteLabel',
@@ -44,7 +48,7 @@ enum JobboardRejection: string
             self::UnknownBtsAccess => 'jobboardRejectUnknownBtsAccessLabel',
             self::DepartementOutsideFrance => 'jobboardRejectDepartementOutsideFranceLabel',
             self::InvalidDepartement => 'jobboardRejectInvalidDepartementLabel',
-            self::UrlDomainMismatch => 'jobboardRejectUrlDomainMismatchLabel',
+            self::InvalidUrl => 'jobboardRejectInvalidUrlLabel',
             self::InvalidDate => 'jobboardRejectInvalidDateLabel',
             self::PublishedInFuture => 'jobboardRejectPublishedInFutureLabel',
             self::RawTooLarge => 'jobboardRejectRawTooLargeLabel',

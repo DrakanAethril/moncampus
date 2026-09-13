@@ -75,8 +75,8 @@
                everybody else, so typing them into the address bar changes nothing. #}
             {% if isAdmin %}
                 {{ widget.multiselect('source', 'jobboardFilterSourceLabel'|trans, 'jobboardFilterSourcePlaceholder'|trans,
-                    sources|map(s => {value: s.value, label: s.label}),
-                    filters.sources|map(s => s.value)) }}
+                    sources|map(s => {value: s.slug, label: s.label}),
+                    filters.sources) }}
 
                 {{ widget.multiselect('acces', 'jobboardFilterBtsAccessLabel'|trans, 'jobboardFilterBtsAccessPlaceholder'|trans,
                     btsAccessValues|map(a => {value: a.value, label: a.labelKey|trans}),
@@ -89,12 +89,16 @@
                 <div class="cm-jb-cell">{{ 'jobboardColumnPositionLabel'|trans }}</div>
                 <div class="cm-jb-cell">{{ 'jobboardColumnPlaceLabel'|trans }}</div>
                 <div class="cm-jb-cell">{{ 'jobboardColumnContractLabel'|trans }}</div>
-                <div class="cm-jb-cell">{{ 'jobboardColumnLevelLabel'|trans }}</div>
+                {# « Niveau » is deliberately not a column here: the estimate is kept in the database
+                   but it is not shown, neither in the list nor in the detail. #}
                 <div class="cm-jb-cell">{{ 'jobboardColumnRemoteLabel'|trans }}</div>
-                {# The only sorted column, and the only order this screen has: date de publication
-                   décroissante. The arrow says so; nothing here is clickable, because a second
-                   order would need a second cursor. #}
-                <div class="cm-jb-cell cm-jb-cell--date is-sorted">{{ 'jobboardColumnPublishedLabel'|trans }} ↓</div>
+                <div class="cm-jb-cell cm-jb-cell--date cm-jb-cell--published">{{ 'jobboardColumnPublishedLabel'|trans }}</div>
+                {# The only sorted column, and the only order this screen has: date de repérage
+                   décroissante. Publication would read worse - the collecting agents do not all
+                   pass every day, so a rarely-run one's harvest would arrive already buried. The
+                   arrow says so; nothing here is clickable, because a second order would need a
+                   second cursor. #}
+                <div class="cm-jb-cell cm-jb-cell--date cm-jb-cell--first-seen is-sorted">{{ 'jobboardColumnFirstSeenLabel'|trans }} ↓</div>
             </div>
 
             <div class="cm-jb-rows" data-jobboard-target="rows">

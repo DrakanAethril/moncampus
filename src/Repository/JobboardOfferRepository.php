@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\JobboardOffer;
+use App\Entity\JobboardSource;
 use App\Entity\Track;
-use App\Enum\JobboardSource;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -96,10 +96,99 @@ class JobboardOfferRepository extends ServiceEntityRepository
         $found = [];
         /** @var JobboardOffer $offer */
         foreach ($qb->andWhere($or)->getQuery()->getResult() as $offer) {
-            $found[$offer->getSource()->value.'|'.$offer->getSourceRef()] = $offer;
+            $found[$offer->getSource()->getSlug().'|'.$offer->getSourceRef()] = $offer;
         }
 
         return $found;
+    }
+
+    /**
+     * How many offers each source carries, keyed by source id - what « Configuration > Jobboard >
+     * Sources » needs to say whether a row may be deleted, in one query rather than one per row.
+     *
+     * @return array<int, int>
+     */
+    public function countBySource(): array
+    {
+        $counts = [];
+
+        /** @var array{source: int, total: int} $row */
+        foreach ($this->createQueryBuilder('o')
+            ->select('IDENTITY(o.source) AS source, COUNT(o.id) AS total')
+            ->groupBy('o.source')
+            ->getQuery()
+            ->getResult() as $row) {
+            $counts[(int) $row['source']] = (int) $row['total'];
+        }
+
+        return $counts;
+    }
+
+    /**
+     * How many offers of `$from` already have a twin on `$into` - the same filière and the same
+     * `source_ref`. Merging two sources would make those two rows one identity, and the UNIQUE
+     * index is the only thing that could then say which one survives. So the screen refuses the
+     * merge and names the number instead: an offer is never deleted to make a merge fit.
+     */
+    public function countIdentityCollisions(JobboardSource $from, JobboardSource $into): int
+    {
+        return (int) $this->createQueryBuilder('a')
+            ->select('COUNT(a.id)')
+            ->innerJoin(JobboardOffer::class, 'b', 'WITH', 'b.track = a.track AND b.sourceRef = a.sourceRef AND b.source = :into')
+            ->andWhere('a.source = :from')
+            ->setParameter('from', $from)
+            ->setParameter('into', $into)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /** Every offer filed under one source - what a merge moves, one by one. */
+    public function moveToSource(JobboardSource $from, JobboardSource $into): int
+    {
+        return (int) $this->createQueryBuilder('o')
+            ->update()
+            ->set('o.source', ':into')
+            ->andWhere('o.source = :from')
+            ->setParameter('from', $from)
+            ->setParameter('into', $into)
+            ->getQuery()
+            ->execute();
+    }
+
+    /**
+     * The sources actually present inside a reading perimeter - what the « Source » filter offers.
+     * Never a list written in advance: a menu proposing a site whose offers are in another filière
+     * is a filter that returns nothing.
+     *
+     * @param list<Track> $tracks
+     *
+     * @return list<JobboardSource>
+     */
+    public function findSourcesInPerimeter(array $tracks): array
+    {
+        // The ids first, the rows second, rather than one query selecting the joined side: the
+        // perimeter must keep entering through createOpenOffersQueryBuilder(), and DQL cannot
+        // select a joined entity without its root anyway.
+        $ids = [];
+
+        /** @var array{id: int} $row */
+        foreach ($this->createOpenOffersQueryBuilder($tracks)
+            ->select('DISTINCT IDENTITY(o.source) AS id')
+            ->getQuery()
+            ->getScalarResult() as $row) {
+            $ids[] = (int) $row['id'];
+        }
+
+        if ([] === $ids) {
+            return [];
+        }
+
+        /** @var list<JobboardSource> $sources */
+        $sources = $this->getEntityManager()
+            ->getRepository(JobboardSource::class)
+            ->findBy(['id' => $ids], ['label' => 'ASC']);
+
+        return $sources;
     }
 
     /**

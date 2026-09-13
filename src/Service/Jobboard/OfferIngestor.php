@@ -62,7 +62,7 @@ final readonly class OfferIngestor
                 $lines[] = new IngestLine(
                     index: $index,
                     outcome: IngestOutcome::Rejected,
-                    source: $payload->source->value,
+                    source: $payload->source->getSlug(),
                     sourceRef: $payload->sourceRef,
                     position: $payload->position,
                     reason: JobboardRejection::DuplicateInBatch,
@@ -101,7 +101,7 @@ final readonly class OfferIngestor
             $lines[] = new IngestLine(
                 index: $index,
                 outcome: $outcome,
-                source: $payload->source->value,
+                source: $payload->source->getSlug(),
                 sourceRef: $payload->sourceRef,
                 position: $payload->position,
             );
@@ -133,7 +133,9 @@ final readonly class OfferIngestor
 
         foreach ($rows as $index => $row) {
             try {
-                $payload = $this->parser->parse($row, $legacy);
+                // `learn: false` - a dry run must announce what the real pass will do and write
+                // nothing at all, a site it meets for the first time included.
+                $payload = $this->parser->parse($row, $legacy, false);
             } catch (OfferRejectedException $exception) {
                 $lines[] = new IngestLine($index, IngestOutcome::Rejected, reason: $exception->reason, field: $exception->field);
 
@@ -144,7 +146,7 @@ final readonly class OfferIngestor
                 $lines[] = new IngestLine(
                     $index,
                     IngestOutcome::Rejected,
-                    $payload->source->value,
+                    $payload->source->getSlug(),
                     $payload->sourceRef,
                     $payload->position,
                     JobboardRejection::DuplicateInBatch,
@@ -159,7 +161,7 @@ final readonly class OfferIngestor
             $lines[] = new IngestLine(
                 $index,
                 $known ? IngestOutcome::Reviewed : IngestOutcome::Created,
-                $payload->source->value,
+                $payload->source->getSlug(),
                 $payload->sourceRef,
                 $payload->position,
             );

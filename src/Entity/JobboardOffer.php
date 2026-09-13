@@ -9,7 +9,6 @@ use App\Enum\JobboardContract;
 use App\Enum\JobboardCountry;
 use App\Enum\JobboardLevelSource;
 use App\Enum\JobboardRemote;
-use App\Enum\JobboardSource;
 use App\Repository\JobboardOfferRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
@@ -31,20 +30,12 @@ use Doctrine\ORM\Mapping as ORM;
  */
 #[ORM\Entity(repositoryClass: JobboardOfferRepository::class)]
 #[ORM\Table(name: 'jobboard_offer')]
-#[ORM\UniqueConstraint(name: 'uniq_jobboard_offer_identity', columns: ['track_id', 'source', 'source_ref'])]
-#[ORM\Index(name: 'idx_jobboard_offer_listing', columns: ['track_id', 'closed_at', 'sort_date', 'id'])]
-#[ORM\Index(name: 'idx_jobboard_offer_first_seen', columns: ['track_id', 'first_seen_at'])]
+#[ORM\UniqueConstraint(name: 'uniq_jobboard_offer_identity', columns: ['track_id', 'source_id', 'source_ref'])]
+#[ORM\Index(name: 'idx_jobboard_offer_listing', columns: ['track_id', 'closed_at', 'first_seen_at', 'id'])]
 #[ORM\Index(name: 'idx_jobboard_offer_departement', columns: ['track_id', 'departement'])]
 #[ORM\Index(name: 'idx_jobboard_offer_contract', columns: ['track_id', 'contract'])]
 class JobboardOffer
 {
-    /**
-     * The date offers with no publication date are sorted under. Not "today" and not null: a row
-     * with no date must land at the far end of a date-descending list and stay there, and a NULL in
-     * an ORDER BY is sorted differently depending on the engine's mood.
-     */
-    public const string UNDATED_SORT_DATE = '1000-01-01';
-
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -56,7 +47,12 @@ class JobboardOffer
     #[ORM\JoinColumn(name: 'track_id', nullable: false, onDelete: 'CASCADE')]
     private Track $track;
 
-    #[ORM\Column(length: 32, enumType: JobboardSource::class)]
+    // A row rather than an enum case since the list of sites was opened: the veille meets new
+    // boards faster than a deploy could add them, and a source nobody declared is created on
+    // first sight (App\Service\Jobboard\JobboardSourceResolver). It is still part of this
+    // offer's identity, and still never rewritten by a later pass.
+    #[ORM\ManyToOne(targetEntity: JobboardSource::class)]
+    #[ORM\JoinColumn(name: 'source_id', nullable: false, onDelete: 'RESTRICT')]
     private JobboardSource $source;
 
     #[ORM\Column(name: 'source_ref', length: 190)]
@@ -111,11 +107,6 @@ class JobboardOffer
     #[ORM\Column(name: 'published_at_approx')]
     private bool $publishedAtApprox = true;
 
-    // Written by the application on every save, never by a column DEFAULT: a DEFAULT only lives for
-    // the duration of its ALTER and then reads as schema drift.
-    #[ORM\Column(name: 'sort_date', type: Types::DATE_IMMUTABLE)]
-    private \DateTimeImmutable $sortDate;
-
     #[ORM\Column(length: 500, nullable: true)]
     private ?string $note = null;
 
@@ -123,6 +114,8 @@ class JobboardOffer
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private ?array $raw = null;
 
+    // The day the veille brought this advert back for the first time, and the column the board is
+    // ordered on. Written once, never moved - see the class docblock.
     #[ORM\Column(name: 'first_seen_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $firstSeenAt;
 
@@ -158,7 +151,6 @@ class JobboardOffer
         $this->levelSource = JobboardLevelSource::Estime;
         $this->btsAccess = JobboardBtsAccess::Accessible;
         $this->remote = JobboardRemote::NonPrecise;
-        $this->sortDate = new \DateTimeImmutable(self::UNDATED_SORT_DATE);
     }
 
     public function getId(): ?int
@@ -348,21 +340,18 @@ class JobboardOffer
     }
 
     /**
-     * The publication date and its precision move together, and `sortDate` with them - three fields
-     * that must never be able to disagree, which is why there is one setter and not three.
+     * The publication date and its precision move together - two fields that must never be able to
+     * disagree, which is why there is one setter and not two.
+     *
+     * Neither of them orders the board: a publication date is what the advert says about itself,
+     * and half the sources say nothing at all. The order is `first_seen_at`.
      */
     public function setPublication(?\DateTimeImmutable $publishedAt, bool $approx): static
     {
         $this->publishedAt = $publishedAt;
         $this->publishedAtApprox = $approx;
-        $this->sortDate = $publishedAt ?? new \DateTimeImmutable(self::UNDATED_SORT_DATE);
 
         return $this;
-    }
-
-    public function getSortDate(): \DateTimeImmutable
-    {
-        return $this->sortDate;
     }
 
     public function getNote(): ?string
