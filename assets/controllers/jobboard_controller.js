@@ -196,8 +196,12 @@ export default class extends Controller {
      * The panel is position:fixed, so it owes nothing to the height of the list: it takes the
      * central zone and no more, wherever the reader has scrolled to. Only its horizontal edge is
      * borrowed from the list card - a drawer pinned to the right of a 2 560 px screen would float
-     * a long way from a layout capped at 1 320 px - and its top stops following the card once the
-     * card's own top has gone past the fold.
+     * a long way from a layout capped at 1 320 px.
+     *
+     * Its top edge follows the card, and stops following it once the card's own top has gone past
+     * the fold. Narrow, where the stacked filters push the card a third of the way down, it does
+     * not follow it at all: --cm-jb-panel-anchor says so, and the breakpoint that decides stays in
+     * the stylesheet where it is already written.
      */
     #placePanel() {
         const list = this.panelTarget.closest('.cm-jb-list');
@@ -208,7 +212,10 @@ export default class extends Controller {
 
         const rect = list.getBoundingClientRect();
         const gutter = 18;
-        const top = Math.min(Math.max(rect.top, gutter), window.innerHeight - 200);
+        const anchor = getComputedStyle(this.element).getPropertyValue('--cm-jb-panel-anchor').trim();
+        const top = anchor === 'window'
+            ? gutter
+            : Math.min(Math.max(rect.top, gutter), window.innerHeight - 200);
         const style = this.panelTarget.style;
 
         style.setProperty('--cm-jb-panel-top', `${Math.round(top)}px`);

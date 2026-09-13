@@ -10856,6 +10856,12 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
        central zone with no window scrollbar of its own - which is the point, the scrollbar must
        belong to the offers and to nothing else. */
     --cm-jb-card-top: 170px;
+    /* Where the detail panel hangs its top edge. Wide, it opens level with the list card, which is
+       already at the top of the central zone. Narrow, the filters stack above the card and push it
+       a third of the way down the page, so the panel takes the window instead. The breakpoint is
+       written once, in the media query below; the controller reads the answer rather than knowing
+       the number. */
+    --cm-jb-panel-anchor: card;
 }
 
 /* ---------- Filter column ---------- */
@@ -11040,7 +11046,7 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
     .cm-jb-cell--published { display: none; }
     /* Stacked, the card no longer starts a third of the way down the page. */
     .cm-jb-list { min-height: 0; }
-    .cm-jb-panel { width: auto; left: 18px; }
+    .cm-jb { --cm-jb-panel-anchor: window; }
 }
 
 /* ---------- Configuration > Jobboard > Historique ---------- */
