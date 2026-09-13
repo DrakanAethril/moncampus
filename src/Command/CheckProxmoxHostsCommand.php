@@ -10,6 +10,7 @@ use App\Service\Proxmox\ProxmoxHostChecker;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Command\LockableTrait;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -26,6 +27,16 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Exits non-zero when a host is unreachable, so a scheduler notices. `--dry-run` tests without
  * writing anything down, which is what you want when investigating rather than monitoring.
+ *
+ * **It locks itself**, so the cron line needs no `flock` and a manual run cannot land on top of a
+ * scheduled one - the same posture as the three `app:mail:*` commands. A pass sounds out every
+ * declared hypervisor one after the other, and an unplugged host is answered by a timeout rather
+ * than a refusal, so a run can outlast the five minutes between two of them; without the lock they
+ * would then pile up, each one waiting on the same dead host.
+ *
+ * `--dry-run` is deliberately exempt. It writes nothing, so two of them cannot collide - and the
+ * one gesture this lock must never block is the investigation the docblock above recommends:
+ * finding out why a host will not answer, while the cron is busy discovering the same thing.
  */
 #[AsCommand(
     name: 'app:proxmox:check',
@@ -33,6 +44,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class CheckProxmoxHostsCommand extends Command
 {
+    use LockableTrait;
+
     public function __construct(
         private readonly ProxmoxHostRepository $repository,
         private readonly ProxmoxHostChecker $checker,
@@ -51,6 +64,15 @@ class CheckProxmoxHostsCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
         $dryRun = true === $input->getOption('dry-run');
+
+        // The lock lives here rather than in the cron line, so that a manual run is protected too.
+        // A skipped pass is a success: the badges keep the state the running pass is refreshing.
+        if (!$dryRun && !$this->lock()) {
+            $io->comment('Une autre exécution est déjà en cours.');
+
+            return Command::SUCCESS;
+        }
+
         // InputInterface::getOption() answers mixed by design - narrow it here rather than casting
         // at the point of use, same rule as every other boundary in this application.
         $onlyOption = $input->getOption('host');

@@ -9,6 +9,7 @@ use App\Service\Network\IpAllocator;
 use App\Service\Network\RangeScanner;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Command\LockableTrait;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -28,6 +29,12 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * Meant for a cron every few minutes. Note that anything writing to the database in this
  * application needs MERCURE_URL in its environment - ux-turbo publishes on every flush, CLI
  * included, and the failure surfaces at flush time rather than at start-up.
+ *
+ * **It locks itself**, so the cron line needs no `flock` - the same posture as the three
+ * `app:mail:*` commands. Two passes at once would be worse here than elsewhere: each one reads the
+ * ranges back from their hypervisor and frees the abandoned reservations, so the second would judge
+ * on a picture the first is in the middle of redrawing. And a range whose host does not answer is
+ * waited on, which is exactly how a pass comes to outlive the interval between two of them.
  */
 #[AsCommand(
     name: 'app:proxmox:scan-addresses',
@@ -35,6 +42,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class ScanProxmoxAddressesCommand extends Command
 {
+    use LockableTrait;
+
     public function __construct(
         private readonly IpRangeRepository $ranges,
         private readonly RangeScanner $scanner,
@@ -52,6 +61,14 @@ class ScanProxmoxAddressesCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
+
+        // The lock lives here rather than in the cron line, so that a manual run is protected too.
+        // A skipped pass is a success: the gaps it would have reported are still there next time.
+        if (!$this->lock()) {
+            $io->comment('Une autre exécution est déjà en cours.');
+
+            return Command::SUCCESS;
+        }
 
         $onlyOption = $input->getOption('range');
         $only = is_numeric($onlyOption) ? (int) $onlyOption : null;
