@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Service\Jobboard;
 
 use App\Entity\JobboardBatch;
+use App\Entity\JobboardSourceLearning;
 use App\Entity\JobboardToken;
 use App\Entity\Track;
 use App\Repository\JobboardBatchRepository;
+use App\Repository\JobboardSourceLearningRepository;
 use App\Repository\JobboardTokenRepository;
 
 /**
@@ -23,6 +25,10 @@ use App\Repository\JobboardTokenRepository;
  * a row whose key has since been revoked still reads - a key is never deleted, precisely so this
  * screen stays true.
  *
+ * The screen also reads `learnings()`, which is not a fifth figure but a second list: what the
+ * source resolution decided by itself. It sits apart because it is not counted at either grain -
+ * one site created can serve four hundred offers over three passes.
+ *
  * @phpstan-type JobboardHistoryRow array{kind: 'api'|'import', at: \DateTimeImmutable, dayOnly: bool, token: ?JobboardToken, batch: ?JobboardBatch, track: Track, passes: int, created: int, reviewed: int, closed: int, rejected: int}
  */
 final readonly class JobboardHistory
@@ -30,9 +36,13 @@ final readonly class JobboardHistory
     /** Beyond this the screen would be a data export, which is not what it is for. */
     public const int DEFAULT_LIMIT = 200;
 
+    /** Enough to see a habit forming without turning the screen into an export of its own. */
+    public const int LEARNING_LIMIT = 50;
+
     public function __construct(
         private JobboardBatchRepository $batches,
         private JobboardTokenRepository $tokens,
+        private JobboardSourceLearningRepository $learnings,
     ) {
     }
 
@@ -46,6 +56,23 @@ final readonly class JobboardHistory
         usort($rows, static fn (array $a, array $b): int => $b['at'] <=> $a['at']);
 
         return \array_slice($rows, 0, $limit);
+    }
+
+    /**
+     * What the resolution decided on its own, most recent first - a site it created, a domain it
+     * attached to a known site.
+     *
+     * Listed rather than counted, and beside the deposits rather than inside them, because a number
+     * in a column would say « ce passage a appris 2 choses » and nothing an administrator can act
+     * on. What is actionable is the name: reading « domaine `bit.ly` rattaché à HelloWork, déclaré
+     * hellowork » is what makes a wrong attachment obvious, and the sources screen is two clicks
+     * away.
+     *
+     * @return list<JobboardSourceLearning>
+     */
+    public function learnings(int $limit = self::LEARNING_LIMIT): array
+    {
+        return $this->learnings->findLatest($limit);
     }
 
     /**

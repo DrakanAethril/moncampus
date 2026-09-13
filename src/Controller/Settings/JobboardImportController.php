@@ -11,6 +11,8 @@ use App\Form\JobboardImportType;
 use App\Repository\TrackRepository;
 use App\Service\Jobboard\LegacyFileFormat;
 use App\Service\Jobboard\OfferIngestor;
+use App\Service\Jobboard\SourceLearning;
+use App\Service\JsonRequestPayload;
 use App\Service\UploadIntake;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -150,6 +152,16 @@ class JobboardImportController extends AbstractController
             'reviewed' => $report->reviewed(),
             'rejected' => $report->rejected(),
             'track' => $track->getName(),
+            // Flattened rather than carried as objects: what goes in a session must survive being
+            // serialised, and these four strings are all the result screen prints. The rows
+            // themselves were written on the batch and are read back from the history. The trade
+            // name rather than the slug, unlike the API's answer - this one is read by a person.
+            'learned' => array_map(static fn (SourceLearning $learning): array => [
+                'kind' => $learning->kind->value,
+                'source' => $learning->source->getLabel(),
+                'declared' => $learning->declared,
+                'domain' => $learning->domain,
+            ], $report->learned),
         ]);
 
         return $this->redirectToRoute('app_settings_jobboard_import_result');
@@ -176,7 +188,35 @@ class JobboardImportController extends AbstractController
             'reviewed' => \is_int($stored['reviewed'] ?? null) ? $stored['reviewed'] : 0,
             'rejected' => \is_int($stored['rejected'] ?? null) ? $stored['rejected'] : 0,
             'track' => \is_string($stored['track'] ?? null) ? $stored['track'] : '',
+            'learned' => self::learned($stored),
         ]);
+    }
+
+    /**
+     * The gestures the confirmed pass made on the sites table, read back off the session.
+     *
+     * Typed here rather than in the template because a session entry is `mixed` all the way down -
+     * `JsonRequestPayload::fromArray()` exists for exactly this, a value that never was JSON but
+     * carries the same problem.
+     *
+     * @param array<array-key, mixed> $stored
+     *
+     * @return list<array{kind: string, source: string, declared: string, domain: string}>
+     */
+    private static function learned(array $stored): array
+    {
+        $rows = [];
+
+        foreach (JsonRequestPayload::fromArray($stored)->objects('learned') as $row) {
+            $rows[] = [
+                'kind' => $row->string('kind'),
+                'source' => $row->string('source'),
+                'declared' => $row->string('declared'),
+                'domain' => $row->string('domain'),
+            ];
+        }
+
+        return $rows;
     }
 
     /**

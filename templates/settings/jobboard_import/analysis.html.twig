@@ -37,6 +37,41 @@
             </div>
         </div>
 
+        {# What confirming will teach the platform about the sites themselves. Announced before the
+           confirmation and not after, because it is the one thing on this screen that outlives the
+           file: an offer is a row, a domain attached to a site changes where every later offer from
+           that host goes. #}
+        {% if report.learned is not empty %}
+            <div class="cm-subhead" style="margin-bottom: 10px">
+                <div class="cm-subhead__title">{{ 'jobboardImportLearningHeading'|trans }}</div>
+                <div class="cm-subhead__hint">{{ 'jobboardImportLearningHintText'|trans }}</div>
+            </div>
+            <table class="card-table" style="margin-bottom: 18px">
+                <thead>
+                    <tr>
+                        <th>{{ 'jobboardHistoryLearningKindColumn'|trans }}</th>
+                        <th>{{ 'jobboardHistoryLearningSourceColumn'|trans }}</th>
+                        <th>{{ 'jobboardHistoryLearningDomainColumn'|trans }}</th>
+                        <th>{{ 'jobboardHistoryLearningDeclaredColumn'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for learning in report.learned %}
+                        <tr>
+                            <td>
+                                <span class="cm-badge cm-badge--{{ learning.kind.value == 'source_created' ? 'purple' : 'teal' }}">
+                                    {{ learning.kind.labelKey|trans }}
+                                </span>
+                            </td>
+                            <td class="text-ink">{{ learning.source.label }}</td>
+                            <td><code>{{ learning.domain }}</code></td>
+                            <td class="text-secondary">{{ learning.declared }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+
         {# A refused line never takes the others with it - the rule of the API, kept here so the two
            doors behave identically. Each one is named with its reason before anything is written. #}
         {% if report.rejectedLines is not empty %}

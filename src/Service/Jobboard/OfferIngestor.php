@@ -6,6 +6,7 @@ namespace App\Service\Jobboard;
 
 use App\Entity\JobboardBatch;
 use App\Entity\JobboardOffer;
+use App\Entity\JobboardSourceLearning;
 use App\Entity\Track;
 use App\Enum\JobboardLevelSource;
 use App\Repository\JobboardOfferRepository;
@@ -22,6 +23,11 @@ use Symfony\Component\Clock\ClockInterface;
  * publication date, the remote-work value - and each one only ever moves towards more certainty.
  *
  * And above all: `premiere_vue` is written at creation and never again. No site can give it back.
+ *
+ * A deposit also files **what it learned about the sites** - a site the resolution invented, a
+ * domain it attached to a known one (App\Entity\JobboardSourceLearning). Those rows are the trace
+ * of the only decisions taken here that nobody asked for, and they refuse nothing: an offer that
+ * caused one was filed like any other.
  */
 final readonly class OfferIngestor
 {
@@ -30,6 +36,7 @@ final readonly class OfferIngestor
         private JobboardOfferRepository $offers,
         private EntityManagerInterface $entityManager,
         private ClockInterface $clock,
+        private JobboardSourceResolver $sources,
     ) {
     }
 
@@ -107,7 +114,23 @@ final readonly class OfferIngestor
             );
         }
 
-        $report = new IngestReport($lines);
+        // Drained after the loop rather than watched during it: the resolution is the parser's
+        // business, and what a deposit learned is a fact about the deposit, not about the line that
+        // happened to carry the first offer of a new site.
+        $learned = $this->sources->takeLearned();
+
+        foreach ($learned as $learning) {
+            $this->entityManager->persist(new JobboardSourceLearning(
+                $batch,
+                $learning->source,
+                $learning->kind,
+                $learning->declared,
+                $learning->domain,
+                $now,
+            ));
+        }
+
+        $report = new IngestReport($lines, $learned);
         $batch->tally($report->created(), $report->reviewed(), $report->rejected());
 
         $this->entityManager->flush();
@@ -167,7 +190,10 @@ final readonly class OfferIngestor
             );
         }
 
-        return new IngestReport($lines);
+        // Drained here too, and for the same reason the rest of this method exists: the screen must
+        // announce that confirming will invent a site or attach a domain. Nothing is persisted -
+        // the sources the preview named were never persisted either.
+        return new IngestReport($lines, $this->sources->takeLearned());
     }
 
     /**

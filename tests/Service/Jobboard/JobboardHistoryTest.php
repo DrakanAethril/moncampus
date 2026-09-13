@@ -8,6 +8,7 @@ use App\Entity\JobboardBatch;
 use App\Entity\JobboardToken;
 use App\Entity\Track;
 use App\Repository\JobboardBatchRepository;
+use App\Repository\JobboardSourceLearningRepository;
 use App\Repository\JobboardTokenRepository;
 use App\Service\Jobboard\JobboardHistory;
 use PHPUnit\Framework\TestCase;
@@ -111,7 +112,7 @@ class JobboardHistoryTest extends TestCase
         $keys = $this->createStub(JobboardTokenRepository::class);
         $keys->method('findBy')->willReturn($tokens);
 
-        return new JobboardHistory($batches, $keys);
+        return new JobboardHistory($batches, $keys, $this->createStub(JobboardSourceLearningRepository::class));
     }
 
     /** @return array<string, mixed> */

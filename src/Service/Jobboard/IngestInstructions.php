@@ -103,6 +103,13 @@ final readonly class IngestInstructions
             La réponse dit, offre par offre, ce qui a été `created`, `reviewed` ou `rejected`, avec
             le motif du refus. **Une offre malformée ne fait jamais échouer les autres.**
 
+            Chaque ligne acceptée renvoie aussi le `source` **retenu**, qui n'est pas forcément
+            celui que tu as déclaré : c'est l'URL qui décide. Et la réponse porte une clé `sources`
+            listant ce que ce dépôt a appris — `source_created` (un site créé depuis le domaine de
+            l'`url`) et `domain_attached` (un domaine rattaché à un site que tu as nommé). C'est
+            informatif : rien n'a été refusé. Mais si tu y vois un raccourcisseur de liens ou un
+            agrégateur, c'est que tes URL ne pointent pas là où tu crois.
+
             ## Les champs d'une offre
 
             | champ | obligatoire | remarque |
