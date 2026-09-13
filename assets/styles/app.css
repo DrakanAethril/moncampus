@@ -10856,12 +10856,6 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
        central zone with no window scrollbar of its own - which is the point, the scrollbar must
        belong to the offers and to nothing else. */
     --cm-jb-card-top: 170px;
-    /* Where the detail panel hangs its top edge. Wide, it opens level with the list card, which is
-       already at the top of the central zone. Narrow, the filters stack above the card and push it
-       a third of the way down the page, so the panel takes the window instead. The breakpoint is
-       written once, in the media query below; the controller reads the answer rather than knowing
-       the number. */
-    --cm-jb-panel-anchor: card;
 }
 
 /* ---------- Filter column ---------- */
@@ -10995,21 +10989,20 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-jb-tag--remote-partiel { background: var(--cm-mail-tint-bg); border-color: var(--cm-mail-tint-border); color: var(--cm-blue-tx); }
 .cm-jb-tag--remote-aucun { background: var(--cm-surface-alt); border-color: var(--cm-border); color: var(--cm-muted); }
 
-/* ---------- Detail panel, over the list ---------- */
-.cm-jb-veil { position: fixed; inset: 0; z-index: 30; background: rgba(18, 52, 77, .16); }
-/* Fixed, not absolute: the card is now as tall as the list, and a panel bounded by it would either
-   be four screens high or carry a scrollbar of its own. Fixed gives it the central zone and nothing
-   else, whatever the reader has scrolled past. The controller writes the three custom properties on
-   opening (and on scroll/resize) so the panel stays flush with the list card's own right edge
-   rather than flying off to the edge of a 2 560 px screen. */
+/* ---------- Detail modal, centred over the screen ---------- */
+.cm-jb-veil { position: fixed; inset: 0; z-index: 30; background: rgba(18, 52, 77, .34); }
+/* A centred modal rather than a drawer pinned to the right: an offer is read, not skimmed
+   alongside the list, and the drawer measured its own position against the list card on every
+   scroll to avoid flying off to the edge of a 2 560 px screen. Centring owes nothing to the card,
+   so nothing has to be recomputed - the panel is where the reader is looking.
+   Height is capped rather than fixed: a short offer is a short box, and a long one scrolls
+   inside the modal rather than pushing the page. */
 .cm-jb-panel {
     position: fixed; z-index: 31;
-    top: var(--cm-jb-panel-top, 18px);
-    right: var(--cm-jb-panel-right, 18px);
-    bottom: var(--cm-jb-panel-bottom, 18px);
-    width: var(--cm-jb-panel-width, 404px); max-width: calc(100vw - 36px);
-    background: var(--cm-surface); border: 1px solid var(--cm-jb-field-bd); border-radius: 12px;
-    box-shadow: -12px 0 32px rgba(18, 52, 77, .18); padding: 18px; overflow-y: auto;
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: min(560px, calc(100vw - 32px)); max-height: min(78dvh, calc(100dvh - 48px));
+    background: var(--cm-surface); border: 1px solid var(--cm-jb-field-bd); border-radius: 14px;
+    box-shadow: 0 18px 48px rgba(18, 52, 77, .26); padding: 22px; overflow-y: auto;
     display: flex; flex-direction: column; gap: 14px;
 }
 .cm-jb-panel__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
@@ -11046,7 +11039,6 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
     .cm-jb-cell--published { display: none; }
     /* Stacked, the card no longer starts a third of the way down the page. */
     .cm-jb-list { min-height: 0; }
-    .cm-jb { --cm-jb-panel-anchor: window; }
 }
 
 /* ---------- Configuration > Jobboard > Historique ---------- */

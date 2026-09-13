@@ -1,8 +1,8 @@
 import { Controller } from '@hotwired/stimulus';
 
 /*
- * The Jobboard's screen: the tag-style filters, the detail panel over the list, and « Afficher 40
- * offres de plus ».
+ * The Jobboard's screen: the tag-style filters, the detail modal, and « Afficher 40 offres de
+ * plus ».
  *
  * Three deliberate choices here.
  *
@@ -10,9 +10,9 @@ import { Controller } from '@hotwired/stimulus';
  * server-side anyway (the data set grows at every pass of the veille), so filtering in the browser
  * would be a second, disagreeing implementation - and the URL stays bookmarkable.
  *
- * The detail panel and the extra rows arrive as **rendered HTML**, not as JSON to build markup from.
- * One template renders a row, one renders a panel, and the rule that a non-administrator never sees
- * the source cannot be forgotten by a second rendering path.
+ * The detail modal and the extra rows arrive as **rendered HTML**, not as JSON to build markup from.
+ * One template renders a row, one renders the modal, and the rule that a non-administrator never
+ * sees the source cannot be forgotten by a second rendering path.
  *
  * Only one menu is open at a time, and opening an offer closes it - that is the handoff's own rule
  * and the reason every menu is closed from one place here.
@@ -36,8 +36,6 @@ export default class extends Controller {
             }
         };
 
-        this.onReframe = () => this.#placePanel();
-
         document.addEventListener('keydown', this.onKeydown);
         document.addEventListener('click', this.onOutside);
     }
@@ -45,8 +43,6 @@ export default class extends Controller {
     disconnect() {
         document.removeEventListener('keydown', this.onKeydown);
         document.removeEventListener('click', this.onOutside);
-        window.removeEventListener('scroll', this.onReframe);
-        window.removeEventListener('resize', this.onReframe);
     }
 
     submit() {
@@ -163,9 +159,6 @@ export default class extends Controller {
         this.panelTarget.innerHTML = await response.text();
         this.veilTarget.hidden = false;
         this.panelTarget.hidden = false;
-        this.#placePanel();
-        window.addEventListener('scroll', this.onReframe, { passive: true });
-        window.addEventListener('resize', this.onReframe);
         this.panelTarget.querySelector('.cm-jb-panel__close')?.focus();
     }
 
@@ -177,9 +170,6 @@ export default class extends Controller {
     }
 
     closeDetail() {
-        window.removeEventListener('scroll', this.onReframe);
-        window.removeEventListener('resize', this.onReframe);
-
         if (this.hasPanelTarget) {
             this.panelTarget.hidden = true;
             this.panelTarget.innerHTML = '';
@@ -190,37 +180,6 @@ export default class extends Controller {
         }
 
         this.rowTargets.forEach((row) => row.classList.remove('is-open'));
-    }
-
-    /*
-     * The panel is position:fixed, so it owes nothing to the height of the list: it takes the
-     * central zone and no more, wherever the reader has scrolled to. Only its horizontal edge is
-     * borrowed from the list card - a drawer pinned to the right of a 2 560 px screen would float
-     * a long way from a layout capped at 1 320 px.
-     *
-     * Its top edge follows the card, and stops following it once the card's own top has gone past
-     * the fold. Narrow, where the stacked filters push the card a third of the way down, it does
-     * not follow it at all: --cm-jb-panel-anchor says so, and the breakpoint that decides stays in
-     * the stylesheet where it is already written.
-     */
-    #placePanel() {
-        const list = this.panelTarget.closest('.cm-jb-list');
-
-        if (!list) {
-            return;
-        }
-
-        const rect = list.getBoundingClientRect();
-        const gutter = 18;
-        const anchor = getComputedStyle(this.element).getPropertyValue('--cm-jb-panel-anchor').trim();
-        const top = anchor === 'window'
-            ? gutter
-            : Math.min(Math.max(rect.top, gutter), window.innerHeight - 200);
-        const style = this.panelTarget.style;
-
-        style.setProperty('--cm-jb-panel-top', `${Math.round(top)}px`);
-        style.setProperty('--cm-jb-panel-right', `${Math.round(Math.max(gutter, window.innerWidth - rect.right))}px`);
-        style.setProperty('--cm-jb-panel-width', `${Math.round(Math.min(404, rect.width))}px`);
     }
 
     #closeMenus() {
