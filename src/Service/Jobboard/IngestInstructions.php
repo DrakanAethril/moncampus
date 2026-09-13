@@ -165,6 +165,9 @@ final readonly class IngestInstructions
             Rien n'est jamais supprimé : une offre retirée reçoit une date de fermeture et cesse
             d'être affichée.
 
+            Ces retraits sont comptés sur le passage du jour, avec les offres ajoutées et les offres
+            revues : appelle-les après la clôture du lot, le même jour.
+
             ## Ce que tu n'envoies jamais
 
             Le salaire, la description complète de l'annonce, des coordonnées de contact, un nom de

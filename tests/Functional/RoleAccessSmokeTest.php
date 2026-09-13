@@ -273,6 +273,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/jobboard' => 200,
             '/settings/jobboard/api' => 403,
             '/settings/jobboard/import' => 403,
+            '/settings/jobboard/history' => 403,
             '/technical/data-model' => 200,
             '/resources/mobile-app' => 200,
             // The documentation base is open to every account - what narrows it is the perimeter
@@ -440,6 +441,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/jobboard' => 200,
             '/settings/jobboard/api' => 403,
             '/settings/jobboard/import' => 403,
+            '/settings/jobboard/history' => 403,
             '/technical/data-model' => 200,
             '/resources/mobile-app' => 200,
             // A teacher reads the base and writes in it, on their own perimeter; the reading
@@ -596,6 +598,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/jobboard' => 200,
             '/settings/jobboard/api' => 200,
             '/settings/jobboard/import' => 200,
+            '/settings/jobboard/history' => 200,
             '/technical/data-model' => 200,
             // Writing the help is an admin's job, and only an admin's.
             '/help/manage' => 200,
@@ -733,6 +736,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/jobboard' => 200,
             '/settings/jobboard/api' => 403,
             '/settings/jobboard/import' => 403,
+            '/settings/jobboard/history' => 403,
             '/technical/data-model' => 200,
             '/resources/mobile-app' => 200,
             // Same door as everyone else: a tutor reaches the base and finds it empty for as

@@ -1,0 +1,83 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'jobboardHistoryHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'settingsConfigurationNavLabel'|trans, url: path('app_settings_configuration')},
+        {label: 'jobboardSettingsHeading'|trans, url: path('app_settings_jobboard_history')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'jobboardSettingsHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% include 'settings/_jobboard_tabs.html.twig' with {activeTab: 'history'} only %}
+
+    <div class="card cm-card--tabbed" style="padding: 18px">
+        <div class="cm-subhead" style="margin-bottom: 14px">
+            <div class="cm-subhead__title">{{ 'jobboardHistoryHeading'|trans }}</div>
+            {# Said on screen because the two grains are not an accident: a veille running three
+               times a morning is one day of veille, an import is a gesture somebody made. #}
+            <div class="cm-subhead__hint">{{ 'jobboardHistoryHintText'|trans }}</div>
+        </div>
+
+        <table class="card-table">
+            <thead>
+                <tr>
+                    <th>{{ 'jobboardHistoryDateColumn'|trans }}</th>
+                    <th>{{ 'jobboardHistoryOriginColumn'|trans }}</th>
+                    <th>{{ 'jobboardTokenSectionColumn'|trans }}</th>
+                    <th class="text-end">{{ 'jobboardHistoryAddedColumn'|trans }}</th>
+                    <th class="text-end">{{ 'jobboardHistoryDuplicateColumn'|trans }}</th>
+                    <th class="text-end">{{ 'jobboardHistoryRemovedColumn'|trans }}</th>
+                    <th class="text-end">{{ 'jobboardHistoryRejectedColumn'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                    <tr>
+                        <td class="text-ink">
+                            {{ row.at|localized_date(row.dayOnly ? 'd MMM y' : 'd MMM y HH:mm') }}
+                            {% if row.dayOnly and row.passes > 1 %}
+                                <span class="text-secondary">· {{ 'jobboardHistoryPassesText'|trans({'%count%': row.passes}) }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if row.kind == 'api' %}
+                                <span class="cm-badge cm-badge--blue">{{ 'jobboardHistoryOriginApiLabel'|trans }}</span>
+                                <span class="text-ink">{{ row.token.label }}</span>
+                                {% if row.token.revoked %}
+                                    <span class="text-secondary">· {{ 'jobboardHistoryTokenRevokedText'|trans }}</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="cm-badge cm-badge--gold">{{ 'jobboardHistoryOriginImportLabel'|trans }}</span>
+                                <span class="text-ink">
+                                    {% if row.batch.importedBy %}
+                                        {{ row.batch.importedBy.displayName ?? row.batch.importedBy.username }}
+                                    {% else %}
+                                        {{ 'jobboardHistoryImporterUnknownText'|trans }}
+                                    {% endif %}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>{{ row.section.name }}</td>
+                        <td class="text-end text-ink">{{ row.created }}</td>
+                        <td class="text-end">{{ row.reviewed }}</td>
+                        <td class="text-end">{{ row.closed }}</td>
+                        <td class="text-end{{ row.rejected > 0 ? ' cm-jb-history__rejected' }}">{{ row.rejected }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="7" class="text-secondary">{{ 'jobboardHistoryEmptyText'|trans }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if rows|length >= limit %}
+            <div class="cm-actionbar">
+                <div class="cm-actionbar__meta">{{ 'jobboardHistoryTruncatedText'|trans({'%count%': limit}) }}</div>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

@@ -1,9 +1,10 @@
-{# The two faces of Configuration > Jobboard, side by side. The nav's submenu points at one tab
-   each; the strip is what says they are one screen with two jobs - the key handed to the agent, and
-   the file loaded by hand. #}
+{# The three faces of Configuration > Jobboard, side by side. The nav's submenu points at one tab
+   each; the strip is what says they are one screen with three jobs - the key handed to the agent,
+   the file loaded by hand, and the record of what either one deposited. #}
 {% include '_tabs.html.twig' with {
     tabs: [
         {url: path('app_settings_jobboard_api'), label: 'jobboardApiNavLabel'|trans, active: activeTab == 'api'},
         {url: path('app_settings_jobboard_import'), label: 'jobboardImportNavLabel'|trans, active: activeTab == 'import'},
+        {url: path('app_settings_jobboard_history'), label: 'jobboardHistoryNavLabel'|trans, active: activeTab == 'history'},
     ],
 } only %}

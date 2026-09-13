@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Repository\ConsoleSessionRepository;
+use App\Repository\JobboardOfferRepository;
 use App\Repository\PlatformActivityRepository;
 use App\Repository\QuizAttemptEventRepository;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -30,12 +31,18 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * both a volume and a thing to answer for. One command rather than two: it already runs daily, and
  * the question it answers is the same one.
  *
+ * **A fourth family since the jobboard: offers older than a year.** An advert published more than
+ * twelve months ago is not a stale row, it is a job that was filled long ago - and unlike the three
+ * families above, deleting it is not tidying, it is the only thing to do with it. Careful not to
+ * confuse it with closing: an offer that left its site keeps its row, because how long it stayed
+ * online is an information; this is about adverts nobody will ever consult again.
+ *
  * To be wired to a scheduled task (once a day is more than enough). With no scheduler, the command
  * stays usable by hand; nothing breaks if it never runs, the tables simply grow.
  */
 #[AsCommand(
     name: 'app:purge-platform-activity',
-    description: 'Supprime les entrées du journal plateforme antérieures à la durée de rétention.',
+    description: 'Applique les rétentions de la plateforme : journal, sessions de console, surveillance de quiz, offres du jobboard.',
 )]
 class PurgePlatformActivityCommand extends Command
 {
@@ -44,10 +51,14 @@ class PurgePlatformActivityCommand extends Command
     /** Console sessions, and their transcripts. Ninety days - see the class docblock. */
     private const int CONSOLE_RETENTION_DAYS = 90;
 
+    /** Jobboard offers, read on the advert's publication date. Twelve months. */
+    private const int JOBBOARD_RETENTION_MONTHS = 12;
+
     public function __construct(
         private readonly PlatformActivityRepository $repository,
         private readonly ConsoleSessionRepository $consoleSessions,
         private readonly QuizAttemptEventRepository $quizEvents,
+        private readonly JobboardOfferRepository $jobboardOffers,
     ) {
         parent::__construct();
     }
@@ -56,6 +67,7 @@ class PurgePlatformActivityCommand extends Command
     {
         $this->addOption('months', null, InputOption::VALUE_REQUIRED, 'Durée de rétention en mois', self::DEFAULT_RETENTION_MONTHS);
         $this->addOption('console-days', null, InputOption::VALUE_REQUIRED, 'Rétention des sessions de console, en jours', self::CONSOLE_RETENTION_DAYS);
+        $this->addOption('jobboard-months', null, InputOption::VALUE_REQUIRED, 'Rétention des offres du jobboard, en mois', self::JOBBOARD_RETENTION_MONTHS);
         $this->addOption('dry-run', null, InputOption::VALUE_NONE, 'Compte sans supprimer');
     }
 
@@ -66,6 +78,8 @@ class PurgePlatformActivityCommand extends Command
         $threshold = new \DateTimeImmutable(\sprintf('-%d months', $months));
         $consoleDays = max(1, (int) $input->getOption('console-days'));
         $consoleThreshold = new \DateTimeImmutable(\sprintf('-%d days', $consoleDays));
+        $jobboardMonths = max(1, (int) $input->getOption('jobboard-months'));
+        $jobboardThreshold = new \DateTimeImmutable(\sprintf('-%d months', $jobboardMonths));
 
         if ($input->getOption('dry-run')) {
             $count = (int) $this->repository->createQueryBuilder('a')
@@ -86,6 +100,11 @@ class PurgePlatformActivityCommand extends Command
                 $this->quizEvents->countOlderThan($threshold),
                 $threshold->format('d/m/Y'),
             ));
+            $io->info(\sprintf(
+                '%d offre(s) du jobboard publiée(s) avant le %s seraient supprimées.',
+                $this->jobboardOffers->countPublishedBefore($jobboardThreshold),
+                $jobboardThreshold->format('d/m/Y'),
+            ));
 
             return Command::SUCCESS;
         }
@@ -100,6 +119,11 @@ class PurgePlatformActivityCommand extends Command
         // screen: the entry contract of a supervised évaluation announces it to the student.
         $quizEvents = $this->quizEvents->deleteOlderThan($threshold);
         $io->success(\sprintf('%d événement(s) de surveillance antérieur(s) au %s supprimé(s).', $quizEvents, $threshold->format('d/m/Y')));
+
+        // Its own duration, and its own reading of what "old" means: the advert's publication date,
+        // falling back to the day the offer was first seen when it never carried one.
+        $offers = $this->jobboardOffers->deletePublishedBefore($jobboardThreshold);
+        $io->success(\sprintf('%d offre(s) du jobboard publiée(s) avant le %s supprimée(s).', $offers, $jobboardThreshold->format('d/m/Y')));
 
         return Command::SUCCESS;
     }

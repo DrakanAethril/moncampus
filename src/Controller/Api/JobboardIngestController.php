@@ -138,6 +138,7 @@ class JobboardIngestController extends AbstractController
             'created' => $batch->getCreatedCount(),
             'reviewed' => $batch->getReviewedCount(),
             'rejected' => $batch->getRejectedCount(),
+            'closed' => $batch->getClosedCount(),
             'closed_at' => $batch->getClosedAt()?->format(\DATE_ATOM),
         ]);
     }
@@ -199,8 +200,12 @@ class JobboardIngestController extends AbstractController
     }
 
     #[Route(path: '/api/jobboard/offers/close', name: 'api_jobboard_offers_close', methods: ['POST'])]
-    public function closeOffers(Request $request, JobboardOfferRepository $offers, ClockInterface $clock): JsonResponse
-    {
+    public function closeOffers(
+        Request $request,
+        JobboardOfferRepository $offers,
+        JobboardBatchRepository $batches,
+        ClockInterface $clock,
+    ): JsonResponse {
         $token = $this->authenticator->authenticate($request);
 
         $identities = [];
@@ -226,6 +231,22 @@ class JobboardIngestController extends AbstractController
                 $offer->close($now);
                 ++$closed;
             }
+        }
+
+        // Filed on the pass it belongs to, so the history can say what a day's veille actually did.
+        // The call arrives after the batch was closed - it is step 6 of the agent's sheet - so the
+        // pass is looked up by day rather than held open for it; a close with no pass that day
+        // opens one, because a figure nobody can attribute is a figure nobody keeps.
+        if ($closed > 0) {
+            $batch = $batches->findLatestForTokenOn($token, $now);
+
+            if (null === $batch) {
+                $batch = JobboardBatch::forToken($token);
+                $batch->close();
+                $this->entityManager->persist($batch);
+            }
+
+            $batch->tallyClosed($closed);
         }
 
         $this->entityManager->flush();

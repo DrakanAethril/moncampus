@@ -7,6 +7,7 @@ namespace App\Tests\Functional;
 use App\Entity\JobboardToken;
 use App\Entity\Section;
 use App\Entity\User;
+use App\Repository\JobboardBatchRepository;
 use App\Repository\JobboardOfferRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -171,6 +172,40 @@ class JobboardIngestApiTest extends FunctionalTestCase
         // Nothing is ever erased: the row stays, dated.
         $this->assertNotNull($stored);
         $this->assertTrue($stored->isClosed());
+    }
+
+    public function testAClosureIsFiledOnTheDaysPass(): void
+    {
+        $this->token();
+        $batch = $this->openBatch();
+        $this->call('POST', '/api/jobboard/batches/'.$batch.'/offers', [$this->offer()], 'key-1');
+        $this->call('POST', '/api/jobboard/batches/'.$batch.'/close');
+
+        // Step 6 of the agent's sheet, after the closure - which is exactly why the pass is found
+        // by day rather than held open for it.
+        $this->call('POST', '/api/jobboard/offers/close', null, null, null, [
+            'offers' => [['source' => 'hellowork', 'source_ref' => '83313525']],
+        ]);
+
+        $this->assertSame(1, $this->tallyOf($batch));
+
+        // Closing an offer that is already closed counts nothing: the history would otherwise read
+        // a retry as a second departure.
+        $this->call('POST', '/api/jobboard/offers/close', null, null, null, [
+            'offers' => [['source' => 'hellowork', 'source_ref' => '83313525']],
+        ]);
+
+        $this->assertSame(1, $this->tallyOf($batch));
+    }
+
+    private function tallyOf(int $batchId): int
+    {
+        $batches = static::getContainer()->get(JobboardBatchRepository::class);
+        $stored = $batches->find($batchId);
+        $this->assertNotNull($stored);
+        $this->manager()->refresh($stored);
+
+        return $stored->getClosedCount();
     }
 
     private function openBatch(): int

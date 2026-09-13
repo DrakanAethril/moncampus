@@ -53,6 +53,13 @@ class JobboardBatch
     #[ORM\Column(name: 'rejected_count')]
     private int $rejectedCount = 0;
 
+    // Offers this pass reported as gone from the sites. It does not come from `ingest()` like the
+    // three above: `POST /offers/close` is a call of its own, made after the batch is closed, and
+    // it is filed here rather than in a table of its own because the history reads a pass as one
+    // line - an offer that left is the third thing a passage does, next to creating and reviewing.
+    #[ORM\Column(name: 'closed_count')]
+    private int $closedCount = 0;
+
     private function __construct(Section $section)
     {
         $this->section = $section;
@@ -132,11 +139,28 @@ class JobboardBatch
         return $this->rejectedCount;
     }
 
+    public function getClosedCount(): int
+    {
+        return $this->closedCount;
+    }
+
     public function tally(int $created, int $reviewed, int $rejected): static
     {
         $this->createdCount += $created;
         $this->reviewedCount += $reviewed;
         $this->rejectedCount += $rejected;
+
+        return $this;
+    }
+
+    /**
+     * Added after the fact, and deliberately allowed on a closed batch: the agent's instruction
+     * sheet puts `POST /offers/close` at step 6, after the closure. Refusing it there would either
+     * lose the figure or force the sheet to be rewritten.
+     */
+    public function tallyClosed(int $closed): static
+    {
+        $this->closedCount += $closed;
 
         return $this;
     }
