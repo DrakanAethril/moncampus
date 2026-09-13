@@ -16,10 +16,9 @@ use Doctrine\ORM\EntityManagerInterface;
  * The retention `app:purge-platform-activity` applies to the jobboard, and the one trap it must not
  * fall into.
  *
- * **`sort_date` is not the date to read.** An undated offer carries 1000-01-01 there, deliberately,
- * so it lands at the far end of a date-descending list - a threshold read against that column would
- * take out every undated offer on the first run. The date read is the publication date, and when
- * there is none, the day the offer was first seen.
+ * **The publication date is what is read, and the first-seen date when there is none.** Half the
+ * sources publish no date at all, and a threshold read against a column that is null for them would
+ * either spare them for ever or take them out on the first run, depending on the engine.
  *
  * And purging is not closing: an offer that left its site keeps its row, because how long it stayed
  * online is an information. Only age decides here.

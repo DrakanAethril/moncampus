@@ -37,13 +37,18 @@
                 <span class="cm-jb-tag cm-jb-tag--remote cm-jb-tag--remote-{{ offer.remote.value }}">{{ offer.remote.labelKey|trans }}</span>
             {% endif %}
         </div>
-        <div class="cm-jb-cell cm-jb-cell--date">
+        <div class="cm-jb-cell cm-jb-cell--date cm-jb-cell--published">
             {% if offer.publishedAt %}
                 {% if offer.publishedAtApprox %}<span class="cm-jb-approx" title="{{ 'jobboardDateApproxTitle'|trans }}" aria-label="{{ 'jobboardDateApproxTitle'|trans }}">≈</span> {% endif %}
                 {{ offer.publishedAt|localized_date('d MMM') }}
             {% else %}
                 —
             {% endif %}
+        </div>
+        {# The day the veille brought the advert back, and the column the list is ordered on. Never
+           empty and never « ≈ »: it is the platform's own observation, not the advert's word. #}
+        <div class="cm-jb-cell cm-jb-cell--date cm-jb-cell--first-seen">
+            {{ offer.firstSeenAt|localized_date('d MMM') }}
         </div>
     </div>
 {% endfor %}

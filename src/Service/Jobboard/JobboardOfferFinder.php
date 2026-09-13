@@ -20,13 +20,18 @@ use Doctrine\ORM\QueryBuilder;
  * - **the perimeter is a WHERE clause**, applied before anything else and never removable by a
  *   filter. A filière ticked outside the reader's own is intersected away, not refused: the answer
  *   to a forged query string is "nothing", not an error page explaining what exists;
- * - **the order is (sort_date DESC, id DESC)** and the cursor is that exact pair. `sortDate` is
- *   why: an offer with no publication date sorts under year 1000 rather than under a NULL, and a
- *   NULL in an ORDER BY is not a stable place.
+ * - **the order is (first_seen_at DESC, id DESC)** and the cursor is that exact pair. It is the day
+ *   the veille brought the advert back, not the day the advert says it was published, and the
+ *   difference is the collecting agents themselves: they do not all pass every day, so ordering on
+ *   the publication date pushes a whole week of a rarely-run agent's harvest down the list, where
+ *   nobody scrolls. `first_seen_at` is also the only date here that is never null and never moves,
+ *   which is what makes it a stable cursor.
  */
 final readonly class JobboardOfferFinder
 {
     public const int PAGE_SIZE = 40;
+
+    private const string CURSOR_FORMAT = 'Y-m-d H:i:s';
 
     public function __construct(
         private JobboardOfferRepository $offers,
@@ -45,7 +50,7 @@ final readonly class JobboardOfferFinder
         $qb = $this->offers->createOpenOffersQueryBuilder($tracks)
             ->addSelect('tr')
             ->leftJoin('o.track', 'tr')
-            ->orderBy('o.sortDate', 'DESC')
+            ->orderBy('o.firstSeenAt', 'DESC')
             ->addOrderBy('o.id', 'DESC')
             ->setMaxResults(self::PAGE_SIZE + 1);
 
@@ -182,14 +187,19 @@ final readonly class JobboardOfferFinder
 
         [$date, $id] = $decoded;
 
-        $qb->andWhere('o.sortDate < :cursorDate OR (o.sortDate = :cursorDate AND o.id < :cursorId)')
+        $qb->andWhere('o.firstSeenAt < :cursorDate OR (o.firstSeenAt = :cursorDate AND o.id < :cursorId)')
             ->setParameter('cursorDate', $date)
             ->setParameter('cursorId', $id);
     }
 
+    /**
+     * The cursor carries the whole timestamp, to the second. A date alone would be ambiguous: a
+     * batch files its offers within the same minute, so a day's worth of rows share a first-seen
+     * *date* and the pair (date, id) would no longer be the order the list is read in.
+     */
     private static function encodeCursor(JobboardOffer $offer): string
     {
-        return rtrim(strtr(base64_encode($offer->getSortDate()->format('Y-m-d').'|'.$offer->getId()), '+/', '-_'), '=');
+        return rtrim(strtr(base64_encode($offer->getFirstSeenAt()->format(self::CURSOR_FORMAT).'|'.$offer->getId()), '+/', '-_'), '=');
     }
 
     /**
@@ -211,7 +221,7 @@ final readonly class JobboardOfferFinder
         }
 
         [$rawDate, $rawId] = explode('|', $decoded, 2);
-        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $rawDate);
+        $date = \DateTimeImmutable::createFromFormat('!'.self::CURSOR_FORMAT, $rawDate);
 
         if (false === $date || !ctype_digit($rawId)) {
             return null;
