@@ -22,14 +22,6 @@
         <div class="cm-jb-cell">
             <span class="cm-jb-tag cm-jb-tag--contract cm-jb-tag--{{ offer.contract.slug }}">{{ offer.contract.labelKey|trans }}</span>
         </div>
-        <div class="cm-jb-cell cm-jb-cell--level">
-            {{ offer.level }}
-            {# The golden ≈ of an estimated level. It is the point of storing niveau_source at all:
-               the uncertainty stays visible instead of being drowned in the column. #}
-            {% if offer.levelSource.value == 'estime' %}
-                <span class="cm-jb-approx" title="{{ 'jobboardLevelEstimatedTitle'|trans }}" aria-label="{{ 'jobboardLevelEstimatedTitle'|trans }}">≈</span>
-            {% endif %}
-        </div>
         <div class="cm-jb-cell">
             {# Nothing at all when the advert did not raise the subject: « non précisé » is not
                « aucun », and a grey « Aucun » tag would answer a question nobody asked. #}

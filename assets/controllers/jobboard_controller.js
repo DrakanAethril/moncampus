@@ -36,6 +36,8 @@ export default class extends Controller {
             }
         };
 
+        this.onReframe = () => this.#placePanel();
+
         document.addEventListener('keydown', this.onKeydown);
         document.addEventListener('click', this.onOutside);
     }
@@ -43,6 +45,8 @@ export default class extends Controller {
     disconnect() {
         document.removeEventListener('keydown', this.onKeydown);
         document.removeEventListener('click', this.onOutside);
+        window.removeEventListener('scroll', this.onReframe);
+        window.removeEventListener('resize', this.onReframe);
     }
 
     submit() {
@@ -159,6 +163,9 @@ export default class extends Controller {
         this.panelTarget.innerHTML = await response.text();
         this.veilTarget.hidden = false;
         this.panelTarget.hidden = false;
+        this.#placePanel();
+        window.addEventListener('scroll', this.onReframe, { passive: true });
+        window.addEventListener('resize', this.onReframe);
         this.panelTarget.querySelector('.cm-jb-panel__close')?.focus();
     }
 
@@ -170,6 +177,9 @@ export default class extends Controller {
     }
 
     closeDetail() {
+        window.removeEventListener('scroll', this.onReframe);
+        window.removeEventListener('resize', this.onReframe);
+
         if (this.hasPanelTarget) {
             this.panelTarget.hidden = true;
             this.panelTarget.innerHTML = '';
@@ -180,6 +190,30 @@ export default class extends Controller {
         }
 
         this.rowTargets.forEach((row) => row.classList.remove('is-open'));
+    }
+
+    /*
+     * The panel is position:fixed, so it owes nothing to the height of the list: it takes the
+     * central zone and no more, wherever the reader has scrolled to. Only its horizontal edge is
+     * borrowed from the list card - a drawer pinned to the right of a 2 560 px screen would float
+     * a long way from a layout capped at 1 320 px - and its top stops following the card once the
+     * card's own top has gone past the fold.
+     */
+    #placePanel() {
+        const list = this.panelTarget.closest('.cm-jb-list');
+
+        if (!list) {
+            return;
+        }
+
+        const rect = list.getBoundingClientRect();
+        const gutter = 18;
+        const top = Math.min(Math.max(rect.top, gutter), window.innerHeight - 200);
+        const style = this.panelTarget.style;
+
+        style.setProperty('--cm-jb-panel-top', `${Math.round(top)}px`);
+        style.setProperty('--cm-jb-panel-right', `${Math.round(Math.max(gutter, window.innerWidth - rect.right))}px`);
+        style.setProperty('--cm-jb-panel-width', `${Math.round(Math.min(404, rect.width))}px`);
     }
 
     #closeMenus() {
