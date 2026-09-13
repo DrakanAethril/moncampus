@@ -48,7 +48,7 @@ class JobboardController extends AbstractController
         $filters = OfferFilters::fromRequest($request);
         $page = $finder->page($reader, $filters, QueryValue::trimmed($request, 'cursor'), $admin);
 
-        $sections = $perimeter->sections($reader);
+        $tracks = $perimeter->tracks($reader);
 
         return $this->render('jobboard/index.html.twig', [
             'page' => $page,
@@ -57,7 +57,7 @@ class JobboardController extends AbstractController
             // The « Filières » filter appears as soon as there is a choice to make, whoever is
             // reading - a selector with one entry is not a choice, and an administrator has no more
             // right to one than a student in two formations.
-            'sections' => \count($sections) > 1 ? $sections : [],
+            'tracks' => \count($tracks) > 1 ? $tracks : [],
             'contracts' => JobboardContract::cases(),
             'remotes' => JobboardRemote::cases(),
             'btsAccessValues' => JobboardBtsAccess::cases(),

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller\Settings;
 
-use App\Entity\Section;
+use App\Entity\Track;
 use App\Entity\User;
 use App\Repository\JobboardTokenRepository;
-use App\Repository\SectionRepository;
+use App\Repository\TrackRepository;
 use App\Service\Jobboard\IngestInstructions;
 use App\Service\Jobboard\IngestTokenFactory;
 use Doctrine\ORM\EntityManagerInterface;
@@ -37,7 +37,7 @@ class JobboardApiController extends AbstractController
     private const string SECRET_SESSION_KEY = 'jobboard_token_secret';
 
     #[Route(path: '/settings/jobboard/api', name: 'app_settings_jobboard_api', methods: ['GET'])]
-    public function index(Request $request, JobboardTokenRepository $tokens, SectionRepository $sections, IngestInstructions $instructions): Response
+    public function index(Request $request, JobboardTokenRepository $tokens, TrackRepository $tracks, IngestInstructions $instructions): Response
     {
         $session = $request->getSession();
         $secret = $session->get(self::SECRET_SESSION_KEY);
@@ -45,7 +45,7 @@ class JobboardApiController extends AbstractController
 
         return $this->render('settings/jobboard_api.html.twig', [
             'tokens' => $tokens->findForScreen(),
-            'sections' => $sections->findAllOrdered(),
+            'tracks' => $tracks->findAllOrdered(),
             'secret' => \is_string($secret) ? $secret : null,
             // Generated from the same enums the validator uses. A sheet typed by hand would be
             // wrong the day a source is added, and wrong silently - on the agent's side.
@@ -56,7 +56,7 @@ class JobboardApiController extends AbstractController
     #[Route(path: '/settings/jobboard/api/tokens', name: 'app_settings_jobboard_token_create', methods: ['POST'])]
     public function create(
         Request $request,
-        SectionRepository $sections,
+        TrackRepository $tracks,
         IngestTokenFactory $factory,
         EntityManagerInterface $entityManager,
     ): Response {
@@ -65,15 +65,15 @@ class JobboardApiController extends AbstractController
         }
 
         $label = trim((string) $request->request->get('label'));
-        $section = $sections->find($request->request->getInt('section'));
+        $track = $tracks->find($request->request->getInt('track'));
 
-        if ('' === $label || !$section instanceof Section) {
+        if ('' === $label || !$track instanceof Track) {
             $this->addFlash('danger', 'jobboardTokenIncompleteFlashMessage');
 
             return $this->redirectToRoute('app_settings_jobboard_api');
         }
 
-        $minted = $factory->create(mb_substr($label, 0, 120), $section, $this->author());
+        $minted = $factory->create(mb_substr($label, 0, 120), $track, $this->author());
 
         $entityManager->persist($minted['token']);
         $entityManager->flush();

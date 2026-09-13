@@ -28,7 +28,7 @@ class OfferFiltersTest extends TestCase
         $this->assertNull($filters->departement);
         $this->assertNull($filters->firstSeenFrom);
         $this->assertSame([], $filters->contracts);
-        $this->assertSame([], $filters->sectionIds);
+        $this->assertSame([], $filters->trackIds);
     }
 
     public function testItReadsACommaSeparatedList(): void

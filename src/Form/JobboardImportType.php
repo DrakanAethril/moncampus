@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Form;
 
-use App\Entity\Section;
-use App\Repository\SectionRepository;
+use App\Entity\Track;
+use App\Repository\TrackRepository;
 use App\Service\UploadPolicy;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
@@ -29,16 +29,16 @@ class JobboardImportType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('section', EntityType::class, [
-                'class' => Section::class,
-                'label' => 'jobboardImportSectionFieldLabel',
-                'help' => 'jobboardImportSectionFieldHelpText',
+            ->add('track', EntityType::class, [
+                'class' => Track::class,
+                'label' => 'jobboardImportTrackFieldLabel',
+                'help' => 'jobboardImportTrackFieldHelpText',
                 'choice_label' => 'name',
-                'query_builder' => static fn (SectionRepository $repository) => $repository->createQueryBuilder('s')->orderBy('s.name', 'ASC'),
+                'query_builder' => static fn (TrackRepository $repository) => $repository->createQueryBuilder('t')->orderBy('t.name', 'ASC'),
                 // A select used for input, so it starts on nothing: the filière is the one decision
                 // this screen asks for, and a pre-selected one would be taken by accident.
-                'placeholder' => 'jobboardImportSectionPlaceholder',
-                'constraints' => [new NotNull(message: 'jobboardImportSectionRequiredMessage')],
+                'placeholder' => 'jobboardImportTrackPlaceholder',
+                'constraints' => [new NotNull(message: 'jobboardImportTrackRequiredMessage')],
             ])
             ->add('file', FilePickerType::class, [
                 'label' => 'jobboardImportFileFieldLabel',

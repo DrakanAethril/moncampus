@@ -31,9 +31,11 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * both a volume and a thing to answer for. One command rather than two: it already runs daily, and
  * the question it answers is the same one.
  *
- * **A fourth family since the jobboard: offers older than a year.** An advert published more than
- * twelve months ago is not a stale row, it is a job that was filled long ago - and unlike the three
- * families above, deleting it is not tidying, it is the only thing to do with it. Careful not to
+ * **A fourth family since the jobboard: offers older than two years.** An advert published more
+ * than twenty-four months ago is not a stale row, it is a job that was filled long ago - and unlike
+ * the three families above, deleting it is not tidying, it is the only thing to do with it. Two
+ * years rather than one because the board is also read as a history of what a filière's market
+ * asked for, and a year of adverts is a single hiring season. Careful not to
  * confuse it with closing: an offer that left its site keeps its row, because how long it stayed
  * online is an information; this is about adverts nobody will ever consult again.
  *
@@ -51,8 +53,8 @@ class PurgePlatformActivityCommand extends Command
     /** Console sessions, and their transcripts. Ninety days - see the class docblock. */
     private const int CONSOLE_RETENTION_DAYS = 90;
 
-    /** Jobboard offers, read on the advert's publication date. Twelve months. */
-    private const int JOBBOARD_RETENTION_MONTHS = 12;
+    /** Jobboard offers, read on the advert's publication date. Twenty-four months. */
+    private const int JOBBOARD_RETENTION_MONTHS = 24;
 
     public function __construct(
         private readonly PlatformActivityRepository $repository,

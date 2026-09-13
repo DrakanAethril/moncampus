@@ -21,7 +21,7 @@ use Doctrine\ORM\Mapping as ORM;
  */
 #[ORM\Entity(repositoryClass: JobboardCursorRepository::class)]
 #[ORM\Table(name: 'jobboard_cursor')]
-#[ORM\UniqueConstraint(name: 'uniq_jobboard_cursor_scope', columns: ['section_id', 'source', 'search'])]
+#[ORM\UniqueConstraint(name: 'uniq_jobboard_cursor_scope', columns: ['track_id', 'source', 'search'])]
 class JobboardCursor
 {
     #[ORM\Id]
@@ -29,9 +29,9 @@ class JobboardCursor
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: Section::class)]
-    #[ORM\JoinColumn(name: 'section_id', nullable: false, onDelete: 'CASCADE')]
-    private Section $section;
+    #[ORM\ManyToOne(targetEntity: Track::class)]
+    #[ORM\JoinColumn(name: 'track_id', nullable: false, onDelete: 'CASCADE')]
+    private Track $track;
 
     #[ORM\Column(length: 32, enumType: JobboardSource::class)]
     private JobboardSource $source;
@@ -48,9 +48,9 @@ class JobboardCursor
     #[ORM\Column(name: 'updated_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $updatedAt;
 
-    public function __construct(Section $section, JobboardSource $source, string $search)
+    public function __construct(Track $track, JobboardSource $source, string $search)
     {
-        $this->section = $section;
+        $this->track = $track;
         $this->source = $source;
         $this->search = $search;
         $this->updatedAt = new \DateTimeImmutable();
@@ -61,9 +61,9 @@ class JobboardCursor
         return $this->id;
     }
 
-    public function getSection(): Section
+    public function getTrack(): Track
     {
-        return $this->section;
+        return $this->track;
     }
 
     public function getSource(): JobboardSource

@@ -60,7 +60,9 @@ class JobboardIngestController extends AbstractController
 
         return new JsonResponse([
             'batch_id' => $batch->getId(),
-            'section' => $token->getSection()->getName(),
+            // Informational echo, so a misconfigured agent sees at once which filière its key
+            // files into. It decides nothing: the key does.
+            'filiere' => $token->getTrack()->getName(),
         ], Response::HTTP_CREATED);
     }
 
@@ -155,7 +157,7 @@ class JobboardIngestController extends AbstractController
                 'last_ref' => $cursor->getLastRef(),
                 'last_published_at' => $cursor->getLastPublishedAt()?->format('Y-m-d'),
                 'updated_at' => $cursor->getUpdatedAt()->format(\DATE_ATOM),
-            ], $cursors->findForSection($token->getSection())),
+            ], $cursors->findForTrack($token->getTrack())),
         ]);
     }
 
@@ -185,10 +187,10 @@ class JobboardIngestController extends AbstractController
             $publishedAt = $parsed;
         }
 
-        $cursor = $cursors->findOneByScope($token->getSection(), $source, mb_substr($search, 0, 190));
+        $cursor = $cursors->findOneByScope($token->getTrack(), $source, mb_substr($search, 0, 190));
 
         if (null === $cursor) {
-            $cursor = new JobboardCursor($token->getSection(), $source, mb_substr($search, 0, 190));
+            $cursor = new JobboardCursor($token->getTrack(), $source, mb_substr($search, 0, 190));
             $this->entityManager->persist($cursor);
         }
 
@@ -218,7 +220,7 @@ class JobboardIngestController extends AbstractController
             }
         }
 
-        $found = $offers->findByIdentities($token->getSection(), $identities);
+        $found = $offers->findByIdentities($token->getTrack(), $identities);
         $now = $clock->now();
         $closed = 0;
 

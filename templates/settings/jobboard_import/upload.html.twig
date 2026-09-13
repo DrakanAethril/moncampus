@@ -29,7 +29,7 @@
         </div>
 
         {{ form_start(form) }}
-            {{ form_row(form.section) }}
+            {{ form_row(form.track) }}
             {{ form_row(form.file) }}
             <div class="cm-actionbar">
                 <div class="cm-actionbar__buttons">
@@ -37,5 +37,27 @@
                 </div>
             </div>
         {{ form_end(form) }}
+    </div>
+
+    {# Under the form and not behind a link: the question « quelle forme doit avoir mon fichier »
+       is asked here, with the file in hand. Same block as the agent's instruction sheet on the API
+       tab, and generated the same way - from the enums the parser validates against, so it cannot
+       describe rules the import does not apply. #}
+    <div class="card cm-jb-sheet" data-controller="copy-block">
+        <div class="cm-subhead cm-jb-sheet__head">
+            <div>
+                <div class="cm-subhead__title">{{ 'jobboardImportFormatHeading'|trans }}</div>
+                <div class="cm-subhead__hint">{{ 'jobboardImportFormatHintText'|trans }}</div>
+            </div>
+            <div class="cm-jb-sheet__actions">
+                {# A plain link, so the browser saves the file: the example is generated on request,
+                   its dates read off the clock. #}
+                <a class="cm-btn cm-btn--outline" href="{{ path('app_settings_jobboard_import_example') }}">{{ 'jobboardImportExampleAction'|trans }}</a>
+                <button type="button" class="cm-btn cm-btn--outline" data-action="click->copy-block#copy"
+                        data-copy-block-done-label-param="{{ 'jobboardImportFormatCopiedText'|trans }}">{{ 'jobboardImportFormatCopyAction'|trans }}</button>
+            </div>
+        </div>
+        <pre class="cm-jb-instructions" data-copy-block-target="source">{{ format }}</pre>
+        <div class="cm-jb-sheet__foot">{{ 'jobboardImportExampleHintText'|trans }}</div>
     </div>
 {% endblock %}

@@ -17,7 +17,7 @@
     <div class="card" style="padding: 18px">
         <div class="cm-subhead" style="margin-bottom: 14px">
             <div class="cm-subhead__title">{{ fileName }}</div>
-            <div class="cm-subhead__hint">{{ 'jobboardImportAnalysisHintText'|trans({'%section%': section.name}) }}</div>
+            <div class="cm-subhead__hint">{{ 'jobboardImportAnalysisHintText'|trans({'%track%': track.name}) }}</div>
         </div>
 
         {# Nothing is written while this is on screen. The three numbers are what the confirmation
@@ -67,7 +67,7 @@
         <form method="post" action="{{ path('app_settings_jobboard_import_confirm') }}">
             <input type="hidden" name="_token" value="{{ csrf_token('jobboard_import_confirm') }}">
             <div class="cm-actionbar">
-                <div class="cm-actionbar__meta">{{ 'jobboardImportConfirmMetaText'|trans({'%section%': section.name}) }}</div>
+                <div class="cm-actionbar__meta">{{ 'jobboardImportConfirmMetaText'|trans({'%track%': track.name}) }}</div>
                 <div class="cm-actionbar__buttons">
                     <a class="cm-btn" href="{{ path('app_settings_jobboard_import') }}">{{ 'jobboardImportBackAction'|trans }}</a>
                     <button type="submit" class="cm-btn cm-btn--primary">{{ 'jobboardImportConfirmAction'|trans }}</button>
