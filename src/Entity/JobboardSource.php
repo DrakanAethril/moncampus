@@ -27,6 +27,11 @@ use Doctrine\ORM\Mapping as ORM;
  * A source nobody declared is therefore created on first sight, from the URL's domain. That is the
  * point of `discoveredByAgent`: the screen must be able to say which rows a human decided and which
  * ones simply turned up, because only the first kind carries a `refRule` anybody verified.
+ *
+ * The one way back out of that openness is `blacklistedAt`: a site an administrator does not want
+ * on the board. It is not a refusal - the deposit is accepted and the offers are dropped - and it
+ * is the row that carries it rather than a list of its own, because the domains are here and they
+ * are what a later offer will be resolved against.
  */
 #[ORM\Entity(repositoryClass: JobboardSourceRepository::class)]
 #[ORM\Table(name: 'jobboard_source')]
@@ -76,6 +81,22 @@ class JobboardSource
 
     #[ORM\Column(name: 'discovered_by_agent')]
     private bool $discoveredByAgent = false;
+
+    /**
+     * When this site was put on the blacklist - null, the ordinary state, meaning it is collected
+     * from like any other.
+     *
+     * A date rather than a flag because the gesture is dated everywhere else on this table
+     * (`discovered_at`), and because « depuis quand » is the first question asked of a site whose
+     * offers vanished. The blacklist does not *refuse* an offer either: a deposit naming a
+     * blacklisted site is accepted and its offers are dropped without a word to the agent, which is
+     * the same stance the resolution takes - the agent collects, the platform decides what it keeps.
+     *
+     * Nothing else on the row changes: the domains stay, precisely so a later offer from that host
+     * still resolves here and is still dropped.
+     */
+    #[ORM\Column(name: 'blacklisted_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $blacklistedAt = null;
 
     /** @param list<string> $domains */
     public function __construct(string $slug, string $label, array $domains = [], ?\DateTimeImmutable $discoveredAt = null)
@@ -202,6 +223,31 @@ class JobboardSource
     public function markDiscoveredByAgent(): static
     {
         $this->discoveredByAgent = true;
+
+        return $this;
+    }
+
+    public function isBlacklisted(): bool
+    {
+        return null !== $this->blacklistedAt;
+    }
+
+    public function getBlacklistedAt(): ?\DateTimeImmutable
+    {
+        return $this->blacklistedAt;
+    }
+
+    /** Idempotent: blacklisting a site already on the list keeps the date it was put there. */
+    public function blacklist(?\DateTimeImmutable $at = null): static
+    {
+        $this->blacklistedAt ??= $at ?? new \DateTimeImmutable();
+
+        return $this;
+    }
+
+    public function allow(): static
+    {
+        $this->blacklistedAt = null;
 
         return $this;
     }

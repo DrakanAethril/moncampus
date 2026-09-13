@@ -20,7 +20,7 @@
             <div class="cm-subhead__hint">{{ 'jobboardImportResultHintText'|trans }}</div>
         </div>
 
-        <div class="cm-loan-summary" style="grid-template-columns: repeat(3, 1fr)">
+        <div class="cm-loan-summary" style="grid-template-columns: repeat({{ blocked > 0 ? 4 : 3 }}, 1fr)">
             <div>
                 <span class="cm-loan-summary__label">{{ 'jobboardOutcomeCreatedLabel'|trans }}</span>
                 <span class="cm-loan-summary__value">{{ created }}</span>
@@ -33,6 +33,14 @@
                 <span class="cm-loan-summary__label">{{ 'jobboardOutcomeRejectedLabel'|trans }}</span>
                 <span class="cm-loan-summary__value{{ rejected > 0 ? ' cm-loan-summary__value--late' }}">{{ rejected }}</span>
             </div>
+            {# Same rule as the analysis screen: the tile appears only where there was something to
+               drop, and it reads the figure the batch recorded rather than a second count. #}
+            {% if blocked > 0 %}
+                <div>
+                    <span class="cm-loan-summary__label">{{ 'jobboardOutcomeBlockedLabel'|trans }}</span>
+                    <span class="cm-loan-summary__value">{{ blocked }}</span>
+                </div>
+            {% endif %}
         </div>
 
         {# Said again after the fact, and not only before: the analysis screen announced these

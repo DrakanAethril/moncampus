@@ -19,6 +19,7 @@
         <div class="cm-subhead" style="margin-bottom: 14px">
             <div class="cm-subhead__title">{{ 'jobboardSourceListHeading'|trans }}</div>
             <div class="cm-subhead__hint">{{ 'jobboardSourceListHintText'|trans }}</div>
+            <div class="cm-subhead__hint">{{ 'jobboardSourceBlacklistHintText'|trans }}</div>
         </div>
 
         <table class="card-table">
@@ -38,6 +39,11 @@
                     <tr>
                         <td class="text-ink">
                             {{ source.label }}
+                            {% if source.blacklisted %}
+                                {# Said on the row rather than in a list of its own: the domains are here, and
+                                   they are what a later offer from this site will still be resolved against. #}
+                                <span class="cm-badge cm-badge--red">{{ 'jobboardSourceBlacklistedLabel'|trans }}</span>
+                            {% endif %}
                             <div class="text-secondary"><code>{{ source.slug }}</code>{% if source.legacyPrefix %} · <code>{{ source.legacyPrefix }}-…</code>{% endif %}</div>
                         </td>
                         <td>
@@ -51,12 +57,30 @@
                         <td>{{ source.refRule ?? '—' }}</td>
                         <td>
                             {{ offers }}
-                            {% if source.discoveredByAgent %}
+                            {% if source.blacklisted %}
+                                <div class="text-secondary">{{ 'jobboardSourceBlacklistedSinceText'|trans({'%date%': source.blacklistedAt|localized_date('d MMM y')}) }}</div>
+                            {% elseif source.discoveredByAgent %}
                                 <div class="text-secondary">{{ 'jobboardSourceDiscoveredText'|trans({'%date%': source.discoveredAt|localized_date('d MMM y')}) }}</div>
                             {% endif %}
                         </td>
                         <td class="cm-actions">
                             <a class="cm-action cm-action--neutral" href="{{ path('app_settings_jobboard_sources', {edit: source.id}) }}">{{ 'jobboardSourceEditAction'|trans }}</a>
+                            {% if source.blacklisted %}
+                                <form method="post" action="{{ path('app_settings_jobboard_source_allow', {id: source.id}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('jobboard_source_blacklist') }}">
+                                    <button type="submit" class="cm-action cm-action--positive">{{ 'jobboardSourceAllowAction'|trans }}</button>
+                                </form>
+                            {% else %}
+                                {# Confirmed because it erases: the offers of this site go, and the next pass
+                                   brings back only what is still online, without its « première vue ». #}
+                                <form method="post" action="{{ path('app_settings_jobboard_source_blacklist', {id: source.id}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('jobboard_source_blacklist') }}">
+                                    <button type="submit" class="cm-action cm-action--warning"
+                                            data-controller="confirm-submit"
+                                            data-confirm-submit-message-value="{{ 'jobboardSourceBlacklistConfirmText'|trans({'%label%': source.label, '%count%': offers}) }}"
+                                            data-action="click->confirm-submit#confirm">{{ 'jobboardSourceBlacklistAction'|trans }}</button>
+                                </form>
+                            {% endif %}
                             {% if offers == 0 and cursors == 0 %}
                                 <form method="post" action="{{ path('app_settings_jobboard_source_delete', {id: source.id}) }}">
                                     <input type="hidden" name="_token" value="{{ csrf_token('jobboard_source_delete') }}">

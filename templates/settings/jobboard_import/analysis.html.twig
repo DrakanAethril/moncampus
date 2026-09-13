@@ -20,9 +20,12 @@
             <div class="cm-subhead__hint">{{ 'jobboardImportAnalysisHintText'|trans({'%track%': track.name}) }}</div>
         </div>
 
-        {# Nothing is written while this is on screen. The three numbers are what the confirmation
-           actually commits to, counted by the same parser the real pass will use. #}
-        <div class="cm-loan-summary" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 18px">
+        {# Nothing is written while this is on screen. The numbers are what the confirmation actually
+           commits to, counted by the same parser the real pass will use. « Ignorées » only appears
+           when the file names a blacklisted site - a fourth tile reading 0 on every ordinary import
+           would be a permanent question about a decision nobody took. #}
+        {% set blocked = report.blocked %}
+        <div class="cm-loan-summary" style="grid-template-columns: repeat({{ blocked > 0 ? 4 : 3 }}, 1fr); margin-bottom: 18px">
             <div>
                 <span class="cm-loan-summary__label">{{ 'jobboardOutcomeCreatedLabel'|trans }}</span>
                 <span class="cm-loan-summary__value">{{ report.created }}</span>
@@ -35,7 +38,23 @@
                 <span class="cm-loan-summary__label">{{ 'jobboardOutcomeRejectedLabel'|trans }}</span>
                 <span class="cm-loan-summary__value{{ report.rejected > 0 ? ' cm-loan-summary__value--late' }}">{{ report.rejected }}</span>
             </div>
+            {% if blocked > 0 %}
+                <div>
+                    <span class="cm-loan-summary__label">{{ 'jobboardOutcomeBlockedLabel'|trans }}</span>
+                    <span class="cm-loan-summary__value">{{ blocked }}</span>
+                </div>
+            {% endif %}
         </div>
+
+        {# Named site by site rather than line by line: what an administrator has to decide here is
+           whether the blacklist he set is the one he meant, and a hundred rows of the same site
+           would say it once too often. #}
+        {% if blocked > 0 %}
+            <div class="cm-subhead" style="margin-bottom: 18px">
+                <div class="cm-subhead__title">{{ 'jobboardImportBlockedHeading'|trans }}</div>
+                <div class="cm-subhead__hint">{{ 'jobboardImportBlockedHintText'|trans({'%count%': blocked, '%sources%': report.blockedSources|join(', ')}) }}</div>
+            </div>
+        {% endif %}
 
         {# What confirming will teach the platform about the sites themselves. Announced before the
            confirmation and not after, because it is the one thing on this screen that outlives the

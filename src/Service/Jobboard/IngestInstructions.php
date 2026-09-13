@@ -110,6 +110,12 @@ final readonly class IngestInstructions
             informatif : rien n'a été refusé. Mais si tu y vois un raccourcisseur de liens ou un
             agrégateur, c'est que tes URL ne pointent pas là où tu crois.
 
+            Un détail à ne pas lire comme une anomalie : `created + reviewed + rejected` peut être
+            **inférieur** au nombre d'offres envoyées, et la liste `offers` plus courte d'autant.
+            L'établissement peut écarter un site ; ses offres sont acceptées puis abandonnées, sans
+            motif et sans ligne. Il n'y a rien à corriger et rien à réessayer — continue de
+            collecter, la décision se prend et se défait côté plateforme.
+
             ## Les champs d'une offre
 
             | champ | obligatoire | remarque |
