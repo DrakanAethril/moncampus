@@ -116,11 +116,12 @@
                     </button>
                 </div>
             {% endif %}
-
-            {# The overlay and the panel live inside the list card: the detail opens *over* the list
-               (position:absolute on this section), it is not a page of its own. #}
-            <div class="cm-jb-veil" data-jobboard-target="veil" data-action="click->jobboard#closeDetail" hidden></div>
-            <aside class="cm-jb-panel" data-jobboard-target="panel" hidden aria-live="polite"></aside>
         </section>
+
+        {# The detail is a centred modal over the whole screen, not a page of its own: the reader
+           comes back to the list where they left it, filters and scroll position intact. It sits
+           outside the list card because it is no longer anchored to it. #}
+        <div class="cm-jb-veil" data-jobboard-target="veil" data-action="click->jobboard#closeDetail" hidden></div>
+        <div class="cm-jb-panel" role="dialog" aria-modal="true" aria-labelledby="jb-detail-title" data-jobboard-target="panel" hidden aria-live="polite"></div>
     </div>
 {% endblock %}

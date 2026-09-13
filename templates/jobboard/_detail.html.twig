@@ -1,9 +1,10 @@
-{# The detail panel, rendered server-side and injected into the overlay. Server-side because of one
-   line of this file: Source and Référence exist only for an administrator, and a fragment that
-   never carries them cannot leak them to a reader who opens the browser's inspector. #}
+{# The detail modal's content, rendered server-side and injected into the dialog. Server-side
+   because of one line of this file: Source and Référence exist only for an administrator, and a
+   fragment that never carries them cannot leak them to a reader who opens the browser's
+   inspector. #}
 <div class="cm-jb-panel__head">
     <div>
-        <h2 class="cm-jb-panel__title">{{ offer.position }}</h2>
+        <h2 class="cm-jb-panel__title" id="jb-detail-title">{{ offer.position }}</h2>
         <p class="cm-jb-panel__company">{{ offer.company }}</p>
     </div>
     <button type="button" class="cm-jb-panel__close" data-action="jobboard#closeDetail"
