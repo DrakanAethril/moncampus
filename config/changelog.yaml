@@ -26,6 +26,22 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.13'
+      date: '2026-09-13'
+      summary: "Les aménagements accordés à un étudiant sont désormais tenus dans l'application, et le premier d'entre eux allonge le temps dont il dispose sur les quiz. Une veille d'offres d'emploi et d'alternance fait par ailleurs son entrée, réservée à l'administration le temps d'être garnie."
+      entries:
+          - type: nouveaute
+            title: "Les aménagements d'un étudiant, et le temps supplémentaire sur les quiz"
+            detail: "Le catalogue des aménagements se tient dans la configuration, et la fiche d'un étudiant lui accorde ceux qui le concernent. Un aménagement ajoute aujourd'hui un pourcentage de temps sur les quiz : plusieurs ne s'additionnent pas, c'est le plus élevé qui s'applique, et le temps accordé est figé au début de la tentative. L'étudiant voit ses propres durées, son enseignant les retrouve sur sa copie, et personne d'autre. Le concours live reste hors du dispositif : une manche est une horloge pour toute la salle."
+          - type: nouveaute
+            title: "Une veille d'offres d'emploi et d'alternance"
+            detail: "Les offres collectées sont rassemblées et proposées en lecture, de la plus récente à la plus ancienne, chacune rattachée à sa filière. Les dépôts sont récapitulés jour par jour, et une offre publiée il y a plus d'un an est retirée."
+          - type: interne
+            title: "Les tâches planifiées de l'infrastructure se verrouillent elles-mêmes"
+            detail: "Une passe qui déborde sur l'heure de la suivante n'empile plus les exécutions ; une passe sautée est un succès."
+          - type: interne
+            title: "La réconciliation du Courrier pro alerte quand elle a dû rejouer"
+            detail: "Le constat partait jusqu'ici dans les journaux du serveur, c'est-à-dire nulle part ; il remonte désormais par le canal d'alerte de la plateforme."
     - version: '2026.09.12'
       date: '2026-09-12'
       summary: "Un tirage au sort s'enregistre désormais sous un nom et se reprend plus tard, avec la liste des élèves déjà tirés. Lire le document d'un travail « À lire » suffit à le régler, les propositions d'une question « ordre » se classent à la souris, et revenir sur le formulaire de connexion en étant déjà connecté ramène à l'accueil."
