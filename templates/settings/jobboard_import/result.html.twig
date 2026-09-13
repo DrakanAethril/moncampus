@@ -35,6 +35,40 @@
             </div>
         </div>
 
+        {# Said again after the fact, and not only before: the analysis screen announced these
+           gestures, this one records that they were made. The rows themselves live in the history,
+           which is where an administrator comes back to them. #}
+        {% if learned is not empty %}
+            <div class="cm-subhead" style="margin-top: 22px; margin-bottom: 10px">
+                <div class="cm-subhead__title">{{ 'jobboardImportLearningDoneHeading'|trans }}</div>
+                <div class="cm-subhead__hint">{{ 'jobboardImportLearningDoneHintText'|trans }}</div>
+            </div>
+            <table class="card-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'jobboardHistoryLearningKindColumn'|trans }}</th>
+                        <th>{{ 'jobboardHistoryLearningSourceColumn'|trans }}</th>
+                        <th>{{ 'jobboardHistoryLearningDomainColumn'|trans }}</th>
+                        <th>{{ 'jobboardHistoryLearningDeclaredColumn'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for learning in learned %}
+                        <tr>
+                            <td>
+                                <span class="cm-badge cm-badge--{{ learning.kind == 'source_created' ? 'purple' : 'teal' }}">
+                                    {{ (learning.kind == 'source_created' ? 'jobboardLearningSourceCreatedLabel' : 'jobboardLearningDomainAttachedLabel')|trans }}
+                                </span>
+                            </td>
+                            <td class="text-ink">{{ learning.source }}</td>
+                            <td><code>{{ learning.domain }}</code></td>
+                            <td class="text-secondary">{{ learning.declared }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+
         <div class="cm-actionbar">
             <div class="cm-actionbar__buttons">
                 <a class="cm-btn" href="{{ path('app_settings_jobboard_import') }}">{{ 'jobboardImportAgainAction'|trans }}</a>

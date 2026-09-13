@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service\Jobboard;
 
 use App\Entity\JobboardSource;
+use App\Enum\JobboardLearningKind;
 use App\Repository\JobboardSourceRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\String\Slugger\AsciiSlugger;
@@ -28,6 +29,13 @@ use Symfony\Contracts\Service\ResetInterface;
  * Nothing here ever refuses. Refusing was the behaviour being removed: the sites turn over faster
  * than a deploy, and an offer refused is an offer lost, since nothing stores what it refused.
  *
+ * **But everything it decides is written down**, which is the counterweight to never refusing: a
+ * resolution silent by design must not also be invisible. The two gestures that change the table
+ * for next time - a site created, a domain attached to an existing site - are journalled as they
+ * happen and handed to whoever asked for the resolution (`takeLearned()`). An administrator reads
+ * them on « Configuration > Jobboard > Historique », the agent reads them in the answer to its own
+ * call, and neither reading refuses anything: it is a diagnostic, not a gate.
+ *
  * **`ResetInterface`, and it is load-bearing rather than tidy.** The table is read once per request
  * and kept, because a batch of 500 offers would otherwise re-read it 500 times, and because a
  * source created on row 12 must be found again on row 13 - before any flush, where no query could
@@ -44,6 +52,15 @@ final class JobboardSourceResolver implements ResetInterface
      * @var list<JobboardSource>|null
      */
     private ?array $known = null;
+
+    /**
+     * The gestures made since the last drain, deduplicated: forty offers of one new site are one
+     * creation, and a dry run - which never attaches anything, so it meets the same unknown host on
+     * every line - must not announce forty attachments of the same domain.
+     *
+     * @var array<string, SourceLearning>
+     */
+    private array $learned = [];
 
     public function __construct(
         private readonly JobboardSourceRepository $sources,
@@ -114,9 +131,25 @@ final class JobboardSourceResolver implements ResetInterface
         return $source;
     }
 
+    /**
+     * The journal, emptied as it is read. Draining rather than reading is what keeps two deposits
+     * in one process from inheriting each other's gestures - and the caller is the only thing that
+     * knows which lot they belong to.
+     *
+     * @return list<SourceLearning>
+     */
+    public function takeLearned(): array
+    {
+        $learned = array_values($this->learned);
+        $this->learned = [];
+
+        return $learned;
+    }
+
     public function reset(): void
     {
         $this->known = null;
+        $this->learned = [];
     }
 
     /**
@@ -160,9 +193,13 @@ final class JobboardSourceResolver implements ResetInterface
             // The site moved, or it was first met through a cursor and had no domain yet. Attaching
             // rather than refusing is the point; the screen lists the domains of every source, so a
             // redirector picked up by accident is visible and removable.
+            $domain = self::registrable($host);
+
             if ($learn) {
-                $named->addDomain(self::registrable($host));
+                $named->addDomain($domain);
             }
+
+            $this->journal(JobboardLearningKind::DomainAttached, $named, $declared, $domain);
 
             return $named;
         }
@@ -195,7 +232,22 @@ final class JobboardSourceResolver implements ResetInterface
         // happen.
         $this->known = [...$this->all(), $source];
 
+        // Journalled only when a URL brought it. A site created by name alone comes from a cursor
+        // write, which belongs to no deposit of offers - and it is already legible on the sources
+        // screen, which says of every row whether a human decided it or the veille met it.
+        if (null !== $domain) {
+            $this->journal(JobboardLearningKind::SourceCreated, $source, $declared, $domain);
+        }
+
         return $source;
+    }
+
+    /** First writing wins: the gesture is the change, and the change happens once. */
+    private function journal(JobboardLearningKind $kind, JobboardSource $source, string $declared, string $domain): void
+    {
+        $learning = new SourceLearning($kind, $source, mb_substr(trim($declared), 0, 255), $domain);
+
+        $this->learned[$learning->identity()] ??= $learning;
     }
 
     private function byNormalisedName(string $normalised): ?JobboardSource

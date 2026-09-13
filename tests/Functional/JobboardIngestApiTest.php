@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Tests\Functional;
 
 use App\Entity\JobboardSource;
+use App\Entity\JobboardSourceLearning;
 use App\Entity\JobboardToken;
 use App\Entity\Section;
 use App\Entity\Track;
 use App\Entity\User;
+use App\Enum\JobboardLearningKind;
 use App\Repository\JobboardBatchRepository;
 use App\Repository\JobboardOfferRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -148,6 +150,41 @@ class JobboardIngestApiTest extends FunctionalTestCase
         $this->assertInstanceOf(JobboardSource::class, $source);
         $this->assertSame(['welcometothejungle.com'], $source->getDomains());
         $this->assertTrue($source->isDiscoveredByAgent());
+
+        // Filed silently would be filed invisibly. The answer says what the deposit decided, the
+        // row says it again with a date - and neither refuses the offer that caused it.
+        $this->assertSame([[
+            'kind' => 'source_created',
+            'source' => 'welcometothejungle',
+            'declared' => 'Welcome to the Jungle',
+            'domain' => 'welcometothejungle.com',
+        ]], $this->payload()['sources'] ?? null);
+
+        $learnings = static::getContainer()->get(EntityManagerInterface::class)
+            ->getRepository(JobboardSourceLearning::class)
+            ->findAll();
+
+        $this->assertCount(1, $learnings);
+        $this->assertSame(JobboardLearningKind::SourceCreated, $learnings[0]->getKind());
+        $this->assertSame($batch, $learnings[0]->getBatch()->getId());
+    }
+
+    /**
+     * An ordinary pass on a known host decides nothing, and the key stays there saying so: an agent
+     * parsing a shape that appears and disappears is one that stops parsing it.
+     */
+    public function testADepositOnAKnownSiteReportsNoLearning(): void
+    {
+        // The site has to exist for this to be the ordinary case: on an empty table every host is
+        // a discovery, which is the other half of the rule and the test just above.
+        $this->jobboardSource();
+        $this->token();
+        $batch = $this->openBatch();
+
+        $this->call('POST', '/api/jobboard/batches/'.$batch.'/offers', [$this->offer()], 'key-1');
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSame([], $this->payload()['sources'] ?? null);
     }
 
     /**

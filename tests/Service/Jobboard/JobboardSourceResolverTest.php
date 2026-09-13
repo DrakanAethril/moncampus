@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Service\Jobboard;
 
 use App\Entity\JobboardSource;
+use App\Enum\JobboardLearningKind;
 use App\Repository\JobboardSourceRepository;
 use App\Service\Jobboard\JobboardSourceResolver;
 use Doctrine\ORM\EntityManagerInterface;
@@ -93,6 +94,64 @@ class JobboardSourceResolverTest extends TestCase
 
         $this->assertSame($created, $again);
         $this->assertSame(['jobijoba.com'], $again->getDomains());
+    }
+
+    /**
+     * The counterweight to never refusing: what the resolution decides on its own is written down.
+     * Both gestures, and only those two - a host already known decides nothing new.
+     */
+    public function testWhatTheResolutionDecidesIsJournalled(): void
+    {
+        $resolver = $this->resolver();
+
+        $this->forUrl($resolver, 'meteojob', 'https://www.hellowork.com/x');
+        $this->forUrl($resolver, 'HelloWork', 'https://www.hellowork.fr/y');
+        $this->forUrl($resolver, 'Welcome to the Jungle', 'https://fr.welcometothejungle.com/z');
+
+        $learned = $resolver->takeLearned();
+
+        $this->assertCount(2, $learned);
+        $this->assertSame(JobboardLearningKind::DomainAttached, $learned[0]->kind);
+        $this->assertSame('hellowork.fr', $learned[0]->domain);
+        $this->assertSame('HelloWork', $learned[0]->declared);
+        $this->assertSame(JobboardLearningKind::SourceCreated, $learned[1]->kind);
+        $this->assertSame('welcometothejungle.com', $learned[1]->domain);
+    }
+
+    /**
+     * A dry run never attaches anything, so it meets the same unknown host on every line. Announcing
+     * it forty times would describe a pass that will happen once.
+     */
+    public function testAPreviewAnnouncesEachGestureOnce(): void
+    {
+        $resolver = $this->resolver();
+
+        $resolver->preview('HelloWork', 'www.hellowork.fr');
+        $resolver->preview('HelloWork', 'jobs.hellowork.fr');
+
+        $this->assertCount(1, $resolver->takeLearned());
+    }
+
+    /** Draining, not reading: two deposits in one process must not inherit each other's gestures. */
+    public function testTheJournalIsEmptiedAsItIsRead(): void
+    {
+        $resolver = $this->resolver();
+        $this->forUrl($resolver, 'Indeed', 'https://fr.indeed.com/1');
+
+        $this->assertCount(1, $resolver->takeLearned());
+        $this->assertSame([], $resolver->takeLearned());
+    }
+
+    /**
+     * A site created by name alone comes from a cursor write, which belongs to no deposit and
+     * carries no domain. The sources screen already says the veille brought it.
+     */
+    public function testASiteCreatedWithoutAUrlIsNotJournalled(): void
+    {
+        $resolver = $this->resolver();
+        $resolver->byName('Jobijoba', create: true);
+
+        $this->assertSame([], $resolver->takeLearned());
     }
 
     /** Closing an offer for a site nothing ever deposited closes nothing: there is nothing to create. */
