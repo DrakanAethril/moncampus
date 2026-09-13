@@ -4,20 +4,27 @@ declare(strict_types=1);
 
 namespace App\Service\Jobboard;
 
+use App\Entity\JobboardSource;
 use App\Enum\JobboardBtsAccess;
 use App\Enum\JobboardContract;
 use App\Enum\JobboardCountry;
 use App\Enum\JobboardLevelSource;
 use App\Enum\JobboardRemote;
-use App\Enum\JobboardSource;
+use App\Repository\JobboardSourceRepository;
 
 /**
  * The instruction sheet an administrator copies into the collecting agent.
  *
  * **It is generated, not written.** Every enumerated value, every limit and every source rule below
- * comes from the same constants OfferPayloadParser validates against. A sheet typed by hand would
- * be wrong the day a source is added, and it would be wrong *silently* - on the agent's side, where
- * nobody re-reads it.
+ * comes from the same constants OfferPayloadParser validates against, and the table of sites is
+ * read from the table the ingestion itself resolves against. A sheet typed by hand would be wrong
+ * the day a source is added, and it would be wrong *silently* - on the agent's side, where nobody
+ * re-reads it.
+ *
+ * Since the list of sites was opened, that table is a **reminder rather than a menu**: a site
+ * missing from it is not refused, it is created from the URL's domain. What the sheet insists on
+ * instead is the thing no platform can repair afterwards - a `source_ref` built the same way from
+ * one pass to the next.
  *
  * The text is French because it is read from a French screen by an agent that works in French. It
  * never contains a key: the secret is shown once, at creation, and pasting it in here would make it
@@ -27,17 +34,23 @@ final readonly class IngestInstructions
 {
     public const int MAX_OFFERS_PER_REQUEST = 500;
 
+    public function __construct(private JobboardSourceRepository $sources)
+    {
+    }
+
     public function markdown(string $baseUrl): string
     {
         $sources = implode("\n", array_map(
             static fn (JobboardSource $source): string => \sprintf(
                 '| `%s` | %s | %s | %s |',
-                $source->value,
-                $source->label(),
-                implode(', ', $source->domains()),
-                $source->refRule(),
+                $source->getSlug(),
+                $source->getLabel(),
+                implode(', ', $source->getDomains()),
+                // A site discovered on the fly has no rule anybody wrote down. Saying so is the
+                // honest answer; inventing one would make the agent change what it already sends.
+                $source->getRefRule() ?? 'règle non fixée — garde exactement celle que tu utilises déjà',
             ),
-            JobboardSource::cases(),
+            $this->sources->findAllOrdered(),
         ));
 
         $contracts = $this->quoted(JobboardContract::values());
@@ -94,9 +107,9 @@ final readonly class IngestInstructions
 
             | champ | obligatoire | remarque |
             |---|---|---|
-            | `source` | oui | une des valeurs du tableau ci-dessous |
+            | `source` | oui | le nom du site. Un site absent du tableau ci-dessous n'est **pas** refusé : la plateforme le crée à partir du domaine de l'`url` |
             | `source_ref` | oui | l'identifiant de l'offre **chez la source**, stable dans le temps |
-            | `url` | oui | doit appartenir au domaine de la source déclarée |
+            | `url` | oui | le lien de l'annonce, en `http`/`https`. C'est lui qui décide de la source : une URL d'un site connu range l'offre chez lui, quel que soit le nom déclaré |
             | `poste` | oui | l'intitulé tel qu'affiché |
             | `entreprise` | oui | `"Non précisée"` est une valeur acceptée |
             | `categorie` | non | texte libre, ton classement (`sisr`, `slam`, `mixte`, …) |
@@ -118,24 +131,36 @@ final readonly class IngestInstructions
             les confondre fausserait toute la lecture de la colonne. Même chose pour
             `niveau_source` : dis `estime` quand tu as déduit, l'incertitude doit rester visible.
 
-            ## Comment construire `source_ref`
+            ## Les sites déjà connus, et comment construire `source_ref`
 
-            C'est le champ qui décide si une offre revue est reconnue ou refilée en double. Garde
-            exactement ces règles — ce sont celles qui ont servi jusqu'ici.
+            `source_ref` est le champ qui décide si une offre revue est reconnue ou refilée en
+            double. Garde exactement ces règles — ce sont celles qui ont servi jusqu'ici.
 
             | source | nom | domaines | `source_ref` |
             |---|---|---|---|
             {$sources}
 
+            **Ce tableau n'est pas une liste fermée.** Un site qui n'y figure pas s'envoie
+            normalement : donne-lui un nom, la plateforme le crée à partir du domaine de l'`url` et
+            il apparaîtra ici au passage suivant. Deux exigences, en revanche, et elles ne se
+            rattrapent pas après coup :
+
+            - **garde le même nom d'un passage à l'autre** — c'est ainsi que le site est reconnu
+              tant qu'il n'a pas encore de domaine enregistré ;
+            - **garde la même règle de `source_ref`** — un identifiant construit autrement crée un
+              doublon, et la date de première vue de l'offre d'origine est perdue pour toujours.
+
             ## Ce qui est refusé
 
             - une `date_publication` dans le futur ;
-            - un `contrat`, `pays`, `teletravail`, `niveau_source`, `acces_bts` ou `source` hors de
-              sa liste ;
+            - un `contrat`, `pays`, `teletravail`, `niveau_source` ou `acces_bts` hors de sa liste ;
             - un `niveau_source` absent ;
             - un `departement` renseigné alors que le pays n'est pas la France, ou hors format ;
-            - une `url` dont le domaine ne correspond pas à la source déclarée ;
+            - une `url` qui n'est pas un lien (`http`/`https` et un domaine lisible) ;
             - un champ obligatoire vide.
+
+            **La `source` n'est plus un motif de refus**, et c'est volontaire : les sites de veille
+            changent plus vite qu'une mise en production, et une offre refusée est une offre perdue.
 
             Ne sont **pas** refusés, ce sont des cas normaux : une date de publication absente, une
             ville vide, une entreprise à « Non précisée », une catégorie inconnue.

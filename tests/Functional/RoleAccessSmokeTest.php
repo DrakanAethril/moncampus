@@ -272,6 +272,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // business and is pinned by FeatureDefaultsTest.
             '/jobboard' => 200,
             '/settings/jobboard/api' => 403,
+            '/settings/jobboard/sources' => 403,
             '/settings/jobboard/import' => 403,
             '/settings/jobboard/history' => 403,
             '/technical/data-model' => 200,
@@ -440,6 +441,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // teacher's business.
             '/jobboard' => 200,
             '/settings/jobboard/api' => 403,
+            '/settings/jobboard/sources' => 403,
             '/settings/jobboard/import' => 403,
             '/settings/jobboard/history' => 403,
             '/technical/data-model' => 200,
@@ -597,6 +599,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // alone: the ingestion keys, and the manual import of a file of offers.
             '/jobboard' => 200,
             '/settings/jobboard/api' => 200,
+            '/settings/jobboard/sources' => 200,
             '/settings/jobboard/import' => 200,
             '/settings/jobboard/history' => 200,
             '/technical/data-model' => 200,
@@ -735,6 +738,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // board rather than a 404: the feature exists, it simply has nothing for them.
             '/jobboard' => 200,
             '/settings/jobboard/api' => 403,
+            '/settings/jobboard/sources' => 403,
             '/settings/jobboard/import' => 403,
             '/settings/jobboard/history' => 403,
             '/technical/data-model' => 200,

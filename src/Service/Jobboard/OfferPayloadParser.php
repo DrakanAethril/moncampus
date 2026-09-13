@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Service\Jobboard;
 
+use App\Entity\JobboardSource;
 use App\Enum\JobboardBtsAccess;
 use App\Enum\JobboardContract;
 use App\Enum\JobboardCountry;
 use App\Enum\JobboardLevelSource;
 use App\Enum\JobboardRemote;
-use App\Enum\JobboardSource;
 use Symfony\Component\Clock\ClockInterface;
 
 /**
@@ -24,6 +24,14 @@ use Symfony\Component\Clock\ClockInterface;
  * changes exactly two things: the old field names are accepted as aliases, and `date_reperage`
  * becomes the offer's first-seen stamp. The rules themselves are not duplicated - writing them
  * twice is the surest way to see the two doors disagree.
+ *
+ * **The source is no longer among the refusals.** It used to be: a closed enum, and an offer from a
+ * site nobody had added yet was refused with `unknown_source` and lost, because nothing here stores
+ * what it refuses. The sites turn over faster than a deploy, so the question was turned around -
+ * the URL says which source an offer belongs to, and an unknown one is created rather than
+ * refused (App\Service\Jobboard\JobboardSourceResolver). What survives of the old check is
+ * stronger than it was: a URL that is not a link at all is still refused, and a host that belongs
+ * to a known site wins over whatever name the agent declared.
  */
 final readonly class OfferPayloadParser
 {
@@ -32,29 +40,35 @@ final readonly class OfferPayloadParser
 
     private const string DEPARTEMENT_PATTERN = '/^(?:97[1-6]|2A|2B|0[1-9]|[1-8][0-9]|9[0-5])$/';
 
-    public function __construct(private ClockInterface $clock)
-    {
+    public function __construct(
+        private ClockInterface $clock,
+        private JobboardSourceResolver $sources,
+    ) {
     }
 
     /**
      * @param array<array-key, mixed> $data
+     * @param bool                    $learn whether resolving an unknown site may create it - false
+     *                                       for the import's dry run, which announces what the real
+     *                                       pass will do and writes nothing
      *
      * @throws OfferRejectedException
      */
-    public function parse(array $data, bool $legacy = false): OfferPayload
+    public function parse(array $data, bool $legacy = false, bool $learn = true): OfferPayload
     {
-        $source = JobboardSource::tryFromLoose($this->requiredString($data, 'source'));
+        $declared = $this->requiredString($data, 'source');
+        $url = $this->requiredString($data, 'url', 1000);
+        $host = JobboardSourceResolver::hostOf($url);
 
-        if (null === $source) {
-            throw new OfferRejectedException(JobboardRejection::UnknownSource, 'source');
+        if (null === $host) {
+            throw new OfferRejectedException(JobboardRejection::InvalidUrl, 'url');
         }
+
+        $source = $learn ? $this->sources->resolve($declared, $host) : $this->sources->preview($declared, $host);
 
         $sourceRef = $legacy
             ? $this->legacyRef($data, $source)
             : $this->requiredString($data, 'source_ref');
-
-        $url = $this->requiredString($data, 'url');
-        $this->assertUrlBelongsToSource($url, $source);
 
         $contract = JobboardContract::tryFromLoose($this->requiredString($data, 'contrat'));
         if (null === $contract) {
@@ -131,15 +145,25 @@ final readonly class OfferPayloadParser
     /**
      * The legacy file has no `source_ref`: it carries `hw-83313525`, the prefix being the source.
      * This is the rule the published instructions quote back to the agent - see
-     * App\Enum\JobboardSource::refRule() and design/validated/jobboard.md §8.2, where it is also
-     * said why the URL is not used instead.
+     * App\Entity\JobboardSource::getRefRule() and design/validated/jobboard.md §8.2, where it is
+     * also said why the URL is not used instead.
+     *
+     * A source discovered since the list was opened carries no prefix, and the id is then kept
+     * whole. Guessing one - stripping any two letters and a dash - would silently merge two offers
+     * whose real identifiers happen to start that way.
      *
      * @param array<array-key, mixed> $data
      */
     private function legacyRef(array $data, JobboardSource $source): string
     {
         $id = $this->requiredString($data, 'id');
-        $prefix = $source->legacyPrefix().'-';
+        $legacyPrefix = $source->getLegacyPrefix();
+
+        if (null === $legacyPrefix || '' === $legacyPrefix) {
+            return $id;
+        }
+
+        $prefix = $legacyPrefix.'-';
 
         return str_starts_with($id, $prefix) ? substr($id, \strlen($prefix)) : $id;
     }
@@ -238,25 +262,5 @@ final readonly class OfferPayloadParser
         // Truncated rather than refused: a title three characters too long is not a reason to lose
         // an offer, and the column is the only thing that cares.
         return '' === $value ? null : mb_substr($value, 0, $maxLength);
-    }
-
-    /** @throws OfferRejectedException */
-    private function assertUrlBelongsToSource(string $url, JobboardSource $source): void
-    {
-        $host = parse_url($url, \PHP_URL_HOST);
-
-        if (!\is_string($host)) {
-            throw new OfferRejectedException(JobboardRejection::UrlDomainMismatch, 'url');
-        }
-
-        $host = strtolower($host);
-
-        foreach ($source->domains() as $domain) {
-            if ($host === $domain || str_ends_with($host, '.'.$domain)) {
-                return;
-            }
-        }
-
-        throw new OfferRejectedException(JobboardRejection::UrlDomainMismatch, 'url');
     }
 }

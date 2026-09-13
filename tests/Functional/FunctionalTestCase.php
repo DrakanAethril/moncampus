@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Functional;
 
 use App\Entity\Cohort;
+use App\Entity\JobboardSource;
 use App\Entity\Program;
 use App\Entity\SchoolYear;
 use App\Entity\Section;
@@ -203,5 +204,26 @@ abstract class FunctionalTestCase extends WebTestCase
         $this->entityManager->flush();
 
         return $program;
+    }
+
+    /**
+     * HelloWork, as a row - the shape every jobboard fixture needs since the list of sites stopped
+     * being an enum. Found rather than created when the migration that seeds the nine declared
+     * sites has already run, so the same test passes on a freshly migrated database and on one
+     * built from the mapping.
+     */
+    protected function jobboardSource(string $slug = 'hellowork', string $label = 'HelloWork', string $domain = 'hellowork.com'): JobboardSource
+    {
+        $existing = $this->entityManager->getRepository(JobboardSource::class)->findOneBy(['slug' => $slug]);
+
+        if ($existing instanceof JobboardSource) {
+            return $existing;
+        }
+
+        $source = new JobboardSource($slug, $label, [$domain]);
+        $this->entityManager->persist($source);
+        $this->entityManager->flush();
+
+        return $source;
     }
 }

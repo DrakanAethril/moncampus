@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service\Jobboard;
 
 use App\Entity\JobboardOffer;
+use App\Entity\JobboardSource;
 use App\Entity\Track;
 use App\Entity\User;
 use App\Repository\JobboardOfferRepository;
@@ -48,8 +49,11 @@ final readonly class JobboardOfferFinder
         }
 
         $qb = $this->offers->createOpenOffersQueryBuilder($tracks)
-            ->addSelect('tr')
+            ->addSelect('tr', 'so')
             ->leftJoin('o.track', 'tr')
+            // Joined rather than lazily loaded: the source carries the trade name every row of an
+            // administrator's list prints, and forty lazy proxies is forty queries.
+            ->leftJoin('o.source', 'so')
             ->orderBy('o.firstSeenAt', 'DESC')
             ->addOrderBy('o.id', 'DESC')
             ->setMaxResults(self::PAGE_SIZE + 1);
@@ -91,9 +95,23 @@ final readonly class JobboardOfferFinder
     }
 
     /**
-     * The values the « Catégorie », « Région », « Pays » and « Source » menus offer: what is
-     * actually in the reader's perimeter, never a list written in advance. A menu proposing
-     * « Bretagne » to somebody whose filière has no Breton offer is a filter that returns nothing.
+     * The sites the « Source » menu offers - the rows actually present in the reader's perimeter.
+     * Administrators only see this filter at all, but the perimeter is applied here just the same:
+     * a query is not the place to trust who is asking.
+     *
+     * @return list<JobboardSource>
+     */
+    public function sources(?User $reader): array
+    {
+        $tracks = $this->perimeter->tracks($reader);
+
+        return [] === $tracks ? [] : $this->offers->findSourcesInPerimeter($tracks);
+    }
+
+    /**
+     * The values the « Catégorie », « Région » and « Pays » menus offer: what is actually in the
+     * reader's perimeter, never a list written in advance. A menu proposing « Bretagne » to
+     * somebody whose filière has no Breton offer is a filter that returns nothing.
      *
      * @return list<string>
      */
@@ -101,7 +119,7 @@ final readonly class JobboardOfferFinder
     {
         $tracks = $this->perimeter->tracks($reader);
 
-        if ([] === $tracks || !\in_array($field, ['category', 'region', 'country', 'source'], true)) {
+        if ([] === $tracks || !\in_array($field, ['category', 'region', 'country'], true)) {
             return [];
         }
 
@@ -158,12 +176,15 @@ final readonly class JobboardOfferFinder
             $qb->andWhere('o.firstSeenAt >= :firstSeenFrom')->setParameter('firstSeenFrom', $filters->firstSeenFrom);
         }
 
+        if ([] !== $filters->sources) {
+            $qb->andWhere('so.slug IN (:sources)')->setParameter('sources', $filters->sources);
+        }
+
         $this->applyIn($qb, 'contract', 'contracts', $filters->contracts);
         $this->applyIn($qb, 'category', 'categories', $filters->categories);
         $this->applyIn($qb, 'remote', 'remotes', $filters->remotes);
         $this->applyIn($qb, 'country', 'countries', $filters->countries);
         $this->applyIn($qb, 'region', 'regions', $filters->regions);
-        $this->applyIn($qb, 'source', 'sources', $filters->sources);
         $this->applyIn($qb, 'btsAccess', 'btsAccess', $filters->btsAccess);
     }
 

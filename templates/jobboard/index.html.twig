@@ -75,8 +75,8 @@
                everybody else, so typing them into the address bar changes nothing. #}
             {% if isAdmin %}
                 {{ widget.multiselect('source', 'jobboardFilterSourceLabel'|trans, 'jobboardFilterSourcePlaceholder'|trans,
-                    sources|map(s => {value: s.value, label: s.label}),
-                    filters.sources|map(s => s.value)) }}
+                    sources|map(s => {value: s.slug, label: s.label}),
+                    filters.sources) }}
 
                 {{ widget.multiselect('acces', 'jobboardFilterBtsAccessLabel'|trans, 'jobboardFilterBtsAccessPlaceholder'|trans,
                     btsAccessValues|map(a => {value: a.value, label: a.labelKey|trans}),

@@ -7,13 +7,13 @@ namespace App\Controller\Api;
 use App\Entity\JobboardBatch;
 use App\Entity\JobboardBatchRequest;
 use App\Entity\JobboardCursor;
-use App\Enum\JobboardSource;
 use App\Repository\JobboardBatchRepository;
 use App\Repository\JobboardBatchRequestRepository;
 use App\Repository\JobboardCursorRepository;
 use App\Repository\JobboardOfferRepository;
 use App\Service\Jobboard\IngestAuthenticator;
 use App\Service\Jobboard\IngestInstructions;
+use App\Service\Jobboard\JobboardSourceResolver;
 use App\Service\Jobboard\OfferIngestor;
 use App\Service\JsonRequestPayload;
 use Doctrine\ORM\EntityManagerInterface;
@@ -46,6 +46,7 @@ class JobboardIngestController extends AbstractController
     public function __construct(
         private readonly IngestAuthenticator $authenticator,
         private readonly EntityManagerInterface $entityManager,
+        private readonly JobboardSourceResolver $sources,
     ) {
     }
 
@@ -152,7 +153,7 @@ class JobboardIngestController extends AbstractController
 
         return new JsonResponse([
             'cursors' => array_map(static fn (JobboardCursor $cursor): array => [
-                'source' => $cursor->getSource()->value,
+                'source' => $cursor->getSource()->getSlug(),
                 'search' => $cursor->getSearch(),
                 'last_ref' => $cursor->getLastRef(),
                 'last_published_at' => $cursor->getLastPublishedAt()?->format('Y-m-d'),
@@ -167,7 +168,10 @@ class JobboardIngestController extends AbstractController
         $token = $this->authenticator->authenticate($request);
         $payload = JsonRequestPayload::fromRequest($request);
 
-        $source = JobboardSource::tryFromLoose($payload->string('source'));
+        // A cursor carries no URL, so the site can only be named here. An agent legitimately writes
+        // a cursor before its first batch, so a name nobody has seen yet creates the source rather
+        // than refusing the call - the domain will be attached by the first offer that arrives.
+        $source = $this->sources->byName($payload->string('source'), create: true);
         $search = trim($payload->string('search'));
 
         if (null === $source || '' === $search) {
@@ -198,7 +202,7 @@ class JobboardIngestController extends AbstractController
         $cursor->moveTo('' === $lastRef ? null : mb_substr($lastRef, 0, 190), $publishedAt);
         $this->entityManager->flush();
 
-        return new JsonResponse(['source' => $source->value, 'search' => $cursor->getSearch()]);
+        return new JsonResponse(['source' => $source->getSlug(), 'search' => $cursor->getSearch()]);
     }
 
     #[Route(path: '/api/jobboard/offers/close', name: 'api_jobboard_offers_close', methods: ['POST'])]
@@ -212,7 +216,9 @@ class JobboardIngestController extends AbstractController
 
         $identities = [];
         foreach (JsonRequestPayload::fromRequest($request)->objects('offers') as $row) {
-            $source = JobboardSource::tryFromLoose($row->string('source'));
+            // Never created here: naming a site no offer ever came from closes nothing, and a
+            // closing call is not a place to learn what exists.
+            $source = $this->sources->byName($row->string('source'));
             $ref = trim($row->string('source_ref'));
 
             if (null !== $source && '' !== $ref) {
@@ -225,7 +231,7 @@ class JobboardIngestController extends AbstractController
         $closed = 0;
 
         foreach ($identities as $identity) {
-            $offer = $found[$identity['source']->value.'|'.$identity['ref']] ?? null;
+            $offer = $found[$identity['source']->getSlug().'|'.$identity['ref']] ?? null;
 
             if (null !== $offer && !$offer->isClosed()) {
                 // Closed, never deleted: how long an advert stayed online is an information in

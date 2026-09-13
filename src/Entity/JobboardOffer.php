@@ -9,7 +9,6 @@ use App\Enum\JobboardContract;
 use App\Enum\JobboardCountry;
 use App\Enum\JobboardLevelSource;
 use App\Enum\JobboardRemote;
-use App\Enum\JobboardSource;
 use App\Repository\JobboardOfferRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
@@ -31,7 +30,7 @@ use Doctrine\ORM\Mapping as ORM;
  */
 #[ORM\Entity(repositoryClass: JobboardOfferRepository::class)]
 #[ORM\Table(name: 'jobboard_offer')]
-#[ORM\UniqueConstraint(name: 'uniq_jobboard_offer_identity', columns: ['track_id', 'source', 'source_ref'])]
+#[ORM\UniqueConstraint(name: 'uniq_jobboard_offer_identity', columns: ['track_id', 'source_id', 'source_ref'])]
 #[ORM\Index(name: 'idx_jobboard_offer_listing', columns: ['track_id', 'closed_at', 'first_seen_at', 'id'])]
 #[ORM\Index(name: 'idx_jobboard_offer_departement', columns: ['track_id', 'departement'])]
 #[ORM\Index(name: 'idx_jobboard_offer_contract', columns: ['track_id', 'contract'])]
@@ -48,7 +47,12 @@ class JobboardOffer
     #[ORM\JoinColumn(name: 'track_id', nullable: false, onDelete: 'CASCADE')]
     private Track $track;
 
-    #[ORM\Column(length: 32, enumType: JobboardSource::class)]
+    // A row rather than an enum case since the list of sites was opened: the veille meets new
+    // boards faster than a deploy could add them, and a source nobody declared is created on
+    // first sight (App\Service\Jobboard\JobboardSourceResolver). It is still part of this
+    // offer's identity, and still never rewritten by a later pass.
+    #[ORM\ManyToOne(targetEntity: JobboardSource::class)]
+    #[ORM\JoinColumn(name: 'source_id', nullable: false, onDelete: 'RESTRICT')]
     private JobboardSource $source;
 
     #[ORM\Column(name: 'source_ref', length: 190)]

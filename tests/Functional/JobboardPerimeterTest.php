@@ -8,7 +8,6 @@ use App\Entity\JobboardOffer;
 use App\Entity\Track;
 use App\Entity\User;
 use App\Enum\JobboardContract;
-use App\Enum\JobboardSource;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -161,7 +160,7 @@ class JobboardPerimeterTest extends FunctionalTestCase
         // The reference is deliberately not a substring of the URL: the URL is shown to every
         // reader by « Voir l'offre », so a reference hidden inside it would make the test pass for
         // the wrong reason.
-        $offer = new JobboardOffer($track, JobboardSource::Hellowork, 'REF-SECRET-42', new \DateTimeImmutable());
+        $offer = new JobboardOffer($track, $this->jobboardSource(), 'REF-SECRET-42', new \DateTimeImmutable());
         $offer
             ->setUrl('https://www.hellowork.com/fr-fr/emplois/83313525.html')
             ->setPosition($position)

@@ -8,7 +8,6 @@ use App\Entity\JobboardOffer;
 use App\Entity\Track;
 use App\Entity\User;
 use App\Enum\JobboardContract;
-use App\Enum\JobboardSource;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -81,7 +80,7 @@ class JobboardOrderTest extends FunctionalTestCase
     ): JobboardOffer {
         $offer = new JobboardOffer(
             $track,
-            JobboardSource::Hellowork,
+            $this->jobboardSource(),
             $reference,
             new \DateTimeImmutable($firstSeen),
         );
