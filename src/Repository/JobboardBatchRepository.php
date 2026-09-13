@@ -27,8 +27,8 @@ class JobboardBatchRepository extends ServiceEntityRepository
     public function findLatest(int $limit = 10): array
     {
         return $this->createQueryBuilder('b')
-            ->addSelect('s', 't', 'u')
-            ->leftJoin('b.section', 's')
+            ->addSelect('tr', 't', 'u')
+            ->leftJoin('b.track', 'tr')
             ->leftJoin('b.token', 't')
             ->leftJoin('b.importedBy', 'u')
             ->orderBy('b.openedAt', 'DESC')
@@ -123,8 +123,8 @@ class JobboardBatchRepository extends ServiceEntityRepository
     public function findImports(int $limit): array
     {
         return $this->createQueryBuilder('b')
-            ->addSelect('s', 'u')
-            ->leftJoin('b.section', 's')
+            ->addSelect('tr', 'u')
+            ->leftJoin('b.track', 'tr')
             ->leftJoin('b.importedBy', 'u')
             ->andWhere('b.token IS NULL')
             ->orderBy('b.openedAt', 'DESC')

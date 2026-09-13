@@ -6,7 +6,7 @@ namespace App\Tests\Service\Jobboard;
 
 use App\Entity\JobboardBatch;
 use App\Entity\JobboardToken;
-use App\Entity\Section;
+use App\Entity\Track;
 use App\Repository\JobboardBatchRepository;
 use App\Repository\JobboardTokenRepository;
 use App\Service\Jobboard\JobboardHistory;
@@ -139,7 +139,7 @@ class JobboardHistoryTest extends TestCase
 
     private function token(int $id, string $label): JobboardToken
     {
-        $token = new JobboardToken($label, $this->createStub(Section::class), 'selector0001', 'hash', null);
+        $token = new JobboardToken($label, $this->createStub(Track::class), 'selector0001', 'hash', null);
         (new \ReflectionProperty($token, 'id'))->setValue($token, $id);
 
         return $token;
@@ -147,7 +147,7 @@ class JobboardHistoryTest extends TestCase
 
     private function import(string $at, int $created = 0, int $reviewed = 0, int $rejected = 0): JobboardBatch
     {
-        $batch = JobboardBatch::forImport($this->createStub(Section::class), null);
+        $batch = JobboardBatch::forImport($this->createStub(Track::class), null);
         (new \ReflectionProperty($batch, 'openedAt'))->setValue($batch, new \DateTimeImmutable($at));
         $batch->tally($created, $reviewed, $rejected);
 

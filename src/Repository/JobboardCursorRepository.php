@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\JobboardCursor;
-use App\Entity\Section;
+use App\Entity\Track;
 use App\Enum\JobboardSource;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -21,19 +21,19 @@ class JobboardCursorRepository extends ServiceEntityRepository
     }
 
     /** @return list<JobboardCursor> */
-    public function findForSection(Section $section): array
+    public function findForTrack(Track $track): array
     {
         return $this->createQueryBuilder('c')
-            ->andWhere('c.section = :section')
-            ->setParameter('section', $section)
+            ->andWhere('c.track = :track')
+            ->setParameter('track', $track)
             ->orderBy('c.source', 'ASC')
             ->addOrderBy('c.search', 'ASC')
             ->getQuery()
             ->getResult();
     }
 
-    public function findOneByScope(Section $section, JobboardSource $source, string $search): ?JobboardCursor
+    public function findOneByScope(Track $track, JobboardSource $source, string $search): ?JobboardCursor
     {
-        return $this->findOneBy(['section' => $section, 'source' => $source, 'search' => $search]);
+        return $this->findOneBy(['track' => $track, 'source' => $source, 'search' => $search]);
     }
 }

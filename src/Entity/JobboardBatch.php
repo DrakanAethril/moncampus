@@ -34,9 +34,9 @@ class JobboardBatch
     #[ORM\JoinColumn(name: 'imported_by_id', nullable: true, onDelete: 'SET NULL')]
     private ?User $importedBy = null;
 
-    #[ORM\ManyToOne(targetEntity: Section::class)]
-    #[ORM\JoinColumn(name: 'section_id', nullable: false, onDelete: 'CASCADE')]
-    private Section $section;
+    #[ORM\ManyToOne(targetEntity: Track::class)]
+    #[ORM\JoinColumn(name: 'track_id', nullable: false, onDelete: 'CASCADE')]
+    private Track $track;
 
     #[ORM\Column(name: 'opened_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $openedAt;
@@ -60,23 +60,23 @@ class JobboardBatch
     #[ORM\Column(name: 'closed_count')]
     private int $closedCount = 0;
 
-    private function __construct(Section $section)
+    private function __construct(Track $track)
     {
-        $this->section = $section;
+        $this->track = $track;
         $this->openedAt = new \DateTimeImmutable();
     }
 
     public static function forToken(JobboardToken $token): self
     {
-        $batch = new self($token->getSection());
+        $batch = new self($token->getTrack());
         $batch->token = $token;
 
         return $batch;
     }
 
-    public static function forImport(Section $section, ?User $importedBy): self
+    public static function forImport(Track $track, ?User $importedBy): self
     {
-        $batch = new self($section);
+        $batch = new self($track);
         $batch->importedBy = $importedBy;
 
         return $batch;
@@ -97,9 +97,9 @@ class JobboardBatch
         return $this->importedBy;
     }
 
-    public function getSection(): Section
+    public function getTrack(): Track
     {
-        return $this->section;
+        return $this->track;
     }
 
     public function getOpenedAt(): \DateTimeImmutable

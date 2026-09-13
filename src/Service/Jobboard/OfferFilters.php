@@ -35,7 +35,7 @@ final readonly class OfferFilters
      * @param list<JobboardRemote>   $remotes
      * @param list<JobboardCountry>  $countries
      * @param list<string>           $regions
-     * @param list<int>              $sectionIds
+     * @param list<int>              $trackIds
      * @param list<JobboardSource>   $sources
      * @param list<JobboardBtsAccess> $btsAccess
      */
@@ -47,7 +47,7 @@ final readonly class OfferFilters
         public array $remotes = [],
         public array $countries = [],
         public array $regions = [],
-        public array $sectionIds = [],
+        public array $trackIds = [],
         public array $sources = [],
         public array $btsAccess = [],
     ) {
@@ -67,7 +67,7 @@ final readonly class OfferFilters
             remotes: self::enums($request, 'teletravail', JobboardRemote::class),
             countries: self::enums($request, 'pays', JobboardCountry::class),
             regions: self::strings($request, 'region', 120),
-            sectionIds: array_values(array_filter(array_map(intval(...), self::strings($request, 'filiere', 12)))),
+            trackIds: array_values(array_filter(array_map(intval(...), self::strings($request, 'filiere', 12)))),
             sources: self::enums($request, 'source', JobboardSource::class),
             btsAccess: self::enums($request, 'acces', JobboardBtsAccess::class),
         );
@@ -83,7 +83,7 @@ final readonly class OfferFilters
             && [] === $this->remotes
             && [] === $this->countries
             && [] === $this->regions
-            && [] === $this->sectionIds
+            && [] === $this->trackIds
             && [] === $this->sources
             && [] === $this->btsAccess;
     }
@@ -99,7 +99,7 @@ final readonly class OfferFilters
             remotes: $this->remotes,
             countries: $this->countries,
             regions: $this->regions,
-            sectionIds: $this->sectionIds,
+            trackIds: $this->trackIds,
         );
     }
 

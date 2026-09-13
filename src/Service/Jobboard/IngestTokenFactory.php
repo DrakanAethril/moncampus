@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Service\Jobboard;
 
 use App\Entity\JobboardToken;
-use App\Entity\Section;
+use App\Entity\Track;
 use App\Entity\User;
 
 /**
@@ -21,12 +21,12 @@ final readonly class IngestTokenFactory
     /**
      * @return array{token: JobboardToken, secret: string} the secret is shown once and never stored
      */
-    public function create(string $label, Section $section, ?User $createdBy): array
+    public function create(string $label, Track $track, ?User $createdBy): array
     {
         $selector = bin2hex(random_bytes(JobboardToken::SELECTOR_LENGTH / 2));
         $verifier = bin2hex(random_bytes(JobboardToken::VERIFIER_LENGTH / 2));
 
-        $token = new JobboardToken($label, $section, $selector, hash('sha256', $verifier), $createdBy);
+        $token = new JobboardToken($label, $track, $selector, hash('sha256', $verifier), $createdBy);
 
         return [
             'token' => $token,

@@ -5,15 +5,17 @@ declare(strict_types=1);
 namespace App\Controller\Settings;
 
 use App\Entity\JobboardBatch;
-use App\Entity\Section;
+use App\Entity\Track;
 use App\Entity\User;
 use App\Form\JobboardImportType;
-use App\Repository\SectionRepository;
+use App\Repository\TrackRepository;
+use App\Service\Jobboard\LegacyFileFormat;
 use App\Service\Jobboard\OfferIngestor;
 use App\Service\UploadIntake;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormError;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -38,57 +40,76 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 #[IsGranted('ROLE_ADMIN')]
 class JobboardImportController extends AbstractController
 {
-    /** A file bigger than this is not a legacy export, it is a mistake. */
-    private const int MAX_ROWS = 2000;
-
     private const string ROWS_SESSION_KEY = 'jobboard_import_rows';
 
     private const string FILE_SESSION_KEY = 'jobboard_import_file';
 
-    private const string SECTION_SESSION_KEY = 'jobboard_import_section';
+    private const string TRACK_SESSION_KEY = 'jobboard_import_track';
 
     private const string OUTCOME_SESSION_KEY = 'jobboard_import_outcome';
 
     #[Route(path: '/settings/jobboard/import', name: 'app_settings_jobboard_import', methods: ['GET', 'POST'])]
-    public function upload(Request $request, UploadIntake $uploadIntake, TranslatorInterface $translator): Response
+    public function upload(Request $request, UploadIntake $uploadIntake, TranslatorInterface $translator, LegacyFileFormat $format): Response
     {
         $form = $this->createForm(JobboardImportType::class);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $section = $form->get('section')->getData();
+            $track = $form->get('track')->getData();
             $file = $uploadIntake->asLocalFile($form->get('file')->getData());
             $rows = $this->readRows((string) file_get_contents($file->getPathname()));
 
-            if (null === $rows || !$section instanceof Section) {
+            if (null === $rows || !$track instanceof Track) {
                 $form->addError(new FormError($translator->trans('jobboardImportUnreadableFileMessage')));
             } else {
                 $session = $request->getSession();
                 $session->set(self::ROWS_SESSION_KEY, $rows);
                 $session->set(self::FILE_SESSION_KEY, $file->getClientOriginalName());
-                $session->set(self::SECTION_SESSION_KEY, $section->getId());
+                $session->set(self::TRACK_SESSION_KEY, $track->getId());
 
                 return $this->redirectToRoute('app_settings_jobboard_import_analysis');
             }
         }
 
-        return $this->render('settings/jobboard_import/upload.html.twig', ['form' => $form]);
+        return $this->render('settings/jobboard_import/upload.html.twig', [
+            'form' => $form,
+            // Written from the enums the parser validates against, on the screen where somebody is
+            // about to trust it - never typed by hand next to the rules it describes.
+            'format' => $format->markdown(),
+        ]);
+    }
+
+    /**
+     * The example file, two offers, generated rather than stored: its dates are read off the clock
+     * because a `date_publication` in the future is refused, and a sample that expires is worse
+     * than none.
+     */
+    #[Route(path: '/settings/jobboard/import/example', name: 'app_settings_jobboard_import_example', methods: ['GET'])]
+    public function example(LegacyFileFormat $format): Response
+    {
+        return new Response($format->sample(), Response::HTTP_OK, [
+            'Content-Type' => 'application/json; charset=utf-8',
+            'Content-Disposition' => HeaderUtils::makeDisposition(
+                HeaderUtils::DISPOSITION_ATTACHMENT,
+                LegacyFileFormat::SAMPLE_FILENAME,
+            ),
+        ]);
     }
 
     #[Route(path: '/settings/jobboard/import/analysis', name: 'app_settings_jobboard_import_analysis', methods: ['GET'])]
-    public function analysis(Request $request, OfferIngestor $ingestor, SectionRepository $sections): Response
+    public function analysis(Request $request, OfferIngestor $ingestor, TrackRepository $tracks): Response
     {
-        $parked = $this->parked($request, $sections);
+        $parked = $this->parked($request, $tracks);
 
         if (null === $parked) {
             return $this->redirectToRoute('app_settings_jobboard_import');
         }
 
-        [$rows, $section] = $parked;
+        [$rows, $track] = $parked;
 
         return $this->render('settings/jobboard_import/analysis.html.twig', [
-            'report' => $ingestor->analyse($section, $rows, legacy: true),
-            'section' => $section,
+            'report' => $ingestor->analyse($track, $rows, legacy: true),
+            'track' => $track,
             'fileName' => $this->fileName($request),
         ]);
     }
@@ -97,24 +118,24 @@ class JobboardImportController extends AbstractController
     public function confirm(
         Request $request,
         OfferIngestor $ingestor,
-        SectionRepository $sections,
+        TrackRepository $tracks,
         EntityManagerInterface $entityManager,
     ): Response {
         if (!$this->isCsrfTokenValid('jobboard_import_confirm', (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException();
         }
 
-        $parked = $this->parked($request, $sections);
+        $parked = $this->parked($request, $tracks);
 
         if (null === $parked) {
             return $this->redirectToRoute('app_settings_jobboard_import');
         }
 
-        [$rows, $section] = $parked;
+        [$rows, $track] = $parked;
 
         // An import is a batch like a collecting pass, with the administrator where the key would
         // be: it reads back in the history as one, and there is one implementation of the rules.
-        $batch = JobboardBatch::forImport($section, $this->author());
+        $batch = JobboardBatch::forImport($track, $this->author());
         $entityManager->persist($batch);
         $entityManager->flush();
 
@@ -128,7 +149,7 @@ class JobboardImportController extends AbstractController
             'created' => $report->created(),
             'reviewed' => $report->reviewed(),
             'rejected' => $report->rejected(),
-            'section' => $section->getName(),
+            'track' => $track->getName(),
         ]);
 
         return $this->redirectToRoute('app_settings_jobboard_import_result');
@@ -148,13 +169,13 @@ class JobboardImportController extends AbstractController
         // point in the past as though it had just run.
         $session->remove(self::OUTCOME_SESSION_KEY);
         $session->remove(self::FILE_SESSION_KEY);
-        $session->remove(self::SECTION_SESSION_KEY);
+        $session->remove(self::TRACK_SESSION_KEY);
 
         return $this->render('settings/jobboard_import/result.html.twig', [
             'created' => \is_int($stored['created'] ?? null) ? $stored['created'] : 0,
             'reviewed' => \is_int($stored['reviewed'] ?? null) ? $stored['reviewed'] : 0,
             'rejected' => \is_int($stored['rejected'] ?? null) ? $stored['rejected'] : 0,
-            'section' => \is_string($stored['section'] ?? null) ? $stored['section'] : '',
+            'track' => \is_string($stored['track'] ?? null) ? $stored['track'] : '',
         ]);
     }
 
@@ -179,7 +200,7 @@ class JobboardImportController extends AbstractController
         }
 
         $rows = [];
-        foreach (\array_slice(array_values($offers), 0, self::MAX_ROWS) as $offer) {
+        foreach (\array_slice(array_values($offers), 0, LegacyFileFormat::MAX_ROWS) as $offer) {
             if (\is_array($offer)) {
                 $rows[] = $offer;
             }
@@ -192,21 +213,21 @@ class JobboardImportController extends AbstractController
      * The parked file and its filière, or null when the session no longer holds one - which is a
      * normal end of story (a bookmark, a session that expired), not an error.
      *
-     * @return array{list<array<array-key, mixed>>, Section}|null
+     * @return array{list<array<array-key, mixed>>, Track}|null
      */
-    private function parked(Request $request, SectionRepository $sections): ?array
+    private function parked(Request $request, TrackRepository $tracks): ?array
     {
         $session = $request->getSession();
         $stored = $session->get(self::ROWS_SESSION_KEY);
-        $sectionId = $session->get(self::SECTION_SESSION_KEY);
+        $trackId = $session->get(self::TRACK_SESSION_KEY);
 
-        if (!\is_array($stored) || !\is_int($sectionId)) {
+        if (!\is_array($stored) || !\is_int($trackId)) {
             return null;
         }
 
-        $section = $sections->find($sectionId);
+        $track = $tracks->find($trackId);
 
-        if (!$section instanceof Section) {
+        if (!$track instanceof Track) {
             return null;
         }
 
@@ -217,7 +238,7 @@ class JobboardImportController extends AbstractController
             }
         }
 
-        return [] === $rows ? null : [$rows, $section];
+        return [] === $rows ? null : [$rows, $track];
     }
 
     /** The uploaded file's own name, kept only so both screens can say which file this is about. */

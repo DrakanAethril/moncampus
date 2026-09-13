@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Functional;
 
 use App\Entity\JobboardOffer;
-use App\Entity\Section;
+use App\Entity\Track;
 use App\Entity\User;
 use App\Enum\JobboardContract;
 use App\Enum\JobboardSource;
@@ -26,11 +26,11 @@ class JobboardPerimeterTest extends FunctionalTestCase
     public function testAStudentReadsOnlyTheOffersOfTheirOwnFiliere(): void
     {
         $student = $this->createUser(['ROLE_USER', 'ROLE_STUDENT'], 'jobboard.student');
-        $mine = $this->createProgram([$student], [], $this->author())->getCohort()?->getTrack()?->getSection();
-        $theirs = $this->createProgram([], [], $this->author())->getCohort()?->getTrack()?->getSection();
+        $mine = $this->createProgram([$student], [], $this->author())->getCohort()?->getTrack();
+        $theirs = $this->createProgram([], [], $this->author())->getCohort()?->getTrack();
 
-        $this->assertInstanceOf(Section::class, $mine);
-        $this->assertInstanceOf(Section::class, $theirs);
+        $this->assertInstanceOf(Track::class, $mine);
+        $this->assertInstanceOf(Track::class, $theirs);
 
         $this->offer($mine, 'Technicien de ma filière');
         $this->offer($theirs, "Technicien d'une autre filière");
@@ -47,8 +47,8 @@ class JobboardPerimeterTest extends FunctionalTestCase
     {
         $student = $this->createUser(['ROLE_USER', 'ROLE_STUDENT'], 'jobboard.student');
         $this->createProgram([$student], [], $this->author());
-        $theirs = $this->createProgram([], [], $this->author())->getCohort()?->getTrack()?->getSection();
-        $this->assertInstanceOf(Section::class, $theirs);
+        $theirs = $this->createProgram([], [], $this->author())->getCohort()?->getTrack();
+        $this->assertInstanceOf(Track::class, $theirs);
 
         $offer = $this->offer($theirs, "Technicien d'une autre filière");
 
@@ -67,8 +67,8 @@ class JobboardPerimeterTest extends FunctionalTestCase
     {
         $student = $this->createUser(['ROLE_USER', 'ROLE_STUDENT'], 'jobboard.student');
         $this->createProgram([$student], [], $this->author());
-        $theirs = $this->createProgram([], [], $this->author())->getCohort()?->getTrack()?->getSection();
-        $this->assertInstanceOf(Section::class, $theirs);
+        $theirs = $this->createProgram([], [], $this->author())->getCohort()?->getTrack();
+        $this->assertInstanceOf(Track::class, $theirs);
 
         $this->offer($theirs, "Technicien d'une autre filière");
 
@@ -83,8 +83,8 @@ class JobboardPerimeterTest extends FunctionalTestCase
     public function testAnAdministratorReadsEveryFiliere(): void
     {
         $admin = $this->createUser(['ROLE_USER', 'ROLE_ADMIN'], 'jobboard.admin');
-        $first = $this->createProgram([], [], $this->author())->getCohort()?->getTrack()?->getSection();
-        $this->assertInstanceOf(Section::class, $first);
+        $first = $this->createProgram([], [], $this->author())->getCohort()?->getTrack();
+        $this->assertInstanceOf(Track::class, $first);
 
         $this->offer($first, 'Technicien vu par un administrateur');
 
@@ -99,10 +99,10 @@ class JobboardPerimeterTest extends FunctionalTestCase
     public function testTheSourceIsAbsentFromAStudentsDetailPanel(): void
     {
         $student = $this->createUser(['ROLE_USER', 'ROLE_STUDENT'], 'jobboard.student');
-        $section = $this->createProgram([$student], [], $this->author())->getCohort()?->getTrack()?->getSection();
-        $this->assertInstanceOf(Section::class, $section);
+        $track = $this->createProgram([$student], [], $this->author())->getCohort()?->getTrack();
+        $this->assertInstanceOf(Track::class, $track);
 
-        $offer = $this->offer($section, 'Technicien informatique');
+        $offer = $this->offer($track, 'Technicien informatique');
 
         $this->client->loginUser($student);
         $crawler = $this->client->request('GET', '/jobboard/offers/'.$offer->getId());
@@ -115,10 +115,10 @@ class JobboardPerimeterTest extends FunctionalTestCase
     public function testAnAdministratorReadsTheSourceAndTheReference(): void
     {
         $admin = $this->createUser(['ROLE_USER', 'ROLE_ADMIN'], 'jobboard.admin');
-        $section = $this->createProgram([], [], $this->author())->getCohort()?->getTrack()?->getSection();
-        $this->assertInstanceOf(Section::class, $section);
+        $track = $this->createProgram([], [], $this->author())->getCohort()?->getTrack();
+        $this->assertInstanceOf(Track::class, $track);
 
-        $offer = $this->offer($section, 'Technicien informatique');
+        $offer = $this->offer($track, 'Technicien informatique');
 
         $this->client->loginUser($admin);
         $crawler = $this->client->request('GET', '/jobboard/offers/'.$offer->getId());
@@ -132,10 +132,10 @@ class JobboardPerimeterTest extends FunctionalTestCase
     public function testAClosedOfferIsReachableByNobody(): void
     {
         $admin = $this->createUser(['ROLE_USER', 'ROLE_ADMIN'], 'jobboard.admin');
-        $section = $this->createProgram([], [], $this->author())->getCohort()?->getTrack()?->getSection();
-        $this->assertInstanceOf(Section::class, $section);
+        $track = $this->createProgram([], [], $this->author())->getCohort()?->getTrack();
+        $this->assertInstanceOf(Track::class, $track);
 
-        $offer = $this->offer($section, 'Offre retirée du site');
+        $offer = $this->offer($track, 'Offre retirée du site');
         $offer->close(new \DateTimeImmutable());
         $this->manager()->flush();
 
@@ -156,12 +156,12 @@ class JobboardPerimeterTest extends FunctionalTestCase
         return $this->author ??= $this->createUser(['ROLE_USER', 'ROLE_ADMIN'], 'jobboard.fixture.author');
     }
 
-    private function offer(Section $section, string $position): JobboardOffer
+    private function offer(Track $track, string $position): JobboardOffer
     {
         // The reference is deliberately not a substring of the URL: the URL is shown to every
         // reader by « Voir l'offre », so a reference hidden inside it would make the test pass for
         // the wrong reason.
-        $offer = new JobboardOffer($section, JobboardSource::Hellowork, 'REF-SECRET-42', new \DateTimeImmutable());
+        $offer = new JobboardOffer($track, JobboardSource::Hellowork, 'REF-SECRET-42', new \DateTimeImmutable());
         $offer
             ->setUrl('https://www.hellowork.com/fr-fr/emplois/83313525.html')
             ->setPosition($position)

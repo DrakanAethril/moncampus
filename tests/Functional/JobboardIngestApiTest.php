@@ -6,6 +6,7 @@ namespace App\Tests\Functional;
 
 use App\Entity\JobboardToken;
 use App\Entity\Section;
+use App\Entity\Track;
 use App\Entity\User;
 use App\Repository\JobboardBatchRepository;
 use App\Repository\JobboardOfferRepository;
@@ -28,7 +29,7 @@ class JobboardIngestApiTest extends FunctionalTestCase
 
     public function testACallWithoutAKeyIsRefused(): void
     {
-        $this->section();
+        $this->track();
         $this->client->request('POST', '/api/jobboard/batches');
 
         $this->assertResponseStatusCodeSame(401);
@@ -52,7 +53,7 @@ class JobboardIngestApiTest extends FunctionalTestCase
         $this->call('POST', '/api/jobboard/batches');
 
         $this->assertResponseStatusCodeSame(201);
-        $this->assertSame($token->getSection()->getName(), $this->payload()['section'] ?? null);
+        $this->assertSame($token->getTrack()->getName(), $this->payload()['filiere'] ?? null);
     }
 
     public function testOffersAreCreatedThenReviewed(): void
@@ -128,7 +129,7 @@ class JobboardIngestApiTest extends FunctionalTestCase
 
         // 404 and not 403: another filière's batch does not exist for this caller.
         $this->assertResponseStatusCodeSame(404);
-        $this->assertNotSame($first->getSection()->getId(), $other->getSection()->getId());
+        $this->assertNotSame($first->getTrack()->getId(), $other->getTrack()->getId());
     }
 
     public function testCursorsAreReadAndWritten(): void
@@ -257,7 +258,7 @@ class JobboardIngestApiTest extends FunctionalTestCase
 
     private function token(string $selector = 'selector0001', string $label = 'Veille SIO'): JobboardToken
     {
-        $token = new JobboardToken($label, $this->section($label), $selector, hash('sha256', self::VERIFIER), null);
+        $token = new JobboardToken($label, $this->track($label), $selector, hash('sha256', self::VERIFIER), null);
         $this->manager()->persist($token);
         $this->manager()->flush();
 
@@ -269,16 +270,20 @@ class JobboardIngestApiTest extends FunctionalTestCase
         return JobboardToken::PREFIX.'_'.$token->getSelector().'_'.self::VERIFIER;
     }
 
-    private function section(string $name = 'Veille SIO'): Section
+    private function track(string $name = 'Veille SIO'): Track
     {
         $this->author ??= $this->createUser(['ROLE_USER', 'ROLE_ADMIN'], 'jobboard.api.author');
 
-        $section = new Section('Filière '.$name);
+        $section = new Section('Enseignement '.$name);
         $section->setCreatedBy($this->author);
         $this->manager()->persist($section);
+
+        $track = new Track('Filière '.$name, $section);
+        $track->setCreatedBy($this->author);
+        $this->manager()->persist($track);
         $this->manager()->flush();
 
-        return $section;
+        return $track;
     }
 
     /**

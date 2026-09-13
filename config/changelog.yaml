@@ -26,6 +26,19 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.13.2'
+      date: '2026-09-13'
+      summary: "La veille d'offres range désormais chaque annonce dans sa filière, et non plus dans le domaine d'enseignement tout entier. Une offre y est par ailleurs conservée deux ans au lieu d'un."
+      entries:
+          - type: modification
+            title: "Les offres de la veille sont rangées par filière"
+            detail: "Une annonce était jusqu'ici rattachée au domaine d'enseignement dans son ensemble, ce qui mêlait dans un même tableau des offres qui ne s'adressaient pas aux mêmes étudiants. Elle l'est maintenant à la filière. Les offres déjà collectées ont suivi, sans perdre la date à laquelle elles ont été vues pour la première fois."
+          - type: modification
+            title: "Une offre est conservée deux ans, et non plus un an"
+            detail: "Un an d'annonces, c'est une seule saison de recrutement : garder la précédente est ce qui permet de comparer."
+          - type: modification
+            title: "L'import d'un fichier d'offres décrit le format qu'il accepte"
+            detail: "La description se copie d'un clic et s'accompagne d'un fichier d'exemple à télécharger. L'une comme l'autre sont engendrées à partir des règles réellement appliquées à la lecture, et ne peuvent donc pas les décrire de travers."
     - version: '2026.09.13'
       date: '2026-09-13'
       summary: "Les aménagements accordés à un étudiant sont désormais tenus dans l'application, et le premier d'entre eux allonge le temps dont il dispose sur les quiz. Une veille d'offres d'emploi et d'alternance fait par ailleurs son entrée, réservée à l'administration le temps d'être garnie."

@@ -65,10 +65,10 @@
 
             {# « Filières » appears as soon as the reader has more than one, whoever they are - the
                controller decides that, not the role. It lists their own filières and no others. #}
-            {% if sections is not empty %}
-                {{ widget.multiselect('filiere', 'jobboardFilterSectionLabel'|trans, 'jobboardFilterSectionPlaceholder'|trans,
-                    sections|map(s => {value: s.id, label: s.name}),
-                    filters.sectionIds) }}
+            {% if tracks is not empty %}
+                {{ widget.multiselect('filiere', 'jobboardFilterTrackLabel'|trans, 'jobboardFilterTrackPlaceholder'|trans,
+                    tracks|map(t => {value: t.id, label: t.name}),
+                    filters.trackIds) }}
             {% endif %}
 
             {# Source and Accès BTS: administrators only. They are also stripped server-side for

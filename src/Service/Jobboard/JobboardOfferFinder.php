@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Service\Jobboard;
 
 use App\Entity\JobboardOffer;
-use App\Entity\Section;
+use App\Entity\Track;
 use App\Entity\User;
 use App\Repository\JobboardOfferRepository;
 use Doctrine\ORM\QueryBuilder;
@@ -36,15 +36,15 @@ final readonly class JobboardOfferFinder
 
     public function page(?User $reader, OfferFilters $filters, ?string $cursor, bool $admin): OfferPage
     {
-        $sections = $this->readableSections($reader, $filters);
+        $tracks = $this->readableTracks($reader, $filters);
 
-        if ([] === $sections) {
+        if ([] === $tracks) {
             return new OfferPage([], null);
         }
 
-        $qb = $this->offers->createOpenOffersQueryBuilder($sections)
-            ->addSelect('s')
-            ->leftJoin('o.section', 's')
+        $qb = $this->offers->createOpenOffersQueryBuilder($tracks)
+            ->addSelect('tr')
+            ->leftJoin('o.track', 'tr')
             ->orderBy('o.sortDate', 'DESC')
             ->addOrderBy('o.id', 'DESC')
             ->setMaxResults(self::PAGE_SIZE + 1);
@@ -70,13 +70,13 @@ final readonly class JobboardOfferFinder
      */
     public function find(?User $reader, int $id): ?JobboardOffer
     {
-        $sections = $this->perimeter->sections($reader);
+        $tracks = $this->perimeter->tracks($reader);
 
-        if ([] === $sections) {
+        if ([] === $tracks) {
             return null;
         }
 
-        $offer = $this->offers->createOpenOffersQueryBuilder($sections)
+        $offer = $this->offers->createOpenOffersQueryBuilder($tracks)
             ->andWhere('o.id = :id')
             ->setParameter('id', $id)
             ->getQuery()
@@ -94,13 +94,13 @@ final readonly class JobboardOfferFinder
      */
     public function distinctValues(?User $reader, string $field): array
     {
-        $sections = $this->perimeter->sections($reader);
+        $tracks = $this->perimeter->tracks($reader);
 
-        if ([] === $sections || !\in_array($field, ['category', 'region', 'country', 'source'], true)) {
+        if ([] === $tracks || !\in_array($field, ['category', 'region', 'country', 'source'], true)) {
             return [];
         }
 
-        $rows = $this->offers->createOpenOffersQueryBuilder($sections)
+        $rows = $this->offers->createOpenOffersQueryBuilder($tracks)
             ->select('DISTINCT o.'.$field.' AS value')
             ->andWhere('o.'.$field.' IS NOT NULL')
             ->orderBy('o.'.$field, 'ASC')
@@ -127,19 +127,19 @@ final readonly class JobboardOfferFinder
      * The perimeter, narrowed by the « Filières » filter when one is ticked. Intersection, never
      * substitution.
      *
-     * @return list<Section>
+     * @return list<Track>
      */
-    private function readableSections(?User $reader, OfferFilters $filters): array
+    private function readableTracks(?User $reader, OfferFilters $filters): array
     {
-        $sections = $this->perimeter->sections($reader);
+        $tracks = $this->perimeter->tracks($reader);
 
-        if ([] === $filters->sectionIds) {
-            return $sections;
+        if ([] === $filters->trackIds) {
+            return $tracks;
         }
 
         return array_values(array_filter(
-            $sections,
-            static fn (Section $section): bool => \in_array($section->getId(), $filters->sectionIds, true),
+            $tracks,
+            static fn (Track $track): bool => \in_array($track->getId(), $filters->trackIds, true),
         ));
     }
 
