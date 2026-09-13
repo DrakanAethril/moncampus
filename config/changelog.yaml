@@ -26,6 +26,19 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.13.3'
+      date: '2026-09-13'
+      summary: "La veille d'offres se lit désormais dans l'ordre où les annonces ont été repérées, et non plus dans celui où elles ont été publiées. Elle accueille par ailleurs n'importe quel site d'annonces, là où elle n'en connaissait qu'une liste fermée."
+      entries:
+          - type: modification
+            title: "Les offres sont classées par date de repérage"
+            detail: "Une annonce publiée depuis plusieurs jours mais découverte le matin même se rangeait au milieu de la liste, alors qu'elle y était nouvelle pour tout le monde. L'ordre suit maintenant la date à laquelle l'offre a été repérée ; celle de publication reste affichée, à titre indicatif."
+          - type: modification
+            title: "La veille n'est plus limitée à une liste de sites connus"
+            detail: "C'est l'adresse de l'annonce qui décide de sa provenance : un site encore inconnu est ajouté de lui-même, et un site qui change d'adresse reste le même. La liste des sites se consulte et se corrige depuis la configuration, où deux entrées faisant double emploi peuvent être fusionnées."
+          - type: modification
+            title: "La lecture des offres occupe toute la page"
+            detail: "La liste n'a plus d'ascenseur à elle : elle allonge la page, et c'est la fenêtre qui défile. Le détail d'une offre prend toute la hauteur disponible, sur écran large comme sur écran étroit. La colonne « Niveau » a été retirée de l'affichage."
     - version: '2026.09.13.2'
       date: '2026-09-13'
       summary: "La veille d'offres range désormais chaque annonce dans sa filière, et non plus dans le domaine d'enseignement tout entier. Une offre y est par ailleurs conservée deux ans au lieu d'un."
