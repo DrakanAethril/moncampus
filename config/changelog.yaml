@@ -26,6 +26,16 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.13.4'
+      date: '2026-09-13'
+      summary: "La veille d'offres accueille n'importe quel site depuis hier ; elle dit maintenant ce qu'elle en a conclu. Chaque dépôt d'annonces annonce les sites qu'il a ajoutés de lui-même et ceux dont il a élargi les adresses."
+      entries:
+          - type: modification
+            title: "La veille rend compte des sites qu'elle ajoute d'elle-même"
+            detail: "Reconnaître seule la provenance d'une annonce évite de perdre des offres, mais cela reste une décision. Elle se lit désormais dans le suivi de la veille, datée et rattachée au dépôt qui l'a prise, et se corrige depuis la liste des sites. Un import annonce la même chose avant qu'on le confirme."
+          - type: fix
+            title: "Un intitulé de colonne s'affichait sous forme de code"
+            detail: "Dans le suivi de la veille, en configuration."
     - version: '2026.09.13.3'
       date: '2026-09-13'
       summary: "La veille d'offres se lit désormais dans l'ordre où les annonces ont été repérées, et non plus dans celui où elles ont été publiées. Elle accueille par ailleurs n'importe quel site d'annonces, là où elle n'en connaissait qu'une liste fermée."
