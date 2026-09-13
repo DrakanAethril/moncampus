@@ -14,7 +14,7 @@ use Doctrine\Persistence\ManagerRegistry;
 /**
  * @extends ServiceEntityRepository<JobboardBatch>
  *
- * @phpstan-type JobboardDayTally array{tokenId: int, day: string, passes: int, created: int, reviewed: int, closed: int, rejected: int, lastAt: \DateTimeImmutable}
+ * @phpstan-type JobboardDayTally array{tokenId: int, day: string, passes: int, created: int, reviewed: int, closed: int, rejected: int, blocked: int, lastAt: \DateTimeImmutable}
  */
 class JobboardBatchRepository extends ServiceEntityRepository
 {
@@ -80,6 +80,7 @@ class JobboardBatchRepository extends ServiceEntityRepository
                    SUM(b.reviewed_count) AS reviewed,
                    SUM(b.closed_count) AS closed,
                    SUM(b.rejected_count) AS rejected,
+                   SUM(b.blocked_count) AS blocked,
                    MAX(b.opened_at) AS last_at
             FROM jobboard_batch b
             WHERE b.token_id IS NOT NULL
@@ -106,6 +107,7 @@ class JobboardBatchRepository extends ServiceEntityRepository
                 'reviewed' => $read->int('reviewed') ?? 0,
                 'closed' => $read->int('closed') ?? 0,
                 'rejected' => $read->int('rejected') ?? 0,
+                'blocked' => $read->int('blocked') ?? 0,
                 'lastAt' => new \DateTimeImmutable($read->string('last_at')),
             ];
         }

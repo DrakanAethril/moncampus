@@ -125,6 +125,7 @@ class JobboardHistoryTest extends TestCase
         int $reviewed = 0,
         int $closed = 0,
         int $rejected = 0,
+        int $blocked = 0,
     ): array {
         return [
             'tokenId' => $tokenId,
@@ -134,6 +135,7 @@ class JobboardHistoryTest extends TestCase
             'reviewed' => $reviewed,
             'closed' => $closed,
             'rejected' => $rejected,
+            'blocked' => $blocked,
             'lastAt' => new \DateTimeImmutable($lastAt ?? $day.' 06:05:00'),
         ];
     }

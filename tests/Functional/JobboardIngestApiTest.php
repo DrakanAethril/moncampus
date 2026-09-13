@@ -210,6 +210,90 @@ class JobboardIngestApiTest extends FunctionalTestCase
         $this->assertSame('hellowork', $offers[0]['source'] ?? null);
     }
 
+    /**
+     * The blacklist, read from the door the collecting agent knocks on. Two things are pinned, and
+     * they are the two halves of « acceptées puis abandonnées » :
+     *
+     * - **nothing is written** - the site was resolved, the offer was not filed;
+     * - **nothing is said** - no rejection, no line, no count. An agent that read a refusal here
+     *   would be right to stop collecting a site somebody may un-blacklist tomorrow.
+     */
+    public function testAnOfferFromABlacklistedSiteIsAcceptedAndDropped(): void
+    {
+        $source = $this->jobboardSource();
+        $source->blacklist();
+        $this->manager()->flush();
+
+        $this->token();
+        $batch = $this->openBatch();
+
+        $this->call('POST', '/api/jobboard/batches/'.$batch.'/offers', [$this->offer()], 'key-1');
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSame(0, $this->payload()['created'] ?? null);
+        $this->assertSame(0, $this->payload()['rejected'] ?? null);
+        $this->assertSame([], $this->payload()['offers'] ?? null);
+        $this->assertArrayNotHasKey('blocked', $this->payload());
+
+        $offers = static::getContainer()->get(JobboardOfferRepository::class);
+        $this->assertNull($offers->findOneBy(['sourceRef' => '83313525']));
+    }
+
+    /**
+     * Silent to the agent, counted for the establishment: the figure is the only trace the gesture
+     * leaves, and « Configuration > Jobboard > Historique » is where it is read.
+     */
+    public function testABlockedOfferIsCountedOnTheBatch(): void
+    {
+        $source = $this->jobboardSource();
+        $source->blacklist();
+        $this->manager()->flush();
+
+        $this->token();
+        $batch = $this->openBatch();
+
+        $this->call('POST', '/api/jobboard/batches/'.$batch.'/offers', [
+            $this->offer(),
+            $this->offer(['source_ref' => '83313526']),
+        ], 'key-1');
+
+        $batches = static::getContainer()->get(JobboardBatchRepository::class);
+        $stored = $batches->find($batch);
+        $this->assertNotNull($stored);
+        $this->manager()->refresh($stored);
+
+        $this->assertSame(2, $stored->getBlockedCount());
+        // Never counted as a refusal: the offers were fine, the site is not wanted. Reading the two
+        // together would make a deliberate decision look like a veille producing garbage.
+        $this->assertSame(0, $stored->getRejectedCount());
+    }
+
+    /**
+     * Removing the blacklist changes nothing retroactively - the offers deleted with it are gone -
+     * but the very next deposit files again.
+     */
+    public function testASiteTakenOffTheBlacklistIsFiledAgain(): void
+    {
+        $source = $this->jobboardSource();
+        $source->blacklist();
+        $this->manager()->flush();
+
+        $this->token();
+        $batch = $this->openBatch();
+        $this->call('POST', '/api/jobboard/batches/'.$batch.'/offers', [$this->offer()], 'key-1');
+        $this->assertSame(0, $this->payload()['created'] ?? null);
+
+        // Re-read rather than reused: the request that just ran cleared the manager, and mutating
+        // the detached instance would flush nothing at all.
+        $stored = $this->manager()->getRepository(JobboardSource::class)->findOneBy(['slug' => 'hellowork']);
+        $this->assertInstanceOf(JobboardSource::class, $stored);
+        $stored->allow();
+        $this->manager()->flush();
+
+        $this->call('POST', '/api/jobboard/batches/'.$batch.'/offers', [$this->offer()], 'key-2');
+        $this->assertSame(1, $this->payload()['created'] ?? null);
+    }
+
     public function testABatchOpenedByAnotherKeyDoesNotExist(): void
     {
         $first = $this->token();

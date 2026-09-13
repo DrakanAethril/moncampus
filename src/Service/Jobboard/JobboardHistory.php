@@ -19,17 +19,19 @@ use App\Repository\JobboardTokenRepository;
  * pass is a machine's routine - three batches in a morning are one veille, and printing them as
  * three lines would make an unremarkable day look like an incident - so the API side is grouped by
  * (key, day). An import is a gesture somebody made, so it keeps its own line, with its hour and its
- * author. The counts are the same four either way, which is what lets the two sit in one table.
+ * author. The counts are the same five either way, which is what lets the two sit in one table -
+ * « Bloquées » being the one that is read after a decision rather than before: it is where the
+ * offers of a site somebody put on the blacklist go.
  *
- * Nothing here recomputes anything: the four figures were tallied when the offers were filed, and
+ * Nothing here recomputes anything: the five figures were tallied when the offers were filed, and
  * a row whose key has since been revoked still reads - a key is never deleted, precisely so this
  * screen stays true.
  *
- * The screen also reads `learnings()`, which is not a fifth figure but a second list: what the
+ * The screen also reads `learnings()`, which is not a sixth figure but a second list: what the
  * source resolution decided by itself. It sits apart because it is not counted at either grain -
  * one site created can serve four hundred offers over three passes.
  *
- * @phpstan-type JobboardHistoryRow array{kind: 'api'|'import', at: \DateTimeImmutable, dayOnly: bool, token: ?JobboardToken, batch: ?JobboardBatch, track: Track, passes: int, created: int, reviewed: int, closed: int, rejected: int}
+ * @phpstan-type JobboardHistoryRow array{kind: 'api'|'import', at: \DateTimeImmutable, dayOnly: bool, token: ?JobboardToken, batch: ?JobboardBatch, track: Track, passes: int, created: int, reviewed: int, closed: int, rejected: int, blocked: int}
  */
 final readonly class JobboardHistory
 {
@@ -114,6 +116,7 @@ final readonly class JobboardHistory
                 'reviewed' => $tally['reviewed'],
                 'closed' => $tally['closed'],
                 'rejected' => $tally['rejected'],
+                'blocked' => $tally['blocked'],
             ];
         }
 
@@ -139,6 +142,7 @@ final readonly class JobboardHistory
                 'reviewed' => $batch->getReviewedCount(),
                 'closed' => $batch->getClosedCount(),
                 'rejected' => $batch->getRejectedCount(),
+                'blocked' => $batch->getBlockedCount(),
             ];
         }
 

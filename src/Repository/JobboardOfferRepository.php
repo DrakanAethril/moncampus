@@ -142,6 +142,27 @@ class JobboardOfferRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
+    /**
+     * Every offer of one site, erased - what blacklisting a source costs, and the one place on the
+     * jobboard where an offer is deleted rather than closed.
+     *
+     * Closing them would have been the habit of this module (« rien n'est jamais effacé »), and it
+     * is wrong here: a closed offer is an advert that left its site, which is a fact about the
+     * market. A blacklisted site is a decision about the board, and the offers must leave the
+     * screens rather than sit in the history of a site nobody wants to read about. Un-blacklisting
+     * does not bring them back - the next pass does, minus a `premiere_vue` nothing can rebuild,
+     * which is exactly why the screen asks before doing it.
+     */
+    public function deleteBySource(JobboardSource $source): int
+    {
+        return (int) $this->createQueryBuilder('o')
+            ->delete()
+            ->andWhere('o.source = :source')
+            ->setParameter('source', $source)
+            ->getQuery()
+            ->execute();
+    }
+
     /** Every offer filed under one source - what a merge moves, one by one. */
     public function moveToSource(JobboardSource $from, JobboardSource $into): int
     {
