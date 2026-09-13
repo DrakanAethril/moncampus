@@ -91,10 +91,13 @@
                 <div class="cm-jb-cell">{{ 'jobboardColumnContractLabel'|trans }}</div>
                 <div class="cm-jb-cell">{{ 'jobboardColumnLevelLabel'|trans }}</div>
                 <div class="cm-jb-cell">{{ 'jobboardColumnRemoteLabel'|trans }}</div>
-                {# The only sorted column, and the only order this screen has: date de publication
-                   décroissante. The arrow says so; nothing here is clickable, because a second
-                   order would need a second cursor. #}
-                <div class="cm-jb-cell cm-jb-cell--date is-sorted">{{ 'jobboardColumnPublishedLabel'|trans }} ↓</div>
+                <div class="cm-jb-cell cm-jb-cell--date cm-jb-cell--published">{{ 'jobboardColumnPublishedLabel'|trans }}</div>
+                {# The only sorted column, and the only order this screen has: date de repérage
+                   décroissante. Publication would read worse - the collecting agents do not all
+                   pass every day, so a rarely-run one's harvest would arrive already buried. The
+                   arrow says so; nothing here is clickable, because a second order would need a
+                   second cursor. #}
+                <div class="cm-jb-cell cm-jb-cell--date cm-jb-cell--first-seen is-sorted">{{ 'jobboardColumnFirstSeenLabel'|trans }} ↓</div>
             </div>
 
             <div class="cm-jb-rows" data-jobboard-target="rows">
