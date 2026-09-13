@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Track;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -64,5 +65,46 @@ class TrackRepository extends ServiceEntityRepository
         if (!$includeInactive) {
             $qb->andWhere('t.inactiveDate IS NULL');
         }
+    }
+
+    /**
+     * Every Track one person belongs to, through the formations they are enrolled in or teach.
+     *
+     * This is the Jobboard's reading perimeter for a student or a teacher
+     * (App\Service\Jobboard\JobboardPerimeter): the filière of an offer is a Track, and being
+     * "concerné" by it means having a formation under it. One query rather than walking
+     * Program -> Cohort -> Track in PHP, because it lands in a WHERE clause and must not be
+     * something a caller can forget to apply.
+     *
+     * @return list<Track>
+     */
+    public function findForMember(User $user): array
+    {
+        return $this->createQueryBuilder('t')
+            ->innerJoin('App\\Entity\\Cohort', 'c', 'WITH', 'c.track = t')
+            ->innerJoin('App\\Entity\\Program', 'p', 'WITH', 'p.cohort = c')
+            ->leftJoin('p.students', 'st')
+            ->leftJoin('p.teachers', 'te')
+            ->andWhere('st = :user OR te = :user')
+            ->setParameter('user', $user)
+            ->distinct()
+            ->orderBy('t.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Every Track, active or not. The Jobboard's perimeter for staff and administrators: a filière
+     * deactivated in the structure still carries the offers deposited under it, and hiding them
+     * would look exactly like losing them.
+     *
+     * @return list<Track>
+     */
+    public function findAllOrdered(): array
+    {
+        return $this->createQueryBuilder('t')
+            ->orderBy('t.name', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 }

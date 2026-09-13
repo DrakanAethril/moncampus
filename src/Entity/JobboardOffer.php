@@ -17,7 +17,7 @@ use Doctrine\ORM\Mapping as ORM;
 /**
  * One job offer, **inside one filière**.
  *
- * The identity is the triple (section, source, source_ref), and that is a decision rather than a
+ * The identity is the triple (track, source, source_ref), and that is a decision rather than a
  * convenience: the same advert pushed by two filières' agents makes two rows, each with its own
  * first-seen date. One row shared between filières would make `premiere_vue` mean "the first time
  * *anybody* saw it", which is not the question the screen answers.
@@ -31,11 +31,11 @@ use Doctrine\ORM\Mapping as ORM;
  */
 #[ORM\Entity(repositoryClass: JobboardOfferRepository::class)]
 #[ORM\Table(name: 'jobboard_offer')]
-#[ORM\UniqueConstraint(name: 'uniq_jobboard_offer_identity', columns: ['section_id', 'source', 'source_ref'])]
-#[ORM\Index(name: 'idx_jobboard_offer_listing', columns: ['section_id', 'closed_at', 'sort_date', 'id'])]
-#[ORM\Index(name: 'idx_jobboard_offer_first_seen', columns: ['section_id', 'first_seen_at'])]
-#[ORM\Index(name: 'idx_jobboard_offer_departement', columns: ['section_id', 'departement'])]
-#[ORM\Index(name: 'idx_jobboard_offer_contract', columns: ['section_id', 'contract'])]
+#[ORM\UniqueConstraint(name: 'uniq_jobboard_offer_identity', columns: ['track_id', 'source', 'source_ref'])]
+#[ORM\Index(name: 'idx_jobboard_offer_listing', columns: ['track_id', 'closed_at', 'sort_date', 'id'])]
+#[ORM\Index(name: 'idx_jobboard_offer_first_seen', columns: ['track_id', 'first_seen_at'])]
+#[ORM\Index(name: 'idx_jobboard_offer_departement', columns: ['track_id', 'departement'])]
+#[ORM\Index(name: 'idx_jobboard_offer_contract', columns: ['track_id', 'contract'])]
 class JobboardOffer
 {
     /**
@@ -52,9 +52,9 @@ class JobboardOffer
 
     // The filière, decided by the ingestion token and by nothing else - never deduced from the
     // advert's content (design/validated/jobboard.md §3.1).
-    #[ORM\ManyToOne(targetEntity: Section::class)]
-    #[ORM\JoinColumn(name: 'section_id', nullable: false, onDelete: 'CASCADE')]
-    private Section $section;
+    #[ORM\ManyToOne(targetEntity: Track::class)]
+    #[ORM\JoinColumn(name: 'track_id', nullable: false, onDelete: 'CASCADE')]
+    private Track $track;
 
     #[ORM\Column(length: 32, enumType: JobboardSource::class)]
     private JobboardSource $source;
@@ -143,12 +143,12 @@ class JobboardOffer
     private ?self $canonical = null;
 
     public function __construct(
-        Section $section,
+        Track $track,
         JobboardSource $source,
         string $sourceRef,
         \DateTimeImmutable $firstSeenAt,
     ) {
-        $this->section = $section;
+        $this->track = $track;
         $this->source = $source;
         $this->sourceRef = $sourceRef;
         $this->firstSeenAt = $firstSeenAt;
@@ -166,9 +166,9 @@ class JobboardOffer
         return $this->id;
     }
 
-    public function getSection(): Section
+    public function getTrack(): Track
     {
-        return $this->section;
+        return $this->track;
     }
 
     public function getSource(): JobboardSource

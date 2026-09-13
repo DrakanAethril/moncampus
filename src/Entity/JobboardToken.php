@@ -43,9 +43,9 @@ class JobboardToken
     #[ORM\Column(length: 120)]
     private string $label;
 
-    #[ORM\ManyToOne(targetEntity: Section::class)]
-    #[ORM\JoinColumn(name: 'section_id', nullable: false, onDelete: 'CASCADE')]
-    private Section $section;
+    #[ORM\ManyToOne(targetEntity: Track::class)]
+    #[ORM\JoinColumn(name: 'track_id', nullable: false, onDelete: 'CASCADE')]
+    private Track $track;
 
     #[ORM\Column(length: 16)]
     private string $selector;
@@ -71,10 +71,10 @@ class JobboardToken
     #[ORM\Column(name: 'last_used_ip', length: 45, nullable: true)]
     private ?string $lastUsedIp = null;
 
-    public function __construct(string $label, Section $section, string $selector, string $verifierHash, ?User $createdBy)
+    public function __construct(string $label, Track $track, string $selector, string $verifierHash, ?User $createdBy)
     {
         $this->label = $label;
-        $this->section = $section;
+        $this->track = $track;
         $this->selector = $selector;
         $this->verifierHash = $verifierHash;
         $this->createdBy = $createdBy;
@@ -91,9 +91,9 @@ class JobboardToken
         return $this->label;
     }
 
-    public function getSection(): Section
+    public function getTrack(): Track
     {
-        return $this->section;
+        return $this->track;
     }
 
     public function getSelector(): string

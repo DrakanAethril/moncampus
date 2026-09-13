@@ -8163,8 +8163,8 @@ jobboardFilterCountryLabel: 'Pays'
 jobboardFilterCountryPlaceholder: 'Tous les pays'
 jobboardFilterRegionLabel: 'Région'
 jobboardFilterRegionPlaceholder: 'Toutes les régions'
-jobboardFilterSectionLabel: 'Filières'
-jobboardFilterSectionPlaceholder: 'Toutes les filières'
+jobboardFilterTrackLabel: 'Filières'
+jobboardFilterTrackPlaceholder: 'Toutes les filières'
 jobboardFilterSourceLabel: 'Source'
 jobboardFilterSourcePlaceholder: 'Toutes les sources'
 jobboardFilterBtsAccessLabel: 'Accès BTS'
@@ -8226,7 +8226,7 @@ jobboardTokenListHeading: "Clés d'ingestion"
 jobboardTokenListHintText: "Une clé par filière : tout ce qu'elle dépose est rangé dans cette filière."
 jobboardTokenListEmptyText: "Aucune clé pour l'instant."
 jobboardTokenLabelColumn: 'Libellé'
-jobboardTokenSectionColumn: 'Filière'
+jobboardTokenTrackColumn: 'Filière'
 jobboardTokenCreatedColumn: 'Créée le'
 jobboardTokenLastUsedColumn: 'Dernier appel'
 jobboardTokenNeverUsedText: 'Jamais appelée'
@@ -8236,7 +8236,7 @@ jobboardTokenRevokeConfirmText: 'Révoquer la clé « %label% » ? La veille ces
 jobboardTokenNewHeading: 'Nouvelle clé'
 jobboardTokenNewHintText: "La clé s'affiche une seule fois, à la création. Elle n'est plus relisible ensuite."
 jobboardTokenLabelPlaceholder: 'Veille BTS SIO'
-jobboardTokenSectionPlaceholder: 'Choisir une filière'
+jobboardTokenTrackPlaceholder: 'Choisir une filière'
 jobboardTokenCreateAction: 'Créer la clé'
 jobboardTokenSecretHeading: 'Voici la clé. Copiez-la maintenant.'
 jobboardTokenSecretWarningText: "Elle ne sera plus jamais affichée : la plateforme n'en conserve qu'une empreinte."
@@ -8251,27 +8251,33 @@ jobboardInstructionsNoSecretText: 'Les consignes ne contiennent aucune clé : co
 jobboardImportHeading: "Importer un fichier d'offres"
 jobboardImportHintText: 'Le format attendu est celui de la veille : { meta, offres }.'
 jobboardImportReplayNoteText: "Le même fichier peut être réimporté autant de fois que voulu : une offre déjà connue est revue, jamais recréée, et sa date de première vue ne bouge pas."
-jobboardImportSectionFieldLabel: 'Filière'
-jobboardImportSectionFieldHelpText: "Le fichier n'en contient aucune : c'est vous qui décidez où ces offres sont rangées."
-jobboardImportSectionPlaceholder: 'Choisir une filière'
-jobboardImportSectionRequiredMessage: 'Choisissez la filière de ces offres.'
+jobboardImportTrackFieldLabel: 'Filière'
+jobboardImportTrackFieldHelpText: "Le fichier n'en contient aucune : c'est vous qui décidez où ces offres sont rangées."
+jobboardImportTrackPlaceholder: 'Choisir une filière'
+jobboardImportTrackRequiredMessage: 'Choisissez la filière de ces offres.'
 jobboardImportFileFieldLabel: 'Fichier JSON'
 jobboardImportFileFieldHelpText: '10 Mo au plus, 2 000 offres au plus.'
 jobboardImportFileRequiredMessage: 'Déposez un fichier.'
 jobboardImportUnreadableFileMessage: 'Ce fichier ne contient aucune offre lisible.'
 jobboardImportAnalyseAction: 'Analyser'
+jobboardImportFormatHeading: 'Le format accepté'
+jobboardImportFormatHintText: "Décrit à partir des règles réellement appliquées à l'import, jamais recopié à la main."
+jobboardImportFormatCopyAction: 'Copier la description'
+jobboardImportFormatCopiedText: 'Copié'
+jobboardImportExampleAction: 'Télécharger un exemple'
+jobboardImportExampleHintText: "L'exemple contient deux offres fictives : une complète et datée, une sans date de publication ni entreprise nommée. Il s'importe tel quel."
 jobboardImportAnalysisHeading: 'Analyse du fichier'
-jobboardImportAnalysisHintText: "Rien n'est encore enregistré. Voici ce que l'import écrirait dans « %section% »."
+jobboardImportAnalysisHintText: "Rien n'est encore enregistré. Voici ce que l'import écrirait dans « %track% »."
 jobboardImportRejectedHeading: 'Lignes refusées'
 jobboardImportRejectedHintText: 'Elles seront ignorées ; les autres seront importées normalement.'
 jobboardImportLineColumn: 'Ligne'
 jobboardImportOfferColumn: 'Offre'
 jobboardImportReasonColumn: 'Motif'
-jobboardImportConfirmMetaText: 'Ces offres seront rangées dans « %section% ».'
+jobboardImportConfirmMetaText: 'Ces offres seront rangées dans « %track% ».'
 jobboardImportConfirmAction: 'Importer'
 jobboardImportBackAction: 'Changer de fichier'
 jobboardImportResultHeading: 'Import terminé'
-jobboardImportResultDoneText: 'Offres importées dans « %section% »'
+jobboardImportResultDoneText: 'Offres importées dans « %track% »'
 jobboardImportResultHintText: "Les offres refusées n'ont rien écrit."
 jobboardImportAgainAction: 'Importer un autre fichier'
 jobboardImportSeeBoardAction: 'Voir le Jobboard'

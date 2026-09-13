@@ -8,6 +8,7 @@ use App\Entity\JobboardBatch;
 use App\Entity\JobboardOffer;
 use App\Entity\JobboardToken;
 use App\Entity\Section;
+use App\Entity\Track;
 use App\Enum\JobboardLevelSource;
 use App\Enum\JobboardRemote;
 use App\Enum\JobboardSource;
@@ -30,13 +31,13 @@ use Symfony\Component\Clock\MockClock;
  */
 class OfferIngestorTest extends TestCase
 {
-    private Section $section;
+    private Track $track;
 
     private MockClock $clock;
 
     protected function setUp(): void
     {
-        $this->section = new Section('BTS SIO');
+        $this->track = new Track('BTS SIO', new Section('Enseignement supérieur'));
         $this->clock = new MockClock('2026-09-12 10:00:00');
     }
 
@@ -187,13 +188,13 @@ class OfferIngestorTest extends TestCase
 
     private function batch(): JobboardBatch
     {
-        return JobboardBatch::forToken(new JobboardToken('Veille', $this->section, 'selector', 'hash', null));
+        return JobboardBatch::forToken(new JobboardToken('Veille', $this->track, 'selector', 'hash', null));
     }
 
     private function stored(): JobboardOffer
     {
         return new JobboardOffer(
-            $this->section,
+            $this->track,
             JobboardSource::Hellowork,
             '83313525',
             new \DateTimeImmutable('2026-07-01 08:00:00'),

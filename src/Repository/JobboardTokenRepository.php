@@ -31,8 +31,8 @@ class JobboardTokenRepository extends ServiceEntityRepository
     public function findForScreen(): array
     {
         return $this->createQueryBuilder('t')
-            ->addSelect('s')
-            ->leftJoin('t.section', 's')
+            ->addSelect('tr')
+            ->leftJoin('t.track', 'tr')
             ->orderBy('t.revokedAt', 'ASC')
             ->addOrderBy('t.createdAt', 'DESC')
             ->getQuery()

@@ -11021,3 +11021,29 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 /* A refusal is the one figure on that screen worth looking at twice; the other three are the
    ordinary shape of a passage. */
 .cm-jb-history__rejected { color: var(--cm-red-tx); font-weight: 600; }
+
+/* ---------- Configuration > Jobboard > API ---------- */
+/* The key, printed once and never again. A monospace block rather than an inline <code>: it is
+   selected and copied by hand, and a line that wraps mid-token is a key pasted wrong. */
+.cm-jb-secret {
+    display: inline-block; margin: 6px 0; padding: 6px 10px;
+    background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: 8px;
+    font: 600 12.5px var(--cm-font-mono);
+    color: var(--cm-ink); word-break: break-all;
+}
+
+/* The agent's instruction sheet, in its own card under the keys. Same object as the quiz
+   assistant's generated prompt - Markdown written for a model, read once, copied whole - so it is
+   the same block, at the width of the screen rather than of a field. */
+.cm-jb-sheet { margin-top: 18px; padding: 18px; }
+.cm-jb-sheet__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+.cm-jb-sheet__actions { display: flex; gap: 8px; flex-shrink: 0; }
+.cm-jb-sheet__foot { margin-top: 10px; font-size: 12.5px; color: var(--cm-faint); }
+.cm-jb-instructions {
+    max-height: 520px; overflow: auto; width: 100%; margin: 0;
+    background: var(--cm-surface-alt); border: 1px solid var(--cm-border-soft); border-radius: 10px;
+    padding: 14px 16px; font-size: 11.5px; line-height: 1.6; white-space: pre-wrap;
+    /* Explicit, like .cm-qimport-prompt: Tabler paints <pre> in the near-white it uses for code on
+       a dark block, which on this card's light surface is white on white. */
+    color: var(--cm-ink);
+}

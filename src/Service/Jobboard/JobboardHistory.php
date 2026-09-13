@@ -6,7 +6,7 @@ namespace App\Service\Jobboard;
 
 use App\Entity\JobboardBatch;
 use App\Entity\JobboardToken;
-use App\Entity\Section;
+use App\Entity\Track;
 use App\Repository\JobboardBatchRepository;
 use App\Repository\JobboardTokenRepository;
 
@@ -23,7 +23,7 @@ use App\Repository\JobboardTokenRepository;
  * a row whose key has since been revoked still reads - a key is never deleted, precisely so this
  * screen stays true.
  *
- * @phpstan-type JobboardHistoryRow array{kind: 'api'|'import', at: \DateTimeImmutable, dayOnly: bool, token: ?JobboardToken, batch: ?JobboardBatch, section: Section, passes: int, created: int, reviewed: int, closed: int, rejected: int}
+ * @phpstan-type JobboardHistoryRow array{kind: 'api'|'import', at: \DateTimeImmutable, dayOnly: bool, token: ?JobboardToken, batch: ?JobboardBatch, track: Track, passes: int, created: int, reviewed: int, closed: int, rejected: int}
  */
 final readonly class JobboardHistory
 {
@@ -81,7 +81,7 @@ final readonly class JobboardHistory
                 'dayOnly' => true,
                 'token' => $token,
                 'batch' => null,
-                'section' => $token->getSection(),
+                'track' => $token->getTrack(),
                 'passes' => $tally['passes'],
                 'created' => $tally['created'],
                 'reviewed' => $tally['reviewed'],
@@ -106,7 +106,7 @@ final readonly class JobboardHistory
                 'dayOnly' => false,
                 'token' => null,
                 'batch' => $batch,
-                'section' => $batch->getSection(),
+                'track' => $batch->getTrack(),
                 'passes' => 1,
                 'created' => $batch->getCreatedCount(),
                 'reviewed' => $batch->getReviewedCount(),

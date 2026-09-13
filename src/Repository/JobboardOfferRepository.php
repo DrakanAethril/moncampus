@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\JobboardOffer;
-use App\Entity\Section;
+use App\Entity\Track;
 use App\Enum\JobboardSource;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
@@ -25,9 +25,9 @@ class JobboardOfferRepository extends ServiceEntityRepository
      * The row an incoming offer is about, or null. The triple is the entity's UNIQUE index, so this
      * is a single-row lookup and not a scan.
      */
-    public function findOneByIdentity(Section $section, JobboardSource $source, string $sourceRef): ?JobboardOffer
+    public function findOneByIdentity(Track $track, JobboardSource $source, string $sourceRef): ?JobboardOffer
     {
-        return $this->findOneBy(['section' => $section, 'source' => $source, 'sourceRef' => $sourceRef]);
+        return $this->findOneBy(['track' => $track, 'source' => $source, 'sourceRef' => $sourceRef]);
     }
 
     /**
@@ -76,15 +76,15 @@ class JobboardOfferRepository extends ServiceEntityRepository
      *
      * @return array<string, JobboardOffer>
      */
-    public function findByIdentities(Section $section, array $identities): array
+    public function findByIdentities(Track $track, array $identities): array
     {
         if ([] === $identities) {
             return [];
         }
 
         $qb = $this->createQueryBuilder('o')
-            ->andWhere('o.section = :section')
-            ->setParameter('section', $section);
+            ->andWhere('o.track = :track')
+            ->setParameter('track', $track);
 
         $or = $qb->expr()->orX();
         foreach ($identities as $index => $identity) {
@@ -106,13 +106,13 @@ class JobboardOfferRepository extends ServiceEntityRepository
      * The one place the reading perimeter enters a query. Callers add their filters on top; none of
      * them may widen this - see App\Service\Jobboard\JobboardOfferFinder.
      *
-     * @param list<Section> $sections
+     * @param list<Track> $tracks
      */
-    public function createOpenOffersQueryBuilder(array $sections, string $alias = 'o'): QueryBuilder
+    public function createOpenOffersQueryBuilder(array $tracks, string $alias = 'o'): QueryBuilder
     {
         return $this->createQueryBuilder($alias)
-            ->andWhere($alias.'.section IN (:perimeter)')
+            ->andWhere($alias.'.track IN (:perimeter)')
             ->andWhere($alias.'.closedAt IS NULL')
-            ->setParameter('perimeter', $sections);
+            ->setParameter('perimeter', $tracks);
     }
 }

@@ -6,7 +6,7 @@ namespace App\Service\Jobboard;
 
 use App\Entity\JobboardBatch;
 use App\Entity\JobboardOffer;
-use App\Entity\Section;
+use App\Entity\Track;
 use App\Enum\JobboardLevelSource;
 use App\Repository\JobboardOfferRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -73,11 +73,11 @@ final readonly class OfferIngestor
 
             $seen[$payload->identity()] = true;
 
-            $existing = $this->offers->findOneByIdentity($batch->getSection(), $payload->source, $payload->sourceRef);
+            $existing = $this->offers->findOneByIdentity($batch->getTrack(), $payload->source, $payload->sourceRef);
 
             if (null === $existing) {
                 $offer = new JobboardOffer(
-                    $batch->getSection(),
+                    $batch->getTrack(),
                     $payload->source,
                     $payload->sourceRef,
                     // The import brings a first-seen date that predates the platform; the API never
@@ -126,7 +126,7 @@ final readonly class OfferIngestor
      *
      * @param list<array<array-key, mixed>> $rows
      */
-    public function analyse(Section $section, array $rows, bool $legacy = false): IngestReport
+    public function analyse(Track $track, array $rows, bool $legacy = false): IngestReport
     {
         $lines = [];
         $seen = [];
@@ -154,7 +154,7 @@ final readonly class OfferIngestor
             }
 
             $seen[$payload->identity()] = true;
-            $known = null !== $this->offers->findOneByIdentity($section, $payload->source, $payload->sourceRef);
+            $known = null !== $this->offers->findOneByIdentity($track, $payload->source, $payload->sourceRef);
 
             $lines[] = new IngestLine(
                 $index,
