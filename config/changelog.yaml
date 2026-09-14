@@ -26,6 +26,22 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.14'
+      date: '2026-09-14'
+      summary: "La veille d'offres gagne deux réglages : chaque formation décide qui y a accès, et un site d'annonces peut en être écarté. Un mot de passe initial peut par ailleurs être choisi à la création d'un compte."
+      entries:
+          - type: nouveaute
+            title: "Chaque formation décide qui voit les offres de la veille"
+            detail: "Le réglage s'ajoute à celui des rôles sans le remplacer : les deux doivent l'autoriser pour qu'une offre soit lisible. Toutes les formations sont masquées au départ, l'ouverture se décide au cas par cas."
+          - type: nouveaute
+            title: "Un site d'annonces peut être écarté de la veille"
+            detail: "Les offres déjà collectées pour ce site sont retirées et les suivantes ne sont plus déposées. Le retirer de la liste ne les rend pas : seul un nouveau passage les ramène."
+          - type: modification
+            title: "Une offre s'ouvre d'un clic sur sa ligne"
+            detail: "La ligne mène directement à l'annonce chez celui qui la publie, et la note de l'annonce (« Débutant accepté », « 2 ans d'expérience minimum ») s'affiche à côté de l'entreprise. Le filtre par site reçoit un champ de recherche."
+          - type: nouveaute
+            title: "Un mot de passe initial peut être saisi à la création d'un compte"
+            detail: "Facultatif, aux mêmes règles que lors de l'import d'une classe. Laissé vide, un mot de passe est inventé comme auparavant."
     - version: '2026.09.13.4'
       date: '2026-09-13'
       summary: "La veille d'offres accueille n'importe quel site depuis hier ; elle dit maintenant ce qu'elle en a conclu. Chaque dépôt d'annonces annonce les sites qu'il a ajoutés de lui-même et ceux dont il a élargi les adresses."
