@@ -11,13 +11,18 @@ use Symfony\Component\Form\CallbackTransformer;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
+use Symfony\Component\Form\Extension\Core\Type\PasswordType;
+use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TelType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Email;
+use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
+use Symfony\Component\Validator\Constraints\Regex;
+use Symfony\Component\Validator\Constraints\When;
 
 class LdapManageUserType extends AbstractType
 {
@@ -82,6 +87,43 @@ class LdapManageUserType extends AbstractType
                 'required' => false,
                 'mapped' => false,
                 'data' => true,
+            ])
+            // Unmapped too, and for a second reason on top of the one above: App\Entity\
+            // LdapManageUser::$password is deliberately write-only - no accessor at all - so no
+            // mapped field could ever read it back to populate this one.
+            //
+            // Optional, and empty is the ordinary case: left blank, the created account gets the
+            // random password the directory script invents, exactly as before. Typed, that one is
+            // used instead, which is why the confirmation field is not a courtesy - a typo is only
+            // discovered by its holder, in front of a machine that only says « mot de passe
+            // incorrect ». Same field, same rule and same reasoning as the class import's
+            // App\Form\ClassImportStartType::$initialPassword.
+            //
+            // The constraints mirror the self-service change of App\Form\ChangePasswordType - 12
+            // characters, four families - but only when something was typed, hence the When:
+            // constraints on a RepeatedType run whether or not the field is filled.
+            ->add('initialPassword', RepeatedType::class, [
+                'type' => PasswordType::class,
+                'required' => false,
+                'mapped' => false,
+                'invalid_message' => 'newUserInitialPasswordMismatchMessage',
+                'first_options' => [
+                    'label' => 'newUserInitialPasswordFieldLabel',
+                    'help' => 'newUserInitialPasswordFieldHelpText',
+                ],
+                'second_options' => ['label' => 'newUserInitialPasswordConfirmationFieldLabel'],
+                'constraints' => [
+                    new When(
+                        expression: 'value !== null and value !== ""',
+                        constraints: [
+                            new Length(min: 12, minMessage: 'newPasswordTooShortMessage'),
+                            new Regex(
+                                pattern: '/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/',
+                                message: 'newPasswordComplexityMessage',
+                            ),
+                        ],
+                    ),
+                ],
             ])
             // Unmapped like mustChangePassword above: this form is bound to the LDAP queue row,
             // while the flag belongs to the App\Entity\User the controller builds alongside it.
