@@ -41,8 +41,10 @@
 {% set resources_apps = is_granted('ROLE_ADMIN') %}
 {# « Jobboard », last entry and student-only here: every other profile reads it from Outils >
    « Au-delà d'un diplôme ». Two doors rather than one because they are two different gestures - a
-   student looks for a contract, a teacher looks at what the market is asking of their class. #}
-{% set resources_jobboard = is_pure_student and feature('jobboard') %}
+   student looks for a contract, a teacher looks at what the market is asking of their class.
+   Both doors ask the perimeter as well as the feature: a formation that keeps its jobboard masked
+   leaves its students an entry onto a board that could only ever be empty. #}
+{% set resources_jobboard = is_pure_student and feature('jobboard') and jobboard_visible() %}
 {% if resources_shared_documents or resources_my_vms or resources_school_mail or resources_job_applications
     or resources_wiki or resources_course_space or resources_quiz_programs is not empty or resources_documentation or resources_apps
     or resources_jobboard %}

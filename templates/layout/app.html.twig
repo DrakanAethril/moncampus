@@ -478,7 +478,7 @@
                            is being prepared for. It joins the union below for the same reason as
                            the other three: a menu that opens on nothing is the same defect as a
                            header with nothing under it. #}
-                        {% set tools_beyond = feature('jobboard') %}
+                        {% set tools_beyond = feature('jobboard') and jobboard_visible() %}
                         {% if (is_granted('ROLE_TEACHER') or is_staff()) and (tools_run or tools_prepare or tools_follow or tools_beyond) %}
                             {% set tools_is_active = current_route starts with 'app_tools_'
                                 or current_route starts with 'app_program_word_cloud'
