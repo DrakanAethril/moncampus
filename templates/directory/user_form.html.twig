@@ -282,6 +282,13 @@
                             </div>
                             {{ form_row(form.mustChangePassword, {label_attr: {class: 'checkbox-switch'}}) }}
                             {{ form_row(form.testUser, {label_attr: {class: 'checkbox-switch'}}) }}
+
+                            {# Optional: left blank, the created account gets the random password
+                               the directory script invents, exactly as before this field existed. #}
+                            <div class="row g-2">
+                                <div class="col-12 col-xl-6">{{ include('partials/_password_field.html.twig', {field: form.initialPassword.first}) }}</div>
+                                <div class="col-12 col-xl-6">{{ include('partials/_password_field.html.twig', {field: form.initialPassword.second}) }}</div>
+                            </div>
                         {% endif %}
                     </div>
                     <div class="col-md-7 d-flex flex-column gap-3">
