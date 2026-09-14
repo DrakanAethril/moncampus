@@ -151,6 +151,16 @@ class ProgramType extends AbstractType
                 'help' => 'programGameEnabledFieldHelp',
                 'required' => false,
             ])
+            // The Jobboard's second axis, next to the Courrier pro and the game above it: who,
+            // in this formation, reads the offers the veille brought back. A tier rather than a
+            // checkbox because a class's offers are often worth showing to its teachers a term
+            // before its students - and « Masqué », the default, is what every formation starts on.
+            ->add('jobboardVisibility', EnumType::class, [
+                'class' => VisibilityLevel::class,
+                'choice_label' => static fn (VisibilityLevel $level): string => $level->labelKey(),
+                'label' => 'programJobboardVisibilityFieldLabel',
+                'help' => 'programJobboardVisibilityFieldHelp',
+            ])
             // UFA section fields - all revealed together on the Program form by the alternance
             // Modality chip (Modality::$isAlternance), not by a dedicated checkbox of their own.
             ->add('internshipManagementEnabled', CheckboxType::class, [
