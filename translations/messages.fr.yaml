@@ -200,6 +200,14 @@ programStudentsEmptyLabel: 'Aucun étudiant dans cette classe pour le moment.'
 programTeachersEmptyLabel: 'Aucun enseignant dans cette classe pour le moment.'
 programTimetablePageHeading: 'Emploi du temps'
 timetableLegendDefaultLabel: 'Classe Entière'
+timetableIcalBannerTitle: "S'abonner à cet emploi du temps"
+timetableIcalBannerHint: "Ajoutez ce lien à votre agenda (Google Agenda, Apple Calendrier, Outlook…) : il se met à jour tout seul. Le lien reprend l'affichage actuel — les légendes masquées ci-dessus ne seront pas reprises dans l'abonnement."
+timetableIcalFieldLabel: "Lien d'abonnement à l'emploi du temps"
+timetableIcalCopyLabel: 'Copier le lien'
+timetableIcalCopiedLabel: 'Lien copié'
+timetableIcalRotateLabel: 'Régénérer le lien'
+timetableIcalRotateConfirm: "Régénérer le lien rendra inutilisables tous les abonnements déjà créés à partir de l'ancien lien, sur tous vos agendas. Continuer ?"
+timetableIcalRotateErrorMessage: "Le lien n'a pas pu être régénéré. Réessayez dans un instant."
 programSettingsPageHeading: 'Paramétrage de la classe'
 programTimetableSettingsPageHeading: "Paramétrage de l'emploi du temps"
 programSettingsStudentsTabLabel: 'Étudiants'

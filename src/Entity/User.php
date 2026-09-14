@@ -36,6 +36,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Table(name: '`user`')]
 #[ORM\UniqueConstraint(name: 'uniq_user_username', columns: ['username'])]
 #[ORM\UniqueConstraint(name: 'uniq_user_contact_email', columns: ['contact_email'])]
+#[ORM\UniqueConstraint(name: 'uniq_user_calendar_token', columns: ['calendar_token'])]
 #[UniqueEntity(fields: ['contactEmail'], message: 'contactEmailAlreadyUsedMessage', ignoreNull: true)]
 #[UniqueEntity(fields: ['pendingContactEmail'], message: 'contactEmailAlreadyUsedMessage', ignoreNull: true)]
 class User implements UserInterface
@@ -169,6 +170,19 @@ class User implements UserInterface
     // from the profile screen, never something inherited.
     #[ORM\Column(name: 'theme_preference', length: 5, options: ['default' => 'light'])]
     private string $themePreference = 'light';
+
+    // The secret half of this account's iCalendar subscription URLs (App\Controller\
+    // TimetableCalendarController). It is not a session and not a password: a calendar client
+    // fetches the .ics from Google's or Apple's servers, carrying no cookie and holding no
+    // account, so the URL itself has to say who is asking - the same shape as an e-CO runner's
+    // join token (App\Entity\EcoRunner).
+    //
+    // **Nullable because it is minted on demand**, the first time somebody is actually shown a
+    // subscription link, rather than written onto fifteen hundred rows that will never use one.
+    // Rotating it (the banner's « Régénérer le lien ») is what revokes every subscription made
+    // from the old one, which is the only reason it is a stored column instead of a signature.
+    #[ORM\Column(name: 'calendar_token', length: 64, nullable: true)]
+    private ?string $calendarToken = null;
 
     // How much this account's file library may hold, in bytes - null meaning "whatever the platform
     // currently says" (App\Service\FileLibraryQuota, design/validated/file-library.md).
@@ -540,6 +554,18 @@ class User implements UserInterface
     public function getSchoolMailAddress(string $domain): ?string
     {
         return $this->primaryAlias?->toAddress($domain);
+    }
+
+    public function getCalendarToken(): ?string
+    {
+        return $this->calendarToken;
+    }
+
+    public function setCalendarToken(?string $calendarToken): static
+    {
+        $this->calendarToken = $calendarToken;
+
+        return $this;
     }
 
     public function getThemePreference(): string

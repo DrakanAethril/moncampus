@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Attribute\RequiresFeature;
 use App\Entity\LessonSession;
 use App\Entity\Program;
+use App\Entity\User;
 use App\Enum\Feature;
 use App\Enum\ProgramAlternanceCalendarMode;
 use App\Repository\LessonSessionRepository;
@@ -17,6 +18,7 @@ use App\Repository\ProgramTeacherOptionRepository;
 use App\Security\ProgramTimetableAccess;
 use App\Security\StructureAccessChecker;
 use App\Service\Accommodation\AccommodationResolver;
+use App\Service\Calendar\CalendarTokenManager;
 use App\Service\ClassRoster;
 use App\Service\FileUploadService;
 use App\Service\GotenbergClient;
@@ -30,6 +32,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\String\Slugger\AsciiSlugger;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -85,7 +88,7 @@ class ProgramController extends AbstractController
 
     #[RequiresFeature(Feature::Timetable)]
     #[Route(path: '/programs/{id}/timetable', name: 'app_program_timetable')]
-    public function timetable(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, ProgramTimetableAccess $timetableAccess): Response
+    public function timetable(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, ProgramTimetableAccess $timetableAccess, CalendarTokenManager $calendarTokens, UrlGeneratorInterface $urlGenerator): Response
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
         // The feature being lit for a role never overrides what the formation decided: the tier
@@ -93,7 +96,21 @@ class ProgramController extends AbstractController
         // App\Security\ProgramTimetableAccess.
         $this->assertProgramFeatureEnabled($timetableAccess->isVisible($program));
 
-        return $this->render('program/timetable.html.twig', ['program' => $program]);
+        return $this->render('program/timetable.html.twig', [
+            'program' => $program,
+            // The subscription banner's URL, unfiltered - what the reader has hidden is added to it
+            // in the browser, on every legend toggle
+            // (assets/controllers/lesson_timetable_controller.js). Absolute: it is going to be
+            // pasted into Google Calendar, which has no idea what host this app is on.
+            //
+            // This is the one place that mints the token, so a GET writes a row - once in an
+            // account's life, and only for somebody actually shown a link. See
+            // App\Service\Calendar\CalendarTokenManager.
+            'icalUrl' => $urlGenerator->generate('app_calendar_program_ics', [
+                'token' => $calendarTokens->tokenFor($this->currentUser()),
+                'id' => $program->getId(),
+            ], UrlGeneratorInterface::ABSOLUTE_URL),
+        ]);
     }
 
     #[RequiresFeature(Feature::Timetable)]
@@ -162,6 +179,14 @@ class ProgramController extends AbstractController
     // Students/teachers/timetable pages are reachable under the same rule as the nav entries
     // that link to them: staff/admin see every Program, a student or teacher only one they're
     // actually enrolled in/teaching - see StructureAccessChecker::isProgramVisible().
+    private function currentUser(): User
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        return $user;
+    }
+
     private function findOrDenyAccess(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker): Program
     {
         $program = $repository->find($id) ?? throw $this->createNotFoundException();

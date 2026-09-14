@@ -29,7 +29,7 @@ const frLocale = frLocaleModule.code ? frLocaleModule : frLocaleModule.default;
  */
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
-    static targets = ['calendar'];
+    static targets = ['calendar', 'icalUrl', 'icalCopy'];
 
     static values = {
         feedUrl: String,
@@ -49,6 +49,12 @@ export default class extends Controller {
         // Program and subject a session belongs to is the whole point of that view, not who's
         // teaching it (always the viewer themself there).
         eventDetailFields: { type: Array, default: ['lessonType', 'classRoom', 'teacher', 'options'] },
+        // The subscription banner, when the screen carries one
+        // (templates/partials/_timetable_ical_banner.html.twig). `icalRotateUrl` is the endpoint
+        // that mints a new token, `icalRotateToken` its CSRF token.
+        icalRotateUrl: String,
+        icalRotateToken: String,
+        icalRotateErrorMessage: String,
     };
 
     connect() {
@@ -57,6 +63,10 @@ export default class extends Controller {
         // extendedProps.legendKey, independently of which color scheme (Option vs formation) is
         // in play. Starts empty: every legend is active/visible until clicked.
         this.hiddenLegendKeys = new Set();
+        // The link as the server handed it over, before any filter - every later value of the field
+        // is rebuilt from this one, so toggling a legend off and back on returns the exact URL
+        // rather than an accumulation of query strings.
+        this.icalBaseUrl = this.hasIcalUrlTarget ? this.icalUrlTarget.value : null;
 
         this.calendar = new Calendar(this.calendarTarget, {
             plugins: [interactionPlugin, dayGridPlugin, timeGridPlugin],
@@ -151,6 +161,96 @@ export default class extends Controller {
         this.calendarTarget.querySelectorAll(`[data-legend-key="${CSS.escape(key)}"]`).forEach((el) => {
             el.style.display = this.hiddenLegendKeys.has(key) ? 'none' : '';
         });
+
+        this.syncIcalUrl();
+    }
+
+    // Keeps the subscription banner's URL equal to what is on screen, on every toggle.
+    //
+    // This is the whole of « the link matches the calendar at the moment you take it »: rather than
+    // capturing the filter when a button is pressed, the field simply never holds anything else, so
+    // copying it by hand with the mouse gives the same URL as the « Copier » button. The hidden keys
+    // are sorted so the same set of swatches always produces the same string - an agenda that sees a
+    // different URL treats it as a different calendar.
+    syncIcalUrl() {
+        if (!this.hasIcalUrlTarget || !this.icalBaseUrl) {
+            return;
+        }
+
+        const hidden = [...this.hiddenLegendKeys].sort();
+        const url = new URL(this.icalBaseUrl);
+
+        if (hidden.length > 0) {
+            url.searchParams.set('hide', hidden.join(','));
+        } else {
+            url.searchParams.delete('hide');
+        }
+
+        this.icalUrlTarget.value = url.toString();
+    }
+
+    // Copies whatever the field currently holds. navigator.clipboard is unavailable outside a secure
+    // context (plain http, which this app is served over on a dev machine), so the field's own
+    // select() is the fallback rather than a failure - and it leaves the URL selected, which is what
+    // somebody does next by hand anyway.
+    copyIcalUrl() {
+        const input = this.icalUrlTarget;
+
+        input.select();
+        input.setSelectionRange(0, input.value.length);
+
+        const done = () => {
+            if (!this.hasIcalCopyTarget) {
+                return;
+            }
+
+            const button = this.icalCopyTarget;
+            const original = button.textContent;
+
+            button.textContent = button.dataset.copiedLabel;
+            window.setTimeout(() => {
+                button.textContent = original;
+            }, 2000);
+        };
+
+        if (navigator.clipboard?.writeText) {
+            navigator.clipboard.writeText(input.value).then(done).catch(() => {});
+
+            return;
+        }
+
+        done();
+    }
+
+    // Mints a new token server-side, which breaks every subscription made from the old URL -
+    // including the ones this person made themself, which is why it asks first. The answer carries
+    // the fresh unfiltered URL, so it becomes the new base and syncIcalUrl() re-applies whatever is
+    // hidden right now on top of it.
+    rotateIcalUrl(event) {
+        if (!window.confirm(event.currentTarget.dataset.confirmMessage)) {
+            return;
+        }
+
+        fetch(this.icalRotateUrlValue, {
+            method: 'POST',
+            // Read from the header on the server side (App\Controller\TimetableCalendarController):
+            // there is no form here to carry a _csrf_token field.
+            headers: { 'X-CSRF-Token': this.icalRotateTokenValue },
+        })
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(`Unexpected response status: ${response.status}`);
+                }
+
+                return response.json();
+            })
+            .then((payload) => {
+                this.icalBaseUrl = payload.url;
+                this.syncIcalUrl();
+            })
+            .catch(() => {
+                window.alert(this.icalRotateErrorMessageValue);
+            });
     }
 
     onReadOnlyEventClick(info) {
