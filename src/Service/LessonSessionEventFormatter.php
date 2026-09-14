@@ -62,7 +62,7 @@ class LessonSessionEventFormatter
                 // Matches a legend swatch's own data-legend-key 1:1 (Option id, or the Program id
                 // in colorByProgram mode) - assets/controllers/lesson_timetable_controller.js's
                 // click-to-filter toggling keys off this, not the rendered color itself.
-                'legendKey' => $colorByProgram ? (string) $session->getProgram()->getId() : $this->optionLegendKey($session),
+                'legendKey' => $this->legendKey($session, $colorByProgram),
                 // Redundant with the per-Program calendar's own page context (unused there, see
                 // lesson_timetable_controller.js's default eventDetailFields), but the only way to
                 // tell sessions from different Programs/Topics apart on
@@ -133,10 +133,21 @@ class LessonSessionEventFormatter
         return 1 === count($options) ? $options[0]->getColor() : self::DEFAULT_COLOR;
     }
 
-    // Same one-Option-or-default rule as optionColor() above, expressed as the stable key a
-    // legend swatch's data-legend-key can match against instead of comparing rendered colors.
-    private function optionLegendKey(LessonSession $session): string
+    /**
+     * Same one-Option-or-default rule as optionColor() above, expressed as the stable key a legend
+     * swatch's data-legend-key can match against instead of comparing rendered colors.
+     *
+     * **Public because a second reader now depends on it**: the iCalendar feed
+     * (App\Service\Calendar\TimetableIcsBuilder) has to drop exactly the séances the legend was
+     * hiding on screen at the moment the link was taken, and a key computed a second time in a
+     * second place is a filter that quietly stops matching the swatch it came from.
+     */
+    public function legendKey(LessonSession $session, bool $colorByProgram = false): string
     {
+        if ($colorByProgram) {
+            return (string) $session->getProgram()->getId();
+        }
+
         $options = $session->getOptions()->toArray();
 
         return 1 === count($options) ? (string) $options[0]->getId() : 'default';

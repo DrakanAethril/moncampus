@@ -7,6 +7,7 @@ namespace App\Tests\Functional;
 use App\Entity\Program;
 use App\Entity\User;
 use App\Enum\VisibilityLevel;
+use App\Service\Calendar\CalendarTokenManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DomCrawler\Crawler;
 
@@ -87,6 +88,83 @@ class ProgramTimetableVisibilityTest extends FunctionalTestCase
         $path = sprintf('/programs/%d/timetable', $program->getId());
         $this->assertScreens($student, [$path => 404]);
         $this->assertScreens($teacher, [$path => 200]);
+    }
+
+    /**
+     * The iCalendar subscription is a third URL carrying the same séances, and the only one reached
+     * **without a session** - an agenda fetches it from Google's or Apple's servers. So the tier has
+     * to close it exactly as it closes the screen and the feed, and it is closed here by the token's
+     * owner, not by whoever is holding the link.
+     */
+    public function testTheSubscriptionAnswersTheSameWayAsTheScreenItCopies(): void
+    {
+        $student = $this->createUser(['ROLE_USER', 'ROLE_STUDENT', 'ROLE_CAMPUS'], 'timetable.student');
+        $program = $this->programFor($student, VisibilityLevel::Everyone);
+
+        $token = static::getContainer()->get(CalendarTokenManager::class)->tokenFor($student);
+
+        // Nobody is logged in for either request - that is the point of the token.
+        self::assertSame(200, $this->fetchIcs($token, $program));
+
+        // The same formation, the same link, closed after the subscription was made: a tier moved
+        // in Paramétrage has to reach the agendas that are already subscribed, not just the screen.
+        $program->setTimetableVisibility(VisibilityLevel::AdminOnly);
+        static::getContainer()->get(EntityManagerInterface::class)->flush();
+
+        self::assertSame(404, $this->fetchIcs($token, $program));
+    }
+
+    public function testATokenNobodyHoldsOpensNothing(): void
+    {
+        $student = $this->createUser(['ROLE_USER', 'ROLE_STUDENT', 'ROLE_CAMPUS'], 'timetable.student');
+        $program = $this->programFor($student, VisibilityLevel::Everyone);
+
+        static::getContainer()->get(CalendarTokenManager::class)->tokenFor($student);
+
+        self::assertSame(404, $this->fetchIcs(str_repeat('f', 64), $program));
+    }
+
+    /**
+     * Rotating is what takes a leaked link back: the old URL has to stop resolving the moment a new
+     * token is minted, or « Régénérer le lien » is a button that promises something it does not do.
+     */
+    public function testRotatingTheTokenClosesEverySubscriptionMadeFromTheOldOne(): void
+    {
+        $student = $this->createUser(['ROLE_USER', 'ROLE_STUDENT', 'ROLE_CAMPUS'], 'timetable.student');
+        $program = $this->programFor($student, VisibilityLevel::Everyone);
+
+        $tokens = static::getContainer()->get(CalendarTokenManager::class);
+        $old = $tokens->tokenFor($student);
+        self::assertSame(200, $this->fetchIcs($old, $program));
+
+        $new = $tokens->rotate($student);
+
+        self::assertNotSame($old, $new);
+        self::assertSame(404, $this->fetchIcs($old, $program));
+        self::assertSame(200, $this->fetchIcs($new, $program));
+    }
+
+    /**
+     * The `hide` parameter can only ever remove. It is unsigned, so anybody holding the link can
+     * rewrite it - and nothing it can be set to widens the feed beyond what the token's owner may
+     * already read.
+     */
+    public function testTheHideParameterOnlyEverRemoves(): void
+    {
+        $student = $this->createUser(['ROLE_USER', 'ROLE_STUDENT', 'ROLE_CAMPUS'], 'timetable.student');
+        $closed = $this->programFor($student, VisibilityLevel::AdminOnly);
+
+        $token = static::getContainer()->get(CalendarTokenManager::class)->tokenFor($student);
+
+        self::assertSame(404, $this->fetchIcs($token, $closed, '?hide='));
+        self::assertSame(404, $this->fetchIcs($token, $closed, '?hide=default,1,2'));
+    }
+
+    private function fetchIcs(string $token, Program $program, string $query = ''): int
+    {
+        $this->client->request('GET', \sprintf('/calendar/%s/program/%d.ics%s', $token, $program->getId(), $query));
+
+        return $this->client->getResponse()->getStatusCode();
     }
 
     private function programFor(User $student, VisibilityLevel $tier): Program

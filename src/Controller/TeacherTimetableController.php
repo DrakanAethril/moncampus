@@ -10,6 +10,7 @@ use App\Entity\User;
 use App\Enum\Feature;
 use App\Repository\LessonSessionRepository;
 use App\Security\ProgramTimetableAccess;
+use App\Service\Calendar\CalendarTokenManager;
 use App\Service\LessonSessionEventFormatter;
 use App\Service\NameColorGenerator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -17,6 +18,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 // A teacher's personal weekly timetable, aggregating their LessonSessions across every Program
@@ -32,7 +34,7 @@ class TeacherTimetableController extends AbstractController
     use CalendarFeedRangeTrait;
 
     #[Route(path: '/timetable', name: 'app_teacher_timetable')]
-    public function index(LessonSessionRepository $repository, NameColorGenerator $colorGenerator, ProgramTimetableAccess $timetableAccess): Response
+    public function index(LessonSessionRepository $repository, NameColorGenerator $colorGenerator, ProgramTimetableAccess $timetableAccess, CalendarTokenManager $calendarTokens, UrlGeneratorInterface $urlGenerator): Response
     {
         // Same color a session gets on the calendar itself (LessonSessionEventFormatter's
         // colorByProgram mode) - computed once here from the exact same generator so a legend
@@ -51,7 +53,16 @@ class TeacherTimetableController extends AbstractController
             $timetableAccess->filterPrograms($repository->findDistinctProgramsForTeacher($this->currentUser())),
         );
 
-        return $this->render('teacher/timetable.html.twig', ['formations' => $formations]);
+        return $this->render('teacher/timetable.html.twig', [
+            'formations' => $formations,
+            // See App\Controller\ProgramController::timetable(): the banner's URL, unfiltered and
+            // absolute, with the legend's own state added to it in the browser.
+            'icalUrl' => $urlGenerator->generate(
+                'app_calendar_teacher_ics',
+                ['token' => $calendarTokens->tokenFor($this->currentUser())],
+                UrlGeneratorInterface::ABSOLUTE_URL,
+            ),
+        ]);
     }
 
     #[Route(path: '/timetable/feed', name: 'app_teacher_timetable_feed')]

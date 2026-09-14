@@ -50,6 +50,26 @@ security:
             # deactivation stops opening anything at once, without waiting for its expiry.
             user_checker: App\Security\AccountStatusChecker
             jwt: ~
+        # iCalendar subscriptions to the emploi du temps. A firewall of its own, before `main`,
+        # because the caller is Google's or Apple's server fetching a .ics on a schedule: it carries
+        # no cookie, and `main` would answer it with a redirect to /login that a calendar client
+        # silently records as an empty calendar.
+        #
+        # Stateless, and authenticated by the secret in the URL alone
+        # (App\Security\CalendarTokenAuthenticator). Unlike `jobboard_ingest` above, security is
+        # *on* here: the point is precisely that the request ends up carrying a real authenticated
+        # User, so FeatureAccess, StructureAccessChecker, ProgramTimetableAccess and the voters all
+        # answer for the token's owner without a second, parallel copy of their rules.
+        calendar:
+            pattern: ^/calendar/
+            stateless: true
+            provider: app_user_provider
+            # One deactivation rule, declared on every firewall that authenticates somebody - a
+            # subscription must stop serving when the account is closed, without waiting for anyone
+            # to unsubscribe.
+            user_checker: App\Security\AccountStatusChecker
+            custom_authenticators:
+                - App\Security\CalendarTokenAuthenticator
         main:
             lazy: true
             provider: app_user_provider
@@ -115,6 +135,14 @@ security:
         # kernel and must stay public: it's fetched directly by iOS (via itms-services://), not by
         # a logged-in browser. Only the listing pages that link to these (11a/11b) require login.
         - { path: ^/downloads, roles: PUBLIC_ACCESS }
+        # The iCalendar feeds. ROLE_USER rather than PUBLIC_ACCESS, and that is the whole difference
+        # this design buys: the `calendar` firewall above has already turned the URL's token into
+        # the account that owns it, so this line asks for a real user and the controller then asks
+        # the ordinary questions about that user. A token that no longer exists never gets here -
+        # the authenticator answers 404 first. Must precede the '^/, roles: ROLE_USER' catch-all
+        # like every other rule, which it already reads the same as; it is listed for the reader,
+        # not for the router.
+        - { path: ^/calendar/, roles: ROLE_USER }
         # The Proxmox console. Admin-only, and stricter than /settings on purpose: staff have no
         # business starting or stopping a hypervisor's machines. Must sit above the '^/,
         # roles: ROLE_USER' catch-all like every other rule here - a rule placed after it never
