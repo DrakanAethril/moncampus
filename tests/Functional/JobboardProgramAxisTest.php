@@ -39,7 +39,7 @@ class JobboardProgramAxisTest extends FunctionalTestCase
         $student = $this->createUser(['ROLE_USER', 'ROLE_STUDENT'], 'jobboard.axis.student');
         $track = $this->trackOf($this->program([$student], [], VisibilityLevel::Hidden));
 
-        $offer = $this->offer($track, 'Technicien de ma filière');
+        $this->offer($track, 'Technicien de ma filière');
 
         $this->client->loginUser($student);
         $crawler = $this->client->request('GET', '/jobboard');
@@ -48,10 +48,7 @@ class JobboardProgramAxisTest extends FunctionalTestCase
         // this reader's perimeter.
         $this->assertResponseIsSuccessful();
         $this->assertStringNotContainsString('Technicien de ma filière', $crawler->html());
-
-        // And the narrowing is a WHERE clause rather than a template that refrained from drawing.
-        $this->client->request('GET', '/jobboard/offers/'.$offer->getId());
-        $this->assertResponseStatusCodeSame(404);
+        $this->assertCount(0, $crawler->filter('.cm-jb-row'));
     }
 
     public function testAnOpenFormationOpensTheBoardToItsStudents(): void
@@ -75,15 +72,15 @@ class JobboardProgramAxisTest extends FunctionalTestCase
         $teacher = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'jobboard.axis.teacher');
         $track = $this->trackOf($this->program([$student], [$teacher], VisibilityLevel::TeachersOnly));
 
-        $offer = $this->offer($track, 'Technicien de ma filière');
+        $this->offer($track, 'Technicien de ma filière');
 
         $this->client->loginUser($teacher);
         $crawler = $this->client->request('GET', '/jobboard');
         $this->assertStringContainsString('Technicien de ma filière', $crawler->html());
 
         $this->client->loginUser($student);
-        $this->client->request('GET', '/jobboard/offers/'.$offer->getId());
-        $this->assertResponseStatusCodeSame(404);
+        $crawler = $this->client->request('GET', '/jobboard');
+        $this->assertStringNotContainsString('Technicien de ma filière', $crawler->html());
     }
 
     /** Most permissive across formations - and filière by filière, never across. */

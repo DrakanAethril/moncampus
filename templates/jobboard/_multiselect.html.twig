@@ -7,8 +7,15 @@
 
    The field is a div rather than a button: it carries the × of each tag, and a button inside a
    button is not markup a browser agrees to render. Keyboard support is therefore explicit -
-   Enter/Space open it, Escape closes it, the tags' × are reachable in the tab order. #}
-{% macro multiselect(name, label, placeholder, options, selected) %}
+   Enter/Space open it, Escape closes it, the tags' × are reachable in the tab order.
+
+   `searchable` adds a typing field at the head of the menu, which narrows the options as they are
+   typed. It is an option rather than the rule because it only earns its place on a list that grows
+   on its own: the sites are created by the veille itself, so nobody knows how many there will be
+   next month, where « Contrat » will always have five entries. The narrowing is purely visual -
+   an option hidden by the search keeps its checkbox and its value, so filtering the menu can never
+   silently untick something already chosen. #}
+{% macro multiselect(name, label, placeholder, options, selected, searchable = false) %}
     <div class="cm-jb-filter" data-jobboard-target="select">
         <span class="cm-jb-filter__label" id="jb-label-{{ name }}">{{ label }}</span>
         <input type="hidden" name="{{ name }}" value="{{ selected|join(',') }}" data-jobboard-target="value">
@@ -28,8 +35,18 @@
             <span class="cm-jb-select__chevron" aria-hidden="true">▾</span>
         </div>
         <div class="cm-jb-menu" role="listbox" data-jobboard-target="menu">
+            {% if searchable %}
+                <div class="cm-jb-search">
+                    <input type="search" class="cm-jb-search__input" autocomplete="off"
+                           placeholder="{{ 'jobboardFilterSearchPlaceholder'|trans }}"
+                           aria-label="{{ 'jobboardFilterSearchPlaceholder'|trans }}"
+                           data-jobboard-target="search"
+                           data-action="input->jobboard#filterOptions keydown->jobboard#keySearch">
+                </div>
+                <p class="cm-jb-menu__empty" data-jobboard-target="noMatch" hidden>{{ 'jobboardFilterNoMatchText'|trans }}</p>
+            {% endif %}
             {% for option in options %}
-                <label class="cm-jb-option{{ option.value in selected ? ' is-on' }}">
+                <label class="cm-jb-option{{ option.value in selected ? ' is-on' }}" data-label="{{ option.label|lower }}">
                     <input type="checkbox" value="{{ option.value }}"{{ option.value in selected ? ' checked' }}
                            data-action="jobboard#pickValue">
                     <span class="cm-jb-check" aria-hidden="true"></span>

@@ -74,27 +74,6 @@ final readonly class JobboardOfferFinder
     }
 
     /**
-     * One offer, or null - and null covers "outside your perimeter" as well as "does not exist".
-     * The detail panel must not be a way of reading a filière one is not in.
-     */
-    public function find(?User $reader, int $id): ?JobboardOffer
-    {
-        $tracks = $this->perimeter->tracks($reader);
-
-        if ([] === $tracks) {
-            return null;
-        }
-
-        $offer = $this->offers->createOpenOffersQueryBuilder($tracks)
-            ->andWhere('o.id = :id')
-            ->setParameter('id', $id)
-            ->getQuery()
-            ->getOneOrNullResult();
-
-        return $offer instanceof JobboardOffer ? $offer : null;
-    }
-
-    /**
      * The sites the « Source » menu offers - the rows actually present in the reader's perimeter.
      * Administrators only see this filter at all, but the perimeter is applied here just the same:
      * a query is not the place to trust who is asking.

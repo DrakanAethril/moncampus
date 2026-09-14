@@ -1,12 +1,13 @@
 {# The rows of the list, rendered here and nowhere else: the first page and « Afficher 40 offres de
    plus » both come through this file, so a row cannot say two different things depending on which
-   door it came from. That is also what keeps the source out of a non-administrator's screen - there
-   is only one rendering path to keep the rule in. #}
+   door it came from.
+
+   The row IS the link to the advert. There is no detail panel any more - everything the platform
+   knows about an offer is on the row - so the only thing left to do with one is to go and read it
+   at the source. A real <a> rather than a click handler: middle-click, Ctrl-click and « copier
+   l'adresse du lien » come for free, and no keyboard handling has to be written back by hand. #}
 {% for offer in page.offers %}
-    <div class="cm-jb-row" role="button" tabindex="0"
-         data-jobboard-target="row"
-         data-id="{{ offer.id }}"
-         data-action="click->jobboard#openDetail keydown->jobboard#keyDetail">
+    <a class="cm-jb-row" href="{{ offer.url }}" target="_blank" rel="noopener noreferrer">
         <div class="cm-jb-cell cm-jb-cell--position">
             <span class="cm-jb-position">{{ offer.position }}</span>
             <span class="cm-jb-subline">
@@ -14,6 +15,12 @@
                     <span class="cm-jb-tag cm-jb-tag--cat{{ offer.category == 'sisr' ? ' cm-jb-tag--cat-sisr' }}">{{ offer.category|upper }}</span>
                 {% endif %}
                 <span class="cm-jb-company">{{ offer.company }}</span>
+                {# The advert's own aside - « Débutant accepté », « 2 ans d'expérience minimum ».
+                   Two thirds of the offers carry one and it is the only field of the row that says
+                   something no column does, so it reads here rather than nowhere. #}
+                {% if offer.note %}
+                    <span class="cm-jb-note">{{ offer.note }}</span>
+                {% endif %}
             </span>
         </div>
         <div class="cm-jb-cell cm-jb-cell--place">
@@ -42,5 +49,5 @@
         <div class="cm-jb-cell cm-jb-cell--date cm-jb-cell--first-seen">
             {{ offer.firstSeenAt|localized_date('d MMM') }}
         </div>
-    </div>
+    </a>
 {% endfor %}
