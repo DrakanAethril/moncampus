@@ -24,16 +24,16 @@ use Symfony\Component\Routing\Attribute\Route;
  * « Jobboard » - the offers the veille brought back, read and nothing else.
  *
  * Nothing here writes an offer, closes one or deletes one: the only hand that writes is the
- * collecting agent's, through App\Controller\Api\JobboardIngestController. This screen filters,
- * lists and opens a detail panel.
+ * collecting agent's, through App\Controller\Api\JobboardIngestController. This screen filters and
+ * lists, and a row is a link to the advert's own site - there is no detail of an offer to serve,
+ * because everything the platform knows about one is on its row.
  *
  * Two rules it carries rather than delegates to a template:
  *
  * - **the filière perimeter is a WHERE clause** (App\Service\Jobboard\JobboardOfferFinder), so an
- *   offer outside the reader's filières cannot be reached by a forged query string, a cursor or an
- *   offer id;
- * - **the source is never shown to a non-administrator** - not in the list, not in the detail. The
- *   three admin-only filters are cleared server-side for everybody else rather than merely not
+ *   offer outside the reader's filières cannot be reached by a forged query string or a cursor;
+ * - **the source is never shown to anybody** - it is an administrator's filter and nothing else.
+ *   The three admin-only filters are cleared server-side for everybody else rather than merely not
  *   drawn.
  */
 #[RequiresFeature(Feature::Jobboard)]
@@ -69,8 +69,8 @@ class JobboardController extends AbstractController
 
     /**
      * « Afficher 40 offres de plus ». Answers the rows already rendered rather than the fields to
-     * build them from: one template, one truth about what a row shows - and the source cannot leak
-     * through a second rendering path that forgot the rule.
+     * build them from: one template, one truth about what a row shows, and no second rendering path
+     * to keep in step with the first.
      */
     #[Route(path: '/jobboard/offers', name: 'app_jobboard_offers', methods: ['GET'])]
     public function more(Request $request, JobboardOfferFinder $finder): JsonResponse
@@ -84,27 +84,8 @@ class JobboardController extends AbstractController
         );
 
         return new JsonResponse([
-            'html' => $this->renderView('jobboard/_rows.html.twig', ['page' => $page, 'isAdmin' => $admin]),
+            'html' => $this->renderView('jobboard/_rows.html.twig', ['page' => $page]),
             'cursor' => $page->nextCursor,
-        ]);
-    }
-
-    /**
-     * The detail panel, rendered server-side. A 404 here covers both « cette offre n'existe pas » and
-     * « elle n'est pas dans vos filières »: the second must not be distinguishable from the first.
-     */
-    #[Route(path: '/jobboard/offers/{id}', name: 'app_jobboard_offer', requirements: ['id' => '\d+'], methods: ['GET'])]
-    public function detail(int $id, JobboardOfferFinder $finder): Response
-    {
-        $offer = $finder->find($this->reader(), $id);
-
-        if (null === $offer) {
-            throw $this->createNotFoundException();
-        }
-
-        return $this->render('jobboard/_detail.html.twig', [
-            'offer' => $offer,
-            'isAdmin' => $this->isGranted('ROLE_ADMIN'),
         ]);
     }
 

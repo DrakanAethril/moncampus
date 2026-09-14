@@ -1,8 +1,7 @@
 import { Controller } from '@hotwired/stimulus';
 
 /*
- * The Jobboard's screen: the tag-style filters, the detail modal, and « Afficher 40 offres de
- * plus ».
+ * The Jobboard's screen: the tag-style filters and « Afficher 40 offres de plus ».
  *
  * Three deliberate choices here.
  *
@@ -10,24 +9,25 @@ import { Controller } from '@hotwired/stimulus';
  * server-side anyway (the data set grows at every pass of the veille), so filtering in the browser
  * would be a second, disagreeing implementation - and the URL stays bookmarkable.
  *
- * The detail modal and the extra rows arrive as **rendered HTML**, not as JSON to build markup from.
- * One template renders a row, one renders the modal, and the rule that a non-administrator never
- * sees the source cannot be forgotten by a second rendering path.
+ * The extra rows arrive as **rendered HTML**, not as JSON to build markup from: one template renders
+ * a row, so a row cannot say two different things depending on which door it came from.
  *
- * Only one menu is open at a time, and opening an offer closes it - that is the handoff's own rule
- * and the reason every menu is closed from one place here.
+ * A row is a plain link to the advert and owes nothing to this controller - there is no detail panel
+ * to open, so opening an offer is the browser's own business, Ctrl-click and all.
+ *
+ * Only one menu is open at a time, which is the handoff's own rule and the reason every menu is
+ * closed from one place here.
  */
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
-    static targets = ['form', 'select', 'menu', 'value', 'rows', 'more', 'empty', 'veil', 'panel', 'row'];
+    static targets = ['form', 'select', 'menu', 'value', 'rows', 'more', 'empty', 'search', 'noMatch'];
 
-    static values = { offersUrl: String, detailUrl: String, cursor: String };
+    static values = { offersUrl: String, cursor: String };
 
     connect() {
         this.onKeydown = (event) => {
             if (event.key === 'Escape') {
                 this.#closeMenus();
-                this.closeDetail();
             }
         };
         this.onOutside = (event) => {
@@ -62,6 +62,9 @@ export default class extends Controller {
         if (!open) {
             wrapper.classList.add('is-open');
             wrapper.querySelector('.cm-jb-select')?.setAttribute('aria-expanded', 'true');
+            // A menu that has a search field opens on it: the reader who asked for a searchable
+            // list is already typing.
+            wrapper.querySelector('.cm-jb-search__input')?.focus();
         }
     }
 
@@ -69,6 +72,41 @@ export default class extends Controller {
         if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault();
             this.toggleMenu(event);
+        }
+    }
+
+    /**
+     * Narrows the options of one menu to what has been typed. Purely visual: a hidden option keeps
+     * its checkbox and its value, so searching can never untick what was already chosen.
+     */
+    filterOptions(event) {
+        const wrapper = event.currentTarget.closest('[data-jobboard-target="select"]');
+
+        if (!wrapper) {
+            return;
+        }
+
+        const needle = this.#fold(event.currentTarget.value);
+        let shown = 0;
+
+        wrapper.querySelectorAll('.cm-jb-option').forEach((option) => {
+            const match = needle === '' || this.#fold(option.dataset.label ?? '').includes(needle);
+            option.hidden = !match;
+            shown += match ? 1 : 0;
+        });
+
+        const empty = wrapper.querySelector('[data-jobboard-target="noMatch"]');
+
+        if (empty) {
+            empty.hidden = shown > 0;
+        }
+    }
+
+    keySearch(event) {
+        // The field lives inside a GET form: Enter would submit it and close the menu the reader is
+        // still using. Escape closes the menu rather than clearing the field, as everywhere else.
+        if (event.key === 'Enter') {
+            event.preventDefault();
         }
     }
 
@@ -139,53 +177,15 @@ export default class extends Controller {
         }
     }
 
-    async openDetail(event) {
-        const row = event.currentTarget;
-        const id = row.dataset.id;
-
-        if (!id) {
-            return;
-        }
-
-        this.#closeMenus();
-        this.rowTargets.forEach((other) => other.classList.toggle('is-open', other === row));
-
-        const response = await fetch(this.detailUrlValue.replace(/\/0$/, `/${id}`), { headers: { Accept: 'text/html' } });
-
-        if (!response.ok) {
-            return;
-        }
-
-        this.panelTarget.innerHTML = await response.text();
-        this.veilTarget.hidden = false;
-        this.panelTarget.hidden = false;
-        this.panelTarget.querySelector('.cm-jb-panel__close')?.focus();
-    }
-
-    keyDetail(event) {
-        if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            this.openDetail(event);
-        }
-    }
-
-    closeDetail() {
-        if (this.hasPanelTarget) {
-            this.panelTarget.hidden = true;
-            this.panelTarget.innerHTML = '';
-        }
-
-        if (this.hasVeilTarget) {
-            this.veilTarget.hidden = true;
-        }
-
-        this.rowTargets.forEach((row) => row.classList.remove('is-open'));
-    }
-
     #closeMenus() {
         this.selectTargets.forEach((wrapper) => {
             wrapper.classList.remove('is-open');
             wrapper.querySelector('.cm-jb-select')?.setAttribute('aria-expanded', 'false');
         });
+    }
+
+    /** Lower-case and accent-free, so « Télétravail » is found by typing « teletravail ». */
+    #fold(value) {
+        return value.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
     }
 }
