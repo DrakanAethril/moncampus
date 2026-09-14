@@ -38,6 +38,10 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * **The rules are the API's, without exception** (App\Service\Jobboard\OfferIngestor): refusal line
  * by line and never of the whole file, `premiere_vue` written once, asymmetric enrichment. Which is
  * what makes a re-import cost nothing: the same file a second time reads « 0 créée, n revues ».
+ *
+ * The blacklist is the one place where these two screens say *more* than the API does: an offer
+ * from a blacklisted site is dropped silently on the API's side, and named here, because the
+ * administrator reading this is the one who set the blacklist.
  */
 #[IsGranted('ROLE_ADMIN')]
 class JobboardImportController extends AbstractController
@@ -151,6 +155,7 @@ class JobboardImportController extends AbstractController
             'created' => $report->created(),
             'reviewed' => $report->reviewed(),
             'rejected' => $report->rejected(),
+            'blocked' => $report->blocked(),
             'track' => $track->getName(),
             // Flattened rather than carried as objects: what goes in a session must survive being
             // serialised, and these four strings are all the result screen prints. The rows
@@ -187,6 +192,7 @@ class JobboardImportController extends AbstractController
             'created' => \is_int($stored['created'] ?? null) ? $stored['created'] : 0,
             'reviewed' => \is_int($stored['reviewed'] ?? null) ? $stored['reviewed'] : 0,
             'rejected' => \is_int($stored['rejected'] ?? null) ? $stored['rejected'] : 0,
+            'blocked' => \is_int($stored['blocked'] ?? null) ? $stored['blocked'] : 0,
             'track' => \is_string($stored['track'] ?? null) ? $stored['track'] : '',
             'learned' => self::learned($stored),
         ]);

@@ -33,6 +33,9 @@
                     <th class="text-end">{{ 'jobboardHistoryDuplicateColumn'|trans }}</th>
                     <th class="text-end">{{ 'jobboardHistoryRemovedColumn'|trans }}</th>
                     <th class="text-end">{{ 'jobboardHistoryRejectedColumn'|trans }}</th>
+                    {# Beside « Refusées » and never merged with it: a refusal is a defect of the offer,
+                       a block is a decision taken on the sources screen. #}
+                    <th class="text-end">{{ 'jobboardHistoryBlockedColumn'|trans }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -67,9 +70,10 @@
                         <td class="text-end">{{ row.reviewed }}</td>
                         <td class="text-end">{{ row.closed }}</td>
                         <td class="text-end{{ row.rejected > 0 ? ' cm-jb-history__rejected' }}">{{ row.rejected }}</td>
+                        <td class="text-end">{{ row.blocked }}</td>
                     </tr>
                 {% else %}
-                    <tr><td colspan="7" class="text-secondary">{{ 'jobboardHistoryEmptyText'|trans }}</td></tr>
+                    <tr><td colspan="8" class="text-secondary">{{ 'jobboardHistoryEmptyText'|trans }}</td></tr>
                 {% endfor %}
             </tbody>
         </table>

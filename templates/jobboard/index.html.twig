@@ -15,7 +15,6 @@
 {% block main %}
     <div class="cm-jb" data-controller="jobboard"
          data-jobboard-offers-url-value="{{ path('app_jobboard_offers') }}"
-         data-jobboard-detail-url-value="{{ path('app_jobboard_offer', {id: '0'}) }}"
          data-jobboard-cursor-value="{{ page.nextCursor }}">
 
         {# A GET form, deliberately: the filtered list is a result to show, not a change to record,
@@ -74,9 +73,12 @@
             {# Source and Accès BTS: administrators only. They are also stripped server-side for
                everybody else, so typing them into the address bar changes nothing. #}
             {% if isAdmin %}
+                {# Searchable: the list of sites is not a fixed vocabulary, it is created by the
+                   veille itself as it meets new domains, so it is the one filter whose length
+                   nobody decides. #}
                 {{ widget.multiselect('source', 'jobboardFilterSourceLabel'|trans, 'jobboardFilterSourcePlaceholder'|trans,
                     sources|map(s => {value: s.slug, label: s.label}),
-                    filters.sources) }}
+                    filters.sources, true) }}
 
                 {{ widget.multiselect('acces', 'jobboardFilterBtsAccessLabel'|trans, 'jobboardFilterBtsAccessPlaceholder'|trans,
                     btsAccessValues|map(a => {value: a.value, label: a.labelKey|trans}),
@@ -89,8 +91,8 @@
                 <div class="cm-jb-cell">{{ 'jobboardColumnPositionLabel'|trans }}</div>
                 <div class="cm-jb-cell">{{ 'jobboardColumnPlaceLabel'|trans }}</div>
                 <div class="cm-jb-cell">{{ 'jobboardColumnContractLabel'|trans }}</div>
-                {# « Niveau » is deliberately not a column here: the estimate is kept in the database
-                   but it is not shown, neither in the list nor in the detail. #}
+                {# « Niveau » is deliberately not a column here: the estimate is kept in the
+                   database but it is not shown. #}
                 <div class="cm-jb-cell">{{ 'jobboardColumnRemoteLabel'|trans }}</div>
                 <div class="cm-jb-cell cm-jb-cell--date cm-jb-cell--published">{{ 'jobboardColumnPublishedLabel'|trans }}</div>
                 {# The only sorted column, and the only order this screen has: date de repérage
@@ -102,7 +104,7 @@
             </div>
 
             <div class="cm-jb-rows" data-jobboard-target="rows">
-                {% include 'jobboard/_rows.html.twig' with {page: page, isAdmin: isAdmin} %}
+                {% include 'jobboard/_rows.html.twig' with {page: page} %}
             </div>
 
             {% if page.offers is empty %}
@@ -116,11 +118,6 @@
                     </button>
                 </div>
             {% endif %}
-
-            {# The overlay and the panel live inside the list card: the detail opens *over* the list
-               (position:absolute on this section), it is not a page of its own. #}
-            <div class="cm-jb-veil" data-jobboard-target="veil" data-action="click->jobboard#closeDetail" hidden></div>
-            <aside class="cm-jb-panel" data-jobboard-target="panel" hidden aria-live="polite"></aside>
         </section>
     </div>
 {% endblock %}

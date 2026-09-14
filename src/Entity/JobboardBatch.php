@@ -60,6 +60,18 @@ class JobboardBatch
     #[ORM\Column(name: 'closed_count')]
     private int $closedCount = 0;
 
+    /**
+     * Offers this deposit dropped because their site is on the blacklist - accepted at the door,
+     * written nowhere.
+     *
+     * It is a column of its own rather than a share of `rejected_count` because the two answer
+     * different questions: a refusal is a defect of the offer, this is a decision of the
+     * establishment. Reading them together would make an administrator who has just blacklisted a
+     * busy site think the veille had started producing garbage.
+     */
+    #[ORM\Column(name: 'blocked_count')]
+    private int $blockedCount = 0;
+
     private function __construct(Track $track)
     {
         $this->track = $track;
@@ -144,11 +156,17 @@ class JobboardBatch
         return $this->closedCount;
     }
 
-    public function tally(int $created, int $reviewed, int $rejected): static
+    public function getBlockedCount(): int
+    {
+        return $this->blockedCount;
+    }
+
+    public function tally(int $created, int $reviewed, int $rejected, int $blocked = 0): static
     {
         $this->createdCount += $created;
         $this->reviewedCount += $reviewed;
         $this->rejectedCount += $rejected;
+        $this->blockedCount += $blocked;
 
         return $this;
     }

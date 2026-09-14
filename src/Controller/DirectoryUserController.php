@@ -75,6 +75,7 @@ class DirectoryUserController extends AbstractController
         EntityManagerInterface $entityManager,
         GroupRepository $groupRepository,
         UserRepository $userRepository,
+        LdapManageUserRepository $ldapManageUserRepository,
         StudentAccountFactory $accountFactory,
         TranslatorInterface $translator,
     ): Response {
@@ -114,6 +115,10 @@ class DirectoryUserController extends AbstractController
                     testUser: FormValue::bool($form, 'testUser'),
                 ));
 
+                // Optional, and blank is the ordinary case: the directory script invents a
+                // password of its own unless one was typed here.
+                $initialPassword = FormValue::string($form, 'initialPassword');
+
                 if ($account->schoolMailFailed) {
                     // A civil status that transliterates to nothing (or a hundredth namesake) is no
                     // reason to refuse the account: it is created without an address, and staff are
@@ -122,7 +127,20 @@ class DirectoryUserController extends AbstractController
                     $this->addFlash('warning', 'userMailAliasNotProvisionedFlashMessage');
                 }
 
-                $entityManager->flush();
+                // The queue row has to exist before its password column can be written (the
+                // column is encrypted MySQL-side, so there is nothing to set on the entity), and
+                // it must not be *visible* to the consumer script before the password is on it -
+                // the script claims any row it sees in state 0, and a row claimed with an empty
+                // password column is an account created with a random one, the exact thing the
+                // operator typed a password to avoid. Hence the flush inside a transaction, the
+                // same pair App\Service\ClassImport\ClassImportExecutor makes for the import.
+                $entityManager->wrapInTransaction(static function () use ($entityManager, $account, $initialPassword, $ldapManageUserRepository): void {
+                    $entityManager->flush();
+
+                    if ('' !== $initialPassword && null !== $account->directoryRequest) {
+                        $ldapManageUserRepository->setInitialPassword($account->directoryRequest, $initialPassword);
+                    }
+                });
 
                 $this->addFlash('success', 'userCreatedFlashMessage');
 

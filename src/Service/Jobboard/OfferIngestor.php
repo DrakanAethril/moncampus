@@ -24,6 +24,11 @@ use Symfony\Component\Clock\ClockInterface;
  *
  * And above all: `premiere_vue` is written at creation and never again. No site can give it back.
  *
+ * **A site on the blacklist stops here**, whichever door the offer came through: the line is read,
+ * resolved, and dropped without writing anything. It is not a refusal - see IngestOutcome::Blocked -
+ * and the only place it is visible is the history's « Bloquées » column and, for an import, the
+ * screen of the administrator who asked for it.
+ *
  * A deposit also files **what it learned about the sites** - a site the resolution invented, a
  * domain it attached to a known one (App\Entity\JobboardSourceLearning). Those rows are the trace
  * of the only decisions taken here that nobody asked for, and they refuse nothing: an offer that
@@ -61,6 +66,15 @@ final readonly class OfferIngestor
                     reason: $exception->reason,
                     field: $exception->field,
                 );
+
+                continue;
+            }
+
+            // Before the duplicate bookkeeping on purpose: two offers of a blacklisted site are
+            // two offers dropped, and calling the second one `duplicate_in_batch` would pronounce
+            // a refusal - which is precisely what blacklisting is not.
+            if ($payload->source->isBlacklisted()) {
+                $lines[] = $this->blocked($index, $payload);
 
                 continue;
             }
@@ -131,7 +145,7 @@ final readonly class OfferIngestor
         }
 
         $report = new IngestReport($lines, $learned);
-        $batch->tally($report->created(), $report->reviewed(), $report->rejected());
+        $batch->tally($report->created(), $report->reviewed(), $report->rejected(), $report->blocked());
 
         $this->entityManager->flush();
 
@@ -165,6 +179,12 @@ final readonly class OfferIngestor
                 continue;
             }
 
+            if ($payload->source->isBlacklisted()) {
+                $lines[] = $this->blocked($index, $payload);
+
+                continue;
+            }
+
             if (isset($seen[$payload->identity()])) {
                 $lines[] = new IngestLine(
                     $index,
@@ -194,6 +214,21 @@ final readonly class OfferIngestor
         // announce that confirming will invent a site or attach a domain. Nothing is persisted -
         // the sources the preview named were never persisted either.
         return new IngestReport($lines, $this->sources->takeLearned());
+    }
+
+    /**
+     * An offer whose site is on the blacklist: named like an accepted line - source, ref, position -
+     * and carrying no reason, because nothing about it was wrong.
+     */
+    private function blocked(int $index, OfferPayload $payload): IngestLine
+    {
+        return new IngestLine(
+            index: $index,
+            outcome: IngestOutcome::Blocked,
+            source: $payload->source->getSlug(),
+            sourceRef: $payload->sourceRef,
+            position: $payload->position,
+        );
     }
 
     /**

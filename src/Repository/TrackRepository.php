@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\Track;
 use App\Entity\User;
+use App\Enum\VisibilityLevel;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -68,7 +69,8 @@ class TrackRepository extends ServiceEntityRepository
     }
 
     /**
-     * Every Track one person belongs to, through the formations they are enrolled in or teach.
+     * Every Track one person belongs to, through the formations they are enrolled in or teach -
+     * kept to the formations that open the Jobboard at one of $tiers.
      *
      * This is the Jobboard's reading perimeter for a student or a teacher
      * (App\Service\Jobboard\JobboardPerimeter): the filière of an offer is a Track, and being
@@ -76,17 +78,30 @@ class TrackRepository extends ServiceEntityRepository
      * Program -> Cohort -> Track in PHP, because it lands in a WHERE clause and must not be
      * something a caller can forget to apply.
      *
+     * The tier travels as a parameter for the same reason it does in
+     * App\Security\ProgramTimetableAccess::visibleTiers(): it is the half of the rule that depends
+     * on who is reading, and the filtering has to happen in SQL rather than on the rows that come
+     * back - a formation whose board is masked must not put its filière in the perimeter at all.
+     *
+     * @param list<VisibilityLevel> $tiers
+     *
      * @return list<Track>
      */
-    public function findForMember(User $user): array
+    public function findForMember(User $user, array $tiers): array
     {
+        if ([] === $tiers) {
+            return [];
+        }
+
         return $this->createQueryBuilder('t')
             ->innerJoin('App\\Entity\\Cohort', 'c', 'WITH', 'c.track = t')
             ->innerJoin('App\\Entity\\Program', 'p', 'WITH', 'p.cohort = c')
             ->leftJoin('p.students', 'st')
             ->leftJoin('p.teachers', 'te')
             ->andWhere('st = :user OR te = :user')
+            ->andWhere('p.jobboardVisibility IN (:tiers)')
             ->setParameter('user', $user)
+            ->setParameter('tiers', $tiers)
             ->distinct()
             ->orderBy('t.name', 'ASC')
             ->getQuery()
@@ -94,9 +109,40 @@ class TrackRepository extends ServiceEntityRepository
     }
 
     /**
-     * Every Track, active or not. The Jobboard's perimeter for staff and administrators: a filière
-     * deactivated in the structure still carries the offers deposited under it, and hiding them
-     * would look exactly like losing them.
+     * Every Track carrying at least one formation that opens its Jobboard at one of $tiers,
+     * whoever teaches or studies there.
+     *
+     * The Jobboard's perimeter for the personnel: they are members of no formation, so their
+     * reading cannot be a membership - it is the establishment's own, narrowed by what each
+     * formation decided. An administrator does not come through here at all (see
+     * App\Service\Jobboard\JobboardPerimeter): they garnish and audit the veille, which is not a
+     * reading a formation gets to close.
+     *
+     * @param list<VisibilityLevel> $tiers
+     *
+     * @return list<Track>
+     */
+    public function findOpenToJobboard(array $tiers): array
+    {
+        if ([] === $tiers) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('t')
+            ->innerJoin('App\\Entity\\Cohort', 'c', 'WITH', 'c.track = t')
+            ->innerJoin('App\\Entity\\Program', 'p', 'WITH', 'p.cohort = c')
+            ->andWhere('p.jobboardVisibility IN (:tiers)')
+            ->setParameter('tiers', $tiers)
+            ->distinct()
+            ->orderBy('t.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Every Track, active or not. The Jobboard's perimeter for an administrator - the one reading
+     * no formation gets to close: a filière deactivated in the structure still carries the offers
+     * deposited under it, and hiding them would look exactly like losing them.
      *
      * @return list<Track>
      */

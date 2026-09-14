@@ -11,6 +11,7 @@ use App\Entity\SchoolYear;
 use App\Entity\Section;
 use App\Entity\Track;
 use App\Entity\User;
+use App\Enum\VisibilityLevel;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -194,6 +195,12 @@ abstract class FunctionalTestCase extends WebTestCase
         // « the mailbox does not exist » - a different assertion about a different thing. The axis
         // itself is pinned by tests/Functional/SchoolMailProgramAxisTest.php.
         $program->setSchoolMailEnabled(true);
+        // Same reasoning one line down, for the Jobboard's own per-formation axis: « Masqué » is
+        // what a formation starts on in the application, and a fixture that kept it would turn
+        // « a student reads their filière's offers » into « the board is empty », which is an
+        // assertion about a different thing. The axis itself is pinned by
+        // tests/Functional/JobboardProgramAxisTest.php.
+        $program->setJobboardVisibility(VisibilityLevel::Everyone);
         foreach ($students as $student) {
             $program->addStudent($student);
         }

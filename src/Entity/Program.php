@@ -278,6 +278,32 @@ class Program
     private bool $gameEnabled = false;
 
     /**
+     * Who reads the « Jobboard » - the veille's offers - from this formation.
+     *
+     * The second axis of a feature the role matrix already gates, and **cumulative with it**: the
+     * `jobboard` feature must be lit for the reader's role *and* one of their formations must open
+     * the board at a tier that admits them (App\Service\Jobboard\JobboardPerimeter). Lighting the
+     * feature for a role therefore never overrides what a formation decided - the same posture as
+     * App\Security\ProgramTimetableAccess, and the reason this is a tier rather than a boolean:
+     * a class's offers are often worth showing to its teachers a term before its students.
+     *
+     * **Hidden at creation, and hidden on every formation that already exists.** The offers come
+     * from an outside collecting agent, so the establishment decides formation by formation when
+     * its students are shown them - the same reasoning that leaves the feature named by no role in
+     * App\Enum\Feature::defaultRoles().
+     *
+     * It decides a *reading*, never a deposit: the collecting agent keeps filing offers under a
+     * filière whose formations are all masked, and opening one later reveals the whole history.
+     * An administrator is deliberately outside the rule - they are the account that garnishes and
+     * audits the veille, and the only one shown an offer's source.
+     *
+     * Same value on the property and in the DDL - the column DEFAULT only lives for the length of
+     * the ALTER.
+     */
+    #[ORM\Column(name: 'jobboard_visibility', length: 20, options: ['default' => 'hidden'], enumType: VisibilityLevel::class)]
+    private VisibilityLevel $jobboardVisibility = VisibilityLevel::Hidden;
+
+    /**
      * The « univers » this formation plays in, which decides the wording of its six levels and the
      * catalogue its students draw a pseudonym from. Null is a legitimate state: generic level
      * wording and no figure catalogue - never an empty cell.
@@ -696,6 +722,18 @@ class Program
     public function setAssignmentManagementEnabled(bool $assignmentManagementEnabled): static
     {
         $this->assignmentManagementEnabled = $assignmentManagementEnabled;
+
+        return $this;
+    }
+
+    public function getJobboardVisibility(): VisibilityLevel
+    {
+        return $this->jobboardVisibility;
+    }
+
+    public function setJobboardVisibility(VisibilityLevel $jobboardVisibility): static
+    {
+        $this->jobboardVisibility = $jobboardVisibility;
 
         return $this;
     }

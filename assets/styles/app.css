@@ -10856,12 +10856,6 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
        central zone with no window scrollbar of its own - which is the point, the scrollbar must
        belong to the offers and to nothing else. */
     --cm-jb-card-top: 170px;
-    /* Where the detail panel hangs its top edge. Wide, it opens level with the list card, which is
-       already at the top of the central zone. Narrow, the filters stack above the card and push it
-       a third of the way down the page, so the panel takes the window instead. The breakpoint is
-       written once, in the media query below; the controller reads the answer rather than knowing
-       the number. */
-    --cm-jb-panel-anchor: card;
 }
 
 /* ---------- Filter column ---------- */
@@ -10934,6 +10928,18 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-jb-option input:checked + .cm-jb-check::after { color: #fff; }
 .cm-jb-option input:focus-visible + .cm-jb-check { outline: 2px solid var(--cm-brand); outline-offset: 1px; }
 .cm-jb-option__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* An option narrowed out by the menu's search field. Spelt out because the row's own display:flex
+   would otherwise win over the browser's [hidden] and the option would stay on screen. */
+.cm-jb-option[hidden] { display: none; }
+/* The typing field of a searchable menu (Source). Sticky so it stays reachable once the list of
+   sites is longer than the menu - scrolling past the search field is scrolling past the way out. */
+.cm-jb-search { position: sticky; top: 0; z-index: 1; background: var(--cm-surface); padding: 2px 2px 5px; }
+.cm-jb-search__input {
+    width: 100%; min-height: 30px; border: 1px solid var(--cm-jb-field-bd); border-radius: 7px;
+    padding: 4px 8px; font-size: 12.5px; color: var(--cm-ink); background: var(--cm-surface);
+}
+.cm-jb-search__input:focus { outline: none; border-color: var(--cm-brand); }
+.cm-jb-menu__empty { margin: 0; padding: 8px; font-size: 12px; color: var(--cm-faint); text-align: center; }
 
 /* ---------- List ---------- */
 .cm-jb-list {
@@ -10957,9 +10963,15 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 /* Two date columns side by side: « Publiée » is the advert's own word and reads as secondary,
    « Repérée » is the platform's observation and the order of the list. */
 .cm-jb-row .cm-jb-cell--published { color: var(--cm-faint); }
-.cm-jb-row { border-bottom: 1px solid var(--cm-border-faint); cursor: pointer; font-size: 12.5px; color: var(--cm-text); }
+/* The row is an <a> to the advert: it must not inherit a link's underline or colour, and the grid
+   it shares with the header is set above. The :hover rule is not redundant - Tabler underlines
+   every hovered link, and a whole row of underlined text is not a row. */
+.cm-jb-row {
+    border-bottom: 1px solid var(--cm-border-faint); font-size: 12.5px; color: var(--cm-text);
+    text-decoration: none;
+}
+.cm-jb-row:hover, .cm-jb-row:focus { text-decoration: none; color: var(--cm-text); }
 .cm-jb-row:hover { background: var(--cm-surface-alt); }
-.cm-jb-row.is-open { background: var(--cm-blue-bg-soft); }
 .cm-jb-row:focus-visible { outline: 2px solid var(--cm-brand); outline-offset: -2px; }
 .cm-jb-cell { min-width: 0; }
 .cm-jb-cell--position { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -10968,7 +10980,20 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .cm-jb-subline { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.cm-jb-company { font-size: 12px; color: var(--cm-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The company keeps up to half the subline and the note takes what is left - the other way round,
+   a long note would cut « Siga Informatique » down to « Siga Info… » to print an aside nobody
+   asked for. */
+.cm-jb-company {
+    font-size: 12px; color: var(--cm-faint); flex: 0 0 auto; max-width: 50%;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* The advert's aside, after the company. Lighter than the company and the first thing to be cut
+   when the column is narrow - it is a nicety, never the reason a row is read. */
+.cm-jb-note {
+    font-size: 11.5px; color: var(--cm-disabled); flex: 1 1 0; min-width: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cm-jb-note::before { content: "· "; }
 .cm-jb-cell--place { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* The golden ≈ - an estimated level, an approximate date. It is small on purpose and it is never
    a colour anything else uses on this screen. */
@@ -10995,47 +11020,7 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-jb-tag--remote-partiel { background: var(--cm-mail-tint-bg); border-color: var(--cm-mail-tint-border); color: var(--cm-blue-tx); }
 .cm-jb-tag--remote-aucun { background: var(--cm-surface-alt); border-color: var(--cm-border); color: var(--cm-muted); }
 
-/* ---------- Detail panel, over the list ---------- */
-.cm-jb-veil { position: fixed; inset: 0; z-index: 30; background: rgba(18, 52, 77, .16); }
-/* Fixed, not absolute: the card is now as tall as the list, and a panel bounded by it would either
-   be four screens high or carry a scrollbar of its own. Fixed gives it the central zone and nothing
-   else, whatever the reader has scrolled past. The controller writes the three custom properties on
-   opening (and on scroll/resize) so the panel stays flush with the list card's own right edge
-   rather than flying off to the edge of a 2 560 px screen. */
-.cm-jb-panel {
-    position: fixed; z-index: 31;
-    top: var(--cm-jb-panel-top, 18px);
-    right: var(--cm-jb-panel-right, 18px);
-    bottom: var(--cm-jb-panel-bottom, 18px);
-    width: var(--cm-jb-panel-width, 404px); max-width: calc(100vw - 36px);
-    background: var(--cm-surface); border: 1px solid var(--cm-jb-field-bd); border-radius: 12px;
-    box-shadow: -12px 0 32px rgba(18, 52, 77, .18); padding: 18px; overflow-y: auto;
-    display: flex; flex-direction: column; gap: 14px;
-}
-.cm-jb-panel__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.cm-jb-panel__title { font-family: Spectral, Georgia, serif; font-weight: 600; font-size: 16px; color: var(--cm-ink); margin: 0; }
-.cm-jb-panel__company { font-size: 12.5px; color: var(--cm-muted); margin: 2px 0 0; }
-.cm-jb-panel__close {
-    border: 0; background: none; font-size: 20px; line-height: 1; color: var(--cm-faint);
-    cursor: pointer; padding: 0 4px; min-width: 32px; min-height: 32px;
-}
-.cm-jb-panel__close:hover { color: var(--cm-ink); }
-.cm-jb-panel__tags { display: flex; flex-wrap: wrap; gap: 6px; }
-.cm-jb-panel__lines { margin: 0; }
-.cm-jb-panel__line {
-    display: flex; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--cm-border-faint); font-size: 12.5px;
-}
-.cm-jb-panel__line dt { width: 118px; flex: none; color: var(--cm-faint); font-weight: 400; }
-.cm-jb-panel__line dd { margin: 0; color: var(--cm-ink); min-width: 0; }
-.cm-jb-panel__hint { color: var(--cm-faint); }
-.cm-jb-panel__note {
-    background: var(--cm-surface-alt); border-left: 3px solid var(--cm-gold); border-radius: 0 8px 8px 0;
-    padding: 10px 12px; font-size: 12.5px; line-height: 1.6; color: var(--cm-text); margin: 0;
-}
-.cm-jb-panel__foot { margin-top: auto; }
-.cm-jb-panel__link { width: 100%; justify-content: center; }
-
-/* Narrow screens: the filter card goes above the list, and the panel takes the whole card. */
+/* Narrow screens: the filter card goes above the list. */
 @media (max-width: 980px) {
     .cm-jb { flex-direction: column; }
     .cm-jb-filters { width: 100%; }
@@ -11046,7 +11031,6 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
     .cm-jb-cell--published { display: none; }
     /* Stacked, the card no longer starts a third of the way down the page. */
     .cm-jb-list { min-height: 0; }
-    .cm-jb { --cm-jb-panel-anchor: window; }
 }
 
 /* ---------- Configuration > Jobboard > Historique ---------- */

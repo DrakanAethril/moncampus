@@ -7,6 +7,7 @@ namespace App\Twig;
 use App\Entity\User;
 use App\Enum\VisibilityLevel;
 use App\Security\ProgramTimetableAccess;
+use App\Service\Jobboard\JobboardPerimeter;
 use Symfony\Bundle\SecurityBundle\Security;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
@@ -21,6 +22,7 @@ class VisibilityExtension extends AbstractExtension
     public function __construct(
         private readonly Security $security,
         private readonly ProgramTimetableAccess $timetableAccess,
+        private readonly JobboardPerimeter $jobboardPerimeter,
     ) {
     }
 
@@ -34,7 +36,20 @@ class VisibilityExtension extends AbstractExtension
             // spelled out inline in three templates, and the one that forgot the tier is how a
             // formation reserved to the administration ended up on its students' bar.
             new TwigFunction('timetable_visible', $this->timetableAccess->isVisible(...)),
+            // The Jobboard's own nav rule, and the reason it is not a tier read off one Program:
+            // the entry opens a board covering every filière the reader is in, so what decides it
+            // is the perimeter itself - « au moins une formation m'ouvre son jobboard ». The
+            // perimeter memoises per request, so the nav asking costs the query the screen was
+            // going to make anyway.
+            new TwigFunction('jobboard_visible', $this->jobboardVisible(...)),
         ];
+    }
+
+    public function jobboardVisible(): bool
+    {
+        $viewer = $this->security->getUser();
+
+        return $viewer instanceof User && $this->jobboardPerimeter->isVisible($viewer);
     }
 
     public function allows(VisibilityLevel $level): bool
