@@ -391,22 +391,36 @@ class LaptopController extends AbstractController
         ]);
     }
 
-    // Pre-selects "Type de prêt" as soon as a borrower is picked, on both lend forms. A separate
-    // request rather than an extra key on the two search endpoints: the answer is needed once a
-    // borrower is chosen, not for each of the twenty candidates a search lists, and this keeps the
-    // rule in one place instead of two payloads.
+    // Pre-selects "Type de prêt" as soon as a borrower is picked, on both lend forms, and says how
+    // many machines that borrower is already holding. A separate request rather than an extra key
+    // on the two search endpoints: the answer is needed once a borrower is chosen, not for each of
+    // the twenty candidates a search lists, and this keeps the rule in one place instead of two
+    // payloads.
+    //
+    // The running-loan count is a remark, never a refusal: lending several machines to the same
+    // person is ordinary (a teacher equipping a room, a student with a second machine for a
+    // placement). What the operator needs is to know it, not to be stopped.
     #[Route(path: '/laptops/loans/suggested-type', name: 'app_laptops_loans_suggested_type')]
-    public function suggestedLoanType(Request $request, UserRepository $userRepository, ProgramStudentModalityRepository $modalityRepository): JsonResponse
+    public function suggestedLoanType(Request $request, UserRepository $userRepository, ProgramStudentModalityRepository $modalityRepository, LaptopLoanRepository $loanRepository, TranslatorInterface $translator): JsonResponse
     {
         $borrower = $this->resolveActiveBorrower($userRepository, $request->query->get('borrower'));
 
         if (null === $borrower) {
-            return $this->json(['loanType' => null]);
+            return $this->json(['loanType' => null, 'activeLoansNotice' => null]);
         }
 
-        $isAlternant = [] !== $modalityRepository->findAlternanceProgramIdsForStudent($borrower);
+        // A borrower who is not a student signs nothing: the institution does not contract with its
+        // own staff over a machine it owns - see App\Enum\LaptopLoanType::Interne.
+        $isStudent = \in_array('ROLE_STUDENT', $borrower->getRoles(), true);
+        $isAlternant = $isStudent && [] !== $modalityRepository->findAlternanceProgramIdsForStudent($borrower);
+        $activeLoans = $loanRepository->countActiveLoansForBorrower($borrower);
 
-        return $this->json(['loanType' => LaptopLoanType::forAlternance($isAlternant)->value]);
+        return $this->json([
+            'loanType' => LaptopLoanType::suggestFor($isStudent, $isAlternant)->value,
+            'activeLoansNotice' => $activeLoans > 0
+                ? $translator->trans('laptopLoanBorrowerAlreadyHoldsNoticeText', ['%count%' => $activeLoans])
+                : null,
+        ]);
     }
 
     // Backs the borrower ajax tom-select field in lend.html.twig - only active (non-disabled)

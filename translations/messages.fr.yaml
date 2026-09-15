@@ -1657,10 +1657,9 @@ returnLaptopButtonLabel: 'Retourner'
 laptopHistoryButtonLabel: 'Historique'
 laptopAssetTagColumnLabel: "N° d'inventaire"
 laptopDeviceColumnLabel: 'Appareil'
-laptopStudentColumnLabel: 'Étudiant'
 laptopComputerColumnLabel: 'Ordinateur'
 laptopStatusColumnLabel: 'Statut'
-laptopLoansSearchPlaceholder: "Étudiant, n° d'inventaire…"
+laptopLoansSearchPlaceholder: "Emprunteur, n° d'inventaire…"
 laptopInventorySearchPlaceholder: 'Marque, modèle, n°…'
 laptopStatusOverdueDaysLabel: 'En retard · %days% j'
 laptopConditionColumnLabel: 'État'
@@ -1708,6 +1707,8 @@ laptopLoanAvailableSearchPlaceholder: 'Rechercher un ordinateur…'
 laptopLoanConditionSectionHeading: 'État du matériel au prêt'
 laptopLoanLaptopRequiredMessage: 'Choisissez un ordinateur disponible.'
 laptopLoanBorrowerSearchPlaceholder: 'Rechercher un utilisateur…'
+laptopLoanBorrowerAnyAccountHint: "N'importe quel compte actif : étudiant, enseignant, personnel, tuteur."
+laptopLoanBorrowerAlreadyHoldsNoticeText: 'Cette personne a déjà %count% machine(s) en cours de prêt.'
 laptopLoanDueAtFieldLabel: 'Retour prévu le'
 laptopLoanLentAtFieldLabel: 'Date du prêt'
 laptopLoanLentStateNotesPlaceholder: "Rayure sur le capot, chargeur USB-C et housse n° 12 remis à l'étudiant…"
@@ -1736,6 +1737,7 @@ laptopLoanTypeFieldLabel: 'Type de prêt'
 laptopLoanTypePlaceholder: 'Choisissez un type de prêt'
 laptopLoanTypeUfaLabel: 'UFA (apprentissage)'
 laptopLoanTypeCfcLabel: 'CFC (formation continue)'
+laptopLoanTypeInternalLabel: 'Interne (sans convention)'
 laptopLoanAccessoriesSectionHeading: 'Accessoires prêtés'
 laptopLoanLentAccessoriesFieldLabel: 'Accessoires remis'
 laptopLoanLentAccessoriesPlaceholder: "Chargeur USB-C, housse n° 12, souris…"
@@ -1750,6 +1752,87 @@ laptopLoanDocumentsColumnLabel: 'Documents'
 laptopLoanDocumentUnavailableMessage: "Ce document n'est pas disponible pour ce prêt."
 laptopLoanPrintConventionPrompt: 'Le prêt est enregistré. Imprimez la convention à faire signer par l’emprunteur.'
 laptopLoanPrintReturnFormPrompt: 'Le retour est enregistré. Imprimez le formulaire de restitution à faire signer.'
+
+# Import d'une liste d'ordinateurs (Inventaire > Importer une liste)
+laptopImportButtonLabel: 'Importer une liste'
+laptopImportPageHeading: "Importer une liste d'ordinateurs"
+laptopImportCheckPageHeading: 'Vérification du fichier'
+laptopImportResultPageHeading: "Import terminé"
+laptopImportStepFileLabel: 'Fichier'
+laptopImportStepCheckLabel: 'Vérification'
+laptopImportStepRunLabel: 'Import'
+laptopImportFileFieldLabel: 'Fichier de l’inventaire (CSV)'
+laptopImportFileFieldHelpText: "Une ligne par machine, avec au minimum le numéro d'inventaire et le numéro de série. 500 machines au maximum."
+laptopImportFileRequiredMessage: 'Choisissez le fichier à importer.'
+laptopImportInitialConditionFieldLabel: 'État initial des machines'
+laptopImportInitialConditionFieldHelpText: "Appliqué à toutes les machines créées par cet import. Facultatif : une livraison neuve est homogène, une reprise de parc ne l'est pas."
+laptopImportInitialConditionPlaceholder: 'Aucun état'
+laptopImportNoWriteNoteText: "Rien n'est écrit à cette étape : le fichier est lu, puis l'analyse vous est présentée avant toute création."
+laptopImportExpectedColumnsTitle: 'Colonnes attendues'
+laptopImportExpectedColumnsHint: "L'ordre des colonnes n'a pas d'importance : elles sont reconnues par leur intitulé."
+laptopImportColumnNameHeader: 'Colonne'
+laptopImportColumnRequiredHeader: 'Obligatoire'
+laptopImportColumnContentHeader: 'Contenu'
+laptopImportColumnAssetTagContent: "Le numéro d'inventaire de l'établissement (2023/01, 2024-07…)"
+laptopImportColumnSerialContent: 'Le numéro de série du constructeur'
+laptopImportColumnBrandContent: 'HP, Lenovo…'
+laptopImportColumnModelContent: 'PAVILION, IdeaPad…'
+laptopImportColumnValueContent: 'Valeur de remplacement portée sur la convention. Vide : 500,00 €'
+laptopImportColumnsFreeFormHint: "Les autres colonnes du fichier sont ignorées."
+laptopImportDownloadTemplateAction: 'Télécharger un modèle'
+laptopImportCheckFileAction: 'Vérifier le fichier'
+laptopImportFileEmptyMessage: "Ce fichier ne contient aucune ligne exploitable."
+laptopImportFileMissingColumnMessage: "Ce fichier n'a pas de colonne « %column% »."
+laptopImportFileTooManyRowsMessage: 'Ce fichier contient plus de %max% machines : ce n’est plus une livraison.'
+laptopImportSessionExpiredFlashMessage: "L'analyse n'est plus disponible : déposez à nouveau le fichier."
+laptopImportNotConfirmedFlashMessage: "Cochez la case de confirmation avant de lancer l'import."
+laptopImportNoLongerImportableFlashMessage: "L'inventaire a changé depuis l'analyse : relisez-la avant de relancer l'import."
+laptopImportCheckSubtitle: '%file% — %count% ligne(s) lue(s).'
+laptopImportStatCreateLabel: 'Créations'
+laptopImportStatCreateHint: 'Machines ajoutées au parc'
+laptopImportStatSkipLabel: 'Déjà au parc'
+laptopImportStatSkipHint: 'Laissées telles quelles'
+laptopImportStatWarningLabel: 'Avertissements'
+laptopImportStatWarningHint: "N'empêchent pas l'import"
+laptopImportStatBlockingLabel: 'Bloquantes'
+laptopImportStatBlockingHint: 'Refusent tout le fichier'
+laptopImportBlockingSectionTitle: '%count% ligne(s) bloquante(s)'
+laptopImportBlockingSectionHint: "Tant qu'une ligne est bloquante, le fichier entier est refusé : les deux numéros sont uniques, un import à moitié écrit ne peut pas être redéposé tel quel."
+laptopImportLineLabel: 'Ligne %line%'
+laptopImportNoAssetTagLabel: "sans numéro d'inventaire"
+laptopImportRowsSectionTitle: 'Détail des lignes'
+laptopImportInitialConditionRecapLabel: 'État initial appliqué aux machines créées : %condition%'
+laptopImportColumnLineHeader: 'Ligne'
+laptopImportColumnOutcomeHeader: 'Ce qui sera fait'
+laptopImportConfirmCheckboxLabel: 'Cette analyse correspond bien au fichier %file%.'
+laptopImportCannotImportBlockingText: "Corrigez les lignes bloquantes puis déposez le fichier à nouveau."
+laptopImportCannotImportNothingText: "Ce fichier n'ajouterait aucune machine : elles sont déjà toutes au parc."
+laptopImportAnotherFileAction: 'Déposer un autre fichier'
+laptopImportRunAction: 'Créer %count% machine(s)'
+laptopImportReplayNoteText: "L'analyse est refaite juste avant l'écriture, au cas où l'inventaire aurait changé entre-temps."
+laptopImportResultFileLabel: 'Fichier importé : %file%'
+laptopImportNoneLabel: 'Aucune'
+laptopImportResultCreatedTitle: 'Machines créées'
+laptopImportResultCreatedHint: "Elles apparaissent désormais dans l'inventaire."
+laptopImportResultSkippedTitle: 'Machines déjà au parc'
+laptopImportResultSkippedHint: "Laissées telles quelles : le fichier n'écrase rien."
+laptopImportBackToInventoryAction: "Retour à l'inventaire"
+laptopImportSeverityBlockingLabel: 'Bloquant'
+laptopImportSeverityWarningLabel: 'Avertissement'
+laptopImportSeverityNoteLabel: 'Info'
+laptopImportActionCreateLabel: 'Création'
+laptopImportActionSkipLabel: 'Déjà au parc'
+laptopImportActionBlockedLabel: 'Bloquée'
+laptopImportMissingAssetTagIssue: "Aucun numéro d'inventaire sur cette ligne."
+laptopImportMissingSerialNumberIssue: 'Aucun numéro de série sur cette ligne.'
+laptopImportDuplicateAssetTagIssue: "Ce numéro d'inventaire apparaît aussi aux lignes %lines% du fichier."
+laptopImportDuplicateSerialNumberIssue: 'Ce numéro de série apparaît aussi aux lignes %lines% du fichier.'
+laptopImportDefaultReplacementValueIssue: 'Aucune valeur indiquée : %value% € sera portée sur la convention.'
+laptopImportInvalidReplacementValueIssue: '« %value% » n’est pas un montant lisible.'
+laptopImportMissingDeviceIssue: 'Ni marque ni modèle : la convention imprimera une case vide.'
+laptopImportAlreadyInInventoryIssue: "Cette machine est déjà à l'inventaire, avec le même numéro de série : elle sera laissée telle quelle."
+laptopImportAssetTagTakenIssue: "Ce numéro d'inventaire est déjà pris par une machine dont le numéro de série est %serial%."
+laptopImportSerialNumberTakenIssue: "Ce numéro de série est déjà enregistré sous le numéro d'inventaire %assetTag%."
 
 gestionNavLabel: 'Gestion'
 ticketsGroupNavLabel: 'Tickets'

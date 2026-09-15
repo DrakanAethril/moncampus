@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\Laptop;
 use App\Entity\LaptopLoan;
+use App\Entity\User;
 use App\Enum\LaptopLoanScope;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
@@ -29,6 +30,24 @@ class LaptopLoanRepository extends ServiceEntityRepository
             ->setParameter('laptop', $laptop)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    /**
+     * How many machines a person is holding right now.
+     *
+     * There is deliberately no ceiling anywhere on this number: a borrower may hold several
+     * machines at once (a teacher equipping a room, a student with a second one for a placement).
+     * The count exists so the lend forms can say so, not so anything can refuse.
+     */
+    public function countActiveLoansForBorrower(User $borrower): int
+    {
+        return (int) $this->createQueryBuilder('loan')
+            ->select('COUNT(loan.id)')
+            ->andWhere('loan.borrower = :borrower')
+            ->andWhere('loan.returnedAt IS NULL')
+            ->setParameter('borrower', $borrower)
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 
     /**

@@ -39,6 +39,9 @@
                                 data-action="change->laptop-loan-type#suggest"
                                 data-tom-select-url-value="{{ path('app_laptops_lend_candidates_search', {id: laptop.id}) }}"
                                 data-tom-select-placeholder-value="{{ 'laptopLoanBorrowerSearchPlaceholder'|trans }}"></select>
+                        <div class="form-hint">{{ 'laptopLoanBorrowerAnyAccountHint'|trans }}</div>
+                        {# Said, never refused: several machines at once is an ordinary loan. #}
+                        <div class="text-secondary small mt-1" data-laptop-loan-type-target="notice" hidden></div>
                     </div>
                     <div class="col-md-6">{{ form_row(form.dueAt) }}</div>
                     <div class="col-md-6">{{ form_row(form.loanType, {attr: {'data-laptop-loan-type-target': 'type'}}) }}</div>

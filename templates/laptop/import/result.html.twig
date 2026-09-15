@@ -1,0 +1,62 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'laptopImportResultPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'ufaNavLabel'|trans, url: path('app_ufa')},
+        {label: 'laptopsNavLabel'|trans, url: path('app_laptops_loans')},
+        {label: 'laptopsInventoryTabLabel'|trans, url: path('app_laptops')},
+        {label: 'laptopImportPageHeading'|trans, url: path('app_laptops_import')},
+        {label: 'laptopImportResultPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'laptopImportResultPageHeading'|trans }}{% endblock %}
+
+{% macro tag_list(title, hint, tags) %}
+    <div class="cm-subhead">
+        <div class="cm-subhead__title">{{ title }}</div>
+        <div class="cm-subhead__hint">{{ hint }}</div>
+    </div>
+    {% if tags is empty %}
+        <p class="text-secondary">{{ 'laptopImportNoneLabel'|trans }}</p>
+    {% else %}
+        <p class="mb-3">
+            {% for tag in tags %}<span class="cm-badge cm-badge--gray me-1">{{ tag }}</span>{% endfor %}
+        </p>
+    {% endif %}
+{% endmacro %}
+
+{% block main %}
+    {% import _self as helper %}
+
+    <p class="text-secondary">{{ 'laptopImportResultFileLabel'|trans({'%file%': fileName}) }}</p>
+
+    {% include 'laptop/import/_steps.html.twig' with {step: 3} %}
+
+    <div class="cm-statgrid my-3">
+        <div class="cm-stat">
+            <span class="cm-stat__value">{{ outcome.createdCount }}</span>
+            <span class="cm-stat__label">{{ 'laptopImportStatCreateLabel'|trans }}</span>
+        </div>
+        <div class="cm-stat">
+            <span class="cm-stat__value">{{ outcome.skippedAssetTags|length }}</span>
+            <span class="cm-stat__label">{{ 'laptopImportStatSkipLabel'|trans }}</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            {{ helper.tag_list('laptopImportResultCreatedTitle'|trans, 'laptopImportResultCreatedHint'|trans, outcome.createdAssetTags) }}
+            {{ helper.tag_list('laptopImportResultSkippedTitle'|trans, 'laptopImportResultSkippedHint'|trans, outcome.skippedAssetTags) }}
+
+            <div class="cm-actionbar">
+                <div class="cm-actionbar__buttons">
+                    <a href="{{ path('app_laptops_import') }}" class="btn btn-link">{{ 'laptopImportAnotherFileAction'|trans }}</a>
+                    <a href="{{ path('app_laptops') }}" class="btn btn-primary">{{ 'laptopImportBackToInventoryAction'|trans }}</a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

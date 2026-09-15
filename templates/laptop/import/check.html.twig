@@ -1,0 +1,156 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'laptopImportCheckPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'ufaNavLabel'|trans, url: path('app_ufa')},
+        {label: 'laptopsNavLabel'|trans, url: path('app_laptops_loans')},
+        {label: 'laptopsInventoryTabLabel'|trans, url: path('app_laptops')},
+        {label: 'laptopImportPageHeading'|trans, url: path('app_laptops_import')},
+        {label: 'laptopImportCheckPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'laptopImportCheckPageHeading'|trans }}{% endblock %}
+
+{# A finding is a translation key plus its parameters. #}
+{% macro issue_list(issues) %}
+    <ul class="mb-0 ps-3">
+        {% for issue in issues %}
+            <li>
+                <span class="cm-badge {{ issue.severity.badgeClass }}">{{ issue.severity.labelKey|trans }}</span>
+                {{ issue.messageKey|trans(issue.parameters) }}
+            </li>
+        {% endfor %}
+    </ul>
+{% endmacro %}
+
+{% block main %}
+    {% import _self as helper %}
+
+    <p class="text-secondary">
+        {{ 'laptopImportCheckSubtitle'|trans({'%file%': analysis.fileName, '%count%': analysis.laptops|length}) }}
+    </p>
+
+    {% include 'laptop/import/_steps.html.twig' with {step: 2} %}
+
+    <div class="cm-statgrid my-3">
+        <div class="cm-stat">
+            <span class="cm-stat__value">{{ analysis.createCount }}</span>
+            <span class="cm-stat__label">{{ 'laptopImportStatCreateLabel'|trans }}</span>
+            <span class="cm-stat__hint">{{ 'laptopImportStatCreateHint'|trans }}</span>
+        </div>
+        <div class="cm-stat">
+            <span class="cm-stat__value">{{ analysis.skipCount }}</span>
+            <span class="cm-stat__label">{{ 'laptopImportStatSkipLabel'|trans }}</span>
+            <span class="cm-stat__hint">{{ 'laptopImportStatSkipHint'|trans }}</span>
+        </div>
+        <div class="cm-stat">
+            <span class="cm-stat__value">{{ analysis.warningCount }}</span>
+            <span class="cm-stat__label">{{ 'laptopImportStatWarningLabel'|trans }}</span>
+            <span class="cm-stat__hint">{{ 'laptopImportStatWarningHint'|trans }}</span>
+        </div>
+        <div class="cm-stat">
+            <span class="cm-stat__value {{ analysis.blockingCount > 0 ? 'cm-stat__value--danger' }}">{{ analysis.blockingCount }}</span>
+            <span class="cm-stat__label">{{ 'laptopImportStatBlockingLabel'|trans }}</span>
+            <span class="cm-stat__hint">{{ 'laptopImportStatBlockingHint'|trans }}</span>
+        </div>
+    </div>
+
+    {% if analysis.blockingCount > 0 %}
+        {# The whole file is refused, not only these lines: the two numbers are unique, so a file
+           that half-imported cannot simply be uploaded again. #}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3 class="card-title">{{ 'laptopImportBlockingSectionTitle'|trans({'%count%': analysis.blockingCount}) }}</h3>
+            </div>
+            <div class="card-body">
+                <p>{{ 'laptopImportBlockingSectionHint'|trans }}</p>
+                <ul class="mb-0">
+                    {% for laptop in analysis.blockedLaptops %}
+                        <li class="mb-2">
+                            <strong>{{ 'laptopImportLineLabel'|trans({'%line%': laptop.line}) }}</strong>
+                            — {{ laptop.row.assetTag ?: 'laptopImportNoAssetTagLabel'|trans }}
+                            {{ helper.issue_list(laptop.blockingIssues) }}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">{{ 'laptopImportRowsSectionTitle'|trans }}</h3>
+            {% if initialCondition %}
+                <div class="card-subtitle">
+                    {{ 'laptopImportInitialConditionRecapLabel'|trans({'%condition%': initialCondition.name}) }}
+                </div>
+            {% endif %}
+        </div>
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'laptopImportColumnLineHeader'|trans }}</th>
+                        <th>{{ 'laptopAssetTagColumnLabel'|trans }}</th>
+                        <th>{{ 'laptopSerialNumberFieldLabel'|trans }}</th>
+                        <th>{{ 'laptopBrandModelColumnLabel'|trans }}</th>
+                        <th>{{ 'laptopReplacementValueFieldLabel'|trans }}</th>
+                        <th>{{ 'laptopImportColumnOutcomeHeader'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for laptop in analysis.laptops %}
+                        <tr>
+                            <td class="text-secondary">{{ laptop.line }}</td>
+                            <td class="fw-medium">{{ laptop.row.assetTag ?: '—' }}</td>
+                            <td class="text-secondary">{{ laptop.row.serialNumber ?: '—' }}</td>
+                            <td>{{ laptop.row.deviceLabel ?: '—' }}</td>
+                            <td>{{ laptop.replacementValue }}</td>
+                            <td>
+                                <span class="cm-badge {{ laptop.action.badgeClass }}">{{ laptop.action.labelKey|trans }}</span>
+                                {% if laptop.issues is not empty %}
+                                    <div class="text-secondary small mt-1">{{ helper.issue_list(laptop.issues) }}</div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer">
+            <form method="post" action="{{ path('app_laptops_import_confirm') }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('laptop_import_confirm') }}">
+                {% if analysis.importable %}
+                    <label class="form-check">
+                        <input class="form-check-input" type="checkbox" name="confirmed" value="1" required>
+                        <span class="form-check-label">{{ 'laptopImportConfirmCheckboxLabel'|trans({'%file%': analysis.fileName}) }}</span>
+                    </label>
+                {% else %}
+                    <div class="cm-note cm-note--gold">
+                        <span class="cm-note__icon">!</span>
+                        <div>
+                            {% if analysis.blockingCount > 0 %}
+                                {{ 'laptopImportCannotImportBlockingText'|trans }}
+                            {% else %}
+                                {{ 'laptopImportCannotImportNothingText'|trans }}
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+                <div class="cm-actionbar">
+                    <div class="cm-actionbar__buttons">
+                        <a href="{{ path('app_laptops_import') }}" class="btn btn-link">{{ 'laptopImportAnotherFileAction'|trans }}</a>
+                        <button type="submit" class="btn btn-primary" {{ analysis.importable ? '' : 'disabled' }}>
+                            {{ 'laptopImportRunAction'|trans({'%count%': analysis.createCount}) }}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    {# The analysis is replayed just before the writing, in case the inventory moved in between. #}
+    <p class="text-secondary small mt-2">{{ 'laptopImportReplayNoteText'|trans }}</p>
+{% endblock %}
