@@ -62,6 +62,7 @@ final readonly class IngestInstructions
         $btsAccess = $this->quoted(JobboardBtsAccess::values());
         $maxOffers = self::MAX_OFFERS_PER_REQUEST;
         $maxRaw = OfferPayloadParser::MAX_RAW_BYTES;
+        $lengths = $this->lengths();
 
         return <<<MD
             # Déposer des offres dans MonCampus
@@ -137,10 +138,25 @@ final readonly class IngestInstructions
             | `niveau_source` | oui | {$levelSources} — `annonce` = lu sur la page, `estime` = déduit de l'intitulé |
             | `acces_bts` | oui | {$btsAccess} |
             | `teletravail` | oui | {$remotes} |
-            | `date_publication` | non | `AAAA-MM-JJ`. Une date absente est une situation normale |
-            | `date_publication_approx` | oui | `true` dès que la date est reconstituée d'une ancienneté relative, ou absente |
+            | `date_publication` | non | `AAAA-MM-JJ`. Une date absente est une situation normale. Sur `{$spontaneous}`, la plateforme inscrit alors le jour où elle a repéré l'entrée |
+            | `date_publication_approx` | non, mais envoie-le | `true` dès que la date est reconstituée d'une ancienneté relative. Absent, il vaut `true` : sans démenti, une date est tenue pour approximative |
             | `note` | non | une précision courte tirée de l'annonce |
-            | `brut` | non | ta charge utile d'origine, {$maxRaw} octets au plus |
+            | `brut` | non | ta charge utile d'origine, un objet JSON de {$maxRaw} octets au plus |
+
+            « Obligatoire » veut dire : absent, vide ou fait d'espaces, la ligne est refusée.
+            Pour les autres, **une chaîne vide vaut une absence** — inutile d'envoyer `""`
+            plutôt que rien, les deux se lisent pareil.
+
+            ## Les longueurs
+
+            Tout texte est débarrassé de ses espaces de bord, puis **tronqué s'il dépasse,
+            jamais refusé** : un intitulé trois caractères trop long n'est pas une raison de
+            perdre une offre. Les limites :
+
+            {$lengths}
+
+            Les autres champs sont des énumérés, une date ou un booléen, et n'ont pas de
+            longueur propre.
 
             ## Les candidatures spontanées
 
@@ -155,8 +171,14 @@ final readonly class IngestInstructions
             nomme les profils recherchés, envoie-les dans `poste` — ce que tu envoies l'emporte
             toujours.
 
-            Tout le reste vaut sans changement, `date_publication` comprise : une page de
-            recrutement n'est pas datée, c'est une situation normale.
+            **Tu n'as pas de `date_publication` à trouver non plus.** Une page « recrutement »
+            n'est pas datée et n'est pas republiée : envoie l'entrée sans date, et la plateforme
+            inscrit le jour où elle l'a repérée, marqué approximatif. Cette date est posée **une
+            fois**, à la création, et ne bouge plus aux passages suivants — c'est ce qui fait qu'une
+            entreprise collectée depuis six mois ne se relit pas comme découverte ce matin.
+
+            Si la page porte malgré tout une date (« nous recrutons depuis le … »), envoie-la : une
+            date exacte remplace toujours l'horodatage de la plateforme.
 
             **`non_precise` n'est pas `aucun`.** La plupart des annonces n'abordent pas le sujet ;
             les confondre fausserait toute la lecture de la colonne. Même chose pour
@@ -230,6 +252,16 @@ final readonly class IngestInstructions
             personne. Et aucun identifiant inventé : l'identité d'une offre est le couple
             (`source`, `source_ref`), la plateforme s'occupe du reste.
             MD;
+    }
+
+    /** The truncation limits, read from the parser that applies them. */
+    private function lengths(): string
+    {
+        return implode("\n", array_map(
+            static fn (string $field, int $length): string => \sprintf('- `%s` — %d caractères', $field, $length),
+            array_keys(OfferPayloadParser::MAX_LENGTHS),
+            array_values(OfferPayloadParser::MAX_LENGTHS),
+        ));
     }
 
     /** @param list<string> $values */

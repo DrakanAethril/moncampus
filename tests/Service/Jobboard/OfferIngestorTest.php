@@ -10,6 +10,7 @@ use App\Entity\JobboardSource;
 use App\Entity\JobboardToken;
 use App\Entity\Section;
 use App\Entity\Track;
+use App\Enum\JobboardContract;
 use App\Enum\JobboardLearningKind;
 use App\Enum\JobboardLevelSource;
 use App\Enum\JobboardRemote;
@@ -251,8 +252,92 @@ class OfferIngestorTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> ...$rows
+     * A company open to unsolicited applications is not an advert: nothing dates it, and nothing
+     * republishes it. The day it was spotted stands in, marked approximate because that is what it
+     * is - and the alternative, an empty column on an entry that is always current, says less.
      */
+    public function testASpontaneousApplicationIsDatedFromTheDayItWasSpotted(): void
+    {
+        $created = $this->capture(null, $this->offer([
+            'contrat' => 'spontanee',
+            'date_publication' => null,
+        ]));
+
+        $this->assertSame('2026-09-12', $created->getPublishedAt()?->format('Y-m-d'));
+        $this->assertTrue($created->isPublishedAtApprox());
+    }
+
+    /**
+     * The trap this rule had to avoid. On review an approximate date replaces an approximate date,
+     * so a stamp recomputed on every pass would walk forward day after day, and an entry collected
+     * since July would read as published this morning.
+     */
+    public function testTheStampedDateDoesNotMoveOnALaterPass(): void
+    {
+        $stored = $this->stored();
+        $stored->setContract(JobboardContract::Spontanee)->setPublication(new \DateTimeImmutable('2026-07-01'), true);
+
+        $this->clock->modify('+3 days');
+        $this->ingest($stored, $this->offer(['contrat' => 'spontanee', 'date_publication' => null]));
+
+        $this->assertSame('2026-07-01', $stored->getPublishedAt()?->format('Y-m-d'));
+    }
+
+    /**
+     * A row that carries no date yet - created before the rule existed, or reclassified by the
+     * veille on this very pass - is settled from its own first-seen date, never from today.
+     */
+    public function testAnUndatedRowIsSettledFromItsOwnFirstSeenDate(): void
+    {
+        $stored = $this->stored();
+
+        $this->clock->modify('+3 days');
+        $this->ingest($stored, $this->offer(['contrat' => 'spontanee', 'date_publication' => null]));
+
+        $this->assertSame('2026-07-01', $stored->getPublishedAt()?->format('Y-m-d'));
+        $this->assertTrue($stored->isPublishedAtApprox());
+    }
+
+    /** A date the veille did find on the page wins over the platform's stamp. */
+    public function testADateReadOnThePageWinsOverTheStamp(): void
+    {
+        $created = $this->capture(null, $this->offer([
+            'contrat' => 'spontanee',
+            'date_publication' => '2026-09-01',
+            'date_publication_approx' => false,
+        ]));
+
+        $this->assertSame('2026-09-01', $created->getPublishedAt()?->format('Y-m-d'));
+        $this->assertFalse($created->isPublishedAtApprox());
+    }
+
+    /** Every other contract keeps an empty publication date: half the sources never carry one. */
+    public function testAnOrdinaryOfferWithoutADateStaysUndated(): void
+    {
+        $created = $this->capture(null, $this->offer(['date_publication' => null]));
+
+        $this->assertNull($created->getPublishedAt());
+    }
+
+    /** @param array<string, mixed> $row */
+    private function capture(?JobboardOffer $stored, array $row): JobboardOffer
+    {
+        $persisted = null;
+        $entityManager = $this->createStub(EntityManagerInterface::class);
+        $entityManager->method('persist')->willReturnCallback(static function (object $entity) use (&$persisted): void {
+            if ($entity instanceof JobboardOffer) {
+                $persisted = $entity;
+            }
+        });
+
+        $this->ingestor($stored, $entityManager)->ingest($this->batch(), [$row]);
+
+        $this->assertInstanceOf(JobboardOffer::class, $persisted);
+
+        return $persisted;
+    }
+
+    /** @param array<string, mixed> ...$rows */
     private function ingest(?JobboardOffer $stored, array ...$rows): IngestReport
     {
         return $this->ingestor($stored)->ingest($this->batch(), array_values($rows));

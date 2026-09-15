@@ -52,6 +52,22 @@ enum JobboardContract: string
         return self::Spontanee === $this ? 'Candidature spontanée' : null;
     }
 
+    /**
+     * Whether an entry of this contract carries no publication date of its own.
+     *
+     * A « recrutement » page is not an advert: it is not dated, and it is not republished. So the
+     * day the veille spotted it is the only date that exists, and standing it in beats leaving the
+     * column empty for an entry that is, by construction, always current.
+     *
+     * It is stamped **once, at creation**, and stays put - see OfferIngestor. Recomputing it on
+     * every pass would walk the date forward day by day, which is precisely the drift the `≈`
+     * marker exists to make visible rather than to produce.
+     */
+    public function publishesNoDate(): bool
+    {
+        return self::Spontanee === $this;
+    }
+
     /** The CSS modifier of the tag, `cm-jb-tag--<slug>`. */
     public function slug(): string
     {
