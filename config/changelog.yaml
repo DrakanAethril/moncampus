@@ -26,6 +26,28 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.15'
+      date: '2026-09-15'
+      summary: "L'emploi du temps s'ajoute à un agenda personnel par un lien d'abonnement, et le parc d'ordinateurs portables s'importe depuis un tableur, avec un prêt interne pour les machines confiées aux membres de l'établissement. La veille d'offres accueille par ailleurs les entreprises ouvertes aux candidatures spontanées."
+      entries:
+          - type: nouveaute
+            title: "S'abonner à son emploi du temps depuis son agenda"
+            detail: "Un lien à recopier dans Google Agenda, Apple Calendrier ou Outlook, qui se met à jour tout seul. Il reprend l'affichage du moment où on le prend : les légendes masquées ne sont pas reprises. Le lien est personnel et ne se partage pas ; « Régénérer le lien » ferme d'un coup tous les abonnements nés du précédent."
+          - type: nouveaute
+            title: "Importer une liste d'ordinateurs portables"
+            detail: "Le tableur du parc se dépose et une vérification complète est relue avant que quoi que ce soit ne soit écrit. Une seule anomalie sérieuse refuse le fichier entier plutôt que d'en importer une moitié, et redéposer le même fichier ne crée pas de doublon."
+          - type: nouveaute
+            title: "Un prêt peut être interne"
+            detail: "Le troisième type de prêt, celui où il n'y a rien à signer : il se date, se rend et s'historise comme les autres, mais ne porte ni convention ni formulaire de restitution. Il est proposé d'office dès que l'emprunteur n'est pas un étudiant."
+          - type: modification
+            title: "Un prêt s'adresse à un emprunteur, pas seulement à un étudiant"
+            detail: "N'importe quel compte actif pouvait déjà emprunter et rien n'a jamais limité le nombre de machines par personne : c'est l'écran qui disait le contraire. Le formulaire signale désormais les machines déjà en cours de prêt — une remarque, jamais un refus."
+          - type: nouveaute
+            title: "Les entreprises ouvertes aux candidatures spontanées entrent dans la veille"
+            detail: "Elles s'affichent parmi les offres, avec leur propre type de contrat, et se filtrent comme les autres. Sans intitulé de poste sur la page, l'entrée est rangée sous « Candidature spontanée » ; sans date, elle porte celle du jour où elle a été repérée."
+          - type: fix
+            title: "Les enseignants accèdent aux offres de leurs classes"
+            detail: "Ouvrir la veille à leur rôle ne suffisait pas : chaque formation restant masquée au départ, l'accès n'apparaissait nulle part. Le réglage propre à la formation décide désormais du moment où la classe voit les offres, et les enseignants y ont accès dès que la veille est ouverte à leur rôle."
     - version: '2026.09.14'
       date: '2026-09-14'
       summary: "La veille d'offres gagne deux réglages : chaque formation décide qui y a accès, et un site d'annonces peut en être écarté. Un mot de passe initial peut par ailleurs être choisi à la création d'un compte."
