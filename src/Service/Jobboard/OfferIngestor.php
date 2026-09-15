@@ -97,17 +97,28 @@ final readonly class OfferIngestor
             $existing = $this->offers->findOneByIdentity($batch->getTrack(), $payload->source, $payload->sourceRef);
 
             if (null === $existing) {
+                // The import brings a first-seen date that predates the platform; the API never
+                // does, and stamping "now" there is the only honest answer.
+                $firstSeenAt = $payload->firstSeenAt ?? $now;
+
                 $offer = new JobboardOffer(
                     $batch->getTrack(),
                     $payload->source,
                     $payload->sourceRef,
-                    // The import brings a first-seen date that predates the platform; the API never
-                    // does, and stamping "now" there is the only honest answer.
-                    $payload->firstSeenAt ?? $now,
+                    $firstSeenAt,
                 );
 
                 $this->overwrite($offer, $payload);
-                $offer->setPublication($payload->publishedAt, $payload->publishedAtApprox);
+
+                // A contract that publishes no date - a company open to unsolicited applications -
+                // is dated from the day it was spotted, and marked approximate because that is what
+                // it is. Here and not in the parser: the parser serves the review pass too, where
+                // the same stamp would be recomputed on every pass and walk the date forward.
+                if (null === $payload->publishedAt && $payload->contract->publishesNoDate()) {
+                    $offer->setPublication($firstSeenAt->setTime(0, 0), true);
+                } else {
+                    $offer->setPublication($payload->publishedAt, $payload->publishedAtApprox);
+                }
                 $offer->setLevel($payload->level)->setLevelSource($payload->levelSource);
                 $offer->setRemote($payload->remote);
                 $offer->markSeen($now);
@@ -260,6 +271,13 @@ final readonly class OfferIngestor
             if (null === $stored || !$payload->publishedAtApprox || $offer->isPublishedAtApprox()) {
                 $offer->setPublication($payload->publishedAt, $payload->publishedAtApprox);
             }
+        }
+
+        // The stamp of a contract that publishes no date, for a row that does not carry it yet:
+        // one created before the rule existed, or one the veille has just reclassified. It fires
+        // only on an empty date, so it settles once and can never walk forward.
+        if (null === $offer->getPublishedAt() && $payload->contract->publishesNoDate()) {
+            $offer->setPublication($offer->getFirstSeenAt()->setTime(0, 0), true);
         }
 
         // Remote work: a stated value replaces anything, `non_precise` replaces nothing. The two

@@ -293,6 +293,21 @@ class OfferPayloadParserTest extends TestCase
         $this->assertSame('Profils réseaux et systèmes', $payload->position);
     }
 
+    /**
+     * The parser does **not** stamp the date: the same parse serves the review pass, where a stamp
+     * recomputed every day would walk the publication date forward. It leaves the field empty and
+     * OfferIngestor dates the row once, on creation - see JobboardOfferDatingTest.
+     */
+    public function testItLeavesASpontaneousApplicationUndated(): void
+    {
+        $payload = $this->parser->parse($this->offer([
+            'contrat' => 'spontanee',
+            'date_publication' => null,
+        ]));
+
+        $this->assertNull($payload->publishedAt);
+    }
+
     /** Every other contract still owes a title: the fallback belongs to one case, not to all. */
     public function testItStillRefusesAnOfferWithoutAPosition(): void
     {
