@@ -31,12 +31,15 @@
                            a native control could not bring forward). It is the server that imposes
                            them - Assert\NotNull on the lender, a form error on the laptop - and the
                            rule is the same everywhere: required field, asterisk. #}
-                        <label class="form-label required" for="borrower">{{ 'laptopStudentColumnLabel'|trans }}</label>
+                        <label class="form-label required" for="borrower">{{ 'laptopBorrowerColumnLabel'|trans }}</label>
                         <select id="borrower" name="borrower" class="form-select"
                                 data-controller="tom-select"
                                 data-action="change->laptop-loan-type#suggest"
                                 data-tom-select-url-value="{{ path('app_laptops_loans_student_search') }}"
                                 data-tom-select-placeholder-value="{{ 'laptopLoanBorrowerSearchPlaceholder'|trans }}"></select>
+                        <div class="form-hint">{{ 'laptopLoanBorrowerAnyAccountHint'|trans }}</div>
+                        {# Said, never refused: several machines at once is an ordinary loan. #}
+                        <div class="text-secondary small mt-1" data-laptop-loan-type-target="notice" hidden></div>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label required" for="laptop">{{ 'laptopAvailableFieldLabel'|trans }}</label>

@@ -23,7 +23,7 @@
                 {{ form_errors(form) }}
                 <div class="cm-loan-summary">
                     <div>
-                        <span class="cm-loan-summary__label">{{ 'laptopStudentColumnLabel'|trans }}</span>
+                        <span class="cm-loan-summary__label">{{ 'laptopBorrowerColumnLabel'|trans }}</span>
                         {# Name and class, as on the mockup: two loans are often told apart by the class
                            faster than by the name. #}
                         <span class="cm-loan-summary__value">{{ loan.borrower.displayName ?? loan.borrower.username }}{% if borrowerProgram %} — {{ borrowerProgram.displayShortName }}{% endif %}</span>

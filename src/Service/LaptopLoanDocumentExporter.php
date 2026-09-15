@@ -60,10 +60,11 @@ class LaptopLoanDocumentExporter
     }
 
     /**
-     * Whether there is a paper model to print this loan on. Both types have one, so in practice
-     * this only rules out a loan that carries no type at all - and it stays the single place to
-     * ask, so that a third type added without its model shows up as a document the screen does not
-     * offer rather than as a failed export.
+     * Whether there is a paper model to print this loan on. It rules out a loan that carries no
+     * type at all, and the Interne type, which has nothing to sign by definition
+     * (LaptopLoanType::hasConvention()) - and it stays the single place to ask, so that a further
+     * type added without its model shows up as a document the screen does not offer rather than as
+     * a failed export.
      */
     public function supports(?LaptopLoanType $loanType): bool
     {
@@ -71,15 +72,14 @@ class LaptopLoanDocumentExporter
     }
 
     /**
-     * The model to print on, or null when the loan carries no type. Every type declared in
-     * App\Enum\LaptopLoanType has an entry in MODELS; adding a case without one is a static error
-     * here rather than a surprise at print time.
+     * The model to print on, or null when the loan carries no type - or carries one no paper comes
+     * with, Interne being the one such case today.
      *
      * @return array{directory: string, template: string, convention: non-empty-array<array-key, string>, return_form: non-empty-array<array-key, string>}|null
      */
     private function model(?LaptopLoanType $loanType): ?array
     {
-        return null === $loanType ? null : self::MODELS[$loanType->value];
+        return null === $loanType ? null : self::MODELS[$loanType->value] ?? null;
     }
 
     /**
@@ -119,7 +119,8 @@ class LaptopLoanDocumentExporter
         if (null === $model) {
             // No null guard on $loanType: loan_type is a NOT NULL column, so a persisted loan
             // always carries one - the property is only nullable because Doctrine hydrates without
-            // the constructor. Reaching here means the type has no paper model built yet.
+            // the constructor. Reaching here means the type has no paper model, which callers are
+            // expected to have asked supports() about first.
             throw new \LogicException(\sprintf('No printable model for loan type "%s".', $loanType->value));
         }
 

@@ -1,0 +1,95 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'laptopImportPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'ufaNavLabel'|trans, url: path('app_ufa')},
+        {label: 'laptopsNavLabel'|trans, url: path('app_laptops_loans')},
+        {label: 'laptopsInventoryTabLabel'|trans, url: path('app_laptops')},
+        {label: 'laptopImportPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'laptopImportPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% include 'laptop/import/_steps.html.twig' with {step: 1} %}
+
+    <div class="card mt-3">
+        <div class="card-body">
+            {{ form_start(form) }}
+            {{ form_errors(form) }}
+
+            <div class="row g-4 align-items-start">
+                <div class="col-12 col-lg-6 d-flex flex-column gap-3">
+                    {{ form_row(form.file) }}
+                    <div class="cm-field--sm">{{ form_row(form.initialConditionType) }}</div>
+                    <div class="cm-note">
+                        <span class="cm-note__icon">i</span>
+                        <div>{{ 'laptopImportNoWriteNoteText'|trans }}</div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-lg-6">
+                    <div class="cm-subhead">
+                        <div class="cm-subhead__title">{{ 'laptopImportExpectedColumnsTitle'|trans }}</div>
+                        <div class="cm-subhead__hint">{{ 'laptopImportExpectedColumnsHint'|trans }}</div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-vcenter">
+                            <thead>
+                                <tr>
+                                    <th>{{ 'laptopImportColumnNameHeader'|trans }}</th>
+                                    <th>{{ 'laptopImportColumnRequiredHeader'|trans }}</th>
+                                    <th>{{ 'laptopImportColumnContentHeader'|trans }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>N° inventaire</code></td>
+                                    <td>{{ 'yesLabel'|trans }}</td>
+                                    <td>{{ 'laptopImportColumnAssetTagContent'|trans }}</td>
+                                </tr>
+                                <tr>
+                                    <td><code>N° série</code></td>
+                                    <td>{{ 'yesLabel'|trans }}</td>
+                                    <td>{{ 'laptopImportColumnSerialContent'|trans }}</td>
+                                </tr>
+                                <tr>
+                                    <td><code>Marque</code></td>
+                                    <td>{{ 'noLabel'|trans }}</td>
+                                    <td>{{ 'laptopImportColumnBrandContent'|trans }}</td>
+                                </tr>
+                                <tr>
+                                    <td><code>Modèle</code></td>
+                                    <td>{{ 'noLabel'|trans }}</td>
+                                    <td>{{ 'laptopImportColumnModelContent'|trans }}</td>
+                                </tr>
+                                <tr>
+                                    <td><code>Prix garantie</code></td>
+                                    <td>{{ 'noLabel'|trans }}</td>
+                                    <td>{{ 'laptopImportColumnValueContent'|trans }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="text-secondary small">
+                        {{ 'laptopImportColumnsFreeFormHint'|trans }}
+                        <a href="{{ path('app_laptops_import_template') }}">{{ 'laptopImportDownloadTemplateAction'|trans }}</a>
+                    </p>
+                </div>
+            </div>
+
+            <div class="cm-actionbar">
+                <div class="cm-actionbar__buttons">
+                    <a href="{{ path('app_laptops') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    <button type="submit" class="btn btn-primary">{{ 'laptopImportCheckFileAction'|trans }}</button>
+                </div>
+            </div>
+
+            {{ form_rest(form) }}
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}

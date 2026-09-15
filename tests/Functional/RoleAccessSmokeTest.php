@@ -1092,6 +1092,39 @@ class RoleAccessSmokeTest extends FunctionalTestCase
     }
 
     /**
+     * The laptop inventory import. Asserted on its own because it is the one laptop screen that
+     * writes a whole box of machines on a single click, and because its access is a *copy* of the
+     * area's - a copy is exactly what drifts.
+     *
+     * Same three roles as the rest of « Ordinateurs portables », no wider: adding thirty machines
+     * to the inventory is the same act as « Ajouter un ordinateur », done thirty times. A teacher
+     * or a student is refused before the controller runs at all.
+     */
+    public function testLaptopImportFollowsTheLaptopsArea(): void
+    {
+        $screens = [
+            '/laptops/import' => 200,
+            '/laptops/import/template.csv' => 200,
+            // Nothing parked in the session yet: back to step ① rather than an empty analysis.
+            '/laptops/import/check' => 302,
+            '/laptops/import/result' => 302,
+        ];
+
+        $staff = $this->createUser(['ROLE_USER', 'ROLE_STAFF'], 'smoke.laptop.staff');
+        $staffLead = $this->createUser(['ROLE_USER', 'ROLE_STAFF-LEAD'], 'smoke.laptop.stafflead');
+
+        foreach ([$this->admin, $staff, $staffLead] as $user) {
+            $this->assertScreens($user, $screens);
+        }
+
+        $refused = array_fill_keys(array_keys($screens), 403);
+
+        foreach ([$this->student, $this->teacher, $this->tutor] as $user) {
+            $this->assertScreens($user, $refused);
+        }
+    }
+
+    /**
      * The « Exporter » button of the two class lists, whose routes carry two guards rather than one
      * and are therefore worth a table of their own: the `IsGranted` says staff and admin, and
      * App\Enum\Feature::ClassListExports says whether the establishment runs the exports at all.
