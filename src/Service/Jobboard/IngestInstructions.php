@@ -54,6 +54,8 @@ final readonly class IngestInstructions
         ));
 
         $contracts = $this->quoted(JobboardContract::values());
+        $spontaneous = JobboardContract::Spontanee->value;
+        $spontaneousPosition = (string) JobboardContract::Spontanee->defaultPosition();
         $countries = $this->quoted(JobboardCountry::values());
         $remotes = $this->quoted(JobboardRemote::values());
         $levelSources = $this->quoted(JobboardLevelSource::values());
@@ -123,10 +125,10 @@ final readonly class IngestInstructions
             | `source` | oui | le nom du site. Un site absent du tableau ci-dessous n'est **pas** refusé : la plateforme le crée à partir du domaine de l'`url` |
             | `source_ref` | oui | l'identifiant de l'offre **chez la source**, stable dans le temps |
             | `url` | oui | le lien de l'annonce, en `http`/`https`. C'est lui qui décide de la source : une URL d'un site connu range l'offre chez lui, quel que soit le nom déclaré |
-            | `poste` | oui | l'intitulé tel qu'affiché |
+            | `poste` | oui, sauf `{$spontaneous}` | l'intitulé tel qu'affiché. Laissé vide sur une candidature spontanée, il devient « {$spontaneousPosition} » |
             | `entreprise` | oui | `"Non précisée"` est une valeur acceptée |
             | `categorie` | non | texte libre, ton classement (`sisr`, `slam`, `mixte`, …) |
-            | `contrat` | oui | {$contracts} |
+            | `contrat` | oui | {$contracts} — `{$spontaneous}` = l'entreprise accepte les candidatures spontanées, il n'y a pas d'annonce |
             | `pays` | oui | {$countries} |
             | `region` | non | vide pour une offre 100 % télétravail sans ancrage |
             | `departement` | non | **uniquement si `pays` vaut `France`** — `"01"` à `"95"`, `"2A"`, `"2B"`, `"971"` à `"976"`, en chaîne, zéro initial conservé |
@@ -139,6 +141,22 @@ final readonly class IngestInstructions
             | `date_publication_approx` | oui | `true` dès que la date est reconstituée d'une ancienneté relative, ou absente |
             | `note` | non | une précision courte tirée de l'annonce |
             | `brut` | non | ta charge utile d'origine, {$maxRaw} octets au plus |
+
+            ## Les candidatures spontanées
+
+            Une entreprise qui accueille les candidatures spontanées s'envoie comme une offre :
+            `contrat` vaut `{$spontaneous}`, l'`url` est la page qui le dit (la page « recrutement »
+            du site, la fiche de l'entreprise chez un agrégateur), et `source_ref` s'en déduit
+            comme pour n'importe quelle annonce — il doit seulement rester le même d'un passage à
+            l'autre.
+
+            C'est le seul contrat où `poste` peut manquer : sans annonce, il n'y a pas d'intitulé à
+            lire, et la plateforme range alors l'entrée sous « {$spontaneousPosition} ». Si la page
+            nomme les profils recherchés, envoie-les dans `poste` — ce que tu envoies l'emporte
+            toujours.
+
+            Tout le reste vaut sans changement, `date_publication` comprise : une page de
+            recrutement n'est pas datée, c'est une situation normale.
 
             **`non_precise` n'est pas `aucun`.** La plupart des annonces n'abordent pas le sujet ;
             les confondre fausserait toute la lecture de la colonne. Même chose pour

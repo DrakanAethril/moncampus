@@ -75,6 +75,14 @@ final readonly class OfferPayloadParser
             throw new OfferRejectedException(JobboardRejection::UnknownContract, 'contrat');
         }
 
+        // `poste` is required of every contract but one: a company that takes unsolicited
+        // applications publishes no job title, so there is nothing for the agent to read. The
+        // contract itself carries the fallback, and a title the agent *did* find always wins.
+        $position = $this->optionalString($data, 'poste', 255) ?? $contract->defaultPosition();
+        if (null === $position) {
+            throw new OfferRejectedException(JobboardRejection::MissingField, 'poste');
+        }
+
         $country = JobboardCountry::tryFromLoose($this->requiredString($data, 'pays'));
         if (null === $country) {
             throw new OfferRejectedException(JobboardRejection::UnknownCountry, 'pays');
@@ -122,7 +130,7 @@ final readonly class OfferPayloadParser
             source: $source,
             sourceRef: $sourceRef,
             url: $url,
-            position: $this->requiredString($data, 'poste'),
+            position: $position,
             company: $this->requiredString($data, 'entreprise'),
             category: $this->category($data),
             contract: $contract,

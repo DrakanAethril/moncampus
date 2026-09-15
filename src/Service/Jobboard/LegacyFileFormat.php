@@ -58,6 +58,8 @@ final readonly class LegacyFileFormat
         ));
 
         $contracts = $this->quoted(JobboardContract::values());
+        $spontaneous = JobboardContract::Spontanee->value;
+        $spontaneousPosition = (string) JobboardContract::Spontanee->defaultPosition();
         $countries = $this->quoted(JobboardCountry::values());
         $remotes = $this->quoted(JobboardRemote::values());
         $levelSources = $this->quoted(JobboardLevelSource::values());
@@ -86,10 +88,10 @@ final readonly class LegacyFileFormat
             | `id` | oui | l'identifiant préfixé de la source (`hw-83313525`) — voir le tableau plus bas |
             | `source` | oui | le nom du site, en toutes lettres (`HelloWork`) ou en minuscules (`hellowork`) |
             | `url` | oui | le lien de l'annonce, en `http`/`https` : c'est lui qui décide de la source |
-            | `poste` | oui | l'intitulé tel qu'affiché |
+            | `poste` | oui, sauf `{$spontaneous}` | l'intitulé tel qu'affiché. Laissé vide sur une candidature spontanée, il devient « {$spontaneousPosition} » |
             | `entreprise` | oui | `"Non précisée"` est une valeur acceptée |
             | `categorie` | non | texte libre, votre classement (`sisr`, `slam`, `mixte`, …) |
-            | `contrat` | oui | {$contracts} |
+            | `contrat` | oui | {$contracts} — `{$spontaneous}` désigne une entreprise qui accepte les candidatures spontanées, sans annonce |
             | `pays` | oui | {$countries} |
             | `region` | non | vide pour une offre 100 % télétravail sans ancrage |
             | `departement` | non | **uniquement si `pays` vaut `France`** — `"01"` à `"95"`, `"2A"`, `"2B"`, `"971"` à `"976"`, en chaîne, zéro initial conservé |
