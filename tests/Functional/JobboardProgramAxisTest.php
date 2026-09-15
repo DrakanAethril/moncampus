@@ -18,14 +18,16 @@ use Doctrine\ORM\EntityManagerInterface;
  *
  * Four rules, each of which somebody could reasonably have decided the other way:
  *
- * - « Masqué » - what every formation starts on - takes the filière out of the perimeter, so the
- *   offer is not merely undrawn: it cannot be reached by its own URL either;
- * - the tier is a tier, not a switch: a formation may open its board to its teachers a term before
- *   its students, which is the whole reason this is not a checkbox;
+ * - « Masqué » - what every formation starts on - takes the filière out of *the class's* perimeter,
+ *   so the offer is not merely undrawn: it cannot be reached by its own URL either;
+ * - the tier is a tier, not a switch: it separates « personne », « le personnel » and « la classe »,
+ *   which is the whole reason this is not a checkbox;
  * - two formations resolve the **most permissive**, filière by filière - one open formation is
  *   enough for its own filière, and never for the other's;
- * - an **administrator is outside the rule**: they are the account that garnishes and audits the
- *   veille, and the only one shown an offer's source.
+ * - two readings are **outside the rule**: an administrator, who garnishes and audits the veille
+ *   and is the only one shown an offer's source, and **the formation's own teachers**, who read
+ *   their classes as soon as the feature is lit for their role. The tier is aimed at the class;
+ *   closing it on the people preparing that class for the market is not what it is for.
  *
  * The base class opens the axis on every fixture formation (see createProgram()), so each test
  * here closes or re-tiers what it is about.
@@ -65,7 +67,7 @@ class JobboardProgramAxisTest extends FunctionalTestCase
         $this->assertStringContainsString('Technicien de ma filière', $crawler->html());
     }
 
-    /** The point of a tier rather than a checkbox: the teachers first, the class later. */
+    /** A tier below « Tout le monde » holds the class back, and only the class. */
     public function testATeachersOnlyFormationOpensTheBoardToTheTeacherAndNotToTheStudent(): void
     {
         $student = $this->createUser(['ROLE_USER', 'ROLE_STUDENT'], 'jobboard.axis.student');
@@ -81,6 +83,82 @@ class JobboardProgramAxisTest extends FunctionalTestCase
         $this->client->loginUser($student);
         $crawler = $this->client->request('GET', '/jobboard');
         $this->assertStringNotContainsString('Technicien de ma filière', $crawler->html());
+    }
+
+    /**
+     * The rule this screen's tier does **not** hold: a teacher reads the filières of their own
+     * classes as soon as the feature is lit for their role, « Masqué » included. Lighting the
+     * feature is the decision; leaving every formation on its default must not silently undo it.
+     */
+    public function testAMaskedFormationStillShowsItsOffersToItsTeachers(): void
+    {
+        $teacher = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'jobboard.axis.teacher');
+        $track = $this->trackOf($this->program([], [$teacher], VisibilityLevel::Hidden));
+
+        $this->offer($track, 'Technicien de ma classe');
+
+        $this->client->loginUser($teacher);
+        $crawler = $this->client->request('GET', '/jobboard');
+
+        $this->assertResponseIsSuccessful();
+        $this->assertStringContainsString('Technicien de ma classe', $crawler->html());
+    }
+
+    /** What a teacher reads is *their* classes - the exemption is not a key to the whole campus. */
+    public function testATeacherStillReadsOnlyTheFilieresOfTheirOwnClasses(): void
+    {
+        $teacher = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'jobboard.axis.teacher');
+        $mine = $this->trackOf($this->program([], [$teacher], VisibilityLevel::Hidden));
+        $theirs = $this->trackOf($this->program([], [], VisibilityLevel::Everyone));
+
+        $this->offer($mine, 'Technicien de ma classe');
+        $this->offer($theirs, "Technicien d'une classe que je n'ai pas");
+
+        $this->client->loginUser($teacher);
+        $crawler = $this->client->request('GET', '/jobboard');
+
+        $this->assertStringContainsString('Technicien de ma classe', $crawler->html());
+        $this->assertStringNotContainsString("Technicien d'une classe que je n'ai pas", $crawler->html());
+    }
+
+    /**
+     * The nav entry follows the same rule, and it is the half the user actually meets: lighting the
+     * feature for the teachers has to put « Au-delà d'un diplôme » in Outils, without asking every
+     * formation to be opened first.
+     */
+    public function testTheToolsMenuCarriesTheEntryForATeacherOfAMaskedFormation(): void
+    {
+        $teacher = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'jobboard.axis.teacher');
+        $this->program([], [$teacher], VisibilityLevel::Hidden);
+
+        $this->client->loginUser($teacher);
+        $crawler = $this->client->request('GET', '/');
+
+        $this->assertResponseIsSuccessful();
+
+        // The heading as well as the link: « Au-delà d'un diplôme » is a group of its own in Outils,
+        // and an entry landing under « Suivre les étudiants » would pass a link-only assertion.
+        $menu = $crawler->filter('.cm-toolsmenu');
+        $this->assertGreaterThan(0, $menu->count());
+        $this->assertStringContainsString("Au-delà d'un diplôme", $menu->html());
+        $this->assertStringContainsString('href="/jobboard"', $menu->html());
+    }
+
+    /** A teacher of nothing reads nothing, and is offered no entry. */
+    public function testATeacherWithNoClassGetsNeitherEntryNorOffers(): void
+    {
+        $teacher = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'jobboard.axis.teacher');
+        $theirs = $this->trackOf($this->program([], [], VisibilityLevel::Everyone));
+
+        $this->offer($theirs, "Technicien d'une classe que je n'ai pas");
+
+        $this->client->loginUser($teacher);
+        $crawler = $this->client->request('GET', '/');
+        $this->assertStringNotContainsString('href="/jobboard"', $crawler->html());
+
+        $crawler = $this->client->request('GET', '/jobboard');
+        $this->assertResponseIsSuccessful();
+        $this->assertStringNotContainsString("Technicien d'une classe que je n'ai pas", $crawler->html());
     }
 
     /** Most permissive across formations - and filière by filière, never across. */
