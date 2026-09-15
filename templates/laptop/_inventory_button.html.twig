@@ -1,3 +1,9 @@
+{# Import on the left, the creation on the right: the main action stays the last of the group, in
+   the place it occupies on mockup 25d. #}
+<a href="{{ path('app_laptops_import') }}" class="btn btn-outline-primary">
+    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" /><path d="M7 11l5 5l5 -5" /><path d="M12 4l0 12" /></svg>
+    {{ 'laptopImportButtonLabel'|trans }}
+</a>
 <a href="{{ path('app_laptops_new') }}" class="btn btn-primary">
     <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
     {{ 'addLaptopButtonLabel'|trans }}

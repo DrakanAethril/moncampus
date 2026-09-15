@@ -38,6 +38,29 @@ final readonly class OfferPayloadParser
     /** A `brut` bigger than this is refused on its own line rather than making the request unreadable. */
     public const int MAX_RAW_BYTES = 65536;
 
+    /**
+     * How long each text field may be. A value beyond its limit is **truncated, never refused** -
+     * a title three characters too long is not a reason to lose an offer.
+     *
+     * They live in a constant rather than at the call sites because the two format sheets quote
+     * them back to the collecting agent: a limit typed twice is one that drifts on the side nobody
+     * re-reads.
+     *
+     * @var array<string, int>
+     */
+    public const array MAX_LENGTHS = [
+        'source' => 255,
+        'source_ref' => 255,
+        'url' => 1000,
+        'poste' => 255,
+        'entreprise' => 255,
+        'categorie' => 32,
+        'region' => 120,
+        'ville' => 120,
+        'niveau' => 120,
+        'note' => 500,
+    ];
+
     private const string DEPARTEMENT_PATTERN = '/^(?:97[1-6]|2A|2B|0[1-9]|[1-8][0-9]|9[0-5])$/';
 
     public function __construct(
@@ -56,8 +79,8 @@ final readonly class OfferPayloadParser
      */
     public function parse(array $data, bool $legacy = false, bool $learn = true): OfferPayload
     {
-        $declared = $this->requiredString($data, 'source');
-        $url = $this->requiredString($data, 'url', 1000);
+        $declared = $this->requiredString($data, 'source', self::MAX_LENGTHS['source']);
+        $url = $this->requiredString($data, 'url', self::MAX_LENGTHS['url']);
         $host = JobboardSourceResolver::hostOf($url);
 
         if (null === $host) {
@@ -68,11 +91,19 @@ final readonly class OfferPayloadParser
 
         $sourceRef = $legacy
             ? $this->legacyRef($data, $source)
-            : $this->requiredString($data, 'source_ref');
+            : $this->requiredString($data, 'source_ref', self::MAX_LENGTHS['source_ref']);
 
         $contract = JobboardContract::tryFromLoose($this->requiredString($data, 'contrat'));
         if (null === $contract) {
             throw new OfferRejectedException(JobboardRejection::UnknownContract, 'contrat');
+        }
+
+        // `poste` is required of every contract but one: a company that takes unsolicited
+        // applications publishes no job title, so there is nothing for the agent to read. The
+        // contract itself carries the fallback, and a title the agent *did* find always wins.
+        $position = $this->optionalString($data, 'poste', self::MAX_LENGTHS['poste']) ?? $contract->defaultPosition();
+        if (null === $position) {
+            throw new OfferRejectedException(JobboardRejection::MissingField, 'poste');
         }
 
         $country = JobboardCountry::tryFromLoose($this->requiredString($data, 'pays'));
@@ -122,21 +153,21 @@ final readonly class OfferPayloadParser
             source: $source,
             sourceRef: $sourceRef,
             url: $url,
-            position: $this->requiredString($data, 'poste'),
-            company: $this->requiredString($data, 'entreprise'),
+            position: $position,
+            company: $this->requiredString($data, 'entreprise', self::MAX_LENGTHS['entreprise']),
             category: $this->category($data),
             contract: $contract,
             country: $country,
-            region: $this->optionalString($data, 'region', 120),
+            region: $this->optionalString($data, 'region', self::MAX_LENGTHS['region']),
             departement: $departement,
-            city: $this->optionalString($data, 'ville', 120),
-            level: $this->requiredString($data, 'niveau', 120),
+            city: $this->optionalString($data, 'ville', self::MAX_LENGTHS['ville']),
+            level: $this->requiredString($data, 'niveau', self::MAX_LENGTHS['niveau']),
             levelSource: $levelSource,
             btsAccess: $btsAccess,
             remote: $remote,
             publishedAt: $publishedAt,
             publishedAtApprox: $this->approx($data, $legacy),
-            note: $this->optionalString($data, 'note', 500),
+            note: $this->optionalString($data, 'note', self::MAX_LENGTHS['note']),
             raw: $this->raw($data),
             firstSeenAt: $legacy ? $this->date($data, 'date_reperage') : null,
         );
@@ -156,7 +187,7 @@ final readonly class OfferPayloadParser
      */
     private function legacyRef(array $data, JobboardSource $source): string
     {
-        $id = $this->requiredString($data, 'id');
+        $id = $this->requiredString($data, 'id', self::MAX_LENGTHS['source_ref']);
         $legacyPrefix = $source->getLegacyPrefix();
 
         if (null === $legacyPrefix || '' === $legacyPrefix) {
@@ -171,7 +202,7 @@ final readonly class OfferPayloadParser
     /** @param array<array-key, mixed> $data */
     private function category(array $data): ?string
     {
-        $value = $this->optionalString($data, 'categorie', 32);
+        $value = $this->optionalString($data, 'categorie', self::MAX_LENGTHS['categorie']);
 
         // Free text, lowercased and never refused: the data contract lists what must be rejected,
         // and `categorie` is deliberately not in it (design/validated/jobboard.md §3.3).

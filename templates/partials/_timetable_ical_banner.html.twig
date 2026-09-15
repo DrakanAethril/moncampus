@@ -1,0 +1,37 @@
+{# Expects `icalUrl` (the subscription URL for this reader, with no filter applied yet).
+
+   Full width, under the calendar - and deliberately a descendant of the same `lesson-timetable`
+   Stimulus controller the legend is a descendant of, because the field below is kept in step with
+   the legend swatches: hiding a formation or an option rewrites the URL on the spot, so whatever is
+   on screen is what the link carries at the moment it is taken (see
+   assets/controllers/lesson_timetable_controller.js). That is also why the field is writable-looking
+   but readonly: it is meant to be copied, never typed into. #}
+<div class="cm-icalbanner">
+    <div class="cm-icalbanner__text">
+        <h3 class="cm-icalbanner__title">{{ 'timetableIcalBannerTitle'|trans }}</h3>
+        <p class="cm-icalbanner__hint">{{ 'timetableIcalBannerHint'|trans }}</p>
+    </div>
+    <div class="cm-icalbanner__controls">
+        <label class="visually-hidden" for="timetable-ical-url">{{ 'timetableIcalFieldLabel'|trans }}</label>
+        <input type="text"
+               id="timetable-ical-url"
+               class="cm-icalbanner__url"
+               readonly
+               spellcheck="false"
+               data-lesson-timetable-target="icalUrl"
+               value="{{ icalUrl }}">
+        <button type="button"
+                class="cm-btn cm-btn--primary"
+                data-lesson-timetable-target="icalCopy"
+                data-action="lesson-timetable#copyIcalUrl"
+                data-copied-label="{{ 'timetableIcalCopiedLabel'|trans }}">
+            {{ 'timetableIcalCopyLabel'|trans }}
+        </button>
+        <button type="button"
+                class="cm-btn cm-btn--outline"
+                data-action="lesson-timetable#rotateIcalUrl"
+                data-confirm-message="{{ 'timetableIcalRotateConfirm'|trans }}">
+            {{ 'timetableIcalRotateLabel'|trans }}
+        </button>
+    </div>
+</div>

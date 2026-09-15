@@ -4,17 +4,25 @@
 {% block page_title %}{{ 'programTimetablePageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block main %}
-    <div class="card">
-        <div class="card-body"
-             data-frankenphp-hot-reload-preserve
-             data-controller="lesson-timetable"
-             data-lesson-timetable-feed-url-value="{{ path('app_program_timetable_feed', {id: program.id}) }}"
-             data-lesson-timetable-editable-value="false"
-             {# FullCalendar's validRange.end is exclusive, hence the +1 day - the calendar should still let you view the last effective day itself. #}
-             {% if program.effectiveStartDate %}data-lesson-timetable-valid-range-start-value="{{ program.effectiveStartDate|date('Y-m-d') }}"{% endif %}
-             {% if program.effectiveEndDate %}data-lesson-timetable-valid-range-end-value="{{ program.effectiveEndDate|date_modify('+1 day')|date('Y-m-d') }}"{% endif %}>
-            <div class="cm-calendar" data-lesson-timetable-target="calendar"></div>
-            {% include 'program/_timetable_legend.html.twig' %}
+    {# The Stimulus controller wraps the card rather than sitting on its body, because the
+       subscription banner below has to be a descendant of it too: the banner's URL is rewritten on
+       every legend toggle, and a target outside the controller's element is not a target at all. #}
+    <div data-frankenphp-hot-reload-preserve
+         data-controller="lesson-timetable"
+         data-lesson-timetable-feed-url-value="{{ path('app_program_timetable_feed', {id: program.id}) }}"
+         data-lesson-timetable-editable-value="false"
+         data-lesson-timetable-ical-rotate-url-value="{{ path('app_timetable_ical_rotate', {program: program.id}) }}"
+         data-lesson-timetable-ical-rotate-token-value="{{ csrf_token('timetable_ical_rotate') }}"
+         data-lesson-timetable-ical-rotate-error-message-value="{{ 'timetableIcalRotateErrorMessage'|trans }}"
+         {# FullCalendar's validRange.end is exclusive, hence the +1 day - the calendar should still let you view the last effective day itself. #}
+         {% if program.effectiveStartDate %}data-lesson-timetable-valid-range-start-value="{{ program.effectiveStartDate|date('Y-m-d') }}"{% endif %}
+         {% if program.effectiveEndDate %}data-lesson-timetable-valid-range-end-value="{{ program.effectiveEndDate|date_modify('+1 day')|date('Y-m-d') }}"{% endif %}>
+        <div class="card">
+            <div class="card-body">
+                <div class="cm-calendar" data-lesson-timetable-target="calendar"></div>
+                {% include 'program/_timetable_legend.html.twig' %}
+            </div>
         </div>
+        {% include 'partials/_timetable_ical_banner.html.twig' %}
     </div>
 {% endblock %}

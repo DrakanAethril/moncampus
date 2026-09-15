@@ -151,10 +151,14 @@ class ProgramType extends AbstractType
                 'help' => 'programGameEnabledFieldHelp',
                 'required' => false,
             ])
-            // The Jobboard's second axis, next to the Courrier pro and the game above it: who,
-            // in this formation, reads the offers the veille brought back. A tier rather than a
-            // checkbox because a class's offers are often worth showing to its teachers a term
-            // before its students - and « Masqué », the default, is what every formation starts on.
+            // The Jobboard's second axis, next to the Courrier pro and the game above it: from
+            // when this formation's *class* reads the offers the veille brought back. « Masqué »,
+            // the default, is what every formation starts on.
+            //
+            // It no longer decides anything for the formation's teachers, who read their own
+            // classes as soon as the `jobboard` feature is lit for their role
+            // (App\Service\Jobboard\JobboardPerimeter). The tier is kept rather than reduced to a
+            // checkbox because it still separates « personne », « le personnel » and « la classe ».
             ->add('jobboardVisibility', EnumType::class, [
                 'class' => VisibilityLevel::class,
                 'choice_label' => static fn (VisibilityLevel $level): string => $level->labelKey(),

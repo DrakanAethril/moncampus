@@ -10834,17 +10834,19 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
     --cm-jb-stage-bg: #cfeadd;      --cm-jb-stage-bd: #6cb694;      --cm-jb-stage-tx: #17603f;
     --cm-jb-cdi-bg: #d5e7f5;        --cm-jb-cdi-bd: #7fb0d6;        --cm-jb-cdi-tx: #0e405f;
     --cm-jb-cdd-bg: #f7ddd6;        --cm-jb-cdd-bd: #d79582;        --cm-jb-cdd-tx: #8a3d28;
+    --cm-jb-spontanee-bg: #e7dff4; --cm-jb-spontanee-bd: #a692ce; --cm-jb-spontanee-tx: #4a3670;
     --cm-jb-autre-bg: #eef2f6;      --cm-jb-autre-bd: #c2ccd4;      --cm-jb-autre-tx: #3d4f5c;
     /* The field border of the handoff (#c2ccd4), used by every input and menu of the filter column. */
     --cm-jb-field-bd: #c2ccd4;
 }
 [data-bs-theme="dark"] {
-    /* Same five contracts, re-grounded: the hue is what carries the meaning, so it is kept and only
+    /* The same contracts, re-grounded: the hue is what carries the meaning, so it is kept and only
        the lightness is swapped - a gold tag stays gold in the dark. */
     --cm-jb-alternance-bg: #3a2f18; --cm-jb-alternance-bd: #8a6f34; --cm-jb-alternance-tx: #e8cf9a;
     --cm-jb-stage-bg: #1c3a2c;      --cm-jb-stage-bd: #4a8468;      --cm-jb-stage-tx: #a9dcc3;
     --cm-jb-cdi-bg: #17303f;        --cm-jb-cdi-bd: #4a7a9c;        --cm-jb-cdi-tx: #b7d8ef;
     --cm-jb-cdd-bg: #3d241c;        --cm-jb-cdd-bd: #a06a56;        --cm-jb-cdd-tx: #efc2b2;
+    --cm-jb-spontanee-bg: #2c2440; --cm-jb-spontanee-bd: #6a5796; --cm-jb-spontanee-tx: #d2c4ef;
     --cm-jb-autre-bg: #263340;      --cm-jb-autre-bd: #3d4f5c;      --cm-jb-autre-tx: #c3cfd9;
     --cm-jb-field-bd: #3d4f5c;
 }
@@ -11014,6 +11016,7 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-jb-tag--stage { background: var(--cm-jb-stage-bg); border-color: var(--cm-jb-stage-bd); color: var(--cm-jb-stage-tx); }
 .cm-jb-tag--cdi { background: var(--cm-jb-cdi-bg); border-color: var(--cm-jb-cdi-bd); color: var(--cm-jb-cdi-tx); }
 .cm-jb-tag--cdd { background: var(--cm-jb-cdd-bg); border-color: var(--cm-jb-cdd-bd); color: var(--cm-jb-cdd-tx); }
+.cm-jb-tag--spontanee { background: var(--cm-jb-spontanee-bg); border-color: var(--cm-jb-spontanee-bd); color: var(--cm-jb-spontanee-tx); }
 .cm-jb-tag--autre { background: var(--cm-jb-autre-bg); border-color: var(--cm-jb-autre-bd); color: var(--cm-jb-autre-tx); }
 .cm-jb-tag--remote { font-size: 10.5px; }
 .cm-jb-tag--remote-total { background: var(--cm-green-bg); border-color: var(--cm-jb-stage-bd); color: var(--cm-green-tx); }
@@ -11063,3 +11066,28 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
        a dark block, which on this card's light surface is white on white. */
     color: var(--cm-ink);
 }
+
+/* Subscription banner under an emploi du temps (templates/partials/_timetable_ical_banner.html.twig).
+   Full width under the calendar card, and a band rather than another card: it is an offer made
+   beside the screen's subject, not a second subject. Stacks to one column on a phone, where the URL
+   field needs the whole width to be readable at all. */
+.cm-icalbanner {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px;
+  margin-top: 20px; padding: 16px 20px;
+  border: 1px solid var(--cm-border); border-left: 3px solid var(--cm-brand);
+  border-radius: var(--cm-radius-sm);
+  background: var(--cm-blue-bg-soft);
+}
+.cm-icalbanner__text { flex: 1 1 260px; min-width: 0; }
+.cm-icalbanner__title { margin: 0 0 3px; font: 700 14px var(--cm-font-ui); color: var(--cm-text); }
+.cm-icalbanner__hint { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--cm-faint); }
+.cm-icalbanner__controls { flex: 1 1 420px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.cm-icalbanner__url {
+  flex: 1 1 240px; min-width: 0;
+  border: 1px solid var(--cm-border); border-radius: var(--cm-radius-sm);
+  padding: 8px 12px;
+  font: 400 12px var(--cm-font-mono);
+  color: var(--cm-text); background: var(--cm-surface);
+  text-overflow: ellipsis;
+}
+.cm-icalbanner__url:focus { outline: 2px solid var(--cm-brand); outline-offset: 1px; }

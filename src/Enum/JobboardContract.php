@@ -5,11 +5,17 @@ declare(strict_types=1);
 namespace App\Enum;
 
 /**
- * The kind of contract an offer proposes - one of the five values the veille guarantees.
+ * The kind of contract an offer proposes - one of the values the veille guarantees.
  *
  * The colours are the handoff's own (design/jobboard/design_handoff_jobboard/README.md, « Code
  * couleur des contrats ») and live here rather than in the template because the same tag is drawn
- * in the list and in the detail panel: two copies would drift on the day a sixth contract appears.
+ * in the list and in the detail panel: two copies would drift on the day a further contract
+ * appears.
+ *
+ * `Spontanee` is the odd one: it names a company that accepts unsolicited applications rather than
+ * an advert for a post. Nothing else about the row changes - it is collected, filed, filtered and
+ * closed exactly like an offer - except that the agent has no job title to read, so this is the
+ * one contract whose `poste` may be left out; see defaultPosition().
  */
 enum JobboardContract: string
 {
@@ -17,6 +23,7 @@ enum JobboardContract: string
     case Stage = 'stage';
     case Cdd = 'cdd';
     case Cdi = 'cdi';
+    case Spontanee = 'spontanee';
     case Autre = 'autre';
 
     public function labelKey(): string
@@ -26,8 +33,39 @@ enum JobboardContract: string
             self::Stage => 'jobboardContractStageLabel',
             self::Cdd => 'jobboardContractCddLabel',
             self::Cdi => 'jobboardContractCdiLabel',
+            self::Spontanee => 'jobboardContractSpontaneeLabel',
             self::Autre => 'jobboardContractAutreLabel',
         };
+    }
+
+    /**
+     * The title to file the offer under when the payload carries none, or null when the contract
+     * demands one.
+     *
+     * It is stored on the row rather than substituted at display time, so that a search on the
+     * position finds these entries the way it finds every other one. The agent may still send a
+     * `poste` of its own - a company page often names the kind of profile it is open to - and what
+     * it sends always wins.
+     */
+    public function defaultPosition(): ?string
+    {
+        return self::Spontanee === $this ? 'Candidature spontanée' : null;
+    }
+
+    /**
+     * Whether an entry of this contract carries no publication date of its own.
+     *
+     * A « recrutement » page is not an advert: it is not dated, and it is not republished. So the
+     * day the veille spotted it is the only date that exists, and standing it in beats leaving the
+     * column empty for an entry that is, by construction, always current.
+     *
+     * It is stamped **once, at creation**, and stays put - see OfferIngestor. Recomputing it on
+     * every pass would walk the date forward day by day, which is precisely the drift the `≈`
+     * marker exists to make visible rather than to produce.
+     */
+    public function publishesNoDate(): bool
+    {
+        return self::Spontanee === $this;
     }
 
     /** The CSS modifier of the tag, `cm-jb-tag--<slug>`. */

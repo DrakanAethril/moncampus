@@ -65,6 +65,63 @@ class LaptopRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
+    /**
+     * The machines the inventory already holds under these numbers, keyed by the folded number.
+     *
+     * Backs the laptop import's analysis (App\Service\LaptopImport\LaptopImportAnalyzer): one
+     * query for the whole file rather than one per line. The key is lowercased because the column's
+     * own unique index is case-insensitive - `5CD335G7GT` and `5cd335g7gt` are the same machine to
+     * MySQL, so they must be to the analysis too.
+     *
+     * @param list<string> $assetTags
+     *
+     * @return array<string, Laptop>
+     */
+    public function findByAssetTags(array $assetTags): array
+    {
+        return $this->indexBy('assetTag', $assetTags, static fn (Laptop $laptop): string => $laptop->getAssetTag());
+    }
+
+    /**
+     * @param list<string> $serialNumbers
+     *
+     * @return array<string, Laptop>
+     */
+    public function findBySerialNumbers(array $serialNumbers): array
+    {
+        return $this->indexBy('serialNumber', $serialNumbers, static fn (Laptop $laptop): string => $laptop->getSerialNumber());
+    }
+
+    /**
+     * @param list<string>                $values
+     * @param \Closure(Laptop): string    $key
+     *
+     * @return array<string, Laptop>
+     */
+    private function indexBy(string $field, array $values, \Closure $key): array
+    {
+        $wanted = array_values(array_unique(array_filter(array_map(trim(...), $values), static fn (string $value): bool => '' !== $value)));
+
+        if ([] === $wanted) {
+            return [];
+        }
+
+        // Retired machines included on purpose: their numbers are still taken, and the import has to
+        // say so rather than fail on the unique index at flush time.
+        $laptops = $this->createQueryBuilder('l')
+            ->andWhere(\sprintf('l.%s IN (:values)', $field))
+            ->setParameter('values', $wanted)
+            ->getQuery()
+            ->getResult();
+
+        $indexed = [];
+        foreach ($laptops as $laptop) {
+            $indexed[mb_strtolower(trim($key($laptop)))] = $laptop;
+        }
+
+        return $indexed;
+    }
+
     private function applySearch(QueryBuilder $qb, ?string $search): void
     {
         if (null === $search || '' === $search) {

@@ -69,6 +69,31 @@ class TrackRepository extends ServiceEntityRepository
     }
 
     /**
+     * Every Track one person teaches in, whatever each formation decided about its Jobboard.
+     *
+     * The Jobboard's perimeter for a teacher, and the one membership the per-formation tier does
+     * **not** narrow. That tier answers « à partir de quand la classe voit-elle les offres » - it
+     * is aimed at the students of the formation, and closing it on the teacher who prepares them
+     * for that market is not what it is for. What gates a teacher is the `jobboard` feature on
+     * their role, and nothing else.
+     *
+     * @return list<Track>
+     */
+    public function findTaughtBy(User $user): array
+    {
+        return $this->createQueryBuilder('t')
+            ->innerJoin('App\\Entity\\Cohort', 'c', 'WITH', 'c.track = t')
+            ->innerJoin('App\\Entity\\Program', 'p', 'WITH', 'p.cohort = c')
+            ->innerJoin('p.teachers', 'te')
+            ->andWhere('te = :user')
+            ->setParameter('user', $user)
+            ->distinct()
+            ->orderBy('t.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Every Track one person belongs to, through the formations they are enrolled in or teach -
      * kept to the formations that open the Jobboard at one of $tiers.
      *

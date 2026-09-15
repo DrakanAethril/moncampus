@@ -54,12 +54,15 @@ final readonly class IngestInstructions
         ));
 
         $contracts = $this->quoted(JobboardContract::values());
+        $spontaneous = JobboardContract::Spontanee->value;
+        $spontaneousPosition = (string) JobboardContract::Spontanee->defaultPosition();
         $countries = $this->quoted(JobboardCountry::values());
         $remotes = $this->quoted(JobboardRemote::values());
         $levelSources = $this->quoted(JobboardLevelSource::values());
         $btsAccess = $this->quoted(JobboardBtsAccess::values());
         $maxOffers = self::MAX_OFFERS_PER_REQUEST;
         $maxRaw = OfferPayloadParser::MAX_RAW_BYTES;
+        $lengths = $this->lengths();
 
         return <<<MD
             # Déposer des offres dans MonCampus
@@ -123,10 +126,10 @@ final readonly class IngestInstructions
             | `source` | oui | le nom du site. Un site absent du tableau ci-dessous n'est **pas** refusé : la plateforme le crée à partir du domaine de l'`url` |
             | `source_ref` | oui | l'identifiant de l'offre **chez la source**, stable dans le temps |
             | `url` | oui | le lien de l'annonce, en `http`/`https`. C'est lui qui décide de la source : une URL d'un site connu range l'offre chez lui, quel que soit le nom déclaré |
-            | `poste` | oui | l'intitulé tel qu'affiché |
+            | `poste` | oui, sauf `{$spontaneous}` | l'intitulé tel qu'affiché. Laissé vide sur une candidature spontanée, il devient « {$spontaneousPosition} » |
             | `entreprise` | oui | `"Non précisée"` est une valeur acceptée |
             | `categorie` | non | texte libre, ton classement (`sisr`, `slam`, `mixte`, …) |
-            | `contrat` | oui | {$contracts} |
+            | `contrat` | oui | {$contracts} — `{$spontaneous}` = l'entreprise accepte les candidatures spontanées, il n'y a pas d'annonce |
             | `pays` | oui | {$countries} |
             | `region` | non | vide pour une offre 100 % télétravail sans ancrage |
             | `departement` | non | **uniquement si `pays` vaut `France`** — `"01"` à `"95"`, `"2A"`, `"2B"`, `"971"` à `"976"`, en chaîne, zéro initial conservé |
@@ -135,10 +138,47 @@ final readonly class IngestInstructions
             | `niveau_source` | oui | {$levelSources} — `annonce` = lu sur la page, `estime` = déduit de l'intitulé |
             | `acces_bts` | oui | {$btsAccess} |
             | `teletravail` | oui | {$remotes} |
-            | `date_publication` | non | `AAAA-MM-JJ`. Une date absente est une situation normale |
-            | `date_publication_approx` | oui | `true` dès que la date est reconstituée d'une ancienneté relative, ou absente |
+            | `date_publication` | non | `AAAA-MM-JJ`. Une date absente est une situation normale. Sur `{$spontaneous}`, la plateforme inscrit alors le jour où elle a repéré l'entrée |
+            | `date_publication_approx` | non, mais envoie-le | `true` dès que la date est reconstituée d'une ancienneté relative. Absent, il vaut `true` : sans démenti, une date est tenue pour approximative |
             | `note` | non | une précision courte tirée de l'annonce |
-            | `brut` | non | ta charge utile d'origine, {$maxRaw} octets au plus |
+            | `brut` | non | ta charge utile d'origine, un objet JSON de {$maxRaw} octets au plus |
+
+            « Obligatoire » veut dire : absent, vide ou fait d'espaces, la ligne est refusée.
+            Pour les autres, **une chaîne vide vaut une absence** — inutile d'envoyer `""`
+            plutôt que rien, les deux se lisent pareil.
+
+            ## Les longueurs
+
+            Tout texte est débarrassé de ses espaces de bord, puis **tronqué s'il dépasse,
+            jamais refusé** : un intitulé trois caractères trop long n'est pas une raison de
+            perdre une offre. Les limites :
+
+            {$lengths}
+
+            Les autres champs sont des énumérés, une date ou un booléen, et n'ont pas de
+            longueur propre.
+
+            ## Les candidatures spontanées
+
+            Une entreprise qui accueille les candidatures spontanées s'envoie comme une offre :
+            `contrat` vaut `{$spontaneous}`, l'`url` est la page qui le dit (la page « recrutement »
+            du site, la fiche de l'entreprise chez un agrégateur), et `source_ref` s'en déduit
+            comme pour n'importe quelle annonce — il doit seulement rester le même d'un passage à
+            l'autre.
+
+            C'est le seul contrat où `poste` peut manquer : sans annonce, il n'y a pas d'intitulé à
+            lire, et la plateforme range alors l'entrée sous « {$spontaneousPosition} ». Si la page
+            nomme les profils recherchés, envoie-les dans `poste` — ce que tu envoies l'emporte
+            toujours.
+
+            **Tu n'as pas de `date_publication` à trouver non plus.** Une page « recrutement »
+            n'est pas datée et n'est pas republiée : envoie l'entrée sans date, et la plateforme
+            inscrit le jour où elle l'a repérée, marqué approximatif. Cette date est posée **une
+            fois**, à la création, et ne bouge plus aux passages suivants — c'est ce qui fait qu'une
+            entreprise collectée depuis six mois ne se relit pas comme découverte ce matin.
+
+            Si la page porte malgré tout une date (« nous recrutons depuis le … »), envoie-la : une
+            date exacte remplace toujours l'horodatage de la plateforme.
 
             **`non_precise` n'est pas `aucun`.** La plupart des annonces n'abordent pas le sujet ;
             les confondre fausserait toute la lecture de la colonne. Même chose pour
@@ -212,6 +252,16 @@ final readonly class IngestInstructions
             personne. Et aucun identifiant inventé : l'identité d'une offre est le couple
             (`source`, `source_ref`), la plateforme s'occupe du reste.
             MD;
+    }
+
+    /** The truncation limits, read from the parser that applies them. */
+    private function lengths(): string
+    {
+        return implode("\n", array_map(
+            static fn (string $field, int $length): string => \sprintf('- `%s` — %d caractères', $field, $length),
+            array_keys(OfferPayloadParser::MAX_LENGTHS),
+            array_values(OfferPayloadParser::MAX_LENGTHS),
+        ));
     }
 
     /** @param list<string> $values */

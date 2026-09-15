@@ -58,11 +58,14 @@ final readonly class LegacyFileFormat
         ));
 
         $contracts = $this->quoted(JobboardContract::values());
+        $spontaneous = JobboardContract::Spontanee->value;
+        $spontaneousPosition = (string) JobboardContract::Spontanee->defaultPosition();
         $countries = $this->quoted(JobboardCountry::values());
         $remotes = $this->quoted(JobboardRemote::values());
         $levelSources = $this->quoted(JobboardLevelSource::values());
         $btsAccess = $this->quoted(JobboardBtsAccess::values());
         $maxRows = self::MAX_ROWS;
+        $lengths = $this->lengths();
 
         return <<<MD
             # Le format accepté par l'import
@@ -86,10 +89,10 @@ final readonly class LegacyFileFormat
             | `id` | oui | l'identifiant préfixé de la source (`hw-83313525`) — voir le tableau plus bas |
             | `source` | oui | le nom du site, en toutes lettres (`HelloWork`) ou en minuscules (`hellowork`) |
             | `url` | oui | le lien de l'annonce, en `http`/`https` : c'est lui qui décide de la source |
-            | `poste` | oui | l'intitulé tel qu'affiché |
+            | `poste` | oui, sauf `{$spontaneous}` | l'intitulé tel qu'affiché. Laissé vide sur une candidature spontanée, il devient « {$spontaneousPosition} » |
             | `entreprise` | oui | `"Non précisée"` est une valeur acceptée |
             | `categorie` | non | texte libre, votre classement (`sisr`, `slam`, `mixte`, …) |
-            | `contrat` | oui | {$contracts} |
+            | `contrat` | oui | {$contracts} — `{$spontaneous}` désigne une entreprise qui accepte les candidatures spontanées, sans annonce |
             | `pays` | oui | {$countries} |
             | `region` | non | vide pour une offre 100 % télétravail sans ancrage |
             | `departement` | non | **uniquement si `pays` vaut `France`** — `"01"` à `"95"`, `"2A"`, `"2B"`, `"971"` à `"976"`, en chaîne, zéro initial conservé |
@@ -98,14 +101,20 @@ final readonly class LegacyFileFormat
             | `niveau_source` | oui | {$levelSources} — `annonce` = lu sur la page, `estime` = déduit de l'intitulé |
             | `acces_bts` | oui | {$btsAccess} |
             | `teletravail` | oui | {$remotes} |
-            | `date_publication` | non | `AAAA-MM-JJ`. Une date absente est une situation normale |
-            | `date_approx` | oui | `true` dès que la date est reconstituée d'une ancienneté relative, ou absente |
+            | `date_publication` | non | `AAAA-MM-JJ`. Une date absente est une situation normale. Sur `{$spontaneous}`, la plateforme inscrit alors la date de repérage |
+            | `date_approx` | non, absent vaut `true` | `true` dès que la date est reconstituée d'une ancienneté relative |
             | `date_reperage` | non | le jour où la veille a vu l'offre pour la première fois |
             | `note` | non | une précision courte tirée de l'annonce |
             | `brut` | non | la charge utile d'origine |
 
             Les valeurs peuvent être écrites avec leurs majuscules (`Alternance`, `Non_Precise`) :
             elles sont lues sans tenir compte de la casse.
+
+            « Obligatoire » veut dire : absent, vide ou fait d'espaces, la ligne est refusée. Pour
+            les autres, une chaîne vide vaut une absence. Tout texte est débarrassé de ses espaces
+            de bord puis **tronqué s'il dépasse, jamais refusé** — les limites, en caractères :
+
+            {$lengths}
 
             **`date_reperage` est le seul champ que rien ne peut reconstituer.** Aucun site ne rend
             la date à laquelle une offre a été vue pour la première fois : si elle manque, c'est le
@@ -205,6 +214,25 @@ final readonly class LegacyFileFormat
         ];
 
         return (string) json_encode($file, \JSON_PRETTY_PRINT | \JSON_UNESCAPED_SLASHES | \JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * The truncation limits, read from the parser that applies them.
+     *
+     * One renaming: the legacy file has no `source_ref` field - the identifier travels in `id`,
+     * prefixed by the source - so the limit is quoted under the name this file actually uses.
+     */
+    private function lengths(): string
+    {
+        $limits = OfferPayloadParser::MAX_LENGTHS;
+        $limits['id'] = $limits['source_ref'];
+        unset($limits['source_ref']);
+
+        return implode("\n", array_map(
+            static fn (string $field, int $length): string => \sprintf('- `%s` — %d', $field, $length),
+            array_keys($limits),
+            array_values($limits),
+        ));
     }
 
     /** @param list<string> $values */

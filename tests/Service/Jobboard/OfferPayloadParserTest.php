@@ -265,6 +265,55 @@ class OfferPayloadParserTest extends TestCase
         $this->assertSame('e2ec328c', $payload->sourceRef);
     }
 
+    /**
+     * A company open to unsolicited applications publishes no advert, so there is no title to read.
+     * It is the one contract where `poste` may be left out, and the entry is filed under a title of
+     * the platform's own rather than refused.
+     */
+    public function testItNamesASpontaneousApplicationWhenThePayloadCarriesNoPosition(): void
+    {
+        $payload = $this->parser->parse($this->offer([
+            'contrat' => 'spontanee',
+            'poste' => '',
+            'date_publication' => null,
+        ]));
+
+        $this->assertSame(JobboardContract::Spontanee, $payload->contract);
+        $this->assertSame('Candidature spontanée', $payload->position);
+    }
+
+    /** What the agent found on the company's page wins over the platform's fallback. */
+    public function testItKeepsThePositionSentWithASpontaneousApplication(): void
+    {
+        $payload = $this->parser->parse($this->offer([
+            'contrat' => 'spontanee',
+            'poste' => 'Profils réseaux et systèmes',
+        ]));
+
+        $this->assertSame('Profils réseaux et systèmes', $payload->position);
+    }
+
+    /**
+     * The parser does **not** stamp the date: the same parse serves the review pass, where a stamp
+     * recomputed every day would walk the publication date forward. It leaves the field empty and
+     * OfferIngestor dates the row once, on creation - see JobboardOfferDatingTest.
+     */
+    public function testItLeavesASpontaneousApplicationUndated(): void
+    {
+        $payload = $this->parser->parse($this->offer([
+            'contrat' => 'spontanee',
+            'date_publication' => null,
+        ]));
+
+        $this->assertNull($payload->publishedAt);
+    }
+
+    /** Every other contract still owes a title: the fallback belongs to one case, not to all. */
+    public function testItStillRefusesAnOfferWithoutAPosition(): void
+    {
+        $this->assertRejects(JobboardRejection::MissingField, ['poste' => '']);
+    }
+
     /** @param array<string, mixed> $overrides */
     private function assertRejects(JobboardRejection $reason, array $overrides): void
     {
