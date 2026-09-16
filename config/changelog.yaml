@@ -26,6 +26,21 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.16'
+      date: '2026-09-16'
+      summary: "Un dossier de pièces peut être demandé à une classe entière ou à quelques étudiants, chaque pièce portant sa propre échéance et, au besoin, une relecture avant d'être acceptée. Le prêt interne d'un ordinateur peut par ailleurs se passer de date de restitution."
+      entries:
+          - type: nouveaute
+            title: "Collecter un dossier de pièces auprès d'une classe"
+            detail: "Chaque pièce porte sa date de mise à disposition, sa date limite et, si besoin, une validation avec allers-retours. Ouvert à l'administration pour l'instant."
+          - type: nouveaute
+            title: "Une demande peut ne concerner qu'une option de la classe"
+            detail: "Sans précision, le dossier s'adresse à toute la classe ; en désignant une ou plusieurs options, il ne s'adresse qu'aux étudiants qui les suivent. Un étudiant qui prend l'option en cours d'année est concerné à partir de ce jour-là."
+          - type: modification
+            title: "Un prêt interne peut être sans date de restitution"
+            detail: "La machine confiée à un membre de l'établissement n'a pas d'échéance, et lui en inventer une ne produisait qu'un retard que personne n'avait voulu. L'échéance se lit « Indéterminée » partout, jamais « — » : ce n'est pas une date oubliée. Les deux prêts qui impriment une convention continuent d'en exiger une."
+          - type: interne
+            title: "La suite de tests retrouve de la marge mémoire"
     - version: '2026.09.15'
       date: '2026-09-15'
       summary: "L'emploi du temps s'ajoute à un agenda personnel par un lien d'abonnement, et le parc d'ordinateurs portables s'importe depuis un tableur, avec un prêt interne pour les machines confiées aux membres de l'établissement. La veille d'offres accueille par ailleurs les entreprises ouvertes aux candidatures spontanées."
