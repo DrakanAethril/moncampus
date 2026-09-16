@@ -67,10 +67,33 @@ class PdfUploadValidatorTest extends TestCase
 
     public function testAPdfOverTheLimitIsRefused(): void
     {
-        $padding = str_repeat('0', PdfUploadValidator::MAX_BYTES + 1);
-        $file = $this->file('gros.pdf', "%PDF-1.4\n".$padding."\n%%EOF\n");
+        // Written a megabyte at a time rather than built as one string. What is being measured is a
+        // file's size, so the file is what has to be big - and holding ten megabytes of padding in
+        // memory, plus the copy the concatenation makes, is how this test came to be the one that
+        // died of « Allowed memory size exhausted » as soon as the suite ahead of it grew.
+        $file = $this->paddedFile('gros.pdf', PdfUploadValidator::MAX_BYTES + 1);
 
         self::assertSame('pdfUploadTooLargeError', (new PdfUploadValidator())->validate($file));
+    }
+
+    /** A genuine PDF header and footer with $padding bytes of nothing between them. */
+    private function paddedFile(string $name, int $padding): UploadedFile
+    {
+        $path = $this->directory.'/'.$name;
+        $handle = fopen($path, 'wb');
+        self::assertIsResource($handle);
+
+        fwrite($handle, "%PDF-1.4\n");
+
+        $chunk = str_repeat('0', 1024 * 1024);
+        for ($written = 0; $written < $padding; $written += \strlen($chunk)) {
+            fwrite($handle, substr($chunk, 0, min(\strlen($chunk), $padding - $written)));
+        }
+
+        fwrite($handle, "\n%%EOF\n");
+        fclose($handle);
+
+        return new UploadedFile($path, $name, null, null, true);
     }
 
     private function file(string $name, string $content, ?string $declaredMimeType = null): UploadedFile
