@@ -3,7 +3,7 @@
    would have nowhere to come back to.
 
    Parameters (passed with `only`): dossier, candidatePrograms, candidateStudents. #}
-{% set selectedPrograms = dossier.targetPrograms|map(p => p.id) %}
+{% set selectedPrograms = dossier.targetedPrograms|map(p => p.id) %}
 {% set selectedStudents = dossier.targetStudents|map(s => s.id) %}
 <form id="dossier-settings-form" method="post" class="cm-dd-pane" data-controller="dossier-wizard"
       action="{{ path(dossier.id ? 'app_dossier_settings' : 'app_dossier_new', dossier.id ? {id: dossier.id} : {}) }}">
@@ -83,13 +83,34 @@
                everything the other side had ticked. #}
             <div class="cm-dd-picklist" data-dossier-wizard-target="targetPanel" data-mode="programs">
                 {% for program in candidatePrograms %}
-                    <label class="cm-dd-pick">
-                        <input type="checkbox" name="target_programs[]" value="{{ program.id }}"{{ program.id in selectedPrograms ? ' checked' }}>
-                        <span class="cm-dd-pick__box"></span>
-                        <span class="cm-dd-pick__name">{{ program.displayShortName }}</span>
-                        {# Never an effectif: « SIO-2 », not « SIO-2 · 10 étudiants ». #}
-                        <span class="cm-dd-pick__detail">{{ 'dossierTargetKindClassLabel'|trans }}</span>
-                    </label>
+                    {% set target = dossier.targetFor(program) %}
+                    {% set selectedOptions = target ? target.options|map(o => o.id) : [] %}
+                    <div class="cm-dd-pickgroup">
+                        <label class="cm-dd-pick">
+                            <input type="checkbox" name="target_programs[]" value="{{ program.id }}"{{ program.id in selectedPrograms ? ' checked' }}>
+                            <span class="cm-dd-pick__box"></span>
+                            <span class="cm-dd-pick__name">{{ program.displayShortName }}</span>
+                            {# Never an effectif: « SIO-2 », not « SIO-2 · 10 étudiants ». #}
+                            <span class="cm-dd-pick__detail">{{ 'dossierTargetKindClassLabel'|trans }}</span>
+                        </label>
+                        {# The options of a class, shown only once the class itself is ticked - the
+                           panel is `:has()`-driven, so there is no state for JavaScript to hold.
+                           Ticking none of them is « toute la classe », which is why there is no
+                           « Tous » entry: it would be a second way of saying what not choosing
+                           already says. A class with no option draws nothing at all. #}
+                        {% if program.options|length %}
+                            <div class="cm-dd-pickoptions">
+                                {% for option in program.options %}
+                                    <label class="cm-dd-pick cm-dd-pick--option">
+                                        <input type="checkbox" name="target_options[{{ program.id }}][]" value="{{ option.id }}"{{ option.id in selectedOptions ? ' checked' }}>
+                                        <span class="cm-dd-pick__box"></span>
+                                        <span class="cm-dd-pick__name">{{ option.name }}</span>
+                                        <span class="cm-dd-pick__detail">{{ 'dossierTargetKindOptionLabel'|trans }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
                 {% endfor %}
             </div>
             <div class="cm-dd-picklist" data-dossier-wizard-target="targetPanel" data-mode="students" hidden>

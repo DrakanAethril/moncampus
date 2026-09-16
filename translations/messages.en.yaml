@@ -7740,6 +7740,7 @@ dossierValidatorPickerPlaceholder: 'Search for a person'
 dossierTargetClassesLabel: 'Classes / groups'
 dossierTargetStudentsLabel: 'Students'
 dossierTargetKindClassLabel: 'Class'
+dossierTargetKindOptionLabel: 'Option'
 dossierEditTargetsAction: 'Edit the targets'
 
 dossierCompositionLabel: 'Dossier composition'

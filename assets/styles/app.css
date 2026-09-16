@@ -11696,3 +11696,17 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
    an auto main-axis margin makes every `flex-grow` on the line count as zero, which left the name
    and its rules line at their own width and ellipsised a line that had room to spare. */
 .cm-dd-docrow__end, .cm-dd-manrow__end { margin-left: 0; }
+
+/* A class and the options it can be narrowed to. The options appear only once the class is ticked,
+   through `:has()` on their own wrapper - the two levels are one submission, so nothing is removed
+   from the DOM and nothing is lost by folding them away. */
+.cm-dd-pickgroup { border-bottom: 1px solid var(--dd-bd-soft); }
+.cm-dd-pickgroup:last-child { border-bottom: 0; }
+.cm-dd-pickgroup .cm-dd-pick { border-bottom: 0; }
+.cm-dd-pickgroup:not(:has(> .cm-dd-pick > input:checked)) .cm-dd-pickoptions { display: none; }
+.cm-dd-pickoptions { background: var(--dd-soft); padding: 2px 0 6px; }
+.cm-dd-pick--option { padding: 7px 14px 7px 40px; background: transparent; }
+.cm-dd-pick--option .cm-dd-pick__box { width: 16px; height: 16px; border-radius: 4px; }
+.cm-dd-pick--option .cm-dd-pick__name { font-size: 12.5px; color: var(--cm-muted); }
+.cm-dd-pick--option:has(input:checked) { background: transparent; }
+.cm-dd-pick--option:has(input:checked) .cm-dd-pick__name { color: var(--cm-ink); }

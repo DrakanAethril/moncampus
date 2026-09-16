@@ -8551,6 +8551,7 @@ dossierValidatorPickerPlaceholder: 'Rechercher une personne'
 dossierTargetClassesLabel: 'Classes / groupes'
 dossierTargetStudentsLabel: 'Étudiants'
 dossierTargetKindClassLabel: 'Classe'
+dossierTargetKindOptionLabel: 'Option'
 dossierEditTargetsAction: 'Modifier les cibles'
 
 dossierCompositionLabel: 'Composition du dossier'

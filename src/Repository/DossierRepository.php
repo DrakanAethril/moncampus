@@ -62,10 +62,17 @@ class DossierRepository extends ServiceEntityRepository
     }
 
     /**
-     * The published dossiers a student is a cible of.
+     * The published dossiers a student **might** be a cible of - the narrowing by option is not in
+     * this query.
      *
      * Two doors, ORed: named one by one, or a student of one of the target formations. A draft never
      * appears - see App\Enum\DossierState.
+     *
+     * A target narrowed to an option (« SIO-2, les SLAM ») still comes back here for every student of
+     * the class, and App\Service\Dossier\DossierTargetResolver::isTarget() is what takes the others
+     * back out. Deliberate: the option link lives in `program_student_option`, and joining it here
+     * would put the same rule in two places - one in DQL, one in PHP - with the DQL half being the
+     * one nobody reads when the rule changes.
      *
      * @return list<Dossier>
      */
@@ -74,7 +81,8 @@ class DossierRepository extends ServiceEntityRepository
         /** @var list<Dossier> $dossiers */
         $dossiers = $this->createQueryBuilder('d')
             ->leftJoin('d.targetStudents', 'ts')
-            ->leftJoin('d.targetPrograms', 'tp')
+            ->leftJoin('d.targetPrograms', 't')
+            ->leftJoin('t.program', 'tp')
             ->leftJoin('tp.students', 'tps')
             ->where('d.state = :published')
             ->andWhere('ts = :student OR tps = :student')

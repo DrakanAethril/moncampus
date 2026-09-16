@@ -8,6 +8,7 @@ use App\Attribute\RequiresFeature;
 use App\Entity\Dossier;
 use App\Entity\DossierDocument;
 use App\Entity\DossierGroup;
+use App\Entity\DossierTargetProgram;
 use App\Entity\User;
 use App\Enum\DossierDepositType;
 use App\Enum\DossierValidationProfile;
@@ -417,19 +418,24 @@ class DossierController extends AbstractController
     private function syncTargets(Request $request, Dossier $dossier, ProgramRepository $programs, UserRepository $users): void
     {
         $programIds = PostValue::intList($request, 'target_programs');
+        // `target_options[<programId>][]` - the options are posted under the class they narrow,
+        // because that is where the narrowing lives (App\Entity\DossierTargetProgram).
+        $optionIds = PostValue::intListMap($request, 'target_options');
 
-        foreach ($dossier->getTargetPrograms()->toArray() as $program) {
-            if (!\in_array($program->getId(), $programIds, true)) {
-                $dossier->removeTargetProgram($program);
+        foreach ($dossier->getTargetPrograms()->toArray() as $target) {
+            if (!\in_array($target->getProgram()?->getId(), $programIds, true)) {
+                $dossier->getTargetPrograms()->removeElement($target);
             }
         }
 
         foreach ($programIds as $programId) {
             $program = $programs->find($programId);
 
-            if (null !== $program) {
-                $dossier->addTargetProgram($program);
+            if (null === $program) {
+                continue;
             }
+
+            $this->syncTargetOptions($dossier->addTargetProgram($program), $optionIds[$programId] ?? []);
         }
 
         $studentIds = PostValue::intList($request, 'target_students');
@@ -449,9 +455,36 @@ class DossierController extends AbstractController
         }
     }
 
+    /**
+     * The options of one target, against what the formation actually offers.
+     *
+     * An option the class does not carry is dropped rather than stored: a target narrowed to an
+     * option nobody in the class can hold is a dossier addressed to nobody, and it would say so
+     * nowhere.
+     *
+     * @param list<int> $optionIds
+     */
+    private function syncTargetOptions(DossierTargetProgram $target, array $optionIds): void
+    {
+        foreach ($target->getOptions()->toArray() as $option) {
+            if (!\in_array($option->getId(), $optionIds, true)) {
+                $target->removeOption($option);
+            }
+        }
+
+        foreach ($target->getProgram()?->getOptions() ?? [] as $option) {
+            if (\in_array($option->getId(), $optionIds, true)) {
+                $target->addOption($option);
+            }
+        }
+    }
+
     private function renderWizard(Dossier $dossier, int $step, ProgramRepository $programs, UserRepository $users, string $selection = ''): Response
     {
         $candidatePrograms = $programs->findAllActiveWithStudents();
+        // The options each class offers, so the picker can show them under it - one extra query for
+        // the whole list rather than one per class.
+        $programs->hydrateOptionsAndModalities($candidatePrograms);
 
         return $this->render('dossier/wizard.html.twig', [
             'dossier' => $dossier,
