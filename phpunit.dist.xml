@@ -19,8 +19,15 @@
              RoleAccessSmokeTest died mid-boot on "Premature end of PHP process" - an out-of-memory
              fatal with no usable message, since it happens inside the container builder's deep
              clone. A ceiling rather than -1, so a genuine runaway in a test still fails instead of
-             taking the machine down with it. -->
-        <ini name="memory_limit" value="512M" />
+             taking the machine down with it.
+
+             Raised from 512M on 2026-09-16, when the suite passed 2 900 tests: PHPUnit keeps a
+             result object per test for the whole run, so the process now sits near 500M by the last
+             third of the suite - and the two tests that build a deliberately oversized upload
+             (PdfUploadValidatorTest, QuizImportImageValidatorTest) then died of "Allowed memory size
+             exhausted" on a five-megabyte str_repeat. Nothing leaked; the headroom had simply run
+             out, and the failure landed on whichever test happened to allocate next. -->
+        <ini name="memory_limit" value="1G" />
         <server name="APP_ENV" value="test" force="true" />
         <server name="SHELL_VERBOSITY" value="-1" />
     </php>
