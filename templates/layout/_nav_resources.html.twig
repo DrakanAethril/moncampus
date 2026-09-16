@@ -12,7 +12,7 @@
 
    Parameters (passed with `only`): current_route, is_pure_student. #}
 {% set resources_is_active = current_route starts with 'app_resources_' or current_route starts with 'app_documentation' or current_route starts with 'app_wiki'
-    or current_route starts with 'app_student_shared_document' or current_route starts with 'app_school_mail' or current_route starts with 'app_training_'
+    or current_route starts with 'app_student_shared_document' or current_route starts with 'app_my_dossier' or current_route starts with 'app_school_mail' or current_route starts with 'app_training_'
     or current_route == 'app_my_job_applications' or current_route starts with 'app_my_courses'
     or (is_pure_student and current_route starts with 'app_program_quiz_') %}
 {# Each entry's condition is read once into a variable, and the same variables decide both whether
@@ -22,6 +22,12 @@
    with the wiki off for teachers, every entry below is student-only or off by default, so a
    teacher's Ressources is empty. #}
 {% set resources_shared_documents = is_granted('ROLE_STUDENT') and not is_staff() and feature('shared_documents') %}
+{# « Mes dossiers » — the cible's side of the Dossiers documentaires, right after the documents
+   their teachers put at their disposal: both are « ce que l'établissement échange avec moi », one
+   way then the other. No « only when they have one » helper, unlike the entries around it: the
+   feature ships switched off for every role, so a student who reads this entry has been handed the
+   tool by name, and an empty list is then the answer to a question they were meant to ask. #}
+{% set resources_dossiers = is_granted('ROLE_STUDENT') and not is_staff() and feature('dossiers') %}
 {% set resources_my_vms = is_pure_student and feature('my_vms') and has_virtual_machines(app.user) %}
 {% set resources_school_mail = is_pure_student and feature('school_mail') %}
 {# « Candidatures » follows « Courrier pro », condition for condition: an application is a mail
@@ -45,7 +51,7 @@
    Both doors ask the perimeter as well as the feature: a formation that keeps its jobboard masked
    leaves its students an entry onto a board that could only ever be empty. #}
 {% set resources_jobboard = is_pure_student and feature('jobboard') and jobboard_visible() %}
-{% if resources_shared_documents or resources_my_vms or resources_school_mail or resources_job_applications
+{% if resources_shared_documents or resources_dossiers or resources_my_vms or resources_school_mail or resources_job_applications
     or resources_wiki or resources_course_space or resources_quiz_programs is not empty or resources_documentation or resources_apps
     or resources_jobboard %}
 <li class="nav-item dropdown {{ resources_is_active ? 'active' }}">
@@ -58,6 +64,9 @@
            from their own file library, and reads the result back through the file's utilisations. #}
         {% if resources_shared_documents %}
             <a class="dropdown-item {{ current_route starts with 'app_student_shared_document' ? 'active' }}" href="{{ path('app_student_shared_documents') }}">{{ 'sharedDocumentNavLabel'|trans }}</a>
+        {% endif %}
+        {% if resources_dossiers %}
+            <a class="dropdown-item {{ current_route starts with 'app_my_dossier' ? 'active' }}" href="{{ path('app_my_dossiers') }}">{{ 'myDossiersNavLabel'|trans }}</a>
         {% endif %}
         {# The two entries of the retired student "Outils" dropdown - their mailbox and their
            applications. Still student-only: staff reach both through the class screens, which is

@@ -1,0 +1,55 @@
+{# Step 3 — le récapitulatif, and the only screen from which a dossier is published.
+
+   Parameters (passed with `only`): dossier, programLabels, cibleCount. #}
+{% set requiredCount = dossier.requiredDocumentCount %}
+<div class="cm-dd-pane">
+    <div class="cm-dd-recap">
+        <div class="cm-dd-recap__card">
+            <span class="cm-dd-collabel">{{ 'dossierTargetsFieldLabel'|trans }}</span>
+            <span class="cm-dd-recap__value">{{ programLabels is empty ? 'dossierCibleCountText'|trans({'%count%': cibleCount}) : programLabels|join(', ') }}</span>
+            <span class="cm-dd-recap__detail">{{ 'dossierCibleCountText'|trans({'%count%': cibleCount}) }}</span>
+        </div>
+        <div class="cm-dd-recap__card">
+            <span class="cm-dd-collabel">{{ 'dossierDocumentsColumnLabel'|trans }}</span>
+            <span class="cm-dd-recap__value">{{ 'dossierPieceCountText'|trans({'%count%': dossier.documents|length}) }}</span>
+            <span class="cm-dd-recap__detail">{{ 'dossierRequiredCountText'|trans({'%count%': requiredCount}) }} · {{ 'dossierGroupCountText'|trans({'%count%': dossier.groups|length}) }}</span>
+        </div>
+        <div class="cm-dd-recap__card">
+            <span class="cm-dd-collabel">{{ 'dossierValidatorsFieldLabel'|trans }}</span>
+            <span class="cm-dd-recap__value">{{ 'dossierPersonCountText'|trans({'%count%': dossier.validators|length}) }}</span>
+            <span class="cm-dd-recap__detail">{{ 'dossierCreatorIncludedText'|trans }}</span>
+        </div>
+    </div>
+
+    <div class="cm-dd-card">
+        <div class="cm-dd-summary__head">
+            <span class="cm-dd-collabel">{{ 'dossierDocumentColumnLabel'|trans }}</span>
+            <span class="cm-dd-collabel">{{ 'dossierGroupColumnLabel'|trans }}</span>
+            <span class="cm-dd-collabel">{{ 'dossierTypeColumnLabel'|trans }}</span>
+            <span class="cm-dd-collabel">{{ 'dossierDueColumnLabel'|trans }}</span>
+            <span class="cm-dd-collabel">{{ 'dossierValidationColumnLabel'|trans }}</span>
+        </div>
+        {% for document in dossier.documents %}
+            <div class="cm-dd-summary__row">
+                <span class="cm-dd-summary__name">{{ document.name }}{% include 'dossier/_required.html.twig' with {document: document} only %}</span>
+                <span class="cm-dd-list__cell">{{ document.group ? document.group.title : 'dossierUngroupedLabel'|trans }}</span>
+                <span class="cm-dd-list__cell">{{ document.depositType.labelKey|trans }}</span>
+                <span class="cm-dd-list__cell">{{ document.dueOn|localized_date('d MMM') }}{{ document.lateAllowed ? ' ' ~ 'dossierLateOkText'|trans }}</span>
+                <span>{% include 'dossier/_profile.html.twig' with {document: document} only %}</span>
+            </div>
+        {% else %}
+            <p class="cm-dd-list__empty">{{ 'dossierCompositionEmptyText'|trans }}</p>
+        {% endfor %}
+    </div>
+
+    <div class="cm-dd-foot cm-dd-foot--end">
+        {# « Enregistrer en brouillon » goes back to the list rather than saving: the dossier has been
+           a saved brouillon since step 1, so there is nothing left to record and a button that
+           pretended otherwise would be teaching the wrong model. #}
+        <a class="cm-dd-ghost cm-dd-ghost--quiet" href="{{ path('app_dossiers') }}">{{ 'dossierSaveDraftAction'|trans }}</a>
+        <form method="post" action="{{ path('app_dossier_publish', {id: dossier.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('dossier_publish') }}">
+            <button type="submit" class="cm-dd-btn cm-dd-btn--wide">{{ 'dossierPublishAction'|trans }}</button>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,3 @@
+{# The two badges every document row carries: what shape the dépôt takes, and whether it may be
+   skipped. Parameters: document. #}
+<span class="cm-dd-badge{{ 'url' == document.depositType.value ? ' cm-dd-badge--url' }}">{{ document.depositType.badgeKey|trans }}</span>

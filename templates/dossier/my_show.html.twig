@@ -1,0 +1,150 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ dossier.title }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'myDossiersNavLabel'|trans, url: path('app_my_dossiers')},
+        {label: dossier.title, url: path('app_my_dossier', {id: dossier.id})},
+    ]} %}
+{% endblock %}
+
+{# The points d'attention sit inside the title, as the handoff draws them: « Dossier de soutenance
+   — BTS SIO 2 » followed by « 1 correction demandée ». #}
+{% block page_title %}{{ dossier.title }}{% for alert in row.alerts %}<span class="cm-dd-tag cm-dd-titletag cm-dd--{{ alert.modifier }}">{{ alert.labelKey|trans }}</span>{% endfor %}{% endblock %}
+
+{% block main %}
+    <div class="cm-dd-page">
+        <div class="cm-dd-banner">
+            <div class="cm-dd-banner__progress">
+                <span class="cm-dd-collabel">{{ 'dossierMyProgressLabel'|trans }}</span>
+                <div class="cm-dd-progress">
+                    <span class="cm-dd-bar cm-dd-bar--lg{{ row.complete ? ' cm-dd-bar--done' }}"><span class="cm-dd-bar__fill" style="width: {{ row.percent }}%"></span></span>
+                    <span class="cm-dd-banner__frac">{{ row.settledRequired }} / {{ row.totalRequired }}</span>
+                </div>
+            </div>
+            <div class="cm-dd-banner__info">
+                <span class="cm-dd-banner__item">
+                    <span class="cm-dd-collabel">{{ 'dossierNextDeadlineLabel'|trans }}</span>
+                    <span class="cm-dd-banner__value cm-dd-banner__value--alert">{{ nextDeadline ? nextDeadline|localized_date('d MMM') : '—' }}</span>
+                </span>
+                <span class="cm-dd-banner__item">
+                    <span class="cm-dd-collabel">{{ 'dossierToSubmitLabel'|trans }}</span>
+                    <span class="cm-dd-banner__value">{{ 'dossierPieceCountText'|trans({'%count%': pendingCount}) }}</span>
+                </span>
+                <span class="cm-dd-banner__item">
+                    <span class="cm-dd-collabel">{{ 'dossierValidatorsFieldLabel'|trans }}</span>
+                    <span class="cm-dd-banner__value">{{ dossier.validators|map(v => v.politeDisplayName)|join(', ') }}</span>
+                </span>
+            </div>
+        </div>
+
+        {% for entry in groups %}
+            <div class="cm-dd-card">
+                <div class="cm-dd-cardhead">
+                    <span class="cm-dd-cardtitle">{{ entry.group ? entry.group.title : 'dossierOtherPiecesLabel'|trans }}</span>
+                    <span class="cm-dd-count">{{ 'dossierDocumentCountText'|trans({'%count%': entry.cells|length}) }}</span>
+                </div>
+                {% for cell in entry.cells %}
+                    {% set document = cell.document %}
+                    {% set isUpcoming = 'avenir' == cell.status.value %}
+                    {% set isOpen = not isUpcoming and openDocument == document.id %}
+                    {% set review = cell.lastReview %}
+                    <div class="cm-dd-mydoc">
+                        {# A document not visible yet is not foldable and exposes no action: before
+                           its date it does not exist for the cible, and the route refuses it too. #}
+                        {# An <a> with no href on an « à venir » document: it keeps the row's shape
+                           without being a link, which is exactly what « pas dépliable » means. #}
+                        <a class="cm-dd-mydoc__row {{ isOpen ? 'is-open' }} {{ isUpcoming ? 'is-locked' }}"
+                           {% if not isUpcoming %}href="{{ path('app_my_dossier', {id: dossier.id, document: isOpen ? null : document.id}) }}"{% endif %}>
+                            {% include 'dossier/_status_pill.html.twig' with {status: cell.status} only %}
+                            <span class="cm-dd-mydoc__text">
+                                <span class="cm-dd-mydoc__titleline">
+                                    <span class="cm-dd-mydoc__name">{{ document.name }}</span>
+                                    {% include 'dossier/_required.html.twig' with {document: document} only %}
+                                </span>
+                                <span class="cm-dd-mydoc__rules">
+                                    {%- if isUpcoming -%}
+                                        {{ 'dossierRuleVisibleFromText'|trans({'%date%': document.visibleFrom|localized_date('d MMM')}) }}
+                                    {%- else -%}
+                                        {% include 'dossier/_rules.html.twig' with {document: document} only %}
+                                    {%- endif -%}
+                                </span>
+                            </span>
+                            <span class="cm-dd-mydoc__end">
+                                {% include 'dossier/_status_tag.html.twig' with {status: cell.status} only %}
+                                {% if isUpcoming %}
+                                    <span class="cm-dd-btn--off">{{ 'dossierUnavailableAction'|trans }}</span>
+                                {% elseif 'valide' == cell.status.value %}
+                                    <span class="cm-dd-btn cm-dd-btn--sm">{{ 'dossierSeeAction'|trans }}</span>
+                                {% elseif cell.status.value in ['corriger', 'retard'] %}
+                                    <span class="cm-dd-btn cm-dd-btn--sm cm-dd-btn--danger">{{ ('corriger' == cell.status.value ? 'dossierResubmitAction' : ('url' == document.depositType.value ? 'dossierAddLinkAction' : 'dossierSubmitAction'))|trans }}</span>
+                                {% else %}
+                                    <span class="cm-dd-btn cm-dd-btn--sm">{{ ('url' == document.depositType.value ? 'dossierAddLinkAction' : 'dossierSubmitAction')|trans }}</span>
+                                {% endif %}
+                            </span>
+                        </a>
+
+                        {% if isOpen %}
+                            <div class="cm-dd-mydoc__panel">
+                                {% if 'corriger' == cell.status.value and review %}
+                                    <div class="cm-dd-feedback">
+                                        <span class="cm-dd-feedback__head">{{ 'dossierCorrectionRequestedByText'|trans({
+                                            '%author%': review.author ? review.author.displayName : '',
+                                            '%date%': review.createdAt|localized_date('d MMM'),
+                                        }) }}</span>
+                                        <span class="cm-dd-feedback__text">{{ review.comment }}</span>
+                                    </div>
+                                {% endif %}
+
+                                {% if accepts[document.id] %}
+                                    {% if 'url' == document.depositType.value %}
+                                        <form method="post" class="cm-dd-urlform" action="{{ path('app_my_dossier_submit', {id: dossier.id, documentId: document.id}) }}">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('dossier_submission') }}">
+                                            <input class="cm-dd-input" type="url" name="url" required placeholder="https://" value="">
+                                            <button type="submit" class="cm-dd-btn">{{ 'dossierSaveLinkAction'|trans }}</button>
+                                        </form>
+                                    {% else %}
+                                        {{ form_start(uploadForm, {action: path('app_my_dossier_submit', {id: dossier.id, documentId: document.id}), attr: {class: 'cm-dd-upload'}}) }}
+                                            {{ form_row(uploadForm.file) }}
+                                            <button type="submit" class="cm-dd-btn">{{ 'dossierSubmitAction'|trans }}</button>
+                                        {{ form_end(uploadForm) }}
+                                    {% endif %}
+                                {% endif %}
+
+                                {% if cell.submissions is not empty %}
+                                    <div class="cm-dd-versions">
+                                        <span class="cm-dd-collabel">{{ 'dossierMySubmissionsHeading'|trans }}</span>
+                                        {% for version in cell.versionsNewestFirst %}
+                                            <div class="cm-dd-version">
+                                                <span class="cm-dd-badge cm-dd-badge--ext">{{ version.extension ?? 'URL' }}</span>
+                                                {% if version.url %}
+                                                    <a class="cm-dd-version__name" href="{{ version.url }}" target="_blank" rel="noopener noreferrer">{{ version.url }}</a>
+                                                {% else %}
+                                                    <a class="cm-dd-version__name" href="{{ download_url(version.storageKey, version.originalFilename) }}" data-turbo="false">{{ version.originalFilename }}</a>
+                                                {% endif %}
+                                                <span class="cm-dd-version__date">{{ version.submittedAt|localized_date('d MMM HH:mm') }}</span>
+                                                {# « Remplacé » is a reading of « a higher version
+                                                   exists », never a stored state. #}
+                                                <span class="cm-dd-version__tag">
+                                                    {% if loop.first %}
+                                                        {% include 'dossier/_status_tag.html.twig' with {status: cell.status} only %}
+                                                    {% else %}
+                                                        <span class="cm-dd-tag cm-dd--neutral">{{ 'dossierReplacedLabel'|trans }}</span>
+                                                    {% endif %}
+                                                </span>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="cm-dd-list__empty">{{ 'dossierCompositionEmptyText'|trans }}</p>
+        {% endfor %}
+    </div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{# The création, as a component: the stepper, the three step panels and the document property
+   panel, with no page chrome of any kind.
+
+   It takes everything it draws from its parameters and posts to named routes, so it mounts
+   unchanged in a page (templates/dossier/wizard.html.twig), in a modal or in a side panel from any
+   other entry point of the platform - which is what the handoff asks of it. The breadcrumb, the h1
+   and the « Précédent / Suivant » pair are the page's, not this file's: they are the parts that
+   only make sense full screen.
+
+   Parameters (passed with `only`): dossier, step, groups, selection, isNewDocument,
+   candidatePrograms, candidateStudents, programLabels, cibleCount, depositTypes,
+   validationProfiles. #}
+<div class="cm-dd-card">
+    {% include 'dossier/wizard/_stepper.html.twig' with {dossier: dossier, step: step} only %}
+
+    {% if 1 == step %}
+        {% include 'dossier/wizard/_step_settings.html.twig' with {
+            dossier: dossier, candidatePrograms: candidatePrograms, candidateStudents: candidateStudents,
+        } only %}
+    {% elseif 2 == step %}
+        {% include 'dossier/wizard/_step_documents.html.twig' with {
+            dossier: dossier, groups: groups, selection: selection, isNewDocument: isNewDocument,
+            depositTypes: depositTypes, validationProfiles: validationProfiles,
+        } only %}
+    {% else %}
+        {% include 'dossier/wizard/_step_summary.html.twig' with {
+            dossier: dossier, programLabels: programLabels, cibleCount: cibleCount,
+        } only %}
+    {% endif %}
+</div>

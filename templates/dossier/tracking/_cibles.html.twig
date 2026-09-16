@@ -1,0 +1,69 @@
+{# Onglet 2 — par cible. One row unfolds at a time, and which one is a query parameter: the link
+   « ?cible=12 » is the open row, clicking it again closes it.
+
+   Parameters (passed with `only`): dossier, board, openCible. #}
+<div>
+    <div class="cm-dd-cibles__head">
+        <span class="cm-dd-collabel">{{ 'dossierCibleColumnLabel'|trans }}</span>
+        <span class="cm-dd-collabel">{{ 'dossierProgressRequiredColumnLabel'|trans }}</span>
+        <span class="cm-dd-collabel">{{ 'dossierLastSubmissionColumnLabel'|trans }}</span>
+        <span class="cm-dd-collabel">{{ 'dossierAttentionColumnLabel'|trans }}</span>
+        <span class="cm-dd-collabel"></span>
+    </div>
+    {% for row in board.rows %}
+        {% set isOpen = openCible == row.student.id %}
+        {% set last = row.lastSubmission %}
+        <div class="cm-dd-cibles__group">
+            <a class="cm-dd-cibles__row {{ isOpen ? 'is-open' }}"
+               href="{{ path('app_dossier_tracking', {id: dossier.id, tab: 'cibles', cible: isOpen ? null : row.student.id}) }}">
+                <span class="cm-dd-person">
+                    {% include 'dossier/_avatar.html.twig' with {user: row.student, size: 32} only %}
+                    <span class="cm-dd-person__text">
+                        <span class="cm-dd-person__name">{{ row.student.displayName ?? row.student.username }}</span>
+                        <span class="cm-dd-meta">{{ row.className }}</span>
+                    </span>
+                </span>
+                <span class="cm-dd-progress">
+                    <span class="cm-dd-bar{{ row.complete ? ' cm-dd-bar--done' }}" style="height: 8px;"><span class="cm-dd-bar__fill" style="width: {{ row.percent }}%"></span></span>
+                    <span class="cm-dd-progress__value">{{ row.settledRequired }}/{{ row.totalRequired }}</span>
+                </span>
+                <span class="cm-dd-list__cell">{{ last ? last.submittedAt|localized_date('d MMM HH:mm') : '—' }}</span>
+                <span class="cm-dd-cibles__alerts">
+                    {% for alert in row.alerts %}{% include 'dossier/_status_tag.html.twig' with {status: alert} only %}{% endfor %}
+                </span>
+                <span class="cm-dd-cibles__action">{{ (isOpen ? 'dossierFoldAction' : 'dossierDetailAction')|trans }}</span>
+            </a>
+            {% if isOpen %}
+                <div class="cm-dd-cibles__panel">
+                    {% for document in board.documents %}
+                        {% set cell = row.cells[document.id] %}
+                        <div class="cm-dd-cibles__doc">
+                            {% include 'dossier/_status_pill.html.twig' with {status: cell.status} only %}
+                            <span class="cm-dd-cibles__docname">{{ document.name }}</span>
+                            {% include 'dossier/_status_tag.html.twig' with {status: cell.status} only %}
+                            <span class="cm-dd-cibles__info">
+                                {%- if cell.latest -%}
+                                    {{ 'dossierSubmittedOnText'|trans({'%date%': cell.latest.submittedAt|localized_date('d MMM HH:mm')}) }}
+                                {%- else -%}
+                                    {{ 'dossierRuleDueText'|trans({'%date%': document.dueOn|localized_date('d MMM')})|capitalize }}
+                                {%- endif -%}
+                            </span>
+                            {# « Ouvrir la validation » on what a validateur can act on, a link to
+                               the file on what they can only read. A cible who has handed in nothing
+                               gets no action at all: relancer is not a gesture this tool offers. #}
+                            {% if cell.status.isAwaitingValidator and cell.latest %}
+                                <a class="cm-dd-link" href="{{ path('app_dossier_review', {id: dossier.id, submission: cell.latest.id}) }}">{{ 'dossierOpenValidationAction'|trans }}</a>
+                            {% elseif cell.latest and cell.latest.url %}
+                                <a class="cm-dd-link" href="{{ cell.latest.url }}" target="_blank" rel="noopener noreferrer">{{ 'dossierOpenLinkAction'|trans }}</a>
+                            {% elseif cell.latest and cell.latest.storageKey %}
+                                <a class="cm-dd-link" href="{{ download_url(cell.latest.storageKey, cell.latest.originalFilename) }}" data-turbo="false">{{ 'dossierSeeFileAction'|trans }}</a>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    {% else %}
+        <p class="cm-dd-list__empty">{{ 'dossierNoCibleText'|trans }}</p>
+    {% endfor %}
+</div>

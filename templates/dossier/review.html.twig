@@ -1,0 +1,141 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'dossierReviewTitle'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'toolsNavLabel'|trans, url: path('app_tools_random_draw')},
+        {label: 'dossierNavLabel'|trans, url: path('app_dossiers')},
+        {label: dossier.title, url: path('app_dossier_show', {id: dossier.id})},
+        {label: 'dossierReviewSegmentLabel'|trans, url: path('app_dossier_review', {id: dossier.id})},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'dossierReviewTitle'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="cm-dd-page">
+        <div class="cm-dd-review">
+            <div class="cm-dd-card">
+                <div class="cm-dd-cardhead">
+                    <span class="cm-dd-cardtitle" style="font-size: 15px;">{{ 'dossierQueueHeading'|trans }}</span>
+                    <span class="cm-dd-queue__count">{{ 'dossierDepositCountText'|trans({'%count%': queue|length}) }}</span>
+                </div>
+                {% for cell in queue %}
+                    <a class="cm-dd-queue__row {{ selected and selected.latest.id == cell.latest.id ? 'is-on' }}"
+                       href="{{ path('app_dossier_review', {id: dossier.id, submission: cell.latest.id}) }}">
+                        {% include 'dossier/_avatar.html.twig' with {user: cell.student, size: 30} only %}
+                        <span class="cm-dd-queue__text">
+                            <span class="cm-dd-queue__name">{{ cell.student.displayName ?? cell.student.username }}</span>
+                            <span class="cm-dd-queue__doc">{{ cell.document.name }}{{ cell.latest.version > 1 ? ' — v' ~ cell.latest.version }}</span>
+                        </span>
+                        <span class="cm-dd-queue__end">
+                            {% include 'dossier/_status_tag.html.twig' with {status: cell.status} only %}
+                            <span class="cm-dd-queue__date">{{ cell.latest.submittedAt|localized_date('d MMM HH:mm') }}</span>
+                        </span>
+                    </a>
+                {% else %}
+                    <p class="cm-dd-queue__empty">{{ 'dossierQueueEmptyText'|trans }}</p>
+                {% endfor %}
+            </div>
+
+            {% if selected %}
+                {% set submission = selected.latest %}
+                <div class="cm-dd-card" style="display: flex; flex-direction: column;">
+                    <div class="cm-dd-detail__head">
+                        <span class="cm-dd-detail__title">
+                            <span class="cm-dd-detail__name">{{ selected.document.name }}</span>
+                            <span class="cm-dd-detail__meta">
+                                {{ selected.student.displayName ?? selected.student.username }}{{ selected.className ? ' · ' ~ selected.className }} ·
+                                {{ 'dossierRuleDueText'|trans({'%date%': selected.document.dueOn|localized_date('d MMM')}) }} ·
+                                {{ (selected.document.lateAllowed ? 'dossierRuleLateAllowedText' : 'dossierRuleLateBlockedText')|trans }}
+                            </span>
+                        </span>
+                        <span style="margin-left: auto;">{% include 'dossier/_status_tag.html.twig' with {status: selected.status} only %}</span>
+                    </div>
+                    <div class="cm-dd-detail__body">
+                        <div class="cm-dd-detail__split">
+                            {# The aperçu is the browser's own: a PDF or an image renders, anything
+                               else keeps the hatched placeholder the handoff draws, because there is
+                               nothing honest to show for a .docx. #}
+                            <div class="cm-dd-preview">
+                                {% set key = submission.storageKey %}
+                                {% set extension = submission.extension %}
+                                {% if key and extension == 'PDF' %}
+                                    <iframe src="{{ file_url(key) }}#toolbar=0" title="{{ submission.originalFilename }}" loading="lazy"></iframe>
+                                {% elseif key and extension in ['PNG', 'JPG', 'JPEG', 'GIF', 'WEBP'] %}
+                                    <img src="{{ file_url(key) }}" alt="{{ submission.originalFilename }}" loading="lazy">
+                                {% else %}
+                                    <span class="cm-dd-preview__label">{{ 'dossierPreviewUnavailableText'|trans }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="cm-dd-detail__side">
+                                <div class="cm-dd-file">
+                                    <span class="cm-dd-badge cm-dd-badge--ext">{{ submission.extension ?? 'URL' }}</span>
+                                    <span class="cm-dd-file__text">
+                                        <span class="cm-dd-file__name">{{ submission.originalFilename ?? submission.url }}</span>
+                                        <span class="cm-dd-file__meta">
+                                            {%- if submission.byteSize %}{{ (submission.byteSize / 1048576)|number_format(1, ',', ' ') }} Mo · {% endif -%}
+                                            {{ 'dossierSubmittedOnText'|trans({'%date%': submission.submittedAt|localized_date('d MMM HH:mm')}) }}
+                                        </span>
+                                    </span>
+                                    <span class="cm-dd-file__links">
+                                        {% if submission.url %}
+                                            <a class="cm-dd-link" href="{{ submission.url }}" target="_blank" rel="noopener noreferrer">{{ 'dossierOpenLinkAction'|trans }}</a>
+                                        {% else %}
+                                            <a class="cm-dd-link" href="{{ file_url(submission.storageKey) }}" target="_blank" rel="noopener noreferrer">{{ 'dossierOpenAction'|trans }}</a>
+                                            <a class="cm-dd-link" href="{{ download_url(submission.storageKey, submission.originalFilename) }}" data-turbo="false">{{ 'dossierDownloadAction'|trans }}</a>
+                                        {% endif %}
+                                    </span>
+                                </div>
+
+                                <span class="cm-dd-collabel" style="margin-top: 4px;">{{ 'dossierHistoryHeading'|trans }}</span>
+                                {% for entry in history %}
+                                    <div class="cm-dd-history">
+                                        <span class="cm-dd-history__dot {{ loop.first ? 'cm-dd-history__dot--current' }} {{ 'correction' == entry.kind ? 'cm-dd-history__dot--fix' }}"></span>
+                                        <span class="cm-dd-history__text">
+                                            <span class="cm-dd-history__title">
+                                                {%- if 'submission' == entry.kind -%}
+                                                    {{ 'dossierHistoryDepositText'|trans({'%version%': entry.title}) }}
+                                                {%- elseif 'validated' == entry.kind -%}
+                                                    {{ 'dossierReviewValidatedLabel'|trans }}
+                                                {%- elseif 'correction' == entry.kind -%}
+                                                    {{ 'dossierReviewCorrectionRequestedLabel'|trans }}
+                                                {%- else -%}
+                                                    {{ 'dossierHistoryVisibleText'|trans }}
+                                                {%- endif -%}
+                                            </span>
+                                            <span class="cm-dd-history__meta">
+                                                {{- entry.author ? entry.author.displayName ~ ' · ' }}{{ entry.at|localized_date('visible' == entry.kind ? 'd MMM' : 'd MMM HH:mm') -}}
+                                            </span>
+                                            {% if entry.comment %}
+                                                <span class="cm-dd-history__comment">{{ entry.comment }}</span>
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <form method="post" class="cm-dd-decide" action="{{ path('app_dossier_review_decide', {id: dossier.id, submissionId: submission.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('dossier_review') }}">
+                            <textarea class="cm-dd-textarea" name="comment" rows="3" placeholder="{{ 'dossierReviewCommentPlaceholder'|trans }}"></textarea>
+                            <div class="cm-dd-decide__actions">
+                                {# The comment is mandatory on this one, and refused server-side as
+                                   well: a correction with nothing to correct is a refusal the cible
+                                   cannot act on. #}
+                                <button type="submit" name="action" value="demande_correction" class="cm-dd-ghost cm-dd-ghost--fix">{{ 'dossierRequestCorrectionAction'|trans }}</button>
+                                <button type="submit" name="action" value="validation" class="cm-dd-btn cm-dd-btn--ok">{{ 'dossierValidateAction'|trans }}</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            {% else %}
+                <div class="cm-dd-card">
+                    <p class="cm-dd-queue__empty">{{ 'dossierQueueEmptyText'|trans }}</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

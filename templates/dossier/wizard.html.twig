@@ -1,0 +1,44 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ dossier.id ? dossier.title : 'dossierNewTitle'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% set segments = [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'toolsNavLabel'|trans, url: path('app_tools_random_draw')},
+        {label: 'dossierNavLabel'|trans, url: path('app_dossiers')},
+    ] %}
+    {% include '_breadcrumb.html.twig' with {segments: segments|merge([
+        {label: dossier.id ? dossier.title : 'dossierNewTitle'|trans, url: dossier.id ? path('app_dossier_documents', {id: dossier.id}) : path('app_dossier_new')},
+    ])} %}
+{% endblock %}
+
+{% block page_title %}{{ dossier.id ? dossier.title : 'dossierNewTitle'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="cm-dd-page">
+        {% include 'dossier/wizard/_wizard.html.twig' with {
+            dossier: dossier, step: step, groups: groups, selection: selection, isNewDocument: isNewDocument,
+            candidatePrograms: candidatePrograms, candidateStudents: candidateStudents,
+            programLabels: programLabels, cibleCount: cibleCount,
+            depositTypes: depositTypes, validationProfiles: validationProfiles,
+        } only %}
+
+        {# The Précédent / Suivant pair is page chrome, not part of the component - a modal has its
+           own way out. Step 1's « Suivant » is its form's submit button, drawn here through the
+           `form` attribute rather than inside the panel: moving on from step 1 means saving, and
+           the button has to say so from the one place the other two steps put theirs. There is no
+           « Précédent » on step 1 and no « Suivant » on step 3 - neither has anywhere to go, and a
+           button that does nothing is worse than an absent one. #}
+        <div class="cm-dd-nav">
+            {% if 1 != step %}
+                <a class="cm-dd-ghost cm-dd-ghost--quiet" href="{{ path(2 == step ? 'app_dossier_settings' : 'app_dossier_documents', {id: dossier.id}) }}">{{ 'dossierPreviousAction'|trans }}</a>
+            {% endif %}
+            {% if 1 == step %}
+                <button type="submit" form="dossier-settings-form" class="cm-dd-btn cm-dd-btn--navy">{{ 'dossierNextAction'|trans }}</button>
+            {% elseif 2 == step %}
+                <a class="cm-dd-btn cm-dd-btn--navy" href="{{ path('app_dossier_summary', {id: dossier.id}) }}">{{ 'dossierNextAction'|trans }}</a>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
