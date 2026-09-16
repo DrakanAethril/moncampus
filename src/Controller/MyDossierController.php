@@ -18,6 +18,7 @@ use App\Repository\ProgramRepository;
 use App\Security\Voter\DossierVoter;
 use App\Service\Dossier\DossierBoardBuilder;
 use App\Service\Dossier\DossierStatusResolver;
+use App\Service\Dossier\DossierTargetResolver;
 use App\Service\PostValue;
 use App\Service\QueryValue;
 use App\Service\StagedUpload;
@@ -54,6 +55,7 @@ class MyDossierController extends AbstractController
         private readonly DossierBoardBuilder $boards,
         private readonly DossierStatusResolver $statuses,
         private readonly DossierSubmissionRepository $submissions,
+        private readonly DossierTargetResolver $targets,
         private readonly EntityManagerInterface $entityManager,
     ) {
     }
@@ -67,6 +69,13 @@ class MyDossierController extends AbstractController
         $rows = [];
 
         foreach ($this->dossiers->findPublishedForStudent($student) as $dossier) {
+            // The query answers « a dossier naming your class »; this takes back out the ones
+            // narrowed to an option this student does not carry. One rule, read from one place -
+            // the same one the Voter asks before letting them deposit.
+            if (!$this->targets->isTarget($dossier, $student)) {
+                continue;
+            }
+
             $rows[] = ['dossier' => $dossier, 'row' => $this->boards->buildForStudent($dossier, $student, $className)];
         }
 

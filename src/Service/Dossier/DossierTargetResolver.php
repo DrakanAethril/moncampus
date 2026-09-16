@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Service\Dossier;
 
 use App\Entity\Dossier;
+use App\Entity\DossierTargetProgram;
 use App\Entity\User;
 use App\Repository\ProgramRepository;
+use App\Repository\ProgramStudentOptionRepository;
 
 /**
  * Who a dossier is actually asked of, and what class each of them reads as.
@@ -29,6 +31,7 @@ class DossierTargetResolver
 {
     public function __construct(
         private readonly ProgramRepository $programs,
+        private readonly ProgramStudentOptionRepository $studentOptions,
     ) {
     }
 
@@ -42,10 +45,12 @@ class DossierTargetResolver
         /** @var array<int, array{student: User, className: string}> $byId */
         $byId = [];
 
-        foreach ($dossier->getTargetPrograms() as $program) {
-            $label = $program->getDisplayShortName();
+        foreach ($dossier->getTargetPrograms() as $target) {
+            // The class reads as itself even when the target is narrowed: the cible's row says
+            // « SIO-2 », and which part of SIO-2 was asked is the dossier's business, not theirs.
+            $label = $target->getProgram()?->getDisplayShortName() ?? '';
 
-            foreach ($program->getStudents() as $student) {
+            foreach ($this->studentsOf($target) as $student) {
                 $id = $student->getId();
 
                 if (null !== $id && !isset($byId[$id])) {
@@ -76,6 +81,30 @@ class DossierTargetResolver
         return $cibles;
     }
 
+    /**
+     * The students one target actually reaches: the whole class, or - once options are named - only
+     * those carrying one of them.
+     *
+     * The union, never the intersection: a student in SLAM *or* SISR is reached when both are named,
+     * which is the same rule an Assignment's option audience follows.
+     *
+     * @return list<User>
+     */
+    private function studentsOf(DossierTargetProgram $target): array
+    {
+        $program = $target->getProgram();
+
+        if (null === $program) {
+            return [];
+        }
+
+        if ($target->isWholeClass()) {
+            return array_values($program->getStudents()->toArray());
+        }
+
+        return $this->studentOptions->findStudentsForProgramAndOptions($program, $target->getOptions());
+    }
+
     /** @return list<User> */
     public function students(Dossier $dossier): array
     {
@@ -88,9 +117,23 @@ class DossierTargetResolver
             return true;
         }
 
-        foreach ($dossier->getTargetPrograms() as $program) {
-            if ($program->getStudents()->contains($user)) {
+        foreach ($dossier->getTargetPrograms() as $target) {
+            $program = $target->getProgram();
+
+            if (null === $program || !$program->getStudents()->contains($user)) {
+                continue;
+            }
+
+            if ($target->isWholeClass()) {
                 return true;
+            }
+
+            // Narrowed: being in the class is not enough, and the options are read now rather than
+            // frozen - a student who picks the option up in November is a cible from that day.
+            foreach ($this->studentOptions->findOptionsForStudent($program, $user) as $option) {
+                if ($target->getOptions()->contains($option)) {
+                    return true;
+                }
             }
         }
 
@@ -101,6 +144,8 @@ class DossierTargetResolver
      * The labels of the formations a dossier names - the « Cibles » column of the list screen.
      *
      * **Never an effectif** (handoff, « Règles produit »): « SIO-2 », not « SIO-2 · 10 étudiants ».
+     * A narrowed target does name its options - « SIO-2 (SLAM) » - because that is which part of the
+     * class is being asked, not how many of them there are.
      *
      * @return list<string>
      */
@@ -108,8 +153,8 @@ class DossierTargetResolver
     {
         $labels = [];
 
-        foreach ($dossier->getTargetPrograms() as $program) {
-            $labels[] = $program->getDisplayShortName();
+        foreach ($dossier->getTargetPrograms() as $target) {
+            $labels[] = $target->label();
         }
 
         sort($labels);

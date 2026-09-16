@@ -80,12 +80,13 @@ class Dossier
     private Collection $validators;
 
     /**
-     * Whole formations. The audience is their students, read at display time.
+     * The formations asked, each with the options it is narrowed to - see
+     * App\Entity\DossierTargetProgram, which exists because the narrowing belongs to the pair and
+     * not to the dossier.
      *
-     * @var Collection<int, Program>
+     * @var Collection<int, DossierTargetProgram>
      */
-    #[ORM\ManyToMany(targetEntity: Program::class)]
-    #[ORM\JoinTable(name: 'dossier_target_program')]
+    #[ORM\OneToMany(mappedBy: 'dossier', targetEntity: DossierTargetProgram::class, cascade: ['persist'], orphanRemoval: true)]
     private Collection $targetPrograms;
 
     /**
@@ -254,26 +255,73 @@ class Dossier
         return $creator === $user || (null !== $creator->getId() && $creator->getId() === $user->getId());
     }
 
-    /** @return Collection<int, Program> */
+    /** @return Collection<int, DossierTargetProgram> */
     public function getTargetPrograms(): Collection
     {
         return $this->targetPrograms;
     }
 
-    public function addTargetProgram(Program $program): static
+    /** Called by DossierTargetProgram's constructor; use addTargetProgram() to add one. */
+    public function addTarget(DossierTargetProgram $target): static
     {
-        if (!$this->targetPrograms->contains($program)) {
-            $this->targetPrograms->add($program);
+        if (!$this->targetPrograms->contains($target)) {
+            $this->targetPrograms->add($target);
         }
 
         return $this;
     }
 
+    /**
+     * Find-or-create, and never a duplicate: a formation is named once, and asking for it again
+     * hands back the row that already carries its options rather than starting a second, empty one.
+     */
+    public function addTargetProgram(Program $program): DossierTargetProgram
+    {
+        return $this->targetFor($program) ?? new DossierTargetProgram($this, $program);
+    }
+
     public function removeTargetProgram(Program $program): static
     {
-        $this->targetPrograms->removeElement($program);
+        $target = $this->targetFor($program);
+
+        if (null !== $target) {
+            $this->targetPrograms->removeElement($target);
+        }
 
         return $this;
+    }
+
+    public function targetFor(Program $program): ?DossierTargetProgram
+    {
+        foreach ($this->targetPrograms as $target) {
+            if ($target->getProgram() === $program
+                || (null !== $program->getId() && $target->getProgram()?->getId() === $program->getId())) {
+                return $target;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The formations themselves, without their narrowing - for the screens that only need to know
+     * which classes are involved.
+     *
+     * @return list<Program>
+     */
+    public function targetedPrograms(): array
+    {
+        $programs = [];
+
+        foreach ($this->targetPrograms as $target) {
+            $program = $target->getProgram();
+
+            if (null !== $program) {
+                $programs[] = $program;
+            }
+        }
+
+        return $programs;
     }
 
     /** @return Collection<int, User> */
