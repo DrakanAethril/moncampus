@@ -8472,6 +8472,7 @@ dossierLastSubmissionColumnLabel: 'Dernier dépôt'
 dossierAttentionColumnLabel: "Points d'attention"
 dossierRequiredShortLabel: 'Oblig.'
 
+dossierPeriodRangeText: 'du %start% au %end%'
 dossierCreatedMetaText: 'Créé le %date% · %author%'
 dossierValidatorCountText: '{1}1 validateur|]1,Inf[%count% validateurs'
 dossierDocumentCountText: '{0}Aucun document|{1}1 document|]1,Inf[%count% documents'
@@ -8506,7 +8507,7 @@ dossierDepositTypeUrlBadge: 'URL'
 
 dossierValidationProfileDepositLabel: 'Dépôt simple'
 dossierValidationProfileValidationLabel: 'Validation par un validateur'
-dossierValidationProfileValidationTag: 'Validation validateur'
+dossierValidationProfileValidationTag: 'Validation'
 dossierValidationProfileDepositHint: 'Le document est réputé rendu dès le dépôt'
 dossierValidationProfileValidationHint: "Allers/retours possibles jusqu'à validation"
 
@@ -8520,7 +8521,6 @@ dossierOtherPiecesLabel: 'Autres pièces'
 dossierReplacedLabel: 'Remplacé'
 
 dossierRuleVisibleText: 'Visible %date%'
-dossierRuleVisibleFromText: 'Visible à partir du %date%'
 dossierRuleDueText: 'rendu %date%'
 dossierRuleLateAllowedText: 'dépassement autorisé'
 dossierRuleLateBlockedText: 'dépassement bloqué'
@@ -8624,9 +8624,9 @@ dossierReviewTitle: 'Dépôts à valider'
 dossierReviewSegmentLabel: 'À valider'
 dossierQueueHeading: "File d'attente"
 dossierQueueEmptyText: 'Aucun dépôt en attente.'
-dossierPreviewUnavailableText: "aperçu indisponible\npour ce format"
 dossierOpenAction: 'Ouvrir'
 dossierDownloadAction: 'Télécharger'
+dossierPreviousVersionsText: '{1}1 version précédente|]1,Inf[%count% versions précédentes'
 dossierHistoryHeading: 'Historique'
 dossierHistoryDepositText: 'Dépôt %version%'
 dossierHistoryVisibleText: 'Document visible'
