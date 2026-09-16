@@ -1,0 +1,128 @@
+{# Step 1 — Paramètres. A single <form>: the validateurs and the cibles are fields of it, not
+   gestures of their own, which is what keeps this panel mountable in a modal where a second POST
+   would have nowhere to come back to.
+
+   Parameters (passed with `only`): dossier, candidatePrograms, candidateStudents. #}
+{% set selectedPrograms = dossier.targetedPrograms|map(p => p.id) %}
+{% set selectedStudents = dossier.targetStudents|map(s => s.id) %}
+<form id="dossier-settings-form" method="post" class="cm-dd-pane" data-controller="dossier-wizard"
+      action="{{ path(dossier.id ? 'app_dossier_settings' : 'app_dossier_new', dossier.id ? {id: dossier.id} : {}) }}">
+    <input type="hidden" name="_token" value="{{ csrf_token('dossier_settings') }}">
+
+    <div class="cm-dd-grid-lead">
+        <div class="cm-dd-field cm-dd-field--lead">
+            <label class="cm-dd-label" for="dd-title">{{ 'dossierTitleFieldLabel'|trans }}</label>
+            <input class="cm-dd-input cm-dd-input--lead" id="dd-title" name="title" required maxlength="255"
+                   value="{{ dossier.title }}" placeholder="{{ 'dossierTitlePlaceholder'|trans }}">
+        </div>
+        <div class="cm-dd-field cm-dd-field--lead">
+            <span class="cm-dd-label">{{ 'dossierPeriodFieldLabel'|trans }}</span>
+            <div class="cm-dd-period">
+                <input class="cm-dd-input" type="date" name="starts_on" aria-label="{{ 'dossierPeriodStartLabel'|trans }}"
+                       value="{{ dossier.startsOn ? dossier.startsOn|date('Y-m-d') }}">
+                <span class="cm-dd-period__arrow" aria-hidden="true">→</span>
+                <input class="cm-dd-input" type="date" name="ends_on" aria-label="{{ 'dossierPeriodEndLabel'|trans }}"
+                       value="{{ dossier.endsOn ? dossier.endsOn|date('Y-m-d') }}">
+            </div>
+        </div>
+    </div>
+
+    <div class="cm-dd-field cm-dd-field--lead">
+        <label class="cm-dd-label" for="dd-description">{{ 'dossierInstructionsFieldLabel'|trans }}</label>
+        <textarea class="cm-dd-textarea" id="dd-description" name="description" rows="3">{{ dossier.description }}</textarea>
+    </div>
+
+    <div class="cm-dd-rule"></div>
+
+    <div class="cm-dd-grid-half">
+        <div class="cm-dd-field cm-dd-field--lead">
+            <span class="cm-dd-label">{{ 'dossierValidatorsFieldLabel'|trans }}</span>
+            <div class="cm-dd-chips">
+                {% for validator in dossier.validators %}
+                    {% set isCreator = dossier.createdBy and dossier.createdBy.id == validator.id %}
+                    <span class="cm-dd-chip" data-dossier-wizard-target="validatorChip">
+                        {% include 'dossier/_avatar.html.twig' with {user: validator, size: 26} only %}
+                        <span class="cm-dd-chip__name">{{ validator.displayName ?? validator.username }}</span>
+                        <span class="cm-dd-chip__role{{ isCreator ? ' cm-dd-chip__role--creator' }}">{{ (isCreator ? 'dossierRoleCreatorLabel' : 'dossierRoleValidatorLabel')|trans }}</span>
+                        {# The créateur is validateur d'office, so their chip carries neither a cross
+                           nor a hidden input - they are put back by the controller whatever the
+                           form says. #}
+                        {% if not isCreator %}
+                            <input type="hidden" name="validators[]" value="{{ validator.id }}">
+                            <button type="button" class="cm-dd-chip__x" data-action="dossier-wizard#removeValidator"
+                                    aria-label="{{ 'dossierRemoveValidatorAction'|trans }}">×</button>
+                        {% endif %}
+                    </span>
+                {% endfor %}
+                <button type="button" class="cm-dd-chip--add" data-action="dossier-wizard#toggleValidatorPicker">{{ 'dossierAddValidatorAction'|trans }}</button>
+            </div>
+            {# Picking Users goes through tomselect + ajax, per this repository's form rule. It is
+               revealed by the dashed chip rather than drawn beside it: the handoff's row is the
+               chips and nothing else until somebody asks to add. #}
+            <div class="cm-dd-pickerbox" data-dossier-wizard-target="validatorPicker" hidden>
+                <select name="validators[]" multiple
+                        aria-label="{{ 'dossierAddValidatorAction'|trans }}"
+                        data-controller="tom-select"
+                        data-tom-select-url-value="{{ path('app_dossier_validator_search') }}"
+                        data-tom-select-placeholder-value="{{ 'dossierValidatorPickerPlaceholder'|trans }}"></select>
+            </div>
+        </div>
+
+        <div class="cm-dd-field cm-dd-field--lead">
+            <span class="cm-dd-label">{{ 'dossierTargetsFieldLabel'|trans }}</span>
+            <div class="cm-dd-seg" role="tablist">
+                <button type="button" class="cm-dd-seg__item is-on" role="tab" aria-selected="true"
+                        data-dossier-wizard-target="targetMode" data-mode="programs"
+                        data-action="dossier-wizard#showTargets">{{ 'dossierTargetClassesLabel'|trans }}</button>
+                <button type="button" class="cm-dd-seg__item" role="tab" aria-selected="false"
+                        data-dossier-wizard-target="targetMode" data-mode="students"
+                        data-action="dossier-wizard#showTargets">{{ 'dossierTargetStudentsLabel'|trans }}</button>
+            </div>
+            {# Both lists stay in the DOM whichever segment is showing: their checkboxes are one
+               submission, and a hidden panel that was emptied on switching would silently drop
+               everything the other side had ticked. #}
+            <div class="cm-dd-picklist" data-dossier-wizard-target="targetPanel" data-mode="programs">
+                {% for program in candidatePrograms %}
+                    {% set target = dossier.targetFor(program) %}
+                    {% set selectedOptions = target ? target.options|map(o => o.id) : [] %}
+                    <div class="cm-dd-pickgroup">
+                        <label class="cm-dd-pick">
+                            <input type="checkbox" name="target_programs[]" value="{{ program.id }}"{{ program.id in selectedPrograms ? ' checked' }}>
+                            <span class="cm-dd-pick__box"></span>
+                            <span class="cm-dd-pick__name">{{ program.displayShortName }}</span>
+                            {# Never an effectif: « SIO-2 », not « SIO-2 · 10 étudiants ». #}
+                            <span class="cm-dd-pick__detail">{{ 'dossierTargetKindClassLabel'|trans }}</span>
+                        </label>
+                        {# The options of a class, shown only once the class itself is ticked - the
+                           panel is `:has()`-driven, so there is no state for JavaScript to hold.
+                           Ticking none of them is « toute la classe », which is why there is no
+                           « Tous » entry: it would be a second way of saying what not choosing
+                           already says. A class with no option draws nothing at all. #}
+                        {% if program.options|length %}
+                            <div class="cm-dd-pickoptions">
+                                {% for option in program.options %}
+                                    <label class="cm-dd-pick cm-dd-pick--option">
+                                        <input type="checkbox" name="target_options[{{ program.id }}][]" value="{{ option.id }}"{{ option.id in selectedOptions ? ' checked' }}>
+                                        <span class="cm-dd-pick__box"></span>
+                                        <span class="cm-dd-pick__name">{{ option.name }}</span>
+                                        <span class="cm-dd-pick__detail">{{ 'dossierTargetKindOptionLabel'|trans }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="cm-dd-picklist" data-dossier-wizard-target="targetPanel" data-mode="students" hidden>
+                {% for entry in candidateStudents %}
+                    <label class="cm-dd-pick">
+                        <input type="checkbox" name="target_students[]" value="{{ entry.student.id }}"{{ entry.student.id in selectedStudents ? ' checked' }}>
+                        <span class="cm-dd-pick__box"></span>
+                        <span class="cm-dd-pick__name">{{ entry.student.displayName ?? entry.student.username }}</span>
+                        <span class="cm-dd-pick__detail">{{ entry.className }}</span>
+                    </label>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</form>

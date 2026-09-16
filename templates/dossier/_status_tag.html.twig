@@ -1,0 +1,5 @@
+{# The pill carrying one derived status. « Le statut est porté par un tag, une couleur ou la
+   section » - so this is the only place a status is ever written out in words.
+
+   Parameters: status (App\Enum\DossierDocumentStatus). #}
+<span class="cm-dd-tag cm-dd--{{ status.modifier }}">{{ status.labelKey|trans }}</span>

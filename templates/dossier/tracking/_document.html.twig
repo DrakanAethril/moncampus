@@ -1,0 +1,53 @@
+{# Onglet 3 — par document. The bandeau says what the document asks, the table says where each cible
+   stands on it, and the filter narrows the table without ever changing the bandeau.
+
+   Parameters (passed with `only`): dossier, document, cells, total. #}
+{% if document is null %}
+    <p class="cm-dd-list__empty">{{ 'dossierCompositionEmptyText'|trans }}</p>
+{% else %}
+    <div>
+        <div class="cm-dd-doc__banner">
+            <span class="cm-dd-doc__title">
+                <span class="cm-dd-doc__name">{{ document.name }}</span>
+                <span class="cm-dd-doc__rules">{% include 'dossier/_rules.html.twig' with {document: document} only %} · {{ document.validationProfile.labelKey|trans|lower }}</span>
+            </span>
+            <span class="cm-dd-doc__count">{{ 'dossierCibleOutOfText'|trans({'%count%': cells|length, '%total%': total}) }}</span>
+        </div>
+        <div class="cm-dd-doc__head">
+            <span class="cm-dd-collabel">{{ 'dossierCibleColumnLabel'|trans }}</span>
+            <span class="cm-dd-collabel">{{ 'dossierStatusColumnLabel'|trans }}</span>
+            <span class="cm-dd-collabel">{{ 'dossierSubmissionColumnLabel'|trans }}</span>
+            <span class="cm-dd-collabel">{{ 'dossierLastReviewColumnLabel'|trans }}</span>
+            <span class="cm-dd-collabel"></span>
+        </div>
+        {% for cell in cells %}
+            {% set review = cell.lastReview %}
+            <div class="cm-dd-doc__row">
+                <span class="cm-dd-person">
+                    {% include 'dossier/_avatar.html.twig' with {user: cell.student, size: 30} only %}
+                    <span class="cm-dd-person__name">{{ cell.student.displayName ?? cell.student.username }}</span>
+                </span>
+                <span>{% include 'dossier/_status_tag.html.twig' with {status: cell.status} only %}</span>
+                <span class="cm-dd-list__cell">{{ cell.latest ? cell.latest.submittedAt|localized_date('d MMM HH:mm') : '—' }}</span>
+                <span class="cm-dd-meta">
+                    {%- if review -%}
+                        {{ review.action.labelKey|trans }} · {{ review.author ? review.author.politeDisplayName : '' }}
+                    {%- elseif cell.status.isAwaitingValidator -%}
+                        {{ 'dossierAwaitingValidatorText'|trans }}
+                    {%- else -%}—{%- endif -%}
+                </span>
+                <span class="cm-dd-doc__action">
+                    {% if cell.status.isAwaitingValidator and cell.latest %}
+                        <a class="cm-dd-link" href="{{ path('app_dossier_review', {id: dossier.id, submission: cell.latest.id}) }}">{{ 'dossierHandleAction'|trans }}</a>
+                    {% elseif cell.latest and cell.latest.url %}
+                        <a class="cm-dd-link" href="{{ cell.latest.url }}" target="_blank" rel="noopener noreferrer">{{ 'dossierConsultAction'|trans }}</a>
+                    {% elseif cell.latest and cell.latest.storageKey %}
+                        <a class="cm-dd-link" href="{{ download_url(cell.latest.storageKey, cell.latest.originalFilename) }}" data-turbo="false">{{ 'dossierConsultAction'|trans }}</a>
+                    {% endif %}
+                </span>
+            </div>
+        {% else %}
+            <p class="cm-dd-list__empty">{{ 'dossierNoCibleWithStatusText'|trans }}</p>
+        {% endfor %}
+    </div>
+{% endif %}

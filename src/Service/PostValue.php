@@ -120,6 +120,42 @@ final class PostValue
     }
 
     /**
+     * A field of identifiers **grouped under another identifier** - `options[12][] = 3`, which is
+     * what a list of checkboxes nested under a parent row posts.
+     *
+     * Both levels are read as ids, so a forged `options[abc][]` or `options[12][]=x` simply does not
+     * appear rather than reaching the controller as a string key it would have to cast. A parent
+     * that ends up naming nothing is dropped too: « this class, no option » and « this class, only
+     * junk » are the same answer, and it is the one an empty entry already means.
+     *
+     * @return array<int, list<int>>
+     */
+    public static function intListMap(Request $request, string $key): array
+    {
+        $grouped = [];
+
+        foreach (self::all($request, $key) as $parent => $entries) {
+            if (!is_numeric($parent) || 0 === (int) $parent || !\is_array($entries)) {
+                continue;
+            }
+
+            $ids = [];
+
+            foreach ($entries as $entry) {
+                if (is_numeric($entry) && 0 !== (int) $entry) {
+                    $ids[] = (int) $entry;
+                }
+            }
+
+            if ([] !== $ids) {
+                $grouped[(int) $parent] = $ids;
+            }
+        }
+
+        return $grouped;
+    }
+
+    /**
      * True only for the forms a checkbox actually posts; everything else, including the empty
      * string and an absent field, is false.
      */

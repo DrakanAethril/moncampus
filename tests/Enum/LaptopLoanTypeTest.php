@@ -50,4 +50,21 @@ class LaptopLoanTypeTest extends TestCase
         self::assertTrue(LaptopLoanType::Cfc->hasConvention());
         self::assertFalse(LaptopLoanType::Interne->hasConvention());
     }
+
+    /**
+     * A convention prints a "date de restitution prévisionnelle", so the two types that sign one
+     * cannot be left open-ended - only the internal loan, which signs nothing, can.
+     */
+    public function testOnlyTheInternalTypeMayRunWithoutAReturnDate(): void
+    {
+        self::assertFalse(LaptopLoanType::Ufa->allowsIndefiniteDuration());
+        self::assertFalse(LaptopLoanType::Cfc->allowsIndefiniteDuration());
+        self::assertTrue(LaptopLoanType::Interne->allowsIndefiniteDuration());
+    }
+
+    /** What the lend forms hand to the front end, so the checkbox is offered on those types only. */
+    public function testTheValuesHandedToTheFrontEndAreTheSameRule(): void
+    {
+        self::assertSame(['interne'], LaptopLoanType::indefiniteDurationValues());
+    }
 }

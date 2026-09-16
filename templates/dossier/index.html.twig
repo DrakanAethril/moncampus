@@ -1,0 +1,70 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'dossierNavLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'toolsNavLabel'|trans, url: path('app_tools_random_draw')},
+        {label: 'dossierNavLabel'|trans, url: path('app_dossiers')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'dossierNavLabel'|trans }}{% endblock %}
+
+{% block page_actions %}
+    <a class="cm-dd-btn" href="{{ path('app_dossier_new') }}">{{ 'dossierNewAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    <div class="cm-dd-page">
+        <div class="cm-dd-card">
+            <div class="cm-dd-list__head">
+                <span class="cm-dd-collabel">{{ 'dossierColumnLabel'|trans }}</span>
+                <span class="cm-dd-collabel">{{ 'dossierTargetsColumnLabel'|trans }}</span>
+                <span class="cm-dd-collabel">{{ 'dossierDocumentsColumnLabel'|trans }}</span>
+                <span class="cm-dd-collabel">{{ 'dossierProgressColumnLabel'|trans }}</span>
+                <span class="cm-dd-collabel"></span>
+            </div>
+            {% for row in rows %}
+                {% set dossier = row.dossier %}
+                <div class="cm-dd-list__row">
+                    <span class="cm-dd-list__name">
+                        <a class="cm-dd-list__title" href="{{ path(dossier.published ? 'app_dossier_show' : 'app_dossier_documents', {id: dossier.id}) }}">{{ dossier.title }}</a>
+                        {# « Créé le 28 août · S. Tharaud · 3 validateurs » - the créateur reads as
+                           « S. Tharaud » and not in full, the same discretion every other list of
+                           this application applies to somebody's name. #}
+                        <span class="cm-dd-meta">{{ 'dossierCreatedMetaText'|trans({
+                            '%date%': dossier.createdAt|localized_date('d MMM'),
+                            '%author%': dossier.createdBy ? dossier.createdBy.politeDisplayName : '',
+                        }) }} · {{ 'dossierValidatorCountText'|trans({'%count%': dossier.validators|length}) }}</span>
+                    </span>
+                    <span class="cm-dd-list__cell">{{ row.cibles|join(', ') }}</span>
+                    <span class="cm-dd-list__cell">{{ 'dossierDocumentCountText'|trans({'%count%': dossier.documents|length}) }}</span>
+                    <span class="cm-dd-progress">
+                        <span class="cm-dd-bar{{ row.complete ? ' cm-dd-bar--done' }}"><span class="cm-dd-bar__fill" style="width: {{ row.percent }}%"></span></span>
+                        <span class="cm-dd-progress__value">{{ row.percent }} %</span>
+                    </span>
+                    <span class="cm-dd-list__state">
+                        <span class="cm-dd-tag cm-dd--{{ dossier.state.tagModifier }}">{{ dossier.state.labelKey|trans }}</span>
+                        {# The bin lives here as well as on the gestion screen, because a brouillon
+                           has no gestion screen to carry it: a draft opens straight on its
+                           composition, so the list is the only place it can be thrown away from. #}
+                        {% if is_granted(constant('App\\Security\\Voter\\DossierVoter::DELETE'), dossier) %}
+                            <form method="post" action="{{ path('app_dossier_delete', {id: dossier.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('dossier_delete') }}">
+                                <button type="submit" class="cm-dd-docrow__bin"
+                                        aria-label="{{ 'dossierDeleteAction'|trans }}" title="{{ 'dossierDeleteAction'|trans }}"
+                                        data-controller="confirm-submit"
+                                        data-confirm-submit-message-value="{{ 'dossierDeleteConfirmText'|trans }}"
+                                        data-action="click->confirm-submit#confirm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"></path></svg></button>
+                            </form>
+                        {% endif %}
+                    </span>
+                </div>
+            {% else %}
+                <p class="cm-dd-list__empty">{{ 'dossierListEmptyText'|trans }}</p>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

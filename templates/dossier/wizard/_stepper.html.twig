@@ -1,0 +1,26 @@
+{# The three steps of the création, freely clickable.
+
+   Steps 2 and 3 only exist once the dossier does - a composition needs a row to hang off - so on a
+   brand new dossier they are drawn, greyed and inert rather than hidden: the reader sees what the
+   création is made of before doing any of it.
+
+   Parameters (passed with `only`): dossier, step. #}
+{% set steps = [
+    {num: 1, label: 'dossierStep1Label', hint: 'dossierStep1Hint', route: dossier.id ? 'app_dossier_settings' : 'app_dossier_new'},
+    {num: 2, label: 'dossierStep2Label', hint: 'dossierStep2Hint', route: 'app_dossier_documents'},
+    {num: 3, label: 'dossierStep3Label', hint: 'dossierStep3Hint', route: 'app_dossier_summary'},
+] %}
+<div class="cm-dd-steps">
+    {% for entry in steps %}
+        {% set reachable = dossier.id or 1 == entry.num %}
+        <a class="cm-dd-step {{ step == entry.num ? 'is-on' }} {{ reachable ? '' : 'is-off' }}"
+           href="{{ reachable ? path(entry.route, dossier.id ? {id: dossier.id} : {}) : '#' }}"
+           {{ reachable ? '' : 'aria-disabled="true" tabindex="-1"' }}>
+            <span class="cm-dd-step__num">{{ entry.num }}</span>
+            <span class="cm-dd-step__text">
+                <span class="cm-dd-step__label">{{ entry.label|trans }}</span>
+                <span class="cm-dd-step__hint">{{ entry.hint|trans }}</span>
+            </span>
+        </a>
+    {% endfor %}
+</div>

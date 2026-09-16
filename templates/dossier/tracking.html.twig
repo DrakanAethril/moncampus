@@ -1,0 +1,99 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'dossierTrackingTitle'|trans({'%dossier%': dossier.title}) }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'toolsNavLabel'|trans, url: path('app_tools_random_draw')},
+        {label: 'dossierNavLabel'|trans, url: path('app_dossiers')},
+        {label: dossier.title, url: path('app_dossier_show', {id: dossier.id})},
+        {label: 'dossierTrackingSegmentLabel'|trans, url: path('app_dossier_tracking', {id: dossier.id})},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'dossierTrackingTitle'|trans({'%dossier%': dossier.title}) }}{% endblock %}
+
+{% block page_actions %}
+    <a class="cm-dd-ghost" href="{{ path('app_dossier_archive', {id: dossier.id}) }}" data-turbo="false">{{ 'dossierArchiveAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    {# The one screen of the feature that takes the window rather than the 1 140 px column: the grid
+       is cibles × documents, and a reading column would cap it at four documents. #}
+    <div class="cm-dd-page cm-dd-page--wide">
+        <div class="cm-dd-kpis">
+            <div class="cm-dd-kpi">
+                <span class="cm-dd-collabel">{{ 'dossierKpiCompleteLabel'|trans }}</span>
+                <span class="cm-dd-kpi__value">{{ board.completeCount }} / {{ board.cibleCount }}</span>
+                <span class="cm-dd-meta">{{ 'dossierKpiCompleteHint'|trans }}</span>
+            </div>
+            <div class="cm-dd-kpi">
+                <span class="cm-dd-collabel">{{ 'dossierKpiAwaitingLabel'|trans }}</span>
+                <span class="cm-dd-kpi__value">{{ queueSize }}</span>
+                <span class="cm-dd-meta">{{ 'dossierKpiAwaitingHint'|trans }}</span>
+            </div>
+            <div class="cm-dd-kpi">
+                <span class="cm-dd-collabel">{{ 'dossierKpiToCorrectLabel'|trans }}</span>
+                <span class="cm-dd-kpi__value cm-dd-kpi__value--alert">{{ board.countWithStatus(toCorrectStatus) }}</span>
+                <span class="cm-dd-meta">{{ 'dossierKpiToCorrectHint'|trans }}</span>
+            </div>
+            <div class="cm-dd-kpi">
+                <span class="cm-dd-collabel">{{ 'dossierKpiLateLabel'|trans }}</span>
+                <span class="cm-dd-kpi__value cm-dd-kpi__value--alert">{{ board.countWithStatus(lateStatus) }}</span>
+                <span class="cm-dd-meta">{{ 'dossierKpiLateHint'|trans }}</span>
+            </div>
+        </div>
+
+        <div class="cm-dd-card">
+            <div class="cm-dd-toolbar">
+                <div class="cm-dd-seg">
+                    {% for entry in [{key: 'grid', label: 'dossierViewGridLabel'}, {key: 'cibles', label: 'dossierViewCiblesLabel'}, {key: 'document', label: 'dossierViewDocumentLabel'}] %}
+                        <a class="cm-dd-seg__item {{ tab == entry.key ? 'is-on' }}"
+                           href="{{ path('app_dossier_tracking', {id: dossier.id, tab: entry.key, document: document ? document.id : null}) }}">{{ entry.label|trans }}</a>
+                    {% endfor %}
+                </div>
+
+                {% if 'document' == tab and document %}
+                    <form method="get" action="{{ path('app_dossier_tracking', {id: dossier.id}) }}">
+                        <input type="hidden" name="tab" value="document">
+                        <select class="cm-dd-select" name="document" style="width: auto;" onchange="this.form.requestSubmit()" aria-label="{{ 'dossierDocumentColumnLabel'|trans }}">
+                            {% for candidate in board.documents %}
+                                <option value="{{ candidate.id }}"{{ candidate.id == document.id ? ' selected' }}>{{ candidate.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <noscript><button type="submit" class="cm-dd-ghost">{{ 'dossierApplyFilterAction'|trans }}</button></noscript>
+                    </form>
+                    <div class="cm-dd-filters">
+                        <a class="cm-dd-filter {{ status is null ? 'is-on' }}" href="{{ path('app_dossier_tracking', {id: dossier.id, tab: 'document', document: document.id}) }}">
+                            {{ 'dossierFilterAllLabel'|trans }}<span class="cm-dd-filter__count">{{ statusCounts[''] }}</span>
+                        </a>
+                        {% for candidate in filterableStatuses %}
+                            <a class="cm-dd-filter {{ status == candidate ? 'is-on' }}"
+                               href="{{ path('app_dossier_tracking', {id: dossier.id, tab: 'document', document: document.id, status: candidate.value}) }}">
+                                {{ candidate.labelKey|trans }}<span class="cm-dd-filter__count">{{ statusCounts[candidate.value] }}</span>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <span class="cm-dd-legend">
+                    {% for candidate in legendStatuses %}
+                        <span class="cm-dd-legend__item">
+                            {% include 'dossier/_status_pill.html.twig' with {status: candidate, small: true} only %}
+                            {{ candidate.labelKey|trans }}
+                        </span>
+                    {% endfor %}
+                </span>
+            </div>
+
+            {% if 'grid' == tab %}
+                {% include 'dossier/tracking/_grid.html.twig' with {dossier: dossier, board: board} only %}
+            {% elseif 'cibles' == tab %}
+                {% include 'dossier/tracking/_cibles.html.twig' with {dossier: dossier, board: board, openCible: openCible} only %}
+            {% else %}
+                {% include 'dossier/tracking/_document.html.twig' with {dossier: dossier, document: document, cells: documentCells, total: board.cibleCount} only %}
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

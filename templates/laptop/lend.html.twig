@@ -15,8 +15,9 @@
 
 {% block main %}
     {# The loan type follows from the student's modality; the operator keeps the last word on it. #}
-    <div class="card" data-controller="laptop-loan-type"
-         data-laptop-loan-type-url-value="{{ path('app_laptops_loans_suggested_type') }}">
+    <div class="card" data-controller="laptop-loan-type laptop-loan-duration"
+         data-laptop-loan-type-url-value="{{ path('app_laptops_loans_suggested_type') }}"
+         data-laptop-loan-duration-indefinite-types-value="{{ form.vars.indefinite_duration_types|json_encode }}">
         <div class="card-body">
             <dl class="row border-bottom pb-3 mb-3">
                 <dt class="col-2">{{ 'laptopAssetTagColumnLabel'|trans }}</dt>
@@ -43,8 +44,29 @@
                         {# Said, never refused: several machines at once is an ordinary loan. #}
                         <div class="text-secondary small mt-1" data-laptop-loan-type-target="notice" hidden></div>
                     </div>
-                    <div class="col-md-6">{{ form_row(form.dueAt) }}</div>
-                    <div class="col-md-6">{{ form_row(form.loanType, {attr: {'data-laptop-loan-type-target': 'type'}}) }}</div>
+                    <div class="col-md-6">{{ form_row(form.loanType, {attr: {
+                        'data-laptop-loan-type-target': 'type',
+                        'data-laptop-loan-duration-target': 'type',
+                        'data-action': 'change->laptop-loan-duration#typeChanged',
+                    }}) }}</div>
+                    {# The two dates and the "Durée indéfinie" box on one line, as on loan_new: the
+                       box only means anything read next to the date it removes. "Date du prêt" is
+                       rendered here rather than left to form_rest, which was dropping it below the
+                       buttons. #}
+                    <div class="col-md-4">{{ form_row(form.lentAt) }}</div>
+                    <div class="col-md-4">{{ form_row(form.dueAt, {
+                        label_attr: {class: 'required', 'data-laptop-loan-duration-target': 'dueAtLabel'},
+                        attr: {'data-laptop-loan-duration-target': 'dueAt'},
+                    }) }}</div>
+                    {# Plain block, never a .d-flex: Bootstrap's display utilities are !important and
+                       would override the hidden attribute. #}
+                    <div class="col-md-4" data-laptop-loan-duration-target="wrapper" hidden>
+                        <div class="form-label d-none d-md-block" aria-hidden="true">&nbsp;</div>
+                        {{ form_row(form.indefiniteDuration, {attr: {
+                            'data-laptop-loan-duration-target': 'checkbox',
+                            'data-action': 'change->laptop-loan-duration#toggle',
+                        }}) }}
+                    </div>
                     <div class="col-md-6">{{ form_row(form.lentConditionType) }}</div>
                     <div class="col-12">{{ form_row(form.lentStateNotes) }}</div>
                 </div>

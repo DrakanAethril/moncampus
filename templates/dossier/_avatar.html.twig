@@ -1,0 +1,12 @@
+{# The cible's or validateur's mark: their photo when the platform has one, their initials
+   otherwise. The box is the handoff's own - a rounded square of 26 to 32 px - either way, so the
+   two never shift the row they sit in.
+
+   Parameters: user, size (26 | 28 | 30 | 32, default 28). #}
+{% set size = size|default(28) %}
+{% set url = avatar_url(user) %}
+{% if url %}
+    <img class="cm-dd-avatar{{ 28 != size ? ' cm-dd-avatar--' ~ size }}" src="{{ url }}" alt="" width="{{ size }}" height="{{ size }}">
+{% else %}
+    <span class="cm-dd-avatar{{ 28 != size ? ' cm-dd-avatar--' ~ size }}" aria-hidden="true">{{ user.initials ?? (user.username|slice(0, 1)|upper) }}</span>
+{% endif %}

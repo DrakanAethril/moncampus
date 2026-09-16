@@ -1,0 +1,51 @@
+{% extends 'layout/app.html.twig' %}
+
+{# « Mes dossiers » - the page the cible's breadcrumb hangs off. Not drawn in the handoff, which
+   opens straight onto one dossier, so it is deliberately the same table as the validateurs' list
+   with the two columns a student has no use for taken out: who created the dossier, and how many
+   validateurs follow it. #}
+
+{% block title %}{{ 'myDossiersNavLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'myDossiersNavLabel'|trans, url: path('app_my_dossiers')},
+    ]} %}
+{% endblock %}
+
+{% block page_title %}{{ 'myDossiersNavLabel'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="cm-dd-page">
+        <div class="cm-dd-card">
+            <div class="cm-dd-list__head">
+                <span class="cm-dd-collabel">{{ 'dossierColumnLabel'|trans }}</span>
+                <span class="cm-dd-collabel">{{ 'dossierPeriodColumnLabel'|trans }}</span>
+                <span class="cm-dd-collabel">{{ 'dossierDocumentsColumnLabel'|trans }}</span>
+                <span class="cm-dd-collabel">{{ 'dossierMyProgressColumnLabel'|trans }}</span>
+                <span class="cm-dd-collabel"></span>
+            </div>
+            {% for entry in rows %}
+                {% set dossier = entry.dossier %}
+                <div class="cm-dd-list__row">
+                    <span class="cm-dd-list__name">
+                        <a class="cm-dd-list__title" href="{{ path('app_my_dossier', {id: dossier.id}) }}">{{ dossier.title }}</a>
+                    </span>
+                    <span class="cm-dd-list__cell">{{ dossier.endsOn ? 'dossierRuleDueText'|trans({'%date%': dossier.endsOn|localized_date('d MMM')}) : '—' }}</span>
+                    <span class="cm-dd-list__cell">{{ 'dossierDocumentCountText'|trans({'%count%': dossier.documents|length}) }}</span>
+                    <span class="cm-dd-progress">
+                        <span class="cm-dd-bar{{ entry.row.complete ? ' cm-dd-bar--done' }}"><span class="cm-dd-bar__fill" style="width: {{ entry.row.percent }}%"></span></span>
+                        <span class="cm-dd-progress__value">{{ entry.row.settledRequired }} / {{ entry.row.totalRequired }}</span>
+                    </span>
+                    <span class="cm-dd-list__state">
+                        {% set alerts = entry.row.alerts %}
+                        {% if alerts is not empty %}{% include 'dossier/_status_tag.html.twig' with {status: alerts|first} only %}{% endif %}
+                    </span>
+                </div>
+            {% else %}
+                <p class="cm-dd-list__empty">{{ 'myDossiersEmptyText'|trans }}</p>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

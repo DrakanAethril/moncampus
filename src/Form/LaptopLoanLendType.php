@@ -10,11 +10,16 @@ use App\Enum\LaptopLoanType;
 use Doctrine\ORM\EntityRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormEvent;
+use Symfony\Component\Form\FormEvents;
+use Symfony\Component\Form\FormInterface;
+use Symfony\Component\Form\FormView;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 // The laptop and borrower are set on the entity by the controller before this form is built,
@@ -44,11 +49,26 @@ class LaptopLoanLendType extends AbstractType
                 'html5' => true,
                 'input' => 'datetime_immutable',
             ])
+            // Not 'required' at the form level, because whether it is depends on the loan type
+            // picked just above: mandatory on the two conventions, optional on an internal loan
+            // whose "Durée indéfinie" box is ticked. What imposes it is LaptopLoan's own
+            // Assert\Callback; the asterisk and the html5 required attribute are put back on the
+            // client by laptop_loan_duration_controller.js, which knows the same rule.
             ->add('dueAt', DateType::class, [
                 'label' => 'laptopLoanDueAtFieldLabel',
                 'widget' => 'single_text',
                 'html5' => true,
                 'input' => 'datetime_immutable',
+                'required' => false,
+            ])
+            // Unmapped: what it means on the entity is simply "no due date", so there is nothing to
+            // store beyond LaptopLoan::$dueAt staying null (see isIndefinite()). Offered on the
+            // internal loan only, and ticked by default there - the front end does that, since the
+            // type is chosen in the browser; PRE_SUBMIT below is what makes the choice binding.
+            ->add('indefiniteDuration', CheckboxType::class, [
+                'label' => 'laptopLoanIndefiniteDurationFieldLabel',
+                'mapped' => false,
+                'required' => false,
             ])
             // Mandatory despite the absence of an asterisk on the mockup: the entity requires the
             // condition and its notes at lending time (non-null column + Assert), which is what
@@ -99,6 +119,49 @@ class LaptopLoanLendType extends AbstractType
                 'label' => 'lendLaptopSubmitAction',
             ])
         ;
+
+        // Reading the box back: a submitted "Durée indéfinie" empties the return date rather than
+        // merely allowing it to be empty, so ticking it after having typed a date does what it says.
+        // It is only honoured for a type that allows it - a box left ticked while the operator
+        // switches back to a convention must not carry an indefinite loan through, and the box is
+        // unticked in the same breath so a re-render shows the state that was actually kept.
+        //
+        // PRE_SUBMIT rather than POST_SUBMIT: the date has to be gone before the form maps it onto
+        // the entity and the validator reads it, not after.
+        $builder->addEventListener(FormEvents::PRE_SUBMIT, static function (FormEvent $event): void {
+            $data = $event->getData();
+
+            if (!\is_array($data) || !($data['indefiniteDuration'] ?? false)) {
+                return;
+            }
+
+            $loanType = \is_string($data['loanType'] ?? null) ? LaptopLoanType::tryFrom($data['loanType']) : null;
+
+            if (true === $loanType?->allowsIndefiniteDuration()) {
+                $data['dueAt'] = '';
+            } else {
+                unset($data['indefiniteDuration']);
+            }
+
+            $event->setData($data);
+        });
+
+        // The box starts out reflecting the loan it is shown on, which on a fresh form is simply
+        // "no type picked yet, so nothing indefinite".
+        $builder->addEventListener(FormEvents::PRE_SET_DATA, static function (FormEvent $event): void {
+            $loan = $event->getData();
+
+            if ($loan instanceof LaptopLoan && $loan->isIndefinite() && true === $loan->getLoanType()?->allowsIndefiniteDuration()) {
+                $event->getForm()->get('indefiniteDuration')->setData(true);
+            }
+        });
+    }
+
+    // Handed to the templates so the front end reads the same rule the enum holds, rather than
+    // hard-coding "interne" in a Stimulus controller.
+    public function buildView(FormView $view, FormInterface $form, array $options): void
+    {
+        $view->vars['indefinite_duration_types'] = LaptopLoanType::indefiniteDurationValues();
     }
 
     public function configureOptions(OptionsResolver $resolver): void

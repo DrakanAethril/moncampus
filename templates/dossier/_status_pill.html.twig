@@ -1,0 +1,7 @@
+{# The square pastille - 26 px in a grid cell and beside a document, 18 px in the legend. The label
+   travels as the title attribute: a glyph alone is not a status for somebody reading with a screen
+   reader, and the grid has no room for a word.
+
+   Parameters: status, small (bool, default false). #}
+<span class="cm-dd-pill{{ small|default(false) ? ' cm-dd-pill--sm' }} cm-dd--{{ status.modifier }}"
+      title="{{ status.labelKey|trans }}"><span aria-hidden="true">{{ status.glyph }}</span><span class="visually-hidden">{{ status.labelKey|trans }}</span></span>
