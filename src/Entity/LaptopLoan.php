@@ -9,6 +9,7 @@ use App\Repository\LaptopLoanRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 /**
  * One lend/return cycle for a Laptop. The full lending history of a laptop (or of a borrower) is
@@ -49,8 +50,11 @@ class LaptopLoan
     #[ORM\Column(name: 'lent_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $lentAt;
 
-    #[ORM\Column(name: 'due_at', type: Types::DATETIME_IMMUTABLE)]
-    #[Assert\NotNull]
+    // Null means the loan runs for as long as it needs to - see isIndefinite(), and the class-level
+    // Assert\Callback below which is what keeps that from being a blank field on a loan that owes a
+    // signed convention. Nullable in the database for the same reason: an internal loan genuinely
+    // has no due date, rather than one nobody got round to entering.
+    #[ORM\Column(name: 'due_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $dueAt = null;
 
     #[ORM\Column(name: 'lent_state_notes', type: Types::TEXT)]
@@ -309,8 +313,40 @@ class LaptopLoan
         return null !== $this->returnedAt;
     }
 
+    /**
+     * A loan with no return date at all: it runs until the machine comes back, and can never be
+     * overdue (isOverdue() reads the same null).
+     *
+     * Only the types that allow it get here - see LaptopLoanType::allowsIndefiniteDuration() and
+     * validateDueDate() below.
+     */
+    public function isIndefinite(): bool
+    {
+        return null === $this->dueAt;
+    }
+
     public function isOverdue(): bool
     {
         return !$this->isReturned() && null !== $this->dueAt && $this->dueAt < new \DateTimeImmutable();
+    }
+
+    /**
+     * A return date is mandatory on every loan that is not internal.
+     *
+     * Expressed here rather than as an Assert\NotNull on the property because the answer depends on
+     * another field: the column had to become nullable for the internal case, and without this the
+     * two conventions - whose paper carries a "date de restitution prévisionnelle" - could be saved
+     * with that line empty.
+     */
+    #[Assert\Callback]
+    public function validateDueDate(ExecutionContextInterface $context): void
+    {
+        if (null !== $this->dueAt || $this->loanType?->allowsIndefiniteDuration()) {
+            return;
+        }
+
+        $context->buildViolation('laptopLoanDueAtRequiredMessage')
+            ->atPath('dueAt')
+            ->addViolation();
     }
 }

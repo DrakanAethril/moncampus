@@ -1711,6 +1711,9 @@ laptopLoanBorrowerAnyAccountHint: "N'importe quel compte actif : étudiant, ense
 laptopLoanBorrowerAlreadyHoldsNoticeText: 'Cette personne a déjà %count% machine(s) en cours de prêt.'
 laptopLoanDueAtFieldLabel: 'Retour prévu le'
 laptopLoanLentAtFieldLabel: 'Date du prêt'
+laptopLoanIndefiniteDurationFieldLabel: 'Durée indéfinie'
+laptopLoanIndefiniteDurationShortLabel: 'Indéterminée'
+laptopLoanDueAtRequiredMessage: "Indiquez la date de retour prévue : seul un prêt interne peut se passer d'échéance."
 laptopLoanLentStateNotesPlaceholder: "Rayure sur le capot, chargeur USB-C et housse n° 12 remis à l'étudiant…"
 laptopLoanConditionFieldLabel: 'État constaté'
 laptopConditionPlaceholder: 'Choisissez un état'

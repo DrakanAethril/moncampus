@@ -580,7 +580,7 @@ class LaptopController extends AbstractController
                     $this->userLabel($loan->getLentBy()),
                     $loan->getLentAt()->format('d/m/Y H:i'),
                     $loan->getLentConditionType()?->getName() ?? '',
-                    $loan->getDueAt()?->format('d/m/Y') ?? '',
+                    $statusFormatter->dueAtLabel($loan),
                     $loan->getReturnedAt()?->format('d/m/Y H:i') ?? '',
                     $loan->getReturnConditionType()?->getName() ?? '',
                     $statusFormatter->loanLabel($loan),
@@ -727,7 +727,9 @@ class LaptopController extends AbstractController
             'lentAt' => $loan->getLentAt()->format('d/m/Y'),
             // One fifth column whose meaning follows the list's scope: the due date on a running
             // loan, the return date on a closed one. Its header is server-rendered to match.
-            'deadline' => ($loan->isReturned() ? $loan->getReturnedAt() : $loan->getDueAt())?->format('d/m/Y') ?? '—',
+            'deadline' => $loan->isReturned()
+                ? ($loan->getReturnedAt()?->format('d/m/Y') ?? '—')
+                : $statusFormatter->dueAtLabel($loan),
             'canReturn' => !$loan->isReturned(),
             'returnUrl' => !$loan->isReturned() ? $this->generateUrl('app_laptops_return', ['id' => $loan->getLaptop()->getId()]) : null,
             'conventionUrl' => $printable ? $this->generateUrl('app_laptops_loan_convention', ['id' => $loan->getId()]) : null,
@@ -751,7 +753,7 @@ class LaptopController extends AbstractController
             'borrowerName' => $this->userLabel($loan->getBorrower()),
             'lentByName' => $this->userLabel($loan->getLentBy()),
             'lentAt' => $loan->getLentAt()->format('d/m/Y H:i'),
-            'dueAt' => $loan->getDueAt()?->format('d/m/Y') ?? '—',
+            'dueAt' => $statusFormatter->dueAtLabel($loan),
             'lentStateNotes' => $loan->getLentStateNotes(),
             'lentConditionName' => $loan->getLentConditionType()?->getName(),
             'lentConditionColor' => $loan->getLentConditionType()?->getColor(),
