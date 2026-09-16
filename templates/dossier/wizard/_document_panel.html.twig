@@ -1,0 +1,97 @@
+{# The property panel of one document — every attribute a document carries, and nothing else.
+
+   Cut out of the page on purpose: it is the one panel of this feature another entry point would
+   want on its own (« ajouter une pièce à un dossier existant », from a class screen), so it takes
+   its whole state from the parameters below and posts to a route named by them.
+
+   Parameters (passed with `only`): dossier, document (null for a new one), groups. #}
+{% set isNew = document is null %}
+<form method="post" class="cm-dd-compose__panel" action="{{ path('app_dossier_document_save', {id: dossier.id}) }}">
+    <input type="hidden" name="_token" value="{{ csrf_token('dossier_document') }}">
+    {% if not isNew %}<input type="hidden" name="document_id" value="{{ document.id }}">{% endif %}
+
+    <span class="cm-dd-panel__title">{{ (isNew ? 'dossierDocumentNewTitle' : 'dossierDocumentPropertiesTitle')|trans }}</span>
+
+    <div class="cm-dd-field">
+        <label class="cm-dd-label" for="dd-doc-name">{{ 'dossierDocumentNameFieldLabel'|trans }}</label>
+        <input class="cm-dd-input" id="dd-doc-name" name="name" required maxlength="255"
+               placeholder="{{ 'dossierDocumentNamePlaceholder'|trans }}" value="{{ isNew ? '' : document.name }}">
+    </div>
+
+    <div class="cm-dd-field">
+        <label class="cm-dd-label" for="dd-doc-group">{{ 'dossierDocumentGroupFieldLabel'|trans }}</label>
+        <select class="cm-dd-select" id="dd-doc-group" name="group_id">
+            <option value="">{{ 'dossierDocumentNoGroupOption'|trans }}</option>
+            {% for group in groups %}
+                <option value="{{ group.id }}"{{ not isNew and document.group and document.group.id == group.id ? ' selected' }}>{{ group.title }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div style="display: flex; gap: 14px;">
+        <div class="cm-dd-field" style="flex: 1;">
+            <span class="cm-dd-label">{{ 'dossierDocumentDepositTypeFieldLabel'|trans }}</span>
+            {# The segment lights from the radio it holds - `:has(input:checked)` - so there is no
+               state for JavaScript to keep in step with the form's own. #}
+            <div class="cm-dd-seg">
+                {% for type in depositTypes %}
+                    <label class="cm-dd-seg__item">
+                        <input type="radio" name="deposit_type" value="{{ type.value }}"
+                               {{ (isNew ? 'upload' : document.depositType.value) == type.value ? 'checked' }}>
+                        {{ type.labelKey|trans }}
+                    </label>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="cm-dd-field" style="flex: none;">
+            <span class="cm-dd-label">{{ 'dossierDocumentRequiredFieldLabel'|trans }}</span>
+            <label class="cm-dd-switchbox">
+                <input type="checkbox" name="required" value="1"{{ isNew or document.required ? ' checked' }}>
+                <span class="cm-dd-switch"><span class="cm-dd-switch__knob"></span></span>
+                <span class="cm-dd-switchbox__text">
+                    <span class="cm-dd-switchbox__on">{{ 'yesLabel'|trans }}</span>
+                    <span class="cm-dd-switchbox__off">{{ 'noLabel'|trans }}</span>
+                </span>
+            </label>
+        </div>
+    </div>
+
+    <div style="display: flex; gap: 14px;">
+        <div class="cm-dd-field" style="flex: 1;">
+            <label class="cm-dd-label" for="dd-doc-visible">{{ 'dossierDocumentVisibleFromFieldLabel'|trans }}</label>
+            <input class="cm-dd-input" type="date" id="dd-doc-visible" name="visible_from" required
+                   value="{{ isNew ? (dossier.startsOn ? dossier.startsOn|date('Y-m-d') : 'now'|date('Y-m-d')) : document.visibleFrom|date('Y-m-d') }}">
+        </div>
+        <div class="cm-dd-field" style="flex: 1;">
+            <label class="cm-dd-label" for="dd-doc-due">{{ 'dossierDocumentDueOnFieldLabel'|trans }}</label>
+            <input class="cm-dd-input" type="date" id="dd-doc-due" name="due_on" required
+                   value="{{ isNew ? (dossier.endsOn ? dossier.endsOn|date('Y-m-d') : 'now'|date('Y-m-d')) : document.dueOn|date('Y-m-d') }}">
+        </div>
+    </div>
+
+    <label class="cm-dd-switchrow">
+        <input type="checkbox" name="late_allowed" value="1"{{ not isNew and document.lateAllowed ? ' checked' }}>
+        <span class="cm-dd-switch"><span class="cm-dd-switch__knob"></span></span>
+        <span class="cm-dd-switchrow__text">{{ 'dossierDocumentLateAllowedFieldLabel'|trans }}</span>
+    </label>
+
+    <div class="cm-dd-field">
+        <span class="cm-dd-label">{{ 'dossierDocumentValidationProfileFieldLabel'|trans }}</span>
+        {% for profile in validationProfiles %}
+            <label class="cm-dd-radiocard">
+                <input type="radio" name="validation_profile" value="{{ profile.value }}"
+                       {{ (isNew ? 'depot' : document.validationProfile.value) == profile.value ? 'checked' }}>
+                <span class="cm-dd-radiocard__dot"></span>
+                <span class="cm-dd-radiocard__text">
+                    <span class="cm-dd-radiocard__label">{{ profile.labelKey|trans }}</span>
+                    <span class="cm-dd-radiocard__hint">{{ profile.hintKey|trans }}</span>
+                </span>
+            </label>
+        {% endfor %}
+    </div>
+
+    <div class="cm-dd-panel__foot">
+        <button type="submit" class="cm-dd-btn">{{ 'dossierDocumentSaveAction'|trans }}</button>
+        <a class="cm-dd-ghost cm-dd-ghost--quiet" href="{{ path('app_dossier_documents', {id: dossier.id}) }}">{{ 'cancelAction'|trans }}</a>
+    </div>
+</form>

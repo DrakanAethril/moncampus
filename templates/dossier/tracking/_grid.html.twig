@@ -1,0 +1,35 @@
+{# Onglet 1 — la grille cibles × documents. One pastille per crossing, its label carried by the
+   title attribute because the cell has no room for a word.
+
+   Parameters (passed with `only`): dossier, board. #}
+<div class="cm-dd-matrix" style="--dd-cols: {{ board.documents|length }};">
+    <div class="cm-dd-matrix__head">
+        <span class="cm-dd-collabel" style="padding-left: 4px;">{{ 'dossierCibleColumnLabel'|trans }}</span>
+        {% for document in board.documents %}
+            <span class="cm-dd-matrix__doc">
+                <span class="cm-dd-matrix__docname" title="{{ document.name }}">{{ document.name }}</span>
+                <span class="cm-dd-matrix__docdue">{{ document.dueOn|localized_date('d MMM') }}</span>
+            </span>
+        {% endfor %}
+        <span class="cm-dd-collabel" style="text-align: right;">{{ 'dossierRequiredShortLabel'|trans }}</span>
+    </div>
+    {% for row in board.rows %}
+        <div class="cm-dd-matrix__row">
+            <span class="cm-dd-matrix__cible">
+                {% include 'dossier/_avatar.html.twig' with {user: row.student, size: 28} only %}
+                <span class="cm-dd-matrix__name">{{ row.student.displayName ?? row.student.username }}</span>
+            </span>
+            {% for document in board.documents %}
+                <span class="cm-dd-matrix__cell">
+                    {% include 'dossier/_status_pill.html.twig' with {status: row.cells[document.id].status} only %}
+                </span>
+            {% endfor %}
+            <span class="cm-dd-matrix__end">
+                <span class="cm-dd-bar{{ row.complete ? ' cm-dd-bar--done' }}"><span class="cm-dd-bar__fill" style="width: {{ row.percent }}%"></span></span>
+                <span class="cm-dd-matrix__frac">{{ row.settledRequired }}/{{ row.totalRequired }}</span>
+            </span>
+        </div>
+    {% else %}
+        <p class="cm-dd-list__empty">{{ 'dossierNoCibleText'|trans }}</p>
+    {% endfor %}
+</div>

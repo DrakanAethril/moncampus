@@ -470,7 +470,7 @@
                         {% set tools_run = feature('class_tools') or feature('word_cloud') or feature('quiz_live') %}
                         {% set tools_prepare = feature('progression') or feature('sequence_library') or feature('quiz_library')
                             or feature('file_library') or feature('surveys') or feature('content_sharing') or feature('audio') %}
-                        {% set tools_follow = feature('lesson_log') or feature('student_work') or feature('quiz_library')
+                        {% set tools_follow = feature('lesson_log') or feature('student_work') or feature('dossiers') or feature('quiz_library')
                             or feature('gradebook_entry') or feature('job_search') %}
                         {# « Au-delà d'un diplôme » - what happens to a student after the formation.
                            A group of its own rather than an entry under « Suivre les étudiants »:
@@ -488,7 +488,8 @@
                                 or current_route starts with 'app_file_library'
                                 or current_route starts with 'app_shares'
                                 or current_route starts with 'app_survey'
-                                or current_route starts with 'app_jobboard' %}
+                                or current_route starts with 'app_jobboard'
+                                or current_route starts with 'app_dossier' %}
                             <li class="nav-item dropdown {{ tools_is_active ? 'active' }}">
                                 <a class="nav-link dropdown-toggle" href="#navbar-tools" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ tools_is_active ? ' aria-current="page"' }}>
                                     <span class="nav-link-title">{{ 'toolsNavLabel'|trans }}</span>
@@ -556,6 +557,12 @@
                                     <h6 class="dropdown-header">{{ 'toolsGroupFollowStudentsLabel'|trans }}</h6>
                                     {% if feature('lesson_log') %}<a class="dropdown-item {{ current_route == 'app_lesson_logs' ? 'active' }}" href="{{ path('app_lesson_logs') }}">{{ 'lessonLogPageHeading'|trans }}</a>{% endif %}
                                     {% if feature('student_work') %}<a class="dropdown-item" href="{{ path('app_assignments') }}">{{ 'toolsStudentWorkNavLabel'|trans }}</a>{% endif %}
+                                    {# « Dossiers documentaires », right after « Travail étudiant » and
+                                       before « Carnet de notes », where the handoff's menu screen puts
+                                       it. It belongs to « Suivre les étudiants » and not to « Préparer
+                                       le contenu »: what is prepared is the dossier, what the entry
+                                       opens on is who has handed in what. #}
+                                    {% if feature('dossiers') %}<a class="dropdown-item {{ current_route starts with 'app_dossier' ? 'active' }}" href="{{ path('app_dossiers') }}">{{ 'dossierNavLabel'|trans }}</a>{% endif %}
                                     {% if feature('quiz_library') %}<a class="dropdown-item {{ current_route == 'app_tools_quiz' ? 'active' }}" href="{{ path('app_tools_quiz') }}">{{ 'quizTrackingPageHeading'|trans }}</a>{% endif %}
                                     {% if feature('gradebook_entry') %}<a class="dropdown-item {{ current_route == 'app_tools_gradebook' ? 'active' }}" href="{{ path('app_tools_gradebook') }}">{{ 'gradebookNavLabel'|trans }}</a>{% endif %}
                                     {% if feature('job_search') %}<a class="dropdown-item {{ current_route == 'app_tools_job_search' ? 'active' }}" href="{{ path('app_tools_job_search') }}">{{ 'jobSearchTrackingNavLabel'|trans }}</a>{% endif %}

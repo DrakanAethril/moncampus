@@ -32,6 +32,7 @@ enum Feature: string
 
     case LessonLog = 'lesson_log';
     case StudentWork = 'student_work';
+    case Dossiers = 'dossiers';
     case QuizLibrary = 'quiz_library';
     case QuizTake = 'quiz_take';
     case QuizLive = 'quiz_live';
@@ -128,7 +129,8 @@ enum Feature: string
             self::Progression, self::SequenceLibrary, self::SequenceImport, self::CourseSpace,
             self::Video, self::Audio, self::FileLibrary, self::SharedDocuments,
             self::ContentSharing, self::Wiki, self::Documentation, self::Surveys,
-            self::ClassTools, self::WordCloud, self::TsfReferential, self::Game => FeatureFamily::Pedagogy,
+            self::ClassTools, self::WordCloud, self::TsfReferential, self::Game,
+            self::Dossiers => FeatureFamily::Pedagogy,
 
             self::Timetable, self::TimetableSettings, self::EvaluationPlanning,
             self::GradebookEntry, self::GradebookStudent, self::SelfAssessment,
@@ -182,6 +184,7 @@ enum Feature: string
         return match ($this) {
             self::LessonLog => 'featureLessonLogLabel',
             self::StudentWork => 'featureStudentWorkLabel',
+            self::Dossiers => 'featureDossiersLabel',
             self::QuizLibrary => 'featureQuizLibraryLabel',
             self::QuizTake => 'featureQuizTakeLabel',
             self::QuizLive => 'featureQuizLiveLabel',
@@ -309,6 +312,13 @@ enum Feature: string
             // it on the day it ships. That is the request, and it is also the only safe default:
             // the offers arrive from an outside agent, and an establishment decides for itself when
             // its students are shown them.
+
+            // « Dossiers documentaires » is named by no role either, and for the same reason as the
+            // Jobboard one line up: the tool ships switched off for everybody, the administrator
+            // being the only one who sees it on the day it lands. It is not half-built - the
+            // validateur's screen and the cible's screen are there - but who collects what from
+            // whom is an establishment's own decision, and it makes it by ticking a line in
+            // Gestion > Fonctionnalités rather than by discovering the entry in a menu.
 
             // The machines are handed out in class, so the two roles that sit in one.
             self::MyVms => ['ROLE_STUDENT', 'ROLE_TEACHER'],

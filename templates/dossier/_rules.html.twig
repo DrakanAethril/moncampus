@@ -1,0 +1,9 @@
+{# « Visible 1 sept. · rendu 15 oct. · dépassement bloqué · fichier » - the one line that says
+   everything a document asks, composed here and nowhere else so the four screens that draw it
+   cannot word it differently.
+
+   Parameters: document. #}
+{{- 'dossierRuleVisibleText'|trans({'%date%': document.visibleFrom|localized_date('d MMM')}) }} ·
+{{ 'dossierRuleDueText'|trans({'%date%': document.dueOn|localized_date('d MMM')}) }} ·
+{{ (document.lateAllowed ? 'dossierRuleLateAllowedText' : 'dossierRuleLateBlockedText')|trans }} ·
+{{ document.depositType.ruleKey|trans -}}

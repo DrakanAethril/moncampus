@@ -1,0 +1,79 @@
+{# Step 2 — la composition. The list on the left, the property panel on the right.
+
+   Which document the panel is editing is a **query parameter**, not browser state: a row is a plain
+   link, « + Document » is a plain link, and the save that follows comes back on the same URL. That
+   is what makes this panel work with no JavaScript at all and what makes « regarde le Rapport de
+   stage » a link somebody can send.
+
+   Parameters (passed with `only`): dossier, groups, selection, isNewDocument, depositTypes,
+   validationProfiles. #}
+<div class="cm-dd-compose">
+    <div class="cm-dd-compose__list">
+        <div class="cm-dd-compose__bar">
+            <span class="cm-dd-label">{{ 'dossierCompositionLabel'|trans }}</span>
+            <span style="margin-left: auto;"></span>
+            <form method="post" class="cm-dd-newgroup" action="{{ path('app_dossier_group_create', {id: dossier.id}) }}"
+                  data-controller="dossier-newgroup">
+                <input type="hidden" name="_token" value="{{ csrf_token('dossier_group') }}">
+                <input class="cm-dd-input" type="text" name="title" maxlength="255" hidden required
+                       placeholder="{{ 'dossierGroupNamePlaceholder'|trans }}" data-dossier-newgroup-target="input">
+                <button type="submit" class="cm-dd-ghost" data-action="dossier-newgroup#open">{{ 'dossierAddGroupAction'|trans }}</button>
+            </form>
+            <a class="cm-dd-btn cm-dd-btn--sm" href="{{ path('app_dossier_documents', {id: dossier.id, document: 'new'}) }}">{{ 'dossierAddDocumentAction'|trans }}</a>
+        </div>
+
+        {% for entry in groups %}
+            <div class="cm-dd-compose__group">
+                <div class="cm-dd-compose__title">
+                    <span class="cm-dd-compose__name">{{ entry.group ? entry.group.title : 'dossierUngroupedLabel'|trans }}</span>
+                    <span class="cm-dd-meta">{{ 'dossierDocumentCountText'|trans({'%count%': entry.documents|length}) }}</span>
+                </div>
+                <div class="cm-dd-card">
+                    {% for document in entry.documents %}
+                        <div class="cm-dd-docrow {{ not isNewDocument and selection and selection.id == document.id ? 'is-on' }}">
+                            {# The handoff's ⠿, ✎ and its bin are characters « à remplacer par le
+                               set d'icônes du codebase cible si disponible » - and it is: these are
+                               the same three SVGs the four libraries' rails draw. #}
+                            <span class="cm-dd-docrow__grip" aria-hidden="true"><svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor" aria-hidden="true"><circle cx="3" cy="3" r="1.2"></circle><circle cx="7" cy="3" r="1.2"></circle><circle cx="3" cy="7" r="1.2"></circle><circle cx="7" cy="7" r="1.2"></circle><circle cx="3" cy="11" r="1.2"></circle><circle cx="7" cy="11" r="1.2"></circle></svg></span>
+                            {% include 'dossier/_doc_badges.html.twig' with {document: document} only %}
+                            <span class="cm-dd-docrow__text">
+                                <a class="cm-dd-docrow__name cm-dd-docrow__select" href="{{ path('app_dossier_documents', {id: dossier.id, document: document.id}) }}">{{ document.name }}</a>
+                                <span class="cm-dd-docrow__rules">{% include 'dossier/_rules.html.twig' with {document: document} only %}</span>
+                            </span>
+                            {% include 'dossier/_required.html.twig' with {document: document} only %}
+                            <span class="cm-dd-docrow__end">
+                                {% include 'dossier/_profile.html.twig' with {document: document} only %}
+                                <a class="cm-dd-docrow__pencil" href="{{ path('app_dossier_documents', {id: dossier.id, document: document.id}) }}"
+                                   aria-label="{{ 'dossierEditDocumentAction'|trans }}" title="{{ 'dossierEditDocumentAction'|trans }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4l9.5-9.5a2.1 2.1 0 0 0-3-3L5 17v3"></path><path d="M13.5 6.5l3 3"></path></svg></a>
+                                {# The bin is this application's own row convention (the four
+                                   libraries carry « un crayon et une corbeille » on every row), and
+                                   the one thing the créa leaves out: a composition you cannot
+                                   correct by removing a piece is not a composition. #}
+                                <form method="post" action="{{ path('app_dossier_document_delete', {id: dossier.id, documentId: document.id}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('dossier_document_delete') }}">
+                                    <button type="submit" class="cm-dd-docrow__bin"
+                                            aria-label="{{ 'dossierDeleteDocumentAction'|trans }}" title="{{ 'dossierDeleteDocumentAction'|trans }}"
+                                            data-controller="confirm-submit"
+                                            data-confirm-submit-message-value="{{ 'dossierDeleteDocumentConfirmText'|trans({'%name%': document.name}) }}"
+                                            data-action="click->confirm-submit#confirm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"></path></svg></button>
+                                </form>
+                            </span>
+                        </div>
+                    {% else %}
+                        <p class="cm-dd-list__empty">{{ 'dossierGroupEmptyText'|trans }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+        {% else %}
+            <p class="cm-dd-list__empty">{{ 'dossierCompositionEmptyText'|trans }}</p>
+        {% endfor %}
+    </div>
+
+    {% include 'dossier/wizard/_document_panel.html.twig' with {
+        dossier: dossier,
+        document: isNewDocument ? null : selection,
+        groups: dossier.groups,
+        depositTypes: depositTypes,
+        validationProfiles: validationProfiles,
+    } only %}
+</div>

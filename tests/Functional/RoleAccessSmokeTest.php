@@ -354,6 +354,13 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/ufa' => 403,
             '/ufa/configuration/contract-import' => 403,
             '/eco/parcours' => 403,
+            // Dossiers documentaires. The two sides of the tool are two sets of routes, and this is
+            // what keeps them apart: a cible reads « Mes dossiers » and nothing else, the whole
+            // management side being gated to teachers and staff. What the *feature* delivers is a
+            // separate question, and it delivers this to nobody - see FeatureDefaultsTest.
+            '/my-dossiers' => 200,
+            '/dossiers' => 403,
+            '/dossiers/new' => 403,
         ]);
     }
 
@@ -507,6 +514,12 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/ufa' => 403,
             '/ufa/configuration/contract-import' => 403,
             '/eco/parcours' => 403,
+            // Dossiers documentaires: a teacher composes one, and reads « Mes dossiers » as an
+            // empty list - the cible screens are open to whoever a dossier names, and a dossier
+            // names nobody here.
+            '/dossiers' => 200,
+            '/dossiers/new' => 200,
+            '/my-dossiers' => 200,
         ]);
     }
 
@@ -642,6 +655,12 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/my/timetable' => 403,
             '/timetable' => 403,
             '/student-work' => 403,
+            // Dossiers documentaires, the role the feature is delivered to on the day it ships.
+            '/dossiers' => 200,
+            '/dossiers/new' => 200,
+            // « Mes dossiers » is not an administrator's screen in any useful sense - they are a
+            // cible of nothing - but it renders, empty, like every other personal screen here.
+            '/my-dossiers' => 200,
         ]);
     }
 
@@ -701,6 +720,12 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         // project_livret_alternant_tutor_access.
         $this->assertScreens($this->tutor, [
             '/' => 302,
+            // Dossiers documentaires: nothing of the management side, and « Mes dossiers » as the
+            // empty list every account gets - a tutor is a cible of nothing, and the day somebody
+            // wants to collect a paper from one, that is a decision, not an oversight.
+            '/dossiers' => 403,
+            '/dossiers/new' => 403,
+            '/my-dossiers' => 200,
             // The game stays between the student, their class and their teachers - a tutor reads
             // none of it (§1, « aucune vue tuteur ni famille »).
             '/game' => 404,
