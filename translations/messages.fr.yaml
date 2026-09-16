@@ -4287,6 +4287,10 @@ toolsNavLabel: 'Outils'
 toolsGroupRunClassLabel: 'Animer la classe'
 toolsGroupPrepareContentLabel: 'Préparer ses contenus'
 toolsGroupFollowStudentsLabel: 'Suivre les étudiants'
+# Le champ de recherche en tête du panneau Outils (design_handoff_menu_outils_1d) et la ligne
+# affichée quand la saisie ne correspond à aucun outil.
+toolsSearchPlaceholder: 'Rechercher un outil'
+toolsSearchNoResultLabel: 'Aucun outil ne correspond'
 # Libellé propre au menu : le handoff nomme cette entrée « Travail étudiant » là où la page cible
 # garde son titre « Travaux » (design_handoff_creation_travail 2b).
 toolsStudentWorkNavLabel: 'Travail étudiant'
