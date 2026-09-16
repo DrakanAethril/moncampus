@@ -41,7 +41,7 @@
                         {# The overdue state is said here, in red next to the deadline, rather than in a
                            separate alert at the top of the card. #}
                         <span class="cm-loan-summary__value{{ daysOverdue is not null ? ' cm-loan-summary__value--late' }}">
-                            {{- loan.dueAt ? loan.dueAt|date('d/m/Y') : '—' }}{% if daysOverdue is not null %} · {{ 'laptopReturnOverdueInlineLabel'|trans({'%days%': daysOverdue}) }}{% endif -%}
+                            {{- loan.indefinite ? 'laptopLoanIndefiniteDurationShortLabel'|trans : loan.dueAt|date('d/m/Y') }}{% if daysOverdue is not null %} · {{ 'laptopReturnOverdueInlineLabel'|trans({'%days%': daysOverdue}) }}{% endif -%}
                         </span>
                     </div>
                 </div>

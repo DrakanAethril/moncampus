@@ -61,6 +61,35 @@ enum LaptopLoanType: string
         return self::Interne !== $this;
     }
 
+    /**
+     * Whether this type of loan may be recorded with no return date at all.
+     *
+     * Only an internal loan may: a machine handed to a member of staff is often lent for as long as
+     * they need it, and inventing a date for it would only produce an overdue loan nobody meant.
+     * The two conventions are signed with a return date on the paper itself, so there is nothing to
+     * make indefinite there.
+     *
+     * Kept next to hasConvention() because it is the same kind of answer - what the type itself
+     * allows - and because the form, the validation and the screens must all read one rule.
+     */
+    public function allowsIndefiniteDuration(): bool
+    {
+        return self::Interne === $this;
+    }
+
+    /**
+     * The values of the types above, for the front end - the checkbox is only offered on those.
+     *
+     * @return list<string>
+     */
+    public static function indefiniteDurationValues(): array
+    {
+        return array_values(array_map(
+            static fn (self $type): string => $type->value,
+            array_filter(self::cases(), static fn (self $type): bool => $type->allowsIndefiniteDuration()),
+        ));
+    }
+
     public function labelKey(): string
     {
         return match ($this) {

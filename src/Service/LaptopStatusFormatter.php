@@ -48,6 +48,19 @@ class LaptopStatusFormatter
         return $activeLoan->isOverdue() ? 'bg-red-lt' : 'bg-blue-lt';
     }
 
+    /**
+     * The "Retour prévu" cell of a loan: its due date, or the word for a loan that has none.
+     *
+     * An empty due date is never a date somebody forgot to enter - LaptopLoan::validateDueDate()
+     * only lets an internal loan through without one - so it is said rather than dashed out.
+     */
+    public function dueAtLabel(LaptopLoan $loan): string
+    {
+        return $loan->isIndefinite()
+            ? $this->translator->trans('laptopLoanIndefiniteDurationShortLabel')
+            : $loan->getDueAt()->format('d/m/Y');
+    }
+
     public function loanLabel(LaptopLoan $loan): string
     {
         if ($loan->isReturned()) {
