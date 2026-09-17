@@ -11468,8 +11468,8 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-dd-docrow__name { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); }
 .cm-dd-docrow__rules { font-size: 12px; color: var(--cm-faint); }
 .cm-dd-docrow__end { margin-left: auto; display: flex; align-items: center; gap: 12px; flex: none; }
-.cm-dd-docrow__pencil { color: var(--cm-faint); font-size: 13px; background: none; border: 0; cursor: pointer; }
-.cm-dd-docrow__pencil:hover { color: var(--dd-blue-tx); }
+.cm-dd-docrow__pencil, .cm-dd-docrow__eye { color: var(--cm-faint); font-size: 13px; background: none; border: 0; cursor: pointer; }
+.cm-dd-docrow__pencil:hover, .cm-dd-docrow__eye:hover { color: var(--dd-blue-tx); }
 
 .cm-dd-radiocard {
     display: flex; align-items: flex-start; gap: 11px; border: 1px solid var(--dd-bd);
@@ -11535,7 +11535,10 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-dd-manrow__progress { display: flex; align-items: center; gap: 8px; }
 .cm-dd-manrow__progress .cm-dd-bar { width: 66px; flex: none; }
 .cm-dd-manrow__value { font: 600 12px var(--cm-font-ui); color: var(--cm-muted); min-width: 34px; text-align: right; }
-.cm-dd-manrow .cm-dd-docrow__pencil { width: 16px; justify-content: center; flex: none; }
+.cm-dd-manrow .cm-dd-docrow__pencil, .cm-dd-manrow .cm-dd-docrow__eye { width: 16px; justify-content: center; flex: none; }
+/* The pencil and the eye are one group, so they stay 8 px apart while the group keeps the
+   row's own 14 px from the jauge - and a row without the pencil holds the eye in place. */
+.cm-dd-manrow__actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex: none; min-width: 40px; }
 .cm-dd-person { display: flex; align-items: center; gap: 10px; }
 .cm-dd-person__text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .cm-dd-person__name { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); }
@@ -11767,7 +11770,7 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
    every name turns the list into a wall. */
 .cm-dd-docrow__text, .cm-dd-manrow .cm-dd-docrow__text { flex: 1; }
 .cm-dd-docrow__rules { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cm-dd-docrow__grip, .cm-dd-docrow__pencil, .cm-dd-docrow__bin { display: inline-flex; align-items: center; }
+.cm-dd-docrow__grip, .cm-dd-docrow__pencil, .cm-dd-docrow__eye, .cm-dd-docrow__bin { display: inline-flex; align-items: center; }
 .cm-dd-link--danger { color: var(--dd-no-tx); }
 .cm-dd-link--danger:hover { color: var(--dd-no-tx); }
 /* The validateur picker is wrapped rather than hidden itself: Tom Select replaces the <select> with
