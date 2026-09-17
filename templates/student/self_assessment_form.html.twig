@@ -46,7 +46,7 @@
             </div>
         {% else %}
             <form method="post" data-controller="self-assessment"
-                  data-self-assessment-scale-value="{{ questions|length > 0 ? questions|reduce((sum, q) => sum + q.maxPoints, 0) : evaluation.scale }}"
+                  data-self-assessment-scale-value="{{ questions|length > 0 ? evaluation.rubricReferencePoints : evaluation.scale }}"
                   data-self-assessment-question-count-value="{{ questions|length }}"
                   data-self-assessment-labels-value="{{ {
                       answeredLabel: 'selfAssessmentAnsweredLabel'|trans({'%count%': '%count%', '%total%': '%total%'}),
@@ -58,27 +58,48 @@
                 <div class="cm-sa-card">
                     {% if questions|length > 0 %}
                         {% for section in sections %}
-                            <div class="cm-sa-section">
+                            {# Bonus and malus close the list: they keep the sign of their band instead
+                               of a letter, and their points are announced as « +2 » / « −4 » because
+                               they sit outside what the evaluation is marked out of. #}
+                            <div class="cm-sa-section cm-sa-section--{{ section.kind.value }}">
                                 {# The mockup's A, B, C… marker: the section's position, not its name.
                                    `slice` and not an access by index - Twig cannot index a string, it
                                    would return null. #}
-                                <span class="cm-sa-section__letter">{{ 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'|slice(loop.index0, 1) ?: '·' }}</span>
-                                <span class="cm-sa-section__name">{{ section.name }}</span>
-                                <span class="cm-sa-section__scale">/{{ section.questions|reduce((sum, q) => sum + q.maxPoints, 0) }}</span>
+                                {# Standard bands always come first (EvaluationRubricSection::$position),
+                                   so loop.index0 IS the letter - no counter to carry, which Twig's
+                                   loop scoping would not let us do anyway. #}
+                                <span class="cm-sa-section__letter">
+                                    {{- section.kind.isStandard
+                                        ? ('ABCDEFGHIJKLMNOPQRSTUVWXYZ'|slice(loop.index0, 1) ?: '·')
+                                        : section.kind.signPrefix -}}
+                                </span>
+                                <span class="cm-sa-section__name">
+                                    {{- section.kind.isStandard ? section.name : section.kind.labelKey|trans -}}
+                                </span>
+                                <span class="cm-sa-section__scale">
+                                    {{- section.kind.isStandard ? '/' ~ section.maxPoints : section.kind.signPrefix ~ section.maxPoints -}}
+                                </span>
                             </div>
                             {% for question in section.questions %}
                                 {% set answer = selfAssessment ? selfAssessment.answerFor(question) : null %}
                                 <div class="cm-sa-row">
-                                    <span class="cm-sa-row__label">{{ 'selfAssessmentQuestionLabel'|trans({'%label%': question.label}) }}</span>
+                                    <span class="cm-sa-row__label">
+                                        {{- section.kind.isStandard
+                                            ? 'selfAssessmentQuestionLabel'|trans({'%label%': question.label})
+                                            : question.label -}}
+                                    </span>
                                     <span class="cm-sa-row__hint">{{ 'selfAssessmentEstimateLabel'|trans }}</span>
                                     <input type="text" inputmode="decimal" class="cm-sa-input"
                                            name="questions[{{ question.id }}]"
                                            value="{{ answer and answer.estimatedPoints is not null ? answer.estimatedPoints : '' }}"
                                            placeholder="—" data-max="{{ question.maxPoints }}"
+                                           data-sign="{{ section.kind.sign }}"
                                            data-self-assessment-target="input"
                                            data-action="input->self-assessment#refresh"
                                            aria-label="{{ 'selfAssessmentQuestionLabel'|trans({'%label%': question.label}) }}">
-                                    <span class="cm-sa-row__max">/{{ question.maxPoints }}</span>
+                                    <span class="cm-sa-row__max">
+                                        {{- section.kind.isStandard ? '/' ~ question.maxPoints : section.kind.signPrefix ~ question.maxPoints -}}
+                                    </span>
                                 </div>
                             {% endfor %}
                         {% endfor %}

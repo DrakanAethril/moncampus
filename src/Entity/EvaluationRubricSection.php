@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\RubricSectionKind;
 use App\Repository\EvaluationRubricSectionRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
-// One named band of an Evaluation's detailed barème (design's "Partie 1", "Partie 2"...).
+// One band of an Evaluation's detailed barème: a named part (design's "Partie 1", "Partie 2"...),
+// or - since $kind exists - the single Bonus or Malus band pinned under them, which carries no name
+// of its own (App\Enum\RubricSectionKind says why).
 #[ORM\Entity(repositoryClass: EvaluationRubricSectionRepository::class)]
 #[ORM\Table(name: 'evaluation_rubric_section')]
 class EvaluationRubricSection
@@ -24,10 +27,17 @@ class EvaluationRubricSection
     #[ORM\JoinColumn(name: 'evaluation_id', nullable: false)]
     private ?Evaluation $evaluation = null;
 
+    // Blank on a Bonus/Malus band, which is labelled from its $kind rather than from the database.
     #[ORM\Column(length: 255)]
-    #[Assert\NotBlank]
     #[Assert\Length(max: 255)]
     private string $name = '';
+
+    /**
+     * Added with a DEFAULT so the existing rows take it during the ALTER; the mapping declares it
+     * too, otherwise doctrine:schema:validate reports the drift at every run.
+     */
+    #[ORM\Column(length: 20, options: ['default' => 'standard'], enumType: RubricSectionKind::class)]
+    private RubricSectionKind $kind = RubricSectionKind::Standard;
 
     #[ORM\Column]
     private int $position = 0;
@@ -37,10 +47,11 @@ class EvaluationRubricSection
     #[ORM\OrderBy(['position' => 'ASC'])]
     private Collection $questions;
 
-    public function __construct(string $name, int $position = 0)
+    public function __construct(string $name, int $position = 0, RubricSectionKind $kind = RubricSectionKind::Standard)
     {
         $this->name = $name;
         $this->position = $position;
+        $this->kind = $kind;
         $this->questions = new ArrayCollection();
     }
 
@@ -71,6 +82,29 @@ class EvaluationRubricSection
         $this->name = $name;
 
         return $this;
+    }
+
+    public function getKind(): RubricSectionKind
+    {
+        return $this->kind;
+    }
+
+    public function setKind(RubricSectionKind $kind): static
+    {
+        $this->kind = $kind;
+
+        return $this;
+    }
+
+    // The points this band adds to (or takes from) the grade when every question is at its maximum.
+    public function getMaxPoints(): float
+    {
+        $total = 0.0;
+        foreach ($this->questions as $question) {
+            $total += $question->getMaxPoints();
+        }
+
+        return round($total, 2);
     }
 
     public function getPosition(): int

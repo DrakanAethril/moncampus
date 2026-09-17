@@ -16,6 +16,8 @@
     <form method="post" class="cm-gb-page"
           data-controller="evaluation-rubric-editor"
           data-evaluation-rubric-editor-sections-value="{{ sectionsJson|json_encode }}"
+          data-evaluation-rubric-editor-bonus-value="{{ bonusJson|json_encode }}"
+          data-evaluation-rubric-editor-malus-value="{{ malusJson|json_encode }}"
           data-evaluation-rubric-editor-labels-value="{{ {
               sectionNameLabel: 'gradebookRubricSectionNameLabel'|trans,
               addQuestionLabel: 'gradebookRubricAddQuestionButtonLabel'|trans,
@@ -24,6 +26,12 @@
               questionLabel: 'gradebookRubricQuestionLabel'|trans,
               questionNumLabel: 'gradebookRubricQuestionNumLabel'|trans,
               questionPointsLabel: 'gradebookRubricQuestionPointsLabel'|trans,
+              itemLabel: 'gradebookRubricItemLabel'|trans,
+              itemNameLabel: 'gradebookRubricItemNameLabel'|trans,
+              addItemLabel: 'gradebookRubricAddItemButtonLabel'|trans,
+              removeItemLabel: 'gradebookRubricRemoveItemLabel'|trans,
+              bonusLabel: 'rubricSectionBonusLabel'|trans,
+              malusLabel: 'rubricSectionMalusLabel'|trans,
           }|json_encode }}">
         <input type="hidden" name="_token" value="{{ csrf_token('gradebook_save') }}">
 
@@ -38,6 +46,35 @@
             </button>
         </div>
 
+        {# Bonus and malus are not two more sections: they sit under the parts, they carry no name,
+           and their points stay out of what the evaluation is marked out of. The teacher enters a
+           maximum here - what is actually awarded is decided student by student on the entry screen. #}
+        <div class="cm-gb-extras">
+            <div class="cm-gb-extra cm-gb-extra--bonus">
+                <div class="cm-gb-extra__head">
+                    <span class="cm-gb-extra__sign">+</span>
+                    <span class="cm-gb-extra__title">{{ 'rubricSectionBonusLabel'|trans }}</span>
+                    <span class="cm-gb-extra__hint">{{ 'gradebookRubricBonusHelpText'|trans }}</span>
+                </div>
+                <div class="d-flex flex-column gap-2" data-evaluation-rubric-editor-target="bonusItems"></div>
+                <button type="button" class="cm-gb-dashed" data-action="click->evaluation-rubric-editor#addBonus">
+                    {{ 'gradebookRubricAddItemButtonLabel'|trans }}
+                </button>
+            </div>
+
+            <div class="cm-gb-extra cm-gb-extra--malus">
+                <div class="cm-gb-extra__head">
+                    <span class="cm-gb-extra__sign">−</span>
+                    <span class="cm-gb-extra__title">{{ 'rubricSectionMalusLabel'|trans }}</span>
+                    <span class="cm-gb-extra__hint">{{ 'gradebookRubricMalusHelpText'|trans }}</span>
+                </div>
+                <div class="d-flex flex-column gap-2" data-evaluation-rubric-editor-target="malusItems"></div>
+                <button type="button" class="cm-gb-dashed" data-action="click->evaluation-rubric-editor#addMalus">
+                    {{ 'gradebookRubricAddItemButtonLabel'|trans }}
+                </button>
+            </div>
+        </div>
+
         <div class="cm-gb-footbar">
             <span class="cm-gb-footbar__hint">
                 {{ 'gradebookRubricCounterLabel'|trans({
@@ -45,6 +82,9 @@
                     '%points%': '<b data-evaluation-rubric-editor-target="total">0</b>',
                     '%scale%': evaluation.scale,
                 })|raw }}
+                {# Shown only once a bonus or a malus exists: the sentence names points that are
+                   deliberately absent from the total just above it. #}
+                <span data-evaluation-rubric-editor-target="extraCounter" hidden></span>
             </span>
             <div class="d-flex gap-2">
                 <a href="{{ path('app_program_gradebook', {id: program.id, topic: evaluation.topic.id}) }}" class="btn btn-outline-secondary">

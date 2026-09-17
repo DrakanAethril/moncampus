@@ -75,18 +75,31 @@
                 {% set currentSection = null %}
                 {% set sectionIndex = -1 %}
                 {% for row in rows %}
-                    {% if row.sectionName != currentSection %}
-                        {% set currentSection = row.sectionName %}
+                    {# Keyed on the kind too: a bonus band and a malus band both carry an empty name,
+                       and on the name alone the second would fold into the first. #}
+                    {% set sectionKey = row.sectionKind.value ~ '/' ~ row.sectionName %}
+                    {% if sectionKey != currentSection %}
+                        {% set currentSection = sectionKey %}
                         {% set sectionIndex = sectionIndex + 1 %}
-                        <div class="cm-sa-section">
+                        <div class="cm-sa-section cm-sa-section--{{ row.sectionKind.value }}">
                             {# Marker of the section, not of the row: `slice` because Twig cannot index
-                               a string. #}
-                            <span class="cm-sa-section__letter">{{ 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'|slice(sectionIndex, 1) ?: '·' }}</span>
-                            <span class="cm-sa-section__name">{{ row.sectionName }}</span>
+                               a string. Bonus and malus keep their sign instead of a letter. #}
+                            <span class="cm-sa-section__letter">
+                                {{- row.sectionKind.isStandard
+                                    ? ('ABCDEFGHIJKLMNOPQRSTUVWXYZ'|slice(sectionIndex, 1) ?: '·')
+                                    : row.sectionKind.signPrefix -}}
+                            </span>
+                            <span class="cm-sa-section__name">
+                                {{- row.sectionKind.isStandard ? row.sectionName : row.sectionKind.labelKey|trans -}}
+                            </span>
                         </div>
                     {% endif %}
                     <div class="cm-sa-comparerow">
-                        <span class="cm-sa-comparerow__label">{{ 'selfAssessmentQuestionLabel'|trans({'%label%': row.label}) }}</span>
+                        <span class="cm-sa-comparerow__label">
+                            {{- row.sectionKind.isStandard
+                                ? 'selfAssessmentQuestionLabel'|trans({'%label%': row.label})
+                                : row.label -}}
+                        </span>
                         <div class="cm-sa-bars">
                             <div class="cm-sa-bar"><div class="cm-sa-bar__fill cm-sa-bar__fill--you" style="width: {{ row.estimatedPercent }}%"></div></div>
                             <div class="cm-sa-bar"><div class="cm-sa-bar__fill cm-sa-bar__fill--teacher" style="width: {{ row.gradedPercent }}%"></div></div>

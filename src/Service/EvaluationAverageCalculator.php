@@ -118,9 +118,16 @@ class EvaluationAverageCalculator
         return [] === $values ? null : array_sum($values) / \count($values);
     }
 
-    // Sums a Grade's rubric answers, each capped at its question's max points (design's qSet()) -
-    // null (not 0) if nothing was answered yet, so a barème-graded cell can still show "empty"
-    // rather than a misleading 0.
+    /**
+     * Sums a Grade's rubric answers, each capped at its question's max points (design's qSet()) -
+     * null (not 0) if nothing was answered yet, so a barème-graded cell can still show "empty"
+     * rather than a misleading 0.
+     *
+     * A bonus answer adds, a malus answer takes away (App\Enum\RubricSectionKind::sign()), and
+     * neither is capped by the barème's own total: an evaluation out of 20 carrying 2 points of
+     * bonus really does come out at 22. The floor, on the other hand, is real - malus can cancel a
+     * grade but never put it into debt, so the total stops at 0.
+     */
     public function computeRubricTotal(Grade $grade): ?float
     {
         $any = false;
@@ -132,13 +139,19 @@ class EvaluationAverageCalculator
                 continue;
             }
 
-            if (null !== $answer->getPointsAwarded()) {
-                $any = true;
-                $sum += max(0.0, min($answer->getQuestion()?->getMaxPoints() ?? 0.0, $answer->getPointsAwarded()));
+            $question = $answer->getQuestion();
+            $awarded = $answer->getPointsAwarded();
+            if (null === $question || null === $awarded) {
+                continue;
             }
+
+            $any = true;
+            // Points are always entered as a magnitude, the sign coming from the band they sit in.
+            $sign = $question->getSection()?->getKind()->sign() ?? 1;
+            $sum += $sign * max(0.0, min($question->getMaxPoints(), $awarded));
         }
 
-        return $any ? round($sum, 2) : null;
+        return $any ? round(max(0.0, $sum), 2) : null;
     }
 
     // The 4 pastel grade bands (design's gradeColor()) as a CSS class name - see the matching
