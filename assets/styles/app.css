@@ -577,14 +577,23 @@ h1, h2, h3, h4,
    A wide panel rather than a flat list: one column per group, side by side, with a search field in
    its head. --cm-toolsmenu-cols is written by the template and carries the number of groups that
    actually rendered, so a partial profile gets a narrower panel and not empty columns. The panel
-   sizes itself to its content (`max-content`) and is capped at the viewport - it hangs off a bar
-   entry that can sit anywhere in the row. */
+   sizes itself to its content (`max-content`) and is capped at the viewport. */
 .cm-toolsmenu {
     --cm-toolsmenu-cols: 4;
     width: max-content;
     min-width: calc(var(--cm-toolsmenu-cols) * 208px);
     max-width: min(1000px, calc(100vw - 24px));
     padding: 18px 0 16px;
+}
+/* The panel is centred on the bar, not aligned on the entry that opens it: it is nearly as wide as
+   the window, so hanging it off a nav item sitting anywhere in the row would push it off one side.
+   Bootstrap skips Popper inside a .navbar (see nav_submenu_placement_controller.js), so the menu is
+   placed by CSS alone against its nearest positioned ancestor - dropping the item's own
+   `position: relative` hands that role to .cm-topbar, which spans the window. `top: 100%` then
+   still means "under the bar", the bar and the nav link being the same 58px tall. */
+@media (min-width: 1400px) {
+    .cm-topbar .cm-toolsmenu-host { position: static; }
+    .cm-topbar .cm-toolsmenu.dropdown-menu { left: 50%; right: auto; transform: translateX(-50%); }
 }
 .cm-toolsmenu__search {
     display: flex; justify-content: center;
