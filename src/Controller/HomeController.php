@@ -524,7 +524,7 @@ class HomeController extends AbstractController
     private function buildStaffData(\DateTimeImmutable $today): array
     {
         return [
-            'banner' => $this->buildStaffBanner($today),
+            'banner' => $this->hasPendingEvaluations($today),
             'engagementBanner' => $this->buildStaffEngagementBanner(),
             'timetable' => $this->buildStaffTimetable($today, null),
         ];
@@ -787,23 +787,21 @@ class HomeController extends AbstractController
         return 60 * (int) $time->format('G') + (int) $time->format('i');
     }
 
-    private function buildStaffBanner(\DateTimeImmutable $today): ?array
+    // Whether any running bilan still has an evaluation nobody has submitted - a yes/no, because
+    // that is all the banner says now: it carries no count and no period, and sends the reader to
+    // /ufa/reminders, which is where the pending evaluations are named one by one.
+    private function hasPendingEvaluations(\DateTimeImmutable $today): bool
     {
         foreach ($this->evaluationPeriodRepository->findRunningAt($today) as $period) {
-            $tutorsPending = $this->tutorLinkRepository->countPendingTutorForPeriod($period);
-            $studentsPending = $this->tutorLinkRepository->countPendingStudentForPeriod($period);
+            $pending = $this->tutorLinkRepository->countPendingTutorForPeriod($period)
+                + $this->tutorLinkRepository->countPendingStudentForPeriod($period);
 
-            if ($tutorsPending + $studentsPending > 0) {
-                return [
-                    'period' => $period,
-                    'tutorsPending' => $tutorsPending,
-                    'studentsPending' => $studentsPending,
-                    'total' => $tutorsPending + $studentsPending,
-                ];
+            if ($pending > 0) {
+                return true;
             }
         }
 
-        return null;
+        return false;
     }
 
     private function buildAdministrationData(): array

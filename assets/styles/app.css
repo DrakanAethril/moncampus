@@ -11853,3 +11853,12 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-dd-pick--option .cm-dd-pick__name { font-size: 12.5px; color: var(--cm-muted); }
 .cm-dd-pick--option:has(input:checked) { background: transparent; }
 .cm-dd-pick--option:has(input:checked) .cm-dd-pick__name { color: var(--cm-ink); }
+
+/* How close a bilan is to its own closing date, on the grouped relances screen: a ramp from green
+   to brick, ink only. The four steps are decided server-side (AlternancePeriodStatusResolver::
+   deadlineToneFor) so the wording and the colour always answer the same question; here there is
+   nothing but the ink, and it comes from the theme's own tokens, which are declared twice. */
+.cm-deadline--far  { color: var(--cm-green-tx); }
+.cm-deadline--soon { color: var(--cm-gold-tx); }
+.cm-deadline--near { color: var(--cm-warn-tx); }
+.cm-deadline--over { color: var(--cm-red-tx); }

@@ -93,6 +93,66 @@ class AlternancePeriodStatusResolver
         return new AlternanceStepStatus(AlternanceStepStatus::STEP_NOT_OPENED, false, null, null, $period);
     }
 
+    // Every active period of the alternance, resolved in a single walk - keyed by period id.
+    // Same answer as calling resolveStepForPeriod() once per period, at a fraction of the queries:
+    // the walk stops evaluating as soon as a period is not closed, every later period being "not
+    // opened" by definition. The grouped relances screen needs all of them at once, to know which
+    // periods have anything to chase before it offers one.
+    /** @return array<int, AlternanceStepStatus> */
+    public function resolveStepsForAllPeriods(InternshipTutorLink $tutorLink): array
+    {
+        $periods = $this->evaluationPeriodRepository->findAllActiveForProgram($tutorLink->getProgram());
+
+        $blockingStep = null;
+        if ($tutorLink->isTerminated()) {
+            $blockingStep = AlternanceStepStatus::STEP_INACTIVE;
+        } elseif (null !== $this->resolveEngagementStep($tutorLink)) {
+            $blockingStep = AlternanceStepStatus::STEP_NOT_OPENED;
+        }
+
+        $statuses = [];
+        foreach ($periods as $period) {
+            $periodId = $period->getId();
+            if (null === $periodId) {
+                continue;
+            }
+
+            if (null !== $blockingStep) {
+                $statuses[$periodId] = new AlternanceStepStatus($blockingStep, false, null, null, $period);
+                continue;
+            }
+
+            $status = $this->resolvePeriodStep($tutorLink, $period);
+            $statuses[$periodId] = $status;
+
+            if (AlternanceStepStatus::STEP_CLOSED !== $status->step) {
+                $blockingStep = AlternanceStepStatus::STEP_NOT_OPENED;
+            }
+        }
+
+        return $statuses;
+    }
+
+    // How urgent a bilan's own end date reads, on the grouped relances screen: green while it is
+    // far off, red once it is near or past. Counted in whole days against today, never against
+    // dates - a bilan closing tomorrow and one that closed last month must not read like one
+    // closing in three months.
+    public function deadlineToneFor(?\DateTimeImmutable $endDate): string
+    {
+        if (null === $endDate) {
+            return 'far';
+        }
+
+        $days = (int) (new \DateTimeImmutable('today'))->diff($endDate->setTime(0, 0))->format('%r%a');
+
+        return match (true) {
+            $days <= 0 => 'over',
+            $days <= 7 => 'near',
+            $days <= 30 => 'soon',
+            default => 'far',
+        };
+    }
+
     // Maps a resolved status to the exact 33a/33b pill text + Tabler light-badge class (see the
     // feature's plan doc, architecture call 10 - this app has no dedicated .cm-badge--* classes,
     // status pills elsewhere already use Tabler's bg-*-lt convention).
