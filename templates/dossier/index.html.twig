@@ -47,6 +47,14 @@
                     </span>
                     <span class="cm-dd-list__state">
                         <span class="cm-dd-tag cm-dd--{{ dossier.state.tagModifier }}">{{ dossier.state.labelKey|trans }}</span>
+                        {# The pencil opens step 1 — titre, période, consignes, validateurs et
+                           cibles. It is the one part of a dossier nothing else links to: the title
+                           opens the composition (or the gestion screen once published), and both
+                           of those only ever walk forward. #}
+                        {% if is_granted(constant('App\\Security\\Voter\\DossierVoter::EDIT'), dossier) %}
+                            <a class="cm-dd-docrow__pencil" href="{{ path('app_dossier_settings', {id: dossier.id}) }}"
+                               aria-label="{{ 'dossierEditSettingsAction'|trans }}" title="{{ 'dossierEditSettingsAction'|trans }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4l9.5-9.5a2.1 2.1 0 0 0-3-3L5 17v3"></path><path d="M13.5 6.5l3 3"></path></svg></a>
+                        {% endif %}
                         {# The bin lives here as well as on the gestion screen, because a brouillon
                            has no gestion screen to carry it: a draft opens straight on its
                            composition, so the list is the only place it can be thrown away from. #}

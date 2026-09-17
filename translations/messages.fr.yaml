@@ -8565,6 +8565,7 @@ dossierTargetStudentsLabel: 'Étudiants'
 dossierTargetKindClassLabel: 'Classe'
 dossierTargetKindOptionLabel: 'Option'
 dossierEditTargetsAction: 'Modifier les cibles'
+dossierEditSettingsAction: 'Modifier les paramètres du dossier'
 
 dossierCompositionLabel: 'Composition du dossier'
 dossierCompositionEmptyText: 'Aucun document dans ce dossier.'
