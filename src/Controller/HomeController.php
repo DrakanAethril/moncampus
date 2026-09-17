@@ -28,6 +28,7 @@ use App\Security\ProgramTimetableAccess;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\AudienceTargetableVoter;
 use App\Service\AlternancePeriodWizardService;
+use App\Service\AlternanceReminderBoard;
 use App\Service\NameColorGenerator;
 use App\Service\StudentAlternanceProgramResolver;
 use App\Service\StudentWorkBoard;
@@ -72,6 +73,7 @@ class HomeController extends AbstractController
         private readonly WordCloudRepository $wordCloudRepository,
         private readonly WordCloudAudience $wordCloudAudience,
         private readonly AlternancePeriodWizardService $wizardService,
+        private readonly AlternanceReminderBoard $reminderBoard,
         private readonly StructureAccessChecker $structureAccessChecker,
         private readonly ProgramTimetableAccess $timetableAccess,
         private readonly NameColorGenerator $nameColorGenerator,
@@ -128,7 +130,7 @@ class HomeController extends AbstractController
 
             match ($activeRole) {
                 'teacher' => $viewData['teacher'] = $this->buildTeacherData($user, $today, $now),
-                'staff' => $viewData['staff'] = $this->buildStaffData($today),
+                'staff' => $viewData['staff'] = $this->buildStaffData($today, $user),
                 default => $viewData['administration'] = $this->buildAdministrationData(),
             };
 
@@ -136,7 +138,7 @@ class HomeController extends AbstractController
         }
 
         if ($isStaff) {
-            $viewData['staff'] = $this->buildStaffData($today);
+            $viewData['staff'] = $this->buildStaffData($today, $user);
 
             return $this->render('home/index.html.twig', $viewData);
         }
@@ -521,10 +523,13 @@ class HomeController extends AbstractController
         ];
     }
 
-    private function buildStaffData(\DateTimeImmutable $today): array
+    private function buildStaffData(\DateTimeImmutable $today, ?User $user): array
     {
         return [
-            'banner' => $this->hasPendingEvaluations($today),
+            // A yes/no, and read from the very board /ufa/reminders is built on: the banner says
+            // there is something to relance, so it must not be able to say it when that screen
+            // has nothing to show. It carries no count and no bilan - the screen names those.
+            'banner' => $this->reminderBoard->hasPendingReminders($user),
             'engagementBanner' => $this->buildStaffEngagementBanner(),
             'timetable' => $this->buildStaffTimetable($today, null),
         ];
@@ -785,23 +790,6 @@ class HomeController extends AbstractController
     private function minutesOfDay(\DateTimeImmutable $time): int
     {
         return 60 * (int) $time->format('G') + (int) $time->format('i');
-    }
-
-    // Whether any running bilan still has an evaluation nobody has submitted - a yes/no, because
-    // that is all the banner says now: it carries no count and no period, and sends the reader to
-    // /ufa/reminders, which is where the pending evaluations are named one by one.
-    private function hasPendingEvaluations(\DateTimeImmutable $today): bool
-    {
-        foreach ($this->evaluationPeriodRepository->findRunningAt($today) as $period) {
-            $pending = $this->tutorLinkRepository->countPendingTutorForPeriod($period)
-                + $this->tutorLinkRepository->countPendingStudentForPeriod($period);
-
-            if ($pending > 0) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private function buildAdministrationData(): array

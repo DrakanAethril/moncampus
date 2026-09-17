@@ -5,9 +5,6 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Enterprise;
-use App\Entity\InternshipEvaluationPeriod;
-use App\Entity\InternshipLivretEngagement;
-use App\Entity\InternshipStudentEvaluation;
 use App\Entity\InternshipTutorEvaluation;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Program;
@@ -125,52 +122,6 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
         }
 
         return $ids;
-    }
-
-    // Staff dashboard banner (design_handoff_dashboards staff-a): tutors who still haven't
-    // signed their evaluation for this period - only links whose periods are actually open
-    // (engagement signed by the centre) count, an unsigned engagement means the tutor isn't
-    // "late", the whole livret just isn't started.
-    public function countPendingTutorForPeriod(InternshipEvaluationPeriod $period): int
-    {
-        return (int) $this->pendingForPeriodQueryBuilder($period)
-            ->andWhere(sprintf(
-                'NOT EXISTS (SELECT 1 FROM %s tev WHERE tev.tutorLink = l AND tev.evaluationPeriod = :period AND tev.signedAt IS NOT NULL)',
-                InternshipTutorEvaluation::class,
-            ))
-            ->getQuery()
-            ->getSingleScalarResult();
-    }
-
-    // Same banner: alternants whose turn is open (tutor signed) but who haven't signed their own
-    // evaluation yet.
-    public function countPendingStudentForPeriod(InternshipEvaluationPeriod $period): int
-    {
-        return (int) $this->pendingForPeriodQueryBuilder($period)
-            ->andWhere(sprintf(
-                'EXISTS (SELECT 1 FROM %s tev WHERE tev.tutorLink = l AND tev.evaluationPeriod = :period AND tev.signedAt IS NOT NULL)',
-                InternshipTutorEvaluation::class,
-            ))
-            ->andWhere(sprintf(
-                'NOT EXISTS (SELECT 1 FROM %s sev WHERE sev.student = l.student AND sev.evaluationPeriod = :period AND sev.signedAt IS NOT NULL)',
-                InternshipStudentEvaluation::class,
-            ))
-            ->getQuery()
-            ->getSingleScalarResult();
-    }
-
-    private function pendingForPeriodQueryBuilder(InternshipEvaluationPeriod $period): QueryBuilder
-    {
-        return $this->createQueryBuilder('l')
-            ->select('COUNT(l.id)')
-            ->where('l.program = :program')
-            ->andWhere('l.inactiveDate IS NULL')
-            ->andWhere(sprintf(
-                'EXISTS (SELECT 1 FROM %s eng WHERE eng.tutorLink = l AND eng.signedCenterAt IS NOT NULL)',
-                InternshipLivretEngagement::class,
-            ))
-            ->setParameter('program', $period->getProgram())
-            ->setParameter('period', $period);
     }
 
     // Powers 32a/32b's "Rechercher un tuteur existant" ajax field and 26b's Tuteurs annuaire.

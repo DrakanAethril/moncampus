@@ -19,6 +19,7 @@ use App\Repository\InternshipSupervisorEvaluationRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
 use App\Service\AlternancePeriodStatusResolver;
 use App\Service\AlternanceStepStatus;
+use App\Service\AlternanceSubmissionIndex;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -264,6 +265,33 @@ class AlternancePeriodStatusResolverTest extends TestCase
         $this->assertSame('over', $this->resolver->deadlineToneFor($today->modify('-1 day')));
     }
 
+    public function testAPreloadedIndexDecidesExactlyWhatTheRepositoriesDecide(): void
+    {
+        // The board hands the resolver an index instead of letting it query, so the two readings
+        // must be interchangeable - that is the whole claim of AlternanceSubmissionIndex.
+        $tutorLink = $this->tutorLink();
+        $tutorLink->method('getId')->willReturn(7);
+        $period = $this->period(1);
+
+        $this->engagementRepository->method('findOneForTutorLink')->willReturn($this->completeEngagement());
+        $this->periodRepository->method('findAllActiveForProgram')->willReturn([$period]);
+        $signedTutorEvaluation = $this->createStub(InternshipTutorEvaluation::class);
+        $signedTutorEvaluation->method('isSigned')->willReturn(true);
+        $this->tutorEvaluationRepository->method('findOneForTutorLinkAndEvaluationPeriod')->willReturn($signedTutorEvaluation);
+        $this->studentEvaluationRepository->method('findOneForStudentAndEvaluationPeriod')->willReturn(null);
+
+        $fromRepositories = $this->resolver->resolveStepsForAllPeriods($tutorLink);
+        $fromIndex = $this->resolver->resolveStepsForAllPeriods($tutorLink, [$period], new AlternanceSubmissionIndex(
+            [7 => true],
+            [7 => [1 => true]],
+            [],
+            [],
+        ));
+
+        $this->assertSame(AlternanceStepStatus::STEP_STUDENT, $fromRepositories[1]->step);
+        $this->assertEquals($fromRepositories, $fromIndex);
+    }
+
     private function period(int $id): InternshipEvaluationPeriod
     {
         $period = $this->createStub(InternshipEvaluationPeriod::class);
@@ -273,7 +301,7 @@ class AlternancePeriodStatusResolverTest extends TestCase
         return $period;
     }
 
-    private function tutorLink(bool $inactive = false): InternshipTutorLink
+    private function tutorLink(bool $inactive = false): InternshipTutorLink&Stub
     {
         $tutorLink = $this->createStub(InternshipTutorLink::class);
         $tutorLink->method('getInactiveDate')->willReturn($inactive ? new \DateTimeImmutable() : null);

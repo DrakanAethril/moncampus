@@ -50,4 +50,29 @@ class InternshipStudentEvaluationRepository extends ServiceEntityRepository
 
         return array_map('intval', $studentIds);
     }
+
+    /**
+     * Every signed alternant evaluation of one Program, as a two-level map - the student side of
+     * AlternanceSubmissionIndex, in one query. Keyed by student, the way the entity itself is:
+     * an alternant signs once per bilan, whatever their alternance.
+     *
+     * @return array<int, array<int, true>> student id => evaluation period id => signed
+     */
+    public function findSignedPairsForProgram(Program $program): array
+    {
+        $rows = $this->createQueryBuilder('se')
+            ->select('IDENTITY(se.student) AS studentId', 'IDENTITY(se.evaluationPeriod) AS periodId')
+            ->where('se.program = :program')
+            ->andWhere('se.signedAt IS NOT NULL')
+            ->setParameter('program', $program)
+            ->getQuery()
+            ->getResult();
+
+        $pairs = [];
+        foreach ($rows as $row) {
+            $pairs[(int) $row['studentId']][(int) $row['periodId']] = true;
+        }
+
+        return $pairs;
+    }
 }

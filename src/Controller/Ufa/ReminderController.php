@@ -12,11 +12,9 @@ use App\Enum\Feature;
 use App\Repository\InternshipEvaluationPeriodRepository;
 use App\Repository\InternshipReminderRepository;
 use App\Repository\InternshipTutorLinkRepository;
-use App\Repository\ProgramRepository;
-use App\Repository\SchoolYearRepository;
 use App\Service\AlternancePeriodStatusResolver;
+use App\Service\AlternanceReminderBoard;
 use App\Service\AlternanceReminderService;
-use App\Service\AlternanceStepStatus;
 use App\Service\PostValue;
 use App\Service\QueryValue;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -32,6 +30,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  *
  * Split out of the former UfaAlternanceController - the routes, their names and their
  * bodies are unchanged; only the class hosting them is new.
+ *
+ * @phpstan-import-type ReminderBilan from AlternanceReminderBoard
  */
 #[IsGranted(new Expression('is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD") or is_granted("ROLE_TEACHER")'))]
 #[RequiresFeature(Feature::UfaBooklet)]
@@ -85,64 +85,41 @@ class ReminderController extends AbstractController
     // AlternanceReminderService::sendBulkForPeriod().
     #[Route(path: '/ufa/reminders', name: 'app_ufa_alternance_reminders')]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
-    public function reminders(Request $request, SchoolYearRepository $schoolYearRepository, ProgramRepository $programRepository, InternshipEvaluationPeriodRepository $periodRepository, InternshipTutorLinkRepository $tutorLinkRepository, AlternancePeriodStatusResolver $statusResolver): Response
+    public function reminders(Request $request, AlternanceReminderBoard $reminderBoard, AlternancePeriodStatusResolver $statusResolver): Response
     {
-        // The screen offers a bilan only when that bilan has somebody to chase, so every period
-        // is resolved up front rather than the selected one alone: "which bilans are worth
-        // opening" is the same question as "who is late on each", asked one level up.
-        $schoolYear = $schoolYearRepository->findCurrentOrMostRecent();
-        $periods = [];
-        /** @var array<int, list<array{tutorLink: InternshipTutorLink, status: AlternanceStepStatus, badge: array{label: string, class: string}, tone: string}>> $rowsByPeriod */
-        $rowsByPeriod = [];
-
-        foreach (null !== $schoolYear ? $programRepository->findAlternanceForSchoolYear($schoolYear, false, $this->currentUser()) : [] as $program) {
-            $programPeriods = $periodRepository->findAllActiveForProgram($program);
-            if ([] === $programPeriods) {
-                continue;
-            }
-
-            foreach ($programPeriods as $period) {
-                $periods[] = $period;
-            }
-
-            foreach ($tutorLinkRepository->findAllActiveForProgram($program) as $tutorLink) {
-                foreach ($statusResolver->resolveStepsForAllPeriods($tutorLink) as $periodId => $status) {
-                    if (\in_array($status->step, [AlternanceStepStatus::STEP_TUTOR, AlternanceStepStatus::STEP_STUDENT], true)) {
-                        $rowsByPeriod[$periodId][] = [
-                            'tutorLink' => $tutorLink,
-                            'status' => $status,
-                            'badge' => $statusResolver->badgeFor($status),
-                            'tone' => $statusResolver->deadlineToneFor($status->period?->getEndDate()),
-                        ];
-                    }
-                }
-            }
-        }
-
-        $periods = array_values(array_filter(
-            $periods,
-            static fn (InternshipEvaluationPeriod $period): bool => [] !== ($rowsByPeriod[(int) $period->getId()] ?? []),
-        ));
+        // The screen offers a bilan only when that bilan has somebody to chase - and it is the
+        // board, not this controller, that says which: the dashboard banner pointing here reads
+        // the same one, so it can never announce work this screen has nothing to show for.
+        $bilans = $reminderBoard->build($this->currentUser());
 
         // Blank is what a bookmarked "?period=" submits; it means "no period", not a malformed
         // request. QueryValue reads it that way, getInt() answers a 400. An unknown or
         // no-longer-pending id falls back to the first bilan still worth chasing - which is also
         // where the send POST lands once it has emptied the bilan it was sent from.
         $selectedPeriodId = QueryValue::int($request, 'period');
-        $selectedPeriod = null;
-        foreach ($periods as $period) {
-            if ($period->getId() === $selectedPeriodId) {
-                $selectedPeriod = $period;
+        $selected = null;
+        foreach ($bilans as $bilan) {
+            if ($bilan['period']->getId() === $selectedPeriodId) {
+                $selected = $bilan;
                 break;
             }
         }
-        $selectedPeriod ??= $periods[0] ?? null;
+        $selected ??= $bilans[0] ?? null;
+        $selectedPeriod = $selected['period'] ?? null;
 
         return $this->render('ufa/alternance/reminders.html.twig', [
-            'periods' => $periods,
+            'periods' => array_map(static fn (array $bilan): InternshipEvaluationPeriod => $bilan['period'], $bilans),
             'selectedPeriod' => $selectedPeriod,
             'selectedTone' => $statusResolver->deadlineToneFor($selectedPeriod?->getEndDate()),
-            'rows' => null !== $selectedPeriod ? ($rowsByPeriod[(int) $selectedPeriod->getId()] ?? []) : [],
+            'rows' => array_map(
+                static fn (array $row): array => [
+                    'tutorLink' => $row['tutorLink'],
+                    'status' => $row['status'],
+                    'badge' => $statusResolver->badgeFor($row['status']),
+                    'tone' => $statusResolver->deadlineToneFor($row['status']->period?->getEndDate()),
+                ],
+                $selected['rows'] ?? [],
+            ),
         ]);
     }
 
