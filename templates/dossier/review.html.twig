@@ -55,67 +55,52 @@
                         <span style="margin-left: auto;">{% include 'dossier/_status_tag.html.twig' with {status: selected.status} only %}</span>
                     </div>
                     <div class="cm-dd-detail__body">
-                        <div class="cm-dd-detail__split">
-                            {# The aperçu is the browser's own: a PDF or an image renders, anything
-                               else keeps the hatched placeholder the handoff draws, because there is
-                               nothing honest to show for a .docx. #}
-                            <div class="cm-dd-preview">
-                                {% set key = submission.storageKey %}
-                                {% set extension = submission.extension %}
-                                {% if key and extension == 'PDF' %}
-                                    <iframe src="{{ file_url(key) }}#toolbar=0" title="{{ submission.originalFilename }}" loading="lazy"></iframe>
-                                {% elseif key and extension in ['PNG', 'JPG', 'JPEG', 'GIF', 'WEBP'] %}
-                                    <img src="{{ file_url(key) }}" alt="{{ submission.originalFilename }}" loading="lazy">
-                                {% else %}
-                                    <span class="cm-dd-preview__label">{{ 'dossierPreviewUnavailableText'|trans }}</span>
-                                {% endif %}
-                            </div>
-                            <div class="cm-dd-detail__side">
-                                <div class="cm-dd-file">
-                                    <span class="cm-dd-badge cm-dd-badge--ext">{{ submission.extension ?? 'URL' }}</span>
-                                    <span class="cm-dd-file__text">
-                                        <span class="cm-dd-file__name">{{ submission.originalFilename ?? submission.url }}</span>
-                                        <span class="cm-dd-file__meta">
-                                            {%- if submission.byteSize %}{{ (submission.byteSize / 1048576)|number_format(1, ',', ' ') }} Mo · {% endif -%}
-                                            {{ 'dossierSubmittedOnText'|trans({'%date%': submission.submittedAt|localized_date('d MMM HH:mm')}) }}
+                        <div class="cm-dd-detail__side">
+                            {# The dépôt being answered. No aperçu beside it: a .docx - which is
+                               most of what is deposited - had nothing but a hatched placeholder
+                               to show, and a validateur opens the file anyway. #}
+                            {% set previous = selected.versionsNewestFirst|slice(1) %}
+                            {% include 'dossier/_submission_file.html.twig' with {submission: submission, current: true} only %}
+
+                            {# Earlier versions, folded: the last one is what is being answered,
+                               and the others are there to be compared with it when a
+                               correction was asked for. #}
+                            {% if previous is not empty %}
+                                <details class="cm-dd-oldversions">
+                                    <summary class="cm-dd-oldversions__summary">{{ 'dossierPreviousVersionsText'|trans({'%count%': previous|length}) }}</summary>
+                                    <div class="cm-dd-oldversions__list">
+                                        {% for version in previous %}
+                                            {% include 'dossier/_submission_file.html.twig' with {submission: version, current: false} only %}
+                                        {% endfor %}
+                                    </div>
+                                </details>
+                            {% endif %}
+
+                            <span class="cm-dd-collabel" style="margin-top: 4px;">{{ 'dossierHistoryHeading'|trans }}</span>
+                            {% for entry in history %}
+                                <div class="cm-dd-history">
+                                    <span class="cm-dd-history__dot {{ loop.first ? 'cm-dd-history__dot--current' }} {{ 'correction' == entry.kind ? 'cm-dd-history__dot--fix' }}"></span>
+                                    <span class="cm-dd-history__text">
+                                        <span class="cm-dd-history__title">
+                                            {%- if 'submission' == entry.kind -%}
+                                                {{ 'dossierHistoryDepositText'|trans({'%version%': entry.title}) }}
+                                            {%- elseif 'validated' == entry.kind -%}
+                                                {{ 'dossierReviewValidatedLabel'|trans }}
+                                            {%- elseif 'correction' == entry.kind -%}
+                                                {{ 'dossierReviewCorrectionRequestedLabel'|trans }}
+                                            {%- else -%}
+                                                {{ 'dossierHistoryVisibleText'|trans }}
+                                            {%- endif -%}
                                         </span>
-                                    </span>
-                                    <span class="cm-dd-file__links">
-                                        {% if submission.url %}
-                                            <a class="cm-dd-link" href="{{ submission.url }}" target="_blank" rel="noopener noreferrer">{{ 'dossierOpenLinkAction'|trans }}</a>
-                                        {% else %}
-                                            <a class="cm-dd-link" href="{{ file_url(submission.storageKey) }}" target="_blank" rel="noopener noreferrer">{{ 'dossierOpenAction'|trans }}</a>
-                                            <a class="cm-dd-link" href="{{ download_url(submission.storageKey, submission.originalFilename) }}" data-turbo="false">{{ 'dossierDownloadAction'|trans }}</a>
+                                        <span class="cm-dd-history__meta">
+                                            {{- entry.author ? entry.author.displayName ~ ' · ' }}{{ entry.at|localized_date('visible' == entry.kind ? 'd MMM' : 'd MMM HH:mm') -}}
+                                        </span>
+                                        {% if entry.comment %}
+                                            <span class="cm-dd-history__comment">{{ entry.comment }}</span>
                                         {% endif %}
                                     </span>
                                 </div>
-
-                                <span class="cm-dd-collabel" style="margin-top: 4px;">{{ 'dossierHistoryHeading'|trans }}</span>
-                                {% for entry in history %}
-                                    <div class="cm-dd-history">
-                                        <span class="cm-dd-history__dot {{ loop.first ? 'cm-dd-history__dot--current' }} {{ 'correction' == entry.kind ? 'cm-dd-history__dot--fix' }}"></span>
-                                        <span class="cm-dd-history__text">
-                                            <span class="cm-dd-history__title">
-                                                {%- if 'submission' == entry.kind -%}
-                                                    {{ 'dossierHistoryDepositText'|trans({'%version%': entry.title}) }}
-                                                {%- elseif 'validated' == entry.kind -%}
-                                                    {{ 'dossierReviewValidatedLabel'|trans }}
-                                                {%- elseif 'correction' == entry.kind -%}
-                                                    {{ 'dossierReviewCorrectionRequestedLabel'|trans }}
-                                                {%- else -%}
-                                                    {{ 'dossierHistoryVisibleText'|trans }}
-                                                {%- endif -%}
-                                            </span>
-                                            <span class="cm-dd-history__meta">
-                                                {{- entry.author ? entry.author.displayName ~ ' · ' }}{{ entry.at|localized_date('visible' == entry.kind ? 'd MMM' : 'd MMM HH:mm') -}}
-                                            </span>
-                                            {% if entry.comment %}
-                                                <span class="cm-dd-history__comment">{{ entry.comment }}</span>
-                                            {% endif %}
-                                        </span>
-                                    </div>
-                                {% endfor %}
-                            </div>
+                            {% endfor %}
                         </div>
 
                         <form method="post" class="cm-dd-decide" action="{{ path('app_dossier_review_decide', {id: dossier.id, submissionId: submission.id}) }}">

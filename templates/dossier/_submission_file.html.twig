@@ -1,0 +1,25 @@
+{# One dépôt read as a file: the extension badge, what it is called, its weight and the day it was
+   deposited, then the two ways of opening it. Shared by the version being answered and the earlier
+   ones folded underneath, so a v1 and a v3 are read exactly the same way.
+
+   Parameters: submission, current (bool) - « current » says which of them is being answered, and
+   the version number is written out as soon as there has been more than one of them. #}
+<div class="cm-dd-file{{ current ? '' : ' cm-dd-file--past' }}">
+    <span class="cm-dd-badge cm-dd-badge--ext">{{ submission.extension ?? 'URL' }}</span>
+    <span class="cm-dd-file__text">
+        <span class="cm-dd-file__name">{{ submission.originalFilename ?? submission.url }}</span>
+        <span class="cm-dd-file__meta">
+            {%- if not current or submission.version > 1 %}v{{ submission.version }} · {% endif -%}
+            {%- if submission.byteSize %}{{ (submission.byteSize / 1048576)|number_format(1, ',', ' ') }} Mo · {% endif -%}
+            {{ 'dossierSubmittedOnText'|trans({'%date%': submission.submittedAt|localized_date('d MMM HH:mm')}) }}
+        </span>
+    </span>
+    <span class="cm-dd-file__links">
+        {% if submission.url %}
+            <a class="cm-dd-link" href="{{ submission.url }}" target="_blank" rel="noopener noreferrer">{{ 'dossierOpenLinkAction'|trans }}</a>
+        {% else %}
+            <a class="cm-dd-link" href="{{ file_url(submission.storageKey) }}" target="_blank" rel="noopener noreferrer">{{ 'dossierOpenAction'|trans }}</a>
+            <a class="cm-dd-link" href="{{ download_url(submission.storageKey, submission.originalFilename) }}" data-turbo="false">{{ 'dossierDownloadAction'|trans }}</a>
+        {% endif %}
+    </span>
+</div>

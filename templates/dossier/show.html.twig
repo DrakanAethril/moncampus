@@ -51,14 +51,22 @@
                             <span class="cm-dd-docrow__text">
                                 <span class="cm-dd-docrow__name">{{ document.name }}</span>
                                 <span class="cm-dd-docrow__rules">{% include 'dossier/_rules.html.twig' with {document: document} only %}</span>
+                                {# The two tags sit under the règles rather than beside them: they
+                                   are properties of the document, read once when it is set up,
+                                   where the line above is the calendar somebody comes back to. It
+                                   also empties the right-hand end of the row, which is what lets
+                                   the jauge, the fraction and the crayon line up from one document
+                                   to the next. #}
+                                <span class="cm-dd-manrow__tags">
+                                    {% include 'dossier/_required.html.twig' with {document: document} only %}
+                                    {% include 'dossier/_profile.html.twig' with {document: document} only %}
+                                </span>
                             </span>
-                            {% include 'dossier/_required.html.twig' with {document: document} only %}
                             <span class="cm-dd-manrow__end">
                                 <span class="cm-dd-manrow__progress">
                                     <span class="cm-dd-bar{{ progress.percent == 100 ? ' cm-dd-bar--done' }}"><span class="cm-dd-bar__fill" style="width: {{ progress.percent }}%"></span></span>
                                     <span class="cm-dd-manrow__value">{{ progress.done }}/{{ progress.total }}</span>
                                 </span>
-                                {% include 'dossier/_profile.html.twig' with {document: document} only %}
                                 {% if canEdit %}
                                     <a class="cm-dd-docrow__pencil" href="{{ path('app_dossier_documents', {id: dossier.id, document: document.id}) }}"
                                        aria-label="{{ 'dossierEditDocumentAction'|trans }}" title="{{ 'dossierEditDocumentAction'|trans }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4l9.5-9.5a2.1 2.1 0 0 0-3-3L5 17v3"></path><path d="M13.5 6.5l3 3"></path></svg></a>

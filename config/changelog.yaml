@@ -26,6 +26,19 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.17'
+      date: '2026-09-17'
+      summary: "Le menu Outils s'ouvre en colonnes, avec une recherche pour atteindre directement une fonctionnalité. Côté dossiers de pièces, la vue de l'étudiant va à l'essentiel et la relecture d'un dépôt donne accès aux versions précédentes."
+      entries:
+          - type: modification
+            title: "Le menu Outils s'ouvre en colonnes, avec une recherche"
+            detail: "Chaque rubrique tient sa colonne, et un champ en tête retrouve une entrée par son nom. Les entrées, leur ordre et qui y a droit sont inchangés : seule la mise en page bouge."
+          - type: modification
+            title: "« Mes dossiers » va à l'essentiel"
+            detail: "La colonne « Période » donne la plage réelle des pièces demandées, de la première échéance à la dernière. La fiche d'un dossier ne mentionne plus la date de mise à disposition ni la tolérance de retard : un dépôt est ouvert ou il ne l'est pas. L'entrée de menu n'apparaît qu'à qui un dossier est adressé."
+          - type: modification
+            title: "La relecture d'un dépôt donne accès aux versions précédentes"
+            detail: "Elles sont repliées sous celle qui reste à traiter. L'aperçu a été retiré : il ne savait rien montrer de la plupart des formats déposés, là où l'ouverture du document les montre tous."
     - version: '2026.09.16'
       date: '2026-09-16'
       summary: "Un dossier de pièces peut être demandé à une classe entière ou à quelques étudiants, chaque pièce portant sa propre échéance et, au besoin, une relecture avant d'être acceptée. Le prêt interne d'un ordinateur peut par ailleurs se passer de date de restitution."

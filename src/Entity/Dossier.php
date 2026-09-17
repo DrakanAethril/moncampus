@@ -409,6 +409,37 @@ class Dossier
         return $documents;
     }
 
+    /**
+     * The span the dossier actually asks for — from the earliest date limite of its documents to
+     * the latest, which is what a cible reads as « Période » rather than the two dates the wizard
+     * declared.
+     *
+     * Read from the documents rather than from `startsOn`/`endsOn` because those two are a label
+     * somebody typed, and the dates a student has to hold are the ones written on the pieces. A
+     * document with no date limite is simply not part of the span; a dossier where none of them
+     * carries one has no span at all, and the screens print a dash.
+     *
+     * @return array{start: ?\DateTimeImmutable, end: ?\DateTimeImmutable}
+     */
+    public function documentDueSpan(): array
+    {
+        $dates = [];
+
+        foreach ($this->documents as $document) {
+            $due = $document->getDueOn();
+
+            if (null !== $due) {
+                $dates[] = $due;
+            }
+        }
+
+        if ([] === $dates) {
+            return ['start' => null, 'end' => null];
+        }
+
+        return ['start' => min($dates), 'end' => max($dates)];
+    }
+
     /** How many documents nobody may skip - the denominator of every avancement on this feature. */
     public function requiredDocumentCount(): int
     {

@@ -32,7 +32,19 @@
                     <span class="cm-dd-list__name">
                         <a class="cm-dd-list__title" href="{{ path('app_my_dossier', {id: dossier.id}) }}">{{ dossier.title }}</a>
                     </span>
-                    <span class="cm-dd-list__cell">{{ dossier.endsOn ? 'dossierRuleDueText'|trans({'%date%': dossier.endsOn|localized_date('d MMM')}) : '—' }}</span>
+                    {# « du 1 sept. au 15 oct. » - the first and last date limite among the
+                       dossier's documents, not the period its wizard declared: what a cible has to
+                       hold is the dates written on the pieces. #}
+                    {% set span = dossier.documentDueSpan %}
+                    <span class="cm-dd-list__cell">
+                        {%- if span.start is null -%}
+                            —
+                        {%- elseif span.start == span.end -%}
+                            {{ span.start|localized_date('d MMM yyyy') }}
+                        {%- else -%}
+                            {{ 'dossierPeriodRangeText'|trans({'%start%': span.start|localized_date('d MMM yyyy'), '%end%': span.end|localized_date('d MMM yyyy')}) }}
+                        {%- endif -%}
+                    </span>
                     <span class="cm-dd-list__cell">{{ 'dossierDocumentCountText'|trans({'%count%': dossier.documents|length}) }}</span>
                     <span class="cm-dd-progress">
                         <span class="cm-dd-bar{{ entry.row.complete ? ' cm-dd-bar--done' }}"><span class="cm-dd-bar__fill" style="width: {{ entry.row.percent }}%"></span></span>

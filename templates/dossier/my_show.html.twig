@@ -64,12 +64,13 @@
                                     <span class="cm-dd-mydoc__name">{{ document.name }}</span>
                                     {% include 'dossier/_required.html.twig' with {document: document} only %}
                                 </span>
+                                {# Neither the date the document became visible nor whether the
+                                   dépassement is allowed: the first says nothing to somebody
+                                   already reading the row, and the second is a rule this screen
+                                   applies rather than announces - the dépôt is open or it is
+                                   not. What is left is the échéance and the shape of the dépôt. #}
                                 <span class="cm-dd-mydoc__rules">
-                                    {%- if isUpcoming -%}
-                                        {{ 'dossierRuleVisibleFromText'|trans({'%date%': document.visibleFrom|localized_date('d MMM')}) }}
-                                    {%- else -%}
-                                        {% include 'dossier/_rules.html.twig' with {document: document} only %}
-                                    {%- endif -%}
+                                    {%- include 'dossier/_rules.html.twig' with {document: document, with_visibility: false, with_late: false} only -%}
                                 </span>
                             </span>
                             <span class="cm-dd-mydoc__end">

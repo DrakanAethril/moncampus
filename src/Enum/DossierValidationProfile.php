@@ -29,10 +29,9 @@ enum DossierValidationProfile: string
     }
 
     /**
-     * The short form the row tag carries — « Validation validateur », where the radio card of the
-     * property panel reads « Validation par un validateur ». Two keys rather than one truncation:
-     * the card is explaining a choice, the tag is labelling a row that already has four other
-     * things on it.
+     * The short form the row tag carries — « Validation », where the radio card of the property
+     * panel reads « Validation par un validateur ». Two keys rather than one truncation: the card
+     * is explaining a choice, the tag is labelling a row that already has four other things on it.
      */
     public function tagKey(): string
     {

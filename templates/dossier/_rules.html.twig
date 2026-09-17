@@ -2,8 +2,22 @@
    everything a document asks, composed here and nowhere else so the four screens that draw it
    cannot word it differently.
 
-   Parameters: document. #}
-{{- 'dossierRuleVisibleText'|trans({'%date%': document.visibleFrom|localized_date('d MMM')}) }} ·
+   Two of the four segments are addressed to whoever composed the dossier rather than to the cible:
+   the day the document appeared is of no use to somebody already reading it, and whether the
+   dépassement is allowed is the rule the screen itself applies - the dépôt closes or it does not.
+   « Mes dossiers » therefore asks for the line without them.
+
+   The two flags are read through `is defined` rather than `|default(true)`: that filter also fires
+   on a *falsy* value, so `with_visibility: false` would have been handed straight back its default.
+
+   Parameters: document, with_visibility (bool, default true), with_late (bool, default true). #}
+{%- set show_visibility = with_visibility is defined ? with_visibility : true -%}
+{%- set show_late = with_late is defined ? with_late : true -%}
+{%- if show_visibility -%}
+    {{- 'dossierRuleVisibleText'|trans({'%date%': document.visibleFrom|localized_date('d MMM')}) }} ·
+{% endif -%}
 {{ 'dossierRuleDueText'|trans({'%date%': document.dueOn|localized_date('d MMM')}) }} ·
-{{ (document.lateAllowed ? 'dossierRuleLateAllowedText' : 'dossierRuleLateBlockedText')|trans }} ·
+{% if show_late -%}
+    {{ (document.lateAllowed ? 'dossierRuleLateAllowedText' : 'dossierRuleLateBlockedText')|trans }} ·
+{% endif -%}
 {{ document.depositType.ruleKey|trans -}}

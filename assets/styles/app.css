@@ -573,9 +573,79 @@ h1, h2, h3, h4,
     text-transform: uppercase; letter-spacing: 1.4px;
 }
 .cm-topbar .dropdown-divider { margin: 8px 0; border-top-color: var(--cm-border-soft); }
-/* The Outils panel is the one the handoff sizes, and it is a flat list - no submenu, so nothing
-   widens it from the inside. */
-.cm-toolsmenu { min-width: 280px; }
+/* ---------- Outils panel (design_handoff_menu_outils_1d) ----------
+   A wide panel rather than a flat list: one column per group, side by side, with a search field in
+   its head. --cm-toolsmenu-cols is written by the template and carries the number of groups that
+   actually rendered, so a partial profile gets a narrower panel and not empty columns. The panel
+   sizes itself to its content (`max-content`) and is capped at the viewport - it hangs off a bar
+   entry that can sit anywhere in the row. */
+.cm-toolsmenu {
+    --cm-toolsmenu-cols: 4;
+    width: max-content;
+    min-width: calc(var(--cm-toolsmenu-cols) * 208px);
+    max-width: min(1000px, calc(100vw - 24px));
+    padding: 18px 0 16px;
+}
+.cm-toolsmenu__search {
+    display: flex; justify-content: center;
+    padding: 0 22px 16px; margin-bottom: 18px;
+    border-bottom: 1px solid var(--cm-border-soft);
+}
+.cm-toolsmenu__search[hidden] { display: none; }
+/* The field is centred in the panel, so the magnifier hangs off the field itself and not off the
+   band around it - the band is much the wider of the two. */
+.cm-toolsmenu__searchfield { position: relative; display: block; width: 420px; max-width: 100%; }
+.cm-toolsmenu__searchicon {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    display: flex; color: var(--cm-faint); pointer-events: none;
+}
+.cm-toolsmenu__input {
+    width: 100%; box-sizing: border-box;
+    border: 1px solid var(--cm-border); border-radius: 20px; padding: 9px 14px 9px 34px;
+    font: 400 13.5px var(--cm-font-ui); color: var(--cm-ink); background: var(--cm-surface);
+    text-align: center; outline: none;
+}
+.cm-toolsmenu__input:focus { border-color: var(--cm-brand); }
+.cm-toolsmenu__input::placeholder { color: var(--cm-faint); }
+.cm-toolsmenu__grid { display: grid; grid-template-columns: repeat(var(--cm-toolsmenu-cols), minmax(0, 1fr)); }
+.cm-toolsmenu__col { display: flex; flex-direction: column; padding: 0 22px; border-left: 1px solid var(--cm-border-soft); }
+/* The rule separates two columns, so the first one carries none - and neither does a lone column,
+   which is what a profile with a single group opens on. */
+.cm-toolsmenu__col:first-child { border-left: 0; }
+/* The panel's own padding already sets these apart from its edges; inside a column the heading and
+   the entries share the column's 22px and stretch the full width of it on hover. */
+.cm-topbar .cm-toolsmenu__col .dropdown-header { padding: 0 0 9px; }
+.cm-topbar .cm-toolsmenu__col .dropdown-item {
+    padding: 7px 10px; margin: 0 -10px; width: auto; border-radius: 6px;
+}
+/* Searching replaces the columns rather than filtering them in place: a column emptied of its
+   matches would leave its heading and its rule standing over nothing. */
+.cm-toolsmenu__results { display: none; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 10px; padding: 0 22px; }
+.cm-toolsmenu__empty { display: none; margin: 0; padding: 14px 22px; text-align: center; font-size: 13.5px; color: var(--cm-muted); }
+.cm-toolsmenu.is-searching .cm-toolsmenu__grid { display: none; }
+.cm-toolsmenu.is-searching .cm-toolsmenu__results { display: grid; }
+.cm-toolsmenu.is-searching.is-empty .cm-toolsmenu__results { display: none; }
+.cm-toolsmenu.is-searching.is-empty .cm-toolsmenu__empty { display: block; }
+.cm-toolsmenu__result {
+    display: flex; flex-direction: column; gap: 1px;
+    padding: 8px 10px; border-radius: 6px; text-decoration: none;
+}
+.cm-toolsmenu__result:hover, .cm-toolsmenu__result.is-current { background: var(--cm-bg); }
+.cm-toolsmenu__result-label { font-size: 14px; color: var(--cm-ink); }
+.cm-toolsmenu__result-group { font-size: 11.5px; color: var(--cm-muted); }
+/* Under the navbar-expand breakpoint the panel stacks statically inside the collapsed menu, where
+   columns side by side have nowhere to go. */
+@media (max-width: 1399.98px) {
+    .cm-toolsmenu { width: auto; min-width: 0; max-width: none; }
+    .cm-toolsmenu__grid { grid-template-columns: 1fr; }
+    /* The columns give up their own geometry entirely here: stacked one under another they are just
+       the groups of a flat menu again, and must line up with the other menus of the collapsed bar. */
+    .cm-toolsmenu__col { border-left: 0; padding: 0; }
+    .cm-topbar .cm-toolsmenu__col .dropdown-header { padding: 8px 18px 5px; }
+    .cm-topbar .cm-toolsmenu__col .dropdown-item { margin: 0; border-radius: 0; }
+    .cm-toolsmenu__results { grid-template-columns: 1fr; }
+    .cm-toolsmenu__searchfield { width: 100%; }
+}
 
 .cm-topbar__right { display: flex; align-items: stretch; gap: 26px; }
 /* Its direct children are plain .nav-item divs (Bootstrap/Tabler markup) which don't stretch their
@@ -11435,12 +11505,24 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-dd-grouphead__title {
     font: 700 10.5px var(--cm-font-ui); letter-spacing: 1.2px; text-transform: uppercase; color: var(--dd-warn-tx);
 }
-.cm-dd-manrow { display: flex; align-items: center; gap: 12px; padding: 13px 18px; border-bottom: 1px solid var(--dd-bd-soft); }
+/* One document of the gestion list. The separation is a full rule rather than the hairline the
+   other lists use: a row is three lines tall here - name, règles, tags - and at that height a soft
+   border stops reading as a boundary between two documents. */
+.cm-dd-manrow {
+    display: flex; align-items: center; gap: 12px; padding: 15px 18px;
+    border-bottom: 1px solid var(--dd-bd-mid);
+}
+.cm-dd-manrow:last-child { border-bottom: 0; }
 .cm-dd-manrow:hover { background: var(--dd-soft); }
+.cm-dd-manrow__tags { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-top: 3px; }
+/* Fixed widths all the way down the end of the row: the jauge, the fraction and the crayon are a
+   column each, so they line up from one document to the next instead of being pushed about by how
+   long the fraction happens to be. */
 .cm-dd-manrow__end { margin-left: auto; display: flex; align-items: center; gap: 14px; flex: none; }
 .cm-dd-manrow__progress { display: flex; align-items: center; gap: 8px; }
 .cm-dd-manrow__progress .cm-dd-bar { width: 66px; flex: none; }
-.cm-dd-manrow__value { font: 600 12px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-dd-manrow__value { font: 600 12px var(--cm-font-ui); color: var(--cm-muted); min-width: 34px; text-align: right; }
+.cm-dd-manrow .cm-dd-docrow__pencil { width: 16px; justify-content: center; flex: none; }
 .cm-dd-person { display: flex; align-items: center; gap: 10px; }
 .cm-dd-person__text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .cm-dd-person__name { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); }
@@ -11552,16 +11634,18 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-dd-detail__name { font: 600 17px var(--cm-font-title); color: var(--cm-ink); }
 .cm-dd-detail__meta { font-size: 12.5px; color: var(--cm-faint); }
 .cm-dd-detail__body { padding: 18px 20px; display: flex; flex-direction: column; gap: 16px; }
-.cm-dd-detail__split { display: flex; gap: 16px; align-items: stretch; flex-wrap: wrap; }
-.cm-dd-preview {
-    width: 180px; flex: none; border: 1px solid var(--dd-bd-mid); border-radius: 8px; height: 210px;
-    display: grid; place-items: center; overflow: hidden;
-    background: repeating-linear-gradient(135deg, var(--dd-soft) 0 8px, var(--dd-bd-soft) 8px 16px);
-}
-.cm-dd-preview iframe, .cm-dd-preview img { width: 100%; height: 100%; border: 0; object-fit: contain; background: var(--cm-surface); }
-.cm-dd-preview__label { font: 600 11px var(--cm-font-mono); color: var(--cm-faint); text-align: center; padding: 0 12px; }
 .cm-dd-detail__side { flex: 1; min-width: 260px; display: flex; flex-direction: column; gap: 10px; }
-.cm-dd-file { display: flex; align-items: center; gap: 11px; border: 1px solid var(--dd-bd-mid); border-radius: 8px; padding: 11px 13px; }
+.cm-dd-file { display: flex; align-items: center; gap: 11px; border: 1px solid var(--dd-bd-mid); border-radius: 8px; padding: 11px 13px; flex-wrap: wrap; }
+/* An earlier version, inside the folded block: same card, drawn back so the dépôt being answered
+   stays the one the eye lands on. */
+.cm-dd-file--past { border-color: var(--dd-bd-soft); background: var(--dd-soft); }
+.cm-dd-oldversions { border: 0; }
+.cm-dd-oldversions__summary {
+    cursor: pointer; font: 600 12.5px var(--cm-font-ui); color: var(--cm-muted);
+    padding: 4px 0; list-style: revert;
+}
+.cm-dd-oldversions__summary:hover { color: var(--dd-blue-tx); }
+.cm-dd-oldversions__list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
 .cm-dd-file__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .cm-dd-file__name { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); word-break: break-all; }
 .cm-dd-file__meta { font-size: 12px; color: var(--cm-faint); }
