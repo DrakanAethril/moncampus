@@ -20,12 +20,13 @@ use Doctrine\ORM\EntityManagerInterface;
  * untagged alternant is missing from the alternance signature sheets and gets the wrong laptop-loan
  * type suggested. Every path that creates an InternshipTutorLink now goes through here.
  *
- * removeTag() is its mirror, and has exactly one caller: the UFA's « Terminer l'alternance »
- * (App\Service\AlternanceTerminationService), where losing the tag is the point - it is what stops
- * the student being an alternant for App\Service\StudentAlternanceProgramResolver, and with them the
- * « Mon alternance » tab, its page and its dashboard card. Deactivating a tutor link from Formation >
- * Paramétrage > Tuteurs still does NOT untag: that gesture tidies up a link, it does not declare the
- * contract over.
+ * removeTag() is its mirror, and belongs to one gesture: ending an alternance
+ * (App\Service\AlternanceTerminationService, reached from the UFA dossier and from Formation >
+ * Paramétrage > Tuteurs alike). Losing the tag is the point there - it is what stops the student
+ * being an alternant for App\Service\StudentAlternanceProgramResolver, and with them the « Mon
+ * alternance » tab, its page and its dashboard card. Both screens write the same fact, so both
+ * carry the same consequence: the tag used to survive a termination done from the Tuteurs tab,
+ * which left a student an alternant with no contract behind them.
  *
  * Does not flush - callers are mid-transaction (see App\Service\AlternanceImport\ImportExecutor) or
  * about to flush their own form submission.

@@ -12,6 +12,7 @@ use App\Form\InternshipTutorLinkType;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Repository\ProgramRepository;
 use App\Service\AlternanceModalityAssigner;
+use App\Service\AlternanceTerminationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -110,16 +111,22 @@ class InternshipTutorController extends AbstractController
         ]);
     }
 
+    // The row action of the Tuteurs table ends the alternance, exactly as the UFA's « Terminer
+    // l'alternance » does - same single fact, so the same service and the same consequence,
+    // the student's alternance modality tag included. The two used to differ, this one merely
+    // stamping the date: a student left tagged after their contract ended stayed an alternant with
+    // nothing behind it, which is the state AlternanceModalityAssigner exists to prevent.
+    //
+    // Idempotent, and the answer says so rather than reporting a failure: a second click on a row
+    // whose alternance is already over asked nothing that has not already happened.
     #[Route(path: '/ufa/programs/{id}/tutors/{tutorLinkId}/deactivate', name: 'app_ufa_formation_tutors_deactivate', methods: ['POST'])]
-    public function deactivateTutorLink(int $id, int $tutorLinkId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository): JsonResponse
+    public function deactivateTutorLink(int $id, int $tutorLinkId, Request $request, ProgramRepository $repository, InternshipTutorLinkRepository $tutorLinkRepository, AlternanceTerminationService $terminationService): JsonResponse
     {
         $program = $this->findOrNotFound($id, $repository);
         $tutorLink = $this->findTutorLinkOrNotFound($tutorLinkRepository, $program, $tutorLinkId);
         $this->assertValidToken('program_internship_deactivate', $request);
 
-        $tutorLink->setInactiveDate(new \DateTimeImmutable());
-        $tutorLink->setInactivatedBy($this->currentUser());
-        $entityManager->flush();
+        $terminationService->terminate($tutorLink, $this->currentUser());
 
         return $this->json(['success' => true]);
     }
