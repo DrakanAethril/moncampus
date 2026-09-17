@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\InternshipLivretEngagement;
 use App\Entity\InternshipTutorLink;
+use App\Entity\Program;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -55,5 +56,28 @@ class InternshipLivretEngagementRepository extends ServiceEntityRepository
             ->addOrderBy('st.firstname', 'ASC')
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * The alternances of one Program whose livret is actually open - the 3 engagement signatures
+     * in. One query for the whole formation, for AlternanceSubmissionIndex; the per-alternance
+     * path asks findOneForTutorLink() instead and reads the same three columns.
+     *
+     * @return array<int, true> tutor link id => the engagement is complete
+     */
+    public function findFullySignedTutorLinkIdsForProgram(Program $program): array
+    {
+        $tutorLinkIds = $this->createQueryBuilder('e')
+            ->select('IDENTITY(e.tutorLink) AS tutorLinkId')
+            ->join('e.tutorLink', 'l')
+            ->where('l.program = :program')
+            ->andWhere('e.signedTutorAt IS NOT NULL')
+            ->andWhere('e.signedStudentAt IS NOT NULL')
+            ->andWhere('e.signedCenterAt IS NOT NULL')
+            ->setParameter('program', $program)
+            ->getQuery()
+            ->getSingleColumnResult();
+
+        return array_fill_keys(array_map('intval', $tutorLinkIds), true);
     }
 }

@@ -54,4 +54,32 @@ class InternshipTutorEvaluationRepository extends ServiceEntityRepository
 
         return array_map('intval', $tutorLinkIds);
     }
+
+    /**
+     * Every signed tutor evaluation of one Program, as a two-level map - one query for what
+     * AlternanceSubmissionIndex would otherwise ask once per alternance and per bilan.
+     *
+     * Note the signedAt test: an unsigned row exists as soon as a tutor opens the form, and is
+     * exactly what "not submitted" looks like.
+     *
+     * @return array<int, array<int, true>> tutor link id => evaluation period id => signed
+     */
+    public function findSignedPairsForProgram(Program $program): array
+    {
+        $rows = $this->createQueryBuilder('te')
+            ->select('IDENTITY(te.tutorLink) AS tutorLinkId', 'IDENTITY(te.evaluationPeriod) AS periodId')
+            ->join('te.tutorLink', 'tl')
+            ->where('tl.program = :program')
+            ->andWhere('te.signedAt IS NOT NULL')
+            ->setParameter('program', $program)
+            ->getQuery()
+            ->getResult();
+
+        $pairs = [];
+        foreach ($rows as $row) {
+            $pairs[(int) $row['tutorLinkId']][(int) $row['periodId']] = true;
+        }
+
+        return $pairs;
+    }
 }
