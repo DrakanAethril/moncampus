@@ -8573,6 +8573,7 @@ dossierAddGroupAction: '+ Groupe'
 dossierGroupNamePlaceholder: 'Nom du groupe'
 dossierAddDocumentAction: '+ Document'
 dossierEditDocumentAction: 'Modifier'
+dossierDocumentTrackingAction: 'Voir le suivi de ce document'
 dossierDeleteDocumentAction: 'Supprimer'
 dossierDeleteDocumentConfirmText: 'Supprimer « %name% » du dossier ? Les dépôts déjà reçus sur ce document seront supprimés avec lui.'
 

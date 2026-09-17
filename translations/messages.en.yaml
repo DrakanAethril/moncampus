@@ -7760,6 +7760,7 @@ dossierAddGroupAction: '+ Group'
 dossierGroupNamePlaceholder: 'Group name'
 dossierAddDocumentAction: '+ Document'
 dossierEditDocumentAction: 'Edit'
+dossierDocumentTrackingAction: "Open this document's tracking"
 dossierDeleteDocumentAction: 'Delete'
 dossierDeleteDocumentConfirmText: 'Delete "%name%" from the dossier? The submissions already received on it will go with it.'
 

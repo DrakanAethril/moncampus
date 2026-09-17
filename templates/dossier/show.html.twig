@@ -67,10 +67,18 @@
                                     <span class="cm-dd-bar{{ progress.percent == 100 ? ' cm-dd-bar--done' }}"><span class="cm-dd-bar__fill" style="width: {{ progress.percent }}%"></span></span>
                                     <span class="cm-dd-manrow__value">{{ progress.done }}/{{ progress.total }}</span>
                                 </span>
+                                <span class="cm-dd-manrow__actions">
                                 {% if canEdit %}
                                     <a class="cm-dd-docrow__pencil" href="{{ path('app_dossier_documents', {id: dossier.id, document: document.id}) }}"
                                        aria-label="{{ 'dossierEditDocumentAction'|trans }}" title="{{ 'dossierEditDocumentAction'|trans }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4l9.5-9.5a2.1 2.1 0 0 0-3-3L5 17v3"></path><path d="M13.5 6.5l3 3"></path></svg></a>
                                 {% endif %}
+                                {# The eye opens « Suivi » already reading this document — the row
+                                   shows the fraction, the tab shows who each half is made of. It
+                                   does not hang off canEdit: this screen is only reached with VIEW
+                                   on a published dossier, which is exactly what the tab asks for. #}
+                                <a class="cm-dd-docrow__eye" href="{{ path('app_dossier_tracking', {id: dossier.id, tab: 'document', document: document.id}) }}"
+                                   aria-label="{{ 'dossierDocumentTrackingAction'|trans }}" title="{{ 'dossierDocumentTrackingAction'|trans }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg></a>
+                                </span>
                             </span>
                         </div>
                     {% endfor %}
