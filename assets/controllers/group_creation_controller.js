@@ -13,7 +13,7 @@ export default class extends Controller {
         'absentInput', 'absentSuggestions', 'absentTags',
         'mixiteFreeBtn', 'mixiteMixedBtn', 'mixiteHomoBtn',
         'pairASelect', 'pairBSelect', 'pairChips',
-        'error', 'reshuffleBtn', 'summary', 'nameFormatSelect',
+        'error', 'reshuffleBtn', 'recalculateBtn', 'summary', 'nameFormatSelect',
         'toolbar', 'lotNameInput', 'updateButton', 'saveButton', 'grid', 'dndHint', 'emptyState',
         'lotsBar', 'lotsChips', 'sharedLotsBar', 'sharedLotsChips',
         'shareButton', 'shareModal', 'shareModalBody', 'shareList', 'shareCheckbox',
@@ -29,6 +29,7 @@ export default class extends Controller {
         sharedLots: Array,
         shareableTeachers: Array,
         generateUrl: String,
+        recalculateUrl: String,
         saveLotUrl: String,
         updateLotUrl: String,
         deleteLotUrl: String,
@@ -424,6 +425,78 @@ export default class extends Controller {
         this.errorTarget.textContent = message ?? '';
     }
 
+    // ---------- Recalculer l'effectif ----------
+
+    /*
+     * A saved lot brought back onto the class as it stands today: whoever left loses their seat,
+     * whoever joined since is handed one in the least-filled open group, and everybody else does
+     * not move. The server is what decides (App\Service\GroupRosterReconciler), and it re-reads the
+     * class from the database rather than from this.studentsValue - a tab left open all morning
+     * carries the roster of the morning, which is exactly the list being doubted.
+     */
+    async recalculateRoster() {
+        if (!this.groups) return;
+
+        this.renderError(null);
+
+        let response;
+        try {
+            response = await fetch(this.recalculateUrlValue, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': this.csrfTokenValue },
+                body: JSON.stringify({
+                    groups: this.groups.map((group) => group.map((m) => m.id)),
+                    option: this.gOption,
+                    absentIds: [...this.absentIds],
+                    lockedIndices: [...this.lockedIndices],
+                }),
+            });
+        } catch (e) {
+            this.renderError(this.labelsValue.networkErrorMessage);
+
+            return;
+        }
+
+        const data = await response.json().catch(() => null);
+        if (!response.ok || !data || data.error) {
+            this.renderError(data?.error ?? this.labelsValue.networkErrorMessage);
+
+            return;
+        }
+
+        this.groups = data.groups;
+        // The roster the panel works from is replaced by the one the server just read, so the
+        // absent search and the pair selects offer the same class the groups now show. A student
+        // ticked absent who has since left the class goes with it: the tag could only render as a
+        // name nobody recognises.
+        this.studentsValue = data.students;
+        const known = new Set(data.students.map((student) => student.id));
+        this.absentIds = new Set([...this.absentIds].filter((id) => known.has(id)));
+
+        if (data.added > 0 || data.removed > 0) {
+            // Still that lot's screen, and no longer what its row says - « Mettre à jour » is how
+            // the recalculation gets written back, the same way a drag or a re-draw does.
+            this.markLotDirty();
+        }
+
+        this.renderAbsentTags();
+        this.renderPairOptions();
+        this.renderGroups();
+        this.renderSummary();
+
+        if (data.unplaced > 0) {
+            this.renderError(this.labelsValue.recalculateAllLockedMessage.replace('%count%', data.unplaced));
+
+            return;
+        }
+
+        // A button whose whole effect can be "nothing had changed" has to say so - silence would
+        // read as a button that did not work.
+        this.showToast(data.added === 0 && data.removed === 0
+            ? this.labelsValue.recalculateUpToDateToast
+            : this.labelsValue.recalculateDoneToast.replace('%added%', data.added).replace('%removed%', data.removed));
+    }
+
     // ---------- Groups grid ----------
 
     renderGroups() {
@@ -638,6 +711,11 @@ export default class extends Controller {
     }
 
     refreshLotButtons() {
+        // Only a saved lot can have gone stale: a fresh draw is the class as it was a second ago.
+        if (this.hasRecalculateBtnTarget) {
+            this.recalculateBtnTarget.hidden = !this.lotLoaded;
+        }
+
         if (this.hasUpdateButtonTarget) {
             this.updateButtonTarget.hidden = this.currentLotId === null;
         }
