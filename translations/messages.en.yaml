@@ -2374,6 +2374,7 @@ quizLaunchVisibilityOptionFieldLabel: 'Visibility'
 quizLaunchVisibilityOptionAllLabel: 'All students'
 quizLaunchVisibilityOptionFieldHint: "Limit the quiz to the students of one of the class's options."
 quizLaunchVisibilityOptionForeignError: "That option does not belong to the class you picked."
+quizInstanceEditVisibilityOptionFieldHelp: "Students who have already begun this quiz keep it, whichever option is picked here."
 quizLaunchModeFieldLabel: 'Mode'
 quizLaunchOpensAtFieldLabel: 'Opens'
 quizLaunchClosesAtFieldLabel: 'Closes'

@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Form;
 
+use App\Entity\Option;
 use App\Entity\QuizInstance;
 use App\Enum\QuizScoring;
 use App\Enum\QuizSupervisionPolicy;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
@@ -42,6 +44,12 @@ use Symfony\Component\Validator\Constraints\Range;
  * rewriting it. Turning surveillance off leaves every event in place - turning it back on shows the
  * same timelines again.
  *
+ * « Visibilité » - the option the quiz is narrowed to - *is* editable here, and it passes the same
+ * test only because App\Service\QuizAudience says the narrowing decides who may discover and begin
+ * a quiz, never who has already begun it: a student holding an attempt keeps the quiz on their hub
+ * and keeps their copy. Without that rule this field would take a finished copy away from the
+ * student who sat it, and it would belong nowhere near this form.
+ *
  * Two consequences are real, and the screen says so rather than the form forbidding them: the
  * absences already recorded count towards a freshly-chosen « rendre après N sorties », so a copy can
  * be handed in the moment that policy is picked; and an attempt already open when surveillance is
@@ -72,6 +80,26 @@ class QuizInstanceEditType extends AbstractType
                 'input' => 'datetime_immutable',
                 'required' => false,
             ])
+        ;
+
+        // Absent rather than empty for a class with no option: « Tous les étudiants » would then be
+        // the only thing to choose, which is not a choice. The list is the *instance's own* class's
+        // options, so there is nothing to filter and nothing foreign to refuse - Symfony rejects a
+        // value outside `choices` on its own, which is why this field needs no listener of the kind
+        // QuizLaunchType carries.
+        if ([] !== $options['programOptions']) {
+            $builder->add('visibilityOption', EntityType::class, [
+                'class' => Option::class,
+                'choices' => $options['programOptions'],
+                'choice_label' => 'shortName',
+                'label' => 'quizLaunchVisibilityOptionFieldLabel',
+                'help' => 'quizInstanceEditVisibilityOptionFieldHelp',
+                'placeholder' => 'quizLaunchVisibilityOptionAllLabel',
+                'required' => false,
+            ]);
+        }
+
+        $builder
             ->add('secondsPerQuestion', IntegerType::class, [
                 'label' => 'quizLaunchSecondsPerQuestionFieldLabel',
                 'required' => false,
@@ -142,8 +170,9 @@ class QuizInstanceEditType extends AbstractType
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver
-            ->setDefaults(['data_class' => QuizInstance::class, 'supervisionEditable' => false])
+            ->setDefaults(['data_class' => QuizInstance::class, 'supervisionEditable' => false, 'programOptions' => []])
             ->setAllowedTypes('supervisionEditable', 'bool')
+            ->setAllowedTypes('programOptions', 'array')
         ;
     }
 }

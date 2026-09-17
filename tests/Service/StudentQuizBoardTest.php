@@ -17,6 +17,7 @@ use App\Enum\AccessConditionMode;
 use App\Enum\AccessConditionType;
 use App\Enum\QuizMode;
 use App\Repository\ProgramStudentOptionRepository;
+use App\Repository\QuizAttemptRepository;
 use App\Repository\QuizInstanceRepository;
 use App\Security\StructureAccessChecker;
 use App\Service\AccessConditionEvaluator;
@@ -223,6 +224,12 @@ class StudentQuizBoardTest extends TestCase
         $studentOptions = $this->createStub(ProgramStudentOptionRepository::class);
         $studentOptions->method('findOptionsForStudent')->willReturn($heldOptions);
 
-        return new StudentQuizBoard($repository, $gate, new QuizAudience($studentOptions));
+        // No attempt anywhere: these cases are about discovering a quiz, and a quiz already sat is
+        // never narrowed away (QuizAudienceTest covers that half).
+        $attempts = $this->createStub(QuizAttemptRepository::class);
+        $attempts->method('findAttemptedInstanceIds')->willReturn([]);
+        $attempts->method('findForStudent')->willReturn([]);
+
+        return new StudentQuizBoard($repository, $gate, new QuizAudience($studentOptions, $attempts));
     }
 }

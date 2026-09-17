@@ -23,6 +23,11 @@
                     <div class="col-12">{{ form_row(form.name) }}</div>
                     <div class="col-md-6">{{ form_row(form.opensAt) }}</div>
                     <div class="col-md-6">{{ form_row(form.closesAt) }}</div>
+                    {# Absent for a class with no option (App\Form\QuizInstanceEditType): « Tous
+                       les étudiants » alone is not a choice. #}
+                    {% if form.visibilityOption is defined %}
+                        <div class="col-md-6">{{ form_row(form.visibilityOption) }}</div>
+                    {% endif %}
                     <div class="col-md-6">{{ form_row(form.secondsPerQuestion) }}</div>
                     <div class="col-md-6">{{ form_row(form.globalTimeMinutes) }}</div>
                     <div class="col-md-6">{{ form_row(form.scoring) }}</div>
