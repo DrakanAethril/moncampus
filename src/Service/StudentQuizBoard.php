@@ -12,7 +12,8 @@ use App\Repository\QuizInstanceRepository;
 /**
  * "Which quizzes may this student see, and which may they start?" - the single answer, for the web
  * hub (App\Controller\ProgramQuizAttemptController) and its mobile twin
- * (App\Controller\Api\QuizController) alike.
+ * (App\Controller\Api\QuizController) alike. Two rules, in this order: the audience the quiz was
+ * launched to (App\Service\QuizAudience), then its conditions d'accès.
  *
  * It exists because those two screens did not ask. A QuizInstance has been an AccessConditionHost
  * since the conditions shipped and the teacher's screen has offered « Conditions d'accès » on it
@@ -29,17 +30,22 @@ class StudentQuizBoard
     public function __construct(
         private readonly QuizInstanceRepository $instanceRepository,
         private readonly AccessConditionGate $accessGate,
+        private readonly QuizAudience $audience,
     ) {
     }
 
     /**
      * The student's quizzes for one program: deactivated ones already excluded by the repository,
-     * then the gate's own two-step - an « Invisible » quiz leaves the list entirely, a « Grisé » one
-     * stays with the way out written on it.
+     * then the audience, then the gate's own two-step - an « Invisible » quiz leaves the list
+     * entirely, a « Grisé » one stays with the way out written on it.
+     *
+     * The audience comes first, and is not a greying: a quiz narrowed to another option of the class
+     * is not addressed to this student, so there is nothing to tell them about it. « Grisé » is for a
+     * quiz that is theirs and not open yet - it names a way in.
      */
     public function readableFor(Program $program, User $reader, ?\DateTimeImmutable $now = null): StudentQuizReadableInstances
     {
-        $instances = $this->instanceRepository->findActiveForProgram($program);
+        $instances = $this->audience->readableBy($program, $this->instanceRepository->findActiveForProgram($program), $reader);
         $verdicts = $this->accessGate->verdicts($instances, $reader, $now);
 
         return new StudentQuizReadableInstances($verdicts->visibleOnly($instances), $verdicts);
@@ -54,6 +60,6 @@ class StudentQuizBoard
      */
     public function isOpenFor(QuizInstance $instance, User $reader, ?\DateTimeImmutable $now = null): bool
     {
-        return $this->accessGate->isOpen($instance, $reader, $now);
+        return $this->audience->includes($instance, $reader) && $this->accessGate->isOpen($instance, $reader, $now);
     }
 }
