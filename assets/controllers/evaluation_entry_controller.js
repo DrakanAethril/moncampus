@@ -32,7 +32,9 @@ export default class extends Controller {
     connect() {
         this.rows = JSON.parse(JSON.stringify(this.rowsValue));
         this.sections = JSON.parse(JSON.stringify(this.sectionsValue));
-        this.questions = this.sections.flatMap((section) => section.questions);
+        // The band a question belongs to decides how its points move the total, so each question
+        // carries its own section along rather than being looked up by index later.
+        this.questions = this.sections.flatMap((section) => section.questions.map((question) => ({ ...question, section })));
         this.hasRubric = this.questions.length > 0;
         this.nodes = {};
         this.sortDescending = false;
@@ -71,7 +73,7 @@ export default class extends Controller {
         sectionsRow.appendChild(this.spacer(22));
         sectionsRow.appendChild(this.spacer(230));
         for (const section of this.sections) {
-            const band = this.el('div', 'cm-gb-qhead__section', section.name);
+            const band = this.el('div', `cm-gb-qhead__section cm-gb-qhead__section--${section.kind}`, section.name);
             band.title = section.name;
             // 54px per question + the 10px gutter between two columns.
             band.style.width = `${section.questions.length * 54 + (section.questions.length - 1) * 10}px`;
@@ -85,9 +87,14 @@ export default class extends Controller {
         pointsLabel.style.cssText = 'width: 230px; flex: none;';
         columnsRow.appendChild(pointsLabel);
         for (const question of this.questions) {
-            const column = this.el('div', 'cm-gb-qhead__q');
+            const column = this.el('div', `cm-gb-qhead__q cm-gb-qhead__q--${question.section.kind}`);
             column.appendChild(this.el('span', 'cm-gb-qhead__num', question.label));
-            column.appendChild(this.el('span', 'cm-gb-qhead__pts', `/${question.maxPoints}`));
+            // A bonus column reads « +2 » and a malus one « −4 »: the box being filled has to say on
+            // its own which way it moves the grade, since both are entered as a plain magnitude.
+            const points = question.section.signPrefix
+                ? `${question.section.signPrefix}${question.maxPoints}`
+                : `/${question.maxPoints}`;
+            column.appendChild(this.el('span', 'cm-gb-qhead__pts', points));
             columnsRow.appendChild(column);
         }
         const total = this.el('div', 'cm-gb-qhead__total cm-gb-label', `${this.labelsValue.totalLabel} /${this.rubricTotalPoints()}`);
@@ -115,7 +122,7 @@ export default class extends Controller {
         if (this.hasRubric) {
             refs.inputs = {};
             for (const question of this.questions) {
-                const input = this.el('input', 'cm-gb-qinput');
+                const input = this.el('input', `cm-gb-qinput cm-gb-qinput--${question.section.kind}`);
                 input.inputMode = 'decimal';
                 input.placeholder = '–';
                 input.value = this.answerDisplay(row.answers?.[question.id]);
@@ -342,9 +349,13 @@ export default class extends Controller {
 
     // ---- Utilitaires ----------------------------------------------------------------------
 
+    // What the evaluation is marked out of: the standard bands alone. Bonus and malus are awarded on
+    // top of it and never widen it - that is what lets a grade come out at 22 under a « Total /20 ».
     // Rounding: adding quarter points in floating point quickly gives 20.000000000000004.
     rubricTotalPoints() {
-        return Math.round(this.questions.reduce((sum, question) => sum + question.maxPoints, 0) * 100) / 100;
+        const standard = this.questions.filter((question) => question.section.kind === 'standard');
+
+        return Math.round(standard.reduce((sum, question) => sum + question.maxPoints, 0) * 100) / 100;
     }
 
     answerDisplay(value) {

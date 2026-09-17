@@ -272,11 +272,15 @@ class SelfAssessmentController extends AbstractController
 
             if (null !== $points) {
                 $any = true;
-                $total += $points;
+                // Estimates are entered as magnitudes, bonus and malus included; the band's sign is
+                // what turns a 2 in the malus column into two points off the estimated total. Floored
+                // at 0 like the teacher's own total (App\Service\EvaluationAverageCalculator), so the
+                // two sides of the comparison cannot disagree about what a heavy malus produces.
+                $total += ($question->getSection()?->getKind()->sign() ?? 1) * $points;
             }
         }
 
-        $selfAssessment->setEstimatedValue($any ? round($total, 2) : null);
+        $selfAssessment->setEstimatedValue($any ? round(max(0.0, $total), 2) : null);
     }
 
     private function clamp(mixed $raw, float $max): ?float
