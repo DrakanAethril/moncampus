@@ -53,7 +53,7 @@
                                 <th>{{ 'sharedDocumentTeacherColumnLabel'|trans }}</th>
                             {% endif %}
                             <th>{{ 'sharedDocumentAvailableColumnLabel'|trans }}</th>
-                            <th class="cm-worktable__action"></th>
+                            <th class="cm-worktable__action cm-worktable__action--pair"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -83,7 +83,12 @@
                                     <td>{{ share.teacher.displayName }}</td>
                                 {% endif %}
                                 <td>{{ share.availableAt|date('d/m/Y') }}</td>
-                                <td class="cm-worktable__action">
+                                <td class="cm-worktable__action cm-worktable__action--pair">
+                                    {# « Télécharger » first, « Ouvrir » second: the same pair, in the
+                                       same order, on both screens. A folder gives back its whole
+                                       subtree as one archive - the label says so, because a click
+                                       that answers with a .zip should not be a surprise. #}
+                                    <a class="cm-btn cm-btn--sm cm-btn--outline" href="{{ path('app_student_shared_document_download', {id: share.id}) }}">{{ (node.folder ? 'sharedDocumentDownloadFolderAction' : 'sharedDocumentDownloadAction')|trans }}</a>
                                     <a class="cm-btn cm-btn--sm cm-btn--outline" href="{{ path('app_student_shared_document_open', {id: share.id}) }}">{{ (node.folder ? 'sharedDocumentBrowseAction' : 'sharedDocumentOpenAction')|trans }}</a>
                                 </td>
                             </tr>

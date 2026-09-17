@@ -5367,6 +5367,10 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-worktable__action { width: 96px; text-align: right; }
 .cm-worktable__action a { font: 600 12.5px var(--cm-font-ui); color: var(--cm-brand-strong); text-decoration: none; }
 .cm-worktable__action a:hover { text-decoration: underline; }
+/* Two gestures on the same row - « Télécharger » then « Ouvrir ». The 96px above holds one button;
+   the pair needs room and must not wrap, or the second one drops under the first. */
+.cm-worktable__action--pair { width: 210px; white-space: nowrap; }
+.cm-worktable__action--pair .cm-btn + .cm-btn { margin-left: 6px; }
 .cm-worktable__empty { color: var(--cm-faint); font-size: 13px; }
 
 /* An assignment's state reads from the color of its deadline, the whole row turning pink once it
