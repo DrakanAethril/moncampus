@@ -184,7 +184,13 @@ class DossierController extends AbstractController
         $this->stamp($dossier);
         $this->entityManager->flush();
 
-        return $this->redirectToRoute('app_dossier_documents', ['id' => $dossier->getId(), 'document' => $document->getId()]);
+        // Adding a document is a gesture somebody repeats: the panel goes back to « Nouveau
+        // document » rather than staying on the row it has just written, whose properties are
+        // already drawn on the left. Correcting an existing one keeps it selected - there, the
+        // panel is the only place the change is readable.
+        $panel = null === $documentId ? 'new' : (string) $document->getId();
+
+        return $this->redirectToRoute('app_dossier_documents', ['id' => $dossier->getId(), 'document' => $panel]);
     }
 
     #[Route(path: '/dossiers/{id}/documents/{documentId}/delete', name: 'app_dossier_document_delete', requirements: ['id' => '\d+', 'documentId' => '\d+'], methods: ['POST'])]
