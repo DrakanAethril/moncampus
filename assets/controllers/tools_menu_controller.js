@@ -121,32 +121,23 @@ export default class extends Controller {
     }
 
     /**
-     * Bootstrap deliberately skips Popper positioning inside a `.navbar`, so the panel is pinned to
-     * the left edge of its bar entry and grows rightward whatever the viewport does. A panel this
-     * wide hanging off an entry in the middle of the row runs off the screen; shift it back by
-     * exactly what overflows.
-     *
-     * The width the columns gave it is then pinned for as long as it stays open: the results grid
-     * is narrower than they are, and a panel that shrank under the first keystroke would move the
+     * Pins the width the columns gave the panel for as long as it stays open: the results grid is
+     * narrower than they are, and a panel that shrank under the first keystroke would move the
      * entries the eye is still on.
+     *
+     * Horizontal placement is CSS's alone - the panel is centred on the bar, so it cannot run off
+     * either edge and nothing has to be shifted back. Below the navbar-expand breakpoint it stacks
+     * statically inside the collapsed menu, where it takes the width of that menu and there is no
+     * geometry to pin.
      */
     #fit() {
-        this.element.style.marginLeft = '';
         this.element.style.width = '';
 
         if (window.getComputedStyle(this.element).position !== 'absolute') {
             return;
         }
 
-        const margin = 12;
-        const box = this.element.getBoundingClientRect();
-        const overflow = box.right - (window.innerWidth - margin);
-
-        if (overflow > 0) {
-            this.element.style.marginLeft = `${-overflow}px`;
-        }
-
-        this.element.style.width = `${box.width}px`;
+        this.element.style.width = `${this.element.getBoundingClientRect().width}px`;
     }
 
     #collect() {
