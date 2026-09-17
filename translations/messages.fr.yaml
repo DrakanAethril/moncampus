@@ -2490,6 +2490,11 @@ programToolsAddSeparateLabel: 'À séparer'
 programToolsAddTogetherLabel: 'À réunir'
 programToolsCreateGroupsButtonLabel: 'Créer les groupes'
 programToolsReshuffleButtonLabel: 'Rebrasser les groupes déverrouillés'
+programToolsRecalculateButtonLabel: "Recalculer l'effectif"
+programToolsRecalculateButtonTitle: "Retirer les étudiants qui ont quitté la classe et placer ceux qui y sont entrés depuis, sans refaire la répartition"
+programToolsRecalculateUpToDateToast: "L'effectif est déjà à jour"
+programToolsRecalculateDoneToast: 'Effectif recalculé : %added% ajouté(s), %removed% retiré(s)'
+programToolsRecalculateAllLockedMessage: "%count% étudiant(s) n'ont pas pu être placés : tous les groupes sont verrouillés."
 programToolsGroupSummaryTemplateLabel: '%count% %studentWord% en jeu → %groups% %groupWord%'
 programToolsNetworkErrorMessage: 'Impossible de contacter le serveur.'
 programToolsPairIncompleteMessage: 'Choisissez deux étudiants avant d''ajouter la contrainte.'

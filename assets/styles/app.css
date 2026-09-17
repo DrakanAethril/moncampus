@@ -2157,6 +2157,11 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     border-radius: var(--cm-radius-sm); padding: 11px; font: 600 13px var(--cm-font-ui); cursor: pointer;
 }
 .cm-grp-reshuffle-btn:hover { background: var(--cm-gold-bg); }
+.cm-grp-recalc-btn {
+    margin-top: -8px; border: 1px solid var(--cm-border); background: var(--cm-surface); color: var(--cm-muted);
+    border-radius: var(--cm-radius-sm); padding: 11px; font: 600 13px var(--cm-font-ui); cursor: pointer;
+}
+.cm-grp-recalc-btn:hover { background: var(--cm-bg); }
 .cm-grp-summary { font-size: 12.5px; color: var(--cm-faint); margin-top: -8px; }
 .cm-grp-error { font-size: 12.5px; color: var(--cm-red-tx); background: var(--cm-red-bg); border-radius: var(--cm-radius-sm); padding: 9px 11px; }
 
