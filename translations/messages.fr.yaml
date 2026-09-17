@@ -1354,6 +1354,8 @@ ufaAlternanceReactivatedFlashMessage: "L'alternance a été réactivée : l'étu
 
 # Terminer une alternance - bouton en pied de l'écran de modification (Ufa\AlternanceController::terminate())
 ufaAlternanceTerminateButtonLabel: "Terminer l'alternance"
+ufaAlternanceTerminateRowActionLabel: 'Terminer'
+ufaAlternanceTerminateRowConfirmText: "Terminer cette alternance ? Plus aucun suivi ni document ne sera demandé au tuteur, à l'alternant ni au centre de formation, et l'étudiant ne sera plus considéré comme alternant. Le livret et les évaluations déjà saisies restent consultables."
 ufaAlternanceTerminateConfirmText: "Terminer l'alternance de %student% ? Plus aucun suivi ni document ne sera demandé au tuteur, à l'alternant ni au centre de formation, et l'étudiant ne sera plus considéré comme alternant. Le livret et les évaluations déjà saisies restent consultables."
 ufaAlternanceTerminatedFlashMessage: "L'alternance a été terminée : plus rien n'est demandé au tuteur, à l'alternant ni au centre, et l'étudiant n'est plus considéré comme alternant."
 ufaAlternanceAlreadyTerminatedFlashMessage: "Cette alternance était déjà terminée."

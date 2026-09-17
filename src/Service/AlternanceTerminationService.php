@@ -30,6 +30,10 @@ use Doctrine\ORM\EntityManagerInterface;
  *
  * resume() is the exact inverse, and exists because the pair has to hold: an alternance put back in
  * service whose student stayed untagged would be live for the tutor and invisible to the student.
+ *
+ * Two screens end an alternance - the UFA dossier's own « Terminer l'alternance » and the row action
+ * of Formation > Paramétrage > Tuteurs - and both come through here, because they write the same
+ * fact and must therefore carry the same consequence. Only the UFA dashboard offers resume().
  */
 class AlternanceTerminationService
 {
