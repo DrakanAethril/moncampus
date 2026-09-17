@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Ufa;
 
 use App\Attribute\RequiresFeature;
+use App\Entity\InternshipEvaluationPeriod;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Program;
 use App\Enum\Feature;
@@ -86,16 +87,47 @@ class ReminderController extends AbstractController
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
     public function reminders(Request $request, SchoolYearRepository $schoolYearRepository, ProgramRepository $programRepository, InternshipEvaluationPeriodRepository $periodRepository, InternshipTutorLinkRepository $tutorLinkRepository, AlternancePeriodStatusResolver $statusResolver): Response
     {
+        // The screen offers a bilan only when that bilan has somebody to chase, so every period
+        // is resolved up front rather than the selected one alone: "which bilans are worth
+        // opening" is the same question as "who is late on each", asked one level up.
         $schoolYear = $schoolYearRepository->findCurrentOrMostRecent();
         $periods = [];
+        /** @var array<int, list<array{tutorLink: InternshipTutorLink, status: AlternanceStepStatus, badge: array{label: string, class: string}, tone: string}>> $rowsByPeriod */
+        $rowsByPeriod = [];
+
         foreach (null !== $schoolYear ? $programRepository->findAlternanceForSchoolYear($schoolYear, false, $this->currentUser()) : [] as $program) {
-            foreach ($periodRepository->findAllActiveForProgram($program) as $period) {
+            $programPeriods = $periodRepository->findAllActiveForProgram($program);
+            if ([] === $programPeriods) {
+                continue;
+            }
+
+            foreach ($programPeriods as $period) {
                 $periods[] = $period;
+            }
+
+            foreach ($tutorLinkRepository->findAllActiveForProgram($program) as $tutorLink) {
+                foreach ($statusResolver->resolveStepsForAllPeriods($tutorLink) as $periodId => $status) {
+                    if (\in_array($status->step, [AlternanceStepStatus::STEP_TUTOR, AlternanceStepStatus::STEP_STUDENT], true)) {
+                        $rowsByPeriod[$periodId][] = [
+                            'tutorLink' => $tutorLink,
+                            'status' => $status,
+                            'badge' => $statusResolver->badgeFor($status),
+                            'tone' => $statusResolver->deadlineToneFor($status->period?->getEndDate()),
+                        ];
+                    }
+                }
             }
         }
 
-        // Blank is what the "—" option of the period filter submits; it means "no period", not a
-        // malformed request. QueryValue reads it that way, getInt() answers a 400.
+        $periods = array_values(array_filter(
+            $periods,
+            static fn (InternshipEvaluationPeriod $period): bool => [] !== ($rowsByPeriod[(int) $period->getId()] ?? []),
+        ));
+
+        // Blank is what a bookmarked "?period=" submits; it means "no period", not a malformed
+        // request. QueryValue reads it that way, getInt() answers a 400. An unknown or
+        // no-longer-pending id falls back to the first bilan still worth chasing - which is also
+        // where the send POST lands once it has emptied the bilan it was sent from.
         $selectedPeriodId = QueryValue::int($request, 'period');
         $selectedPeriod = null;
         foreach ($periods as $period) {
@@ -104,21 +136,13 @@ class ReminderController extends AbstractController
                 break;
             }
         }
-
-        $rows = [];
-        if (null !== $selectedPeriod) {
-            foreach ($tutorLinkRepository->findAllActiveForProgram($selectedPeriod->getProgram()) as $tutorLink) {
-                $status = $statusResolver->resolveStepForPeriod($tutorLink, $selectedPeriod);
-                if (\in_array($status->step, [AlternanceStepStatus::STEP_TUTOR, AlternanceStepStatus::STEP_STUDENT], true)) {
-                    $rows[] = ['tutorLink' => $tutorLink, 'status' => $status, 'badge' => $statusResolver->badgeFor($status)];
-                }
-            }
-        }
+        $selectedPeriod ??= $periods[0] ?? null;
 
         return $this->render('ufa/alternance/reminders.html.twig', [
             'periods' => $periods,
             'selectedPeriod' => $selectedPeriod,
-            'rows' => $rows,
+            'selectedTone' => $statusResolver->deadlineToneFor($selectedPeriod?->getEndDate()),
+            'rows' => null !== $selectedPeriod ? ($rowsByPeriod[(int) $selectedPeriod->getId()] ?? []) : [],
         ]);
     }
 

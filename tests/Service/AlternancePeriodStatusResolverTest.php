@@ -203,6 +203,76 @@ class AlternancePeriodStatusResolverTest extends TestCase
         $this->assertSame(AlternanceStepStatus::STEP_NOT_OPENED, $status->step);
     }
 
+    public function testResolveStepsForAllPeriodsStopsAtTheFirstOpenPeriodAndCallsTheLaterOnesNotOpened(): void
+    {
+        $tutorLink = $this->tutorLink();
+        $this->engagementRepository->method('findOneForTutorLink')->willReturn($this->completeEngagement());
+
+        $period1 = $this->period(1);
+        $period2 = $this->period(2);
+        $this->periodRepository->method('findAllActiveForProgram')->willReturn([$period1, $period2]);
+        $this->tutorEvaluationRepository->method('findOneForTutorLinkAndEvaluationPeriod')->willReturn(null);
+
+        $statuses = $this->resolver->resolveStepsForAllPeriods($tutorLink);
+
+        $this->assertSame([1, 2], array_keys($statuses));
+        $this->assertSame(AlternanceStepStatus::STEP_TUTOR, $statuses[1]->step);
+        $this->assertSame(AlternanceStepStatus::STEP_NOT_OPENED, $statuses[2]->step);
+    }
+
+    public function testResolveStepsForAllPeriodsAgreesWithResolveStepForPeriodOnEveryPeriod(): void
+    {
+        $tutorLink = $this->tutorLink();
+        $this->engagementRepository->method('findOneForTutorLink')->willReturn($this->completeEngagement());
+
+        $period1 = $this->period(1);
+        $period2 = $this->period(2);
+        $this->periodRepository->method('findAllActiveForProgram')->willReturn([$period1, $period2]);
+
+        $signedTutorEvaluation = $this->createStub(InternshipTutorEvaluation::class);
+        $signedTutorEvaluation->method('isSigned')->willReturn(true);
+        $this->tutorEvaluationRepository->method('findOneForTutorLinkAndEvaluationPeriod')->willReturn($signedTutorEvaluation);
+        $this->studentEvaluationRepository->method('findOneForStudentAndEvaluationPeriod')->willReturn(null);
+
+        $statuses = $this->resolver->resolveStepsForAllPeriods($tutorLink);
+
+        $this->assertSame($this->resolver->resolveStepForPeriod($tutorLink, $period1)->step, $statuses[1]->step);
+        $this->assertSame($this->resolver->resolveStepForPeriod($tutorLink, $period2)->step, $statuses[2]->step);
+    }
+
+    public function testTerminatedAlternanceReportsEveryPeriodInactive(): void
+    {
+        $tutorLink = $this->tutorLink(inactive: true);
+        $this->periodRepository->method('findAllActiveForProgram')->willReturn([$this->period(1), $this->period(2)]);
+
+        $statuses = $this->resolver->resolveStepsForAllPeriods($tutorLink);
+
+        $this->assertSame(AlternanceStepStatus::STEP_INACTIVE, $statuses[1]->step);
+        $this->assertSame(AlternanceStepStatus::STEP_INACTIVE, $statuses[2]->step);
+    }
+
+    public function testDeadlineToneRampsFromGreenToRedAsTheEndDateApproaches(): void
+    {
+        $today = new \DateTimeImmutable('today');
+
+        $this->assertSame('far', $this->resolver->deadlineToneFor($today->modify('+31 days')));
+        $this->assertSame('soon', $this->resolver->deadlineToneFor($today->modify('+30 days')));
+        $this->assertSame('soon', $this->resolver->deadlineToneFor($today->modify('+8 days')));
+        $this->assertSame('near', $this->resolver->deadlineToneFor($today->modify('+7 days')));
+        $this->assertSame('near', $this->resolver->deadlineToneFor($today->modify('+1 day')));
+        $this->assertSame('over', $this->resolver->deadlineToneFor($today));
+        $this->assertSame('over', $this->resolver->deadlineToneFor($today->modify('-1 day')));
+    }
+
+    private function period(int $id): InternshipEvaluationPeriod
+    {
+        $period = $this->createStub(InternshipEvaluationPeriod::class);
+        $period->method('getId')->willReturn($id);
+        $period->method('isPast')->willReturn(false);
+
+        return $period;
+    }
+
     private function tutorLink(bool $inactive = false): InternshipTutorLink
     {
         $tutorLink = $this->createStub(InternshipTutorLink::class);
