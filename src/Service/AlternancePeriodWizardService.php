@@ -22,6 +22,19 @@ use App\Repository\InternshipTutorEvaluationRepository;
  * within-one-role step order (1→2→3→4) is deliberately NOT enforced here: decision #3 makes a
  * role's own steps 1-3 silent, freely-revisitable drafts, only the cross-role gates below and the
  * post-signature/post-closure locks matter.
+ *
+ * A terminated alternance (InternshipTutorLink::isTerminated()) is read-only for all three roles at
+ * once, and that is settled here rather than in each of the five wizard actions: « on ne demande
+ * plus rien » has to hold for the two portals and for a direct URL alike, and a gate repeated five
+ * times is a gate forgotten once.
+ *
+ * Termination is deliberately a read-only rule and not a closed "open" gate: the is*Open() methods
+ * say whose turn the chain reached, and terminating freezes that reading rather than rewinding it.
+ * A period whose wizard was reachable stays reachable, showing what was filled in with nothing left
+ * to submit - the staff chips on the suivi screen are that consultation path. What answers "is
+ * anyone still being asked" is not this class but the lists: a terminated alternance leaves the
+ * tutor's own portal, the student's « Mon alternance » and every pending count, all of which query
+ * on inactiveDate.
  */
 class AlternancePeriodWizardService
 {
@@ -82,7 +95,7 @@ class AlternancePeriodWizardService
     // way nothing more can be edited on their behalf.
     public function isTutorStepReadOnly(InternshipTutorLink $tutorLink, InternshipEvaluationPeriod $period): bool
     {
-        if ($this->isPeriodClosed($tutorLink, $period)) {
+        if ($tutorLink->isTerminated() || $this->isPeriodClosed($tutorLink, $period)) {
             return true;
         }
 
@@ -91,12 +104,21 @@ class AlternancePeriodWizardService
 
     public function isStudentStepReadOnly(InternshipTutorLink $tutorLink, InternshipEvaluationPeriod $period): bool
     {
-        if ($this->isPeriodClosed($tutorLink, $period)) {
+        if ($tutorLink->isTerminated() || $this->isPeriodClosed($tutorLink, $period)) {
             return true;
         }
 
         $student = $tutorLink->getStudent();
 
         return null !== $student && ($this->studentEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $period)?->isSigned() ?? false);
+    }
+
+    // The chargé de suivi's counterpart to the two above - their wizard had no read-only rule of
+    // its own, only "the period is closed", which is why this arrives with the termination gate.
+    // Closing a period is the last thing the centre does, and a terminated alternance is not
+    // closed on its way out: what is not signed stays unsigned.
+    public function isSupervisorStepReadOnly(InternshipTutorLink $tutorLink, InternshipEvaluationPeriod $period): bool
+    {
+        return $tutorLink->isTerminated() || $this->isPeriodClosed($tutorLink, $period);
     }
 }

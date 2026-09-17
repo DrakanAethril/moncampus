@@ -17,6 +17,11 @@
         <div class="card-footer d-flex justify-content-between align-items-center">
             {% if engagement.signedTutorAt %}
                 <span class="badge bg-green-lt">{{ 'ufaAlternanceEngagementSignedOnLabel'|trans({'%date%': engagement.signedTutorAt|date('d/m/Y')}) }}</span>
+            {% elseif tutorLink.terminated %}
+                {# The alternance left this tutor's own list when it was terminated; reaching this
+                   page now means a page left open, so it says so instead of offering a signature
+                   the service would refuse. #}
+                <span class="text-secondary small">{{ 'ufaAlternanceTerminatedNothingToDoLabel'|trans }}</span>
             {% else %}
                 <span class="text-secondary small">{{ 'ufaAlternanceEngagementTutorPromptLabel'|trans }}</span>
                 <form method="post" action="{{ path('app_internship_tutor_engagement_sign', {tutorLinkId: tutorLink.id}) }}">

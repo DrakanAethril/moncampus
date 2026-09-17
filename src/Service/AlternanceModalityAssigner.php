@@ -20,8 +20,12 @@ use Doctrine\ORM\EntityManagerInterface;
  * untagged alternant is missing from the alternance signature sheets and gets the wrong laptop-loan
  * type suggested. Every path that creates an InternshipTutorLink now goes through here.
  *
- * The reverse is deliberately NOT done: deactivating an alternance does not untag the student, who
- * followed the modality for that year whatever happened to the contract.
+ * removeTag() is its mirror, and has exactly one caller: the UFA's « Terminer l'alternance »
+ * (App\Service\AlternanceTerminationService), where losing the tag is the point - it is what stops
+ * the student being an alternant for App\Service\StudentAlternanceProgramResolver, and with them the
+ * « Mon alternance » tab, its page and its dashboard card. Deactivating a tutor link from Formation >
+ * Paramétrage > Tuteurs still does NOT untag: that gesture tidies up a link, it does not declare the
+ * contract over.
  *
  * Does not flush - callers are mid-transaction (see App\Service\AlternanceImport\ImportExecutor) or
  * about to flush their own form submission.
@@ -60,5 +64,28 @@ class AlternanceModalityAssigner
         $this->entityManager->persist(new ProgramStudentModality($program, $student, $alternanceModality));
 
         return true;
+    }
+
+    /**
+     * Drops whatever ties this student to this Program's alternance modality.
+     *
+     * Every matching row is removed rather than the first one found: a duplicate tag is invisible on
+     * screen, and leaving one behind would leave the student an alternant with nothing behind it -
+     * the precise state this exists to undo. Only the alternance modality is touched; a student
+     * tagged with an option or another modality keeps it.
+     *
+     * @return bool whether anything was actually removed
+     */
+    public function removeTag(Program $program, User $student): bool
+    {
+        $removed = false;
+        foreach ($this->studentModalityRepository->findAllForProgramAndStudent($program, $student) as $existing) {
+            if (true === $existing->getModality()?->isAlternance()) {
+                $this->entityManager->remove($existing);
+                $removed = true;
+            }
+        }
+
+        return $removed;
     }
 }

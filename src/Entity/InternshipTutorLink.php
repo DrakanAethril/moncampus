@@ -99,6 +99,10 @@ class InternshipTutorLink
     #[ORM\Column(name: 'creation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $creationDate;
 
+    // The day this alternance stopped asking anything of anyone - what the UFA's « Terminer
+    // l'alternance » gesture writes (see App\Service\AlternanceTerminationService), and what the
+    // dashboard reads as « terminée le … ». Nothing is ever deleted: the row, its engagement and
+    // its evaluations stay readable, only the chain goes quiet.
     #[ORM\Column(name: 'inactive_date', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $inactiveDate = null;
 
@@ -241,5 +245,13 @@ class InternshipTutorLink
         $this->inactiveDate = $inactiveDate;
 
         return $this;
+    }
+
+    // The domain reading of $inactiveDate, and the one gate every screen asks: a terminated
+    // alternance is consulted, never filled in. Kept as a method rather than repeated as
+    // "getInactiveDate() !== null" so the question has one name.
+    public function isTerminated(): bool
+    {
+        return null !== $this->inactiveDate;
     }
 }

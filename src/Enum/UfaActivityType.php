@@ -26,6 +26,8 @@ enum UfaActivityType: string
     case PeriodTeamSigned = 'period_team_signed';
     case PeriodSupervisorClosed = 'period_supervisor_closed';
     case ReminderSent = 'reminder_sent';
+    case AlternanceTerminated = 'alternance_terminated';
+    case AlternanceResumed = 'alternance_resumed';
 
     /**
      * The placeholders available are those the recorder puts in the payload: %student%, %tutor%,
@@ -42,6 +44,8 @@ enum UfaActivityType: string
             self::PeriodTeamSigned => 'ufaActivityPeriodTeamSignedText',
             self::PeriodSupervisorClosed => 'ufaActivityPeriodSupervisorClosedText',
             self::ReminderSent => 'ufaActivityReminderSentText',
+            self::AlternanceTerminated => 'ufaActivityAlternanceTerminatedText',
+            self::AlternanceResumed => 'ufaActivityAlternanceResumedText',
         };
     }
 }

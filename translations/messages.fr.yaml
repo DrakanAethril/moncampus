@@ -1313,7 +1313,7 @@ ufaAlternanceBadgeRoleTutorLabel: 'tuteur'
 ufaAlternanceBadgeRoleStudentLabel: 'alternant'
 ufaAlternanceBadgeRoleSupervisorLabel: 'chargé de suivi'
 ufaAlternanceBadgeRoleCenterLabel: 'centre de formation'
-ufaAlternanceStatusInactiveBadgeLabel: 'Alternance inactive'
+ufaAlternanceStatusInactiveBadgeLabel: 'Alternance terminée'
 ufaAlternanceStatusNotOpenedBadgeLabel: 'Non ouverte'
 ufaAlternanceStatusEngagementBadgeLabel: 'Engagement — %role%'
 ufaAlternanceStatusEngagementCompleteBadgeLabel: 'Engagement complet'
@@ -1348,11 +1348,19 @@ ufaAlternanceActionSuiviLabel: 'Suivi'
 ufaAlternanceActionLivretLabel: 'Livret'
 ufaAlternanceActionRelancerLabel: 'Relancer'
 ufaAlternanceActionReactivateLabel: 'Réactiver'
-ufaAlternanceInactiveSinceLabel: 'rupture au %date%'
 ufaAlternanceEmptyStateLabel: 'Aucune alternance pour cette sélection.'
 ufaAlternancePastYearNoteLabel: 'Les années passées restent consultables, en lecture seule.'
-ufaAlternanceDeactivatedFlashMessage: "L'alternance a été désactivée."
-ufaAlternanceReactivatedFlashMessage: "L'alternance a été réactivée."
+ufaAlternanceReactivatedFlashMessage: "L'alternance a été réactivée : l'étudiant est de nouveau considéré comme alternant."
+
+# Terminer une alternance - bouton en pied de l'écran de modification (Ufa\AlternanceController::terminate())
+ufaAlternanceTerminateButtonLabel: "Terminer l'alternance"
+ufaAlternanceTerminateConfirmText: "Terminer l'alternance de %student% ? Plus aucun suivi ni document ne sera demandé au tuteur, à l'alternant ni au centre de formation, et l'étudiant ne sera plus considéré comme alternant. Le livret et les évaluations déjà saisies restent consultables."
+ufaAlternanceTerminatedFlashMessage: "L'alternance a été terminée : plus rien n'est demandé au tuteur, à l'alternant ni au centre, et l'étudiant n'est plus considéré comme alternant."
+ufaAlternanceAlreadyTerminatedFlashMessage: "Cette alternance était déjà terminée."
+ufaAlternanceTerminatedOnLabel: 'terminée le %date%'
+ufaAlternanceTerminatedBannerTitleLabel: 'Alternance terminée le %date%.'
+ufaAlternanceTerminatedBannerBodyLabel: "Plus aucun suivi n'est demandé. Le livret et les évaluations déjà saisies restent consultables."
+ufaAlternanceTerminatedNothingToDoLabel: "Cette alternance est terminée : il n'y a plus rien à y remplir."
 ufaAlternanceShowPageHeading: "Suivi de l'alternance"
 ufaAlternanceLivretPageHeading: "Livret de suivi"
 ufaAlternanceLivretSommaireTitle: 'Sommaire'
@@ -1417,6 +1425,7 @@ ufaAlternanceWizardPeriodsNotOpenFlashMessage: "Les périodes d'évaluation ne s
 ufaAlternanceWizardStepIncompleteFlashMessage: 'Répondez à tous les champs de cette étape avant de passer à la suivante.'
 internshipTutorEvaluationChooseAnswerPlaceholder: 'Choisissez une réponse'
 ufaAlternanceWizardStepNotOpenFlashMessage: "Cette étape n'est pas encore ouverte."
+ufaAlternanceWizardRoleNotAskedLabel: 'Non demandé'
 ufaAlternanceWizardRoleInProgressLabel: 'En cours'
 ufaAlternanceWizardRoleWaitingLabel: 'En attente'
 wizardStepCaptionLabel: 'Étape %step% sur %total% · %name%'
@@ -1536,6 +1545,8 @@ ufaActivityPeriodStudentSignedText: "%student% a signé son évaluation de %peri
 ufaActivityPeriodTeamSignedText: "L'équipe pédagogique a signé %period% pour %student%"
 ufaActivityPeriodSupervisorClosedText: '%actor% a clôturé %period% pour %student%'
 ufaActivityReminderSentText: '%actor% a relancé %role% pour %student%%periodSuffix%'
+ufaActivityAlternanceTerminatedText: "%actor% a terminé l'alternance de %student%"
+ufaActivityAlternanceResumedText: "%actor% a réactivé l'alternance de %student%"
 platformActivityLoginPasswordText: "%user% s'est connecté par mot de passe"
 platformActivityLoginMagicLinkText: "%user% s'est connecté par lien de connexion"
 activityRecentCardTitle: 'Dernières activités'

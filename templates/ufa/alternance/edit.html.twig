@@ -45,12 +45,33 @@
                         <div class="col-md-6">{{ form_row(form.newEnterpriseAddress) }}</div>
                     </div>
                 </div>
-                <div class="d-flex justify-content-between">
-                    <a href="{{ path('app_ufa_alternance_show', {id: tutorLink.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <a href="{{ path('app_ufa_alternance_show', {id: tutorLink.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                        {# « Terminer l'alternance » belongs to the modification screen only - there is
+                           nothing to end while the alternance is being created. The button sits here
+                           but posts the sibling form below through its form="…" attribute: a <form>
+                           cannot be nested inside the edit form, and this keeps the gesture where the
+                           decision is taken. #}
+                        {% if tutorLink.terminated %}
+                            <span class="text-secondary small">{{ 'ufaAlternanceTerminatedOnLabel'|trans({'%date%': tutorLink.inactiveDate|date('d/m/Y')}) }}</span>
+                        {% else %}
+                            <button type="submit" form="ufa-alternance-terminate" class="cm-btn cm-btn--danger"
+                                    data-controller="confirm-submit"
+                                    data-confirm-submit-message-value="{{ 'ufaAlternanceTerminateConfirmText'|trans({'%student%': tutorLink.student.displayName ?? tutorLink.student.username}) }}"
+                                    data-action="click->confirm-submit#confirm">{{ 'ufaAlternanceTerminateButtonLabel'|trans }}</button>
+                        {% endif %}
+                    </div>
                     {{ form_widget(form.submit, {'label': 'submitEditAction'}) }}
                 </div>
                 {{ form_rest(form) }}
             {{ form_end(form) }}
         </div>
     </div>
+
+    {% if not tutorLink.terminated %}
+        <form id="ufa-alternance-terminate" method="post" action="{{ path('app_ufa_alternance_terminate', {id: tutorLink.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('ufa_alternance_terminate') }}">
+        </form>
+    {% endif %}
 {% endblock %}

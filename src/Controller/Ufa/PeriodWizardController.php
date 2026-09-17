@@ -229,7 +229,9 @@ class PeriodWizardController extends AbstractController
         $tutorEvaluation = $stepBuilder->findOrPrepare($tutorLink, $period);
         $studentEvaluation = $studentEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $period) ?? new InternshipStudentEvaluation($student, $tutorLink->getProgram(), $period);
         $supervisorEvaluation = $supervisorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $period) ?? new InternshipSupervisorEvaluation($tutorLink, $period);
-        $isClosed = $wizardService->isPeriodClosed($tutorLink, $period);
+        // Read-only rather than merely closed: a terminated alternance asks nothing of the centre
+        // either, so the two step forms and the closure itself are all frozen by the same flag.
+        $isClosed = $wizardService->isSupervisorStepReadOnly($tutorLink, $period);
 
         $form = \in_array($step, ['comportement', 'competences'], true) ? $stepBuilder->buildStepForm($step, $tutorEvaluation, $tutorLink->getProgram()) : null;
 

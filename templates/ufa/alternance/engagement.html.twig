@@ -52,6 +52,11 @@
                         <div class="fw-bold">{{ 'ufaAlternanceRoleCenterLabel'|trans }}</div>
                         {% if engagement.signedCenterAt %}
                             <div class="text-secondary small">{{ 'ufaAlternanceEngagementSignedOnLabel'|trans({'%date%': engagement.signedCenterAt|date('d/m/Y')}) }}</div>
+                        {% elseif tutorLink.terminated %}
+                            {# Nothing left to make available: the engagement of a terminated
+                               alternance stays on screen as it was, unsigned and unsignable
+                               (AlternanceEngagementService refuses it too). #}
+                            <div class="text-secondary small">{{ 'ufaAlternanceTerminatedNothingToDoLabel'|trans }}</div>
                         {% elseif engagement.signedTutorAt and engagement.signedStudentAt %}
                             <div class="text-secondary small mb-2">{{ tutorLink.supervisor.displayName ?? tutorLink.supervisor.username ?? app.user.displayName }}</div>
                             <form method="post" action="{{ path('app_ufa_alternance_engagement_sign', {id: tutorLink.id}) }}">
