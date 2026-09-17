@@ -14,6 +14,7 @@ use App\Repository\ProgramRepository;
 use App\Repository\QuizAttemptRepository;
 use App\Repository\QuizInstanceRepository;
 use App\Service\QueryValue;
+use App\Service\QuizAudience;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\HttpFoundation\Request;
@@ -40,7 +41,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class QuizTrackingController extends AbstractController
 {
     #[Route(path: '/tools/quiz', name: 'app_tools_quiz', methods: ['GET'])]
-    public function index(Request $request, ProgramRepository $programRepository, QuizInstanceRepository $instanceRepository, QuizAttemptRepository $attemptRepository): Response
+    public function index(Request $request, ProgramRepository $programRepository, QuizInstanceRepository $instanceRepository, QuizAttemptRepository $attemptRepository, QuizAudience $audience): Response
     {
         /** @var User $viewer */
         $viewer = $this->getUser();
@@ -82,7 +83,9 @@ class QuizTrackingController extends AbstractController
                 'instance' => $instance,
                 'state' => $states[(int) $instance->getId()],
                 'concludedCount' => \count($attemptRepository->findConcludedForInstance($instance)),
-                'studentCount' => $instance->getProgram()?->getStudents()->count() ?? 0,
+                // The audience, not the class: a quiz narrowed to an option must be counted
+                // « n / students of that option » (App\Service\QuizAudience).
+                'studentCount' => $audience->count($instance),
             ];
         }
 

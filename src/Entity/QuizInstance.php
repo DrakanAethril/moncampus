@@ -66,6 +66,23 @@ class QuizInstance implements AccessConditionHost
     #[ORM\OrderBy(['name' => 'ASC'])]
     private Collection $sourceTemplates;
 
+    /**
+     * Narrows the quiz to the students of one of the class's own options - null means the whole
+     * class, which is what the launch form opens on.
+     *
+     * A restriction, never a grant: a class without options offers nothing to pick here, and the
+     * option chosen must be one of $program's (App\Form\QuizLaunchType checks it on submit, the
+     * launch screen only ever offers those). It is frozen at launch for the reason the rest of the
+     * instance is - App\Form\QuizInstanceEditType deliberately leaves it out, since narrowing it
+     * afterwards would take a finished copy away from the student who sat it.
+     *
+     * SET NULL rather than CASCADE: deleting an option must not take an already-launched quiz with
+     * it, and the class as a whole is the safe reading of "the option is gone".
+     */
+    #[ORM\ManyToOne(targetEntity: Option::class)]
+    #[ORM\JoinColumn(name: 'visibility_option_id', nullable: true, onDelete: 'SET NULL')]
+    private ?Option $visibilityOption = null;
+
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(name: 'created_by_id', nullable: false)]
     private ?User $createdBy = null;
@@ -213,6 +230,18 @@ class QuizInstance implements AccessConditionHost
     public function getProgram(): ?Program
     {
         return $this->program;
+    }
+
+    public function getVisibilityOption(): ?Option
+    {
+        return $this->visibilityOption;
+    }
+
+    public function setVisibilityOption(?Option $visibilityOption): static
+    {
+        $this->visibilityOption = $visibilityOption;
+
+        return $this;
     }
 
     public function getSourceTemplate(): ?QuizTemplate

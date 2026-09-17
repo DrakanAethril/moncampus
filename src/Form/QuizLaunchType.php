@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Form;
 
+use App\Entity\Option;
 use App\Entity\Program;
 use App\Entity\QuizTemplate;
 use App\Enum\QuizMode;
@@ -20,6 +21,9 @@ use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormError;
+use Symfony\Component\Form\FormEvent;
+use Symfony\Component\Form\FormEvents;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\Positive;
@@ -74,6 +78,27 @@ class QuizLaunchType extends AbstractType
                 'choice_label' => static fn (Program $program): string => sprintf('%s - %s', $program->getDisplayShortName(), $program->getSchoolYear()->getStartDate()?->format('Y') ?? '?'),
                 'label' => 'quizLaunchProgramFieldLabel',
                 'placeholder' => 'structureLdapGroupPlaceholder',
+            ])
+            // « Tous les étudiants » is the placeholder rather than a first choice, because it is
+            // what null means here - the narrowing is optional and the field carries no default.
+            //
+            // The list holds every option of every class on offer, not those of the class currently
+            // picked: the program is chosen in the same form, so which options are valid changes
+            // while the screen is open. quiz_launch_option_controller.js hides the ones that do not
+            // belong to the selection (and clears it when the class changes), exactly as the parent
+            // picker on Paramètres > Groupes does; the rule itself is enforced below on submit and
+            // again in App\Service\QuizInstantiationService, never by the filtering.
+            ->add('visibilityOption', EntityType::class, [
+                'class' => Option::class,
+                'choices' => $options['optionChoices'],
+                'choice_label' => 'shortName',
+                'choice_attr' => static fn (Option $option): array => ['data-programs' => implode(' ', array_map(
+                    static fn (Program $program): string => (string) $program->getId(),
+                    $option->getPrograms()->toArray(),
+                ))],
+                'label' => 'quizLaunchVisibilityOptionFieldLabel',
+                'placeholder' => 'quizLaunchVisibilityOptionAllLabel',
+                'required' => false,
             ])
             ->add('mode', EnumType::class, [
                 'class' => QuizMode::class,
@@ -190,13 +215,26 @@ class QuizLaunchType extends AbstractType
                 'label' => 'quizLaunchSubmitAction',
             ])
         ;
+
+        // The client-side filtering is an assistance, not the rule: an option belonging to another
+        // class would address nobody at all, which is a great deal worse than an error message.
+        $builder->addEventListener(FormEvents::POST_SUBMIT, static function (FormEvent $event): void {
+            $form = $event->getForm();
+            $program = $form->get('program')->getData();
+            $option = $form->get('visibilityOption')->getData();
+
+            if ($program instanceof Program && $option instanceof Option && !$program->getOptions()->contains($option)) {
+                $form->get('visibilityOption')->addError(new FormError('quizLaunchVisibilityOptionForeignError'));
+            }
+        });
     }
 
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver
-            ->setRequired(['programs', 'baseTemplateName', 'additionalTemplateChoices', 'defaultQuestionCount', 'defaultSecondsPerQuestion', 'defaultSameQuestionsForAll', 'defaultQuestionOrderPerStudent', 'defaultAnswerOrderPerStudent'])
+            ->setRequired(['programs', 'optionChoices', 'baseTemplateName', 'additionalTemplateChoices', 'defaultQuestionCount', 'defaultSecondsPerQuestion', 'defaultSameQuestionsForAll', 'defaultQuestionOrderPerStudent', 'defaultAnswerOrderPerStudent'])
             ->setAllowedTypes('programs', 'array')
+            ->setAllowedTypes('optionChoices', 'array')
             ->setAllowedTypes('baseTemplateName', ['string', 'null'])
             ->setAllowedTypes('additionalTemplateChoices', 'array')
             ->setAllowedTypes('defaultQuestionCount', 'int')

@@ -42,8 +42,10 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * A student's own quiz-taking flow - screens 1d (class "Quiz" hub)/1e (passation)/1m (correction,
  * entraînement only). Route-level ROLE_STUDENT guards (not a class-level gate), same shape as
  * ProgramAssignmentSubmissionController: whether a given QuizInstance is actually reachable is
- * decided by Program membership, not a per-instance audience (a quiz's audience is always its
- * whole launch Program - see App\Entity\QuizInstance's class docblock).
+ * decided by Program membership first (every route here answers 404 to a non-member), then by the
+ * audience the quiz was launched to: the whole class, or the students of the one option it was
+ * narrowed to - App\Service\QuizAudience, asked through StudentQuizBoard on the list and again at
+ * the door.
  */
 #[RequiresFeature(Feature::QuizTake)]
 class ProgramQuizAttemptController extends AbstractController

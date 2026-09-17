@@ -61,6 +61,11 @@
                                 {% if not row.instance.active %}
                                     <span class="badge bg-secondary-lt ms-1">{{ 'quizInstanceDeactivatedBadgeLabel'|trans }}</span>
                                 {% endif %}
+                                {# The narrowing named where the « n / m » is read: m counts the
+                                   option's students, not the class's. #}
+                                {% if row.instance.visibilityOption %}
+                                    <span class="cm-badge cm-badge--blue ms-1">{{ row.instance.visibilityOption.shortName }}</span>
+                                {% endif %}
                             </td>
                             <td>{{ row.instance.program.displayShortName }}</td>
                             <td><span class="badge {{ row.instance.mode.value == 'evaluation' ? 'bg-blue-lt' : 'bg-green-lt' }}">{{ row.instance.mode.labelKey|trans }}</span></td>

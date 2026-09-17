@@ -2786,6 +2786,10 @@ quizLaunchAddTemplateAction: '+ Ajouter un quiz'
 quizLaunchAddTemplateHint: "Les questions des quiz ajoutés rejoignent le même vivier : le tirage y puise sans distinguer leur quiz d'origine."
 quizLaunchRemoveTemplateAction: 'Retirer ce quiz'
 quizLaunchProgramFieldLabel: 'Classe'
+quizLaunchVisibilityOptionFieldLabel: 'Visibilité'
+quizLaunchVisibilityOptionAllLabel: 'Tous les étudiants'
+quizLaunchVisibilityOptionFieldHint: "Limiter le quiz aux étudiants d'une option de la classe."
+quizLaunchVisibilityOptionForeignError: "Cette option n'appartient pas à la classe choisie."
 quizLaunchModeFieldLabel: 'Mode'
 quizLaunchOpensAtFieldLabel: 'Ouverture'
 quizLaunchClosesAtFieldLabel: 'Fermeture'
@@ -2893,6 +2897,7 @@ quizQuestionDisplayCountTemplate: '%count% affichages'
 quizAttemptTimingsHeading: 'Temps par question'
 quizAttemptTimingsHintText: 'Mesuré entre l''affichage de la question et votre réponse. Ce n''est pas une note.'
 quizSupervisedBadgeLabel: "Mode contrôle"
+quizVisibilityOptionBadgeTemplate: 'Visibilité : %option%'
 quizLaunchSupervisionTitle: "Mode contrôle"
 quizLaunchSupervisionHint: "Pour une évaluation composée depuis un navigateur ordinaire, sur un poste que l'établissement ne maîtrise pas."
 quizLaunchSupervisedFieldLabel: "Surveiller la passation"
