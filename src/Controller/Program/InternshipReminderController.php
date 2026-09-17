@@ -115,9 +115,13 @@ class InternshipReminderController extends AbstractController
     private function findPendingEvaluations(Program $program, InternshipEvaluationPeriod $evaluationPeriod, InternshipStudentEvaluationRepository $studentEvaluationRepository, InternshipTutorEvaluationRepository $tutorEvaluationRepository, InternshipTutorLinkRepository $tutorLinkRepository): array
     {
         $submittedStudentIds = $studentEvaluationRepository->findSubmittedStudentIdsForProgramAndEvaluationPeriod($program, $evaluationPeriod);
+        // The pending list is built from the Program's roster, so a terminated alternance would
+        // otherwise still be chased here - nothing is asked of an alternant whose contract is over.
+        $terminatedStudentIds = $tutorLinkRepository->findTerminatedStudentIdsForProgram($program);
         $pendingStudents = array_values(array_filter(
             $program->getStudents()->toArray(),
-            static fn (User $student): bool => !\in_array($student->getId(), $submittedStudentIds, true),
+            static fn (User $student): bool => !\in_array($student->getId(), $submittedStudentIds, true)
+                && !isset($terminatedStudentIds[(int) $student->getId()]),
         ));
 
         $submittedTutorLinkIds = $tutorEvaluationRepository->findSubmittedTutorLinkIdsForProgramAndEvaluationPeriod($program, $evaluationPeriod);

@@ -97,6 +97,36 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
         return $this->findBy(['program' => $program, 'inactiveDate' => null]);
     }
 
+    /**
+     * The students of one Program whose alternance is over and who have no live one left - the
+     * people an evaluation relance must no longer reach (see
+     * Program\InternshipReminderController::findPendingEvaluations(), which lists pending students
+     * from the Program's roster and so cannot see terminations by itself).
+     *
+     * Keyed rather than returned as a list so callers can test membership without a second loop.
+     *
+     * @return array<int, true> student id => every alternance of theirs on this Program is terminated
+     */
+    public function findTerminatedStudentIdsForProgram(Program $program): array
+    {
+        $rows = $this->createQueryBuilder('l')
+            ->select('IDENTITY(l.student) AS studentId', 'COUNT(l.id) AS total', 'SUM(CASE WHEN l.inactiveDate IS NULL THEN 1 ELSE 0 END) AS live')
+            ->where('l.program = :program')
+            ->setParameter('program', $program)
+            ->groupBy('studentId')
+            ->getQuery()
+            ->getResult();
+
+        $ids = [];
+        foreach ($rows as $row) {
+            if ((int) $row['total'] > 0 && 0 === (int) $row['live']) {
+                $ids[(int) $row['studentId']] = true;
+            }
+        }
+
+        return $ids;
+    }
+
     // Staff dashboard banner (design_handoff_dashboards staff-a): tutors who still haven't
     // signed their evaluation for this period - only links whose periods are actually open
     // (engagement signed by the centre) count, an unsigned engagement means the tutor isn't

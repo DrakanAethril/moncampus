@@ -37,7 +37,7 @@ class AlternancePeriodStatusResolver
     // dashboard badge (33a/33b) and the suivi page's warning banner (34a/34b).
     public function resolveCurrentStep(InternshipTutorLink $tutorLink): AlternanceStepStatus
     {
-        if (null !== $tutorLink->getInactiveDate()) {
+        if ($tutorLink->isTerminated()) {
             return new AlternanceStepStatus(AlternanceStepStatus::STEP_INACTIVE, false, null, null, null);
         }
 
@@ -64,7 +64,7 @@ class AlternancePeriodStatusResolver
     // period shows its own 3-role progress strip regardless of whether earlier periods are done.
     public function resolveStepForPeriod(InternshipTutorLink $tutorLink, InternshipEvaluationPeriod $period): AlternanceStepStatus
     {
-        if (null !== $tutorLink->getInactiveDate()) {
+        if ($tutorLink->isTerminated()) {
             return new AlternanceStepStatus(AlternanceStepStatus::STEP_INACTIVE, false, null, null, $period);
         }
 

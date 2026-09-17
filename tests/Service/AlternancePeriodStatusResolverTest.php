@@ -207,6 +207,7 @@ class AlternancePeriodStatusResolverTest extends TestCase
     {
         $tutorLink = $this->createStub(InternshipTutorLink::class);
         $tutorLink->method('getInactiveDate')->willReturn($inactive ? new \DateTimeImmutable() : null);
+        $tutorLink->method('isTerminated')->willReturn($inactive);
         $tutorLink->method('getProgram')->willReturn($this->createStub(Program::class));
         $tutorLink->method('getStudent')->willReturn($this->createStub(User::class));
         $tutorLink->method('getTutor')->willReturn(null);

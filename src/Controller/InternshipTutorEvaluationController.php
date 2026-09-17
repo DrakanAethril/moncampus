@@ -273,8 +273,14 @@ class InternshipTutorEvaluationController extends AbstractController
         $this->denyAccessUnlessGranted(InternshipTutorLinkVoter::EVALUATE, $tutorLink);
         $this->assertValidFormToken('internship_tutor_engagement_sign', $request);
 
-        $engagementService->signAsTutor($engagementService->findOrCreate($tutorLink), $this->currentUser());
-        $this->addFlash('success', 'ufaAlternanceEngagementSignedFlashMessage');
+        // The tutor's own list stops offering a terminated alternance at all, so the only way to
+        // land here with one is a page left open - hence a flash rather than a 500.
+        try {
+            $engagementService->signAsTutor($engagementService->findOrCreate($tutorLink), $this->currentUser());
+            $this->addFlash('success', 'ufaAlternanceEngagementSignedFlashMessage');
+        } catch (\DomainException) {
+            $this->addFlash('warning', 'ufaAlternanceTerminatedNothingToDoLabel');
+        }
 
         return $this->redirectToRoute('app_internship_tutor_engagement', ['tutorLinkId' => $tutorLink->getId()]);
     }
