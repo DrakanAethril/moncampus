@@ -7752,6 +7752,7 @@ dossierTargetStudentsLabel: 'Students'
 dossierTargetKindClassLabel: 'Class'
 dossierTargetKindOptionLabel: 'Option'
 dossierEditTargetsAction: 'Edit the targets'
+dossierEditSettingsAction: "Edit the dossier's settings"
 
 dossierCompositionLabel: 'Dossier composition'
 dossierCompositionEmptyText: 'No document in this dossier.'
