@@ -148,6 +148,10 @@ class ProgramQuizController extends AbstractController
         // that block is on this screen at all is decided here, once.
         $form = $this->createForm(QuizInstanceEditType::class, $instance, [
             'supervisionEditable' => QuizMode::Evaluation === $instance->getMode(),
+            // This class's own options, so « Visibilité » cannot name one belonging elsewhere - the
+            // launch form needs a filter and a guard for that, this one needs neither. A class with
+            // no option gets no field at all.
+            'programOptions' => array_values($program->getOptions()->toArray()),
         ]);
         $form->handleRequest($request);
 
@@ -324,12 +328,10 @@ class ProgramQuizController extends AbstractController
     }
 
     /**
-     * One row per student the quiz was launched to - the class, or the students of the option it was
-     * narrowed to (App\Service\QuizAudience). That set is the denominator of every rate this screen
-     * prints, so a quiz addressed to one option must not count the rest of the class as absent.
-     *
-     * Plus anybody who actually sat it, whatever the audience says today: an option assigned after
-     * the launch would otherwise make a finished copy disappear from the screen that holds it.
+     * One row per student the quiz concerns - the class, or the students of the option it was
+     * narrowed to plus anybody holding an attempt on it (App\Service\QuizAudience, which owns that
+     * whole rule). That set is the denominator of every rate this screen prints, so a quiz addressed
+     * to one option must not count the rest of the class as absent.
      *
      * @param list<QuizAttempt> $concludedAttempts
      */
@@ -340,16 +342,8 @@ class ProgramQuizController extends AbstractController
             $attemptsByStudent[$attempt->getStudent()->getId()][] = $attempt;
         }
 
-        $addressed = [];
-        foreach ($audience->students($instance) as $student) {
-            $addressed[(int) $student->getId()] = $student;
-        }
-        foreach ($concludedAttempts as $attempt) {
-            $addressed[(int) $attempt->getStudent()->getId()] ??= $attempt->getStudent();
-        }
-
         $rows = [];
-        foreach ($addressed as $student) {
+        foreach ($audience->students($instance) as $student) {
             $attempts = $attemptsByStudent[$student->getId()] ?? [];
             $retained = [] !== $attempts ? $attempts[\count($attempts) - 1] : null;
 

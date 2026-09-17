@@ -97,6 +97,60 @@ class QuizAttemptRepository extends ServiceEntityRepository
         return $byInstanceId;
     }
 
+    /**
+     * Which of these instances this student has ever sat, in one query - what tells
+     * App\Service\QuizAudience that a quiz was theirs, whatever its audience says today.
+     *
+     * In-progress attempts count: the case this exists for is a teacher narrowing a quiz while
+     * somebody is in the middle of it, and that copy has to be finishable.
+     *
+     * @param list<QuizInstance> $instances
+     *
+     * @return list<int> instance ids
+     */
+    public function findAttemptedInstanceIds(array $instances, User $student): array
+    {
+        if ([] === $instances) {
+            return [];
+        }
+
+        $rows = $this->createQueryBuilder('a')
+            ->select('DISTINCT IDENTITY(a.quizInstance) AS instanceId')
+            ->where('a.quizInstance IN (:instances)')
+            ->andWhere('a.student = :student')
+            ->setParameter('instances', $instances)
+            ->setParameter('student', $student)
+            ->getQuery()
+            ->getScalarResult();
+
+        return array_map(intval(...), array_column($rows, 'instanceId'));
+    }
+
+    /**
+     * Every student holding an attempt on this quiz, finished or not - what App\Service\QuizAudience
+     * adds to the option's own students so that narrowing a quiz after the launch never erases
+     * somebody from the screen that holds their copy, nor somebody who is sitting it right now.
+     *
+     * @return list<User>
+     */
+    public function findStudentsWithAttempt(QuizInstance $instance): array
+    {
+        $attempts = $this->createQueryBuilder('a')
+            ->addSelect('s')
+            ->join('a.student', 's')
+            ->where('a.quizInstance = :instance')
+            ->setParameter('instance', $instance)
+            ->getQuery()
+            ->getResult();
+
+        $studentsById = [];
+        foreach ($attempts as $attempt) {
+            $studentsById[(int) $attempt->getStudent()->getId()] = $attempt->getStudent();
+        }
+
+        return array_values($studentsById);
+    }
+
     // Powers the teacher-facing results screens (1f/1g) - every concluded attempt across every
     // student, in one query (student eagerly joined, since every row needs a display name).
     /** @return list<QuizAttempt> */

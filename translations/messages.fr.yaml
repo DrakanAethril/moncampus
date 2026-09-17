@@ -2790,6 +2790,7 @@ quizLaunchVisibilityOptionFieldLabel: 'Visibilité'
 quizLaunchVisibilityOptionAllLabel: 'Tous les étudiants'
 quizLaunchVisibilityOptionFieldHint: "Limiter le quiz aux étudiants d'une option de la classe."
 quizLaunchVisibilityOptionForeignError: "Cette option n'appartient pas à la classe choisie."
+quizInstanceEditVisibilityOptionFieldHelp: "Les étudiants qui ont déjà commencé ce quiz le gardent, quelle que soit l'option retenue ici."
 quizLaunchModeFieldLabel: 'Mode'
 quizLaunchOpensAtFieldLabel: 'Ouverture'
 quizLaunchClosesAtFieldLabel: 'Fermeture'
