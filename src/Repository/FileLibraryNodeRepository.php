@@ -71,6 +71,46 @@ class FileLibraryNodeRepository extends ServiceEntityRepository
     }
 
     /**
+     * The live files of a library whose name ends with one of these extensions, by name - what the
+     * « À visionner » card of the assignment wizard offers to pick from.
+     *
+     * Read on the display name, as FileLibraryNode::getExtension() reads it: the name is what the
+     * row's tile shows and what FileLibraryWorkFactory decides the nature on, so a file the library
+     * shows as a video is one here. The column's _ci collation makes the LIKE case-blind, which is
+     * what `.MP4` needs.
+     *
+     * @param list<string> $extensions lowercased, without the dot
+     *
+     * @return list<FileLibraryNode>
+     */
+    public function findFilesWithExtensions(User $owner, array $extensions): array
+    {
+        $builder = $this->createQueryBuilder('n')
+            ->where('n.owner = :owner')
+            ->andWhere('n.type = :file')
+            ->andWhere('n.deletedAt IS NULL')
+            ->andWhere('n.storageKey IS NOT NULL')
+            ->setParameter('owner', $owner)
+            ->setParameter('file', FileLibraryNodeType::File)
+            ->orderBy('n.name', 'ASC');
+
+        $alternatives = [];
+        foreach ($extensions as $index => $extension) {
+            $alternatives[] = 'n.name LIKE :extension'.$index;
+            $builder->setParameter('extension'.$index, '%.'.$extension);
+        }
+
+        if ([] === $alternatives) {
+            return [];
+        }
+
+        /** @var list<FileLibraryNode> $files */
+        $files = $builder->andWhere('('.implode(' OR ', $alternatives).')')->getQuery()->getResult();
+
+        return $files;
+    }
+
+    /**
      * What one folder holds, folders first then files, in the reader's chosen order.
      *
      * @param 'name'|'size'|'date' $sort

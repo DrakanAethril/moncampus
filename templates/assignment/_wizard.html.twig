@@ -22,7 +22,7 @@
 {% set steps_fields = {
     1: ['program', 'audienceType', 'options', 'groupBatch'],
     2: ['nature', 'mandatory', 'graded'],
-    3: ['title', 'description', 'attachmentFiles', 'expectedProductions', 'quizInstance', 'minimumScorePercent', 'evaluation'],
+    3: ['title', 'description', 'attachmentFiles', 'expectedProductions', 'quizInstance', 'minimumScorePercent', 'evaluation', 'libraryVideo'],
     4: ['dueDate', 'visibility', 'visibleAt'],
 } %}
 {% set error_step = steps_fields
@@ -343,6 +343,28 @@
                             </div>
                         </div>
                     {% endif %}
+
+                    {# Picked on the grid, a viewing still has to name its video: one of the
+                       teacher's own library videos. The library is where videos are hosted now, and
+                       what is built from the one picked is exactly what the library's « Créer un
+                       travail » builds (App\Service\FileLibraryWorkFactory). #}
+                    {% if not context.videoResource and not context.libraryNode and not (assignment and assignment.videoResource) %}
+                        <div class="cm-wizard__conditional d-none" data-assignment-wizard-target="naturePane" data-natures="watching">
+                            <span class="cm-wizard__label">
+                                {{ 'assignmentWizardLibraryVideoFieldLabel'|trans }}
+                                <span class="cm-wizard__label-note">{{ 'assignmentWizardLibraryVideoHint'|trans }}</span>
+                            </span>
+                            {% if form.libraryVideo.vars.choices is empty %}
+                                <p class="cm-wizard__note">
+                                    {{ 'assignmentWizardLibraryVideoEmptyMessage'|trans }}
+                                    <a href="{{ path('app_file_library') }}">{{ 'assignmentWizardLibraryVideoOpenLibraryAction'|trans }}</a>
+                                </p>
+                            {% endif %}
+                            {{ form_widget(form.libraryVideo, {attr: {class: 'cm-select'}}) }}
+                            {{ form_errors(form.libraryVideo) }}
+                        </div>
+                    {% endif %}
+                    {% do form.libraryVideo.setRendered %}
 
                     <div class="cm-wizard__conditional d-none" data-assignment-wizard-target="naturePane" data-natures="to_read">
                         <label class="cm-toggle-row">

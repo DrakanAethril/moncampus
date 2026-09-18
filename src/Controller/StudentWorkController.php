@@ -36,6 +36,7 @@ use App\Service\StudentWorkBoard;
 use App\Service\StudentWorkItem;
 use App\Service\StudentWorkRow;
 use App\Service\VideoUploadService;
+use App\Service\VideoWatchReport;
 use App\Service\VideoWatchTracker;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -544,9 +545,9 @@ class StudentWorkController extends AbstractController
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        $percent = JsonRequestPayload::fromRequest($request)->int('percent', 0) ?? 0;
+        $report = VideoWatchReport::fromPayload(JsonRequestPayload::fromRequest($request), $file->getDurationSeconds());
 
-        return $this->json(['percent' => $watchTracker->register($file, $this->currentUser(), $percent)]);
+        return $this->json(['percent' => $watchTracker->register($file, $this->currentUser(), $report)]);
     }
 
     /** The file, and the right to watch it: one of this video assignment's own. */

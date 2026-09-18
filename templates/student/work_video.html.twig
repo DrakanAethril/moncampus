@@ -34,6 +34,10 @@
         <div class="cm-video-brief">{{ assignment.description|raw }}</div>
     {% endif %}
 
+    {# Said before the first play rather than discovered at the first pause: the rule is part of
+       the travail. #}
+    <p class="cm-video-rule">{{ 'studentWorkWatchRuleNotice'|trans }}</p>
+
     {% for file in files %}
         {% set percent = progress[file.id] ?? 0 %}
         {# Two controllers on the one section, deliberately: video-watch measures what was really
@@ -55,6 +59,7 @@
                      notStarted: 'studentWorkWatchNotStartedLabel'|trans,
                      remaining: 'studentWorkWatchRemainingLabel'|trans({'%time%': '%time%'}),
                      skipped: 'studentWorkWatchSkippedLabel'|trans({'%from%': '%from%', '%to%': '%to%'}),
+                     focusPaused: 'studentWorkWatchFocusPausedLabel'|trans,
                  }|json_encode }}">
             <div class="cm-audio-card__head">
                 <span class="cm-audio-card__label">{{ file.originalName }}</span>
@@ -65,11 +70,13 @@
                    veiled and the question on top of it, not below - the question belongs to the
                    minute it was posted at. #}
                 <div class="cm-video-stage">
-                    <video class="cm-video-player" controls preload="none" playsinline
+                    {# No picture-in-picture: it is precisely a way of watching from another page,
+                       and the video stops the moment this one loses the focus. #}
+                    <video class="cm-video-player" controls preload="none" playsinline disablepictureinpicture
                            {% if file.posterStorageKey %}poster="{{ file_url(file.posterStorageKey) }}"{% endif %}
                            data-video-watch-target="player"
                            data-video-cue-player-target="player"
-                           data-action="play->video-watch#started timeupdate->video-watch#tick timeupdate->video-cue-player#tick loadedmetadata->video-cue-player#paintMarkers pause->video-watch#flush ended->video-watch#flush"></video>
+                           data-action="play->video-watch#started seeking->video-watch#seeking timeupdate->video-watch#tick timeupdate->video-cue-player#tick loadedmetadata->video-cue-player#paintMarkers pause->video-watch#paused ended->video-watch#flush"></video>
 
                     <div class="cm-video-overlay" data-video-cue-player-target="overlay" hidden>
                         <div class="cm-video-overlay__veil"></div>
