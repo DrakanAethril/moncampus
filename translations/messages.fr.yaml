@@ -3998,6 +3998,7 @@ studentJobApplicationsNotesTeamOnlyLabel: 'Équipe uniquement'
 studentJobApplicationsNotesEmptyLabel: 'Aucune note pour le moment.'
 studentJobApplicationsNotePlaceholder: 'Une observation à partager avec l’équipe…'
 studentJobApplicationsAddNoteAction: 'Ajouter une note'
+studentJobApplicationsValidationHistoryLink: 'Historique de validation'
 studentJobApplicationsNoteDeleteAction: 'Supprimer'
 studentJobApplicationsUnknownAuthorLabel: 'Auteur inconnu'
 

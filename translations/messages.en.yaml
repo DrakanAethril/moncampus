@@ -3561,6 +3561,7 @@ studentJobApplicationsNotesTeamOnlyLabel: 'Team only'
 studentJobApplicationsNotesEmptyLabel: 'No note yet.'
 studentJobApplicationsNotePlaceholder: 'Something to share with the team...'
 studentJobApplicationsAddNoteAction: 'Add a note'
+studentJobApplicationsValidationHistoryLink: 'Validation history'
 studentJobApplicationsNoteDeleteAction: 'Delete'
 studentJobApplicationsUnknownAuthorLabel: 'Unknown author'
 
