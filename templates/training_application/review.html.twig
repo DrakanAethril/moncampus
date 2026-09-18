@@ -27,7 +27,6 @@
 
 {% block main %}
     {% set version = application.currentVersion %}
-    {% set previousRemarks = application.reviews|filter(r => r.decision.value == 'refused' and r.versionNumber < application.versionNumber) %}
 
     <div class="cm-sheet">
         <div class="cm-sheet__main">
@@ -37,13 +36,22 @@
                     <span class="cm-jobapp-head__count">{{ 'trainingReviewOfferLabel'|trans({'%offer%': application.offer.title}) }}</span>
                 </div>
                 <div class="card-body">
-                    {% for remark in previousRemarks %}
-                        {# What this validator asked for last time, next to what came back: without it
-                           they would have to remember, or dig. #}
-                        <div class="cm-training-previous">
-                            <b>{{ 'trainingReviewPreviousRemarkLabel'|trans({'%version%': remark.versionNumber}) }}</b>
-                            « {{ remark.remark }} »
-                        </div>
+                    {# What was asked for last time, next to what came back: without it the validator
+                       would have to remember, or dig. One fold per version, most recent first and
+                       only that one open - after several round trips a flat list no longer says
+                       which remark the version under review is answering. #}
+                    {% for versionNumber, remarks in application.previousRemarksByVersion %}
+                        <details class="cm-training-previous"{{ loop.first ? ' open' }}>
+                            <summary class="cm-training-previous__summary">
+                                {{ 'trainingReviewPreviousRemarksTitle'|trans({'%version%': versionNumber}) }}
+                                <span class="cm-training-previous__count">{{ 'trainingReviewPreviousRemarksCountLabel'|trans({'%count%': remarks|length}) }}</span>
+                            </summary>
+                            <ul class="cm-training-previous__list">
+                                {% for remark in remarks %}
+                                    <li><b>{{ remark.element.labelKey|trans }}</b> « {{ remark.remark }} »</li>
+                                {% endfor %}
+                            </ul>
+                        </details>
                     {% endfor %}
 
                     <div class="cm-sheet__mail-body">{{ version.body|nl2br }}</div>
