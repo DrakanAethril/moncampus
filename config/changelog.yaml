@@ -26,6 +26,13 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.18.2'
+      date: '2026-09-18'
+      summary: "Un tuteur dont le compte vient d'être créé choisit lui-même son mot de passe dès sa première connexion, avant d'accéder à quoi que ce soit."
+      entries:
+          - type: modification
+            title: "Un nouveau tuteur renouvelle son mot de passe à sa première connexion"
+            detail: "Que le compte soit créé depuis le dossier d'alternance ou par l'import des contrats, le mot de passe transmis au tuteur ne sert qu'une fois : il doit en choisir un nouveau avant d'ouvrir le livret."
     - version: '2026.09.18'
       date: '2026-09-18'
       summary: "Un quiz lancé peut n'être visible que des étudiants d'une option, et un barème détaillé accepte désormais des bonus et des malus. Côté alternance, un contrat se termine depuis le dossier lui-même, et l'écran des relances ne propose plus que les bilans qui ont réellement quelqu'un à relancer."
