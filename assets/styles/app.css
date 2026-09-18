@@ -4840,6 +4840,9 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-sheet__note-meta form { margin-left: auto; }
 .cm-sheet__note-form { padding: 12px 18px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
 .cm-sheet__note-form textarea { width: 100%; }
+.cm-sheet__side-link { margin-top: 10px; text-align: right; }
+.cm-sheet__side-link a { font: 600 13px var(--cm-font-ui); color: var(--cm-brand); text-decoration: none; }
+.cm-sheet__side-link a:hover { text-decoration: underline; }
 
 /* -- Unlinked mails queue (screen 5a) --------------------------------------- */
 .cm-unlinked__row {

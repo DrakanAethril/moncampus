@@ -155,6 +155,12 @@
                     <button type="submit" class="cm-btn cm-btn--outline cm-btn--sm">{{ 'studentJobApplicationsAddNoteAction'|trans }}</button>
                 </form>
             </div>
+
+            {% if validatedApplication %}
+                <div class="cm-sheet__side-link">
+                    <a href="{{ path('app_training_application_review', {id: validatedApplication.id}) }}">{{ 'studentJobApplicationsValidationHistoryLink'|trans }}</a>
+                </div>
+            {% endif %}
         </aside>
     </div>
 {% endblock %}

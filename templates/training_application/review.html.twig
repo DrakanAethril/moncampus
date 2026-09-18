@@ -129,8 +129,16 @@
         </div>
 
         <aside class="cm-sheet__side">
+            {# A reader who is not a validator of the offer - reaching this screen from the
+               student's job-search sheet - sees the same panel without anything to submit. So does
+               a validator once all four elements are acquired: there is nothing left to decide. #}
+            {% set decidable = canDecide and application.validatedCount < elements|length %}
+            {% if decidable %}
             <form method="post" action="{{ path('app_training_application_review', {id: application.id}) }}" class="card">
                 <input type="hidden" name="_token" value="{{ csrf_token('training_review') }}">
+            {% else %}
+            <div class="card">
+            {% endif %}
                 <div class="cm-jobapp-head">
                     <span class="cm-jobapp-head__title">{{ 'trainingReviewPanelTitle'|trans }}</span>
                     <span class="cm-training-badge ms-auto">{{ application.validatedCount }} / {{ elements|length }}</span>
@@ -171,7 +179,7 @@
                             </span>
                         </div>
 
-                        {% if not validated %}
+                        {% if not validated and decidable %}
                             {# A correction asked for on this very version is still standing: the
                                screen shows it back as it was written, so a validator reopening the
                                application reads their own words rather than an empty box. #}
@@ -192,11 +200,15 @@
                     </div>
                 {% endfor %}
 
+            {% if decidable %}
                 <div class="cm-compose__footer">
                     <button type="submit" class="cm-btn cm-btn--primary">{{ 'trainingReviewSubmitAction'|trans }}</button>
                     <span class="cm-compose__notes">{{ 'trainingReviewFooterNoticeLabel'|trans }}</span>
                 </div>
             </form>
+            {% else %}
+            </div>
+            {% endif %}
         </aside>
     </div>
 {% endblock %}
