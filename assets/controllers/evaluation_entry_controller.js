@@ -62,6 +62,7 @@ export default class extends Controller {
         const children = [];
         if (this.hasRubric) children.push(this.buildQuestionHead());
         this.rows.forEach((row, index) => children.push(this.buildRow(row, index)));
+        this.listTarget.classList.toggle('cm-gb-entry--rubric', this.hasRubric);
         this.listTarget.replaceChildren(...children);
     }
 

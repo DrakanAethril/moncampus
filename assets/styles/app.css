@@ -3121,6 +3121,13 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 [data-bs-theme="dark"] .cm-gb-quick .cm-gb-quick--ne { border-color: var(--cm-border); background: var(--cm-surface-alt); }
 /* Question columns (rubric mode). */
 .cm-gb-qhead { padding: 10px 16px 0; border-bottom: 2px solid var(--cm-gb-rule); background: var(--cm-surface-soft); min-width: max-content; }
+/* On a long class the question header has to stay in view while the rows scroll under it. The grid
+   already scrolls sideways, which makes it the sticky header's scroll container: bounding its height
+   lets it scroll vertically too, so the header sticks to the grid's own top edge and still slides
+   sideways with the columns it labels. */
+/* The scroll padding keeps a box reached with Tab from landing underneath the header. */
+.cm-gb-entry--rubric { max-height: calc(100vh - 120px); min-height: 320px; overflow-y: auto; scroll-padding-top: 100px; }
+.cm-gb-entry--rubric .cm-gb-qhead { position: sticky; top: 0; z-index: 2; }
 .cm-gb-qhead__sections { display: flex; gap: 10px; align-items: flex-end; }
 .cm-gb-qhead__cols { display: flex; align-items: flex-end; gap: 10px; padding: 7px 0 10px; }
 .cm-gb-qhead__section {
