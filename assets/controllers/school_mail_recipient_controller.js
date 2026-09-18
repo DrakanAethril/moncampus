@@ -12,7 +12,7 @@ import { Controller } from '@hotwired/stimulus';
  * The send button stays disabled until the démarche is named: it is blocking (handoff principle #4).
  */
 export default class extends Controller {
-    static targets = ['address', 'application', 'hint', 'submit', 'files', 'fileList'];
+    static targets = ['address', 'application', 'hint', 'submit'];
 
     static values = { checkUrl: String };
 
@@ -84,11 +84,6 @@ export default class extends Controller {
         }
 
         this.render(this.knownNames.includes(name.toLocaleLowerCase()) ? 'existing' : 'new');
-    }
-
-    showFiles() {
-        const names = Array.from(this.filesTarget.files ?? []).map((file) => file.name);
-        this.fileListTarget.textContent = names.join(' · ');
     }
 
     render(state) {

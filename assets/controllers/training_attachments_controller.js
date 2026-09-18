@@ -1,6 +1,7 @@
 import { Controller } from '@hotwired/stimulus';
 
-// Attachments of a practice application (design_handoff_postulation_redaction, screens 8b and 8f).
+// Attachments of a practice application (design_handoff_postulation_redaction, screens 8b and 8f),
+// and of a real one written from Courrier pro's compose form, which had the same need.
 //
 // One way in - "Joindre un fichier" - and as many files as the student wants, each removable by its
 // own ×. The chips are painted here rather than by Twig because the files exist nowhere but in the
@@ -11,7 +12,7 @@ import { Controller } from '@hotwired/stimulus';
 // removing a chip would otherwise leave the removed file in the post.
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
-    static targets = ['input', 'chips'];
+    static targets = ['input', 'chips', 'add'];
 
     static values = { removeLabel: String };
 
@@ -61,8 +62,7 @@ export default class extends Controller {
     render() {
         this.chipsTarget.querySelectorAll('.cm-postul__chip--new').forEach((chip) => chip.remove());
 
-        const button = this.chipsTarget.querySelector('.cm-postul__attach');
-        this.files.forEach((file, index) => this.chipsTarget.insertBefore(this.buildChip(file, index), button));
+        this.files.forEach((file, index) => this.chipsTarget.insertBefore(this.buildChip(file, index), this.addTarget));
     }
 
     buildChip(file, index) {
