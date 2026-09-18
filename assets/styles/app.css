@@ -6228,6 +6228,20 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-audio-stats__na { color: var(--cm-faint); }
 .cm-audio-stats__total { width: 100px; font-weight: 600; color: var(--cm-ink); }
 .cm-audio-stats__last { width: 140px; }
+/* The watching detail beside the percentages: play time, skips and page exits. A non-zero skip or
+   exit count is tinted - it is what the teacher scans the column for. */
+.cm-video-stats__num { width: 96px; text-align: center; font-variant-numeric: tabular-nums; }
+.cm-video-stats__num--flag { color: var(--cm-warn-tx); font-weight: 600; }
+.cm-video-detail { border-bottom: 1px solid var(--cm-border-faint); padding: 10px 20px; }
+.cm-video-detail:last-child { border-bottom: 0; }
+.cm-video-detail summary { display: flex; gap: 12px; align-items: baseline; cursor: pointer; }
+.cm-video-detail__name { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-video-detail__counts { font: 400 12px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-video-detail__file { margin: 8px 0 2px 18px; font: 600 12px var(--cm-font-ui); color: var(--cm-text-2); }
+.cm-video-detail__events { margin: 6px 0 0 18px; padding: 0; list-style: none; }
+.cm-video-detail__event { padding: 2px 0 2px 10px; border-left: 3px solid var(--cm-border); font: 400 12.5px var(--cm-font-ui); color: var(--cm-text); }
+.cm-video-detail__event--skip { border-left-color: var(--cm-warn-tx); }
+.cm-video-detail__when { display: inline-block; min-width: 110px; color: var(--cm-faint); font-variant-numeric: tabular-nums; }
 .cm-audio-stats__status { width: 130px; }
 
 @media (max-width: 900px) {
@@ -6309,6 +6323,8 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-video-head__due,
 .cm-video-head__topic { font: 400 12.5px var(--cm-font-ui); color: var(--cm-faint); }
 .cm-video-brief { margin-bottom: 16px; font: 400 13.5px var(--cm-font-ui); color: var(--cm-text); }
+/* The watching rule, stated above the players: whole video, no skipping, pauses off the page. */
+.cm-video-rule { margin: 0 0 14px; padding: 8px 12px; border-left: 3px solid var(--cm-accent); background: var(--cm-surface-2); font: 400 13px var(--cm-font-ui); color: var(--cm-text-2); }
 .cm-video-block .cm-audio-card__body { gap: 12px; }
 .cm-video-player {
   width: 100%; max-height: 62vh; border-radius: var(--cm-radius-sm);

@@ -30,6 +30,7 @@ use App\Service\StudentWorkBoard;
 use App\Service\StudentWorkExpectation;
 use App\Service\StudentWorkItem;
 use App\Service\VideoUploadService;
+use App\Service\VideoWatchReport;
 use App\Service\VideoWatchTracker;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -299,9 +300,9 @@ class WorkController extends AbstractController
             throw $this->createNotFoundException();
         }
 
-        $percent = JsonRequestPayload::fromRequest($request)->int('percent', 0) ?? 0;
+        $report = VideoWatchReport::fromPayload(JsonRequestPayload::fromRequest($request), $file->getDurationSeconds());
 
-        return $this->json(['percent' => $watchTracker->register($file, $student, $percent)]);
+        return $this->json(['percent' => $watchTracker->register($file, $student, $report)]);
     }
 
     /**

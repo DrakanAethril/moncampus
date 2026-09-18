@@ -23,6 +23,19 @@ import { Controller } from '@hotwired/stimulus';
 // and an unexplained percentage reads as a bug - so the bar shows the credited stretch, the stretch
 // seen after a jump that earns nothing, and the playhead.
 //
+// Beside the percentage, the player reports how the video was watched, for the teacher's statistics
+// (App\Service\VideoWatchReport) - none of it can complete anything:
+//
+//  - the wall-clock time the video really spent playing, which set against the running time says
+//    whether it was watched at double speed;
+//  - each skip: a forward jump landing beyond what had been watched, with where it left and where it
+//    landed. A drag of the scrubber fires "seeking" many times, so the jump is only settled once
+//    playback resumes, from wherever the student let go;
+//  - each loss of focus. The video must not run in a page the student is not looking at, so the
+//    moment the page is hidden or the window loses the focus, a playing video is paused and the
+//    pause recorded. Picture-in-picture is disabled on the element for the same reason: it is
+//    precisely a way of watching from elsewhere.
+//
 // Reporting is throttled to ~5s of playback rather than every timeupdate tick, which fires several
 // times a second. Throttling alone loses the tail - a student who stops between two ticks was
 // credited up to the last one - so pausing, reaching the end and hiding the page all flush, and the
@@ -49,20 +62,65 @@ export default class extends Controller {
         this.sentPercent = this.percentValue;
         this.creditedSeconds = null;
         this.lastReportedAt = 0;
+        // What the next report carries beside the percentage.
+        this.pendingWatchedSeconds = 0;
+        this.pendingEvents = [];
+        // Where the playhead last was during ordinary playback, where a seek started from, and the
+        // wall clock of the previous tick - the three readings the detail is built from.
+        this.lastPlayhead = null;
+        this.seekFrom = null;
+        this.lastTickAt = null;
+        this.pausedForFocus = false;
+
         this.onVisibilityChange = () => {
-            if (document.visibilityState === 'hidden') this.flush(true);
+            if (document.visibilityState === 'hidden') this.focusLost();
         };
+        this.onBlur = () => this.focusLost();
         document.addEventListener('visibilitychange', this.onVisibilityChange);
+        window.addEventListener('blur', this.onBlur);
         this.paint();
     }
 
     disconnect() {
         document.removeEventListener('visibilitychange', this.onVisibilityChange);
+        window.removeEventListener('blur', this.onBlur);
+    }
+
+    // The page is no longer the one in front of the student: a playing video stops there, and the
+    // pause is recorded. Whatever was pending goes out now, with keepalive - a hidden page may be a
+    // page being closed.
+    focusLost() {
+        const player = this.playerTarget;
+
+        if (!player.paused && !player.ended) {
+            this.pendingEvents.push({ type: 'focus_loss', at: player.currentTime });
+            this.pausedForFocus = true;
+            player.pause();
+            this.paint();
+        }
+
+        this.flush(true);
+    }
+
+    // A playhead set moving while the page is not in front of the student - a media key, a headset
+    // button - is stopped at once: the rule is about where the student is, not about how play was
+    // pressed.
+    pageHasFocus() {
+        return document.visibilityState === 'visible' && document.hasFocus();
     }
 
     // The source is fetched on first play rather than laid into the page: a video weighs ten to a
     // hundred times an audio file, so a page opened and left would cost its whole transfer.
     async started() {
+        if (!this.pageHasFocus()) {
+            this.playerTarget.pause();
+
+            return;
+        }
+
+        this.pausedForFocus = false;
+        this.paint();
+
         if (this.playerTarget.src) return;
 
         let data;
@@ -78,15 +136,48 @@ export default class extends Controller {
         this.playerTarget.play();
     }
 
+    // A seek starts: remember where the playhead was when it began. A drag fires this many times,
+    // and only the first one knows where the student came from.
+    seeking() {
+        if (this.seekFrom === null) this.seekFrom = this.lastPlayhead ?? 0;
+        this.lastTickAt = null;
+    }
+
+    paused() {
+        this.lastTickAt = null;
+        this.flush();
+    }
+
     tick() {
         const player = this.playerTarget;
-        if (!player.duration || player.paused) return;
+        if (!player.duration || player.paused || player.seeking) return;
 
         // Rule 2: what was already credited, expressed in this file's own seconds. Only knowable
         // once the duration is, hence here rather than in connect().
         if (this.creditedSeconds === null) {
             this.creditedSeconds = (this.maxPercent / 100) * player.duration;
         }
+
+        // Playback resumed after a seek: it is settled here, from where the student let go. Only
+        // the stretch beyond both the starting point and what was already credited was missed -
+        // jumping around inside what has been watched skips nothing.
+        if (this.seekFrom !== null) {
+            const from = Math.max(this.seekFrom, this.creditedSeconds);
+            if (player.currentTime > from + this.constructor.CONTIGUITY_TOLERANCE_SECONDS) {
+                this.pendingEvents.push({ type: 'skip', from, to: player.currentTime });
+            }
+            this.seekFrom = null;
+        }
+        this.lastPlayhead = player.currentTime;
+
+        // Wall-clock time really spent playing. A gap longer than two seconds between ticks is not
+        // playing - a stalled network, a machine asleep - and is not counted.
+        const nowTick = performance.now();
+        if (this.lastTickAt !== null) {
+            const elapsed = (nowTick - this.lastTickAt) / 1000;
+            if (elapsed > 0 && elapsed < 2) this.pendingWatchedSeconds += elapsed;
+        }
+        this.lastTickAt = nowTick;
 
         // Rule 1: a position beyond what has been watched, plus the tolerance, was jumped to. The
         // gap is remembered rather than discarded - it is what the bar draws as "vu après un saut".
@@ -113,24 +204,31 @@ export default class extends Controller {
         this.paint();
 
         const now = Date.now();
-        if (now - this.lastReportedAt < 5000 && this.maxPercent < 100) return;
+        if (now - this.lastReportedAt < 5000 && (this.maxPercent < 100 || this.sentPercent >= 100)) return;
 
         this.flush();
     }
 
-    // Nothing to send when the furthest point reached has already been reported: the server-side
-    // ratchet would ignore it anyway, and a paused player fires "pause" on every seek.
+    // Nothing to send when there is nothing new: no further point reached, under a second played
+    // since the last report, and no event - a paused player fires "pause" on every seek.
     flush(keepalive = false) {
-        if (this.maxPercent <= this.sentPercent) return;
+        const watchedSeconds = Math.floor(this.pendingWatchedSeconds);
+        if (this.maxPercent <= this.sentPercent && watchedSeconds < 1 && this.pendingEvents.length === 0) return;
+
+        const body = { percent: this.maxPercent, watchedSeconds, events: this.pendingEvents };
 
         this.lastReportedAt = Date.now();
         this.sentPercent = this.maxPercent;
+        // The fraction of a second stays pending: flooring every report would lose a second in
+        // every five.
+        this.pendingWatchedSeconds -= watchedSeconds;
+        this.pendingEvents = [];
 
         fetch(this.progressUrlValue, {
             method: 'POST',
-            keepalive,
+            keepalive: keepalive === true,
             headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': this.csrfTokenValue },
-            body: JSON.stringify({ percent: this.maxPercent }),
+            body: JSON.stringify(body),
         }).catch(() => {});
     }
 
@@ -166,6 +264,8 @@ export default class extends Controller {
     }
 
     noteFor(duration, skipping) {
+        if (this.pausedForFocus) return this.labelsValue.focusPaused;
+
         if (skipping) {
             return this.labelsValue.skipped
                 .replace('%from%', this.clock(this.skippedFrom))

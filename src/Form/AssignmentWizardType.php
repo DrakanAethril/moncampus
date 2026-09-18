@@ -6,6 +6,7 @@ namespace App\Form;
 
 use App\Entity\Assignment;
 use App\Entity\Evaluation;
+use App\Entity\FileLibraryNode;
 use App\Entity\GroupBatch;
 use App\Entity\Option;
 use App\Entity\Program;
@@ -213,6 +214,20 @@ class AssignmentWizardType extends AbstractType
                 'placeholder' => 'assignmentWizardQuizPlaceholder',
                 'required' => false,
             ])
+            // The video an « À visionner » is about, picked among the teacher's own library videos.
+            // Unmapped: the assignment does not point at the file, it points at the VideoResource
+            // built from it on saving (App\Service\FileLibraryWorkFactory), which is what carries
+            // the cue points and the watch tracking. Absent when there is nothing to pick - opened
+            // from the library or from the Vidéos tool, the video is already chosen.
+            ->add('libraryVideo', EntityType::class, [
+                'class' => FileLibraryNode::class,
+                'choices' => $options['library_videos'],
+                'choice_label' => static fn (FileLibraryNode $node): string => $node->getName(),
+                'label' => 'assignmentWizardLibraryVideoFieldLabel',
+                'placeholder' => 'assignmentWizardLibraryVideoPlaceholder',
+                'mapped' => false,
+                'required' => false,
+            ])
             // The share of correct answers the quiz must reach to count as done. Left empty,
             // concluding the quiz is enough.
             //
@@ -342,6 +357,10 @@ class AssignmentWizardType extends AbstractType
         // offering a choice that is not one.
         $resolver->setDefault('natures', AssignmentNature::forLessonLog());
         $resolver->setAllowedTypes('natures', 'array');
+        // The teacher's library videos, offered by the « À visionner » card. The controller reads
+        // them, the only place that knows whose library it is.
+        $resolver->setDefault('library_videos', []);
+        $resolver->setAllowedTypes('library_videos', 'array');
     }
 
     /**

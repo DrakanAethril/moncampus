@@ -246,13 +246,21 @@ class AssignmentController extends AbstractController
                 null !== $context->audioRecording => [AssignmentNature::Listening],
                 null !== $context->videoResource => [AssignmentNature::Watching],
                 null !== $context->quizInstance => [AssignmentNature::Quiz],
+                // A video or an audio file of the library is a watching or a listening and nothing
+                // else, as it is from the two tools: the grid shrinks to that one card. Any other
+                // file is a support, and the whole grid stays on offer.
+                null !== $context->libraryNode && AssignmentNature::ToSubmit !== $this->workFactory->natureFor($context->libraryNode) => [$this->workFactory->natureFor($context->libraryNode)],
                 default => AssignmentNature::forLessonLog(),
             },
+            // The « À visionner » card asks for a library video only when none is chosen yet.
+            'library_videos' => null === $context->videoResource && null === $context->libraryNode && null === $assignment->getVideoResource()
+                ? $this->libraryNodes->findFilesWithExtensions($this->currentUser(), FileLibraryWorkFactory::VIDEO_EXTENSIONS)
+                : [],
         ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted()) {
-            $this->validateNatureRequirements($form);
+            $this->validateNatureRequirements($form, null !== $context->libraryNode || null !== $this->pickedLibraryVideo($form));
         }
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -290,6 +298,16 @@ class AssignmentController extends AbstractController
                         $saved->setVideoResource($this->workFactory->createVideoResource($saved, $context->libraryNode, $this->currentUser()));
                     }
                 }
+            }
+
+            // The same back door, reached from the grid of types: « À visionner » picked there
+            // names its library video in the wizard, and what is built from it is exactly what the
+            // library's own « Créer un travail » builds. On an edit too - a travail turned into a
+            // watching has no resource yet.
+            $pickedVideo = $this->pickedLibraryVideo($form);
+            if (null !== $pickedVideo && AssignmentNature::Watching === $saved->getNature() && null === $saved->getVideoResource()) {
+                $this->workFactory->attach($saved, $pickedVideo);
+                $saved->setVideoResource($this->workFactory->createVideoResource($saved, $pickedVideo, $this->currentUser()));
             }
 
             $entityManager->flush();
@@ -999,14 +1017,22 @@ class AssignmentController extends AbstractController
      * checked here and not in the form type, which does not see the other fields at the time it is
      * built.
      */
-    private function validateNatureRequirements(\Symfony\Component\Form\FormInterface $form): void
+    private function validateNatureRequirements(\Symfony\Component\Form\FormInterface $form, bool $videoChosen): void
     {
         /** @var Assignment $assignment */
         $assignment = $form->getData();
 
-        foreach ($this->natureRequirements->missing($assignment) as $field => $message) {
+        foreach ($this->natureRequirements->missing($assignment, $videoChosen) as $field => $message) {
             $form->get($field)->addError(new \Symfony\Component\Form\FormError($this->translator->trans($message)));
         }
+    }
+
+    /** The library video named by the « À visionner » card, when the wizard offered to pick one. */
+    private function pickedLibraryVideo(\Symfony\Component\Form\FormInterface $form): ?FileLibraryNode
+    {
+        $picked = $form->has('libraryVideo') ? $form->get('libraryVideo')->getData() : null;
+
+        return $picked instanceof FileLibraryNode ? $picked : null;
     }
 
     /**

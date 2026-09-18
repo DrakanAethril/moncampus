@@ -26,16 +26,21 @@ class AssignmentNatureTest extends TestCase
     }
 
     /**
-     * Watching is the twin of Listening: a video assignment can only be born of a video resource,
-     * from the "Vidéos" tool which opens the wizard with the nature already set. Neither is a card
-     * on the grid of types, which would offer a nature with nothing to attach to it.
+     * Listening can only be born of an audio recording, which opens the wizard with the nature
+     * already set: a card on the grid would offer a nature with nothing to attach to it.
      */
-    public function testTheTwoMediaNaturesAreNeverOfferedOnTheGrid(): void
+    public function testListeningIsNeverOfferedOnTheGrid(): void
     {
-        $offered = AssignmentNature::forLessonLog();
+        self::assertNotContains(AssignmentNature::Listening, AssignmentNature::forLessonLog());
+    }
 
-        self::assertNotContains(AssignmentNature::Watching, $offered);
-        self::assertNotContains(AssignmentNature::Listening, $offered);
+    /**
+     * Watching is on the grid since videos live in the file library: picking the card asks for one
+     * of the teacher's library videos, so there is always something to attach.
+     */
+    public function testWatchingIsOfferedOnTheGrid(): void
+    {
+        self::assertContains(AssignmentNature::Watching, AssignmentNature::forLessonLog());
     }
 
     /**

@@ -106,6 +106,9 @@
                                 <th class="cm-audio-stats__file" title="{{ entry.file.originalName }}">{{ entry.file.originalName }}</th>
                             {% endfor %}
                             <th class="cm-audio-stats__total">{{ 'videoResourceTotalColumnLabel'|trans }}</th>
+                            <th class="cm-video-stats__num" title="{{ 'videoResourceWatchedTimeColumnHint'|trans }}">{{ 'videoResourceWatchedTimeColumnLabel'|trans }}</th>
+                            <th class="cm-video-stats__num">{{ 'videoResourceSkipsColumnLabel'|trans }}</th>
+                            <th class="cm-video-stats__num" title="{{ 'videoResourceFocusLossColumnHint'|trans }}">{{ 'videoResourceFocusLossColumnLabel'|trans }}</th>
                             <th class="cm-audio-stats__last">{{ 'videoResourceLastWatchColumnLabel'|trans }}</th>
                             <th class="cm-audio-stats__status">{{ 'videoResourceStatusColumnLabel'|trans }}</th>
                         </tr>
@@ -129,6 +132,19 @@
                                     </td>
                                 {% endfor %}
                                 <td class="cm-audio-stats__total">{{ row.total }} %</td>
+                                {# Time really played, against the running time: a set watched in half
+                                   its length was watched at double speed, which the percentage alone
+                                   cannot tell. #}
+                                <td class="cm-video-stats__num">
+                                    {%- if row.watchedSeconds > 0 -%}
+                                        {{ row.watchedSeconds|video_timecode }}
+                                        {%- if totalDurationSeconds > 0 %}<span class="cm-audio-stats__percent">{{ 'videoResourceWatchedTimeRatioLabel'|trans({'%ratio%': (row.watchedSeconds / totalDurationSeconds * 100)|round}) }}</span>{% endif -%}
+                                    {%- else -%}
+                                        <span class="cm-audio-stats__na">—</span>
+                                    {%- endif -%}
+                                </td>
+                                <td class="cm-video-stats__num {{ row.skipCount > 0 ? 'cm-video-stats__num--flag' }}">{{ row.skipCount }}</td>
+                                <td class="cm-video-stats__num {{ row.focusLossCount > 0 ? 'cm-video-stats__num--flag' }}">{{ row.focusLossCount }}</td>
                                 {# "aujourd'hui 09:14", "hier 18:42", "5 août 14:10": the mockup names the
                                    last two days and dates the rest. #}
                                 <td class="cm-audio-stats__last">
@@ -144,6 +160,9 @@
                                 </td>
                                 <td class="cm-audio-stats__status">
                                     <span class="cm-audio-pill cm-audio-pill--{{ row.status }}">{{ status_labels[row.status]|trans }}</span>
+                                    {% if row.completedAt %}
+                                        <span class="cm-audio-stats__percent">{{ 'videoResourceCompletedAtLabel'|trans({'%date%': row.completedAt|localized_date('d MMM')}) }} {{ row.completedAt|date('H:i') }}</span>
+                                    {% endif %}
                                 </td>
                             </tr>
                         {% endfor %}
@@ -152,4 +171,45 @@
             </div>
         {% endif %}
     </div>
+
+    {# How each student watched, event by event: the skips with the stretch they jumped over, and the
+       moments the page lost the focus - the video paused there. Only students with something to
+       say are listed; everything else is already in the table. #}
+    {% set watchers = rows|filter(row => row.events is not empty) %}
+    <section class="card cm-audio-card">
+        <div class="cm-audio-card__head">
+            <span class="cm-audio-card__label">{{ 'videoResourceWatchDetailHeading'|trans }}</span>
+            <span class="cm-audio-card__count">{{ 'videoResourceWatchDetailCountLabel'|trans({'%count%': watchers|length}) }}</span>
+        </div>
+        <div class="cm-audio-card__body cm-audio-card__body--rows">
+            {% for row in watchers %}
+                <details class="cm-video-detail">
+                    <summary>
+                        <span class="cm-video-detail__name">{{ row.student.displayName ?? row.student.username }}</span>
+                        <span class="cm-video-detail__counts">{{ 'videoResourceWatchDetailSkipsCountLabel'|trans({'%count%': row.skipCount}) }} · {{ 'videoResourceWatchDetailLossesCountLabel'|trans({'%count%': row.focusLossCount}) }}</span>
+                    </summary>
+                    {% for entry in files %}
+                        {% set events = row.events[entry.file.id] ?? [] %}
+                        {% if events is not empty %}
+                            {% if files|length > 1 %}<div class="cm-video-detail__file">{{ entry.file.originalName }}</div>{% endif %}
+                            <ul class="cm-video-detail__events">
+                                {% for event in events %}
+                                    <li class="cm-video-detail__event cm-video-detail__event--{{ event.skip ? 'skip' : 'focus' }}">
+                                        <span class="cm-video-detail__when">{{ event.occurredAt|localized_date('d MMM') }} {{ event.occurredAt|date('H:i') }}</span>
+                                        {% if event.skip %}
+                                            {{ 'videoResourceWatchDetailSkipLabel'|trans({'%from%': event.positionSeconds|video_timecode, '%to%': event.targetSeconds|video_timecode, '%missed%': event.skippedSeconds|video_timecode}) }}
+                                        {% else %}
+                                            {{ 'videoResourceWatchDetailFocusLabel'|trans({'%at%': event.positionSeconds|video_timecode}) }}
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    {% endfor %}
+                </details>
+            {% else %}
+                <div class="cm-video-detail text-secondary">{{ 'videoResourceWatchDetailEmptyMessage'|trans }}</div>
+            {% endfor %}
+        </div>
+    </section>
 {% endblock %}
