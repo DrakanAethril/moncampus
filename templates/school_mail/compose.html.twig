@@ -123,16 +123,19 @@
                 <a href="{{ path('app_school_mail_signature') }}">{{ 'schoolMailSignatureNavLabel'|trans }}</a>
             </p>
 
-            {# Attachments are free (principle #9): the student attaches whatever they want. #}
-            <div class="cm-compose__attachments">
-                <label class="cm-compose__attach">
+            {# Attachments are free (principle #9): the student attaches whatever they want, as many as
+               they want - each pick adds to the list rather than replacing it. #}
+            <div class="cm-compose__attachments" data-controller="training-attachments"
+                 data-training-attachments-remove-label-value="{{ 'trainingApplyRemoveAttachmentAction'|trans }}"
+                 data-training-attachments-target="chips">
+                <button type="button" class="cm-compose__attach" data-training-attachments-target="add" data-action="training-attachments#pick">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m21.4 11.05-8.9 8.9a5.5 5.5 0 0 1-7.8-7.8l8.9-8.9a3.7 3.7 0 0 1 5.2 5.2l-8.9 8.9a1.8 1.8 0 0 1-2.6-2.6l8.2-8.2"></path></svg>
                     <span>{{ 'schoolMailComposeAttachAction'|trans }}</span>
-                    <input type="file" name="attachments[]" multiple
-                           data-school-mail-recipient-target="files"
-                           data-action="change->school-mail-recipient#showFiles">
-                </label>
-                <span class="cm-compose__hint" data-school-mail-recipient-target="fileList"></span>
+                </button>
+                <input type="file" name="attachments[]" multiple class="cm-postul__file"
+                       data-training-attachments-target="input"
+                       data-action="change->training-attachments#added"
+                       aria-label="{{ 'schoolMailComposeAttachAction'|trans }}">
             </div>
         </div>
 
