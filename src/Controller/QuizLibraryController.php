@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Attribute\RequiresFeature;
+use App\Entity\Option;
 use App\Entity\Program;
 use App\Entity\QuizAnswer;
 use App\Entity\QuizFolder;
@@ -452,6 +453,7 @@ class QuizLibraryController extends AbstractController
         ));
         $form = $this->createForm(QuizLaunchType::class, null, [
             'programs' => $programs,
+            'optionChoices' => $this->optionsOfPrograms($programs),
             'baseTemplateName' => $template->getName(),
             'additionalTemplateChoices' => $otherTemplates,
             'defaultQuestionCount' => min($template->getDefaultQuestionCount(), max(1, $template->getQuestions()->count())),
@@ -505,6 +507,10 @@ class QuizLibraryController extends AbstractController
                 supervisionPolicy: $form->get('supervisionPolicy')->getData(),
                 supervisionExitSeconds: FormValue::int($form, 'supervisionExitSeconds') ?: 8,
                 supervisionSubmitAt: FormValue::int($form, 'supervisionSubmitAt') ?: null,
+                // Null is « tous les étudiants » all the way down - the narrowing is stored on the
+                // instance and read back by App\Service\QuizAudience, which is what the student
+                // hub, the passation door and the results roster all ask.
+                visibilityOption: $form->get('visibilityOption')->getData(),
             );
 
             $this->addFlash('success', 'quizLaunchedFlashMessage');
@@ -1347,6 +1353,32 @@ class QuizLibraryController extends AbstractController
         return $accessChecker->isStaff()
             ? $programRepository->findActiveForNav($this->currentUser())
             : $programRepository->findAllForTeacher($this->currentUser());
+    }
+
+    /**
+     * Every option carried by any of the classes on offer, named once and sorted - the launch
+     * screen's « Visibilité » list, filtered down to the chosen class in the browser.
+     *
+     * The whole set rather than one class's: the class is picked in the same form, so a list built
+     * for the current selection would be wrong the moment it changes.
+     *
+     * @param list<Program> $programs
+     *
+     * @return list<Option>
+     */
+    private function optionsOfPrograms(array $programs): array
+    {
+        $optionsById = [];
+        foreach ($programs as $program) {
+            foreach ($program->getOptions() as $option) {
+                $optionsById[(int) $option->getId()] = $option;
+            }
+        }
+
+        // usort re-indexes, so the deduplicating keys are gone by the time this returns a list.
+        usort($optionsById, static fn (Option $a, Option $b): int => strcasecmp($a->getShortName(), $b->getShortName()));
+
+        return $optionsById;
     }
 
     /**

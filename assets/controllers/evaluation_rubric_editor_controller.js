@@ -3,15 +3,22 @@ import { Controller } from '@hotwired/stimulus';
 // Carnet de notes - rubric editor (design/design_handoff_carnet_de_notes, screen 3).
 // A two-level structure (sections containing questions), hence not a CollectionType: plain named
 // fields sections[i][name] / sections[i][questions][j][label]|[maxPoints], read back by hand on the
-// server side (App\Controller\ProgramGradebookController::applyRubricSubmission()) - same reasoning
-// as the answer list of QuizQuestionType. The index counters only ever grow: a deleted row leaves a
-// gap, with no consequence since PHP iterates the keys actually present.
+// server side (App\Service\EvaluationRubricBuilder) - same reasoning as the answer list of
+// QuizQuestionType. The index counters only ever grow: a deleted row leaves a gap, with no
+// consequence since PHP iterates the keys actually present.
+//
+// Bonus and malus are posted apart, as flat bonus[j][label]|[maxPoints] lists: there is one band of
+// each, it has no name, and it cannot be deleted or reordered - nothing of a section survives but
+// its rows. Their points are counted separately in the footer, because the whole point of them is
+// that they do not enter the total the evaluation is marked out of.
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
-    static targets = ['sections', 'addTile', 'count', 'total'];
+    static targets = ['sections', 'addTile', 'count', 'total', 'bonusItems', 'malusItems', 'extraCounter'];
 
     static values = {
         sections: Array,
+        bonus: Array,
+        malus: Array,
         labels: Object,
     };
 
@@ -21,11 +28,29 @@ export default class extends Controller {
         for (const section of initial) {
             this.insertSection(section);
         }
+
+        // Unlike a section, a bonus/malus band starts empty: a barème without either is the ordinary
+        // case, and an offered blank row would read as one to fill in.
+        this.bonusItemsTarget.dataset.itemIndex = '0';
+        this.malusItemsTarget.dataset.itemIndex = '0';
+        for (const item of this.bonusValue) this.appendItem('bonus', item);
+        for (const item of this.malusValue) this.appendItem('malus', item);
+
         this.refreshTotals();
     }
 
     addSection() {
         this.insertSection({ name: '', questions: [{ label: '1', maxPoints: 1 }] });
+        this.refreshTotals();
+    }
+
+    addBonus() {
+        this.appendItem('bonus', { label: '', maxPoints: 1 });
+        this.refreshTotals();
+    }
+
+    addMalus() {
+        this.appendItem('malus', { label: '', maxPoints: 1 });
         this.refreshTotals();
     }
 
@@ -35,21 +60,50 @@ export default class extends Controller {
         this.sectionsTarget.insertBefore(this.buildSection(section), this.addTileTarget);
     }
 
+    appendItem(kind, item) {
+        const container = 'bonus' === kind ? this.bonusItemsTarget : this.malusItemsTarget;
+        container.appendChild(this.buildRow({
+            counterEl: container,
+            namePrefix: kind,
+            pointsFlag: `rubric${'bonus' === kind ? 'Bonus' : 'Malus'}Points`,
+            labelPlaceholder: this.labelsValue.itemNameLabel,
+            rowLabel: this.labelsValue.itemLabel,
+            removeLabel: this.labelsValue.removeItemLabel,
+            labelWidth: '220px',
+            item,
+        }));
+    }
+
     // Footer from the designs: « N questions · X points — barème de l'évaluation : /20 ». Recomputed
     // on every keystroke, it is the only way for the teacher to see that their rubric adds up.
+    // X counts the sections alone: a bonus that inflated it would make the sentence lie about what
+    // the evaluation is marked out of.
     refreshTotals() {
         const points = [...this.element.querySelectorAll('[data-rubric-points]')];
         this.countTarget.textContent = String(points.length);
-        // Rounded to the hundredth: adding quarter points in floating point would otherwise display
-        // 20.000000000000004.
-        const total = points.reduce((sum, input) => sum + (parseFloat(String(input.value).replace(',', '.')) || 0), 0);
-        this.totalTarget.textContent = String(Math.round(total * 100) / 100);
+        this.totalTarget.textContent = String(this.sum(points));
+
+        const bonus = this.sum([...this.element.querySelectorAll('[data-rubric-bonus-points]')]);
+        const malus = this.sum([...this.element.querySelectorAll('[data-rubric-malus-points]')]);
+        const parts = [];
+        if (bonus > 0) parts.push(`${this.labelsValue.bonusLabel} +${bonus}`);
+        if (malus > 0) parts.push(`${this.labelsValue.malusLabel} −${malus}`);
+        this.extraCounterTarget.hidden = parts.length === 0;
+        this.extraCounterTarget.textContent = parts.length ? ` · ${parts.join(' · ')}` : '';
+    }
+
+    // Rounded to the hundredth: adding quarter points in floating point would otherwise display
+    // 20.000000000000004.
+    sum(inputs) {
+        const total = inputs.reduce((acc, input) => acc + (parseFloat(String(input.value).replace(',', '.')) || 0), 0);
+
+        return Math.round(total * 100) / 100;
     }
 
     buildSection(section) {
         const sIndex = this.sectionIndex++;
         const wrapper = this.el('div', 'cm-gb-bar-section');
-        wrapper.dataset.questionIndex = '0';
+        wrapper.dataset.itemIndex = '0';
 
         const head = this.el('div', 'd-flex align-items-center gap-2');
         const nameInput = this.el('input', 'cm-gb-bar-name');
@@ -70,14 +124,24 @@ export default class extends Controller {
 
         const questions = this.el('div', 'd-flex flex-column gap-2');
         wrapper.appendChild(questions);
+        const buildQuestion = (question) => this.buildRow({
+            counterEl: wrapper,
+            namePrefix: `sections[${sIndex}][questions]`,
+            pointsFlag: 'rubricPoints',
+            labelPlaceholder: this.labelsValue.questionNumLabel,
+            rowLabel: this.labelsValue.questionLabel,
+            removeLabel: this.labelsValue.removeQuestionLabel,
+            labelWidth: '110px',
+            item: question,
+        });
         for (const question of section.questions) {
-            questions.appendChild(this.buildQuestion(wrapper, sIndex, question));
+            questions.appendChild(buildQuestion(question));
         }
 
         const addQuestion = this.el('button', 'cm-gb-dashed', this.labelsValue.addQuestionLabel);
         addQuestion.type = 'button';
         addQuestion.addEventListener('click', () => {
-            questions.appendChild(this.buildQuestion(wrapper, sIndex, { label: '', maxPoints: 1 }));
+            questions.appendChild(buildQuestion({ label: '', maxPoints: 1 }));
             this.refreshTotals();
         });
         wrapper.appendChild(addQuestion);
@@ -85,19 +149,21 @@ export default class extends Controller {
         return wrapper;
     }
 
-    buildQuestion(sectionEl, sIndex, question) {
-        const qIndex = Number(sectionEl.dataset.questionIndex);
-        sectionEl.dataset.questionIndex = String(qIndex + 1);
+    // One row of the editor, whichever band it belongs to: a label, a maximum, a bin. `counterEl`
+    // carries the row counter of its own band, so two bands never share an index.
+    buildRow({ counterEl, namePrefix, pointsFlag, labelPlaceholder, rowLabel, removeLabel, labelWidth, item }) {
+        const index = Number(counterEl.dataset.itemIndex);
+        counterEl.dataset.itemIndex = String(index + 1);
 
         const row = this.el('div', 'cm-gb-bar-qrow');
-        row.appendChild(this.el('span', 'cm-gb-bar-qlabel', this.labelsValue.questionLabel));
+        row.appendChild(this.el('span', 'cm-gb-bar-qlabel', rowLabel));
 
         const labelInput = this.el('input', 'cm-gb-bar-input');
         labelInput.type = 'text';
-        labelInput.style.width = '110px';
-        labelInput.name = `sections[${sIndex}][questions][${qIndex}][label]`;
-        labelInput.value = question.label;
-        labelInput.placeholder = this.labelsValue.questionNumLabel;
+        labelInput.style.width = labelWidth;
+        labelInput.name = `${namePrefix}[${index}][label]`;
+        labelInput.value = item.label;
+        labelInput.placeholder = labelPlaceholder;
         row.appendChild(labelInput);
 
         row.appendChild(this.el('span', 'cm-gb-bar-qlabel', this.labelsValue.questionPointsLabel));
@@ -109,16 +175,16 @@ export default class extends Controller {
         pointsInput.step = '0.25';
         pointsInput.min = '0.25';
         pointsInput.style.cssText = 'width: 76px; text-align: center;';
-        pointsInput.name = `sections[${sIndex}][questions][${qIndex}][maxPoints]`;
-        pointsInput.value = question.maxPoints;
-        pointsInput.dataset.rubricPoints = '';
+        pointsInput.name = `${namePrefix}[${index}][maxPoints]`;
+        pointsInput.value = item.maxPoints;
+        pointsInput.dataset[pointsFlag] = '';
         pointsInput.addEventListener('input', () => this.refreshTotals());
         row.appendChild(pointsInput);
 
         const remove = this.el('button', 'btn btn-link text-secondary p-1');
         remove.type = 'button';
-        remove.title = this.labelsValue.removeQuestionLabel;
-        remove.setAttribute('aria-label', this.labelsValue.removeQuestionLabel);
+        remove.title = removeLabel;
+        remove.setAttribute('aria-label', removeLabel);
         remove.appendChild(this.icon('M18 6 6 18M6 6l12 12', 13));
         remove.addEventListener('click', () => { row.remove(); this.refreshTotals(); });
         row.appendChild(remove);

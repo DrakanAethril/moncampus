@@ -37,7 +37,7 @@
                     <tr>
                         <th>{{ 'fileLibraryNameColumnLabel'|trans }}</th>
                         <th>{{ 'fileLibrarySizeColumnLabel'|trans }}</th>
-                        <th class="cm-worktable__action"></th>
+                        <th class="cm-worktable__action cm-worktable__action--pair"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -59,7 +59,11 @@
                                 </span>
                             </td>
                             <td>{{ row.node.folder ? '—' : byte_size(row.node.sizeBytes) }}</td>
-                            <td class="cm-worktable__action">
+                            <td class="cm-worktable__action cm-worktable__action--pair">
+                                {# A subfolder has nothing to open - its content is already on this
+                                   screen, one level in - but it is downloadable as its own archive,
+                                   so a student who wants one branch is not made to take the lot. #}
+                                <a class="cm-btn cm-btn--sm cm-btn--outline" href="{{ path('app_student_shared_document_download', {id: share.id, node: row.node.id}) }}">{{ (row.node.folder ? 'sharedDocumentDownloadFolderAction' : 'sharedDocumentDownloadAction')|trans }}</a>
                                 {% if not row.node.folder %}
                                     <a class="cm-btn cm-btn--sm cm-btn--outline" href="{{ path('app_student_shared_document_open', {id: share.id, node: row.node.id}) }}">{{ 'sharedDocumentOpenAction'|trans }}</a>
                                 {% endif %}

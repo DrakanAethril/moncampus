@@ -38,6 +38,11 @@
                                 {% if not quizInstance.active %}
                                     <span class="badge bg-secondary-lt ms-1">{{ 'quizInstanceDeactivatedBadgeLabel'|trans }}</span>
                                 {% endif %}
+                                {# Named on the row rather than only on the quiz's own screen: the
+                                   audience is why two launches of the same subject sit side by side. #}
+                                {% if quizInstance.visibilityOption %}
+                                    <span class="cm-badge cm-badge--blue ms-1">{{ quizInstance.visibilityOption.shortName }}</span>
+                                {% endif %}
                             </td>
                             <td><span class="badge {{ quizInstance.mode.value == 'evaluation' ? 'bg-blue-lt' : 'bg-green-lt' }}">{{ quizInstance.mode.labelKey|trans }}</span></td>
                             <td>{{ quizInstance.questionCount }}</td>

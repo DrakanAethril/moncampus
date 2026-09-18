@@ -108,8 +108,7 @@ homeTeacherNoUpcomingSessionsMessage: 'Aucune séance à venir.'
 homeTeacherStudentCountLabel: '%count% étudiants'
 homeTeacherNextSessionTodayLabel: "Aujourd'hui"
 homeTeacherQuickLinksLabel: 'Liens rapides'
-homeStaffBannerEvaluationsTitle: "%count% évaluations d'alternance non soumises"
-homeStaffBannerEvaluationsText: '%period% — clôture le %date% pour %tutors% tuteur(s) et %students% alternant(s)'
+homeStaffBannerEvaluationsTitle: '1 ou plusieurs évaluations non soumises, cliquez sur le bouton pour les voir et les relancer si besoin.'
 homeStaffBannerEvaluationsAction: 'Envoyer les relances'
 homeStaffBannerEngagementTitle: '%count% mise(s) à disposition de livret en attente de votre signature'
 homeStaffBannerEngagementTextSingle: 'Le tuteur et l’alternant ont signé pour %student% (%formation%) : la signature du centre de formation ouvrira les périodes d’évaluation.'
@@ -867,7 +866,7 @@ gradebookEntryFinishLabel: 'Terminer'
 gradebookFormRecapLabel: 'Évaluation pour'
 gradebookFormCreateAndEnterLabel: 'Créer et saisir'
 gradebookFormSaveAndEnterLabel: 'Enregistrer et saisir'
-gradebookRubricHelpText: 'Nommez vos sections librement et ajoutez les questions avec leurs points. Vous pourrez compléter ou modifier ce barème plus tard.'
+gradebookRubricHelpText: "Nommez vos sections librement et ajoutez les questions avec leurs points. Les bonus et les malus se règlent en bas : ils déplacent la note sans changer ce sur quoi elle est comptée. Vous pourrez compléter ou modifier ce barème plus tard."
 gradebookRubricQuestionLabel: 'Question'
 gradebookRubricCounterLabel: '%count% questions · %points% points — barème de l''évaluation : /%scale%'
 gradebookRubricLaterLabel: 'Compléter plus tard'
@@ -932,6 +931,14 @@ gradebookRubricQuestionNumLabel: 'N°'
 gradebookRubricQuestionPointsLabel: 'Points'
 gradebookRubricRemoveSectionLabel: 'Supprimer cette partie'
 gradebookRubricRemoveQuestionLabel: 'Supprimer cette question'
+gradebookRubricItemLabel: 'Item'
+gradebookRubricItemNameLabel: 'Intitulé'
+gradebookRubricAddItemButtonLabel: '+ Ajouter un item'
+gradebookRubricRemoveItemLabel: 'Supprimer cet item'
+gradebookRubricBonusHelpText: "Points en plus, dans la limite saisie. Ils s'ajoutent à la note sans entrer dans le barème : une évaluation sur 20 avec 2 points de bonus peut donner 22/20."
+gradebookRubricMalusHelpText: "Points en moins, dans la limite saisie. Ils se retranchent de la note sans entrer dans le barème ; la note s'arrête à 0 et ne devient jamais négative."
+rubricSectionBonusLabel: 'Bonus'
+rubricSectionMalusLabel: 'Malus'
 gradebookDetailPageHeading: 'Détail du barème'
 gradebookStudentPageHeading: 'Mon carnet de notes'
 gradebookStudentGeneralAverageLabel: 'Moyenne générale'
@@ -1313,7 +1320,7 @@ ufaAlternanceBadgeRoleTutorLabel: 'tuteur'
 ufaAlternanceBadgeRoleStudentLabel: 'alternant'
 ufaAlternanceBadgeRoleSupervisorLabel: 'chargé de suivi'
 ufaAlternanceBadgeRoleCenterLabel: 'centre de formation'
-ufaAlternanceStatusInactiveBadgeLabel: 'Alternance inactive'
+ufaAlternanceStatusInactiveBadgeLabel: 'Alternance terminée'
 ufaAlternanceStatusNotOpenedBadgeLabel: 'Non ouverte'
 ufaAlternanceStatusEngagementBadgeLabel: 'Engagement — %role%'
 ufaAlternanceStatusEngagementCompleteBadgeLabel: 'Engagement complet'
@@ -1348,11 +1355,21 @@ ufaAlternanceActionSuiviLabel: 'Suivi'
 ufaAlternanceActionLivretLabel: 'Livret'
 ufaAlternanceActionRelancerLabel: 'Relancer'
 ufaAlternanceActionReactivateLabel: 'Réactiver'
-ufaAlternanceInactiveSinceLabel: 'rupture au %date%'
 ufaAlternanceEmptyStateLabel: 'Aucune alternance pour cette sélection.'
 ufaAlternancePastYearNoteLabel: 'Les années passées restent consultables, en lecture seule.'
-ufaAlternanceDeactivatedFlashMessage: "L'alternance a été désactivée."
-ufaAlternanceReactivatedFlashMessage: "L'alternance a été réactivée."
+ufaAlternanceReactivatedFlashMessage: "L'alternance a été réactivée : l'étudiant est de nouveau considéré comme alternant."
+
+# Terminer une alternance - bouton en pied de l'écran de modification (Ufa\AlternanceController::terminate())
+ufaAlternanceTerminateButtonLabel: "Terminer l'alternance"
+ufaAlternanceTerminateRowActionLabel: 'Terminer'
+ufaAlternanceTerminateRowConfirmText: "Terminer cette alternance ? Plus aucun suivi ni document ne sera demandé au tuteur, à l'alternant ni au centre de formation, et l'étudiant ne sera plus considéré comme alternant. Le livret et les évaluations déjà saisies restent consultables."
+ufaAlternanceTerminateConfirmText: "Terminer l'alternance de %student% ? Plus aucun suivi ni document ne sera demandé au tuteur, à l'alternant ni au centre de formation, et l'étudiant ne sera plus considéré comme alternant. Le livret et les évaluations déjà saisies restent consultables."
+ufaAlternanceTerminatedFlashMessage: "L'alternance a été terminée : plus rien n'est demandé au tuteur, à l'alternant ni au centre, et l'étudiant n'est plus considéré comme alternant."
+ufaAlternanceAlreadyTerminatedFlashMessage: "Cette alternance était déjà terminée."
+ufaAlternanceTerminatedOnLabel: 'terminée le %date%'
+ufaAlternanceTerminatedBannerTitleLabel: 'Alternance terminée le %date%.'
+ufaAlternanceTerminatedBannerBodyLabel: "Plus aucun suivi n'est demandé. Le livret et les évaluations déjà saisies restent consultables."
+ufaAlternanceTerminatedNothingToDoLabel: "Cette alternance est terminée : il n'y a plus rien à y remplir."
 ufaAlternanceShowPageHeading: "Suivi de l'alternance"
 ufaAlternanceLivretPageHeading: "Livret de suivi"
 ufaAlternanceLivretSommaireTitle: 'Sommaire'
@@ -1417,6 +1434,7 @@ ufaAlternanceWizardPeriodsNotOpenFlashMessage: "Les périodes d'évaluation ne s
 ufaAlternanceWizardStepIncompleteFlashMessage: 'Répondez à tous les champs de cette étape avant de passer à la suivante.'
 internshipTutorEvaluationChooseAnswerPlaceholder: 'Choisissez une réponse'
 ufaAlternanceWizardStepNotOpenFlashMessage: "Cette étape n'est pas encore ouverte."
+ufaAlternanceWizardRoleNotAskedLabel: 'Non demandé'
 ufaAlternanceWizardRoleInProgressLabel: 'En cours'
 ufaAlternanceWizardRoleWaitingLabel: 'En attente'
 wizardStepCaptionLabel: 'Étape %step% sur %total% · %name%'
@@ -1497,11 +1515,12 @@ ufaAlternanceRemindersDeadlineLabel: 'clôture le %date%'
 ufaAlternanceRemindersSelectedCountLabel: '%count% destinataires sélectionnés'
 ufaAlternanceRemindersRecipientColumnLabel: 'Destinataire'
 ufaAlternanceRemindersRoleColumnLabel: 'Rôle'
+ufaAlternanceRemindersPeriodColumnLabel: 'Bilan'
+ufaAlternanceRemindersPeriodRangeLabel: 'du %start% au %end%'
 ufaAlternanceRemindersStatusColumnLabel: 'Statut'
-ufaAlternanceRemindersEmptyLabel: 'Aucun non-soumis pour cette période.'
 ufaAlternanceRemindersFooterNoteLabel: 'Modèle « Relance — évaluation de période » · aperçu avant envoi'
 ufaAlternanceRemindersSendButtonLabel: 'Envoyer les relances (%count%)'
-ufaAlternanceRemindersPickPeriodLabel: 'Choisissez une période pour afficher les non-soumis.'
+ufaAlternanceRemindersNothingPendingLabel: 'Aucune relance à envoyer : toutes les évaluations attendues ont été soumises.'
 ufaAlternanceRemindersBulkSentFlashMessage: '{0}Aucune relance envoyée|{1}1 relance envoyée|]1,Inf[%count% relances envoyées'
 
 # Opening line shared by every transactional email (templates/emails/*.html.twig). Deliberately
@@ -1536,6 +1555,8 @@ ufaActivityPeriodStudentSignedText: "%student% a signé son évaluation de %peri
 ufaActivityPeriodTeamSignedText: "L'équipe pédagogique a signé %period% pour %student%"
 ufaActivityPeriodSupervisorClosedText: '%actor% a clôturé %period% pour %student%'
 ufaActivityReminderSentText: '%actor% a relancé %role% pour %student%%periodSuffix%'
+ufaActivityAlternanceTerminatedText: "%actor% a terminé l'alternance de %student%"
+ufaActivityAlternanceResumedText: "%actor% a réactivé l'alternance de %student%"
 platformActivityLoginPasswordText: "%user% s'est connecté par mot de passe"
 platformActivityLoginMagicLinkText: "%user% s'est connecté par lien de connexion"
 activityRecentCardTitle: 'Dernières activités'
@@ -2477,6 +2498,11 @@ programToolsAddSeparateLabel: 'À séparer'
 programToolsAddTogetherLabel: 'À réunir'
 programToolsCreateGroupsButtonLabel: 'Créer les groupes'
 programToolsReshuffleButtonLabel: 'Rebrasser les groupes déverrouillés'
+programToolsRecalculateButtonLabel: "Recalculer l'effectif"
+programToolsRecalculateButtonTitle: "Retirer les étudiants qui ont quitté la classe et placer ceux qui y sont entrés depuis, sans refaire la répartition"
+programToolsRecalculateUpToDateToast: "L'effectif est déjà à jour"
+programToolsRecalculateDoneToast: 'Effectif recalculé : %added% ajouté(s), %removed% retiré(s)'
+programToolsRecalculateAllLockedMessage: "%count% étudiant(s) n'ont pas pu être placés : tous les groupes sont verrouillés."
 programToolsGroupSummaryTemplateLabel: '%count% %studentWord% en jeu → %groups% %groupWord%'
 programToolsNetworkErrorMessage: 'Impossible de contacter le serveur.'
 programToolsPairIncompleteMessage: 'Choisissez deux étudiants avant d''ajouter la contrainte.'
@@ -2786,6 +2812,11 @@ quizLaunchAddTemplateAction: '+ Ajouter un quiz'
 quizLaunchAddTemplateHint: "Les questions des quiz ajoutés rejoignent le même vivier : le tirage y puise sans distinguer leur quiz d'origine."
 quizLaunchRemoveTemplateAction: 'Retirer ce quiz'
 quizLaunchProgramFieldLabel: 'Classe'
+quizLaunchVisibilityOptionFieldLabel: 'Visibilité'
+quizLaunchVisibilityOptionAllLabel: 'Tous les étudiants'
+quizLaunchVisibilityOptionFieldHint: "Limiter le quiz aux étudiants d'une option de la classe."
+quizLaunchVisibilityOptionForeignError: "Cette option n'appartient pas à la classe choisie."
+quizInstanceEditVisibilityOptionFieldHelp: "Les étudiants qui ont déjà commencé ce quiz le gardent, quelle que soit l'option retenue ici."
 quizLaunchModeFieldLabel: 'Mode'
 quizLaunchOpensAtFieldLabel: 'Ouverture'
 quizLaunchClosesAtFieldLabel: 'Fermeture'
@@ -2893,6 +2924,7 @@ quizQuestionDisplayCountTemplate: '%count% affichages'
 quizAttemptTimingsHeading: 'Temps par question'
 quizAttemptTimingsHintText: 'Mesuré entre l''affichage de la question et votre réponse. Ce n''est pas une note.'
 quizSupervisedBadgeLabel: "Mode contrôle"
+quizVisibilityOptionBadgeTemplate: 'Visibilité : %option%'
 quizLaunchSupervisionTitle: "Mode contrôle"
 quizLaunchSupervisionHint: "Pour une évaluation composée depuis un navigateur ordinaire, sur un poste que l'établissement ne maîtrise pas."
 quizLaunchSupervisedFieldLabel: "Surveiller la passation"
@@ -6048,6 +6080,8 @@ sharedDocumentDocumentColumnLabel: 'Document'
 sharedDocumentTeacherColumnLabel: 'Enseignant'
 sharedDocumentAvailableColumnLabel: 'Mis à disposition le'
 sharedDocumentOpenAction: 'Ouvrir'
+sharedDocumentDownloadAction: 'Télécharger'
+sharedDocumentDownloadFolderAction: 'Télécharger (.zip)'
 sharedDocumentBrowseAction: 'Consulter'
 sharedDocumentFolderNoticeText: 'Le dossier est partagé en entier : son contenu et ses sous-dossiers, y compris ce que vous y déposerez plus tard.'
 sharedDocumentFolderSharedByText: 'Dossier partagé par %teacher% — %topic%'
@@ -8557,6 +8591,7 @@ dossierTargetStudentsLabel: 'Étudiants'
 dossierTargetKindClassLabel: 'Classe'
 dossierTargetKindOptionLabel: 'Option'
 dossierEditTargetsAction: 'Modifier les cibles'
+dossierEditSettingsAction: 'Modifier les paramètres du dossier'
 
 dossierCompositionLabel: 'Composition du dossier'
 dossierCompositionEmptyText: 'Aucun document dans ce dossier.'
@@ -8565,6 +8600,7 @@ dossierAddGroupAction: '+ Groupe'
 dossierGroupNamePlaceholder: 'Nom du groupe'
 dossierAddDocumentAction: '+ Document'
 dossierEditDocumentAction: 'Modifier'
+dossierDocumentTrackingAction: 'Voir le suivi de ce document'
 dossierDeleteDocumentAction: 'Supprimer'
 dossierDeleteDocumentConfirmText: 'Supprimer « %name% » du dossier ? Les dépôts déjà reçus sur ce document seront supprimés avec lui.'
 

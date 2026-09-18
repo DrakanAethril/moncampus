@@ -22,6 +22,7 @@ use App\Service\GotenbergUnavailableException;
 use App\Service\GroupBatchNaming;
 use App\Service\GroupCreationRequest;
 use App\Service\GroupCreationService;
+use App\Service\GroupRosterReconciler;
 use App\Service\JsonRequestPayload;
 use App\Service\UnsatisfiableGroupConstraintsException;
 use Doctrine\ORM\EntityManagerInterface;
@@ -358,6 +359,69 @@ class ProgramToolsController extends AbstractController
                 static fn (array $group): array => array_map(static fn (array $s): array => $roster[$s['id']], $group),
                 $groups,
             ),
+        ]);
+    }
+
+    // « Recalculer l'effectif » - the saved groups brought back onto the class as it stands today,
+    // without re-drawing them: whoever left the class loses their seat, whoever joined since is
+    // handed one, and everybody else stays exactly where the teacher put them. The rule itself is
+    // App\Service\GroupRosterReconciler; what belongs here is reading the roster AGAIN from the
+    // database rather than from the payload, which is the whole point of the button - a tab left
+    // open all morning still carries the class of the morning, and the students embedded in the
+    // page are precisely the list the teacher is asking to doubt.
+    #[Route(path: '/programs/{id}/tools/group-creation/recalculate', name: 'app_program_tools_group_creation_recalculate', methods: ['POST'])]
+    public function recalculateGroups(
+        int $id,
+        Request $request,
+        ProgramRepository $repository,
+        StructureAccessChecker $accessChecker,
+        ProgramStudentOptionRepository $studentOptionRepository,
+        GroupRosterReconciler $reconciler,
+    ): JsonResponse {
+        $program = $this->findForTeacherOrStaff($id, $repository, $accessChecker);
+        $this->assertCsrf($request->headers->get('X-CSRF-Token'));
+
+        $payload = JsonRequestPayload::fromRequest($request);
+        $groups = $payload->intLists('groups');
+        if ([] === $groups) {
+            return $this->json(['error' => 'Aucun groupe à recalculer.'], 422);
+        }
+
+        $roster = $this->buildRoster($program, $studentOptionRepository);
+
+        // Who may be handed a seat, as opposed to who is in the class: the panel's own Option
+        // filter and its absentees narrow the placement, never the removal. A student outside the
+        // filter is still in the class, so their seat is left alone.
+        $optionId = $payload->int('option');
+        $absentIds = $payload->ids('absentIds');
+        $placeable = array_filter(
+            $roster,
+            static fn (array $student): bool => (null === $optionId || \in_array($optionId, $student['optionIds'], true))
+                && !\in_array($student['id'], $absentIds, true),
+        );
+
+        $result = $reconciler->reconcile(
+            $groups,
+            array_keys($roster),
+            array_values(array_map(static fn (array $student): int => $student['id'], $placeable)),
+            $payload->ids('lockedIndices'),
+        );
+
+        return $this->json([
+            'groups' => array_map(
+                // No array_values() around it, unlike lotPayload()'s: the reconciler only ever
+                // hands back ids it found in this very roster, so nothing is filtered out here and
+                // the keys cannot gap.
+                static fn (array $ids): array => array_map(static fn (int $studentId): array => $roster[$studentId], $ids),
+                $result['groups'],
+            ),
+            // The fresh roster travels back with the groups: the absent picker and the pair selects
+            // are built from it, and a newcomer visible in a group but not in those lists would be
+            // a screen half-recalculated.
+            'students' => array_values($roster),
+            'added' => \count($result['added']),
+            'removed' => \count($result['removed']),
+            'unplaced' => \count($result['unplaced']),
         ]);
     }
 

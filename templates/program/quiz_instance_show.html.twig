@@ -13,6 +13,9 @@
 {% block page_title %}
     {{ 'programQuizResultsHeadingTemplate'|trans({'%name%': quizInstance.name}) }}
     {% if quizInstance.supervised %}<span class="cm-badge cm-badge--gold ms-2">{{ 'quizSupervisedBadgeLabel'|trans }}</span>{% endif %}
+    {# Named here because it is the denominator: « 12 / 18 » below counts the option's students, not
+       the class's (App\Service\QuizAudience). #}
+    {% if quizInstance.visibilityOption %}<span class="cm-badge cm-badge--blue ms-2">{{ 'quizVisibilityOptionBadgeTemplate'|trans({'%option%': quizInstance.visibilityOption.shortName}) }}</span>{% endif %}
 {% endblock %}
 
 {% block page_actions %}

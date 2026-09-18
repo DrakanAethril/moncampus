@@ -23,6 +23,7 @@ use App\Repository\UserRepository;
 use App\Service\AlternanceEngagementService;
 use App\Service\AlternanceModalityAssigner;
 use App\Service\AlternancePeriodStatusResolver;
+use App\Service\AlternanceTerminationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -243,36 +244,42 @@ class AlternanceController extends AbstractController
         ]);
     }
 
-    // Plain <form method="post"> submit from the dashboard row (no JS confirm dialog - this app
-    // has no generic standalone confirm+fetch controller outside DataTables-driven lists, and
-    // this table is plain server-rendered, not a DataTable) - CSRF travels as the body field.
-    #[Route(path: '/ufa/alternances/{id}/deactivate', name: 'app_ufa_alternance_deactivate', methods: ['POST'])]
+    // « Terminer l'alternance », from the foot of the edit screen (the only screen that offers it:
+    // ending a contract is a decision taken while looking at the dossier, not a row action to
+    // click past in a list). Plain <form method="post"> submit - CSRF travels as the body field,
+    // and the last word is a window.confirm on the button, see confirm_submit_controller.js.
+    //
+    // What it does lives in App\Service\AlternanceTerminationService, because "terminated" is two
+    // facts and not one: the alternance goes quiet, and the student stops being an alternant.
+    #[Route(path: '/ufa/alternances/{id}/terminate', name: 'app_ufa_alternance_terminate', methods: ['POST'])]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
-    public function deactivate(int $id, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository): Response
+    public function terminate(int $id, Request $request, InternshipTutorLinkRepository $tutorLinkRepository, AlternanceTerminationService $terminationService): Response
     {
         $tutorLink = $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
-        $this->assertValidFormToken('ufa_alternance_deactivate', $request);
+        $this->assertValidFormToken('ufa_alternance_terminate', $request);
 
-        $tutorLink->setInactiveDate(new \DateTimeImmutable());
-        $tutorLink->setInactivatedBy($this->currentUser());
-        $entityManager->flush();
+        $this->addFlash(
+            'success',
+            $terminationService->terminate($tutorLink, $this->currentUser())
+                ? 'ufaAlternanceTerminatedFlashMessage'
+                : 'ufaAlternanceAlreadyTerminatedFlashMessage',
+        );
 
-        $this->addFlash('success', 'ufaAlternanceDeactivatedFlashMessage');
-
-        return $this->redirectToRoute('app_ufa', $request->query->all());
+        // Back to the suivi screen rather than the list: it is where the trail came from, and it is
+        // where the new state is legible.
+        return $this->redirectToRoute('app_ufa_alternance_show', ['id' => $tutorLink->getId()]);
     }
 
+    // The undo of the above, from the dashboard's terminated rows - it re-tags the student, which is
+    // the half that would otherwise stay lost (see AlternanceTerminationService::resume()).
     #[Route(path: '/ufa/alternances/{id}/reactivate', name: 'app_ufa_alternance_reactivate', methods: ['POST'])]
     #[IsGranted(new Expression(self::STAFF_ACCESS_EXPRESSION))]
-    public function reactivate(int $id, Request $request, EntityManagerInterface $entityManager, InternshipTutorLinkRepository $tutorLinkRepository): Response
+    public function reactivate(int $id, Request $request, InternshipTutorLinkRepository $tutorLinkRepository, AlternanceTerminationService $terminationService): Response
     {
         $tutorLink = $tutorLinkRepository->find($id) ?? throw $this->createNotFoundException();
-        $this->assertValidFormToken('ufa_alternance_deactivate', $request);
+        $this->assertValidFormToken('ufa_alternance_terminate', $request);
 
-        $tutorLink->setInactiveDate(null);
-        $tutorLink->setInactivatedBy(null);
-        $entityManager->flush();
-
+        $terminationService->resume($tutorLink, $this->currentUser());
         $this->addFlash('success', 'ufaAlternanceReactivatedFlashMessage');
 
         return $this->redirectToRoute('app_ufa', $request->query->all());

@@ -76,7 +76,7 @@ class DashboardController extends AbstractController
                 $rows[] = [
                     'tutorLink' => $tutorLink,
                     'status' => $status,
-                    'badge' => $isPastYear && null === $tutorLink->getInactiveDate() && AlternanceStepStatus::STEP_INACTIVE !== $status->step
+                    'badge' => $isPastYear && !$tutorLink->isTerminated() && AlternanceStepStatus::STEP_INACTIVE !== $status->step
                         ? ['label' => $translator->trans('ufaAlternanceStatusYearClosedBadgeLabel'), 'class' => 'bg-green-lt']
                         : $statusResolver->badgeFor($status),
                     'isPastYear' => $isPastYear,

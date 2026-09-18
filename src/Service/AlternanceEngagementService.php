@@ -20,6 +20,12 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * which is what opens the alternance's evaluation periods for AlternancePeriodStatusResolver.
  * Signing is a plain authenticated-click stamp everywhere (no checkbox/code/handwritten capture -
  * see the feature's plan doc, decision #1).
+ *
+ * None of the three signatures is accepted once the alternance is terminated, and the refusal lives
+ * here because the three of them arrive from three different portals: the tutor's own, the
+ * student's own, and the staff screen. All three throw \DomainException - a terminated alternance
+ * asks nothing, so a signature reaching this point is a stale page or a hand-made POST, not a
+ * gesture to absorb silently.
  */
 class AlternanceEngagementService
 {
@@ -48,6 +54,8 @@ class AlternanceEngagementService
 
     public function signAsTutor(InternshipLivretEngagement $engagement, User $tutor): void
     {
+        $this->assertNotTerminated($engagement);
+
         $engagement->setSignedTutorAt(new \DateTimeImmutable());
         $engagement->setSignedTutorBy($tutor);
         $this->entityManager->flush();
@@ -57,6 +65,8 @@ class AlternanceEngagementService
 
     public function signAsStudent(InternshipLivretEngagement $engagement, User $student): void
     {
+        $this->assertNotTerminated($engagement);
+
         $engagement->setSignedStudentAt(new \DateTimeImmutable());
         $engagement->setSignedStudentBy($student);
         $this->entityManager->flush();
@@ -69,6 +79,8 @@ class AlternanceEngagementService
     // from the spec is enforced here, not just by hiding the button in the template.
     public function signAsCenter(InternshipLivretEngagement $engagement, User $staff): void
     {
+        $this->assertNotTerminated($engagement);
+
         if (null === $engagement->getSignedTutorAt() || null === $engagement->getSignedStudentAt()) {
             throw new \DomainException('Cannot sign as centre representative before both the tutor and the student have signed.');
         }
@@ -78,6 +90,13 @@ class AlternanceEngagementService
         $this->entityManager->flush();
 
         $this->activityRecorder->record(UfaActivityType::EngagementSignedCenter, $engagement->getTutorLink(), $staff);
+    }
+
+    private function assertNotTerminated(InternshipLivretEngagement $engagement): void
+    {
+        if (true === $engagement->getTutorLink()?->isTerminated()) {
+            throw new \DomainException('Cannot sign the engagement of a terminated alternance.');
+        }
     }
 
     // Called once, right after the alternance is created (Ufa\AlternanceController::

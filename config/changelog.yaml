@@ -26,6 +26,37 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.18'
+      date: '2026-09-18'
+      summary: "Un quiz lancé peut n'être visible que des étudiants d'une option, et un barème détaillé accepte désormais des bonus et des malus. Côté alternance, un contrat se termine depuis le dossier lui-même, et l'écran des relances ne propose plus que les bilans qui ont réellement quelqu'un à relancer."
+      entries:
+          - type: nouveaute
+            title: "La visibilité d'un quiz peut être limitée aux étudiants d'une option"
+            detail: "Au lancement comme après coup, le quiz peut n'être proposé qu'à une option de la classe : les autres étudiants ne le voient pas, et la participation se compte sur eux seuls. Restreindre après coup ne retire jamais rien à qui a déjà commencé : sa copie et sa place dans les résultats restent."
+          - type: nouveaute
+            title: "Bonus et malus sur un barème détaillé"
+            detail: "Deux sections s'ajoutent sous les parties du barème, chacune avec son maximum de points. Le bonus s'ajoute à la note et le malus s'en retranche, sans entrer dans le total sur lequel l'évaluation est comptée : une note sur 20 peut atteindre 22 et ne descend jamais sous 0."
+          - type: nouveaute
+            title: "Terminer une alternance"
+            detail: "Un bouton au pied de la fiche met fin au contrat : la date est horodatée et l'étudiant cesse d'être compté comme alternant. Rien n'est supprimé — la fiche, l'engagement et les bilans signés restent consultables — mais plus aucune signature n'est acceptée et plus aucune relance ne part. Réactiver rétablit exactement l'inverse."
+          - type: nouveaute
+            title: "Recalculer l'effectif d'un lot de groupes enregistré"
+            detail: "Un lot enregistré en septembre décrit la classe de septembre. Le bouton la remet sur la classe d'aujourd'hui sans refaire la répartition : qui a quitté la classe perd sa place, qui est arrivé depuis en reçoit une dans le groupe le moins rempli, et personne d'autre ne bouge."
+          - type: nouveaute
+            title: "Télécharger un document partagé depuis l'espace étudiant"
+            detail: "Chaque ligne porte « Télécharger » à côté d'« Ouvrir ». Un fichier est servi tel quel, un dossier revient en archive .zip de tout ce qu'il contient, sous-dossiers compris."
+          - type: modification
+            title: "L'écran des relances ne propose que les bilans à relancer"
+            detail: "Le sélecteur ne liste plus que les bilans ayant au moins une relance à envoyer et ouvre sur le premier ; chaque ligne nomme ses dates, colorisées selon la proximité de l'échéance. La bannière de l'accueil dit maintenant exactement ce que cet écran montre."
+          - type: modification
+            title: "Un dossier de pièces se règle et se suit depuis ses listes"
+            detail: "Un crayon sur chaque ligne de « Mes dossiers » rouvre le titre, la période, les consignes, les validateurs et les destinataires. Dans un dossier, un œil sur chaque document ouvre le suivi directement sur ce document."
+          - type: fix
+            title: "Le panneau Outils reste centré dans la fenêtre"
+            detail: "Selon la place de « Outils » dans la barre, il débordait d'un côté ou de l'autre avant d'être rattrapé après coup."
+          - type: fix
+            title: "Ajouter une pièce à un dossier enchaîne sur la suivante"
+            detail: "Le panneau de droite restait sur la pièce qui venait d'être créée, alors que c'est un geste que l'on répète."
     - version: '2026.09.17'
       date: '2026-09-17'
       summary: "Le menu Outils s'ouvre en colonnes, avec une recherche pour atteindre directement une fonctionnalité. Côté dossiers de pièces, la vue de l'étudiant va à l'essentiel et la relecture d'un dépôt donne accès aux versions précédentes."

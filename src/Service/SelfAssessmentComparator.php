@@ -7,6 +7,7 @@ namespace App\Service;
 use App\Entity\Assignment;
 use App\Entity\Grade;
 use App\Entity\SelfAssessment;
+use App\Enum\RubricSectionKind;
 
 /**
  * Brings a student's estimate together with the teacher's grading
@@ -68,7 +69,12 @@ class SelfAssessmentComparator
      * The question-by-question detail of 5c: the student's estimate and the points actually awarded,
      * with their share of the maximum for the two progress bars.
      *
-     * @return list<array{sectionName: string, label: string, maxPoints: float, estimated: ?float, graded: ?float, estimatedPercent: float, gradedPercent: float, gap: ?float}>
+     * A bonus or malus row carries no section name of its own - the screen labels it from
+     * $sectionKind, exactly as the entry grid does. Its $gap keeps the same meaning as anywhere
+     * else: how far the estimate is from what was awarded on that one item, the band's sign being
+     * a matter of the total, not of the item.
+     *
+     * @return list<array{sectionName: string, sectionKind: RubricSectionKind, label: string, maxPoints: float, estimated: ?float, graded: ?float, estimatedPercent: float, gradedPercent: float, gap: ?float}>
      */
     public function questionRows(Assignment $assignment, SelfAssessment $selfAssessment, ?Grade $grade): array
     {
@@ -86,6 +92,7 @@ class SelfAssessmentComparator
 
                 $rows[] = [
                     'sectionName' => $section->getName(),
+                    'sectionKind' => $section->getKind(),
                     'label' => $question->getLabel(),
                     'maxPoints' => $max,
                     'estimated' => $estimated,

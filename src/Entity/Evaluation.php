@@ -8,6 +8,7 @@ use App\Enum\EvaluationModality;
 use App\Enum\EvaluationNature;
 use App\Enum\EvaluationStatus;
 use App\Enum\EvaluationType;
+use App\Enum\RubricSectionKind;
 use App\Repository\EvaluationRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -326,6 +327,47 @@ class Evaluation
     public function hasRubric(): bool
     {
         return !$this->rubricSections->isEmpty();
+    }
+
+    /**
+     * The named parts of the barème, bonus and malus left out. This is what "le barème" means
+     * wherever a screen counts questions or sums points to check that the rubric adds up.
+     *
+     * @return list<EvaluationRubricSection>
+     */
+    public function getStandardRubricSections(): array
+    {
+        return array_values(array_filter(
+            $this->rubricSections->toArray(),
+            static fn (EvaluationRubricSection $section): bool => $section->getKind()->isStandard(),
+        ));
+    }
+
+    // There is at most one band of each special kind; null when the teacher declared none.
+    public function getRubricSectionOfKind(RubricSectionKind $kind): ?EvaluationRubricSection
+    {
+        foreach ($this->rubricSections as $section) {
+            if ($section->getKind() === $kind) {
+                return $section;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The points the evaluation is marked out of according to its own barème - the standard sections
+     * alone. Bonus and malus deliberately do not move it: that is the whole point of them being a
+     * kind rather than one more part, and it is what lets a grade come out at 22 on a rubric of 20.
+     */
+    public function getRubricReferencePoints(): float
+    {
+        $total = 0.0;
+        foreach ($this->getStandardRubricSections() as $section) {
+            $total += $section->getMaxPoints();
+        }
+
+        return round($total, 2);
     }
 
     /** @return Collection<int, Grade> */

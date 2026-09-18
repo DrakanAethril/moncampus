@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Service;
 
 use App\Entity\Cohort;
+use App\Entity\Option;
 use App\Entity\Program;
 use App\Entity\QuizInstance;
 use App\Entity\SchoolYear;
@@ -15,6 +16,8 @@ use App\Enum\AccessConditionDisplay;
 use App\Enum\AccessConditionMode;
 use App\Enum\AccessConditionType;
 use App\Enum\QuizMode;
+use App\Repository\ProgramStudentOptionRepository;
+use App\Repository\QuizAttemptRepository;
 use App\Repository\QuizInstanceRepository;
 use App\Security\StructureAccessChecker;
 use App\Service\AccessConditionEvaluator;
@@ -26,6 +29,7 @@ use App\Service\AccessConditionNameResolver;
 use App\Service\AccessConditionNames;
 use App\Service\AccessConditionTraces;
 use App\Service\AccessConditionTree;
+use App\Service\QuizAudience;
 use App\Service\StudentAccessFacts;
 use App\Service\StudentQuizBoard;
 use PHPUnit\Framework\TestCase;
@@ -107,6 +111,52 @@ class StudentQuizBoardTest extends TestCase
         self::assertTrue($this->board([$quiz], traces: $traces)->isOpenFor($quiz, new User('sio2-001')));
     }
 
+    /**
+     * The narrowing chosen at launch, read on the student's own list: a quiz addressed to SLAM is
+     * not on a SISR student's hub at all.
+     *
+     * Absent rather than greyed, and that is the whole distinction: « Grisé » names a way in, and
+     * there is none here - the quiz was never theirs.
+     */
+    public function testAQuizNarrowedToAnotherOptionIsNotListed(): void
+    {
+        $slam = new Option('SLAM', 'SLAM', '#0d6efd');
+        $quiz = $this->quiz();
+        $quiz->setVisibilityOption($slam);
+
+        $board = $this->board([$quiz], heldOptions: [new Option('SISR', 'SISR', '#198754')]);
+        $student = new User('sio2-001');
+
+        self::assertSame([], $board->readableFor($this->program(), $student)->instances);
+        // And at the door too: the address of a quiz is guessable, so the list is never the lock.
+        self::assertFalse($board->isOpenFor($quiz, $student));
+    }
+
+    public function testAQuizNarrowedToTheStudentsOwnOptionStaysListedAndPlayable(): void
+    {
+        $slam = new Option('SLAM', 'SLAM', '#0d6efd');
+        $quiz = $this->quiz();
+        $quiz->setVisibilityOption($slam);
+
+        $board = $this->board([$quiz], heldOptions: [$slam]);
+        $student = new User('sio2-001');
+
+        self::assertSame([$quiz], $board->readableFor($this->program(), $student)->instances);
+        self::assertTrue($board->isOpenFor($quiz, $student));
+    }
+
+    /**
+     * A student the annuaire has placed in no option of the class is outside a narrowed quiz - the
+     * same reading the option-scoped travail à faire already applies (AssignmentAudienceResolver).
+     */
+    public function testAStudentWithNoOptionIsOutsideANarrowedQuiz(): void
+    {
+        $quiz = $this->quiz();
+        $quiz->setVisibilityOption(new Option('SLAM', 'SLAM', '#0d6efd'));
+
+        self::assertFalse($this->board([$quiz])->isOpenFor($quiz, new User('sio2-001')));
+    }
+
     private function quiz(): QuizInstance
     {
         $quiz = new QuizInstance($this->program(), new User('prof'));
@@ -141,8 +191,11 @@ class StudentQuizBoardTest extends TestCase
         );
     }
 
-    /** @param list<QuizInstance> $instances */
-    private function board(array $instances, bool $readsThrough = false, ?AccessConditionTraces $traces = null): StudentQuizBoard
+    /**
+     * @param list<QuizInstance> $instances
+     * @param list<Option>       $heldOptions the options the reading student is enrolled in
+     */
+    private function board(array $instances, bool $readsThrough = false, ?AccessConditionTraces $traces = null, array $heldOptions = []): StudentQuizBoard
     {
         $repository = $this->createStub(QuizInstanceRepository::class);
         $repository->method('findActiveForProgram')->willReturn($instances);
@@ -168,6 +221,15 @@ class StudentQuizBoardTest extends TestCase
 
         $gate = new AccessConditionGate($factsLoader, new AccessConditionEvaluator(), $nameResolver, $labeler, $traces, $checker);
 
-        return new StudentQuizBoard($repository, $gate);
+        $studentOptions = $this->createStub(ProgramStudentOptionRepository::class);
+        $studentOptions->method('findOptionsForStudent')->willReturn($heldOptions);
+
+        // No attempt anywhere: these cases are about discovering a quiz, and a quiz already sat is
+        // never narrowed away (QuizAudienceTest covers that half).
+        $attempts = $this->createStub(QuizAttemptRepository::class);
+        $attempts->method('findAttemptedInstanceIds')->willReturn([]);
+        $attempts->method('findForStudent')->willReturn([]);
+
+        return new StudentQuizBoard($repository, $gate, new QuizAudience($studentOptions, $attempts));
     }
 }

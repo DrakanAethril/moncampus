@@ -22,6 +22,7 @@ use App\Repository\TopicRepository;
 use App\Security\FeatureAccess;
 use App\Security\StructureAccessChecker;
 use App\Service\Accommodation\AccommodationResolver;
+use App\Service\QuizAudience;
 use App\Service\QuizDrawService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -53,7 +54,7 @@ class ProgramQuizController extends AbstractController
 
     // Screens 1f/1g - one route, two tabs (?tab=student|question), each with its own "Trier par".
     #[Route(path: '/programs/{id}/quiz/{instanceId}', name: 'app_program_quiz_show', requirements: ['instanceId' => '\d+'])]
-    public function show(int $id, int $instanceId, Request $request, ProgramRepository $repository, StructureAccessChecker $accessChecker, QuizInstanceRepository $instanceRepository, QuizAttemptRepository $attemptRepository, AssignmentRepository $assignmentRepository, TopicRepository $topicRepository, FeatureAccess $featureAccess): Response
+    public function show(int $id, int $instanceId, Request $request, ProgramRepository $repository, StructureAccessChecker $accessChecker, QuizInstanceRepository $instanceRepository, QuizAttemptRepository $attemptRepository, AssignmentRepository $assignmentRepository, TopicRepository $topicRepository, FeatureAccess $featureAccess, QuizAudience $audience): Response
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
         $instance = $this->findInstanceOrNotFound($instanceRepository, $program, $instanceId);
@@ -61,7 +62,7 @@ class ProgramQuizController extends AbstractController
         $tab = 'question' === $request->query->get('tab') ? 'question' : 'student';
         $concludedAttempts = $attemptRepository->findConcludedForInstance($instance);
 
-        $studentRows = $this->buildStudentRows($program, $instance, $concludedAttempts, $attemptRepository);
+        $studentRows = $this->buildStudentRows($instance, $concludedAttempts, $attemptRepository, $audience);
         $questionRows = $this->buildQuestionRows($instance, $concludedAttempts);
 
         $sort = (string) $request->query->get('sort', 'student' === $tab ? 'name' : 'rate_asc');
@@ -147,6 +148,10 @@ class ProgramQuizController extends AbstractController
         // that block is on this screen at all is decided here, once.
         $form = $this->createForm(QuizInstanceEditType::class, $instance, [
             'supervisionEditable' => QuizMode::Evaluation === $instance->getMode(),
+            // This class's own options, so « Visibilité » cannot name one belonging elsewhere - the
+            // launch form needs a filter and a guard for that, this one needs neither. A class with
+            // no option gets no field at all.
+            'programOptions' => array_values($program->getOptions()->toArray()),
         ]);
         $form->handleRequest($request);
 
@@ -322,8 +327,15 @@ class ProgramQuizController extends AbstractController
         ]);
     }
 
-    /** @param list<QuizAttempt> $concludedAttempts */
-    private function buildStudentRows(Program $program, QuizInstance $instance, array $concludedAttempts, QuizAttemptRepository $attemptRepository): array
+    /**
+     * One row per student the quiz concerns - the class, or the students of the option it was
+     * narrowed to plus anybody holding an attempt on it (App\Service\QuizAudience, which owns that
+     * whole rule). That set is the denominator of every rate this screen prints, so a quiz addressed
+     * to one option must not count the rest of the class as absent.
+     *
+     * @param list<QuizAttempt> $concludedAttempts
+     */
+    private function buildStudentRows(QuizInstance $instance, array $concludedAttempts, QuizAttemptRepository $attemptRepository, QuizAudience $audience): array
     {
         $attemptsByStudent = [];
         foreach ($concludedAttempts as $attempt) {
@@ -331,7 +343,7 @@ class ProgramQuizController extends AbstractController
         }
 
         $rows = [];
-        foreach ($program->getStudents() as $student) {
+        foreach ($audience->students($instance) as $student) {
             $attempts = $attemptsByStudent[$student->getId()] ?? [];
             $retained = [] !== $attempts ? $attempts[\count($attempts) - 1] : null;
 

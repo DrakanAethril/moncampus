@@ -19,6 +19,7 @@ use App\Repository\InternshipSupervisorEvaluationRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
 use App\Service\AlternancePeriodStatusResolver;
 use App\Service\AlternanceStepStatus;
+use App\Service\AlternanceSubmissionIndex;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -203,10 +204,108 @@ class AlternancePeriodStatusResolverTest extends TestCase
         $this->assertSame(AlternanceStepStatus::STEP_NOT_OPENED, $status->step);
     }
 
-    private function tutorLink(bool $inactive = false): InternshipTutorLink
+    public function testResolveStepsForAllPeriodsStopsAtTheFirstOpenPeriodAndCallsTheLaterOnesNotOpened(): void
+    {
+        $tutorLink = $this->tutorLink();
+        $this->engagementRepository->method('findOneForTutorLink')->willReturn($this->completeEngagement());
+
+        $period1 = $this->period(1);
+        $period2 = $this->period(2);
+        $this->periodRepository->method('findAllActiveForProgram')->willReturn([$period1, $period2]);
+        $this->tutorEvaluationRepository->method('findOneForTutorLinkAndEvaluationPeriod')->willReturn(null);
+
+        $statuses = $this->resolver->resolveStepsForAllPeriods($tutorLink);
+
+        $this->assertSame([1, 2], array_keys($statuses));
+        $this->assertSame(AlternanceStepStatus::STEP_TUTOR, $statuses[1]->step);
+        $this->assertSame(AlternanceStepStatus::STEP_NOT_OPENED, $statuses[2]->step);
+    }
+
+    public function testResolveStepsForAllPeriodsAgreesWithResolveStepForPeriodOnEveryPeriod(): void
+    {
+        $tutorLink = $this->tutorLink();
+        $this->engagementRepository->method('findOneForTutorLink')->willReturn($this->completeEngagement());
+
+        $period1 = $this->period(1);
+        $period2 = $this->period(2);
+        $this->periodRepository->method('findAllActiveForProgram')->willReturn([$period1, $period2]);
+
+        $signedTutorEvaluation = $this->createStub(InternshipTutorEvaluation::class);
+        $signedTutorEvaluation->method('isSigned')->willReturn(true);
+        $this->tutorEvaluationRepository->method('findOneForTutorLinkAndEvaluationPeriod')->willReturn($signedTutorEvaluation);
+        $this->studentEvaluationRepository->method('findOneForStudentAndEvaluationPeriod')->willReturn(null);
+
+        $statuses = $this->resolver->resolveStepsForAllPeriods($tutorLink);
+
+        $this->assertSame($this->resolver->resolveStepForPeriod($tutorLink, $period1)->step, $statuses[1]->step);
+        $this->assertSame($this->resolver->resolveStepForPeriod($tutorLink, $period2)->step, $statuses[2]->step);
+    }
+
+    public function testTerminatedAlternanceReportsEveryPeriodInactive(): void
+    {
+        $tutorLink = $this->tutorLink(inactive: true);
+        $this->periodRepository->method('findAllActiveForProgram')->willReturn([$this->period(1), $this->period(2)]);
+
+        $statuses = $this->resolver->resolveStepsForAllPeriods($tutorLink);
+
+        $this->assertSame(AlternanceStepStatus::STEP_INACTIVE, $statuses[1]->step);
+        $this->assertSame(AlternanceStepStatus::STEP_INACTIVE, $statuses[2]->step);
+    }
+
+    public function testDeadlineToneRampsFromGreenToRedAsTheEndDateApproaches(): void
+    {
+        $today = new \DateTimeImmutable('today');
+
+        $this->assertSame('far', $this->resolver->deadlineToneFor($today->modify('+31 days')));
+        $this->assertSame('soon', $this->resolver->deadlineToneFor($today->modify('+30 days')));
+        $this->assertSame('soon', $this->resolver->deadlineToneFor($today->modify('+8 days')));
+        $this->assertSame('near', $this->resolver->deadlineToneFor($today->modify('+7 days')));
+        $this->assertSame('near', $this->resolver->deadlineToneFor($today->modify('+1 day')));
+        $this->assertSame('over', $this->resolver->deadlineToneFor($today));
+        $this->assertSame('over', $this->resolver->deadlineToneFor($today->modify('-1 day')));
+    }
+
+    public function testAPreloadedIndexDecidesExactlyWhatTheRepositoriesDecide(): void
+    {
+        // The board hands the resolver an index instead of letting it query, so the two readings
+        // must be interchangeable - that is the whole claim of AlternanceSubmissionIndex.
+        $tutorLink = $this->tutorLink();
+        $tutorLink->method('getId')->willReturn(7);
+        $period = $this->period(1);
+
+        $this->engagementRepository->method('findOneForTutorLink')->willReturn($this->completeEngagement());
+        $this->periodRepository->method('findAllActiveForProgram')->willReturn([$period]);
+        $signedTutorEvaluation = $this->createStub(InternshipTutorEvaluation::class);
+        $signedTutorEvaluation->method('isSigned')->willReturn(true);
+        $this->tutorEvaluationRepository->method('findOneForTutorLinkAndEvaluationPeriod')->willReturn($signedTutorEvaluation);
+        $this->studentEvaluationRepository->method('findOneForStudentAndEvaluationPeriod')->willReturn(null);
+
+        $fromRepositories = $this->resolver->resolveStepsForAllPeriods($tutorLink);
+        $fromIndex = $this->resolver->resolveStepsForAllPeriods($tutorLink, [$period], new AlternanceSubmissionIndex(
+            [7 => true],
+            [7 => [1 => true]],
+            [],
+            [],
+        ));
+
+        $this->assertSame(AlternanceStepStatus::STEP_STUDENT, $fromRepositories[1]->step);
+        $this->assertEquals($fromRepositories, $fromIndex);
+    }
+
+    private function period(int $id): InternshipEvaluationPeriod
+    {
+        $period = $this->createStub(InternshipEvaluationPeriod::class);
+        $period->method('getId')->willReturn($id);
+        $period->method('isPast')->willReturn(false);
+
+        return $period;
+    }
+
+    private function tutorLink(bool $inactive = false): InternshipTutorLink&Stub
     {
         $tutorLink = $this->createStub(InternshipTutorLink::class);
         $tutorLink->method('getInactiveDate')->willReturn($inactive ? new \DateTimeImmutable() : null);
+        $tutorLink->method('isTerminated')->willReturn($inactive);
         $tutorLink->method('getProgram')->willReturn($this->createStub(Program::class));
         $tutorLink->method('getStudent')->willReturn($this->createStub(User::class));
         $tutorLink->method('getTutor')->willReturn(null);

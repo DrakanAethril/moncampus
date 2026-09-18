@@ -29,10 +29,13 @@ export default class extends Controller {
             if (value === null) continue;
 
             answered += 1;
-            total += value;
+            // Every box is filled in as a magnitude; the band it belongs to carries the sign, so a 2
+            // estimated in the malus column takes two points off. Floored at 0 like the server's own
+            // total (App\Controller\SelfAssessmentController::applySubmission()).
+            total += Number(input.dataset.sign ?? 1) * value;
         }
 
-        this.totalTarget.textContent = answered ? String(Math.round(total * 100) / 100) : '—';
+        this.totalTarget.textContent = answered ? String(Math.max(0, Math.round(total * 100) / 100)) : '—';
 
         const expected = this.questionCountValue || 1;
         this.answeredTarget.textContent = this.labelsValue.answeredLabel

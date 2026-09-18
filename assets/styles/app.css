@@ -577,14 +577,23 @@ h1, h2, h3, h4,
    A wide panel rather than a flat list: one column per group, side by side, with a search field in
    its head. --cm-toolsmenu-cols is written by the template and carries the number of groups that
    actually rendered, so a partial profile gets a narrower panel and not empty columns. The panel
-   sizes itself to its content (`max-content`) and is capped at the viewport - it hangs off a bar
-   entry that can sit anywhere in the row. */
+   sizes itself to its content (`max-content`) and is capped at the viewport. */
 .cm-toolsmenu {
     --cm-toolsmenu-cols: 4;
     width: max-content;
     min-width: calc(var(--cm-toolsmenu-cols) * 208px);
     max-width: min(1000px, calc(100vw - 24px));
     padding: 18px 0 16px;
+}
+/* The panel is centred on the bar, not aligned on the entry that opens it: it is nearly as wide as
+   the window, so hanging it off a nav item sitting anywhere in the row would push it off one side.
+   Bootstrap skips Popper inside a .navbar (see nav_submenu_placement_controller.js), so the menu is
+   placed by CSS alone against its nearest positioned ancestor - dropping the item's own
+   `position: relative` hands that role to .cm-topbar, which spans the window. `top: 100%` then
+   still means "under the bar", the bar and the nav link being the same 58px tall. */
+@media (min-width: 1400px) {
+    .cm-topbar .cm-toolsmenu-host { position: static; }
+    .cm-topbar .cm-toolsmenu.dropdown-menu { left: 50%; right: auto; transform: translateX(-50%); }
 }
 .cm-toolsmenu__search {
     display: flex; justify-content: center;
@@ -2148,6 +2157,11 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     border-radius: var(--cm-radius-sm); padding: 11px; font: 600 13px var(--cm-font-ui); cursor: pointer;
 }
 .cm-grp-reshuffle-btn:hover { background: var(--cm-gold-bg); }
+.cm-grp-recalc-btn {
+    margin-top: -8px; border: 1px solid var(--cm-border); background: var(--cm-surface); color: var(--cm-muted);
+    border-radius: var(--cm-radius-sm); padding: 11px; font: 600 13px var(--cm-font-ui); cursor: pointer;
+}
+.cm-grp-recalc-btn:hover { background: var(--cm-bg); }
 .cm-grp-summary { font-size: 12.5px; color: var(--cm-faint); margin-top: -8px; }
 .cm-grp-error { font-size: 12.5px; color: var(--cm-red-tx); background: var(--cm-red-bg); border-radius: var(--cm-radius-sm); padding: 9px 11px; }
 
@@ -3020,6 +3034,29 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 /* « Section grid tile » variant: same minimum height as an empty section. */
 .cm-gb-dashed--tile { min-height: 120px; }
 
+/* Bonus and malus bands of the rubric editor. Deliberately NOT cells of .cm-gb-sections: they are
+   not sections a teacher composes, they sit under the grid, and putting them in it would offer them
+   as one more part to fill. Green and red carry what the sign says, they do not replace it. */
+.cm-gb-extras { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; align-items: start; margin-top: 16px; }
+@media (max-width: 900px) {
+    .cm-gb-extras { grid-template-columns: 1fr; }
+}
+.cm-gb-extra {
+    background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: 12px;
+    padding: 18px; display: flex; flex-direction: column; gap: 12px; border-left-width: 4px;
+}
+.cm-gb-extra--bonus { border-left-color: #2e7d4f; }
+.cm-gb-extra--malus { border-left-color: #c0604f; }
+.cm-gb-extra__head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.cm-gb-extra__sign {
+    width: 24px; height: 24px; flex: none; display: inline-flex; align-items: center;
+    justify-content: center; border-radius: 6px; font: 700 14px var(--cm-font-ui);
+}
+.cm-gb-extra--bonus .cm-gb-extra__sign { background: var(--cm-green-bg); color: var(--cm-green-tx); }
+.cm-gb-extra--malus .cm-gb-extra__sign { background: var(--cm-red-bg); color: var(--cm-red-tx); }
+.cm-gb-extra__title { font: 600 16px var(--cm-font-title); color: var(--cm-ink); }
+.cm-gb-extra__hint { flex-basis: 100%; font-size: 11.5px; color: var(--cm-faint); }
+
 /* ---------- Saisie rapide ---------- */
 .cm-gb-hero {
     background: var(--cm-navy); color: #fff; border-radius: 12px; padding: 20px 24px;
@@ -3102,6 +3139,16 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 }
 .cm-gb-qinput:focus { border-color: var(--cm-brand); background: var(--cm-gb-focus-bg); }
 .cm-gb-qinput.is-invalid { border-color: var(--cm-red-tx); }
+/* Bonus/malus columns of the entry grid. The tint is what tells the teacher, mid-keyboard-entry,
+   that the box they are in moves the grade the other way - the « +2 » / « −4 » in the header says
+   it too, but the header scrolls away on a long class. */
+.cm-gb-qhead__section--bonus { background: var(--cm-green-bg); color: var(--cm-green-tx); }
+.cm-gb-qhead__section--malus { background: var(--cm-red-bg); color: var(--cm-red-tx); }
+.cm-gb-qhead__q--bonus .cm-gb-qhead__num, .cm-gb-qhead__q--bonus .cm-gb-qhead__pts { color: var(--cm-green-tx); }
+.cm-gb-qhead__q--malus .cm-gb-qhead__num, .cm-gb-qhead__q--malus .cm-gb-qhead__pts { color: var(--cm-red-tx); }
+.cm-gb-qinput--bonus { border-color: #a8cbb6; background: var(--cm-green-bg); }
+.cm-gb-qinput--malus { border-color: #ddb0a6; background: var(--cm-red-bg); }
+[data-bs-theme="dark"] .cm-gb-qinput--bonus, [data-bs-theme="dark"] .cm-gb-qinput--malus { border-color: var(--cm-border); }
 .cm-gb-qtotal {
     width: 90px; flex: none; text-align: center; font: 700 16px var(--cm-font-ui);
     white-space: nowrap; background: transparent;
@@ -3275,6 +3322,11 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
     background: var(--cm-surface-soft); border-bottom: 1px solid var(--cm-border-soft);
 }
 .cm-sa-section__letter { font: 700 13px var(--cm-font-title); color: var(--cm-gold); }
+/* Bonus/malus bands of the autoévaluation: the letter slot holds their sign instead. */
+.cm-sa-section--bonus { background: var(--cm-green-bg); }
+.cm-sa-section--malus { background: var(--cm-red-bg); }
+.cm-sa-section--bonus .cm-sa-section__letter, .cm-sa-section--bonus .cm-sa-section__scale { color: var(--cm-green-tx); }
+.cm-sa-section--malus .cm-sa-section__letter, .cm-sa-section--malus .cm-sa-section__scale { color: var(--cm-red-tx); }
 .cm-sa-section__name { font: 600 14px var(--cm-font-title); color: var(--cm-ink); }
 .cm-sa-section__scale { margin-left: auto; font: 600 11.5px var(--cm-font-ui); color: var(--cm-faint); }
 .cm-sa-row {
@@ -5358,6 +5410,10 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-worktable__action { width: 96px; text-align: right; }
 .cm-worktable__action a { font: 600 12.5px var(--cm-font-ui); color: var(--cm-brand-strong); text-decoration: none; }
 .cm-worktable__action a:hover { text-decoration: underline; }
+/* Two gestures on the same row - « Télécharger » then « Ouvrir ». The 96px above holds one button;
+   the pair needs room and must not wrap, or the second one drops under the first. */
+.cm-worktable__action--pair { width: 210px; white-space: nowrap; }
+.cm-worktable__action--pair .cm-btn + .cm-btn { margin-left: 6px; }
 .cm-worktable__empty { color: var(--cm-faint); font-size: 13px; }
 
 /* An assignment's state reads from the color of its deadline, the whole row turning pink once it
@@ -11455,8 +11511,8 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-dd-docrow__name { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); }
 .cm-dd-docrow__rules { font-size: 12px; color: var(--cm-faint); }
 .cm-dd-docrow__end { margin-left: auto; display: flex; align-items: center; gap: 12px; flex: none; }
-.cm-dd-docrow__pencil { color: var(--cm-faint); font-size: 13px; background: none; border: 0; cursor: pointer; }
-.cm-dd-docrow__pencil:hover { color: var(--dd-blue-tx); }
+.cm-dd-docrow__pencil, .cm-dd-docrow__eye { color: var(--cm-faint); font-size: 13px; background: none; border: 0; cursor: pointer; }
+.cm-dd-docrow__pencil:hover, .cm-dd-docrow__eye:hover { color: var(--dd-blue-tx); }
 
 .cm-dd-radiocard {
     display: flex; align-items: flex-start; gap: 11px; border: 1px solid var(--dd-bd);
@@ -11522,7 +11578,10 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-dd-manrow__progress { display: flex; align-items: center; gap: 8px; }
 .cm-dd-manrow__progress .cm-dd-bar { width: 66px; flex: none; }
 .cm-dd-manrow__value { font: 600 12px var(--cm-font-ui); color: var(--cm-muted); min-width: 34px; text-align: right; }
-.cm-dd-manrow .cm-dd-docrow__pencil { width: 16px; justify-content: center; flex: none; }
+.cm-dd-manrow .cm-dd-docrow__pencil, .cm-dd-manrow .cm-dd-docrow__eye { width: 16px; justify-content: center; flex: none; }
+/* The pencil and the eye are one group, so they stay 8 px apart while the group keeps the
+   row's own 14 px from the jauge - and a row without the pencil holds the eye in place. */
+.cm-dd-manrow__actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex: none; min-width: 40px; }
 .cm-dd-person { display: flex; align-items: center; gap: 10px; }
 .cm-dd-person__text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .cm-dd-person__name { font: 600 13.5px var(--cm-font-ui); color: var(--cm-ink); }
@@ -11754,7 +11813,7 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
    every name turns the list into a wall. */
 .cm-dd-docrow__text, .cm-dd-manrow .cm-dd-docrow__text { flex: 1; }
 .cm-dd-docrow__rules { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cm-dd-docrow__grip, .cm-dd-docrow__pencil, .cm-dd-docrow__bin { display: inline-flex; align-items: center; }
+.cm-dd-docrow__grip, .cm-dd-docrow__pencil, .cm-dd-docrow__eye, .cm-dd-docrow__bin { display: inline-flex; align-items: center; }
 .cm-dd-link--danger { color: var(--dd-no-tx); }
 .cm-dd-link--danger:hover { color: var(--dd-no-tx); }
 /* The validateur picker is wrapped rather than hidden itself: Tom Select replaces the <select> with
@@ -11794,3 +11853,12 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-dd-pick--option .cm-dd-pick__name { font-size: 12.5px; color: var(--cm-muted); }
 .cm-dd-pick--option:has(input:checked) { background: transparent; }
 .cm-dd-pick--option:has(input:checked) .cm-dd-pick__name { color: var(--cm-ink); }
+
+/* How close a bilan is to its own closing date, on the grouped relances screen: a ramp from green
+   to brick, ink only. The four steps are decided server-side (AlternancePeriodStatusResolver::
+   deadlineToneFor) so the wording and the colour always answer the same question; here there is
+   nothing but the ink, and it comes from the theme's own tokens, which are declared twice. */
+.cm-deadline--far  { color: var(--cm-green-tx); }
+.cm-deadline--soon { color: var(--cm-gold-tx); }
+.cm-deadline--near { color: var(--cm-warn-tx); }
+.cm-deadline--over { color: var(--cm-red-tx); }

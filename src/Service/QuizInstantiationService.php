@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Entity\Option;
 use App\Entity\Program;
 use App\Entity\QuizAnswer;
 use App\Entity\QuizInstance;
@@ -76,6 +77,8 @@ class QuizInstantiationService
         // concours calls this method positionally, and slipping a parameter into the middle would
         // silently hand it $name's argument.
         bool $correctionVisible = true,
+        // Same reason it sits at the end: appended, never inserted. Null is the whole class.
+        ?Option $visibilityOption = null,
     ): QuizInstance {
         $firstTemplate = $templates[0];
 
@@ -100,6 +103,9 @@ class QuizInstantiationService
         $instance->setScoring($scoring);
         $instance->setScoreVisibleImmediately($scoreVisibleImmediately);
         $instance->setCorrectionVisible($correctionVisible);
+        // Belongs to the class or to nothing: an option of another program would silently address
+        // no one at all, so it is refused here as well as on the form that offers it.
+        $instance->setVisibilityOption(null !== $visibilityOption && $program->getOptions()->contains($visibilityOption) ? $visibilityOption : null);
         // « Le mode contrôle n'existe qu'en Évaluation » applied where the instance is built, so no
         // caller can launch a supervised entraînement by forgetting the rule.
         $instance->setSupervised($supervised && QuizMode::Evaluation === $mode);

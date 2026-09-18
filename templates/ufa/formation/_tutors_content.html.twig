@@ -8,8 +8,11 @@
      data-datatable-print-label-value="{{ 'internshipBookletViewButtonLabel'|trans }}"
      data-datatable-print-same-tab-value="true"
      data-datatable-edit-label-value="{{ 'editActionLabel'|trans }}"
-     data-datatable-deactivate-label-value="{{ 'deactivateActionLabel'|trans }}"
-     data-datatable-deactivate-confirm-message-value="{{ 'deactivateConfirmMessage'|trans }}"
+     {# Not the generic « Désactiver » wording: this row ends an alternance, which also stops the
+        student being an alternant - see Program\InternshipTutorController::deactivateTutorLink().
+        The confirm text names no student because the DataTable action cannot carry one. #}
+     data-datatable-deactivate-label-value="{{ 'ufaAlternanceTerminateRowActionLabel'|trans }}"
+     data-datatable-deactivate-confirm-message-value="{{ 'ufaAlternanceTerminateRowConfirmText'|trans }}"
      data-datatable-deactivate-error-message-value="{{ 'deactivateErrorMessage'|trans }}"
      data-datatable-page-length-value="10"
      data-datatable-columns-value="{{ [

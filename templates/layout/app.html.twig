@@ -490,7 +490,10 @@
                                 or current_route starts with 'app_survey'
                                 or current_route starts with 'app_jobboard'
                                 or current_route starts with 'app_dossier' %}
-                            <li class="nav-item dropdown {{ tools_is_active ? 'active' }}">
+                            {# cm-toolsmenu-host: the panel is centred on the bar rather than on the
+                               entry that opens it, so the item gives up being the menu's
+                               positioning context - see .cm-toolsmenu-host in app.css. #}
+                            <li class="nav-item dropdown cm-toolsmenu-host {{ tools_is_active ? 'active' }}">
                                 <a class="nav-link dropdown-toggle" href="#navbar-tools" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ tools_is_active ? ' aria-current="page"' }}>
                                     <span class="nav-link-title">{{ 'toolsNavLabel'|trans }}</span>
                                 </a>

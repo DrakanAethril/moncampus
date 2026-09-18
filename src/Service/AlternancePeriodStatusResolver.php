@@ -37,7 +37,7 @@ class AlternancePeriodStatusResolver
     // dashboard badge (33a/33b) and the suivi page's warning banner (34a/34b).
     public function resolveCurrentStep(InternshipTutorLink $tutorLink): AlternanceStepStatus
     {
-        if (null !== $tutorLink->getInactiveDate()) {
+        if ($tutorLink->isTerminated()) {
             return new AlternanceStepStatus(AlternanceStepStatus::STEP_INACTIVE, false, null, null, null);
         }
 
@@ -64,7 +64,7 @@ class AlternancePeriodStatusResolver
     // period shows its own 3-role progress strip regardless of whether earlier periods are done.
     public function resolveStepForPeriod(InternshipTutorLink $tutorLink, InternshipEvaluationPeriod $period): AlternanceStepStatus
     {
-        if (null !== $tutorLink->getInactiveDate()) {
+        if ($tutorLink->isTerminated()) {
             return new AlternanceStepStatus(AlternanceStepStatus::STEP_INACTIVE, false, null, null, $period);
         }
 
@@ -91,6 +91,76 @@ class AlternancePeriodStatusResolver
         // $period wasn't found among the program's active periods (inactive/foreign period) -
         // defensive fallback, should not happen from any of this feature's own routes.
         return new AlternanceStepStatus(AlternanceStepStatus::STEP_NOT_OPENED, false, null, null, $period);
+    }
+
+    /**
+     * Every active period of the alternance, resolved in a single walk - keyed by period id.
+     *
+     * Same answer as calling resolveStepForPeriod() once per period, at a fraction of the queries:
+     * the walk stops evaluating as soon as a period is not closed, every later period being "not
+     * opened" by definition. The grouped relances screen needs all of them at once, to know which
+     * periods have anything to chase before it offers one.
+     *
+     * $periods and $index are the board's way in (AlternanceReminderBoard): the periods it has
+     * already loaded for the Program, and every submission of every alternance read up front. They
+     * change nothing about the decision below - only where the answers are read from.
+     *
+     * @param list<InternshipEvaluationPeriod>|null $periods
+     *
+     * @return array<int, AlternanceStepStatus>
+     */
+    public function resolveStepsForAllPeriods(InternshipTutorLink $tutorLink, ?array $periods = null, ?AlternanceSubmissionIndex $index = null): array
+    {
+        $periods ??= $this->evaluationPeriodRepository->findAllActiveForProgram($tutorLink->getProgram());
+
+        $blockingStep = null;
+        if ($tutorLink->isTerminated()) {
+            $blockingStep = AlternanceStepStatus::STEP_INACTIVE;
+        } elseif (!$this->isEngagementComplete($tutorLink, $index)) {
+            $blockingStep = AlternanceStepStatus::STEP_NOT_OPENED;
+        }
+
+        $statuses = [];
+        foreach ($periods as $period) {
+            $periodId = $period->getId();
+            if (null === $periodId) {
+                continue;
+            }
+
+            if (null !== $blockingStep) {
+                $statuses[$periodId] = new AlternanceStepStatus($blockingStep, false, null, null, $period);
+                continue;
+            }
+
+            $status = $this->resolvePeriodStep($tutorLink, $period, $index);
+            $statuses[$periodId] = $status;
+
+            if (AlternanceStepStatus::STEP_CLOSED !== $status->step) {
+                $blockingStep = AlternanceStepStatus::STEP_NOT_OPENED;
+            }
+        }
+
+        return $statuses;
+    }
+
+    // How urgent a bilan's own end date reads, on the grouped relances screen: green while it is
+    // far off, red once it is near or past. Counted in whole days against today, never against
+    // dates - a bilan closing tomorrow and one that closed last month must not read like one
+    // closing in three months.
+    public function deadlineToneFor(?\DateTimeImmutable $endDate): string
+    {
+        if (null === $endDate) {
+            return 'far';
+        }
+
+        $days = (int) (new \DateTimeImmutable('today'))->diff($endDate->setTime(0, 0))->format('%r%a');
+
+        return match (true) {
+            $days <= 0 => 'over',
+            $days <= 7 => 'near',
+            $days <= 30 => 'soon',
+            default => 'far',
+        };
     }
 
     // Maps a resolved status to the exact 33a/33b pill text + Tabler light-badge class (see the
@@ -156,28 +226,64 @@ class AlternancePeriodStatusResolver
         return null;
     }
 
-    private function resolvePeriodStep(InternshipTutorLink $tutorLink, InternshipEvaluationPeriod $period): AlternanceStepStatus
+    // The order of the three signatures, and nothing else. Whether an index is in hand only
+    // decides where each answer is read; the sequence below is the rule, and is written here once.
+    private function resolvePeriodStep(InternshipTutorLink $tutorLink, InternshipEvaluationPeriod $period, ?AlternanceSubmissionIndex $index = null): AlternanceStepStatus
     {
         $isPast = $period->isPast();
         $dueDate = $period->getEndDate();
 
-        $tutorEvaluation = $this->tutorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $period);
-        if (null === $tutorEvaluation || !$tutorEvaluation->isSigned()) {
+        if (!$this->isTutorSigned($tutorLink, $period, $index)) {
             return new AlternanceStepStatus(AlternanceStepStatus::STEP_TUTOR, $isPast, $tutorLink->getTutor(), $dueDate, $period);
         }
 
-        $student = $tutorLink->getStudent();
-        $studentEvaluation = null !== $student ? $this->studentEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $period) : null;
-        if (null === $studentEvaluation || !$studentEvaluation->isSigned()) {
-            return new AlternanceStepStatus(AlternanceStepStatus::STEP_STUDENT, $isPast, $student, $dueDate, $period);
+        if (!$this->isStudentSigned($tutorLink, $period, $index)) {
+            return new AlternanceStepStatus(AlternanceStepStatus::STEP_STUDENT, $isPast, $tutorLink->getStudent(), $dueDate, $period);
         }
 
-        $supervisorEvaluation = $this->supervisorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $period);
-        if (null === $supervisorEvaluation || !$supervisorEvaluation->isClosed()) {
+        if (!$this->isSupervisorClosed($tutorLink, $period, $index)) {
             return new AlternanceStepStatus(AlternanceStepStatus::STEP_SUPERVISOR, $isPast, $tutorLink->getSupervisor(), $dueDate, $period);
         }
 
         return new AlternanceStepStatus(AlternanceStepStatus::STEP_CLOSED, false, null, null, $period);
+    }
+
+    // The four readings the rule above is made of. Each is a repository lookup for one alternance,
+    // or one array test when the caller has already read them all.
+    private function isEngagementComplete(InternshipTutorLink $tutorLink, ?AlternanceSubmissionIndex $index): bool
+    {
+        return null !== $index
+            ? $index->isEngagementComplete($tutorLink)
+            : null === $this->resolveEngagementStep($tutorLink);
+    }
+
+    private function isTutorSigned(InternshipTutorLink $tutorLink, InternshipEvaluationPeriod $period, ?AlternanceSubmissionIndex $index): bool
+    {
+        if (null !== $index) {
+            return $index->isTutorSigned($tutorLink, $period);
+        }
+
+        return $this->tutorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $period)?->isSigned() ?? false;
+    }
+
+    private function isStudentSigned(InternshipTutorLink $tutorLink, InternshipEvaluationPeriod $period, ?AlternanceSubmissionIndex $index): bool
+    {
+        if (null !== $index) {
+            return $index->isStudentSigned($tutorLink, $period);
+        }
+
+        $student = $tutorLink->getStudent();
+
+        return null !== $student && ($this->studentEvaluationRepository->findOneForStudentAndEvaluationPeriod($student, $period)?->isSigned() ?? false);
+    }
+
+    private function isSupervisorClosed(InternshipTutorLink $tutorLink, InternshipEvaluationPeriod $period, ?AlternanceSubmissionIndex $index): bool
+    {
+        if (null !== $index) {
+            return $index->isSupervisorClosed($tutorLink, $period);
+        }
+
+        return $this->supervisorEvaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $period)?->isClosed() ?? false;
     }
 
     private function badgeRoleLabel(string $step): string

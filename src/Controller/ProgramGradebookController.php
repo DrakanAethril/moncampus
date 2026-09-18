@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Attribute\RequiresFeature;
 use App\Entity\Evaluation;
+use App\Entity\EvaluationRubricSection;
 use App\Entity\Grade;
 use App\Entity\GradeRubricAnswer;
 use App\Entity\Program;
@@ -13,6 +14,7 @@ use App\Entity\Topic;
 use App\Entity\User;
 use App\Enum\Feature;
 use App\Enum\GradeStatus;
+use App\Enum\RubricSectionKind;
 use App\Form\EvaluationFormType;
 use App\Repository\EvaluationRepository;
 use App\Repository\GradeRepository;
@@ -34,6 +36,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Carnet de notes (design/design_handoff_projet/PROMPT_CLAUDE_CODE_carnet_de_notes.md, Part B/C).
@@ -387,7 +390,12 @@ class ProgramGradebookController extends AbstractController
 
         if ($request->isMethod('POST')) {
             $this->assertFormCsrf($request);
-            $rubricBuilder->rebuild($evaluation, PostValue::all($request, 'sections'));
+            $rubricBuilder->rebuild(
+                $evaluation,
+                PostValue::all($request, 'sections'),
+                PostValue::all($request, 'bonus'),
+                PostValue::all($request, 'malus'),
+            );
             $entityManager->flush();
 
             $this->addFlash('success', 'evaluationRubricSavedFlashMessage');
@@ -396,18 +404,19 @@ class ProgramGradebookController extends AbstractController
         }
 
         $sectionsJson = [];
-        foreach ($evaluation->getRubricSections() as $section) {
-            $questions = [];
-            foreach ($section->getQuestions() as $question) {
-                $questions[] = ['label' => $question->getLabel(), 'maxPoints' => $question->getMaxPoints()];
-            }
-            $sectionsJson[] = ['name' => $section->getName(), 'questions' => $questions];
+        foreach ($evaluation->getStandardRubricSections() as $section) {
+            $sectionsJson[] = ['name' => $section->getName(), 'questions' => $this->rubricItemsJson($section)];
         }
+
+        $bonusSection = $evaluation->getRubricSectionOfKind(RubricSectionKind::Bonus);
+        $malusSection = $evaluation->getRubricSectionOfKind(RubricSectionKind::Malus);
 
         return $this->render('program/gradebook_evaluation_rubric.html.twig', [
             'program' => $program,
             'evaluation' => $evaluation,
             'sectionsJson' => $sectionsJson,
+            'bonusJson' => null === $bonusSection ? [] : $this->rubricItemsJson($bonusSection),
+            'malusJson' => null === $malusSection ? [] : $this->rubricItemsJson($malusSection),
         ]);
     }
 
@@ -430,6 +439,7 @@ class ProgramGradebookController extends AbstractController
         ProgramStudentOptionRepository $studentOptionRepository,
         StructureAccessChecker $accessChecker,
         EvaluationAverageCalculator $calculator,
+        TranslatorInterface $translator,
     ): Response {
         $program = $this->findVisibleProgram($id, $programRepository, $accessChecker);
         $evaluation = $this->findEvaluationOrNotFound($evaluationRepository, $program, $evaluationId);
@@ -458,7 +468,16 @@ class ProgramGradebookController extends AbstractController
             foreach ($section->getQuestions() as $question) {
                 $questions[] = ['id' => $question->getId(), 'label' => $question->getLabel(), 'maxPoints' => $question->getMaxPoints()];
             }
-            $sections[] = ['name' => $section->getName(), 'questions' => $questions];
+            $kind = $section->getKind();
+            $sections[] = [
+                // A bonus/malus band has no name of its own - the wording comes from its kind, and is
+                // translated here rather than in the controller of the browser.
+                'name' => $kind->isStandard() ? $section->getName() : $translator->trans((string) $kind->labelKey()),
+                'kind' => $kind->value,
+                'sign' => $kind->sign(),
+                'signPrefix' => $kind->signPrefix(),
+                'questions' => $questions,
+            ];
         }
 
         $roster = $this->rosterJson($program, $studentOptionRepository, lastNameFirst: true);
@@ -574,6 +593,22 @@ class ProgramGradebookController extends AbstractController
             'normalizedValue' => $calculator->normalize($grade),
             'colorClass' => $calculator->gradeColorClass($calculator->normalize($grade)),
         ]);
+    }
+
+    /**
+     * One band's rows as the rubric editor reads them back. Bonus and malus items have exactly the
+     * shape of a section's questions, which is what lets the editor build all three the same way.
+     *
+     * @return list<array{label: string, maxPoints: float}>
+     */
+    private function rubricItemsJson(EvaluationRubricSection $section): array
+    {
+        $items = [];
+        foreach ($section->getQuestions() as $question) {
+            $items[] = ['label' => $question->getLabel(), 'maxPoints' => $question->getMaxPoints()];
+        }
+
+        return $items;
     }
 
     /** @param list<Evaluation> $evaluations @param array<int, list<Grade>> $gradesByEvaluation */

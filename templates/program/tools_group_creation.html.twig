@@ -25,6 +25,7 @@
              data-group-creation-shared-lots-value="{{ sharedLots|json_encode }}"
              data-group-creation-shareable-teachers-value="{{ shareableTeachers|json_encode }}"
              data-group-creation-generate-url-value="{{ path('app_program_tools_group_creation_generate', {id: program.id}) }}"
+             data-group-creation-recalculate-url-value="{{ path('app_program_tools_group_creation_recalculate', {id: program.id}) }}"
              data-group-creation-save-lot-url-value="{{ path('app_program_tools_group_creation_save_lot', {id: program.id}) }}"
              data-group-creation-update-lot-url-value="{{ path('app_program_tools_group_creation_update_lot', {id: program.id, lotId: '__LOT_ID__'}) }}"
              data-group-creation-delete-lot-url-value="{{ path('app_program_tools_group_creation_delete_lot', {id: program.id, lotId: '__LOT_ID__'}) }}"
@@ -54,6 +55,9 @@
                  lotSharedToast: 'programToolsLotSharedToast'|trans,
                  lotUnsharedToast: 'programToolsLotUnsharedToast'|trans,
                  shareLotUnsavedMessage: 'programToolsShareLotUnsavedMessage'|trans,
+                 recalculateUpToDateToast: 'programToolsRecalculateUpToDateToast'|trans,
+                 recalculateDoneToast: 'programToolsRecalculateDoneToast'|trans,
+                 recalculateAllLockedMessage: 'programToolsRecalculateAllLockedMessage'|trans,
                  lotSavedToast: 'programToolsLotSavedToast'|trans,
                  lotUpdatedToast: 'programToolsLotUpdatedToast'|trans,
                  saveLotButton: 'programToolsSaveLotButtonLabel'|trans,
@@ -133,6 +137,9 @@
 
                     <button type="button" class="cm-grp-create-btn" data-action="click->group-creation#createGroups">{{ 'programToolsCreateGroupsButtonLabel'|trans }}</button>
                     <button type="button" class="cm-grp-reshuffle-btn" data-group-creation-target="reshuffleBtn" data-action="click->group-creation#reshuffleGroups" hidden>{{ 'programToolsReshuffleButtonLabel'|trans }}</button>
+                    {# Only while a saved lot is on screen: it is the one thing that can have gone
+                       stale, a fresh draw being by definition the class as it is right now. #}
+                    <button type="button" class="cm-grp-recalc-btn" data-group-creation-target="recalculateBtn" data-action="click->group-creation#recalculateRoster" title="{{ 'programToolsRecalculateButtonTitle'|trans }}" hidden>{{ 'programToolsRecalculateButtonLabel'|trans }}</button>
                     <div class="cm-grp-summary" data-group-creation-target="summary"></div>
                 </div>
 

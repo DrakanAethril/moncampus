@@ -86,6 +86,20 @@ class QuizInstanceEditTypeTest extends TypeTestCase
     }
 
     /**
+     * « Visibilité » is absent, not empty, for a class carrying no option: « Tous les étudiants »
+     * would be the only thing to choose, and that is not a choice.
+     *
+     * (The field's presence and its round trip are exercised in a real browser rather than here -
+     * an EntityType needs a Doctrine registry this test has no database to give it.)
+     */
+    public function testAClassWithoutOptionsCarriesNoVisibilityField(): void
+    {
+        $form = $this->factory->create(QuizInstanceEditType::class, $this->instance(QuizMode::Evaluation));
+
+        self::assertFalse($form->has('visibilityOption'));
+    }
+
+    /**
      * @param array<string, string> $overrides
      *
      * @return array<string, string|null>

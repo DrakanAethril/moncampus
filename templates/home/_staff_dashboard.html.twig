@@ -4,13 +4,10 @@
     <div class="cm-dash-banner">
         <span class="cm-dash-banner__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 8v5"></path><path d="M12 16.5v.01"></path><circle cx="12" cy="12" r="9"></circle></svg></span>
         <span class="cm-dash-banner__body">
-            <span class="cm-dash-banner__title">{{ 'homeStaffBannerEvaluationsTitle'|trans({'%count%': staff.banner.total}) }}</span>
-            <span class="cm-dash-banner__text">{{ 'homeStaffBannerEvaluationsText'|trans({
-                '%period%': staff.banner.period.name,
-                '%date%': staff.banner.period.endDate|date('d/m/Y'),
-                '%tutors%': staff.banner.tutorsPending,
-                '%students%': staff.banner.studentsPending,
-            }) }}</span>
+            {# One line, no count and no subtitle: the banner says that something is pending and
+               points at the screen that names it; the detail belongs on /ufa/reminders, which
+               resolves it properly rather than from two SQL counts. #}
+            <span class="cm-dash-banner__title">{{ 'homeStaffBannerEvaluationsTitle'|trans }}</span>
         </span>
         <span class="cm-dash-banner__action">
             <a href="{{ path('app_ufa_alternance_reminders') }}" class="cm-btn cm-btn--gold">{{ 'homeStaffBannerEvaluationsAction'|trans }}</a>
