@@ -26,6 +26,11 @@ use Doctrine\ORM\EntityManagerInterface;
  *
  * That contact e-mail is then the ONLY address anything mails a tutor at - no free-text fallback
  * is left anywhere. See App\Entity\InternshipTutorLink's own docblock for what this replaced.
+ *
+ * One thing differs from a staff-created account, and it is not an option here: the tutor always
+ * arrives with User::$mustChangePassword set. Nothing on either path hands them a password - the
+ * directory script invents one and no mail is sent - so the credentials that reach them reached
+ * them through a person, and the first screen they get is the renewal one.
  */
 class InternshipTutorProvisioningService
 {
@@ -76,6 +81,13 @@ class InternshipTutorProvisioningService
         // A fake alternance must not spawn a real-looking account: the box ticked on the creation
         // form propagates here (see InternshipTutorLink::$testAlternance).
         $user->setTestUser($testUser);
+        // Unconditional, and deliberately not an option on either screen: nobody ever tells a tutor
+        // their password, since the directory script invents one and the platform sends no mail on
+        // creation (App\Service\AlternanceImport\ImportExecutor is silent on purpose). Whatever
+        // reaches them reaches them through a person, so the first thing they do with it is replace
+        // it - App\EventSubscriber\ForcePasswordRenewalSubscriber holds the session on
+        // /password/renewal until they have.
+        $user->setMustChangePassword(true);
         $this->contactEmailVerifier->markVerifiedByStaff($user);
 
         // The ledger starts at the account's first login, not at its first rename.
