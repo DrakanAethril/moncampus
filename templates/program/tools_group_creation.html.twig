@@ -60,6 +60,8 @@
                  recalculateAllLockedMessage: 'programToolsRecalculateAllLockedMessage'|trans,
                  lotSavedToast: 'programToolsLotSavedToast'|trans,
                  lotUpdatedToast: 'programToolsLotUpdatedToast'|trans,
+                 updateLotTitle: 'programToolsUpdateLotTitle'|trans,
+                 updateLotCleanTitle: 'programToolsUpdateLotCleanTitle'|trans,
                  saveLotButton: 'programToolsSaveLotButtonLabel'|trans,
                  duplicateLotButton: 'programToolsDuplicateLotButtonLabel'|trans,
                  saveLotTitle: 'programToolsSaveLotTitle'|trans,
@@ -146,10 +148,13 @@
                 <div class="cm-grp-results">
                     <div class="cm-grp-toolbar" data-group-creation-target="toolbar" hidden>
                         <div class="cm-grp-toolbar__row">
-                            <input type="text" class="form-control form-control-sm" placeholder="{{ 'programToolsLotNamePlaceholder'|trans }}" data-group-creation-target="lotNameInput">
+                            <input type="text" class="form-control form-control-sm" placeholder="{{ 'programToolsLotNamePlaceholder'|trans }}" data-group-creation-target="lotNameInput" data-action="input->group-creation#renameLot">
                             {# Only while one of one's OWN saved lots is on screen: it writes over
-                               that row, and a colleague's row is not one's to write over. #}
-                            <button type="button" class="btn btn-outline-warning btn-sm" data-group-creation-target="updateButton" data-action="click->group-creation#updateLot" title="{{ 'programToolsUpdateLotTitle'|trans }}" hidden>{{ 'programToolsUpdateLotButtonLabel'|trans }}</button>
+                               that row, and a colleague's row is not one's to write over. Nothing
+                               is ever saved on its own - a drag, a re-draw or a recalculation only
+                               changes the screen, and this button, lit only once the screen has
+                               diverged from the row, is the one gesture that writes it back. #}
+                            <button type="button" class="btn btn-primary btn-sm" data-group-creation-target="updateButton" data-action="click->group-creation#updateLot" title="{{ 'programToolsUpdateLotTitle'|trans }}" hidden disabled>{{ 'programToolsUpdateLotButtonLabel'|trans }}</button>
                             {# Reads « Dupliquer » as soon as a saved lot is on screen - it always
                                creates a second row, and only its wording tells the two apart. #}
                             <button type="button" class="btn btn-outline-warning btn-sm" data-group-creation-target="saveButton" data-action="click->group-creation#saveLot" title="{{ 'programToolsSaveLotTitle'|trans }}">{{ 'programToolsSaveLotButtonLabel'|trans }}</button>

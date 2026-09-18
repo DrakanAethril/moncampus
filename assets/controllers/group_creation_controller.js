@@ -54,8 +54,9 @@ export default class extends Controller {
         this.pendingDeleteLotId = null;
         // Which of one's OWN saved lots the grid came from, or null when it came from a fresh draw
         // or from a colleague's read-only lot. It survives every edit made afterwards, because
-        // "Mettre à jour" is precisely the gesture for « these new groups replace the old ones » -
-        // losing the row on the first drag would hide the button exactly when it is wanted.
+        // « Enregistrer les modifications » is precisely the gesture for « these new groups
+        // replace the old ones » - losing the row on the first drag would hide the button exactly
+        // when it is wanted.
         this.currentLotId = null;
         // Whether any saved lot at all is on screen, one's own or a colleague's - what turns
         // "Enregistrer les groupes" into "Dupliquer". A colleague's lot loaded here can only ever
@@ -474,8 +475,9 @@ export default class extends Controller {
         this.absentIds = new Set([...this.absentIds].filter((id) => known.has(id)));
 
         if (data.added > 0 || data.removed > 0) {
-            // Still that lot's screen, and no longer what its row says - « Mettre à jour » is how
-            // the recalculation gets written back, the same way a drag or a re-draw does.
+            // Still that lot's screen, and no longer what its row says - « Enregistrer les
+            // modifications » is how the recalculation gets written back, the same way a drag or a
+            // re-draw does. Nothing is saved until then.
             this.markLotDirty();
         }
 
@@ -611,7 +613,7 @@ export default class extends Controller {
         this.groups[targetIndex].push(member);
         this.dragId = null;
         // The grid no longer matches the saved row - but it is still that lot's screen, and
-        // "Mettre à jour" is how it gets written back.
+        // « Enregistrer les modifications » is how it gets written back.
         this.markLotDirty();
         this.renderGroups();
     }
@@ -692,13 +694,22 @@ export default class extends Controller {
     }
 
     // The single place the three lot flags are written, so the toolbar can never disagree with the
-    // state: `owned` is the row "Mettre à jour" would write to, `loaded` says a saved lot is what
-    // is on screen at all, `dirty` says the screen has moved away from it since.
+    // state: `owned` is the row « Enregistrer les modifications » would write to, `loaded` says a
+    // saved lot is what is on screen at all, `dirty` says the screen has moved away from it since.
     setCurrentLot(lotId, { loaded = lotId !== null, dirty = false } = {}) {
         this.currentLotId = lotId;
         this.lotLoaded = loaded;
         this.lotDirty = dirty;
         this.refreshLotButtons();
+    }
+
+    // Retyping the name of a loaded lot of one's own is a change to save like any other - it
+    // travels with the composition through « Enregistrer les modifications ».
+    renameLot() {
+        const lot = this.ownedLot(this.currentLotId);
+        if (lot && this.lotNameInputTarget.value.trim() !== lot.name) {
+            this.markLotDirty();
+        }
     }
 
     // Marks the screen as no longer being what the row says, without forgetting which row it came
@@ -717,7 +728,12 @@ export default class extends Controller {
         }
 
         if (this.hasUpdateButtonTarget) {
+            // Always in place while one's own lot is loaded, so the teacher knows where saving
+            // lives, but lit only once there is something to save: nothing is ever written back
+            // on its own.
             this.updateButtonTarget.hidden = this.currentLotId === null;
+            this.updateButtonTarget.disabled = !this.lotDirty;
+            this.updateButtonTarget.title = this.lotDirty ? this.labelsValue.updateLotTitle : this.labelsValue.updateLotCleanTitle;
         }
 
         if (this.hasSaveButtonTarget) {
@@ -831,9 +847,9 @@ export default class extends Controller {
         this.showToast(this.labelsValue.lotSavedToast.replace('%name%', data.name));
     }
 
-    // "Mettre à jour" - the loaded lot's own row takes the name and the composition on screen. Only
-    // ever reachable while one of one's own lots is loaded (the button is hidden otherwise), and the
-    // server re-checks that anyway by scoping the lookup to the owner.
+    // « Enregistrer les modifications » - the loaded lot's own row takes the name and the
+    // composition on screen. Only ever reachable while one of one's own lots is loaded (the button
+    // is hidden otherwise), and the server re-checks that anyway by scoping the lookup to the owner.
     async updateLot() {
         if (!this.groups || this.currentLotId === null) return;
 
