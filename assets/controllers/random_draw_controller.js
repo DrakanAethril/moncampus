@@ -150,6 +150,22 @@ export default class extends Controller {
         this.syncCurrentDraw();
     }
 
+    // One student back into the pool - « Réinitialiser » for a single name, for the one who was
+    // absent when called or whose turn did not count. On a saved draw it goes through the same
+    // autosave as every other gesture.
+    restoreDrawn(studentId) {
+        if (this.spinning) {
+            return;
+        }
+        this.drawnIds = this.drawnIds.filter((candidate) => candidate !== studentId);
+        if (!this.winner) {
+            this.renderSlot();
+        }
+        this.renderRemaining();
+        this.renderDrawnBlock();
+        this.syncCurrentDraw();
+    }
+
     toggleFullscreen() {
         if (document.fullscreenElement) {
             document.exitFullscreen().catch(() => {});
@@ -417,7 +433,17 @@ export default class extends Controller {
             }
             const chip = document.createElement('span');
             chip.className = 'cm-draw-drawn__chip';
-            chip.textContent = this.label(student);
+            chip.appendChild(document.createTextNode(this.label(student)));
+
+            const restore = document.createElement('button');
+            restore.type = 'button';
+            restore.className = 'cm-draw-drawn__restore';
+            restore.title = this.labelsValue.restoreDrawnTitle;
+            restore.setAttribute('aria-label', `${this.labelsValue.restoreDrawnTitle} : ${student.name}`);
+            restore.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg>';
+            restore.addEventListener('click', () => this.restoreDrawn(student.id));
+            chip.appendChild(restore);
+
             chips.appendChild(chip);
         }
         this.drawnChipsTarget.replaceChildren(chips);
