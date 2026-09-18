@@ -179,6 +179,29 @@ class TrainingApplication
         return $previous;
     }
 
+    /**
+     * The corrections asked for on the versions sent before the current one, grouped by version,
+     * most recent first (screen 8d). After several round trips a flat list mixes what was asked of
+     * v1 with what was asked of v3, and the validator can no longer tell which remark is still news.
+     *
+     * @return array<int, list<TrainingApplicationReview>> keyed by version number
+     */
+    public function previousRemarksByVersion(): array
+    {
+        $current = $this->getVersionNumber();
+        $grouped = [];
+
+        foreach ($this->reviews as $review) {
+            if (TrainingApplicationDecision::Refused === $review->getDecision() && $review->getVersionNumber() < $current) {
+                $grouped[$review->getVersionNumber()][] = $review;
+            }
+        }
+
+        krsort($grouped);
+
+        return $grouped;
+    }
+
     /** @return Collection<int, TrainingApplicationReview> */
     public function getReviews(): Collection
     {
