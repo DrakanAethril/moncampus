@@ -26,6 +26,34 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.19'
+      date: '2026-09-19'
+      summary: "Un travail de visionnage se crée maintenant depuis l'assistant, et le suivi dit précisément ce que l'étudiant a regardé. Plus quelques gestes attendus : rendre au tirage un élève déjà sorti, joindre plusieurs pièces à un mail de postulation, et garder l'en-tête du barème sous les yeux pendant la saisie des notes."
+      entries:
+          - type: nouveaute
+            title: "Créer un travail de visionnage depuis l'assistant"
+            detail: "La carte « Visionnage » rejoint la grille des types de travail : elle demande une vidéo de la bibliothèque de l'enseignant, exactement comme la création depuis la bibliothèque elle-même. Partir d'une vidéo ou d'un enregistrement audio ne propose plus que la nature de travail qui lui correspond."
+          - type: nouveaute
+            title: "Le suivi de visionnage détaille ce qui a été regardé"
+            detail: "Temps réellement lu et part de la durée, nombre de sauts dans la vidéo, sorties de page, date de fin, et le détail minuté pour chaque étudiant. Côté lecteur, la vidéo se met en pause dès que l'étudiant quitte la page. Rien de tout cela ne change ce qui termine le travail : il faut toujours avoir vu la vidéo en entier."
+          - type: nouveaute
+            title: "Remettre en jeu un élève déjà tiré"
+            detail: "Une croix sur chaque nom de la liste des élèves déjà sortis le rend au tirage. Sur un tirage enregistré, le geste est conservé comme les autres."
+          - type: nouveaute
+            title: "Consulter l'historique de validation d'une postulation depuis la fiche de l'étudiant"
+            detail: "Qui voit la fiche de suivi d'un étudiant peut ouvrir l'historique de validation de sa postulation en lecture ; seul un validateur de l'offre décide toujours."
+          - type: modification
+            title: "Les retours d'une postulation sont groupés par version"
+            detail: "L'écran de validation range chaque échange sous la version du dossier auquel il répond, dépliable une par une."
+          - type: modification
+            title: "L'en-tête du barème détaillé reste visible pendant la saisie des notes"
+            detail: "La ligne des questions reste collée en haut de la grille quand on descend dans la classe, et continue de suivre le défilement horizontal."
+          - type: modification
+            title: "Un lot de groupes s'enregistre par un bouton qui dit ce qu'il fait"
+            detail: "« Enregistrer les modifications » remplace « Mettre à jour » : il reste en place tant qu'un lot à soi est affiché et ne s'allume qu'une fois l'écran modifié. Rien n'est jamais enregistré automatiquement."
+          - type: fix
+            title: "Plusieurs pièces jointes sur un mail de postulation"
+            detail: "Chaque ajout complète la liste au lieu de remplacer ce qui y était déjà."
     - version: '2026.09.18.2'
       date: '2026-09-18'
       summary: "Un tuteur dont le compte vient d'être créé choisit lui-même son mot de passe dès sa première connexion, avant d'accéder à quoi que ce soit."
