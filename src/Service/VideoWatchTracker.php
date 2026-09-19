@@ -7,7 +7,9 @@ namespace App\Service;
 use App\Entity\User;
 use App\Entity\VideoResource;
 use App\Entity\VideoResourceFile;
+use App\Entity\VideoWatchEvent;
 use App\Entity\VideoWatchProgress;
+use App\Enum\VideoWatchEventType;
 use App\Repository\VideoWatchProgressRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -26,8 +28,13 @@ class VideoWatchTracker
     ) {
     }
 
-    /** @return int the percentage kept once the ratchet has been applied */
-    public function register(VideoResourceFile $file, User $student, int $percent): int
+    /**
+     * The percentage goes through the ratchet; the rest of the report - time played, skips, losses
+     * of focus - is added to what the teacher reads and decides nothing.
+     *
+     * @return int the percentage kept once the ratchet has been applied
+     */
+    public function register(VideoResourceFile $file, User $student, VideoWatchReport $report): int
     {
         $progress = $this->progressRepository->findOneFor($file, $student);
 
@@ -36,7 +43,18 @@ class VideoWatchTracker
             $this->entityManager->persist($progress);
         }
 
-        $progress->registerProgress($percent);
+        $progress->registerProgress($report->percent);
+        $progress->addWatchedSeconds($report->watchedSeconds);
+
+        foreach ($report->events as $event) {
+            $this->entityManager->persist(new VideoWatchEvent($progress, $event['type'], $event['position'], $event['target']));
+
+            match ($event['type']) {
+                VideoWatchEventType::Skip => $progress->countSkip(),
+                VideoWatchEventType::FocusLoss => $progress->countFocusLoss(),
+            };
+        }
+
         $this->entityManager->flush();
 
         return $progress->getMaxWatchedPercent();
@@ -110,7 +128,7 @@ class VideoWatchTracker
                 return null;
             }
 
-            $dates[] = $progress->getLastWatchedAt();
+            $dates[] = $progress->getCompletedAt();
         }
 
         $dates = array_filter($dates);

@@ -14,10 +14,15 @@ namespace App\Enum;
  * lui est antérieur et reste en place, avec ses devoirs : il ne figure pas dans la grille de types
  * du 2b, qui reprend celle de la maquette, mais l'écran devoir historique continue de l'offrir.
  *
- * Listening and Watching, unlike every other one, are never picked: they can only be born of an
- * audio recording or of a video resource, from the "Enregistrements audio" and "Vidéos" tools,
- * which open the wizard with the nature already set. They are therefore absent from forLessonLog(),
- * the grid of natures on offer - a card for them would offer a nature with nothing to attach to it.
+ * Listening is never picked: it can only be born of an audio recording, from the "Enregistrements
+ * audio" tool, which opens the wizard with the nature already set - a card for it would offer a
+ * nature with nothing to attach to it. It is therefore absent from forLessonLog(), the grid of
+ * natures on offer.
+ *
+ * Watching used to be in the same position and no longer is: since videos live in the file library,
+ * the card has something to attach - the wizard asks for one of the teacher's library videos when it
+ * is picked (App\Form\AssignmentWizardType, `libraryVideo`), and App\Service\FileLibraryWorkFactory
+ * builds the video resource from it exactly as the library's own « Créer un travail » does.
  */
 enum AssignmentNature: string
 {
@@ -40,7 +45,7 @@ enum AssignmentNature: string
      */
     public static function forLessonLog(): array
     {
-        return [self::ToSubmit, self::ToRead, self::Exercices, self::ToRevise, self::Quiz, self::SelfAssessment, self::Autre];
+        return [self::ToSubmit, self::ToRead, self::Watching, self::Exercices, self::ToRevise, self::Quiz, self::SelfAssessment, self::Autre];
     }
 
     public function labelKey(): string

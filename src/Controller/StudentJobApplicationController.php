@@ -8,11 +8,13 @@ use App\Attribute\RequiresFeature;
 use App\Entity\JobSearchNote;
 use App\Entity\User;
 use App\Enum\Feature;
+use App\Enum\TrainingApplicationState;
 use App\Repository\EmailMessageRepository;
 use App\Repository\JobApplicationRepository;
 use App\Repository\JobSearchNoteRepository;
 use App\Repository\JobSearchRepository;
 use App\Repository\ProgramRepository;
+use App\Repository\TrainingApplicationRepository;
 use App\Repository\UserRepository;
 use App\Security\StructureAccessChecker;
 use App\Service\JobApplicationSummaryBuilder;
@@ -44,6 +46,7 @@ class StudentJobApplicationController extends AbstractController
         private readonly JobSearchRepository $searchRepository,
         private readonly JobSearchNoteRepository $noteRepository,
         private readonly JobApplicationSummaryBuilder $summaryBuilder,
+        private readonly TrainingApplicationRepository $trainingApplicationRepository,
         private readonly StructureAccessChecker $accessChecker,
         private readonly EntityManagerInterface $entityManager,
     ) {
@@ -90,6 +93,10 @@ class StudentJobApplicationController extends AbstractController
             'unattachedMails' => $this->messageRepository->findWithoutApplicationForStudent($student),
             'notes' => $this->noteRepository->findForStudent($student),
             'closedSearch' => $this->searchRepository->findOneBy(['student' => $student]),
+            // The practice application that opened the student's mailbox, for the « Historique de
+            // validation » link: once the mailbox is open, nothing else on the tracking side leads
+            // back to the versions and remarks exchanged before it did.
+            'validatedApplication' => $this->validatedApplicationFor($student),
         ]);
     }
 
@@ -137,6 +144,18 @@ class StudentJobApplicationController extends AbstractController
         }
 
         return $this->redirectToRoute('app_student_job_applications', ['id' => $student->getId()]);
+    }
+
+    /** The most recent fully validated practice application of this student, if any. */
+    private function validatedApplicationFor(User $student): ?\App\Entity\TrainingApplication
+    {
+        foreach ($this->trainingApplicationRepository->findForStudent($student) as $application) {
+            if (TrainingApplicationState::Validated === $application->getState()) {
+                return $application;
+            }
+        }
+
+        return null;
     }
 
     /** The first class of this student the viewer may see - null when they share none. */

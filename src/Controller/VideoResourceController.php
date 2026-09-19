@@ -12,6 +12,7 @@ use App\Entity\VideoResourceFile;
 use App\Enum\Feature;
 use App\Repository\ProgramRepository;
 use App\Repository\VideoResourceRepository;
+use App\Repository\VideoWatchEventRepository;
 use App\Repository\VideoWatchProgressRepository;
 use App\Security\StructureAccessChecker;
 use App\Service\PostValue;
@@ -209,12 +210,13 @@ class VideoResourceController extends AbstractController
      * nothing to recompute.
      */
     #[Route(path: '/tools/videos/{resourceId}/statistics', name: 'app_video_resource_statistics', methods: ['GET'], requirements: ['resourceId' => '\d+'])]
-    public function statistics(int $resourceId, VideoWatchProgressRepository $progressRepository, VideoRetention $retention): Response
+    public function statistics(int $resourceId, VideoWatchProgressRepository $progressRepository, VideoWatchEventRepository $eventRepository, VideoRetention $retention): Response
     {
         $resource = $this->findOwnResource($resourceId);
         $audience = $this->audienceResolver->resolveAudience($resource);
         $optionsByStudentId = $this->audienceResolver->optionsByStudentId($resource);
         $progressByStudentId = $progressRepository->findByStudentAndFileForResource($resource);
+        $eventsByStudentId = $eventRepository->findByStudentAndFileForResource($resource);
         $files = $resource->getFiles()->toArray();
 
         $rows = [];
@@ -223,6 +225,10 @@ class VideoResourceController extends AbstractController
         foreach ($audience as $student) {
             $percents = [];
             $dates = [];
+            $completions = [];
+            $watchedSeconds = 0;
+            $skipCount = 0;
+            $focusLossCount = 0;
 
             foreach ($files as $file) {
                 $progress = $progressByStudentId[(int) $student->getId()][(int) $file->getId()] ?? null;
@@ -233,7 +239,15 @@ class VideoResourceController extends AbstractController
                 if (null !== $progress?->getLastWatchedAt()) {
                     $dates[] = $progress->getLastWatchedAt();
                 }
+
+                $completions[] = $progress?->getCompletedAt();
+                $watchedSeconds += $progress?->getWatchedSeconds() ?? 0;
+                $skipCount += $progress?->getSkipCount() ?? 0;
+                $focusLossCount += $progress?->getFocusLossCount() ?? 0;
             }
+
+            $status = $this->studentStatus(array_values($percents));
+            $completions = array_filter($completions);
 
             $rows[] = [
                 'student' => $student,
@@ -243,7 +257,13 @@ class VideoResourceController extends AbstractController
                 // and a thirty-second outro are not half the set each.
                 'total' => $this->weightedPercent($files, $percents),
                 'lastWatchedAt' => [] === $dates ? null : max($dates),
-                'status' => $this->studentStatus(array_values($percents)),
+                // The set is complete when its last file is, and only then.
+                'completedAt' => 'complete' === $status && [] !== $completions ? max($completions) : null,
+                'watchedSeconds' => $watchedSeconds,
+                'skipCount' => $skipCount,
+                'focusLossCount' => $focusLossCount,
+                'events' => $eventsByStudentId[(int) $student->getId()] ?? [],
+                'status' => $status,
             ];
         }
 
@@ -267,6 +287,7 @@ class VideoResourceController extends AbstractController
             'curve' => null === $mapped
                 ? $retention->curve([], 0)
                 : $retention->curve($percentsByFileId[(int) $mapped->getId()] ?? [], $mapped->getDurationSeconds()),
+            'totalDurationSeconds' => $resource->getTotalDurationSeconds(),
             'summary' => [
                 'complete' => \count(array_filter($rows, static fn (array $row): bool => 'complete' === $row['status'])),
                 'inProgress' => \count(array_filter($rows, static fn (array $row): bool => 'in_progress' === $row['status'])),

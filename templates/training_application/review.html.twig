@@ -27,7 +27,6 @@
 
 {% block main %}
     {% set version = application.currentVersion %}
-    {% set previousRemarks = application.reviews|filter(r => r.decision.value == 'refused' and r.versionNumber < application.versionNumber) %}
 
     <div class="cm-sheet">
         <div class="cm-sheet__main">
@@ -37,13 +36,22 @@
                     <span class="cm-jobapp-head__count">{{ 'trainingReviewOfferLabel'|trans({'%offer%': application.offer.title}) }}</span>
                 </div>
                 <div class="card-body">
-                    {% for remark in previousRemarks %}
-                        {# What this validator asked for last time, next to what came back: without it
-                           they would have to remember, or dig. #}
-                        <div class="cm-training-previous">
-                            <b>{{ 'trainingReviewPreviousRemarkLabel'|trans({'%version%': remark.versionNumber}) }}</b>
-                            « {{ remark.remark }} »
-                        </div>
+                    {# What was asked for last time, next to what came back: without it the validator
+                       would have to remember, or dig. One fold per version, most recent first and
+                       only that one open - after several round trips a flat list no longer says
+                       which remark the version under review is answering. #}
+                    {% for versionNumber, remarks in application.previousRemarksByVersion %}
+                        <details class="cm-training-previous"{{ loop.first ? ' open' }}>
+                            <summary class="cm-training-previous__summary">
+                                {{ 'trainingReviewPreviousRemarksTitle'|trans({'%version%': versionNumber}) }}
+                                <span class="cm-training-previous__count">{{ 'trainingReviewPreviousRemarksCountLabel'|trans({'%count%': remarks|length}) }}</span>
+                            </summary>
+                            <ul class="cm-training-previous__list">
+                                {% for remark in remarks %}
+                                    <li><b>{{ remark.element.labelKey|trans }}</b> « {{ remark.remark }} »</li>
+                                {% endfor %}
+                            </ul>
+                        </details>
                     {% endfor %}
 
                     <div class="cm-sheet__mail-body">{{ version.body|nl2br }}</div>
@@ -121,8 +129,16 @@
         </div>
 
         <aside class="cm-sheet__side">
+            {# A reader who is not a validator of the offer - reaching this screen from the
+               student's job-search sheet - sees the same panel without anything to submit. So does
+               a validator once all four elements are acquired: there is nothing left to decide. #}
+            {% set decidable = canDecide and application.validatedCount < elements|length %}
+            {% if decidable %}
             <form method="post" action="{{ path('app_training_application_review', {id: application.id}) }}" class="card">
                 <input type="hidden" name="_token" value="{{ csrf_token('training_review') }}">
+            {% else %}
+            <div class="card">
+            {% endif %}
                 <div class="cm-jobapp-head">
                     <span class="cm-jobapp-head__title">{{ 'trainingReviewPanelTitle'|trans }}</span>
                     <span class="cm-training-badge ms-auto">{{ application.validatedCount }} / {{ elements|length }}</span>
@@ -163,7 +179,7 @@
                             </span>
                         </div>
 
-                        {% if not validated %}
+                        {% if not validated and decidable %}
                             {# A correction asked for on this very version is still standing: the
                                screen shows it back as it was written, so a validator reopening the
                                application reads their own words rather than an empty box. #}
@@ -184,11 +200,15 @@
                     </div>
                 {% endfor %}
 
+            {% if decidable %}
                 <div class="cm-compose__footer">
                     <button type="submit" class="cm-btn cm-btn--primary">{{ 'trainingReviewSubmitAction'|trans }}</button>
                     <span class="cm-compose__notes">{{ 'trainingReviewFooterNoticeLabel'|trans }}</span>
                 </div>
             </form>
+            {% else %}
+            </div>
+            {% endif %}
         </aside>
     </div>
 {% endblock %}

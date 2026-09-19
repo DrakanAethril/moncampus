@@ -45,9 +45,11 @@ class TrainingApplicationReviewController extends AbstractController
     {
         /** @var User $validator */
         $validator = $this->getUser();
-        $this->denyUnlessValidator($application, $validator);
+        $this->denyUnlessReader($application, $validator);
 
         if ($request->isMethod('POST')) {
+            $this->denyUnlessValidator($application, $validator);
+
             if (!$this->isCsrfTokenValid('training_review', (string) $request->request->get('_token'))) {
                 throw $this->createAccessDeniedException();
             }
@@ -108,7 +110,7 @@ class TrainingApplicationReviewController extends AbstractController
     {
         /** @var User $viewer */
         $viewer = $this->getUser();
-        $this->denyUnlessValidator($application, $viewer);
+        $this->denyUnlessReader($application, $viewer);
 
         foreach ($application->getVersions() as $version) {
             foreach ($version->getAttachments() as $attachment) {
@@ -123,8 +125,14 @@ class TrainingApplicationReviewController extends AbstractController
 
     private function renderReview(TrainingApplication $application, ?string $error = null, int $status = Response::HTTP_OK): Response
     {
+        /** @var User $viewer */
+        $viewer = $this->getUser();
+
         return $this->render('training_application/review.html.twig', [
             'application' => $application,
+            // Only a validator of the offer decides; anyone else reaching this screen - from a
+            // student's job-search sheet, through « Historique de validation » - reads it.
+            'canDecide' => $this->isValidator($application, $viewer),
             'elements' => TrainingApplicationElement::all(),
             'error' => $error,
             // The class this application was opened from, so the breadcrumb climbs back to the
@@ -150,10 +158,30 @@ class TrainingApplicationReviewController extends AbstractController
         return null;
     }
 
+    private function isValidator(TrainingApplication $application, User $user): bool
+    {
+        return true === $application->getOffer()?->hasValidator($user);
+    }
+
     private function denyUnlessValidator(TrainingApplication $application, User $user): void
     {
-        if (true !== $application->getOffer()?->hasValidator($user)) {
+        if (!$this->isValidator($application, $user)) {
             throw $this->createAccessDeniedException();
         }
+    }
+
+    /**
+     * Reading is wider than deciding: whoever may open the student's job-search sheet (staff, or a
+     * teacher of one of the student's classes) already reads the mails the student sent for real,
+     * so the practice versions that came before them are no wider an exposure. It is the same test
+     * App\Controller\StudentJobApplicationController applies.
+     */
+    private function denyUnlessReader(TrainingApplication $application, User $user): void
+    {
+        if ($this->isValidator($application, $user) || $this->accessChecker->isStaff() || null !== $this->visibleProgramFor($application)) {
+            return;
+        }
+
+        throw $this->createAccessDeniedException();
     }
 }

@@ -36,7 +36,7 @@ use Doctrine\ORM\EntityManagerInterface;
 class FileLibraryWorkFactory
 {
     /** Same three extensions the per-file ceiling is picked on - one list, one meaning. */
-    private const array VIDEO_EXTENSIONS = ['mp4', 'webm', 'mov'];
+    public const array VIDEO_EXTENSIONS = ['mp4', 'webm', 'mov'];
     private const array AUDIO_EXTENSIONS = ['mp3', 'm4a', 'wav', 'ogg', 'opus', 'flac'];
 
     public function __construct(private readonly EntityManagerInterface $entityManager)

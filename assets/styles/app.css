@@ -2040,7 +2040,10 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-draw-drawn[hidden] { display: none; }
 .cm-draw-drawn__label { font: 700 11px var(--cm-font-ui); color: var(--cm-faint); text-transform: uppercase; letter-spacing: .5px; flex: none; }
 .cm-draw-drawn__chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.cm-draw-drawn__chip { border: 1px solid var(--cm-border); background: var(--cm-surface-alt); border-radius: 14px; padding: 4px 11px; font: 600 12.5px var(--cm-font-ui); color: var(--cm-muted); }
+.cm-draw-drawn__chip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--cm-border); background: var(--cm-surface-alt); border-radius: 14px; padding: 4px 5px 4px 11px; font: 600 12.5px var(--cm-font-ui); color: var(--cm-muted); }
+/* The cross puts one student back into the pool - the per-name counterpart of « Réinitialiser ». */
+.cm-draw-drawn__restore { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--cm-faint); cursor: pointer; }
+.cm-draw-drawn__restore:hover, .cm-draw-drawn__restore:focus-visible { background: var(--cm-border-soft); color: var(--cm-ink); }
 
 .cm-draw-autosave { display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--cm-border-soft); padding-top: 15px; font-size: 12.5px; color: var(--cm-muted); }
 .cm-draw-autosave[hidden] { display: none; }
@@ -3121,6 +3124,13 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 [data-bs-theme="dark"] .cm-gb-quick .cm-gb-quick--ne { border-color: var(--cm-border); background: var(--cm-surface-alt); }
 /* Question columns (rubric mode). */
 .cm-gb-qhead { padding: 10px 16px 0; border-bottom: 2px solid var(--cm-gb-rule); background: var(--cm-surface-soft); min-width: max-content; }
+/* On a long class the question header has to stay in view while the rows scroll under it. The grid
+   already scrolls sideways, which makes it the sticky header's scroll container: bounding its height
+   lets it scroll vertically too, so the header sticks to the grid's own top edge and still slides
+   sideways with the columns it labels. */
+/* The scroll padding keeps a box reached with Tab from landing underneath the header. */
+.cm-gb-entry--rubric { max-height: calc(100vh - 120px); min-height: 320px; overflow-y: auto; scroll-padding-top: 100px; }
+.cm-gb-entry--rubric .cm-gb-qhead { position: sticky; top: 0; z-index: 2; }
 .cm-gb-qhead__sections { display: flex; gap: 10px; align-items: flex-end; }
 .cm-gb-qhead__cols { display: flex; align-items: flex-end; gap: 10px; padding: 7px 0 10px; }
 .cm-gb-qhead__section {
@@ -4833,6 +4843,9 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-sheet__note-meta form { margin-left: auto; }
 .cm-sheet__note-form { padding: 12px 18px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
 .cm-sheet__note-form textarea { width: 100%; }
+.cm-sheet__side-link { margin-top: 10px; text-align: right; }
+.cm-sheet__side-link a { font: 600 13px var(--cm-font-ui); color: var(--cm-brand); text-decoration: none; }
+.cm-sheet__side-link a:hover { text-decoration: underline; }
 
 /* -- Unlinked mails queue (screen 5a) --------------------------------------- */
 .cm-unlinked__row {
@@ -5049,6 +5062,16 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
   border: 1px solid #e0b25f; background: #fffdf6; color: #8a6a1f; border-radius: 8px;
   padding: 10px 13px; margin-bottom: 12px; font-size: 12.5px; line-height: 1.55;
 }
+/* One fold per earlier version, the triangle drawn as in the history card below. */
+.cm-training-previous__summary {
+  display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; font-weight: 700;
+}
+.cm-training-previous__summary::-webkit-details-marker { display: none; }
+.cm-training-previous__summary::before { content: '▸'; font-size: 11px; transition: transform .15s ease; }
+.cm-training-previous[open] > .cm-training-previous__summary::before { transform: rotate(90deg); }
+.cm-training-previous__count { margin-left: auto; font-weight: 400; font-size: 11.5px; }
+.cm-training-previous__list { margin: 8px 0 0; padding-left: 19px; }
+.cm-training-previous__list li + li { margin-top: 4px; }
 
 /* -- Screen 8d: what was sent before ----------------------------------------
    A card of its own under the version being judged, one folded row per earlier send. Folded,
@@ -6205,6 +6228,20 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-audio-stats__na { color: var(--cm-faint); }
 .cm-audio-stats__total { width: 100px; font-weight: 600; color: var(--cm-ink); }
 .cm-audio-stats__last { width: 140px; }
+/* The watching detail beside the percentages: play time, skips and page exits. A non-zero skip or
+   exit count is tinted - it is what the teacher scans the column for. */
+.cm-video-stats__num { width: 96px; text-align: center; font-variant-numeric: tabular-nums; }
+.cm-video-stats__num--flag { color: var(--cm-warn-tx); font-weight: 600; }
+.cm-video-detail { border-bottom: 1px solid var(--cm-border-faint); padding: 10px 20px; }
+.cm-video-detail:last-child { border-bottom: 0; }
+.cm-video-detail summary { display: flex; gap: 12px; align-items: baseline; cursor: pointer; }
+.cm-video-detail__name { font: 600 13px var(--cm-font-ui); color: var(--cm-ink); }
+.cm-video-detail__counts { font: 400 12px var(--cm-font-ui); color: var(--cm-faint); }
+.cm-video-detail__file { margin: 8px 0 2px 18px; font: 600 12px var(--cm-font-ui); color: var(--cm-text-2); }
+.cm-video-detail__events { margin: 6px 0 0 18px; padding: 0; list-style: none; }
+.cm-video-detail__event { padding: 2px 0 2px 10px; border-left: 3px solid var(--cm-border); font: 400 12.5px var(--cm-font-ui); color: var(--cm-text); }
+.cm-video-detail__event--skip { border-left-color: var(--cm-warn-tx); }
+.cm-video-detail__when { display: inline-block; min-width: 110px; color: var(--cm-faint); font-variant-numeric: tabular-nums; }
 .cm-audio-stats__status { width: 130px; }
 
 @media (max-width: 900px) {
@@ -6286,6 +6323,8 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-video-head__due,
 .cm-video-head__topic { font: 400 12.5px var(--cm-font-ui); color: var(--cm-faint); }
 .cm-video-brief { margin-bottom: 16px; font: 400 13.5px var(--cm-font-ui); color: var(--cm-text); }
+/* The watching rule, stated above the players: whole video, no skipping, pauses off the page. */
+.cm-video-rule { margin: 0 0 14px; padding: 8px 12px; border-left: 3px solid var(--cm-accent); background: var(--cm-surface-2); font: 400 13px var(--cm-font-ui); color: var(--cm-text-2); }
 .cm-video-block .cm-audio-card__body { gap: 12px; }
 .cm-video-player {
   width: 100%; max-height: 62vh; border-radius: var(--cm-radius-sm);

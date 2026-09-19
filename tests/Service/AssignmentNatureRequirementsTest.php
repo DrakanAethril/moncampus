@@ -8,6 +8,7 @@ use App\Entity\Assignment;
 use App\Entity\Evaluation;
 use App\Entity\Program;
 use App\Entity\QuizInstance;
+use App\Entity\VideoResource;
 use App\Enum\AssignmentNature;
 use App\Service\AssignmentNatureRequirements;
 use PHPUnit\Framework\TestCase;
@@ -90,6 +91,34 @@ class AssignmentNatureRequirementsTest extends TestCase
     public function testAnOrdinaryAssignmentNeedsNeitherQuizNorEvaluation(): void
     {
         $assignment = $this->assignment(AssignmentNature::Exercices, withProgram: true);
+
+        self::assertSame([], $this->requirements->missing($assignment));
+    }
+
+    /** Picked on the grid of types, a watching has no video until the wizard names one. */
+    public function testAWatchingNeedsAVideo(): void
+    {
+        $assignment = $this->assignment(AssignmentNature::Watching, withProgram: true);
+
+        self::assertSame(
+            ['libraryVideo' => 'assignmentWizardLibraryVideoRequiredMessage'],
+            $this->requirements->missing($assignment),
+        );
+    }
+
+    /** A library video named for it is enough: the resource is only built on saving. */
+    public function testAWatchingWithAChosenLibraryVideoIsComplete(): void
+    {
+        $assignment = $this->assignment(AssignmentNature::Watching, withProgram: true);
+
+        self::assertSame([], $this->requirements->missing($assignment, videoChosen: true));
+    }
+
+    /** Born of the Vidéos tool, or reopened, it already carries its resource. */
+    public function testAWatchingThatCarriesItsVideoResourceIsComplete(): void
+    {
+        $assignment = $this->assignment(AssignmentNature::Watching, withProgram: true);
+        $assignment->setVideoResource((new \ReflectionClass(VideoResource::class))->newInstanceWithoutConstructor());
 
         self::assertSame([], $this->requirements->missing($assignment));
     }

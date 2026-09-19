@@ -82,6 +82,38 @@ class VideoWatchProgressTest extends TestCase
         self::assertGreaterThanOrEqual($first, $progress->getLastWatchedAt());
     }
 
+    /** Reaching 100 % is stamped once: a replay a week later must not move the completion date. */
+    public function testCompletionIsStampedOnce(): void
+    {
+        $progress = $this->progress();
+        self::assertNull($progress->getCompletedAt());
+
+        $progress->registerProgress(100);
+        $completedAt = $progress->getCompletedAt();
+        self::assertNotNull($completedAt);
+
+        usleep(1000);
+        $progress->registerProgress(100);
+
+        self::assertSame($completedAt, $progress->getCompletedAt());
+        self::assertNotSame($completedAt, $progress->getLastWatchedAt());
+    }
+
+    public function testTheWatchingDetailAccumulates(): void
+    {
+        $progress = $this->progress();
+        $progress->addWatchedSeconds(5);
+        $progress->addWatchedSeconds(7);
+        $progress->addWatchedSeconds(-3);
+        $progress->countSkip();
+        $progress->countFocusLoss();
+        $progress->countFocusLoss();
+
+        self::assertSame(12, $progress->getWatchedSeconds());
+        self::assertSame(1, $progress->getSkipCount());
+        self::assertSame(2, $progress->getFocusLossCount());
+    }
+
     private function progress(): VideoWatchProgress
     {
         return new VideoWatchProgress($this->createStub(VideoResourceFile::class), new User('student'));
