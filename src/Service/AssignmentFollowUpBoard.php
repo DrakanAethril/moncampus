@@ -15,7 +15,6 @@ use App\Repository\AudioListenProgressRepository;
 use App\Repository\QuizAttemptRepository;
 use App\Repository\SelfAssessmentRepository;
 use App\Repository\SurveyTargetRepository;
-use App\Repository\VideoWatchProgressRepository;
 
 /**
  * Where every student of an audience stands on one assignment - the teacher-facing twin of
@@ -41,7 +40,7 @@ class AssignmentFollowUpBoard
         private readonly AssignmentCompletionRepository $completionRepository,
         private readonly SurveyTargetRepository $surveyTargetRepository,
         private readonly AudioListenProgressRepository $listenProgressRepository,
-        private readonly VideoWatchProgressRepository $watchProgressRepository,
+        private readonly VideoWatchStandings $watchStandings,
     ) {
     }
 
@@ -78,7 +77,7 @@ class AssignmentFollowUpBoard
         }
 
         if (null !== $assignment->getVideoResource()) {
-            return $this->datedRows($assignment, $audience, $this->watchedDates($assignment, $audience));
+            return $this->watchingRows($assignment, $audience);
         }
 
         if (null !== $assignment->getSurveyCampaign()) {
@@ -259,44 +258,46 @@ class AssignmentFollowUpBoard
     }
 
     /**
-     * The same rule on the video side (App\Service\VideoWatchTracker): every file of the set watched
-     * through, and the date is the last of them.
+     * The one nature with a middle: a video is watched over several sittings, so a line has to be
+     * able to say « en cours » and how far - twelve minutes of a twenty-minute lecture is not
+     * « Non visionné », and that is all the teacher could read here.
+     *
+     * « Visionné » stays what it was (App\Service\VideoWatchTracker's rule: every file of the set
+     * watched through, dated on the last of them); what is added is the state below it. The reading
+     * is App\Service\VideoWatchStandings', the same one the tool's « Suivi de visionnage » prints,
+     * so the two screens cannot answer differently about the same student.
      *
      * @param list<User> $audience
      *
-     * @return array<int, \DateTimeImmutable>
+     * @return list<AssignmentFollowUpRow>
      */
-    private function watchedDates(Assignment $assignment, array $audience): array
+    private function watchingRows(Assignment $assignment, array $audience): array
     {
         $resource = $assignment->getVideoResource();
         \assert(null !== $resource);
 
-        if ($resource->getFiles()->isEmpty()) {
-            return [];
-        }
+        $standings = $this->watchStandings->forAudience($resource, $audience);
 
-        $progressByStudentId = $this->watchProgressRepository->findByStudentAndFileForResource($resource);
-        $dates = [];
+        return array_map(function (User $student) use ($assignment, $standings): AssignmentFollowUpRow {
+            $standing = $standings[(int) $student->getId()] ?? null;
 
-        foreach ($audience as $student) {
-            $completed = [];
-            foreach ($resource->getFiles() as $file) {
-                $progress = $progressByStudentId[(int) $student->getId()][(int) $file->getId()] ?? null;
+            $status = match (true) {
+                null === $standing || !$standing->hasStarted() => AssignmentFollowUpStatus::Pending,
+                $standing->isComplete() => AssignmentFollowUpStatus::Done,
+                default => AssignmentFollowUpStatus::InProgress,
+            };
 
-                if (null === $progress || !$progress->isComplete()) {
-                    continue 2;
-                }
-
-                $completed[] = $progress->getLastWatchedAt();
-            }
-
-            $completed = array_values(array_filter($completed));
-            if ([] !== $completed) {
-                $dates[(int) $student->getId()] = max($completed);
-            }
-        }
-
-        return $dates;
+            return new AssignmentFollowUpRow(
+                $student,
+                $status,
+                AssignmentFollowUpStatus::InProgress === $status
+                    ? 'assignmentFollowUpWatchingInProgressLabel'
+                    : $this->labelKeyOf($assignment, $status),
+                $standing?->completedAt,
+                progressPercent: $standing->percent ?? 0,
+                startedAt: $standing?->startedAt,
+            );
+        }, $audience);
     }
 
     private function labelKeyOf(Assignment $assignment, AssignmentFollowUpStatus $status): string
