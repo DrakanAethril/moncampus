@@ -47,15 +47,21 @@ export default class extends Controller {
         };
         document.addEventListener('visibilitychange', this.onVisibilityChange);
         this.paint();
+        this.loadSource();
     }
 
     disconnect() {
         document.removeEventListener('visibilitychange', this.onVisibilityChange);
     }
 
-    // The source is fetched on first play rather than laid into the page: an individualised recording
-    // would otherwise hand every student's address to everybody.
-    async started() {
+    // The address is fetched rather than laid into the page: an individualised recording would
+    // otherwise hand every student's address to everybody. It goes onto the element on connect
+    // rather than in answer to the first play, for the reason spelled out in
+    // video_watch_controller.js: an <audio> with no source is a player with no media, and a browser
+    // disables its own controls there - the play button does nothing and no `play` event fires, so
+    // a fetch waiting on that event waits for ever. `preload="none"` is what keeps the bytes
+    // unfetched until play, and it goes on doing so with a source set.
+    async loadSource() {
         if (this.playerTarget.src) return;
 
         let data;
@@ -68,7 +74,6 @@ export default class extends Controller {
         }
 
         this.playerTarget.src = data.url;
-        this.playerTarget.play();
     }
 
     tick() {

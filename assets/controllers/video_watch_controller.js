@@ -83,6 +83,7 @@ export default class extends Controller {
         document.addEventListener('visibilitychange', this.onVisibilityChange);
         window.addEventListener('blur', this.onBlur);
         this.paint();
+        this.loadSource();
     }
 
     disconnect() {
@@ -113,18 +114,17 @@ export default class extends Controller {
         return document.visibilityState === 'visible' && document.hasFocus();
     }
 
-    // The source is fetched on first play rather than laid into the page: a video weighs ten to a
-    // hundred times an audio file, so a page opened and left would cost its whole transfer.
-    async started() {
-        if (!this.pageHasFocus()) {
-            this.playerTarget.pause();
-
-            return;
-        }
-
-        this.pausedForFocus = false;
-        this.paint();
-
+    // The address is fetched rather than laid into the page - the page never carries it, and the
+    // route is where the right to watch this file is checked. But it has to be on the element
+    // BEFORE the student presses play, not in answer to it: a <video> with no source is a player
+    // with no media, and a browser disables its own controls there. The play button did nothing,
+    // no `play` event fired, and the fetch that was waiting for it never went out - the screen
+    // waited for a gesture the browser would not let anyone make.
+    //
+    // Nothing is transferred for it. `preload="none"` on the element is what spares the bandwidth
+    // of a page opened and left, and it keeps doing so with a source set: the browser resolves the
+    // address and stops there, and the first byte of video is read when play is pressed.
+    async loadSource() {
         if (this.playerTarget.src) return;
 
         let data;
@@ -137,7 +137,17 @@ export default class extends Controller {
         }
 
         this.playerTarget.src = data.url;
-        this.playerTarget.play();
+    }
+
+    started() {
+        if (!this.pageHasFocus()) {
+            this.playerTarget.pause();
+
+            return;
+        }
+
+        this.pausedForFocus = false;
+        this.paint();
     }
 
     // The media itself answered an error - the object is gone from the bucket, or the address it is

@@ -37,11 +37,16 @@ export default class extends Controller {
         // into rather than at the beginning of a twelve-minute lecture.
         const anchor = /^#t=(\d+)$/.exec(window.location.hash);
         if (anchor) this.timecodeTarget.value = this.clock(Number(anchor[1]));
+
+        this.loadSource();
     }
 
-    // The source is fetched on first play, as everywhere else a video is shown: a screen opened to
-    // read the list of questions must not cost the whole transfer.
-    async started() {
+    // The address is fetched rather than laid into the page, and put on the element as soon as the
+    // screen opens - see video_watch_controller.js: a <video> with no source is a player with no
+    // media, and a browser disables its own controls there, so an address served in answer to the
+    // first play waits on a gesture nobody can make. A screen opened to read the list of questions
+    // still costs no transfer: that is what preload="none" on the element does, source or no source.
+    async loadSource() {
         if (this.playerTarget.src) return;
 
         try {
@@ -49,7 +54,6 @@ export default class extends Controller {
             if (!response.ok) return;
             const data = await response.json();
             this.playerTarget.src = data.url;
-            this.playerTarget.play();
         } catch (e) {
             /* the poster stays, and the timeline still works: a marker is a number, not a frame */
         }

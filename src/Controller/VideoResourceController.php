@@ -189,9 +189,12 @@ class VideoResourceController extends AbstractController
     }
 
     /**
-     * The playback address, served on demand rather than laid into the page. It matters more here
-     * than for audio: a video weighs ten to a hundred times an audio file, so an address in a page
-     * that is never played is bandwidth given away.
+     * The playback address, asked for rather than laid into the page - the HTML never carries it,
+     * and this is where the file is checked to be one of this resource's own. The player puts it on
+     * the element as the screen opens, not in answer to the first play: a <video> with no source
+     * has no working controls, so an address waiting on that gesture waits for ever. A screen
+     * opened and never played still costs no transfer - the element's preload="none" is what says
+     * so, and it goes on saying it with a source set.
      */
     #[Route(path: '/tools/videos/{resourceId}/files/{fileId}/playback-url', name: 'app_video_resource_file_playback_url', methods: ['GET'], requirements: ['resourceId' => '\d+', 'fileId' => '\d+'])]
     public function playbackUrl(int $resourceId, int $fileId, VideoUploadService $uploadService): JsonResponse

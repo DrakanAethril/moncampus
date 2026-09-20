@@ -503,9 +503,13 @@ class StudentWorkController extends AbstractController
     }
 
     /**
-     * The playback address of one file of a video assignment, served on first play rather than laid
-     * into the page: a video weighs ten to a hundred times an audio file, and a page that is opened
-     * and left is then bandwidth given away.
+     * The playback address of one file of a video assignment, asked for rather than laid into the
+     * page: the HTML never carries it, and this is where the right to watch this particular file is
+     * checked. The player puts it on the element as soon as the screen opens - a <video> with no
+     * source has no working controls, so an address served in answer to the first play would be
+     * waiting for a gesture the browser refuses to let anyone make. Nothing is transferred for it
+     * either way: the element's preload="none" is what spares a page opened and left the whole
+     * weight of a video.
      */
     #[Route(path: '/student-work/{assignmentId}/video/{fileId}/playback-url', name: 'app_student_work_video_playback_url', methods: ['GET'], requirements: ['assignmentId' => '\d+', 'fileId' => '\d+'])]
     public function videoPlaybackUrl(
