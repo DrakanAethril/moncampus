@@ -26,6 +26,13 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.20.4'
+      date: '2026-09-20'
+      summary: "Le suivi d'un travail de visionnage dit maintenant où en est chaque étudiant, et non plus seulement s'il a terminé."
+      entries:
+          - type: modification
+            title: "Le suivi d'un visionnage montre l'avancement de chaque étudiant"
+            detail: "Le tableau ne répondait que « Visionné » ou « Non visionné » : un étudiant aux deux tiers d'un cours de vingt minutes était annoncé comme n'ayant rien fait. Il porte désormais l'état intermédiaire, la part de la vidéo réellement regardée et la date du premier lancement."
     - version: '2026.09.20.3'
       date: '2026-09-20'
       summary: "Le bouton lecture lance enfin la vidéo : sur la page de visionnage d'un travail, appuyer dessus ne faisait rien. Et un visionnage se regarde désormais à vitesse normale."

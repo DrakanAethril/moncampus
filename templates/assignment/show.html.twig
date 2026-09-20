@@ -50,6 +50,14 @@
                     </button>
                 </div>
             {% endif %}
+            {# The detailed follow-up - retention curve, skips, focus losses - lives on the video
+               tool's own screen, which only its author and the administration may open. This is a
+               door onto it, not a second reading of it. #}
+            {% if assignment.videoResource and (is_staff() or assignment.videoResource.createdBy.id == app.user.id) %}
+                <div class="cm-worksummary__action">
+                    <a class="cm-btn cm-btn--secondary" href="{{ path('app_video_resource_statistics', {resourceId: assignment.videoResource.id}) }}">{{ 'videoResourceStatisticsPageHeading'|trans }}</a>
+                </div>
+            {% endif %}
         </div>
     </div>
 
@@ -84,6 +92,13 @@
                     <tr>
                         <th>{{ 'assignmentStudentColumnLabel'|trans }}</th>
                         <th>{{ 'assignmentSubmissionStatusColumnLabel'|trans }}</th>
+                        {# A watching has a middle, and it is the only nature that does: where the
+                           student got to, and when they first pressed play. « Visionné le » stays
+                           the date the set was finished. #}
+                        {% if assignment.videoResource %}
+                            <th>{{ 'assignmentFollowUpWatchProgressColumnLabel'|trans }}</th>
+                            <th>{{ 'assignmentFollowUpStartedAtColumnLabel'|trans }}</th>
+                        {% endif %}
                         <th>{{ assignment.followUpDateColumnLabelKey|trans }}</th>
                         {% if assignment.quizInstance %}
                             <th>{{ 'assignmentFollowUpScoreColumnLabel'|trans }}</th>
@@ -102,6 +117,16 @@
                         <tr>
                             <td>{{ row.student.displayName ?? row.student.username }}</td>
                             <td><span class="badge {{ row.status.badgeClass }}">{{ row.statusLabelKey|trans }}</span></td>
+                            {% if assignment.videoResource %}
+                                {% set percent = row.progressPercent ?? 0 %}
+                                <td class="cm-audio-stats__file">
+                                    <span class="cm-audio-bar cm-audio-bar--mini">
+                                        <span class="cm-audio-bar__fill {{ percent >= 100 ? 'cm-audio-bar__fill--done' }}" style="width: {{ percent }}%"></span>
+                                    </span>
+                                    <span class="cm-audio-stats__percent">{{ percent }} %</span>
+                                </td>
+                                <td>{{ row.startedAt ? row.startedAt|date('d/m/Y H:i') : '—' }}</td>
+                            {% endif %}
                             <td>{{ row.doneAt ? row.doneAt|date('d/m/Y H:i') : '—' }}</td>
                             {% if assignment.quizInstance %}
                                 <td>{{ row.scorePercent is not null ? row.scorePercent|round ~ ' %' : '—' }}</td>
@@ -119,7 +144,7 @@
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="{{ assignment.quizInstance ? 7 : 3 }}" class="text-secondary">{{ 'assignmentShowNoAudienceMessage'|trans }}</td>
+                            <td colspan="{{ assignment.quizInstance ? 7 : (assignment.videoResource ? 5 : 3) }}" class="text-secondary">{{ 'assignmentShowNoAudienceMessage'|trans }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>

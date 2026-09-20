@@ -17,6 +17,7 @@ use App\Entity\SurveyCampaign;
 use App\Entity\SurveyTarget;
 use App\Entity\Track;
 use App\Entity\User;
+use App\Entity\VideoResource;
 use App\Enum\AssignmentFollowUpStatus;
 use App\Enum\AssignmentNature;
 use App\Enum\AttemptStatus;
@@ -27,9 +28,10 @@ use App\Repository\AudioListenProgressRepository;
 use App\Repository\QuizAttemptRepository;
 use App\Repository\SelfAssessmentRepository;
 use App\Repository\SurveyTargetRepository;
-use App\Repository\VideoWatchProgressRepository;
 use App\Service\AssignmentFollowUpBoard;
 use App\Service\AssignmentFollowUpRow;
+use App\Service\VideoWatchStanding;
+use App\Service\VideoWatchStandings;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -244,6 +246,73 @@ class AssignmentFollowUpBoardTest extends TestCase
     }
 
     /**
+     * A video is watched over several sittings, and the screen only knew « Visionné » or
+     * « Non visionné »: a student two thirds of the way through a twenty-minute lecture was
+     * announced as having done nothing. The middle state is what this asks for.
+     */
+    public function testAWatchingHalfDoneReadsAsInProgressAndSaysHowFar(): void
+    {
+        $assignment = $this->assignment(AssignmentNature::Watching);
+        $resource = $this->videoResource($assignment);
+
+        $rows = $this->rows($assignment, watchStandings: $this->standings($resource, [
+            (int) $this->marie->getId() => new VideoWatchStanding([1 => 62], 62, new \DateTimeImmutable('2026-09-05 18:20'), new \DateTimeImmutable('2026-09-06 21:05'), null),
+            (int) $this->paul->getId() => new VideoWatchStanding([1 => 0], 0, null, null, null),
+        ]));
+
+        $this->assertSame(AssignmentFollowUpStatus::InProgress, $rows[0]->status);
+        $this->assertSame('assignmentFollowUpWatchingInProgressLabel', $rows[0]->statusLabelKey);
+        $this->assertSame(62, $rows[0]->progressPercent);
+        $this->assertSame('2026-09-05 18:20', $rows[0]->startedAt?->format('Y-m-d H:i'));
+        // Started is not finished: the « Visionné le » column stays empty until the set is through.
+        $this->assertNull($rows[0]->doneAt);
+
+        $this->assertSame(AssignmentFollowUpStatus::Pending, $rows[1]->status);
+        $this->assertSame('assignmentFollowUpNotWatchedLabel', $rows[1]->statusLabelKey);
+        $this->assertSame(0, $rows[1]->progressPercent);
+        $this->assertNull($rows[1]->startedAt);
+    }
+
+    /** « Visionné » is unchanged: every file of the set watched through, dated on the last of them. */
+    public function testAWatchingSeenThroughStillReadsAsDone(): void
+    {
+        $assignment = $this->assignment(AssignmentNature::Watching);
+        $resource = $this->videoResource($assignment);
+
+        $rows = $this->rows($assignment, watchStandings: $this->standings($resource, [
+            (int) $this->marie->getId() => new VideoWatchStanding(
+                [1 => 100],
+                100,
+                new \DateTimeImmutable('2026-09-05 18:20'),
+                new \DateTimeImmutable('2026-09-06 21:05'),
+                new \DateTimeImmutable('2026-09-06 21:05'),
+            ),
+        ]));
+
+        $this->assertSame(AssignmentFollowUpStatus::Done, $rows[0]->status);
+        $this->assertSame('assignmentFollowUpWatchedLabel', $rows[0]->statusLabelKey);
+        $this->assertSame(100, $rows[0]->progressPercent);
+        $this->assertSame('2026-09-06 21:05', $rows[0]->doneAt?->format('Y-m-d H:i'));
+    }
+
+    /** @param array<int, VideoWatchStanding> $byStudentId */
+    private function standings(VideoResource $resource, array $byStudentId): VideoWatchStandings
+    {
+        $standings = $this->createStub(VideoWatchStandings::class);
+        $standings->method('forAudience')->willReturn($byStudentId);
+
+        return $standings;
+    }
+
+    private function videoResource(Assignment $assignment): VideoResource
+    {
+        $resource = $this->createStub(VideoResource::class);
+        $assignment->setVideoResource($resource);
+
+        return $resource;
+    }
+
+    /**
      * @param list<QuizAttempt>                     $attempts
      * @param array<int, list<AssignmentSubmission>> $submissions
      * @param array<int, SelfAssessment>            $selfAssessments
@@ -261,7 +330,10 @@ class AssignmentFollowUpBoardTest extends TestCase
         array $completions = [],
         array $surveyTargets = [],
         array $views = [],
+        ?VideoWatchStandings $watchStandings = null,
     ): array {
+        $watchStandings ??= $this->createStub(VideoWatchStandings::class);
+
         $submissionRepository = $this->createStub(AssignmentSubmissionRepository::class);
         $submissionRepository->method('findAllByStudentIdForAssignment')->willReturn($submissions);
 
@@ -288,7 +360,7 @@ class AssignmentFollowUpBoardTest extends TestCase
             $completionRepository,
             $surveyTargetRepository,
             $this->createStub(AudioListenProgressRepository::class),
-            $this->createStub(VideoWatchProgressRepository::class),
+            $watchStandings,
         );
 
         return $board->rows($assignment, [$this->marie, $this->paul]);
