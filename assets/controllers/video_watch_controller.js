@@ -84,6 +84,8 @@ export default class extends Controller {
         window.addEventListener('blur', this.onBlur);
         this.paint();
         this.loadSource();
+        this.playerTarget.defaultPlaybackRate = 1;
+        this.playerTarget.playbackRate = 1;
     }
 
     disconnect() {
@@ -148,6 +150,23 @@ export default class extends Controller {
 
         this.pausedForFocus = false;
         this.paint();
+    }
+
+    // Normal speed, and held there rather than merely not offered. A travail watched at 2x is
+    // watched in half the time, and the percentage would credit it in full: the contiguity rule
+    // counts positions, not minutes. `controlslist="noplaybackrate"` on the element takes the entry
+    // out of Chrome's own menu, but that is a Chrome attribute and a hidden control is still a
+    // control - Firefox keeps its speed menu, and a console has never needed one. So whatever moves
+    // the rate, it goes back to 1 here, which is what makes "à vitesse normale" a rule.
+    //
+    // The test guards the recursion: assigning playbackRate fires `ratechange` again, and the
+    // second pass finds 1 and stops.
+    //
+    // The wall-clock seconds the report already carries stay worth sending: they are what says a
+    // video was got through faster than it runs, whichever player did it - and the mobile one
+    // applies no such rule.
+    rateChanged() {
+        if (1 !== this.playerTarget.playbackRate) this.playerTarget.playbackRate = 1;
     }
 
     // The media itself answered an error - the object is gone from the bucket, or the address it is
