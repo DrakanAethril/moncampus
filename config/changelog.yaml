@@ -26,6 +26,25 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.20.2'
+      date: '2026-09-20'
+      summary: "Le travail de type visionnage est corrigé de bout en bout : la vidéo s'ouvre enfin côté étudiant, se regarde sans pouvoir être téléchargée, et se crée sans qu'on puisse lui joindre autre chose qu'elle-même. Les applications Android sont republiées avec ces corrections."
+      entries:
+          - type: fix
+            title: "Les vidéos d'un travail de visionnage s'ouvrent pour les étudiants"
+            detail: "L'écran de visionnage refusait de charger ce qu'il avait à montrer : la vidéo est désormais servie à tout étudiant à qui le travail est donné, sur le web comme sur mobile. Et si elle ne peut vraiment pas être chargée, le lecteur le dit au lieu de rester muet."
+          - type: modification
+            title: "Un travail de visionnage ne se télécharge pas"
+            detail: "Plus aucun bouton de téléchargement sur ce type de travail, ni dans la consigne, ni sur la page de la formation, ni dans l'application mobile : la vidéo se regarde. La page de la formation et l'accueil portent à la place le lien pour la lancer, et un travail déjà fait propose « Revisionner »."
+          - type: modification
+            title: "La création d'un visionnage ne demande plus que la vidéo"
+            detail: "Le bloc documents et liens disparaît de ce type de travail — le travail EST la vidéo — et le choix de celle-ci se fait dans une liste qui se cherche, pratique quand la bibliothèque s'allonge."
+          - type: fix
+            title: "Le fil d'Ariane revient sur les devoirs d'une formation"
+            detail: "« Mes devoirs » et la page d'un devoir n'en affichaient aucun ; le chemin depuis l'accueil y est de nouveau visible."
+          - type: autre
+            title: "Applications Android republiées"
+            detail: "Les versions Android de MonCampus et d'e-CO sont à retélécharger depuis la page Ressources pour recevoir les corrections du visionnage."
     - version: '2026.09.20'
       date: '2026-09-20'
       summary: "Un quiz se lance maintenant directement depuis « Quiz par classes », sans avoir à retrouver sa fiche dans la bibliothèque. Côté Courrier pro, un avis d'échec d'envoi se range de lui-même sous la démarche dont il parle."
