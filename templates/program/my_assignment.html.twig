@@ -22,13 +22,27 @@
             {% if assignment.description|trim is not empty %}
                 <div>{{ assignment.description|raw }}</div>
             {% endif %}
+
+            {# A « Visionnage » is done on its own screen, and this card is the only thing this page
+               shows of it: the way in belongs here rather than in a supports section it does not
+               have. #}
+            {% if assignment.nature.expectsWatching %}
+                <div class="mt-3">
+                    {% include 'student/_work_watch_link.html.twig' with {assignment: assignment, link_class: 'cm-btn cm-btn--primary'} only %}
+                </div>
+            {% endif %}
         </div>
     </div>
 
     {# The supports the teacher attached - a file to download or a link to follow. An announce-only
        nature (à lire, à réviser) has no submission box at all, so without this section the page
-       named a document nothing on it could open. #}
-    {% if assignment.attachments|length > 0 %}
+       named a document nothing on it could open.
+
+       Never on a « Visionnage »: there the only file is the video itself, and offering it as a
+       download is handing over whole what the work asks to be watched - the player measures the
+       watching, a saved file measures nothing. Works published before this rule still carry that
+       attachment row, which is why the test is on the nature and not on what is attached. #}
+    {% if assignment.attachments|length > 0 and not assignment.nature.expectsWatching %}
         <div class="card mb-3">
             <div class="card-header">
                 <h3 class="card-title">{{ 'studentWorkAttachmentsHeading'|trans }}</h3>

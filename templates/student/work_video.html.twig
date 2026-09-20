@@ -60,6 +60,7 @@
                      remaining: 'studentWorkWatchRemainingLabel'|trans({'%time%': '%time%'}),
                      skipped: 'studentWorkWatchSkippedLabel'|trans({'%from%': '%from%', '%to%': '%to%'}),
                      focusPaused: 'studentWorkWatchFocusPausedLabel'|trans,
+                     unavailable: 'studentWorkWatchUnavailableLabel'|trans,
                  }|json_encode }}">
             <div class="cm-audio-card__head">
                 <span class="cm-audio-card__label">{{ file.originalName }}</span>
@@ -76,7 +77,7 @@
                            {% if file.posterStorageKey %}poster="{{ file_url(file.posterStorageKey) }}"{% endif %}
                            data-video-watch-target="player"
                            data-video-cue-player-target="player"
-                           data-action="play->video-watch#started seeking->video-watch#seeking timeupdate->video-watch#tick timeupdate->video-cue-player#tick loadedmetadata->video-cue-player#paintMarkers pause->video-watch#paused ended->video-watch#flush"></video>
+                           data-action="play->video-watch#started seeking->video-watch#seeking timeupdate->video-watch#tick timeupdate->video-cue-player#tick loadedmetadata->video-cue-player#paintMarkers pause->video-watch#paused ended->video-watch#flush error->video-watch#failed"></video>
 
                     <div class="cm-video-overlay" data-video-cue-player-target="overlay" hidden>
                         <div class="cm-video-overlay__veil"></div>

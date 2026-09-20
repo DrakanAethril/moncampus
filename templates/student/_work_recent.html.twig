@@ -20,5 +20,9 @@
            refusing to show what. This is the only action the column carries, here and in the
            unabridged history, which has no consigne panel to open. #}
         {%- if assignment.nature.expectsReading %} · {% include 'student/_work_reading_link.html.twig' with {assignment: assignment, reread: true} only %}{% endif -%}
+        {# Same for a watching, and for the same reason: the video is the course, and a travail
+           « fait » whose video has become unreachable is the column saying it was watched and
+           refusing to show what. #}
+        {%- if assignment.nature.expectsWatching %} · {% include 'student/_work_watch_link.html.twig' with {assignment: assignment, rewatch: true} only %}{% endif -%}
     </span>
 </div>
