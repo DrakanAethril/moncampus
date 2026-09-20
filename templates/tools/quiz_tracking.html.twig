@@ -23,7 +23,7 @@
             active: state.value == case,
         }]) %}
     {% endfor %}
-    {% include '_tabs.html.twig' with {tabs: state_tabs} %}
+    {% include '_tabs.html.twig' with {tabs: state_tabs, tabs_action: 'tools/_quiz_launch_button.html.twig'} %}
 
     <div class="card cm-card--tabbed">
         <div class="card-body border-bottom">

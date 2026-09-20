@@ -319,6 +319,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // The quiz library's classement: the same door as the library itself.
             '/library/quiz' => 403,
             '/library/quiz/search' => 403,
+            // « Lancer un quiz » from Quiz par classes: the launch screen with no quiz picked
+            // yet. Same door as the library it draws its quizzes from.
+            '/library/quiz/launch' => 403,
             '/library/quiz/import/assistant' => 403,
             '/library/quiz/import/batch' => 403,
             // The deployment banner's status route is public on purpose: the login screen polls
@@ -498,6 +501,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tools/file-library/search' => 200,
             '/library/quiz' => 200,
             '/library/quiz/search' => 200,
+            '/library/quiz/launch' => 200,
             '/library/quiz/import/assistant' => 200,
             // No batch in the session, so the batch verification screen sends the teacher back to
             // the paste step rather than rendering an empty rail.
@@ -648,6 +652,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tools/file-library/trash' => 200,
             '/library/quiz' => 200,
             '/library/quiz/search' => 200,
+            '/library/quiz/launch' => 200,
             '/library/quiz/import/assistant' => 200,
             '/library/quiz/import/batch' => 302,
             '/deployment/notice' => 200,
@@ -814,6 +819,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // The quiz library's classement: the same door as the library itself.
             '/library/quiz' => 403,
             '/library/quiz/search' => 403,
+            '/library/quiz/launch' => 403,
             '/library/quiz/import/assistant' => 403,
             '/help/manage' => 403,
             '/settings/configuration' => 403,

@@ -438,40 +438,110 @@ class QuizLibraryController extends AbstractController
         $template = $this->findTemplateOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
 
+        return $this->renderLaunchScreen(
+            $template,
+            // Siblings from the same library, not the viewer's own: staff can open (and launch)
+            // another teacher's quiz, and the pool it may be merged with is that teacher's.
+            $repository->findForTeacher($template->getTeacher()),
+            $this->folderTrailOf($folders, $template->getFolder(), $this->currentUser()),
+            $this->generateUrl('app_library_quiz_questions', ['id' => $template->getId()]),
+            $request,
+            $programRepository,
+            $accessChecker,
+            $instantiationService,
+            $completeness,
+        );
+    }
+
+    /**
+     * The same screen, opened with no quiz chosen yet - « Lancer un quiz » on Quiz par classes
+     * (App\Controller\QuizTrackingController), where the teacher arrives with a class in mind
+     * rather than with a quiz.
+     *
+     * Launching used to be reachable from the quiz's own screen alone, which meant opening the
+     * right folder first - a classement question asked at a moment when nobody is classifying
+     * anything. Here the quiz is simply the form's first field.
+     *
+     * Over the viewer's own library only, deliberately: launching somebody else's quiz stays
+     * something one does from that quiz's own screen, where its name is on the page.
+     */
+    #[Route(path: '/library/quiz/launch', name: 'app_quiz_launch')]
+    public function launchAny(Request $request, QuizTemplateRepository $repository, ProgramRepository $programRepository, StructureAccessChecker $accessChecker, QuizInstantiationService $instantiationService, QuizQuestionCompleteness $completeness): Response
+    {
+        return $this->renderLaunchScreen(
+            null,
+            // By folder then by name (findPickable), not by date: a select over a whole library is
+            // read the way the library itself is read.
+            $repository->findPickable($this->currentUser()),
+            [],
+            $this->generateUrl('app_tools_quiz'),
+            $request,
+            $programRepository,
+            $accessChecker,
+            $instantiationService,
+            $completeness,
+        );
+    }
+
+    /**
+     * Screen 1c itself, with or without the quiz already decided. One method rather than two
+     * screens: every rule below - the incomplete-question lock, the merge, the clamp on the draw,
+     * the option check - must answer the same whichever door the launch came through.
+     *
+     * @param list<QuizTemplate> $libraryTemplates the quizzes on offer: the base one when it is still to be picked, and the merge rows in both cases
+     * @param list<QuizFolder>   $folderTrail      the folders the quiz is filed under, for the breadcrumb - empty when the screen hangs off no folder at all
+     */
+    private function renderLaunchScreen(?QuizTemplate $template, array $libraryTemplates, array $folderTrail, string $cancelUrl, Request $request, ProgramRepository $programRepository, StructureAccessChecker $accessChecker, QuizInstantiationService $instantiationService, QuizQuestionCompleteness $completeness): Response
+    {
+        $programs = $this->instantiablePrograms($accessChecker, $programRepository);
+        // The merge rows never offer the quiz being launched: it is in the pool already.
+        $otherTemplates = array_values(array_filter(
+            $libraryTemplates,
+            static fn (QuizTemplate $candidate): bool => $candidate->getId() !== $template?->getId(),
+        ));
+
+        $form = $this->createForm(QuizLaunchType::class, null, [
+            'programs' => $programs,
+            'optionChoices' => $this->optionsOfPrograms($programs),
+            'baseTemplateName' => $template?->getName(),
+            // Null is what tells the form the quiz is already known - the field is then not
+            // rendered at all rather than rendered and locked.
+            'baseTemplateChoices' => null === $template ? $libraryTemplates : null,
+            'defaultProgram' => $this->requestedProgram($request, $programs),
+            'additionalTemplateChoices' => $otherTemplates,
+            // With no quiz yet there is no bank to draw from: the field opens on 1 and follows the
+            // pool the moment one is picked (quiz_launch_controller.js), as it does for a merge.
+            'defaultQuestionCount' => null !== $template ? min($template->getDefaultQuestionCount(), max(1, $template->getQuestions()->count())) : 1,
+            // Not `?->... ?? 30`: a quiz whose own default is "pas de limite" must not be given one
+            // back here. With no quiz picked the field opens blank, which is that same answer.
+            'defaultSecondsPerQuestion' => null !== $template ? $template->getDefaultSecondsPerQuestion() : null,
+            'defaultSameQuestionsForAll' => $template?->isDefaultSameQuestionsForAll() ?? true,
+            'defaultQuestionOrderPerStudent' => $template?->isDefaultQuestionOrderPerStudent() ?? true,
+            'defaultAnswerOrderPerStudent' => $template?->isDefaultAnswerOrderPerStudent() ?? false,
+        ]);
+        $form->handleRequest($request);
+
+        // The quiz being launched: the page's own, or the one the form has just named.
+        $base = $template;
+        if (null === $base && $form->isSubmitted() && $form->has('template')) {
+            $picked = $form->get('template')->getData();
+            $base = $picked instanceof QuizTemplate ? $picked : null;
+        }
+
         // The lock on incomplete questions sits here rather than at import time: a question waiting
         // for its image can be created, edited and read - it is only a *passation* it would break.
         // It is never left out of the draw instead: a question that vanishes without saying so reads
         // as a bug (conception_import_quiz_ia.md, section 5 bis).
-        $incomplete = $completeness->incomplete($template->getQuestions());
+        $incomplete = null !== $base ? $completeness->incomplete($base->getQuestions()) : [];
 
-        $programs = $this->instantiablePrograms($accessChecker, $programRepository);
-        // Siblings from the same library, not the viewer's own: staff can open (and launch) another
-        // teacher's quiz, and the pool it may be merged with is that teacher's, not theirs.
-        $otherTemplates = array_values(array_filter(
-            $repository->findForTeacher($template->getTeacher()),
-            static fn (QuizTemplate $candidate): bool => $candidate->getId() !== $template->getId(),
-        ));
-        $form = $this->createForm(QuizLaunchType::class, null, [
-            'programs' => $programs,
-            'optionChoices' => $this->optionsOfPrograms($programs),
-            'baseTemplateName' => $template->getName(),
-            'additionalTemplateChoices' => $otherTemplates,
-            'defaultQuestionCount' => min($template->getDefaultQuestionCount(), max(1, $template->getQuestions()->count())),
-            'defaultSecondsPerQuestion' => $template->getDefaultSecondsPerQuestion(),
-            'defaultSameQuestionsForAll' => $template->isDefaultSameQuestionsForAll(),
-            'defaultQuestionOrderPerStudent' => $template->isDefaultQuestionOrderPerStudent(),
-            'defaultAnswerOrderPerStudent' => $template->isDefaultAnswerOrderPerStudent(),
-        ]);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid() && [] === $incomplete) {
+        if ($form->isSubmitted() && $form->isValid() && null !== $base && [] === $incomplete) {
             /** @var Program $program */
             $program = $form->get('program')->getData();
 
             // The launched template first, then the extras in the order the teacher added them -
             // a row left on its placeholder submits null and is simply skipped, and the same quiz
             // picked twice must not double its questions in the pool.
-            $templates = [$template];
+            $templates = [$base];
             /** @var list<QuizTemplate|null> $additional */
             $additional = array_values($form->get('additionalTemplates')->getData() ?? []);
             foreach ($additional as $extra) {
@@ -520,13 +590,66 @@ class QuizLibraryController extends AbstractController
 
         return $this->render('library/quiz_launch.html.twig', [
             'quizTemplate' => $template,
-            'folderTrail' => $this->folderTrailOf($folders, $template->getFolder(), $this->currentUser()),
+            // The quiz the warning below is about - the page's own, or the one picked in the form.
+            'incompleteTemplate' => $base,
+            'folderTrail' => $folderTrail,
+            'cancelUrl' => $cancelUrl,
             'form' => $form,
             'incompleteQuestions' => $incomplete,
             // Feeds quiz_pool_controller.js so the pool size, the draw's ceiling and its default
             // all follow the rows without a round trip. The server clamps again on submit.
             'questionCountsByTemplate' => $this->questionCountsByTemplate($otherTemplates),
+            // Only where the quiz is picked on the screen: choosing it there must decide what
+            // choosing it from the library decides.
+            'launchDefaultsByTemplate' => null === $template ? $this->launchDefaultsByTemplate($libraryTemplates) : [],
         ]);
+    }
+
+    /**
+     * The class named by `?program=`, when the viewer may launch into it - how « Quiz par
+     * classes » hands over the class its own filter is on. Anything else preselects nothing: a
+     * stale or foreign id is not an error here, it is simply not an answer.
+     *
+     * @param list<Program> $programs
+     */
+    private function requestedProgram(Request $request, array $programs): ?Program
+    {
+        $id = QueryValue::nullableInt($request, 'program');
+        if (null === $id) {
+            return null;
+        }
+
+        foreach ($programs as $program) {
+            if ($program->getId() === $id) {
+                return $program;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * What each quiz puts in the launch form's own fields, for the screen where the quiz is picked
+     * on the spot (quiz_launch_controller.js applies them on selection). The size of the draw is
+     * deliberately absent: it follows the whole pool, which quiz_pool_controller.js already sums.
+     *
+     * @param list<QuizTemplate> $templates
+     *
+     * @return array<int, array{seconds: int|null, sameQuestions: bool, questionOrder: bool, answerOrder: bool}>
+     */
+    private function launchDefaultsByTemplate(array $templates): array
+    {
+        $defaults = [];
+        foreach ($templates as $template) {
+            $defaults[(int) $template->getId()] = [
+                'seconds' => $template->getDefaultSecondsPerQuestion(),
+                'sameQuestions' => $template->isDefaultSameQuestionsForAll(),
+                'questionOrder' => $template->isDefaultQuestionOrderPerStudent(),
+                'answerOrder' => $template->isDefaultAnswerOrderPerStudent(),
+            ];
+        }
+
+        return $defaults;
     }
 
     /**
