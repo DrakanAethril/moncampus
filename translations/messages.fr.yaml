@@ -2846,6 +2846,17 @@ quizLaunchPageHeading: 'Lancer un quiz'
 quizLaunchTemplateFieldLabel: 'Quiz à lancer'
 quizLaunchTemplateTitle: 'Quiz à lancer'
 quizLaunchTemplateHint: "Le quiz est choisi ici : ses réglages par défaut remplissent le reste de l'écran."
+quizLaunchTemplateRequiredError: 'Choisissez le quiz à lancer.'
+# Le sélecteur de bibliothèque (bouton + modale d'arborescence) : le vocabulaire commun, puis ce que
+# la bibliothèque de quiz en dit.
+libraryPickerChooseAction: 'Choisir…'
+libraryPickerBrowseAction: 'Parcourir'
+libraryPickerSearchPlaceholder: 'Rechercher…'
+libraryPickerNoMatchMessage: 'Aucun résultat pour cette recherche.'
+libraryPickerEmptyMessage: 'Cette bibliothèque est vide.'
+quizPickerTitle: 'Choisir un quiz'
+quizPickerSearchPlaceholder: 'Rechercher un quiz…'
+quizPickerEmptyMessage: 'Votre bibliothèque ne contient encore aucun quiz.'
 quizLaunchEmptyLibraryMessage: 'Votre bibliothèque ne contient encore aucun quiz :'
 quizLaunchBreadcrumbLabel: 'Lancer'
 quizLaunchModeAndClassTitle: 'Mode et classe'

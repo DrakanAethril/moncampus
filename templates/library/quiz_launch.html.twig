@@ -44,7 +44,7 @@
                 </div>
             {% endif %}
             <div class="row g-4 align-items-start"
-                 data-controller="quiz-launch quiz-pool quiz-supervision-launch"
+                 data-controller="quiz-launch quiz-pool quiz-supervision-launch library-picker"
                  data-action="quiz-pool:change->quiz-launch#poolChanged"
                  {# 0 when the base quiz is picked on the screen: it is then one more `select`
                     target, exactly as on Outils > Concours live. #}
@@ -89,12 +89,18 @@
                             </div>
                         {% endif %}
                         <div class="mt-2" style="max-width: 420px;">
-                            {# Label carried by the subhead just above, so the select is not
-                               announced twice. #}
-                            {{ form_row(form.template, {label: false, attr: {
-                                'data-quiz-pool-target': 'select',
-                                'data-action': 'change->quiz-pool#update change->quiz-launch#baseChanged',
-                            }}) }}
+                            {# The field is the select the picker writes into; the errors are its
+                               own, and they are rendered here because the widget itself is not
+                               visible - an empty choice must still say so somewhere. #}
+                            {{ form_errors(form.template) }}
+                            {% include '_library_picker_field.html.twig' with {
+                                field: form.template,
+                                placeholder: 'quizLaunchAdditionalTemplatePlaceholder'|trans,
+                                select_attr: {
+                                    'data-quiz-pool-target': 'select',
+                                    'data-action': 'change->quiz-pool#update change->quiz-launch#baseChanged',
+                                },
+                            } only %}
                         </div>
                     </div>
                 {% endif %}
@@ -256,6 +262,16 @@
                         </div>
                     </div>
                 </div>
+
+                {# One modal for the whole screen - the base field and every merge row open the same
+                   tree, each filtered by what its own select offers. #}
+                {% include '_library_picker.html.twig' with {
+                    tree: pickerTree,
+                    title: 'quizPickerTitle'|trans,
+                    search_placeholder: 'quizPickerSearchPlaceholder'|trans,
+                    count_label: 'quizQuestionsCountLabel'|trans,
+                    empty_message: 'quizPickerEmptyMessage'|trans,
+                } only %}
             </div>
             <div class="cm-actionbar">
                 <div class="cm-actionbar__buttons">

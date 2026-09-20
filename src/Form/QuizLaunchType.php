@@ -26,6 +26,7 @@ use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Length;
+use Symfony\Component\Validator\Constraints\NotNull;
 use Symfony\Component\Validator\Constraints\Positive;
 use Symfony\Component\Validator\Constraints\Range;
 
@@ -55,6 +56,13 @@ class QuizLaunchType extends AbstractType
                 'group_by' => static fn (QuizTemplate $template): ?string => $template->getFolder()?->getName(),
                 'label' => 'quizLaunchTemplateFieldLabel',
                 'placeholder' => 'quizLaunchAdditionalTemplatePlaceholder',
+                // The select is not what the teacher reads any more - it sits behind the picker
+                // modal (templates/_library_picker.html.twig), hidden. `required` would then be an
+                // HTML5 rule on a control the browser cannot focus, which blocks the submit while
+                // showing nothing at all; the rule is a constraint instead, so an empty choice is
+                // answered by the form itself.
+                'required' => false,
+                'constraints' => [new NotNull(message: 'quizLaunchTemplateRequiredError')],
             ]);
         }
 
