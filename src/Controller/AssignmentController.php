@@ -40,6 +40,7 @@ use App\Repository\TopicRepository;
 use App\Repository\UserRepository;
 use App\Repository\VideoResourceRepository;
 use App\Security\StructureAccessChecker;
+use App\Security\Voter\AssignmentVoter;
 use App\Security\Voter\EvaluationVoter;
 use App\Security\Voter\FileLibraryVoter;
 use App\Service\AssignmentAudienceResolver;
@@ -111,7 +112,11 @@ class AssignmentController extends AbstractController
         $programs = $this->teachingPrograms($programRepository);
         $now = new \DateTimeImmutable();
 
-        $assignments = $assignmentRepository->findForPrograms($programs, $this->accessChecker->isStaff() ? null : $this->currentUser());
+        // Always scoped to the author, staff and admin included: a travail belongs to whoever
+        // gave it, and this screen is « mes travaux », never the class's. An administrator who
+        // also teaches sees their own work here and nobody else's - what another teacher gave is
+        // read from that teacher's own screens, not from this list.
+        $assignments = $assignmentRepository->findForPrograms($programs, $this->currentUser());
 
         // Read through QueryValue, not the InputBag's own getInt(): every one of these four filters
         // offers a blank "Toutes/Tous" option, so the toolbar submits `?classe=&type=&etat=` as a
@@ -1172,11 +1177,21 @@ class AssignmentController extends AbstractController
         return false;
     }
 
+    /**
+     * The assignment behind an /assignments/{id} URL, or a 404. Two conditions, both of them
+     * silent: the class must be one the user teaches, and the travail must be one they gave
+     * themselves (AssignmentVoter::MANAGE). A colleague's travail - an administrator's included -
+     * does not exist here rather than being forbidden, exactly as the list never names it.
+     */
     private function findOrNotFound(int $id, AssignmentRepository $assignmentRepository, ProgramRepository $programRepository): Assignment
     {
         $assignment = $assignmentRepository->find($id) ?? throw $this->createNotFoundException();
 
         if (!$this->isAmong($assignment->getProgram(), $this->teachingPrograms($programRepository))) {
+            throw $this->createNotFoundException();
+        }
+
+        if (!$this->isGranted(AssignmentVoter::MANAGE, $assignment)) {
             throw $this->createNotFoundException();
         }
 

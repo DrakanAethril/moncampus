@@ -42,34 +42,33 @@ class AssignmentRepository extends ServiceEntityRepository
      * all their classes at once, from the nearest to the furthest - an overdue assignment reads at
      * the top because it is the one whose submissions are coming in, not because it is old.
      *
-     * $creator restricts to the assignments given by the teacher themselves; null (staff) returns
-     * those of the whole team on the classes targeted.
+     * $creator is required rather than optional, and there is no "everybody" reading: a travail
+     * belongs to whoever gave it, so this list is always somebody's own - staff and administrators
+     * included. The web screen and the mobile 4d screen therefore answer the same thing.
      *
      * @param list<Program> $programs
      *
      * @return list<Assignment>
      */
-    public function findForPrograms(array $programs, ?User $creator = null): array
+    public function findForPrograms(array $programs, User $creator): array
     {
         if ([] === $programs) {
             return [];
         }
 
-        $builder = $this->createQueryBuilder('a')
+        return $this->createQueryBuilder('a')
             ->addSelect('o', 'p', 't', 'e')
             ->leftJoin('a.options', 'o')
             ->leftJoin('a.program', 'p')
             ->leftJoin('a.topic', 't')
             ->leftJoin('a.expectedProductions', 'e')
             ->where('a.program IN (:programs)')
+            ->andWhere('a.createdBy = :creator')
             ->setParameter('programs', $programs)
-            ->orderBy('a.dueDate', 'ASC');
-
-        if (null !== $creator) {
-            $builder->andWhere('a.createdBy = :creator')->setParameter('creator', $creator);
-        }
-
-        return $builder->getQuery()->getResult();
+            ->setParameter('creator', $creator)
+            ->orderBy('a.dueDate', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 
     // The assignments given from a séance's cahier de texte (mockup 2a), all parts together - the
