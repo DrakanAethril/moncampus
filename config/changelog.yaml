@@ -26,6 +26,16 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.20.3'
+      date: '2026-09-20'
+      summary: "Le bouton lecture lance enfin la vidéo : sur la page de visionnage d'un travail, appuyer dessus ne faisait rien. Et un visionnage se regarde désormais à vitesse normale."
+      entries:
+          - type: fix
+            title: "Le bouton lecture lance enfin la vidéo"
+            detail: "Sur la page de visionnage d'un travail, le lecteur restait muet : le bouton lecture ne démarrait rien. Les lecteurs d'un travail « Écoute » et l'écran des questions incrustées avaient exactement le même défaut ; les trois démarrent."
+          - type: modification
+            title: "Un visionnage se regarde à vitesse normale"
+            detail: "La vitesse de lecture ne peut plus être accélérée ni ralentie, et la vidéo ne se télécharge pas depuis le lecteur. La consigne affichée avant la première lecture le dit, à côté de « sans sauter de passage »."
     - version: '2026.09.20.2'
       date: '2026-09-20'
       summary: "Le travail de type visionnage est corrigé de bout en bout : la vidéo s'ouvre enfin côté étudiant, se regarde sans pouvoir être téléchargée, et se crée sans qu'on puisse lui joindre autre chose qu'elle-même. Les applications Android sont republiées avec ces corrections."

@@ -14,9 +14,10 @@ use Doctrine\ORM\Mapping as ORM;
  * One video of a VideoResource.
  *
  * Storage keys only: like every upload in this app the object itself lives in S3 and is reached
- * through a signed address built at play time, never laid into the page. That matters more here
- * than for audio - a video is ten to a hundred times heavier, so handing its address to a page that
- * may never be played is bandwidth given away.
+ * through an address the player asks for over its own route, never laid into the page. What keeps a
+ * page that is never played from costing its whole transfer is the element's preload="none" - a
+ * video being ten to a hundred times heavier than an audio file - and not the moment the address
+ * reaches the player, which is as the screen opens.
  */
 #[ORM\Entity(repositoryClass: VideoResourceFileRepository::class)]
 #[ORM\Table(name: 'video_resource_file')]

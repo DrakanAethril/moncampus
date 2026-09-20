@@ -59,7 +59,7 @@
                     <video class="cm-video-player" controls preload="none" playsinline
                            {% if file.posterStorageKey %}poster="{{ file_url(file.posterStorageKey) }}"{% endif %}
                            data-video-cue-editor-target="player"
-                           data-action="play->video-cue-editor#started timeupdate->video-cue-editor#tick loadedmetadata->video-cue-editor#tick"></video>
+                           data-action="timeupdate->video-cue-editor#tick loadedmetadata->video-cue-editor#tick"></video>
 
                     {# The timeline is the editor: a click on it is where the question goes. #}
                     <div class="cm-video-timeline" data-video-cue-editor-target="timeline" data-action="click->video-cue-editor#place"

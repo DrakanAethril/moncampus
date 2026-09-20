@@ -91,9 +91,10 @@ class VideoUploadService
     }
 
     /**
-     * The address the player is handed, and only on first play: a video weighs ten to a hundred
-     * times an audio file, so laying it into a page that may never be played is bandwidth given
-     * away.
+     * The address the player is handed, over its own route rather than laid into the page. What
+     * spares the bandwidth of a page that is never played is the element's preload="none", not the
+     * moment the address arrives - the player sets it as the screen opens, a <video> with no source
+     * having no working controls at all.
      *
      * Same CloudFront-first/direct-endpoint-fallback logic as FileUploadService::url() - the bucket
      * is private (CloudFront Origin Access Control only), so this is the same "obscure but not

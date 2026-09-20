@@ -72,12 +72,18 @@
                    minute it was posted at. #}
                 <div class="cm-video-stage">
                     {# No picture-in-picture: it is precisely a way of watching from another page,
-                       and the video stops the moment this one loses the focus. #}
-                    <video class="cm-video-player" controls preload="none" playsinline disablepictureinpicture
+                       and the video stops the moment this one loses the focus.
+
+                       `controlslist` takes two entries out of the browser's own menu: the playback
+                       speed, this travail being watched at normal speed, and the download, which
+                       is the same rule the screen already applies by carrying no download button of
+                       its own. Neither is the enforcement - a controlslist only hides a control,
+                       and it is Chrome's attribute. The speed is held to 1 in the controller. #}
+                    <video class="cm-video-player" controls controlslist="nodownload noplaybackrate" preload="none" playsinline disablepictureinpicture
                            {% if file.posterStorageKey %}poster="{{ file_url(file.posterStorageKey) }}"{% endif %}
                            data-video-watch-target="player"
                            data-video-cue-player-target="player"
-                           data-action="play->video-watch#started seeking->video-watch#seeking timeupdate->video-watch#tick timeupdate->video-cue-player#tick loadedmetadata->video-cue-player#paintMarkers pause->video-watch#paused ended->video-watch#flush error->video-watch#failed"></video>
+                           data-action="play->video-watch#started seeking->video-watch#seeking timeupdate->video-watch#tick timeupdate->video-cue-player#tick loadedmetadata->video-cue-player#paintMarkers pause->video-watch#paused ended->video-watch#flush error->video-watch#failed ratechange->video-watch#rateChanged"></video>
 
                     <div class="cm-video-overlay" data-video-cue-player-target="overlay" hidden>
                         <div class="cm-video-overlay__veil"></div>

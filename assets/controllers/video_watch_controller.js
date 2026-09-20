@@ -83,6 +83,9 @@ export default class extends Controller {
         document.addEventListener('visibilitychange', this.onVisibilityChange);
         window.addEventListener('blur', this.onBlur);
         this.paint();
+        this.loadSource();
+        this.playerTarget.defaultPlaybackRate = 1;
+        this.playerTarget.playbackRate = 1;
     }
 
     disconnect() {
@@ -113,18 +116,17 @@ export default class extends Controller {
         return document.visibilityState === 'visible' && document.hasFocus();
     }
 
-    // The source is fetched on first play rather than laid into the page: a video weighs ten to a
-    // hundred times an audio file, so a page opened and left would cost its whole transfer.
-    async started() {
-        if (!this.pageHasFocus()) {
-            this.playerTarget.pause();
-
-            return;
-        }
-
-        this.pausedForFocus = false;
-        this.paint();
-
+    // The address is fetched rather than laid into the page - the page never carries it, and the
+    // route is where the right to watch this file is checked. But it has to be on the element
+    // BEFORE the student presses play, not in answer to it: a <video> with no source is a player
+    // with no media, and a browser disables its own controls there. The play button did nothing,
+    // no `play` event fired, and the fetch that was waiting for it never went out - the screen
+    // waited for a gesture the browser would not let anyone make.
+    //
+    // Nothing is transferred for it. `preload="none"` on the element is what spares the bandwidth
+    // of a page opened and left, and it keeps doing so with a source set: the browser resolves the
+    // address and stops there, and the first byte of video is read when play is pressed.
+    async loadSource() {
         if (this.playerTarget.src) return;
 
         let data;
@@ -137,7 +139,34 @@ export default class extends Controller {
         }
 
         this.playerTarget.src = data.url;
-        this.playerTarget.play();
+    }
+
+    started() {
+        if (!this.pageHasFocus()) {
+            this.playerTarget.pause();
+
+            return;
+        }
+
+        this.pausedForFocus = false;
+        this.paint();
+    }
+
+    // Normal speed, and held there rather than merely not offered. A travail watched at 2x is
+    // watched in half the time, and the percentage would credit it in full: the contiguity rule
+    // counts positions, not minutes. `controlslist="noplaybackrate"` on the element takes the entry
+    // out of Chrome's own menu, but that is a Chrome attribute and a hidden control is still a
+    // control - Firefox keeps its speed menu, and a console has never needed one. So whatever moves
+    // the rate, it goes back to 1 here, which is what makes "à vitesse normale" a rule.
+    //
+    // The test guards the recursion: assigning playbackRate fires `ratechange` again, and the
+    // second pass finds 1 and stops.
+    //
+    // The wall-clock seconds the report already carries stay worth sending: they are what says a
+    // video was got through faster than it runs, whichever player did it - and the mobile one
+    // applies no such rule.
+    rateChanged() {
+        if (1 !== this.playerTarget.playbackRate) this.playerTarget.playbackRate = 1;
     }
 
     // The media itself answered an error - the object is gone from the bucket, or the address it is

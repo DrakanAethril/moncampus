@@ -50,7 +50,7 @@
                     <span class="cm-audio-bar">
                         <span class="cm-audio-bar__fill" data-audio-listen-target="bar" style="width: {{ percent }}%"></span>
                     </span>
-                    <audio controls preload="none" class="cm-tw-listen__player" data-audio-listen-target="player" data-action="play->audio-listen#started timeupdate->audio-listen#tick pause->audio-listen#flush ended->audio-listen#flush"></audio>
+                    <audio controls preload="none" class="cm-tw-listen__player" data-audio-listen-target="player" data-action="timeupdate->audio-listen#tick pause->audio-listen#flush ended->audio-listen#flush"></audio>
                 </div>
             {% endfor %}
         </div>
