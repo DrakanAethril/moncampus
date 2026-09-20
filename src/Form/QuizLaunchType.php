@@ -43,6 +43,21 @@ class QuizLaunchType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        // Screen 1c reached without a quiz (« Lancer un quiz » on Quiz par classes): the base
+        // quiz is the first field of the form instead of the page's own subject. Added first so it
+        // reads as step one, and absent altogether from the library's own launch screen, where the
+        // quiz is what the page is about - a select there could only disagree with the URL.
+        if (null !== $options['baseTemplateChoices']) {
+            $builder->add('template', EntityType::class, [
+                'class' => QuizTemplate::class,
+                'choices' => $options['baseTemplateChoices'],
+                'choice_label' => static fn (QuizTemplate $template): string => $template->getName() ?? '',
+                'group_by' => static fn (QuizTemplate $template): ?string => $template->getFolder()?->getName(),
+                'label' => 'quizLaunchTemplateFieldLabel',
+                'placeholder' => 'quizLaunchAdditionalTemplatePlaceholder',
+            ]);
+        }
+
         $builder
             // Optional: the instance is named after the base template when left blank
             // (App\Service\QuizInstantiationService). A launch merging five séance quizzes is
@@ -72,9 +87,12 @@ class QuizLaunchType extends AbstractType
                 'prototype_name' => '__quiz__',
                 'required' => false,
             ])
+            // `data` is how the class arrives already picked when the screen is opened from a
+            // filtered « Quiz par classes » - null everywhere else, which is the placeholder.
             ->add('program', EntityType::class, [
                 'class' => Program::class,
                 'choices' => $options['programs'],
+                'data' => $options['defaultProgram'],
                 'choice_label' => static fn (Program $program): string => sprintf('%s - %s', $program->getDisplayShortName(), $program->getSchoolYear()->getStartDate()?->format('Y') ?? '?'),
                 'label' => 'quizLaunchProgramFieldLabel',
                 'placeholder' => 'structureLdapGroupPlaceholder',
@@ -233,6 +251,12 @@ class QuizLaunchType extends AbstractType
     {
         $resolver
             ->setRequired(['programs', 'optionChoices', 'baseTemplateName', 'additionalTemplateChoices', 'defaultQuestionCount', 'defaultSecondsPerQuestion', 'defaultSameQuestionsForAll', 'defaultQuestionOrderPerStudent', 'defaultAnswerOrderPerStudent'])
+            // Null means « the quiz is already known »: the field is not rendered at all, rather
+            // than rendered and locked.
+            ->setDefault('baseTemplateChoices', null)
+            ->setAllowedTypes('baseTemplateChoices', ['array', 'null'])
+            ->setDefault('defaultProgram', null)
+            ->setAllowedTypes('defaultProgram', [Program::class, 'null'])
             ->setAllowedTypes('programs', 'array')
             ->setAllowedTypes('optionChoices', 'array')
             ->setAllowedTypes('baseTemplateName', ['string', 'null'])
