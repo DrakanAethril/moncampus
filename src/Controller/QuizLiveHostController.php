@@ -6,16 +6,19 @@ namespace App\Controller;
 
 use App\Attribute\RequiresFeature;
 use App\Entity\Program;
+use App\Entity\QuizFolder;
 use App\Entity\QuizLiveSession;
 use App\Entity\QuizTemplate;
 use App\Entity\User;
 use App\Enum\Feature;
 use App\Repository\ProgramRepository;
+use App\Repository\QuizFolderRepository;
 use App\Repository\QuizLiveParticipantRepository;
 use App\Repository\QuizLiveSessionRepository;
 use App\Repository\QuizTemplateRepository;
 use App\Security\StructureAccessChecker;
 use App\Service\JsonRequestPayload;
+use App\Service\LibraryPickerTree;
 use App\Service\LiveSessionStateException;
 use App\Service\LiveTemplateNotEligibleException;
 use App\Service\PostValue;
@@ -45,7 +48,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 class QuizLiveHostController extends AbstractController
 {
     #[Route(path: '/programs/{id}/quiz/live/new', name: 'app_program_quiz_live_new')]
-    public function new(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, QuizTemplateRepository $templateRepository): Response
+    public function new(int $id, ProgramRepository $repository, StructureAccessChecker $accessChecker, QuizTemplateRepository $templateRepository, QuizFolderRepository $folders, LibraryPickerTree $pickerTree): Response
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
 
@@ -62,6 +65,28 @@ class QuizLiveHostController extends AbstractController
                 array_map(static fn (QuizTemplate $template): int => (int) $template->getId(), $templates),
                 array_map(static fn (QuizTemplate $template): array => ['questions' => $template->getQuestions()->count(), 'defaultCount' => 0], $templates),
             ),
+            // The library as a tree, for the picker modal the base field and the merge rows open -
+            // the same one screen 1c uses (App\Controller\QuizLibraryController). A host picks from
+            // their own library here, so the folders are their own.
+            'pickerTree' => $pickerTree->build(
+                array_map(
+                    static fn (QuizFolder $folder): array => [
+                        'id' => (int) $folder->getId(),
+                        'parentId' => $folder->getParent()?->getId(),
+                        'name' => $folder->getName(),
+                    ],
+                    $folders->findAllFor($this->currentUser()),
+                ),
+                array_map(
+                    static fn (QuizTemplate $template): array => [
+                        'id' => (int) $template->getId(),
+                        'folderId' => $template->getFolder()?->getId(),
+                        'label' => $template->getName() ?? '',
+                        'count' => $template->getQuestions()->count(),
+                    ],
+                    $templates,
+                ),
+            ),
         ]);
     }
 
@@ -74,7 +99,16 @@ class QuizLiveHostController extends AbstractController
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        $template = $this->findTemplateOrNotFound($templateRepository, PostValue::int($request, 'templateId'));
+        // No quiz chosen is a thing the host can do - the field opens on a placeholder now that it
+        // is picked in a modal - and it is not a 404: nothing is missing, something is unanswered.
+        $templateId = PostValue::int($request, 'templateId');
+        if ($templateId <= 0) {
+            $this->addFlash('error', $translator->trans('quizLaunchTemplateRequiredError'));
+
+            return $this->redirectToRoute('app_program_quiz_live_new', ['id' => $program->getId()]);
+        }
+
+        $template = $this->findTemplateOrNotFound($templateRepository, $templateId);
 
         // Extra quizzes merged into the same pool, in the order the host added them - each still
         // goes through findTemplateOrNotFound(), so a hand-crafted id for someone else's quiz is

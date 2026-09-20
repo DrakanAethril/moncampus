@@ -7,10 +7,14 @@
    controller already listening on it (quiz-pool, quiz-launch) goes on working untouched.
 
    Parameters: `field` the form child, `placeholder` what the button says while nothing is chosen,
-   `select_attr` the attributes the select must keep (its targets and actions). #}
+   `select_attr` the attributes the select must keep (its targets and actions).
+
+   A screen with no Symfony form at all - Outils > Concours live - `embed`s this template instead and
+   overrides the `select` block with its own `<select>`. The wrapper, the button and the contract
+   with library_picker_controller.js stay written once. #}
 {% set placeholder = placeholder|default('libraryPickerChooseAction'|trans) %}
 <div class="cm-pickfield" data-picker-field data-picker-placeholder="{{ placeholder }}">
-    {{ form_widget(field, {attr: {class: 'cm-pickfield__select'}|merge(select_attr|default({}))}) }}
+    {% block select %}{{ form_widget(field, {attr: {class: 'cm-pickfield__select'}|merge(select_attr|default({}))}) }}{% endblock %}
     <button type="button" class="cm-pickfield__button" data-action="library-picker#open">
         <span class="cm-pickfield__ico" aria-hidden="true">
             {# The item's own glyph, not a folder's: what the button holds once filled is one thing
