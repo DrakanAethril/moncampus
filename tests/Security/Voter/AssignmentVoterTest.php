@@ -5,48 +5,69 @@ declare(strict_types=1);
 namespace App\Tests\Security\Voter;
 
 use App\Entity\Assignment;
-use App\Security\StructureAccessChecker;
+use App\Entity\User;
 use App\Security\Voter\AssignmentVoter;
 use App\Service\AssignmentAudienceResolver;
 
 /**
- * MANAGE is a staff decision; SUBMIT is an audience decision. The two must not bleed into each
- * other - a student in the audience may submit but must never manage.
+ * MANAGE is an authorship decision; SUBMIT is an audience decision. The two must not bleed into
+ * each other - a student in the audience may submit but must never manage - and neither of them
+ * knows what a role is: a colleague, staff or an administrator manages nothing they did not give.
  */
 class AssignmentVoterTest extends VoterTestCase
 {
-    private function voter(bool $isStaff, bool $inAudience): AssignmentVoter
+    private function voter(bool $inAudience): AssignmentVoter
     {
-        $checker = $this->createStub(StructureAccessChecker::class);
-        $checker->method('isStaff')->willReturn($isStaff);
         $resolver = $this->createStub(AssignmentAudienceResolver::class);
         $resolver->method('isInAudience')->willReturn($inAudience);
 
-        return new AssignmentVoter($checker, $resolver);
+        return new AssignmentVoter($resolver);
     }
 
-    public function testStaffManagesButAudienceAloneDoesNot(): void
+    private function assignmentGivenBy(?User $author): Assignment
     {
         $assignment = $this->createStub(Assignment::class);
+        $assignment->method('getCreatedBy')->willReturn($author);
 
-        $this->assertGranted($this->voter(true, false), $this->user(), $assignment, AssignmentVoter::MANAGE);
-        $this->assertDenied($this->voter(false, true), $this->user(), $assignment, AssignmentVoter::MANAGE);
+        return $assignment;
+    }
+
+    public function testOnlyTheAuthorManages(): void
+    {
+        $author = $this->user();
+        $colleague = $this->user();
+
+        $this->assertGranted($this->voter(false), $author, $this->assignmentGivenBy($author), AssignmentVoter::MANAGE);
+        $this->assertDenied($this->voter(false), $colleague, $this->assignmentGivenBy($author), AssignmentVoter::MANAGE);
+    }
+
+    public function testAdministratorDoesNotManageSomebodyElsesWork(): void
+    {
+        $author = $this->user();
+        $admin = $this->user(['ROLE_ADMIN', 'ROLE_STAFF']);
+
+        $this->assertDenied($this->voter(true), $admin, $this->assignmentGivenBy($author), AssignmentVoter::MANAGE);
+    }
+
+    public function testAnAuthorlessAssignmentIsNobodysToManage(): void
+    {
+        $this->assertDenied($this->voter(false), $this->user(), $this->assignmentGivenBy(null), AssignmentVoter::MANAGE);
     }
 
     public function testSubmitFollowsTheAudienceOnly(): void
     {
-        $assignment = $this->createStub(Assignment::class);
+        $author = $this->user();
 
-        $this->assertGranted($this->voter(false, true), $this->user(), $assignment, AssignmentVoter::SUBMIT);
-        $this->assertDenied($this->voter(true, false), $this->user(), $assignment, AssignmentVoter::SUBMIT);
+        $this->assertGranted($this->voter(true), $this->user(), $this->assignmentGivenBy($author), AssignmentVoter::SUBMIT);
+        $this->assertDenied($this->voter(false), $author, $this->assignmentGivenBy($author), AssignmentVoter::SUBMIT);
     }
 
     public function testAnonymousIsDeniedAndForeignAttributesAreLeftAlone(): void
     {
-        $assignment = $this->createStub(Assignment::class);
+        $assignment = $this->assignmentGivenBy($this->user());
 
-        $this->assertDenied($this->voter(true, true), null, $assignment, AssignmentVoter::MANAGE);
-        $this->assertAbstains($this->voter(true, true), $this->user(), $assignment, 'SOMETHING_ELSE');
-        $this->assertAbstains($this->voter(true, true), $this->user(), new \stdClass(), AssignmentVoter::MANAGE);
+        $this->assertDenied($this->voter(true), null, $assignment, AssignmentVoter::MANAGE);
+        $this->assertAbstains($this->voter(true), $this->user(), $assignment, 'SOMETHING_ELSE');
+        $this->assertAbstains($this->voter(true), $this->user(), new \stdClass(), AssignmentVoter::MANAGE);
     }
 }
