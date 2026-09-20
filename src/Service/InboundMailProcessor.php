@@ -44,6 +44,7 @@ class InboundMailProcessor
         private readonly S3Client $mailS3Client,
         private readonly EmailAliasRepository $aliasRepository,
         private readonly EmailMessageRepository $messageRepository,
+        private readonly SchoolMailApplicationRecovery $recovery,
         private readonly EntityManagerInterface $entityManager,
         private readonly LoggerInterface $logger,
         private readonly string $mailBucket,
@@ -161,26 +162,46 @@ class InboundMailProcessor
      * A reply inherits the application of the mail it answers, through In-Reply-To (principle #5 of
      * the screens handoff): no question is ever asked of the student.
      *
-     * Only that header is followed, deliberately. The infra handoff mentions a sender+recipient+time
-     * window fallback, but guessing an application from a coincidence would file a mail under a
-     * company it may have nothing to do with - and screen 5a exists precisely so that "we do not
-     * know" is an answer the platform can give.
+     * That header is followed first and on its own. When it says nothing - which is the case of a
+     * delivery failure notice, a fresh message that answers no one - the mail is read for a send it
+     * *quotes*, in App\Service\SchoolMailApplicationRecovery. What stays refused, there as here, is
+     * the sender+recipient+time window fallback the infra handoff mentions: filing on a coincidence
+     * would put a mail under a company it may have nothing to do with, and screen 5a exists
+     * precisely so that "we do not know" is an answer the platform can give.
      */
     private function linkToApplication(EmailMessage $message): void
     {
+        $student = $message->getStudent();
+
+        if (null === $student) {
+            return;
+        }
+
         $inReplyTo = $message->getInReplyTo();
+        $answered = null !== $inReplyTo ? $this->messageRepository->findOneByAnyMessageId($inReplyTo) : null;
 
-        if (null === $inReplyTo || null === $message->getStudent()) {
+        if (null !== $answered && $answered->getStudent()?->getId() === $student->getId()) {
+            $message->setJobApplication($answered->getJobApplication());
+        }
+
+        if (null !== $message->getJobApplication()) {
             return;
         }
 
-        $answered = $this->messageRepository->findOneByAnyMessageId($inReplyTo);
+        $match = $this->recovery->recover($message);
 
-        if (null === $answered || $answered->getStudent()?->getId() !== $message->getStudent()->getId()) {
+        if (null === $match) {
             return;
         }
 
-        $message->setJobApplication($answered->getJobApplication());
+        $message->setJobApplication($match->application);
+
+        $this->logger->info('School mail: incoming mail filed under the démarche it quotes.', [
+            'student' => $student->getUsername(),
+            'application' => $match->application->getName(),
+            'evidence' => $match->evidence,
+            'evidenceKind' => $match->kind->value,
+        ]);
     }
 
     /** S3 keys tolerate far less than a filename does; the display name stays untouched in database. */
