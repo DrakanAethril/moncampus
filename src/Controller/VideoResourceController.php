@@ -13,7 +13,6 @@ use App\Enum\Feature;
 use App\Repository\ProgramRepository;
 use App\Repository\VideoResourceRepository;
 use App\Repository\VideoWatchEventRepository;
-use App\Repository\VideoWatchProgressRepository;
 use App\Security\StructureAccessChecker;
 use App\Service\PostValue;
 use App\Service\QueryValue;
@@ -21,6 +20,7 @@ use App\Service\VideoResourceAudienceResolver;
 use App\Service\VideoRetention;
 use App\Service\VideoUploadService;
 use App\Service\VideoUploadValidator;
+use App\Service\VideoWatchStandings;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -213,60 +213,45 @@ class VideoResourceController extends AbstractController
      * nothing to recompute.
      */
     #[Route(path: '/tools/videos/{resourceId}/statistics', name: 'app_video_resource_statistics', methods: ['GET'], requirements: ['resourceId' => '\d+'])]
-    public function statistics(int $resourceId, VideoWatchProgressRepository $progressRepository, VideoWatchEventRepository $eventRepository, VideoRetention $retention): Response
+    public function statistics(int $resourceId, VideoWatchStandings $standings, VideoWatchEventRepository $eventRepository, VideoRetention $retention): Response
     {
         $resource = $this->findOwnResource($resourceId);
         $audience = $this->audienceResolver->resolveAudience($resource);
         $optionsByStudentId = $this->audienceResolver->optionsByStudentId($resource);
-        $progressByStudentId = $progressRepository->findByStudentAndFileForResource($resource);
         $eventsByStudentId = $eventRepository->findByStudentAndFileForResource($resource);
-        $files = $resource->getFiles()->toArray();
+        $files = array_values($resource->getFiles()->toArray());
 
         $rows = [];
         $percentsByFileId = [];
 
+        $byStudentId = $standings->forAudience($resource, $audience);
+
         foreach ($audience as $student) {
-            $percents = [];
-            $dates = [];
-            $completions = [];
-            $watchedSeconds = 0;
-            $skipCount = 0;
-            $focusLossCount = 0;
+            $standing = $byStudentId[(int) $student->getId()] ?? null;
 
-            foreach ($files as $file) {
-                $progress = $progressByStudentId[(int) $student->getId()][(int) $file->getId()] ?? null;
-                $percent = $progress?->getMaxWatchedPercent() ?? 0;
-                $percents[(int) $file->getId()] = $percent;
-                $percentsByFileId[(int) $file->getId()][] = $percent;
-
-                if (null !== $progress?->getLastWatchedAt()) {
-                    $dates[] = $progress->getLastWatchedAt();
-                }
-
-                $completions[] = $progress?->getCompletedAt();
-                $watchedSeconds += $progress?->getWatchedSeconds() ?? 0;
-                $skipCount += $progress?->getSkipCount() ?? 0;
-                $focusLossCount += $progress?->getFocusLossCount() ?? 0;
+            if (null === $standing) {
+                continue;
             }
 
-            $status = $this->studentStatus(array_values($percents));
-            $completions = array_filter($completions);
+            foreach ($standing->percents as $fileId => $percent) {
+                $percentsByFileId[$fileId][] = $percent;
+            }
 
             $rows[] = [
                 'student' => $student,
                 'options' => $optionsByStudentId[(int) $student->getId()] ?? [],
-                'percents' => $percents,
+                'percents' => $standing->percents,
                 // Weighted by running time, as VideoWatchTracker weighs it: a twelve-minute lecture
                 // and a thirty-second outro are not half the set each.
-                'total' => $this->weightedPercent($files, $percents),
-                'lastWatchedAt' => [] === $dates ? null : max($dates),
+                'total' => $standing->percent,
+                'lastWatchedAt' => $standing->lastWatchedAt,
                 // The set is complete when its last file is, and only then.
-                'completedAt' => 'complete' === $status && [] !== $completions ? max($completions) : null,
-                'watchedSeconds' => $watchedSeconds,
-                'skipCount' => $skipCount,
-                'focusLossCount' => $focusLossCount,
+                'completedAt' => $standing->completedAt,
+                'watchedSeconds' => $standing->watchedSeconds,
+                'skipCount' => $standing->skipCount,
+                'focusLossCount' => $standing->focusLossCount,
                 'events' => $eventsByStudentId[(int) $student->getId()] ?? [],
-                'status' => $status,
+                'status' => $standing->status(),
             ];
         }
 
@@ -410,39 +395,6 @@ class VideoResourceController extends AbstractController
             'duration' => $file->getFormattedDuration(),
             'size' => $file->getFileSize(),
         ];
-    }
-
-    /**
-     * @param list<VideoResourceFile> $files
-     * @param array<int, int>         $percents
-     */
-    private function weightedPercent(array $files, array $percents): int
-    {
-        $total = 0;
-        $watched = 0.0;
-
-        foreach ($files as $file) {
-            $total += $file->getDurationSeconds();
-            $watched += $file->getDurationSeconds() * (($percents[(int) $file->getId()] ?? 0) / 100);
-        }
-
-        return 0 === $total ? 0 : (int) floor($watched / $total * 100);
-    }
-
-    /** @param list<int> $percents */
-    private function studentStatus(array $percents): string
-    {
-        if ([] === $percents) {
-            return 'not_started';
-        }
-
-        // "Terminé" only at 100% on EVERY file: the same rule as the assignment's completion, not a
-        // more forgiving reading kept for the teacher.
-        if ([] === array_filter($percents, static fn (int $percent): bool => $percent < 100)) {
-            return 'complete';
-        }
-
-        return [] === array_filter($percents, static fn (int $percent): bool => $percent > 0) ? 'not_started' : 'in_progress';
     }
 
     // ---- Access -------------------------------------------------------------------------------

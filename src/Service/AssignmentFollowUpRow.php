@@ -27,6 +27,10 @@ final class AssignmentFollowUpRow
         public readonly ?\DateTimeImmutable $doneAt = null,
         public readonly array $submissions = [],
         public readonly ?QuizAttempt $attempt = null,
+        /** Where the student is in the work when it has an in-between, which today only a watching has. */
+        public readonly ?int $progressPercent = null,
+        /** When they first engaged with it - the first playback of a watching. */
+        public readonly ?\DateTimeImmutable $startedAt = null,
     ) {
     }
 

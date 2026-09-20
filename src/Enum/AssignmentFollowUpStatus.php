@@ -12,7 +12,7 @@ namespace App\Enum;
  * Deliberately a second enum rather than a fourth case on AssignmentSubmissionStatus: that one
  * answers "has this deposit arrived", and three of its four callers ask exactly that. What is added
  * here belongs to natures that never carry a deposit - a quiz answered below the teacher's
- * threshold is neither handed in nor missing.
+ * threshold is neither handed in nor missing, and neither is a video half watched.
  *
  * The wording is the nature's, not the status's (App\Enum\AssignmentNature::followUp*LabelKey): a
  * quiz is « Répondu » where a submission is « Rendu », and one vocabulary for both is how a screen
@@ -23,6 +23,10 @@ enum AssignmentFollowUpStatus: string
     case Done = 'done';
     case Late = 'late';
     case Insufficient = 'insufficient';
+    // Started and not finished. A watching is the nature that needed it: a video is watched over
+    // several sittings, so « Non visionné » on a student two thirds of the way through says the
+    // opposite of what happened.
+    case InProgress = 'in_progress';
     case Pending = 'pending';
 
     public function badgeClass(): string
@@ -31,6 +35,7 @@ enum AssignmentFollowUpStatus: string
             self::Done => 'bg-green-lt',
             self::Late => 'bg-yellow-lt',
             self::Insufficient => 'bg-orange-lt',
+            self::InProgress => 'bg-blue-lt',
             self::Pending => 'bg-secondary-lt',
         };
     }
