@@ -221,6 +221,12 @@
                     {{ form_widget(form.description, {attr: {class: 'd-none', 'data-controller': 'hugerte-editor', 'data-hugerte-editor-height-value': 190}}) }}
                     {% do form.description.setRendered %}
 
+                    {# Supports and links, on every type but one. « Visionnage » is the exception and
+                       it is the whole point of the type: the work *is* the video, named just below
+                       from the library, so a second way of carrying a file could only offer a
+                       second video - one that no player reads and no tracking measures, sitting in
+                       the consigne as a plain download. See App\Service\FileLibraryWorkFactory. #}
+                    <div data-assignment-wizard-target="naturePane" data-natures-except="watching">
                     <span class="cm-wizard__label">{{ 'assignmentWizardAttachmentsFieldLabel'|trans }}</span>
                     <div class="cm-attachpick" data-assignment-wizard-target="attachments">
                         {# The supports already attached. Detaching them does not erase them right
@@ -263,6 +269,7 @@
                         </div>
                         {{ form_widget(form.attachmentLinks, {attr: {class: 'd-none', 'data-assignment-wizard-target': 'attachmentLinks'}}) }}
                         {{ form_errors(form.attachmentFiles) }}
+                    </div>
                     </div>
                     {% do form.attachmentFiles.setRendered %}
                     {% do form.attachmentLinks.setRendered %}
@@ -360,7 +367,14 @@
                                     <a href="{{ path('app_file_library') }}">{{ 'assignmentWizardLibraryVideoOpenLibraryAction'|trans }}</a>
                                 </p>
                             {% endif %}
-                            {{ form_widget(form.libraryVideo, {attr: {class: 'cm-select'}}) }}
+                            {# Enriched rather than plain: this is the only field of the wizard whose
+                               list grows with the teacher's own library, and a bare <select> of two
+                               hundred videos is scrolled, not searched. No url value - the options
+                               are all rendered, Tom Select only searches them. #}
+                            {{ form_widget(form.libraryVideo, {attr: {
+                                class: 'cm-select',
+                                'data-controller': 'tom-select',
+                            }}) }}
                             {{ form_errors(form.libraryVideo) }}
                         </div>
                     {% endif %}

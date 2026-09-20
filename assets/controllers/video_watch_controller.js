@@ -71,6 +71,10 @@ export default class extends Controller {
         this.seekFrom = null;
         this.lastTickAt = null;
         this.pausedForFocus = false;
+        // The media could not be fetched or could not be decoded. Said on screen rather than left
+        // to the console: a player that simply never starts reads as "the platform is broken", and
+        // the student has no way of telling that apart from a video they are not allowed to watch.
+        this.unavailable = false;
 
         this.onVisibilityChange = () => {
             if (document.visibilityState === 'hidden') this.focusLost();
@@ -126,14 +130,22 @@ export default class extends Controller {
         let data;
         try {
             const response = await fetch(this.playbackUrlValue);
-            if (!response.ok) return;
+            if (!response.ok) return this.failed();
             data = await response.json();
         } catch (e) {
-            return;
+            return this.failed();
         }
 
         this.playerTarget.src = data.url;
         this.playerTarget.play();
+    }
+
+    // The media itself answered an error - the object is gone from the bucket, or the address it is
+    // served under no longer resolves. Fired by the <video>'s own `error` event as well as by a
+    // refused playback address.
+    failed() {
+        this.unavailable = true;
+        this.paint();
     }
 
     // A seek starts: remember where the playhead was when it began. A drag fires this many times,
@@ -264,6 +276,8 @@ export default class extends Controller {
     }
 
     noteFor(duration, skipping) {
+        if (this.unavailable) return this.labelsValue.unavailable;
+
         if (this.pausedForFocus) return this.labelsValue.focusPaused;
 
         if (skipping) {

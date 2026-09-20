@@ -1,0 +1,18 @@
+{# The way into a « Visionnage »'s player, from wherever the travail is read - the dashboard card,
+   the « Derniers travaux » column and the travail's own page all include this rather than building
+   their own href, so a single screen carries the viewing and a single rule decides whether there is
+   anything to view.
+
+   `rewatch` only changes the wording. A watching stays open once it is done: the video is the
+   course, and a student revising it is doing exactly what it was given for - « Visionner » there
+   would suggest it is still owed.
+
+   Nothing is drawn when the travail carries no video: a « Visionnage » saved without one - which
+   the Paramétrage form still allows - would otherwise offer a button onto a screen that does not
+   exist (App\Controller\StudentWorkController::video answers 404). #}
+{% if assignment.videoResource %}
+    <a href="{{ path('app_student_work_video', {assignmentId: assignment.id}) }}"
+       class="{{ link_class|default('cm-tw-link') }}">
+        {{ (rewatch|default(false) ? 'studentWorkRewatchAction' : 'studentWorkWatchAction')|trans }}
+    </a>
+{% endif %}

@@ -287,15 +287,19 @@ class AssignmentController extends AbstractController
                 $context->videoResource?->setAssignment($saved);
 
                 if (null !== $context->libraryNode) {
-                    // The file is a **link**: the row carries the node's own storage key plus a
-                    // foreign key back to it.
-                    $this->workFactory->attach($saved, $context->libraryNode);
-
-                    // And a video opens the Vidéos tool's back door: the resource and its file are
+                    // A video opens the Vidéos tool's back door: the resource and its file are
                     // created here, referencing the same object, so the cue-point editor and the
                     // statistics screen are reached from the work exactly as they always were.
+                    //
+                    // And **only** that - no attachment row beside it. A watching is done by
+                    // watching, which the player measures; the same file offered again as a support
+                    // is a download button that settles nothing and hands the video over whole.
                     if (AssignmentNature::Watching === $saved->getNature()) {
                         $saved->setVideoResource($this->workFactory->createVideoResource($saved, $context->libraryNode, $this->currentUser()));
+                    } else {
+                        // The file is a **link**: the row carries the node's own storage key plus a
+                        // foreign key back to it.
+                        $this->workFactory->attach($saved, $context->libraryNode);
                     }
                 }
             }
@@ -306,7 +310,6 @@ class AssignmentController extends AbstractController
             // watching has no resource yet.
             $pickedVideo = $this->pickedLibraryVideo($form);
             if (null !== $pickedVideo && AssignmentNature::Watching === $saved->getNature() && null === $saved->getVideoResource()) {
-                $this->workFactory->attach($saved, $pickedVideo);
                 $saved->setVideoResource($this->workFactory->createVideoResource($saved, $pickedVideo, $this->currentUser()));
             }
 

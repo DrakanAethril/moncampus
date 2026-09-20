@@ -40,7 +40,12 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * is already long, and whose video actions are about watching rather than about answering.
  */
 #[IsGranted('ROLE_USER')]
-#[RequiresFeature(Feature::Video)]
+// Gated on `student_work`, not on `video`: the `video` feature is the teachers' « Vidéos » tool -
+// uploading, cue points, the statistics screen - and a student is never delivered it. What brings a
+// watching to a student is the travail itself, which StudentWorkController serves under
+// `student_work`; these routes are the same screen, split off only for length. Gated the other way,
+// every watching screen fired a 404 on its own markers with the delivered defaults.
+#[RequiresFeature(Feature::StudentWork)]
 class StudentVideoCueController extends AbstractController
 {
     public const string CSRF_TOKEN_ID = 'student_video_cue';

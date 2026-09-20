@@ -246,7 +246,15 @@ export default class extends Controller {
         const nature = this.element.querySelector('[name$="[nature]"]:checked')?.value;
 
         this.naturePaneTargets.forEach((pane) => {
-            pane.classList.toggle('d-none', !pane.dataset.natures.split(' ').includes(nature));
+            // A pane either names the types it belongs to, or the ones it does not. The second
+            // reading exists for the supports block, which belongs to every type but « Visionnage »
+            // - listing the other nine would make a new type lose its attachments by omission.
+            const { natures, naturesExcept } = pane.dataset;
+            const shown = undefined === naturesExcept
+                ? natures.split(' ').includes(nature)
+                : !naturesExcept.split(' ').includes(nature);
+
+            pane.classList.toggle('d-none', !shown);
         });
 
         this.refreshMultiDueBanner();

@@ -217,6 +217,12 @@
                                     {% if assignment.nature.expectsReading %}
                                         {% include 'student/_work_reading_link.html.twig' with {assignment: assignment, link_class: 'cm-inline-add'} only %}
                                     {% endif %}
+                                    {# And a « Visionnage » from here too, for the same reason: the
+                                       video is the travail, and the card otherwise names one with
+                                       no way of starting it. #}
+                                    {% if assignment.nature.expectsWatching %}
+                                        {% include 'student/_work_watch_link.html.twig' with {assignment: assignment, link_class: 'cm-inline-add'} only %}
+                                    {% endif %}
                                     {% if multi %}<span class="cm-dot-badge"><span class="cm-dot-badge__dot" style="background: {{ student.programMeta[assignment.program.id].color }}"></span>{{ assignment.program.displayShortName }}</span>{% endif %}
                                     <span class="cm-badge {{ assignment.nature.badgeClass }}">{{ assignment.nature.labelKey|trans }}</span>
                                 </span>
