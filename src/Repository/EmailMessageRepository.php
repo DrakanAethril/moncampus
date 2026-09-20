@@ -329,6 +329,55 @@ class EmailMessageRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * The student's own sends that are already filed under a démarche - the corpus
+     * App\Service\SchoolMailApplicationRecovery reads an incoming mail against.
+     *
+     * Loaded whole rather than queried address by address: `to_addresses` is a JSON column, a
+     * delivery failure notice quotes a handful of identifiers and addresses at once, and a student
+     * has tens of sends, not thousands. One query beats a dozen LIKEs over JSON text.
+     *
+     * @return list<EmailMessage>
+     */
+    public function findSendsWithApplicationForStudent(User $student): array
+    {
+        return $this->createQueryBuilder('m')
+            ->andWhere('m.student = :student')
+            ->andWhere('m.direction = :outbound')
+            ->andWhere('m.jobApplication IS NOT NULL')
+            ->setParameter('student', $student)
+            ->setParameter('outbound', EmailDirection::Outbound)
+            ->orderBy('m.messageDate', 'DESC')
+            ->addOrderBy('m.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Incoming mails that belong to a student but to no démarche - what the repair pass
+     * (App\Command\RelinkSchoolMailCommand) walks.
+     *
+     * Binned mails are included: the bin is the student's own tidying, and a failure notice they
+     * swept away is still the trace of a send that failed.
+     *
+     * @return list<EmailMessage>
+     */
+    public function findInboundWithoutApplication(?User $student = null): array
+    {
+        $qb = $this->createQueryBuilder('m')
+            ->andWhere('m.student IS NOT NULL')
+            ->andWhere('m.jobApplication IS NULL')
+            ->andWhere('m.direction = :inbound')
+            ->setParameter('inbound', EmailDirection::Inbound)
+            ->orderBy('m.id', 'ASC');
+
+        if (null !== $student) {
+            $qb->andWhere('m.student = :student')->setParameter('student', $student);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
     private function folderQueryBuilder(
         User $student,
         EmailDirection $direction,

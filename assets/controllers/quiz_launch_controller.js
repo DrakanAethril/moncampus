@@ -37,12 +37,16 @@ export default class extends Controller {
         'slider', 'hiddenInput', 'zoneBadge', 'barFacile', 'barMoyen', 'barDifficile',
         'legendFacile', 'legendMoyen', 'legendDifficile',
         'questionCount', 'sameQuestionsForAll', 'questionOrderPerStudent', 'answerOrderPerStudent',
-        'noteText',
+        'secondsPerQuestion', 'noteText',
     ];
 
     static values = {
         labels: Object,
         noteTemplate: String,
+        // templateId -> the quiz's own launch defaults (screen 1n), for the screen that picks the
+        // quiz here rather than arriving from it. Empty on the library's own launch screen, where
+        // the server put those defaults in the fields before rendering.
+        defaults: Object,
     };
 
     connect() {
@@ -69,6 +73,33 @@ export default class extends Controller {
                 : Number(event.detail.defaultTotal) || 0;
 
             this.questionCountTarget.value = String(Math.max(1, Math.min(desired, total)));
+        }
+
+        this.update();
+    }
+
+    // The base quiz was picked (or changed) on a screen opened without one. Launching a quiz must
+    // decide the same thing whichever door it came through, so the quiz's own settings are what the
+    // form then shows - the very ones the library's launch screen is rendered with. The draw's size
+    // is not among them: it follows the whole pool, and poolChanged() above owns it.
+    //
+    // Applied rather than merged: the quiz is the first field of the screen, so anything below it
+    // is still the previous quiz's answer, not the teacher's.
+    baseChanged(event) {
+        const defaults = this.defaultsValue[event.currentTarget.value];
+        if (defaults === undefined) {
+            return;
+        }
+
+        this.sameQuestionsForAllTarget.checked = Boolean(defaults.sameQuestions);
+        this.questionOrderPerStudentTarget.checked = Boolean(defaults.questionOrder);
+        this.answerOrderPerStudentTarget.checked = Boolean(defaults.answerOrder);
+
+        if (this.hasSecondsPerQuestionTarget) {
+            // null is « pas de limite » and must stay a blank field, never a number invented here.
+            this.secondsPerQuestionTarget.value = defaults.seconds === null || defaults.seconds === undefined
+                ? ''
+                : String(defaults.seconds);
         }
 
         this.update();

@@ -1,14 +1,28 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}{{ 'quizLaunchPageHeadingTemplate'|trans({'%name%': quizTemplate.name}) }}{% endblock %}
+{# Screen 1c, the two ways in. `quizTemplate` is the quiz the page is about when the launch was
+   started from the library; it is null when the screen was opened from « Quiz par classes » with
+   no quiz in mind, and the quiz is then the form's own first field. Everything else - the merge
+   rows, the draw, the rules - is one screen, deliberately (App\Controller\QuizLibraryController). #}
+{% set launchHeading = quizTemplate ? 'quizLaunchPageHeadingTemplate'|trans({'%name%': quizTemplate.name}) : 'quizLaunchPageHeading'|trans %}
+
+{% block title %}{{ launchHeading }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include 'library/_quiz_trail.html.twig' with {folderTrail: folderTrail, tail: [
-        {label: quizTemplate.name, url: path('app_library_quiz_questions', {id: quizTemplate.id})},
-        {label: 'quizLaunchBreadcrumbLabel'|trans, url: app.request.requestUri},
-    ]} only %}
+    {% if quizTemplate %}
+        {% include 'library/_quiz_trail.html.twig' with {folderTrail: folderTrail, tail: [
+            {label: quizTemplate.name, url: path('app_library_quiz_questions', {id: quizTemplate.id})},
+            {label: 'quizLaunchBreadcrumbLabel'|trans, url: app.request.requestUri},
+        ]} only %}
+    {% else %}
+        {% include '_breadcrumb.html.twig' with {segments: [
+            {label: 'homeNavLabel'|trans, url: path('app_home')},
+            {label: 'quizTrackingPageHeading'|trans, url: path('app_tools_quiz')},
+            {label: 'quizLaunchPageHeading'|trans, url: app.request.requestUri},
+        ]} %}
+    {% endif %}
 {% endblock %}
-{% block page_title %}{{ 'quizLaunchPageHeadingTemplate'|trans({'%name%': quizTemplate.name}) }}{% endblock %}
+{% block page_title %}{{ launchHeading }}{% endblock %}
 
 {% block main %}
     <div class="card">
@@ -24,7 +38,7 @@
                     <div>{{ 'quizLaunchIncompleteHintText'|trans }}</div>
                     <ul class="mb-0 mt-1 ps-3">
                         {% for question in incompleteQuestions|slice(0, 10) %}
-                            <li><a href="{{ path('app_library_quiz_questions', {id: quizTemplate.id, question: question.id}) }}">{{ question.label|length ? question.label : '—' }}</a></li>
+                            <li><a href="{{ path('app_library_quiz_questions', {id: incompleteTemplate.id, question: question.id}) }}">{{ question.label|length ? question.label : '—' }}</a></li>
                         {% endfor %}
                     </ul>
                 </div>
@@ -32,8 +46,11 @@
             <div class="row g-4 align-items-start"
                  data-controller="quiz-launch quiz-pool quiz-supervision-launch"
                  data-action="quiz-pool:change->quiz-launch#poolChanged"
-                 data-quiz-pool-base-count-value="{{ quizTemplate.questions|length }}"
-                 data-quiz-pool-base-default-count-value="{{ min(quizTemplate.defaultQuestionCount, quizTemplate.questions|length) }}"
+                 {# 0 when the base quiz is picked on the screen: it is then one more `select`
+                    target, exactly as on Outils > Concours live. #}
+                 data-quiz-pool-base-count-value="{{ quizTemplate ? quizTemplate.questions|length : 0 }}"
+                 data-quiz-pool-base-default-count-value="{{ quizTemplate ? min(quizTemplate.defaultQuestionCount, quizTemplate.questions|length) : 0 }}"
+                 data-quiz-launch-defaults-value="{{ launchDefaultsByTemplate|json_encode(constant('JSON_FORCE_OBJECT')) }}"
                  {# JSON_FORCE_OBJECT: a map of identifiers whose first key were 0 would be encoded as
                     an array, and the controller reads it by identifier. #}
                  data-quiz-pool-counts-value="{{ questionCountsByTemplate|json_encode(constant('JSON_FORCE_OBJECT')) }}"
@@ -54,6 +71,33 @@
                      noteAnswerOrderPerStudent: 'quizLaunchNoteAnswerOrderPerStudentText'|trans,
                      noteAnswerOrderSame: 'quizLaunchNoteAnswerOrderSameText'|trans,
                  }|json_encode }}">
+                {% if quizTemplate is null %}
+                    {# Step one, and the only question this screen asks that the library's own
+                       launch already knows the answer to. Above the two columns rather than inside
+                       one: everything below is read against it - the pool, the ceiling of the draw,
+                       and the quiz's own defaults, which quiz_launch_controller.js applies here the
+                       way the library hands them over there. #}
+                    <div class="col-12">
+                        <div class="cm-subhead">
+                            <div class="cm-subhead__title">{{ 'quizLaunchTemplateTitle'|trans }}</div>
+                            <div class="cm-subhead__hint">{{ 'quizLaunchTemplateHint'|trans }}</div>
+                        </div>
+                        {% if form.template.vars.choices is empty %}
+                            <div class="cm-note mt-2">
+                                <span class="cm-note__icon">i</span>
+                                <div>{{ 'quizLaunchEmptyLibraryMessage'|trans }} <a href="{{ path('app_library_quiz') }}">{{ 'quizLibraryPageHeading'|trans }}</a></div>
+                            </div>
+                        {% endif %}
+                        <div class="mt-2" style="max-width: 420px;">
+                            {# Label carried by the subhead just above, so the select is not
+                               announced twice. #}
+                            {{ form_row(form.template, {label: false, attr: {
+                                'data-quiz-pool-target': 'select',
+                                'data-action': 'change->quiz-pool#update change->quiz-launch#baseChanged',
+                            }}) }}
+                        </div>
+                    </div>
+                {% endif %}
                 <div class="col-12 col-lg-6 d-flex flex-column gap-3">
                     <div class="cm-subhead">
                         <div class="cm-subhead__title">{{ 'quizLaunchModeAndClassTitle'|trans }}</div>
@@ -103,13 +147,15 @@
                         <div class="cm-subhead__title">{{ 'quizLaunchQuestionSelectionTitle'|trans }}</div>
                         {# The number is refreshed by quiz_pool_controller.js on every quiz added or
                            removed: it is the size of the merged pool, not that of the quiz launched. #}
-                        <div class="cm-subhead__hint">{{ 'quizLaunchQuestionSelectionHintTemplate'|trans({'%count%': '<span data-quiz-pool-target="total">' ~ quizTemplate.questions|length ~ '</span>'})|raw }}</div>
+                        <div class="cm-subhead__hint">{{ 'quizLaunchQuestionSelectionHintTemplate'|trans({'%count%': '<span data-quiz-pool-target="total">' ~ (quizTemplate ? quizTemplate.questions|length : 0) ~ '</span>'})|raw }}</div>
                     </div>
                     <div class="cm-quizpool">
-                        <div class="cm-quizpool__base">
-                            <span class="cm-quizpool__name">{{ quizTemplate.name }}</span>
-                            <span class="cm-quizpool__count">{{ quizTemplate.questions|length }} {{ 'quizQuestionsCountLabel'|trans }}</span>
-                        </div>
+                        {% if quizTemplate %}
+                            <div class="cm-quizpool__base">
+                                <span class="cm-quizpool__name">{{ quizTemplate.name }}</span>
+                                <span class="cm-quizpool__count">{{ quizTemplate.questions|length }} {{ 'quizQuestionsCountLabel'|trans }}</span>
+                            </div>
+                        {% endif %}
                         <div class="cm-quizpool__rows" data-quiz-pool-target="rows">
                             {% for entry in form.additionalTemplates %}
                                 {{ include('library/_quiz_pool_row.html.twig', {entry: entry}) }}
@@ -121,7 +167,9 @@
                         {% endif %}
                     </div>
                     <div class="d-flex flex-column gap-1" style="max-width: 160px;">
-                        {{ form_widget(form.questionCount, {attr: {'data-quiz-launch-target': 'questionCount', 'data-action': 'input->quiz-launch#questionCountEdited', max: quizTemplate.questions|length}}) }}
+                        {# No ceiling before a quiz is picked: quiz_launch_controller.js sets one
+                           on the first pool change, and the server clamps in any case. #}
+                        {{ form_widget(form.questionCount, {attr: {'data-quiz-launch-target': 'questionCount', 'data-action': 'input->quiz-launch#questionCountEdited'}|merge(quizTemplate ? {max: quizTemplate.questions|length} : {})}) }}
                         {{ form_label(form.questionCount) }}
                     </div>
                     <div class="d-flex flex-column gap-2">
@@ -162,7 +210,7 @@
                         <div class="cm-subhead__title">{{ 'quizLaunchTimeTitle'|trans }}</div>
                     </div>
                     <div class="row g-3">
-                        <div class="col-6">{{ form_row(form.secondsPerQuestion) }}</div>
+                        <div class="col-6">{{ form_row(form.secondsPerQuestion, {attr: {'data-quiz-launch-target': 'secondsPerQuestion'}}) }}</div>
                         <div class="col-6">{{ form_row(form.globalTimeMinutes) }}</div>
                     </div>
                     <div class="cm-note">
@@ -211,8 +259,11 @@
             </div>
             <div class="cm-actionbar">
                 <div class="cm-actionbar__buttons">
-                    <a href="{{ path('app_library_quiz_questions', {id: quizTemplate.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                    {{ form_widget(form.submit, incompleteQuestions is not empty ? {attr: {disabled: 'disabled'}} : {}) }}
+                    <a href="{{ cancelUrl }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {# Disabled only where the quiz cannot be changed: on the screen that picks it,
+                       the way out of the warning is to pick another quiz, so the button stays
+                       live and the server refuses the launch again if it has to. #}
+                    {{ form_widget(form.submit, quizTemplate and incompleteQuestions is not empty ? {attr: {disabled: 'disabled'}} : {}) }}
                 </div>
             </div>
             {{ form_rest(form) }}

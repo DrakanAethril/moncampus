@@ -2839,6 +2839,11 @@ quizDifficultyZoneEquilibreLabel: 'Équilibré'
 quizDifficultyZonePlutotDifficileLabel: 'Plutôt difficile'
 quizDifficultyZoneTresDifficileLabel: 'Très difficile'
 quizLaunchPageHeadingTemplate: 'Lancer « %name% »'
+quizLaunchPageHeading: 'Lancer un quiz'
+quizLaunchTemplateFieldLabel: 'Quiz à lancer'
+quizLaunchTemplateTitle: 'Quiz à lancer'
+quizLaunchTemplateHint: "Le quiz est choisi ici : ses réglages par défaut remplissent le reste de l'écran."
+quizLaunchEmptyLibraryMessage: 'Votre bibliothèque ne contient encore aucun quiz :'
 quizLaunchBreadcrumbLabel: 'Lancer'
 quizLaunchModeAndClassTitle: 'Mode et classe'
 quizLaunchModeAndClassHint: "Une copie du quiz est créée à l'instant T pour cette classe"

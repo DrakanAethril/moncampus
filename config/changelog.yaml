@@ -26,6 +26,16 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.20'
+      date: '2026-09-20'
+      summary: "Un quiz se lance maintenant directement depuis « Quiz par classes », sans avoir à retrouver sa fiche dans la bibliothèque. Côté Courrier pro, un avis d'échec d'envoi se range de lui-même sous la démarche dont il parle."
+      entries:
+          - type: modification
+            title: "Lancer un quiz depuis « Quiz par classes »"
+            detail: "Un bouton « Lancer un quiz » s'ajoute à côté des onglets et ouvre l'écran de lancement avec le quiz comme premier champ ; la classe déjà filtrée arrive choisie. Les règles restent les mêmes quelle que soit la porte empruntée, et choisir un quiz applique ses propres réglages par défaut."
+          - type: fix
+            title: "Les avis d'échec d'envoi rejoignent leur démarche"
+            detail: "Le message qui signale qu'un envoi n'a pas pu être remis revenait dans la boîte sans être rattaché à rien. Il est désormais classé sous la démarche dont il parle, à condition que ce qu'il cite n'en désigne qu'une seule."
     - version: '2026.09.19'
       date: '2026-09-19'
       summary: "Un travail de visionnage se crée maintenant depuis l'assistant, et le suivi dit précisément ce que l'étudiant a regardé. Plus quelques gestes attendus : rendre au tirage un élève déjà sorti, joindre plusieurs pièces à un mail de postulation, et garder l'en-tête du barème sous les yeux pendant la saisie des notes."
