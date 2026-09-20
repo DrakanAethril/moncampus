@@ -1,13 +1,23 @@
 {# One « quiz added » row of a live contest's pool. This screen has no Symfony form: the template
    serves only as a prototype for quiz_pool_controller.js, which clones it on every addition.
    Hence the array-style name rather than an indexed one - the order of the rows is enough, a live
-   contest plays the pool in order. #}
+   contest plays the pool in order.
+
+   The select is behind the picker modal, as on screen 1c; with no form to hand a FormView over, the
+   shared wrapper is embedded and its `select` block written out here. #}
 <div class="cm-quizpool__row" data-quiz-pool-row>
-    <select class="form-select cm-quizpool__select" name="additionalTemplateIds[]" data-quiz-pool-target="select" data-action="change->quiz-pool#update">
-        <option value="">{{ 'quizLaunchAdditionalTemplatePlaceholder'|trans }}</option>
-        {% for template in templates %}
-            <option value="{{ template.id }}">{{ template.name }} · {{ template.questions|length }} {{ 'quizQuestionsCountLabel'|trans }}</option>
-        {% endfor %}
-    </select>
+    {% embed '_library_picker_field.html.twig' with {
+        templates: templates,
+        placeholder: 'quizLaunchAdditionalTemplatePlaceholder'|trans,
+    } only %}
+        {% block select %}
+            <select class="cm-pickfield__select" name="additionalTemplateIds[]" data-quiz-pool-target="select" data-action="change->quiz-pool#update">
+                <option value=""></option>
+                {% for template in templates %}
+                    <option value="{{ template.id }}">{{ template.name }}</option>
+                {% endfor %}
+            </select>
+        {% endblock %}
+    {% endembed %}
     <button type="button" class="cm-quizpool__remove" data-action="quiz-pool#remove" aria-label="{{ 'quizLaunchRemoveTemplateAction'|trans }}">&times;</button>
 </div>
