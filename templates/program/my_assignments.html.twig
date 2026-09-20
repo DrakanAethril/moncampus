@@ -1,6 +1,17 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'myAssignmentsPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
+
+{# Depth follows navigation: the entry lives in the formation's own submenu, so the formation is the
+   level above - reached, for a student, through its class list (App\Controller\ProgramController
+   lets an enrolled student in). Same trail as « Quiz », its neighbour in that submenu. #}
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.displayShortName, url: path('app_program_students', {id: program.id})},
+        {label: 'programMyAssignmentsNavLabel'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
 {% block page_title %}{{ 'myAssignmentsPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block main %}

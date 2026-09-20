@@ -8,8 +8,13 @@
 {% set state = row.state.value %}
 {% set production = row.expectation ? row.expectation.production : null %}
 {# A listening always has a brief, whatever else it carries: the panel is where its player lives,
-   so without it the travail would be unreachable. #}
-{% set hasBrief = assignment.description|default('')|trim is not empty or assignment.attachments|length > 0 or assignment.expectedProductions|length > 0 or assignment.nature.expectsListening %}
+   so without it the travail would be unreachable. A watching is the opposite case - its attachments
+   are not shown in the panel (the video is not a download), so they must not be what opens it
+   either, or « voir la consigne » would lead to an empty panel. #}
+{% set hasBrief = assignment.description|default('')|trim is not empty
+    or (assignment.attachments|length > 0 and not assignment.nature.expectsWatching)
+    or assignment.expectedProductions|length > 0
+    or assignment.nature.expectsListening %}
 
 {% set locked = row.item.isLocked() %}
 
@@ -66,6 +71,10 @@
                 {# A quiz already answered still has a copy to read, and « Quiz » is where it lives -
                    the row otherwise ends on a tag and no way back to what was handed in. #}
                 <a class="cm-tw-btn cm-tw-btn--ghost" href="{{ path('app_program_quiz_mine', {id: assignment.program.id}) }}">{{ 'programQuizViewCopyAction'|trans }}</a>
+            {% elseif assignment.nature.expectsWatching %}
+                {# A watching stays open once it is through: the video is the course, and a student
+                   going back over it is doing what it was given for. #}
+                {% include 'student/_work_watch_link.html.twig' with {assignment: assignment, link_class: 'cm-tw-btn cm-tw-btn--ghost', rewatch: true} only %}
             {% elseif assignment.nature.expectsSelfDeclaration %}
                 {% include 'student/_work_done_form.html.twig' with {assignment: assignment, undo: true} %}
             {% endif %}
@@ -96,7 +105,7 @@
             {% elseif assignment.nature.expectsWatching %}
                 {# A watching, unlike a listening, has a screen of its own: the bar that says what was
                    credited and what was skipped past does not fit in the panel, and it is the point. #}
-                <a class="cm-tw-btn cm-tw-btn--primary" href="{{ path('app_student_work_video', {assignmentId: assignment.id}) }}">{{ 'studentWorkWatchAction'|trans }}</a>
+                {% include 'student/_work_watch_link.html.twig' with {assignment: assignment, link_class: 'cm-tw-btn cm-tw-btn--primary'} only %}
             {% elseif assignment.nature.expectsSurvey and assignment.surveyCampaign %}
                 {# A survey has a screen of its own, « Mes sondages », because the anonymity notice
                    has to be read before the first question. And it deliberately has no « marquer

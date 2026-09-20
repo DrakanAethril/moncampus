@@ -65,7 +65,11 @@
         </div>
     {% endif %}
 
-    {% if assignment.attachments|length > 0 %}
+    {# Never on a « Visionnage », whatever is attached: the only file there is the video, and this
+       panel offering it as a download hands over whole what the travail asks to be watched. The
+       viewing is a screen of its own, which the row's own button opens. Works published before this
+       rule still carry that attachment row, hence a test on the nature rather than on the file. #}
+    {% if assignment.attachments|length > 0 and not assignment.nature.expectsWatching %}
         <div class="cm-tw-modal__section">
             <span class="cm-tw-modal__label">{{ 'studentWorkAttachmentsHeading'|trans }} · {{ assignment.attachments|length }}</span>
             {% for attachment in assignment.attachments %}

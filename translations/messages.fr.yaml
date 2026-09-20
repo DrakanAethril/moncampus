@@ -4502,6 +4502,7 @@ assignmentWizardLibraryVideoRequiredMessage: 'Choisissez la vidéo que ce travai
 assignmentWizardLibraryVideoEmptyMessage: 'Votre bibliothèque de fichiers ne contient encore aucune vidéo.'
 assignmentWizardLibraryVideoOpenLibraryAction: 'Ouvrir la bibliothèque'
 studentWorkWatchAction: 'Visionner'
+studentWorkRewatchAction: 'Revisionner'
 studentWorkWatchDueLabel: 'à rendre le %date%'
 studentWorkBackToListAction: 'Retour au travail à faire'
 studentWorkWatchCompleteLabel: 'Visionné'
@@ -4510,6 +4511,7 @@ studentWorkWatchNotStartedLabel: 'Non commencé'
 studentWorkWatchRemainingLabel: 'Il reste %time% à visionner.'
 studentWorkWatchSkippedLabel: "Vous avez repris sans avoir vu %from% → %to% : ce passage n'est pas compté."
 studentWorkWatchFocusPausedLabel: 'Lecture mise en pause : la page n''était plus au premier plan.'
+studentWorkWatchUnavailableLabel: "La vidéo n'a pas pu être chargée. Prévenez l'enseignant qui a donné ce travail."
 studentWorkWatchRuleNotice: 'Le travail est fait quand la vidéo a été regardée en entier, sans sauter de passage. Elle se met en pause dès que vous quittez cette page.'
 studentWorkWatchCreditedLegend: 'Visionné et crédité'
 studentWorkWatchSkippedLegend: 'Vu après un saut — non crédité'

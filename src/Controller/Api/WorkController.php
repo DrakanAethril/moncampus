@@ -145,7 +145,12 @@ class WorkController extends AbstractController
                 fn (StudentWorkExpectation $expectation): array => $this->formatExpectation($assignment, $expectation),
                 $item->expectations,
             ),
-            'attachments' => array_map(
+            // Never on a watching, whatever is attached: the only file there is the video, and
+            // handing it over as a support is giving away whole what the travail asks to be
+            // watched - `videoFiles` below is how it is served, one tracked stretch at a time. The
+            // web screens apply the same rule; works published before it still carry the row, hence
+            // a test on the nature rather than on what is attached.
+            'attachments' => AssignmentNature::Watching === $assignment->getNature() ? [] : array_map(
                 fn (AssignmentAttachment $attachment): array => $this->formatAttachment($attachment, $fileUploadService),
                 $assignment->getAttachments()->toArray(),
             ),
