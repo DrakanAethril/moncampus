@@ -1,6 +1,19 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ assignment.title }} - {{ program.displayShortName }}{% endblock %}
+
+{# One segment per intervening level: the formation, then its « Mes devoirs » list, then this
+   travail. The list is the level above whichever screen sent the reader here - the dashboard card
+   and « Travail à faire » both link straight to a travail, and a trail that skipped the list would
+   leave them no way up. #}
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: program.displayShortName, url: path('app_program_students', {id: program.id})},
+        {label: 'programMyAssignmentsNavLabel'|trans, url: path('app_program_my_assignments', {id: program.id})},
+        {label: assignment.title, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
 {% block page_title %}{{ assignment.title }}{% endblock %}
 
 {% block main %}
