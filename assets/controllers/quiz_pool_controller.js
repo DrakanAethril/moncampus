@@ -57,9 +57,12 @@ export default class extends Controller {
         this.rowsTarget.appendChild(row);
         this.update();
 
-        const select = row.querySelector('select');
-        if (select !== null) {
-            select.focus();
+        // The button where the launch screen has one - its select is behind the picker modal and
+        // cannot take focus (library_picker_controller.js); the live screen still has a plain
+        // select, and focusing it is what opens its list.
+        const focusable = row.querySelector('.cm-pickfield__button') ?? row.querySelector('select');
+        if (focusable !== null) {
+            focusable.focus();
         }
     }
 

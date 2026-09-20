@@ -11,6 +11,7 @@ use App\Entity\QuizAnswer;
 use App\Entity\QuizFolder;
 use App\Entity\QuizQuestion;
 use App\Entity\QuizTemplate;
+use App\Entity\User;
 use App\Enum\BlankMode;
 use App\Enum\ContentShareScope;
 use App\Enum\Feature;
@@ -34,6 +35,7 @@ use App\Security\Voter\QuizTemplateVoter;
 use App\Service\ContentShareAudience;
 use App\Service\FileUploadService;
 use App\Service\FormValue;
+use App\Service\LibraryPickerTree;
 use App\Service\MatchingImageStore;
 use App\Service\MixedJsonImporter;
 use App\Service\PostValue;
@@ -433,7 +435,7 @@ class QuizLibraryController extends AbstractController
     // results/instances stay teacher-visible (unlike the ROLE_ADMIN-only séquences Program side),
     // so there's no branching redirect based on role here.
     #[Route(path: '/library/quiz/{id}/launch', name: 'app_library_quiz_launch')]
-    public function launch(int $id, Request $request, QuizTemplateRepository $repository, QuizFolderRepository $folders, ProgramRepository $programRepository, StructureAccessChecker $accessChecker, QuizInstantiationService $instantiationService, QuizQuestionCompleteness $completeness): Response
+    public function launch(int $id, Request $request, QuizTemplateRepository $repository, QuizFolderRepository $folders, ProgramRepository $programRepository, StructureAccessChecker $accessChecker, QuizInstantiationService $instantiationService, QuizQuestionCompleteness $completeness, LibraryPickerTree $pickerTree): Response
     {
         $template = $this->findTemplateOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
@@ -446,6 +448,8 @@ class QuizLibraryController extends AbstractController
             $this->folderTrailOf($folders, $template->getFolder(), $this->currentUser()),
             $this->generateUrl('app_library_quiz_questions', ['id' => $template->getId()]),
             $request,
+            $folders,
+            $pickerTree,
             $programRepository,
             $accessChecker,
             $instantiationService,
@@ -466,7 +470,7 @@ class QuizLibraryController extends AbstractController
      * something one does from that quiz's own screen, where its name is on the page.
      */
     #[Route(path: '/library/quiz/launch', name: 'app_quiz_launch')]
-    public function launchAny(Request $request, QuizTemplateRepository $repository, ProgramRepository $programRepository, StructureAccessChecker $accessChecker, QuizInstantiationService $instantiationService, QuizQuestionCompleteness $completeness): Response
+    public function launchAny(Request $request, QuizTemplateRepository $repository, QuizFolderRepository $folders, ProgramRepository $programRepository, StructureAccessChecker $accessChecker, QuizInstantiationService $instantiationService, QuizQuestionCompleteness $completeness, LibraryPickerTree $pickerTree): Response
     {
         return $this->renderLaunchScreen(
             null,
@@ -476,6 +480,8 @@ class QuizLibraryController extends AbstractController
             [],
             $this->generateUrl('app_tools_quiz'),
             $request,
+            $folders,
+            $pickerTree,
             $programRepository,
             $accessChecker,
             $instantiationService,
@@ -491,7 +497,7 @@ class QuizLibraryController extends AbstractController
      * @param list<QuizTemplate> $libraryTemplates the quizzes on offer: the base one when it is still to be picked, and the merge rows in both cases
      * @param list<QuizFolder>   $folderTrail      the folders the quiz is filed under, for the breadcrumb - empty when the screen hangs off no folder at all
      */
-    private function renderLaunchScreen(?QuizTemplate $template, array $libraryTemplates, array $folderTrail, string $cancelUrl, Request $request, ProgramRepository $programRepository, StructureAccessChecker $accessChecker, QuizInstantiationService $instantiationService, QuizQuestionCompleteness $completeness): Response
+    private function renderLaunchScreen(?QuizTemplate $template, array $libraryTemplates, array $folderTrail, string $cancelUrl, Request $request, QuizFolderRepository $folders, LibraryPickerTree $pickerTree, ProgramRepository $programRepository, StructureAccessChecker $accessChecker, QuizInstantiationService $instantiationService, QuizQuestionCompleteness $completeness): Response
     {
         $programs = $this->instantiablePrograms($accessChecker, $programRepository);
         // The merge rows never offer the quiz being launched: it is in the pool already.
@@ -602,7 +608,52 @@ class QuizLibraryController extends AbstractController
             // Only where the quiz is picked on the screen: choosing it there must decide what
             // choosing it from the library decides.
             'launchDefaultsByTemplate' => null === $template ? $this->launchDefaultsByTemplate($libraryTemplates) : [],
+            // The library as a tree, for the picker modal both the base field and the merge rows
+            // open. One tree for the whole screen, whatever each field may actually offer: which
+            // quizzes a field accepts is written in its own <select>, and the modal reads it there
+            // (assets/controllers/library_picker_controller.js) rather than being rendered twice.
+            'pickerTree' => $pickerTree->build(
+                $this->pickerFolderRows($folders, $template?->getTeacher() ?? $this->currentUser()),
+                $this->pickerQuizRows($libraryTemplates),
+            ),
         ]);
+    }
+
+    /**
+     * The library's folders as the picker reads them - the owner's own, which for a quiz opened
+     * from somebody else's library is that teacher's: the quizzes on offer are theirs, so the
+     * classement they are filed under has to be theirs too.
+     *
+     * @return list<array{id: int, parentId: int|null, name: string}>
+     */
+    private function pickerFolderRows(QuizFolderRepository $folders, User $owner): array
+    {
+        return array_map(
+            static fn (QuizFolder $folder): array => [
+                'id' => (int) $folder->getId(),
+                'parentId' => $folder->getParent()?->getId(),
+                'name' => $folder->getName(),
+            ],
+            $folders->findAllFor($owner),
+        );
+    }
+
+    /**
+     * @param list<QuizTemplate> $templates
+     *
+     * @return list<array{id: int, folderId: int|null, label: string, count: int}>
+     */
+    private function pickerQuizRows(array $templates): array
+    {
+        return array_map(
+            static fn (QuizTemplate $template): array => [
+                'id' => (int) $template->getId(),
+                'folderId' => $template->getFolder()?->getId(),
+                'label' => $template->getName() ?? '',
+                'count' => $template->getQuestions()->count(),
+            ],
+            $templates,
+        );
     }
 
     /**

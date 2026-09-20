@@ -1,0 +1,85 @@
+{# Choosing an item in a library, by walking its folders - the modal half of the pattern, the other
+   being templates/_library_picker_field.html.twig.
+
+   It is the **rail's tree with the items in it** (templates/library/_quiz_rail_node.html.twig), and
+   deliberately so: there must not be two vocabularies for one classement in this application. What
+   a picker changes is what a folder is for - here one opens a folder to reach what is inside, so the
+   folders carry their items and a branch leading to nothing is not rendered at all
+   (App\Service\LibraryPickerTree).
+
+   **One modal serves every field of the screen.** Which items a field accepts is written in its own
+   <select>, and library_picker_controller.js reads it there before opening: rendering the tree once
+   per field would be the same list three times over, and three chances for them to disagree.
+
+   Parameters: `tree` from App\Service\LibraryPickerTree, `title`, `search_placeholder`,
+   `count_label` the unit an item counts in (« questions »), `empty_message` for a library with
+   nothing in it. #}
+{% macro node(row, countLabel) %}
+    <li class="cm-picker__folder is-collapsed" data-picker-folder>
+        <button type="button" class="cm-picker__folder-row" data-action="library-picker#toggle" aria-expanded="false">
+            <span class="cm-picker__caret" aria-hidden="true">
+                <svg width="9" height="9" viewBox="0 0 10 10" fill="currentColor"><path d="M3 1l5 4-5 4z"></path></svg>
+            </span>
+            <span class="cm-picker__ico" aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"></path></svg>
+            </span>
+            <span class="cm-picker__folder-name">{{ row.name }}</span>
+        </button>
+        <ul class="cm-picker__tree cm-picker__tree--nested">
+            {% for child in row.children %}
+                {{ _self.node(child, countLabel) }}
+            {% endfor %}
+            {% for item in row.items %}
+                {{ _self.item(item, countLabel) }}
+            {% endfor %}
+        </ul>
+    </li>
+{% endmacro %}
+
+{% macro item(item, countLabel) %}
+    {# `data-label` rather than the button's own text: the button also prints the count, and what the
+       field must show afterwards is the name alone. #}
+    <li class="cm-picker__item" data-picker-item data-value="{{ item.id }}" data-label="{{ item.label }}">
+        <button type="button" class="cm-picker__item-row" data-action="library-picker#choose">
+            <span class="cm-picker__ico" aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"></path><path d="M14 3v5h5M9 13h6M9 17h4"></path></svg>
+            </span>
+            <span class="cm-picker__item-name">{{ item.label }}</span>
+            {% if countLabel %}
+                <span class="cm-picker__item-meta">{{ item.count }} {{ countLabel }}</span>
+            {% endif %}
+        </button>
+    </li>
+{% endmacro %}
+
+{% set countLabel = count_label|default(null) %}
+<div class="cm-picker" data-library-picker-target="modal" hidden
+     data-action="click->library-picker#backdrop keydown.esc->library-picker#close">
+    <div class="cm-picker__box" role="dialog" aria-modal="true" aria-label="{{ title }}">
+        <div class="cm-picker__head">
+            <h2 class="cm-picker__title">{{ title }}</h2>
+            <button type="button" class="cm-picker__close" data-action="library-picker#close" aria-label="{{ 'fileLibraryCloseAction'|trans }}">&times;</button>
+        </div>
+        <div class="cm-picker__search">
+            <input type="search" class="form-control" autocomplete="off"
+                   placeholder="{{ search_placeholder|default('libraryPickerSearchPlaceholder'|trans) }}"
+                   data-library-picker-target="search" data-action="input->library-picker#search">
+        </div>
+        <div class="cm-picker__body">
+            <ul class="cm-picker__tree" data-library-picker-target="tree">
+                {% for row in tree.folders %}
+                    {{ _self.node(row, countLabel) }}
+                {% endfor %}
+                {% for item in tree.items %}
+                    {{ _self.item(item, countLabel) }}
+                {% endfor %}
+            </ul>
+            {# Two silences that are not the same thing: a library with nothing in it, and a search
+               that matches nothing. The second is the only one the modal can answer by itself. #}
+            <p class="cm-picker__empty" data-library-picker-target="empty" hidden>{{ 'libraryPickerNoMatchMessage'|trans }}</p>
+            {% if tree.folders is empty and tree.items is empty %}
+                <p class="cm-picker__empty">{{ empty_message|default('libraryPickerEmptyMessage'|trans) }}</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
