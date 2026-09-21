@@ -190,7 +190,7 @@ class StudentVideoCueController extends AbstractController
 
     private function findVisibleAssignmentOrNotFound(int $assignmentId): Assignment
     {
-        $assignment = $this->assignmentRepository->find($assignmentId) ?? throw $this->createNotFoundException();
+        $assignment = $this->assignmentRepository->findLive($assignmentId) ?? throw $this->createNotFoundException();
 
         if (!$assignment->isVisibleFor() || !$this->audienceResolver->isInAudience($assignment, $this->currentUser())) {
             throw $this->createNotFoundException();

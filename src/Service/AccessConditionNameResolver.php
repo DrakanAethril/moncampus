@@ -90,7 +90,7 @@ class AccessConditionNameResolver
                 static fn (Evaluation $evaluation): string => $evaluation->getName(),
             ),
             AccessConditionType::AssignmentDone => $this->named(
-                $this->assignmentRepository->findBy(['id' => $ids]),
+                $this->assignmentRepository->findLiveByIds($ids),
                 fn (Assignment $assignment): bool => $this->readsProgram($assignment->getProgram())
                     && ($this->accessChecker->isStaff() || $this->audienceResolver->isInAudience($assignment, $reader)),
                 static fn (Assignment $assignment): string => (string) $assignment->getTitle(),

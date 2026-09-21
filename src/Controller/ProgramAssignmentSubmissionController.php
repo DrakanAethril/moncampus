@@ -190,7 +190,7 @@ class ProgramAssignmentSubmissionController extends AbstractController
 
     private function findAssignmentForStudentOrNotFound(AssignmentRepository $repository, Program $program, int $assignmentId): Assignment
     {
-        $assignment = $repository->find($assignmentId) ?? throw $this->createNotFoundException();
+        $assignment = $repository->findLive($assignmentId) ?? throw $this->createNotFoundException();
 
         if ($assignment->getProgram()->getId() !== $program->getId()) {
             throw $this->createNotFoundException();

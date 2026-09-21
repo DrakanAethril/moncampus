@@ -231,7 +231,7 @@ class AccessConditionController extends AbstractController
     private function hostOrDeny(string $type, int $id): AccessConditionHost
     {
         $host = match ($type) {
-            AccessConditionHostKey::ASSIGNMENT => $this->assignmentRepository->find($id),
+            AccessConditionHostKey::ASSIGNMENT => $this->assignmentRepository->findLive($id),
             AccessConditionHostKey::QUIZ_INSTANCE => $this->quizInstanceRepository->find($id),
             AccessConditionHostKey::RESOURCE => $this->resourceRepository->find($id),
             AccessConditionHostKey::SEQUENCE => $this->sequenceRepository->find($id),

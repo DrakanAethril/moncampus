@@ -88,6 +88,14 @@ class FileLibraryLinks
 
         foreach ($this->attachmentsOf($node, AssignmentAttachment::class) as $row) {
             $assignment = $row->getAssignment();
+
+            // A deleted travail is not a usage: its row stays in the database, but the link below
+            // would open a 404, and « ce fichier sert à 3 travaux » would be counting one nobody
+            // can reach.
+            if (null !== $assignment && $assignment->isDeleted()) {
+                continue;
+            }
+
             $usages[] = [
                 'where' => 'fileLibraryUsageAssignmentLabel',
                 'what' => $assignment?->getTitle() ?? $row->getLabel(),

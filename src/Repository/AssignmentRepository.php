@@ -24,6 +24,47 @@ class AssignmentRepository extends ServiceEntityRepository
         parent::__construct($registry, Assignment::class);
     }
 
+    /**
+     * A travail by id, deleted ones excepted - the only correct way to look one up.
+     *
+     * `find()` is not: a soft deletion writes a date and leaves the row where it is, so the inherited
+     * finder keeps answering a travail nobody may open any more. Every screen and every API endpoint
+     * reaching for an assignment by its id goes through this.
+     */
+    public function findLive(int $id): ?Assignment
+    {
+        /** @var ?Assignment $assignment */
+        $assignment = $this->createQueryBuilder('a')
+            ->where('a.id = :id')
+            ->andWhere('a.deletedAt IS NULL')
+            ->setParameter('id', $id)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        return $assignment;
+    }
+
+    /**
+     * The same reading over a set of ids, for a screen naming several travaux at once.
+     *
+     * @param list<int> $ids
+     *
+     * @return list<Assignment>
+     */
+    public function findLiveByIds(array $ids): array
+    {
+        if ([] === $ids) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('a')
+            ->where('a.id IN (:ids)')
+            ->andWhere('a.deletedAt IS NULL')
+            ->setParameter('ids', $ids)
+            ->getQuery()
+            ->getResult();
+    }
+
     /** @return list<Assignment> */
     public function findForProgram(Program $program): array
     {
@@ -31,6 +72,7 @@ class AssignmentRepository extends ServiceEntityRepository
             ->addSelect('o')
             ->leftJoin('a.options', 'o')
             ->where('a.program = :program')
+            ->andWhere('a.deletedAt IS NULL')
             ->setParameter('program', $program)
             ->orderBy('a.dueDate', 'DESC')
             ->getQuery()
@@ -64,6 +106,7 @@ class AssignmentRepository extends ServiceEntityRepository
             ->leftJoin('a.expectedProductions', 'e')
             ->where('a.program IN (:programs)')
             ->andWhere('a.createdBy = :creator')
+            ->andWhere('a.deletedAt IS NULL')
             ->setParameter('programs', $programs)
             ->setParameter('creator', $creator)
             ->orderBy('a.dueDate', 'ASC')
@@ -80,6 +123,7 @@ class AssignmentRepository extends ServiceEntityRepository
             ->addSelect('o')
             ->leftJoin('a.options', 'o')
             ->where('a.lessonSession = :session')
+            ->andWhere('a.deletedAt IS NULL')
             ->setParameter('session', $session)
             ->orderBy('a.dueDate', 'ASC')
             ->getQuery()
@@ -102,6 +146,7 @@ class AssignmentRepository extends ServiceEntityRepository
         $assignment = $this->createQueryBuilder('a')
             ->addSelect('CASE WHEN a.gradebookEvaluation IS NULL THEN 1 ELSE 0 END AS HIDDEN converted')
             ->where('a.quizInstance = :instance')
+            ->andWhere('a.deletedAt IS NULL')
             ->setParameter('instance', $instance)
             ->orderBy('converted', 'ASC')
             ->addOrderBy('a.id', 'DESC')
@@ -130,6 +175,7 @@ class AssignmentRepository extends ServiceEntityRepository
             ->addSelect('o')
             ->leftJoin('a.options', 'o')
             ->where('a.lessonSession IN (:sessions)')
+            ->andWhere('a.deletedAt IS NULL')
             ->setParameter('sessions', $sessions)
             ->orderBy('a.dueDate', 'ASC')
             ->getQuery()
@@ -156,6 +202,7 @@ class AssignmentRepository extends ServiceEntityRepository
             ->leftJoin('a.options', 'o')
             ->leftJoin('a.lessonSession', 'l')
             ->where('a.program IN (:programs)')
+            ->andWhere('a.deletedAt IS NULL')
             // An assignment given from a séance only exists for the student once published; the
             // assignments of the historical screen were published by the migration, so they all pass.
             ->andWhere('a.visibleAt IS NOT NULL AND a.visibleAt <= :now')
@@ -185,6 +232,7 @@ class AssignmentRepository extends ServiceEntityRepository
             ->addSelect('o')
             ->leftJoin('a.options', 'o')
             ->where('a.evaluation IN (:evaluations)')
+            ->andWhere('a.deletedAt IS NULL')
             ->andWhere('a.nature = :nature')
             ->andWhere('a.visibleAt IS NOT NULL AND a.visibleAt <= :now')
             ->setParameter('evaluations', $evaluations)

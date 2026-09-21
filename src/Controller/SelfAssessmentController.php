@@ -331,7 +331,7 @@ class SelfAssessmentController extends AbstractController
 
     private function findSelfAssessmentWorkOrNotFound(AssignmentRepository $repository, int $assignmentId): Assignment
     {
-        $assignment = $repository->find($assignmentId) ?? throw $this->createNotFoundException();
+        $assignment = $repository->findLive($assignmentId) ?? throw $this->createNotFoundException();
         if (!$assignment->getNature()->expectsSelfAssessment() || null === $assignment->getEvaluation()) {
             throw $this->createNotFoundException();
         }

@@ -97,8 +97,20 @@
                                 {% endif %}
                             {% endif %}
                         </td>
-                        <td class="cm-worktable__action">
-                            <a href="{{ path('app_assignment_show', {id: assignment.id}) }}">{{ 'assignmentConsultAction'|trans }}</a>
+                        {# Consulter, Modifier, Supprimer - the three gestures a travail has, in that
+                           order. « Modifier » opens the wizard on the travail, as everywhere else: it
+                           is the only screen of an assignment. « Supprimer » is a soft deletion
+                           (App\Entity\Assignment::delete()), which is why the question it asks says
+                           what becomes of the students' productions rather than merely « Êtes-vous
+                           sûr ? ». #}
+                        <td class="cm-worktable__action cm-actions">
+                            <a class="cm-action--warning" href="{{ path('app_assignment_show', {id: assignment.id}) }}">{{ 'assignmentConsultAction'|trans }}</a>
+                            <a class="cm-action--neutral" href="{{ path('app_assignment_edit', {id: assignment.id}) }}">{{ 'editActionLabel'|trans }}</a>
+                            <form method="post" action="{{ path('app_assignment_delete', {id: assignment.id}) }}"
+                                  onsubmit="return confirm('{{ 'assignmentDeleteConfirmMessage'|trans|e('js') }}')">
+                                <input type="hidden" name="_token" value="{{ csrf_token('assignment_delete') }}">
+                                <button type="submit" class="cm-action--danger">{{ 'assignmentDeleteAction'|trans }}</button>
+                            </form>
                         </td>
                     </tr>
                 {% else %}
