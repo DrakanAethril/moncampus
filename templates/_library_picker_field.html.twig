@@ -1,0 +1,27 @@
+{# A library item chosen in a modal rather than in a <select> - the trigger half of the pattern, the
+   other being templates/_library_picker.html.twig.
+
+   **The select is still the field.** It stays in the form, keeps its name, its choices and its
+   server-side rule; it is merely not what the teacher reads any more, because a library of two
+   hundred quizzes is not a list one scrolls. The modal writes into it and fires a `change`, so every
+   controller already listening on it (quiz-pool, quiz-launch) goes on working untouched.
+
+   Parameters: `field` the form child, `placeholder` what the button says while nothing is chosen,
+   `select_attr` the attributes the select must keep (its targets and actions).
+
+   A screen with no Symfony form at all - Outils > Concours live - `embed`s this template instead and
+   overrides the `select` block with its own `<select>`. The wrapper, the button and the contract
+   with library_picker_controller.js stay written once. #}
+{% set placeholder = placeholder|default('libraryPickerChooseAction'|trans) %}
+<div class="cm-pickfield" data-picker-field data-picker-placeholder="{{ placeholder }}">
+    {% block select %}{{ form_widget(field, {attr: {class: 'cm-pickfield__select'}|merge(select_attr|default({}))}) }}{% endblock %}
+    <button type="button" class="cm-pickfield__button" data-action="library-picker#open">
+        <span class="cm-pickfield__ico" aria-hidden="true">
+            {# The item's own glyph, not a folder's: what the button holds once filled is one thing
+               taken out of the library, and the tree is where the folders are drawn. #}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"></path><path d="M14 3v5h5M9 13h6M9 17h4"></path></svg>
+        </span>
+        <span class="cm-pickfield__label" data-picker-label>{{ placeholder }}</span>
+        <span class="cm-pickfield__action">{{ 'libraryPickerBrowseAction'|trans }}</span>
+    </button>
+</div>

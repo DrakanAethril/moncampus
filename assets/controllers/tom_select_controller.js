@@ -7,7 +7,7 @@ import 'tom-select/dist/css/tom-select.bootstrap5.min.css';
  *
  * - Ajax search (no data-tom-select-create-value): fetches matching options from a JSON endpoint
  *   as the user types instead of the page ever rendering the full choice list server-side (see
- *   App\Controller\ProgramAssignmentController::studentsSearch() for the first caller). The
+ *   App\Controller\TicketController::assigneesSearch() for one caller). The
  *   endpoint must return `{results: [{id, text}], pagination: {more}}` - select2's ajax response
  *   shape, reused here since it's a simple, self-describing format (this project originally tried
  *   select2.js itself, but its minified bundle isn't safe to run under the strict mode ES modules

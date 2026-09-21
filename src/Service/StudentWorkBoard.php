@@ -60,9 +60,9 @@ class StudentWorkBoard
         $now ??= new \DateTimeImmutable();
         // Only the formations that run « Devoirs » here: the flag is cumulative with the feature,
         // exactly like « Visibilité de l'emploi du temps » next to it. It was applied on the
-        // writing side alone (App\Controller\ProgramAssignmentController answers 404 without it),
-        // so a formation switched off kept showing its students the works given before - and this
-        // board is what the screen, the dashboard card and the mobile feed all read.
+        // writing side alone (App\Controller\AssignmentController::teachingPrograms() drops the
+        // formation), so a formation switched off kept showing its students the works given
+        // before - and this board is what the screen, the dashboard card and the mobile feed read.
         $programs = array_values(array_filter(
             $this->programRepository->findAllActiveForStudent($student),
             static fn (Program $program): bool => $program->isAssignmentManagementEnabled(),

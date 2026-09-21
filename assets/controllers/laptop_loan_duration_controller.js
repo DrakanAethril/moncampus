@@ -1,7 +1,7 @@
 import { Controller } from '@hotwired/stimulus';
 
 /**
- * Offers "Durée indéfinie" on the two lend forms, and only on the loan types that may run without a
+ * Offers "Durée indéfinie" on the lend form, and only on the loan types that may run without a
  * return date - today the internal loan alone (App\Enum\LaptopLoanType::allowsIndefiniteDuration()).
  * The list of those types is handed down from the form rather than spelled out here, so the rule
  * stays in the enum.

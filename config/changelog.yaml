@@ -26,6 +26,22 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.21'
+      date: '2026-09-21'
+      summary: "Un travail se modifie, se supprime et ses dépôts se récupèrent en un seul téléchargement ; il n'est désormais visible que de l'enseignant qui l'a donné. Le quiz d'un lancement ou d'un concours se choisit dans l'arborescence de la bibliothèque plutôt que dans une longue liste."
+      entries:
+          - type: nouveaute
+            title: "Modifier ou supprimer un travail, et récupérer les dépôts des étudiants"
+            detail: "La liste des travaux porte désormais les trois gestes en bout de ligne : consulter, modifier, supprimer. Sur un travail à rendre, le suivi donne accès à chaque fichier déposé et permet de tout récupérer d'un coup, rangé par étudiant. Supprimer un travail ne détruit jamais les rendus."
+          - type: modification
+            title: "Un travail n'est visible que de l'enseignant qui l'a donné"
+            detail: "La liste des travaux montrait à tout le personnel ceux donnés par les autres enseignants de la classe. Un travail appartient à qui l'a donné : sa liste de destinataires et ses rendus disent ce que cet enseignant-là a demandé, et lui seul le voit."
+          - type: modification
+            title: "Choisir un quiz dans l'arborescence de la bibliothèque"
+            detail: "Au lancement d'un quiz comme à la création d'un concours, le quiz se choisissait dans une liste déroulante portant toute la bibliothèque, illisible passé quelques dizaines de quiz. Il se choisit maintenant dans une fenêtre qui reprend le classement par dossiers, avec recherche."
+          - type: interne
+            title: "Suppression de trois écrans que plus aucun lien n'atteignait"
+            detail: "Chacun doublait un écran vivant et c'est le doublon qui avait perdu son lien ; le code devenu inutile part avec eux."
     - version: '2026.09.20.4'
       date: '2026-09-20'
       summary: "Le suivi d'un travail de visionnage dit maintenant où en est chaque étudiant, et non plus seulement s'il a terminé."

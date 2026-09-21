@@ -8,7 +8,6 @@ import { Controller } from '@hotwired/stimulus';
 //
 // The "types" target scopes the read: those panels contain checkboxes of their own, and a
 // document-wide `input[type=checkbox]:checked` would count a picked programme as an audience.
-// Same reasoning as assignment_audience_controller.js, generalized to a set of values.
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = ['types', 'programField', 'recipientsField'];

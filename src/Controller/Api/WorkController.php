@@ -116,7 +116,7 @@ class WorkController extends AbstractController
         VideoUploadService $videoUploadService,
     ): JsonResponse {
         $student = $this->currentUser();
-        $assignment = $assignmentRepository->find($assignmentId);
+        $assignment = $assignmentRepository->findLive($assignmentId);
 
         if (null === $assignment || !$audienceResolver->isInAudience($assignment, $student)) {
             throw $this->createNotFoundException();
@@ -185,7 +185,7 @@ class WorkController extends AbstractController
         FileUploadService $fileUploadService,
     ): JsonResponse {
         $student = $this->currentUser();
-        $assignment = $assignmentRepository->find($assignmentId);
+        $assignment = $assignmentRepository->findLive($assignmentId);
 
         if (null === $assignment || !$assignment->isVisibleFor() || !$audienceResolver->isInAudience($assignment, $student)) {
             throw $this->createNotFoundException();
@@ -243,7 +243,7 @@ class WorkController extends AbstractController
         AudioListenTracker $listenTracker,
     ): JsonResponse {
         $student = $this->currentUser();
-        $assignment = $assignmentRepository->find($assignmentId);
+        $assignment = $assignmentRepository->findLive($assignmentId);
 
         if (null === $assignment || !$assignment->isVisibleFor() || !$audienceResolver->isInAudience($assignment, $student)) {
             throw $this->createNotFoundException();
@@ -287,7 +287,7 @@ class WorkController extends AbstractController
         VideoWatchTracker $watchTracker,
     ): JsonResponse {
         $student = $this->currentUser();
-        $assignment = $assignmentRepository->find($assignmentId);
+        $assignment = $assignmentRepository->findLive($assignmentId);
 
         if (null === $assignment || !$assignment->isVisibleFor() || !$audienceResolver->isInAudience($assignment, $student)) {
             throw $this->createNotFoundException();

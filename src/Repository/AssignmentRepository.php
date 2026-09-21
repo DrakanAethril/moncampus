@@ -24,6 +24,47 @@ class AssignmentRepository extends ServiceEntityRepository
         parent::__construct($registry, Assignment::class);
     }
 
+    /**
+     * A travail by id, deleted ones excepted - the only correct way to look one up.
+     *
+     * `find()` is not: a soft deletion writes a date and leaves the row where it is, so the inherited
+     * finder keeps answering a travail nobody may open any more. Every screen and every API endpoint
+     * reaching for an assignment by its id goes through this.
+     */
+    public function findLive(int $id): ?Assignment
+    {
+        /** @var ?Assignment $assignment */
+        $assignment = $this->createQueryBuilder('a')
+            ->where('a.id = :id')
+            ->andWhere('a.deletedAt IS NULL')
+            ->setParameter('id', $id)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        return $assignment;
+    }
+
+    /**
+     * The same reading over a set of ids, for a screen naming several travaux at once.
+     *
+     * @param list<int> $ids
+     *
+     * @return list<Assignment>
+     */
+    public function findLiveByIds(array $ids): array
+    {
+        if ([] === $ids) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('a')
+            ->where('a.id IN (:ids)')
+            ->andWhere('a.deletedAt IS NULL')
+            ->setParameter('ids', $ids)
+            ->getQuery()
+            ->getResult();
+    }
+
     /** @return list<Assignment> */
     public function findForProgram(Program $program): array
     {
@@ -31,6 +72,7 @@ class AssignmentRepository extends ServiceEntityRepository
             ->addSelect('o')
             ->leftJoin('a.options', 'o')
             ->where('a.program = :program')
+            ->andWhere('a.deletedAt IS NULL')
             ->setParameter('program', $program)
             ->orderBy('a.dueDate', 'DESC')
             ->getQuery()
@@ -42,34 +84,34 @@ class AssignmentRepository extends ServiceEntityRepository
      * all their classes at once, from the nearest to the furthest - an overdue assignment reads at
      * the top because it is the one whose submissions are coming in, not because it is old.
      *
-     * $creator restricts to the assignments given by the teacher themselves; null (staff) returns
-     * those of the whole team on the classes targeted.
+     * $creator is required rather than optional, and there is no "everybody" reading: a travail
+     * belongs to whoever gave it, so this list is always somebody's own - staff and administrators
+     * included. The web screen and the mobile 4d screen therefore answer the same thing.
      *
      * @param list<Program> $programs
      *
      * @return list<Assignment>
      */
-    public function findForPrograms(array $programs, ?User $creator = null): array
+    public function findForPrograms(array $programs, User $creator): array
     {
         if ([] === $programs) {
             return [];
         }
 
-        $builder = $this->createQueryBuilder('a')
+        return $this->createQueryBuilder('a')
             ->addSelect('o', 'p', 't', 'e')
             ->leftJoin('a.options', 'o')
             ->leftJoin('a.program', 'p')
             ->leftJoin('a.topic', 't')
             ->leftJoin('a.expectedProductions', 'e')
             ->where('a.program IN (:programs)')
+            ->andWhere('a.createdBy = :creator')
+            ->andWhere('a.deletedAt IS NULL')
             ->setParameter('programs', $programs)
-            ->orderBy('a.dueDate', 'ASC');
-
-        if (null !== $creator) {
-            $builder->andWhere('a.createdBy = :creator')->setParameter('creator', $creator);
-        }
-
-        return $builder->getQuery()->getResult();
+            ->setParameter('creator', $creator)
+            ->orderBy('a.dueDate', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 
     // The assignments given from a séance's cahier de texte (mockup 2a), all parts together - the
@@ -81,6 +123,7 @@ class AssignmentRepository extends ServiceEntityRepository
             ->addSelect('o')
             ->leftJoin('a.options', 'o')
             ->where('a.lessonSession = :session')
+            ->andWhere('a.deletedAt IS NULL')
             ->setParameter('session', $session)
             ->orderBy('a.dueDate', 'ASC')
             ->getQuery()
@@ -103,6 +146,7 @@ class AssignmentRepository extends ServiceEntityRepository
         $assignment = $this->createQueryBuilder('a')
             ->addSelect('CASE WHEN a.gradebookEvaluation IS NULL THEN 1 ELSE 0 END AS HIDDEN converted')
             ->where('a.quizInstance = :instance')
+            ->andWhere('a.deletedAt IS NULL')
             ->setParameter('instance', $instance)
             ->orderBy('converted', 'ASC')
             ->addOrderBy('a.id', 'DESC')
@@ -131,6 +175,7 @@ class AssignmentRepository extends ServiceEntityRepository
             ->addSelect('o')
             ->leftJoin('a.options', 'o')
             ->where('a.lessonSession IN (:sessions)')
+            ->andWhere('a.deletedAt IS NULL')
             ->setParameter('sessions', $sessions)
             ->orderBy('a.dueDate', 'ASC')
             ->getQuery()
@@ -157,6 +202,7 @@ class AssignmentRepository extends ServiceEntityRepository
             ->leftJoin('a.options', 'o')
             ->leftJoin('a.lessonSession', 'l')
             ->where('a.program IN (:programs)')
+            ->andWhere('a.deletedAt IS NULL')
             // An assignment given from a séance only exists for the student once published; the
             // assignments of the historical screen were published by the migration, so they all pass.
             ->andWhere('a.visibleAt IS NOT NULL AND a.visibleAt <= :now')
@@ -186,6 +232,7 @@ class AssignmentRepository extends ServiceEntityRepository
             ->addSelect('o')
             ->leftJoin('a.options', 'o')
             ->where('a.evaluation IN (:evaluations)')
+            ->andWhere('a.deletedAt IS NULL')
             ->andWhere('a.nature = :nature')
             ->andWhere('a.visibleAt IS NOT NULL AND a.visibleAt <= :now')
             ->setParameter('evaluations', $evaluations)

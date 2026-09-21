@@ -264,51 +264,10 @@ class LaptopController extends AbstractController
         ]);
     }
 
-    // Single-step lend form: the borrower is picked via an ajax tom-select field in the
-    // template (see lend.html.twig) instead of a separate "browse the whole active roster in a
-    // DataTable, then confirm" flow - that extra picker page/step turned out to be an unwieldy
-    // way to do what's really just a lookup by name.
-    #[Route(path: '/laptops/{id}/lend', name: 'app_laptops_lend')]
-    public function lendForm(Request $request, EntityManagerInterface $entityManager, LaptopRepository $repository, LaptopLoanRepository $loanRepository, UserRepository $userRepository, int $id): Response
-    {
-        $laptop = $this->assertLendable($repository, $loanRepository, $id);
-
-        $loan = (new LaptopLoan($laptop))->setLentBy($this->currentUser());
-
-        // The borrower must be resolved and set before handleRequest()/isValid() runs, not
-        // after like AuditableTrait's createdBy - LaptopLoan::$borrower carries an
-        // Assert\NotNull, so setting it only on success would make the form permanently
-        // invalid (borrower is null right up to the point isValid() runs). It's read from a
-        // plain top-level "borrower" field (not a mapped form child) the same way
-        // AssignmentType's manual_recipients is, since the candidate pool is the whole active
-        // user roster.
-        if ($request->isMethod('POST')) {
-            $loan->setBorrower($this->resolveActiveBorrower($userRepository, $request->request->get('borrower')));
-        }
-
-        $form = $this->createForm(LaptopLoanLendType::class, $loan);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->persist($loan);
-            $entityManager->flush();
-
-            $this->addFlash('success', 'laptopLentFlashMessage');
-
-            // To the loans list rather than the inventory: that is where the convention is offered
-            // for printing, right after the loan is saved.
-            return $this->redirectToRoute('app_laptops_loans', ['justSaved' => $loan->getId()]);
-        }
-
-        return $this->render('laptop/lend.html.twig', [
-            'form' => $form,
-            'laptop' => $laptop,
-        ]);
-    }
-
-    // 25a/25e's primary "Prêter un ordinateur" entry point - unlike lendForm() above (reached
-    // from one specific Inventaire row, laptop already fixed), this picks BOTH the student and
-    // the available laptop in the same form. The laptop is resolved from a raw "laptop" POST
+    // 25a/25e's "Prêter un ordinateur" entry point, and the only one: it picks BOTH the student
+    // and the available laptop in the same form. A second, per-machine form used to sit beside it
+    // (laptop already fixed, reached from one Inventaire row) - it was removed once it turned out
+    // no screen had ever linked to it. The laptop is resolved from a raw "laptop" POST
     // field exactly like "borrower" already is (LaptopLoan has no setLaptop() - it's
     // constructor-only by design, see the entity's docblock - so a real Laptop must be known
     // before the entity can be constructed at all). A placeholder empty Laptop stands in only
@@ -367,9 +326,9 @@ class LaptopController extends AbstractController
         ]);
     }
 
-    // Backs the "Étudiant" ajax tom-select field in loan_new.html.twig - unlike
-    // lendCandidatesSearch() above (scoped to one laptop just to assert it's still lendable),
-    // this has no laptop yet to scope against.
+    // Backs the "Étudiant" ajax tom-select field in loan_new.html.twig - only active
+    // (non-disabled) users are eligible, same "DB filters what it can" convention as
+    // UserRepository's other active-candidate queries (see findActiveMatchingRoles()).
     #[Route(path: '/laptops/loans/student-search', name: 'app_laptops_loans_student_search')]
     public function loanStudentSearch(Request $request, UserRepository $userRepository, ProgramRepository $programRepository): JsonResponse
     {
@@ -391,11 +350,10 @@ class LaptopController extends AbstractController
         ]);
     }
 
-    // Pre-selects "Type de prêt" as soon as a borrower is picked, on both lend forms, and says how
-    // many machines that borrower is already holding. A separate request rather than an extra key
-    // on the two search endpoints: the answer is needed once a borrower is chosen, not for each of
-    // the twenty candidates a search lists, and this keeps the rule in one place instead of two
-    // payloads.
+    // Pre-selects "Type de prêt" as soon as a borrower is picked, and says how many machines that
+    // borrower is already holding. A separate request rather than an extra key on the search
+    // endpoint: the answer is needed once a borrower is chosen, not for each of the twenty
+    // candidates a search lists.
     //
     // The running-loan count is a remark, never a refusal: lending several machines to the same
     // person is ordinary (a teacher equipping a room, a student with a second machine for a
@@ -420,26 +378,6 @@ class LaptopController extends AbstractController
             'activeLoansNotice' => $activeLoans > 0
                 ? $translator->trans('laptopLoanBorrowerAlreadyHoldsNoticeText', ['%count%' => $activeLoans])
                 : null,
-        ]);
-    }
-
-    // Backs the borrower ajax tom-select field in lend.html.twig - only active (non-disabled)
-    // users are eligible, same "DB filters what it can" convention as UserRepository's other
-    // active-candidate queries (see findActiveMatchingRoles()).
-    #[Route(path: '/laptops/{id}/lend-candidates', name: 'app_laptops_lend_candidates_search')]
-    public function lendCandidatesSearch(Request $request, LaptopRepository $repository, LaptopLoanRepository $loanRepository, UserRepository $userRepository, int $id): JsonResponse
-    {
-        $this->assertLendable($repository, $loanRepository, $id);
-        $limit = 20;
-
-        $candidates = $userRepository->findActiveMatchingRoles([], [], $request->query->get('q'));
-
-        return $this->json([
-            'results' => array_map(static fn (User $user): array => [
-                'id' => $user->getId(),
-                'text' => $user->getDisplayName() ?? $user->getUsername(),
-            ], array_slice($candidates, 0, $limit)),
-            'pagination' => ['more' => count($candidates) > $limit],
         ]);
     }
 
@@ -648,17 +586,6 @@ class LaptopController extends AbstractController
         ));
 
         return $response;
-    }
-
-    private function assertLendable(LaptopRepository $repository, LaptopLoanRepository $loanRepository, int $id): Laptop
-    {
-        $laptop = $this->findOrNotFound($repository, $id);
-
-        if (!$this->eligibility->isLendable($laptop, null !== $loanRepository->findActiveLoanForLaptop($laptop))) {
-            throw $this->createNotFoundException();
-        }
-
-        return $laptop;
     }
 
     // Re-resolves and re-checks the submitted laptop id server-side rather than trusting it -

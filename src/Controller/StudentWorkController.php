@@ -599,7 +599,7 @@ class StudentWorkController extends AbstractController
 
     private function findVisibleAssignmentOrNotFound(int $assignmentId, AssignmentRepository $repository, AssignmentAudienceResolver $audienceResolver): Assignment
     {
-        $assignment = $repository->find($assignmentId) ?? throw $this->createNotFoundException();
+        $assignment = $repository->findLive($assignmentId) ?? throw $this->createNotFoundException();
 
         // An unpublished assignment does not exist yet for the student, and a published one only
         // concerns them if they are part of its audience.

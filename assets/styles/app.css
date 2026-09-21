@@ -2552,6 +2552,59 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-quizpool__remove:hover { color: var(--cm-red-tx); }
 .cm-quizpool .cm-dashed-add:disabled { opacity: .5; cursor: not-allowed; }
 
+/* ---------- Picking an item in a library: the button, and the modal it opens ----------
+   The pair replaces a <select> over a whole library (templates/_library_picker_field.html.twig and
+   templates/_library_picker.html.twig). The select is still there and still carries the value - it
+   is only never displayed, hence `display: none` rather than the `hidden` attribute, which
+   Bootstrap's own display utilities would override on a field that happens to sit in a flex row. */
+.cm-pickfield { flex: 1; min-width: 0; }
+.cm-pickfield__select { display: none; }
+.cm-pickfield__button {
+    width: 100%; display: flex; align-items: center; gap: 8px; text-align: left; cursor: pointer;
+    padding: 8px 12px; background: var(--cm-surface); color: var(--cm-ink);
+    border: 1px solid var(--cm-border); border-radius: 9px; font: 400 13px var(--cm-font-ui);
+}
+.cm-pickfield__button:hover { border-color: var(--cm-brand); }
+.cm-pickfield__ico { flex: none; color: var(--cm-faint); display: flex; }
+.cm-pickfield__label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Nothing chosen yet: the button reads as a placeholder, the way the select it replaces did. */
+.cm-pickfield.is-empty .cm-pickfield__label { color: var(--cm-faint); }
+.cm-pickfield__action { flex: none; font-size: 12px; color: var(--cm-brand-strong); }
+
+.cm-picker { position: fixed; inset: 0; z-index: 1080; display: grid; place-items: center; background: rgba(18, 52, 77, .55); padding: 20px; }
+.cm-picker[hidden] { display: none; }
+.cm-picker__box {
+    width: min(520px, 100%); max-height: min(78vh, 620px); display: flex; flex-direction: column;
+    background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius);
+    box-shadow: 0 18px 48px rgba(18, 52, 77, .28);
+}
+.cm-picker__head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--cm-border-soft); }
+.cm-picker__title { flex: 1; min-width: 0; margin: 0; font: 600 14px var(--cm-font-ui); color: var(--cm-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-picker__close { border: 0; background: none; color: var(--cm-faint); font-size: 22px; line-height: 1; cursor: pointer; }
+.cm-picker__search { padding: 12px 16px; border-bottom: 1px solid var(--cm-border-soft); }
+.cm-picker__body { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 8px 12px; }
+.cm-picker__tree { list-style: none; margin: 0; padding: 0; }
+.cm-picker__tree--nested { padding-left: 16px; }
+.cm-picker__folder[hidden], .cm-picker__item[hidden] { display: none; }
+/* One triangle rotated by CSS, as in the library's own rail: two glyphs would be two states able to
+   drift apart. */
+.cm-picker__folder.is-collapsed > .cm-picker__tree { display: none; }
+.cm-picker__folder-row, .cm-picker__item-row {
+    width: 100%; display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 0;
+    background: none; border-radius: 7px; font: 400 13px var(--cm-font-ui); color: var(--cm-text);
+    text-align: left; cursor: pointer;
+}
+.cm-picker__folder-row:hover, .cm-picker__item-row:hover { background: var(--cm-surface-alt); color: var(--cm-ink); }
+.cm-picker__folder-row { font-weight: 600; color: var(--cm-ink); }
+.cm-picker__caret { flex: none; width: 10px; display: flex; color: var(--cm-faint); transition: transform .12s ease; }
+.cm-picker__folder:not(.is-collapsed) > .cm-picker__folder-row .cm-picker__caret { transform: rotate(90deg); }
+.cm-picker__ico { flex: none; display: flex; color: var(--cm-faint); }
+.cm-picker__item-row { padding-left: 26px; }
+.cm-picker__item-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-picker__item-meta { flex: none; font-size: 12px; color: var(--cm-faint); }
+.cm-picker__item.is-current > .cm-picker__item-row { background: var(--cm-blue-bg-soft); color: var(--cm-brand-strong); font-weight: 600; }
+.cm-picker__empty { margin: 12px 8px 4px; font-size: 13px; color: var(--cm-faint); }
+
 /* ---------- Gold variant of .cm-note (Ressources > Application e-CO "install before race day") ---------- */
 .cm-note--gold {
     background: var(--cm-gold-bg); border-color: color-mix(in srgb, var(--cm-gold) 45%, var(--cm-border));
@@ -5430,7 +5483,12 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-worktable__type { width: 100px; font: 600 12px var(--cm-font-ui); color: var(--cm-text); }
 .cm-worktable__class { width: 130px; }
 .cm-worktable__progress { width: 190px; }
-.cm-worktable__action { width: 96px; text-align: right; }
+/* 96px held the single « Consulter » this column used to carry; it now carries three gestures -
+   Consulter, Modifier, Supprimer - and .cm-actions lays them out (right-aligned, 14px apart, no
+   wrap). The width is stated all the same so the column does not breathe from one screen to the
+   next: the follow-up list is read by scanning the deadline column, and a table whose last column
+   resizes drags every other one with it. */
+.cm-worktable__action { width: 210px; text-align: right; }
 .cm-worktable__action a { font: 600 12.5px var(--cm-font-ui); color: var(--cm-brand-strong); text-decoration: none; }
 .cm-worktable__action a:hover { text-decoration: underline; }
 /* Two gestures on the same row - « Télécharger » then « Ouvrir ». The 96px above holds one button;
@@ -5468,6 +5526,12 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-worksummary__own-due { color: #8a6a1f; font-weight: 600; }
 /* « Convertir en note » sits at the far right of the banner, whatever the number of facts to its left. */
 .cm-worksummary__action { margin-left: auto; align-self: center; }
+
+/* The files one student handed in, on the follow-up table. One per line rather than a wrapped
+   sentence: a filename is read whole or not at all, and two of them running into each other is how
+   « rapport.pdf annexe.pdf » comes to look like a single name. */
+.cm-submission-files__row { display: block; }
+.cm-submission-files__row + .cm-submission-files__row { margin-top: 3px; }
 
 /* A modal whose body is a long form. Bootstrap's own `modal-dialog-scrollable` leaves the body at
    its full content height here - the dialog is capped, the body is not, so the footer's buttons end

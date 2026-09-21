@@ -23,8 +23,8 @@ use Symfony\Component\Validator\Constraints\Positive;
 // Screen 1b, right-hand question editor. Only the fixed fields live here - the answers list is a
 // dynamic client-side row set (assets/controllers/quiz_question_editor_controller.js) submitted as
 // raw answers[N][label]/answers[N][correct] request fields and resolved manually in
-// QuizLibraryController::questionSave(), same reasoning as AssignmentType's manualRecipients or
-// SequenceTemplateType's niveau/option/blocs (a Symfony CollectionType would fight the add/remove/
+// QuizLibraryController::questionSave(), same reasoning as the travail wizard's manual_recipients
+// (App\Controller\AssignmentController::applyAudience()) or SequenceTemplateType's niveau/option/blocs (a Symfony CollectionType would fight the add/remove/
 // reorder JS instead of driving it).
 class QuizQuestionType extends AbstractType
 {

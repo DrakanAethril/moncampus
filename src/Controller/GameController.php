@@ -237,26 +237,6 @@ class GameController extends AbstractController
         return $this->redirectToRoute('app_game_ranking');
     }
 
-    /** My team, and its threshold. */
-    #[Route(path: '/game/team', name: 'app_game_team', methods: ['GET'])]
-    public function team(Request $request, GameAccess $access, GameTeamBoard $board, GameSettingsProvider $settingsProvider): Response
-    {
-        $student = $this->currentUser();
-        $program = $access->primaryProgramFor($student) ?? throw $this->createNotFoundException();
-        $month = $this->requestedMonth($request);
-        [$from, $to] = [$month->firstDay(), $month->lastMoment()];
-
-        return $this->render('game/team.html.twig', [
-            'program' => $program,
-            'month' => $month,
-            'team' => $board->forStudent($student, $program, $from, $to),
-            'teamCount' => \count($board->teams($program, $from, $to)),
-            'reachedCount' => $board->reachedCount($program, $from, $to),
-            'settings' => $settingsProvider->for($program),
-            'me' => $student,
-        ]);
-    }
-
     /** Choosing a figure - three cards, a name, dates and one line on what the person did. */
     #[Route(path: '/game/alias', name: 'app_game_alias', methods: ['GET', 'POST'])]
     public function alias(Request $request, GameAccess $access, GameAliasDrawer $drawer, GameFigureRepository $figures): Response

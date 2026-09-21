@@ -20,7 +20,7 @@
         <form method="post" action="{{ path('app_program_quiz_live_create', {id: program.id}) }}">
             <input type="hidden" name="_token" value="{{ csrf_token('quiz_live_create') }}">
             <div class="card-body d-flex flex-column gap-3"
-                 data-controller="quiz-pool"
+                 data-controller="quiz-pool library-picker"
                  {# JSON_FORCE_OBJECT: a map of identifiers whose first key were 0 would be encoded as
                     an array, and the controller reads it by identifier. #}
                  data-quiz-pool-counts-value="{{ questionCountsByTemplate|json_encode(constant('JSON_FORCE_OBJECT')) }}"
@@ -30,17 +30,35 @@
                 {% else %}
                     <div>
                         <label class="form-label" for="quiz-live-name">{{ 'quizLaunchNameFieldLabel'|trans }}</label>
-                        <input type="text" class="form-control" id="quiz-live-name" name="name" maxlength="255" placeholder="{{ templates|first.name }}">
+                        {# No placeholder naming a quiz: the base one is no longer preselected (it is
+                           picked in the modal), so the first of the list is nobody's choice. #}
+                        <input type="text" class="form-control" id="quiz-live-name" name="name" maxlength="255">
                         <div class="form-hint">{{ 'quizLaunchNameFieldHint'|trans }}</div>
                     </div>
                     <div>
+                        {# No `required` on the select: it sits behind the picker modal and is never
+                           displayed, and an HTML5 rule on a control the browser cannot focus blocks
+                           the submit while showing nothing at all. The create action refuses an
+                           empty choice and says so (App\Controller\QuizLiveHostController).
+
+                           The placeholder option is new too: the quiz used to be the first of the
+                           list by default, which a button reading a name nobody chose would state
+                           as a decision. #}
                         <label class="form-label required" for="quiz-live-template">{{ 'quizLiveNewTemplateFieldLabel'|trans }}</label>
-                        <select class="form-select" id="quiz-live-template" name="templateId" required
-                                data-quiz-pool-target="select" data-action="change->quiz-pool#update">
-                            {% for template in templates %}
-                                <option value="{{ template.id }}">{{ template.name }} · {{ template.questions|length }} {{ 'quizQuestionsCountLabel'|trans }}</option>
-                            {% endfor %}
-                        </select>
+                        {% embed '_library_picker_field.html.twig' with {
+                            templates: templates,
+                            placeholder: 'quizLaunchAdditionalTemplatePlaceholder'|trans,
+                        } only %}
+                            {% block select %}
+                                <select class="cm-pickfield__select" id="quiz-live-template" name="templateId"
+                                        data-quiz-pool-target="select" data-action="change->quiz-pool#update">
+                                    <option value=""></option>
+                                    {% for template in templates %}
+                                        <option value="{{ template.id }}">{{ template.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            {% endblock %}
+                        {% endembed %}
                         <div class="form-hint">{{ 'quizLiveNewTemplateFieldHint'|trans }}</div>
                     </div>
                     <div class="cm-quizpool">
@@ -53,6 +71,16 @@
                         <input type="number" class="form-control" id="quiz-live-seconds" name="secondsPerQuestion" min="5" max="300">
                         <div class="form-hint">{{ 'quizLiveNewDefaultSecondsFieldHint'|trans }}</div>
                     </div>
+
+                    {# One modal for the screen: the base quiz and every merge row open the same
+                       tree, each filtered by what its own select offers. #}
+                    {% include '_library_picker.html.twig' with {
+                        tree: pickerTree,
+                        title: 'quizPickerTitle'|trans,
+                        search_placeholder: 'quizPickerSearchPlaceholder'|trans,
+                        count_label: 'quizQuestionsCountLabel'|trans,
+                        empty_message: 'quizPickerEmptyMessage'|trans,
+                    } only %}
                 {% endif %}
             </div>
             <div class="card-footer text-end">

@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Attribute\RequiresFeature;
 use App\Entity\Assignment;
 use App\Entity\AssignmentAttachment;
+use App\Entity\AssignmentSubmission;
 use App\Entity\AudioRecording;
 use App\Entity\Evaluation;
 use App\Entity\FileLibraryNode;
@@ -40,6 +41,7 @@ use App\Repository\TopicRepository;
 use App\Repository\UserRepository;
 use App\Repository\VideoResourceRepository;
 use App\Security\StructureAccessChecker;
+use App\Security\Voter\AssignmentVoter;
 use App\Security\Voter\EvaluationVoter;
 use App\Security\Voter\FileLibraryVoter;
 use App\Service\AssignmentAudienceResolver;
@@ -50,6 +52,7 @@ use App\Service\AssignmentNatureFields;
 use App\Service\AssignmentNatureRequirements;
 use App\Service\AssignmentProgressSummarizer;
 use App\Service\AssignmentQuizGradeConverter;
+use App\Service\AssignmentSubmissionArchiver;
 use App\Service\AssignmentWizardContext;
 use App\Service\FileLibraryWorkFactory;
 use App\Service\FileUploadService;
@@ -72,9 +75,10 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * the 2b list and the 2a creation wizard.
  *
  * Deliberately outside the /programs/{id}/… tree: a teacher works across several classes and the
- * mockup gives them a single page. The per-program screens (ProgramAssignmentController, on the
- * settings side) stay in place and serve another need - staff administering a program's
- * assignments.
+ * mockup gives them a single page. It is now the only place a travail is written: the per-program
+ * settings screens that used to double it (ProgramAssignmentController) were removed once it turned
+ * out nothing linked to them - see App\Controller\ProgramAssignmentSubmissionController for what
+ * stays on the /programs/{id} side, which is the student's own deposit.
  */
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 #[RequiresFeature(Feature::StudentWork)]
@@ -111,7 +115,11 @@ class AssignmentController extends AbstractController
         $programs = $this->teachingPrograms($programRepository);
         $now = new \DateTimeImmutable();
 
-        $assignments = $assignmentRepository->findForPrograms($programs, $this->accessChecker->isStaff() ? null : $this->currentUser());
+        // Always scoped to the author, staff and admin included: a travail belongs to whoever
+        // gave it, and this screen is « mes travaux », never the class's. An administrator who
+        // also teaches sees their own work here and nobody else's - what another teacher gave is
+        // read from that teacher's own screens, not from this list.
+        $assignments = $assignmentRepository->findForPrograms($programs, $this->currentUser());
 
         // Read through QueryValue, not the InputBag's own getInt(): every one of these four filters
         // offers a blank "Toutes/Tous" option, so the toolbar submits `?classe=&type=&etat=` as a
@@ -402,6 +410,15 @@ class AssignmentController extends AbstractController
         return $this->render('assignment/show.html.twig', [
             'assignment' => $assignment,
             'rows' => $rows,
+            // « Télécharger tous les dépôts » is offered on what there is to download, not on the
+            // nature: a travail à rendre nobody has answered yet would hand over an empty archive.
+            'depositCount' => array_sum(array_map(
+                static fn (AssignmentFollowUpRow $row): int => array_sum(array_map(
+                    static fn (AssignmentSubmission $submission): int => $submission->getFiles()->count(),
+                    $row->submissions,
+                )),
+                $rows,
+            )),
             'details' => $this->audienceDetails($assignment, $audienceResolver),
             'progress' => $summarizer->summarize([$assignment])[$assignment->getId()] ?? null,
             // « Convertir en note »: offered only where there is both something to convert (a quiz,
@@ -416,6 +433,62 @@ class AssignmentController extends AbstractController
                 ? null
                 : $this->conversionDefaults($assignment, $rows, $conversionTopics[0], $conversionEvaluation),
         ]);
+    }
+
+    /**
+     * « Supprimer » on a row of the list, and the only deletion of a travail there is.
+     *
+     * It is **soft** (App\Entity\Assignment::delete()): a travail holds the students' own
+     * productions - deposits, quiz attempts, listenings - and a teacher tidying their list must
+     * never be what takes a class's work away. The row keeps its place in the database, stamped
+     * with who deleted it and when; every screen stops naming it, on both sides at once.
+     *
+     * Who may do it is AssignmentVoter::MANAGE, which findOrNotFound() already asks: the author
+     * and nobody else, staff and administrators included.
+     */
+    #[Route(path: '/assignments/{id}/delete', name: 'app_assignment_delete', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function delete(int $id, Request $request, EntityManagerInterface $entityManager, AssignmentRepository $assignmentRepository, ProgramRepository $programRepository): Response
+    {
+        $assignment = $this->findOrNotFound($id, $assignmentRepository, $programRepository);
+
+        if (!$this->isCsrfTokenValid('assignment_delete', PostValue::string($request, '_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $assignment->delete($this->currentUser());
+        $entityManager->flush();
+
+        $this->addFlash('success', 'assignmentDeletedFlashMessage');
+
+        return $this->redirectToRoute('app_assignments');
+    }
+
+    /**
+     * « Télécharger tous les dépôts (.zip) » - one folder per student, holding what they handed in.
+     *
+     * Offered on a travail à rendre alone: it is the only nature that produces files. The reading is
+     * App\Service\AssignmentFollowUpBoard's, the very rows the table above prints, so the archive
+     * and the screen cannot disagree about who deposited what.
+     */
+    #[Route(path: '/assignments/{id}/submissions.zip', name: 'app_assignment_submissions_archive', methods: ['GET'], requirements: ['id' => '\d+'])]
+    public function submissionsArchive(
+        int $id,
+        AssignmentRepository $assignmentRepository,
+        ProgramRepository $programRepository,
+        AssignmentAudienceResolver $audienceResolver,
+        AssignmentFollowUpBoard $followUpBoard,
+        AssignmentSubmissionArchiver $archiver,
+    ): Response {
+        $assignment = $this->findOrNotFound($id, $assignmentRepository, $programRepository);
+
+        if (!$assignment->expectsSubmission()) {
+            throw $this->createNotFoundException();
+        }
+
+        $audience = $audienceResolver->resolveAudience($assignment);
+        usort($audience, static fn (User $a, User $b): int => ($a->getDisplayName() ?? $a->getUsername()) <=> ($b->getDisplayName() ?? $b->getUsername()));
+
+        return $archiver->respond($assignment, $followUpBoard->rows($assignment, $audience));
     }
 
     /**
@@ -912,9 +985,10 @@ class AssignmentController extends AbstractController
     }
 
     /**
-     * The recipients named one by one, ticked in the step 1 list. Same convention as
-     * ProgramAssignmentController: raw checkboxes rather than a form field, the list depending on
-     * the class chosen in the same screen.
+     * The recipients named one by one, ticked in the step 1 list: raw checkboxes read straight off
+     * the request rather than a form field, the list depending on the class chosen in the same
+     * screen. This is the convention the rest of the app points at for the same problem - see
+     * App\Form\MessageComposeType and App\Form\QuizQuestionType.
      */
     private function applyAudience(Assignment $assignment, Request $request, UserRepository $userRepository): void
     {
@@ -1172,11 +1246,21 @@ class AssignmentController extends AbstractController
         return false;
     }
 
+    /**
+     * The assignment behind an /assignments/{id} URL, or a 404. Two conditions, both of them
+     * silent: the class must be one the user teaches, and the travail must be one they gave
+     * themselves (AssignmentVoter::MANAGE). A colleague's travail - an administrator's included -
+     * does not exist here rather than being forbidden, exactly as the list never names it.
+     */
     private function findOrNotFound(int $id, AssignmentRepository $assignmentRepository, ProgramRepository $programRepository): Assignment
     {
-        $assignment = $assignmentRepository->find($id) ?? throw $this->createNotFoundException();
+        $assignment = $assignmentRepository->findLive($id) ?? throw $this->createNotFoundException();
 
         if (!$this->isAmong($assignment->getProgram(), $this->teachingPrograms($programRepository))) {
+            throw $this->createNotFoundException();
+        }
+
+        if (!$this->isGranted(AssignmentVoter::MANAGE, $assignment)) {
             throw $this->createNotFoundException();
         }
 
