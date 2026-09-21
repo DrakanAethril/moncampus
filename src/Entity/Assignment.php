@@ -18,9 +18,14 @@ use Symfony\Component\Validator\Constraints as Assert;
 /**
  * A generic "place to submit work" - see design/validated/assignment-submission-box.md. Not tied
  * to a LessonSession (part A optionally links to one from its travail avant/après slots, but
- * Assignment itself has no idea it's being used that way). Hard-deleted like LessonSession (no
- * inactiveDate lifecycle) - AuditableTrait is used only for createdBy/lastUpdatedBy tracking,
- * same as InternshipProgramInfo.
+ * Assignment itself has no idea it's being used that way). AuditableTrait is used only for
+ * createdBy/lastUpdatedBy tracking, same as InternshipProgramInfo - there is no inactiveDate
+ * lifecycle.
+ *
+ * **Deletion is soft** ($deletedAt/$deletedBy): a travail holds the students' own productions, so
+ * nothing about it is ever destroyed. Every query that lists travaux therefore asks
+ * `deletedAt IS NULL`, and App\Repository\AssignmentRepository::findLive() is how a travail is
+ * looked up by id - `find()` on this entity answers deleted rows like any other.
  */
 #[ORM\Entity(repositoryClass: AssignmentRepository::class)]
 #[ORM\Table(name: 'assignment')]
@@ -242,6 +247,23 @@ class Assignment implements AccessConditionHost
      */
     #[ORM\Column(name: 'read_tracking_enabled')]
     private bool $readTrackingEnabled = true;
+
+    /**
+     * The soft deletion, and the whole of it: a deleted travail leaves every screen at once - the
+     * teacher's list, the student's board, the cahier de texte, the mobile API - while its rows stay
+     * where they are. Nothing is ever destroyed here, which is the point: a travail carries the
+     * students' own productions, and a mis-click must not take a class's work away.
+     *
+     * There is deliberately no corbeille screen and no restore gesture: the pair is a trace, not a
+     * feature. Restoring means clearing `deleted_at` in the database, which is a decision somebody
+     * takes deliberately rather than a button beside the one that deleted it.
+     */
+    #[ORM\Column(name: 'deleted_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $deletedAt = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'deleted_by_id', nullable: true, onDelete: 'SET NULL')]
+    private ?User $deletedBy = null;
 
     /** @var Collection<int, AssignmentExpectedProduction> */
     #[ORM\OneToMany(mappedBy: 'assignment', targetEntity: AssignmentExpectedProduction::class, cascade: ['persist'], orphanRemoval: true)]
@@ -700,6 +722,35 @@ class Assignment implements AccessConditionHost
     public function expectsSubmission(): bool
     {
         return $this->nature->expectsSubmission();
+    }
+
+    public function getDeletedAt(): ?\DateTimeImmutable
+    {
+        return $this->deletedAt;
+    }
+
+    public function getDeletedBy(): ?User
+    {
+        return $this->deletedBy;
+    }
+
+    public function isDeleted(): bool
+    {
+        return null !== $this->deletedAt;
+    }
+
+    /**
+     * Stamped once. Deleting twice is a double click, not a second deletion, and the second one
+     * would rewrite who deleted the travail and when.
+     */
+    public function delete(User $by): static
+    {
+        if (null === $this->deletedAt) {
+            $this->deletedAt = new \DateTimeImmutable();
+            $this->deletedBy = $by;
+        }
+
+        return $this;
     }
 
     /** @return Collection<int, Option> */

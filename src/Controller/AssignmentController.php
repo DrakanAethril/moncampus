@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Attribute\RequiresFeature;
 use App\Entity\Assignment;
 use App\Entity\AssignmentAttachment;
+use App\Entity\AssignmentSubmission;
 use App\Entity\AudioRecording;
 use App\Entity\Evaluation;
 use App\Entity\FileLibraryNode;
@@ -51,6 +52,7 @@ use App\Service\AssignmentNatureFields;
 use App\Service\AssignmentNatureRequirements;
 use App\Service\AssignmentProgressSummarizer;
 use App\Service\AssignmentQuizGradeConverter;
+use App\Service\AssignmentSubmissionArchiver;
 use App\Service\AssignmentWizardContext;
 use App\Service\FileLibraryWorkFactory;
 use App\Service\FileUploadService;
@@ -408,6 +410,15 @@ class AssignmentController extends AbstractController
         return $this->render('assignment/show.html.twig', [
             'assignment' => $assignment,
             'rows' => $rows,
+            // « Télécharger tous les dépôts » is offered on what there is to download, not on the
+            // nature: a travail à rendre nobody has answered yet would hand over an empty archive.
+            'depositCount' => array_sum(array_map(
+                static fn (AssignmentFollowUpRow $row): int => array_sum(array_map(
+                    static fn (AssignmentSubmission $submission): int => $submission->getFiles()->count(),
+                    $row->submissions,
+                )),
+                $rows,
+            )),
             'details' => $this->audienceDetails($assignment, $audienceResolver),
             'progress' => $summarizer->summarize([$assignment])[$assignment->getId()] ?? null,
             // « Convertir en note »: offered only where there is both something to convert (a quiz,
@@ -422,6 +433,62 @@ class AssignmentController extends AbstractController
                 ? null
                 : $this->conversionDefaults($assignment, $rows, $conversionTopics[0], $conversionEvaluation),
         ]);
+    }
+
+    /**
+     * « Supprimer » on a row of the list, and the only deletion of a travail there is.
+     *
+     * It is **soft** (App\Entity\Assignment::delete()): a travail holds the students' own
+     * productions - deposits, quiz attempts, listenings - and a teacher tidying their list must
+     * never be what takes a class's work away. The row keeps its place in the database, stamped
+     * with who deleted it and when; every screen stops naming it, on both sides at once.
+     *
+     * Who may do it is AssignmentVoter::MANAGE, which findOrNotFound() already asks: the author
+     * and nobody else, staff and administrators included.
+     */
+    #[Route(path: '/assignments/{id}/delete', name: 'app_assignment_delete', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function delete(int $id, Request $request, EntityManagerInterface $entityManager, AssignmentRepository $assignmentRepository, ProgramRepository $programRepository): Response
+    {
+        $assignment = $this->findOrNotFound($id, $assignmentRepository, $programRepository);
+
+        if (!$this->isCsrfTokenValid('assignment_delete', PostValue::string($request, '_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $assignment->delete($this->currentUser());
+        $entityManager->flush();
+
+        $this->addFlash('success', 'assignmentDeletedFlashMessage');
+
+        return $this->redirectToRoute('app_assignments');
+    }
+
+    /**
+     * « Télécharger tous les dépôts (.zip) » - one folder per student, holding what they handed in.
+     *
+     * Offered on a travail à rendre alone: it is the only nature that produces files. The reading is
+     * App\Service\AssignmentFollowUpBoard's, the very rows the table above prints, so the archive
+     * and the screen cannot disagree about who deposited what.
+     */
+    #[Route(path: '/assignments/{id}/submissions.zip', name: 'app_assignment_submissions_archive', methods: ['GET'], requirements: ['id' => '\d+'])]
+    public function submissionsArchive(
+        int $id,
+        AssignmentRepository $assignmentRepository,
+        ProgramRepository $programRepository,
+        AssignmentAudienceResolver $audienceResolver,
+        AssignmentFollowUpBoard $followUpBoard,
+        AssignmentSubmissionArchiver $archiver,
+    ): Response {
+        $assignment = $this->findOrNotFound($id, $assignmentRepository, $programRepository);
+
+        if (!$assignment->expectsSubmission()) {
+            throw $this->createNotFoundException();
+        }
+
+        $audience = $audienceResolver->resolveAudience($assignment);
+        usort($audience, static fn (User $a, User $b): int => ($a->getDisplayName() ?? $a->getUsername()) <=> ($b->getDisplayName() ?? $b->getUsername()));
+
+        return $archiver->respond($assignment, $followUpBoard->rows($assignment, $audience));
     }
 
     /**
@@ -1187,7 +1254,7 @@ class AssignmentController extends AbstractController
      */
     private function findOrNotFound(int $id, AssignmentRepository $assignmentRepository, ProgramRepository $programRepository): Assignment
     {
-        $assignment = $assignmentRepository->find($id) ?? throw $this->createNotFoundException();
+        $assignment = $assignmentRepository->findLive($id) ?? throw $this->createNotFoundException();
 
         if (!$this->isAmong($assignment->getProgram(), $this->teachingPrograms($programRepository))) {
             throw $this->createNotFoundException();

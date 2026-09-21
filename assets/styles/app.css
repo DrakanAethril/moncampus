@@ -5483,7 +5483,12 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-worktable__type { width: 100px; font: 600 12px var(--cm-font-ui); color: var(--cm-text); }
 .cm-worktable__class { width: 130px; }
 .cm-worktable__progress { width: 190px; }
-.cm-worktable__action { width: 96px; text-align: right; }
+/* 96px held the single « Consulter » this column used to carry; it now carries three gestures -
+   Consulter, Modifier, Supprimer - and .cm-actions lays them out (right-aligned, 14px apart, no
+   wrap). The width is stated all the same so the column does not breathe from one screen to the
+   next: the follow-up list is read by scanning the deadline column, and a table whose last column
+   resizes drags every other one with it. */
+.cm-worktable__action { width: 210px; text-align: right; }
 .cm-worktable__action a { font: 600 12.5px var(--cm-font-ui); color: var(--cm-brand-strong); text-decoration: none; }
 .cm-worktable__action a:hover { text-decoration: underline; }
 /* Two gestures on the same row - « Télécharger » then « Ouvrir ». The 96px above holds one button;
@@ -5521,6 +5526,12 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-worksummary__own-due { color: #8a6a1f; font-weight: 600; }
 /* « Convertir en note » sits at the far right of the banner, whatever the number of facts to its left. */
 .cm-worksummary__action { margin-left: auto; align-self: center; }
+
+/* The files one student handed in, on the follow-up table. One per line rather than a wrapped
+   sentence: a filename is read whole or not at all, and two of them running into each other is how
+   « rapport.pdf annexe.pdf » comes to look like a single name. */
+.cm-submission-files__row { display: block; }
+.cm-submission-files__row + .cm-submission-files__row { margin-top: 3px; }
 
 /* A modal whose body is a long form. Bootstrap's own `modal-dialog-scrollable` leaves the body at
    its full content height here - the dialog is capped, the body is not, so the footer's buttons end

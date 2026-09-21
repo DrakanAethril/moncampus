@@ -2054,6 +2054,7 @@ assignmentFollowUpNotDoneLabel: 'Non fait'
 assignmentFollowUpDoneAtColumnLabel: 'Fait le'
 assignmentFollowUpBelowThresholdLabel: 'Répondu, sous le seuil'
 assignmentFollowUpScoreColumnLabel: 'Score'
+assignmentFollowUpFilesColumnLabel: 'Fichiers déposés'
 assignmentFollowUpViewCopyAction: 'Voir la copie'
 assignmentFollowUpPointsColumnLabel: 'Note'
 assignmentFollowUpScoreOn20ColumnLabel: 'Sur 20'
@@ -3742,7 +3743,7 @@ lessonLogImportNote: "Reprendre une séance enregistre immédiatement : c'est ce
 lessonLogAttachmentModalTitle: 'Ajouter un document — %section%'
 lessonLogImportLibraryLabel: 'La séance source de ma bibliothèque'
 lessonLogWorkRemoveConfirmMessage: 'Supprimer ce travail ?'
-lessonLogWorkRemoveStartedConfirmMessage: 'Des étudiants ont déjà déposé ou déclaré avoir fini ce travail. Le supprimer effacera aussi leurs productions. Continuer ?'
+lessonLogWorkRemoveStartedConfirmMessage: 'Des étudiants ont déjà déposé ou déclaré avoir fini ce travail. Le supprimer le retirera de leur liste ; leurs productions, elles, sont conservées. Continuer ?'
 lessonLogWorkRemovedFlashMessage: 'Le travail a été supprimé avec succès.'
 lessonLogWorkRemoveAction: 'Supprimer'
 lessonLogImportedFlashMessage: "Le cahier de texte a été importé avec succès."
@@ -4317,6 +4318,10 @@ assignmentQuizClosesBeforeDueDateFlashMessage: "Attention : ce quiz ferme avant 
 # « travail », jamais « devoir » : assignmentUpdatedFlashMessage garde le vocabulaire de l'écran de
 # paramétrage des devoirs, celui-ci porte celui de l'assistant.
 assignmentSavedFlashMessage: 'Le travail a été enregistré.'
+assignmentDeleteConfirmMessage: 'Supprimer ce travail ? Il disparaîtra de votre liste et de celle des étudiants ; les fichiers déjà déposés sont conservés.'
+assignmentDeleteAction: 'Supprimer'
+assignmentDeletedFlashMessage: 'Le travail a été supprimé.'
+assignmentSubmissionsArchiveAction: 'Télécharger tous les dépôts (.zip)'
 
 # --- Corrections audio (design_handoff_enregistrements_audio, renommé par file-library.md) ---
 # Le libellé affiché est « Corrections audio » depuis que la bibliothèque de fichiers existe : un

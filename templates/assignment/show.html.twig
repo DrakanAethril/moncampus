@@ -50,6 +50,14 @@
                     </button>
                 </div>
             {% endif %}
+            {# « Télécharger tous les dépôts » - the whole class's files as one archive, a folder per
+               student. Offered on a travail à rendre alone, and only once somebody has actually
+               handed something in: an empty ZIP is not an answer to « où en sont-ils ». #}
+            {% if assignment.expectsSubmission and depositCount > 0 %}
+                <div class="cm-worksummary__action">
+                    <a class="cm-btn cm-btn--secondary" href="{{ path('app_assignment_submissions_archive', {id: assignment.id}) }}" data-turbo="false">{{ 'assignmentSubmissionsArchiveAction'|trans }}</a>
+                </div>
+            {% endif %}
             {# The detailed follow-up - retention curve, skips, focus losses - lives on the video
                tool's own screen, which only its author and the administration may open. This is a
                door onto it, not a second reading of it. #}
@@ -100,6 +108,11 @@
                             <th>{{ 'assignmentFollowUpStartedAtColumnLabel'|trans }}</th>
                         {% endif %}
                         <th>{{ assignment.followUpDateColumnLabelKey|trans }}</th>
+                        {# What the student handed in, file by file. Only a travail à rendre has
+                           any: the other ten natures leave a date and nothing to download. #}
+                        {% if assignment.expectsSubmission %}
+                            <th>{{ 'assignmentFollowUpFilesColumnLabel'|trans }}</th>
+                        {% endif %}
                         {% if assignment.quizInstance %}
                             <th>{{ 'assignmentFollowUpScoreColumnLabel'|trans }}</th>
                             {# The mark as the quiz counted it, then the same mark on 20. The
@@ -128,6 +141,27 @@
                                 <td>{{ row.startedAt ? row.startedAt|date('d/m/Y H:i') : '—' }}</td>
                             {% endif %}
                             <td>{{ row.doneAt ? row.doneAt|date('d/m/Y H:i') : '—' }}</td>
+                            {% if assignment.expectsSubmission %}
+                                <td class="cm-submission-files">
+                                    {%- set files = row.submissions|reduce((total, submission) => total + submission.files|length, 0) -%}
+                                    {%- if files == 0 -%}
+                                        —
+                                    {%- else -%}
+                                        {%- for submission in row.submissions -%}
+                                            {%- for file in submission.files -%}
+                                                {# download_url() and not file_url(): the object is stored
+                                                   under a random key, so the CDN address would land in
+                                                   the teacher's Téléchargements folder under a
+                                                   hexadecimal name. #}
+                                                <span class="cm-submission-files__row">
+                                                    <a href="{{ download_url(file.storageKey, file.originalFilename) }}" data-turbo="false">{{ file.originalFilename }}</a>
+                                                    {%- if submission.expectedProduction %} <span class="text-secondary">({{ submission.expectedProduction.name }})</span>{% endif -%}
+                                                </span>
+                                            {%- endfor -%}
+                                        {%- endfor -%}
+                                    {%- endif -%}
+                                </td>
+                            {% endif %}
                             {% if assignment.quizInstance %}
                                 <td>{{ row.scorePercent is not null ? row.scorePercent|round ~ ' %' : '—' }}</td>
                                 <td>{{ row.hasMark ? row.pointsEarnedLabel ~ ' / ' ~ row.pointsAvailable : '—' }}</td>
@@ -144,7 +178,7 @@
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="{{ assignment.quizInstance ? 7 : (assignment.videoResource ? 5 : 3) }}" class="text-secondary">{{ 'assignmentShowNoAudienceMessage'|trans }}</td>
+                            <td colspan="{{ assignment.quizInstance ? 7 : (assignment.videoResource ? 5 : (assignment.expectsSubmission ? 4 : 3)) }}" class="text-secondary">{{ 'assignmentShowNoAudienceMessage'|trans }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>

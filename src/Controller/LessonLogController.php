@@ -390,9 +390,10 @@ class LessonLogController extends AbstractController
     }
 
     /**
-     * Delete a given assignment. A deliberate gesture, including when students have already
-     * submitted or declared themselves finished - the import, by contrast, refuses and spares them.
-     * The screen warns more firmly in that case, since deletion carries their productions away too.
+     * Delete a given assignment. The same gesture as the « Travaux » list's, and the same deletion:
+     * **soft** (App\Entity\Assignment::delete()). The travail leaves this séance and every other
+     * screen at once, while the students' own productions stay exactly where they are - which is
+     * why this route no longer asks the teacher to weigh whether anyone has already handed in.
      */
     #[Route(path: '/programs/{id}/timetable/sessions/{sessionId}/log/assignments/{assignmentId}/delete', name: 'app_program_timetable_session_log_work_remove', methods: ['POST'], requirements: ['assignmentId' => '\d+'])]
     public function removeWork(int $id, int $sessionId, int $assignmentId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, LessonSessionRepository $lessonSessionRepository, AssignmentRepository $assignmentRepository): Response
@@ -405,12 +406,12 @@ class LessonLogController extends AbstractController
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        $assignment = $assignmentRepository->find($assignmentId) ?? throw $this->createNotFoundException();
+        $assignment = $assignmentRepository->findLive($assignmentId) ?? throw $this->createNotFoundException();
         if ($assignment->getLessonSession()?->getId() !== $session->getId()) {
             throw $this->createNotFoundException();
         }
 
-        $entityManager->remove($assignment);
+        $assignment->delete($this->currentUser());
         $entityManager->flush();
 
         $this->addFlash('success', 'lessonLogWorkRemovedFlashMessage');
