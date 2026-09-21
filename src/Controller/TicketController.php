@@ -120,7 +120,7 @@ class TicketController extends AbstractController
     // Backs the assignee ajax tom-select fields in both ticket/show.html.twig's manage panel and
     // the queue's assignee filter (_queue_content.html.twig) - only active users matching
     // TicketVoter::HANDLER_ROLES are eligible, same "DB filters what it can" convention as
-    // LaptopController::lendCandidatesSearch().
+    // LaptopController::loanStudentSearch().
     #[IsGranted(new Expression(self::HANDLER_ACCESS_EXPRESSION))]
     #[Route(path: '/tickets/assignees-search', name: 'app_tickets_assignees_search')]
     public function assigneesSearch(Request $request, UserRepository $userRepository): JsonResponse

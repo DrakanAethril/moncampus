@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Enum;
 
 // Never persisted - purely a derived, per-student display value computed by
-// App\Controller\ProgramAssignmentController from an audience list and existing
+// App\Controller\ProgramAssignmentSubmissionController from an audience list and existing
 // AssignmentSubmission rows (a student either has no submission, an on-time one, or a late one).
 enum AssignmentSubmissionStatus: string
 {

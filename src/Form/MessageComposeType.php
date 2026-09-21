@@ -34,8 +34,8 @@ use Symfony\Component\Validator\Constraints\NotBlank;
 // reads the checked fields back into MessageThread's audience through
 // applyComposedAudience(), late-joiner sync (App\Service\MessageThreadRecipientSyncer) included.
 //
-// Manual recipients are deliberately NOT a form field here, same reasoning as AssignmentType's
-// manualRecipients: with potentially hundreds of active users, an EntityType/ChoiceType would
+// Manual recipients are deliberately NOT a form field here, same reasoning as the travail wizard's
+// manual_recipients (App\Controller\AssignmentController::applyAudience()): with potentially hundreds of active users, an EntityType/ChoiceType would
 // have to render every choice regardless of which ones get picked. The tom-select ajax widget in
 // the template submits a plain `recipients[]` array outside this form's namespace, resolved
 // server-side by App\Service\MessagingAccessChecker::resolveManualRecipients(), which only ever

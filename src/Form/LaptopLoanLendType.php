@@ -23,9 +23,10 @@ use Symfony\Component\Form\FormView;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 // The laptop and borrower are set on the entity by the controller before this form is built,
-// not editable form fields here - see LaptopController::lendForm(). The borrower is instead
-// picked via a plain ajax tom-select field embedded directly in lend.html.twig (resolved from a
-// top-level "borrower" POST field, same convention as AssignmentType's manual_recipients).
+// not editable form fields here - see LaptopController::newLoanForm(). Both are instead picked via
+// plain ajax tom-select fields embedded directly in loan_new.html.twig (resolved from top-level
+// "laptop"/"borrower" POST fields, same convention as the wizard's manual_recipients, read by
+// App\Controller\AssignmentController::applyAudience()).
 class LaptopLoanLendType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
