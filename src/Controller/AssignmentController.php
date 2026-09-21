@@ -73,9 +73,10 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * the 2b list and the 2a creation wizard.
  *
  * Deliberately outside the /programs/{id}/… tree: a teacher works across several classes and the
- * mockup gives them a single page. The per-program screens (ProgramAssignmentController, on the
- * settings side) stay in place and serve another need - staff administering a program's
- * assignments.
+ * mockup gives them a single page. It is now the only place a travail is written: the per-program
+ * settings screens that used to double it (ProgramAssignmentController) were removed once it turned
+ * out nothing linked to them - see App\Controller\ProgramAssignmentSubmissionController for what
+ * stays on the /programs/{id} side, which is the student's own deposit.
  */
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN") or is_granted("ROLE_STAFF") or is_granted("ROLE_STAFF-LEAD")'))]
 #[RequiresFeature(Feature::StudentWork)]
@@ -917,9 +918,10 @@ class AssignmentController extends AbstractController
     }
 
     /**
-     * The recipients named one by one, ticked in the step 1 list. Same convention as
-     * ProgramAssignmentController: raw checkboxes rather than a form field, the list depending on
-     * the class chosen in the same screen.
+     * The recipients named one by one, ticked in the step 1 list: raw checkboxes read straight off
+     * the request rather than a form field, the list depending on the class chosen in the same
+     * screen. This is the convention the rest of the app points at for the same problem - see
+     * App\Form\MessageComposeType and App\Form\QuizQuestionType.
      */
     private function applyAudience(Assignment $assignment, Request $request, UserRepository $userRepository): void
     {

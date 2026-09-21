@@ -15,8 +15,8 @@ use Doctrine\ORM\EntityManagerInterface;
  * « Devoirs » (Program::$assignmentManagementEnabled) is cumulative with the `student_work`
  * feature, the way « Visibilité de l'emploi du temps » is with `timetable` next to it.
  *
- * It was applied on the writing side alone - a formation switched off refuses a new travail
- * (App\Controller\ProgramAssignmentController) and drops out of the teacher's pickers - while
+ * It was applied on the writing side alone - a formation switched off drops out of the teacher's
+ * pickers and of App\Controller\AssignmentController::teachingPrograms() - while
  * App\Service\StudentWorkBoard read every formation the student is enrolled in. So closing the
  * box stopped nothing that had already been given: the list, the dashboard card and the mobile
  * feed all kept showing it, because all three read that one board.

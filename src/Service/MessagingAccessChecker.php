@@ -130,7 +130,7 @@ class MessagingAccessChecker
     // Resolves manually-submitted recipient ids back to Users, re-validating every one against
     // the permission matrix rather than trusting the client - a forged id for someone the sender
     // isn't allowed to reach is silently dropped, same security role as
-    // UserRepository::findByIdsForProgram() in ProgramAssignmentController::form().
+    // UserRepository::findByIdsForProgram() in AssignmentController::applyAudience().
     /**
      * @param list<int> $ids
      *

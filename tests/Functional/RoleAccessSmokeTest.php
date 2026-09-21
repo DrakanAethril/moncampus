@@ -243,7 +243,6 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/game/title' => 200,
             '/game/ranking' => 200,
             '/game/ranking?scope=year' => 200,
-            '/game/team' => 200,
             $this->gameSettingsPath => 403,
             // « Séquences de l'année » hands over to the single formation this student belongs to
             // rather than drawing a picker with one card in it (2026-08-17). The list still renders
@@ -395,7 +394,6 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/game/alias' => 404,
             '/game/title' => 404,
             '/game/ranking' => 404,
-            '/game/team' => 404,
             $this->gameSettingsPath => 403,
             // The course-space index is the student's own list of programs; a teacher reaches the
             // same sequences from their program screens instead.
@@ -548,7 +546,6 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/game/alias' => 404,
             '/game/title' => 404,
             '/game/ranking' => 404,
-            '/game/team' => 404,
             $this->gameSettingsPath => 200,
             '/settings/configuration' => 200,
             '/settings/teaching' => 200,
@@ -746,7 +743,6 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/game/alias' => 404,
             '/game/title' => 404,
             '/game/ranking' => 404,
-            '/game/team' => 404,
             $this->gameSettingsPath => 403,
             '/agenda' => 200,
             '/messages' => 200,

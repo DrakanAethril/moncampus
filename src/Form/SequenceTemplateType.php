@@ -17,7 +17,8 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 // (App\Entity\AbstractLibraryTag), rendered as raw <select> elements in library/sequence_new.html.twig
 // (Tom Select, create-or-reuse) and resolved/persisted manually by
 // App\Controller\SequenceLibraryController::form() via App\Service\LibraryTagResolver - same
-// reasoning as AssignmentType's manualRecipients field.
+// reasoning as the travail wizard's manual_recipients field
+// (App\Controller\AssignmentController::applyAudience()).
 class SequenceTemplateType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void

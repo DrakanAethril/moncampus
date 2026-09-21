@@ -1,8 +1,8 @@
 import { Controller } from '@hotwired/stimulus';
 
 /**
- * Reacts to the borrower being picked on the two lend forms: it pre-selects "Type de prêt", and it
- * says out loud when that person is already holding machines.
+ * Reacts to the borrower being picked on the lend form: it pre-selects "Type de prêt", and it says
+ * out loud when that person is already holding machines.
  *
  * The rule behind the pre-selection lives server-side, on App\Enum\LaptopLoanType::suggestFor() -
  * an apprentice borrows under the UFA convention, another student under the CFC one, and anyone who
