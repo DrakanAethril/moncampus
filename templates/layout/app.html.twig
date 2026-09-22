@@ -428,6 +428,10 @@
                                         </div>
                                     </div>
                                     {% endif %}
+                                    {# Sibling of « Formations », and a plain entry rather than a
+                                       sub-menu: the employers are a list, and there is nothing to
+                                       branch into before the one being looked for is found. #}
+                                    <a class="dropdown-item {{ current_route starts with 'app_ufa_enterprise' ? 'active' }}" href="{{ path('app_ufa_enterprises') }}">{{ 'ufaEnterprisesNavLabel'|trans }}</a>
                                     {% endif %}
                                     {% if feature('laptop_loans') %}
                                     <h6 class="dropdown-header">{{ 'ufaEquipmentGroupLabel'|trans }}</h6>

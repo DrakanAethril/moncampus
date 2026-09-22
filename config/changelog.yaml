@@ -26,6 +26,13 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.22'
+      date: '2026-09-22'
+      summary: "L'UFA dispose d'une liste des entreprises qui accueillent des alternants : chacune annonce le nombre d'alternances qu'elle accueille actuellement, et sa fiche rassemble ses contacts, ses alternances et ses informations."
+      entries:
+          - type: nouveaute
+            title: "Les entreprises de l'alternance, listées et consultables"
+            detail: "Les employeurs nommés sur les contrats, les plus récents d'abord et cherchés par leur nom, chacun accompagné du nombre d'alternances en cours. Le nom ouvre la fiche de l'entreprise : ses coordonnées, les tuteurs qui y suivent des alternants — un tuteur y reste après la fin de son alternance — et les alternances qui lui sont rattachées. Les informations de l'entreprise s'y corrigent."
     - version: '2026.09.21'
       date: '2026-09-21'
       summary: "Un travail se modifie, se supprime et ses dépôts se récupèrent en un seul téléchargement ; il n'est désormais visible que de l'enseignant qui l'a donné. Le quiz d'un lancement ou d'un concours se choisit dans l'arborescence de la bibliothèque plutôt que dans une longue liste."

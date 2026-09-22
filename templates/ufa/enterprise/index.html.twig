@@ -1,0 +1,64 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'ufaEnterprisesPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'ufaNavLabel'|trans, url: path('app_ufa')},
+        {label: 'ufaEnterprisesPageHeading'|trans, url: path('app_ufa_enterprises')},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'ufaEnterprisesPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="cm-subhead mb-3">
+        <div class="cm-subhead__hint">{{ 'ufaEnterpriseListHintText'|trans }}</div>
+    </div>
+
+    {# DataTables owns this subtree's DOM from here on - see templates/directory/users.html.twig
+       for why the hot-reload morph is told to leave it alone. #}
+    <div class="card"
+         data-frankenphp-hot-reload-preserve
+         data-controller="datatable"
+         data-datatable-url-value="{{ path('app_ufa_enterprises_data') }}"
+         data-datatable-search-placeholder-value="{{ 'ufaEnterpriseSearchPlaceholder'|trans }}"
+         {# Twenty rows, newest first (EnterpriseRepository::findPageOrderedByMostRecent()) - the
+            employer somebody is looking for right after an import is at the top. #}
+         data-datatable-page-length-value="20"
+         data-datatable-columns-value="{{ [
+             {data: 'name', render: 'html'},
+             {data: 'city'},
+             {data: 'siret'},
+             {data: 'activeAlternances'},
+             {data: 'creationDate'},
+         ]|json_encode }}"
+         data-datatable-language-value="{{ {
+             info: 'datatableInfoLabel'|trans,
+             infoEmpty: 'datatableInfoEmptyLabel'|trans,
+             infoFiltered: 'datatableInfoFilteredLabel'|trans,
+             zeroRecords: 'datatableZeroRecordsLabel'|trans,
+             processing: 'datatableProcessingLabel'|trans,
+             lengthMenu: 'datatableLengthMenuLabel'|trans,
+             search: 'datatableSearchLabel'|trans,
+             paginate: {
+                 next: 'datatablePaginateNextLabel'|trans,
+                 previous: 'datatablePaginatePreviousLabel'|trans,
+             },
+         }|json_encode }}">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table table-striped" data-datatable-target="table">
+                <thead>
+                    <tr>
+                        <th>{{ 'ufaEnterpriseNameColumnLabel'|trans }}</th>
+                        <th>{{ 'ufaEnterpriseCityColumnLabel'|trans }}</th>
+                        <th>{{ 'ufaEnterpriseSiretColumnLabel'|trans }}</th>
+                        <th>{{ 'ufaEnterpriseActiveAlternancesColumnLabel'|trans }}</th>
+                        <th>{{ 'ufaEnterpriseCreationDateColumnLabel'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
