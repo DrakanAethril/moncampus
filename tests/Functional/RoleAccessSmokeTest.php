@@ -354,6 +354,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/features' => 403,
             '/directory/users' => 403,
             '/ufa' => 403,
+            '/ufa/enterprises' => 403,
             '/ufa/configuration/contract-import' => 403,
             '/eco/parcours' => 403,
             // Dossiers documentaires. The two sides of the tool are two sets of routes, and this is
@@ -514,6 +515,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/settings/groups/hierarchy' => 403,
             '/directory/users' => 403,
             '/ufa' => 403,
+            '/ufa/enterprises' => 403,
             '/ufa/configuration/contract-import' => 403,
             '/eco/parcours' => 403,
             // Dossiers documentaires: a teacher composes one, and reads « Mes dossiers » as an
@@ -562,6 +564,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/features/agenda/overrides' => 200,
             '/directory/users' => 200,
             '/ufa' => 200,
+            '/ufa/enterprises' => 200,
             '/ufa/reminders' => 200,
             '/ufa/configuration/contract-import' => 200,
             '/eco/parcours' => 200,
@@ -824,6 +827,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/features' => 403,
             '/directory/users' => 403,
             '/ufa' => 403,
+            '/ufa/enterprises' => 403,
             '/ufa/configuration/contract-import' => 403,
             '/eco/parcours' => 403,
         ]);

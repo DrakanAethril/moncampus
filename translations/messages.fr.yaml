@@ -1285,6 +1285,7 @@ internshipContractModalityIntroText: 'Ces modalités surchargent celles définie
 ufaNavLabel: 'UFA'
 ufaDashboardNavLabel: 'Tableau de bord'
 ufaFormationsNavLabel: 'Formations'
+ufaEnterprisesNavLabel: 'Entreprises'
 ufaConfigurationNavLabel: 'Configuration'
 ufaConfigurationFormationCenterNavLabel: 'Centre de formation'
 ufaConfigurationContractModalitiesNavLabel: 'Modalités de contrats'
@@ -1294,6 +1295,36 @@ ufaLaptopsNavLabel: 'Ordinateurs portables'
 ufaLaptopsLoansNavLabel: 'Prêts'
 ufaLaptopsInventoryNavLabel: 'Inventaire'
 ufaLaptopsConfigurationNavLabel: 'Configuration'
+
+# UFA > Entreprises - templates/ufa/enterprise/*.html.twig
+ufaEnterprisesPageHeading: 'Entreprises'
+ufaEnterpriseListHintText: "Les employeurs nommés sur les contrats d'alternance, les vingt plus récents d'abord. Une entreprise naît du contrat qui la nomme : elle ne se crée ni ne se supprime ici, elle se corrige."
+ufaEnterpriseSearchPlaceholder: "Nom de l'entreprise"
+ufaEnterpriseNameColumnLabel: 'Entreprise'
+ufaEnterpriseCityColumnLabel: 'Ville'
+ufaEnterpriseSiretColumnLabel: 'SIRET'
+ufaEnterpriseActiveAlternancesColumnLabel: 'Alternances en cours'
+ufaEnterpriseCreationDateColumnLabel: 'Connue depuis'
+ufaEnterpriseActiveAlternancesCountText: "{0}Aucune alternance en cours|{1}1 alternance en cours|]1,Inf[%count% alternances en cours"
+ufaEnterpriseKnownSinceText: 'connue depuis le %date%'
+ufaEnterpriseDetailsCardTitle: 'Informations'
+ufaEnterpriseContactsCardTitle: 'Contacts'
+ufaEnterpriseContactNameColumnLabel: 'Contact'
+ufaEnterpriseContactEmailColumnLabel: 'Adresse mail'
+ufaEnterpriseContactPhoneColumnLabel: 'Téléphone'
+ufaEnterpriseContactNoActiveAlternanceText: 'Aucune en cours'
+ufaEnterpriseNoContactText: "Aucun contact : personne n'a encore été nommé tuteur pour cette entreprise."
+ufaEnterpriseAlternancesCardTitle: 'Alternances'
+ufaEnterpriseNoAlternanceText: "Aucune alternance rattachée à cette entreprise."
+ufaEnterpriseAlternanceTerminatedBadgeLabel: 'Terminée le %date%'
+ufaEnterpriseEditActionLabel: "Modifier l'entreprise"
+ufaEnterpriseEditPageHeading: "Modifier l'entreprise"
+ufaEnterpriseNameFieldLabel: 'Nom'
+ufaEnterpriseSiretFieldLabel: 'SIRET'
+ufaEnterprisePhoneFieldLabel: 'Téléphone'
+ufaEnterpriseCityFieldLabel: 'Ville'
+ufaEnterpriseAddressFieldLabel: 'Adresse'
+ufaEnterpriseUpdatedFlashMessage: "L'entreprise a été mise à jour."
 
 ufaDashboardPageHeading: 'UFA'
 ufaConfigurationPageHeading: 'UFA'

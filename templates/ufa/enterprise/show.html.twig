@@ -1,0 +1,132 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ enterprise.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include '_breadcrumb.html.twig' with {segments: [
+        {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {label: 'ufaNavLabel'|trans, url: path('app_ufa')},
+        {label: 'ufaEnterprisesPageHeading'|trans, url: path('app_ufa_enterprises')},
+        {label: enterprise.name, url: path('app_ufa_enterprise_show', {id: enterprise.id})},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ enterprise.name }}{% endblock %}
+{% block page_actions %}
+    <a href="{{ path('app_ufa_enterprise_edit', {id: enterprise.id}) }}" class="btn btn-primary">{{ 'ufaEnterpriseEditActionLabel'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    <div class="text-secondary mb-3" style="margin-top: -8px;">
+        {% if enterprise.testEnterprise %}<span class="badge bg-purple-lt me-1">{{ 'ufaAlternanceTestBadgeLabel'|trans }}</span>{% endif %}
+        {{ 'ufaEnterpriseActiveAlternancesCountText'|trans({'%count%': activeCount}) }}
+        · {{ 'ufaEnterpriseKnownSinceText'|trans({'%date%': enterprise.creationDate|date('d/m/Y')}) }}
+    </div>
+
+    <div class="row row-cards">
+        <div class="col-lg-4">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">{{ 'ufaEnterpriseDetailsCardTitle'|trans }}</h3>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <div class="fw-bold">{{ 'ufaEnterpriseSiretFieldLabel'|trans }}</div>
+                        <div class="text-secondary">{{ enterprise.siret ?? '—' }}</div>
+                    </div>
+                    <div class="mb-2">
+                        <div class="fw-bold">{{ 'ufaEnterprisePhoneFieldLabel'|trans }}</div>
+                        <div class="text-secondary">{{ enterprise.phone ?? '—' }}</div>
+                    </div>
+                    <div class="mb-2">
+                        <div class="fw-bold">{{ 'ufaEnterpriseCityFieldLabel'|trans }}</div>
+                        <div class="text-secondary">{{ enterprise.city ?? '—' }}</div>
+                    </div>
+                    <div>
+                        <div class="fw-bold">{{ 'ufaEnterpriseAddressFieldLabel'|trans }}</div>
+                        {# A postal block is several lines and has to stay so - it is copied out of
+                           here onto an envelope. #}
+                        <div class="text-secondary" style="white-space: pre-line">{{ enterprise.address ?? '—' }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">{{ 'ufaEnterpriseContactsCardTitle'|trans }}</h3>
+                </div>
+                {# Nobody is *declared* a contact of an employer: a contact is a tutor named on one
+                   of its contracts, which is why a tutor stays listed once their alternance is over
+                   (App\Service\EnterpriseContacts). #}
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table table-striped">
+                        <thead>
+                            <tr>
+                                <th>{{ 'ufaEnterpriseContactNameColumnLabel'|trans }}</th>
+                                <th>{{ 'ufaEnterpriseContactEmailColumnLabel'|trans }}</th>
+                                <th>{{ 'ufaEnterpriseContactPhoneColumnLabel'|trans }}</th>
+                                <th>{{ 'ufaEnterpriseActiveAlternancesColumnLabel'|trans }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for contact in contacts %}
+                                <tr>
+                                    <td>{{ contact.tutor.displayName ?? contact.tutor.username }}</td>
+                                    <td>{{ contact.tutor.contactEmail ?? '—' }}</td>
+                                    <td>{{ contact.tutor.phoneNumber ?? '—' }}</td>
+                                    <td>
+                                        {% if contact.activeCount > 0 %}
+                                            {{ contact.activeCount }}
+                                        {% else %}
+                                            <span class="text-secondary">{{ 'ufaEnterpriseContactNoActiveAlternanceText'|trans }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr><td colspan="4" class="text-secondary">{{ 'ufaEnterpriseNoContactText'|trans }}</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">{{ 'ufaEnterpriseAlternancesCardTitle'|trans }}</h3>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table table-striped">
+                        <thead>
+                            <tr>
+                                <th>{{ 'internshipTutorLinkStudentColumnLabel'|trans }}</th>
+                                <th>{{ 'ufaAlternanceColumnFormationLabel'|trans }}</th>
+                                <th>{{ 'internshipTutorLinkTutorColumnLabel'|trans }}</th>
+                                <th>{{ 'internshipTutorLinkContractStartDateColumnLabel'|trans }}</th>
+                                <th>{{ 'internshipTutorLinkContractEndDateColumnLabel'|trans }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for alternance in alternances %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ path('app_ufa_alternance_show', {id: alternance.id}) }}">{{ alternance.student.displayName ?? alternance.student.username }}</a>
+                                        {% if alternance.terminated %}
+                                            <span class="badge bg-secondary-lt ms-1">{{ 'ufaEnterpriseAlternanceTerminatedBadgeLabel'|trans({'%date%': alternance.inactiveDate|date('d/m/Y')}) }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ alternance.program ? alternance.program.displayShortName : '—' }}</td>
+                                    <td>{{ alternance.tutor ? (alternance.tutor.displayName ?? alternance.tutor.username) : '—' }}</td>
+                                    <td>{{ alternance.contractStartDate ? alternance.contractStartDate|date('d/m/Y') : '—' }}</td>
+                                    <td>{{ alternance.contractEndDate ? alternance.contractEndDate|date('d/m/Y') : '—' }}</td>
+                                </tr>
+                            {% else %}
+                                <tr><td colspan="5" class="text-secondary">{{ 'ufaEnterpriseNoAlternanceText'|trans }}</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

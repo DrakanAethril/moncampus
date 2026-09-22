@@ -113,6 +113,11 @@ export default class extends Controller {
             ordering: false,
             pagingType: 'simple_numbers',
             pageLength: this.pageLengthValue,
+            // DataTables' own length menu is [10, 25, 50, 100], so a screen asking for a page
+            // length outside it (UFA > Entreprises opens on 20) leaves the "Afficher … entrées"
+            // select rendered blank. Adding the asked-for value keeps every other screen's menu
+            // exactly as it was.
+            lengthMenu: [...new Set([10, 25, 50, 100, this.pageLengthValue])].sort((a, b) => a - b),
             ajax: {
                 url: this.urlValue,
                 type: 'GET',
