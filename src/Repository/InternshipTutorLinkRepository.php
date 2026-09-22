@@ -292,6 +292,73 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
+    /**
+     * « Alternances en cours » for one page of the UFA's Entreprises list, as a map id => count.
+     *
+     * Asked for the whole page at once rather than employer by employer: the list is 20 rows and a
+     * count per row would be 20 queries. An employer with none at all is simply absent from the map
+     * - the caller reads it with a `?? 0`, which is also what a page containing no employer answers.
+     *
+     * "En cours" is the same fact as everywhere else in the UFA: the alternance has not been
+     * terminated (InternshipTutorLink::$inactiveDate). It is deliberately not "today is between the
+     * two contract dates" - a contract that ran out while the livret is still being signed has not
+     * stopped asking anything of anyone, and the dashboard counts it too.
+     *
+     * @param list<Enterprise> $enterprises
+     *
+     * @return array<int, int>
+     */
+    public function countActiveByEnterprise(array $enterprises): array
+    {
+        if ([] === $enterprises) {
+            return [];
+        }
+
+        /** @var list<array{id: int, total: int}> $rows */
+        $rows = $this->createQueryBuilder('l')
+            ->select('IDENTITY(l.enterprise) AS id', 'COUNT(l.id) AS total')
+            ->where('l.enterprise IN (:enterprises)')
+            ->andWhere('l.inactiveDate IS NULL')
+            ->groupBy('l.enterprise')
+            ->setParameter('enterprises', $enterprises)
+            ->getQuery()
+            ->getResult();
+
+        $counts = [];
+        foreach ($rows as $row) {
+            $counts[(int) $row['id']] = (int) $row['total'];
+        }
+
+        return $counts;
+    }
+
+    /**
+     * Every alternance this employer has ever carried, terminated ones included - the fiche's
+     * contacts are built from it (App\Service\EnterpriseContacts).
+     *
+     * Terminated links are kept in on purpose: a tutor whose alternance ended is still this
+     * company's contact, and dropping them would empty the fiche of an employer between two
+     * contracts. Which ones are still running is said row by row instead, and they come first -
+     * MySQL sorts NULL before anything else on an ASC order, which is what the first ORDER BY
+     * clause is after.
+     *
+     * @return list<InternshipTutorLink>
+     */
+    public function findAllForEnterprise(Enterprise $enterprise): array
+    {
+        return $this->createQueryBuilder('l')
+            ->addSelect('st', 'tu', 'p')
+            ->leftJoin('l.student', 'st')
+            ->leftJoin('l.tutor', 'tu')
+            ->leftJoin('l.program', 'p')
+            ->where('l.enterprise = :enterprise')
+            ->setParameter('enterprise', $enterprise)
+            ->orderBy('l.inactiveDate', 'ASC')
+            ->addOrderBy('l.contractStartDate', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
     // Callers all join l.tutor as "tu" and l.enterprise as "e" before reaching here.
     private function applySearch(QueryBuilder $qb, ?string $search): void
     {
