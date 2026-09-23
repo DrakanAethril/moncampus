@@ -24,11 +24,13 @@ use App\Security\StructureAccessChecker;
 use App\Service\Accommodation\AccommodationResolver;
 use App\Service\QuizAudience;
 use App\Service\QuizDrawService;
+use App\Service\QuizPenaltyRemarker;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 // Program-scoped browsing of launched QuizInstances, and their results - see App\Entity\QuizInstance's
 // class docblock and screens 1f (par étudiant)/1g (par question)/1p (tentatives d'un étudiant).
@@ -135,11 +137,17 @@ class ProgramQuizController extends AbstractController
     }
 
     // "Modifier" - the launch settings that can still change once the quiz is out (name, window,
-    // timers, scoring, and mode contrôle on an évaluation). See App\Form\QuizInstanceEditType for
-    // what is deliberately not editable and why; in short, anything that shaped the draw is frozen
-    // with the questions it produced.
+    // timers, scoring, « note négative sur erreurs », and mode contrôle on an évaluation). See
+    // App\Form\QuizInstanceEditType for what is deliberately not editable and why; in short,
+    // anything that shaped the draw is frozen with the questions it produced.
+    //
+    // The penalty is the one setting here that rewrites marks already given, so every save re-marks
+    // the whole class (App\Service\QuizPenaltyRemarker) and the flash says how many copies moved.
+    // Run on every save rather than only when a penalty field changed: it is idempotent, and a
+    // condition on "did this field move" is exactly the kind of thing that ends up wrong after the
+    // next field is added here.
     #[Route(path: '/programs/{id}/quiz/{instanceId}/edit', name: 'app_program_quiz_edit', requirements: ['instanceId' => '\d+'], methods: ['GET', 'POST'])]
-    public function edit(int $id, int $instanceId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, StructureAccessChecker $accessChecker, QuizInstanceRepository $instanceRepository): Response
+    public function edit(int $id, int $instanceId, Request $request, EntityManagerInterface $entityManager, ProgramRepository $repository, StructureAccessChecker $accessChecker, QuizInstanceRepository $instanceRepository, QuizPenaltyRemarker $remarker, TranslatorInterface $translator): Response
     {
         $program = $this->findOrDenyAccess($id, $repository, $accessChecker);
         $instance = $this->findInstanceOrNotFound($instanceRepository, $program, $instanceId);
@@ -156,8 +164,18 @@ class ProgramQuizController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            // Before the flush: the instance already carries the new settings in memory, and the
+            // re-marked copies are written in the same transaction as the settings that explain
+            // them. A flush in between would leave a window where the two disagree.
+            $remarked = $remarker->reapply($instance);
             $entityManager->flush();
+
             $this->addFlash('success', 'quizInstanceUpdatedFlashMessage');
+            // Said only when something actually moved - a rename re-marks nothing and must not
+            // announce that it did.
+            if ($remarked > 0) {
+                $this->addFlash('info', $translator->trans('quizInstanceRemarkedFlashTemplate', ['%count%' => $remarked]));
+            }
 
             return $this->redirectToRoute('app_program_quiz_show', ['id' => $program->getId(), 'instanceId' => $instance->getId()]);
         }

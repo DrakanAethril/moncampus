@@ -1,0 +1,17 @@
+{# What a wrong answer costs, said before anything is answered and again while it is: a penalty
+   nobody was told about is a trap rather than a rule. Shared by the student's door of a supervised
+   évaluation (quiz_contract) and by the passation itself (quiz_question), so the two cannot end up
+   announcing different arithmetic. `quizInstance` is the only expected variable. #}
+{% if quizInstance.negativeMarking %}
+    <div class="cm-note" role="status">
+        <span class="cm-note__icon">!</span>
+        <div>
+            {% if quizInstance.penaltyMode.value == 'fixed' %}
+                {{ 'quizNegativeMarkingFixedNoticeTemplate'|trans({'%points%': quizInstance.penaltyPointsLabel}) }}
+            {% else %}
+                {{ 'quizNegativeMarkingScaleNoticeTemplate'|trans({'%percent%': quizInstance.penaltyPercent}) }}
+            {% endif %}
+            {{ (quizInstance.negativeScoreAllowed ? 'quizNegativeScoreAllowedNoticeText' : 'quizNegativeScoreFlooredNoticeText')|trans }}
+        </div>
+    </div>
+{% endif %}

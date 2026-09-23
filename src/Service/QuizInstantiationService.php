@@ -14,6 +14,7 @@ use App\Entity\QuizQuestion;
 use App\Entity\QuizTemplate;
 use App\Entity\User;
 use App\Enum\QuizMode;
+use App\Enum\QuizPenaltyMode;
 use App\Enum\QuizScoring;
 use App\Enum\QuizSupervisionPolicy;
 use Doctrine\ORM\EntityManagerInterface;
@@ -79,6 +80,14 @@ class QuizInstantiationService
         bool $correctionVisible = true,
         // Same reason it sits at the end: appended, never inserted. Null is the whole class.
         ?Option $visibilityOption = null,
+        // Appended for the same reason again. The three penalty settings are stored whether or not
+        // $negativeMarking is on: QuizInstance::penaltyFor() reads the flag first, so what is kept
+        // here is what the teacher left in the form rather than a value the save decided for them.
+        bool $negativeMarking = false,
+        QuizPenaltyMode $penaltyMode = QuizPenaltyMode::Fixed,
+        float $penaltyPoints = 0.5,
+        int $penaltyPercent = 50,
+        bool $negativeScoreAllowed = false,
     ): QuizInstance {
         $firstTemplate = $templates[0];
 
@@ -103,6 +112,11 @@ class QuizInstantiationService
         $instance->setScoring($scoring);
         $instance->setScoreVisibleImmediately($scoreVisibleImmediately);
         $instance->setCorrectionVisible($correctionVisible);
+        $instance->setNegativeMarking($negativeMarking);
+        $instance->setPenaltyMode($penaltyMode);
+        $instance->setPenaltyPoints($penaltyPoints);
+        $instance->setPenaltyPercent($penaltyPercent);
+        $instance->setNegativeScoreAllowed($negativeScoreAllowed);
         // Belongs to the class or to nothing: an option of another program would silently address
         // no one at all, so it is refused here as well as on the form that offers it.
         $instance->setVisibilityOption(null !== $visibilityOption && $program->getOptions()->contains($visibilityOption) ? $visibilityOption : null);

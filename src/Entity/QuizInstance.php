@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\QuizMode;
+use App\Enum\QuizPenaltyMode;
 use App\Enum\QuizScoring;
 use App\Enum\QuizSupervisionPolicy;
 use App\Repository\QuizInstanceRepository;
@@ -166,6 +167,46 @@ class QuizInstance implements AccessConditionHost
      */
     #[ORM\Column(name: 'correction_visible', options: ['default' => true])]
     private bool $correctionVisible = true;
+
+    // ---- Note négative sur erreurs ----
+    /**
+     * Whether a wrong answer costs points rather than simply earning none. Off by default, and off
+     * is the historic behaviour: every quiz launched before this existed reads as "no penalty"
+     * without a migration having to decide anything for it.
+     *
+     * Unlike the draw, these four settings **can** be changed after the launch
+     * (App\Form\QuizInstanceEditType). The penalty is frozen into each answer as it is given, so on
+     * its own that would leave the copies already handed in marked under the old rule - which is
+     * why saving the edit form re-marks the whole class through App\Service\QuizPenaltyRemarker.
+     * The asymmetry is removed rather than the gesture forbidden: a teacher who set the penalty too
+     * hard must be able to say so without making the class sit the paper again.
+     */
+    #[ORM\Column(name: 'negative_marking', options: ['default' => false])]
+    private bool $negativeMarking = false;
+
+    #[ORM\Column(name: 'penalty_mode', length: 16, enumType: QuizPenaltyMode::class)]
+    private QuizPenaltyMode $penaltyMode = QuizPenaltyMode::Fixed;
+
+    /** Points removed per wrong answer under QuizPenaltyMode::Fixed - « 0,5 » on screen. */
+    #[ORM\Column(name: 'penalty_points', type: Types::DECIMAL, precision: 5, scale: 2, options: ['default' => '0.50'])]
+    private string $penaltyPoints = '0.50';
+
+    /**
+     * Share of the question's own barème removed per wrong answer under QuizPenaltyMode::Scale.
+     * 50 by default, so that on an ordinary 1-point question the two modes open on the same
+     * half-point and the select changes the unit rather than the severity.
+     */
+    #[ORM\Column(name: 'penalty_percent', type: Types::SMALLINT, options: ['unsigned' => true, 'default' => 50])]
+    private int $penaltyPercent = 50;
+
+    /**
+     * Whether the copy may end below zero. Off by default: the penalty is there to make guessing
+     * cost something, not to owe the teacher points, and a mark under zero is a statement few
+     * carnets know how to read. The floor is on the *total* only - a single question still scores
+     * its own negative, which is what makes the copy add up to what each line shows.
+     */
+    #[ORM\Column(name: 'negative_score_allowed', options: ['default' => false])]
+    private bool $negativeScoreAllowed = false;
 
     // ---- Mode contrôle (évaluation only) ----
     /**
@@ -521,6 +562,102 @@ class QuizInstance implements AccessConditionHost
         $this->correctionVisible = $correctionVisible;
 
         return $this;
+    }
+
+    public function isNegativeMarking(): bool
+    {
+        return $this->negativeMarking;
+    }
+
+    public function setNegativeMarking(bool $negativeMarking): static
+    {
+        $this->negativeMarking = $negativeMarking;
+
+        return $this;
+    }
+
+    public function getPenaltyMode(): QuizPenaltyMode
+    {
+        return $this->penaltyMode;
+    }
+
+    public function setPenaltyMode(QuizPenaltyMode $penaltyMode): static
+    {
+        $this->penaltyMode = $penaltyMode;
+
+        return $this;
+    }
+
+    public function getPenaltyPoints(): float
+    {
+        return (float) $this->penaltyPoints;
+    }
+
+    /** Never negative: the penalty is expressed as what it costs, and a negative cost would pay. */
+    public function setPenaltyPoints(float $penaltyPoints): static
+    {
+        $this->penaltyPoints = number_format(max(0.0, $penaltyPoints), 2, '.', '');
+
+        return $this;
+    }
+
+    public function getPenaltyPercent(): int
+    {
+        return $this->penaltyPercent;
+    }
+
+    /**
+     * « 0,5 » rather than « 0,50 » - the trailing zeros dropped the same way
+     * QuizAttempt::getCorrectCountLabel() drops them, so the two never spell a half point
+     * differently on two screens of the same quiz.
+     */
+    public function getPenaltyPointsLabel(): string
+    {
+        $points = $this->getPenaltyPoints();
+
+        return $points === floor($points)
+            ? number_format($points, 0, ',', '')
+            : rtrim(number_format($points, 2, ',', ''), '0');
+    }
+
+    /** Capped at 100: a wrong answer may cost what the question was worth, never more. */
+    public function setPenaltyPercent(int $penaltyPercent): static
+    {
+        $this->penaltyPercent = max(0, min(100, $penaltyPercent));
+
+        return $this;
+    }
+
+    public function isNegativeScoreAllowed(): bool
+    {
+        return $this->negativeScoreAllowed;
+    }
+
+    public function setNegativeScoreAllowed(bool $negativeScoreAllowed): static
+    {
+        $this->negativeScoreAllowed = $negativeScoreAllowed;
+
+        return $this;
+    }
+
+    /**
+     * What a wrong answer costs on a question worth $questionPoints, as a positive number of
+     * points - 0.0 when the quiz was launched without the penalty.
+     *
+     * The single reading of the three settings above, asked by App\Service\QuizAttemptGrader at
+     * answer time and by nothing else. Two copies of this arithmetic would eventually disagree on
+     * a student's mark, which is the same reason QuizAttemptConcluder exists at all.
+     */
+    public function penaltyFor(float $questionPoints): float
+    {
+        if (!$this->negativeMarking) {
+            return 0.0;
+        }
+
+        return round(match ($this->penaltyMode) {
+            QuizPenaltyMode::Fixed => (float) $this->penaltyPoints,
+            QuizPenaltyMode::Scale => max(0.0, $questionPoints) * $this->penaltyPercent / 100,
+        }, 2);
     }
 
     /**

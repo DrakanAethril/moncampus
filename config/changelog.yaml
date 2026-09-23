@@ -26,6 +26,16 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.23'
+      date: '2026-09-23'
+      summary: "Un quiz peut désormais retirer des points aux réponses fausses. La règle se choisit au lancement, se modifie ensuite — les copies déjà rendues sont alors renotées — et l'étudiant sait ce qu'une erreur lui coûte avant de répondre."
+      entries:
+          - type: nouveaute
+            title: "Retirer des points aux réponses fausses d'un quiz"
+            detail: "Au lancement, une case retire des points à chaque réponse fausse : un nombre de points fixe, ou une part du barème de la question. Une autre autorise ou non les notes en dessous de 0. Une réponse partiellement juste n'est jamais pénalisée, ni une question laissée sans réponse. Le réglage se modifie après coup : les copies déjà rendues sont renotées — rien n'est recorrigé, seule la pénalité est recalculée — et une conversion vers le carnet de notes déjà faite doit être relancée pour en tenir compte. L'étudiant est prévenu avant de répondre, et sa correction montre ce que chaque question lui a coûté."
+          - type: autre
+            title: "Applications mobiles : MonCampus 2.7.1 et e-CO 1.1.1"
+            detail: "MonCampus annonce à son tour la note négative sur erreurs, là où les quiz sont présentés, pendant la passation et sur la copie rendue. e-CO est republiée sans changement."
     - version: '2026.09.22'
       date: '2026-09-22'
       summary: "L'UFA dispose d'une liste des entreprises qui accueillent des alternants : chacune annonce le nombre d'alternances qu'elle accueille actuellement, et sa fiche rassemble ses contacts, ses alternances et ses informations."

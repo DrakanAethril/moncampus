@@ -75,6 +75,20 @@ class QuizInstanceQuestion implements QuizQuestionDefinition
         return $this->quizInstance;
     }
 
+    /**
+     * What this question is worth when a copy is marked.
+     *
+     * The types built on answer rows (QCM, vrai/faux, ordre, image…) are worth exactly one point
+     * whatever QuizQuestionDefinitionTrait::$points says - that field is only offered on the
+     * config-driven types. Both ends of the marking read it from here: what the attempt is out of
+     * (App\Service\QuizAttemptConcluder) and what a wrong answer costs
+     * (App\Entity\QuizInstance::penaltyFor()), which is one arithmetic and must stay one.
+     */
+    public function gradingPoints(): float
+    {
+        return $this->type->usesAnswerRows() ? 1.0 : $this->getPoints();
+    }
+
     public function getType(): QuestionType
     {
         return $this->type;

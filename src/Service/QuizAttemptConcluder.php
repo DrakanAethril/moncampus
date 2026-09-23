@@ -29,7 +29,7 @@ class QuizAttemptConcluder
     {
         $attempt->setStatus($status);
         $attempt->setSubmittedAt(new \DateTimeImmutable());
-        $attempt->setScore($this->earnedPoints($attempt), $this->availablePoints($attempt));
+        $this->remark($attempt);
 
         // The rule is asked once here and re-read at display time - never copied. It changes
         // nothing about the mark just computed above: it counts what a teacher may want to look
@@ -40,8 +40,39 @@ class QuizAttemptConcluder
     }
 
     /**
+     * Writes the copy's mark from the lines it already holds - nothing else. Public because
+     * « Modifier le quiz » re-marks an existing copy after the penalty has moved
+     * (App\Service\QuizPenaltyRemarker) and must not re-stamp its status, its hand-in instant or
+     * its surveillance count: those say when and how the copy was sat, which no later edit changes.
+     *
+     * That it is the same method conclude() calls is the point: two ways of totalling a copy would
+     * eventually disagree, and one of them would be the one nobody looks at.
+     */
+    public function remark(QuizAttempt $attempt): void
+    {
+        $attempt->setScore($this->finalPoints($attempt), $this->availablePoints($attempt));
+    }
+
+    /**
+     * The mark as it is written down: the sum of the frozen lines, floored at zero unless the quiz
+     * was launched with « autoriser les notes en dessous de 0 ».
+     *
+     * The floor lives here rather than in the entity because it is the *quiz* that decides it, and
+     * it applies to the total alone: each question keeps the negative it earned, so a copy read
+     * question by question still adds up to what the badge shows - or, when the floor bites, shows
+     * plainly why it stopped at zero.
+     */
+    private function finalPoints(QuizAttempt $attempt): float
+    {
+        $earned = $this->earnedPoints($attempt);
+
+        return $attempt->getQuizInstance()->isNegativeScoreAllowed() ? $earned : max(0.0, $earned);
+    }
+
+    /**
      * Sum of what each answered question was frozen with. Unanswered questions contribute nothing -
-     * an attempt cut short by the timer scores only what was actually done.
+     * an attempt cut short by the timer scores only what was actually done, and is not penalised
+     * for what it never reached either (App\Service\QuizAttemptGrader::score()).
      */
     private function earnedPoints(QuizAttempt $attempt): float
     {
@@ -66,8 +97,7 @@ class QuizAttemptConcluder
     {
         $total = 0.0;
         foreach ($attempt->getAttemptAnswers() as $attemptAnswer) {
-            $question = $attemptAnswer->getInstanceQuestion();
-            $total += $question->getType()->usesAnswerRows() ? 1.0 : $question->getPoints();
+            $total += $attemptAnswer->getInstanceQuestion()->gradingPoints();
         }
 
         // The column is an int and the screens read it as "x / 20": a fractional barème rounds up

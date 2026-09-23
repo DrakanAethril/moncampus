@@ -2840,6 +2840,8 @@ quizLaunchVisibilityOptionFieldLabel: 'Visibilité'
 quizLaunchVisibilityOptionAllLabel: 'Tous les étudiants'
 quizLaunchVisibilityOptionFieldHint: "Limiter le quiz aux étudiants d'une option de la classe."
 quizLaunchVisibilityOptionForeignError: "Cette option n'appartient pas à la classe choisie."
+quizInstanceEditNegativeMarkingNoteText: "Enregistrer renote immédiatement toutes les copies déjà rendues sous ce réglage : rien n'est recorrigé, seule la pénalité est recalculée sur les réponses qui n'avaient rien rapporté. Les étudiants voient la nouvelle note, et une conversion vers le carnet de notes déjà faite doit être relancée pour la suivre."
+quizInstanceRemarkedFlashTemplate: '%count% copie(s) renotée(s) avec le nouveau réglage de note négative.'
 quizInstanceEditVisibilityOptionFieldHelp: "Les étudiants qui ont déjà commencé ce quiz le gardent, quelle que soit l'option retenue ici."
 quizLaunchModeFieldLabel: 'Mode'
 quizLaunchOpensAtFieldLabel: 'Ouverture'
@@ -2848,6 +2850,23 @@ quizLaunchScoringFieldLabel: 'Barème'
 quizLaunchScoreVisibleImmediatelyFieldLabel: "Score visible par l'étudiant dès la fin du questionnaire"
 quizLaunchCorrectionVisibleFieldLabel: "Correction visible par l'étudiant à la fin"
 quizLaunchCorrectionVisibleFieldHelp: "L'étudiant relit sa copie question par question, comme vous la voyez. Décochez si la même épreuve reste à passer par un autre groupe : vous pourrez la rouvrir ensuite depuis « Modifier »."
+quizLaunchNegativeMarkingFieldLabel: "Note négative sur erreurs"
+quizLaunchNegativeMarkingFieldHelp: "Chaque réponse fausse retire des points au lieu de n'en rapporter aucun. Une réponse partiellement juste (texte à trous, légende, appariement) n'est jamais pénalisée, ni une question laissée sans réponse."
+quizLaunchPenaltyModeFieldLabel: 'Type de pénalité'
+quizPenaltyModeFixedLabel: 'Pénalité fixe'
+quizPenaltyModeScaleLabel: 'Pénalité en fonction du barème'
+quizLaunchPenaltyPointsFieldLabel: 'Points retirés par erreur'
+quizLaunchPenaltyPointsFieldHelp: "Le même nombre de points pour toutes les questions, quel que soit leur barème."
+quizLaunchPenaltyPercentFieldLabel: 'Pénalité (% du barème)'
+quizLaunchPenaltyPercentFieldHelp: "Part du barème de la question retirée quand elle est fausse. Une erreur ne peut jamais coûter plus que ce que la question rapportait."
+quizLaunchNegativeScoreAllowedFieldLabel: 'Autoriser les notes en dessous de 0'
+quizLaunchNegativeScoreAllowedFieldHelp: "Décoché, la note du quiz s'arrête à 0 même si les pénalités dépassent les points gagnés."
+quizNegativeMarkingFixedNoticeTemplate: 'Chaque réponse fausse retire %points% point.'
+quizNegativeMarkingScaleNoticeTemplate: 'Chaque réponse fausse retire %percent% % du barème de la question.'
+quizNegativeScoreFlooredNoticeText: 'La note ne peut pas descendre en dessous de 0.'
+quizNegativeScoreAllowedNoticeText: 'La note peut descendre en dessous de 0.'
+quizNegativeMarkingFixedBadgeTemplate: 'Note négative : −%points% pt'
+quizNegativeMarkingScaleBadgeTemplate: 'Note négative : −%percent% % du barème'
 quizLaunchQuestionCountFieldLabel: 'Nombre de questions tirées'
 quizLaunchSameQuestionsForAllFieldLabel: 'Mêmes questions pour tous les étudiants'
 quizLaunchQuestionOrderPerStudentFieldLabel: 'Ordre des questions différent pour chaque étudiant'

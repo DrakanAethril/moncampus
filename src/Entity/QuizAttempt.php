@@ -398,9 +398,14 @@ class QuizAttempt
         return $this->questionTotal;
     }
 
+    /**
+     * Stores what it is handed, floor included. The « pas de note en dessous de 0 » rule lives one
+     * level up, in App\Service\QuizAttemptConcluder, because it is the quiz that decides it - a
+     * clamp here would silently overrule a teacher who deliberately allowed a negative mark.
+     */
     public function setScore(float $correctCount, int $questionTotal): static
     {
-        $this->correctCount = number_format(max(0.0, $correctCount), 2, '.', '');
+        $this->correctCount = number_format($correctCount, 2, '.', '');
         $this->questionTotal = $questionTotal;
 
         return $this;

@@ -141,6 +141,7 @@ class QuizController extends AbstractController
                     // padlock meets the same 409, which is the difference between a polite display
                     // and a rule.
                     'supervised' => $instance->isSupervised(),
+                    'negativeMarking' => self::negativeMarkingPayload($instance),
                 ];
 
                 continue;
@@ -170,6 +171,7 @@ class QuizController extends AbstractController
                 'lastScorePercent' => $lastConcluded?->getScorePercent(),
                 'locked' => [] !== $lockedBy,
                 'lockedReasons' => $lockedBy,
+                'negativeMarking' => self::negativeMarkingPayload($instance),
             ];
         }
 
@@ -310,6 +312,27 @@ class QuizController extends AbstractController
     }
 
     /**
+     * « Note négative sur erreurs » as the app needs it: the rule, not a rendered sentence, exactly
+     * like the 'supervision' block above. Null when the quiz was launched without it, so a build
+     * that has never heard of the key behaves as it always did.
+     *
+     * @return array{mode: string, points: float, percent: int, floorAtZero: bool}|null
+     */
+    private static function negativeMarkingPayload(QuizInstance $instance): ?array
+    {
+        if (!$instance->isNegativeMarking()) {
+            return null;
+        }
+
+        return [
+            'mode' => $instance->getPenaltyMode()->value,
+            'points' => $instance->getPenaltyPoints(),
+            'percent' => $instance->getPenaltyPercent(),
+            'floorAtZero' => !$instance->isNegativeScoreAllowed(),
+        ];
+    }
+
+    /**
      * One question of an attempt, at the student's own presentation position, with its answers
      * already in this attempt's order (never the stored order - that would leak "ordre" solutions).
      */
@@ -371,6 +394,11 @@ class QuizController extends AbstractController
                 'submitAt' => $instance->getSupervisionSubmitAt(),
             ] : null,
             'deadline' => $attempt->getTimeLimitAt()?->format(\DateTimeInterface::ATOM),
+            // What a wrong answer costs, so the app can say so before it is given - the web
+            // passation prints the same sentence (templates/program/_quiz_penalty_notice.html.twig).
+            // Null on a quiz launched without the penalty, which is every quiz until a teacher
+            // ticks it.
+            'negativeMarking' => self::negativeMarkingPayload($instance),
             'question' => $this->questionPayload($question, $attempt, $drawService),
         ]);
     }
@@ -569,6 +597,10 @@ class QuizController extends AbstractController
                     // the mark (see the design's "Reste ouvert", point 2).
                     'elapsedMs' => $attemptAnswer->getElapsedMs(),
                     'isCorrect' => $attemptAnswer->getIsCorrect(),
+                    // What this line was worth, penalty included - negative on a question a quiz
+                    // with « note négative sur erreurs » charged for. The app prints it beside the
+                    // ✕ exactly as the web breakdown does, so a mark still adds up to the copy.
+                    'score' => $attemptAnswer->getScore(),
                     'explanation' => $question->getExplanation(),
                     'blankResponses' => $question->getType()->usesBlankAnswers() ? $attemptAnswer->getBlankResponses() : null,
                     'blankResults' => $grader->blankResults($question, $attemptAnswer->getBlankResponses()),
@@ -636,6 +668,9 @@ class QuizController extends AbstractController
             'questionTotal' => $attempt->getQuestionTotal(),
             'scorePercent' => $scoreVisible ? $attempt->getScorePercent() : null,
             'scoreOn20' => $scoreVisible && 'note20' === $instance->getScoring()->value ? $attempt->getScoreOn20() : null,
+            // Sent here too, and not only while composing: it is what explains a copy that scored
+            // below what its right answers alone would have paid.
+            'negativeMarking' => self::negativeMarkingPayload($instance),
             'correction' => $correction,
         ]);
     }
