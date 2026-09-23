@@ -255,6 +255,28 @@ class QuizAttemptAnswer
     }
 
     /**
+     * What this answer was worth on its own merits, penalty undone - null when it was never
+     * answered.
+     *
+     * A reading rather than a second stored column, and it is exact because of one invariant:
+     * **the penalty is only ever applied to an answer that earned nothing**
+     * (App\Service\QuizAttemptGrader::score()). A stored score above zero is therefore the raw
+     * mark untouched, and anything at or below zero means the answer earned nothing and was
+     * charged whatever the quiz charged that day.
+     *
+     * It is what lets « Modifier le quiz » move the penalty and re-mark the copies already handed
+     * in (App\Service\QuizPenaltyRemarker) without re-reading a single student's selections. If
+     * that invariant is ever broken - a penalty on a partly right answer, say - this recovery
+     * silently starts lying, and the remarker with it.
+     */
+    public function earnedBeforePenalty(): ?float
+    {
+        $score = $this->getScore();
+
+        return null === $score ? null : max(0.0, $score);
+    }
+
+    /**
      * Not floored at zero: a quiz launched with « note négative sur erreurs » stores the cost of a
      * wrong answer right here (App\Service\QuizAttemptGrader::score()), so the copy's total stays
      * the sum of the lines its correction prints. The floor that does exist is on that total, and

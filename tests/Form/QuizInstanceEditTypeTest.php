@@ -6,6 +6,7 @@ namespace App\Tests\Form;
 
 use App\Entity\QuizInstance;
 use App\Enum\QuizMode;
+use App\Enum\QuizPenaltyMode;
 use App\Enum\QuizSupervisionPolicy;
 use App\Form\QuizInstanceEditType;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -86,6 +87,61 @@ class QuizInstanceEditTypeTest extends TypeTestCase
     }
 
     /**
+     * The penalty is editable here, unlike everything that shaped the draw, because
+     * App\Service\QuizPenaltyRemarker re-marks the copies already handed in on save - see the form's
+     * class docblock. What is pinned is that all four settings make the round trip: a teacher has to
+     * be able to switch the mode, move either figure, and turn the whole thing on or off.
+     */
+    public function testEveryPenaltySettingMakesTheRoundTrip(): void
+    {
+        $instance = $this->instance(QuizMode::Evaluation);
+        $form = $this->factory->create(QuizInstanceEditType::class, $instance, ['supervisionEditable' => true]);
+
+        $form->submit($this->payload([
+            'negativeMarking' => '1',
+            'penaltyMode' => QuizPenaltyMode::Scale->value,
+            'penaltyPercent' => '75',
+            'penaltyPoints' => '3',
+            'negativeScoreAllowed' => '1',
+        ]));
+
+        self::assertTrue($form->isSynchronized());
+        self::assertTrue($instance->isNegativeMarking());
+        self::assertSame(QuizPenaltyMode::Scale, $instance->getPenaltyMode());
+        self::assertSame(75, $instance->getPenaltyPercent());
+        // Kept although the mode no longer reads it: what the teacher last typed is theirs, and
+        // switching back to « pénalité fixe » must not have silently reset it.
+        self::assertSame(3.0, $instance->getPenaltyPoints());
+        self::assertTrue($instance->isNegativeScoreAllowed());
+    }
+
+    public function testUntickingThePenaltyTurnsItOff(): void
+    {
+        $instance = $this->instance(QuizMode::Evaluation)->setNegativeMarking(true);
+        $form = $this->factory->create(QuizInstanceEditType::class, $instance, ['supervisionEditable' => true]);
+
+        // An unticked checkbox is simply absent from the payload - the one way a switch is turned
+        // off, and the one that must not be mistaken for "the field was not submitted".
+        $form->submit($this->payload());
+
+        self::assertTrue($form->isSynchronized());
+        self::assertFalse($instance->isNegativeMarking());
+    }
+
+    public function testBlankPenaltyFieldsFallBackRatherThanReachingTheColumnsAsNull(): void
+    {
+        $instance = $this->instance(QuizMode::Evaluation);
+        $form = $this->factory->create(QuizInstanceEditType::class, $instance, ['supervisionEditable' => true]);
+
+        $form->submit($this->payload(['penaltyMode' => '', 'penaltyPoints' => '', 'penaltyPercent' => '']));
+
+        self::assertTrue($form->isSynchronized());
+        self::assertSame(QuizPenaltyMode::Fixed, $instance->getPenaltyMode());
+        self::assertSame(0.5, $instance->getPenaltyPoints());
+        self::assertSame(50, $instance->getPenaltyPercent());
+    }
+
+    /**
      * « Visibilité » is absent, not empty, for a class carrying no option: « Tous les étudiants »
      * would be the only thing to choose, and that is not a choice.
      *
@@ -113,6 +169,9 @@ class QuizInstanceEditTypeTest extends TypeTestCase
             'secondsPerQuestion' => '30',
             'globalTimeMinutes' => '',
             'scoring' => 'note20',
+            'penaltyMode' => QuizPenaltyMode::Fixed->value,
+            'penaltyPoints' => '1',
+            'penaltyPercent' => '50',
             'supervisionPolicy' => QuizSupervisionPolicy::Warn->value,
             'supervisionExitSeconds' => '8',
             'supervisionSubmitAt' => '',

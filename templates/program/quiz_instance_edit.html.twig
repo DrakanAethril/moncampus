@@ -35,6 +35,31 @@
                     <div class="col-md-6">{{ form_row(form.correctionVisible) }}</div>
                 </div>
 
+                {# « Note négative sur erreurs » - the same block as the launch screen, and the one
+                   field on this form that rewrites marks already given. Saving re-marks every copy
+                   of the class (App\Service\QuizPenaltyRemarker), so the note says so before the
+                   click rather than the flash saying it after. #}
+                <div class="mt-3" data-controller="quiz-penalty">
+                    <div class="cm-subhead">
+                        <div class="cm-subhead__title">{{ 'quizLaunchNegativeMarkingFieldLabel'|trans }}</div>
+                    </div>
+                    <div class="d-flex flex-column gap-3 mt-2">
+                        {{ form_row(form.negativeMarking, {row_attr: {class: 'form-switch'}, attr: {'data-quiz-penalty-target': 'toggle', 'data-action': 'change->quiz-penalty#refresh'}}) }}
+                        <div class="d-flex flex-column gap-3 ps-3 d-none" style="border-left: 2px solid var(--cm-border-soft);" data-quiz-penalty-target="settings">
+                            <div style="max-width: 280px;">
+                                {{ form_row(form.penaltyMode, {attr: {'data-quiz-penalty-target': 'mode', 'data-action': 'change->quiz-penalty#refresh'}}) }}
+                            </div>
+                            <div style="max-width: 200px;" data-quiz-penalty-target="fixed">{{ form_row(form.penaltyPoints) }}</div>
+                            <div style="max-width: 200px;" class="d-none" data-quiz-penalty-target="scale">{{ form_row(form.penaltyPercent) }}</div>
+                            {{ form_row(form.negativeScoreAllowed, {row_attr: {class: 'form-switch'}}) }}
+                        </div>
+                        <div class="cm-note">
+                            <span class="cm-note__icon">i</span>
+                            <div>{{ 'quizInstanceEditNegativeMarkingNoteText'|trans }}</div>
+                        </div>
+                    </div>
+                </div>
+
                 {# Mode contrôle - present only on an évaluation, the mode having been frozen at
                    launch. Editable because nothing here rewrites anything: the journal holds raw
                    page events and every threshold is read back at display time. The two real

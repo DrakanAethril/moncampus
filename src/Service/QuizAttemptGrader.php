@@ -67,6 +67,11 @@ class QuizAttemptGrader
      * An *unanswered* question is not penalised either, and needs no test here: it is never graded
      * at all, so its score stays null and the concluder leaves it out.
      *
+     * « only when the answer earned nothing » is more than a fairness rule: it is what makes the
+     * stored score reversible, so « Modifier le quiz » can move the penalty and re-mark the copies
+     * already handed in without re-reading anybody's selections. See
+     * App\Entity\QuizAttemptAnswer::earnedBeforePenalty(), which that recovery goes through.
+     *
      * @param list<int>                $selectedInstanceAnswerIds
      * @param list<string>             $blankResponses
      * @param array<array-key, string> $zoneResponses

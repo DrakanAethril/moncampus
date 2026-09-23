@@ -151,6 +151,29 @@ class QuizAttemptRepository extends ServiceEntityRepository
         return array_values($studentsById);
     }
 
+    /**
+     * Every attempt of one quiz, finished or not, with its answers already loaded - what
+     * App\Service\QuizPenaltyRemarker walks when the penalty moves.
+     *
+     * The ones still in progress are deliberately included: a copy being composed right now holds
+     * answers already frozen under the old rule, and leaving them behind would hand that student a
+     * paper marked half one way and half the other.
+     *
+     * @return list<QuizAttempt>
+     */
+    public function findAllForInstanceWithAnswers(QuizInstance $instance): array
+    {
+        return $this->createQueryBuilder('a')
+            ->addSelect('aa', 'q')
+            ->leftJoin('a.attemptAnswers', 'aa')
+            ->leftJoin('aa.instanceQuestion', 'q')
+            ->where('a.quizInstance = :instance')
+            ->setParameter('instance', $instance)
+            ->orderBy('a.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     // Powers the teacher-facing results screens (1f/1g) - every concluded attempt across every
     // student, in one query (student eagerly joined, since every row needs a display name).
     /** @return list<QuizAttempt> */
