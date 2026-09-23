@@ -141,6 +141,7 @@ class QuizController extends AbstractController
                     // padlock meets the same 409, which is the difference between a polite display
                     // and a rule.
                     'supervised' => $instance->isSupervised(),
+                    'negativeMarking' => self::negativeMarkingPayload($instance),
                 ];
 
                 continue;
@@ -170,6 +171,7 @@ class QuizController extends AbstractController
                 'lastScorePercent' => $lastConcluded?->getScorePercent(),
                 'locked' => [] !== $lockedBy,
                 'lockedReasons' => $lockedBy,
+                'negativeMarking' => self::negativeMarkingPayload($instance),
             ];
         }
 
@@ -310,6 +312,27 @@ class QuizController extends AbstractController
     }
 
     /**
+     * « Note négative sur erreurs » as the app needs it: the rule, not a rendered sentence, exactly
+     * like the 'supervision' block above. Null when the quiz was launched without it, so a build
+     * that has never heard of the key behaves as it always did.
+     *
+     * @return array{mode: string, points: float, percent: int, floorAtZero: bool}|null
+     */
+    private static function negativeMarkingPayload(QuizInstance $instance): ?array
+    {
+        if (!$instance->isNegativeMarking()) {
+            return null;
+        }
+
+        return [
+            'mode' => $instance->getPenaltyMode()->value,
+            'points' => $instance->getPenaltyPoints(),
+            'percent' => $instance->getPenaltyPercent(),
+            'floorAtZero' => !$instance->isNegativeScoreAllowed(),
+        ];
+    }
+
+    /**
      * One question of an attempt, at the student's own presentation position, with its answers
      * already in this attempt's order (never the stored order - that would leak "ordre" solutions).
      */
@@ -371,6 +394,11 @@ class QuizController extends AbstractController
                 'submitAt' => $instance->getSupervisionSubmitAt(),
             ] : null,
             'deadline' => $attempt->getTimeLimitAt()?->format(\DateTimeInterface::ATOM),
+            // What a wrong answer costs, so the app can say so before it is given - the web
+            // passation prints the same sentence (templates/program/_quiz_penalty_notice.html.twig).
+            // Null on a quiz launched without the penalty, which is every quiz until a teacher
+            // ticks it.
+            'negativeMarking' => self::negativeMarkingPayload($instance),
             'question' => $this->questionPayload($question, $attempt, $drawService),
         ]);
     }

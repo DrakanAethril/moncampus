@@ -33,6 +33,13 @@ use Symfony\Component\Validator\Constraints\Range;
  * re-drawing a quiz some of the class has already sat, or showing numbers that no longer describe
  * the questions in the row. A different draw is a new launch.
  *
+ * « Note négative sur erreurs » and its two settings are absent for that same reason, and it is
+ * worth spelling out because they sit next to « Barème », which *is* editable. A barème is a
+ * reading of a mark already computed; the penalty is what computes it, frozen into each answer as
+ * it is given (App\Service\QuizAttemptGrader::score()). Moving it afterwards would leave the copies
+ * already handed in marked under the old rule and the ones still to come under the new one - the
+ * same class sitting two different papers. A different penalty is a different launch.
+ *
  * QuizMode is absent for the same reason one level up: entraînement and évaluation do not grant the
  * same number of attempts, so flipping the mode would retroactively change how many tries the
  * students who already played were entitled to.

@@ -8,6 +8,7 @@ use App\Entity\Option;
 use App\Entity\Program;
 use App\Entity\QuizTemplate;
 use App\Enum\QuizMode;
+use App\Enum\QuizPenaltyMode;
 use App\Enum\QuizScoring;
 use App\Enum\QuizSupervisionPolicy;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
@@ -18,6 +19,7 @@ use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
+use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -169,6 +171,49 @@ class QuizLaunchType extends AbstractType
                 'help' => 'quizLaunchCorrectionVisibleFieldHelp',
                 'required' => false,
                 'data' => true,
+            ])
+            // « Note négative sur erreurs ». The three fields under it are rendered but hidden
+            // until it is ticked (quiz_penalty_controller.js) and stay submitted either way - the
+            // flag is what decides, and App\Entity\QuizInstance::penaltyFor() reads it first, so a
+            // penalty left behind in a hidden field costs nobody anything.
+            ->add('negativeMarking', CheckboxType::class, [
+                'label' => 'quizLaunchNegativeMarkingFieldLabel',
+                'help' => 'quizLaunchNegativeMarkingFieldHelp',
+                'required' => false,
+                'data' => false,
+            ])
+            ->add('penaltyMode', EnumType::class, [
+                'class' => QuizPenaltyMode::class,
+                'choice_label' => static fn (QuizPenaltyMode $penaltyMode): string => $penaltyMode->labelKey(),
+                'label' => 'quizLaunchPenaltyModeFieldLabel',
+                'data' => QuizPenaltyMode::Fixed,
+            ])
+            // html5:false so the field keeps the French decimal comma (« 0,5 ») NumberType already
+            // parses - an <input type="number"> would refuse it outright in a fr-FR browser, the
+            // same reason App\Form\AccommodationType gives for its own percentage.
+            ->add('penaltyPoints', NumberType::class, [
+                'label' => 'quizLaunchPenaltyPointsFieldLabel',
+                'help' => 'quizLaunchPenaltyPointsFieldHelp',
+                'required' => false,
+                'html5' => false,
+                'scale' => 2,
+                'constraints' => [new Range(min: 0.01, max: 20)],
+                'data' => 0.5,
+            ])
+            // Capped at 100: a wrong answer may cost what the question was worth, never more - the
+            // entity says the same thing again, this one only says it sooner.
+            ->add('penaltyPercent', IntegerType::class, [
+                'label' => 'quizLaunchPenaltyPercentFieldLabel',
+                'help' => 'quizLaunchPenaltyPercentFieldHelp',
+                'required' => false,
+                'constraints' => [new Range(min: 1, max: 100)],
+                'data' => 50,
+            ])
+            ->add('negativeScoreAllowed', CheckboxType::class, [
+                'label' => 'quizLaunchNegativeScoreAllowedFieldLabel',
+                'help' => 'quizLaunchNegativeScoreAllowedFieldHelp',
+                'required' => false,
+                'data' => false,
             ])
             ->add('questionCount', IntegerType::class, [
                 'label' => 'quizLaunchQuestionCountFieldLabel',

@@ -254,9 +254,15 @@ class QuizAttemptAnswer
         return null === $this->score ? null : (float) $this->score;
     }
 
+    /**
+     * Not floored at zero: a quiz launched with « note négative sur erreurs » stores the cost of a
+     * wrong answer right here (App\Service\QuizAttemptGrader::score()), so the copy's total stays
+     * the sum of the lines its correction prints. The floor that does exist is on that total, and
+     * only when the teacher asked for it - see App\Entity\QuizInstance::isNegativeScoreAllowed().
+     */
     public function setScore(?float $score): static
     {
-        $this->score = null === $score ? null : number_format(max(0.0, $score), 2, '.', '');
+        $this->score = null === $score ? null : number_format($score, 2, '.', '');
 
         return $this;
     }

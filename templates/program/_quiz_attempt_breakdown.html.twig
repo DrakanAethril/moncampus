@@ -39,6 +39,12 @@
                     {% if (question.type.value in ['texte_a_trous', 'legende', 'apparier'] or ((question.type.value in ['zone', 'reponse_courte'] or question.type.usesNumericConfig) and question.points != 1)) and attemptAnswer.score is not null %}
                         <span class="cm-badge cm-badge--gold">{{ attemptAnswer.score }} / {{ question.points }}</span>
                     {% endif %}
+                    {# What the penalty took off this line, whatever the type - the badge above only
+                       ever shows on the weighted ones, and a mark has to add up to what the copy
+                       prints (App\Service\QuizAttemptGrader::score()). #}
+                    {% if attemptAnswer.score is not null and attemptAnswer.score < 0 %}
+                        <span class="cm-badge cm-badge--red">{{ attemptAnswer.score|number_format(2, ',', ' ') }}</span>
+                    {% endif %}
                     {% if attemptAnswer.isCorrect %}
                         <a class="ms-auto small" data-bs-toggle="collapse" href="#correction-{{ attemptAnswer.id }}" role="button">{{ 'programQuizSeeDetailAction'|trans }} ▾</a>
                     {% endif %}

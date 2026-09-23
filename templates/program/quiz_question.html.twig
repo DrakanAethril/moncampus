@@ -45,6 +45,7 @@
                         </span>
                     {% endif %}
                 </div>
+                {% include 'program/_quiz_penalty_notice.html.twig' with {quizInstance: quizInstance} only %}
                 <div>
                     <div class="text-secondary text-uppercase small fw-bold" style="letter-spacing:.5px;">{{ 'programQuizProgressTemplate'|trans({'%position%': position + 1, '%total%': total}) }}</div>
                     <div style="height:6px;background:var(--cm-border-soft);border-radius:3px;margin-top:7px;overflow:hidden;">
