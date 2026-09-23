@@ -597,6 +597,10 @@ class QuizController extends AbstractController
                     // the mark (see the design's "Reste ouvert", point 2).
                     'elapsedMs' => $attemptAnswer->getElapsedMs(),
                     'isCorrect' => $attemptAnswer->getIsCorrect(),
+                    // What this line was worth, penalty included - negative on a question a quiz
+                    // with « note négative sur erreurs » charged for. The app prints it beside the
+                    // ✕ exactly as the web breakdown does, so a mark still adds up to the copy.
+                    'score' => $attemptAnswer->getScore(),
                     'explanation' => $question->getExplanation(),
                     'blankResponses' => $question->getType()->usesBlankAnswers() ? $attemptAnswer->getBlankResponses() : null,
                     'blankResults' => $grader->blankResults($question, $attemptAnswer->getBlankResponses()),
@@ -664,6 +668,9 @@ class QuizController extends AbstractController
             'questionTotal' => $attempt->getQuestionTotal(),
             'scorePercent' => $scoreVisible ? $attempt->getScorePercent() : null,
             'scoreOn20' => $scoreVisible && 'note20' === $instance->getScoring()->value ? $attempt->getScoreOn20() : null,
+            // Sent here too, and not only while composing: it is what explains a copy that scored
+            // below what its right answers alone would have paid.
+            'negativeMarking' => self::negativeMarkingPayload($instance),
             'correction' => $correction,
         ]);
     }
