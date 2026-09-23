@@ -587,6 +587,14 @@ class QuizLibraryController extends AbstractController
                 // instance and read back by App\Service\QuizAudience, which is what the student
                 // hub, the passation door and the results roster all ask.
                 visibilityOption: $form->get('visibilityOption')->getData(),
+                // « Note négative sur erreurs ». Left-blank penalty fields fall back on the values
+                // the form opens with rather than on zero: a penalty of nothing would tick the
+                // setting on and take nothing off, which reads as the feature being broken.
+                negativeMarking: (bool) $form->get('negativeMarking')->getData(),
+                penaltyMode: $form->get('penaltyMode')->getData(),
+                penaltyPoints: FormValue::float($form, 'penaltyPoints') ?? 0.5,
+                penaltyPercent: FormValue::int($form, 'penaltyPercent') ?: 50,
+                negativeScoreAllowed: (bool) $form->get('negativeScoreAllowed')->getData(),
             );
 
             $this->addFlash('success', 'quizLaunchedFlashMessage');

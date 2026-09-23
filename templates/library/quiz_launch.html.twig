@@ -147,6 +147,21 @@
                     </div>
                     {{ form_row(form.scoreVisibleImmediately, {row_attr: {class: 'form-switch'}}) }}
                     {{ form_row(form.correctionVisible, {row_attr: {class: 'form-switch'}}) }}
+                    {# « Note négative sur erreurs » - the settings appear under the checkbox and
+                       the two penalty fields swap with the mode (quiz_penalty_controller.js). Only
+                       the display is conditional: everything here is submitted either way, and the
+                       checkbox is what the server reads first. #}
+                    <div data-controller="quiz-penalty">
+                        {{ form_row(form.negativeMarking, {row_attr: {class: 'form-switch'}, attr: {'data-quiz-penalty-target': 'toggle', 'data-action': 'change->quiz-penalty#refresh'}}) }}
+                        <div class="d-flex flex-column gap-3 ps-3 d-none" style="border-left: 2px solid var(--cm-border-soft);" data-quiz-penalty-target="settings">
+                            <div style="max-width: 280px;">
+                                {{ form_row(form.penaltyMode, {attr: {'data-quiz-penalty-target': 'mode', 'data-action': 'change->quiz-penalty#refresh'}}) }}
+                            </div>
+                            <div style="max-width: 200px;" data-quiz-penalty-target="fixed">{{ form_row(form.penaltyPoints) }}</div>
+                            <div style="max-width: 200px;" class="d-none" data-quiz-penalty-target="scale">{{ form_row(form.penaltyPercent) }}</div>
+                            {{ form_row(form.negativeScoreAllowed, {row_attr: {class: 'form-switch'}}) }}
+                        </div>
+                    </div>
                 </div>
                 <div class="col-12 col-lg-6 d-flex flex-column gap-3">
                     <div class="cm-subhead">

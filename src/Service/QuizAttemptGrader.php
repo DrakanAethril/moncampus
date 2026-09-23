@@ -22,6 +22,9 @@ use App\Enum\QuestionType;
  *   design/design_handoff_quiz). isCorrect() stays "every one of them right", so the green/red
  *   badges keep their all-or-nothing meaning.
  * - zone: all-or-nothing on the clicked set, but weighted by the question's own barème.
+ *
+ * On top of that, a quiz launched with « note négative sur erreurs » makes an answer that
+ * earned nothing cost points instead - see score(), which is the only place that reads it.
  */
 class QuizAttemptGrader
 {
@@ -47,8 +50,22 @@ class QuizAttemptGrader
     }
 
     /**
-     * The points earned. Rounded to 2 decimals to match the column it is stored in, so summing an
-     * attempt's answers can never drift from the value each row shows.
+     * The points this answer is worth. Rounded to 2 decimals to match the column it is stored in,
+     * so summing an attempt's answers can never drift from the value each row shows.
+     *
+     * **Negative when the quiz was launched with « note négative sur erreurs » and the answer
+     * earned nothing at all** (App\Entity\QuizInstance::penaltyFor()). The penalty is applied here
+     * rather than when the copy is closed for that same no-drift reason: the mark a student reads
+     * has to be the sum of the lines their correction prints, and a total quietly shrunk at
+     * hand-in time would be a mark nobody can recompute from the screen.
+     *
+     * An answer that earned *something* is never penalised. The partial-credit types are the whole
+     * reason: a texte à trous with two blanks of three right is not a guess, and taking points off
+     * a question that just paid 0.67 would read as an arithmetic bug rather than as a rule. So the
+     * penalty falls on the answer that scored zero, which is exactly what the setting is for.
+     *
+     * An *unanswered* question is not penalised either, and needs no test here: it is never graded
+     * at all, so its score stays null and the concluder leaves it out.
      *
      * @param list<int>                $selectedInstanceAnswerIds
      * @param list<string>             $blankResponses
@@ -57,6 +74,27 @@ class QuizAttemptGrader
      * @param array<string, float>     $numericVariables
      */
     public function score(QuizInstanceQuestion $question, array $selectedInstanceAnswerIds, array $blankResponses = [], array $zoneResponses = [], array $matchingResponses = [], ?float $numericValue = null, ?string $numericUnit = null, array $numericVariables = []): float
+    {
+        $earned = $this->earnedPoints($question, $selectedInstanceAnswerIds, $blankResponses, $zoneResponses, $matchingResponses, $numericValue, $numericUnit, $numericVariables);
+
+        if ($earned > 0.0) {
+            return $earned;
+        }
+
+        return -($question->getQuizInstance()?->penaltyFor($question->gradingPoints()) ?? 0.0);
+    }
+
+    /**
+     * What the answer earned on its own merits, before any penalty - the per-type rule the class
+     * docblock lists.
+     *
+     * @param list<int>                $selectedInstanceAnswerIds
+     * @param list<string>             $blankResponses
+     * @param array<array-key, string> $zoneResponses
+     * @param array<array-key, string> $matchingResponses
+     * @param array<string, float>     $numericVariables
+     */
+    private function earnedPoints(QuizInstanceQuestion $question, array $selectedInstanceAnswerIds, array $blankResponses, array $zoneResponses, array $matchingResponses, ?float $numericValue, ?string $numericUnit, array $numericVariables): float
     {
         if ($question->getType()->usesBlankAnswers()) {
             // A réponse courte is one blank, so the same equal split hands it its whole barème or

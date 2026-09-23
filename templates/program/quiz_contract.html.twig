@@ -56,6 +56,8 @@
                     <p class="text-secondary small mb-0">{{ 'accommodationExtraTimeStudentNotice'|trans({'%percent%': accommodation.quizExtraTimeLabel}) }}</p>
                 {% endif %}
 
+                {% include 'program/_quiz_penalty_notice.html.twig' with {quizInstance: quizInstance} only %}
+
                 <div class="cm-audio-warn">
                     <div class="fw-medium">{{ 'quizContractHeadingText'|trans }}</div>
                     <ul class="mb-0 mt-1 ps-3">
