@@ -29,7 +29,7 @@ class QuizAttemptConcluder
     {
         $attempt->setStatus($status);
         $attempt->setSubmittedAt(new \DateTimeImmutable());
-        $attempt->setScore($this->finalPoints($attempt), $this->availablePoints($attempt));
+        $this->remark($attempt);
 
         // The rule is asked once here and re-read at display time - never copied. It changes
         // nothing about the mark just computed above: it counts what a teacher may want to look
@@ -37,6 +37,20 @@ class QuizAttemptConcluder
         if ($attempt->getQuizInstance()->isSupervised()) {
             $attempt->setFlaggedCount($this->supervisionReports->build($attempt)->flaggedCount);
         }
+    }
+
+    /**
+     * Writes the copy's mark from the lines it already holds - nothing else. Public because
+     * « Modifier le quiz » re-marks an existing copy after the penalty has moved
+     * (App\Service\QuizPenaltyRemarker) and must not re-stamp its status, its hand-in instant or
+     * its surveillance count: those say when and how the copy was sat, which no later edit changes.
+     *
+     * That it is the same method conclude() calls is the point: two ways of totalling a copy would
+     * eventually disagree, and one of them would be the one nobody looks at.
+     */
+    public function remark(QuizAttempt $attempt): void
+    {
+        $attempt->setScore($this->finalPoints($attempt), $this->availablePoints($attempt));
     }
 
     /**

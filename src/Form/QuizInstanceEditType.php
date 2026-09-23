@@ -6,6 +6,7 @@ namespace App\Form;
 
 use App\Entity\Option;
 use App\Entity\QuizInstance;
+use App\Enum\QuizPenaltyMode;
 use App\Enum\QuizScoring;
 use App\Enum\QuizSupervisionPolicy;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
@@ -14,6 +15,7 @@ use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
+use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -33,12 +35,18 @@ use Symfony\Component\Validator\Constraints\Range;
  * re-drawing a quiz some of the class has already sat, or showing numbers that no longer describe
  * the questions in the row. A different draw is a new launch.
  *
- * « Note négative sur erreurs » and its two settings are absent for that same reason, and it is
- * worth spelling out because they sit next to « Barème », which *is* editable. A barème is a
- * reading of a mark already computed; the penalty is what computes it, frozen into each answer as
- * it is given (App\Service\QuizAttemptGrader::score()). Moving it afterwards would leave the copies
- * already handed in marked under the old rule and the ones still to come under the new one - the
- * same class sitting two different papers. A different penalty is a different launch.
+ * « Note négative sur erreurs » *is* editable here, and it is the one field on this form that
+ * rewrites something already written. The penalty is frozen into each answer as it is given
+ * (App\Service\QuizAttemptGrader::score()), so on its own, moving it would leave the copies already
+ * handed in marked under the old rule and the ones still to come under the new one - the same class
+ * sitting two different papers. The answer is not to forbid the gesture but to remove the
+ * asymmetry: App\Service\QuizPenaltyRemarker re-marks every copy of the quiz on save, and the
+ * controller says how many marks moved.
+ *
+ * That re-marking re-grades nothing. What each answer earned was decided when the student gave it
+ * and stays decided; only the penalty on top of it is recomputed. Which is why this field passes
+ * the test the draw settings fail: a different penalty is a different reading of the same copies,
+ * a different draw would be different copies.
  *
  * QuizMode is absent for the same reason one level up: entraînement and évaluation do not grant the
  * same number of attempts, so flipping the mode would retroactively change how many tries the
@@ -132,6 +140,47 @@ class QuizInstanceEditType extends AbstractType
             ->add('correctionVisible', CheckboxType::class, [
                 'label' => 'quizLaunchCorrectionVisibleFieldLabel',
                 'help' => 'quizLaunchCorrectionVisibleFieldHelp',
+                'required' => false,
+            ])
+            // « Note négative sur erreurs », the four fields of the launch form unchanged - see the
+            // class docblock for why they are here at all. Entity-backed unlike over there, so no
+            // `data`: they open on what this quiz was launched with.
+            ->add('negativeMarking', CheckboxType::class, [
+                'label' => 'quizLaunchNegativeMarkingFieldLabel',
+                'help' => 'quizLaunchNegativeMarkingFieldHelp',
+                'required' => false,
+            ])
+            // Same guard as « secondes avant une sortie » below, and for the same reason: the
+            // column is NOT NULL and this form writes straight into the entity, so a payload
+            // arriving without the select - an old cached page, a client that posts a subset -
+            // would reach a typed setter as null and raise a TypeError rather than a form error.
+            ->add('penaltyMode', EnumType::class, [
+                'class' => QuizPenaltyMode::class,
+                'choice_label' => static fn (QuizPenaltyMode $penaltyMode): string => $penaltyMode->labelKey(),
+                'label' => 'quizLaunchPenaltyModeFieldLabel',
+                'empty_data' => QuizPenaltyMode::Fixed->value,
+            ])
+            // Required here, unlike on the launch form, for the reason « secondes avant une sortie »
+            // gives just below: the column is NOT NULL and this form is bound to the entity, so a
+            // blank submission would reach the setter as null. Blank means the half point the
+            // launch form opens on rather than a 500.
+            ->add('penaltyPoints', NumberType::class, [
+                'label' => 'quizLaunchPenaltyPointsFieldLabel',
+                'help' => 'quizLaunchPenaltyPointsFieldHelp',
+                'html5' => false,
+                'scale' => 2,
+                'empty_data' => '0.5',
+                'constraints' => [new Range(min: 0.01, max: 20)],
+            ])
+            ->add('penaltyPercent', IntegerType::class, [
+                'label' => 'quizLaunchPenaltyPercentFieldLabel',
+                'help' => 'quizLaunchPenaltyPercentFieldHelp',
+                'empty_data' => '50',
+                'constraints' => [new Range(min: 1, max: 100)],
+            ])
+            ->add('negativeScoreAllowed', CheckboxType::class, [
+                'label' => 'quizLaunchNegativeScoreAllowedFieldLabel',
+                'help' => 'quizLaunchNegativeScoreAllowedFieldHelp',
                 'required' => false,
             ])
         ;

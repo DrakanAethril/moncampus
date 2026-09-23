@@ -2840,6 +2840,8 @@ quizLaunchVisibilityOptionFieldLabel: 'Visibilité'
 quizLaunchVisibilityOptionAllLabel: 'Tous les étudiants'
 quizLaunchVisibilityOptionFieldHint: "Limiter le quiz aux étudiants d'une option de la classe."
 quizLaunchVisibilityOptionForeignError: "Cette option n'appartient pas à la classe choisie."
+quizInstanceEditNegativeMarkingNoteText: "Enregistrer renote immédiatement toutes les copies déjà rendues sous ce réglage : rien n'est recorrigé, seule la pénalité est recalculée sur les réponses qui n'avaient rien rapporté. Les étudiants voient la nouvelle note, et une conversion vers le carnet de notes déjà faite doit être relancée pour la suivre."
+quizInstanceRemarkedFlashTemplate: '%count% copie(s) renotée(s) avec le nouveau réglage de note négative.'
 quizInstanceEditVisibilityOptionFieldHelp: "Les étudiants qui ont déjà commencé ce quiz le gardent, quelle que soit l'option retenue ici."
 quizLaunchModeFieldLabel: 'Mode'
 quizLaunchOpensAtFieldLabel: 'Ouverture'

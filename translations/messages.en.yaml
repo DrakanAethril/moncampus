@@ -2379,6 +2379,8 @@ quizLaunchVisibilityOptionFieldLabel: 'Visibility'
 quizLaunchVisibilityOptionAllLabel: 'All students'
 quizLaunchVisibilityOptionFieldHint: "Limit the quiz to the students of one of the class's options."
 quizLaunchVisibilityOptionForeignError: "That option does not belong to the class you picked."
+quizInstanceEditNegativeMarkingNoteText: 'Saving re-marks every copy already handed in under this setting straight away: nothing is re-graded, only the penalty is recomputed on the answers that earned nothing. Students see the new mark, and a conversion into the gradebook already done has to be run again to follow it.'
+quizInstanceRemarkedFlashTemplate: '%count% copy/copies re-marked under the new negative marking setting.'
 quizInstanceEditVisibilityOptionFieldHelp: "Students who have already begun this quiz keep it, whichever option is picked here."
 quizLaunchModeFieldLabel: 'Mode'
 quizLaunchOpensAtFieldLabel: 'Opens'

@@ -174,10 +174,12 @@ class QuizInstance implements AccessConditionHost
      * is the historic behaviour: every quiz launched before this existed reads as "no penalty"
      * without a migration having to decide anything for it.
      *
-     * The three settings below are frozen at launch like the rest of the marking, and deliberately
-     * absent from App\Form\QuizInstanceEditType: changing them afterwards would leave the copies
-     * already handed in marked under the old rule and the ones still to come under the new one, so
-     * the same class would sit two different papers. A different penalty is a different launch.
+     * Unlike the draw, these four settings **can** be changed after the launch
+     * (App\Form\QuizInstanceEditType). The penalty is frozen into each answer as it is given, so on
+     * its own that would leave the copies already handed in marked under the old rule - which is
+     * why saving the edit form re-marks the whole class through App\Service\QuizPenaltyRemarker.
+     * The asymmetry is removed rather than the gesture forbidden: a teacher who set the penalty too
+     * hard must be able to say so without making the class sit the paper again.
      */
     #[ORM\Column(name: 'negative_marking', options: ['default' => false])]
     private bool $negativeMarking = false;
