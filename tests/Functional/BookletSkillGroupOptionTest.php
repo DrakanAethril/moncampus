@@ -15,6 +15,7 @@ use App\Entity\ProgramStudentOption;
 use App\Entity\Skill;
 use App\Entity\SkillGroup;
 use App\Entity\SkillLevel;
+use App\Entity\TopicGroup;
 use App\Entity\User;
 use App\Enum\ContractTypeCode;
 use App\Service\AlternanceTutorWizardStepBuilder;
@@ -24,6 +25,7 @@ use Doctrine\ORM\EntityManagerInterface;
 /**
  * A competency group narrowed to options appears in the Livret de l'alternant only for a student
  * holding one of them - the booklet itself, and the tutor's « Compétences » step that fills it.
+ * The same goes for the matière groups its « Équipe pédagogique » lists.
  *
  * Against the real schema, because what the wizard got wrong was never the rule but the rows: an
  * evaluation keeps the skill rows it was created with, and a group put on an option afterwards
@@ -66,6 +68,25 @@ class BookletSkillGroupOptionTest extends FunctionalTestCase
         $this->group('Réservé SISR', $this->sisr);
 
         self::assertSame(['Commun'], $this->bookletGroupLabels($this->tutorLink()));
+    }
+
+    public function testTheTeachingTeamListsTheCommonMatiereGroupsAndTheStudentsOwnOptionOnly(): void
+    {
+        $this->giveStudentOption($this->slam);
+        foreach (['Commun' => null, 'Réservé SLAM' => $this->slam, 'Réservé SISR' => $this->sisr] as $name => $option) {
+            $topicGroup = new TopicGroup($name, $this->program);
+            $topicGroup->setCreatedBy($this->author);
+            if (null !== $option) {
+                $topicGroup->addOption($option);
+            }
+            $this->entityManager->persist($topicGroup);
+        }
+        $this->entityManager->flush();
+
+        /** @var list<array{topicGroup: TopicGroup}> $teamRows */
+        $teamRows = $this->booklet($this->tutorLink())['teamRows'];
+
+        self::assertSame(['Commun', 'Réservé SLAM'], array_map(static fn (array $row): string => $row['topicGroup']->getName(), $teamRows));
     }
 
     public function testRowsStoredBeforeTheGroupWasNarrowedLeaveTheSkillsStep(): void
@@ -111,14 +132,20 @@ class BookletSkillGroupOptionTest extends FunctionalTestCase
     /** @return list<string> */
     private function bookletGroupLabels(InternshipTutorLink $tutorLink): array
     {
+        /** @var list<SkillGroup> $groups */
+        $groups = $this->booklet($tutorLink)['skillGroups'];
+
+        return array_map(static fn (SkillGroup $group): string => $group->getLabel(), $groups);
+    }
+
+    /** @return array<string, mixed> */
+    private function booklet(InternshipTutorLink $tutorLink): array
+    {
         $this->entityManager->clear();
         $tutorLink = $this->entityManager->find(InternshipTutorLink::class, $tutorLink->getId());
         self::assertInstanceOf(InternshipTutorLink::class, $tutorLink);
 
-        /** @var list<SkillGroup> $groups */
-        $groups = static::getContainer()->get(InternshipBookletBuilder::class)->build($tutorLink)['skillGroups'];
-
-        return array_map(static fn (SkillGroup $group): string => $group->getLabel(), $groups);
+        return static::getContainer()->get(InternshipBookletBuilder::class)->build($tutorLink);
     }
 
     private function rowFor(InternshipTutorEvaluation $evaluation, SkillGroup $group): InternshipTutorEvaluationSkill
