@@ -9,7 +9,6 @@ use App\Entity\InternshipProgramInfo;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Option;
 use App\Entity\Program;
-use App\Entity\SkillGroup;
 use App\Entity\Topic;
 use App\Entity\TopicGroup;
 use App\Entity\User;
@@ -26,7 +25,6 @@ use App\Repository\InternshipSupervisorEvaluationRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\PeriodRepository;
 use App\Repository\ProgramStudentOptionRepository;
-use App\Repository\SkillGroupRepository;
 use App\Repository\SkillLevelRepository;
 use App\Repository\TopicGroupRepository;
 use App\Repository\TopicRepository;
@@ -45,7 +43,7 @@ class InternshipBookletBuilder
         private readonly TopicRepository $topicRepository,
         private readonly TopicGroupRepository $topicGroupRepository,
         private readonly InternshipBehaviorCriteriaRepository $behaviorCriteriaRepository,
-        private readonly SkillGroupRepository $skillGroupRepository,
+        private readonly BookletSkillGroups $bookletSkillGroups,
         private readonly SkillLevelRepository $skillLevelRepository,
         private readonly PeriodRepository $periodRepository,
         private readonly InternshipEvaluationPeriodRepository $evaluationPeriodRepository,
@@ -68,12 +66,8 @@ class InternshipBookletBuilder
         $student = $tutorLink->getStudent();
 
         $studentOptions = $this->studentOptionRepository->findOptionsForStudent($program, $student);
-        $studentOptionIds = array_map(static fn (Option $option): int => $option->getId(), $studentOptions);
 
-        $skillGroups = array_values(array_filter(
-            $this->skillGroupRepository->findAllActiveForProgram($program),
-            static fn (SkillGroup $group): bool => $group->isVisibleInBooklet() && $group->isVisibleForStudentOptions($studentOptionIds),
-        ));
+        $skillGroups = $this->bookletSkillGroups->forTutorLink($tutorLink);
 
         $programInfo = $this->programInfoRepository->findOneByProgram($program);
         $examModalitiesByOptionId = $this->optionExamModalityRepository->findMapForProgram($program);

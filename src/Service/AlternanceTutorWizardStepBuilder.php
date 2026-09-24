@@ -32,6 +32,7 @@ class AlternanceTutorWizardStepBuilder
     public function __construct(
         private readonly InternshipTutorEvaluationBuilder $evaluationBuilder,
         private readonly SkillLevelRepository $skillLevelRepository,
+        private readonly BookletSkillGroups $bookletSkillGroups,
         private readonly FormFactoryInterface $formFactory,
     ) {
     }
@@ -50,7 +51,10 @@ class AlternanceTutorWizardStepBuilder
             'remarques' => InternshipTutorRemarksStepType::class,
             default => throw new \InvalidArgumentException(\sprintf('Unknown tuteur wizard step "%s".', $step)),
         };
-        $options = 'competences' === $step ? ['skillLevelChoices' => $this->skillLevelRepository->findAllActiveForProgramOrGlobal($program)] : [];
+        $options = 'competences' === $step ? [
+            'skillLevelChoices' => $this->skillLevelRepository->findAllActiveForProgramOrGlobal($program),
+            'skillEvaluations' => $this->bookletSkillGroups->skillEvaluationsOf($evaluation),
+        ] : [];
 
         return $this->formFactory->create($type, $evaluation, $options);
     }
@@ -74,8 +78,10 @@ class AlternanceTutorWizardStepBuilder
                 $evaluation->getBehaviorEvaluations(),
                 static fn (InternshipTutorEvaluationBehavior $behavior): bool => null !== $behavior->getBehaviorLevel(),
             ),
+            // Only the rows the step shows: a row left over from a group since narrowed to another
+            // option is invisible, so it cannot be what holds the tutor back.
             'competences' => $this->allAnswered(
-                $evaluation->getSkillEvaluations(),
+                $this->bookletSkillGroups->skillEvaluationsOf($evaluation),
                 static fn (InternshipTutorEvaluationSkill $skill): bool => null !== $skill->getSkillLevel(),
             ),
             'forces' => '' !== trim((string) $evaluation->getStrengthsText())

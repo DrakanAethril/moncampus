@@ -28,12 +28,15 @@ class InternshipTutorEvaluationType extends AbstractType
                 'by_reference' => false,
                 'label' => false,
             ])
+            // Unmapped, for the same reason as InternshipTutorSkillsStepType: only the rows the
+            // booklet would print, which the caller passes in.
             ->add('skillEvaluations', CollectionType::class, [
                 'entry_type' => InternshipTutorEvaluationSkillType::class,
                 'entry_options' => ['skillLevelChoices' => $options['skillLevelChoices']],
                 'allow_add' => false,
                 'allow_delete' => false,
-                'by_reference' => false,
+                'mapped' => false,
+                'data' => $options['skillEvaluations'],
                 'label' => false,
             ])
             ->add('strengthsText', TextareaType::class, [
@@ -62,8 +65,9 @@ class InternshipTutorEvaluationType extends AbstractType
     {
         $resolver
             ->setDefaults(['data_class' => InternshipTutorEvaluation::class])
-            ->setRequired('skillLevelChoices')
+            ->setRequired(['skillLevelChoices', 'skillEvaluations'])
             ->setAllowedTypes('skillLevelChoices', 'iterable')
+            ->setAllowedTypes('skillEvaluations', 'array')
         ;
     }
 }
