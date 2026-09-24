@@ -218,28 +218,70 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
         return $enterprises;
     }
 
-    // Powers the Alternances dashboard (33a/33b) - deliberately unpaginated per the spec ("pas de
-    // pagination"), filtering is client-side over the full result.
+    // Powers the Alternances dashboard (33a/33b), one page at a time. The spec said "pas de
+    // pagination"; that held while the list showed one formation, and stopped holding once
+    // « Toutes les formations » became its default - the whole year at once is several hundred rows,
+    // each asking the status resolver for its current step.
+    //
+    // $programs is the formation picker's own list (or the one formation picked in it): an empty one
+    // matches nothing, never everything, so a viewer with no formation on offer sees an empty list
+    // rather than every alternance of the establishment.
     //
     // $testData is a strict either/or, not an "include as well": the dashboard's "Données de test"
     // box swaps the list from the real world to the fake one, the same way a test account swaps
     // worlds everywhere else (see App\Security\StructureAccessChecker::matchesTestMode()). Showing
     // both at once is what the flag exists to prevent.
-    /** @return list<InternshipTutorLink> */
-    public function findForDashboard(Program $program, bool $includeInactive, ?Enterprise $enterprise = null, ?string $search = null, bool $testData = false): array
+    /**
+     * @param list<Program> $programs
+     *
+     * @return list<InternshipTutorLink>
+     */
+    public function findDashboardPage(array $programs, bool $includeInactive, ?Enterprise $enterprise, ?string $search, bool $testData, int $offset, int $limit): array
+    {
+        if ([] === $programs) {
+            return [];
+        }
+
+        return $this->dashboardQuery($programs, $includeInactive, $enterprise, $search, $testData)
+            ->addSelect('st', 'tu', 'e', 'p')
+            ->orderBy('st.lastname', 'ASC')
+            ->addOrderBy('st.firstname', 'ASC')
+            // Two homonyms would otherwise swap places between two page requests and one of them
+            // could show on both pages while the other showed on neither.
+            ->addOrderBy('l.id', 'ASC')
+            // Every join above is to-one, so the limit counts alternances, not joined rows - no
+            // Doctrine Paginator needed.
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /** @param list<Program> $programs */
+    public function countForDashboard(array $programs, bool $includeInactive, ?Enterprise $enterprise, ?string $search, bool $testData): int
+    {
+        if ([] === $programs) {
+            return 0;
+        }
+
+        return (int) $this->dashboardQuery($programs, $includeInactive, $enterprise, $search, $testData)
+            ->select('COUNT(l.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /** @param list<Program> $programs */
+    private function dashboardQuery(array $programs, bool $includeInactive, ?Enterprise $enterprise, ?string $search, bool $testData): QueryBuilder
     {
         $qb = $this->createQueryBuilder('l')
-            ->addSelect('st', 'tu', 'e', 'p')
             ->leftJoin('l.student', 'st')
             ->leftJoin('l.tutor', 'tu')
             ->leftJoin('l.enterprise', 'e')
             ->leftJoin('l.program', 'p')
-            ->where('l.program = :program')
+            ->where('l.program IN (:programs)')
             ->andWhere('l.testAlternance = :testData')
-            ->setParameter('program', $program)
-            ->setParameter('testData', $testData)
-            ->orderBy('st.lastname', 'ASC')
-            ->addOrderBy('st.firstname', 'ASC');
+            ->setParameter('programs', $programs)
+            ->setParameter('testData', $testData);
 
         if (null !== $enterprise) {
             $qb->andWhere('l.enterprise = :enterprise')->setParameter('enterprise', $enterprise);
@@ -248,7 +290,7 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
         $this->applySearch($qb, $search);
         $this->applyActiveFilter($qb, $includeInactive);
 
-        return $qb->getQuery()->getResult();
+        return $qb;
     }
 
     // Feeds the "Alternances" KPI card - all active alternance links for every alternance Program
