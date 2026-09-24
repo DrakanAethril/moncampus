@@ -287,7 +287,7 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
             $qb->andWhere('l.enterprise = :enterprise')->setParameter('enterprise', $enterprise);
         }
 
-        $this->applySearch($qb, $search);
+        $this->applySearch($qb, $search, true);
         $this->applyActiveFilter($qb, $includeInactive);
 
         return $qb;
@@ -401,14 +401,27 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    // Callers all join l.tutor as "tu" and l.enterprise as "e" before reaching here.
-    private function applySearch(QueryBuilder $qb, ?string $search): void
+    // Callers all join l.tutor as "tu" and l.enterprise as "e" before reaching here, and l.student
+    // as "st" when they ask for $includeStudent. The student is matched on the full name as it is
+    // typed - either way round, since the dashboard prints "Prénom Nom" but a list is sorted by
+    // surname - and on the login, which is what the row shows for an account LDAP gave no name.
+    private function applySearch(QueryBuilder $qb, ?string $search, bool $includeStudent = false): void
     {
         if (null === $search || '' === $search) {
             return;
         }
 
-        $qb->andWhere('tu.firstname LIKE :search OR tu.lastname LIKE :search OR e.name LIKE :search')
+        $conditions = ['tu.firstname LIKE :search', 'tu.lastname LIKE :search', 'e.name LIKE :search'];
+        if ($includeStudent) {
+            array_push(
+                $conditions,
+                "CONCAT(COALESCE(st.firstname, ''), ' ', COALESCE(st.lastname, '')) LIKE :search",
+                "CONCAT(COALESCE(st.lastname, ''), ' ', COALESCE(st.firstname, '')) LIKE :search",
+                'st.username LIKE :search',
+            );
+        }
+
+        $qb->andWhere(implode(' OR ', $conditions))
             ->setParameter('search', '%'.$search.'%');
     }
 
