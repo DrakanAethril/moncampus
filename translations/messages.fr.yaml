@@ -1371,6 +1371,7 @@ ufaAlternanceKpiApprentissageLabel: "Contrats d'apprentissage"
 ufaAlternanceKpiProfessionnalisationLabel: 'Contrats de professionnalisation'
 ufaAlternanceFilterSchoolYearLabel: 'Année scolaire'
 ufaAlternanceFilterFormationLabel: 'Formation'
+ufaAlternanceFilterFormationAllLabel: 'Toutes les formations'
 ufaAlternanceFilterEnterpriseLabel: 'Entreprise'
 ufaAlternanceFilterEnterpriseAllLabel: 'Toutes'
 ufaAlternanceFilterActiveLabel: 'Actives'
@@ -1387,6 +1388,8 @@ ufaAlternanceActionLivretLabel: 'Livret'
 ufaAlternanceActionRelancerLabel: 'Relancer'
 ufaAlternanceActionReactivateLabel: 'Réactiver'
 ufaAlternanceEmptyStateLabel: 'Aucune alternance pour cette sélection.'
+ufaAlternancePagerInfoLabel: '%from%–%to% sur %total%'
+ufaAlternancePagerLabel: 'Pages de la liste des alternances'
 ufaAlternancePastYearNoteLabel: 'Les années passées restent consultables, en lecture seule.'
 ufaAlternanceReactivatedFlashMessage: "L'alternance a été réactivée : l'étudiant est de nouveau considéré comme alternant."
 

@@ -4786,6 +4786,9 @@ sequencePublicationUpdatedFlashMessage: 'The opening to students has been update
 ufaConfigurationContractImportNavLabel: 'Import Charlemagne Entreprises'
 
 # UFA > Entreprises - templates/ufa/enterprise/*.html.twig
+ufaAlternanceFilterFormationAllLabel: 'All programs'
+ufaAlternancePagerInfoLabel: '%from%–%to% of %total%'
+ufaAlternancePagerLabel: 'Alternance list pages'
 ufaEnterprisesNavLabel: 'Companies'
 ufaEnterprisesPageHeading: 'Companies'
 ufaEnterpriseListHintText: 'The employers named on alternance contracts, the twenty most recent first. A company is born of the contract naming it: it is neither created nor deleted here, only corrected.'
