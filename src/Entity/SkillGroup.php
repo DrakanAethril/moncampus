@@ -68,16 +68,15 @@ class SkillGroup
 
     // Empty means visible to every student regardless of Option; non-empty scopes this group (and
     // the booklet/evaluation form questions it produces) to only the students enrolled in one of
-    // these Options - see ProgramStudentOptionRepository::findOptionsForStudent() and its use in
-    // InternshipBookletBuilder/InternshipTutorEvaluationController::evaluate().
+    // these Options - see App\Service\BookletSkillGroups, the one place that applies it.
     /** @var Collection<int, Option> */
     #[ORM\ManyToMany(targetEntity: Option::class)]
     #[ORM\JoinTable(name: 'skill_group_option')]
     private Collection $options;
 
     // Both default true so every existing/newly-created group keeps showing up everywhere until a
-    // teacher opts it out - see isVisibleForStudentOptions() for the pre-existing Option-based gate
-    // this composes with in InternshipBookletBuilder/InternshipTutorEvaluationController.
+    // teacher opts it out - see isVisibleForStudentOptions() for the Option-based gate this
+    // composes with in App\Service\BookletSkillGroups.
     #[ORM\Column(name: 'visible_in_booklet', options: ['default' => true])]
     private bool $visibleInBooklet = true;
 
@@ -194,8 +193,8 @@ class SkillGroup
         return $this;
     }
 
-    // Shared by InternshipBookletBuilder and InternshipTutorEvaluationController::evaluate() so
-    // a group's option-gating is only ever decided in one place.
+    // Read by App\Service\BookletSkillGroups alone, so a group's option-gating is only ever
+    // decided in one place.
     /** @param list<int> $studentOptionIds */
     public function isVisibleForStudentOptions(array $studentOptionIds): bool
     {

@@ -13,7 +13,9 @@
     {% endfor %}
 {% elseif step == 'competences' %}
     {% set currentGroupId = null %}
-    {% for skillEvaluation in tutorEvaluation.skillEvaluations %}
+    {# Not tutorEvaluation.skillEvaluations: a stored row outlives the option rule that created
+       it, so only the rows the booklet itself would print (App\Service\BookletSkillGroups). #}
+    {% for skillEvaluation in booklet_skill_evaluations(tutorEvaluation) %}
         {% if skillEvaluation.skill.skillGroup.id != currentGroupId %}
             <div class="fw-bold text-primary small mb-2 mt-3">{{ skillEvaluation.skill.skillGroup.label }}</div>
             {% set currentGroupId = skillEvaluation.skill.skillGroup.id %}

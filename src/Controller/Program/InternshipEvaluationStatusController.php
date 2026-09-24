@@ -107,10 +107,10 @@ class InternshipEvaluationStatusController extends AbstractController
         $tutorLink = $this->findTutorLinkOrNotFound($tutorLinkRepository, $program, $tutorLinkId);
         $evaluationPeriod = $this->findEvaluationPeriodOrNotFound($evaluationPeriodRepository, $program, $evaluationPeriodId);
 
-        ['evaluation' => $evaluation, 'isEdit' => $isEdit, 'skillGroups' => $skillGroups] = $evaluationBuilder->findOrPrepare($tutorLink, $evaluationPeriod);
+        ['evaluation' => $evaluation, 'isEdit' => $isEdit, 'skillGroups' => $skillGroups, 'skillEvaluations' => $skillEvaluations] = $evaluationBuilder->findOrPrepare($tutorLink, $evaluationPeriod);
 
         $skillLevels = $skillLevelRepository->findAllActiveForProgramOrGlobal($program);
-        $form = $this->createForm(InternshipTutorEvaluationType::class, $evaluation, ['skillLevelChoices' => $skillLevels]);
+        $form = $this->createForm(InternshipTutorEvaluationType::class, $evaluation, ['skillLevelChoices' => $skillLevels, 'skillEvaluations' => $skillEvaluations]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {

@@ -15,12 +15,16 @@ class InternshipTutorSkillsStepType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        // Unmapped, fed the rows the booklet would print rather than the evaluation's whole
+        // collection (see App\Service\BookletSkillGroups). Each entry is the stored row itself, so
+        // an answer still lands on it; nothing is written back to the collection.
         $builder->add('skillEvaluations', CollectionType::class, [
             'entry_type' => InternshipTutorEvaluationSkillType::class,
             'entry_options' => ['skillLevelChoices' => $options['skillLevelChoices']],
             'allow_add' => false,
             'allow_delete' => false,
-            'by_reference' => false,
+            'mapped' => false,
+            'data' => $options['skillEvaluations'],
             'label' => false,
         ]);
     }
@@ -29,8 +33,9 @@ class InternshipTutorSkillsStepType extends AbstractType
     {
         $resolver
             ->setDefaults(['data_class' => InternshipTutorEvaluation::class])
-            ->setRequired('skillLevelChoices')
+            ->setRequired(['skillLevelChoices', 'skillEvaluations'])
             ->setAllowedTypes('skillLevelChoices', 'iterable')
+            ->setAllowedTypes('skillEvaluations', 'array')
         ;
     }
 }

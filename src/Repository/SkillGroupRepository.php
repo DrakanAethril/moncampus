@@ -47,10 +47,6 @@ class SkillGroupRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
-    // Powers the booklet and the tutor evaluation form. Active skills and gating Options (see
-    // SkillGroup::$options) are fetch-joined to avoid N+1 when the caller filters by the
-    // student's own Options afterward.
-    /** @return list<SkillGroup> */
     /**
      * Every group of the program, inactive ones included when asked, in referential order.
      *
@@ -79,6 +75,10 @@ class SkillGroupRepository extends ServiceEntityRepository
         return $rows;
     }
 
+    // Powers App\Service\BookletSkillGroups. Active skills and gating Options (see
+    // SkillGroup::$options) are fetch-joined to avoid N+1 when it filters by the student's own
+    // Options afterward.
+    /** @return list<SkillGroup> */
     public function findAllActiveForProgram(Program $program): array
     {
         return $this->createQueryBuilder('g')
