@@ -26,6 +26,19 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.24'
+      date: '2026-09-24'
+      summary: "Le tableau de bord de l'UFA s'ouvre désormais sur toutes les formations de l'année, par pages de 50 alternances. Le livret de l'alternant ne montre plus que les compétences et l'équipe pédagogique de son option."
+      entries:
+          - type: modification
+            title: "Tableau de bord de l'UFA : toutes les formations par défaut"
+            detail: "Le choix de formation propose « Toutes les formations » en premier, et c'est lui qui s'affiche à l'ouverture, toujours sur l'année scolaire en cours. La liste des alternances se lit par pages de 50, et changer de page ne recharge que le tableau."
+          - type: fix
+            title: "Évaluations du livret : plus de compétences d'une autre option"
+            detail: "Les évaluations du tuteur, du chargé de suivi et de l'alternant n'affichent plus les compétences réservées à une option que l'alternant ne suit pas, et l'étape « Compétences » ne reste plus bloquée à cause d'elles. Rien de ce qui avait été saisi n'est effacé."
+          - type: fix
+            title: "Livret : l'équipe pédagogique suit l'option de l'alternant"
+            detail: "La section « Équipe pédagogique » ne liste plus les matières réservées à une autre option."
     - version: '2026.09.23'
       date: '2026-09-23'
       summary: "Un quiz peut désormais retirer des points aux réponses fausses. La règle se choisit au lancement, se modifie ensuite — les copies déjà rendues sont alors renotées — et l'étudiant sait ce qu'une erreur lui coûte avant de répondre."
