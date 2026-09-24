@@ -138,6 +138,28 @@ class TopicGroup
         return $this;
     }
 
+    /**
+     * Same rule as SkillGroup::isVisibleForStudentOptions(): no option means common to everyone,
+     * otherwise the student must hold one of them. Read by the Livret's « Équipe pédagogique »,
+     * where a CDA-only group listed for an AIS student named teachers who never teach them.
+     *
+     * @param list<int> $studentOptionIds
+     */
+    public function isVisibleForStudentOptions(array $studentOptionIds): bool
+    {
+        if ($this->options->isEmpty()) {
+            return true;
+        }
+
+        foreach ($this->options as $option) {
+            if (\in_array($option->getId(), $studentOptionIds, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function getCreationDate(): \DateTimeImmutable
     {
         return $this->creationDate;

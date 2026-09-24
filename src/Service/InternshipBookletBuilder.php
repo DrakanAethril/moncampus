@@ -66,6 +66,7 @@ class InternshipBookletBuilder
         $student = $tutorLink->getStudent();
 
         $studentOptions = $this->studentOptionRepository->findOptionsForStudent($program, $student);
+        $studentOptionIds = array_map(static fn (Option $option): int => $option->getId(), $studentOptions);
 
         $skillGroups = $this->bookletSkillGroups->forTutorLink($tutorLink);
 
@@ -86,8 +87,9 @@ class InternshipBookletBuilder
                 $studentOptions,
             );
 
-        // "Equipe pédagogique" (I.4): one row per active TopicGroup, alphabetically (the
-        // repository's own order), facing the teacher who answers for that group.
+        // "Equipe pédagogique" (I.4): one row per active TopicGroup the student follows - common to
+        // every option, or one of their own - alphabetically (the repository's own order), facing
+        // the teacher who answers for that group.
         $topicsByGroupId = [];
         foreach ($this->topicRepository->findAllActiveForProgram($program) as $topic) {
             $topicsByGroupId[$topic->getTopicGroup()?->getId() ?? 0][] = $topic;
@@ -102,7 +104,10 @@ class InternshipBookletBuilder
                 'teacher' => $topicGroup->getTeacher()
                     ?? $this->resolveTopicGroupTeacher($topicsByGroupId[$topicGroup->getId()] ?? []),
             ],
-            $this->topicGroupRepository->findAllActiveForProgram($program),
+            array_values(array_filter(
+                $this->topicGroupRepository->findAllActiveForProgram($program),
+                static fn (TopicGroup $topicGroup): bool => $topicGroup->isVisibleForStudentOptions($studentOptionIds),
+            )),
         );
 
         // Two independent notions of "period" feed this booklet: $rawPeriods is the alternance
