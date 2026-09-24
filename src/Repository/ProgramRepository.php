@@ -248,7 +248,7 @@ class ProgramRepository extends ServiceEntityRepository
     //
     // $testProgram is the "Données de test" box of the Alternances dashboard (33a/33b): null keeps
     // both worlds (every other caller), true/false narrows to one of them - a strict either/or,
-    // matching InternshipTutorLinkRepository::findForDashboard()'s own $testData. Ignored for a
+    // matching InternshipTutorLinkRepository::findDashboardPage()'s own $testData. Ignored for a
     // test VIEWER, whose world is already all-test and for whom "hide the test formations" would
     // just empty the screen.
     /** @return list<Program> */

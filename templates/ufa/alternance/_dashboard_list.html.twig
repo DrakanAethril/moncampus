@@ -1,0 +1,97 @@
+{# The alternance list of the UFA dashboard, wrapped in the <turbo-frame> its own pager navigates.
+   Rendered both inline by DashboardController::dashboard() and standalone by
+   DashboardController::list() - the frame id has to match in both, which is why there is one
+   partial and not two.
+
+   target="_top" sends every link and form of the rows (Suivi, Livret, Modifier, Réactiver) to a
+   full visit, as before; only the pager's links name the frame, so only they stay inside it. #}
+{% set list_query = filters|merge({all: showAll ? 1 : 0}) %}
+<turbo-frame id="ufa-alternance-list" target="_top" autoscroll data-autoscroll-block="start">
+    <div class="table-responsive">
+        <table class="table table-vcenter card-table table-striped">
+            <thead>
+                <tr>
+                    <th>{{ 'ufaAlternanceColumnStudentLabel'|trans }}</th>
+                    <th>{{ 'ufaAlternanceColumnFormationLabel'|trans }}</th>
+                    <th>{{ 'ufaAlternanceColumnTutorLabel'|trans }}</th>
+                    <th>{{ 'ufaAlternanceColumnEnterpriseLabel'|trans }}</th>
+                    <th>{{ 'ufaAlternanceColumnStatusLabel'|trans }}</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                    {% set tutorLink = row.tutorLink %}
+                    {% set inactive = tutorLink.terminated %}
+                    <tr>
+                        <td>
+                            <div class="fw-bold">
+                                {{ tutorLink.student.displayName ?? tutorLink.student.username }}
+                                {% if tutorLink.testAlternance %}<span class="badge bg-purple-lt ms-1">{{ 'ufaAlternanceTestBadgeLabel'|trans }}</span>{% endif %}
+                            </div>
+                            <div class="text-secondary small">{{ tutorLink.contractType.labelKey|trans }} · {{ tutorLink.contractStartDate|date('d/m/Y') }} - {{ tutorLink.contractEndDate|date('d/m/Y') }}{{ inactive ? ' · ' ~ 'ufaAlternanceTerminatedOnLabel'|trans({'%date%': tutorLink.inactiveDate|date('d/m/Y')}) }}</div>
+                        </td>
+                        <td>{{ tutorLink.program.displayShortName }}</td>
+                        <td>{{ tutorLink.tutor.displayName ?? tutorLink.tutor.username }}</td>
+                        <td>{{ tutorLink.enterprise.name ?? '—' }}</td>
+                        <td><span class="badge {{ row.badge.class }}">{{ row.badge.label }}</span></td>
+                        <td class="text-end">
+                            {% if inactive %}
+                                <a href="{{ path('app_ufa_alternance_livret', {id: tutorLink.id}) }}">{{ 'ufaAlternanceActionLivretLabel'|trans }}</a>
+                                {# The list's own query string rides along, so the redirect lands back on this
+                                   page of this selection rather than on the dashboard's defaults. #}
+                                <form method="post" class="d-inline ms-2" action="{{ path('app_ufa_alternance_reactivate', {id: tutorLink.id}|merge(list_query)|merge({page: page})) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('ufa_alternance_terminate') }}">
+                                    <button type="submit" class="btn btn-link p-0">{{ 'ufaAlternanceActionReactivateLabel'|trans }}</button>
+                                </form>
+                            {% elseif row.isPastYear %}
+                                <a href="{{ path('app_ufa_alternance_livret', {id: tutorLink.id}) }}">{{ 'ufaAlternanceActionLivretLabel'|trans }}</a>
+                            {% else %}
+                                {# Spec §5: Suivi / Livret / Modifier - the Livret is replaced by
+                                   Relancer on the overdue rows. #}
+                                <a href="{{ path('app_ufa_alternance_show', {id: tutorLink.id}) }}">{{ 'ufaAlternanceActionSuiviLabel'|trans }}</a>
+                                {% if row.status.isLate %}
+                                    <a href="{{ path('app_ufa_alternance_show', {id: tutorLink.id}) }}" class="ms-2 text-warning">{{ 'ufaAlternanceActionRelancerLabel'|trans }}</a>
+                                {% else %}
+                                    <a href="{{ path('app_ufa_alternance_livret', {id: tutorLink.id}) }}" class="ms-2">{{ 'ufaAlternanceActionLivretLabel'|trans }}</a>
+                                {% endif %}
+                                <a href="{{ path('app_ufa_alternance_edit', {id: tutorLink.id}) }}" class="ms-2">{{ 'editActionLabel'|trans }}</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="6" class="text-center text-secondary py-4">{{ 'ufaAlternanceEmptyStateLabel'|trans }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if total > 0 %}
+        <div class="cm-pager">
+            {% if pageCount > 1 %}
+                <nav class="cm-pager__pages" aria-label="{{ 'ufaAlternancePagerLabel'|trans }}">
+                    {% if page > 1 %}
+                        <a class="cm-pager__link" href="{{ path('app_ufa_list', list_query|merge({page: page - 1})) }}" data-turbo-frame="ufa-alternance-list" rel="prev">{{ 'datatablePaginatePreviousLabel'|trans }}</a>
+                    {% else %}
+                        <span class="cm-pager__link is-disabled" aria-disabled="true">{{ 'datatablePaginatePreviousLabel'|trans }}</span>
+                    {% endif %}
+                    {# First, last, and two either side of the current page; a gap anywhere else. #}
+                    {% for number in 1..pageCount %}
+                        {% if number == page %}
+                            <span class="cm-pager__link is-current" aria-current="page">{{ number }}</span>
+                        {% elseif number == 1 or number == pageCount or (number >= page - 2 and number <= page + 2) %}
+                            <a class="cm-pager__link" href="{{ path('app_ufa_list', list_query|merge({page: number})) }}" data-turbo-frame="ufa-alternance-list">{{ number }}</a>
+                        {% elseif number == page - 3 or number == page + 3 %}
+                            <span class="cm-pager__gap" aria-hidden="true">…</span>
+                        {% endif %}
+                    {% endfor %}
+                    {% if page < pageCount %}
+                        <a class="cm-pager__link" href="{{ path('app_ufa_list', list_query|merge({page: page + 1})) }}" data-turbo-frame="ufa-alternance-list" rel="next">{{ 'datatablePaginateNextLabel'|trans }}</a>
+                    {% else %}
+                        <span class="cm-pager__link is-disabled" aria-disabled="true">{{ 'datatablePaginateNextLabel'|trans }}</span>
+                    {% endif %}
+                </nav>
+            {% endif %}
+            <span class="cm-pager__count">{{ 'ufaAlternancePagerInfoLabel'|trans({'%from%': offset + 1, '%to%': offset + rows|length, '%total%': total}) }}</span>
+        </div>
+    {% endif %}
+</turbo-frame>

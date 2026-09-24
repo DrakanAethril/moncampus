@@ -9,12 +9,9 @@ use App\Entity\InternshipTutorEvaluation;
 use App\Entity\InternshipTutorEvaluationBehavior;
 use App\Entity\InternshipTutorEvaluationSkill;
 use App\Entity\InternshipTutorLink;
-use App\Entity\Option;
 use App\Entity\SkillGroup;
 use App\Repository\InternshipBehaviorCriteriaRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
-use App\Repository\ProgramStudentOptionRepository;
-use App\Repository\SkillGroupRepository;
 
 /**
  * Find-or-create + idempotent row population for an InternshipTutorEvaluation - shared by
@@ -27,12 +24,17 @@ class InternshipTutorEvaluationBuilder
     public function __construct(
         private readonly InternshipTutorEvaluationRepository $evaluationRepository,
         private readonly InternshipBehaviorCriteriaRepository $behaviorCriteriaRepository,
-        private readonly SkillGroupRepository $skillGroupRepository,
-        private readonly ProgramStudentOptionRepository $studentOptionRepository,
+        private readonly BookletSkillGroups $bookletSkillGroups,
     ) {
     }
 
-    /** @return array{evaluation: InternshipTutorEvaluation, isEdit: bool, skillGroups: list<SkillGroup>} */
+    /**
+     * 'skillEvaluations' is what a form or a screen should render, never the evaluation's whole
+     * collection: rows stored before a group was narrowed to an option stay in it - see
+     * BookletSkillGroups.
+     *
+     * @return array{evaluation: InternshipTutorEvaluation, isEdit: bool, skillGroups: list<SkillGroup>, skillEvaluations: list<InternshipTutorEvaluationSkill>}
+     */
     public function findOrPrepare(InternshipTutorLink $tutorLink, InternshipEvaluationPeriod $evaluationPeriod): array
     {
         $evaluation = $this->evaluationRepository->findOneForTutorLinkAndEvaluationPeriod($tutorLink, $evaluationPeriod);
@@ -59,14 +61,7 @@ class InternshipTutorEvaluationBuilder
             static fn (InternshipTutorEvaluationSkill $row): ?int => $row->getSkill()?->getId(),
             $evaluation->getSkillEvaluations()->toArray(),
         );
-        $studentOptionIds = array_map(
-            static fn (Option $option): int => $option->getId(),
-            $this->studentOptionRepository->findOptionsForStudent($tutorLink->getProgram(), $tutorLink->getStudent()),
-        );
-        $skillGroups = array_values(array_filter(
-            $this->skillGroupRepository->findAllActiveForProgram($tutorLink->getProgram()),
-            static fn (SkillGroup $group): bool => $group->isVisibleInBooklet() && $group->isVisibleForStudentOptions($studentOptionIds),
-        ));
+        $skillGroups = $this->bookletSkillGroups->forTutorLink($tutorLink);
         foreach ($skillGroups as $skillGroup) {
             foreach ($skillGroup->getSkills() as $skill) {
                 if (null === $skill->getInactiveDate() && !\in_array($skill->getId(), $existingSkillIds, true)) {
@@ -75,6 +70,11 @@ class InternshipTutorEvaluationBuilder
             }
         }
 
-        return ['evaluation' => $evaluation, 'isEdit' => $isEdit, 'skillGroups' => $skillGroups];
+        return [
+            'evaluation' => $evaluation,
+            'isEdit' => $isEdit,
+            'skillGroups' => $skillGroups,
+            'skillEvaluations' => $this->bookletSkillGroups->skillEvaluationsOf($evaluation),
+        ];
     }
 }

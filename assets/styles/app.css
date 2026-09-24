@@ -1363,6 +1363,24 @@ div.dt-container div.dt-search input.form-control {
 }
 .dataTables_wrapper .dataTables_paginate .paginate_button.disabled { color: var(--cm-border) !important; }
 
+/* Server-rendered pager (.cm-pager) - the same pills as the DataTables pagination above, for a
+   list whose rows are rendered by Twig and whose pages load into a <turbo-frame> (UFA dashboard). */
+.cm-pager {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
+    padding: 12px 16px; border-top: 1px solid var(--cm-border-soft);
+}
+.cm-pager__pages { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.cm-pager__link {
+    font: 400 12.5px var(--cm-font-ui); padding: 5px 11px; border-radius: 7px;
+    border: 1px solid var(--cm-border-soft); background: var(--cm-surface);
+    color: var(--cm-brand-strong); text-decoration: none;
+}
+a.cm-pager__link:hover { border-color: var(--cm-brand); text-decoration: none; }
+.cm-pager__link.is-current { background: var(--cm-brand); border-color: var(--cm-brand); color: #fff; font-weight: 600; }
+.cm-pager__link.is-disabled { color: var(--cm-disabled); }
+.cm-pager__gap { font-size: 12.5px; color: var(--cm-faint); }
+.cm-pager__count { margin-left: auto; font: 400 12.5px var(--cm-font-ui); color: var(--cm-faint); }
+
 /* ==========================================================================
    Row/list actions (.cm-actions) - plain color-coded text links/buttons at
    the end of a table row or list item, replacing the previous Bootstrap

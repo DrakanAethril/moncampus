@@ -9,7 +9,6 @@ use App\Entity\InternshipProgramInfo;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Option;
 use App\Entity\Program;
-use App\Entity\SkillGroup;
 use App\Entity\Topic;
 use App\Entity\TopicGroup;
 use App\Entity\User;
@@ -26,7 +25,6 @@ use App\Repository\InternshipSupervisorEvaluationRepository;
 use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\PeriodRepository;
 use App\Repository\ProgramStudentOptionRepository;
-use App\Repository\SkillGroupRepository;
 use App\Repository\SkillLevelRepository;
 use App\Repository\TopicGroupRepository;
 use App\Repository\TopicRepository;
@@ -45,7 +43,7 @@ class InternshipBookletBuilder
         private readonly TopicRepository $topicRepository,
         private readonly TopicGroupRepository $topicGroupRepository,
         private readonly InternshipBehaviorCriteriaRepository $behaviorCriteriaRepository,
-        private readonly SkillGroupRepository $skillGroupRepository,
+        private readonly BookletSkillGroups $bookletSkillGroups,
         private readonly SkillLevelRepository $skillLevelRepository,
         private readonly PeriodRepository $periodRepository,
         private readonly InternshipEvaluationPeriodRepository $evaluationPeriodRepository,
@@ -70,10 +68,7 @@ class InternshipBookletBuilder
         $studentOptions = $this->studentOptionRepository->findOptionsForStudent($program, $student);
         $studentOptionIds = array_map(static fn (Option $option): int => $option->getId(), $studentOptions);
 
-        $skillGroups = array_values(array_filter(
-            $this->skillGroupRepository->findAllActiveForProgram($program),
-            static fn (SkillGroup $group): bool => $group->isVisibleInBooklet() && $group->isVisibleForStudentOptions($studentOptionIds),
-        ));
+        $skillGroups = $this->bookletSkillGroups->forTutorLink($tutorLink);
 
         $programInfo = $this->programInfoRepository->findOneByProgram($program);
         $examModalitiesByOptionId = $this->optionExamModalityRepository->findMapForProgram($program);
@@ -92,8 +87,9 @@ class InternshipBookletBuilder
                 $studentOptions,
             );
 
-        // "Equipe pédagogique" (I.4): one row per active TopicGroup, alphabetically (the
-        // repository's own order), facing the teacher who answers for that group.
+        // "Equipe pédagogique" (I.4): one row per active TopicGroup the student follows - common to
+        // every option, or one of their own - alphabetically (the repository's own order), facing
+        // the teacher who answers for that group.
         $topicsByGroupId = [];
         foreach ($this->topicRepository->findAllActiveForProgram($program) as $topic) {
             $topicsByGroupId[$topic->getTopicGroup()?->getId() ?? 0][] = $topic;
@@ -108,7 +104,10 @@ class InternshipBookletBuilder
                 'teacher' => $topicGroup->getTeacher()
                     ?? $this->resolveTopicGroupTeacher($topicsByGroupId[$topicGroup->getId()] ?? []),
             ],
-            $this->topicGroupRepository->findAllActiveForProgram($program),
+            array_values(array_filter(
+                $this->topicGroupRepository->findAllActiveForProgram($program),
+                static fn (TopicGroup $topicGroup): bool => $topicGroup->isVisibleForStudentOptions($studentOptionIds),
+            )),
         );
 
         // Two independent notions of "period" feed this booklet: $rawPeriods is the alternance

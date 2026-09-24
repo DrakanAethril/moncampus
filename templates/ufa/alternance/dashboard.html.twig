@@ -18,14 +18,8 @@
 
 {% block main %}
     {% set year_label = selectedYear ? selectedYear.startDate|date('Y') ~ '-' ~ selectedYear.endDate|date('Y') : '—' %}
-    {# Every filter except "all", so the Actives/Toutes links can flip that one and keep the rest. #}
-    {% set filters = {
-        year: selectedYear ? selectedYear.id : null,
-        formation: selectedFormation ? selectedFormation.id : null,
-        enterprise: selectedEnterprise ? selectedEnterprise.id : null,
-        search: search != '' ? search : null,
-        test: showTestData ? 1 : null,
-    }|filter(value => value is not null) %}
+    {# `filters` comes from the controller (DashboardController::readListFilters()): every filter
+       except "all", so the Actives/Toutes links can flip that one and keep the rest. #}
 
     {# 33a: value first, then a sentence-case label, then the muted qualifier line -
        the two contract-type cards carry no qualifier in the design. #}
@@ -65,7 +59,8 @@
             </label>
             <label class="cm-filterbar__field">
                 {{ 'ufaAlternanceFilterFormationLabel'|trans }}
-                <select name="formation" class="cm-filterbar__select" data-action="change->auto-submit#submit">
+                <select name="formation" class="cm-filterbar__select {{ selectedFormation ? '' : 'cm-filterbar__select--any' }}" data-action="change->auto-submit#submit">
+                    <option value="">{{ 'ufaAlternanceFilterFormationAllLabel'|trans }}</option>
                     {% for formation in formations %}
                         <option value="{{ formation.id }}"{{ selectedFormation and selectedFormation.id == formation.id ? ' selected' }}>{{ formation.displayShortName }}</option>
                     {% endfor %}
@@ -100,62 +95,7 @@
                 <input type="search" name="search" value="{{ search }}" aria-label="{{ 'ufaAlternanceFilterSearchLabel'|trans }}" placeholder="{{ 'ufaAlternanceFilterSearchPlaceholder'|trans }}" data-action="change->auto-submit#submit">
             </span>
         </form>
-        <div class="table-responsive">
-            <table class="table table-vcenter card-table table-striped">
-                <thead>
-                    <tr>
-                        <th>{{ 'ufaAlternanceColumnStudentLabel'|trans }}</th>
-                        <th>{{ 'ufaAlternanceColumnFormationLabel'|trans }}</th>
-                        <th>{{ 'ufaAlternanceColumnTutorLabel'|trans }}</th>
-                        <th>{{ 'ufaAlternanceColumnEnterpriseLabel'|trans }}</th>
-                        <th>{{ 'ufaAlternanceColumnStatusLabel'|trans }}</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for row in rows %}
-                        {% set tutorLink = row.tutorLink %}
-                        {% set inactive = tutorLink.terminated %}
-                        <tr>
-                            <td>
-                                <div class="fw-bold">
-                                    {{ tutorLink.student.displayName ?? tutorLink.student.username }}
-                                    {% if tutorLink.testAlternance %}<span class="badge bg-purple-lt ms-1">{{ 'ufaAlternanceTestBadgeLabel'|trans }}</span>{% endif %}
-                                </div>
-                                <div class="text-secondary small">{{ tutorLink.contractType.labelKey|trans }} · {{ tutorLink.contractStartDate|date('d/m/Y') }} - {{ tutorLink.contractEndDate|date('d/m/Y') }}{{ inactive ? ' · ' ~ 'ufaAlternanceTerminatedOnLabel'|trans({'%date%': tutorLink.inactiveDate|date('d/m/Y')}) }}</div>
-                            </td>
-                            <td>{{ tutorLink.program.displayShortName }}</td>
-                            <td>{{ tutorLink.tutor.displayName ?? tutorLink.tutor.username }}</td>
-                            <td>{{ tutorLink.enterprise.name ?? '—' }}</td>
-                            <td><span class="badge {{ row.badge.class }}">{{ row.badge.label }}</span></td>
-                            <td class="text-end">
-                                {% if inactive %}
-                                    <a href="{{ path('app_ufa_alternance_livret', {id: tutorLink.id}) }}">{{ 'ufaAlternanceActionLivretLabel'|trans }}</a>
-                                    <form method="post" class="d-inline ms-2" action="{{ path('app_ufa_alternance_reactivate', {id: tutorLink.id}) }}">
-                                        <input type="hidden" name="_token" value="{{ csrf_token('ufa_alternance_terminate') }}">
-                                        <button type="submit" class="btn btn-link p-0">{{ 'ufaAlternanceActionReactivateLabel'|trans }}</button>
-                                    </form>
-                                {% elseif row.isPastYear %}
-                                    <a href="{{ path('app_ufa_alternance_livret', {id: tutorLink.id}) }}">{{ 'ufaAlternanceActionLivretLabel'|trans }}</a>
-                                {% else %}
-                                    {# Spec §5: Suivi / Livret / Modifier - the Livret is replaced by
-                                       Relancer on the overdue rows. #}
-                                    <a href="{{ path('app_ufa_alternance_show', {id: tutorLink.id}) }}">{{ 'ufaAlternanceActionSuiviLabel'|trans }}</a>
-                                    {% if row.status.isLate %}
-                                        <a href="{{ path('app_ufa_alternance_show', {id: tutorLink.id}) }}" class="ms-2 text-warning">{{ 'ufaAlternanceActionRelancerLabel'|trans }}</a>
-                                    {% else %}
-                                        <a href="{{ path('app_ufa_alternance_livret', {id: tutorLink.id}) }}" class="ms-2">{{ 'ufaAlternanceActionLivretLabel'|trans }}</a>
-                                    {% endif %}
-                                    <a href="{{ path('app_ufa_alternance_edit', {id: tutorLink.id}) }}" class="ms-2">{{ 'editActionLabel'|trans }}</a>
-                                {% endif %}
-                            </td>
-                        </tr>
-                    {% else %}
-                        <tr><td colspan="6" class="text-center text-secondary py-4">{{ 'ufaAlternanceEmptyStateLabel'|trans }}</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+        {% include 'ufa/alternance/_dashboard_list.html.twig' %}
         {% if isPastYear %}
             <div class="card-footer text-secondary small">{{ 'ufaAlternancePastYearNoteLabel'|trans }}</div>
         {% endif %}
