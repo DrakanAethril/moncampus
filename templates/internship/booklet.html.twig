@@ -2,9 +2,9 @@
    and rendered by Gotenberg for the PDF export (App\Service\InternshipBookletPdfExporter), which
    is why every asset() call is prefixed with assetBaseUrl: Gotenberg has no browser origin of its
    own. Faithfully ports design/design_livret_alternant (see its README) into real data bindings -
-   institutional/regulatory text (pages "Modalités d'utilisation", "Durée de travail",
-   "Fonctionnement de la formation", "Suivi de la formation") is intentionally hardcoded, it is
-   part of the document itself, not configurable content.
+   institutional text ("Suivi de la formation") is intentionally hardcoded, it is part of the
+   document itself, not configurable content - except the modalités de contrat, sections 5 onwards
+   of chapter I, which each contract type (and formation) writes for itself.
 
    No page number is written in this file. On paper they are Chromium's own: the running header
    and footer live in the @page margin boxes and count real pages (counter(page)), so a section that
@@ -100,6 +100,18 @@
     }
     .lv-h1 { color: #1F4E79; font-size: 18pt; margin: 6mm 0 4mm; }
     .lv-h2 { color: #2E74B5; font-size: 13pt; margin: 3mm 0 3mm; }
+    .lv-h3 { color: #1F4E79; font-size: 11pt; font-weight: 700; margin: 4mm 0 2mm; }
+    /* The modalités de contrat: whatever the editor produced, set in the booklet's own rhythm. Their
+       headings were rewritten to lv-h2/lv-h3 on the way in; a heading is never left alone at the
+       foot of a page. */
+    .lv-free-text > .lv-h2 { margin-top: 7mm; }
+    .lv-free-text > .lv-h2:first-child { margin-top: 4mm; }
+    .lv-free-text .lv-h2, .lv-free-text .lv-h3 { break-after: avoid; }
+    .lv-free-text p { margin: 2mm 0; }
+    .lv-free-text ul, .lv-free-text ol { margin: 1mm 0; padding-left: 7mm; }
+    .lv-free-text li { margin: 1.5mm 0; }
+    .lv-free-text table { margin: 2mm 0; }
+    .lv-free-text td, .lv-free-text th { border: 0.5pt solid #8aa2bd; padding: 1.5mm 2mm; vertical-align: top; }
     /* The competency's own explanation, under its label in the two "compétences" grids. Smaller
        and grey so the rated wording stays the thing the eye lands on; the HugeRTE paragraph
        margins are flattened, otherwise one sentence adds a blank line to every row. */
@@ -131,36 +143,16 @@
   </nav>
 {% endmacro %}
 
-{# The sommaire: one entry per heading, pointing at its anchor. Its page comes from tocPages, and a
-   heading nobody measured (on screen) prints without one. #}
-{% set toc = [
-    {label: 'I. Acteurs et informations générales', anchor: 'section-i', level: 1},
-    {label: '1. Alternant', anchor: 'section-i-1', level: 2},
-    {label: '2. Employeur', anchor: 'section-i-2', level: 2},
-    {label: '3. Le centre de formation', anchor: 'section-i-3', level: 2},
-    {label: '4. Equipe pédagogique', anchor: 'section-i-4', level: 2},
-    {label: '5. Modalités d’utilisation du livret', anchor: 'section-i-5', level: 2},
-    {label: '6. Durée de travail', anchor: 'section-i-6', level: 2},
-    {label: 'II. Informations pédagogiques', anchor: 'section-ii', level: 1},
-    {label: '1. Calendrier d’alternance', anchor: 'section-ii-1', level: 2},
-] %}
-{# The emploi du temps only exists as a section when the formation deposited one, and it is what
-   pushes the exam modalities from 2 to 3 - hence a merge rather than a second full listing. #}
-{% if timetableFileUrl %}
-    {% set toc = toc|merge([{label: '2. Emploi du temps', anchor: 'section-ii-2', level: 2}]) %}
-{% endif %}
+{# The sommaire lists the outline's printed entries - chapter I's sections include the modalités de
+   contrat, however many headings they have - each pointing at its anchor. Its page comes from
+   tocPages, and a heading nobody measured (on screen) prints without one. See
+   App\Service\BookletOutline, which the reader's menu reads too. #}
+{% set toc = outline|filter(entry => entry.printed) %}
 {% set examNumber = timetableFileUrl ? 3 : 2 %}
-{% set toc = toc|merge([
-    {label: examNumber ~ '. Modalités d’examen', anchor: 'section-ii-' ~ examNumber, level: 2},
-    {label: 'III. Suivi de la formation', anchor: 'section-iii', level: 1},
-]) %}
 
 {# Every anchor the exporter needs a page for: the sommaire's, and each evaluation period, which is
    how an extract knows the numbers its pages carry in the complete booklet. #}
-{% set measuredAnchors = toc|map(t => t.anchor) %}
-{% for entry in periods %}
-    {% set measuredAnchors = measuredAnchors|merge(['section-period-' ~ loop.index]) %}
-{% endfor %}
+{% set measuredAnchors = outline|map(entry => entry.anchor) %}
 
 <div style="font-family: Carlito, Calibri, 'Segoe UI', sans-serif; color: #1b2430; font-size: 10.5pt; line-height: 1.45;">
 
@@ -192,7 +184,8 @@
         {% set page = tocPages[t.anchor] ?? null %}
         {% set weight = t.level == 1 ? 700 : 400 %}
         <a href="#{{ t.anchor }}" style="display: flex; align-items: baseline; gap: 3mm; font-size: 12pt; margin: 1.6mm 0; padding-left: {{ t.level == 1 ? 0 : 8 }}mm; color: #1b2430;">
-            <span style="font-weight: {{ weight }}; color: {{ t.level == 1 ? '#1F4E79' : '#1b2430' }};">{{ t.label }}</span>
+            {# Always French, like the rest of the document, whatever the reader's language. #}
+            <span style="font-weight: {{ weight }}; color: {{ t.level == 1 ? '#1F4E79' : '#1b2430' }};">{{ t.number }} {{ t.labelKey ? t.labelKey|trans({}, 'messages', 'fr') : t.label }}</span>
             {% if page %}
                 <span style="flex: 1; border-bottom: 1.2pt dotted #9db1c7;"></span>
                 <span style="font-weight: {{ weight }};">{{ page }}</span>
@@ -262,7 +255,7 @@
   <!-- PAGE 5 - Equipe pedagogique -->
   <div class="lv-page">
     <div class="lv-corner">{{ studentName }}</div>
-    <h2 class="lv-h2" id="section-i-4" style="margin-top: 4mm;">4. Equipe p&eacute;dagogique</h2>
+    <h2 class="lv-h2" id="section-i-4" style="margin-top: 4mm;">4. &Eacute;quipe p&eacute;dagogique</h2>
     <table>
       <thead>
         <tr>
@@ -287,81 +280,21 @@
     </div>
   </div>
 
-  <!-- PAGE 6 - Modalites d'utilisation -->
+  <!-- PAGES 6+ - Modalites de contrat -->
+  {# The modalités de contrat of this alternant's contract type, as written in UFA > Configuration or
+     for the formation: sections 5, 6... of chapter I, flowing over as many pages as they need - the
+     footers and the sommaire follow. Nothing at all when no text exists for this contract type. See
+     App\Service\BookletContractModalities and App\Service\BookletFreeTextLayout. #}
+  {% if contractModalities %}
   <div class="lv-page">
     <div class="lv-corner">{{ studentName }}</div>
-    <h2 class="lv-h2" id="section-i-5" style="margin-top: 4mm;">5. Modalit&eacute;s d&rsquo;utilisation du livret</h2>
-    <p style="margin: 2mm 0;">Le livret de suivi de l&rsquo;alternant est un document de liaison entre l&rsquo;entreprise et le Centre de Formation.</p>
-    <p style="margin: 2mm 0;">C&rsquo;est un lien essentiel entre l&rsquo;employeur et les formateurs. Il permet au centre de formation et au tuteur de suivre l&rsquo;&eacute;volution de la formation de l&rsquo;alternant tant au niveau du comportement, des r&eacute;sultats que de l&rsquo;acquisition de comp&eacute;tences.</p>
-    <p style="margin: 2mm 0;">L&rsquo;alternant est responsable de la tenue de ce livret qu&rsquo;il doit pouvoir pr&eacute;senter &agrave; tout moment dans l&rsquo;entreprise et au centre de formation.</p>
-    <p style="margin: 2mm 0;">Ce livret de suivi de l&rsquo;alternant est un outil <strong>&agrave; conserver pendant toute la dur&eacute;e de la formation</strong> et &ecirc;tre en possession de l&rsquo;alternant tout au long de la formation que ce soit en entreprise ou en centre de formation.</p>
-    <p style="margin: 4mm 0 2mm; font-weight: 700;">Les obligations de chacun des partenaires&nbsp;:</p>
-    <p style="margin: 2mm 0;">&#9642; <strong>Pour le Centre de Formation</strong>, l&rsquo;obligation d&rsquo;assurer, au moyen de divers documents p&eacute;dagogiques, la coordination entre les formations qu&rsquo;il dispense et celles qui sont donn&eacute;es en entreprise.</p>
-    <p style="margin: 2mm 0; font-style: italic;">Ses obligations&nbsp;:</p>
-    <ul style="margin: 1mm 0 0; padding-left: 7mm;">
-      <li style="margin: 1.5mm 0;">Administrer le contrat d&rsquo;apprentissage ou le contrat de professionnalisation.</li>
-      <li style="margin: 1.5mm 0;">R&eacute;aliser les enseignements pr&eacute;vus dans le programme p&eacute;dagogique, et organiser le contr&ocirc;le des connaissances et les jurys d&rsquo;obtention du dipl&ocirc;me tels qu&rsquo;ils sont sp&eacute;cifi&eacute;s conventionnellement.</li>
-      <li style="margin: 1.5mm 0;">Proc&eacute;der &agrave; une premi&egrave;re &eacute;valuation du d&eacute;roulement de la formation dans les 2 mois qui suivent la conclusion du contrat, entretien organis&eacute; en pr&eacute;sence de l&rsquo;alternant, du ma&icirc;tre d&rsquo;apprentissage et du tuteur p&eacute;dagogique (Art. R.6233-58 du Code du Travail). Effectuer au moins 2 visites en entreprise avec l&rsquo;alternant par ann&eacute;e de formation.</li>
-      <li style="margin: 1.5mm 0;">Assurer le suivi des formations selon des crit&egrave;res sp&eacute;cifi&eacute;s dans son syst&egrave;me qualit&eacute;&nbsp;: suivi du livret d&rsquo;apprentissage remis &agrave; l&rsquo;alternant, organisation des r&eacute;unions, visites du tuteur p&eacute;dagogique en entreprise&hellip;</li>
-      <li style="margin: 1.5mm 0;">Assurer le suivi des pr&eacute;sences des alternants aux enseignements et envoyer les attestations de pr&eacute;sence aux entreprises.</li>
-    </ul>
+    <div class="lv-free-text">{{ contractModalities.html|raw }}</div>
   </div>
+  {% endif %}
 
-  <!-- PAGE 7 - Employeur / Alternant obligations -->
+  <!-- Engagement / signatures, right after the modalités de contrat -->
   <div class="lv-page">
     <div class="lv-corner">{{ studentName }}</div>
-    <p style="margin: 3mm 0 2mm;">&#9642; <strong>Pour l&rsquo;employeur</strong>, l&rsquo;obligation d&rsquo;assurer ou de faire assurer la formation pratique de l&rsquo;alternant dans l&rsquo;entreprise en lui confiant des t&acirc;ches ou des postes de travail permettant l&rsquo;ex&eacute;cution d&rsquo;op&eacute;rations et de travaux conformes au r&eacute;f&eacute;rentiel du dipl&ocirc;me.</p>
-    <p style="margin: 2mm 0; font-style: italic;">Ses missions&nbsp;:</p>
-    <ul style="margin: 1mm 0 0; padding-left: 7mm;">
-      <li style="margin: 1.5mm 0;">S&rsquo;assurer de l&rsquo;int&eacute;gration de l&rsquo;alternant&nbsp;: il lui fait d&eacute;couvrir l&rsquo;entreprise, les diff&eacute;rents services, les membres de son &eacute;quipe de travail.</li>
-      <li style="margin: 1.5mm 0;">Le familiariser avec le lieu de travail&nbsp;: les &eacute;quipements, les m&eacute;thodes de travail.</li>
-      <li style="margin: 1.5mm 0;">Organiser le poste de l&rsquo;alternant, d&eacute;crire tr&egrave;s clairement les t&acirc;ches qui lui sont confi&eacute;es.</li>
-      <li style="margin: 1.5mm 0;">Prendre de son temps pour l&rsquo;encadrer dans son activit&eacute;.</li>
-      <li style="margin: 1.5mm 0;">Contribuer &agrave; la bonne acquisition des connaissances et des comp&eacute;tences requises pour l&rsquo;obtention du dipl&ocirc;me pr&eacute;par&eacute; par l&rsquo;alternant&nbsp;: l&rsquo;aider &agrave; am&eacute;liorer ses performances, &agrave; acqu&eacute;rir les savoir-faire essentiels, &agrave; gagner en autonomie, et &agrave; saisir les enjeux du m&eacute;tier dans sa globalit&eacute;.</li>
-      <li style="margin: 1.5mm 0;">Assurer la liaison avec le centre de formation, et suivre l&rsquo;&eacute;volution de la formation de l&rsquo;alternant (parcours, r&eacute;sultats aux examens, etc.).</li>
-      <li style="margin: 1.5mm 0;">&Eacute;valuer l&rsquo;alternant et adapter son travail dans l&rsquo;entreprise en cons&eacute;quence.</li>
-    </ul>
-    <p style="margin: 4mm 0 2mm;">&#9642; <strong>Pour l&rsquo;alternant</strong>, l&rsquo;utilisation efficace du livret d&rsquo;apprentissage est donc une obligation. Il doit pouvoir le pr&eacute;senter, le compl&eacute;ter tout au long de la formation et le faire viser par l&rsquo;&eacute;quipe p&eacute;dagogique et l&rsquo;entreprise d&rsquo;accueil.</p>
-    <p style="margin: 2mm 0; font-style: italic;">Ses obligations&nbsp;:</p>
-    <ul style="margin: 1mm 0 0; padding-left: 7mm;">
-      <li style="margin: 1.5mm 0;">S&rsquo;inscrire au centre de formation.</li>
-      <li style="margin: 1.5mm 0;">Respecter le r&egrave;glement int&eacute;rieur de l&rsquo;entreprise et de l&rsquo;&eacute;tablissement de formation.</li>
-      <li style="margin: 1.5mm 0;">Effectuer les t&acirc;ches confi&eacute;es par l&rsquo;entreprise.</li>
-      <li style="margin: 1.5mm 0;">Tenir &agrave; jour, compl&eacute;ter, viser et faire viser le livret de suivi de l&rsquo;alternant.</li>
-      <li style="margin: 1.5mm 0;">Suivre obligatoirement les enseignements, les travaux dirig&eacute;s, les travaux pratiques et satisfaire aux contr&ocirc;les des connaissances (pr&eacute;sence contr&ocirc;l&eacute;e et &eacute;tats envoy&eacute;s mensuellement aux entreprises).</li>
-      <li style="margin: 1.5mm 0;">Se pr&eacute;senter aux examens en vue de l&rsquo;acquisition du dipl&ocirc;me.</li>
-    </ul>
-    <h2 class="lv-h2" id="section-i-6" style="margin-top: 5mm;">6. Dur&eacute;e de travail</h2>
-    <p style="margin: 2mm 0; font-weight: 700; color: #1F4E79;">Horaire de l&rsquo;alternant</p>
-    <p style="margin: 2mm 0;">L&rsquo;alternant est soumis &agrave; l&rsquo;horaire applicable &agrave; l&rsquo;ensemble du personnel de l&rsquo;entreprise. Le temps consacr&eacute; &agrave; la formation est compris dans l&rsquo;horaire de travail.</p>
-  </div>
-
-  <!-- PAGE 8 - Fonctionnement de la formation -->
-  <div class="lv-page">
-    <div class="lv-corner">{{ studentName }}</div>
-    <p style="margin: 3mm 0 2mm;"><strong>NB</strong> &ndash; Des accords nationaux ou d&eacute;partementaux ont pu &ecirc;tre sign&eacute;s par les professions. Pour plus d&rsquo;informations &agrave; ce sujet, s&rsquo;adresser &agrave; la D.R.E.E.T.S.</p>
-    <p style="margin: 2mm 0;"><strong>Pour les moins de 18 ans&nbsp;:</strong> La dur&eacute;e du travail est au maximum de 8h par jour ou 35h par semaine, pas d&rsquo;heures suppl&eacute;mentaires, sauf sur d&eacute;rogation de l&rsquo;Inspecteur du Travail et avis conforme du m&eacute;decin du travail et ce dans la limite de 5 heures par semaine (maximum).</p>
-    <p style="margin: 5mm 0 2mm; font-weight: 700; color: #1F4E79;">Fonctionnement de la formation</p>
-    <p style="margin: 3mm 0 1mm;">&#9642; <strong>ARTICLE 1 &ndash; HORAIRES DE FORMATION</strong></p>
-    <p style="margin: 1mm 0;">Les alternants doivent respecter les horaires de formation fix&eacute;s par la direction du Centre de formation.</p>
-    <p style="margin: 1mm 0;">La direction se r&eacute;serve, dans les limites impos&eacute;es par les dispositions en vigueur, le droit de modifier les horaires en fonction des besoins. Les alternants doivent se conformer aux modifications apport&eacute;es par la direction, aux horaires et &agrave; l&rsquo;organisation de la formation.</p>
-    <p style="margin: 3mm 0 1mm; font-weight: 700;">Absences et retards</p>
-    <p style="margin: 1mm 0;">Se r&eacute;f&eacute;rer au r&egrave;glement int&eacute;rieur du centre de formation.</p>
-    <div style="border: 0.5pt solid #8aa2bd; background: #eef3f9; padding: 3mm 4mm; margin: 3mm 0; text-align: center;">
-      <div><strong>Charg&eacute;e de vie scolaire&nbsp;:</strong> Madame VINCENT &nbsp;&mdash;&nbsp; <a href="mailto:i.vincent@beaupeyrat.com">i.vincent@beaupeyrat.com</a></div>
-      <div style="font-style: italic; margin-top: 1mm;">&gt; &agrave; contacter par mail pour toute absence ou retard, en joignant un justificatif officiel, m&eacute;dical ou administratif.</div>
-    </div>
-    <p style="margin: 3mm 0 1mm;">&#9642; <strong>ARTICLE 2 &ndash; FORMATION</strong></p>
-    <p style="margin: 1mm 0;">La relation tripartite entreprise/alternant/centre de formation s&rsquo;&eacute;tablit au travers des documents de suivi dont l&rsquo;alternant est responsable. Les &eacute;valuations peuvent &ecirc;tre communiqu&eacute;es aux entreprises.</p>
-    <p style="margin: 1mm 0;">Les dossiers professionnels, &agrave; pr&eacute;senter pour la plupart des examens, sont de la responsabilit&eacute; de l&rsquo;alternant tant dans leur r&eacute;daction que dans leur pr&eacute;sentation finale.</p>
-    <p style="margin: 3mm 0 1mm;">&#9642; <strong>ARTICLE 3 &ndash; LIVRET DE SUIVI DE L&rsquo;ALTERNANT</strong></p>
-    <p style="margin: 1mm 0;">Le livret de suivi de l&rsquo;alternant est obligatoire. Il doit &ecirc;tre conserv&eacute; par l&rsquo;alternant en permanence, en formation comme en entreprise. L&rsquo;alternant a la charge de le remplir, de le faire compl&eacute;ter et signer, notamment pour le suivi.</p>
-  </div>
-
-  <!-- PAGE 9 - Engagement / signatures -->
-  <div class="lv-page">
-    <div class="lv-corner">{{ studentName }}</div>
-    <p style="margin: 3mm 0 2mm;">Chaque alternant doit pouvoir le pr&eacute;senter &agrave; tout moment &agrave; la demande des inspecteurs de l&rsquo;apprentissage, du ma&icirc;tre d&rsquo;apprentissage et de l&rsquo;&eacute;quipe p&eacute;dagogique.</p>
     <p style="margin: 4mm 0 3mm; font-weight: 700;">Les signataires certifient avoir pris connaissance du livret d&rsquo;apprentissage, de la formation propos&eacute;e et s&rsquo;engagent &agrave; en accepter les exigences.</p>
     <table style="text-align: center; font-size: 10pt;">
       <thead>
@@ -414,7 +347,7 @@
     </div>
   </div>
 
-{% endif %}{# end of pages 2 to 9 #}
+{% endif %}{# end of the sommaire to the engagement page #}
 
 {# On export an uploaded calendar is the section itself, headings included: the 'before' part stops
    short of it and the file is merged in its place, which is why this page is never printed then. #}
@@ -688,7 +621,7 @@
       <div style="border: 0.5pt solid #8aa2bd; height: 42mm; padding: 2mm 3mm; white-space: pre-line;">{{ studentEvaluation ? studentEvaluation.remarksText : '' }}</div>
       <div style="font-weight: 700; color: #1F4E79; margin: 6mm 0 1.5mm; text-align: center;">SIGNATURES</div>
       {# The electronic signatures the period wizard collected are reported here, the same way
-         page 9 reports the booklet's own engagement signatures: without this a period signed by
+         the engagement page reports the booklet's own engagement signatures: without this a period signed by
          everyone and closed still printed empty boxes. One column per role that actually signs,
          in the order the wizard collects them - the same three the paper booklet draws. The
          chargé de suivi has no evaluation of their own: their signature rides on the closing act
