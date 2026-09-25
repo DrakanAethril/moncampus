@@ -34,7 +34,6 @@
 {% block main %}
     {% include 'internship/_livret_reader.html.twig' with {
         frameUrl: path('app_ufa_formation_tutors_booklet_frame', {id: program.id, tutorLinkId: tutorLink.id}),
-        periods: periods,
-        hasTimetableDocument: program.timetableDocumentFileKey is not null,
+        outline: booklet_outline(tutorLink),
     } only %}
 {% endblock %}

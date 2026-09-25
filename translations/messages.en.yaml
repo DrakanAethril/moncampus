@@ -7956,3 +7956,7 @@ dossierSubmissionSavedFlashMessage: 'Submission recorded.'
 dossierSubmissionClosedFlashMessage: 'This document no longer accepts submissions.'
 dossierSubmissionInvalidUrlFlashMessage: 'That address is not valid.'
 dossierSubmissionInvalidFileFlashMessage: 'That file could not be submitted.'
+ufaContractModalitiesBookletHint: "This text makes up items 5 onwards of part I of the apprentice's booklet. Each « Section title » is numbered automatically there and listed in the table of contents; a « Subtitle » is not."
+hugerteBookletParagraphFormat: 'Paragraph'
+hugerteBookletSectionFormat: 'Section title'
+hugerteBookletSubtitleFormat: 'Subtitle'

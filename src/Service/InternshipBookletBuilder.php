@@ -33,6 +33,8 @@ use App\Repository\TopicRepository;
  * Assembles the full Livret Alternant booklet view data for one InternshipTutorLink - shared by
  * the staff, student, and tutor "view booklet" routes so the aggregation logic (team grouping,
  * per-period evaluation lookup) isn't duplicated three times.
+ *
+ * @phpstan-import-type BookletOutlineEntry from BookletOutline
  */
 class InternshipBookletBuilder
 {
@@ -56,7 +58,19 @@ class InternshipBookletBuilder
         private readonly InternshipCalendarBuilder $calendarBuilder,
         private readonly FileUploadService $fileUploadService,
         private readonly TopicPrincipalTeacher $principalTeacher,
+        private readonly BookletContractModalities $contractModalities,
+        private readonly BookletOutline $outline,
     ) {
+    }
+
+    /**
+     * The booklet's outline alone, for the reader's menu - see App\Service\BookletOutline.
+     *
+     * @return list<BookletOutlineEntry>
+     */
+    public function outline(InternshipTutorLink $tutorLink): array
+    {
+        return $this->outlineOf($tutorLink, $this->contractModalities->forTutorLink($tutorLink));
     }
 
     /** @return array<string, mixed> */
@@ -71,6 +85,7 @@ class InternshipBookletBuilder
         $skillGroups = $this->bookletSkillGroups->forTutorLink($tutorLink);
 
         $programInfo = $this->programInfoRepository->findOneByProgram($program);
+        $contractModalities = $this->contractModalities->forTutorLink($tutorLink);
         $examModalitiesByOptionId = $this->optionExamModalityRepository->findMapForProgram($program);
         $programLegalName = $this->resolveLegalName($program, $programInfo, $studentOptions);
 
@@ -173,6 +188,9 @@ class InternshipBookletBuilder
             // under people who have signed. Null before anyone opens the engagement screen.
             'engagement' => $this->engagementRepository->findOneForTutorLink($tutorLink),
             'programInfo' => $programInfo,
+            // Sections 5, 6... of chapter I, or null when this contract type has no text anywhere.
+            'contractModalities' => $contractModalities,
+            'outline' => $this->outlineOf($tutorLink, $contractModalities),
             'programLegalName' => $programLegalName,
             'examModalities' => $examModalities,
             'teamRows' => $teamRows,
@@ -194,6 +212,21 @@ class InternshipBookletBuilder
             'timetableFileKey' => $timetableFileKey,
             'timetableFileUrl' => null !== $timetableFileKey ? $this->fileUploadService->url($timetableFileKey) : null,
         ];
+    }
+
+    /** @return list<BookletOutlineEntry> */
+    private function outlineOf(InternshipTutorLink $tutorLink, ?BookletFreeText $contractModalities): array
+    {
+        $program = $tutorLink->getProgram();
+
+        return $this->outline->entries(
+            $contractModalities->sections ?? [],
+            null !== $program?->getTimetableDocumentFileKey(),
+            null === $program ? [] : array_map(
+                static fn (InternshipEvaluationPeriod $period): string => $period->getName(),
+                $this->evaluationPeriodRepository->findAllActiveForProgram($program),
+            ),
+        );
     }
 
     /**
