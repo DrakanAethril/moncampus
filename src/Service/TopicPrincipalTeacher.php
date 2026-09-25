@@ -11,20 +11,19 @@ use App\Repository\LessonSessionRepository;
 use Symfony\Contracts\Service\ResetInterface;
 
 /**
- * One name for a matière held by several titulaires - the Livret alternant's « Formateur » cell,
- * and the author credited to an evaluation born of a travail whose own creator is gone.
+ * One name for a matière held by several titulaires - the author credited to an evaluation born of
+ * a travail whose own creator is gone.
  *
  * **Derived, never stored.** Topic::$teachers carries no principal and no position column on
  * purpose: who mainly delivers a matière is already written in the timetable, and a column saying
  * it again would be wrong the first time a créneau moved. So the answer is "the titulaire holding
- * the most créneaux of that matière", ties broken alphabetically so the same booklet exported
- * twice never names two different people - the same rule
- * App\Service\InternshipBookletBuilder::resolveTopicGroupTeacher() already applies one level up.
+ * the most créneaux of that matière", ties broken alphabetically so the same question asked
+ * twice never names two different people.
  *
  * A teacher standing in a créneau without being a titulaire is a remplaçant, not the formateur of
  * the matière, so only Topic::$teachers are ever returned. When the timetable names none of them -
  * a matière with no créneau yet, or one delivered entirely by someone else - the alphabetically
- * first titulaire answers rather than nothing: the booklet prints a name it can defend.
+ * first titulaire answers rather than nothing: the evaluation is credited to a name it can defend.
  *
  * Counts are read once per Program and memoised for the request. The memo is cleared between
  * requests (ResetInterface) because the FrankenPHP worker outlives them.

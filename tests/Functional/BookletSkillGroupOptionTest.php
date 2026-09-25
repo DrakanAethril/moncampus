@@ -6,6 +6,8 @@ namespace App\Tests\Functional;
 
 use App\Entity\Enterprise;
 use App\Entity\InternshipEvaluationPeriod;
+use App\Entity\InternshipFormationCenter;
+use App\Entity\InternshipProgramInfo;
 use App\Entity\InternshipTutorEvaluation;
 use App\Entity\InternshipTutorEvaluationSkill;
 use App\Entity\InternshipTutorLink;
@@ -15,7 +17,6 @@ use App\Entity\ProgramStudentOption;
 use App\Entity\Skill;
 use App\Entity\SkillGroup;
 use App\Entity\SkillLevel;
-use App\Entity\TopicGroup;
 use App\Entity\User;
 use App\Enum\ContractTypeCode;
 use App\Service\AlternanceTutorWizardStepBuilder;
@@ -25,7 +26,7 @@ use Doctrine\ORM\EntityManagerInterface;
 /**
  * A competency group narrowed to options appears in the Livret de l'alternant only for a student
  * holding one of them - the booklet itself, and the tutor's « Compétences » step that fills it.
- * The same goes for the matière groups its « Équipe pédagogique » lists.
+ * The same goes for the lines of its « Équipe pédagogique » (App\Service\TeachingTeam).
  *
  * Against the real schema, because what the wizard got wrong was never the rule but the rows: an
  * evaluation keeps the skill rows it was created with, and a group put on an option afterwards
@@ -70,23 +71,35 @@ class BookletSkillGroupOptionTest extends FunctionalTestCase
         self::assertSame(['Commun'], $this->bookletGroupLabels($this->tutorLink()));
     }
 
-    public function testTheTeachingTeamListsTheCommonMatiereGroupsAndTheStudentsOwnOptionOnly(): void
+    public function testTheTeachingTeamListsTheCommonLinesAndTheStudentsOwnOptionOnly(): void
     {
         $this->giveStudentOption($this->slam);
-        foreach (['Commun' => null, 'Réservé SLAM' => $this->slam, 'Réservé SISR' => $this->sisr] as $name => $option) {
-            $topicGroup = new TopicGroup($name, $this->program);
-            $topicGroup->setCreatedBy($this->author);
-            if (null !== $option) {
-                $topicGroup->addOption($option);
-            }
-            $this->entityManager->persist($topicGroup);
-        }
+        $info = new InternshipProgramInfo($this->program);
+        $info->setCreatedBy($this->author);
+        $info->setTeachingTeam([
+            ['id' => 'a1', 'topic' => 'Réservé SLAM', 'teacher' => 'Y', 'optionIds' => [$this->slam->getId()]],
+            ['id' => 'b2', 'topic' => 'Réservé SISR', 'teacher' => 'Z', 'optionIds' => [$this->sisr->getId()]],
+            ['id' => 'c3', 'topic' => 'Commun', 'teacher' => 'X', 'optionIds' => []],
+        ]);
+        $this->entityManager->persist($info);
+        // The page below needs the training centre every installation has.
+        $center = new InternshipFormationCenter();
+        $center->setCreatedBy($this->author);
+        $this->entityManager->persist($center);
         $this->entityManager->flush();
 
-        /** @var list<array{topicGroup: TopicGroup}> $teamRows */
-        $teamRows = $this->booklet($this->tutorLink())['teamRows'];
+        $tutorLink = $this->tutorLink();
+        /** @var list<array{topic: string}> $teamRows */
+        $teamRows = $this->booklet($tutorLink)['teamRows'];
 
-        self::assertSame(['Commun', 'Réservé SLAM'], array_map(static fn (array $row): string => $row['topicGroup']->getName(), $teamRows));
+        self::assertSame(['Commun', 'Réservé SLAM'], array_column($teamRows, 'topic'));
+
+        // And the page prints them as typed.
+        $this->client->loginUser($this->author);
+        $crawler = $this->client->request('GET', '/ufa/alternances/'.$tutorLink->getId().'/booklet/frame');
+        self::assertResponseIsSuccessful();
+        $team = $crawler->filter('#section-i-4 + table tbody tr')->each(static fn ($row): string => trim(preg_replace('/\s+/', ' ', $row->text()) ?? ''));
+        self::assertSame(['Commun X', 'Réservé SLAM Y'], $team);
     }
 
     public function testRowsStoredBeforeTheGroupWasNarrowedLeaveTheSkillsStep(): void

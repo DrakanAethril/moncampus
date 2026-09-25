@@ -49,9 +49,8 @@ class TopicGroup
 
     // The teacher who answers for the group as a whole - optional, and deliberately independent of
     // the per-Topic teacher (Topic::$teacher): a group can be owned by someone who doesn't teach
-    // every subject in it. Read by the Livret Alternant's "Equipe pédagogique" section, which
-    // falls back to a teacher taken from the group's own Topics when this is left empty (see
-    // App\Service\InternshipBookletBuilder).
+    // every subject in it. The Livret Alternant's « Équipe pédagogique » no longer reads it: that
+    // section is free text written for the booklet alone (App\Service\TeachingTeam).
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(name: 'teacher_id', nullable: true)]
     private ?User $teacher = null;
@@ -136,28 +135,6 @@ class TopicGroup
         $this->options->removeElement($option);
 
         return $this;
-    }
-
-    /**
-     * Same rule as SkillGroup::isVisibleForStudentOptions(): no option means common to everyone,
-     * otherwise the student must hold one of them. Read by the Livret's « Équipe pédagogique »,
-     * where a CDA-only group listed for an AIS student named teachers who never teach them.
-     *
-     * @param list<int> $studentOptionIds
-     */
-    public function isVisibleForStudentOptions(array $studentOptionIds): bool
-    {
-        if ($this->options->isEmpty()) {
-            return true;
-        }
-
-        foreach ($this->options as $option) {
-            if (\in_array($option->getId(), $studentOptionIds, true)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     public function getCreationDate(): \DateTimeImmutable

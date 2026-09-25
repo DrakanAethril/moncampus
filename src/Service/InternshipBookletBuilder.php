@@ -9,9 +9,6 @@ use App\Entity\InternshipProgramInfo;
 use App\Entity\InternshipTutorLink;
 use App\Entity\Option;
 use App\Entity\Program;
-use App\Entity\Topic;
-use App\Entity\TopicGroup;
-use App\Entity\User;
 use App\Enum\ProgramAlternanceCalendarMode;
 use App\Repository\InternshipBehaviorCriteriaRepository;
 use App\Repository\InternshipEvaluationPeriodRepository;
@@ -26,13 +23,11 @@ use App\Repository\InternshipTutorEvaluationRepository;
 use App\Repository\PeriodRepository;
 use App\Repository\ProgramStudentOptionRepository;
 use App\Repository\SkillLevelRepository;
-use App\Repository\TopicGroupRepository;
-use App\Repository\TopicRepository;
 
 /**
  * Assembles the full Livret Alternant booklet view data for one InternshipTutorLink - shared by
- * the staff, student, and tutor "view booklet" routes so the aggregation logic (team grouping,
- * per-period evaluation lookup) isn't duplicated three times.
+ * the staff, student, and tutor "view booklet" routes so the aggregation logic (options
+ * filtering, per-period evaluation lookup) isn't duplicated three times.
  *
  * @phpstan-import-type BookletOutlineEntry from BookletOutline
  */
@@ -42,8 +37,6 @@ class InternshipBookletBuilder
         private readonly InternshipFormationCenterRepository $formationCenterRepository,
         private readonly InternshipLivretEngagementRepository $engagementRepository,
         private readonly InternshipProgramInfoRepository $programInfoRepository,
-        private readonly TopicRepository $topicRepository,
-        private readonly TopicGroupRepository $topicGroupRepository,
         private readonly InternshipBehaviorCriteriaRepository $behaviorCriteriaRepository,
         private readonly BookletSkillGroups $bookletSkillGroups,
         private readonly SkillLevelRepository $skillLevelRepository,
@@ -57,7 +50,6 @@ class InternshipBookletBuilder
         private readonly InternshipOptionLegalNameRepository $optionLegalNameRepository,
         private readonly InternshipCalendarBuilder $calendarBuilder,
         private readonly FileUploadService $fileUploadService,
-        private readonly TopicPrincipalTeacher $principalTeacher,
         private readonly BookletContractModalities $contractModalities,
         private readonly BookletOutline $outline,
     ) {
@@ -102,28 +94,11 @@ class InternshipBookletBuilder
                 $studentOptions,
             );
 
-        // "Equipe pédagogique" (I.4): one row per active TopicGroup the student follows - common to
-        // every option, or one of their own - alphabetically (the repository's own order), facing
-        // the teacher who answers for that group.
-        $topicsByGroupId = [];
-        foreach ($this->topicRepository->findAllActiveForProgram($program) as $topic) {
-            $topicsByGroupId[$topic->getTopicGroup()?->getId() ?? 0][] = $topic;
-        }
-
-        $teamRows = array_map(
-            fn (TopicGroup $topicGroup): array => [
-                'topicGroup' => $topicGroup,
-                // TopicGroup::$teacher is the answer whenever staff set one; otherwise the group
-                // is represented by one of the teachers of its own subjects - see
-                // resolveTopicGroupTeacher() for which one and why.
-                'teacher' => $topicGroup->getTeacher()
-                    ?? $this->resolveTopicGroupTeacher($topicsByGroupId[$topicGroup->getId()] ?? []),
-            ],
-            array_values(array_filter(
-                $this->topicGroupRepository->findAllActiveForProgram($program),
-                static fn (TopicGroup $topicGroup): bool => $topicGroup->isVisibleForStudentOptions($studentOptionIds),
-            )),
-        );
+        // "Equipe pédagogique" (I.4): the lines written in UFA > Formations > « Équipe » that concern
+        // this alternant - common to every option, or one of their own - alphabetically by matière.
+        // Free text, deliberately unrelated to the formation's matières and timetable: see
+        // App\Service\TeachingTeam.
+        $teamRows = TeachingTeam::forBooklet($programInfo?->getTeachingTeam() ?? [], $studentOptionIds);
 
         // Two independent notions of "period" feed this booklet: $rawPeriods is the alternance
         // calendar (classroom vs. company weeks, used only for the calendar visualization below),
@@ -227,48 +202,6 @@ class InternshipBookletBuilder
                 $this->evaluationPeriodRepository->findAllActiveForProgram($program),
             ),
         );
-    }
-
-    /**
-     * Who represents a TopicGroup that nobody was explicitly assigned to: one of the teachers of
-     * its own subjects, the one covering the most of them - the closest thing to "the teacher of
-     * this group" the data actually supports. Ties (and the common case of one subject each) are
-     * broken alphabetically rather than left to row order, so the same booklet exported twice
-     * never names two different people.
-     *
-     * A matière held by several titulaires is counted once, for its principal - the one holding the
-     * most of its créneaux (App\Service\TopicPrincipalTeacher). Counting all of them would make a
-     * shared matière weigh double and hand the group to whoever happens to share one.
-     *
-     * Null when the group has no subjects, or none of them has a teacher: the row is printed with
-     * an empty Formateur cell rather than dropped, since the group is still part of the
-     * curriculum the alternant is shown.
-     *
-     * @param list<Topic> $topics the group's own active Topics
-     */
-    private function resolveTopicGroupTeacher(array $topics): ?User
-    {
-        /** @var array<int, array{teacher: User, count: int}> $byTeacherId */
-        $byTeacherId = [];
-        foreach ($topics as $topic) {
-            $teacher = $this->principalTeacher->resolve($topic);
-            if (null === $teacher) {
-                continue;
-            }
-
-            $id = $teacher->getId();
-            $byTeacherId[$id] ??= ['teacher' => $teacher, 'count' => 0];
-            ++$byTeacherId[$id]['count'];
-        }
-
-        if ([] === $byTeacherId) {
-            return null;
-        }
-
-        usort($byTeacherId, static fn (array $a, array $b): int => $b['count'] <=> $a['count']
-            ?: strcasecmp($a['teacher']->getDisplayName() ?? '', $b['teacher']->getDisplayName() ?? ''));
-
-        return $byTeacherId[0]['teacher'];
     }
 
     // Cover-page name shown for this alternant: a student with exactly one Option gets that

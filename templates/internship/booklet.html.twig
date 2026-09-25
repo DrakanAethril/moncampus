@@ -264,13 +264,12 @@
         </tr>
       </thead>
       <tbody>
-        {# One row per matière group, in alphabetical order (the repository's own), facing the
-           group's teacher - failing that one of the teachers of its matières, see
-           App\Service\InternshipBookletBuilder::resolveTopicGroupTeacher(). #}
+        {# The lines written in UFA > Formations > « Équipe » that concern this alternant, in
+           alphabetical order of matière - free text, see App\Service\TeachingTeam. #}
         {% for row in teamRows %}
           <tr>
-            <td style="border: 0.5pt solid #8aa2bd; padding: 2mm 3mm;">{{ row.topicGroup.name }}</td>
-            <td class="lv-td-value" style="width: 38%;">{{ row.teacher ? (row.teacher.displayName ?? row.teacher.username) : '' }}</td>
+            <td style="border: 0.5pt solid #8aa2bd; padding: 2mm 3mm;">{{ row.topic }}</td>
+            <td class="lv-td-value" style="width: 38%;">{{ row.teacher }}</td>
           </tr>
         {% endfor %}
       </tbody>
