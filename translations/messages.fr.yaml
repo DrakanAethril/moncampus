@@ -8787,3 +8787,25 @@ dossierSubmissionSavedFlashMessage: 'Dépôt enregistré.'
 dossierSubmissionClosedFlashMessage: "Ce document n'accepte plus de dépôt."
 dossierSubmissionInvalidUrlFlashMessage: "Cette adresse n'est pas valide."
 dossierSubmissionInvalidFileFlashMessage: "Ce fichier n'a pas pu être déposé."
+
+# « Équipe » - templates/ufa/formation/_teaching_team_content.html.twig. Free text for the booklet's
+# « Équipe pédagogique » only: the wording must never suggest a link to matières or accounts.
+ufaFormationTeachingTeamTabLabel: 'Équipe'
+ufaTeachingTeamHelpText: "Les lignes saisies ici forment la partie « Équipe pédagogique » du livret de l'alternant, classées par ordre alphabétique de matière. C'est du texte libre : il n'est lié ni aux matières, ni à l'emploi du temps, ni aux comptes de la plateforme. Une ligne sans option s'applique à toutes les options."
+ufaTeachingTeamAddButtonLabel: 'Ajouter une ligne'
+ufaTeachingTeamTopicColumnLabel: 'Matière'
+ufaTeachingTeamTeacherColumnLabel: 'Enseignant'
+ufaTeachingTeamOptionsColumnLabel: 'Options'
+ufaTeachingTeamAllOptionsLabel: 'Toutes'
+ufaTeachingTeamEmptyText: "Aucune ligne pour le moment : la partie « Équipe pédagogique » du livret est vide."
+ufaTeachingTeamDeleteActionLabel: 'Supprimer'
+ufaTeachingTeamDeleteConfirmMessage: 'Supprimer cette ligne de l''équipe pédagogique ?'
+ufaTeachingTeamNewHeading: 'Nouvelle ligne'
+ufaTeachingTeamEditHeading: 'Modifier la ligne'
+ufaTeachingTeamTopicFieldLabel: 'Nom de la matière'
+ufaTeachingTeamTeacherFieldLabel: "Nom de l'enseignant"
+ufaTeachingTeamOptionsFieldLabel: 'Options'
+ufaTeachingTeamOptionsFieldHelp: "Aucune option cochée : la ligne s'applique à toutes les options."
+ufaTeachingTeamCreatedFlashMessage: 'Ligne ajoutée à l''équipe pédagogique.'
+ufaTeachingTeamUpdatedFlashMessage: 'Ligne de l''équipe pédagogique modifiée.'
+ufaTeachingTeamDeletedFlashMessage: 'Ligne de l''équipe pédagogique supprimée.'

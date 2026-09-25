@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Repository\InternshipProgramInfoRepository;
+use App\Service\TeachingTeam;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -15,6 +16,8 @@ use Doctrine\ORM\Mapping as ORM;
  * modalities used to live here too (termsConditionsProText/termsConditionsApprentissageText) -
  * moved to ProgramContractModality (one row per Program per ContractType) so a center-level
  * default (ContractType::$defaultModalitiesHtml) can exist for a Program to inherit from.
+ *
+ * @phpstan-import-type TeachingTeamEntry from TeachingTeam
  */
 #[ORM\Entity(repositoryClass: InternshipProgramInfoRepository::class)]
 #[ORM\Table(name: 'internship_program_info')]
@@ -40,6 +43,12 @@ class InternshipProgramInfo
 
     #[ORM\Column(name: 'exam_modality_text', type: Types::TEXT, nullable: true)]
     private ?string $examModalityText = null;
+
+    // The booklet's « Équipe pédagogique », as free text lines - one JSON column on purpose, since
+    // nothing relates to it. See App\Service\TeachingTeam. Null until the first line is written.
+    /** @var array<array-key, mixed>|null */
+    #[ORM\Column(name: 'teaching_team', type: Types::JSON, nullable: true)]
+    private ?array $teachingTeam = null;
 
     public function __construct(Program $program)
     {
@@ -76,6 +85,20 @@ class InternshipProgramInfo
     public function setExamModalityText(?string $examModalityText): static
     {
         $this->examModalityText = $examModalityText;
+
+        return $this;
+    }
+
+    /** @return list<TeachingTeamEntry> */
+    public function getTeachingTeam(): array
+    {
+        return TeachingTeam::normalize($this->teachingTeam);
+    }
+
+    /** @param list<TeachingTeamEntry> $teachingTeam */
+    public function setTeachingTeam(array $teachingTeam): static
+    {
+        $this->teachingTeam = $teachingTeam;
 
         return $this;
     }
