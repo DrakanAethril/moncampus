@@ -26,6 +26,27 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.25'
+      date: '2026-09-25'
+      summary: "Le livret de l'alternant reprend désormais, en partie I, les modalités propres à son type de contrat, avec un sommaire et des numéros de page calculés à l'impression. L'équipe pédagogique du livret se saisit librement pour chaque formation, et la recherche du tableau de bord de l'UFA trouve enfin l'alternant."
+      entries:
+          - type: modification
+            title: "Livret : les modalités du contrat remplacent le texte fixe de la partie I"
+            detail: "Le texte du type de contrat de l'alternant (celui de la formation s'il existe, sinon celui du centre) s'imprime à la place des anciennes pages fixes, sur autant de pages qu'il faut ; ses titres deviennent des sections numérotées et apparaissent au sommaire comme dans le menu de la liseuse."
+          - type: modification
+            title: "Livret : sommaire et numéros de page toujours justes"
+            detail: "Les numéros de page sont calculés à l'impression, y compris autour d'un calendrier ou d'un emploi du temps déposé, et l'export partiel garde ceux du livret complet. Le décalage d'une page après le calendrier a disparu."
+          - type: modification
+            title: "L'éditeur des modalités de contrat ressemble au livret"
+            detail: "Trois formats (paragraphe, titre de partie, sous-titre), la typographie du livret et la numérotation telle qu'elle sera imprimée."
+          - type: nouveaute
+            title: "Équipe pédagogique du livret saisie par formation"
+            detail: "Un onglet Équipe liste, pour chaque formation, les matières et leurs enseignants, éventuellement réservés à certaines options ; le livret imprime ces lignes selon les options de l'alternant."
+          - type: nouveaute
+            title: "Accès direct à l'aperçu du livret depuis la liste des alternances"
+          - type: fix
+            title: "La recherche du tableau de bord de l'UFA trouve aussi l'alternant"
+            detail: "Par son nom, dans un sens ou dans l'autre, et par son identifiant, en plus du tuteur et de l'entreprise."
     - version: '2026.09.24'
       date: '2026-09-24'
       summary: "Le tableau de bord de l'UFA s'ouvre désormais sur toutes les formations de l'année, par pages de 50 alternances. Le livret de l'alternant ne montre plus que les compétences et l'équipe pédagogique de son option."
