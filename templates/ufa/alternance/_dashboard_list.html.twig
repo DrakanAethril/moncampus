@@ -11,6 +11,7 @@
         <table class="table table-vcenter card-table table-striped">
             <thead>
                 <tr>
+                    <th class="w-1 pe-0"><span class="visually-hidden">{{ 'ufaAlternanceActionLivretLabel'|trans }}</span></th>
                     <th>{{ 'ufaAlternanceColumnStudentLabel'|trans }}</th>
                     <th>{{ 'ufaAlternanceColumnFormationLabel'|trans }}</th>
                     <th>{{ 'ufaAlternanceColumnTutorLabel'|trans }}</th>
@@ -24,6 +25,13 @@
                     {% set tutorLink = row.tutorLink %}
                     {% set inactive = tutorLink.terminated %}
                     <tr>
+                        {# The booklet preview, reachable from every row whatever its state - the
+                           actions column only offers it on some of them. #}
+                        <td class="w-1 pe-0">
+                            <a href="{{ path('app_ufa_alternance_livret', {id: tutorLink.id}) }}" class="text-secondary" title="{{ 'ufaAlternanceActionLivretLabel'|trans }}" aria-label="{{ 'ufaAlternanceActionLivretLabel'|trans }}">
+                                <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-book"></use></svg>
+                            </a>
+                        </td>
                         <td>
                             <div class="fw-bold">
                                 {{ tutorLink.student.displayName ?? tutorLink.student.username }}
@@ -60,7 +68,7 @@
                         </td>
                     </tr>
                 {% else %}
-                    <tr><td colspan="6" class="text-center text-secondary py-4">{{ 'ufaAlternanceEmptyStateLabel'|trans }}</td></tr>
+                    <tr><td colspan="7" class="text-center text-secondary py-4">{{ 'ufaAlternanceEmptyStateLabel'|trans }}</td></tr>
                 {% endfor %}
             </tbody>
         </table>
