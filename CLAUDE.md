@@ -461,6 +461,17 @@ tab for new 404s under `/hugerte/`.
 - `symfony/ux-turbo` pings Mercure on **every** flush, including from CLI commands — `MERCURE_URL` must
   be set in any context that writes to the database, and the failure surfaces at flush time, not at
   startup.
+- **Gotenberg 8.16's `/forms/pdfengines/split` with `splitUnify` returns a damaged PDF about one
+  time in two** on the Livret (measured 2026-09-25: same request, varying sizes, truncated tails
+  that every merge engine then refuses). Don't cut a PDF with it; print the parts separately and
+  merge them, as `InternshipBookletPdfExporter` does.
+- **Chromium lays the first page out with the default `@page` margins before applying a named
+  page's.** A full-bleed 296mm cover on a named page with `margin: 0` came out cut in three. Make
+  the full-bleed page the *default* `@page` and name the others (`templates/internship/booklet.html.twig`).
+  Chromium (132 in Gotenberg) paints `@page` margin boxes with `counter(page)`, and `html {
+  counter-reset: page N }` starts the count at N+1, but it has no `target-counter()`: a table of
+  contents learns its page numbers from the named destinations of a first print
+  (`App\Service\PdfNamedDestinations`) — written only for anchors some link points at.
 - `config/reference.php` produces a non-deterministic docblock-ordering diff from the running dev
   container. It is safe to `git checkout --` without asking; it is not real work.
 
