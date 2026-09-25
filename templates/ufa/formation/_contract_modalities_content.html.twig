@@ -6,7 +6,8 @@
 <form method="post" action="{{ path('app_ufa_formation_contract_modalities', {id: program.id}) }}">
     <input type="hidden" name="_token" value="{{ csrf_token('program_internship_contract_modalities') }}">
 
-    <p class="text-secondary mb-3">{{ 'internshipContractModalityIntroText'|trans }}</p>
+    <p class="text-secondary mb-1">{{ 'internshipContractModalityIntroText'|trans }}</p>
+    <p class="text-secondary small mb-3">{{ 'ufaContractModalitiesBookletHint'|trans }}</p>
 
     <div class="d-flex flex-column gap-3">
         {% for block in blocks %}
@@ -39,6 +40,10 @@
                 </div>
                 <div class="cm-collapse__body" data-override-block-target="body">
                     <textarea class="form-control d-none" rows="8" name="modalities[{{ contractType.code.value }}]"
+                              data-hugerte-editor-booklet-value="true"
+                              data-hugerte-editor-booklet-paragraph-label-value="{{ 'hugerteBookletParagraphFormat'|trans }}"
+                              data-hugerte-editor-booklet-section-label-value="{{ 'hugerteBookletSectionFormat'|trans }}"
+                              data-hugerte-editor-booklet-subtitle-label-value="{{ 'hugerteBookletSubtitleFormat'|trans }}"
                               {% if override %}data-controller="hugerte-editor" data-hugerte-editor-height-value="200"{% else %}disabled{% endif %}
                               data-override-block-target="textarea"
                     >{{ override ? override.modalitiesHtml : '' }}</textarea>

@@ -1333,6 +1333,10 @@ ufaContractModalitiesTabLabel: 'Modalités de contrats'
 
 ufaContractModalitiesOverrideCountLabel: "{0}Aucune formation n'a surchargé|{1}1 formation a surchargé|]1,Inf[%count% formations ont surchargé"
 ufaContractModalitiesDefaultSectionTitle: 'Modalités par défaut — %type%'
+ufaContractModalitiesBookletHint: 'Ce texte forme les points 5 et suivants de la partie I du livret de l’alternant. Chaque « Titre de partie » y est numéroté automatiquement et repris au sommaire ; un « Sous-titre » ne l’est pas.'
+hugerteBookletParagraphFormat: 'Paragraphe'
+hugerteBookletSectionFormat: 'Titre de partie'
+hugerteBookletSubtitleFormat: 'Sous-titre'
 ufaContractModalitiesOverridingFormationsTitle: 'Formations ayant surchargé ces modalités'
 ufaContractModalitiesUpdatedFlashMessage: 'Les modalités par défaut ont été mises à jour avec succès.'
 ufaEvaluationPeriodsFooterLabel: "{0}Aucune période · année %year%|{1}1 période · année %year%|]1,Inf[%count% périodes · année %year%"
