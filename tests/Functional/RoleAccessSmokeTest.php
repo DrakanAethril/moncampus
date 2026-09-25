@@ -691,6 +691,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             sprintf('/ufa/programs/%d/tutors', $programId),
             // The certification rides the denomination tab rather than one of its own.
             sprintf('/ufa/programs/%d/denomination', $programId),
+            // The booklet's « Équipe pédagogique », free text, and the panel that adds a line.
+            sprintf('/ufa/programs/%d/teaching-team', $programId),
+            sprintf('/ufa/programs/%d/teaching-team/new', $programId),
             sprintf('/ufa/programs/%d/contract-modalities', $programId),
             sprintf('/ufa/programs/%d/exam-modalities', $programId),
             // The two tabs the UFA team was given so it would stop having to walk through

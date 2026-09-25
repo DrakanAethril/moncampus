@@ -87,6 +87,15 @@ export default class extends Controller {
         imageUploadUrl: { type: String, default: '' },
         // Sent as X-CSRF-Token on that upload, the same idiom as every other fetch endpoint here.
         imageUploadToken: { type: String, default: '' },
+        // The modalités de contrat, printed as sections 5, 6... of the Livret de l'alternant
+        // (App\Service\BookletFreeTextLayout). Three block formats only - paragraph, section title,
+        // subtitle - named after what they become, and the editing area set like the booklet,
+        // numbers included, so what is typed is what gets printed. The labels are passed in
+        // because they are display text.
+        booklet: { type: Boolean, default: false },
+        bookletParagraphLabel: { type: String, default: 'Paragraph' },
+        bookletSectionLabel: { type: String, default: 'Section' },
+        bookletSubtitleLabel: { type: String, default: 'Subtitle' },
     };
 
     async connect() {
@@ -146,6 +155,7 @@ export default class extends Controller {
             // never converted anyway, so nothing about the image button changes.
             convert_urls: false,
             ...(this.imageValue ? this.imageOptions() : {}),
+            ...(this.bookletValue ? this.bookletOptions(dark) : {}),
             setup: (setupEditor) => {
                 // HugeRTE only syncs its content back into the underlying textarea by default on
                 // the form's "submit" event - too late here, since the textarea is hidden
@@ -156,6 +166,10 @@ export default class extends Controller {
                 // matching how Trix kept the textarea continuously up to date via its "input"
                 // attribute.
                 setupEditor.on('change input undo redo', () => setupEditor.save());
+
+                if (this.bookletValue) {
+                    setupEditor.on('init SetContent NodeChange change input undo redo', () => this.markSectionLevel(setupEditor));
+                }
 
                 if (this.emojiValue) {
                     setupEditor.ui.registry.addButton('emoji', {
@@ -173,6 +187,48 @@ export default class extends Controller {
     disconnect() {
         this.emojiPicker?.remove();
         this.editor?.remove();
+    }
+
+    // The booklet reads heading levels RELATIVELY - the highest level present is a numbered
+    // section, anything below a subtitle - so a text written before this toolbar existed (in h1/h2)
+    // prints like one written with it (h2/h3). CSS alone cannot know which level is the highest,
+    // so the body is told, and the preview numbers the right one.
+    bookletOptions(dark) {
+        const section = dark ? '#8cb8e8' : '#2E74B5';
+        const subtitle = dark ? '#b7cde6' : '#1F4E79';
+        const sectionSelectors = [1, 2, 3].map((level) => `body.lv-top-h${level} h${level}`);
+        const sections = sectionSelectors.join(', ');
+        const sectionNumbers = sectionSelectors.map((selector) => `${selector}::before`).join(', ');
+        const subtitles = [1, 2, 3].map((level) => `body.lv-top-h${level} :is(${['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].slice(level).join(', ')})`).join(', ');
+
+        return {
+            block_formats: `${this.bookletParagraphLabelValue}=p;${this.bookletSectionLabelValue}=h2;${this.bookletSubtitleLabelValue}=h3`,
+            content_style: `
+                @import url('https://fonts.googleapis.com/css2?family=Carlito:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+                body { font-family: Carlito, Calibri, 'Segoe UI', sans-serif; font-size: 10.5pt; line-height: 1.45; counter-reset: lv-section 4; }
+                ${sections} { color: ${section}; font-size: 13pt; font-weight: 700; margin: 7mm 0 3mm; }
+                ${sectionNumbers} { counter-increment: lv-section; content: counter(lv-section) ". "; }
+                ${subtitles} { color: ${subtitle}; font-size: 11pt; font-weight: 700; margin: 4mm 0 2mm; }
+                p { margin: 2mm 0; }
+            `,
+        };
+    }
+
+    markSectionLevel(editor) {
+        const body = editor.getBody();
+        if (!body) {
+            return;
+        }
+
+        const levels = [...body.querySelectorAll('h1, h2, h3, h4, h5, h6')]
+            .filter((heading) => '' !== heading.textContent.trim())
+            .map((heading) => Number(heading.tagName.substring(1)));
+        const top = levels.length > 0 ? Math.min(...levels) : 0;
+
+        body.classList.remove('lv-top-h1', 'lv-top-h2', 'lv-top-h3');
+        if (top >= 1 && top <= 3) {
+            body.classList.add(`lv-top-h${top}`);
+        }
     }
 
     // The upload half of the image button. Two things are deliberate here:

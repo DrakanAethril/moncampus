@@ -1,0 +1,86 @@
+{# « Équipe » - the lines of the booklet's « Équipe pédagogique », listed in the order the booklet
+   prints them (App\Service\TeachingTeam::sorted()). Same shape as _evaluation_periods_content: a
+   plain table, « Ajouter » on the tab row, create/edit in a cm-panel over the list. Free text
+   only - nothing here is linked to the formation's matières, timetable or accounts. #}
+{% set hasOptions = optionNames is not empty %}
+<div class="card-body pb-0">
+    <p class="text-secondary mb-3">{{ 'ufaTeachingTeamHelpText'|trans }}</p>
+</div>
+<div class="table-responsive">
+    <table class="table table-vcenter card-table table-striped">
+        <thead>
+            <tr>
+                <th>{{ 'ufaTeachingTeamTopicColumnLabel'|trans }}</th>
+                <th>{{ 'ufaTeachingTeamTeacherColumnLabel'|trans }}</th>
+                {% if hasOptions %}
+                    <th>{{ 'ufaTeachingTeamOptionsColumnLabel'|trans }}</th>
+                {% endif %}
+                <th class="cm-actions"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in teachingTeam %}
+                <tr>
+                    <td class="fw-medium">{{ entry.topic }}</td>
+                    <td>{{ entry.teacher }}</td>
+                    {% if hasOptions %}
+                        <td>
+                            {% set entryOptionNames = entry.optionIds|filter(optionId => optionNames[optionId] is defined)|map(optionId => optionNames[optionId]) %}
+                            {% if entryOptionNames is empty %}
+                                <span class="text-secondary">{{ 'ufaTeachingTeamAllOptionsLabel'|trans }}</span>
+                            {% else %}
+                                {% for optionName in entryOptionNames %}
+                                    <span class="cm-badge">{{ optionName }}</span>
+                                {% endfor %}
+                            {% endif %}
+                        </td>
+                    {% endif %}
+                    <td class="cm-actions">
+                        <a href="{{ path('app_ufa_formation_teaching_team_edit', {id: program.id, entryId: entry.id}) }}" class="cm-action--warning">{{ 'editActionLabel'|trans }}</a>
+                        <button type="submit" form="ufa-teaching-team-delete-{{ entry.id }}" class="cm-action--danger" onclick="return confirm('{{ 'ufaTeachingTeamDeleteConfirmMessage'|trans|e('js') }}')">{{ 'ufaTeachingTeamDeleteActionLabel'|trans }}</button>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="{{ hasOptions ? 4 : 3 }}" class="text-center text-secondary">{{ 'ufaTeachingTeamEmptyText'|trans }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{# The per-row Supprimer buttons submit these forms through their form="..." attribute, which
+   keeps a <form> out of the table markup - same idiom as _evaluation_periods_content. #}
+{% for entry in teachingTeam %}
+    <form id="ufa-teaching-team-delete-{{ entry.id }}" method="post" action="{{ path('app_ufa_formation_teaching_team_delete', {id: program.id, entryId: entry.id}) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token(deleteToken) }}">
+    </form>
+{% endfor %}
+
+{% if panelForm is defined and panelForm %}
+    <a href="{{ path('app_ufa_formation_teaching_team', {id: program.id}) }}" class="cm-panel-backdrop" aria-label="{{ 'cancelAction'|trans }}"></a>
+    <div class="cm-panel" role="dialog" aria-modal="true">
+        <div class="cm-panel__header">
+            <div class="cm-panel__title">{{ (panelIsEdit ? 'ufaTeachingTeamEditHeading' : 'ufaTeachingTeamNewHeading')|trans }}</div>
+            <a href="{{ path('app_ufa_formation_teaching_team', {id: program.id}) }}" class="cm-panel__close" aria-label="{{ 'cancelAction'|trans }}">&times;</a>
+        </div>
+        {{ form_start(panelForm) }}
+            <div class="cm-panel__body">
+                {{ form_errors(panelForm) }}
+                {{ form_row(panelForm.topic) }}
+                {{ form_row(panelForm.teacher) }}
+                {% if panelForm.optionIds is defined %}
+                    {{ form_row(panelForm.optionIds) }}
+                {% endif %}
+            </div>
+            <div class="cm-panel__footer">
+                <span></span>
+                <div class="cm-panel__footer-buttons">
+                    <a href="{{ path('app_ufa_formation_teaching_team', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {{ form_widget(panelForm.submit, {'label': panelIsEdit ? 'submitEditAction' : 'submitCreateAction'}) }}
+                </div>
+            </div>
+            {{ form_rest(panelForm) }}
+        {{ form_end(panelForm) }}
+    </div>
+{% endif %}

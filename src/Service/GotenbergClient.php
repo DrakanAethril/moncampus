@@ -87,8 +87,8 @@ class GotenbergClient
      * How many pages a PDF byte-stream has, via Gotenberg's exiftool-backed metadata route.
      *
      * Used by App\Service\InternshipBookletPdfExporter to know how far an uploaded alternance
-     * calendar pushes everything printed after it, since the booklet's page numbers (footers and
-     * sommaire) are authored as fixed values rather than counted at render time.
+     * calendar or emploi du temps pushes everything printed after it: the part of the booklet that
+     * follows them is printed on its own, and told where its page numbering starts.
      *
      * Falls back to 1 whenever the answer can't be read - an uncounted file then behaves exactly
      * like a single-page one, which is the pre-existing numbering, rather than failing the whole

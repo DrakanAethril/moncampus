@@ -16,8 +16,13 @@
                 <div class="cm-subhead">
                     <div class="cm-subhead__title">{{ 'ufaContractModalitiesDefaultSectionTitle'|trans({'%type%': selectedCode.labelKey|trans}) }}</div>
                 </div>
+                <p class="text-secondary small">{{ 'ufaContractModalitiesBookletHint'|trans }}</p>
                 <textarea class="form-control" rows="12" name="defaultModalitiesHtml"
                           data-controller="hugerte-editor" data-hugerte-editor-height-value="360"
+                          data-hugerte-editor-booklet-value="true"
+                          data-hugerte-editor-booklet-paragraph-label-value="{{ 'hugerteBookletParagraphFormat'|trans }}"
+                          data-hugerte-editor-booklet-section-label-value="{{ 'hugerteBookletSectionFormat'|trans }}"
+                          data-hugerte-editor-booklet-subtitle-label-value="{{ 'hugerteBookletSubtitleFormat'|trans }}"
                 >{{ selectedContractType ? selectedContractType.defaultModalitiesHtml : '' }}</textarea>
             </div>
             {% if overrides is not empty %}
