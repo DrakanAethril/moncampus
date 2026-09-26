@@ -69,7 +69,7 @@ class AgendaController extends AbstractController
         return [
             'id' => $signupList->getId(),
             'title' => $signupList->getTitle(),
-            'registrationCount' => $registrationRepository->countForSignupList($signupList),
+            'registrationCount' => $signupList->getRegistrationCount(),
             'registrationOpen' => $signupList->isRegistrationOpen(),
             'isRegistered' => null !== $registrationRepository->findOneForSignupListAndUser($signupList, $user),
             'canRegister' => $this->isGranted(SignupListVoter::REGISTER, $signupList),
