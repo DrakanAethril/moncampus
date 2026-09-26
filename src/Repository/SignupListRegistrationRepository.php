@@ -37,14 +37,4 @@ class SignupListRegistrationRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
-
-    public function countForSignupList(SignupList $signupList): int
-    {
-        return (int) $this->createQueryBuilder('r')
-            ->select('COUNT(r.id)')
-            ->where('r.signupList = :signupList')
-            ->setParameter('signupList', $signupList)
-            ->getQuery()
-            ->getSingleScalarResult();
-    }
 }

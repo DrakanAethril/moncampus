@@ -53,6 +53,15 @@ class SignupList implements AudienceTargetable
     #[ORM\Column(name: 'registration_deadline', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $registrationDeadline = null;
 
+    /**
+     * How many people are registered, stored rather than counted on every screen and every API
+     * answer that shows it. Never written by the ORM: App\Service\SignupListRegistrar moves it with
+     * an atomic `UPDATE … ± 1` in the transaction that adds or removes the registration, and
+     * recomputes it from `signup_list_registration` at night.
+     */
+    #[ORM\Column(name: 'registration_count', insertable: false, updatable: false, options: ['default' => 0])]
+    private int $registrationCount = 0;
+
     // Default private - only the creator/staff see who's registered unless explicitly opened up.
     // See SignupListVoter::VIEW_ROSTER.
     #[ORM\Column(name: 'public_roster')]
@@ -128,6 +137,17 @@ class SignupList implements AudienceTargetable
         $this->registrationDeadline = $registrationDeadline;
 
         return $this;
+    }
+
+    public function getRegistrationCount(): int
+    {
+        return $this->registrationCount;
+    }
+
+    /** Memory only - keeps the loaded list in step with what SignupListRegistrar has just written. */
+    public function mirrorRegistrationCount(int $delta): void
+    {
+        $this->registrationCount += $delta;
     }
 
     public function isRegistrationOpen(): bool

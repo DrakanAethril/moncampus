@@ -6,13 +6,12 @@ namespace App\Controller\Api;
 
 use App\Attribute\RequiresFeature;
 use App\Entity\SignupList;
-use App\Entity\SignupListRegistration;
 use App\Entity\User;
 use App\Enum\Feature;
 use App\Repository\SignupListRegistrationRepository;
 use App\Repository\SignupListRepository;
 use App\Security\Voter\SignupListVoter;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Service\SignupListRegistrar;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
@@ -30,7 +29,7 @@ use Symfony\Component\Routing\Attribute\Route;
 class SignupListController extends AbstractController
 {
     #[Route(path: '/api/signup-lists/{id}/register', name: 'api_signup_lists_register', methods: ['POST'])]
-    public function register(int $id, SignupListRepository $repository, SignupListRegistrationRepository $registrationRepository, EntityManagerInterface $entityManager): JsonResponse
+    public function register(int $id, SignupListRepository $repository, SignupListRegistrationRepository $registrationRepository, SignupListRegistrar $registrar): JsonResponse
     {
         $signupList = $this->findOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(SignupListVoter::REGISTER, $signupList);
@@ -39,23 +38,19 @@ class SignupListController extends AbstractController
             return $this->json(['error' => 'registration_closed'], 422);
         }
 
-        if (null === $registrationRepository->findOneForSignupListAndUser($signupList, $this->currentUser())) {
-            $entityManager->persist(new SignupListRegistration($signupList, $this->currentUser()));
-            $entityManager->flush();
-        }
+        $registrar->register($signupList, $this->currentUser());
 
         return $this->json($this->formatSignupList($signupList, $registrationRepository));
     }
 
     #[Route(path: '/api/signup-lists/{id}/unregister', name: 'api_signup_lists_unregister', methods: ['POST'])]
-    public function unregister(int $id, SignupListRepository $repository, SignupListRegistrationRepository $registrationRepository, EntityManagerInterface $entityManager): JsonResponse
+    public function unregister(int $id, SignupListRepository $repository, SignupListRegistrationRepository $registrationRepository, SignupListRegistrar $registrar): JsonResponse
     {
         $signupList = $this->findOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(SignupListVoter::UNREGISTER, $signupList);
 
         $registration = $registrationRepository->findOneForSignupListAndUser($signupList, $this->currentUser()) ?? throw $this->createNotFoundException();
-        $entityManager->remove($registration);
-        $entityManager->flush();
+        $registrar->unregister($registration);
 
         return $this->json($this->formatSignupList($signupList, $registrationRepository));
     }
@@ -65,7 +60,7 @@ class SignupListController extends AbstractController
     {
         return [
             'id' => $signupList->getId(),
-            'registrationCount' => $registrationRepository->countForSignupList($signupList),
+            'registrationCount' => $signupList->getRegistrationCount(),
             'registrationOpen' => $signupList->isRegistrationOpen(),
             'isRegistered' => null !== $registrationRepository->findOneForSignupListAndUser($signupList, $this->currentUser()),
             'canRegister' => $this->isGranted(SignupListVoter::REGISTER, $signupList),
