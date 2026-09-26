@@ -1,0 +1,67 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'equipmentLabelsPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'equipment/_breadcrumb.html.twig' with {extra: [
+        {label: 'equipmentLabelsPageHeading'|trans, url: path('app_equipment_labels')},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'equipmentLabelsPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="cm-subhead mb-3">
+        <div class="cm-subhead__hint">
+            {{ (isBatch ? 'equipmentLabelsBatchHint' : 'equipmentLabelsHint')|trans({'%count%': items|length}) }}
+            {% if isBatch and unlabeledCount > 0 %}
+                <a href="{{ path('app_equipment_labels') }}">{{ 'equipmentLabelsSeeAllAction'|trans({'%count%': unlabeledCount}) }}</a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if items is empty %}
+        <div class="card"><div class="card-body text-center text-secondary">{{ 'equipmentLabelsEmptyText'|trans }}</div></div>
+    {% else %}
+        <form method="post" action="{{ path('app_equipment_labels_mark') }}" class="card">
+            <input type="hidden" name="_token" value="{{ csrf_token('equipment_labels') }}">
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px"></th>
+                            <th>{{ 'equipmentItemCodeColumnLabel'|trans }}</th>
+                            <th>{{ 'equipmentTypeNameFieldLabel'|trans }}</th>
+                            <th>{{ 'equipmentItemLabelFieldLabel'|trans }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                            <tr>
+                                <td>
+                                    {% if not item.labeled %}
+                                        <input type="checkbox" class="form-check-input" name="items[]" value="{{ item.id }}" checked aria-label="{{ item.code }}">
+                                    {% endif %}
+                                </td>
+                                {# Large and monospaced: this is what somebody reads off the screen
+                                   while typing on the Dymo's keyboard. #}
+                                <td><a href="{{ path('app_equipment_item_show', {id: item.id}) }}" class="font-monospace fw-bold" style="font-size: 1.35rem; letter-spacing: .04em">{{ item.code }}</a></td>
+                                <td>{{ item.type.name }}</td>
+                                <td>
+                                    {% if item.labeled %}
+                                        <span class="cm-badge cm-badge--green">{{ 'equipmentItemLabeledBadge'|trans }}</span>
+                                    {% else %}
+                                        <span class="cm-badge cm-badge--gold">{{ 'equipmentToLabelBadge'|trans }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer d-flex justify-content-between align-items-center">
+                <span class="text-secondary small">{{ 'equipmentLabelsFootnote'|trans }}</span>
+                <button type="submit" class="btn btn-primary">{{ 'equipmentLabelsMarkAction'|trans }}</button>
+            </div>
+        </form>
+    {% endif %}
+{% endblock %}

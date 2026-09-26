@@ -1,0 +1,31 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'equipmentItemEditPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'equipment/_breadcrumb.html.twig' with {extra: [
+        {label: item.type.name, url: path('app_equipment_type_show', {id: item.type.id})},
+        {label: item.code, url: path('app_equipment_item_show', {id: item.id})},
+        {label: 'equipmentItemEditPageHeading'|trans, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'equipmentItemEditPageHeading'|trans }} <span class="font-monospace">{{ item.code }}</span>{% endblock %}
+
+{% block main %}
+    <div class="card">
+        {{ form_start(form) }}
+            {{ form_errors(form) }}
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">{{ form_row(form.serialNumber) }}</div>
+                    <div class="col-md-6">{{ form_row(form.location) }}</div>
+                </div>
+                {{ form_row(form.notes) }}
+            </div>
+            <div class="card-footer d-flex justify-content-end gap-2">
+                <a href="{{ path('app_equipment_item_show', {id: item.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                {{ form_widget(form.submit, {attr: {class: 'btn btn-primary'}}) }}
+            </div>
+        {{ form_end(form) }}
+    </div>
+{% endblock %}

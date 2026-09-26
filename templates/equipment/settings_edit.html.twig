@@ -1,0 +1,25 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set heading = (kind == 'categories' ? 'equipmentCategoryEditPageHeading' : 'equipmentLocationEditPageHeading')|trans %}
+
+{% block title %}{{ heading }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'equipment/_breadcrumb.html.twig' with {extra: [
+        {label: 'equipmentSettingsPageHeading'|trans, url: path('app_equipment_settings')},
+        {label: heading, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ heading }}{% endblock %}
+
+{% block main %}
+    <div class="card" style="max-width: 560px">
+        {{ form_start(form) }}
+            <div class="card-body">{{ form_row(form.name) }}</div>
+            <div class="card-footer d-flex justify-content-end gap-2">
+                <a href="{{ path('app_equipment_settings') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                {{ form_widget(form.submit, {attr: {class: 'btn btn-primary'}}) }}
+            </div>
+        {{ form_end(form) }}
+    </div>
+{% endblock %}

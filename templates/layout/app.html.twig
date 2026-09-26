@@ -683,11 +683,15 @@
                            once, and the menu is the union of them. Nothing here is on by default
                            except the tickets, so an establishment that switches those off would
                            otherwise be left with a Gestion opening on an empty panel. #}
-                        {% set gestion_internship = feature('training_offers') or (is_granted('ROLE_ADMIN') and feature('school_mail_supervision')) %}
-                        {% set gestion_directory = (is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD')) and feature('directory') %}
-                        {% if (is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD'))
-                            and (gestion_internship or feature('support') or feature('signup_lists') or gestion_directory or is_granted('ROLE_ADMIN')) %}
-                        {% set gestion_is_active = current_route in ['app_tickets_queue', 'app_tickets_queue_categories'] or (is_granted('ROLE_ADMIN') and support_is_active) or current_route starts with 'app_directory_' or current_route starts with 'app_signup_lists' or current_route starts with 'app_school_mail_unlinked' or current_route starts with 'app_training_offer' %}
+                        {# Matériel is the one group the technical support reaches too: for a
+                           support-tech account alone, Gestion holds Matériel and nothing else - the
+                           other groups stay behind gestion_staff. #}
+                        {% set gestion_staff = is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD') %}
+                        {% set gestion_internship = gestion_staff and (feature('training_offers') or (is_granted('ROLE_ADMIN') and feature('school_mail_supervision'))) %}
+                        {% set gestion_directory = gestion_staff and feature('directory') %}
+                        {% set gestion_equipment = (gestion_staff or is_granted('ROLE_SUPPORT-TECH')) and feature('equipment') %}
+                        {% if (gestion_staff and (gestion_internship or feature('support') or feature('signup_lists') or gestion_directory or is_granted('ROLE_ADMIN'))) or gestion_equipment %}
+                        {% set gestion_is_active = current_route in ['app_tickets_queue', 'app_tickets_queue_categories'] or (is_granted('ROLE_ADMIN') and support_is_active) or current_route starts with 'app_directory_' or current_route starts with 'app_signup_lists' or current_route starts with 'app_school_mail_unlinked' or current_route starts with 'app_training_offer' or current_route starts with 'app_equipment' %}
                         <li class="nav-item dropdown {{ gestion_is_active ? 'active' }}">
                             <a class="nav-link dropdown-toggle" href="#navbar-gestion" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ gestion_is_active ? ' aria-current="page"' }}>
                                 <span class="nav-link-title">{{ 'gestionNavLabel'|trans }}</span>
@@ -713,7 +717,7 @@
                                     </div>
                                 </div>
                                 {% endif %}
-                                {% if feature('support') %}
+                                {% if gestion_staff and feature('support') %}
                                 <div class="dropend">
                                     <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_tickets' ? 'active' }}" href="#gestion-tickets" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                                         {{ 'ticketsGroupNavLabel'|trans }}
@@ -730,7 +734,7 @@
                                    Directory - students/teachers need to reach it too, to register/view lists
                                    they're eligible for (see App\Controller\SignupListController), not just staff
                                    to manage them. #}
-                                {% if feature('signup_lists') %}<a class="dropdown-item {{ current_route starts with 'app_signup_lists' ? 'active' }}" href="{{ path('app_signup_lists') }}">{{ 'signupListsNavLabel'|trans }}</a>{% endif %}
+                                {% if gestion_staff and feature('signup_lists') %}<a class="dropdown-item {{ current_route starts with 'app_signup_lists' ? 'active' }}" href="{{ path('app_signup_lists') }}">{{ 'signupListsNavLabel'|trans }}</a>{% endif %}
                                 {% if gestion_directory %}
                                     <div class="dropend">
                                         <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_directory_' ? 'active' }}" href="#gestion-directory" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
@@ -747,6 +751,20 @@
                                                 <a class="dropdown-item" href="{{ path('app_directory_services') }}">{{ 'directoryServicesNavLabel'|trans }}</a>
                                                 <a class="dropdown-item" href="{{ path('app_directory_computers') }}">{{ 'directoryComputersNavLabel'|trans }}</a>
                                             {% endif %}
+                                        </div>
+                                    </div>
+                                {% endif %}
+                                {# Gestion > Matériel - last of the menu, by request. The UFA laptops
+                                   are not here: they have their own inventory under UFA. #}
+                                {% if gestion_equipment %}
+                                    <div class="dropend">
+                                        <a class="dropdown-item dropdown-toggle {{ current_route starts with 'app_equipment' ? 'active' }}" href="#gestion-equipment" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                            {{ 'equipmentNavLabel'|trans }}
+                                        </a>
+                                        <div class="dropdown-menu">
+                                            <a class="dropdown-item {{ current_route in ['app_equipment', 'app_equipment_search'] or current_route starts with 'app_equipment_type' or current_route starts with 'app_equipment_item' ? 'active' }}" href="{{ path('app_equipment') }}">{{ 'equipmentStockNavLabel'|trans }}</a>
+                                            <a class="dropdown-item {{ current_route starts with 'app_equipment_labels' ? 'active' }}" href="{{ path('app_equipment_labels') }}">{{ 'equipmentLabelsNavLabel'|trans }}</a>
+                                            <a class="dropdown-item {{ current_route starts with 'app_equipment_settings' ? 'active' }}" href="{{ path('app_equipment_settings') }}">{{ 'equipmentSettingsNavLabel'|trans }}</a>
                                         </div>
                                     </div>
                                 {% endif %}
