@@ -95,6 +95,7 @@ enum Feature: string
     case GuestConsole = 'guest_console';
     case Eco = 'eco';
     case ActivityHistory = 'activity_history';
+    case Equipment = 'equipment';
 
     /**
      * The roles the matrix offers a column for, in the order the screen draws them.
@@ -145,7 +146,7 @@ enum Feature: string
             self::TrainingOffers, self::JobSearch, self::Jobboard => FeatureFamily::Alternance,
 
             self::MyVms, self::Infrastructure, self::GuestConsole, self::Eco,
-            self::ActivityHistory => FeatureFamily::Technical,
+            self::ActivityHistory, self::Equipment => FeatureFamily::Technical,
         };
     }
 
@@ -235,6 +236,7 @@ enum Feature: string
             self::GuestConsole => 'featureGuestConsoleLabel',
             self::Eco => 'featureEcoLabel',
             self::ActivityHistory => 'featureActivityHistoryLabel',
+            self::Equipment => 'featureEquipmentLabel',
         };
     }
 
@@ -325,6 +327,11 @@ enum Feature: string
 
             // e-CO is what ROLE_ECO exists for.
             self::Eco => ['ROLE_ECO'],
+
+            // Gestion > Matériel is kept by the people who hand the spares out: the administration
+            // and the technical support. Teachers declare nothing here - a broken mouse in a room
+            // reaches the support the way everything else does, through a ticket.
+            self::Equipment => ['ROLE_STAFF', 'ROLE_STAFF-LEAD', 'ROLE_SUPPORT-TECH'],
 
             // The two class lists are the establishment's own directory rather than a teaching
             // tool (see the nav's comment on them), and so is exporting one: an émargement sheet

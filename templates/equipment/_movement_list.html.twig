@@ -1,0 +1,36 @@
+{# The journal lines of a type or of one piece, newest first. `showItem` adds the piece column,
+   which a piece's own fiche does not need. #}
+<div class="table-responsive">
+    <table class="table table-vcenter card-table">
+        <thead>
+            <tr>
+                <th>{{ 'equipmentMovementDateColumnLabel'|trans }}</th>
+                <th>{{ 'equipmentMovementKindColumnLabel'|trans }}</th>
+                {% if showItem %}<th>{{ 'equipmentItemCodeColumnLabel'|trans }}</th>{% endif %}
+                <th class="text-end">{{ 'equipmentQuantityFieldLabel'|trans }}</th>
+                <th>{{ 'equipmentRoomFieldLabel'|trans }}</th>
+                <th>{{ 'equipmentMovementByColumnLabel'|trans }}</th>
+                <th>{{ 'equipmentMovementNoteFieldLabel'|trans }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for movement in movements %}
+                <tr>
+                    <td class="text-nowrap">{{ movement.occurredAt|date('d/m/Y H:i') }}</td>
+                    <td>{{ movement.kind.labelKey|trans }}</td>
+                    {% if showItem %}
+                        <td class="text-nowrap">
+                            {% if movement.item %}<a href="{{ path('app_equipment_item_show', {id: movement.item.id}) }}" class="font-monospace">{{ movement.item.code }}</a>{% else %}—{% endif %}
+                        </td>
+                    {% endif %}
+                    <td class="text-end">{{ movement.quantity }}</td>
+                    <td>{{ movement.room ? movement.room.name : '—' }}</td>
+                    <td>{{ movement.recordedBy ? (movement.recordedBy.displayName ?? movement.recordedBy.username) : '—' }}</td>
+                    <td>{{ movement.note ?? '' }}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="{{ showItem ? 7 : 6 }}" class="text-center text-secondary">{{ 'equipmentNoMovementText'|trans }}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

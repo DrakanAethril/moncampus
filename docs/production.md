@@ -465,6 +465,33 @@ Notes:
 > gesture per student, so it is the same kind of table as `PlatformActivity` and falls under the same
 > retention question.
 
+## Recomputing the stored counters (cron)
+
+`app:counters:recompute` checks every **stored counter** of the platform against its source and
+corrects the ones that drifted. A stored counter is a value kept on a row rather than summed at
+display - since 2026-09-26, the three counters of each Gestion > Matériel type (available, in use,
+on order), read by the stock screen instead of the whole equipment journal.
+
+**The counters are right without it.** Each one moves in real time, in the same transaction as what
+changes it; this pass is the safety net, not the mechanism. That is also why a correction is never
+quiet: each drift is logged at *error* level and so reaches Discord - a counter that drifted means a
+code path moved a source without moving its counter, and that is a bug to fix, not a figure to patch
+every night.
+
+```cron
+45 3 * * * cd /srv/moncampus && docker compose -f compose.yaml -f compose.prod.yaml exec -T php bin/console app:counters:recompute >> /var/log/moncampus-counters.log 2>&1
+```
+
+Notes:
+
+- **`--dry-run` compares and writes nothing**, which is how a suspicion is checked by hand.
+  `--counter=equipment_stock` narrows it to one counter; the command lists the names when given an
+  unknown one.
+- **Harmless to run at any time.** Each counter locks the rows it checks before reading their source,
+  so a gesture recorded during the pass is neither lost nor counted twice.
+- **The Matériel screens have their own buttons** (« Recalculer les compteurs », « Recalculer ce
+  compteur »), which check the equipment counters only. The platform-wide pass is this command.
+
 ## Disabling HTTPS
 
 Alternatively, if you don't want to expose an HTTPS server but only an HTTP one,

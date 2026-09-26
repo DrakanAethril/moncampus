@@ -1,0 +1,153 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ type.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'equipment/_breadcrumb.html.twig' with {extra: [
+        {label: type.name, url: path('app_equipment_type_show', {id: type.id})},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ type.name }}{% endblock %}
+{% block page_actions %}
+    <a href="{{ path('app_equipment_type_edit', {id: type.id}) }}" class="btn btn-primary">{{ 'equipmentTypeEditAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    <div class="text-secondary mb-3" style="margin-top: -8px;">
+        {{ (type.unitTracked ? 'equipmentTrackingUnitLabel' : 'equipmentTrackingQuantityLabel')|trans }}
+        · {{ type.category ? type.category.name : 'equipmentNoCategoryPlaceholder'|trans }}
+        {% if type.brand or type.model %}· {{ [type.brand, type.model]|filter(v => v)|join(' ') }}{% endif %}
+    </div>
+
+    <div class="cm-statgrid mb-3">
+        <div class="cm-stat">
+            <span class="cm-stat__value"><span class="cm-badge cm-badge--{{ type.stockLevel }}" style="font-size: inherit">{{ type.availableCount }}</span></span>
+            <span class="cm-stat__label">{{ 'equipmentStatAvailableLabel'|trans }}</span>
+            {% if type.alertThreshold is not null %}<span class="cm-stat__hint">{{ 'equipmentAlertThresholdTitle'|trans({'%threshold%': type.alertThreshold}) }}</span>{% endif %}
+        </div>
+        <div class="cm-stat">
+            <span class="cm-stat__value">{{ type.inUseCount }}</span>
+            <span class="cm-stat__label">{{ 'equipmentStatInUseLabel'|trans }}</span>
+        </div>
+        <div class="cm-stat">
+            <span class="cm-stat__value">{{ type.targetStock ?? '—' }}</span>
+            <span class="cm-stat__label">{{ 'equipmentTypeTargetStockFieldLabel'|trans }}</span>
+        </div>
+        <div class="cm-stat">
+            <span class="cm-stat__value">{{ type.unitPrice is not null ? type.unitPrice|number_format(2, ',', ' ') ~ ' €' : '—' }}</span>
+            <span class="cm-stat__label">{{ 'equipmentTypeUnitPriceFieldLabel'|trans }}</span>
+        </div>
+    </div>
+
+    <div class="row row-cards">
+        <div class="col-lg-4">
+            <div class="card mb-3">
+                <div class="card-header"><h3 class="card-title mb-0">{{ type.unitTracked ? 'equipmentAddUnitsAction'|trans : 'equipmentAddQuantityAction'|trans }}</h3></div>
+                <div class="card-body">
+                    {{ form_start(addStockForm) }}
+                        {{ form_row(addStockForm.quantity) }}
+                        {{ form_row(addStockForm.note) }}
+                        {{ form_widget(addStockForm.submit, {attr: {class: 'btn btn-primary w-100'}}) }}
+                    {{ form_end(addStockForm) }}
+                    {% if type.unitTracked %}<div class="form-hint mt-2">{{ 'equipmentAddUnitsHint'|trans }}</div>{% endif %}
+                </div>
+            </div>
+
+            {% if deployForm %}
+                <div class="card mb-3">
+                    <div class="card-header"><h3 class="card-title mb-0">{{ 'equipmentDeployQuantityAction'|trans }}</h3></div>
+                    <div class="card-body">
+                        {{ form_start(deployForm) }}
+                            {{ form_row(deployForm.quantity) }}
+                            {{ form_row(deployForm.room) }}
+                            {{ form_widget(deployForm.submit, {attr: {class: 'btn btn-outline-primary w-100'}}) }}
+                        {{ form_end(deployForm) }}
+                    </div>
+                </div>
+                <div class="card mb-3">
+                    <div class="card-header"><h3 class="card-title mb-0">{{ 'equipmentReturnQuantityAction'|trans }}</h3></div>
+                    <div class="card-body">
+                        {{ form_start(returnForm) }}
+                            {{ form_row(returnForm.quantity) }}
+                            {{ form_widget(returnForm.submit, {attr: {class: 'btn btn-outline-primary w-100'}}) }}
+                        {{ form_end(returnForm) }}
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="card mb-3">
+                <div class="card-header"><h3 class="card-title mb-0">{{ 'equipmentDetailsCardTitle'|trans }}</h3></div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <div class="fw-bold">{{ 'equipmentTypeLocationFieldLabel'|trans }}</div>
+                        <div class="text-secondary">{{ type.location ? type.location.name : '—' }}</div>
+                    </div>
+                    <div class="mb-2">
+                        <div class="fw-bold">{{ 'equipmentTypeSupplierReferenceFieldLabel'|trans }}</div>
+                        <div class="text-secondary text-break">
+                            {% if type.supplierReference and type.supplierReference starts with 'http' %}
+                                <a href="{{ type.supplierReference }}" target="_blank" rel="noopener noreferrer">{{ type.supplierReference }}</a>
+                            {% else %}
+                                {{ type.supplierReference ?? '—' }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div>
+                        <div class="fw-bold">{{ 'equipmentNotesFieldLabel'|trans }}</div>
+                        <div class="text-secondary" style="white-space: pre-line">{{ type.notes ?? '—' }}</div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <form method="post" action="{{ path('app_equipment_type_recompute', {id: type.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('equipment_recompute') }}">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary w-100">{{ 'equipmentRecomputeOneAction'|trans }}</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            {% if type.unitTracked %}
+                <div class="card mb-3">
+                    <div class="card-header"><h3 class="card-title mb-0">{{ 'equipmentItemsCardTitle'|trans({'%count%': items|length}) }}</h3></div>
+                    <div class="table-responsive">
+                        <table class="table table-vcenter card-table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>{{ 'equipmentItemCodeColumnLabel'|trans }}</th>
+                                    <th>{{ 'equipmentItemStatusColumnLabel'|trans }}</th>
+                                    <th>{{ 'equipmentItemWhereColumnLabel'|trans }}</th>
+                                    <th>{{ 'equipmentItemSerialNumberFieldLabel'|trans }}</th>
+                                    <th class="cm-actions"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in items %}
+                                    <tr>
+                                        <td class="text-nowrap">
+                                            <a href="{{ path('app_equipment_item_show', {id: item.id}) }}" class="font-monospace fw-bold">{{ item.code }}</a>
+                                            {% if not item.labeled %}<span class="cm-badge cm-badge--gold ms-1">{{ 'equipmentToLabelBadge'|trans }}</span>{% endif %}
+                                        </td>
+                                        <td>{% include 'equipment/_status_badge.html.twig' with {status: item.status} only %}</td>
+                                        <td>{{ item.room ? item.room.name : (item.location ? item.location.name : '—') }}</td>
+                                        <td>{{ item.serialNumber ?? '—' }}</td>
+                                        <td class="cm-actions text-nowrap">
+                                            {% include 'equipment/_item_usage_button.html.twig' with {item: item, back: 'type'} only %}
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    <tr><td colspan="5" class="text-center text-secondary">{{ 'equipmentNoItemText'|trans }}</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="card mb-3">
+                <div class="card-header"><h3 class="card-title mb-0">{{ 'equipmentHistoryCardTitle'|trans }}</h3></div>
+                {% include 'equipment/_movement_list.html.twig' with {movements: movements, showItem: type.unitTracked} only %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

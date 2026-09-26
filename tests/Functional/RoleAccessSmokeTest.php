@@ -1164,6 +1164,39 @@ class RoleAccessSmokeTest extends FunctionalTestCase
     }
 
     /**
+     * Gestion > Matériel: kept by the administration and the technical support, and by nobody
+     * else. The support-tech account is the one worth pinning - it is delivered nothing by default
+     * (App\Enum\Feature::ROLES_WITHOUT_DEFAULTS) and this is the first area of Gestion it reaches.
+     */
+    public function testEquipmentIsKeptByTheAdministrationAndTheSupport(): void
+    {
+        $screens = [
+            '/equipment' => 200,
+            '/equipment/types/new' => 200,
+            '/equipment/labels' => 200,
+            '/equipment/settings' => 200,
+            // Not a code at all: handed back to the stock list, filtered by name.
+            '/equipment/search?q=souris' => 302,
+            '/equipment/types/999999' => 404,
+            '/equipment/items/999999' => 404,
+        ];
+
+        $staff = $this->createUser(['ROLE_USER', 'ROLE_STAFF'], 'smoke.equipment.staff');
+        $staffLead = $this->createUser(['ROLE_USER', 'ROLE_STAFF-LEAD'], 'smoke.equipment.stafflead');
+        $support = $this->createUser(['ROLE_USER', 'ROLE_SUPPORT-TECH'], 'smoke.equipment.support');
+
+        foreach ([$this->admin, $staff, $staffLead, $support] as $user) {
+            $this->assertScreens($user, $screens);
+        }
+
+        $refused = array_fill_keys(['/equipment', '/equipment/types/new', '/equipment/labels', '/equipment/settings'], 403);
+
+        foreach ([$this->student, $this->teacher, $this->tutor] as $user) {
+            $this->assertScreens($user, $refused);
+        }
+    }
+
+    /**
      * The « Exporter » button of the two class lists, whose routes carry two guards rather than one
      * and are therefore worth a table of their own: the `IsGranted` says staff and admin, and
      * App\Enum\Feature::ClassListExports says whether the establishment runs the exports at all.

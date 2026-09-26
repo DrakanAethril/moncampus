@@ -1,0 +1,65 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set heading = type ? 'equipmentTypeEditPageHeading'|trans : 'equipmentTypeNewPageHeading'|trans %}
+
+{% block title %}{{ heading }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'equipment/_breadcrumb.html.twig' with {extra: (type ? [
+        {label: type.name, url: path('app_equipment_type_show', {id: type.id})},
+    ] : [])|merge([
+        {label: heading, url: app.request.requestUri},
+    ])} %}
+{% endblock %}
+{% block page_title %}{{ heading }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        {{ form_start(form) }}
+            {{ form_errors(form) }}
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">{{ form_row(form.name) }}</div>
+                    <div class="col-md-6">{{ form_row(form.category) }}</div>
+                </div>
+
+                {% if form.unitTracked is defined %}
+                    {# The tracking mode is chosen here once: the fiche of an existing type does not
+                       offer it again (App\Form\EquipmentTypeType). #}
+                    <div class="cm-gb-fieldset mb-3"
+                         data-controller="equipment-type-form"
+                         data-equipment-type-form-unit-label-value="{{ 'equipmentTypeUnitCountFieldLabel'|trans }}"
+                         data-equipment-type-form-quantity-label-value="{{ 'equipmentTypeInitialQuantityFieldLabel'|trans }}"
+                         data-equipment-type-form-unit-help-value="{{ 'equipmentTypeUnitCountFieldHelp'|trans({'%max%': constant('App\\Service\\Equipment\\EquipmentLedger::MAX_UNITS_PER_BATCH')}) }}"
+                         data-equipment-type-form-quantity-help-value="{{ 'equipmentTypeInitialQuantityFieldHelp'|trans }}"
+                         data-equipment-type-form-max-value="{{ constant('App\\Service\\Equipment\\EquipmentLedger::MAX_UNITS_PER_BATCH') }}">
+                        {{ form_row(form.unitTracked, {attr: {'data-equipment-type-form-target': 'toggle', 'data-action': 'change->equipment-type-form#refresh'}}) }}
+                        <div class="mb-3" style="max-width: 240px">
+                            <label class="form-label required" for="{{ form.quantity.vars.id }}" data-equipment-type-form-target="label">{{ 'equipmentTypeInitialQuantityFieldLabel'|trans }}</label>
+                            {{ form_widget(form.quantity, {attr: {'data-equipment-type-form-target': 'quantity'}}) }}
+                            {{ form_errors(form.quantity) }}
+                            <small class="form-hint" data-equipment-type-form-target="help">{{ 'equipmentTypeInitialQuantityFieldHelp'|trans }}</small>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="row">
+                    <div class="col-md-4">{{ form_row(form.brand) }}</div>
+                    <div class="col-md-4">{{ form_row(form.model) }}</div>
+                    <div class="col-md-4">{{ form_row(form.unitPrice) }}</div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4">{{ form_row(form.alertThreshold) }}</div>
+                    <div class="col-md-4">{{ form_row(form.targetStock) }}</div>
+                    <div class="col-md-4">{{ form_row(form.location) }}</div>
+                </div>
+                {{ form_row(form.supplierReference) }}
+                {{ form_row(form.notes) }}
+            </div>
+            <div class="card-footer d-flex justify-content-end gap-2">
+                <a href="{{ type ? path('app_equipment_type_show', {id: type.id}) : path('app_equipment') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                {{ form_widget(form.submit, {attr: {class: 'btn btn-primary'}}) }}
+            </div>
+        {{ form_end(form) }}
+    </div>
+{% endblock %}

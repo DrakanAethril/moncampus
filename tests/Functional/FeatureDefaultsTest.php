@@ -125,7 +125,7 @@ class FeatureDefaultsTest extends KernelTestCase
         // Staff: the alternance area and the equipment, and that is all. The unlinked mail is not
         // theirs (§12.2), and neither are the offers or the job search any more - both went to the
         // students, and a staff member who has to read them gets an individual derogation.
-        foreach (['ufa_booklet', 'laptop_loans', 'my_alternance', 'support'] as $feature) {
+        foreach (['ufa_booklet', 'laptop_loans', 'my_alternance', 'support', 'equipment'] as $feature) {
             $this->assertTrue($reads('ROLE_STAFF', $feature), 'staff are delivered '.$feature);
         }
         foreach ([
@@ -141,13 +141,15 @@ class FeatureDefaultsTest extends KernelTestCase
         }
 
         // The three columns that hold nothing but what names them: `eco` for the role it exists
-        // for, and not one line for the two outside accounts. They are carried alongside another
-        // role far more often than on their own, and the resolver takes the most permissive.
+        // for, `equipment` for the technical support, who keeps Gestion > Matériel with the
+        // administration, and not one line for the outside accounts. They are carried alongside
+        // another role far more often than on their own, and the resolver takes the most permissive.
         $this->assertTrue($reads('ROLE_ECO', 'eco'), 'the e-CO role is delivered e-CO');
+        $this->assertTrue($reads('ROLE_SUPPORT-TECH', 'equipment'), 'the technical support is delivered the equipment inventory');
 
         foreach (Feature::cases() as $feature) {
             foreach (['ROLE_ECO', 'ROLE_SUPPORT-TECH', 'ROLE_EXTERNAL'] as $role) {
-                if ('ROLE_ECO' === $role && Feature::Eco === $feature) {
+                if (('ROLE_ECO' === $role && Feature::Eco === $feature) || ('ROLE_SUPPORT-TECH' === $role && Feature::Equipment === $feature)) {
                     continue;
                 }
 
