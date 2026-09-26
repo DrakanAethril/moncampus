@@ -7,6 +7,7 @@ namespace App\Service\Equipment;
 use App\Counter\CounterDrift;
 use App\Counter\CounterRun;
 use App\Counter\RecomputableCounter;
+use App\Enum\EquipmentItemStatus;
 use App\Enum\EquipmentMovementKind;
 use Doctrine\DBAL\Connection;
 
@@ -50,17 +51,18 @@ final readonly class EquipmentStockCounter implements RecomputableCounter
                 $parameters,
             );
 
-            /** @var list<array{type_id: int|string, kind: string, total: int|string}> $sums */
+            /** @var list<array{type_id: int|string, kind: string, origin: string|null, total: int|string}> $sums */
             $sums = $connection->fetchAllAssociative(
-                'SELECT type_id, kind, SUM(quantity) AS total FROM equipment_movement'
-                .(null !== $id ? ' WHERE type_id = :id' : '').' GROUP BY type_id, kind',
+                'SELECT type_id, kind, origin, SUM(quantity) AS total FROM equipment_movement'
+                .(null !== $id ? ' WHERE type_id = :id' : '').' GROUP BY type_id, kind, origin',
                 $parameters,
             );
 
             $expected = [];
             foreach ($sums as $sum) {
                 $typeId = (int) $sum['type_id'];
-                $delta = EquipmentMovementKind::from($sum['kind'])->delta((int) $sum['total']);
+                $origin = null !== $sum['origin'] ? EquipmentItemStatus::from($sum['origin']) : null;
+                $delta = EquipmentMovementKind::from($sum['kind'])->delta((int) $sum['total'], $origin);
                 $expected[$typeId] = ($expected[$typeId] ?? EquipmentCounterDelta::zero())->plus($delta);
             }
 

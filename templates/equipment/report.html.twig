@@ -1,0 +1,142 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'equipmentReportPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'equipment/_breadcrumb.html.twig' with {extra: [
+        {label: 'equipmentReportPageHeading'|trans, url: path('app_equipment_report')},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'equipmentReportPageHeading'|trans }}{% endblock %}
+
+{% macro yearLabel(year) %}{{ year.startDate|date('Y') }}-{{ year.endDate|date('Y') }}{% endmacro %}
+{% macro euros(value) %}{{ value|number_format(2, ',', ' ') }} €{% endmacro %}
+{% macro lineTable(lines, labelKey, emptyLabelKey) %}
+    <div class="table-responsive">
+        <table class="table table-vcenter card-table table-striped">
+            <thead>
+                <tr>
+                    <th>{{ labelKey|trans }}</th>
+                    <th class="text-end">{{ 'equipmentReportMissingLabel'|trans }}</th>
+                    <th class="text-end">{{ 'equipmentReportOutOfOrderLabel'|trans }}</th>
+                    <th class="text-end">{{ 'equipmentReportValueColumnLabel'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for line in lines %}
+                    <tr>
+                        <td>{{ line.label ?? emptyLabelKey|trans }}</td>
+                        <td class="text-end">{{ line.missing }}</td>
+                        <td class="text-end">{{ line.outOfOrder }}</td>
+                        <td class="text-end">{{ _self.euros(line.value) }}{% if line.unpriced %} <span class="text-secondary" title="{{ 'equipmentReportUnpricedTitle'|trans }}">*</span>{% endif %}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="4" class="text-center text-secondary">{{ 'equipmentReportNoLossText'|trans }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endmacro %}
+
+{% block main %}
+    {% if year is null %}
+        <div class="card"><div class="card-body text-center text-secondary">{{ 'equipmentReportNoSchoolYearText'|trans }}</div></div>
+    {% else %}
+        <div class="card mb-3">
+            <form method="get" action="{{ path('app_equipment_report') }}" class="cm-filterbar" data-controller="auto-submit">
+                <label class="cm-filterbar__field">
+                    {{ 'equipmentReportSchoolYearLabel'|trans }}
+                    <select name="year" class="cm-filterbar__select" data-action="change->auto-submit#submit">
+                        {% for schoolYear in schoolYears %}
+                            <option value="{{ schoolYear.id }}"{{ schoolYear.id == year.id ? ' selected' }}>{{ _self.yearLabel(schoolYear) }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <span class="text-secondary small ms-auto">{{ 'equipmentReportNetHint'|trans }}</span>
+            </form>
+        </div>
+
+        {% set totals = report.totals %}
+        {% set before = previousReport ? previousReport.totals : null %}
+        <div class="cm-statgrid mb-3">
+            {% for stat in [
+                {value: totals.missing, previous: before ? before.missing : null, label: 'equipmentReportMissingLabel'},
+                {value: totals.outOfOrder, previous: before ? before.outOfOrder : null, label: 'equipmentReportOutOfOrderLabel'},
+                {value: totals.value, previous: before ? before.value : null, label: 'equipmentReportValueLabel', money: true},
+                {value: totals.answered, previous: before ? before.answered : null, label: 'equipmentReportAnsweredLabel'},
+            ] %}
+                <div class="cm-stat">
+                    <span class="cm-stat__value">{{ stat.money is defined ? _self.euros(stat.value) : stat.value }}</span>
+                    <span class="cm-stat__label">{{ stat.label|trans }}</span>
+                    {% if previous and stat.previous is not null %}
+                        <span class="cm-stat__hint">{{ 'equipmentReportPreviousYearHint'|trans({'%year%': _self.yearLabel(previous), '%value%': stat.money is defined ? _self.euros(stat.previous) : stat.previous}) }}</span>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+        {% if totals.unpriced %}
+            <p class="text-secondary small">* {{ 'equipmentReportUnpricedTitle'|trans }}</p>
+        {% endif %}
+
+        <div class="row row-cards">
+            <div class="col-lg-6">
+                <div class="card mb-3">
+                    <div class="card-header"><h3 class="card-title mb-0">{{ 'equipmentReportByCauseCardTitle'|trans }}</h3></div>
+                    <div class="card-body">
+                        {% for kind in ['missing', 'out_of_order'] %}
+                            {% set total = kind == 'missing' ? totals.missing : totals.outOfOrder %}
+                            <div class="{{ loop.first ? 'mb-3' }}">
+                                <div class="fw-bold">{{ ('equipmentReportCauseHeading_' ~ kind)|trans({'%count%': total}) }}</div>
+                                {% for cause, count in report.byCause[kind] ?? {} %}
+                                    <div class="d-flex justify-content-between border-bottom py-1">
+                                        <span>{{ ('equipmentCause' ~ (cause|capitalize) ~ 'Label')|trans }}</span>
+                                        <span class="fw-semibold">{{ count }}</span>
+                                    </div>
+                                {% else %}
+                                    <div class="text-secondary">{{ 'equipmentReportNoLossText'|trans }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="card mb-3">
+                    <div class="card-header"><h3 class="card-title mb-0">{{ 'equipmentReportByCategoryCardTitle'|trans }}</h3></div>
+                    {{ _self.lineTable(report.byCategory, 'equipmentTypeCategoryFieldLabel', 'equipmentNoCategoryPlaceholder') }}
+                </div>
+                <div class="card mb-3">
+                    <div class="card-header"><h3 class="card-title mb-0">{{ 'equipmentReportByRoomCardTitle'|trans }}</h3></div>
+                    {{ _self.lineTable(report.byRoom, 'equipmentRoomFieldLabel', 'equipmentNoRoomPlaceholder') }}
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card mb-3">
+                    <div class="card-header"><h3 class="card-title mb-0">{{ 'equipmentReportByTypeCardTitle'|trans }}</h3></div>
+                    {{ _self.lineTable(report.byType, 'equipmentTypeNameFieldLabel', 'equipmentNoCategoryPlaceholder') }}
+                </div>
+                <div class="card mb-3">
+                    <div class="card-header"><h3 class="card-title mb-0">{{ 'equipmentReportByMonthCardTitle'|trans }}</h3></div>
+                    <div class="table-responsive">
+                        <table class="table table-vcenter card-table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>{{ 'equipmentReportMonthColumnLabel'|trans }}</th>
+                                    <th class="text-end">{{ 'equipmentReportMissingLabel'|trans }}</th>
+                                    <th class="text-end">{{ 'equipmentReportOutOfOrderLabel'|trans }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for month in report.byMonth %}
+                                    <tr>
+                                        <td>{{ (month.month ~ '-01')|date('m/Y') }}</td>
+                                        <td class="text-end">{{ month.missing ?: '—' }}</td>
+                                        <td class="text-end">{{ month.outOfOrder ?: '—' }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

@@ -17,7 +17,11 @@
             {% for movement in movements %}
                 <tr>
                     <td class="text-nowrap">{{ movement.occurredAt|date('d/m/Y H:i') }}</td>
-                    <td>{{ movement.kind.labelKey|trans }}</td>
+                    <td>
+                        {{ movement.kind.labelKey|trans }}
+                        {% if movement.cause %}<div class="text-secondary small">{{ movement.cause.labelKey|trans }}{% if movement.origin %} · {{ ('equipmentOriginFrom_' ~ movement.origin.value)|trans }}{% endif %}</div>{% endif %}
+                        {% if movement.resolves %}<div class="text-secondary small">{{ 'equipmentAnswersIncidentText'|trans({'%date%': movement.resolves.occurredAt|date('d/m/Y')}) }}</div>{% endif %}
+                    </td>
                     {% if showItem %}
                         <td class="text-nowrap">
                             {% if movement.item %}<a href="{{ path('app_equipment_item_show', {id: movement.item.id}) }}" class="font-monospace">{{ movement.item.code }}</a>{% else %}—{% endif %}

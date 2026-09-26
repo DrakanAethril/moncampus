@@ -1175,6 +1175,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/equipment/types/new' => 200,
             '/equipment/labels' => 200,
             '/equipment/settings' => 200,
+            '/equipment/report' => 200,
             // Not a code at all: handed back to the stock list, filtered by name.
             '/equipment/search?q=souris' => 302,
             '/equipment/types/999999' => 404,
@@ -1189,7 +1190,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             $this->assertScreens($user, $screens);
         }
 
-        $refused = array_fill_keys(['/equipment', '/equipment/types/new', '/equipment/labels', '/equipment/settings'], 403);
+        $refused = array_fill_keys(['/equipment', '/equipment/types/new', '/equipment/labels', '/equipment/settings', '/equipment/report'], 403);
 
         foreach ([$this->student, $this->teacher, $this->tutor] as $user) {
             $this->assertScreens($user, $refused);
