@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\EquipmentCategory;
 use App\Entity\EquipmentItem;
 use App\Entity\EquipmentLocation;
 use App\Entity\EquipmentType;
+use App\Enum\EquipmentItemStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -120,5 +122,36 @@ class EquipmentItemRepository extends ServiceEntityRepository
             ->setParameter('location', $location)
             ->getQuery()
             ->getSingleScalarResult();
+    }
+
+    /**
+     * The pieces a count expects to find: those of the scope (a category, or everything) in one of
+     * the given statuses, and already there when the count started - a mouse received during the
+     * count was never missed by it.
+     *
+     * @param list<EquipmentItemStatus> $statuses
+     *
+     * @return list<EquipmentItem>
+     */
+    public function findExpectedByCount(?EquipmentCategory $category, array $statuses, \DateTimeImmutable $createdBefore): array
+    {
+        $qb = $this->createQueryBuilder('i')
+            ->join('i.type', 't')->addSelect('t')
+            ->leftJoin('i.room', 'r')->addSelect('r')
+            ->where('i.status IN (:statuses)')
+            ->andWhere('i.creationDate <= :createdBefore')
+            ->setParameter('statuses', $statuses)
+            ->setParameter('createdBefore', $createdBefore)
+            ->orderBy('t.name', 'ASC')
+            ->addOrderBy('i.codeNumber', 'ASC');
+
+        if (null !== $category) {
+            $qb->andWhere('t.category = :category')->setParameter('category', $category);
+        }
+
+        /** @var list<EquipmentItem> $items */
+        $items = $qb->getQuery()->getResult();
+
+        return $items;
     }
 }

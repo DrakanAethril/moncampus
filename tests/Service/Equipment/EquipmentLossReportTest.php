@@ -77,6 +77,26 @@ class EquipmentLossReportTest extends TestCase
         self::assertSame('2026-03', $report['byMonth'][6]['month']);
     }
 
+    /**
+     * What the count found missing is a loss too, but it is kept apart from what somebody declared:
+     * nobody saw it go, and it carries no cause.
+     */
+    public function testInventoryGapsAreCountedApartFromDeclaredLosses(): void
+    {
+        $report = (new EquipmentLossReport())->build([
+            $this->row('missing', 2, cause: 'theft', type: 'Souris', price: '10.00'),
+            $this->row('inventory_shortage', 3, resolved: 1, cause: null, type: 'Souris', price: '10.00'),
+        ], new \DateTimeImmutable('2025-09-01'));
+
+        self::assertSame(2, $report['totals']['missing']);
+        self::assertSame(2, $report['totals']['gap'], 'three not found, one found since');
+        self::assertSame(4, $report['totals']['net']);
+        self::assertEqualsWithDelta(40.0, $report['totals']['value'], 0.001);
+        self::assertSame(['theft' => 2], $report['byCause']['missing']);
+        self::assertArrayNotHasKey('inventory_shortage', $report['byCause'], 'a gap has no cause to break down');
+        self::assertSame(2, $report['byType'][0]['gap']);
+    }
+
     /** A fully answered incident vanishes from every breakdown, not only from the totals. */
     public function testAFullyAnsweredIncidentWeighsNothingAnywhere(): void
     {
@@ -90,13 +110,13 @@ class EquipmentLossReportTest extends TestCase
     }
 
     /**
-     * @return array{kind: string, quantity: int, resolved: int, cause: string, occurredAt: \DateTimeImmutable, typeId: int, typeName: string, unitPrice: string|null, categoryName: string|null, roomName: string|null}
+     * @return array{kind: string, quantity: int, resolved: int, cause: string|null, occurredAt: \DateTimeImmutable, typeId: int, typeName: string, unitPrice: string|null, categoryName: string|null, roomName: string|null}
      */
     private function row(
         string $kind,
         int $quantity,
         int $resolved = 0,
-        string $cause = 'unknown',
+        ?string $cause = 'unknown',
         string $type = 'Souris',
         ?string $price = '10.00',
         ?string $room = null,

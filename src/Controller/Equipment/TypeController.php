@@ -87,7 +87,7 @@ class TypeController extends AbstractController
             'cancelOrderForm' => $type->getOnOrderCount() > 0 ? $this->orderForm($type, 'cancel', '') : null,
             // What is still out: lost pieces not found, broken ones not repaired.
             'openIncidents' => [
-                'missing' => array_sum(array_column($movements->findOpenIncidents($type, EquipmentMovementKind::Missing), 'remaining')),
+                'missing' => array_sum(array_column($movements->findOpenIncidents($type, EquipmentMovementKind::Found->answers()), 'remaining')),
                 'outOfOrder' => array_sum(array_column($movements->findOpenIncidents($type, EquipmentMovementKind::OutOfOrder), 'remaining')),
             ],
         ]);

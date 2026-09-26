@@ -1,0 +1,77 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'equipmentStocktakesPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'equipment/_breadcrumb.html.twig' with {extra: [
+        {label: 'equipmentStocktakesPageHeading'|trans, url: path('app_equipment_stocktakes')},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'equipmentStocktakesPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="row row-cards">
+        <div class="col-lg-5">
+            <div class="card mb-3">
+                <div class="card-header"><h3 class="card-title mb-0">{{ (open ? 'equipmentStocktakeOpenCardTitle' : 'equipmentStocktakeStartCardTitle')|trans }}</h3></div>
+                <div class="card-body">
+                    {% if open %}
+                        <p>{{ 'equipmentStocktakeOpenText'|trans({'%date%': open.startedAt|date('d/m/Y H:i'), '%scope%': open.category ? open.category.name : 'equipmentAllCategoriesLabel'|trans}) }}</p>
+                        <a href="{{ path('app_equipment_stocktake_show', {id: open.id}) }}" class="btn btn-primary w-100">{{ 'equipmentStocktakeResumeAction'|trans }}</a>
+                    {% else %}
+                        <p class="text-secondary">{{ 'equipmentStocktakeStartHint'|trans }}</p>
+                        <form method="post" action="{{ path('app_equipment_stocktake_start') }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('equipment_stocktake') }}">
+                            <div class="mb-3">
+                                <label class="form-label" for="stocktake-category">{{ 'equipmentTypeCategoryFieldLabel'|trans }}</label>
+                                <select id="stocktake-category" name="category" class="form-select">
+                                    <option value="">{{ 'equipmentAllCategoriesLabel'|trans }}</option>
+                                    {% for category in categories %}<option value="{{ category.id }}">{{ category.name }}</option>{% endfor %}
+                                </select>
+                            </div>
+                            <label class="form-check mb-3">
+                                <input type="checkbox" class="form-check-input" name="includesInUse" value="1">
+                                <span class="form-check-label">{{ 'equipmentStocktakeIncludesInUseLabel'|trans }}</span>
+                                <small class="form-hint d-block">{{ 'equipmentStocktakeIncludesInUseHelp'|trans }}</small>
+                            </label>
+                            <button type="submit" class="btn btn-primary w-100">{{ 'equipmentStocktakeStartAction'|trans }}</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-header"><h3 class="card-title mb-0">{{ 'equipmentStocktakeHistoryCardTitle'|trans }}</h3></div>
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table table-striped">
+                        <thead>
+                            <tr>
+                                <th>{{ 'equipmentMovementDateColumnLabel'|trans }}</th>
+                                <th>{{ 'equipmentTypeCategoryFieldLabel'|trans }}</th>
+                                <th>{{ 'equipmentStocktakeResultColumnLabel'|trans }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stocktake in history %}
+                                <tr>
+                                    <td><a href="{{ path('app_equipment_stocktake_show', {id: stocktake.id}) }}">{{ stocktake.closedAt|date('d/m/Y') }}</a></td>
+                                    <td>{{ stocktake.category ? stocktake.category.name : 'equipmentAllCategoriesLabel'|trans }}</td>
+                                    <td>
+                                        {% if stocktake.abandoned %}
+                                            <span class="cm-badge cm-badge--gray">{{ 'equipmentStocktakeAbandonedBadge'|trans }}</span>
+                                        {% else %}
+                                            {{ 'equipmentStocktakeResultText'|trans({'%shortages%': stocktake.shortageCount, '%surpluses%': stocktake.surplusCount}) }}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr><td colspan="3" class="text-center text-secondary">{{ 'equipmentStocktakeNoHistoryText'|trans }}</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

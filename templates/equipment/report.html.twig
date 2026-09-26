@@ -19,6 +19,7 @@
                     <th>{{ labelKey|trans }}</th>
                     <th class="text-end">{{ 'equipmentReportMissingLabel'|trans }}</th>
                     <th class="text-end">{{ 'equipmentReportOutOfOrderLabel'|trans }}</th>
+                    <th class="text-end">{{ 'equipmentReportGapColumnLabel'|trans }}</th>
                     <th class="text-end">{{ 'equipmentReportValueColumnLabel'|trans }}</th>
                 </tr>
             </thead>
@@ -28,10 +29,11 @@
                         <td>{{ line.label ?? emptyLabelKey|trans }}</td>
                         <td class="text-end">{{ line.missing }}</td>
                         <td class="text-end">{{ line.outOfOrder }}</td>
+                        <td class="text-end">{{ line.gap }}</td>
                         <td class="text-end">{{ _self.euros(line.value) }}{% if line.unpriced %} <span class="text-secondary" title="{{ 'equipmentReportUnpricedTitle'|trans }}">*</span>{% endif %}</td>
                     </tr>
                 {% else %}
-                    <tr><td colspan="4" class="text-center text-secondary">{{ 'equipmentReportNoLossText'|trans }}</td></tr>
+                    <tr><td colspan="5" class="text-center text-secondary">{{ 'equipmentReportNoLossText'|trans }}</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -62,8 +64,8 @@
             {% for stat in [
                 {value: totals.missing, previous: before ? before.missing : null, label: 'equipmentReportMissingLabel'},
                 {value: totals.outOfOrder, previous: before ? before.outOfOrder : null, label: 'equipmentReportOutOfOrderLabel'},
+                {value: totals.gap, previous: before ? before.gap : null, label: 'equipmentReportGapLabel'},
                 {value: totals.value, previous: before ? before.value : null, label: 'equipmentReportValueLabel', money: true},
-                {value: totals.answered, previous: before ? before.answered : null, label: 'equipmentReportAnsweredLabel'},
             ] %}
                 <div class="cm-stat">
                     <span class="cm-stat__value">{{ stat.money is defined ? _self.euros(stat.value) : stat.value }}</span>
@@ -74,9 +76,10 @@
                 </div>
             {% endfor %}
         </div>
-        {% if totals.unpriced %}
-            <p class="text-secondary small">* {{ 'equipmentReportUnpricedTitle'|trans }}</p>
-        {% endif %}
+        <p class="text-secondary small">
+            {{ 'equipmentReportAnsweredText'|trans({'%count%': totals.answered}) }}
+            {% if totals.unpriced %}<br>* {{ 'equipmentReportUnpricedTitle'|trans }}{% endif %}
+        </p>
 
         <div class="row row-cards">
             <div class="col-lg-6">
@@ -122,6 +125,7 @@
                                     <th>{{ 'equipmentReportMonthColumnLabel'|trans }}</th>
                                     <th class="text-end">{{ 'equipmentReportMissingLabel'|trans }}</th>
                                     <th class="text-end">{{ 'equipmentReportOutOfOrderLabel'|trans }}</th>
+                                    <th class="text-end">{{ 'equipmentReportGapColumnLabel'|trans }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -130,6 +134,7 @@
                                         <td>{{ (month.month ~ '-01')|date('m/Y') }}</td>
                                         <td class="text-end">{{ month.missing ?: '—' }}</td>
                                         <td class="text-end">{{ month.outOfOrder ?: '—' }}</td>
+                                        <td class="text-end">{{ month.gap ?: '—' }}</td>
                                     </tr>
                                 {% endfor %}
                             </tbody>

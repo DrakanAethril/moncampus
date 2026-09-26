@@ -63,19 +63,21 @@ class EquipmentMovementRepository extends ServiceEntityRepository
     }
 
     /**
-     * The incidents of this kind not yet fully answered by a Found or Repaired line, newest first,
+     * The losses of these kinds not yet fully answered by a Found or Repaired line, newest first,
      * each with what is left to answer. For a piece, narrowed to that piece.
+     *
+     * @param EquipmentMovementKind|list<EquipmentMovementKind> $kind
      *
      * @return list<array{incident: EquipmentMovement, remaining: int}>
      */
-    public function findOpenIncidents(EquipmentType $type, EquipmentMovementKind $kind, ?EquipmentItem $item = null): array
+    public function findOpenIncidents(EquipmentType $type, EquipmentMovementKind|array $kind, ?EquipmentItem $item = null): array
     {
         $qb = $this->createQueryBuilder('m')
             ->addSelect('(SELECT COALESCE(SUM(r.quantity), 0) FROM App\Entity\EquipmentMovement r WHERE r.resolves = m) AS resolved')
             ->where('m.type = :type')
-            ->andWhere('m.kind = :kind')
+            ->andWhere('m.kind IN (:kinds)')
             ->setParameter('type', $type)
-            ->setParameter('kind', $kind)
+            ->setParameter('kinds', \is_array($kind) ? $kind : [$kind])
             ->orderBy('m.occurredAt', 'DESC')
             ->addOrderBy('m.id', 'DESC');
 
@@ -115,7 +117,7 @@ class EquipmentMovementRepository extends ServiceEntityRepository
             ->leftJoin('m.room', 'r')
             ->where('m.kind IN (:kinds)')
             ->andWhere('m.occurredAt BETWEEN :from AND :to')
-            ->setParameter('kinds', [EquipmentMovementKind::Missing, EquipmentMovementKind::OutOfOrder])
+            ->setParameter('kinds', [EquipmentMovementKind::Missing, EquipmentMovementKind::OutOfOrder, EquipmentMovementKind::InventoryShortage])
             ->setParameter('from', $from)
             ->setParameter('to', $to)
             ->getQuery()

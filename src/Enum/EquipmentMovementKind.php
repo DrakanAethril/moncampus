@@ -56,6 +56,15 @@ enum EquipmentMovementKind: string
     case OrderCancelled = 'order_cancelled';
 
     /**
+     * « Écart d'inventaire » - fewer pieces counted than recorded. Not a declared incident: nobody
+     * saw them go, the count found them missing, and the report keeps the two apart.
+     */
+    case InventoryShortage = 'inventory_shortage';
+
+    /** More pieces counted than recorded: the count puts them back. */
+    case InventorySurplus = 'inventory_surplus';
+
+    /**
      * @param EquipmentItemStatus|null $origin the count an incident takes its pieces from -
      *                                         Available or InUse; required for an incident, ignored otherwise
      */
@@ -65,10 +74,15 @@ enum EquipmentMovementKind: string
             self::Intake, self::Found, self::Repaired => new EquipmentCounterDelta(available: $quantity),
             self::Deploy => new EquipmentCounterDelta(available: -$quantity, inUse: $quantity),
             self::Return => new EquipmentCounterDelta(available: $quantity, inUse: -$quantity),
-            self::Missing, self::OutOfOrder => match ($origin) {
+            self::Missing, self::OutOfOrder, self::InventoryShortage => match ($origin) {
                 EquipmentItemStatus::Available => new EquipmentCounterDelta(available: -$quantity),
                 EquipmentItemStatus::InUse => new EquipmentCounterDelta(inUse: -$quantity),
                 default => throw new \LogicException('An incident names the count its pieces came from.'),
+            },
+            self::InventorySurplus => match ($origin) {
+                EquipmentItemStatus::Available => new EquipmentCounterDelta(available: $quantity),
+                EquipmentItemStatus::InUse => new EquipmentCounterDelta(inUse: $quantity),
+                default => throw new \LogicException('A surplus names the count it goes back into.'),
             },
             self::Disposed => EquipmentCounterDelta::zero(),
             self::Ordered => new EquipmentCounterDelta(onOrder: $quantity),
@@ -81,13 +95,18 @@ enum EquipmentMovementKind: string
         return self::Missing === $this || self::OutOfOrder === $this;
     }
 
-    /** The incident this line answers, for Found and Repaired. */
-    public function resolves(): ?self
+    /**
+     * The losses this line answers, for Found and Repaired. A piece the count could not find is
+     * found the same way as a piece declared missing.
+     *
+     * @return list<self>
+     */
+    public function answers(): array
     {
         return match ($this) {
-            self::Found => self::Missing,
-            self::Repaired => self::OutOfOrder,
-            default => null,
+            self::Found => [self::Missing, self::InventoryShortage],
+            self::Repaired => [self::OutOfOrder],
+            default => [],
         };
     }
 
@@ -95,7 +114,7 @@ enum EquipmentMovementKind: string
     public function statusAfter(): ?EquipmentItemStatus
     {
         return match ($this) {
-            self::Missing => EquipmentItemStatus::Missing,
+            self::Missing, self::InventoryShortage => EquipmentItemStatus::Missing,
             self::OutOfOrder => EquipmentItemStatus::OutOfOrder,
             self::Found, self::Repaired => EquipmentItemStatus::Available,
             self::Disposed => EquipmentItemStatus::Disposed,
@@ -117,6 +136,8 @@ enum EquipmentMovementKind: string
             self::Ordered => 'equipmentMovementOrderedLabel',
             self::Received => 'equipmentMovementReceivedLabel',
             self::OrderCancelled => 'equipmentMovementOrderCancelledLabel',
+            self::InventoryShortage => 'equipmentMovementInventoryShortageLabel',
+            self::InventorySurplus => 'equipmentMovementInventorySurplusLabel',
         };
     }
 }
