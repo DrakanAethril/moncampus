@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\User;
-use App\Repository\FileLibraryNodeRepository;
 
 /**
  * What a library is allowed to weigh, and what it weighs (design/validated/file-library.md,
@@ -13,7 +12,9 @@ use App\Repository\FileLibraryNodeRepository;
  *
  * Two rules that look like implementation detail and are the design:
  *
- * - **the usage is measured, never stored** - see FileLibraryNodeRepository::usedBytes();
+ * - **the usage is stored on the account and moved with every file** (App\Service\FileLibraryUsageCounter).
+ *   It was measured at every display until 2026-09-26; storing it was decided for the speed of the
+ *   library screens, and `app:counters:recompute` is what keeps that decision honest;
  * - **the limit is nullable on User, and null is not zero.** It means "whatever the platform
  *   currently says", so raising the default later raises it for everyone who was never overridden.
  *   Writing 1 073 741 824 into 1 500 rows would freeze today's default into history.
@@ -35,7 +36,6 @@ class FileLibraryQuota
     public const int RED_PERCENT = 90;
 
     public function __construct(
-        private readonly FileLibraryNodeRepository $nodes,
         private readonly string $fileLibraryDefaultQuota,
     ) {
     }
@@ -53,7 +53,7 @@ class FileLibraryQuota
 
     public function usedBytes(User $owner): int
     {
-        return $this->nodes->usedBytes($owner);
+        return $owner->getFileLibraryUsedBytes();
     }
 
     public function remainingBytes(User $owner): int

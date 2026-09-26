@@ -21,34 +21,6 @@ class FileLibraryNodeRepository extends ServiceEntityRepository
     }
 
     /**
-     * How many bytes this library holds - **measured, never stored**
-     * (design/validated/file-library.md, "Usage is measured, never stored").
-     *
-     * A stored counter would be a second truth to keep correct through every delete, replace, move
-     * and failed upload, and it is wrong the first time one of those paths forgets it. A library
-     * holds hundreds of rows, not millions, and the index on (owner_id, type) is what makes the
-     * sum cheap.
-     *
-     * `deletedAt IS NULL` is the corbeille's own rule: a deleted file stops counting the moment it
-     * is deleted, thirty days before its bytes go. Freeing space has to be visible when it is asked
-     * for - a teacher who deletes 300 Mo and sees the bar hold still will delete something else.
-     */
-    public function usedBytes(User $owner): int
-    {
-        $sum = $this->createQueryBuilder('n')
-            ->select('COALESCE(SUM(n.sizeBytes), 0)')
-            ->where('n.owner = :owner')
-            ->andWhere('n.type = :file')
-            ->andWhere('n.deletedAt IS NULL')
-            ->setParameter('owner', $owner)
-            ->setParameter('file', FileLibraryNodeType::File)
-            ->getQuery()
-            ->getSingleScalarResult();
-
-        return (int) $sum;
-    }
-
-    /**
      * Every live folder of a library, flat, for the rail. Files are the table's business - a rail
      * listing both would be the same list twice.
      *
