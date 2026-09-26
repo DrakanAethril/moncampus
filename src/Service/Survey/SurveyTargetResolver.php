@@ -40,6 +40,7 @@ class SurveyTargetResolver
         private readonly AudienceResolver $audienceResolver,
         private readonly SurveyTargetRepository $targets,
         private readonly EntityManagerInterface $entityManager,
+        private readonly SurveyCampaignCounters $counters,
     ) {
     }
 
@@ -55,25 +56,38 @@ class SurveyTargetResolver
         $recipients = $this->audienceResolver->resolveRecipients($campaign);
         $already = array_flip($this->targets->findTargetedUserIds($campaign));
 
-        $added = 0;
-        foreach ($recipients as $user) {
-            $id = $user->getId();
+        // The rows and the stored count move together or not at all.
+        $connection = $this->entityManager->getConnection();
+        $connection->beginTransaction();
 
-            if (null === $id || isset($already[$id])) {
-                continue;
+        try {
+            $added = 0;
+            foreach ($recipients as $user) {
+                $id = $user->getId();
+
+                if (null === $id || isset($already[$id])) {
+                    continue;
+                }
+
+                $this->entityManager->persist(new SurveyTarget($campaign, $user));
+                $already[$id] = true;
+                ++$added;
+
+                if (0 === $added % self::BATCH_SIZE) {
+                    $this->entityManager->flush();
+                }
             }
 
-            $this->entityManager->persist(new SurveyTarget($campaign, $user));
-            $already[$id] = true;
-            ++$added;
-
-            if (0 === $added % self::BATCH_SIZE) {
+            if ($added > 0) {
                 $this->entityManager->flush();
+                $this->counters->targetsAdded($campaign, $added);
             }
-        }
 
-        if ($added > 0) {
-            $this->entityManager->flush();
+            $connection->commit();
+        } catch (\Throwable $exception) {
+            $connection->rollBack();
+
+            throw $exception;
         }
 
         return $added;

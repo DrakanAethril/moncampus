@@ -86,6 +86,20 @@ class SurveyCampaign implements AudienceTargetable
     #[ORM\Column(name: 'target_frozen_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $targetFrozenAt = null;
 
+    /**
+     * The two counts of the response rate - « 18 / 24 » - stored rather than counted at display.
+     *
+     * Never written by the ORM (`insertable`/`updatable` off): App\Service\Survey\SurveyCampaignCounters
+     * moves them with an atomic `UPDATE … + n` in the transaction that adds targets or stamps a
+     * response, and recomputes them from `survey_target` at night. A flush of this entity can
+     * therefore never write back a stale count over a concurrent increment.
+     */
+    #[ORM\Column(name: 'targeted_count', insertable: false, updatable: false, options: ['default' => 0])]
+    private int $targetedCount = 0;
+
+    #[ORM\Column(name: 'responded_count', insertable: false, updatable: false, options: ['default' => 0])]
+    private int $respondedCount = 0;
+
     /** @var Collection<int, Program> */
     #[ORM\ManyToMany(targetEntity: Program::class)]
     #[ORM\JoinTable(name: 'survey_campaign_program')]
@@ -251,6 +265,37 @@ class SurveyCampaign implements AudienceTargetable
         $this->resultsVisibleToRespondents = $visible;
 
         return $this;
+    }
+
+    public function getTargetedCount(): int
+    {
+        return $this->targetedCount;
+    }
+
+    public function getRespondedCount(): int
+    {
+        return $this->respondedCount;
+    }
+
+    /**
+     * « 18 / 24 » - the pair every campaign list and results screen opens on.
+     *
+     * @return array{targeted: int, responded: int}
+     */
+    public function responseCounts(): array
+    {
+        return ['targeted' => $this->targetedCount, 'responded' => $this->respondedCount];
+    }
+
+    /**
+     * Keeps the loaded entity in step with what SurveyCampaignCounters has just written, so a
+     * screen that adds targets and then shows the rate in the same request reads the new figure.
+     * Memory only: the columns are never written through the ORM.
+     */
+    public function mirrorCounts(int $targetedAdded, int $respondedAdded): void
+    {
+        $this->targetedCount += $targetedAdded;
+        $this->respondedCount += $respondedAdded;
     }
 
     public function getTargetFrozenAt(): ?\DateTimeImmutable

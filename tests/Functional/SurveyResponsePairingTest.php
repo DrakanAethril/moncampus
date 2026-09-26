@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional;
 
+use App\Counter\CounterRecomputer;
 use App\Entity\SurveyCampaign;
 use App\Entity\SurveyCampaignAnswer;
 use App\Entity\SurveyCampaignQuestion;
@@ -13,7 +14,9 @@ use App\Entity\User;
 use App\Enum\MessageAudienceType;
 use App\Enum\SurveyQuestionType;
 use App\Repository\SurveyTargetRepository;
+use App\Service\Survey\SurveyCampaignCounters;
 use App\Service\Survey\SurveyResponseRecorder;
+use App\Service\Survey\SurveyTargetResolver;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -127,6 +130,48 @@ class SurveyResponsePairingTest extends FunctionalTestCase
             $target->getRespondedAt()->format('Y-m-d H:i:s'),
             'both are stamped from the same moment, in the same flush',
         );
+    }
+
+    /**
+     * The stored « 18 / 24 » moves with the rows it counts: freezing the target adds to `targeted`,
+     * submitting adds to `responded`, both in the transaction that writes the rows - and the nightly
+     * recomputation, reading `survey_target` again, then has nothing to correct.
+     */
+    public function testTheStoredCountsFollowTheTargetAndTheResponses(): void
+    {
+        $author = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'survey.author.counts');
+        $student = $this->createUser(['ROLE_USER', 'ROLE_STUDENT'], 'survey.student.counts');
+        $other = $this->createUser(['ROLE_USER', 'ROLE_STUDENT'], 'survey.other.counts');
+        $entityManager = $this->entityManager();
+
+        $series = new SurveySeries();
+        $series->setName('Série comptée')->setOwner($author);
+        $entityManager->persist($series);
+
+        $campaign = new SurveyCampaign();
+        $campaign->setSeries($series)->setName('Campagne comptée')->setCreatedBy($author);
+        $campaign->setAudienceTypes([MessageAudienceType::Manual]);
+        $campaign->addManualRecipient($student)->addManualRecipient($other);
+        $campaign->setTargetFrozenAt(new \DateTimeImmutable('-1 day'));
+        $question = new SurveyCampaignQuestion($campaign);
+        $question->setType(SurveyQuestionType::Commentaire)->setLabel('Un avis ?')->setOrderIndex(0)->setComparisonKey('a');
+        $campaign->addQuestion($question);
+        $entityManager->persist($campaign);
+        $entityManager->persist($question);
+        $entityManager->flush();
+
+        self::assertSame(2, static::getContainer()->get(SurveyTargetResolver::class)->refresh($campaign));
+        self::assertSame(['targeted' => 2, 'responded' => 0], $campaign->responseCounts(), 'the loaded campaign reads the new figure at once');
+
+        $draft = $this->recorder()->draftFor($campaign, $student);
+        $this->recorder()->record($campaign, $student, $draft, [(int) $question->getId() => ['freeText' => 'Très bien']], true);
+        self::assertSame(['targeted' => 2, 'responded' => 1], $campaign->responseCounts());
+
+        $entityManager->refresh($campaign);
+        self::assertSame(['targeted' => 2, 'responded' => 1], $campaign->responseCounts(), 'and so does the database');
+
+        $run = static::getContainer()->get(CounterRecomputer::class)->recompute(SurveyCampaignCounters::NAME, (int) $campaign->getId());
+        self::assertSame([], $run->drifts);
     }
 
     /**

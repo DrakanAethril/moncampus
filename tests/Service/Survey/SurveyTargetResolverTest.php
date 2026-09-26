@@ -9,6 +9,7 @@ use App\Entity\SurveyTarget;
 use App\Entity\User;
 use App\Repository\SurveyTargetRepository;
 use App\Service\AudienceResolver;
+use App\Service\Survey\SurveyCampaignCounters;
 use App\Service\Survey\SurveyTargetResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
@@ -50,7 +51,7 @@ class SurveyTargetResolverTest extends TestCase
             }
         });
 
-        return new SurveyTargetResolver($audience, $targets, $entityManager);
+        return new SurveyTargetResolver($audience, $targets, $entityManager, $this->createStub(SurveyCampaignCounters::class));
     }
 
     private function user(int $id, string $username): User
