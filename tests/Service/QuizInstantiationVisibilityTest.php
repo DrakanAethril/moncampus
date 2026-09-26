@@ -18,6 +18,7 @@ use App\Service\FileUploadService;
 use App\Service\MatchingImageStore;
 use App\Service\QuizDifficultyDistributionResolver;
 use App\Service\QuizInstantiationService;
+use App\Service\QuizPoolShares;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 
@@ -63,6 +64,7 @@ class QuizInstantiationVisibilityTest extends TestCase
             // MatchingImageStore is final, so it is built for real - harmless here, its only
             // dependency being the upload service and this launch carrying no question at all.
             new MatchingImageStore($this->createStub(FileUploadService::class)),
+            new QuizPoolShares(),
         );
 
         $template = new QuizTemplate(new User('prof'));

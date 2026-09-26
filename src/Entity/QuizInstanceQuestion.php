@@ -47,6 +47,13 @@ class QuizInstanceQuestion implements QuizQuestionDefinition
     #[ORM\Column(name: 'order_index')]
     private int $orderIndex = 0;
 
+    // Which of the merged quizzes this question was copied from, by its position in the launch
+    // (0 is the quiz the launch started from). Read only when the instance gives a quiz its own
+    // share of the draw (QuizInstance::$poolShares); a position rather than a link to the
+    // template, which may be edited or deleted long after the copy.
+    #[ORM\Column(name: 'pool_index', type: Types::SMALLINT, options: ['default' => 0])]
+    private int $poolIndex = 0;
+
     // Per-question time, on top of the quiz's own default - see App\Enum\QuestionTimeMode.
     #[ORM\Column(name: 'time_mode', length: 20, enumType: QuestionTimeMode::class, options: ['default' => 'quiz'])]
     private QuestionTimeMode $timeMode = QuestionTimeMode::Quiz;
@@ -145,6 +152,18 @@ class QuizInstanceQuestion implements QuizQuestionDefinition
     public function getOrderIndex(): int
     {
         return $this->orderIndex;
+    }
+
+    public function getPoolIndex(): int
+    {
+        return $this->poolIndex;
+    }
+
+    public function setPoolIndex(int $poolIndex): static
+    {
+        $this->poolIndex = $poolIndex;
+
+        return $this;
     }
 
     public function setOrderIndex(int $orderIndex): static

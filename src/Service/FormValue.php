@@ -41,6 +41,14 @@ final class FormValue
         return is_numeric($value) ? (int) $value : $default;
     }
 
+    /** Null for a field left blank - where blank means « not given » rather than zero. */
+    public static function nullableInt(FormInterface $form, string $field): ?int
+    {
+        $value = $form->get($field)->getData();
+
+        return is_numeric($value) ? (int) $value : null;
+    }
+
     public static function float(FormInterface $form, string $field, ?float $default = null): ?float
     {
         $value = $form->get($field)->getData();

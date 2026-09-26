@@ -44,13 +44,15 @@ class QuizInstantiationService
         private readonly FileUploadService $fileUploadService,
         private readonly QuizDifficultyDistributionResolver $difficultyResolver,
         private readonly MatchingImageStore $matchingImageStore,
+        private readonly QuizPoolShares $poolShares,
     ) {
     }
 
     /**
-     * @param non-empty-list<QuizTemplate> $templates the merged question pool, in launch order
-     * @param string|null                  $name      the teacher's own label for this launch;
-     *                                                blank falls back to the first template's name
+     * @param non-empty-list<QuizTemplate> $templates  the merged question pool, in launch order
+     * @param string|null                  $name       the teacher's own label for this launch;
+     *                                                 blank falls back to the first template's name
+     * @param list<int|null>|null          $poolShares
      */
     public function instantiateQuiz(
         array $templates,
@@ -88,6 +90,10 @@ class QuizInstantiationService
         float $penaltyPoints = 0.5,
         int $penaltyPercent = 50,
         bool $negativeScoreAllowed = false,
+        // « Part du quiz », one entry per template in the same order, null where the quiz draws
+        // from what the others leave. Already checked by the caller (App\Service\QuizPoolShares::
+        // violation()); resolved into counts here and frozen on the instance.
+        ?array $poolShares = null,
     ): QuizInstance {
         $firstTemplate = $templates[0];
 
@@ -132,13 +138,27 @@ class QuizInstantiationService
         $counts = $this->difficultyResolver->resolveCounts($percents['facilePercent'], $percents['moyenPercent'], $percents['difficilePercent'], $questionCount);
         $instance->setDifficultyCounts($counts['facile'], $counts['moyen'], $counts['difficile']);
 
+        if (null !== $poolShares) {
+            // One entry per template, whatever the caller handed over.
+            $shares = [];
+            foreach (array_keys($templates) as $index) {
+                $shares[] = $poolShares[$index] ?? null;
+            }
+            $quotas = $this->poolShares->quotas($shares, $questionCount);
+            $instance->setPoolShares(array_map(
+                static fn (?int $share, ?int $quota): ?array => null === $share || null === $quota ? null : ['percent' => $share, 'count' => $quota],
+                $shares,
+                $quotas,
+            ));
+        }
+
         $orderIndex = 0;
-        foreach ($templates as $template) {
+        foreach ($templates as $poolIndex => $template) {
             foreach ($template->getQuestions() as $question) {
                 if (null !== $questionFilter && !$questionFilter($question)) {
                     continue;
                 }
-                $instance->addQuestion($this->copyQuestion($question, $instance, $orderIndex++));
+                $instance->addQuestion($this->copyQuestion($question, $instance, $orderIndex++)->setPoolIndex($poolIndex));
             }
         }
 

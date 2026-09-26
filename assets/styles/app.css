@@ -2561,7 +2561,7 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 .cm-quizpool__count { font-size: 12px; color: var(--cm-faint); margin-left: auto; }
 .cm-quizpool__rows { width: 100%; }
 .cm-quizpool__rows:empty { display: none; }
-.cm-quizpool__row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.cm-quizpool__row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; width: 100%; }
 .cm-quizpool__select { flex: 1; min-width: 0; font-size: 13px; }
 .cm-quizpool__remove {
     border: 0; background: none; color: var(--cm-faint); font-size: 15px; line-height: 1;
@@ -2569,6 +2569,20 @@ table.dataTable tr.cm-dt-total td, table.dataTable tr.cm-dt-total th {
 }
 .cm-quizpool__remove:hover { color: var(--cm-red-tx); }
 .cm-quizpool .cm-dashed-add:disabled { opacity: .5; cursor: not-allowed; }
+/* « Part du quiz » - the optional share of the draw at the end of each row, the number of questions
+   it amounts to written after it. The fixed base row aligns on its baseline, hence align-self. */
+.cm-quizpool__share { display: flex; align-items: center; gap: 4px; flex: none; align-self: center; }
+.cm-quizpool__share-input {
+    width: 64px; padding: 6px 8px; font-size: 13px; text-align: right;
+    background: var(--cm-surface); color: var(--cm-ink);
+    border: 1px solid var(--cm-border); border-radius: 9px;
+}
+.cm-quizpool__share-input:focus { outline: none; border-color: var(--cm-brand); }
+.cm-quizpool__share-input.is-over { border-color: var(--cm-red-tx); color: var(--cm-red-tx); }
+/* The base row cannot be removed: an empty slot the size of the × keeps its share in line. */
+.cm-quizpool__remove-slot { width: 23px; flex: none; }
+.cm-quizpool__share-unit { font-size: 12px; color: var(--cm-muted); }
+.cm-quizpool__share-hint { font-size: 12px; color: var(--cm-faint); min-width: 36px; }
 
 /* ---------- Picking an item in a library: the button, and the modal it opens ----------
    The pair replaces a <select> over a whole library (templates/_library_picker_field.html.twig and

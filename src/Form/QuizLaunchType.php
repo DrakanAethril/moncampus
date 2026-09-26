@@ -47,9 +47,10 @@ class QuizLaunchType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         // Screen 1c reached without a quiz (« Lancer un quiz » on Quiz par classes): the base
-        // quiz is the first field of the form instead of the page's own subject. Added first so it
-        // reads as step one, and absent altogether from the library's own launch screen, where the
-        // quiz is what the page is about - a select there could only disagree with the URL.
+        // quiz is a field of the form instead of the page's own subject - the first row of the
+        // question pool, where every other quiz of the launch is picked too. Absent altogether from
+        // the library's own launch screen, where the quiz is what the page is about - a select
+        // there could only disagree with the URL.
         if (null !== $options['baseTemplateChoices']) {
             $builder->add('template', EntityType::class, [
                 'class' => QuizTemplate::class,
@@ -78,24 +79,32 @@ class QuizLaunchType extends AbstractType
                 'constraints' => [new Length(max: 255)],
                 'attr' => ['placeholder' => $options['baseTemplateName'], 'maxlength' => 255],
             ])
-            // The extra templates whose questions join the pool, on top of the one being launched.
-            // A collection of single selects rather than one multi-select: the rows carry an order
-            // (which the live concours plays literally) and "ajouter un quiz" is a repeated action,
-            // not a set to tick - the checkbox-group convention is for genuine option sets.
+            // « Part du quiz » of the quiz being launched - the first row of the pool, whichever
+            // door the screen was opened through. Read only once the pool holds a second quiz.
+            ->add('baseShare', IntegerType::class, [
+                'label' => 'quizLaunchShareFieldLabel',
+                'required' => false,
+                'constraints' => [new Range(min: 1, max: 100)],
+            ])
+            // The extra templates whose questions join the pool, on top of the one being launched,
+            // each with its optional share of the draw (App\Form\QuizPoolEntryType). A collection
+            // of rows rather than one multi-select: the rows carry an order (which the live concours
+            // plays literally) and "ajouter un quiz" is a repeated action, not a set to tick - the
+            // checkbox-group convention is for genuine option sets.
             ->add('additionalTemplates', CollectionType::class, [
-                'entry_type' => EntityType::class,
+                'entry_type' => QuizPoolEntryType::class,
                 'entry_options' => [
-                    'class' => QuizTemplate::class,
-                    'choices' => $options['additionalTemplateChoices'],
-                    'choice_label' => static fn (QuizTemplate $template): string => $template->getName() ?? '',
+                    'templateChoices' => $options['additionalTemplateChoices'],
                     'label' => false,
-                    'placeholder' => 'quizLaunchAdditionalTemplatePlaceholder',
                 ],
                 'label' => false,
                 'allow_add' => true,
                 'allow_delete' => true,
                 'prototype_name' => '__quiz__',
                 'required' => false,
+                // Kept on the pool rather than bubbled to the top of the form: what a share breaks
+                // is read under the rows it is about (templates/library/quiz_launch.html.twig).
+                'error_bubbling' => false,
             ])
             // `data` is how the class arrives already picked when the screen is opened from a
             // filtered « Quiz par classes » - null everywhere else, which is the placeholder.
