@@ -234,6 +234,66 @@ final readonly class EquipmentLedger
         });
     }
 
+    /** « Commander » - the pieces count as coming until they are received or the order cancelled. */
+    public function order(EquipmentType $type, int $quantity, ?string $note, User $by): void
+    {
+        if ($quantity < 1) {
+            throw new EquipmentStockException('equipmentQuantityTooSmallMessage');
+        }
+
+        $this->transactional(function () use ($type, $quantity, $note, $by): void {
+            $this->applyDelta($type, EquipmentMovementKind::Ordered->delta($quantity));
+            $this->entityManager->persist(new EquipmentMovement($type, null, EquipmentMovementKind::Ordered, $quantity, $by, null, $note));
+            $this->entityManager->flush();
+            $this->entityManager->refresh($type);
+        });
+    }
+
+    /**
+     * « Réceptionner » - part or all of what is on order arrives: the order count goes down, and
+     * the pieces come in exactly as a delivery does (codes and all, for a unit-tracked type).
+     *
+     * @return list<EquipmentItem> the pieces created, for the labels screen
+     */
+    public function receiveOrder(EquipmentType $type, int $quantity, ?string $note, User $by): array
+    {
+        $this->assertIntakeQuantity($type, $quantity, 1);
+
+        return $this->transactional(function () use ($type, $quantity, $note, $by): array {
+            $this->assertOnOrder($type, $quantity);
+            $this->applyDelta($type, EquipmentMovementKind::Received->delta($quantity));
+            $this->entityManager->persist(new EquipmentMovement($type, null, EquipmentMovementKind::Received, $quantity, $by, null, $note));
+
+            return $this->intake($type, $quantity, $by, $note);
+        });
+    }
+
+    /** « Annuler » part or all of what is on order. */
+    public function cancelOrder(EquipmentType $type, int $quantity, ?string $note, User $by): void
+    {
+        if ($quantity < 1) {
+            throw new EquipmentStockException('equipmentQuantityTooSmallMessage');
+        }
+
+        $this->transactional(function () use ($type, $quantity, $note, $by): void {
+            $this->assertOnOrder($type, $quantity);
+            $this->applyDelta($type, EquipmentMovementKind::OrderCancelled->delta($quantity));
+            $this->entityManager->persist(new EquipmentMovement($type, null, EquipmentMovementKind::OrderCancelled, $quantity, $by, null, $note));
+            $this->entityManager->flush();
+            $this->entityManager->refresh($type);
+        });
+    }
+
+    /** Nothing is received or cancelled beyond what is on order - read under the type's row lock. */
+    private function assertOnOrder(EquipmentType $type, int $quantity): void
+    {
+        $this->entityManager->refresh($type, LockMode::PESSIMISTIC_WRITE);
+
+        if ($type->getOnOrderCount() < $quantity) {
+            throw new EquipmentStockException('equipmentMoreThanOrderedMessage');
+        }
+    }
+
     /** @return list<EquipmentItem> */
     private function intake(EquipmentType $type, int $quantity, User $by, ?string $note): array
     {

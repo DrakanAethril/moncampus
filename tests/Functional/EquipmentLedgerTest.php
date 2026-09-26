@@ -287,6 +287,47 @@ class EquipmentLedgerTest extends FunctionalTestCase
         self::assertSelectorTextContains('body', 'Souris sans fil');
     }
 
+    /**
+     * An order counts as coming until it arrives; receiving pieces creates them with their codes,
+     * and nothing is received or cancelled beyond what was ordered.
+     */
+    public function testAnOrderIsReceivedAsPiecesAndBoundedByWhatWasOrdered(): void
+    {
+        $type = $this->ledgerType('Claviers', true, 0);
+
+        $this->ledger->order($type, 5, 'BC-2026-14', $this->admin);
+        self::assertSame([0, 5], [$type->getAvailableCount(), $type->getOnOrderCount()]);
+
+        $items = $this->ledger->receiveOrder($type, 3, null, $this->admin);
+        self::assertCount(3, $items);
+        self::assertSame([3, 2], [$type->getAvailableCount(), $type->getOnOrderCount()]);
+
+        $this->ledger->cancelOrder($type, 2, null, $this->admin);
+        self::assertSame(0, $type->getOnOrderCount());
+        $this->assertNoDrift($type);
+
+        $this->expectException(EquipmentStockException::class);
+        $this->ledger->receiveOrder($type, 1, null, $this->admin);
+    }
+
+    /** « À commander » lists what is under its threshold, with the quantity back to target, and exports it. */
+    public function testTheReorderListSuggestsTheQuantityBackToTarget(): void
+    {
+        $type = $this->ledgerType('Piles AA', false, 3);
+        $type->setAlertThreshold(5)->setTargetStock(40);
+        $this->entityManager->flush();
+
+        $this->client->loginUser($this->admin);
+        $this->client->request('GET', '/equipment/reorder');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', 'Piles AA');
+        self::assertInputValueSame('equipment_order[quantity]', '37');
+
+        $this->client->request('GET', '/equipment/reorder/export.csv');
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('"Piles AA";;;3;0;40;37;', (string) $this->client->getInternalResponse()->getContent());
+    }
+
     private function assertNoDrift(EquipmentType $type): void
     {
         $run = static::getContainer()->get(CounterRecomputer::class)->recompute(EquipmentStockCounter::NAME, (int) $type->getId(), dryRun: true);

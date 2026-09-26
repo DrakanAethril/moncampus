@@ -82,6 +82,9 @@ class TypeController extends AbstractController
             'returnForm' => $type->isUnitTracked() ? null : $this->quantityForm($type, 'return'),
             'incidentForm' => $type->isUnitTracked() ? null : $this->incidentForm($this->generateUrl('app_equipment_type_incident', ['id' => $id]), true),
             'resolutionForm' => $type->isUnitTracked() ? null : $this->resolutionForm($this->generateUrl('app_equipment_type_resolve', ['id' => $id])),
+            'orderForm' => $this->orderForm($type, 'order', ''),
+            'receiveForm' => $type->getOnOrderCount() > 0 ? $this->orderForm($type, 'receive', '', $type->getOnOrderCount()) : null,
+            'cancelOrderForm' => $type->getOnOrderCount() > 0 ? $this->orderForm($type, 'cancel', '') : null,
             // What is still out: lost pieces not found, broken ones not repaired.
             'openIncidents' => [
                 'missing' => array_sum(array_column($movements->findOpenIncidents($type, EquipmentMovementKind::Missing), 'remaining')),

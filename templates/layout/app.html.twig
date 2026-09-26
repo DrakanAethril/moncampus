@@ -764,6 +764,7 @@
                                         <div class="dropdown-menu">
                                             <a class="dropdown-item {{ current_route in ['app_equipment', 'app_equipment_search'] or current_route starts with 'app_equipment_type' or current_route starts with 'app_equipment_item' ? 'active' }}" href="{{ path('app_equipment') }}">{{ 'equipmentStockNavLabel'|trans }}</a>
                                             <a class="dropdown-item {{ current_route starts with 'app_equipment_labels' ? 'active' }}" href="{{ path('app_equipment_labels') }}">{{ 'equipmentLabelsNavLabel'|trans }}</a>
+                                            <a class="dropdown-item {{ current_route starts with 'app_equipment_reorder' ? 'active' }}" href="{{ path('app_equipment_reorder') }}">{{ 'equipmentReorderNavLabel'|trans }}</a>
                                             <a class="dropdown-item {{ current_route starts with 'app_equipment_report' ? 'active' }}" href="{{ path('app_equipment_report') }}">{{ 'equipmentReportNavLabel'|trans }}</a>
                                             <a class="dropdown-item {{ current_route starts with 'app_equipment_settings' ? 'active' }}" href="{{ path('app_equipment_settings') }}">{{ 'equipmentSettingsNavLabel'|trans }}</a>
                                         </div>

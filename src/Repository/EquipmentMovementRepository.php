@@ -8,6 +8,7 @@ use App\Entity\EquipmentItem;
 use App\Entity\EquipmentMovement;
 use App\Entity\EquipmentType;
 use App\Enum\EquipmentIncidentCause;
+use App\Enum\EquipmentItemStatus;
 use App\Enum\EquipmentMovementKind;
 use App\Service\Equipment\EquipmentLossReport;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -133,5 +134,34 @@ class EquipmentMovementRepository extends ServiceEntityRepository
             'categoryName' => $row['categoryName'],
             'roomName' => $row['roomName'],
         ], $rows);
+    }
+
+    /**
+     * What left the reserve of each type since a date: pieces put into service, and pieces lost or
+     * broken straight from the reserve. The pace « À commander » projects the run-out date from.
+     *
+     * @return array<int, int> type id => pieces
+     */
+    public function consumptionSince(\DateTimeImmutable $since): array
+    {
+        /** @var list<array{typeId: int|string, total: int|string}> $rows */
+        $rows = $this->createQueryBuilder('m')
+            ->select('IDENTITY(m.type) AS typeId', 'SUM(m.quantity) AS total')
+            ->where('m.occurredAt >= :since')
+            ->andWhere('m.kind = :deploy OR (m.kind IN (:incidents) AND m.origin = :available)')
+            ->setParameter('since', $since)
+            ->setParameter('deploy', EquipmentMovementKind::Deploy)
+            ->setParameter('incidents', [EquipmentMovementKind::Missing, EquipmentMovementKind::OutOfOrder])
+            ->setParameter('available', EquipmentItemStatus::Available)
+            ->groupBy('typeId')
+            ->getQuery()
+            ->getArrayResult();
+
+        $consumption = [];
+        foreach ($rows as $row) {
+            $consumption[(int) $row['typeId']] = (int) $row['total'];
+        }
+
+        return $consumption;
     }
 }

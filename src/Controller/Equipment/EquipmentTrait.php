@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller\Equipment;
 
+use App\Entity\EquipmentType;
 use App\Entity\User;
 use App\Form\EquipmentIncidentType;
+use App\Form\EquipmentMovementType;
 use App\Form\EquipmentResolutionType;
+use App\Service\Equipment\EquipmentLedger;
 use App\Service\Equipment\EquipmentStockException;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -57,6 +60,22 @@ trait EquipmentTrait
         $now = new \DateTimeImmutable();
 
         return $day->format('Y-m-d') === $now->format('Y-m-d') ? $now : $day->setTime(12, 0);
+    }
+
+    /** Commander / réceptionner / annuler for one type, `?back=reorder` when it sits on « À commander ». */
+    private function orderForm(EquipmentType $type, string $gesture, string $back, ?int $suggested = null): FormInterface
+    {
+        return $this->container->get('form.factory')->createNamed('equipment_'.$gesture, EquipmentMovementType::class, null, [
+            'action' => $this->generateUrl('app_equipment_type_order', ['id' => $type->getId(), 'gesture' => $gesture] + ('' !== $back ? ['back' => $back] : [])),
+            'with_note' => true,
+            'default_quantity' => null !== $suggested && $suggested > 0 ? $suggested : 1,
+            'max_quantity' => 'receive' === $gesture && $type->isUnitTracked() ? EquipmentLedger::MAX_UNITS_PER_BATCH : null,
+            'submit_label' => match ($gesture) {
+                'order' => 'equipmentOrderAction',
+                'receive' => 'equipmentReceiveAction',
+                default => 'equipmentCancelOrderAction',
+            },
+        ]);
     }
 
     /** A refusal of the ledger becomes a flash message on the screen the gesture came from. */

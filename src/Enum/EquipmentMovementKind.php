@@ -46,6 +46,15 @@ enum EquipmentMovementKind: string
     /** « Mis au rebut » - a piece out of order leaves the inventory for good. */
     case Disposed = 'disposed';
 
+    /** « Commandé » - pieces on their way; they count as coming on « À commander ». */
+    case Ordered = 'ordered';
+
+    /** Part or all of an order arrived. The pieces themselves come in through Intake lines. */
+    case Received = 'received';
+
+    /** Part or all of an order will not come. */
+    case OrderCancelled = 'order_cancelled';
+
     /**
      * @param EquipmentItemStatus|null $origin the count an incident takes its pieces from -
      *                                         Available or InUse; required for an incident, ignored otherwise
@@ -62,6 +71,8 @@ enum EquipmentMovementKind: string
                 default => throw new \LogicException('An incident names the count its pieces came from.'),
             },
             self::Disposed => EquipmentCounterDelta::zero(),
+            self::Ordered => new EquipmentCounterDelta(onOrder: $quantity),
+            self::Received, self::OrderCancelled => new EquipmentCounterDelta(onOrder: -$quantity),
         };
     }
 
@@ -103,6 +114,9 @@ enum EquipmentMovementKind: string
             self::Found => 'equipmentMovementFoundLabel',
             self::Repaired => 'equipmentMovementRepairedLabel',
             self::Disposed => 'equipmentMovementDisposedLabel',
+            self::Ordered => 'equipmentMovementOrderedLabel',
+            self::Received => 'equipmentMovementReceivedLabel',
+            self::OrderCancelled => 'equipmentMovementOrderCancelledLabel',
         };
     }
 }

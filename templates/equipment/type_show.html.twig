@@ -76,6 +76,26 @@
                 </div>
             {% endif %}
 
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">{{ 'equipmentOrderCardTitle'|trans }}</h3>
+                    {% if type.onOrderCount > 0 %}<div class="card-actions"><span class="cm-badge cm-badge--blue">{{ 'equipmentOnOrderBadge'|trans({'%count%': type.onOrderCount}) }}</span></div>{% endif %}
+                </div>
+                <div class="card-body">
+                    {% for orderForm in [receiveForm, orderForm, cancelOrderForm] %}
+                        {% if orderForm %}
+                            {{ form_start(orderForm, {attr: {class: loop.last ? '' : 'mb-3 pb-3 border-bottom'}}) }}
+                                <div class="row g-2">
+                                    <div class="col-4">{{ form_row(orderForm.quantity) }}</div>
+                                    <div class="col-8">{{ form_row(orderForm.note, {label: 'equipmentOrderReferenceFieldLabel'}) }}</div>
+                                </div>
+                                {{ form_widget(orderForm.submit, {attr: {class: 'btn ' ~ (orderForm.vars.name == 'equipment_cancel' ? 'btn-outline-secondary' : 'btn-outline-primary') ~ ' w-100'}}) }}
+                            {{ form_end(orderForm) }}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
             {% if incidentForm %}
                 <div class="card mb-3">
                     <div class="card-header"><h3 class="card-title mb-0">{{ 'equipmentIncidentCardTitle'|trans }}</h3></div>

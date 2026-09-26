@@ -80,6 +80,7 @@
                         <th>{{ 'equipmentTrackingColumnLabel'|trans }}</th>
                         <th class="text-end">{{ 'equipmentAvailableColumnLabel'|trans }}</th>
                         <th class="text-end">{{ 'equipmentInUseColumnLabel'|trans }}</th>
+                        <th class="text-end">{{ 'equipmentOnOrderColumnLabel'|trans }}</th>
                         <th>{{ 'equipmentTypeLocationFieldLabel'|trans }}</th>
                     </tr>
                 </thead>
@@ -96,10 +97,11 @@
                                 <span class="cm-badge cm-badge--{{ type.stockLevel }}" title="{{ type.alertThreshold is not null ? 'equipmentAlertThresholdTitle'|trans({'%threshold%': type.alertThreshold}) : '' }}">{{ type.availableCount }}</span>
                             </td>
                             <td class="text-end">{{ type.inUseCount }}</td>
+                            <td class="text-end">{{ type.onOrderCount ?: '—' }}</td>
                             <td>{{ type.location ? type.location.name : '—' }}</td>
                         </tr>
                     {% else %}
-                        <tr><td colspan="6" class="text-center text-secondary">{{ 'equipmentNoTypeText'|trans }}</td></tr>
+                        <tr><td colspan="7" class="text-center text-secondary">{{ 'equipmentNoTypeText'|trans }}</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
