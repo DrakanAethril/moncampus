@@ -9110,3 +9110,7 @@ equipmentStocktakeAbandonedText: "Abandonné le %date% : rien n'a été écrit."
 # Gestion > Matériel - where a count was made
 equipmentWhere_available: "Réserve"
 equipmentWhere_in_use: "En service"
+
+# Gestion > Matériel - mobile API
+equipmentApiUnknownActionMessage: "Ce geste n'est pas possible sur ce matériel."
+equipmentApiCauseRequiredMessage: "Choisissez une cause."
