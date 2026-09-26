@@ -26,6 +26,35 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.26'
+      date: '2026-09-26'
+      summary: "Le petit matériel de l'établissement a désormais son inventaire : étiquettes, mouvements, incidents, liste à commander, comptages et bilan annuel des pertes. Au lancement d'un quiz composé de plusieurs quiz, chacun peut recevoir sa part des questions tirées."
+      entries:
+          - type: nouveaute
+            title: "Inventaire du petit matériel, pour l'administration et le support technique"
+            detail: "Matériel suivi à l'unité (chaque exemplaire porte une étiquette à code) ou en quantité, avec son état, sa salle et le journal de tous ses mouvements ; catégories et emplacements se paramètrent."
+          - type: nouveaute
+            title: "Matériel : incidents et bilan annuel des pertes"
+            detail: "Un exemplaire ou une quantité se déclare disparu ou hors d'usage avec sa cause, puis retrouvé, réparé ou mis au rebut ; le bilan de l'année scolaire chiffre les pertes par cause, matériel, salle et mois, face à l'année précédente."
+          - type: nouveaute
+            title: "Matériel : liste « À commander » et suivi des commandes"
+            detail: "La liste repère ce qui passe sous son seuil ou le passera dans le mois, propose la quantité à commander sans compter deux fois une commande en cours, et s'exporte en CSV ou PDF ; une commande se réceptionne en tout ou partie."
+          - type: nouveaute
+            title: "Matériel : comptages d'inventaire"
+            detail: "Un comptage coche les exemplaires par leur code et compte les quantités, puis montre avant clôture les écarts qu'il enregistrera ; le bilan annuel les distingue des pertes déclarées."
+          - type: modification
+            title: "Lancer un quiz : tous les quiz se choisissent au même endroit"
+            detail: "Le quiz lancé et les quiz ajoutés se choisissent dans la même liste, dans la colonne des questions."
+          - type: nouveaute
+            title: "Lancer un quiz : une part des questions pour chaque quiz"
+            detail: "Quand plusieurs quiz sont réunis, chacun peut recevoir un pourcentage des questions tirées ; ceux laissés libres se partagent le reste, et une répartition impossible est signalée avant le lancement."
+          - type: fix
+            title: "Lancer un quiz : le nombre de questions saisi est conservé quand le formulaire signale une erreur"
+          - type: interne
+            title: "Compteurs stockés et vérifiés chaque nuit"
+            detail: "Espace occupé de la bibliothèque de fichiers, inscrits des listes d'inscription et réponses des sondages ne sont plus recomptés à chaque affichage."
+          - type: interne
+            title: "Préparation de la saisie des mouvements de matériel depuis l'application mobile"
     - version: '2026.09.25'
       date: '2026-09-25'
       summary: "Le livret de l'alternant reprend désormais, en partie I, les modalités propres à son type de contrat, avec un sommaire et des numéros de page calculés à l'impression. L'équipe pédagogique du livret se saisit librement pour chaque formation, et la recherche du tableau de bord de l'UFA trouve enfin l'alternant."
