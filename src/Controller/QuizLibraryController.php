@@ -43,6 +43,7 @@ use App\Service\QueryValue;
 use App\Service\QuizAnswerChecker;
 use App\Service\QuizFolderTree;
 use App\Service\QuizInstantiationService;
+use App\Service\QuizPoolShares;
 use App\Service\QuizQuestionCompleteness;
 use App\Service\QuizTemplateDuplicator;
 use App\Service\UploadIntake;
@@ -51,6 +52,7 @@ use App\Util\NumericVariableParser;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
+use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -435,7 +437,7 @@ class QuizLibraryController extends AbstractController
     // results/instances stay teacher-visible (unlike the ROLE_ADMIN-only séquences Program side),
     // so there's no branching redirect based on role here.
     #[Route(path: '/library/quiz/{id}/launch', name: 'app_library_quiz_launch')]
-    public function launch(int $id, Request $request, QuizTemplateRepository $repository, QuizFolderRepository $folders, ProgramRepository $programRepository, StructureAccessChecker $accessChecker, QuizInstantiationService $instantiationService, QuizQuestionCompleteness $completeness, LibraryPickerTree $pickerTree): Response
+    public function launch(int $id, Request $request, QuizTemplateRepository $repository, QuizFolderRepository $folders, ProgramRepository $programRepository, StructureAccessChecker $accessChecker, QuizInstantiationService $instantiationService, QuizQuestionCompleteness $completeness, LibraryPickerTree $pickerTree, QuizPoolShares $poolShares, TranslatorInterface $translator): Response
     {
         $template = $this->findTemplateOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $template);
@@ -454,6 +456,8 @@ class QuizLibraryController extends AbstractController
             $accessChecker,
             $instantiationService,
             $completeness,
+            $poolShares,
+            $translator,
         );
     }
 
@@ -470,7 +474,7 @@ class QuizLibraryController extends AbstractController
      * something one does from that quiz's own screen, where its name is on the page.
      */
     #[Route(path: '/library/quiz/launch', name: 'app_quiz_launch')]
-    public function launchAny(Request $request, QuizTemplateRepository $repository, QuizFolderRepository $folders, ProgramRepository $programRepository, StructureAccessChecker $accessChecker, QuizInstantiationService $instantiationService, QuizQuestionCompleteness $completeness, LibraryPickerTree $pickerTree): Response
+    public function launchAny(Request $request, QuizTemplateRepository $repository, QuizFolderRepository $folders, ProgramRepository $programRepository, StructureAccessChecker $accessChecker, QuizInstantiationService $instantiationService, QuizQuestionCompleteness $completeness, LibraryPickerTree $pickerTree, QuizPoolShares $poolShares, TranslatorInterface $translator): Response
     {
         return $this->renderLaunchScreen(
             null,
@@ -486,6 +490,8 @@ class QuizLibraryController extends AbstractController
             $accessChecker,
             $instantiationService,
             $completeness,
+            $poolShares,
+            $translator,
         );
     }
 
@@ -497,7 +503,7 @@ class QuizLibraryController extends AbstractController
      * @param list<QuizTemplate> $libraryTemplates the quizzes on offer: the base one when it is still to be picked, and the merge rows in both cases
      * @param list<QuizFolder>   $folderTrail      the folders the quiz is filed under, for the breadcrumb - empty when the screen hangs off no folder at all
      */
-    private function renderLaunchScreen(?QuizTemplate $template, array $libraryTemplates, array $folderTrail, string $cancelUrl, Request $request, QuizFolderRepository $folders, LibraryPickerTree $pickerTree, ProgramRepository $programRepository, StructureAccessChecker $accessChecker, QuizInstantiationService $instantiationService, QuizQuestionCompleteness $completeness): Response
+    private function renderLaunchScreen(?QuizTemplate $template, array $libraryTemplates, array $folderTrail, string $cancelUrl, Request $request, QuizFolderRepository $folders, LibraryPickerTree $pickerTree, ProgramRepository $programRepository, StructureAccessChecker $accessChecker, QuizInstantiationService $instantiationService, QuizQuestionCompleteness $completeness, QuizPoolShares $poolShares, TranslatorInterface $translator): Response
     {
         $programs = $this->instantiablePrograms($accessChecker, $programRepository);
         // The merge rows never offer the quiz being launched: it is in the pool already.
@@ -540,30 +546,50 @@ class QuizLibraryController extends AbstractController
         // as a bug (conception_import_quiz_ia.md, section 5 bis).
         $incomplete = null !== $base ? $completeness->incomplete($base->getQuestions()) : [];
 
+        // What the launch will merge, once the form is valid and its shares hold - null otherwise.
+        $pool = null;
         if ($form->isSubmitted() && $form->isValid() && null !== $base && [] === $incomplete) {
-            /** @var Program $program */
-            $program = $form->get('program')->getData();
-
             // The launched template first, then the extras in the order the teacher added them -
             // a row left on its placeholder submits null and is simply skipped, and the same quiz
-            // picked twice must not double its questions in the pool.
+            // picked twice must not double its questions in the pool. Each keeps the share typed
+            // on its own row (« Part du quiz »), blank being no share.
             $templates = [$base];
-            /** @var list<QuizTemplate|null> $additional */
-            $additional = array_values($form->get('additionalTemplates')->getData() ?? []);
-            foreach ($additional as $extra) {
+            $shares = [FormValue::nullableInt($form, 'baseShare')];
+            foreach ($form->get('additionalTemplates') as $row) {
+                $extra = $row->get('template')->getData();
                 if ($extra instanceof QuizTemplate && !\in_array($extra, $templates, true)) {
                     $templates[] = $extra;
+                    $shares[] = FormValue::nullableInt($row, 'share');
                 }
             }
 
-            $poolSize = array_sum(array_map(static fn (QuizTemplate $item): int => $item->getQuestions()->count(), $templates));
+            $available = array_map(static fn (QuizTemplate $item): int => $item->getQuestions()->count(), $templates);
+            $questionCount = min(FormValue::int($form, 'questionCount'), array_sum($available));
+
+            // Refused rather than bent: a share its quiz cannot fill would otherwise be quietly
+            // made up from another quiz, which is the one thing the teacher asked not to happen.
+            $violation = $poolShares->violation($shares, $available, $questionCount);
+            if (null !== $violation) {
+                $params = $violation['params'];
+                if (isset($violation['index'])) {
+                    $params['%name%'] = $templates[$violation['index']]->getName() ?? '';
+                }
+                $form->get('additionalTemplates')->addError(new FormError($translator->trans($violation['key'], $params)));
+            } else {
+                $pool = ['templates' => $templates, 'shares' => $shares, 'questionCount' => $questionCount];
+            }
+        }
+
+        if (null !== $pool) {
+            /** @var Program $program */
+            $program = $form->get('program')->getData();
 
             $instance = $instantiationService->instantiateQuiz(
-                templates: $templates,
+                templates: $pool['templates'],
                 program: $program,
                 createdBy: $this->currentUser(),
                 mode: $form->get('mode')->getData(),
-                questionCount: min(FormValue::int($form, 'questionCount'), $poolSize),
+                questionCount: $pool['questionCount'],
                 difficultySliderPosition: FormValue::int($form, 'difficultySliderPosition'),
                 sameQuestionsForAll: (bool) $form->get('sameQuestionsForAll')->getData(),
                 questionOrderPerStudent: (bool) $form->get('questionOrderPerStudent')->getData(),
@@ -595,6 +621,7 @@ class QuizLibraryController extends AbstractController
                 penaltyPoints: FormValue::float($form, 'penaltyPoints') ?? 0.5,
                 penaltyPercent: FormValue::int($form, 'penaltyPercent') ?: 50,
                 negativeScoreAllowed: (bool) $form->get('negativeScoreAllowed')->getData(),
+                poolShares: $pool['shares'],
             );
 
             $this->addFlash('success', 'quizLaunchedFlashMessage');

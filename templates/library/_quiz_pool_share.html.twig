@@ -1,0 +1,18 @@
+{# « Part du quiz » - the share of the final draw one quiz of the pool must provide, as a percentage
+   of the questions drawn. Optional: blank is « libre », the quiz then drawing from what the shared
+   ones leave (App\Service\QuizPoolShares). Shown only once the pool holds two quizzes -
+   quiz_pool_controller.js toggles it and writes the resulting number of questions beside it. #}
+<span class="cm-quizpool__share{{ split ? '' : ' d-none' }}" data-quiz-pool-share>
+    {{ form_widget(field, {attr: {
+        class: 'cm-quizpool__share-input',
+        min: 1,
+        max: 100,
+        placeholder: 'quizLaunchSharePlaceholder'|trans,
+        title: 'quizLaunchShareFieldLabel'|trans,
+        'aria-label': 'quizLaunchShareFieldLabel'|trans,
+        'data-quiz-pool-target': 'share',
+        'data-action': 'input->quiz-pool#refreshShares',
+    }}) }}
+    <span class="cm-quizpool__share-unit" aria-hidden="true">%</span>
+    <span class="cm-quizpool__share-hint" data-quiz-pool-share-hint></span>
+</span>

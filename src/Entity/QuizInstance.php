@@ -134,6 +134,18 @@ class QuizInstance implements AccessConditionHost
     #[ORM\Column(name: 'difficulty_difficile_count')]
     private int $difficultyDifficileCount = 0;
 
+    /**
+     * « Part du quiz »: what each merged quiz must provide, indexed by its position in the pool
+     * (QuizInstanceQuestion::$poolIndex) - the percentage the teacher typed and the question count
+     * it resolved to at launch (App\Service\QuizPoolShares). Frozen like the difficulty counts
+     * above, for the same reason. Null where a quiz was given no share, and null altogether when
+     * none was: the draw is then the single merged pool it has always been (App\Service\QuizDrawService).
+     *
+     * @var list<array{percent: int, count: int}|null>|null
+     */
+    #[ORM\Column(name: 'pool_shares', type: Types::JSON, nullable: true)]
+    private ?array $poolShares = null;
+
     #[ORM\Column(name: 'same_questions_for_all', options: ['default' => true])]
     private bool $sameQuestionsForAll = true;
 
@@ -464,6 +476,25 @@ class QuizInstance implements AccessConditionHost
         $this->difficultyFacileCount = $facile;
         $this->difficultyMoyenCount = $moyen;
         $this->difficultyDifficileCount = $difficile;
+
+        return $this;
+    }
+
+    /** @return list<array{percent: int, count: int}|null>|null */
+    public function getPoolShares(): ?array
+    {
+        return $this->poolShares;
+    }
+
+    /**
+     * @param array<array-key, array{percent: int, count: int}|null>|null $poolShares
+     */
+    public function setPoolShares(?array $poolShares): static
+    {
+        // No share anywhere is no split at all - stored as null so the draw takes its usual path.
+        $this->poolShares = null !== $poolShares && [] !== array_filter($poolShares, static fn (?array $share): bool => null !== $share)
+            ? array_values($poolShares)
+            : null;
 
         return $this;
     }

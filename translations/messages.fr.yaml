@@ -2838,7 +2838,15 @@ quizLaunchNameFieldLabel: 'Intitulé'
 quizLaunchNameFieldHint: 'Facultatif — le nom du quiz est repris si vous laissez vide.'
 quizLaunchAdditionalTemplatePlaceholder: 'Choisir un quiz…'
 quizLaunchAddTemplateAction: '+ Ajouter un quiz'
-quizLaunchAddTemplateHint: "Les questions des quiz ajoutés rejoignent le même vivier : le tirage y puise sans distinguer leur quiz d'origine."
+quizLaunchAddTemplateHint: "Les questions des quiz ajoutés rejoignent le même vivier. Chaque quiz peut recevoir une part du tirage, en % des questions tirées ; ceux laissés libres se partagent le reste."
+quizLaunchShareFieldLabel: 'Part du quiz (% des questions tirées)'
+quizLaunchSharePlaceholder: 'libre'
+quizLaunchShareQuotaTemplate: '= %count% q.'
+quizLaunchShareRestTemplate: 'Les quiz sans part se partagent le reste : %rest% question(s).'
+quizLaunchShareOverflowError: 'La somme des parts dépasse 100 % (%sum% %).'
+quizLaunchShareIncompleteError: "Chaque quiz a reçu une part : leur somme doit faire 100 % (%sum% % pour l'instant)."
+quizLaunchShareTooLargeError: '« %name% » ne compte que %available% questions : %share% % du tirage en demandent %quota%.'
+quizLaunchShareRestTooLargeError: 'Les quiz sans part ne comptent que %available% questions pour les %rest% qui restent à tirer.'
 quizLaunchRemoveTemplateAction: 'Retirer ce quiz'
 quizLaunchProgramFieldLabel: 'Classe'
 quizLaunchVisibilityOptionFieldLabel: 'Visibilité'
@@ -2887,8 +2895,6 @@ quizDifficultyZoneTresDifficileLabel: 'Très difficile'
 quizLaunchPageHeadingTemplate: 'Lancer « %name% »'
 quizLaunchPageHeading: 'Lancer un quiz'
 quizLaunchTemplateFieldLabel: 'Quiz à lancer'
-quizLaunchTemplateTitle: 'Quiz à lancer'
-quizLaunchTemplateHint: "Le quiz est choisi ici : ses réglages par défaut remplissent le reste de l'écran."
 quizLaunchTemplateRequiredError: 'Choisissez le quiz à lancer.'
 # Le sélecteur de bibliothèque (bouton + modale d'arborescence) : le vocabulaire commun, puis ce que
 # la bibliothèque de quiz en dit.
