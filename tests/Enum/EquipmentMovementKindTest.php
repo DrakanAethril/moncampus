@@ -60,6 +60,14 @@ class EquipmentMovementKindTest extends TestCase
         self::assertTrue(EquipmentMovementKind::Disposed->delta(1)->isZero());
     }
 
+    /** An order moves « en commande » alone: the pieces that arrive come in through their own intake. */
+    public function testOrderLinesMoveOnlyTheOrderedCount(): void
+    {
+        self::assertEquals(new EquipmentCounterDelta(onOrder: 20), EquipmentMovementKind::Ordered->delta(20));
+        self::assertEquals(new EquipmentCounterDelta(onOrder: -12), EquipmentMovementKind::Received->delta(12));
+        self::assertEquals(new EquipmentCounterDelta(onOrder: -8), EquipmentMovementKind::OrderCancelled->delta(8));
+    }
+
     public function testOnlyTheTwoLossesAreIncidents(): void
     {
         $incidents = array_values(array_filter(EquipmentMovementKind::cases(), static fn (EquipmentMovementKind $kind): bool => $kind->isIncident()));

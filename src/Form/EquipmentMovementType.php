@@ -38,7 +38,9 @@ class EquipmentMovementType extends AbstractType
 
             $builder->add('quantity', IntegerType::class, [
                 'label' => 'equipmentQuantityFieldLabel',
-                'data' => 1,
+                // An option rather than a later setData(): `data` locks the field, and a setData()
+                // on a locked field is ignored without a word.
+                'data' => $options['default_quantity'],
                 'attr' => $attr,
                 'constraints' => $constraints,
             ]);
@@ -68,12 +70,14 @@ class EquipmentMovementType extends AbstractType
     {
         $resolver->setDefaults([
             'with_quantity' => true,
+            'default_quantity' => 1,
             'max_quantity' => null,
             'with_room' => false,
             'with_note' => false,
             'submit_label' => 'submitSaveAction',
         ]);
         $resolver->setAllowedTypes('with_quantity', 'bool');
+        $resolver->setAllowedTypes('default_quantity', 'int');
         $resolver->setAllowedTypes('max_quantity', ['null', 'int']);
         $resolver->setAllowedTypes('with_room', 'bool');
         $resolver->setAllowedTypes('with_note', 'bool');

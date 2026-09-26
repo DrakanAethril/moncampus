@@ -1,0 +1,74 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'equipmentReorderPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'equipment/_breadcrumb.html.twig' with {extra: [
+        {label: 'equipmentReorderPageHeading'|trans, url: path('app_equipment_reorder')},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'equipmentReorderPageHeading'|trans }}{% endblock %}
+{% block page_actions %}
+    <div class="d-flex gap-2">
+        <a href="{{ path('app_equipment_reorder_export', {format: 'csv'}|merge(showAll ? {all: 1} : {})) }}" class="btn btn-outline-primary" data-turbo="false">{{ 'equipmentExportCsvAction'|trans }}</a>
+        <a href="{{ path('app_equipment_reorder_export', {format: 'pdf'}|merge(showAll ? {all: 1} : {})) }}" class="btn btn-outline-primary" data-turbo="false">{{ 'equipmentExportPdfAction'|trans }}</a>
+    </div>
+{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="cm-filterbar">
+            <span class="cm-filterbar__segmented">
+                <a href="{{ path('app_equipment_reorder') }}" class="cm-filterbar__seg {{ showAll ? '' : 'is-active' }}"{{ showAll ? '' : ' aria-current="true"' }}>{{ 'equipmentReorderOnlyFilterLabel'|trans }}</a>
+                <a href="{{ path('app_equipment_reorder', {all: 1}) }}" class="cm-filterbar__seg {{ showAll ? 'is-active' : '' }}"{{ showAll ? ' aria-current="true"' : '' }}>{{ 'equipmentReorderAllFilterLabel'|trans }}</a>
+            </span>
+            <span class="text-secondary small ms-auto">{{ 'equipmentReorderHint'|trans({'%months%': windowMonths}) }}</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'equipmentTypeNameFieldLabel'|trans }}</th>
+                        <th class="text-end">{{ 'equipmentAvailableColumnLabel'|trans }}</th>
+                        <th class="text-end">{{ 'equipmentOnOrderColumnLabel'|trans }}</th>
+                        <th class="text-end">{{ 'equipmentReorderConsumptionColumnLabel'|trans }}</th>
+                        <th>{{ 'equipmentReorderRunsOutColumnLabel'|trans }}</th>
+                        <th style="min-width: 360px">{{ 'equipmentOrderAction'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for line in lines %}
+                        {% set type = line.type %}
+                        {% set plan = line.plan %}
+                        {% set form = forms[type.id] %}
+                        <tr>
+                            <td>
+                                <a href="{{ path('app_equipment_type_show', {id: type.id}) }}"><strong>{{ type.name }}</strong></a>
+                                {% if plan.needsOrder %}<span class="cm-badge cm-badge--red ms-1">{{ 'equipmentReorderToOrderBadge'|trans }}</span>{% elseif plan.coveredByOrder %}<span class="cm-badge cm-badge--blue ms-1">{{ 'equipmentReorderCoveredBadge'|trans }}</span>{% endif %}
+                                <div class="text-secondary small">
+                                    {% if type.alertThreshold is not null %}{{ 'equipmentAlertThresholdTitle'|trans({'%threshold%': type.alertThreshold}) }}{% endif %}
+                                    {% if type.targetStock is not null %} · {{ 'equipmentTypeTargetStockFieldLabel'|trans }} : {{ type.targetStock }}{% endif %}
+                                    {% if type.supplierReference %} · {{ type.supplierReference|length > 40 ? type.supplierReference|slice(0, 40) ~ '…' : type.supplierReference }}{% endif %}
+                                </div>
+                            </td>
+                            <td class="text-end"><span class="cm-badge cm-badge--{{ type.stockLevel }}">{{ type.availableCount }}</span></td>
+                            <td class="text-end">{{ type.onOrderCount ?: '—' }}</td>
+                            <td class="text-end">{{ plan.monthlyConsumption > 0 ? 'equipmentPerMonthText'|trans({'%count%': plan.monthlyConsumption|round(1)|number_format(1, ',', ' ')}) : '—' }}</td>
+                            <td>{{ plan.runsOutOn ? (type.availableCount <= 0 ? 'equipmentOutOfStockText'|trans : plan.runsOutOn|date('d/m/Y')) : '—' }}</td>
+                            <td>
+                                {{ form_start(form, {attr: {class: 'd-flex gap-2 align-items-start'}}) }}
+                                    <div style="width: 90px">{{ form_widget(form.quantity) }}</div>
+                                    <div class="flex-grow-1">{{ form_widget(form.note, {attr: {placeholder: 'equipmentOrderReferenceFieldLabel'|trans}}) }}</div>
+                                    {{ form_widget(form.submit, {attr: {class: 'btn btn-sm btn-primary'}}) }}
+                                {{ form_end(form) }}
+                                {% if plan.suggested is null %}<div class="text-secondary small mt-1">{{ 'equipmentReorderNoTargetText'|trans }}</div>{% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="6" class="text-center text-secondary">{{ 'equipmentReorderEmptyText'|trans }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

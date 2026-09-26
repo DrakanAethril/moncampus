@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    {# Without it Chromium guesses the charset and the accents come out as ideograms. #}
+    <meta charset="UTF-8">
+    <title>{{ 'equipmentReorderPageHeading'|trans }}</title>
+    <style>
+        @page { size: A4 portrait; }
+        body { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 10.5pt; color: #1d2b36; }
+        h1 { font-size: 16pt; margin: 0 0 2mm; }
+        .meta { color: #6b7a86; margin-bottom: 6mm; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; font-size: 8.5pt; text-transform: uppercase; letter-spacing: .04em; color: #6b7a86; border-bottom: 1px solid #c9d3db; padding: 2mm 1.5mm; }
+        td { border-bottom: 1px solid #e3e8ec; padding: 2mm 1.5mm; vertical-align: top; }
+        .num { text-align: right; white-space: nowrap; }
+        .ref { color: #6b7a86; font-size: 9pt; }
+        .strong { font-weight: 700; }
+    </style>
+</head>
+<body>
+    <h1>{{ 'equipmentReorderPageHeading'|trans }}</h1>
+    <div class="meta">{{ 'equipmentReorderPdfGeneratedText'|trans({'%date%': generatedAt|date('d/m/Y')}) }}</div>
+    <table>
+        <thead>
+            <tr>
+                <th>{{ 'equipmentTypeNameFieldLabel'|trans }}</th>
+                <th class="num">{{ 'equipmentAvailableColumnLabel'|trans }}</th>
+                <th class="num">{{ 'equipmentOnOrderColumnLabel'|trans }}</th>
+                <th class="num">{{ 'equipmentReorderSuggestedColumnLabel'|trans }}</th>
+                <th class="num">{{ 'equipmentTypeUnitPriceFieldLabel'|trans }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in lines %}
+                <tr>
+                    <td>
+                        <span class="strong">{{ line.type.name }}</span>
+                        {% if line.type.supplierReference %}<div class="ref">{{ line.type.supplierReference }}</div>{% endif %}
+                    </td>
+                    <td class="num">{{ line.type.availableCount }}</td>
+                    <td class="num">{{ line.type.onOrderCount }}</td>
+                    <td class="num strong">{{ line.plan.suggested ?? '—' }}</td>
+                    <td class="num">{{ line.type.unitPrice is not null ? line.type.unitPrice|number_format(2, ',', ' ') ~ ' €' : '—' }}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="5">{{ 'equipmentReorderEmptyText'|trans }}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
