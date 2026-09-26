@@ -186,7 +186,10 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   journal; the type's counters are **stored** and move only through `EquipmentLedger`'s atomic
   `UPDATE … + delta` - never through the entity - and `EquipmentMovementKind::delta()` is the single
   rule both the live update and the recomputation read. Kept by admin, staff, staff-lead and
-  support-tech; nothing is ever imputed to a class or a student, a room is optional.
+  support-tech; nothing is ever imputed to a class or a student, a room is optional. An incident is
+  **Disparu** or **Hors d'usage** plus a cause, and leaves the count it came from; « Retrouvé » /
+  « Réparé » points at the incident it answers (`resolves`), so the annual report
+  (`EquipmentLossReport`, per `SchoolYear`) takes the loss back out of the year it was declared in.
 - **Agenda, Annonces, Listes d'inscription** — `AgendaEvent`, `Announcement`, `SignupList`; the
   first two resolve who they are for through `AudienceResolver` like `MessageThread` does.
 - **Accès aux fonctionnalités** — `App\Enum\Feature` (49 cases) + `#[RequiresFeature]` +

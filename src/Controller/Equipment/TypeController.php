@@ -9,6 +9,7 @@ use App\Counter\CounterRecomputer;
 use App\Entity\EquipmentItem;
 use App\Entity\EquipmentType;
 use App\Entity\Room;
+use App\Enum\EquipmentMovementKind;
 use App\Enum\Feature;
 use App\Form\EquipmentMovementType;
 use App\Form\EquipmentTypeType;
@@ -79,6 +80,13 @@ class TypeController extends AbstractController
             'addStockForm' => $this->addStockForm($type),
             'deployForm' => $type->isUnitTracked() ? null : $this->quantityForm($type, 'deploy'),
             'returnForm' => $type->isUnitTracked() ? null : $this->quantityForm($type, 'return'),
+            'incidentForm' => $type->isUnitTracked() ? null : $this->incidentForm($this->generateUrl('app_equipment_type_incident', ['id' => $id]), true),
+            'resolutionForm' => $type->isUnitTracked() ? null : $this->resolutionForm($this->generateUrl('app_equipment_type_resolve', ['id' => $id])),
+            // What is still out: lost pieces not found, broken ones not repaired.
+            'openIncidents' => [
+                'missing' => array_sum(array_column($movements->findOpenIncidents($type, EquipmentMovementKind::Missing), 'remaining')),
+                'outOfOrder' => array_sum(array_column($movements->findOpenIncidents($type, EquipmentMovementKind::OutOfOrder), 'remaining')),
+            ],
         ]);
     }
 

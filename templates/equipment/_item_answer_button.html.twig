@@ -1,0 +1,7 @@
+{# « Retrouvé », « Réparé » or « Mettre au rebut » for one piece - a plain token, like the other
+   one-click gestures of this area. `confirm` asks before posting, for the one that cannot be undone. #}
+<form method="post" action="{{ path('app_equipment_item_answer', {id: item.id, answer: answer}) }}">
+    <input type="hidden" name="_token" value="{{ csrf_token('equipment_item_answer') }}">
+    <button type="submit" class="btn {{ style }} w-100"
+            {% if confirm is defined %}data-controller="confirm-submit" data-confirm-submit-message-value="{{ confirm }}" data-action="click->confirm-submit#confirm"{% endif %}>{{ label|trans }}</button>
+</form>

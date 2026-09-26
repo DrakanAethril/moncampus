@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\EquipmentIncidentCause;
+use App\Enum\EquipmentItemStatus;
 use App\Enum\EquipmentMovementKind;
 use App\Repository\EquipmentMovementRepository;
 use Doctrine\DBAL\Types\Types;
@@ -18,6 +20,11 @@ use Doctrine\ORM\Mapping as ORM;
  *
  * `$item` is set for a unit-tracked type (and `$quantity` is then 1); a quantity-tracked type
  * moves in numbers and names no piece.
+ *
+ * An incident also carries `$origin` - the count its pieces left, Disponible or Utilisé - and a
+ * `$cause`. A « Retrouvé » or « Réparé » line points at the incident it answers (`$resolves`), which
+ * is what lets the annual report take a loss back out of the year it was declared in, whenever the
+ * piece turns up.
  */
 #[ORM\Entity(repositoryClass: EquipmentMovementRepository::class)]
 #[ORM\Table(name: 'equipment_movement')]
@@ -63,6 +70,18 @@ class EquipmentMovement
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $note;
 
+    /** The count an incident's pieces came from - Available or InUse. */
+    #[ORM\Column(length: 20, nullable: true, enumType: EquipmentItemStatus::class)]
+    private ?EquipmentItemStatus $origin;
+
+    #[ORM\Column(length: 20, nullable: true, enumType: EquipmentIncidentCause::class)]
+    private ?EquipmentIncidentCause $cause;
+
+    /** The incident a Found or Repaired line answers. */
+    #[ORM\ManyToOne(targetEntity: self::class)]
+    #[ORM\JoinColumn(name: 'resolves_id', nullable: true, onDelete: 'CASCADE')]
+    private ?EquipmentMovement $resolves;
+
     public function __construct(
         EquipmentType $type,
         ?EquipmentItem $item,
@@ -72,6 +91,9 @@ class EquipmentMovement
         ?Room $room = null,
         ?string $note = null,
         ?\DateTimeImmutable $occurredAt = null,
+        ?EquipmentItemStatus $origin = null,
+        ?EquipmentIncidentCause $cause = null,
+        ?EquipmentMovement $resolves = null,
     ) {
         if ($quantity <= 0) {
             throw new \InvalidArgumentException('A journal line moves at least one piece.');
@@ -87,6 +109,9 @@ class EquipmentMovement
         $this->note = '' === $note ? null : $note;
         $this->recordedAt = new \DateTimeImmutable();
         $this->occurredAt = $occurredAt ?? $this->recordedAt;
+        $this->origin = $origin;
+        $this->cause = $cause;
+        $this->resolves = $resolves;
     }
 
     public function getId(): ?int
@@ -137,5 +162,20 @@ class EquipmentMovement
     public function getNote(): ?string
     {
         return $this->note;
+    }
+
+    public function getOrigin(): ?EquipmentItemStatus
+    {
+        return $this->origin;
+    }
+
+    public function getCause(): ?EquipmentIncidentCause
+    {
+        return $this->cause;
+    }
+
+    public function getResolves(): ?self
+    {
+        return $this->resolves;
     }
 }

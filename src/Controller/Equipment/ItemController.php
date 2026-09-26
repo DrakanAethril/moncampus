@@ -43,6 +43,9 @@ class ItemController extends AbstractController
             'item' => $item,
             'movements' => $movements->findForItem($item),
             'deployForm' => EquipmentItemStatus::Available === $item->getStatus() ? $this->deployForm($item) : null,
+            'incidentForm' => $item->getStatus()->isInService()
+                ? $this->incidentForm($this->generateUrl('app_equipment_item_incident', ['id' => $id]), false)
+                : null,
         ]);
     }
 

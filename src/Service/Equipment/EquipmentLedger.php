@@ -9,8 +9,10 @@ use App\Entity\EquipmentMovement;
 use App\Entity\EquipmentType;
 use App\Entity\Room;
 use App\Entity\User;
+use App\Enum\EquipmentIncidentCause;
 use App\Enum\EquipmentItemStatus;
 use App\Enum\EquipmentMovementKind;
+use App\Repository\EquipmentMovementRepository;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -34,6 +36,7 @@ final readonly class EquipmentLedger
     public function __construct(
         private EntityManagerInterface $entityManager,
         private EquipmentCodeAllocator $codes,
+        private EquipmentMovementRepository $movements,
     ) {
     }
 
@@ -88,6 +91,147 @@ final readonly class EquipmentLedger
     public function returnQuantity(EquipmentType $type, int $quantity, User $by): void
     {
         $this->moveQuantity($type, EquipmentMovementKind::Return, $quantity, null, $by);
+    }
+
+    /**
+     * « Disparu » or « Hors d'usage » for one piece. It leaves the count it was in - the reserve or
+     * the rooms - and stays out until it is found, repaired or disposed of.
+     */
+    public function declareItemIncident(
+        EquipmentItem $item,
+        EquipmentMovementKind $kind,
+        EquipmentIncidentCause $cause,
+        ?Room $room,
+        \DateTimeImmutable $occurredAt,
+        ?string $note,
+        User $by,
+    ): void {
+        $this->assertIncident($kind);
+
+        $this->transactional(function () use ($item, $kind, $cause, $room, $occurredAt, $note, $by): void {
+            $this->entityManager->refresh($item, LockMode::PESSIMISTIC_WRITE);
+            $origin = $item->getStatus();
+
+            if (!$origin->isInService()) {
+                throw new EquipmentStockException('equipmentItemStatusChangedMessage');
+            }
+
+            $type = $item->getType();
+            $this->applyDelta($type, $kind->delta(1, $origin));
+            $item->moveTo($kind->statusAfter() ?? $origin, null);
+            $this->entityManager->persist(new EquipmentMovement($type, $item, $kind, 1, $by, $room, $note, $occurredAt, $origin, $cause));
+            $this->entityManager->flush();
+            $this->entityManager->refresh($type);
+        });
+    }
+
+    /**
+     * The same for a number of pieces of a quantity type, taken from the count they were in.
+     */
+    public function declareQuantityIncident(
+        EquipmentType $type,
+        EquipmentMovementKind $kind,
+        int $quantity,
+        EquipmentItemStatus $origin,
+        EquipmentIncidentCause $cause,
+        ?Room $room,
+        \DateTimeImmutable $occurredAt,
+        ?string $note,
+        User $by,
+    ): void {
+        $this->assertIncident($kind);
+        $this->assertQuantityType($type, $quantity);
+
+        if (!$origin->isInService()) {
+            throw new \LogicException('An incident takes its pieces from the reserve or from the rooms.');
+        }
+
+        $this->transactional(function () use ($type, $kind, $quantity, $origin, $cause, $room, $occurredAt, $note, $by): void {
+            $this->applyDelta($type, $kind->delta($quantity, $origin));
+            $this->entityManager->persist(new EquipmentMovement($type, null, $kind, $quantity, $by, $room, $note, $occurredAt, $origin, $cause));
+            $this->entityManager->flush();
+            $this->entityManager->refresh($type);
+        });
+    }
+
+    /**
+     * « Retrouvé » (a Missing piece) or « Réparé » (an OutOfOrder one): back into the reserve, and
+     * the line points at the incident it answers, so the report takes that loss back out of the
+     * year it was declared in.
+     */
+    public function resolveItem(EquipmentItem $item, EquipmentMovementKind $kind, ?string $note, User $by): void
+    {
+        $answered = $kind->resolves() ?? throw new \LogicException('Only Found and Repaired answer an incident.');
+
+        $this->transactional(function () use ($item, $kind, $answered, $note, $by): void {
+            $this->entityManager->refresh($item, LockMode::PESSIMISTIC_WRITE);
+
+            if ($item->getStatus() !== $answered->statusAfter()) {
+                throw new EquipmentStockException('equipmentItemStatusChangedMessage');
+            }
+
+            $type = $item->getType();
+            $incident = $this->movements->findOpenIncidents($type, $answered, $item)[0]['incident'] ?? null;
+
+            $this->applyDelta($type, $kind->delta(1));
+            $item->moveTo(EquipmentItemStatus::Available, null);
+            $this->entityManager->persist(new EquipmentMovement($type, $item, $kind, 1, $by, null, $note, null, null, null, $incident));
+            $this->entityManager->flush();
+            $this->entityManager->refresh($type);
+        });
+    }
+
+    /**
+     * The same for a number of pieces of a quantity type. The quantity is spread over the open
+     * incidents of that kind, newest first - one line per incident answered - and refused beyond
+     * what those incidents still hold: nobody finds more cables than were lost.
+     */
+    public function resolveQuantity(EquipmentType $type, EquipmentMovementKind $kind, int $quantity, ?string $note, User $by): void
+    {
+        $answered = $kind->resolves() ?? throw new \LogicException('Only Found and Repaired answer an incident.');
+        $this->assertQuantityType($type, $quantity);
+
+        $this->transactional(function () use ($type, $kind, $answered, $quantity, $note, $by): void {
+            // Two people answering the same incidents at once must not both succeed.
+            $this->entityManager->refresh($type, LockMode::PESSIMISTIC_WRITE);
+
+            $open = $this->movements->findOpenIncidents($type, $answered);
+            if (array_sum(array_column($open, 'remaining')) < $quantity) {
+                throw new EquipmentStockException('equipmentNothingToResolveMessage');
+            }
+
+            $this->applyDelta($type, $kind->delta($quantity));
+
+            $left = $quantity;
+            foreach ($open as ['incident' => $incident, 'remaining' => $remaining]) {
+                $share = min($left, $remaining);
+                $this->entityManager->persist(new EquipmentMovement($type, null, $kind, $share, $by, null, $note, null, null, null, $incident));
+                $left -= $share;
+
+                if (0 === $left) {
+                    break;
+                }
+            }
+
+            $this->entityManager->flush();
+            $this->entityManager->refresh($type);
+        });
+    }
+
+    /** « Mettre au rebut » - the end of life of a piece out of order. Its code is never reused. */
+    public function disposeItem(EquipmentItem $item, ?string $note, User $by): void
+    {
+        $this->transactional(function () use ($item, $note, $by): void {
+            $this->entityManager->refresh($item, LockMode::PESSIMISTIC_WRITE);
+
+            if (EquipmentItemStatus::OutOfOrder !== $item->getStatus()) {
+                throw new EquipmentStockException('equipmentItemStatusChangedMessage');
+            }
+
+            $item->moveTo(EquipmentItemStatus::Disposed, null);
+            $this->entityManager->persist(new EquipmentMovement($item->getType(), $item, EquipmentMovementKind::Disposed, 1, $by, null, $note));
+            $this->entityManager->flush();
+        });
     }
 
     /** @return list<EquipmentItem> */
@@ -165,6 +309,24 @@ final readonly class EquipmentLedger
             $this->entityManager->flush();
             $this->entityManager->refresh($type);
         });
+    }
+
+    private function assertIncident(EquipmentMovementKind $kind): void
+    {
+        if (!$kind->isIncident()) {
+            throw new \LogicException('Only Missing and OutOfOrder are incidents.');
+        }
+    }
+
+    private function assertQuantityType(EquipmentType $type, int $quantity): void
+    {
+        if ($type->isUnitTracked()) {
+            throw new \LogicException('A unit-tracked type moves piece by piece.');
+        }
+
+        if ($quantity < 1) {
+            throw new EquipmentStockException('equipmentQuantityTooSmallMessage');
+        }
     }
 
     private function assertIntakeQuantity(EquipmentType $type, int $quantity, int $minimum): void

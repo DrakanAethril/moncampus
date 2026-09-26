@@ -1,0 +1,13 @@
+{# « Déclarer un problème » - App\Form\EquipmentIncidentType, for a piece or for a quantity. #}
+{{ form_start(form) }}
+    {{ form_row(form.kind) }}
+    {{ form_row(form.cause) }}
+    {% if form.quantity is defined %}
+        {{ form_row(form.quantity) }}
+        {{ form_row(form.origin) }}
+    {% endif %}
+    {{ form_row(form.room) }}
+    {{ form_row(form.occurredAt) }}
+    {{ form_row(form.note) }}
+    {{ form_widget(form.submit, {attr: {class: 'btn btn-outline-danger w-100'}}) }}
+{{ form_end(form) }}

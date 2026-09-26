@@ -37,9 +37,29 @@
                             <input type="hidden" name="_token" value="{{ csrf_token('equipment_item_move') }}">
                             <button type="submit" class="btn btn-primary w-100">{{ 'equipmentMarkAvailableAction'|trans }}</button>
                         </form>
+                    {% elseif item.status.value == 'missing' %}
+                        <p class="text-secondary">{{ 'equipmentItemMissingText'|trans }}</p>
+                        {% include 'equipment/_item_answer_button.html.twig' with {item: item, answer: 'found', label: 'equipmentFoundAction', style: 'btn-primary'} only %}
+                    {% elseif item.status.value == 'out_of_order' %}
+                        <p class="text-secondary">{{ 'equipmentItemOutOfOrderText'|trans }}</p>
+                        {% include 'equipment/_item_answer_button.html.twig' with {item: item, answer: 'repaired', label: 'equipmentRepairedAction', style: 'btn-primary'} only %}
+                        <div class="mt-2">
+                            {% include 'equipment/_item_answer_button.html.twig' with {item: item, answer: 'disposed', label: 'equipmentDisposeAction', style: 'btn-outline-danger', confirm: 'equipmentDisposeConfirmText'|trans({'%code%': item.code})} only %}
+                        </div>
+                    {% else %}
+                        <p class="text-secondary mb-0">{{ 'equipmentItemDisposedText'|trans }}</p>
                     {% endif %}
                 </div>
             </div>
+
+            {% if incidentForm %}
+            <div class="card mb-3">
+                <div class="card-header"><h3 class="card-title mb-0">{{ 'equipmentIncidentCardTitle'|trans }}</h3></div>
+                <div class="card-body">
+                    {% include 'equipment/_incident_form.html.twig' with {form: incidentForm} only %}
+                </div>
+            </div>
+            {% endif %}
 
             <div class="card mb-3">
                 <div class="card-header"><h3 class="card-title mb-0">{{ 'equipmentDetailsCardTitle'|trans }}</h3></div>
