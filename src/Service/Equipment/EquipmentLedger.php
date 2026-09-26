@@ -161,12 +161,15 @@ final readonly class EquipmentLedger
      */
     public function resolveItem(EquipmentItem $item, EquipmentMovementKind $kind, ?string $note, User $by): void
     {
-        $answered = $kind->resolves() ?? throw new \LogicException('Only Found and Repaired answer an incident.');
+        $answered = $kind->answers();
+        if ([] === $answered) {
+            throw new \LogicException('Only Found and Repaired answer an incident.');
+        }
 
         $this->transactional(function () use ($item, $kind, $answered, $note, $by): void {
             $this->entityManager->refresh($item, LockMode::PESSIMISTIC_WRITE);
 
-            if ($item->getStatus() !== $answered->statusAfter()) {
+            if ($item->getStatus() !== $answered[0]->statusAfter()) {
                 throw new EquipmentStockException('equipmentItemStatusChangedMessage');
             }
 
@@ -188,7 +191,10 @@ final readonly class EquipmentLedger
      */
     public function resolveQuantity(EquipmentType $type, EquipmentMovementKind $kind, int $quantity, ?string $note, User $by): void
     {
-        $answered = $kind->resolves() ?? throw new \LogicException('Only Found and Repaired answer an incident.');
+        $answered = $kind->answers();
+        if ([] === $answered) {
+            throw new \LogicException('Only Found and Repaired answer an incident.');
+        }
         $this->assertQuantityType($type, $quantity);
 
         $this->transactional(function () use ($type, $kind, $answered, $quantity, $note, $by): void {
@@ -231,6 +237,51 @@ final readonly class EquipmentLedger
             $item->moveTo(EquipmentItemStatus::Disposed, null);
             $this->entityManager->persist(new EquipmentMovement($item->getType(), $item, EquipmentMovementKind::Disposed, 1, $by, null, $note));
             $this->entityManager->flush();
+        });
+    }
+
+    /**
+     * A piece the count did not find: « Disparu », through an inventory-gap line rather than a
+     * declared incident. Found later, it is answered like any missing piece.
+     */
+    public function recordItemShortage(EquipmentItem $item, \DateTimeImmutable $occurredAt, ?string $note, User $by): void
+    {
+        $this->transactional(function () use ($item, $occurredAt, $note, $by): void {
+            $this->entityManager->refresh($item, LockMode::PESSIMISTIC_WRITE);
+            $origin = $item->getStatus();
+
+            if (!$origin->isInService()) {
+                return;
+            }
+
+            $type = $item->getType();
+            $kind = EquipmentMovementKind::InventoryShortage;
+            $this->applyDelta($type, $kind->delta(1, $origin));
+            $item->moveTo(EquipmentItemStatus::Missing, null);
+            $this->entityManager->persist(new EquipmentMovement($type, $item, $kind, 1, $by, null, $note, $occurredAt, $origin));
+            $this->entityManager->flush();
+            $this->entityManager->refresh($type);
+        });
+    }
+
+    /**
+     * A quantity counted that differs from the stored one: the count wins, and the difference is
+     * written as a shortage or a surplus of the count it was found in.
+     */
+    public function recordQuantityGap(EquipmentType $type, EquipmentItemStatus $origin, int $difference, \DateTimeImmutable $occurredAt, ?string $note, User $by): void
+    {
+        if (0 === $difference) {
+            return;
+        }
+
+        $kind = $difference < 0 ? EquipmentMovementKind::InventoryShortage : EquipmentMovementKind::InventorySurplus;
+        $quantity = abs($difference);
+
+        $this->transactional(function () use ($type, $origin, $kind, $quantity, $occurredAt, $note, $by): void {
+            $this->applyDelta($type, $kind->delta($quantity, $origin));
+            $this->entityManager->persist(new EquipmentMovement($type, null, $kind, $quantity, $by, null, $note, $occurredAt, $origin));
+            $this->entityManager->flush();
+            $this->entityManager->refresh($type);
         });
     }
 

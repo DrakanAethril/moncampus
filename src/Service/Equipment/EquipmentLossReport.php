@@ -14,19 +14,21 @@ namespace App\Service\Equipment;
  * - **Value at the type's unit price.** A type with no price still counts its pieces but adds nothing
  *   to the value, and is flagged so the screen can say the figure is partial rather than guess.
  * - Kind (Disparu / Hors d'usage) is crossed with cause: « 14 disparus, dont 9 vols ».
+ * - **Inventory gaps apart.** What a count found missing (`inventory_shortage`) is a loss, counted
+ *   in the net and the value, but in its own column: nobody declared it, and it has no cause.
  *
  * Pure: the rows come from App\Repository\EquipmentMovementRepository::findIncidentRows(), so the
  * arithmetic is tested without a database.
  *
  * @phpstan-type IncidentRow array{kind: string, quantity: int, resolved: int, cause: string|null, occurredAt: \DateTimeImmutable, typeId: int, typeName: string, unitPrice: string|null, categoryName: string|null, roomName: string|null}
- * @phpstan-type Line array{label: string|null, missing: int, outOfOrder: int, net: int, value: float, unpriced: bool}
+ * @phpstan-type Line array{label: string|null, missing: int, outOfOrder: int, gap: int, net: int, value: float, unpriced: bool}
  * @phpstan-type Report array{
- *     totals: array{missing: int, outOfOrder: int, net: int, answered: int, value: float, unpriced: bool},
+ *     totals: array{missing: int, outOfOrder: int, gap: int, net: int, answered: int, value: float, unpriced: bool},
  *     byType: list<Line>,
  *     byCategory: list<Line>,
  *     byRoom: list<Line>,
  *     byCause: array<string, array<string, int>>,
- *     byMonth: list<array{month: string, missing: int, outOfOrder: int, net: int}>
+ *     byMonth: list<array{month: string, missing: int, outOfOrder: int, gap: int, net: int}>
  * }
  */
 final class EquipmentLossReport
@@ -39,7 +41,7 @@ final class EquipmentLossReport
      */
     public function build(array $rows, \DateTimeImmutable $yearStart): array
     {
-        $totals = ['missing' => 0, 'outOfOrder' => 0, 'net' => 0, 'answered' => 0, 'value' => 0.0, 'unpriced' => false];
+        $totals = ['missing' => 0, 'outOfOrder' => 0, 'gap' => 0, 'net' => 0, 'answered' => 0, 'value' => 0.0, 'unpriced' => false];
         $byType = [];
         $byCategory = [];
         $byRoom = [];
@@ -48,7 +50,7 @@ final class EquipmentLossReport
         $firstMonth = $yearStart->modify('first day of this month')->setTime(0, 0);
         $byMonth = [];
         for ($i = 0; $i < 12; ++$i) {
-            $byMonth[$firstMonth->modify(\sprintf('+%d months', $i))->format('Y-m')] = ['missing' => 0, 'outOfOrder' => 0, 'net' => 0];
+            $byMonth[$firstMonth->modify(\sprintf('+%d months', $i))->format('Y-m')] = ['missing' => 0, 'outOfOrder' => 0, 'gap' => 0, 'net' => 0];
         }
 
         foreach ($rows as $row) {
@@ -60,25 +62,31 @@ final class EquipmentLossReport
                 continue;
             }
 
-            $isMissing = 'missing' === $row['kind'];
+            $bucket = match ($row['kind']) {
+                'missing' => 'missing',
+                'inventory_shortage' => 'gap',
+                default => 'outOfOrder',
+            };
             $price = null !== $row['unitPrice'] ? (float) $row['unitPrice'] : null;
             $value = null !== $price ? $net * $price : 0.0;
 
-            $totals[$isMissing ? 'missing' : 'outOfOrder'] += $net;
+            $totals[$bucket] += $net;
             $totals['net'] += $net;
             $totals['value'] += $value;
             $totals['unpriced'] = $totals['unpriced'] || null === $price;
 
-            self::add($byType, (string) $row['typeId'], $row['typeName'], $isMissing, $net, $value, null === $price);
-            self::add($byCategory, $row['categoryName'] ?? '', $row['categoryName'], $isMissing, $net, $value, null === $price);
-            self::add($byRoom, $row['roomName'] ?? '', $row['roomName'], $isMissing, $net, $value, null === $price);
+            self::add($byType, (string) $row['typeId'], $row['typeName'], $bucket, $net, $value, null === $price);
+            self::add($byCategory, $row['categoryName'] ?? '', $row['categoryName'], $bucket, $net, $value, null === $price);
+            self::add($byRoom, $row['roomName'] ?? '', $row['roomName'], $bucket, $net, $value, null === $price);
 
-            $cause = $row['cause'] ?? 'unknown';
-            $byCause[$row['kind']][$cause] = ($byCause[$row['kind']][$cause] ?? 0) + $net;
+            if ('gap' !== $bucket) {
+                $cause = $row['cause'] ?? 'unknown';
+                $byCause[$row['kind']][$cause] = ($byCause[$row['kind']][$cause] ?? 0) + $net;
+            }
 
             $month = $row['occurredAt']->format('Y-m');
             if (isset($byMonth[$month])) {
-                $byMonth[$month][$isMissing ? 'missing' : 'outOfOrder'] += $net;
+                $byMonth[$month][$bucket] += $net;
                 $byMonth[$month]['net'] += $net;
             }
         }
@@ -104,12 +112,13 @@ final class EquipmentLossReport
     }
 
     /**
-     * @param array<string, Line> $lines
+     * @param array<string, Line>              $lines
+     * @param 'missing'|'outOfOrder'|'gap'     $bucket
      */
-    private static function add(array &$lines, string $key, ?string $label, bool $isMissing, int $net, float $value, bool $unpriced): void
+    private static function add(array &$lines, string $key, ?string $label, string $bucket, int $net, float $value, bool $unpriced): void
     {
-        $lines[$key] ??= ['label' => $label, 'missing' => 0, 'outOfOrder' => 0, 'net' => 0, 'value' => 0.0, 'unpriced' => false];
-        $lines[$key][$isMissing ? 'missing' : 'outOfOrder'] += $net;
+        $lines[$key] ??= ['label' => $label, 'missing' => 0, 'outOfOrder' => 0, 'gap' => 0, 'net' => 0, 'value' => 0.0, 'unpriced' => false];
+        $lines[$key][$bucket] += $net;
         $lines[$key]['net'] += $net;
         $lines[$key]['value'] += $value;
         $lines[$key]['unpriced'] = $lines[$key]['unpriced'] || $unpriced;

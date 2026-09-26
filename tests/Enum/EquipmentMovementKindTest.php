@@ -68,13 +68,20 @@ class EquipmentMovementKindTest extends TestCase
         self::assertEquals(new EquipmentCounterDelta(onOrder: -8), EquipmentMovementKind::OrderCancelled->delta(8));
     }
 
+    /** The count corrects whichever count it was: fewer found takes out, more found puts back. */
+    public function testAnInventoryGapCorrectsTheCountItWasFoundIn(): void
+    {
+        self::assertEquals(new EquipmentCounterDelta(available: -2), EquipmentMovementKind::InventoryShortage->delta(2, EquipmentItemStatus::Available));
+        self::assertEquals(new EquipmentCounterDelta(inUse: 3), EquipmentMovementKind::InventorySurplus->delta(3, EquipmentItemStatus::InUse));
+    }
+
     public function testOnlyTheTwoLossesAreIncidents(): void
     {
         $incidents = array_values(array_filter(EquipmentMovementKind::cases(), static fn (EquipmentMovementKind $kind): bool => $kind->isIncident()));
 
-        self::assertSame([EquipmentMovementKind::Missing, EquipmentMovementKind::OutOfOrder], $incidents);
-        self::assertSame(EquipmentMovementKind::Missing, EquipmentMovementKind::Found->resolves());
-        self::assertSame(EquipmentMovementKind::OutOfOrder, EquipmentMovementKind::Repaired->resolves());
+        self::assertSame([EquipmentMovementKind::Missing, EquipmentMovementKind::OutOfOrder], $incidents, 'an inventory gap is observed, not declared');
+        self::assertSame([EquipmentMovementKind::Missing, EquipmentMovementKind::InventoryShortage], EquipmentMovementKind::Found->answers());
+        self::assertSame([EquipmentMovementKind::OutOfOrder], EquipmentMovementKind::Repaired->answers());
     }
 
     public function testDeltasAddUp(): void

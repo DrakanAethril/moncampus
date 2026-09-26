@@ -1,0 +1,88 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set heading = 'equipmentStocktakeReviewPageHeading'|trans %}
+
+{% block title %}{{ heading }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'equipment/_breadcrumb.html.twig' with {extra: [
+        {label: 'equipmentStocktakesPageHeading'|trans, url: path('app_equipment_stocktakes')},
+        {label: 'equipmentStocktakePageHeading'|trans({'%date%': stocktake.startedAt|date('d/m/Y')}), url: path('app_equipment_stocktake_show', {id: stocktake.id})},
+        {label: heading, url: path('app_equipment_stocktake_review', {id: stocktake.id})},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ heading }}{% endblock %}
+
+{% block main %}
+    <p class="text-secondary">{{ 'equipmentStocktakeReviewHint'|trans }}</p>
+
+    <div class="row row-cards">
+        <div class="col-lg-6">
+            <div class="card mb-3">
+                <div class="card-header"><h3 class="card-title mb-0">{{ 'equipmentStocktakeMissingItemsCardTitle'|trans({'%count%': gaps.missingItems|length}) }}</h3></div>
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table">
+                        <tbody>
+                            {% for item in gaps.missingItems %}
+                                <tr>
+                                    <td class="font-monospace fw-bold">{{ item.code }}</td>
+                                    <td>{{ item.type.name }}</td>
+                                    <td>{% include 'equipment/_status_badge.html.twig' with {status: item.status} only %}</td>
+                                </tr>
+                            {% else %}
+                                <tr><td class="text-center text-secondary">{{ 'equipmentStocktakeNoMissingItemText'|trans }}</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card mb-3">
+                <div class="card-header"><h3 class="card-title mb-0">{{ 'equipmentStocktakeQuantityGapsCardTitle'|trans }}</h3></div>
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table">
+                        <thead>
+                            <tr>
+                                <th>{{ 'equipmentTypeNameFieldLabel'|trans }}</th>
+                                <th>{{ 'equipmentStocktakeWhereColumnLabel'|trans }}</th>
+                                <th class="text-end">{{ 'equipmentStocktakeRecordedColumnLabel'|trans }}</th>
+                                <th class="text-end">{{ 'equipmentStocktakeCountedColumnLabel'|trans }}</th>
+                                <th class="text-end">{{ 'equipmentStocktakeGapColumnLabel'|trans }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for gap in gaps.quantities %}
+                                <tr>
+                                    <td>{{ gap.type.name }}</td>
+                                    <td>{{ ('equipmentWhere_' ~ gap.origin.value)|trans }}</td>
+                                    <td class="text-end">{{ gap.stored }}</td>
+                                    <td class="text-end">{{ gap.counted }}</td>
+                                    <td class="text-end fw-bold {{ gap.difference < 0 ? 'text-danger' : 'text-success' }}">{{ gap.difference > 0 ? '+' }}{{ gap.difference }}</td>
+                                </tr>
+                            {% else %}
+                                <tr><td colspan="5" class="text-center text-secondary">{{ 'equipmentStocktakeNoQuantityGapText'|trans }}</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between gap-2">
+        <form method="post" action="{{ path('app_equipment_stocktake_abandon', {id: stocktake.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('equipment_stocktake') }}">
+            <button type="submit" class="btn btn-outline-secondary"
+                    data-controller="confirm-submit" data-confirm-submit-message-value="{{ 'equipmentStocktakeAbandonConfirmText'|trans }}" data-action="click->confirm-submit#confirm">{{ 'equipmentStocktakeAbandonAction'|trans }}</button>
+        </form>
+        <div class="d-flex gap-2">
+            <a href="{{ path('app_equipment_stocktake_show', {id: stocktake.id}) }}" class="btn btn-link">{{ 'equipmentStocktakeBackToCountAction'|trans }}</a>
+            <form method="post" action="{{ path('app_equipment_stocktake_close', {id: stocktake.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('equipment_stocktake') }}">
+                <button type="submit" class="btn btn-primary"
+                        data-controller="confirm-submit" data-confirm-submit-message-value="{{ 'equipmentStocktakeCloseConfirmText'|trans }}" data-action="click->confirm-submit#confirm">{{ 'equipmentStocktakeCloseAction'|trans }}</button>
+            </form>
+        </div>
+    </div>
+{% endblock %}

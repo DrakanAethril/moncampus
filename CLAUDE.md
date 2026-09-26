@@ -190,6 +190,9 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   **Disparu** or **Hors d'usage** plus a cause, and leaves the count it came from; « Retrouvé » /
   « Réparé » points at the incident it answers (`resolves`), so the annual report
   (`EquipmentLossReport`, per `SchoolYear`) takes the loss back out of the year it was declared in.
+  « À commander » (`EquipmentReorderPlanner`) counts what is on order as coming; a count
+  (`EquipmentStocktake`, closed by `EquipmentStocktakeCloser`) writes its differences as
+  *inventory-gap* lines, which the report keeps apart from declared losses.
 - **Agenda, Annonces, Listes d'inscription** — `AgendaEvent`, `Announcement`, `SignupList`; the
   first two resolve who they are for through `AudienceResolver` like `MessageThread` does.
 - **Accès aux fonctionnalités** — `App\Enum\Feature` (49 cases) + `#[RequiresFeature]` +

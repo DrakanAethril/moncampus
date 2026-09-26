@@ -1,0 +1,26 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set heading = 'equipmentStocktakePageHeading'|trans({'%date%': stocktake.startedAt|date('d/m/Y')}) %}
+
+{% block title %}{{ heading }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'equipment/_breadcrumb.html.twig' with {extra: [
+        {label: 'equipmentStocktakesPageHeading'|trans, url: path('app_equipment_stocktakes')},
+        {label: heading, url: path('app_equipment_stocktake_show', {id: stocktake.id})},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ heading }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body">
+            {% if stocktake.abandoned %}
+                <p class="mb-0">{{ 'equipmentStocktakeAbandonedText'|trans({'%date%': stocktake.closedAt|date('d/m/Y H:i')}) }}</p>
+            {% else %}
+                <p>{{ 'equipmentStocktakeClosedText'|trans({'%date%': stocktake.closedAt|date('d/m/Y H:i'), '%by%': stocktake.closedBy ? (stocktake.closedBy.displayName ?? stocktake.closedBy.username) : '—'}) }}</p>
+                <p class="mb-0">{{ 'equipmentStocktakeResultText'|trans({'%shortages%': stocktake.shortageCount, '%surpluses%': stocktake.surplusCount}) }}</p>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
