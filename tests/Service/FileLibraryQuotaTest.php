@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Service;
 
 use App\Entity\User;
-use App\Repository\FileLibraryNodeRepository;
 use App\Service\ByteSize;
 use App\Service\FileLibraryQuota;
 use PHPUnit\Framework\TestCase;
@@ -20,6 +19,9 @@ use PHPUnit\Framework\TestCase;
 class FileLibraryQuotaTest extends TestCase
 {
     private const int GIGABYTE = 1024 ** 3;
+
+    /** What the next user() weighs - the usage lives on the account since it is stored. */
+    private int $usedBytes = 0;
 
     public function testAnAccountWithNoOverrideGetsThePlatformDefault(): void
     {
@@ -86,12 +88,12 @@ class FileLibraryQuotaTest extends TestCase
 
     public function testTheDefaultIsReadFromConfigurationAndNotFrozenInCode(): void
     {
-        $quota = new FileLibraryQuota($this->nodes(0), '2 Go');
+        $quota = new FileLibraryQuota('2 Go');
 
         self::assertSame(2 * self::GIGABYTE, $quota->defaultBytes());
         // And an unreadable setting falls back to the documented 1 Go rather than to zero, which
         // would refuse every upload on the platform.
-        self::assertSame(self::GIGABYTE, (new FileLibraryQuota($this->nodes(0), 'nonsense'))->defaultBytes());
+        self::assertSame(self::GIGABYTE, (new FileLibraryQuota('nonsense'))->defaultBytes());
     }
 
     public function testByteSizeReadsWhatAnAdminTypesAndWritesWhatAScreenShows(): void
@@ -111,19 +113,16 @@ class FileLibraryQuotaTest extends TestCase
 
     private function quota(int $usedBytes): FileLibraryQuota
     {
-        return new FileLibraryQuota($this->nodes($usedBytes), '1G');
-    }
+        $this->usedBytes = $usedBytes;
 
-    private function nodes(int $usedBytes): FileLibraryNodeRepository
-    {
-        $nodes = $this->createStub(FileLibraryNodeRepository::class);
-        $nodes->method('usedBytes')->willReturn($usedBytes);
-
-        return $nodes;
+        return new FileLibraryQuota('1G');
     }
 
     private function user(?int $quotaBytes): User
     {
-        return (new User('quota.tester'))->setFileLibraryQuotaBytes($quotaBytes);
+        $user = (new User('quota.tester'))->setFileLibraryQuotaBytes($quotaBytes);
+        $user->mirrorFileLibraryUsedBytes($this->usedBytes);
+
+        return $user;
     }
 }

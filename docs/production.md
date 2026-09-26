@@ -476,6 +476,7 @@ display. Since 2026-09-26:
 | `equipment_stock` | each Gestion > Matériel type: available, in use, on order | the equipment journal |
 | `survey_responses` | each survey campaign: targeted, responded | `survey_target` |
 | `signup_registrations` | each sign-up list: registrations | `signup_list_registration` |
+| `file_library_usage` | each account: what its file library weighs | the live files of `file_library_node` |
 
 **The counters are right without it.** Each one moves in real time, in the same transaction as what
 changes it; this pass is the safety net, not the mechanism. That is also why a correction is never

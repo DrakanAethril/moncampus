@@ -193,6 +193,13 @@ class User implements UserInterface
     #[ORM\Column(name: 'file_library_quota_bytes', type: Types::BIGINT, nullable: true)]
     private ?int $fileLibraryQuotaBytes = null;
 
+    // What the library weighs today: the live files' sizes, summed. Stored rather than summed on
+    // every library screen, and never written by the ORM - App\Service\FileLibraryUsageCounter moves
+    // it inside the flush that adds, trashes, restores, replaces or removes a file, and recomputes
+    // it at night.
+    #[ORM\Column(name: 'file_library_used_bytes', type: Types::BIGINT, insertable: false, updatable: false, options: ['default' => 0])]
+    private int|string $fileLibraryUsedBytes = 0;
+
     // S3 object key under the "avatars/" prefix (see App\Service\FileUploadService), not a URL -
     // keeps the bucket/CloudFront domain changeable without a data migration.
     #[ORM\Column(name: 'avatar_key', length: 255, nullable: true)]
@@ -590,6 +597,17 @@ class User implements UserInterface
         $this->fileLibraryQuotaBytes = $fileLibraryQuotaBytes;
 
         return $this;
+    }
+
+    public function getFileLibraryUsedBytes(): int
+    {
+        return (int) $this->fileLibraryUsedBytes;
+    }
+
+    /** Memory only - keeps the loaded account in step with what FileLibraryUsageCounter has just written. */
+    public function mirrorFileLibraryUsedBytes(int $delta): void
+    {
+        $this->fileLibraryUsedBytes = $this->getFileLibraryUsedBytes() + $delta;
     }
 
     public function getAvatarKey(): ?string
