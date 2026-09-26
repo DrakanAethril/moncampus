@@ -1,0 +1,109 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set heading = 'equipmentStocktakePageHeading'|trans({'%date%': stocktake.startedAt|date('d/m/Y')}) %}
+
+{% block title %}{{ heading }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'equipment/_breadcrumb.html.twig' with {extra: [
+        {label: 'equipmentStocktakesPageHeading'|trans, url: path('app_equipment_stocktakes')},
+        {label: heading, url: path('app_equipment_stocktake_show', {id: stocktake.id})},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ heading }}{% endblock %}
+{% block page_actions %}
+    <a href="{{ path('app_equipment_stocktake_review', {id: stocktake.id}) }}" class="btn btn-primary">{{ 'equipmentStocktakeReviewAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    <div class="text-secondary mb-3" style="margin-top: -8px;">
+        {{ stocktake.category ? stocktake.category.name : 'equipmentAllCategoriesLabel'|trans }}
+        · {{ (stocktake.includesInUse ? 'equipmentStocktakeScopeWithRoomsText' : 'equipmentStocktakeScopeReserveText')|trans }}
+    </div>
+
+    {# The code of the piece in hand, typed as it reads on its label - focused on load, so a count
+       is type, Enter, next piece. #}
+    <div class="card mb-3">
+        <form method="post" action="{{ path('app_equipment_stocktake_scan', {id: stocktake.id}) }}" class="card-body d-flex gap-2 align-items-end flex-wrap">
+            <input type="hidden" name="_token" value="{{ csrf_token('equipment_stocktake') }}">
+            <div class="flex-grow-1" style="min-width: 240px">
+                <label class="form-label" for="stocktake-code">{{ 'equipmentStocktakeCodeLabel'|trans }}</label>
+                <input type="text" id="stocktake-code" name="code" class="form-control form-control-lg font-monospace" placeholder="CA-0142-0" autocomplete="off" autofocus>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg">{{ 'equipmentStocktakeFoundAction'|trans }}</button>
+            <div class="w-100 text-secondary small">{{ 'equipmentStocktakeProgressText'|trans({'%found%': foundCount, '%expected%': expectedCount}) }}</div>
+        </form>
+    </div>
+
+    {% for group in unitGroups %}
+        <div class="card mb-3" id="type-{{ group.type.id }}">
+            <div class="card-header"><h3 class="card-title mb-0">{{ group.type.name }}</h3></div>
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <tbody>
+                        {% for item in group.items %}
+                            {% set isFound = found[item.id] is defined %}
+                            <tr>
+                                <td style="width: 180px" class="font-monospace fw-bold">{{ item.code }}</td>
+                                <td>{% include 'equipment/_status_badge.html.twig' with {status: item.status} only %}{% if item.room %} <span class="text-secondary">{{ item.room.name }}</span>{% endif %}</td>
+                                <td class="text-end">
+                                    <form method="post" action="{{ path('app_equipment_stocktake_toggle', {id: stocktake.id, itemId: item.id}) }}" class="d-inline">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('equipment_stocktake') }}">
+                                        <button type="submit" class="btn btn-sm {{ isFound ? 'btn-success' : 'btn-outline-secondary' }}">
+                                            {{ (isFound ? 'equipmentStocktakeFoundBadge' : 'equipmentStocktakeNotYetFoundBadge')|trans }}
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endfor %}
+
+    {% if quantityTypes is not empty %}
+        <div class="card mb-3">
+            <div class="card-header"><h3 class="card-title mb-0">{{ 'equipmentStocktakeQuantitiesCardTitle'|trans }}</h3></div>
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'equipmentTypeNameFieldLabel'|trans }}</th>
+                            <th>{{ 'equipmentStocktakeCountedAvailableLabel'|trans }}</th>
+                            {% if stocktake.includesInUse %}<th>{{ 'equipmentStocktakeCountedInUseLabel'|trans }}</th>{% endif %}
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for type in quantityTypes %}
+                            {% set line = counts[type.id] ?? null %}
+                            {% set formId = 'count-' ~ type.id %}
+                            <tr id="type-{{ type.id }}">
+                                <td>
+                                    <strong>{{ type.name }}</strong>
+                                    <div class="text-secondary small">{{ 'equipmentStocktakeRecordedText'|trans({'%available%': type.availableCount, '%inUse%': type.inUseCount}) }}</div>
+                                </td>
+                                <td><input form="{{ formId }}" type="number" min="0" name="available" class="form-control" style="max-width: 120px" value="{{ line ? line.countedAvailable : '' }}" aria-label="{{ 'equipmentStocktakeCountedAvailableLabel'|trans }}"></td>
+                                {% if stocktake.includesInUse %}
+                                    <td><input form="{{ formId }}" type="number" min="0" name="inUse" class="form-control" style="max-width: 120px" value="{{ line ? line.countedInUse : '' }}" aria-label="{{ 'equipmentStocktakeCountedInUseLabel'|trans }}"></td>
+                                {% endif %}
+                                <td class="text-end">
+                                    <form id="{{ formId }}" method="post" action="{{ path('app_equipment_stocktake_count', {id: stocktake.id, typeId: type.id}) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('equipment_stocktake') }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-primary">{{ 'submitSaveAction'|trans }}</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer text-secondary small">{{ 'equipmentStocktakeBlankIsNotZeroText'|trans }}</div>
+        </div>
+    {% endif %}
+
+    {% if unitGroups is empty and quantityTypes is empty %}
+        <div class="card"><div class="card-body text-center text-secondary">{{ 'equipmentStocktakeNothingToCountText'|trans }}</div></div>
+    {% endif %}
+{% endblock %}

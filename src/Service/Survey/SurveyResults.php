@@ -8,7 +8,6 @@ use App\Entity\SurveyCampaign;
 use App\Entity\SurveyCampaignQuestion;
 use App\Entity\SurveyResponse;
 use App\Repository\SurveyResponseRepository;
-use App\Repository\SurveyTargetRepository;
 use Doctrine\DBAL\Connection;
 
 /**
@@ -34,7 +33,6 @@ class SurveyResults
 
     public function __construct(
         private readonly Connection $connection,
-        private readonly SurveyTargetRepository $targets,
         private readonly SurveyResponseRepository $responses,
     ) {
     }
@@ -57,7 +55,7 @@ class SurveyResults
 
         $counts = $this->countsByAnswer($questionIds);
         $answeredPerQuestion = $this->answeredPerQuestion($questionIds);
-        $targeted = $this->targets->countFor($campaign);
+        $targeted = $campaign->getTargetedCount();
 
         $results = [];
         foreach ($questions as $question) {
@@ -179,10 +177,12 @@ class SurveyResults
      */
     public function responseRate(SurveyCampaign $campaign): array
     {
-        $rate = $this->targets->responseRate($campaign);
-        $percent = $rate['targeted'] > 0 ? $rate['responded'] * 100 / $rate['targeted'] : 0.0;
+        // Stored on the campaign (App\Service\Survey\SurveyCampaignCounters), not counted here.
+        $targeted = $campaign->getTargetedCount();
+        $responded = $campaign->getRespondedCount();
+        $percent = $targeted > 0 ? $responded * 100 / $targeted : 0.0;
 
-        return ['targeted' => $rate['targeted'], 'responded' => $rate['responded'], 'percent' => $percent];
+        return ['targeted' => $targeted, 'responded' => $responded, 'percent' => $percent];
     }
 
     /**

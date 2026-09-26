@@ -1,0 +1,117 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'equipmentStockPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'equipment/_breadcrumb.html.twig' with {extra: [
+        {label: 'equipmentStockPageHeading'|trans, url: path('app_equipment')},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'equipmentStockPageHeading'|trans }}{% endblock %}
+{% block page_actions %}
+    <a href="{{ path('app_equipment_type_new') }}" class="btn btn-primary">{{ 'equipmentTypeNewAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    {% set totalAvailable = 0 %}
+    {% set totalInUse = 0 %}
+    {% set alertCount = 0 %}
+    {% for type in types %}
+        {% set totalAvailable = totalAvailable + type.availableCount %}
+        {% set totalInUse = totalInUse + type.inUseCount %}
+        {% if type.stockLevel != 'green' %}{% set alertCount = alertCount + 1 %}{% endif %}
+    {% endfor %}
+
+    <div class="cm-statgrid mb-3">
+        <div class="cm-stat">
+            <span class="cm-stat__value">{{ types|length }}</span>
+            <span class="cm-stat__label">{{ 'equipmentStatTypesLabel'|trans }}</span>
+        </div>
+        <div class="cm-stat">
+            <span class="cm-stat__value">{{ totalAvailable }}</span>
+            <span class="cm-stat__label">{{ 'equipmentStatAvailableLabel'|trans }}</span>
+        </div>
+        <div class="cm-stat">
+            <span class="cm-stat__value">{{ totalInUse }}</span>
+            <span class="cm-stat__label">{{ 'equipmentStatInUseLabel'|trans }}</span>
+        </div>
+        <div class="cm-stat">
+            <span class="cm-stat__value">{{ alertCount }}</span>
+            <span class="cm-stat__label">{{ 'equipmentStatAlertsLabel'|trans }}</span>
+            <span class="cm-stat__hint">{{ 'equipmentStatAlertsHint'|trans }}</span>
+        </div>
+    </div>
+
+    {% if unlabeledCount > 0 %}
+        <div class="alert alert-info d-flex align-items-center justify-content-between">
+            <span>{{ 'equipmentUnlabeledNoticeText'|trans({'%count%': unlabeledCount}) }}</span>
+            <a href="{{ path('app_equipment_labels') }}" class="btn btn-sm btn-outline-primary">{{ 'equipmentLabelsNavLabel'|trans }}</a>
+        </div>
+    {% endif %}
+
+    <div class="card">
+        <form method="get" action="{{ path('app_equipment') }}" class="cm-filterbar" data-controller="auto-submit">
+            <label class="cm-filterbar__field">
+                {{ 'equipmentTypeCategoryFieldLabel'|trans }}
+                <select name="category" class="cm-filterbar__select {{ category ? '' : 'cm-filterbar__select--any' }}" data-action="change->auto-submit#submit">
+                    <option value="">{{ 'equipmentAllCategoriesLabel'|trans }}</option>
+                    {% for oneCategory in categories %}
+                        <option value="{{ oneCategory.id }}"{{ category and category.id == oneCategory.id ? ' selected' }}>{{ oneCategory.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label class="cm-filterbar__check">
+                <input type="checkbox" name="alerts" value="1"{{ alertsOnly ? ' checked' }} data-action="change->auto-submit#submit">
+                {{ 'equipmentAlertsOnlyFilterLabel'|trans }}
+            </label>
+            {# A label code typed here opens the piece (StockController::index()); anything else
+               narrows the list by name, brand or model. #}
+            <span class="cm-filterbar__search">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="flex: none;" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
+                <input type="search" name="q" value="{{ search }}" aria-label="{{ 'equipmentSearchLabel'|trans }}" placeholder="{{ 'equipmentSearchPlaceholder'|trans }}" data-action="change->auto-submit#submit">
+            </span>
+        </form>
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table table-striped">
+                <thead>
+                    <tr>
+                        <th>{{ 'equipmentTypeNameFieldLabel'|trans }}</th>
+                        <th>{{ 'equipmentTypeCategoryFieldLabel'|trans }}</th>
+                        <th>{{ 'equipmentTrackingColumnLabel'|trans }}</th>
+                        <th class="text-end">{{ 'equipmentAvailableColumnLabel'|trans }}</th>
+                        <th class="text-end">{{ 'equipmentInUseColumnLabel'|trans }}</th>
+                        <th class="text-end">{{ 'equipmentOnOrderColumnLabel'|trans }}</th>
+                        <th>{{ 'equipmentTypeLocationFieldLabel'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for type in types %}
+                        <tr>
+                            <td>
+                                <a href="{{ path('app_equipment_type_show', {id: type.id}) }}"><strong>{{ type.name }}</strong></a>
+                                {% if type.brand or type.model %}<div class="text-secondary small">{{ [type.brand, type.model]|filter(v => v)|join(' ') }}</div>{% endif %}
+                            </td>
+                            <td>{{ type.category ? type.category.name : '—' }}</td>
+                            <td>{{ (type.unitTracked ? 'equipmentTrackingUnitLabel' : 'equipmentTrackingQuantityLabel')|trans }}</td>
+                            <td class="text-end">
+                                <span class="cm-badge cm-badge--{{ type.stockLevel }}" title="{{ type.alertThreshold is not null ? 'equipmentAlertThresholdTitle'|trans({'%threshold%': type.alertThreshold}) : '' }}">{{ type.availableCount }}</span>
+                            </td>
+                            <td class="text-end">{{ type.inUseCount }}</td>
+                            <td class="text-end">{{ type.onOrderCount ?: '—' }}</td>
+                            <td>{{ type.location ? type.location.name : '—' }}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="7" class="text-center text-secondary">{{ 'equipmentNoTypeText'|trans }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer d-flex justify-content-between align-items-center">
+            <span class="text-secondary small">{{ 'equipmentCountersFootnote'|trans }}</span>
+            <form method="post" action="{{ path('app_equipment_recompute') }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('equipment_recompute') }}">
+                <button type="submit" class="btn btn-sm btn-outline-secondary">{{ 'equipmentRecomputeAllAction'|trans }}</button>
+            </form>
+        </div>
+    </div>
+{% endblock %}

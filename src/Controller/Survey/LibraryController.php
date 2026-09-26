@@ -16,7 +16,6 @@ use App\Form\Survey\SurveyTemplateType;
 use App\Repository\SurveyCampaignRepository;
 use App\Repository\SurveyFolderRepository;
 use App\Repository\SurveySeriesRepository;
-use App\Repository\SurveyTargetRepository;
 use App\Repository\SurveyTemplateRepository;
 use App\Security\StructureAccessChecker;
 use App\Security\Voter\SurveyVoter;
@@ -63,12 +62,11 @@ class LibraryController extends AbstractController
     public function templates(
         SurveyTemplateRepository $repository,
         SurveyCampaignRepository $campaigns,
-        SurveyTargetRepository $targets,
         SurveyFolderRepository $folders,
         SurveyFolderTree $tree,
         StructureAccessChecker $accessChecker,
     ): Response {
-        return $this->browse(null, $repository, $campaigns, $targets, $folders, $tree, $accessChecker);
+        return $this->browse(null, $repository, $campaigns, $folders, $tree, $accessChecker);
     }
 
     #[Route(path: '/surveys/templates/folder/{folderId}', name: 'app_surveys_templates_folder', requirements: ['folderId' => '\d+'], methods: ['GET'])]
@@ -76,12 +74,11 @@ class LibraryController extends AbstractController
         int $folderId,
         SurveyTemplateRepository $repository,
         SurveyCampaignRepository $campaigns,
-        SurveyTargetRepository $targets,
         SurveyFolderRepository $folders,
         SurveyFolderTree $tree,
         StructureAccessChecker $accessChecker,
     ): Response {
-        return $this->browse($this->loadFolder($folders, $folderId), $repository, $campaigns, $targets, $folders, $tree, $accessChecker);
+        return $this->browse($this->loadFolder($folders, $folderId), $repository, $campaigns, $folders, $tree, $accessChecker);
     }
 
     /**
@@ -95,7 +92,6 @@ class LibraryController extends AbstractController
         Request $request,
         SurveyTemplateRepository $repository,
         SurveyCampaignRepository $campaigns,
-        SurveyTargetRepository $targets,
         SurveyFolderRepository $folders,
         SurveyFolderTree $tree,
         StructureAccessChecker $accessChecker,
@@ -106,7 +102,7 @@ class LibraryController extends AbstractController
 
         return $this->render('survey/templates_search.html.twig', [
             'tabs' => $this->surveyTabs('app_surveys_templates', $repository->countForOwner($author), $campaigns->countLaunched($owner)),
-            'headline' => $this->headline($campaigns, $targets, $owner),
+            'headline' => $this->headline($campaigns, $owner),
             'terms' => $terms,
             'templates' => '' === $terms ? [] : $repository->searchByName($author, $terms),
             'rail' => $this->railTree($folders, $tree, $author),
@@ -118,7 +114,6 @@ class LibraryController extends AbstractController
         ?SurveyFolder $folder,
         SurveyTemplateRepository $repository,
         SurveyCampaignRepository $campaigns,
-        SurveyTargetRepository $targets,
         SurveyFolderRepository $folders,
         SurveyFolderTree $tree,
         StructureAccessChecker $accessChecker,
@@ -128,7 +123,7 @@ class LibraryController extends AbstractController
 
         return $this->render('survey/templates.html.twig', [
             'tabs' => $this->surveyTabs('app_surveys_templates', $repository->countForOwner($author), $campaigns->countLaunched($owner)),
-            'headline' => $this->headline($campaigns, $targets, $owner),
+            'headline' => $this->headline($campaigns, $owner),
             'currentFolder' => $folder,
             'ancestors' => $this->ancestorsOf($folders, $folder),
             // Folders first, then models - two lists rather than one sorted set: a folder is a place
@@ -158,7 +153,6 @@ class LibraryController extends AbstractController
         SurveySeriesRepository $seriesRepository,
         SurveyTemplateRepository $templateRepository,
         SurveyCampaignRepository $campaignRepository,
-        SurveyTargetRepository $targets,
         StructureAccessChecker $accessChecker,
     ): Response {
         $owner = $accessChecker->isStaff() ? null : $this->currentUser();
@@ -173,7 +167,7 @@ class LibraryController extends AbstractController
             foreach ($oneSeries->getCampaigns() as $campaign) {
                 $id = $campaign->getId();
                 if (null !== $id) {
-                    $rates[$id] = $targets->responseRate($campaign);
+                    $rates[$id] = $campaign->responseCounts();
                 }
             }
         }
@@ -186,7 +180,7 @@ class LibraryController extends AbstractController
             ),
             'series' => $series,
             'rates' => $rates,
-            'headline' => $this->headline($campaignRepository, $targets, $owner),
+            'headline' => $this->headline($campaignRepository, $owner),
         ]);
     }
 
@@ -196,13 +190,13 @@ class LibraryController extends AbstractController
      *
      * @return array{open: int, awaitingReminder: int}
      */
-    private function headline(SurveyCampaignRepository $campaigns, SurveyTargetRepository $targets, ?\App\Entity\User $owner): array
+    private function headline(SurveyCampaignRepository $campaigns, ?\App\Entity\User $owner): array
     {
         $open = $campaigns->findOpenFor($owner);
         $awaiting = 0;
 
         foreach ($open as $campaign) {
-            $rate = $targets->responseRate($campaign);
+            $rate = $campaign->responseCounts();
             if ($rate['targeted'] > $rate['responded']) {
                 ++$awaiting;
             }

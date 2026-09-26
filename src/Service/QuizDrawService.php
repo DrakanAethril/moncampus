@@ -29,6 +29,11 @@ use App\Enum\QuizMode;
  */
 class QuizDrawService
 {
+    public function __construct(
+        private readonly QuizDifficultyDistributionResolver $difficultyResolver,
+    ) {
+    }
+
     /** @return list<QuizInstanceQuestion> already in this attempt's presentation order */
     public function drawQuestions(QuizAttempt $attempt): array
     {
@@ -38,6 +43,13 @@ class QuizDrawService
         $selectionSeed = (QuizMode::Entrainement === $instance->getMode() || !$instance->isSameQuestionsForAll())
             ? $attempt->getShuffleSeed()
             : $instance->getId();
+
+        $orderSeed = $instance->isQuestionOrderPerStudent() ? $attempt->getShuffleSeed() : $instance->getId();
+
+        $shares = $instance->getPoolShares();
+        if (null !== $shares) {
+            return $this->sortDeterministic($this->drawByShares($instance, $pool, $shares, (int) $selectionSeed), $orderSeed, 'order');
+        }
 
         $byDifficulty = [
             'facile' => [],
@@ -69,9 +81,111 @@ class QuizDrawService
             $selected = [...$selected, ...$this->pickDeterministic($remaining, $shortfall, $selectionSeed, 'select-fallback')];
         }
 
-        $orderSeed = $instance->isQuestionOrderPerStudent() ? $attempt->getShuffleSeed() : $instance->getId();
-
         return $this->sortDeterministic($selected, $orderSeed, 'order');
+    }
+
+    /**
+     * The draw of a merged launch whose quizzes were given their own share (« Part du quiz »,
+     * App\Service\QuizPoolShares). A separate path rather than a generalisation of the one above:
+     * that one must keep drawing, for every instance launched before shares existed, exactly the
+     * questions it always drew - the draw is recomputed on every read, never stored.
+     *
+     * Each shared quiz provides its frozen count, split over the difficulty levels in the
+     * instance's own proportions; the quizzes without a share then provide the rest, taking the
+     * levels the shared ones did not already cover. When a quiz lacks a level, its quota is
+     * completed from its other levels, never from another quiz: the share is what the teacher
+     * typed, the difficulty curve is a preference.
+     *
+     * @param list<QuizInstanceQuestion>                   $pool
+     * @param list<array{percent: int, count: int}|null> $shares
+     *
+     * @return list<QuizInstanceQuestion>
+     */
+    private function drawByShares(QuizInstance $instance, array $pool, array $shares, int $seed): array
+    {
+        $wanted = [
+            'facile' => $instance->getDifficultyFacileCount(),
+            'moyen' => $instance->getDifficultyMoyenCount(),
+            'difficile' => $instance->getDifficultyDifficileCount(),
+        ];
+
+        $groups = [];
+        $free = [];
+        foreach ($pool as $question) {
+            $index = $question->getPoolIndex();
+            if (null !== ($shares[$index] ?? null)) {
+                $groups[$index][] = $question;
+            } else {
+                $free[] = $question;
+            }
+        }
+
+        $selected = [];
+        foreach ($shares as $index => $share) {
+            if (null === $share) {
+                continue;
+            }
+            $levels = $this->difficultyResolver->resolveCounts(
+                $instance->getDifficultyFacilePercent(),
+                $instance->getDifficultyMoyenPercent(),
+                $instance->getDifficultyDifficilePercent(),
+                $share['count'],
+            );
+            $selected = [...$selected, ...$this->pickByLevel($groups[$index] ?? [], $levels, $share['count'], $seed, 'share-'.$index)];
+        }
+
+        $taken = ['facile' => 0, 'moyen' => 0, 'difficile' => 0];
+        foreach ($selected as $question) {
+            ++$taken[$question->getEffectiveDifficulty()->value];
+        }
+        $rest = max(0, $instance->getQuestionCount() - \count($selected));
+        $restLevels = array_map(static fn (int $count): int => max(0, $count), [
+            'facile' => $wanted['facile'] - $taken['facile'],
+            'moyen' => $wanted['moyen'] - $taken['moyen'],
+            'difficile' => $wanted['difficile'] - $taken['difficile'],
+        ]);
+        $selected = [...$selected, ...$this->pickByLevel($free, $restLevels, $rest, $seed, 'rest')];
+
+        // Only reachable when the pool no longer matches its shares - the launch refuses a share its
+        // quiz cannot fill. Under-drawing would still be the worse answer.
+        $shortfall = $instance->getQuestionCount() - \count($selected);
+        if ($shortfall > 0) {
+            $remaining = array_values(array_filter($pool, static fn (QuizInstanceQuestion $question): bool => !\in_array($question, $selected, true)));
+            $selected = [...$selected, ...$this->pickDeterministic($remaining, $shortfall, $seed, 'share-fallback')];
+        }
+
+        return $selected;
+    }
+
+    /**
+     * $total questions out of $questions, $levels of each difficulty as far as the questions allow,
+     * the rest taken from whatever is left - and never more than $total.
+     *
+     * @param list<QuizInstanceQuestion>                         $questions
+     * @param array{facile: int, moyen: int, difficile: int} $levels
+     *
+     * @return list<QuizInstanceQuestion>
+     */
+    private function pickByLevel(array $questions, array $levels, int $total, int $seed, string $salt): array
+    {
+        $byLevel = ['facile' => [], 'moyen' => [], 'difficile' => []];
+        foreach ($questions as $question) {
+            $byLevel[$question->getEffectiveDifficulty()->value][] = $question;
+        }
+
+        $picked = [];
+        foreach ($levels as $level => $count) {
+            $count = min($count, $total - \count($picked));
+            $picked = [...$picked, ...$this->pickDeterministic($byLevel[$level], $count, $seed, $salt.'-'.$level)];
+        }
+
+        $shortfall = $total - \count($picked);
+        if ($shortfall > 0) {
+            $remaining = array_values(array_filter($questions, static fn (QuizInstanceQuestion $question): bool => !\in_array($question, $picked, true)));
+            $picked = [...$picked, ...$this->pickDeterministic($remaining, $shortfall, $seed, $salt.'-fallback')];
+        }
+
+        return $picked;
     }
 
     /** @return list<QuizInstanceAnswer> in this attempt's presentation order for $question */

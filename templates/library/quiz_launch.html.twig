@@ -2,8 +2,8 @@
 
 {# Screen 1c, the two ways in. `quizTemplate` is the quiz the page is about when the launch was
    started from the library; it is null when the screen was opened from « Quiz par classes » with
-   no quiz in mind, and the quiz is then the form's own first field. Everything else - the merge
-   rows, the draw, the rules - is one screen, deliberately (App\Controller\QuizLibraryController). #}
+   no quiz in mind, and the quiz is then the first row of the question pool. Everything else - the
+   merge rows, the draw, the rules - is one screen, deliberately (App\Controller\QuizLibraryController). #}
 {% set launchHeading = quizTemplate ? 'quizLaunchPageHeadingTemplate'|trans({'%name%': quizTemplate.name}) : 'quizLaunchPageHeading'|trans %}
 
 {% block title %}{{ launchHeading }}{% endblock %}
@@ -50,11 +50,22 @@
                     target, exactly as on Outils > Concours live. #}
                  data-quiz-pool-base-count-value="{{ quizTemplate ? quizTemplate.questions|length : 0 }}"
                  data-quiz-pool-base-default-count-value="{{ quizTemplate ? min(quizTemplate.defaultQuestionCount, quizTemplate.questions|length) : 0 }}"
+                 {# A form sent back with an error keeps the number the teacher typed: the pool
+                    announcing itself on load must not put the default back over it. #}
+                 data-quiz-launch-count-touched-value="{{ form.vars.submitted ? 'true' : 'false' }}"
                  data-quiz-launch-defaults-value="{{ launchDefaultsByTemplate|json_encode(constant('JSON_FORCE_OBJECT')) }}"
                  {# JSON_FORCE_OBJECT: a map of identifiers whose first key were 0 would be encoded as
                     an array, and the controller reads it by identifier. #}
                  data-quiz-pool-counts-value="{{ questionCountsByTemplate|json_encode(constant('JSON_FORCE_OBJECT')) }}"
                  data-quiz-pool-prototype-value="{{ include('library/_quiz_pool_row.html.twig', {entry: form.additionalTemplates.vars.prototype})|e('html_attr') }}"
+                 data-quiz-pool-share-labels-value="{{ {
+                     quota: 'quizLaunchShareQuotaTemplate'|trans,
+                     rest: 'quizLaunchShareRestTemplate'|trans,
+                     overflow: 'quizLaunchShareOverflowError'|trans,
+                     incomplete: 'quizLaunchShareIncompleteError'|trans,
+                     tooLarge: 'quizLaunchShareTooLargeError'|trans,
+                     restTooLarge: 'quizLaunchShareRestTooLargeError'|trans,
+                 }|json_encode }}"
                  data-quiz-launch-labels-value="{{ {
                      quizDifficultyZoneTresFacileLabel: 'quizDifficultyZoneTresFacileLabel'|trans,
                      quizDifficultyZonePlutotFacileLabel: 'quizDifficultyZonePlutotFacileLabel'|trans,
@@ -71,39 +82,6 @@
                      noteAnswerOrderPerStudent: 'quizLaunchNoteAnswerOrderPerStudentText'|trans,
                      noteAnswerOrderSame: 'quizLaunchNoteAnswerOrderSameText'|trans,
                  }|json_encode }}">
-                {% if quizTemplate is null %}
-                    {# Step one, and the only question this screen asks that the library's own
-                       launch already knows the answer to. Above the two columns rather than inside
-                       one: everything below is read against it - the pool, the ceiling of the draw,
-                       and the quiz's own defaults, which quiz_launch_controller.js applies here the
-                       way the library hands them over there. #}
-                    <div class="col-12">
-                        <div class="cm-subhead">
-                            <div class="cm-subhead__title">{{ 'quizLaunchTemplateTitle'|trans }}</div>
-                            <div class="cm-subhead__hint">{{ 'quizLaunchTemplateHint'|trans }}</div>
-                        </div>
-                        {% if form.template.vars.choices is empty %}
-                            <div class="cm-note mt-2">
-                                <span class="cm-note__icon">i</span>
-                                <div>{{ 'quizLaunchEmptyLibraryMessage'|trans }} <a href="{{ path('app_library_quiz') }}">{{ 'quizLibraryPageHeading'|trans }}</a></div>
-                            </div>
-                        {% endif %}
-                        <div class="mt-2" style="max-width: 420px;">
-                            {# The field is the select the picker writes into; the errors are its
-                               own, and they are rendered here because the widget itself is not
-                               visible - an empty choice must still say so somewhere. #}
-                            {{ form_errors(form.template) }}
-                            {% include '_library_picker_field.html.twig' with {
-                                field: form.template,
-                                placeholder: 'quizLaunchAdditionalTemplatePlaceholder'|trans,
-                                select_attr: {
-                                    'data-quiz-pool-target': 'select',
-                                    'data-action': 'change->quiz-pool#update change->quiz-launch#baseChanged',
-                                },
-                            } only %}
-                        </div>
-                    </div>
-                {% endif %}
                 <div class="col-12 col-lg-6 d-flex flex-column gap-3">
                     <div class="cm-subhead">
                         <div class="cm-subhead__title">{{ 'quizLaunchModeAndClassTitle'|trans }}</div>
@@ -170,11 +148,41 @@
                            removed: it is the size of the merged pool, not that of the quiz launched. #}
                         <div class="cm-subhead__hint">{{ 'quizLaunchQuestionSelectionHintTemplate'|trans({'%count%': '<span data-quiz-pool-target="total">' ~ (quizTemplate ? quizTemplate.questions|length : 0) ~ '</span>'})|raw }}</div>
                     </div>
+                    {# Every quiz of the launch is chosen here, the base one included: the first row
+                       is the quiz the launch started from - fixed when the screen was opened from
+                       the library, picked on the spot otherwise - and the rows below join its pool.
+                       Each may be given its share of the draw once there are two (« Part du quiz »). #}
+                    {% set split = form.additionalTemplates|length > 0 %}
                     <div class="cm-quizpool">
                         {% if quizTemplate %}
-                            <div class="cm-quizpool__base">
+                            <div class="cm-quizpool__base" data-quiz-pool-entry data-questions="{{ quizTemplate.questions|length }}">
                                 <span class="cm-quizpool__name">{{ quizTemplate.name }}</span>
                                 <span class="cm-quizpool__count">{{ quizTemplate.questions|length }} {{ 'quizQuestionsCountLabel'|trans }}</span>
+                                {{ include('library/_quiz_pool_share.html.twig', {field: form.baseShare, split: split}) }}
+                            </div>
+                        {% else %}
+                            {% if form.template.vars.choices is empty %}
+                                <div class="cm-note">
+                                    <span class="cm-note__icon">i</span>
+                                    <div>{{ 'quizLaunchEmptyLibraryMessage'|trans }} <a href="{{ path('app_library_quiz') }}">{{ 'quizLibraryPageHeading'|trans }}</a></div>
+                                </div>
+                            {% endif %}
+                            {# The field is the select the picker writes into; its errors are rendered
+                               here because the widget itself is not visible - an empty choice must
+                               still say so somewhere. It is one more `select` of the pool, and the
+                               quiz's own defaults follow it (quiz_launch_controller.js#baseChanged). #}
+                            {{ form_errors(form.template) }}
+                            <div class="cm-quizpool__row" data-quiz-pool-entry>
+                                {% include '_library_picker_field.html.twig' with {
+                                    field: form.template,
+                                    placeholder: 'quizLaunchAdditionalTemplatePlaceholder'|trans,
+                                    select_attr: {
+                                        'data-quiz-pool-target': 'select',
+                                        'data-action': 'change->quiz-pool#update change->quiz-launch#baseChanged',
+                                    },
+                                } only %}
+                                {{ include('library/_quiz_pool_share.html.twig', {field: form.baseShare, split: split}) }}
+                                <span class="cm-quizpool__remove-slot" aria-hidden="true"></span>
                             </div>
                         {% endif %}
                         <div class="cm-quizpool__rows" data-quiz-pool-target="rows">
@@ -182,15 +190,27 @@
                                 {{ include('library/_quiz_pool_row.html.twig', {entry: entry}) }}
                             {% endfor %}
                         </div>
-                        {% if form.additionalTemplates.vars.prototype.vars.choices is not empty %}
+                        {% if form.additionalTemplates.vars.prototype.template.vars.choices is not empty %}
                             <button type="button" class="cm-dashed-add" data-quiz-pool-target="addButton" data-action="quiz-pool#add">{{ 'quizLaunchAddTemplateAction'|trans }}</button>
                             <div class="text-secondary small">{{ 'quizLaunchAddTemplateHint'|trans }}</div>
+                        {% endif %}
+                        {# The split as it stands - what the quizzes without a share will provide, or
+                           which rule the shares break. The server checks the same rules on submit
+                           and answers in the errors below. #}
+                        <div class="small" data-quiz-pool-target="shareStatus" hidden></div>
+                        {# The server's answer stays until the pool is touched again - from then on the
+                           status line above says the same thing, live. #}
+                        {% if form.baseShare.vars.errors|length or form.additionalTemplates.vars.errors|length %}
+                            <div data-quiz-pool-target="serverErrors">
+                                {{ form_errors(form.baseShare) }}
+                                {{ form_errors(form.additionalTemplates) }}
+                            </div>
                         {% endif %}
                     </div>
                     <div class="d-flex flex-column gap-1" style="max-width: 160px;">
                         {# No ceiling before a quiz is picked: quiz_launch_controller.js sets one
                            on the first pool change, and the server clamps in any case. #}
-                        {{ form_widget(form.questionCount, {attr: {'data-quiz-launch-target': 'questionCount', 'data-action': 'input->quiz-launch#questionCountEdited'}|merge(quizTemplate ? {max: quizTemplate.questions|length} : {})}) }}
+                        {{ form_widget(form.questionCount, {attr: {'data-quiz-launch-target': 'questionCount', 'data-quiz-pool-target': 'questionCount', 'data-action': 'input->quiz-launch#questionCountEdited input->quiz-pool#refreshShares'}|merge(quizTemplate ? {max: quizTemplate.questions|length} : {})}) }}
                         {{ form_label(form.questionCount) }}
                     </div>
                     <div class="d-flex flex-column gap-2">

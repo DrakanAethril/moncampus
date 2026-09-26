@@ -1,0 +1,56 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'equipmentSettingsPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'equipment/_breadcrumb.html.twig' with {extra: [
+        {label: 'equipmentSettingsPageHeading'|trans, url: path('app_equipment_settings')},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ 'equipmentSettingsPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="row row-cards">
+        {% for panel in [
+            {kind: 'categories', title: 'equipmentCategoriesCardTitle', rows: categories, usage: categoryUsage, form: categoryForm, confirm: 'equipmentCategoryDeleteConfirmText', usageText: 'equipmentCategoryUsageText'},
+            {kind: 'locations', title: 'equipmentLocationsCardTitle', rows: locations, usage: locationUsage, form: locationForm, confirm: 'equipmentLocationDeleteConfirmText', usageText: 'equipmentLocationUsageText'},
+        ] %}
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title mb-0">{{ panel.title|trans }}</h3></div>
+                    <div class="table-responsive">
+                        <table class="table table-vcenter card-table table-striped">
+                            <tbody>
+                                {% for row in panel.rows %}
+                                    {% set used = panel.usage[row.id] ?? 0 %}
+                                    <tr>
+                                        <td><strong>{{ row.name }}</strong></td>
+                                        <td class="text-secondary">{{ panel.usageText|trans({'%count%': used}) }}</td>
+                                        <td class="cm-actions text-nowrap">
+                                            <a href="{{ path('app_equipment_settings_edit', {kind: panel.kind, id: row.id}) }}" class="cm-action--warning">{{ 'editActionLabel'|trans }}</a>
+                                            <form method="post" action="{{ path('app_equipment_settings_delete', {kind: panel.kind, id: row.id}) }}" class="d-inline">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('equipment_settings_delete') }}">
+                                                <button type="submit" class="cm-action--danger" style="background: none; border: 0;"
+                                                        data-controller="confirm-submit"
+                                                        data-confirm-submit-message-value="{{ panel.confirm|trans({'%name%': row.name, '%count%': used}) }}"
+                                                        data-action="click->confirm-submit#confirm">{{ 'equipmentDeleteAction'|trans }}</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    <tr><td class="text-center text-secondary">{{ 'equipmentSettingsEmptyText'|trans }}</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer">
+                        {{ form_start(panel.form, {attr: {class: 'd-flex gap-2 align-items-start'}}) }}
+                            <div class="flex-grow-1">{{ form_widget(panel.form.name, {attr: {placeholder: 'equipmentNameFieldLabel'|trans}}) }}{{ form_errors(panel.form.name) }}</div>
+                            {{ form_widget(panel.form.submit, {attr: {class: 'btn btn-primary'}}) }}
+                        {{ form_end(panel.form) }}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

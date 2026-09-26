@@ -1,0 +1,6 @@
+{# Gestion > Matériel trail: Accueil › Matériel › …extra. `extra` is the list of segments after
+   « Matériel »; the last one is the current page. #}
+{% include '_breadcrumb.html.twig' with {segments: [
+    {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {label: 'equipmentNavLabel'|trans, url: path('app_equipment')},
+]|merge(extra|default([]))} %}

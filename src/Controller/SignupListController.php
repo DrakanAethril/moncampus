@@ -10,7 +10,6 @@ use App\Entity\Announcement;
 use App\Entity\MessageThread;
 use App\Entity\SignupList;
 use App\Entity\SignupListAttachment;
-use App\Entity\SignupListRegistration;
 use App\Entity\User;
 use App\Enum\Feature;
 use App\Enum\MessageAudienceType;
@@ -26,6 +25,7 @@ use App\Security\Voter\SignupListVoter;
 use App\Service\FileUploadService;
 use App\Service\PostValue;
 use App\Service\SignupListAccessChecker;
+use App\Service\SignupListRegistrar;
 use App\Service\UploadIntake;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -201,7 +201,7 @@ class SignupListController extends AbstractController
             'canRegister' => $this->isGranted(SignupListVoter::REGISTER, $signupList),
             'canUnregister' => $this->isGranted(SignupListVoter::UNREGISTER, $signupList),
             'canViewRoster' => $canViewRoster,
-            'registrationCount' => $registrationRepository->countForSignupList($signupList),
+            'registrationCount' => $signupList->getRegistrationCount(),
             'registrations' => $canViewRoster ? $registrationRepository->findAllForSignupList($signupList) : [],
             'parent' => $parent,
             // Twig has no clean instanceof check, so the discriminator is resolved here rather
@@ -216,7 +216,7 @@ class SignupListController extends AbstractController
     }
 
     #[Route(path: '/signup-lists/{id}/register', name: 'app_signup_lists_register', methods: ['POST'])]
-    public function register(int $id, Request $request, SignupListRepository $repository, SignupListRegistrationRepository $registrationRepository, EntityManagerInterface $entityManager): Response
+    public function register(int $id, Request $request, SignupListRepository $repository, SignupListRegistrar $registrar): Response
     {
         $signupList = $this->findOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(SignupListVoter::REGISTER, $signupList);
@@ -230,9 +230,7 @@ class SignupListController extends AbstractController
             return $this->redirectToRoute('app_signup_lists_show', ['id' => $signupList->getId()]);
         }
 
-        if (null === $registrationRepository->findOneForSignupListAndUser($signupList, $user)) {
-            $entityManager->persist(new SignupListRegistration($signupList, $user));
-            $entityManager->flush();
+        if ($registrar->register($signupList, $user)) {
             $this->addFlash('success', 'signupListRegisteredFlashMessage');
         }
 
@@ -240,15 +238,14 @@ class SignupListController extends AbstractController
     }
 
     #[Route(path: '/signup-lists/{id}/unregister', name: 'app_signup_lists_unregister', methods: ['POST'])]
-    public function unregister(int $id, Request $request, SignupListRepository $repository, SignupListRegistrationRepository $registrationRepository, EntityManagerInterface $entityManager): Response
+    public function unregister(int $id, Request $request, SignupListRepository $repository, SignupListRegistrationRepository $registrationRepository, SignupListRegistrar $registrar): Response
     {
         $signupList = $this->findOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(SignupListVoter::UNREGISTER, $signupList);
         $this->assertValidToken('signup_list_unregister', $request);
 
         $registration = $registrationRepository->findOneForSignupListAndUser($signupList, $this->currentUser()) ?? throw $this->createNotFoundException();
-        $entityManager->remove($registration);
-        $entityManager->flush();
+        $registrar->unregister($registration);
 
         $this->addFlash('success', 'signupListUnregisteredFlashMessage');
 

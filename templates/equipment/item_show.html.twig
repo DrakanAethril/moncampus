@@ -1,0 +1,102 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ item.code }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% include 'equipment/_breadcrumb.html.twig' with {extra: [
+        {label: item.type.name, url: path('app_equipment_type_show', {id: item.type.id})},
+        {label: item.code, url: path('app_equipment_item_show', {id: item.id})},
+    ]} %}
+{% endblock %}
+{% block page_title %}<span class="font-monospace">{{ item.code }}</span>{% endblock %}
+{% block page_actions %}
+    <a href="{{ path('app_equipment_item_edit', {id: item.id}) }}" class="btn btn-primary">{{ 'equipmentItemEditAction'|trans }}</a>
+{% endblock %}
+
+{% block main %}
+    <div class="text-secondary mb-3" style="margin-top: -8px;">
+        <a href="{{ path('app_equipment_type_show', {id: item.type.id}) }}">{{ item.type.name }}</a>
+        · {% include 'equipment/_status_badge.html.twig' with {status: item.status} only %}
+        {% if item.room %}· {{ item.room.name }}{% endif %}
+    </div>
+
+    <div class="row row-cards">
+        <div class="col-lg-4">
+            <div class="card mb-3">
+                <div class="card-header"><h3 class="card-title mb-0">{{ 'equipmentItemUsageCardTitle'|trans }}</h3></div>
+                <div class="card-body">
+                    {% if deployForm %}
+                        <p class="text-secondary">{{ 'equipmentItemAvailableText'|trans }}</p>
+                        {{ form_start(deployForm) }}
+                            {{ form_row(deployForm.room) }}
+                            {{ form_widget(deployForm.submit, {attr: {class: 'btn btn-primary w-100'}}) }}
+                        {{ form_end(deployForm) }}
+                    {% elseif item.status.value == 'in_use' %}
+                        <p class="text-secondary">{{ item.room ? 'equipmentItemInUseInRoomText'|trans({'%room%': item.room.name}) : 'equipmentItemInUseText'|trans }}</p>
+                        <form method="post" action="{{ path('app_equipment_item_return', {id: item.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('equipment_item_move') }}">
+                            <button type="submit" class="btn btn-primary w-100">{{ 'equipmentMarkAvailableAction'|trans }}</button>
+                        </form>
+                    {% elseif item.status.value == 'missing' %}
+                        <p class="text-secondary">{{ 'equipmentItemMissingText'|trans }}</p>
+                        {% include 'equipment/_item_answer_button.html.twig' with {item: item, answer: 'found', label: 'equipmentFoundAction', style: 'btn-primary'} only %}
+                    {% elseif item.status.value == 'out_of_order' %}
+                        <p class="text-secondary">{{ 'equipmentItemOutOfOrderText'|trans }}</p>
+                        {% include 'equipment/_item_answer_button.html.twig' with {item: item, answer: 'repaired', label: 'equipmentRepairedAction', style: 'btn-primary'} only %}
+                        <div class="mt-2">
+                            {% include 'equipment/_item_answer_button.html.twig' with {item: item, answer: 'disposed', label: 'equipmentDisposeAction', style: 'btn-outline-danger', confirm: 'equipmentDisposeConfirmText'|trans({'%code%': item.code})} only %}
+                        </div>
+                    {% else %}
+                        <p class="text-secondary mb-0">{{ 'equipmentItemDisposedText'|trans }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if incidentForm %}
+            <div class="card mb-3">
+                <div class="card-header"><h3 class="card-title mb-0">{{ 'equipmentIncidentCardTitle'|trans }}</h3></div>
+                <div class="card-body">
+                    {% include 'equipment/_incident_form.html.twig' with {form: incidentForm} only %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="card mb-3">
+                <div class="card-header"><h3 class="card-title mb-0">{{ 'equipmentDetailsCardTitle'|trans }}</h3></div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <div class="fw-bold">{{ 'equipmentItemSerialNumberFieldLabel'|trans }}</div>
+                        <div class="text-secondary">{{ item.serialNumber ?? '—' }}</div>
+                    </div>
+                    <div class="mb-2">
+                        <div class="fw-bold">{{ 'equipmentTypeLocationFieldLabel'|trans }}</div>
+                        <div class="text-secondary">{{ item.location ? item.location.name : '—' }}</div>
+                    </div>
+                    <div class="mb-2">
+                        <div class="fw-bold">{{ 'equipmentNotesFieldLabel'|trans }}</div>
+                        <div class="text-secondary" style="white-space: pre-line">{{ item.notes ?? '—' }}</div>
+                    </div>
+                    <div>
+                        <div class="fw-bold">{{ 'equipmentItemLabelFieldLabel'|trans }}</div>
+                        <div class="text-secondary">
+                            {{ item.labeled ? 'equipmentItemLabeledOnText'|trans({'%date%': item.labeledAt|date('d/m/Y')}) : 'equipmentItemNotLabeledText'|trans }}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <form method="post" action="{{ path('app_equipment_item_labeled', {id: item.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('equipment_labels') }}">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary w-100">{{ (item.labeled ? 'equipmentItemUnmarkLabeledAction' : 'equipmentItemMarkLabeledAction')|trans }}</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card mb-3">
+                <div class="card-header"><h3 class="card-title mb-0">{{ 'equipmentHistoryCardTitle'|trans }}</h3></div>
+                {% include 'equipment/_movement_list.html.twig' with {movements: movements, showItem: false} only %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

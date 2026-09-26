@@ -2,12 +2,14 @@
    and the prototype cloned by quiz_pool_controller.js, hence the include rather than a form_row.
 
    The select is behind the picker modal (templates/_library_picker_field.html.twig): it keeps the
-   field's name, its choices and the pool's own change listener, and the teacher reads a button. #}
-<div class="cm-quizpool__row" data-quiz-pool-row>
+   field's name, its choices and the pool's own change listener, and the teacher reads a button. A
+   prototype row always joins a pool that already holds a quiz, so its share is shown from the start. #}
+<div class="cm-quizpool__row" data-quiz-pool-row data-quiz-pool-entry>
     {% include '_library_picker_field.html.twig' with {
-        field: entry,
+        field: entry.template,
         placeholder: 'quizLaunchAdditionalTemplatePlaceholder'|trans,
         select_attr: {'data-quiz-pool-target': 'select', 'data-action': 'change->quiz-pool#update'},
     } only %}
+    {{ include('library/_quiz_pool_share.html.twig', {field: entry.share, split: true}) }}
     <button type="button" class="cm-quizpool__remove" data-action="quiz-pool#remove" aria-label="{{ 'quizLaunchRemoveTemplateAction'|trans }}">&times;</button>
 </div>

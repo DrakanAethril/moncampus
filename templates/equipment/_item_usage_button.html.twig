@@ -1,0 +1,17 @@
+{# « Utilisé » / « Disponible » in one click, from a list. The room stays optional and is not asked
+   here - the piece's own fiche offers it. Both buttons carry a plain session token: the Symfony
+   forms of this app use the stateless `submit` token rewritten by JS, which a hand-built form
+   cannot imitate (ItemController::deploy() has a door for each). #}
+{% if item.status.value == 'available' %}
+    <form method="post" action="{{ path('app_equipment_item_deploy', {id: item.id}) }}" class="d-inline">
+        <input type="hidden" name="_token" value="{{ csrf_token('equipment_item_move') }}">
+        <input type="hidden" name="_back" value="{{ back }}">
+        <button type="submit" class="cm-action cm-action--neutral" style="background: none; border: 0;">{{ 'equipmentMarkInUseAction'|trans }}</button>
+    </form>
+{% elseif item.status.value == 'in_use' %}
+    <form method="post" action="{{ path('app_equipment_item_return', {id: item.id}) }}" class="d-inline">
+        <input type="hidden" name="_token" value="{{ csrf_token('equipment_item_move') }}">
+        <input type="hidden" name="_back" value="{{ back }}">
+        <button type="submit" class="cm-action cm-action--positive" style="background: none; border: 0;">{{ 'equipmentMarkAvailableAction'|trans }}</button>
+    </form>
+{% endif %}

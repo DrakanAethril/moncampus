@@ -74,6 +74,7 @@ cron on the production host today; `docs/production.md` carries the crontab line
 | `app:ldap:apply-account-requests` | Relit l'annuaire pour chaque demande de `ldap_manage_account` que le script consommateur a terminée, et applique la conséquence côté application — aujourd'hui la bascule de `User::$username` après un renommage confirmé. **Cron toutes les minutes.** C'est ce qui fait qu'un onglet fermé ne décide de rien : la fiche sonde la même chose toutes les 2 s, mais la boucle du navigateur n'est jamais ce qui porte le travail. Idempotente (`applied_at`) et verrouillée (`LockableTrait`). Voir `docs/production.md` |
 | `app:proxmox:secrets` | **Diagnostic, not cron.** Says whether the sealed Proxmox secrets still open, and prints a fingerprint of the `PROXMOX_SECRET_KEY` in use. Run it before and after a deploy: a fingerprint that changes means the key is not being carried across releases, which makes every stored token unreadable at once and looks, from the screen, exactly like Proxmox refusing them |
 | `app:guest-accounts:prune` | **Maintenance à la demande, pas cron.** Supprime les lignes `guest_account` dont la machine n'existe plus sur l'hyperviseur, ou dont le VMID a été repris depuis par un autre lot — Proxmox rend un numéro dès qu'une machine est détruite, et les lignes de l'ancienne occupante restent classées dessous (cette moitié-là se décide sur les seules données de la plateforme, sans rien demander à l'hyperviseur ; `App\Service\Proxmox\VmidHandover` la ferme à la source lors des créations suivantes). C'est l'état que /infrastructure ne montre pas : ces écrans lisent Proxmox à l'affichage, donc une machine détruite cesse d'y être listée, tandis que ses comptes restent — et « Mes machines virtuelles » est bâti sur ces comptes. Un hôte injoignable ne décide rien : ses comptes sont comptés à part et laissés tels quels. `--dry-run` nomme chaque ligne avant d'y toucher. Jamais planifiée : supprimer est une décision, pas un horaire |
+| `app:counters:recompute` | **Cron, once a night** (`docs/production.md`). Checks every stored counter of the platform (`App\Counter\RecomputableCounter`, one tagged service each) against its source and corrects the drifts - each correction logged at error level, so it reaches Discord: a drift is a bug, not a figure to patch. The counters move in real time with what changes them; this is the safety net. `--counter=`, `--dry-run` |
 | `app:seed-dev-*`, `app:dev:*`, `app:configure-dev-programs` | **Dev-machine only.** Populate/inject into the local database. These must never be relied on in staging or production. |
 
 ## Runtime architecture (Docker layer)
@@ -177,6 +178,21 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   Two rules the code depends on: **one pass does exactly one step** (`app:vm-batch:advance`, cron
   every minute, is what makes a deployment survive a closed browser tab), and the application never
   destroys a machine — an expired batch reminds, an administrator deletes in Proxmox.
+- **Matériel (Gestion > Matériel)** - the small-equipment inventory, `App\Controller\Equipment\*`.
+  **Not the UFA laptops**, which keep their own inventory. `EquipmentType` is followed either
+  *à l'unité* (each `EquipmentItem` has a label code `CA-0142-0`: one sequence shared by every type,
+  never reused, Luhn check digit - `App\Service\Equipment\EquipmentCode`; the labeller is a keyboard
+  Dymo, so the code is typed by hand) or *en quantité*. `EquipmentMovement` is an **append-only**
+  journal; the type's counters are **stored** and move only through `EquipmentLedger`'s atomic
+  `UPDATE … + delta` - never through the entity - and `EquipmentMovementKind::delta()` is the single
+  rule both the live update and the recomputation read. Kept by admin, staff, staff-lead and
+  support-tech; nothing is ever imputed to a class or a student, a room is optional. An incident is
+  **Disparu** or **Hors d'usage** plus a cause, and leaves the count it came from; « Retrouvé » /
+  « Réparé » points at the incident it answers (`resolves`), so the annual report
+  (`EquipmentLossReport`, per `SchoolYear`) takes the loss back out of the year it was declared in.
+  « À commander » (`EquipmentReorderPlanner`) counts what is on order as coming; a count
+  (`EquipmentStocktake`, closed by `EquipmentStocktakeCloser`) writes its differences as
+  *inventory-gap* lines, which the report keeps apart from declared losses.
 - **Agenda, Annonces, Listes d'inscription** — `AgendaEvent`, `Announcement`, `SignupList`; the
   first two resolve who they are for through `AudienceResolver` like `MessageThread` does.
 - **Accès aux fonctionnalités** — `App\Enum\Feature` (49 cases) + `#[RequiresFeature]` +

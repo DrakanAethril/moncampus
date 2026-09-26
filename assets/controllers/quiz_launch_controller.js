@@ -47,10 +47,12 @@ export default class extends Controller {
         // quiz here rather than arriving from it. Empty on the library's own launch screen, where
         // the server put those defaults in the fields before rendering.
         defaults: Object,
+        // True on a form sent back with an error: the count on screen is the teacher's own.
+        countTouched: Boolean,
     };
 
     connect() {
-        this.questionCountTouched = false;
+        this.questionCountTouched = this.countTouchedValue;
         this.update();
     }
 
