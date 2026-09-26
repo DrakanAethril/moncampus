@@ -10,7 +10,6 @@ use App\Entity\SurveySeries;
 use App\Enum\Feature;
 use App\Repository\SurveyCampaignRepository;
 use App\Repository\SurveySeriesRepository;
-use App\Repository\SurveyTargetRepository;
 use App\Security\Voter\SurveyVoter;
 use App\Service\QueryValue;
 use App\Service\Survey\SurveyComparison;
@@ -45,7 +44,6 @@ class SeriesController extends AbstractController
         int $id,
         SurveySeriesRepository $seriesRepository,
         SurveyCampaignRepository $campaigns,
-        SurveyTargetRepository $targets,
         SurveyComparison $comparison,
     ): Response {
         $series = $this->seriesOrNotFound($seriesRepository, $id);
@@ -54,7 +52,7 @@ class SeriesController extends AbstractController
 
         $rates = [];
         foreach ($waves as $wave) {
-            $rates[$wave->getWaveNumber()] = $targets->responseRate($wave);
+            $rates[$wave->getWaveNumber()] = $wave->responseCounts();
         }
 
         return $this->render('survey/series.html.twig', [

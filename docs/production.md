@@ -469,8 +469,12 @@ Notes:
 
 `app:counters:recompute` checks every **stored counter** of the platform against its source and
 corrects the ones that drifted. A stored counter is a value kept on a row rather than summed at
-display - since 2026-09-26, the three counters of each Gestion > Matériel type (available, in use,
-on order), read by the stock screen instead of the whole equipment journal.
+display. Since 2026-09-26:
+
+| `--counter=` | Stored on | Source |
+|---|---|---|
+| `equipment_stock` | each Gestion > Matériel type: available, in use, on order | the equipment journal |
+| `survey_responses` | each survey campaign: targeted, responded | `survey_target` |
 
 **The counters are right without it.** Each one moves in real time, in the same transaction as what
 changes it; this pass is the safety net, not the mechanism. That is also why a correction is never

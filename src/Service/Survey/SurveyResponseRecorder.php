@@ -34,6 +34,7 @@ class SurveyResponseRecorder
         private readonly SurveyTargetRepository $targets,
         private readonly SurveyResponseRepository $responses,
         private readonly EntityManagerInterface $entityManager,
+        private readonly SurveyCampaignCounters $counters,
     ) {
     }
 
@@ -118,14 +119,30 @@ class SurveyResponseRecorder
             $this->writeAnswer($response, $question, $given);
         }
 
-        if ($submit) {
-            $now = new \DateTimeImmutable();
-            $response->setSubmittedAt($now);
-            // The pair. Same transaction, same flush - never two writes that could drift apart.
-            $target->setRespondedAt($now);
+        if (!$submit) {
+            $this->entityManager->flush();
+
+            return $response;
         }
 
-        $this->entityManager->flush();
+        $now = new \DateTimeImmutable();
+        $response->setSubmittedAt($now);
+        // The pair. Same transaction, same flush - never two writes that could drift apart. The
+        // campaign's stored « responded » count moves in that same transaction.
+        $target->setRespondedAt($now);
+
+        $connection = $this->entityManager->getConnection();
+        $connection->beginTransaction();
+
+        try {
+            $this->entityManager->flush();
+            $this->counters->responseAdded($campaign);
+            $connection->commit();
+        } catch (\Throwable $exception) {
+            $connection->rollBack();
+
+            throw $exception;
+        }
 
         return $response;
     }

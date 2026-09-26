@@ -35,48 +35,6 @@ class SurveyTargetRepository extends ServiceEntityRepository
         return $this->findOneFor($campaign, $user)?->getRespondedAt();
     }
 
-    /** The denominator of the response rate - never the number of students of the class. */
-    public function countFor(SurveyCampaign $campaign): int
-    {
-        return (int) $this->createQueryBuilder('t')
-            ->select('COUNT(t.id)')
-            ->where('t.campaign = :campaign')
-            ->setParameter('campaign', $campaign)
-            ->getQuery()
-            ->getSingleScalarResult();
-    }
-
-    public function countRespondedFor(SurveyCampaign $campaign): int
-    {
-        return (int) $this->createQueryBuilder('t')
-            ->select('COUNT(t.id)')
-            ->where('t.campaign = :campaign')
-            ->andWhere('t.respondedAt IS NOT NULL')
-            ->setParameter('campaign', $campaign)
-            ->getQuery()
-            ->getSingleScalarResult();
-    }
-
-    /**
-     * Both counts of the response rate in one query - "18 / 24", the pair every results screen
-     * opens on.
-     *
-     * @return array{targeted: int, responded: int}
-     */
-    public function responseRate(SurveyCampaign $campaign): array
-    {
-        /** @var array{targeted: int|string, responded: int|string} $row */
-        $row = $this->createQueryBuilder('t')
-            ->select('COUNT(t.id) AS targeted')
-            ->addSelect('SUM(CASE WHEN t.respondedAt IS NOT NULL THEN 1 ELSE 0 END) AS responded')
-            ->where('t.campaign = :campaign')
-            ->setParameter('campaign', $campaign)
-            ->getQuery()
-            ->getSingleResult();
-
-        return ['targeted' => (int) $row['targeted'], 'responded' => (int) $row['responded']];
-    }
-
     /**
      * Who to remind: the targets still without a response, by name.
      *

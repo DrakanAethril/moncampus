@@ -167,7 +167,7 @@ class EquipmentLedgerTest extends FunctionalTestCase
         $dryRun = $recomputer->recompute(EquipmentStockCounter::NAME, $typeId, dryRun: true);
         self::assertCount(1, $dryRun->drifts);
         self::assertSame('available_count 99 → 12', $dryRun->drifts[0]->describe());
-        self::assertSame(99, (int) $this->entityManager->getConnection()->fetchOne('SELECT available_count FROM equipment_type WHERE id = ?', [$typeId]));
+        self::assertEquals(99, $this->entityManager->getConnection()->fetchOne('SELECT available_count FROM equipment_type WHERE id = ?', [$typeId]), 'A dry run writes nothing.');
 
         $run = $recomputer->recompute(EquipmentStockCounter::NAME, $typeId);
         self::assertCount(1, $run->drifts);
