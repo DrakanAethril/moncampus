@@ -13,11 +13,14 @@
     <div class="row row-cards">
         {% for panel in [
             {kind: 'categories', title: 'equipmentCategoriesCardTitle', rows: categories, usage: categoryUsage, form: categoryForm, confirm: 'equipmentCategoryDeleteConfirmText', usageText: 'equipmentCategoryUsageText'},
-            {kind: 'locations', title: 'equipmentLocationsCardTitle', rows: locations, usage: locationUsage, form: locationForm, confirm: 'equipmentLocationDeleteConfirmText', usageText: 'equipmentLocationUsageText'},
+            {kind: 'locations', title: 'equipmentLocationsCardTitle', rows: locations, usage: locationUsage, form: locationForm, confirm: 'equipmentLocationDeleteConfirmText', usageText: 'equipmentLocationUsageText', hint: 'equipmentLocationsRoomsHint'},
         ] %}
             <div class="col-lg-6">
                 <div class="card">
                     <div class="card-header"><h3 class="card-title mb-0">{{ panel.title|trans }}</h3></div>
+                    {% if panel.hint is defined %}
+                        <div class="card-body py-2 text-secondary small">{{ panel.hint|trans }}</div>
+                    {% endif %}
                     <div class="table-responsive">
                         <table class="table table-vcenter card-table table-striped">
                             <tbody>

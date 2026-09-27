@@ -3,11 +3,10 @@
 {% block title %}{{ dossier.title }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'myDossiersNavLabel'|trans, url: path('app_my_dossiers')},
         {label: dossier.title, url: path('app_my_dossier', {id: dossier.id})},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {# The points d'attention sit inside the title, as the handoff draws them: « Dossier de soutenance

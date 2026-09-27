@@ -8,7 +8,7 @@
     <td>
         <span class="cm-slib__name">
             <span class="cm-slib__ext cm-slib__ext--dir" aria-hidden="true">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"></path></svg>
+                <twig:ux:icon name="folder" width="13" height="13"/>
             </span>
             <a href="{{ path('app_surveys_templates_folder', {folderId: row.folder.id}) }}">{{ row.folder.name }}</a>
         </span>
@@ -22,8 +22,7 @@
                records: the table sits in a `.table-responsive` whose `overflow: auto` is a clipping
                context, and a folder holding one row makes a card shorter than its own menu. #}
             <button type="button" class="cm-slib__kebab" data-bs-toggle="dropdown" aria-expanded="false"
-                    data-bs-boundary="viewport"
-                    data-bs-popper-config='{"strategy":"fixed"}'
+                    data-bs-popper-config='{"strategy":"fixed","modifiers":[{"name":"preventOverflow","options":{"boundary":"viewport"}},{"name":"offset","options":{"offset":[0,2]}}]}'
                     aria-label="{{ 'surveyLibraryRowMenuLabel'|trans }}">⋮</button>
             <ul class="dropdown-menu dropdown-menu-end">
                 <li><a class="dropdown-item" href="{{ path('app_surveys_templates_folder', {folderId: row.folder.id}) }}">{{ 'surveyFolderOpenAction'|trans }}</a></li>

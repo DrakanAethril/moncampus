@@ -4,10 +4,9 @@
 {% block title %}{{ 'jobboardNavLabel'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'jobboardNavLabel'|trans, url: path('app_jobboard')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'jobboardNavLabel'|trans }}{% endblock %}

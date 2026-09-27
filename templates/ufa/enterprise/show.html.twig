@@ -3,12 +3,11 @@
 {% block title %}{{ enterprise.name }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'ufaNavLabel'|trans, url: path('app_ufa')},
         {label: 'ufaEnterprisesPageHeading'|trans, url: path('app_ufa_enterprises')},
         {label: enterprise.name, url: path('app_ufa_enterprise_show', {id: enterprise.id})},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ enterprise.name }}{% endblock %}
 {% block page_actions %}

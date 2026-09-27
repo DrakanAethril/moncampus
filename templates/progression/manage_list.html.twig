@@ -3,11 +3,10 @@
 {% block title %}{{ 'progressionManagePageHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'progressionNavLabel'|trans, url: path('app_progression')},
         {label: 'progressionManagePageHeading'|trans, url: path('app_progression_manage')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'progressionManagePageHeading'|trans }}{% endblock %}
 
@@ -91,8 +90,7 @@
                                          data-pdf-download-fallback-filename-value="progression.pdf">
                                         <button type="button" class="cm-btn cm-btn--outline cm-btn--sm dropdown-toggle"
                                                 data-bs-toggle="dropdown" aria-expanded="false"
-                                                data-bs-boundary="viewport"
-                                                data-bs-popper-config='{"strategy":"fixed"}'
+                                                data-bs-popper-config='{"strategy":"fixed","modifiers":[{"name":"preventOverflow","options":{"boundary":"viewport"}},{"name":"offset","options":{"offset":[0,2]}}]}'
                                                 data-pdf-download-target="trigger">
                                             <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true" data-pdf-download-target="spinner"></span>
                                             <span data-pdf-download-target="label">{{ 'progressionExportPdfAction'|trans }}</span>

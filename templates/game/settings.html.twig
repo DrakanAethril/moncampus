@@ -3,11 +3,10 @@
 {% block title %}{{ 'gameSettingsHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: program.displayShortName, url: path('app_program_timetable', {id: program.id})},
         {label: 'gameSettingsHeading'|trans, url: path('app_program_settings_game', {id: program.id})},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'gameSettingsHeading'|trans }}{% endblock %}
@@ -207,11 +206,9 @@
             </div>
         </div>
 
-        <div class="cm-actionbar">
-            <span class="cm-actionbar__meta">{{ 'gameSettingsScopeNoteText'|trans }}</span>
-            <div class="cm-actionbar__buttons">
-                <button type="submit" class="cm-btn cm-btn--primary">{{ 'submitSaveAction'|trans }}</button>
-            </div>
-        </div>
+        <twig:Cm:ActionBar>
+            <twig:block name="meta">{{ 'gameSettingsScopeNoteText'|trans }}</twig:block>
+            <button type="submit" class="cm-btn cm-btn--primary">{{ 'submitSaveAction'|trans }}</button>
+        </twig:Cm:ActionBar>
     </form>
 {% endblock %}

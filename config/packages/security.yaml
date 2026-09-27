@@ -2,6 +2,10 @@ security:
     # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
     password_hashers:
         Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+        # The passwords people choose for external services (App\Security\ExternalServicePasswords)
+        # - the only passwords this platform stores, and only as hashes. The establishment password
+        # itself is never stored: it lives in the directory.
+        external_service: 'auto'
 
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
@@ -50,6 +54,31 @@ security:
             # deactivation stops opening anything at once, without waiting for its expiry.
             user_checker: App\Security\AccountStatusChecker
             jwt: ~
+        # The OAuth side of the Claude connector that nobody signs in to: the two discovery
+        # documents (RFC 8414 / RFC 9728), dynamic client registration and the token endpoint. The
+        # caller is claude.ai's server or Claude Code, never a browser with a session, and each of
+        # these endpoints checks what it needs itself (App\Controller\OAuth\*). With security off,
+        # access_control does not apply here either - this firewall is the rule. The consent screen,
+        # /oauth/authorize, is deliberately *not* in this pattern: it belongs to `main`, where it can
+        # read a session - but it is public (see access_control) and signs the person in with their
+        # service password, never the establishment one.
+        oauth_public:
+            pattern: ^/(\.well-known/oauth-|oauth/(token|register)$)
+            security: false
+        # The Claude connector itself (App\Controller\McpController). Stateless, and authenticated
+        # by the OAuth access token alone (App\Security\McpAccessTokenAuthenticator), which is also
+        # the entry point: a call without a token must get the 401 + WWW-Authenticate the MCP
+        # specification relies on for discovery, never `main`'s redirect to /login. Kept out of
+        # ^/api so LexikJWT never sees these bearers. Security is *on*, as for `calendar` below: the
+        # request carries a real user, so features and voters answer unchanged.
+        mcp:
+            pattern: ^/mcp$
+            stateless: true
+            provider: app_user_provider
+            user_checker: App\Security\AccountStatusChecker
+            entry_point: App\Security\McpAccessTokenAuthenticator
+            custom_authenticators:
+                - App\Security\McpAccessTokenAuthenticator
         # iCalendar subscriptions to the emploi du temps. A firewall of its own, before `main`,
         # because the caller is Google's or Apple's server fetching a .ics on a schedule: it carries
         # no cookie, and `main` would answer it with a redirect to /login that a calendar client
@@ -117,6 +146,11 @@ security:
         # mailed contact-email link (see its docblock) isn't bounced through /login first.
         - { path: ^/profile/contact-email/confirm, roles: PUBLIC_ACCESS }
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
+        # The consent screen of the Claude connector (App\Controller\OAuth\AuthorizeController):
+        # public, because it signs the person in with the password they chose for that service and
+        # never with the establishment password - sending them through /login first is exactly what
+        # it must not do. It stays on `main` only to read a session when there is one.
+        - { path: ^/oauth/authorize, roles: PUBLIC_ACCESS }
         # e-CO runners have no account at all (pseudo + course code, see App\Entity\EcoRunner) -
         # identity for every subsequent call is their own join token, checked manually inside
         # App\Controller\Api\EcoRunnerApiController, not through this firewall/JWT at all. Must
@@ -143,6 +177,11 @@ security:
         # like every other rule, which it already reads the same as; it is listed for the reader,
         # not for the router.
         - { path: ^/calendar/, roles: ROLE_USER }
+        # The Claude connector: ROLE_USER for the same reason as the feeds above - the `mcp`
+        # firewall has already turned the OAuth token into its owner, and an anonymous call is
+        # answered by that firewall's entry point (401 + WWW-Authenticate), which is what an MCP
+        # client needs to discover where to sign in. Listed for the reader, like the line above.
+        - { path: ^/mcp$, roles: ROLE_USER }
         # The Proxmox console. Admin-only, and stricter than /settings on purpose: staff have no
         # business starting or stopping a hypervisor's machines. Must sit above the '^/,
         # roles: ROLE_USER' catch-all like every other rule here - a rule placed after it never
@@ -165,3 +204,8 @@ when@test:
                 cost: 4 # Lowest possible value for bcrypt
                 time_cost: 3 # Lowest possible value for argon
                 memory_cost: 10 # Lowest possible value for argon
+            external_service:
+                algorithm: auto
+                cost: 4
+                time_cost: 3
+                memory_cost: 10

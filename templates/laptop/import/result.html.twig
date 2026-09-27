@@ -3,22 +3,18 @@
 {% block title %}{{ 'laptopImportResultPageHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'ufaNavLabel'|trans, url: path('app_ufa')},
         {label: 'laptopsNavLabel'|trans, url: path('app_laptops_loans')},
         {label: 'laptopsInventoryTabLabel'|trans, url: path('app_laptops')},
         {label: 'laptopImportPageHeading'|trans, url: path('app_laptops_import')},
         {label: 'laptopImportResultPageHeading'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'laptopImportResultPageHeading'|trans }}{% endblock %}
 
 {% macro tag_list(title, hint, tags) %}
-    <div class="cm-subhead">
-        <div class="cm-subhead__title">{{ title }}</div>
-        <div class="cm-subhead__hint">{{ hint }}</div>
-    </div>
+    <twig:Cm:Subhead :title="title" :hint="hint"/>
     {% if tags is empty %}
         <p class="text-secondary">{{ 'laptopImportNoneLabel'|trans }}</p>
     {% else %}
@@ -51,12 +47,10 @@
             {{ helper.tag_list('laptopImportResultCreatedTitle'|trans, 'laptopImportResultCreatedHint'|trans, outcome.createdAssetTags) }}
             {{ helper.tag_list('laptopImportResultSkippedTitle'|trans, 'laptopImportResultSkippedHint'|trans, outcome.skippedAssetTags) }}
 
-            <div class="cm-actionbar">
-                <div class="cm-actionbar__buttons">
-                    <a href="{{ path('app_laptops_import') }}" class="btn btn-link">{{ 'laptopImportAnotherFileAction'|trans }}</a>
-                    <a href="{{ path('app_laptops') }}" class="btn btn-primary">{{ 'laptopImportBackToInventoryAction'|trans }}</a>
-                </div>
-            </div>
+            <twig:Cm:ActionBar>
+                <a href="{{ path('app_laptops_import') }}" class="btn btn-link">{{ 'laptopImportAnotherFileAction'|trans }}</a>
+                <a href="{{ path('app_laptops') }}" class="btn btn-primary">{{ 'laptopImportBackToInventoryAction'|trans }}</a>
+            </twig:Cm:ActionBar>
         </div>
     </div>
 {% endblock %}

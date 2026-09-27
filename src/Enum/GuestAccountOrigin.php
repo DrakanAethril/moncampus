@@ -15,7 +15,7 @@ namespace App\Enum;
  *            leaves these alone.** A console that quietly deleted the account a student made for
  *            their own project would be worse than one that never synchronises at all.
  */
-enum GuestAccountOrigin: string
+enum GuestAccountOrigin: string implements HasBadge
 {
     case Member = 'member';
     case Fixed = 'fixed';
@@ -30,12 +30,12 @@ enum GuestAccountOrigin: string
         };
     }
 
-    public function badgeModifier(): string
+    public function badgeTone(): BadgeTone
     {
         return match ($this) {
-            self::Member => 'blue',
-            self::Fixed => 'teal',
-            self::Manual => 'gray',
+            self::Member => BadgeTone::Blue,
+            self::Fixed => BadgeTone::Teal,
+            self::Manual => BadgeTone::Gray,
         };
     }
 }

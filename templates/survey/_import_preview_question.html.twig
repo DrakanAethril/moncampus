@@ -10,7 +10,7 @@
             {% if question.type.isAnswerable %}
                 <span class="cm-qbank__index">Q{{ number }}</span>
             {% endif %}
-            <span class="cm-badge {{ question.type.badgeClass }}">{{ question.type.labelKey|trans }}</span>
+            <twig:Cm:Badge :of="question.type"/>
             {% if question.type.supportsScale and question.isScale %}
                 <span class="cm-badge cm-badge--teal">{{ 'surveyQuestionScaleBadgeLabel'|trans }}</span>
             {% endif %}

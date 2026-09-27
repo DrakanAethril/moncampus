@@ -5,10 +5,9 @@
 {% block title %}{{ 'courseSpaceNavLabel'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'courseSpaceNavLabel'|trans, url: path('app_my_courses')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'courseSpaceNavLabel'|trans }}{% endblock %}
 

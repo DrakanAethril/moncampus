@@ -3,12 +3,11 @@
 {% block title %}{{ 'surveyAssistantPastePageHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'surveysPageHeading'|trans, url: path('app_surveys')},
         {label: 'surveyAssistantBreadcrumbLabel'|trans, url: path('app_survey_import')},
         {label: 'surveyAssistantPasteBreadcrumbLabel'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'surveyAssistantPastePageHeading'|trans }}{% endblock %}
 
@@ -20,10 +19,7 @@
             <form method="post" action="{{ path('app_survey_import_paste') }}" class="d-flex flex-column gap-3">
                 <input type="hidden" name="_token" value="{{ csrf_token('survey_import_paste') }}">
 
-                <div class="cm-subhead">
-                    <div class="cm-subhead__title">{{ 'surveyImportDocumentSectionTitle'|trans }}</div>
-                    <div class="cm-subhead__hint">{{ 'surveyImportDocumentSectionHint'|trans }}</div>
-                </div>
+                <twig:Cm:Subhead :title="'surveyImportDocumentSectionTitle'|trans" :hint="'surveyImportDocumentSectionHint'|trans"/>
 
                 {% if error %}
                     {# Rendered with a 422, never a 200: a POST answered 200 is thrown away by Turbo
@@ -44,12 +40,10 @@
                     <div>{{ 'surveyImportNoWriteNoteText'|trans }}</div>
                 </div>
 
-                <div class="cm-actionbar">
-                    <div class="cm-actionbar__buttons">
-                        <a href="{{ path('app_survey_import_prompt') }}" class="btn btn-link">{{ 'surveyAssistantBackToPromptActionLabel'|trans }}</a>
-                        <button type="submit" class="btn btn-primary">{{ 'surveyImportAnalyseButtonLabel'|trans }}</button>
-                    </div>
-                </div>
+                <twig:Cm:ActionBar>
+                    <a href="{{ path('app_survey_import_prompt') }}" class="btn btn-link">{{ 'surveyAssistantBackToPromptActionLabel'|trans }}</a>
+                    <button type="submit" class="btn btn-primary">{{ 'surveyImportAnalyseButtonLabel'|trans }}</button>
+                </twig:Cm:ActionBar>
             </form>
         </div>
     </div>

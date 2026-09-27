@@ -1,6 +1,12 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ seanceTemplate.titre }} - {{ sequenceTemplate.titre }}{% endblock %}
+{% block page_breadcrumb %}
+    {% include 'library/_sequence_breadcrumb.html.twig' with {ancestors: folderTrail, tail: [
+        {label: sequenceTemplate.titre, url: path('app_library_sequences_show', {id: sequenceTemplate.id})},
+        {label: seanceTemplate.titre, url: app.request.requestUri},
+    ]} only %}
+{% endblock %}
 {% block page_title %}{{ seanceTemplate.titre }}{% endblock %}
 
 {% block page_actions %}

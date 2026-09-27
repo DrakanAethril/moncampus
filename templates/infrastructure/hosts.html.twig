@@ -3,11 +3,10 @@
 {% block title %}{{ 'infrastructureHostsNavLabel'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
         {label: 'infrastructureHostsNavLabel'|trans, url: path('app_infrastructure_hosts')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'infrastructureHostsNavLabel'|trans }}{% endblock %}

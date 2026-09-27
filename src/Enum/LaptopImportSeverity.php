@@ -12,7 +12,7 @@ namespace App\Enum;
  * class import and the UFA contract import - a file that half-imported leaves an inventory nobody
  * can reconcile against the spreadsheet it came from; the file gets fixed and uploaded again.
  */
-enum LaptopImportSeverity: string
+enum LaptopImportSeverity: string implements HasBadge
 {
     case Blocking = 'blocking';
     case Warning = 'warning';
@@ -29,12 +29,12 @@ enum LaptopImportSeverity: string
         };
     }
 
-    public function badgeClass(): string
+    public function badgeTone(): BadgeTone
     {
         return match ($this) {
-            self::Blocking => 'cm-badge--red',
-            self::Warning => 'cm-badge--gold',
-            self::Note => 'cm-badge--gray',
+            self::Blocking => BadgeTone::Red,
+            self::Warning => BadgeTone::Gold,
+            self::Note => BadgeTone::Gray,
         };
     }
 }

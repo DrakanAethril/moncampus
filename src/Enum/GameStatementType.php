@@ -13,7 +13,7 @@ namespace App\Enum;
  * school's evaluation periods still carry the *index* (§4, decision 2 - the game invents no
  * calendar), but they no longer dictate how many documents a class fills in.
  */
-enum GameStatementType: string
+enum GameStatementType: string implements HasBadge
 {
     /** Three states, no absence recorded anywhere - see App\Enum\AttendanceState. */
     case Attendance = 'attendance';
@@ -43,11 +43,11 @@ enum GameStatementType: string
         return self::Attendance === $this;
     }
 
-    public function badgeVariant(): string
+    public function badgeTone(): BadgeTone
     {
         return match ($this) {
-            self::Attendance => 'blue',
-            self::Council => 'gold',
+            self::Attendance => BadgeTone::Blue,
+            self::Council => BadgeTone::Gold,
         };
     }
 }

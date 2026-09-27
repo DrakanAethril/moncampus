@@ -12,7 +12,7 @@ namespace App\Enum;
  * the UFA contract import - an import that half-writes a class is the state nobody knows how to
  * get out of; the file gets fixed and uploaded again.
  */
-enum ClassImportSeverity: string
+enum ClassImportSeverity: string implements HasBadge
 {
     case Blocking = 'blocking';
     case Warning = 'warning';
@@ -29,12 +29,12 @@ enum ClassImportSeverity: string
         };
     }
 
-    public function badgeClass(): string
+    public function badgeTone(): BadgeTone
     {
         return match ($this) {
-            self::Blocking => 'cm-badge--red',
-            self::Warning => 'cm-badge--gold',
-            self::Note => 'cm-badge--gray',
+            self::Blocking => BadgeTone::Red,
+            self::Warning => BadgeTone::Gold,
+            self::Note => BadgeTone::Gray,
         };
     }
 }

@@ -1,16 +1,20 @@
 {# Shared "card-attached tabs" row (see design/design_campus_manager/README.md 8a) - GLOBAL
    pattern for every tabbed admin screen, replacing the old Bootstrap nav-pills-in-card-header.
    `tabs` is a list of {url, label, active} plus an optional `count`, rendered as the pill some
-   screens carry beside the label ("Campagnes 9"); `tabs_action` is an optional template path included
-   on the right of the row (e.g. a tab's "+ Ajouter..."/"Exporter" button). The card that follows
-   this include must carry .cm-card--tabbed so it visually fuses with the active tab. #}
-<div class="cm-tabs">
+   screens carry beside the label ("Campagnes 9"). The optional `action` block is drawn on the right
+   of the row (a tab's "+ Ajouter..."/"Exporter" button); it is rendered in the caller's context, so
+   the partial it includes still sees the screen's variables. The card that follows the row must
+   carry .cm-card--tabbed so it visually fuses with the active tab. #}
+{% props tabs %}
+{% set action %}{% block action %}{% endblock %}{% endset %}
+{% set action = action|trim %}
+<div{{ attributes.defaults({class: 'cm-tabs'}) }}>
     {% for tab in tabs %}
         <a href="{{ tab.url }}" class="cm-tabs__tab{{ tab.active ? ' is-active' }}">{{ tab.label }}{% if tab.count is defined and tab.count is not null %}<span class="cm-tabs__count">{{ tab.count }}</span>{% endif %}</a>
     {% endfor %}
-    {% if tabs_action is defined and tabs_action %}
+    {% if action is not empty %}
         <div class="cm-tabs__action">
-            {% include tabs_action %}
+            {{ action|raw }}
         </div>
     {% endif %}
 </div>

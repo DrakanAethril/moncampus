@@ -3,12 +3,11 @@
 {% block title %}{{ article.title }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'helpPageHeading'|trans, url: path('app_help')},
         {label: section.title, url: path('app_help_section', {sectionSlug: section.slug})},
         {label: article.title, url: path('app_help_article', {sectionSlug: section.slug, articleSlug: article.slug})},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ article.title }}{% endblock %}

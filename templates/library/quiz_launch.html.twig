@@ -15,11 +15,10 @@
             {label: 'quizLaunchBreadcrumbLabel'|trans, url: app.request.requestUri},
         ]} only %}
     {% else %}
-        {% include '_breadcrumb.html.twig' with {segments: [
-            {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {{ component('Cm:Breadcrumb', {segments: [
             {label: 'quizTrackingPageHeading'|trans, url: path('app_tools_quiz')},
             {label: 'quizLaunchPageHeading'|trans, url: app.request.requestUri},
-        ]} %}
+        ]}) }}
     {% endif %}
 {% endblock %}
 {% block page_title %}{{ launchHeading }}{% endblock %}
@@ -83,10 +82,7 @@
                      noteAnswerOrderSame: 'quizLaunchNoteAnswerOrderSameText'|trans,
                  }|json_encode }}">
                 <div class="col-12 col-lg-6 d-flex flex-column gap-3">
-                    <div class="cm-subhead">
-                        <div class="cm-subhead__title">{{ 'quizLaunchModeAndClassTitle'|trans }}</div>
-                        <div class="cm-subhead__hint">{{ 'quizLaunchModeAndClassHint'|trans }}</div>
-                    </div>
+                    <twig:Cm:Subhead :title="'quizLaunchModeAndClassTitle'|trans" :hint="'quizLaunchModeAndClassHint'|trans"/>
                     {{ form_row(form.name, {help: 'quizLaunchNameFieldHint'|trans}) }}
                     {# One controller over both selects: « Visibilité » only ever offers the options
                        of the class picked just above (quiz_launch_option_controller.js), and hides
@@ -247,9 +243,7 @@
                         {{ form_row(form.questionOrderPerStudent, {row_attr: {class: 'form-switch'}, attr: {'data-quiz-launch-target': 'questionOrderPerStudent', 'data-action': 'change->quiz-launch#update'}}) }}
                         {{ form_row(form.answerOrderPerStudent, {row_attr: {class: 'form-switch'}, attr: {'data-quiz-launch-target': 'answerOrderPerStudent', 'data-action': 'change->quiz-launch#update'}}) }}
                     </div>
-                    <div class="cm-subhead">
-                        <div class="cm-subhead__title">{{ 'quizLaunchTimeTitle'|trans }}</div>
-                    </div>
+                    <twig:Cm:Subhead :title="'quizLaunchTimeTitle'|trans"/>
                     <div class="row g-3">
                         <div class="col-6">{{ form_row(form.secondsPerQuestion, {attr: {'data-quiz-launch-target': 'secondsPerQuestion'}}) }}</div>
                         <div class="col-6">{{ form_row(form.globalTimeMinutes) }}</div>
@@ -262,10 +256,7 @@
                     {# Mode contrôle. Rendered under Évaluation only - an entraînement se refait, se
                        cherche et se discute, et le surveiller userait la case. #}
                     <div class="d-none" data-quiz-supervision-launch-target="block">
-                        <div class="cm-subhead">
-                            <div class="cm-subhead__title">{{ 'quizLaunchSupervisionTitle'|trans }}</div>
-                            <div class="cm-subhead__hint">{{ 'quizLaunchSupervisionHint'|trans }}</div>
-                        </div>
+                        <twig:Cm:Subhead :title="'quizLaunchSupervisionTitle'|trans" :hint="'quizLaunchSupervisionHint'|trans"/>
                         <div class="d-flex flex-column gap-3 mt-2">
                             {{ form_row(form.supervised, {row_attr: {class: 'form-switch'}, help: 'quizLaunchSupervisedFieldHint'|trans, attr: {'data-quiz-supervision-launch-target': 'toggle', 'data-action': 'change->quiz-supervision-launch#refresh'}}) }}
 
@@ -308,15 +299,13 @@
                     empty_message: 'quizPickerEmptyMessage'|trans,
                 } only %}
             </div>
-            <div class="cm-actionbar">
-                <div class="cm-actionbar__buttons">
-                    <a href="{{ cancelUrl }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                    {# Disabled only where the quiz cannot be changed: on the screen that picks it,
-                       the way out of the warning is to pick another quiz, so the button stays
-                       live and the server refuses the launch again if it has to. #}
-                    {{ form_widget(form.submit, quizTemplate and incompleteQuestions is not empty ? {attr: {disabled: 'disabled'}} : {}) }}
-                </div>
-            </div>
+            <twig:Cm:ActionBar>
+                <a href="{{ cancelUrl }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                {# Disabled only where the quiz cannot be changed: on the screen that picks it,
+                   the way out of the warning is to pick another quiz, so the button stays
+                   live and the server refuses the launch again if it has to. #}
+                {{ form_widget(form.submit, quizTemplate and incompleteQuestions is not empty ? {attr: {disabled: 'disabled'}} : {}) }}
+            </twig:Cm:ActionBar>
             {{ form_rest(form) }}
             {{ form_end(form) }}
         </div>

@@ -29,11 +29,11 @@
                     {% if timetable.previousDay %}
                         <a class="cm-daynav__arrow" href="{{ path('app_home_staff_timetable', {day: timetable.previousDay|date('Y-m-d'), view: timetable.view}) }}"
                            aria-label="{{ 'homeStaffMatrixPreviousDayLabel'|trans }}" title="{{ 'homeStaffMatrixPreviousDayLabel'|trans }}">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+                            <twig:ux:icon name="chevron-left" width="16" height="16"/>
                         </a>
                     {% else %}
                         <span class="cm-daynav__arrow is-disabled" aria-hidden="true">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+                            <twig:ux:icon name="chevron-left" width="16" height="16"/>
                         </span>
                     {% endif %}
 
@@ -59,11 +59,11 @@
                     {% if timetable.nextDay %}
                         <a class="cm-daynav__arrow" href="{{ path('app_home_staff_timetable', {day: timetable.nextDay|date('Y-m-d'), view: timetable.view}) }}"
                            aria-label="{{ 'homeStaffMatrixNextDayLabel'|trans }}" title="{{ 'homeStaffMatrixNextDayLabel'|trans }}">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+                            <twig:ux:icon name="chevron-right" width="16" height="16" stroke-width="2"/>
                         </a>
                     {% else %}
                         <span class="cm-daynav__arrow is-disabled" aria-hidden="true">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+                            <twig:ux:icon name="chevron-right" width="16" height="16" stroke-width="2"/>
                         </span>
                     {% endif %}
                 </div>

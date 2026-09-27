@@ -3,12 +3,11 @@
 {% block title %}{{ batch.label }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
         {label: 'infrastructureBatchesNavLabel'|trans, url: path('app_infrastructure_batches')},
         {label: batch.label, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ batch.label }}{% endblock %}
@@ -57,9 +56,9 @@
                 {# Deployed in passes: twenty-four clones do not fit in one request, a batch is not
                    atomic, and only the outstanding items are ever attempted - so pressing this
                    twice is safe by construction. #}
-                <button type="button" class="cm-btn cm-btn--primary cm-btn--sm" data-action="vm-batch#deploy" data-vm-batch-target="button">
+                <twig:Cm:Button variant="primary" size="sm" data-action="vm-batch#deploy" data-vm-batch-target="button">
                     {{ 'vmBatchDeployAction'|trans }}
-                </button>
+                </twig:Cm:Button>
             {% endif %}
         </div>
 
@@ -87,7 +86,7 @@
                             <td class="cm-mono">{{ item.ipAllocation ? item.ipAllocation.ip : '—' }}</td>
                             <td class="cm-mono">{{ item.login }}</td>
                             <td>
-                                <span class="cm-badge cm-badge--{{ item.status.badgeModifier }}">{{ item.status.labelKey|trans }}</span>
+                                <twig:Cm:Badge :of="item.status"/>
                                 {% if item.message %}<div class="cm-guest__sub">{{ item.message }}</div>{% endif %}
                             </td>
                             <td class="cm-actions">

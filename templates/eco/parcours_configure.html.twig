@@ -3,11 +3,10 @@
 {% block title %}{{ parcours.name }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'ecoParcoursListPageHeading'|trans, url: path('app_eco_parcours')},
         {label: parcours.name, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}
     {{ parcours.name }}
@@ -98,12 +97,11 @@
             </div>
         </div>
     </div>
-    <form id="eco-parcours-configure-form" method="post" class="cm-actionbar mt-3">
+    <form id="eco-parcours-configure-form" method="post">
         <input type="hidden" name="_token" value="{{ csrf_token('eco_parcours_configure') }}">
-        {% include '_last_modified_meta.html.twig' with {entity: parcours} %}
-        <div class="cm-actionbar__buttons">
+        <twig:Cm:ActionBar :lastModified="parcours" class="mt-3">
             <a href="{{ path('app_eco_parcours') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
             <button type="submit" class="btn btn-primary">{{ 'submitSaveAction'|trans }}</button>
-        </div>
+        </twig:Cm:ActionBar>
     </form>
 {% endblock %}

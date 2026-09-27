@@ -1,6 +1,11 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'signupListsPageHeading'|trans }}{% endblock %}
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'signupListsPageHeading'|trans, url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
 {% block page_title %}{{ 'signupListsPageHeading'|trans }}{% endblock %}
 
 {% block page_actions %}

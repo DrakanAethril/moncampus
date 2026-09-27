@@ -3,11 +3,10 @@
 {% block title %}{{ thread.subject }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'messagesPageHeading'|trans, url: path('app_messages')},
         {label: thread.subject, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'messagesPageHeading'|trans }}{% endblock %}
 {% block page_actions %}{% endblock %}
@@ -33,14 +32,14 @@
                             <form method="post" action="{{ path('app_messages_archive', {id: thread.id}) }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token('message_archive') }}">
                                 <button type="submit" class="cm-mail-icon-btn" title="{{ 'messageArchiveAction'|trans }}" aria-label="{{ 'messageArchiveAction'|trans }}">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="4.5" rx="1.2"></rect><path d="M5 9v9.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V9"></path><path d="M10 13h4"></path></svg>
+                                    <twig:ux:icon name="archive" width="16" height="16"/>
                                 </button>
                             </form>
                         {% else %}
                             <form method="post" action="{{ path('app_messages_unarchive', {id: thread.id}) }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token('message_unarchive') }}">
                                 <button type="submit" class="cm-mail-icon-btn" title="{{ 'messageUnarchiveAction'|trans }}" aria-label="{{ 'messageUnarchiveAction'|trans }}">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="4.5" rx="1.2"></rect><path d="M5 9v9.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V9"></path><path d="M10 13h4"></path></svg>
+                                    <twig:ux:icon name="archive" width="16" height="16"/>
                                 </button>
                             </form>
                         {% endif %}
@@ -126,12 +125,12 @@
                         </div>
                         <div class="cm-mail-reply__actions">
                             {{ form_widget(replyForm.submit, {
-                                label: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4 3.5 10.8l6 2.4 2.4 6z"></path><path d="M20 4l-8.1 15.2"></path></svg> ' ~ ('messageReplySendAction'|trans),
+                                label: ux_icon('send', {width: 15, height: 15, 'stroke-width': 1.9}) ~ ' ' ~ ('messageReplySendAction'|trans),
                                 label_html: true,
                                 attr: {class: 'cm-mail-btn-primary', 'data-message-submit-target': 'button'},
                             }) }}
                             <label class="cm-mail-icon-btn" style="cursor:pointer">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 12.5 12.3 20a4.5 4.5 0 0 1-6.4-6.4l8-8a3 3 0 0 1 4.3 4.3l-8 8a1.5 1.5 0 0 1-2.2-2.1l7.2-7.2"></path></svg>
+                                <twig:ux:icon name="paperclip" width="16" height="16" stroke-width="1.8"/>
                                 <span class="visually-hidden">{{ 'messageAttachmentsFieldLabel'|trans }}</span>
                                 {{ form_widget(replyForm.attachments, {attr: {class: 'd-none'}}) }}
                             </label>

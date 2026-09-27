@@ -5,7 +5,7 @@
    a séance since it was shared has gained it here too, and a share row that claimed otherwise would
    be lying about something the reader can check in one click. #}
 {% set subject = share.subject %}
-<span class="cm-badge {{ subject.badgeClass }}">{{ subject.labelKey|trans }}</span>
+<twig:Cm:Badge :of="subject"/>
 <div class="cm-share__detail">
     {% if subject.value == 'sequence' and share.sequenceTemplate %}
         {{ 'contentShareSeanceCountLabel'|trans({'%count%': share.sequenceTemplate.seanceTemplates|length}) }}

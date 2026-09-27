@@ -14,18 +14,17 @@
 
 {% block page_breadcrumb %}
     {% set segments = [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
         {label: assignment.program.displayShortName, url: path('app_program_students', {id: assignment.program.id})},
         {label: 'studentWorkNavLabel'|trans, url: path('app_student_work')},
         {label: assignment.title, url: app.request.requestUri},
     ] %}
-    {% include '_breadcrumb.html.twig' with {segments: segments} %}
+    {{ component('Cm:Breadcrumb', {segments: segments}) }}
 {% endblock %}
 {% block page_title %}{{ assignment.title }}{% endblock %}
 
 {% block main %}
     <div class="cm-video-head">
-        <span class="cm-badge {{ assignment.nature.badgeClass }}">{{ assignment.nature.labelKey|trans }}</span>
+        <twig:Cm:Badge :of="assignment.nature"/>
         <span class="cm-video-head__due">{{ 'studentWorkWatchDueLabel'|trans({'%date%': assignment.dueDate|localized_date('d MMMM')}) }}</span>
         {%- if assignment.topic %}<span class="cm-video-head__topic">{{ assignment.topic.name }}</span>{% endif -%}
     </div>

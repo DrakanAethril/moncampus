@@ -3,11 +3,10 @@
 {% block title %}{{ 'gameLevelLabelsHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'settingsConfigurationNavLabel'|trans, url: path('app_settings_configuration')},
         {label: 'gameLevelLabelsHeading'|trans, url: path('app_settings_game_levels')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'gameLevelLabelsHeading'|trans }}{% endblock %}
@@ -44,10 +43,8 @@
             <span>{{ 'gameLevelLabelsNoteText'|trans }}</span>
         </div>
 
-        <div class="cm-actionbar">
-            <div class="cm-actionbar__buttons">
-                <button type="submit" class="cm-btn cm-btn--primary">{{ 'submitSaveAction'|trans }}</button>
-            </div>
-        </div>
+        <twig:Cm:ActionBar>
+            <button type="submit" class="cm-btn cm-btn--primary">{{ 'submitSaveAction'|trans }}</button>
+        </twig:Cm:ActionBar>
     </form>
 {% endblock %}

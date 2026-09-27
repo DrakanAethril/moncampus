@@ -6,6 +6,9 @@ namespace App\Command;
 
 use App\Repository\ConsoleSessionRepository;
 use App\Repository\JobboardOfferRepository;
+use App\Repository\OAuthAuthorizationCodeRepository;
+use App\Repository\OAuthClientRepository;
+use App\Repository\OAuthTokenRepository;
 use App\Repository\PlatformActivityRepository;
 use App\Repository\QuizAttemptEventRepository;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -39,12 +42,19 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * confuse it with closing: an offer that left its site keeps its row, because how long it stayed
  * online is an information; this is about adverts nobody will ever consult again.
  *
+ * **A fifth family since the Claude connector: its expired OAuth secrets, 30 days after expiry.**
+ * An expired code or token opens nothing; it is kept a month only so that a replayed refresh token
+ * is still recognised - and answered by revoking its connection - rather than met as a stranger.
+ * The clients nobody ever consented to go at the same age: registration is open to the internet by
+ * specification, and each probe leaves a row. Consented clients and their grants stay, as the trace
+ * of who acted through the connector.
+ *
  * To be wired to a scheduled task (once a day is more than enough). With no scheduler, the command
  * stays usable by hand; nothing breaks if it never runs, the tables simply grow.
  */
 #[AsCommand(
     name: 'app:purge-platform-activity',
-    description: 'Applique les rétentions de la plateforme : journal, sessions de console, surveillance de quiz, offres du jobboard.',
+    description: 'Applique les rétentions de la plateforme : journal, sessions de console, surveillance de quiz, offres du jobboard, secrets OAuth expirés.',
 )]
 class PurgePlatformActivityCommand extends Command
 {
@@ -56,11 +66,17 @@ class PurgePlatformActivityCommand extends Command
     /** Jobboard offers, read on the advert's publication date. Twenty-four months. */
     private const int JOBBOARD_RETENTION_MONTHS = 24;
 
+    /** Expired OAuth codes and tokens, and never-consented clients, of the Claude connector. */
+    private const int OAUTH_RETENTION_DAYS = 30;
+
     public function __construct(
         private readonly PlatformActivityRepository $repository,
         private readonly ConsoleSessionRepository $consoleSessions,
         private readonly QuizAttemptEventRepository $quizEvents,
         private readonly JobboardOfferRepository $jobboardOffers,
+        private readonly OAuthTokenRepository $oauthTokens,
+        private readonly OAuthAuthorizationCodeRepository $oauthCodes,
+        private readonly OAuthClientRepository $oauthClients,
     ) {
         parent::__construct();
     }
@@ -82,6 +98,7 @@ class PurgePlatformActivityCommand extends Command
         $consoleThreshold = new \DateTimeImmutable(\sprintf('-%d days', $consoleDays));
         $jobboardMonths = max(1, (int) $input->getOption('jobboard-months'));
         $jobboardThreshold = new \DateTimeImmutable(\sprintf('-%d months', $jobboardMonths));
+        $oauthThreshold = new \DateTimeImmutable(\sprintf('-%d days', self::OAUTH_RETENTION_DAYS));
 
         if ($input->getOption('dry-run')) {
             $count = (int) $this->repository->createQueryBuilder('a')
@@ -107,6 +124,13 @@ class PurgePlatformActivityCommand extends Command
                 $this->jobboardOffers->countPublishedBefore($jobboardThreshold),
                 $jobboardThreshold->format('d/m/Y'),
             ));
+            $io->info(\sprintf(
+                '%d jeton(s), %d code(s) et %d client(s) OAuth du connecteur Claude expirés avant le %s seraient supprimés.',
+                $this->oauthTokens->countExpiredBefore($oauthThreshold),
+                $this->oauthCodes->countExpiredBefore($oauthThreshold),
+                $this->oauthClients->countUnconsentedBefore($oauthThreshold),
+                $oauthThreshold->format('d/m/Y'),
+            ));
 
             return Command::SUCCESS;
         }
@@ -126,6 +150,11 @@ class PurgePlatformActivityCommand extends Command
         // falling back to the day the offer was first seen when it never carried one.
         $offers = $this->jobboardOffers->deletePublishedBefore($jobboardThreshold);
         $io->success(\sprintf('%d offre(s) du jobboard publiée(s) avant le %s supprimée(s).', $offers, $jobboardThreshold->format('d/m/Y')));
+
+        $tokens = $this->oauthTokens->deleteExpiredBefore($oauthThreshold);
+        $codes = $this->oauthCodes->deleteExpiredBefore($oauthThreshold);
+        $clients = $this->oauthClients->deleteUnconsentedBefore($oauthThreshold);
+        $io->success(\sprintf('%d jeton(s), %d code(s) et %d client(s) OAuth du connecteur Claude supprimé(s).', $tokens, $codes, $clients));
 
         return Command::SUCCESS;
     }

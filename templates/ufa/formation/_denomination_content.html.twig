@@ -2,10 +2,7 @@
     {{ form_errors(form) }}
     <div class="row g-4 align-items-start">
         <div class="col-12 col-lg-6 d-flex flex-column gap-3">
-            <div class="cm-subhead">
-                <div class="cm-subhead__title">{{ 'internshipLegalNameDefaultSectionTitle'|trans }}</div>
-                <div class="cm-subhead__hint">{{ 'internshipLegalNameDefaultSectionHint'|trans }}</div>
-            </div>
+            <twig:Cm:Subhead :title="'internshipLegalNameDefaultSectionTitle'|trans" :hint="'internshipLegalNameDefaultSectionHint'|trans"/>
             <div style="max-width: 420px;">
                 {{ form_row(form.legalName) }}
             </div>
@@ -17,10 +14,7 @@
 
         {% if program.options is not empty %}
             <div class="col-12 col-lg-6 d-flex flex-column gap-2">
-                <div class="cm-subhead">
-                    <div class="cm-subhead__title">{{ 'internshipOptionLegalNamesSectionTitle'|trans }}</div>
-                    <div class="cm-subhead__hint">{{ 'internshipOptionLegalNamesHelpText'|trans }}</div>
-                </div>
+                <twig:Cm:Subhead :title="'internshipOptionLegalNamesSectionTitle'|trans" :hint="'internshipOptionLegalNamesHelpText'|trans"/>
                 {% for option in program.options %}
                     <div class="cm-optionrow">
                         <div>
@@ -37,10 +31,7 @@
     {# Second zone of the same form and the same actionbar - what the formation is called, then
        what it awards. #}
     <div class="d-flex flex-column gap-2 mt-4">
-        <div class="cm-subhead">
-            <div class="cm-subhead__title">{{ 'programCertificationSectionTitle'|trans }}</div>
-            <div class="cm-subhead__hint">{{ 'programCertificationSectionHint'|trans }}</div>
-        </div>
+        <twig:Cm:Subhead :title="'programCertificationSectionTitle'|trans" :hint="'programCertificationSectionHint'|trans"/>
         {% for row in certificationRows %}
             {% set subForm = attribute(form, row.fieldName) %}
             <div class="cm-editorblock">
@@ -70,12 +61,9 @@
         {% endfor %}
     </div>
 
-    <div class="cm-actionbar">
-        {% include '_last_modified_meta.html.twig' with {entity: info} %}
-        <div class="cm-actionbar__buttons">
-            <a href="{{ path('app_ufa_formation_denomination', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-            {{ form_widget(form.submit) }}
-        </div>
-    </div>
+    <twig:Cm:ActionBar :lastModified="info">
+        <a href="{{ path('app_ufa_formation_denomination', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+        {{ form_widget(form.submit) }}
+    </twig:Cm:ActionBar>
     {{ form_rest(form) }}
 {{ form_end(form) }}

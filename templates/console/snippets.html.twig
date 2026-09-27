@@ -3,10 +3,9 @@
 {% block title %}{{ 'consoleSnippetsHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'consoleSnippetsHeading'|trans, url: path('app_console_snippets')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'consoleSnippetsHeading'|trans }}{% endblock %}
@@ -40,11 +39,9 @@
                 <p class="cm-hint">{{ 'consoleSnippetTokensHelp'|trans }}</p>
             </fieldset>
             <div class="cm-fieldset">
-                <div class="cm-actionbar" style="margin-top: 0; border-top: 0; padding-top: 0;">
-                    <div class="cm-actionbar__buttons">
-                        <button type="submit" class="cm-btn cm-btn--primary">{{ 'consoleSnippetSaveAction'|trans }}</button>
-                    </div>
-                </div>
+                <twig:Cm:ActionBar style="margin-top: 0; border-top: 0; padding-top: 0;">
+                    <button type="submit" class="cm-btn cm-btn--primary">{{ 'consoleSnippetSaveAction'|trans }}</button>
+                </twig:Cm:ActionBar>
             </div>
         </form>
     </div>

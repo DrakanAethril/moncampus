@@ -3,13 +3,12 @@
 {% block title %}{{ sequence.title }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'progressionNavLabel'|trans, url: path('app_progression')},
         {label: 'progressionManagePageHeading'|trans, url: path('app_progression_manage')},
         {label: progression.displayName, url: path('app_progression_show', {id: progression.id})},
         {label: sequence.title, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'progressionPlacementPageHeading'|trans({'%sequence%': sequence.title}) }}{% endblock %}
 

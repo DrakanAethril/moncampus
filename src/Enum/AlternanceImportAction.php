@@ -9,7 +9,7 @@ namespace App\Enum;
  * ImportAnalyzer, shown on the analysis screen, and re-decided from scratch before anything is
  * written.
  */
-enum AlternanceImportAction: string
+enum AlternanceImportAction: string implements HasBadge
 {
     /** A new alternance, plus whatever employer/tutor account it needs. */
     case Create = 'create';
@@ -29,12 +29,12 @@ enum AlternanceImportAction: string
         };
     }
 
-    public function badgeClass(): string
+    public function badgeTone(): BadgeTone
     {
         return match ($this) {
-            self::Create => 'cm-badge--green',
-            self::Skip => 'cm-badge--gray',
-            self::Blocked => 'cm-badge--red',
+            self::Create => BadgeTone::Green,
+            self::Skip => BadgeTone::Gray,
+            self::Blocked => BadgeTone::Red,
         };
     }
 }

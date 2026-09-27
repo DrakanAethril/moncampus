@@ -5,11 +5,10 @@
 {# Reached from Outils > Concours live, which asks for the class first - hence a trail through the
    picker rather than through the class's own screens. #}
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'quizLiveNavLabel'|trans, url: path('app_tools_quiz_live')},
         {label: program.displayShortName, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'quizLiveHistoryPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
 

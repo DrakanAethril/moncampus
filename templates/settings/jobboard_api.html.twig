@@ -3,11 +3,10 @@
 {% block title %}{{ 'jobboardSettingsHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'settingsConfigurationNavLabel'|trans, url: path('app_settings_configuration')},
         {label: 'jobboardSettingsHeading'|trans, url: path('app_settings_jobboard_api')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'jobboardSettingsHeading'|trans }}{% endblock %}
@@ -30,10 +29,7 @@
             </div>
         {% endif %}
 
-        <div class="cm-subhead" style="margin-bottom: 14px">
-            <div class="cm-subhead__title">{{ 'jobboardTokenListHeading'|trans }}</div>
-            <div class="cm-subhead__hint">{{ 'jobboardTokenListHintText'|trans }}</div>
-        </div>
+        <twig:Cm:Subhead style="margin-bottom: 14px" :title="'jobboardTokenListHeading'|trans" :hint="'jobboardTokenListHintText'|trans"/>
 
         <table class="card-table">
             <thead>
@@ -78,10 +74,7 @@
             </tbody>
         </table>
 
-        <div class="cm-subhead" style="margin: 24px 0 14px">
-            <div class="cm-subhead__title">{{ 'jobboardTokenNewHeading'|trans }}</div>
-            <div class="cm-subhead__hint">{{ 'jobboardTokenNewHintText'|trans }}</div>
-        </div>
+        <twig:Cm:Subhead style="margin: 24px 0 14px" :title="'jobboardTokenNewHeading'|trans" :hint="'jobboardTokenNewHintText'|trans"/>
 
         <form method="post" action="{{ path('app_settings_jobboard_token_create') }}">
             <input type="hidden" name="_token" value="{{ csrf_token('jobboard_token_create') }}">
@@ -102,11 +95,9 @@
                     </select>
                 </label>
             </div>
-            <div class="cm-actionbar">
-                <div class="cm-actionbar__buttons">
-                    <button type="submit" class="cm-btn cm-btn--primary">{{ 'jobboardTokenCreateAction'|trans }}</button>
-                </div>
-            </div>
+            <twig:Cm:ActionBar>
+                <twig:Cm:Button variant="primary" type="submit">{{ 'jobboardTokenCreateAction'|trans }}</twig:Cm:Button>
+            </twig:Cm:ActionBar>
         </form>
     </div>
 
@@ -118,16 +109,14 @@
        Generated from the enums the validator itself uses - never typed by hand, or it would be
        wrong the day a source is added, and wrong where nobody re-reads it. #}
     <div class="card cm-jb-sheet" data-controller="copy-block">
-        <div class="cm-subhead cm-jb-sheet__head">
-            <div>
-                <div class="cm-subhead__title">{{ 'jobboardInstructionsHeading'|trans }}</div>
-                <div class="cm-subhead__hint">{{ 'jobboardInstructionsHintText'|trans }}</div>
-            </div>
+        <twig:Cm:Subhead class="cm-jb-sheet__head" :title="'jobboardInstructionsHeading'|trans" :hint="'jobboardInstructionsHintText'|trans">
             {# Above the sheet and not under it: sixteen screens of Markdown must not be scrolled
                past to reach the button that copies them. #}
-            <button type="button" class="cm-btn cm-btn--outline" data-action="click->copy-block#copy"
-                    data-copy-block-done-label-param="{{ 'jobboardInstructionsCopiedText'|trans }}">{{ 'jobboardInstructionsCopyAction'|trans }}</button>
-        </div>
+            <twig:block name="action">
+                <twig:Cm:Button variant="outline" data-action="click->copy-block#copy"
+                        data-copy-block-done-label-param="{{ 'jobboardInstructionsCopiedText'|trans }}">{{ 'jobboardInstructionsCopyAction'|trans }}</twig:Cm:Button>
+            </twig:block>
+        </twig:Cm:Subhead>
         <pre class="cm-jb-instructions" data-copy-block-target="source">{{ instructions }}</pre>
         <div class="cm-jb-sheet__foot">{{ 'jobboardInstructionsNoSecretText'|trans }}</div>
     </div>

@@ -3,13 +3,12 @@
 {% block title %}{{ series.name }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'surveysPageHeading'|trans, url: path('app_surveys')},
         {label: series.name, url: path('app_survey_series', {id: series.id})},
         {label: 'surveyCompareWavesActionLabel'|trans, url: path('app_survey_series', {id: series.id})},
         {label: 'surveyIndividualComparisonActionLabel'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'surveyIndividualPageHeading'|trans({'%name%': series.name}) }}{% endblock %}

@@ -39,7 +39,7 @@
                         {% set messaging_is_active = current_route starts with 'app_messages' %}
                         <div class="nav-item">
                             <a href="{{ path('app_messages') }}" class="cm-mail {{ messaging_is_active ? 'is-active' }}" title="{{ 'messagingNavLabel'|trans }}" aria-label="{{ 'messagingUnreadAriaLabel'|trans({'%count%': unread_message_count}) }}"{{ messaging_is_active ? ' aria-current="page"' }}>
-                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="3"></rect><path d="M3.5 7.5 10.4 12.6a2.7 2.7 0 0 0 3.2 0L20.5 7.5"></path></svg>
+                                <twig:ux:icon name="mail" width="26" height="26" stroke-width="1.6"/>
                                 {% if unread_message_count > 0 %}
                                     <span class="cm-mail__badge">{{ unread_message_count > 99 ? '99+' : unread_message_count }}</span>
                                 {% endif %}
@@ -472,10 +472,13 @@
                            nothing are the same defect, and both become reachable as soon as an
                            establishment switches a few of these off. #}
                         {% set tools_run = feature('class_tools') or feature('word_cloud') or feature('quiz_live') %}
+                        {# École Directe is tried by administrators only for now, so the entry asks for
+                           the role its controllers do (App\Controller\EcoleDirecte\EcoleDirecteControllerTrait). #}
+                        {% set tools_ecole_directe = feature('ecole_directe') and is_granted('ROLE_ADMIN') %}
                         {% set tools_prepare = feature('progression') or feature('sequence_library') or feature('quiz_library')
                             or feature('file_library') or feature('surveys') or feature('content_sharing') or feature('audio') %}
                         {% set tools_follow = feature('lesson_log') or feature('student_work') or feature('dossiers') or feature('quiz_library')
-                            or feature('gradebook_entry') or feature('job_search') %}
+                            or feature('gradebook_entry') or feature('job_search') or tools_ecole_directe %}
                         {# « Au-delà d'un diplôme » - what happens to a student after the formation.
                            A group of its own rather than an entry under « Suivre les étudiants »:
                            the jobboard is not about following anybody, it is the market the class
@@ -493,7 +496,8 @@
                                 or current_route starts with 'app_shares'
                                 or current_route starts with 'app_survey'
                                 or current_route starts with 'app_jobboard'
-                                or current_route starts with 'app_dossier' %}
+                                or current_route starts with 'app_dossier'
+                                or current_route starts with 'app_ecole_directe' %}
                             {# cm-toolsmenu-host: the panel is centred on the bar rather than on the
                                entry that opens it, so the item gives up being the menu's
                                positioning context - see .cm-toolsmenu-host in app.css. #}
@@ -600,6 +604,7 @@
                                     {% if feature('quiz_library') %}<a class="dropdown-item {{ current_route == 'app_tools_quiz' ? 'active' }}" href="{{ path('app_tools_quiz') }}">{{ 'quizTrackingPageHeading'|trans }}</a>{% endif %}
                                     {% if feature('gradebook_entry') %}<a class="dropdown-item {{ current_route == 'app_tools_gradebook' ? 'active' }}" href="{{ path('app_tools_gradebook') }}">{{ 'gradebookNavLabel'|trans }}</a>{% endif %}
                                     {% if feature('job_search') %}<a class="dropdown-item {{ current_route == 'app_tools_job_search' ? 'active' }}" href="{{ path('app_tools_job_search') }}">{{ 'jobSearchTrackingNavLabel'|trans }}</a>{% endif %}
+                                    {% if tools_ecole_directe %}<a class="dropdown-item {{ current_route starts with 'app_ecole_directe' ? 'active' }}" href="{{ path('app_ecole_directe') }}">{{ 'ecoleDirecteHeading'|trans }}</a>{% endif %}
                                     </div>
                                     {% endif %}
                                     {% if tools_beyond %}

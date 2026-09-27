@@ -7,10 +7,9 @@
        virtuelles », but nothing navigates through Infrastructure to reach this screen - that whole
        area is ROLE_ADMIN and this page exists for the students and teachers who are not. Depth
        follows navigation, and this one hangs off the menu directly. #}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'myMachinesHeading'|trans, url: path('app_my_machines')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'myMachinesHeading'|trans }}{% endblock %}

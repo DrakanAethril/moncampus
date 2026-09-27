@@ -3,11 +3,10 @@
 {% block title %}{{ 'gameTitleChoiceHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'gameLevelingHeading'|trans, url: path('app_game_leveling')},
         {label: 'gameTitleChoiceHeading'|trans, url: path('app_game_title')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'gameTitleChoiceHeading'|trans }}{% endblock %}
@@ -74,11 +73,9 @@
             {% endfor %}
         </div>
 
-        <div class="cm-actionbar">
-            <div class="cm-actionbar__buttons">
-                <a href="{{ path('app_game_leveling') }}" class="cm-btn cm-btn--outline">{{ 'cancelAction'|trans }}</a>
-                <button type="submit" class="cm-btn cm-btn--primary">{{ 'gameTitleSaveAction'|trans }}</button>
-            </div>
-        </div>
+        <twig:Cm:ActionBar>
+            <a href="{{ path('app_game_leveling') }}" class="cm-btn cm-btn--outline">{{ 'cancelAction'|trans }}</a>
+            <button type="submit" class="cm-btn cm-btn--primary">{{ 'gameTitleSaveAction'|trans }}</button>
+        </twig:Cm:ActionBar>
     </form>
 {% endblock %}

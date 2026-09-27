@@ -3,12 +3,11 @@
 {% block title %}{{ quizInstance.name }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'quizTrackingPageHeading'|trans, url: path('app_tools_quiz', {program: program.id})},
         {label: program.displayShortName, url: path('app_program_quiz', {id: program.id})},
         {label: 'programQuizResultsBreadcrumbLabel'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}
     {{ 'programQuizResultsHeadingTemplate'|trans({'%name%': quizInstance.name}) }}
@@ -77,13 +76,12 @@
         </div>
     </div>
 
-    {% include '_tabs.html.twig' with {
-        tabs: [
-            {url: path('app_program_quiz_show', {id: program.id, instanceId: quizInstance.id, tab: 'student'}), label: 'programQuizTabStudentLabel'|trans, active: tab == 'student'},
-            {url: path('app_program_quiz_show', {id: program.id, instanceId: quizInstance.id, tab: 'question'}), label: 'programQuizTabQuestionLabel'|trans, active: tab == 'question'},
-        ],
-        tabs_action: 'program/_quiz_results_sort_select.html.twig',
-    } %}
+    <twig:Cm:Tabs :tabs="[
+        {url: path('app_program_quiz_show', {id: program.id, instanceId: quizInstance.id, tab: 'student'}), label: 'programQuizTabStudentLabel'|trans, active: tab == 'student'},
+        {url: path('app_program_quiz_show', {id: program.id, instanceId: quizInstance.id, tab: 'question'}), label: 'programQuizTabQuestionLabel'|trans, active: tab == 'question'},
+    ]">
+        <twig:block name="action">{% include 'program/_quiz_results_sort_select.html.twig' %}</twig:block>
+    </twig:Cm:Tabs>
     <div class="card cm-card--tabbed">
         {% if tab == 'student' %}
             <div class="table-responsive">

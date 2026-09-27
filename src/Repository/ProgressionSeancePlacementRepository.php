@@ -49,6 +49,44 @@ class ProgressionSeancePlacementRepository extends ServiceEntityRepository
     }
 
     /**
+     * The placements of a whole set of créneaux at once, keyed by créneau id - what a list of
+     * séances needs to name the séance planned on each row without asking once per row.
+     *
+     * Same rule as findOneByLessonSession(): a retirée séance occupies nothing and is skipped; the
+     * order within a créneau is the same too.
+     *
+     * @param list<LessonSession> $sessions
+     *
+     * @return array<int, list<ProgressionSeancePlacement>>
+     */
+    public function findForLessonSessions(array $sessions): array
+    {
+        if ([] === $sessions) {
+            return [];
+        }
+
+        /** @var list<ProgressionSeancePlacement> $placements */
+        $placements = $this->createQueryBuilder('p')
+            ->innerJoin('p.progressionSeance', 'se')
+            ->innerJoin('se.progressionSequence', 'sq')
+            ->addSelect('se', 'sq')
+            ->where('p.lessonSession IN (:sessions)')
+            ->andWhere('se.removed = false')
+            ->setParameter('sessions', $sessions)
+            ->orderBy('p.partIndex', 'ASC')
+            ->addOrderBy('p.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $bySession = [];
+        foreach ($placements as $placement) {
+            $bySession[(int) $placement->getLessonSession()?->getId()][] = $placement;
+        }
+
+        return $bySession;
+    }
+
+    /**
      * The SeanceInstances of this Program that a progression has actually committed to a créneau -
      * the "x / y programmées" column of the Program-side séquences list.
      *

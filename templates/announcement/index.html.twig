@@ -1,6 +1,11 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'announcementsPageHeading'|trans }}{% endblock %}
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'announcementsPageHeading'|trans, url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
 {% block page_title %}{{ 'announcementsPageHeading'|trans }}{% endblock %}
 
 {% block page_actions %}

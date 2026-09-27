@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\SequenceFolder;
+use App\Entity\SequenceTemplate;
 use App\Entity\User;
 use App\Repository\SequenceFolderRepository;
 use App\Security\Voter\SequenceFolderVoter;
@@ -95,6 +96,25 @@ trait SequenceLibraryFolderTrait
         }
 
         return $ancestors;
+    }
+
+    /**
+     * The folders a séquence is filed under, root first, ending with its own - the middle of the
+     * breadcrumb on the séquence, séance and phase screens, so that leaving one lands back in the
+     * folder it came from (the same rule as QuizLibraryFolderTrait::folderTrailOf()). Empty for
+     * anybody but the owner: a folder belongs to a personal classement, and staff reading a
+     * séquence are not walked through someone else's.
+     *
+     * @return list<SequenceFolder>
+     */
+    private function sequenceFolderTrailOf(SequenceFolderRepository $folders, SequenceTemplate $sequenceTemplate, User $reader): array
+    {
+        $folder = $sequenceTemplate->getFolder();
+        if (null === $folder || $folder->getOwner() !== $reader) {
+            return [];
+        }
+
+        return [...$this->sequenceAncestorsOf($folders, $folder), $folder];
     }
 
     /** Back to the folder that was being looked at - the root when there is none. */

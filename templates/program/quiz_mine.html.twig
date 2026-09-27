@@ -3,11 +3,10 @@
 {% block title %}{{ 'programQuizMinePageHeadingTemplate'|trans({'%program%': program.displayShortName}) }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: program.displayShortName, url: path('app_program_quiz_mine', {id: program.id})},
         {label: 'programQuizNavLabel'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'programQuizMinePageHeadingTemplate'|trans({'%program%': program.displayShortName}) }}{% endblock %}
 
@@ -87,7 +86,7 @@
                                            same shape the course space uses for a locked chapter. #}
                                         {% for reason in row.lockedBy %}
                                             <span class="cm-lockwhy">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+                                                <twig:ux:icon name="lock" width="12" height="12" stroke-width="2.2"/>
                                                 {{ reason }}
                                             </span>
                                         {% endfor %}
@@ -142,7 +141,7 @@
                                     {% if row.lockedBy is not empty %}
                                         {% for reason in row.lockedBy %}
                                             <span class="cm-lockwhy">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+                                                <twig:ux:icon name="lock" width="12" height="12" stroke-width="2.2"/>
                                                 {{ reason }}
                                             </span>
                                         {% endfor %}

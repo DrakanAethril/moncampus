@@ -76,12 +76,11 @@
 {% block title %}{{ pageLabel }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'directoryNavLabel'|trans, url: path('app_directory_groups')},
         {label: 'usersListPageHeading'|trans, url: path('app_directory_users')},
         {label: pageLabel, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}
@@ -152,9 +151,7 @@
                 {{ form_errors(form) }}
                 <div class="row">
                     <div class="col-md-5 d-flex flex-column gap-3">
-                        <div class="cm-subhead">
-                            <div class="cm-subhead__title">{{ 'newUserIdentitySectionTitle'|trans }}</div>
-                        </div>
+                        <twig:Cm:Subhead :title="'newUserIdentitySectionTitle'|trans"/>
 
                         {% if isEdit %}
                             {# Only remaining editable fields in edit mode - everything else below
@@ -171,28 +168,28 @@
                                 <div>
                                     <div class="cm-readonly-panel__label">
                                         {{ 'userFirstnameFieldLabel'|trans }}
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10.5" width="16" height="10" rx="2"></rect><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"></path></svg>
+                                        <twig:ux:icon name="lock" width="12" height="12"/>
                                     </div>
                                     <div class="cm-readonly-panel__value">{{ editedUser.firstname }}</div>
                                 </div>
                                 <div>
                                     <div class="cm-readonly-panel__label">
                                         {{ 'userLastnameFieldLabel'|trans }}
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10.5" width="16" height="10" rx="2"></rect><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"></path></svg>
+                                        <twig:ux:icon name="lock" width="12" height="12"/>
                                     </div>
                                     <div class="cm-readonly-panel__value">{{ editedUser.lastname }}</div>
                                 </div>
                                 <div>
                                     <div class="cm-readonly-panel__label">
                                         {{ 'userUsernameColumnLabel'|trans }}
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10.5" width="16" height="10" rx="2"></rect><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"></path></svg>
+                                        <twig:ux:icon name="lock" width="12" height="12"/>
                                     </div>
                                     <div class="cm-readonly-panel__value">{{ editedUser.username }}</div>
                                 </div>
                                 <div>
                                     <div class="cm-readonly-panel__label">
                                         {{ 'userTypeColumnLabel'|trans }}
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10.5" width="16" height="10" rx="2"></rect><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"></path></svg>
+                                        <twig:ux:icon name="lock" width="12" height="12"/>
                                     </div>
                                     <div class="cm-readonly-panel__value">{{ resolvedType ?? '—' }}</div>
                                 </div>
@@ -202,7 +199,7 @@
                                 <div>
                                     <div class="cm-readonly-panel__label">
                                         {{ 'userLdapAddStatusLabel'|trans }}
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10.5" width="16" height="10" rx="2"></rect><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"></path></svg>
+                                        <twig:ux:icon name="lock" width="12" height="12"/>
                                     </div>
                                     <div class="cm-readonly-panel__value">
                                         {% if ldapAddStatus %}
@@ -219,7 +216,7 @@
                                     <div>
                                         <div class="cm-readonly-panel__label">
                                             {{ 'userLastAccountOperationLabel'|trans }}
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10.5" width="16" height="10" rx="2"></rect><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"></path></svg>
+                                            <twig:ux:icon name="lock" width="12" height="12"/>
                                         </div>
                                         <div class="cm-readonly-panel__value">
                                             {% if accountStatus is defined and accountStatus %}
@@ -260,7 +257,7 @@
                                         {% for bucket in adGroupBuckets %}
                                             {% for group in bucket.groups %}
                                                 <span class="cm-groupchip cm-groupchip--locked" aria-readonly="true">
-                                                    <svg class="cm-groupchip__lock" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10.5" width="16" height="10" rx="2"></rect><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"></path></svg>
+                                                    <twig:ux:icon name="lock" class="cm-groupchip__lock" width="12" height="12"/>
                                                     {{ group.name }}
                                                 </span>
                                             {% endfor %}
@@ -292,9 +289,7 @@
                         {% endif %}
                     </div>
                     <div class="col-md-7 d-flex flex-column gap-3">
-                        <div class="cm-subhead">
-                            <div class="cm-subhead__title">{{ isEdit ? 'editUserSecondaryGroupsSectionTitle'|trans : 'newUserSecondaryGroupsSectionTitle'|trans }}</div>
-                        </div>
+                        <twig:Cm:Subhead :title="isEdit ? 'editUserSecondaryGroupsSectionTitle'|trans : 'newUserSecondaryGroupsSectionTitle'|trans"/>
                         <div>
                             {# create: form.userGroups (LdapManageUserType) against every active group;
                                edit: form.manualGroups (UserProfileType) against manually-assignable
@@ -347,10 +342,7 @@
                 {% endif %}
                 {% if showAccommodations|default(false) and form.accommodations is defined and form.accommodations.children|length > 0 %}
                     <div class="mt-4">
-                        <div class="cm-subhead mb-3">
-                            <div class="cm-subhead__title">{{ 'userAccommodationsSectionTitle'|trans }}</div>
-                            <div class="cm-subhead__hint">{{ 'userAccommodationsSectionHint'|trans }}</div>
-                        </div>
+                        <twig:Cm:Subhead class="mb-3" :title="'userAccommodationsSectionTitle'|trans" :hint="'userAccommodationsSectionHint'|trans"/>
                         <div class="cm-groupchips__list">
                             {% for child in form.accommodations.children %}
                                 <label class="cm-groupchip">
@@ -371,10 +363,7 @@
                     {% set primaryAliasId = editedUser.primaryAlias is not null ? editedUser.primaryAlias.id : null %}
 
                     <div class="mt-4" data-controller="email-alias-list">
-                        <div class="cm-subhead mb-3">
-                            <div class="cm-subhead__title">{{ 'userEmailAliasesSectionTitle'|trans }}</div>
-                            <div class="cm-subhead__hint">{{ 'userEmailAliasesSectionHint'|trans }}</div>
-                        </div>
+                        <twig:Cm:Subhead class="mb-3" :title="'userEmailAliasesSectionTitle'|trans" :hint="'userEmailAliasesSectionHint'|trans"/>
 
                         <div class="cm-alias-list{{ form.emailAliases|length == 0 ? ' d-none' : '' }}" data-email-alias-list-target="list">
                             <div class="cm-alias cm-alias--head">
@@ -406,10 +395,7 @@
                            out of the list go on being visible - still receiving, never written from,
                            never reassignable. #}
                         {% if archivedAliases|default([])|length > 0 %}
-                            <div class="cm-subhead mt-4 mb-2">
-                                <div class="cm-subhead__title">{{ 'userEmailAliasesArchivedTitle'|trans }}</div>
-                                <div class="cm-subhead__hint">{{ 'userEmailAliasesArchivedHint'|trans }}</div>
-                            </div>
+                            <twig:Cm:Subhead class="mt-4 mb-2" :title="'userEmailAliasesArchivedTitle'|trans" :hint="'userEmailAliasesArchivedHint'|trans"/>
                             <ul class="cm-chip-list list-unstyled mb-0">
                                 {% for archived in archivedAliases %}
                                     <li class="cm-chip">
@@ -427,10 +413,7 @@
                    may. #}
                 {% if loginHistory|default([])|length > 0 %}
                     <div class="mt-4">
-                        <div class="cm-subhead mb-2">
-                            <div class="cm-subhead__title">{{ 'userLoginHistoryTitle'|trans }}</div>
-                            <div class="cm-subhead__hint">{{ 'userLoginHistoryHint'|trans }}</div>
-                        </div>
+                        <twig:Cm:Subhead class="mb-2" :title="'userLoginHistoryTitle'|trans" :hint="'userLoginHistoryHint'|trans"/>
                         <ul class="cm-chip-list list-unstyled mb-0">
                             {% for entry in loginHistory %}
                                 <li class="cm-chip">
@@ -458,9 +441,7 @@
                    fileLibraryQuotaEditable), staff seeing the usage without being offered the box. #}
                 {% if isEdit and fileLibraryQuota is defined and fileLibraryQuota %}
                     <div class="mt-4">
-                        <div class="cm-subhead mb-3">
-                            <div class="cm-subhead__title">{{ 'fileLibraryQuotaCardTitle'|trans }}</div>
-                        </div>
+                        <twig:Cm:Subhead class="mb-3" :title="'fileLibraryQuotaCardTitle'|trans"/>
 
                         <p class="cm-flib__quota-usage">{{ 'fileLibraryQuotaUsageLabel'|trans({'%used%': fileLibraryQuota.usedLabel, '%limit%': fileLibraryQuota.limitLabel}) }}</p>
                         <div class="cm-flib__quota cm-flib__quota--{{ fileLibraryQuota.level }}">
@@ -486,12 +467,10 @@
                     </div>
                 {% endif %}
 
-                <div class="cm-actionbar">
-                    <div class="cm-actionbar__buttons">
-                        <a href="{{ path('app_directory_users') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                        {{ form_widget(form.submit) }}
-                    </div>
-                </div>
+                <twig:Cm:ActionBar>
+                    <a href="{{ path('app_directory_users') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {{ form_widget(form.submit) }}
+                </twig:Cm:ActionBar>
                 {{ form_rest(form) }}
             {{ form_end(form) }}
         </div>
@@ -505,9 +484,7 @@
     {% if isEdit and is_granted('ROLE_ADMIN') and featureRows is defined and featureRows %}
         <div class="card mt-3" id="features">
             <div class="card-body">
-                <div class="cm-subhead mb-3">
-                    <div class="cm-subhead__title">{{ 'featureOverridesCardTitle'|trans }}</div>
-                </div>
+                <twig:Cm:Subhead class="mb-3" :title="'featureOverridesCardTitle'|trans"/>
                 <p class="cm-hint">{{ 'featureOverridesCardHelpText'|trans }}</p>
 
                 <form method="post" action="{{ path('app_directory_users_features', {id: editedUser.id}) }}">
@@ -553,11 +530,9 @@
                         </table>
                     </div>
 
-                    <div class="cm-actionbar">
-                        <div class="cm-actionbar__buttons">
-                            <button type="submit" class="cm-btn cm-btn--primary">{{ 'submitSaveAction'|trans }}</button>
-                        </div>
-                    </div>
+                    <twig:Cm:ActionBar>
+                        <button type="submit" class="cm-btn cm-btn--primary">{{ 'submitSaveAction'|trans }}</button>
+                    </twig:Cm:ActionBar>
                 </form>
             </div>
         </div>

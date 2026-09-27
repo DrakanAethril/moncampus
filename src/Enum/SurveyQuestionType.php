@@ -21,7 +21,7 @@ namespace App\Enum;
  * is_scale flag, which declares that the answers' order_index *is* a value (§12.A). A separate
  * type would duplicate the single choice up to the point where the two diverge.
  */
-enum SurveyQuestionType: string
+enum SurveyQuestionType: string implements HasBadge
 {
     case Unique = 'unique';
     case Multiple = 'multiple';
@@ -101,12 +101,12 @@ enum SurveyQuestionType: string
     }
 
     /** Mockup palette: the two choice types blue, Ordre amber, the two others neutral. */
-    public function badgeClass(): string
+    public function badgeTone(): BadgeTone
     {
         return match ($this) {
-            self::Unique, self::Multiple => 'cm-badge--blue',
-            self::Ordre => 'cm-badge--gold',
-            self::Commentaire, self::Titre => 'cm-badge--gray',
+            self::Unique, self::Multiple => BadgeTone::Blue,
+            self::Ordre => BadgeTone::Gold,
+            self::Commentaire, self::Titre => BadgeTone::Gray,
         };
     }
 

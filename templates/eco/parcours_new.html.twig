@@ -3,11 +3,10 @@
 {% block title %}{{ 'ecoParcoursNewButtonLabel'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'ecoParcoursListPageHeading'|trans, url: path('app_eco_parcours')},
         {label: 'ecoParcoursNewButtonLabel'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'ecoParcoursNewButtonLabel'|trans }}{% endblock %}
 
@@ -26,12 +25,10 @@
                 <span class="cm-note__icon">i</span>
                 <div>{{ 'ecoParcoursNewNoteText'|trans }}</div>
             </div>
-            <div class="cm-actionbar">
-                <div class="cm-actionbar__buttons">
-                    <a href="{{ path('app_eco_parcours') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                    {{ form_widget(form.submit) }}
-                </div>
-            </div>
+            <twig:Cm:ActionBar>
+                <a href="{{ path('app_eco_parcours') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                {{ form_widget(form.submit) }}
+            </twig:Cm:ActionBar>
             {{ form_rest(form) }}
             {{ form_end(form) }}
         </div>

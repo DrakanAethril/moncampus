@@ -26,6 +26,26 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.27'
+      date: '2026-09-27'
+      summary: "Les enseignants pourront brancher MonCampus dans leur propre Claude pour préparer quiz, séquences, barèmes et cahier de texte : le connecteur est en essai et s'ouvrira progressivement. Tous les écrans ont désormais leur fil d'Ariane, et le matériel peut être rangé dans les salles de l'établissement."
+      entries:
+          - type: nouveaute
+            title: "Brancher MonCampus dans Claude, en essai"
+            detail: "Un enseignant pourra confier à son propre Claude ses bibliothèques de quiz, de séquences et de fichiers, ses évaluations et leurs barèmes, son emploi du temps, son cahier de texte et sa progression ; la connexion se fait avec un mot de passe dédié, choisi dans Mon profil."
+          - type: modification
+            title: "Matériel : les salles de l'établissement proposées comme emplacements"
+            detail: "En plus des lieux de rangement créés à la main."
+          - type: modification
+            title: "Un fil d'Ariane sur chaque écran, et des barres d'action et en-têtes harmonisés"
+          - type: fix
+            title: "Carnet de notes : modifier le barème d'une évaluation déjà notée est refusé clairement au lieu d'une erreur"
+          - type: fix
+            title: "Les menus ⋮ s'ouvrent de nouveau correctement, notamment dans la bibliothèque de fichiers"
+          - type: interne
+            title: "Prototype de liaison avec École Directe, réservé à l'administration"
+          - type: interne
+            title: "Composants d'interface partagés, icônes en fichiers et calendrier embarqué dans l'application"
     - version: '2026.09.26'
       date: '2026-09-26'
       summary: "Le petit matériel de l'établissement a désormais son inventaire : étiquettes, mouvements, incidents, liste à commander, comptages et bilan annuel des pertes. Au lancement d'un quiz composé de plusieurs quiz, chacun peut recevoir sa part des questions tirées."

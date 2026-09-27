@@ -3,11 +3,10 @@
 {% block title %}{{ 'sequenceImportDonePageHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'libraryNavLabel'|trans, url: path('app_library_sequences')},
         {label: sequenceTemplate.titre, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'sequenceImportDonePageHeading'|trans }}{% endblock %}
 
@@ -17,16 +16,11 @@
        quizzes, and this is the one screen that can say so. #}
     <div class="card cm-audio-card">
         <div class="cm-audio-card__body d-flex flex-column gap-3">
-            <div class="cm-subhead">
-                <div class="cm-subhead__title">
-                    {{ 'sequenceImportDoneSummaryTemplate'|trans({
+            <twig:Cm:Subhead :title="'sequenceImportDoneSummaryTemplate'|trans({
                         '%titre%': sequenceTemplate.titre,
                         '%seances%': sequenceTemplate.seanceTemplates|length,
                         '%phases%': phaseCount,
-                    }) }}
-                </div>
-                <div class="cm-subhead__hint">{{ 'sequenceImportDoneNextTitle'|trans }}</div>
-            </div>
+                    })" :hint="'sequenceImportDoneNextTitle'|trans"/>
 
             <div class="d-flex flex-column gap-2">
                 <a class="btn" href="{{ path('app_library_sequences_show', {id: sequenceTemplate.id}) }}">

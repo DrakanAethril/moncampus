@@ -10,9 +10,7 @@
    Both « Ouvrir » links open a screen of the application rather than the file itself - see
    App\Controller\Ufa\FormationDocumentController::documentView(). #}
 <div class="card-body">
-    <div class="cm-subhead mb-3">
-        <div class="cm-subhead__title">{{ 'programAlternanceCalendarFileFieldLabel'|trans }}</div>
-    </div>
+    <twig:Cm:Subhead class="mb-3" :title="'programAlternanceCalendarFileFieldLabel'|trans"/>
 
     {% if program.alternanceCalendarFileKey %}
         <p class="mb-3">
@@ -34,20 +32,15 @@
         <div class="row">
             <div class="col-md-8">{{ form_row(form.alternanceCalendarFile) }}</div>
         </div>
-        <div class="cm-actionbar">
-            {% include '_last_modified_meta.html.twig' with {entity: program} %}
-            <div class="cm-actionbar__buttons">
-                {{ form_widget(form.submit) }}
-            </div>
-        </div>
+        <twig:Cm:ActionBar :lastModified="program">
+            {{ form_widget(form.submit) }}
+        </twig:Cm:ActionBar>
         {{ form_rest(form) }}
     {{ form_end(form) }}
 
     <hr class="my-4">
 
-    <div class="cm-subhead mb-3">
-        <div class="cm-subhead__title">{{ 'ufaFormationTimetableDocumentHeading'|trans }}</div>
-    </div>
+    <twig:Cm:Subhead class="mb-3" :title="'ufaFormationTimetableDocumentHeading'|trans"/>
 
     <p class="cm-hint mb-3">{{ 'ufaFormationTimetableDocumentHelpText'|trans }}</p>
 
@@ -65,11 +58,9 @@
         <div class="row">
             <div class="col-md-8">{{ form_row(timetableForm.timetableDocumentFile) }}</div>
         </div>
-        <div class="cm-actionbar">
-            <div class="cm-actionbar__buttons">
-                {{ form_widget(timetableForm.submit) }}
-            </div>
-        </div>
+        <twig:Cm:ActionBar>
+            {{ form_widget(timetableForm.submit) }}
+        </twig:Cm:ActionBar>
         {{ form_rest(timetableForm) }}
     {{ form_end(timetableForm) }}
 </div>

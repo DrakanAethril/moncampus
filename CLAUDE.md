@@ -67,13 +67,14 @@ cron on the production host today; `docs/production.md` carries the crontab line
 | `app:mail:relink-applications` | **Repair pass, not cron.** Re-reads the Courrier pro mails that have a student but no démarche, and files the ones that *quote* a send: the Message-ID a failure notice copies back, failing that the failing address found among the recipients of that student's own sends — and only when every match agrees on **one** démarche. The whole rule lives in `App\Service\SchoolMailApplicationRecovery`, which the inbound worker now applies on arrival; the command exists only for the rows written before it. `--dry-run` names each mail and the evidence found, which is how it should be read first: it files mails under démarches nobody named |
 | `app:import-edt-timetable`, `app:import-edt-periods` | Timetable import from the school's EDT export |
 | `app:import-notion-sequences` | One-off import of pedagogical sequences from a Notion export |
-| `app:purge-platform-activity` | Retention: 12 months on `PlatformActivity` and on `QuizAttemptEvent`, **90 days on `ConsoleSession`** with the screen transcripts it carries, and **24 months on `JobboardOffer`** read on the advert's publication date (an offer with no date is judged on the day it was first seen — `sort_date` holds 1000-01-01 for those and reading the threshold against it would empty the board). **Meant to be cron (once a day), and was still not wired to one on 2026-08-22.** That gap matters more since the machine console: the journal at `/infrastructure/console-sessions` prints « Conservation 90 jours » on screen, so a command nobody runs turns that line into a promise nothing keeps. Volume is *not* the argument — a transcript measures a couple of kibibytes — the retention decision is. See `docs/production.md` |
+| `app:purge-platform-activity` | Retention: 12 months on `PlatformActivity` and on `QuizAttemptEvent`, **90 days on `ConsoleSession`** with the screen transcripts it carries, **30 days past expiry on the Claude connector's OAuth codes and tokens** (and on the clients nobody ever consented to), and **24 months on `JobboardOffer`** read on the advert's publication date (an offer with no date is judged on the day it was first seen — `sort_date` holds 1000-01-01 for those and reading the threshold against it would empty the board). **Meant to be cron (once a day), and was still not wired to one on 2026-08-22.** That gap matters more since the machine console: the journal at `/infrastructure/console-sessions` prints « Conservation 90 jours » on screen, so a command nobody runs turns that line into a promise nothing keeps. Volume is *not* the argument — a transcript measures a couple of kibibytes — the retention decision is. See `docs/production.md` |
 | `app:antivirus:check` | **Diagnostic, not cron.** Scans a clean file and the EICAR test string through the configured `ANTIVIRUS_DSN`; exits non-zero unless uploads are genuinely being refused. The state it exists for is the silent one — a blank DSN disables scanning without announcing it anywhere |
 | `app:help:sync-content` | Creates the missing help sections/articles from `App\Help\HelpContentCatalog`; never overwrites what an admin has edited (`--refresh` also rewrites the untouched ones). Run it once after a deploy that adds catalogue entries |
 | `app:vm-batch:advance` | Continues every VM deployment already under way, one machine per pass. **Cron every minute.** It is what makes a deployment survive the browser tab that started it — without it the batch screen's own loop is the only thing pressing, and a closed tab leaves machines cloned and never configured. It never *starts* a deployment: a batch whose machines are all still `planned` is a plan, not an instruction |
 | `app:ldap:apply-account-requests` | Relit l'annuaire pour chaque demande de `ldap_manage_account` que le script consommateur a terminée, et applique la conséquence côté application — aujourd'hui la bascule de `User::$username` après un renommage confirmé. **Cron toutes les minutes.** C'est ce qui fait qu'un onglet fermé ne décide de rien : la fiche sonde la même chose toutes les 2 s, mais la boucle du navigateur n'est jamais ce qui porte le travail. Idempotente (`applied_at`) et verrouillée (`LockableTrait`). Voir `docs/production.md` |
 | `app:proxmox:secrets` | **Diagnostic, not cron.** Says whether the sealed Proxmox secrets still open, and prints a fingerprint of the `PROXMOX_SECRET_KEY` in use. Run it before and after a deploy: a fingerprint that changes means the key is not being carried across releases, which makes every stored token unreadable at once and looks, from the screen, exactly like Proxmox refusing them |
 | `app:guest-accounts:prune` | **Maintenance à la demande, pas cron.** Supprime les lignes `guest_account` dont la machine n'existe plus sur l'hyperviseur, ou dont le VMID a été repris depuis par un autre lot — Proxmox rend un numéro dès qu'une machine est détruite, et les lignes de l'ancienne occupante restent classées dessous (cette moitié-là se décide sur les seules données de la plateforme, sans rien demander à l'hyperviseur ; `App\Service\Proxmox\VmidHandover` la ferme à la source lors des créations suivantes). C'est l'état que /infrastructure ne montre pas : ces écrans lisent Proxmox à l'affichage, donc une machine détruite cesse d'y être listée, tandis que ses comptes restent — et « Mes machines virtuelles » est bâti sur ces comptes. Un hôte injoignable ne décide rien : ses comptes sont comptés à part et laissés tels quels. `--dry-run` nomme chaque ligne avant d'y toucher. Jamais planifiée : supprimer est une décision, pas un horaire |
+| `app:ecoledirecte:check` | **Diagnostic, not cron.** Runs the one step of an École Directe login that needs no account (the GTK cookie of `login.awp?gtk=1`) and says whether École Directe still answers it from this server. The platform holds no École Directe credentials and must not, so this is the most it can prove on its own |
 | `app:counters:recompute` | **Cron, once a night** (`docs/production.md`). Checks every stored counter of the platform (`App\Counter\RecomputableCounter`, one tagged service each) against its source and corrects the drifts - each correction logged at error level, so it reaches Discord: a drift is a bug, not a figure to patch. The counters move in real time with what changes them; this is the safety net. `--counter=`, `--dry-run` |
 | `app:seed-dev-*`, `app:dev:*`, `app:configure-dev-programs` | **Dev-machine only.** Populate/inject into the local database. These must never be relied on in staging or production. |
 
@@ -195,6 +196,67 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   *inventory-gap* lines, which the report keeps apart from declared losses.
 - **Agenda, Annonces, Listes d'inscription** — `AgendaEvent`, `Announcement`, `SignupList`; the
   first two resolve who they are for through `AudienceResolver` like `MessageThread` does.
+- **Connecteur Claude (MCP)** — `/mcp`, the platform as a remote MCP server a teacher adds to
+  their **own** claude.ai (the intelligence is paid by their subscription; a built-in chatbot would
+  need API credits nobody pays — the « Beaupie » handoff is on hold for that reason). Two halves:
+  - **OAuth 2.1, hand-rolled and minimal** (`src/OAuth/`, `App\Controller\OAuth\*`): discovery
+    (RFC 8414/9728), dynamic client registration (open to the internet by spec, rate-limited, redirect
+    URIs from a closed list: claude.ai/claude.com callbacks and the loopback), a consent screen, PKCE
+    S256 only. **The consent screen never takes the establishment password**: it is public and signs
+    the person in with the password they chose for that service in « Mon profil »
+    (`App\Security\ExternalServicePasswords`, `ExternalServicePassword`, one per `ExternalService`).
+    That password is hashed (`external_service` hasher), strong (`App\Validator\StrongPassword`,
+    shared with the account password change) and **must differ from the directory password** —
+    checked by binding with it (`PlatformPasswordCheck`, a directory that cannot be asked means
+    « refuse »), both when chosen and at every sign-in. No service password, no authorisation;
+    changing or removing it revokes every grant. `OAuthGrant` is the « connection » the profile card lists and
+    revokes; codes and tokens are selector + hashed verifier like `JobboardToken`, the refresh token
+    **rotates**, and replaying a used code or refresh token revokes the whole grant.
+  - **MCP, stateless** (`src/Mcp/`, `App\Controller\McpController`): JSON-RPC over POST, one message
+    per request, no `Mcp-Session-Id`, no SSE — a held stream would pin one of production's 8 workers.
+    Its own `mcp` firewall turns the access token into a **real authenticated user**
+    (`McpAccessTokenAuthenticator`, the `CalendarTokenAuthenticator` idea), so voters and
+    `FeatureAccess` answer unchanged; a call without token gets 401 + `WWW-Authenticate:
+    resource_metadata=…`, which is how claude.ai discovers where to sign in.
+  A tool is one `App\Mcp\McpTool` service (autoconfigured tag), **thin**: it reads arguments, asks the
+  same voters and calls the same writers as the screens (`QuizTemplateImportWriter`,
+  `SequenceImportWriter`, `FileLibraryWriter`, `EvaluationRubricBuilder`…), and is listed only when
+  its features are lit. Texts sent to the model (tool descriptions, `McpInstructions`, prompts) are
+  **French prompt text**, like the prompt catalogues. Rules the tools hold: nothing is deleted; a
+  document is refused whole at the first invalid item (Claude corrects and resends); no image
+  reference crosses (`mediaRef`/`imageKey`); an evaluation it creates is visible to students only
+  at a **future** date (D+1 by default); a barème with points entered is never rebuilt; no student
+  name or grade is exposed. The emploi du temps (`timetable_get`) hands out the `sessionId` the
+  cahier de texte tools take: `lesson_log_write` passes `LessonLogVoter::EDIT` (the créneau's own
+  teacher or co-animator, never staff by role), takes Markdown through the library's renderer and
+  sanitizer, **never overwrites a part that says something unless `replace`**, and moves a part's
+  visibility only when named — a cahier opened there starts hidden like on screen.
+  `progression_get` is **read-only**: Claude suggests a progression, the teacher builds it on the
+  progression screens (`McpTimetable` holds the shared doors). `format_guide` is assembled from the import assistants' own catalogues,
+  so the screen's prompt and the connector's guide cannot drift. `Feature::ClaudeConnector` is off
+  for every role; an admin tries it first. `DocumentTextExtractor` reads PDF (poppler's `pdftotext`,
+  in the image since this lot), Word, PowerPoint, OpenDocument, Excel and HTML;
+  `moncampus-bareme/1` (`EvaluationRubricJsonImporter`) is the barème's document format, read strictly.
+- **École Directe (Outils)** — `src/EcoleDirecte/`, `App\Controller\EcoleDirecte\*`. **ROLE_ADMIN only for
+  now** (`EcoleDirecteControllerTrait::administrator()`, the menu entry, `RoleAccessSmokeTest`). A
+  teacher signs in to their **own** École Directe account from the platform's server (Aplim publishes
+  no API: this is the private one its website calls, teacher routes on `apip.ecoledirecte.com`), reads
+  it, and sends their cahier de texte and an evaluation's grades there. Rules the code holds:
+  - **The identifiant and the password are never kept.** They are arguments of `EcoleDirecteClient`'s
+    login methods, sent again by the browser when the identity question replays the login, and nothing
+    else. What spans requests is the handshake, sealed by `EcoleDirecteSessionSealer` (key derived from
+    APP_SECRET, 10 min sliding, bound to the user) and held in the page's JS memory only. The client is
+    **stateless** (worker mode).
+  - **Two doors on the client.** `read()` forces `verbe=get`; `send()` knows `put` and `post` and throws
+    on anything else. Nothing is ever deleted from École Directe.
+  - **Every call is a button**, and every send is a preview first; the send reads École Directe again
+    before writing. Cahier de texte: séance and slot are matched on day + start time, the whole slot
+    goes back with `verbe=put` and only its base64 `contenu` changed (`EcoleDirecteLessonLogPlanner`
+    says which part lands where). Grades: the evaluation is found by name + date or created, then the
+    grid's students are posted; a student is matched only by exact name, and statuses are written
+    `abs` / `ne` / `(12)` - `EcoleDirecteGradePlanner::noteFor()` is the one place that mapping lives.
+  `Feature::EcoleDirecte` is off for every role. École Directe changes its protocol without notice -
+  an answer the client does not recognise is logged at error level and refused, never guessed at.
 - **Accès aux fonctionnalités** — `App\Enum\Feature` (49 cases) + `#[RequiresFeature]` +
   `App\Security\FeatureAccess`: which features are lit, per role and per formation. Gestion >
   Fonctionnalités is the screen. **The whole Pédagogie family is off by default**, with four
@@ -293,6 +355,12 @@ Prefer these over re-implementing:
 - `App\Form\FilePickerType` — no form on this platform carries bytes. The picker
   stages each file on its own XHR to `/uploads/stage` and the form submits signed tokens; the field
   declares an `UploadPolicy`, not constraints.
+- `App\Enum\HasBadge` + `App\Enum\BadgeTone` — any value shown as a `.cm-badge` implements it
+  (`labelKey()` + `badgeTone()`), and `<twig:Cm:Badge :of="…"/>` renders it. The pairing of a state
+  with its colour is written on the enum, never as a ternary in a template. Enums drawn in another
+  pill family (`cm-audio-pill`, `cm-wc-tag`, `cm-step`, Tabler's `bg-*-lt`) keep their own
+  `badgeClass()`.
+- `Cm:*` Twig components — see "Design" below.
 - Twig helpers in `src/Twig/`: `is_staff`, `is_program_teacher`, `file_url`, `avatar_url`,
   `visibility_allows`, `structure_nav_*`, `student_nav_*`, `ufa_nav_*`, `unread_message_thread_count`.
 
@@ -349,6 +417,8 @@ New per-object rules belong in a Voter, not inline in a controller.
 | Matomo | Analytics, **consent-gated** (`requireConsent`, opt-in banner) | `MATOMO_URL`, `MATOMO_SITE_ID` |
 | Discord | Support-ticket notifications | `DISCORD_WEBHOOK_*` |
 | LDAP | Authentication + directory | `LDAP_*` |
+| École Directe (Aplim) | Read and send to one's own teacher account from the server (private API, no stored credentials, admins only for now) | `ECOLEDIRECTE_*` |
+| claude.ai (Anthropic) | Calls the Claude connector (`/mcp`, OAuth) from `160.79.104.0/21` — inbound only, the app never calls Anthropic | — |
 
 `.env.prod.local` **on the development machine holds decoy values.** Never infer the real production
 region, bucket or DSN from it.
@@ -364,7 +434,7 @@ Tabler behind rather than conforming to it.
 Current state, which is a deliberate in-between and not an inconsistency:
 - Tabler 1.4.0 CSS/JS are still vendored at `assets/tabler/{css,js}/tabler.min.*` and loaded by
   `templates/base.html.twig`; a lot of markup is still Bootstrap/Tabler-shaped.
-- On top of it, `assets/styles/app.css` (~9 600 lines) implements the handoff design system: 108
+- On top of it, `assets/styles/app.css` (~12 000 lines) implements the handoff design system: 108
   `--cm-*` custom properties (each declared twice, light and dark) used ~4 400 times, and some 2 760
   `cm-*` selectors (`cm-btn`, `cm-badge`, `cm-tabs`, `cm-actionbar`,
   `cm-action--{positive,danger,neutral,warning,off}`, …). New UI should use `cm-*`.
@@ -374,12 +444,49 @@ Current state, which is a deliberate in-between and not an inconsistency:
 
 `templates/layout/app.html.twig` is the authenticated app shell (horizontal navbar, role-dependent, +
 `page_title`/`main` blocks). New authenticated screens extend it. `login` extends `base.html.twig`
-directly so it shows no navbar. Shared `_tabs.html.twig` / `_breadcrumb.html.twig` partials implement
-the global tab + breadcrumb pattern.
+directly so it shows no navbar.
+
+**Twig components** (`symfony/ux-twig-component`, since 2026-09-27) carry the design system's
+recurring pieces, under the `Cm:` prefix: the template in `templates/components/Cm/`, the class, when
+there is a rule to hold, in `src/Twig/Components/Cm/`. A component is where a rule lives once instead
+of being recopied: **new markup uses the component, never the raw `cm-*` classes it renders.**
+
+| Component | Replaces | The rule it holds |
+|---|---|---|
+| `Cm:Breadcrumb` | `_breadcrumb.html.twig` (deleted) | prepends « Accueil » itself, refuses a caller that passes it again |
+| `Cm:Tabs` | `_tabs.html.twig` (deleted) | the `action` block renders in the *caller's* context, so its partial sees the screen's variables |
+| `Cm:Badge` | `<span class="cm-badge cm-badge--…">` | `:of="value"` reads text and colour from a `HasBadge` enum; a hand-typed `tone` must be a `BadgeTone` |
+| `Cm:Button` | `<a/button class="cm-btn …">` | `<a>` with an `href`, else a `<button type="button">`; refuses a variant `app.css` does not draw |
+| `Cm:ActionBar` | `<div class="cm-actionbar">` + `__meta` + `__buttons` | content = the buttons, pushed right; `meta` block on the left; `:lastModified="entity"` writes « Modifié le … par … » only once a real edit exists (replaces `_last_modified_meta.html.twig`, deleted) |
+| `Cm:Subhead` | `<div class="cm-subhead">` + `__title` + `__hint` | `:title` / `:hint` are text, escaped; an `action` block goes on the right |
+
+**Icons** are `symfony/ux-icons`, not a component of ours: one SVG file per icon in `assets/icons/`
+(`folder`, `pencil`, `trash`, `lock`, `plus`…), drawn for the handoffs, rendered with
+`<twig:ux:icon name="folder" width="15" height="15"/>` — or `ux_icon('send', {…})` inside a Twig
+string. The file carries the viewBox and the stroke; an attribute at the call site wins, which is
+how one drawing serves at 12 px and at 20 px. Iconify is switched off in
+`config/packages/ux_icons.yaml`: an unknown name is an error, never a download. Production renders
+nothing for a missing icon rather than fail the page, so `tests/Functional/IconNamesTest.php` checks
+every name a template uses. About 90 `<svg>` stay inline - drawings used once, the Tabler sprite `<use>`s, the
+store logos; a second use is when one becomes a file.
+
+Two call styles, one choice each: `{{ component('Cm:Breadcrumb', {segments: [...]}) }}` when only
+props are passed (a long Twig literal reads better outside an HTML attribute), `<twig:Cm:Tabs
+:tabs="...">` + `<twig:block name="action">` when a block is. Breadcrumb, Tabs, Subhead
+(all but a handful whose head carries more than one title and one hint) and the ActionBar in its standard shape are
+migrated everywhere. **24 action bars are deliberately left raw**: primary button on the left
+(content-share duplication), `justify-content-end`, buttons split across both sides - each a layout
+decision, not a leftover, to make with the handoff open. Button and Badge are migrated **as screens
+are touched** — some 265 hand-written
+`cm-btn` and 838 Bootstrap `btn` remain, and that is the backlog, not a second convention.
+`tests/Twig/Components/CmComponentsTest.php` pins each component's markup.
 
 **Breadcrumb rule.** Every authenticated screen fills the `page_breadcrumb` block, and **the trail
-always opens on `Accueil`** — `{label: 'homeNavLabel'|trans, url: path('app_home')}`, which the partial
-renders with the house pictogram. This is stated in several handoffs ("commence toujours par Accueil
+always opens on `Accueil`** — which `Cm:Breadcrumb` prepends itself, with the house pictogram,
+pointing at `app_home` (`HomeController` sends a tutor on to their own home). Callers pass only the
+levels *after* it; one that still passes Accueil is refused at render time, and
+`tests/Functional/BreadcrumbConventionTest.php` refuses both a trail drawn outside the component and
+a template naming `homeNavLabel` again. This is stated in several handoffs ("commence toujours par Accueil
 avec picto maison") and holds across the app; a screen that starts its trail on a section name instead
 is a bug, not a variant. After Accueil come the real parent levels, then the current page last:
 
@@ -393,11 +500,16 @@ the rule holds across all 120-odd of them. The "Description technique" handoff, 
 to reach it: it hangs off the profile menu, so it is two segments.
 
 Every segment stays a real `<a href>`, including the last, which carries `.current`. When the trail
-varies between callers of a shared template, build it with `{% set segments = [...] %}` + `|merge`
+varies between callers of a shared template, build it with `{% set segments = [] %}` + `|merge`
 rather than duplicating the block — see `templates/audio_recording/_breadcrumb.html.twig` and
 `templates/activity/history.html.twig`. Deliberately suppressing the breadcrumb (`{% block
 page_breadcrumb %}{% endblock %}`) is rare and should carry a comment saying why, as
-`templates/profile/index.html.twig` does.
+`templates/profile/index.html.twig` does — the convention test refuses an empty block without one.
+The same test refuses an authenticated screen with no trail at all, and a screen that redraws the
+whole `page_header` without calling the trail inside it (`{{ block('page_breadcrumb') }}`, as
+`templates/my_alternance/index.html.twig` does). The 37 screens that had none were given theirs on
+2026-09-27; the sequence library's show/edit screens walk the séquence's folders like the quiz
+screens do (`SequenceLibraryFolderTrait::sequenceFolderTrailOf()`, owner only).
 
 The WYSIWYG editor is **HugeRTE** (MIT TinyMCE fork), vendored under **`public/hugerte/`** and loaded by
 a plain `<script src="/hugerte/hugerte.min.js">`, *not* through AssetMapper. This is deliberate: HugeRTE
@@ -405,6 +517,15 @@ fetches its own `skins/`/`themes/`/`plugins/`/`icons/` by relative HTTP at runti
 moment AssetMapper content-hashes those filenames. Upgrading means re-copying the same minified subset
 from a fresh `npm install hugerte` (in a scratch dir, never at the repo root) and checking the Network
 tab for new 404s under `/hugerte/`.
+
+**FullCalendar 6** is vendored too, under `assets/fullcalendar/`, but through AssetMapper: the
+package's raw ESM files, minified one by one without bundling and mapped with `path` entries in
+`importmap.php`. `importmap:require` cannot be used for it: jsDelivr's `+esm` build copies
+FullCalendar's internal classes into two modules that the plugins and the application each import
+one of, and the calendar dies on its first render (`Class constructor … cannot be invoked without
+'new'`). `assets/fullcalendar/README.md` says why the relative imports are rewritten as bare
+specifiers, and how to upgrade. Changing `importmap.php` needs `docker compose restart php` in dev:
+the worker keeps the old map in memory and answers « vendor asset is missing ».
 
 ## Conventions
 

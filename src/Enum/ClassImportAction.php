@@ -9,7 +9,7 @@ namespace App\Enum;
  * ClassImportAnalyzer, shown on the verification screen, and decided again from scratch just
  * before anything is written.
  */
-enum ClassImportAction: string
+enum ClassImportAction: string implements HasBadge
 {
     /** Nobody carries this name: an account, its directory request and its class membership. */
     case Create = 'create';
@@ -41,14 +41,14 @@ enum ClassImportAction: string
         };
     }
 
-    public function badgeClass(): string
+    public function badgeTone(): BadgeTone
     {
         return match ($this) {
-            self::Create => 'cm-badge--green',
-            self::Attach => 'cm-badge--blue',
-            self::Update => 'cm-badge--gray',
-            self::Decide => 'cm-badge--gold',
-            self::Blocked => 'cm-badge--red',
+            self::Create => BadgeTone::Green,
+            self::Attach => BadgeTone::Blue,
+            self::Update => BadgeTone::Gray,
+            self::Decide => BadgeTone::Gold,
+            self::Blocked => BadgeTone::Red,
         };
     }
 }

@@ -9,7 +9,7 @@
             <span class="cm-survey-line__label">{{ question.label|default('surveyQuestionUntitledText'|trans) }}</span>
         </div>
         <div class="cm-survey-line__meta">
-            <span class="cm-badge {{ question.type.badgeClass }}">{{ question.type.labelKey|trans }}</span>
+            <twig:Cm:Badge :of="question.type"/>
             {% if question.type.supportsScale and question.isScale %}
                 <span class="cm-badge cm-badge--teal">{{ 'surveyQuestionScaleBadgeLabel'|trans }}</span>
             {% endif %}

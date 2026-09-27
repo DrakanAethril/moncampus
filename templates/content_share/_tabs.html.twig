@@ -20,4 +20,4 @@
         active: currentTab == 'mine',
     },
 ] %}
-{% include '_tabs.html.twig' with {tabs: share_tabs} %}
+{{ component('Cm:Tabs', {tabs: share_tabs}) }}

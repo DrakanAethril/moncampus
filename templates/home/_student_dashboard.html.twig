@@ -25,7 +25,7 @@
 
     {% if student.banner %}
         <div class="cm-dash-banner{{ student.banner.late|default(false) ? ' cm-dash-banner--danger' }}">
-            <span class="cm-dash-banner__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 8v5"></path><path d="M12 16.5v.01"></path><circle cx="12" cy="12" r="9"></circle></svg></span>
+            <span class="cm-dash-banner__icon"><twig:ux:icon name="alert-circle" width="20" height="20"/></span>
             {% if student.banner.type == 'quizLive' %}
                 {% set banner_session = student.banner.session %}
                 <span class="cm-dash-banner__body">
@@ -103,7 +103,7 @@
             </div>
             <div class="card-body">
                 <div class="d-flex align-items-center gap-3 flex-wrap mb-3">
-                    <span class="cm-role-progress__icon cm-role-progress__icon--current" style="width: 40px; height: 40px; border-radius: 9px;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 20V6.5A1.5 1.5 0 0 1 5.5 5H12v15"></path><path d="M12 10h6.5A1.5 1.5 0 0 1 20 11.5V20"></path><path d="M3 20h18"></path></svg></span>
+                    <span class="cm-role-progress__icon cm-role-progress__icon--current" style="width: 40px; height: 40px; border-radius: 9px;"><twig:ux:icon name="building" width="19" height="19"/></span>
                     <span>
                         <span class="d-block fw-bold" style="color: var(--cm-ink);">{{ alternance.tutorLink.enterprise.name }} — {{ 'homeStudentAlternanceTutorPrefix'|trans }} {{ alternance.tutorLink.tutor.displayName ?? alternance.tutorLink.tutor.username }}</span>
                         <span class="text-secondary" style="font-size: 12px;">{{ alternance.tutorLink.contractType.labelKey|trans }} · {{ alternance.tutorLink.contractStartDate|date('d/m/Y') }} → {{ alternance.tutorLink.contractEndDate|date('d/m/Y') }}</span>
@@ -224,7 +224,7 @@
                                         {% include 'student/_work_watch_link.html.twig' with {assignment: assignment, link_class: 'cm-inline-add'} only %}
                                     {% endif %}
                                     {% if multi %}<span class="cm-dot-badge"><span class="cm-dot-badge__dot" style="background: {{ student.programMeta[assignment.program.id].color }}"></span>{{ assignment.program.displayShortName }}</span>{% endif %}
-                                    <span class="cm-badge {{ assignment.nature.badgeClass }}">{{ assignment.nature.labelKey|trans }}</span>
+                                    <twig:Cm:Badge :of="assignment.nature"/>
                                 </span>
                             </div>
                             {% if not loop.last %}<div style="height: 1px; background: var(--cm-border-soft);"></div>{% endif %}

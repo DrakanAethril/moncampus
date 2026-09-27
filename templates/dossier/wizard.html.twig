@@ -4,13 +4,12 @@
 
 {% block page_breadcrumb %}
     {% set segments = [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
         {label: 'toolsNavLabel'|trans, url: path('app_tools_random_draw')},
         {label: 'dossierNavLabel'|trans, url: path('app_dossiers')},
     ] %}
-    {% include '_breadcrumb.html.twig' with {segments: segments|merge([
+    {{ component('Cm:Breadcrumb', {segments: segments|merge([
         {label: dossier.id ? dossier.title : 'dossierNewTitle'|trans, url: dossier.id ? path('app_dossier_documents', {id: dossier.id}) : path('app_dossier_new')},
-    ])} %}
+    ])}) }}
 {% endblock %}
 
 {% block page_title %}{{ dossier.id ? dossier.title : 'dossierNewTitle'|trans }}{% endblock %}

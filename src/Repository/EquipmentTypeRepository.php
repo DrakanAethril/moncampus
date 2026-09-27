@@ -31,6 +31,7 @@ class EquipmentTypeRepository extends ServiceEntityRepository
         $qb = $this->createQueryBuilder('t')
             ->leftJoin('t.category', 'c')->addSelect('c')
             ->leftJoin('t.location', 'l')->addSelect('l')
+            ->leftJoin('t.storageRoom', 'sr')->addSelect('sr')
             // Uncategorised types last, rather than first as a NULL would sort.
             ->addSelect('CASE WHEN c.id IS NULL THEN 1 ELSE 0 END AS HIDDEN uncategorised')
             ->orderBy('uncategorised', 'ASC')

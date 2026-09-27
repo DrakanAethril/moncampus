@@ -5,11 +5,10 @@
 {% block title %}{{ program.displayName }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'courseSpaceNavLabel'|trans, url: path('app_my_courses')},
         {label: program.displayName, url: path('app_my_courses_program', {programId: program.id})},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ program.displayName }}{% endblock %}
 
@@ -35,7 +34,7 @@
                             <div class="cm-card-title">{{ sequence.titre }}</div>
                             {% for reason in accessVerdicts.reasonsFor(sequence) %}
                                 <span class="cm-lockwhy">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+                                    <twig:ux:icon name="lock" width="12" height="12" stroke-width="2.2"/>
                                     {{ reason }}
                                 </span>
                             {% endfor %}

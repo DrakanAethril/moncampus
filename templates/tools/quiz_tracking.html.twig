@@ -7,10 +7,9 @@
 {% block title %}{{ 'quizTrackingPageHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'quizTrackingPageHeading'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'quizTrackingPageHeading'|trans }}{% endblock %}
 
@@ -23,7 +22,9 @@
             active: state.value == case,
         }]) %}
     {% endfor %}
-    {% include '_tabs.html.twig' with {tabs: state_tabs, tabs_action: 'tools/_quiz_launch_button.html.twig'} %}
+    <twig:Cm:Tabs :tabs="state_tabs">
+        <twig:block name="action">{% include 'tools/_quiz_launch_button.html.twig' %}</twig:block>
+    </twig:Cm:Tabs>
 
     <div class="card cm-card--tabbed">
         <div class="card-body border-bottom">

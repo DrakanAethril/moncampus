@@ -13,9 +13,10 @@ use Symfony\Component\Validator\Constraints as Assert;
 /**
  * Where spare equipment is stored - a reserve, a cupboard, a bin.
  *
- * Deliberately not a Room: a room is where equipment is *used*, and it already exists in the
- * timetable; a storage place is the inventory's own vocabulary, and a cupboard is not a room anybody
- * schedules.
+ * Deliberately not a Room: a cupboard is not a room anybody schedules, so the inventory names it in
+ * its own vocabulary. A room *can* still be where spares are kept - the « Emplacement » field offers
+ * the platform's rooms next to these (EquipmentType/EquipmentItem::setPlace()) - which is why this
+ * list only ever needs the places that are not rooms.
  */
 #[ORM\Entity(repositoryClass: EquipmentLocationRepository::class)]
 #[ORM\Table(name: 'equipment_location')]

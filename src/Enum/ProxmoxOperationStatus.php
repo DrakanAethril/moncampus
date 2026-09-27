@@ -16,7 +16,7 @@ namespace App\Enum;
  * `Pending` exists for the same honesty: the row is written *before* the call goes out, so an
  * operation that vanishes into a dead network still leaves a trace of who asked for it.
  */
-enum ProxmoxOperationStatus: string
+enum ProxmoxOperationStatus: string implements HasBadge
 {
     /** Written before the request leaves. Nothing has been asked of the hypervisor yet. */
     case Pending = 'pending';
@@ -42,13 +42,13 @@ enum ProxmoxOperationStatus: string
         };
     }
 
-    public function badgeModifier(): string
+    public function badgeTone(): BadgeTone
     {
         return match ($this) {
-            self::Pending, self::Running => 'gold',
-            self::Succeeded => 'green',
-            self::Failed => 'red',
-            self::Unknown => 'gray',
+            self::Pending, self::Running => BadgeTone::Gold,
+            self::Succeeded => BadgeTone::Green,
+            self::Failed => BadgeTone::Red,
+            self::Unknown => BadgeTone::Gray,
         };
     }
 

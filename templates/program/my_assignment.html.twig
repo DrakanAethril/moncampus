@@ -7,12 +7,11 @@
    and « Travail à faire » both link straight to a travail, and a trail that skipped the list would
    leave them no way up. #}
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: program.displayShortName, url: path('app_program_students', {id: program.id})},
         {label: 'programMyAssignmentsNavLabel'|trans, url: path('app_program_my_assignments', {id: program.id})},
         {label: assignment.title, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ assignment.title }}{% endblock %}
 
@@ -24,7 +23,7 @@
     <div class="card mb-3">
         <div class="card-body">
             <div class="mb-2">
-                <span class="cm-badge {{ assignment.nature.badgeClass }}">{{ assignment.nature.labelKey|trans }}</span>
+                <twig:Cm:Badge :of="assignment.nature"/>
             </div>
             <div class="mb-2">
                 <span class="text-secondary">{{ 'assignmentDueDateFieldLabel'|trans }}:</span>

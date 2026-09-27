@@ -3,13 +3,12 @@
 {% block title %}{{ 'quizAssistantPastePageHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'toolsNavLabel'|trans, url: path('app_library_quiz')},
         {label: 'quizLibraryPageHeading'|trans, url: path('app_library_quiz')},
         {label: 'quizAssistantBreadcrumbLabel'|trans, url: path('app_library_quiz_assistant')},
         {label: 'quizAssistantPasteBreadcrumbLabel'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'quizAssistantPastePageHeading'|trans }}{% endblock %}
 
@@ -23,10 +22,7 @@
             <form method="post" action="{{ path('app_library_quiz_assistant_paste') }}" class="d-flex flex-column gap-3">
                 <input type="hidden" name="_token" value="{{ csrf_token('quiz_assistant_paste') }}">
 
-                <div class="cm-subhead">
-                    <div class="cm-subhead__title">{{ 'quizImportDocumentSectionTitle'|trans }}</div>
-                    <div class="cm-subhead__hint">{{ 'quizImportDocumentSectionHint'|trans }}</div>
-                </div>
+                <twig:Cm:Subhead :title="'quizImportDocumentSectionTitle'|trans" :hint="'quizImportDocumentSectionHint'|trans"/>
 
                 {# Several documents one under another are read as a batch, which is the ordinary
                    shape of an answer that produced a term's worth of quizzes at once. Nothing to
@@ -57,12 +53,10 @@
                     <div>{{ 'quizImportNoWriteNoteText'|trans }}</div>
                 </div>
 
-                <div class="cm-actionbar">
-                    <div class="cm-actionbar__buttons">
-                        <a href="{{ path('app_library_quiz_assistant_prompt') }}" class="btn btn-link">{{ 'quizAssistantBackToPromptActionLabel'|trans }}</a>
-                        <button type="submit" class="btn btn-primary">{{ 'quizImportAnalyseButtonLabel'|trans }}</button>
-                    </div>
-                </div>
+                <twig:Cm:ActionBar>
+                    <a href="{{ path('app_library_quiz_assistant_prompt') }}" class="btn btn-link">{{ 'quizAssistantBackToPromptActionLabel'|trans }}</a>
+                    <button type="submit" class="btn btn-primary">{{ 'quizImportAnalyseButtonLabel'|trans }}</button>
+                </twig:Cm:ActionBar>
             </form>
         </div>
     </div>
@@ -72,19 +66,14 @@
        one <form> answering to two submits would have to tell them apart on every render. #}
     <div class="card mt-3">
         <div class="card-body">
-            <div class="cm-subhead">
-                <div class="cm-subhead__title">{{ 'quizBatchArchiveSectionTitle'|trans }}</div>
-                <div class="cm-subhead__hint">{{ 'quizBatchArchiveSectionHint'|trans }}</div>
-            </div>
+            <twig:Cm:Subhead :title="'quizBatchArchiveSectionTitle'|trans" :hint="'quizBatchArchiveSectionHint'|trans"/>
 
             {{ form_start(archiveForm, {action: path('app_library_quiz_assistant_archive'), attr: {class: 'd-flex flex-column gap-3'}}) }}
                 {{ form_errors(archiveForm) }}
                 {{ form_row(archiveForm.file) }}
-                <div class="cm-actionbar">
-                    <div class="cm-actionbar__buttons">
-                        <button type="submit" class="btn btn-primary">{{ 'quizImportAnalyseButtonLabel'|trans }}</button>
-                    </div>
-                </div>
+                <twig:Cm:ActionBar>
+                    <button type="submit" class="btn btn-primary">{{ 'quizImportAnalyseButtonLabel'|trans }}</button>
+                </twig:Cm:ActionBar>
             {{ form_end(archiveForm) }}
         </div>
     </div>

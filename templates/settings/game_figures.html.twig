@@ -3,11 +3,10 @@
 {% block title %}{{ 'gameFiguresHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'settingsConfigurationNavLabel'|trans, url: path('app_settings_configuration')},
         {label: 'gameFiguresHeading'|trans, url: path('app_settings_game_figures')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'gameFiguresHeading'|trans }}{% endblock %}
@@ -58,11 +57,9 @@
                         <span class="cm-field__help">{{ 'gameFigureNoticeHelpText'|trans }}</span>
                     </label>
                 </div>
-                <div class="cm-actionbar">
-                    <div class="cm-actionbar__buttons">
-                        <button type="submit" class="cm-btn cm-btn--primary">{{ 'gameFigureCreateAction'|trans }}</button>
-                    </div>
-                </div>
+                <twig:Cm:ActionBar>
+                    <button type="submit" class="cm-btn cm-btn--primary">{{ 'gameFigureCreateAction'|trans }}</button>
+                </twig:Cm:ActionBar>
             </form>
         </div>
 

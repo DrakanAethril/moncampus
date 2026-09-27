@@ -11,11 +11,10 @@
 {% block title %}{{ 'contentShareModalTitle'|trans({'%name%': node.name}) }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'fileLibraryNavLabel'|trans, url: path('app_file_library')},
         {label: 'contentShareAction'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'contentShareModalTitle'|trans({'%name%': node.name}) }}{% endblock %}

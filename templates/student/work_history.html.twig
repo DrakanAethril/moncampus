@@ -3,11 +3,10 @@
 {% block title %}{{ 'studentWorkHistoryPageHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'studentWorkNavLabel'|trans, url: path('app_student_work')},
         {label: 'studentWorkHistoryPageHeading'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'studentWorkHistoryPageHeading'|trans }}{% endblock %}
 

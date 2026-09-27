@@ -12,12 +12,11 @@
 {% block title %}{{ 'trainingApplicationPageHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'schoolMailPageHeading'|trans, url: path('app_school_mail')},
         {label: 'trainingValidationBreadcrumbLabel'|trans, url: path('app_training_validation')},
         {label: application.offer.title, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}
@@ -98,7 +97,7 @@
                         {% endfor %}
                         {% if canResend %}
                             <button type="button" class="cm-postul__attach" data-training-attachments-target="add" data-action="training-attachments#pick">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+                                <twig:ux:icon name="plus" width="12" height="12"/>
                                 {{ 'trainingApplyAttachAction'|trans }}
                             </button>
                         {% endif %}

@@ -3,11 +3,10 @@
 {% block title %}{{ 'jobboardSettingsHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'settingsConfigurationNavLabel'|trans, url: path('app_settings_configuration')},
         {label: 'jobboardSettingsHeading'|trans, url: path('app_settings_jobboard_sources')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'jobboardSettingsHeading'|trans }}{% endblock %}
@@ -98,10 +97,7 @@
             </tbody>
         </table>
 
-        <div class="cm-subhead" style="margin: 24px 0 14px">
-            <div class="cm-subhead__title">{{ edited ? 'jobboardSourceEditHeading'|trans({'%label%': edited.label}) : 'jobboardSourceNewHeading'|trans }}</div>
-            <div class="cm-subhead__hint">{{ edited ? 'jobboardSourceEditHintText'|trans : 'jobboardSourceNewHintText'|trans }}</div>
-        </div>
+        <twig:Cm:Subhead style="margin: 24px 0 14px" :title="edited ? 'jobboardSourceEditHeading'|trans({'%label%': edited.label}) : 'jobboardSourceNewHeading'|trans" :hint="edited ? 'jobboardSourceEditHintText'|trans : 'jobboardSourceNewHintText'|trans"/>
 
         <form method="post" action="{{ edited ? path('app_settings_jobboard_source_update', {id: edited.id}) : path('app_settings_jobboard_source_create') }}">
             <input type="hidden" name="_token" value="{{ csrf_token('jobboard_source_save') }}">
@@ -125,23 +121,18 @@
                 <input type="text" name="ref_rule" maxlength="255" value="{{ edited ? edited.refRule }}" placeholder="{{ 'jobboardSourceRefRulePlaceholder'|trans }}">
                 <span class="cm-field__help">{{ 'jobboardSourceRefRuleHelpText'|trans }}</span>
             </label>
-            <div class="cm-actionbar">
-                <div class="cm-actionbar__buttons">
-                    {% if edited %}
-                        <a class="cm-btn cm-btn--outline" href="{{ path('app_settings_jobboard_sources') }}">{{ 'cancelAction'|trans }}</a>
-                    {% endif %}
-                    <button type="submit" class="cm-btn cm-btn--primary">{{ edited ? 'jobboardSourceUpdateAction'|trans : 'jobboardSourceCreateAction'|trans }}</button>
-                </div>
-            </div>
+            <twig:Cm:ActionBar>
+                {% if edited %}
+                    <a class="cm-btn cm-btn--outline" href="{{ path('app_settings_jobboard_sources') }}">{{ 'cancelAction'|trans }}</a>
+                {% endif %}
+                <button type="submit" class="cm-btn cm-btn--primary">{{ edited ? 'jobboardSourceUpdateAction'|trans : 'jobboardSourceCreateAction'|trans }}</button>
+            </twig:Cm:ActionBar>
         </form>
 
         {# Merging is the repair for the one thing the open list can produce: the same site under two
            names, because a pass declared it differently before any domain was known. #}
         {% if sources|length > 1 %}
-            <div class="cm-subhead" style="margin: 24px 0 14px">
-                <div class="cm-subhead__title">{{ 'jobboardSourceMergeHeading'|trans }}</div>
-                <div class="cm-subhead__hint">{{ 'jobboardSourceMergeHintText'|trans }}</div>
-            </div>
+            <twig:Cm:Subhead style="margin: 24px 0 14px" :title="'jobboardSourceMergeHeading'|trans" :hint="'jobboardSourceMergeHintText'|trans"/>
 
             <form method="post" action="{{ path('app_settings_jobboard_source_merge') }}">
                 <input type="hidden" name="_token" value="{{ csrf_token('jobboard_source_merge') }}">
@@ -165,14 +156,12 @@
                         </select>
                     </label>
                 </div>
-                <div class="cm-actionbar">
-                    <div class="cm-actionbar__buttons">
-                        <button type="submit" class="cm-btn cm-btn--primary"
-                                data-controller="confirm-submit"
-                                data-confirm-submit-message-value="{{ 'jobboardSourceMergeConfirmText'|trans }}"
-                                data-action="click->confirm-submit#confirm">{{ 'jobboardSourceMergeAction'|trans }}</button>
-                    </div>
-                </div>
+                <twig:Cm:ActionBar>
+                    <button type="submit" class="cm-btn cm-btn--primary"
+                            data-controller="confirm-submit"
+                            data-confirm-submit-message-value="{{ 'jobboardSourceMergeConfirmText'|trans }}"
+                            data-action="click->confirm-submit#confirm">{{ 'jobboardSourceMergeAction'|trans }}</button>
+                </twig:Cm:ActionBar>
             </form>
         {% endif %}
     </div>

@@ -1,0 +1,15 @@
+{# Breadcrumb of every authenticated screen - reference: design/design_handoff_ufa/screenshots/25e-pret-formulaire.png,
+   which is authoritative for the whole application. A house icon opens the trail, the segments are
+   separated by chevrons, the parents are blue links and the current segment is in ink and bold.
+
+   « Accueil » is prepended here (App\Twig\Components\Cm\Breadcrumb); `segments` is the list of
+   {label, url} that follows it. Every segment, the last one included, stays a real <a href>: the
+   last carries .current so it reads as non-navigable. #}
+<nav{{ attributes.defaults({class: 'cm-breadcrumb'}) }}>
+    <svg class="cm-breadcrumb__home" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12H3l9-9 9 9h-2"></path><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"></path></svg>
+    <a href="{{ this.homeUrl }}"{% if segments is empty %} class="current"{% endif %}>{{ 'homeNavLabel'|trans }}</a>
+    {% for segment in segments %}
+        <span class="sep" aria-hidden="true">&rsaquo;</span>
+        <a href="{{ segment.url }}"{% if loop.last %} class="current"{% endif %}>{{ segment.label }}</a>
+    {% endfor %}
+</nav>

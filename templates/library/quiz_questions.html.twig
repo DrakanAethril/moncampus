@@ -10,14 +10,13 @@
 {% block page_title %}{{ quizTemplate.name }}{% endblock %}
 
 {% block main %}
-    {% include '_tabs.html.twig' with {
-        tabs: [
-            {url: path('app_library_quiz_settings', {id: quizTemplate.id}), label: 'quizTabSettingsLabel'|trans, active: false},
-            {url: path('app_library_quiz_questions', {id: quizTemplate.id}), label: 'quizTabQuestionsLabel'|trans, active: true},
-            {url: path('app_library_quiz_test', {id: quizTemplate.id}), label: 'quizTabTestLabel'|trans, active: false},
-        ],
-        tabs_action: 'library/_quiz_questions_new_button.html.twig',
-    } %}
+    <twig:Cm:Tabs :tabs="[
+        {url: path('app_library_quiz_settings', {id: quizTemplate.id}), label: 'quizTabSettingsLabel'|trans, active: false},
+        {url: path('app_library_quiz_questions', {id: quizTemplate.id}), label: 'quizTabQuestionsLabel'|trans, active: true},
+        {url: path('app_library_quiz_test', {id: quizTemplate.id}), label: 'quizTabTestLabel'|trans, active: false},
+    ]">
+        <twig:block name="action">{% include 'library/_quiz_questions_new_button.html.twig' %}</twig:block>
+    </twig:Cm:Tabs>
     <div class="card cm-card--tabbed">
         <div class="card-body">
             <div class="row g-4">
@@ -288,13 +287,10 @@
                                 {{ form_row(form.explanation) }}
                             </div>
                         </div>
-                        <div class="cm-actionbar">
-                            {% include '_last_modified_meta.html.twig' with {entity: quizTemplate} %}
-                            <div class="cm-actionbar__buttons">
-                                <a href="{{ path('app_library_quiz_questions', {id: quizTemplate.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                                {{ form_widget(form.submit) }}
-                            </div>
-                        </div>
+                        <twig:Cm:ActionBar :lastModified="quizTemplate">
+                            <a href="{{ path('app_library_quiz_questions', {id: quizTemplate.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                            {{ form_widget(form.submit) }}
+                        </twig:Cm:ActionBar>
                         {{ form_rest(form) }}
                         {{ form_end(form) }}
 

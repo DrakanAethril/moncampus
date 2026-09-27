@@ -1,6 +1,12 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ (isEdit ? 'signupListEditPageHeading' : 'signupListNewPageHeading')|trans }}{% endblock %}
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'signupListsPageHeading'|trans, url: path('app_signup_lists')},
+        {label: (isEdit ? 'signupListEditPageHeading' : 'signupListNewPageHeading')|trans, url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
 {% block page_title %}{{ (isEdit ? 'signupListEditPageHeading' : 'signupListNewPageHeading')|trans }}{% endblock %}
 
 {% block main %}

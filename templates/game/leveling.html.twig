@@ -5,10 +5,9 @@
 {% block page_breadcrumb %}
     {# Two segments: « Leveling » hangs off the profile menu, and nothing navigates through a
        section to reach it. #}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'gameLevelingHeading'|trans, url: path('app_game_leveling')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'gameLevelingHeading'|trans }}{% endblock %}

@@ -11,7 +11,7 @@
             <button type="button" class="cm-seqlib__move-item" style="padding-left: {{ 10 + depth * 16 }}px"
                     data-action="sequence-library#moveTo" data-target-id="{{ row.id }}">
                 <span class="cm-seqlib__node-ico" aria-hidden="true">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"></path></svg>
+                    <twig:ux:icon name="folder" width="14" height="14"/>
                 </span>
                 {{ row.name }}
             </button>
@@ -32,7 +32,7 @@
             <li>
                 <button type="button" class="cm-seqlib__move-item" data-action="sequence-library#moveTo" data-target-id="">
                     <span class="cm-seqlib__node-ico" aria-hidden="true">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"></path></svg>
+                        <twig:ux:icon name="home" width="14" height="14"/>
                     </span>
                     {{ 'sequenceFolderRootLabel'|trans }}
                 </button>

@@ -5,11 +5,10 @@
 {% block title %}{{ campaign.name }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'surveysPageHeading'|trans, url: path('app_surveys')},
         {label: campaign.name, url: path('app_survey_campaign', {id: campaign.id})},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ campaign.name }}{% endblock %}
@@ -34,7 +33,7 @@
 
     {% include 'survey/_results_head.html.twig' %}
 
-    {% include '_tabs.html.twig' with {tabs: tabs|map(t => {url: t.url, label: t.label|trans, active: t.active, count: t.count})} %}
+    {{ component('Cm:Tabs', {tabs: tabs|map(t => {url: t.url, label: t.label|trans, active: t.active, count: t.count})}) }}
 
     <div class="card cm-card--tabbed">
         <div class="card-body">

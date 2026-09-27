@@ -33,3 +33,30 @@ framework:
             policy: sliding_window
             limit: 30
             interval: '1 hour'
+
+        # Guards dynamic client registration of the Claude connector (App\Controller\OAuth\
+        # RegistrationController), keyed by client IP. The specification wants that endpoint open
+        # to anybody, and each call writes a row: a claude.ai connection registers once, so twenty
+        # an hour from one address is already far beyond any real use.
+        oauth_client_registration:
+            policy: sliding_window
+            limit: 20
+            interval: '1 hour'
+
+        # Guards the sign-in of an external service with its own password (the Claude connector's
+        # consent screen, App\Controller\OAuth\AuthorizeController), consumed twice per attempt:
+        # keyed "ip:<ip>" and "user:<identifier>", both must pass - so neither one address trying
+        # many accounts nor many addresses trying one account can guess a service password.
+        external_service_sign_in:
+            policy: sliding_window
+            limit: 10
+            interval: '15 minutes'
+
+        # Guards the École Directe sign-in (App\Controller\EcoleDirecte\EcoleDirecteController),
+        # keyed "user:<id>". Not about this platform's own accounts: every teacher reaches École
+        # Directe from this one server address, and a password mistyped in a loop must stop here
+        # before École Directe blocks the address - or the teacher's own account - for everybody.
+        ecoledirecte_login:
+            policy: sliding_window
+            limit: 8
+            interval: '15 minutes'

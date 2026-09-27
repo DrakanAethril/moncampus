@@ -18,7 +18,7 @@
 
    Entries appear as their screens are built; there is deliberately no disabled entry for a screen
    that does not exist yet - a link that goes nowhere teaches nothing. #}
-{% include '_tabs.html.twig' with {
+{{ component('Cm:Tabs', {
     tabs: [
         {url: path('app_infrastructure'), label: 'infrastructureOverviewNavLabel'|trans, active: activeNav == 'overview'},
         {url: path('app_infrastructure_hosts'), label: 'infrastructureHostsNavLabel'|trans, active: activeNav == 'hosts'},
@@ -29,4 +29,4 @@
         {url: path('app_infrastructure_operations'), label: 'infrastructureOperationsNavLabel'|trans, active: activeNav == 'operations'},
         {url: path('app_infrastructure_console_sessions'), label: 'consoleSessionsNavLabel'|trans, active: activeNav == 'console_sessions'},
     ],
-} %}
+}) }}

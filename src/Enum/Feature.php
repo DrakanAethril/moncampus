@@ -66,6 +66,7 @@ enum Feature: string
     case ClassListExports = 'class_list_exports';
     case ProgramFinancial = 'program_financial';
     case Directory = 'directory';
+    case EcoleDirecte = 'ecole_directe';
 
     // --- Vie scolaire et communication -------------------------------------------------------
 
@@ -96,6 +97,7 @@ enum Feature: string
     case Eco = 'eco';
     case ActivityHistory = 'activity_history';
     case Equipment = 'equipment';
+    case ClaudeConnector = 'claude_connector';
 
     /**
      * The roles the matrix offers a column for, in the order the screen draws them.
@@ -136,7 +138,7 @@ enum Feature: string
             self::Timetable, self::TimetableSettings, self::EvaluationPlanning,
             self::GradebookEntry, self::GradebookStudent, self::SelfAssessment,
             self::ProgramReporting, self::ProgramExports, self::ClassListExports,
-            self::ProgramFinancial, self::Directory => FeatureFamily::Schooling,
+            self::ProgramFinancial, self::Directory, self::EcoleDirecte => FeatureFamily::Schooling,
 
             self::Agenda, self::Announcements, self::Messaging, self::SchoolMail,
             self::SchoolMailSupervision, self::SignupLists, self::Support,
@@ -146,7 +148,7 @@ enum Feature: string
             self::TrainingOffers, self::JobSearch, self::Jobboard => FeatureFamily::Alternance,
 
             self::MyVms, self::Infrastructure, self::GuestConsole, self::Eco,
-            self::ActivityHistory, self::Equipment => FeatureFamily::Technical,
+            self::ActivityHistory, self::Equipment, self::ClaudeConnector => FeatureFamily::Technical,
         };
     }
 
@@ -216,6 +218,7 @@ enum Feature: string
             self::ClassListExports => 'featureClassListExportsLabel',
             self::ProgramFinancial => 'featureProgramFinancialLabel',
             self::Directory => 'featureDirectoryLabel',
+            self::EcoleDirecte => 'featureEcoleDirecteLabel',
             self::Agenda => 'featureAgendaLabel',
             self::Announcements => 'featureAnnouncementsLabel',
             self::Messaging => 'featureMessagingLabel',
@@ -237,6 +240,7 @@ enum Feature: string
             self::Eco => 'featureEcoLabel',
             self::ActivityHistory => 'featureActivityHistoryLabel',
             self::Equipment => 'featureEquipmentLabel',
+            self::ClaudeConnector => 'featureClaudeConnectorLabel',
         };
     }
 
@@ -332,6 +336,15 @@ enum Feature: string
             // and the technical support. Teachers declare nothing here - a broken mouse in a room
             // reaches the support the way everything else does, through a ticket.
             self::Equipment => ['ROLE_STAFF', 'ROLE_STAFF-LEAD', 'ROLE_SUPPORT-TECH'],
+
+            // The Claude connector is named by no role, like the Jobboard: it ships off for everybody,
+            // the administrator being the only one who can connect on the day it lands. Whoever is
+            // lit then still reaches only the tools of the features they already have - the
+            // connector is a door onto the platform, never a way round its switches.
+
+            // École Directe is named by no role either: it is a prototype that signs a teacher in to
+            // another application from this server, reads it and sends to it. Its controllers are
+            // ROLE_ADMIN for now, so ticking a role here would open nothing until they are widened.
 
             // The two class lists are the establishment's own directory rather than a teaching
             // tool (see the nav's comment on them), and so is exporting one: an émargement sheet

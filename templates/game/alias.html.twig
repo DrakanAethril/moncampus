@@ -3,11 +3,10 @@
 {% block title %}{{ 'gameAliasHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'gameProgressHeading'|trans, url: path('app_game')},
         {label: 'gameAliasHeading'|trans, url: path('app_game_alias')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'gameAliasHeading'|trans }}{% endblock %}

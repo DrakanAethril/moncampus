@@ -1081,6 +1081,19 @@ h1, h2, h3, h4,
 .cm-authcard__state p { margin: 9px 0 0; font-size: 14px; line-height: 1.65; color: var(--cm-auth-footer-phone); }
 .cm-authcard__state p b { color: var(--cm-auth-label); }
 
+/* ---------- « Mon profil » > the password of an external service (profile/_external_service_password) ---------- */
+.cm-external-service-password__title { font: 600 14px var(--cm-font-ui); color: var(--cm-text); margin: 0 0 6px; }
+
+/* ---------- Consent screen of the Claude connector (templates/oauth/authorize.html.twig) ---------- */
+.cm-oauth-consent__list {
+    margin: 0; padding: 12px 16px 12px 34px; border-radius: 10px;
+    background: var(--cm-blue-bg); color: var(--cm-auth-label); font-size: 14px; line-height: 1.6;
+}
+.cm-authcard__btn--secondary { background: transparent; color: var(--cm-brand); border: 1px solid var(--cm-auth-footer-border); }
+.cm-authcard__btn--secondary:hover { background: var(--cm-blue-bg); }
+[data-bs-theme="dark"] .cm-authcard__btn--secondary { color: #7fb3dc; }
+[data-bs-theme="dark"] .cm-authcard__btn--secondary:hover { background: transparent; border-color: #7fb3dc; }
+
 /* ---------- Account-recall card (7c) - reuses .cm-user__avatar's square-gold-avatar look ---------- */
 .cm-authcard__account {
     background: var(--cm-auth-field-bg); border: 1px solid var(--cm-auth-field-border); border-radius: 10px;

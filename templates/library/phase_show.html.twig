@@ -1,6 +1,13 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ phaseTemplate.nom }} - {{ seanceTemplate.titre }}{% endblock %}
+{% block page_breadcrumb %}
+    {% include 'library/_sequence_breadcrumb.html.twig' with {ancestors: folderTrail, tail: [
+        {label: sequenceTemplate.titre, url: path('app_library_sequences_show', {id: sequenceTemplate.id})},
+        {label: seanceTemplate.titre, url: path('app_library_seances_show', {sequenceId: sequenceTemplate.id, id: seanceTemplate.id})},
+        {label: phaseTemplate.nom, url: app.request.requestUri},
+    ]} only %}
+{% endblock %}
 {% block page_title %}{{ phaseTemplate.nom }}{% endblock %}
 
 {% block page_actions %}

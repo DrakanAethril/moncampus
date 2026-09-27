@@ -3,13 +3,12 @@
 {% block title %}{{ 'ufaContractImportAnalysisPageHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'ufaNavLabel'|trans, url: path('app_ufa')},
         {label: 'ufaConfigurationNavLabel'|trans, url: path('app_ufa_configuration_formation_center')},
         {label: 'ufaContractImportPageHeading'|trans, url: path('app_ufa_configuration_contract_import')},
         {label: 'ufaContractImportAnalysisPageHeading'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'ufaContractImportAnalysisPageHeading'|trans }}{% endblock %}
 
@@ -17,7 +16,7 @@
     <ul class="mb-0 ps-3">
         {% for issue in issues %}
             <li>
-                <span class="cm-badge {{ issue.severity.badgeClass }}">{{ issue.severity.labelKey|trans }}</span>
+                <twig:Cm:Badge :of="issue.severity"/>
                 {{ issue.messageKey|trans(issue.parameters) }}
             </li>
         {% endfor %}
@@ -81,20 +80,14 @@
                     <h3 class="card-title">{{ 'ufaContractImportEnterprisesSectionTitle'|trans }}</h3>
                 </div>
                 <div class="card-body">
-                    <div class="cm-subhead">
-                        <div class="cm-subhead__title">{{ 'ufaContractImportNewEnterprisesTitle'|trans({'%count%': analysis.newEnterpriseNames|length}) }}</div>
-                        <div class="cm-subhead__hint">{{ 'ufaContractImportNewEnterprisesHint'|trans }}</div>
-                    </div>
+                    <twig:Cm:Subhead :title="'ufaContractImportNewEnterprisesTitle'|trans({'%count%': analysis.newEnterpriseNames|length})" :hint="'ufaContractImportNewEnterprisesHint'|trans"/>
                     {% if analysis.newEnterpriseNames is empty %}
                         <p class="text-secondary">{{ 'ufaContractImportNoneLabel'|trans }}</p>
                     {% else %}
                         <ul>{% for name in analysis.newEnterpriseNames %}<li>{{ name }}</li>{% endfor %}</ul>
                     {% endif %}
 
-                    <div class="cm-subhead mt-3">
-                        <div class="cm-subhead__title">{{ 'ufaContractImportKnownEnterprisesTitle'|trans({'%count%': analysis.knownEnterpriseNames|length}) }}</div>
-                        <div class="cm-subhead__hint">{{ 'ufaContractImportKnownEnterprisesHint'|trans }}</div>
-                    </div>
+                    <twig:Cm:Subhead class="mt-3" :title="'ufaContractImportKnownEnterprisesTitle'|trans({'%count%': analysis.knownEnterpriseNames|length})" :hint="'ufaContractImportKnownEnterprisesHint'|trans"/>
                     {% if analysis.knownEnterpriseNames is empty %}
                         <p class="text-secondary mb-0">{{ 'ufaContractImportNoneLabel'|trans }}</p>
                     {% else %}
@@ -109,20 +102,14 @@
                     <h3 class="card-title">{{ 'ufaContractImportTutorsSectionTitle'|trans }}</h3>
                 </div>
                 <div class="card-body">
-                    <div class="cm-subhead">
-                        <div class="cm-subhead__title">{{ 'ufaContractImportNewTutorsTitle'|trans({'%count%': analysis.newTutorLabels|length}) }}</div>
-                        <div class="cm-subhead__hint">{{ 'ufaContractImportNewTutorsHint'|trans }}</div>
-                    </div>
+                    <twig:Cm:Subhead :title="'ufaContractImportNewTutorsTitle'|trans({'%count%': analysis.newTutorLabels|length})" :hint="'ufaContractImportNewTutorsHint'|trans"/>
                     {% if analysis.newTutorLabels is empty %}
                         <p class="text-secondary">{{ 'ufaContractImportNoneLabel'|trans }}</p>
                     {% else %}
                         <ul>{% for label in analysis.newTutorLabels %}<li>{{ label }}</li>{% endfor %}</ul>
                     {% endif %}
 
-                    <div class="cm-subhead mt-3">
-                        <div class="cm-subhead__title">{{ 'ufaContractImportKnownTutorsTitle'|trans({'%count%': analysis.knownTutorLabels|length}) }}</div>
-                        <div class="cm-subhead__hint">{{ 'ufaContractImportKnownTutorsHint'|trans }}</div>
-                    </div>
+                    <twig:Cm:Subhead class="mt-3" :title="'ufaContractImportKnownTutorsTitle'|trans({'%count%': analysis.knownTutorLabels|length})" :hint="'ufaContractImportKnownTutorsHint'|trans"/>
                     {% if analysis.knownTutorLabels is empty %}
                         <p class="text-secondary mb-0">{{ 'ufaContractImportNoneLabel'|trans }}</p>
                     {% else %}
@@ -204,7 +191,7 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <span class="cm-badge {{ row.action.badgeClass }}">{{ row.action.labelKey|trans }}</span>
+                                <twig:Cm:Badge :of="row.action"/>
                             </td>
                         </tr>
                         {% if row.issues is not empty %}
@@ -234,12 +221,10 @@
                         <div>{{ (analysis.blockingCount > 0 ? 'ufaContractImportCannotImportBlockingText' : 'ufaContractImportCannotImportNothingText')|trans }}</div>
                     </div>
                 {% endif %}
-                <div class="cm-actionbar">
-                    <div class="cm-actionbar__buttons">
-                        <a href="{{ path('app_ufa_configuration_contract_import') }}" class="btn btn-link">{{ 'ufaContractImportAnotherFileActionLabel'|trans }}</a>
-                        <button type="submit" class="btn btn-primary" {{ analysis.importable ? '' : 'disabled' }}>{{ 'ufaContractImportRunButtonLabel'|trans }}</button>
-                    </div>
-                </div>
+                <twig:Cm:ActionBar>
+                    <a href="{{ path('app_ufa_configuration_contract_import') }}" class="btn btn-link">{{ 'ufaContractImportAnotherFileActionLabel'|trans }}</a>
+                    <button type="submit" class="btn btn-primary" {{ analysis.importable ? '' : 'disabled' }}>{{ 'ufaContractImportRunButtonLabel'|trans }}</button>
+                </twig:Cm:ActionBar>
             </form>
         </div>
     </div>

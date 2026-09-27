@@ -3,13 +3,12 @@
 {% block title %}{{ 'classImportBatchPageHeading'|trans({'%date%': batch.importedAt|date('d/m/Y')}) }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'directoryNavLabel'|trans, url: path('app_directory_users')},
         {label: 'directoryUsersNavLabel'|trans, url: path('app_directory_users')},
         {label: 'classImportPageHeading'|trans, url: path('app_directory_class_import')},
         {label: 'classImportBatchBreadcrumbLabel'|trans({'%date%': batch.importedAt|date('d/m/Y')}), url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}
     {{ 'classImportBatchPageHeading'|trans({'%date%': batch.importedAt|date('d/m/Y')}) }} — {{ batch.program.displayShortName }}
@@ -96,7 +95,7 @@
                             <tr data-class-import-status-line="{{ line.id }}">
                                 <td>{{ line.user ? (line.user.displayName ?? line.user.username) : '—' }}</td>
                                 <td class="text-secondary">{{ line.user ? line.user.username : '—' }}</td>
-                                <td><span class="cm-badge {{ line.action.badgeClass }}">{{ line.action.labelKey|trans }}</span></td>
+                                <td><twig:Cm:Badge :of="line.action"/></td>
                                 <td>
                                     {% if line.directoryState is null %}
                                         {# Not "pending": there is nothing to wait for. An attached
@@ -136,11 +135,9 @@
             </div>
             <div class="card-footer">
                 <span class="text-secondary small">{{ 'classImportBatchStillReachableHint'|trans }}</span>
-                <div class="cm-actionbar">
-                    <div class="cm-actionbar__buttons">
-                        <a href="{{ path('app_directory_users') }}" class="btn btn-primary">{{ 'classImportBatchFinishAction'|trans }}</a>
-                    </div>
-                </div>
+                <twig:Cm:ActionBar>
+                    <a href="{{ path('app_directory_users') }}" class="btn btn-primary">{{ 'classImportBatchFinishAction'|trans }}</a>
+                </twig:Cm:ActionBar>
             </div>
         </div>
     </div>

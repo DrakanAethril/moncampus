@@ -13,11 +13,10 @@
 {% block title %}{{ node.name }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'sharedDocumentNavLabel'|trans, url: path('app_student_shared_documents')},
         {label: node.name, url: path('app_student_shared_document_open', {id: share.id})},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ node.name }}{% endblock %}
@@ -49,7 +48,7 @@
                                 <span class="cm-flib__name">
                                     {% if row.node.folder %}
                                         <span class="cm-flib__ext cm-flib__ext--dir" aria-hidden="true">
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"></path></svg>
+                                            <twig:ux:icon name="folder" width="13" height="13"/>
                                         </span>
                                         <span>{{ row.node.name }}</span>
                                     {% else %}

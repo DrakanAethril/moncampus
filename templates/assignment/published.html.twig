@@ -8,12 +8,11 @@
 {% block title %}{{ 'assignmentPublishedHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'assignmentsListPageHeading'|trans, url: path('app_assignments')},
         {label: assignment.program.displayShortName, url: path('app_assignments', {classe: assignment.program.id})},
         {label: 'assignmentPublishedHeading'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ page_heading }}{% endblock %}

@@ -10,26 +10,22 @@
 {% block page_title %}{{ quizTemplate.name }}{% endblock %}
 
 {% block main %}
-    {% include '_tabs.html.twig' with {
-        tabs: isNew
-            ? [{url: path('app_library_quiz_new'), label: 'quizTabSettingsLabel'|trans, active: true}]
-            : [
-                {url: path('app_library_quiz_settings', {id: quizTemplate.id}), label: 'quizTabSettingsLabel'|trans, active: true},
-                {url: path('app_library_quiz_questions', {id: quizTemplate.id}), label: 'quizTabQuestionsLabel'|trans, active: false},
-                {url: path('app_library_quiz_test', {id: quizTemplate.id}), label: 'quizTabTestLabel'|trans, active: false},
-            ],
-        tabs_action: 'library/_quiz_settings_save_button.html.twig',
-    } %}
+    <twig:Cm:Tabs :tabs="isNew
+        ? [{url: path('app_library_quiz_new'), label: 'quizTabSettingsLabel'|trans, active: true}]
+        : [
+            {url: path('app_library_quiz_settings', {id: quizTemplate.id}), label: 'quizTabSettingsLabel'|trans, active: true},
+            {url: path('app_library_quiz_questions', {id: quizTemplate.id}), label: 'quizTabQuestionsLabel'|trans, active: false},
+            {url: path('app_library_quiz_test', {id: quizTemplate.id}), label: 'quizTabTestLabel'|trans, active: false},
+        ]">
+        <twig:block name="action">{% include 'library/_quiz_settings_save_button.html.twig' %}</twig:block>
+    </twig:Cm:Tabs>
     <div class="card cm-card--tabbed">
         <div class="card-body">
             {{ form_start(form, {attr: {id: 'quiz-settings-form'}}) }}
             {{ form_errors(form) }}
             <div class="row g-4 align-items-start">
                 <div class="col-12 col-lg-6 d-flex flex-column gap-3">
-                    <div class="cm-subhead">
-                        <div class="cm-subhead__title">{{ 'quizSettingsIdentityTitle'|trans }}</div>
-                        <div class="cm-subhead__hint">{{ 'quizSettingsIdentityHint'|trans }}</div>
-                    </div>
+                    <twig:Cm:Subhead :title="'quizSettingsIdentityTitle'|trans" :hint="'quizSettingsIdentityHint'|trans"/>
                     <div style="max-width: 420px;">
                         {{ form_row(form.name) }}
                     </div>
@@ -39,10 +35,7 @@
                     {{ form_row(form.description) }}
                 </div>
                 <div class="col-12 col-lg-6 d-flex flex-column gap-3">
-                    <div class="cm-subhead">
-                        <div class="cm-subhead__title">{{ 'quizSettingsDefaultsTitle'|trans }}</div>
-                        <div class="cm-subhead__hint">{{ 'quizSettingsDefaultsHint'|trans }}</div>
-                    </div>
+                    <twig:Cm:Subhead :title="'quizSettingsDefaultsTitle'|trans" :hint="'quizSettingsDefaultsHint'|trans"/>
                     <div class="row g-3">
                         <div class="col-6">{{ form_row(form.defaultQuestionCount) }}</div>
                         {# The seconds field is hidden rather than removed from the DOM: the server
@@ -89,13 +82,10 @@
                     {% endif %}
                 </div>
             </div>
-            <div class="cm-actionbar">
-                {% include '_last_modified_meta.html.twig' with {entity: quizTemplate} %}
-                <div class="cm-actionbar__buttons">
-                    {% set backFolder = folderTrail|last %}
-                    <a href="{{ backFolder ? path('app_library_quiz_folder', {folderId: backFolder.id}) : path('app_library_quiz') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                </div>
-            </div>
+            <twig:Cm:ActionBar :lastModified="quizTemplate">
+                {% set backFolder = folderTrail|last %}
+                <a href="{{ backFolder ? path('app_library_quiz_folder', {folderId: backFolder.id}) : path('app_library_quiz') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+            </twig:Cm:ActionBar>
             {{ form_rest(form) }}
             {{ form_end(form) }}
         </div>

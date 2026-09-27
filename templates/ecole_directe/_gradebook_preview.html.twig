@@ -1,0 +1,44 @@
+{# What sending one evaluation would write into an École Directe gradebook, student by student -
+   App\EcoleDirecte\EcoleDirecteGradePlanner. #}
+<p class="mb-2">
+    {% if evaluation %}
+        {{ 'ecoleDirecteGradebookExistingLabel'|trans({'%name%': subject.name}) }}
+    {% else %}
+        {{ 'ecoleDirecteGradebookNewLabel'|trans({'%name%': subject.name, '%scale%': subject.scale, '%coefficient%': subject.coefficient}) }}
+    {% endif %}
+</p>
+{% if refusal %}
+    <div class="alert alert-danger">{{ refusal|trans }}</div>
+{% endif %}
+{% if rows is empty %}
+    <p class="text-secondary mb-0">{{ 'ecoleDirecteGradebookNoGradeLabel'|trans }}</p>
+{% else %}
+    <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+            <thead>
+                <tr>
+                    <th>{{ 'ecoleDirecteGradebookStudentLabel'|trans }}</th>
+                    <th>{{ 'ecoleDirecteGradebookMonCampusLabel'|trans }}</th>
+                    <th>{{ 'ecoleDirecteGradebookEcoleDirecteLabel'|trans }}</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                    <tr>
+                        <td>{{ row.label }}</td>
+                        <td>{{ row.value ?: '—' }}</td>
+                        <td>{{ row.current ?: '—' }}</td>
+                        <td><twig:Cm:Badge :of="row.state"/></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}
+{% if ecoleDirecteOnly is not empty %}
+    <div class="alert alert-info mt-3 mb-0">
+        <div class="fw-medium">{{ 'ecoleDirecteGradebookOnlyThereLabel'|trans }}</div>
+        {{ ecoleDirecteOnly|join(' ; ') }}
+    </div>
+{% endif %}

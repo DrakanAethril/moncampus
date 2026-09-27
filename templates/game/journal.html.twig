@@ -3,11 +3,10 @@
 {% block title %}{{ 'gameJournalHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'gameProgressHeading'|trans, url: path('app_game')},
         {label: 'gameJournalHeading'|trans, url: path('app_game_journal')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'gameJournalHeading'|trans }}{% endblock %}

@@ -60,21 +60,16 @@ Déroulé minuté de la vidéo (transcription automatique, ou plan écrit à la 
             <div class="card-body d-flex flex-column gap-3">
                 {{ form_start(form) }}
                 {{ form_errors(form) }}
-                <div class="cm-subhead">
-                    <div class="cm-subhead__title">{{ 'videoCueImportFileSectionTitle'|trans }}</div>
-                    <div class="cm-subhead__hint">{{ 'videoCueImportFileSectionHintTemplate'|trans({'%name%': file.originalName, '%duration%': file.formattedDuration}) }}</div>
-                </div>
+                <twig:Cm:Subhead :title="'videoCueImportFileSectionTitle'|trans" :hint="'videoCueImportFileSectionHintTemplate'|trans({'%name%': file.originalName, '%duration%': file.formattedDuration})"/>
                 {{ form_row(form.file) }}
                 <div class="cm-note">
                     <span class="cm-note__icon">i</span>
                     <div>{{ 'videoCueImportNoWriteNoteText'|trans }}</div>
                 </div>
-                <div class="cm-actionbar">
-                    <div class="cm-actionbar__buttons">
-                        <a href="{{ path('app_video_resource_cues', {resourceId: resource.id, fileId: file.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                        <button type="submit" class="btn btn-primary">{{ 'quizImportAnalyseButtonLabel'|trans }}</button>
-                    </div>
-                </div>
+                <twig:Cm:ActionBar>
+                    <a href="{{ path('app_video_resource_cues', {resourceId: resource.id, fileId: file.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    <button type="submit" class="btn btn-primary">{{ 'quizImportAnalyseButtonLabel'|trans }}</button>
+                </twig:Cm:ActionBar>
                 {{ form_rest(form) }}
                 {{ form_end(form) }}
             </div>
@@ -82,10 +77,7 @@ Déroulé minuté de la vidéo (transcription automatique, ou plan écrit à la 
 
         <section class="card">
             <div class="card-body d-flex flex-column gap-2">
-                <div class="cm-subhead">
-                    <div class="cm-subhead__title">{{ 'videoCuePromptSectionTitle'|trans }}</div>
-                    <div class="cm-subhead__hint">{{ 'videoCuePromptSectionHint'|trans }}</div>
-                </div>
+                <twig:Cm:Subhead :title="'videoCuePromptSectionTitle'|trans" :hint="'videoCuePromptSectionHint'|trans"/>
                 <div data-controller="copy-block" class="d-flex flex-column gap-2 align-items-start">
                     <button type="button" class="btn btn-sm" data-action="click->copy-block#copy"
                             data-copy-block-done-label-param="{{ 'zoneImportPromptCopiedLabel'|trans }}">{{ 'zoneImportPromptCopyLabel'|trans }}</button>
