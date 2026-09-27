@@ -74,6 +74,7 @@ cron on the production host today; `docs/production.md` carries the crontab line
 | `app:ldap:apply-account-requests` | Relit l'annuaire pour chaque demande de `ldap_manage_account` que le script consommateur a terminée, et applique la conséquence côté application — aujourd'hui la bascule de `User::$username` après un renommage confirmé. **Cron toutes les minutes.** C'est ce qui fait qu'un onglet fermé ne décide de rien : la fiche sonde la même chose toutes les 2 s, mais la boucle du navigateur n'est jamais ce qui porte le travail. Idempotente (`applied_at`) et verrouillée (`LockableTrait`). Voir `docs/production.md` |
 | `app:proxmox:secrets` | **Diagnostic, not cron.** Says whether the sealed Proxmox secrets still open, and prints a fingerprint of the `PROXMOX_SECRET_KEY` in use. Run it before and after a deploy: a fingerprint that changes means the key is not being carried across releases, which makes every stored token unreadable at once and looks, from the screen, exactly like Proxmox refusing them |
 | `app:guest-accounts:prune` | **Maintenance à la demande, pas cron.** Supprime les lignes `guest_account` dont la machine n'existe plus sur l'hyperviseur, ou dont le VMID a été repris depuis par un autre lot — Proxmox rend un numéro dès qu'une machine est détruite, et les lignes de l'ancienne occupante restent classées dessous (cette moitié-là se décide sur les seules données de la plateforme, sans rien demander à l'hyperviseur ; `App\Service\Proxmox\VmidHandover` la ferme à la source lors des créations suivantes). C'est l'état que /infrastructure ne montre pas : ces écrans lisent Proxmox à l'affichage, donc une machine détruite cesse d'y être listée, tandis que ses comptes restent — et « Mes machines virtuelles » est bâti sur ces comptes. Un hôte injoignable ne décide rien : ses comptes sont comptés à part et laissés tels quels. `--dry-run` nomme chaque ligne avant d'y toucher. Jamais planifiée : supprimer est une décision, pas un horaire |
+| `app:ecoledirecte:check` | **Diagnostic, not cron.** Runs the one step of an École Directe login that needs no account (the GTK cookie of `login.awp?gtk=1`) and says whether École Directe still answers it from this server. The platform holds no École Directe credentials and must not, so this is the most it can prove on its own |
 | `app:counters:recompute` | **Cron, once a night** (`docs/production.md`). Checks every stored counter of the platform (`App\Counter\RecomputableCounter`, one tagged service each) against its source and corrects the drifts - each correction logged at error level, so it reaches Discord: a drift is a bug, not a figure to patch. The counters move in real time with what changes them; this is the safety net. `--counter=`, `--dry-run` |
 | `app:seed-dev-*`, `app:dev:*`, `app:configure-dev-programs` | **Dev-machine only.** Populate/inject into the local database. These must never be relied on in staging or production. |
 
@@ -230,6 +231,16 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   for every role; an admin tries it first. `DocumentTextExtractor` reads PDF (poppler's `pdftotext`,
   in the image since this lot), Word, PowerPoint, OpenDocument, Excel and HTML;
   `moncampus-bareme/1` (`EvaluationRubricJsonImporter`) is the barème's document format, read strictly.
+- **École Directe (Outils)** — `src/EcoleDirecte/`, `App\Controller\EcoleDirecte\*`. A teacher signs in to
+  their **own** École Directe account from the platform's server (Aplim publishes no API: this is the
+  private one its website calls, teacher routes on `apip.ecoledirecte.com`). Two rules the code holds:
+  **the identifiant and the password are never kept** - they are arguments of `EcoleDirecteClient`'s
+  login methods, sent again by the browser when the identity question replays the login, and nothing
+  else; what spans requests is the handshake, sealed by `EcoleDirecteSessionSealer` (key derived from
+  APP_SECRET, 10 min sliding, bound to the user) and held in the page's JS memory only. And the client
+  is **stateless** (worker mode): the session travels by value. `Feature::EcoleDirecte` is off for every
+  role. École Directe changes its protocol without notice - an answer the client does not recognise is
+  logged at error level and refused, never guessed at.
 - **Accès aux fonctionnalités** — `App\Enum\Feature` (49 cases) + `#[RequiresFeature]` +
   `App\Security\FeatureAccess`: which features are lit, per role and per formation. Gestion >
   Fonctionnalités is the screen. **The whole Pédagogie family is off by default**, with four
@@ -390,6 +401,7 @@ New per-object rules belong in a Voter, not inline in a controller.
 | Matomo | Analytics, **consent-gated** (`requireConsent`, opt-in banner) | `MATOMO_URL`, `MATOMO_SITE_ID` |
 | Discord | Support-ticket notifications | `DISCORD_WEBHOOK_*` |
 | LDAP | Authentication + directory | `LDAP_*` |
+| École Directe (Aplim) | Teachers sign in to their own account from the server (private API, no stored credentials) | `ECOLEDIRECTE_*` |
 | claude.ai (Anthropic) | Calls the Claude connector (`/mcp`, OAuth) from `160.79.104.0/21` — inbound only, the app never calls Anthropic | — |
 
 `.env.prod.local` **on the development machine holds decoy values.** Never infer the real production

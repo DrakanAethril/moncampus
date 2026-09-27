@@ -92,6 +92,10 @@ services:
             # App\Service\DocumentationPerimeter falls back to every group that takes part in the
             # hierarchy rather than to an empty perimeter.
             string $rootGroupName: '%app.documentation_root_group%'
+            # App\EcoleDirecte\EcoleDirecteClient only - see .env.
+            string $ecoleDirecteApiUrl: '%env(ECOLEDIRECTE_API_URL)%'
+            string $ecoleDirecteTeacherApiUrl: '%env(ECOLEDIRECTE_TEACHER_API_URL)%'
+            string $ecoleDirecteAppVersion: '%env(ECOLEDIRECTE_APP_VERSION)%'
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name

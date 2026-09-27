@@ -1,0 +1,28 @@
+{# The École Directe account a login opened - App\EcoleDirecte\EcoleDirecteAccount. For a teacher
+   its classes, groups and subjects are what the future mapping to MonCampus will be built on. #}
+<dl class="row mb-0">
+    <dt class="col-sm-3">{{ 'ecoleDirecteAccountNameLabel'|trans }}</dt>
+    <dd class="col-sm-9">{{ account.firstName }} {{ account.lastName }}
+        {% if account.teacher %}
+            <twig:Cm:Badge tone="green">{{ 'ecoleDirecteTeacherAccountLabel'|trans }}</twig:Cm:Badge>
+        {% else %}
+            <twig:Cm:Badge tone="gold">{{ 'ecoleDirecteOtherAccountLabel'|trans({'%type%': account.type}) }}</twig:Cm:Badge>
+        {% endif %}
+    </dd>
+    {% if account.establishment %}
+        <dt class="col-sm-3">{{ 'ecoleDirecteEstablishmentLabel'|trans }}</dt>
+        <dd class="col-sm-9">{{ account.establishment }}{% if account.schoolYear %} · {{ account.schoolYear }}{% endif %}</dd>
+    {% endif %}
+    <dt class="col-sm-3">{{ 'ecoleDirecteClassesLabel'|trans }}</dt>
+    <dd class="col-sm-9">
+        {% for class in account.classes %}<twig:Cm:Badge tone="blue" title="{{ class.id }}">{{ class.label ?: class.code }}</twig:Cm:Badge> {% else %}<span class="text-secondary">—</span>{% endfor %}
+    </dd>
+    <dt class="col-sm-3">{{ 'ecoleDirecteGroupsLabel'|trans }}</dt>
+    <dd class="col-sm-9">
+        {% for group in account.groups %}<twig:Cm:Badge tone="teal" title="{{ group.id }}{{ group.subjectCode ? ' · ' ~ group.subjectCode }}">{{ group.label ?: group.code }}</twig:Cm:Badge> {% else %}<span class="text-secondary">—</span>{% endfor %}
+    </dd>
+    <dt class="col-sm-3">{{ 'ecoleDirecteSubjectsLabel'|trans }}</dt>
+    <dd class="col-sm-9 mb-0">
+        {% for subject in account.subjects %}<twig:Cm:Badge tone="purple" title="{{ subject.code }}">{{ subject.label ?: subject.code }}</twig:Cm:Badge> {% else %}<span class="text-secondary">—</span>{% endfor %}
+    </dd>
+</dl>

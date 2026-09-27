@@ -472,10 +472,14 @@
                            nothing are the same defect, and both become reachable as soon as an
                            establishment switches a few of these off. #}
                         {% set tools_run = feature('class_tools') or feature('word_cloud') or feature('quiz_live') %}
+                        {# École Directe signs a *teacher* in to their own account there: staff reach
+                           this menu too, but have no account to read, so the entry asks for the role
+                           the controller does (App\Controller\EcoleDirecte\EcoleDirecteController). #}
+                        {% set tools_ecole_directe = feature('ecole_directe') and (is_granted('ROLE_TEACHER') or is_granted('ROLE_ADMIN')) %}
                         {% set tools_prepare = feature('progression') or feature('sequence_library') or feature('quiz_library')
                             or feature('file_library') or feature('surveys') or feature('content_sharing') or feature('audio') %}
                         {% set tools_follow = feature('lesson_log') or feature('student_work') or feature('dossiers') or feature('quiz_library')
-                            or feature('gradebook_entry') or feature('job_search') %}
+                            or feature('gradebook_entry') or feature('job_search') or tools_ecole_directe %}
                         {# « Au-delà d'un diplôme » - what happens to a student after the formation.
                            A group of its own rather than an entry under « Suivre les étudiants »:
                            the jobboard is not about following anybody, it is the market the class
@@ -493,7 +497,8 @@
                                 or current_route starts with 'app_shares'
                                 or current_route starts with 'app_survey'
                                 or current_route starts with 'app_jobboard'
-                                or current_route starts with 'app_dossier' %}
+                                or current_route starts with 'app_dossier'
+                                or current_route starts with 'app_ecole_directe' %}
                             {# cm-toolsmenu-host: the panel is centred on the bar rather than on the
                                entry that opens it, so the item gives up being the menu's
                                positioning context - see .cm-toolsmenu-host in app.css. #}
@@ -600,6 +605,7 @@
                                     {% if feature('quiz_library') %}<a class="dropdown-item {{ current_route == 'app_tools_quiz' ? 'active' }}" href="{{ path('app_tools_quiz') }}">{{ 'quizTrackingPageHeading'|trans }}</a>{% endif %}
                                     {% if feature('gradebook_entry') %}<a class="dropdown-item {{ current_route == 'app_tools_gradebook' ? 'active' }}" href="{{ path('app_tools_gradebook') }}">{{ 'gradebookNavLabel'|trans }}</a>{% endif %}
                                     {% if feature('job_search') %}<a class="dropdown-item {{ current_route == 'app_tools_job_search' ? 'active' }}" href="{{ path('app_tools_job_search') }}">{{ 'jobSearchTrackingNavLabel'|trans }}</a>{% endif %}
+                                    {% if tools_ecole_directe %}<a class="dropdown-item {{ current_route starts with 'app_ecole_directe' ? 'active' }}" href="{{ path('app_ecole_directe') }}">{{ 'ecoleDirecteHeading'|trans }}</a>{% endif %}
                                     </div>
                                     {% endif %}
                                     {% if tools_beyond %}
