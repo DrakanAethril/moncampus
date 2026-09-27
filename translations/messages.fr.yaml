@@ -9163,3 +9163,4 @@ rubricImportLabelTooLongError: "Partie %section%, question %question% : l'intitu
 rubricImportPointsError: "Partie %section%, question %question% (« %label% ») : le nombre de points doit être strictement positif."
 fileLibraryWriteInfectedMessage: "« %name% » a été refusé par l'antivirus."
 fileLibraryWriteScanUnavailableMessage: "L'antivirus ne répond pas : le fichier n'a pas été enregistré. Réessayez dans quelques minutes."
+evaluationRubricLockedFlashMessage: "Des points ont déjà été saisis sur ce barème : il ne peut plus être modifié."

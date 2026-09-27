@@ -17,6 +17,7 @@ use App\Enum\GradeStatus;
 use App\Enum\RubricSectionKind;
 use App\Form\EvaluationFormType;
 use App\Repository\EvaluationRepository;
+use App\Repository\GradeRubricAnswerRepository;
 use App\Repository\GradeRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\ProgramStudentOptionRepository;
@@ -383,13 +384,25 @@ class ProgramGradebookController extends AbstractController
         EntityManagerInterface $entityManager,
         StructureAccessChecker $accessChecker,
         EvaluationRubricBuilder $rubricBuilder,
+        GradeRubricAnswerRepository $rubricAnswers,
     ): Response {
         $program = $this->findVisibleProgram($id, $programRepository, $accessChecker);
         $evaluation = $this->findEvaluationOrNotFound($evaluationRepository, $program, $evaluationId);
         $this->denyAccessUnlessGranted(EvaluationVoter::MANAGE, $evaluation);
 
+        // Points were entered against these questions: rebuilding them would orphan the answers,
+        // which the database refuses (it used to surface as a 500 on save).
+        $locked = $rubricAnswers->existsForEvaluation($evaluation);
+
         if ($request->isMethod('POST')) {
             $this->assertFormCsrf($request);
+
+            if ($locked) {
+                $this->addFlash('error', 'evaluationRubricLockedFlashMessage');
+
+                return $this->redirectToRoute('app_program_gradebook_evaluation_rubric', ['id' => $program->getId(), 'evaluationId' => $evaluation->getId()]);
+            }
+
             $rubricBuilder->rebuild(
                 $evaluation,
                 PostValue::all($request, 'sections'),
@@ -401,6 +414,10 @@ class ProgramGradebookController extends AbstractController
             $this->addFlash('success', 'evaluationRubricSavedFlashMessage');
 
             return $this->redirectToRoute('app_program_gradebook', ['id' => $program->getId(), 'topic' => $evaluation->getTopic()->getId()]);
+        }
+
+        if ($locked) {
+            $this->addFlash('warning', 'evaluationRubricLockedFlashMessage');
         }
 
         $sectionsJson = [];
