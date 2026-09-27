@@ -1,0 +1,42 @@
+{% extends 'security/_auth_card.html.twig' %}
+
+{# The consent screen of the Claude connector (App\Controller\OAuth\AuthorizeController). Reached
+   signed in, so it follows the viewer's theme like the other signed-in auth screens. The form
+   posts the whole authorization request back: the controller checks it again rather than trusting
+   what these hidden fields say. `data-turbo="false"` because both answers redirect to the client's
+   own site, which Turbo's fetch cannot follow. #}
+
+{% block auth_card_modifier %}cm-authcard--themed{% endblock %}
+
+{% block title %}{{ 'oauthConsentPageTitle'|trans }}{% endblock %}
+
+{% block auth_content %}
+    <div class="cm-authcard__state">
+        <div class="cm-authcard__pastille cm-authcard__pastille--info">
+            <svg class="icon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-plug-connected"></use></svg>
+        </div>
+        <h2>{{ 'oauthConsentHeading'|trans({'%client%': client.clientName}) }}</h2>
+        <p>{{ 'oauthConsentIntro'|trans({'%client%': client.clientName, '%user%': app.user.displayName ?? app.user.userIdentifier}) }}</p>
+    </div>
+
+    <ul class="cm-oauth-consent__list">
+        <li>{{ 'oauthConsentReadLibrary'|trans }}</li>
+        <li>{{ 'oauthConsentCreateLibrary'|trans }}</li>
+        <li>{{ 'oauthConsentCreateEvaluations'|trans }}</li>
+    </ul>
+
+    <p class="cm-authcard__hint">{{ 'oauthConsentRedirectHint'|trans({'%host%': redirectHost}) }}</p>
+
+    <form method="post" action="{{ path('app_oauth_authorize') }}" class="d-flex flex-column gap-2" data-turbo="false">
+        <input type="hidden" name="_token" value="{{ csrf_token('oauth_authorize') }}">
+        {% for name, value in authorization %}
+            <input type="hidden" name="{{ name }}" value="{{ value }}">
+        {% endfor %}
+        <button type="submit" name="decision" value="allow" class="cm-authcard__btn">{{ 'oauthConsentAllowAction'|trans }}</button>
+        <button type="submit" name="decision" value="deny" class="cm-authcard__btn cm-authcard__btn--secondary">{{ 'oauthConsentDenyAction'|trans }}</button>
+    </form>
+{% endblock %}
+
+{% block auth_footer_link %}
+    <a href="{{ path('app_profile') }}">{{ 'oauthConsentProfileLink'|trans }}</a>
+{% endblock %}

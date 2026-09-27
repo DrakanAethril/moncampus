@@ -6,7 +6,6 @@ namespace App\Controller;
 
 use App\Attribute\RequiresFeature;
 use App\Entity\QuizFolder;
-use App\Entity\QuizTemplate;
 use App\Entity\SeanceTemplate;
 use App\Entity\SequenceTemplate;
 use App\Entity\User;
@@ -21,6 +20,7 @@ use App\Service\PostValue;
 use App\Service\QuizImportImages;
 use App\Service\QuizImportPreview;
 use App\Service\QuizImportSession;
+use App\Service\QuizTemplateImportWriter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -106,6 +106,7 @@ class QuizImportBatchController extends AbstractController
         QuizImportImages $images,
         SequenceTemplateRepository $sequenceRepository,
         SeanceTemplateRepository $seanceRepository,
+        QuizTemplateImportWriter $writer,
     ): Response {
         if (!$this->isCsrfTokenValid('quiz_import_batch', (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException();
@@ -139,24 +140,18 @@ class QuizImportBatchController extends AbstractController
                 continue;
             }
 
-            $template = new QuizTemplate($this->currentUser());
-            $template->setFolder($folder);
-            $template->setName($this->line($names[$index] ?? null) ?? $payload['name']);
-            $template->setSubject($this->line($subjects[$index] ?? null) ?? $payload['subject']);
-            $template->setDescription($this->line($descriptions[$index] ?? null) ?? $payload['description']);
-            $template->setCreatedBy($this->currentUser());
-            // Same adjustment as the single-quiz screen: a freshly imported bank is usually smaller
-            // than the 20-question default draw, and a draw larger than its bank is refused at launch.
-            $template->setDefaultQuestionCount(min($template->getDefaultQuestionCount(), \count($payload['questions'])));
+            $template = $writer->newTemplate(
+                $this->currentUser(),
+                $folder,
+                $this->line($names[$index] ?? null) ?? $payload['name'],
+                $this->line($subjects[$index] ?? null) ?? $payload['subject'],
+                $this->line($descriptions[$index] ?? null) ?? $payload['description'],
+                \count($payload['questions']),
+            );
 
-            $registry->forPayloadFormat($payload['format'])?->appendQuestions($template, $payload['questions']);
-
-            if ($attach) {
-                if ($attachTo instanceof SeanceTemplate) {
-                    $template->addSeanceTemplate($attachTo);
-                } elseif (null !== $attachTo) {
-                    $template->addSequenceTemplate($attachTo);
-                }
+            $importer = $registry->forPayloadFormat($payload['format']);
+            if (null !== $importer) {
+                $writer->fill($template, $importer, $payload['questions'], $attach ? $attachTo : null);
             }
 
             $entityManager->persist($template);

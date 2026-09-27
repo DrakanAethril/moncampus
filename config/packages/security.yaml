@@ -50,6 +50,30 @@ security:
             # deactivation stops opening anything at once, without waiting for its expiry.
             user_checker: App\Security\AccountStatusChecker
             jwt: ~
+        # The OAuth side of the Claude connector that nobody signs in to: the two discovery
+        # documents (RFC 8414 / RFC 9728), dynamic client registration and the token endpoint. The
+        # caller is claude.ai's server or Claude Code, never a browser with a session, and each of
+        # these endpoints checks what it needs itself (App\Controller\OAuth\*). With security off,
+        # access_control does not apply here either - this firewall is the rule. The consent screen,
+        # /oauth/authorize, is deliberately *not* in this pattern: it belongs to `main`, which is
+        # what sends a teacher through the ordinary login first.
+        oauth_public:
+            pattern: ^/(\.well-known/oauth-|oauth/(token|register)$)
+            security: false
+        # The Claude connector itself (App\Controller\McpController). Stateless, and authenticated
+        # by the OAuth access token alone (App\Security\McpAccessTokenAuthenticator), which is also
+        # the entry point: a call without a token must get the 401 + WWW-Authenticate the MCP
+        # specification relies on for discovery, never `main`'s redirect to /login. Kept out of
+        # ^/api so LexikJWT never sees these bearers. Security is *on*, as for `calendar` below: the
+        # request carries a real user, so features and voters answer unchanged.
+        mcp:
+            pattern: ^/mcp$
+            stateless: true
+            provider: app_user_provider
+            user_checker: App\Security\AccountStatusChecker
+            entry_point: App\Security\McpAccessTokenAuthenticator
+            custom_authenticators:
+                - App\Security\McpAccessTokenAuthenticator
         # iCalendar subscriptions to the emploi du temps. A firewall of its own, before `main`,
         # because the caller is Google's or Apple's server fetching a .ics on a schedule: it carries
         # no cookie, and `main` would answer it with a redirect to /login that a calendar client
@@ -143,6 +167,11 @@ security:
         # like every other rule, which it already reads the same as; it is listed for the reader,
         # not for the router.
         - { path: ^/calendar/, roles: ROLE_USER }
+        # The Claude connector: ROLE_USER for the same reason as the feeds above - the `mcp`
+        # firewall has already turned the OAuth token into its owner, and an anonymous call is
+        # answered by that firewall's entry point (401 + WWW-Authenticate), which is what an MCP
+        # client needs to discover where to sign in. Listed for the reader, like the line above.
+        - { path: ^/mcp$, roles: ROLE_USER }
         # The Proxmox console. Admin-only, and stricter than /settings on purpose: staff have no
         # business starting or stopping a hypervisor's machines. Must sit above the '^/,
         # roles: ROLE_USER' catch-all like every other rule here - a rule placed after it never

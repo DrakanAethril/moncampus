@@ -67,7 +67,7 @@ cron on the production host today; `docs/production.md` carries the crontab line
 | `app:mail:relink-applications` | **Repair pass, not cron.** Re-reads the Courrier pro mails that have a student but no démarche, and files the ones that *quote* a send: the Message-ID a failure notice copies back, failing that the failing address found among the recipients of that student's own sends — and only when every match agrees on **one** démarche. The whole rule lives in `App\Service\SchoolMailApplicationRecovery`, which the inbound worker now applies on arrival; the command exists only for the rows written before it. `--dry-run` names each mail and the evidence found, which is how it should be read first: it files mails under démarches nobody named |
 | `app:import-edt-timetable`, `app:import-edt-periods` | Timetable import from the school's EDT export |
 | `app:import-notion-sequences` | One-off import of pedagogical sequences from a Notion export |
-| `app:purge-platform-activity` | Retention: 12 months on `PlatformActivity` and on `QuizAttemptEvent`, **90 days on `ConsoleSession`** with the screen transcripts it carries, and **24 months on `JobboardOffer`** read on the advert's publication date (an offer with no date is judged on the day it was first seen — `sort_date` holds 1000-01-01 for those and reading the threshold against it would empty the board). **Meant to be cron (once a day), and was still not wired to one on 2026-08-22.** That gap matters more since the machine console: the journal at `/infrastructure/console-sessions` prints « Conservation 90 jours » on screen, so a command nobody runs turns that line into a promise nothing keeps. Volume is *not* the argument — a transcript measures a couple of kibibytes — the retention decision is. See `docs/production.md` |
+| `app:purge-platform-activity` | Retention: 12 months on `PlatformActivity` and on `QuizAttemptEvent`, **90 days on `ConsoleSession`** with the screen transcripts it carries, **30 days past expiry on the Claude connector's OAuth codes and tokens** (and on the clients nobody ever consented to), and **24 months on `JobboardOffer`** read on the advert's publication date (an offer with no date is judged on the day it was first seen — `sort_date` holds 1000-01-01 for those and reading the threshold against it would empty the board). **Meant to be cron (once a day), and was still not wired to one on 2026-08-22.** That gap matters more since the machine console: the journal at `/infrastructure/console-sessions` prints « Conservation 90 jours » on screen, so a command nobody runs turns that line into a promise nothing keeps. Volume is *not* the argument — a transcript measures a couple of kibibytes — the retention decision is. See `docs/production.md` |
 | `app:antivirus:check` | **Diagnostic, not cron.** Scans a clean file and the EICAR test string through the configured `ANTIVIRUS_DSN`; exits non-zero unless uploads are genuinely being refused. The state it exists for is the silent one — a blank DSN disables scanning without announcing it anywhere |
 | `app:help:sync-content` | Creates the missing help sections/articles from `App\Help\HelpContentCatalog`; never overwrites what an admin has edited (`--refresh` also rewrites the untouched ones). Run it once after a deploy that adds catalogue entries |
 | `app:vm-batch:advance` | Continues every VM deployment already under way, one machine per pass. **Cron every minute.** It is what makes a deployment survive the browser tab that started it — without it the batch screen's own loop is the only thing pressing, and a closed tab leaves machines cloned and never configured. It never *starts* a deployment: a batch whose machines are all still `planned` is a plan, not an instruction |
@@ -195,6 +195,34 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   *inventory-gap* lines, which the report keeps apart from declared losses.
 - **Agenda, Annonces, Listes d'inscription** — `AgendaEvent`, `Announcement`, `SignupList`; the
   first two resolve who they are for through `AudienceResolver` like `MessageThread` does.
+- **Connecteur Claude (MCP)** — `/mcp`, the platform as a remote MCP server a teacher adds to
+  their **own** claude.ai (the intelligence is paid by their subscription; a built-in chatbot would
+  need API credits nobody pays — the « Beaupie » handoff is on hold for that reason). Two halves:
+  - **OAuth 2.1, hand-rolled and minimal** (`src/OAuth/`, `App\Controller\OAuth\*`): discovery
+    (RFC 8414/9728), dynamic client registration (open to the internet by spec, rate-limited, redirect
+    URIs from a closed list: claude.ai/claude.com callbacks and the loopback), a consent screen on the
+    `main` firewall, PKCE S256 only. `OAuthGrant` is the « connection » the profile card lists and
+    revokes; codes and tokens are selector + hashed verifier like `JobboardToken`, the refresh token
+    **rotates**, and replaying a used code or refresh token revokes the whole grant.
+  - **MCP, stateless** (`src/Mcp/`, `App\Controller\McpController`): JSON-RPC over POST, one message
+    per request, no `Mcp-Session-Id`, no SSE — a held stream would pin one of production's 8 workers.
+    Its own `mcp` firewall turns the access token into a **real authenticated user**
+    (`McpAccessTokenAuthenticator`, the `CalendarTokenAuthenticator` idea), so voters and
+    `FeatureAccess` answer unchanged; a call without token gets 401 + `WWW-Authenticate:
+    resource_metadata=…`, which is how claude.ai discovers where to sign in.
+  A tool is one `App\Mcp\McpTool` service (autoconfigured tag), **thin**: it reads arguments, asks the
+  same voters and calls the same writers as the screens (`QuizTemplateImportWriter`,
+  `SequenceImportWriter`, `FileLibraryWriter`, `EvaluationRubricBuilder`…), and is listed only when
+  its features are lit. Texts sent to the model (tool descriptions, `McpInstructions`, prompts) are
+  **French prompt text**, like the prompt catalogues. Rules the tools hold: nothing is deleted; a
+  document is refused whole at the first invalid item (Claude corrects and resends); no image
+  reference crosses (`mediaRef`/`imageKey`); an evaluation it creates is visible to students only
+  at a **future** date (D+1 by default); a barème with points entered is never rebuilt; no student
+  name or grade is exposed. `format_guide` is assembled from the import assistants' own catalogues,
+  so the screen's prompt and the connector's guide cannot drift. `Feature::ClaudeConnector` is off
+  for every role; an admin tries it first. `DocumentTextExtractor` reads PDF (poppler's `pdftotext`,
+  in the image since this lot), Word, PowerPoint, OpenDocument, Excel and HTML;
+  `moncampus-bareme/1` (`EvaluationRubricJsonImporter`) is the barème's document format, read strictly.
 - **Accès aux fonctionnalités** — `App\Enum\Feature` (49 cases) + `#[RequiresFeature]` +
   `App\Security\FeatureAccess`: which features are lit, per role and per formation. Gestion >
   Fonctionnalités is the screen. **The whole Pédagogie family is off by default**, with four
@@ -355,6 +383,7 @@ New per-object rules belong in a Voter, not inline in a controller.
 | Matomo | Analytics, **consent-gated** (`requireConsent`, opt-in banner) | `MATOMO_URL`, `MATOMO_SITE_ID` |
 | Discord | Support-ticket notifications | `DISCORD_WEBHOOK_*` |
 | LDAP | Authentication + directory | `LDAP_*` |
+| claude.ai (Anthropic) | Calls the Claude connector (`/mcp`, OAuth) from `160.79.104.0/21` — inbound only, the app never calls Anthropic | — |
 
 `.env.prod.local` **on the development machine holds decoy values.** Never infer the real production
 region, bucket or DSN from it.

@@ -335,7 +335,7 @@ Notes:
   but the alert is what says the normal path above dropped them. `--since` bounds the scan, seven
   days by default; widen it after an incident, the run costs nothing on objects already stored.
 
-## Retention: platform log, console transcripts and jobboard offers (cron)
+## Retention: platform log, console transcripts, jobboard offers and OAuth secrets (cron)
 
 `app:purge-platform-activity` deletes the families of rows that nothing else ever removes:
 
@@ -350,6 +350,10 @@ Notes:
   filled long ago. Not to be confused with *closing* an offer: an offer that left its site keeps its
   row, because how long it stayed online is an information. The date read is the publication date,
   and an offer that never carried one is judged on the day it was first seen.
+- **The Claude connector's expired OAuth codes and tokens, and its never-consented clients, 30
+  days on.** An expired secret opens nothing; it is kept a month so that a replayed refresh token
+  is still recognised - and answered by revoking its connection. Clients are registered by anybody
+  on the internet, by specification; the ones somebody actually connected stay, with their grants.
 
 **Volume is not the argument.** A transcript measures a couple of kibibytes in practice, and a year
 of them would be a handful of megabytes. The argument is that the journal at
@@ -376,6 +380,32 @@ Notes:
   safe, so a schedule tighter than the command's own runtime would need the lock added first.
 - Deleting is all it does: nothing is written, nothing is announced, and a run on an empty database
   exits in a few milliseconds. Installing the entry before there is anything to purge is harmless.
+
+## Opening the Claude connector
+
+The connector (`/mcp`, see CLAUDE.md) lets a teacher act from their own claude.ai account. Three
+things decide whether it works, none of which a deploy does by itself:
+
+- **Anthropic's servers must reach the host.** claude.ai calls the connector from its own
+  infrastructure, never from the teacher's browser, and so do its OAuth calls. The public site
+  already answers from the internet; if a firewall or a reverse proxy filters by source, allow
+  `160.79.104.0/21` on `/mcp`, `/oauth/register`, `/oauth/token` and `/.well-known/oauth-*`
+  (`/oauth/authorize` is opened by the teacher's own browser, like any screen).
+- **`TRUSTED_PROXIES` must make the request say `https`.** The discovery documents announce
+  absolute addresses built from the request, and claude.ai compares them character for character
+  with the URL the teacher typed. `curl https://<host>/.well-known/oauth-protected-resource/mcp`
+  must answer a `resource` of exactly `https://<host>/mcp`.
+- **The feature is off for every role.** Gestion > Fonctionnalités, line « Connecteur Claude »: an
+  administrator has it without ticking anything, which is how to try it first; then tick
+  `ROLE_TEACHER` (and staff, if wanted). Each tool also needs the feature it acts on - the quiz
+  library, the séquences, the file library, the carnet de notes.
+
+The PDF reading needs `pdftotext`, which the image carries since poppler-utils was added to the
+`Dockerfile`: the first deploy after it rebuilds the image as usual, nothing to install by hand.
+
+To test end to end from the development machine, Claude Code speaks to a local server directly:
+`claude mcp add --transport http moncampus https://localhost/mcp`. claude.ai itself cannot reach a
+laptop - it needs the production host, or a temporary tunnel.
 
 ## Closing the loop on account operations (cron)
 

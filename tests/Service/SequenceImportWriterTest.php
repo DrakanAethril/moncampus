@@ -9,6 +9,7 @@ use App\Entity\LibraryNiveauTag;
 use App\Entity\LibraryOptionTag;
 use App\Entity\SeancePhaseTemplate;
 use App\Entity\SeanceTemplate;
+use App\Entity\SequenceFolder;
 use App\Entity\SequenceTemplate;
 use App\Entity\User;
 use App\Enum\EvaluationNature;
@@ -73,6 +74,15 @@ class SequenceImportWriterTest extends TestCase
         self::assertSame([1, 2], array_map(static fn ($phase) => $phase->getOrdre(), $first->getSeancePhaseTemplates()->toArray()));
         self::assertSame('Accueil', $first->getSeancePhaseTemplates()->first()->getNom());
         self::assertSame('20', $first->getSeancePhaseTemplates()->first()->getDuree());
+    }
+
+    public function testLandsInTheFolderItWasCreatedFor(): void
+    {
+        $folder = new SequenceFolder($this->teacher, 'Réseaux');
+
+        self::assertSame($folder, $this->writer->createSequence($this->teacher, $this->payload(), 1, $folder)->getFolder());
+        // The import assistant creates at the root, as it always has.
+        self::assertNull($this->writer->createSequence($this->teacher, $this->payload())->getFolder());
     }
 
     public function testCarriesEveryTextFieldAcrossTheThreeLevels(): void

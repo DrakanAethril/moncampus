@@ -658,6 +658,49 @@ final class HelpContentCatalog
                     'audiences' => [HelpAudience::Teacher],
                     'summary' => "Une séance de la bibliothèque se saisit en minutes. Les créneaux de l'emploi du temps, eux, sont en heures : c'est l'écran de placement de la progression qui fait la conversion.",
                 ],
+                [
+                    'kind' => HelpArticleKind::Article,
+                    'slug' => 'brancher-moncampus-dans-claude',
+                    'title' => 'Brancher MonCampus dans Claude',
+                    'audiences' => [HelpAudience::Teacher, HelpAudience::Staff],
+                    'summary' => 'Une fois MonCampus ajouté comme connecteur dans claude.ai, Claude crée pour vous des quiz, des séquences, des supports de cours et des barèmes dans votre bibliothèque, à partir de vos documents.',
+                    'body' => <<<'HTML'
+                        <h2>Ce que le connecteur permet</h2>
+                        <p>Depuis une conversation avec Claude (sur claude.ai, l'application de bureau ou mobile), vous pouvez lui demander de :</p>
+                        <ul>
+                            <li>lire vos bibliothèques de quiz, de séquences et de fichiers, y compris vos PDF, documents Word et présentations ;</li>
+                            <li>créer des quiz, des séquences avec leurs séances, des supports de cours en PDF et des dossiers ;</li>
+                            <li>rattacher un quiz ou un fichier à une séquence ou à une séance ;</li>
+                            <li>créer une évaluation dans votre carnet de notes et poser son barème.</li>
+                        </ul>
+                        <p>Claude agit avec vos droits, et seulement les vôtres : il ne voit que ce que vous voyez dans MonCampus. Il ne supprime rien et ne lance aucun quiz auprès d'une classe. Une évaluation qu'il crée reste masquée aux étudiants jusqu'à sa date de visibilité, fixée par défaut au lendemain.</p>
+                        <h2>Le brancher</h2>
+                        <ol>
+                            <li>Dans MonCampus, ouvrez <strong>Profil</strong> et copiez l'adresse de la carte <strong>Claude</strong>.</li>
+                            <li>Dans claude.ai, ouvrez <strong>Paramètres › Connecteurs</strong>, puis <strong>Ajouter un connecteur personnalisé</strong>. Collez l'adresse et validez.</li>
+                            <li>Claude vous renvoie vers MonCampus : connectez-vous si besoin, puis cliquez sur <strong>Autoriser</strong>.</li>
+                        </ol>
+                        <p>Un abonnement gratuit à Claude suffit pour un connecteur.</p>
+                        <h2>Bien s'en servir</h2>
+                        <p>Joignez votre support à la conversation, ou nommez le fichier de votre bibliothèque, et dites ce que vous voulez : « fais de ce cours une séquence de quatre séances, puis un quiz de quinze questions rattaché à la dernière ». Claude vous donne à chaque fois le lien vers ce qu'il a créé : ouvrez-le pour vérifier.</p>
+                        <h2>Couper la connexion</h2>
+                        <p>La carte <strong>Claude</strong> de votre profil liste vos connexions. <strong>Révoquer</strong> coupe l'accès immédiatement.</p>
+                        HTML,
+                ],
+                [
+                    'kind' => HelpArticleKind::Faq,
+                    'slug' => 'claude-voit-il-mes-etudiants',
+                    'title' => 'Claude voit-il les noms ou les notes de mes étudiants ?',
+                    'audiences' => [HelpAudience::Teacher, HelpAudience::Staff],
+                    'summary' => "Non. Le connecteur donne accès à vos bibliothèques et à la liste de vos évaluations, mais à aucune note ni à aucun nom d'étudiant.",
+                ],
+                [
+                    'kind' => HelpArticleKind::Faq,
+                    'slug' => 'carte-claude-absente',
+                    'title' => 'Je ne vois pas la carte Claude dans mon profil, pourquoi ?',
+                    'audiences' => [HelpAudience::Teacher, HelpAudience::Staff],
+                    'summary' => "Le connecteur n'est pas encore ouvert pour votre compte. C'est l'administration qui l'active, rôle par rôle ou personne par personne.",
+                ],
             ],
         ];
     }

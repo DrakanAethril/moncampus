@@ -31,6 +31,7 @@ use App\Service\QuizImportImages;
 use App\Service\QuizImportImageValidator;
 use App\Service\QuizImportPreview;
 use App\Service\QuizImportSession;
+use App\Service\QuizTemplateImportWriter;
 use App\Service\UploadIntake;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
@@ -183,6 +184,7 @@ class QuizImportController extends AbstractController
         SequenceTemplateRepository $sequenceRepository,
         SeanceTemplateRepository $seanceRepository,
         TranslatorInterface $translator,
+        QuizTemplateImportWriter $writer,
     ): Response {
         $payload = $request->getSession()->get(QuizImportSession::PAYLOAD_KEY);
         // Which family produced this payload, or null for the CSV/Kahoot route - the interactive
@@ -195,19 +197,17 @@ class QuizImportController extends AbstractController
             return $this->redirectToRoute(null !== $interactive ? 'app_library_quiz_assistant_paste' : 'app_library_quiz_import');
         }
 
-        $template = new QuizTemplate($this->currentUser());
         // Where the import was started from, so a quiz produced inside a folder lands in it rather
         // than at the root the teacher would then have to move it from
         // (App\Service\QuizImportSession::FOLDER_KEY).
-        $template->setFolder($this->rememberedFolder($request, $folders));
-        $template->setName($payload['name']);
-        $template->setSubject($payload['subject']);
-        $template->setDescription($payload['description']);
-        $template->setCreatedBy($this->currentUser());
-        // A freshly imported bank is usually smaller than the 20-question default draw, and a draw
-        // larger than the bank is rejected at launch time - propose the whole bank instead. Only on
-        // a new quiz: on an existing one this would overwrite a choice the teacher made.
-        $template->setDefaultQuestionCount(min($template->getDefaultQuestionCount(), \count($payload['questions'])));
+        $template = $writer->newTemplate(
+            $this->currentUser(),
+            $this->rememberedFolder($request, $folders),
+            $payload['name'],
+            $payload['subject'],
+            $payload['description'],
+            \count($payload['questions']),
+        );
 
         $existingTemplates = $templateRepository->findForTeacher($this->currentUser());
         $form = $this->createForm(QuizTemplateSettingsType::class, $template, [
@@ -257,21 +257,12 @@ class QuizImportController extends AbstractController
                     $this->denyAccessUnlessGranted(QuizTemplateVoter::EDIT, $target);
                 }
 
-                if (null !== $interactive) {
-                    $interactive->appendQuestions($target, $payload['questions']);
-                } else {
-                    $importer->appendQuestions($target, $payload['questions']);
-                }
-                if (null !== $attachTo && true === $form->get('attach')->getData()) {
-                    // Attached, never moved: the quiz stays in the teacher's library, which is its home
-                    // (App\Entity\QuizTemplate::$seanceTemplates). Adding a link it already has is a
-                    // no-op, so appending twice to the same séance cannot duplicate a row.
-                    if ($attachTo instanceof SeanceTemplate) {
-                        $target->addSeanceTemplate($attachTo);
-                    } else {
-                        $target->addSequenceTemplate($attachTo);
-                    }
-                }
+                $writer->fill(
+                    $target,
+                    $interactive ?? $importer,
+                    $payload['questions'],
+                    null !== $attachTo && true === $form->get('attach')->getData() ? $attachTo : null,
+                );
 
                 $target->setLastUpdatedBy($this->currentUser());
                 $target->setLastUpdatedDate(new \DateTimeImmutable());

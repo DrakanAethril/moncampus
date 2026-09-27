@@ -46,6 +46,22 @@ enum PlatformActivityType: string
      */
     case FeatureOverrideChanged = 'feature_override_changed';
 
+    /**
+     * Somebody connected Claude to their account (the consent screen of the connector). Recorded
+     * because from then on a third-party application acts in their name, and the grant it received
+     * is the first thing to look at when something was created that nobody remembers creating.
+     */
+    case ClaudeConnectorAuthorized = 'claude_connector_authorized';
+
+    /** A connection of the Claude connector was closed from « Mon profil ». */
+    case ClaudeConnectorRevoked = 'claude_connector_revoked';
+
+    /**
+     * Claude created something through the connector - a quiz, a séquence, a file, an evaluation.
+     * The payload names the tool, the kind of object and its id, so the trace leads to it.
+     */
+    case ClaudeConnectorContentCreated = 'claude_connector_content_created';
+
     /** Placeholder disponible : %user%. */
     public function messageKey(): string
     {
@@ -56,6 +72,9 @@ enum PlatformActivityType: string
             self::ProxmoxGuestCreated => 'platformActivityProxmoxGuestCreatedText',
             self::ProxmoxPostInstallRun => 'platformActivityProxmoxPostInstallRunText',
             self::FeatureOverrideChanged => 'platformActivityFeatureOverrideChangedText',
+            self::ClaudeConnectorAuthorized => 'platformActivityClaudeConnectorAuthorizedText',
+            self::ClaudeConnectorRevoked => 'platformActivityClaudeConnectorRevokedText',
+            self::ClaudeConnectorContentCreated => 'platformActivityClaudeConnectorContentCreatedText',
         };
     }
 }

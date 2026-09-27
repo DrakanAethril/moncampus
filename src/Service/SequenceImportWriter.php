@@ -9,6 +9,7 @@ use App\Entity\LibraryNiveauTag;
 use App\Entity\LibraryOptionTag;
 use App\Entity\SeancePhaseTemplate;
 use App\Entity\SeanceTemplate;
+use App\Entity\SequenceFolder;
 use App\Entity\SequenceTemplate;
 use App\Entity\User;
 use App\Enum\EvaluationNature;
@@ -53,8 +54,10 @@ final class SequenceImportWriter
      * @param array<string, mixed> $payload
      * @param int                  $order  where the séquence lands in the teacher's own list; the
      *                                     controller counts the existing rows, as the manual form does
+     * @param SequenceFolder|null  $folder where it is filed; the assistant creates at the root, the
+     *                                     Claude connector wherever the teacher names
      */
-    public function createSequence(User $teacher, array $payload, int $order = 0): SequenceTemplate
+    public function createSequence(User $teacher, array $payload, int $order = 0, ?SequenceFolder $folder = null): SequenceTemplate
     {
         /** @var array<string, mixed> $raw */
         $raw = \is_array($payload['sequence'] ?? null) ? $payload['sequence'] : [];
@@ -62,6 +65,7 @@ final class SequenceImportWriter
         $sequence = new SequenceTemplate($teacher);
         $sequence->setTitre($this->stringOf($raw['titre'] ?? null));
         $sequence->setOrder($order);
+        $sequence->setFolder($folder);
         $sequence->setObjectifs($this->stringOf($raw['objectifs'] ?? null));
         $sequence->setCapacitesAttendues($this->stringOf($raw['capacitesAttendues'] ?? null));
         $sequence->setPreRequis($this->stringOf($raw['preRequis'] ?? null));

@@ -1,0 +1,23 @@
+{% extends 'security/_auth_card.html.twig' %}
+
+{# Shown instead of redirecting when the client or its redirect URI cannot be established - sending
+   anything to an address nobody vouched for would turn the consent screen into an open redirector
+   (App\Controller\OAuth\AuthorizeController). #}
+
+{% block auth_card_modifier %}cm-authcard--themed{% endblock %}
+
+{% block title %}{{ 'oauthConsentErrorHeading'|trans }}{% endblock %}
+
+{% block auth_content %}
+    <div class="cm-authcard__state">
+        <div class="cm-authcard__pastille cm-authcard__pastille--error">
+            <svg class="icon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-plug-x"></use></svg>
+        </div>
+        <h2>{{ 'oauthConsentErrorHeading'|trans }}</h2>
+        <p>{{ 'oauthConsentErrorText'|trans }}</p>
+    </div>
+{% endblock %}
+
+{% block auth_footer_link %}
+    <a href="{{ path('app_home') }}">{{ 'oauthConsentHomeLink'|trans }}</a>
+{% endblock %}

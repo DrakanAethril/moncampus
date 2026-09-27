@@ -91,6 +91,17 @@ class FeatureCoverageTest extends KernelTestCase
             'e-CO runners hold no account' => [
                 'api_eco_runner_',
             ],
+            // The OAuth plumbing of the Claude connector that nobody signs in to: the discovery
+            // documents, dynamic client registration and the token endpoint. The caller is
+            // claude.ai's server, with no account to resolve a feature against. Nothing here opens
+            // anything by itself - the consent screen (`app_oauth_authorize`) and /mcp are where the
+            // `claude_connector` feature is enforced, and both carry it.
+            'the Claude connector\'s clients hold no account' => [
+                'app_oauth_protected_resource_metadata',
+                'app_oauth_authorization_server_metadata',
+                'app_oauth_register',
+                'app_oauth_token',
+            ],
             // The one upload component of the application (App\Form\FilePickerType) is on some
             // fifteen forms across a dozen features. Its staging endpoint belongs to none of them,
             // and switching it off would take every one of those forms with it. What `file_library`

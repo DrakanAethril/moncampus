@@ -33,3 +33,12 @@ framework:
             policy: sliding_window
             limit: 30
             interval: '1 hour'
+
+        # Guards dynamic client registration of the Claude connector (App\Controller\OAuth\
+        # RegistrationController), keyed by client IP. The specification wants that endpoint open
+        # to anybody, and each call writes a row: a claude.ai connection registers once, so twenty
+        # an hour from one address is already far beyond any real use.
+        oauth_client_registration:
+            policy: sliding_window
+            limit: 20
+            interval: '1 hour'
