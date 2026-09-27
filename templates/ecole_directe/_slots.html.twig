@@ -1,0 +1,37 @@
+{# A teacher's École Directe cahier de texte over the span asked - App\EcoleDirecte\EcoleDirecteSlot,
+   plain text only: HTML from another application is never printed as HTML. #}
+{% if slots is empty %}
+    <p class="text-secondary mb-0">{{ 'ecoleDirecteNoSlotLabel'|trans }}</p>
+{% else %}
+    <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+            <thead>
+                <tr>
+                    <th>{{ 'ecoleDirecteSlotWhenLabel'|trans }}</th>
+                    <th>{{ 'ecoleDirecteSlotClassLabel'|trans }}</th>
+                    <th>{{ 'ecoleDirecteSlotSubjectLabel'|trans }}</th>
+                    <th>{{ 'ecoleDirecteSlotContentLabel'|trans }}</th>
+                    <th>{{ 'ecoleDirecteSlotHomeworkLabel'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for slot in slots %}
+                    <tr>
+                        <td class="text-nowrap">
+                            {{ slot.date ? slot.date|localized_date('EEE d MMM') : '—' }}<br>
+                            <span class="text-secondary small">{{ slot.start }}{% if slot.end %}–{{ slot.end }}{% endif %}{% if slot.room %} · {{ slot.room }}{% endif %}</span>
+                        </td>
+                        <td>{{ slot.className ?: '—' }}</td>
+                        <td>{{ slot.subject ?: '—' }}{% if slot.test %} <twig:Cm:Badge tone="red">{{ 'ecoleDirecteSlotTestLabel'|trans }}</twig:Cm:Badge>{% endif %}</td>
+                        <td class="small">
+                            {% if slot.content %}{{ slot.content }}{% elseif slot.hasContent %}<twig:Cm:Badge tone="green">{{ 'ecoleDirecteSlotFilledLabel'|trans }}</twig:Cm:Badge>{% else %}<span class="text-secondary">—</span>{% endif %}
+                        </td>
+                        <td class="small">
+                            {% if slot.homework %}{{ slot.homework }}{% elseif slot.hasHomework %}<twig:Cm:Badge tone="green">{{ 'ecoleDirecteSlotFilledLabel'|trans }}</twig:Cm:Badge>{% else %}<span class="text-secondary">—</span>{% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}

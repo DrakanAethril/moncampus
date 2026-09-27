@@ -66,6 +66,7 @@ enum Feature: string
     case ClassListExports = 'class_list_exports';
     case ProgramFinancial = 'program_financial';
     case Directory = 'directory';
+    case EcoleDirecte = 'ecole_directe';
 
     // --- Vie scolaire et communication -------------------------------------------------------
 
@@ -137,7 +138,7 @@ enum Feature: string
             self::Timetable, self::TimetableSettings, self::EvaluationPlanning,
             self::GradebookEntry, self::GradebookStudent, self::SelfAssessment,
             self::ProgramReporting, self::ProgramExports, self::ClassListExports,
-            self::ProgramFinancial, self::Directory => FeatureFamily::Schooling,
+            self::ProgramFinancial, self::Directory, self::EcoleDirecte => FeatureFamily::Schooling,
 
             self::Agenda, self::Announcements, self::Messaging, self::SchoolMail,
             self::SchoolMailSupervision, self::SignupLists, self::Support,
@@ -217,6 +218,7 @@ enum Feature: string
             self::ClassListExports => 'featureClassListExportsLabel',
             self::ProgramFinancial => 'featureProgramFinancialLabel',
             self::Directory => 'featureDirectoryLabel',
+            self::EcoleDirecte => 'featureEcoleDirecteLabel',
             self::Agenda => 'featureAgendaLabel',
             self::Announcements => 'featureAnnouncementsLabel',
             self::Messaging => 'featureMessagingLabel',
@@ -339,6 +341,10 @@ enum Feature: string
             // the administrator being the only one who can connect on the day it lands. Whoever is
             // lit then still reaches only the tools of the features they already have - the
             // connector is a door onto the platform, never a way round its switches.
+
+            // École Directe is named by no role either: it is a read-only prototype that signs a
+            // teacher in to another application from this server, and the administrator tries it on
+            // their own account before any teacher is shown the entry.
 
             // The two class lists are the establishment's own directory rather than a teaching
             // tool (see the nav's comment on them), and so is exporting one: an émargement sheet

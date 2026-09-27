@@ -51,3 +51,12 @@ framework:
             policy: sliding_window
             limit: 10
             interval: '15 minutes'
+
+        # Guards the École Directe sign-in (App\Controller\EcoleDirecte\EcoleDirecteController),
+        # keyed "user:<id>". Not about this platform's own accounts: every teacher reaches École
+        # Directe from this one server address, and a password mistyped in a loop must stop here
+        # before École Directe blocks the address - or the teacher's own account - for everybody.
+        ecoledirecte_login:
+            policy: sliding_window
+            limit: 8
+            interval: '15 minutes'

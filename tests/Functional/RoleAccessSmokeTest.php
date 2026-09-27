@@ -1248,6 +1248,27 @@ class RoleAccessSmokeTest extends FunctionalTestCase
     }
 
     /**
+     * Outils > École Directe signs a teacher in to their own École Directe account: teachers and
+     * admins reach it, nobody else has an account there to read - and with the feature off it does
+     * not exist, not even for a teacher.
+     */
+    public function testEcoleDirecteIsATeacherScreen(): void
+    {
+        $screen = ['/ecole-directe' => 200];
+
+        $this->assertScreens($this->teacher, $screen);
+        $this->assertScreens($this->admin, $screen);
+
+        foreach ([$this->student, $this->tutor, $this->createUser(['ROLE_USER', 'ROLE_STAFF'], 'smoke.ed.staff')] as $user) {
+            $this->assertScreens($user, ['/ecole-directe' => 403]);
+        }
+
+        $this->switchOffEveryRole(Feature::EcoleDirecte);
+        $this->assertScreens($this->teacher, ['/ecole-directe' => 404]);
+        $this->assertScreens($this->admin, $screen);
+    }
+
+    /**
      * The console, one line per role - and the student's line is the one this table exists for.
      *
      * `/console/{id}` is reached *through an account*, so the id here is a real GuestAccount owned
