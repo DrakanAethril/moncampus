@@ -175,6 +175,27 @@ final readonly class McpTimetable
             : trim((string) $content);
     }
 
+    /** A part of the cahier de texte as the screen names it. */
+    public static function sectionLabel(LessonLogSection $section): string
+    {
+        return match ($section) {
+            LessonLogSection::Before => 'avant',
+            LessonLogSection::During => 'pendant',
+            LessonLogSection::After => 'après',
+        };
+    }
+
+    /** Whether the students read a part, in words. */
+    public static function visibilityLabel(LessonLog $log, LessonLogSection $section): string
+    {
+        return match ($log->getVisibility($section)) {
+            LessonLogVisibility::Hidden => 'masquée',
+            LessonLogVisibility::Now => 'visible',
+            LessonLogVisibility::AfterSession => 'visible à la fin de la séance',
+            LessonLogVisibility::Scheduled => 'programmée au '.$log->getVisibleAt($section)?->format('d/m/Y H:i'),
+        };
+    }
+
     public function logUrl(LessonSession $session): string
     {
         return $this->urls->generate('app_program_timetable_session_log', [
