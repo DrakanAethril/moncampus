@@ -26,6 +26,15 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.27.2'
+      date: '2026-09-27'
+      summary: "Le connecteur Claude, toujours en essai, sait maintenant joindre un document ou un lien au cahier de texte. Le dépôt de fichiers est renforcé."
+      entries:
+          - type: modification
+            title: "Connecteur Claude : joindre un document au cahier de texte"
+            detail: "Un fichier de sa bibliothèque ou un lien, rangé sous une partie de la séance et visible des étudiants seulement si cette partie l'est."
+          - type: interne
+            title: "Dépôt de fichiers renforcé"
     - version: '2026.09.27'
       date: '2026-09-27'
       summary: "Les enseignants pourront brancher MonCampus dans leur propre Claude pour préparer quiz, séquences, barèmes et cahier de texte : le connecteur est en essai et s'ouvrira progressivement. Tous les écrans ont désormais leur fil d'Ariane, et le matériel peut être rangé dans les salles de l'établissement."

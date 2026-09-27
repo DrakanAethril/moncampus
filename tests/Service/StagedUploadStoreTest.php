@@ -99,6 +99,48 @@ class StagedUploadStoreTest extends TestCase
         self::assertNull($this->store->resolve(rtrim(strtr(base64_encode('{"k":"staged/12/x.pdf","n":"x.pdf","m":"application/pdf","s":4,"o":12}'), '+/', '-_'), '=').'.forged', 12));
     }
 
+    public function testAnEmptySecretIsRefusedRatherThanSigningWithIt(): void
+    {
+        // An HMAC under an empty key is one anybody can compute: every token becomes forgeable while
+        // the store goes on answering as if nothing were wrong. Production ran that way once.
+        $this->expectException(\LogicException::class);
+
+        new StagedUploadStore($this->filesystem, new AntivirusScanner(new ClamAvClient(), ''), $this->createStub(ObjectStore::class), '');
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function keysOutsideTheOwnersStaging(): iterable
+    {
+        yield 'another feature\'s object' => ['library/abc.pdf'];
+        yield 'another account\'s staging' => ['staged/13/0123456789abcdef0123456789abcdef.pdf'];
+        yield 'a path climbing out of staging' => ['staged/12/../../library/abc.pdf'];
+        yield 'the staging prefix alone' => ['staged/12/'];
+    }
+
+    /**
+     * The signature is not the only thing between a token and the bucket: claim() copies the object
+     * the token names and then removes it, so a token naming anything but a staged object of its
+     * owner would read and delete a file that is not theirs. Refused even when the signature holds -
+     * a leaked secret must not turn into that.
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('keysOutsideTheOwnersStaging')]
+    public function testAProperlySignedTokenNamingAKeyOutsideTheOwnersStagingResolvesToNothing(string $key): void
+    {
+        $payload = json_encode(['k' => $key, 'n' => 'x.pdf', 'm' => 'application/pdf', 's' => 4, 'o' => 12], \JSON_THROW_ON_ERROR);
+        $encode = static fn (string $raw): string => rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
+
+        self::assertNull($this->store->resolve($encode($payload).'.'.$encode(hash_hmac('sha256', $payload, 'test-secret', true)), 12));
+    }
+
+    public function testATokenWithoutExtensionStillResolves(): void
+    {
+        $staged = $this->store->stage($this->upload('README', 'body'), 12);
+
+        self::assertNotNull($this->store->resolve($staged->token, 12));
+    }
+
     public function testClaimingMovesTheObjectIntoTheCallersPrefix(): void
     {
         $staged = $this->store->stage($this->upload('cours.pdf', 'body'), 12);

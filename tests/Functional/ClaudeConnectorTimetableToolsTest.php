@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional;
 
+use App\Entity\FileLibraryNode;
 use App\Entity\LessonLog;
+use App\Entity\LessonLogAttachment;
 use App\Entity\LessonSession;
 use App\Entity\Program;
 use App\Entity\Progression;
 use App\Entity\Topic;
 use App\Entity\TopicGroup;
 use App\Entity\User;
+use App\Enum\LessonLogAttachmentSourceType;
 use App\Enum\LessonLogSection;
 use App\Enum\LessonLogVisibility;
 use App\Enum\VisibilityLevel;
@@ -148,6 +151,98 @@ class ClaudeConnectorTimetableToolsTest extends FunctionalTestCase
         $result = $this->callTool($this->accessTokenFor($this->teacher), 'lesson_log_write', ['sessionId' => $this->session->getId(), 'during' => 'Tableaux', 'visibilityDuring' => 'scheduled']);
 
         self::assertTrue($result['isError']);
+        self::assertNull($this->logOf($this->session));
+    }
+
+    public function testALibraryFileIsAttachedToAPartAsAReference(): void
+    {
+        $token = $this->accessTokenFor($this->teacher);
+        $created = $this->callTool($token, 'file_create', ['title' => 'Énoncé TP tableaux', 'content' => 'Créer un tableau de 3 colonnes.', 'format' => 'md']);
+        self::assertFalse($created['isError'], $created['text']);
+
+        $attached = $this->callTool($token, 'lesson_log_attach', ['sessionId' => $this->session->getId(), 'fileId' => $created['data']['fileId'], 'section' => 'after']);
+
+        self::assertFalse($attached['isError'], $attached['text']);
+        self::assertStringContainsString('masquée', $attached['text']);
+        $log = $this->logOf($this->session);
+        self::assertInstanceOf(LessonLog::class, $log);
+        self::assertSame($this->teacher->getId(), $log->getCreatedBy()?->getId());
+        $documents = $log->getAttachmentsForSection(LessonLogSection::After);
+        self::assertCount(1, $documents);
+        $document = $documents->first();
+        self::assertInstanceOf(LessonLogAttachment::class, $document);
+        $file = $this->entityManager->find(FileLibraryNode::class, $created['data']['fileId']);
+        self::assertInstanceOf(FileLibraryNode::class, $file);
+        self::assertSame(LessonLogAttachmentSourceType::Library, $document->getType());
+        self::assertSame($file->getName(), $document->getLabel());
+        // A reference: the library's own object, nothing copied.
+        self::assertSame($file->getStorageKey(), $document->getStorageKey());
+        self::assertSame($file->getId(), $document->getLibraryNode()?->getId());
+        self::assertNull($document->getVisibleAt());
+
+        // A retried call answers with the row already there rather than a second line.
+        $again = $this->callTool($token, 'lesson_log_attach', ['sessionId' => $this->session->getId(), 'fileId' => $created['data']['fileId'], 'section' => 'after']);
+        self::assertFalse($again['isError'], $again['text']);
+        self::assertFalse($again['data']['created']);
+        self::assertSame($document->getId(), $again['data']['attachmentId']);
+        self::assertCount(1, $this->entityManager->getRepository(LessonLogAttachment::class)->findBy(['lessonLog' => $log]));
+
+        $listed = $this->callTool($token, 'file_list', ['linked' => 'linked']);
+        $files = $listed['data']['files'];
+        self::assertIsArray($files);
+        self::assertCount(1, $files);
+        self::assertIsArray($files[0]);
+        $linkedTo = $files[0]['linkedTo'] ?? null;
+        self::assertIsArray($linkedTo);
+        self::assertIsArray($linkedTo[0]);
+        self::assertSame(['kind' => 'lesson_log', 'id' => $this->session->getId()], array_intersect_key($linkedTo[0], array_flip(['kind', 'id'])));
+    }
+
+    public function testALinkIsAttachedAndOnlyHttpIsAccepted(): void
+    {
+        $token = $this->accessTokenFor($this->teacher);
+
+        $refused = $this->callTool($token, 'lesson_log_attach', ['sessionId' => $this->session->getId(), 'url' => 'javascript:alert(1)']);
+        self::assertTrue($refused['isError']);
+        // Refused before anything was opened: no empty cahier de texte left behind.
+        self::assertNull($this->logOf($this->session));
+
+        $both = $this->callTool($token, 'lesson_log_attach', ['sessionId' => $this->session->getId(), 'url' => 'https://developer.mozilla.org/fr/docs/Web/HTML/Element/table', 'fileId' => 1]);
+        self::assertTrue($both['isError']);
+
+        $attached = $this->callTool($token, 'lesson_log_attach', ['sessionId' => $this->session->getId(), 'url' => 'https://developer.mozilla.org/fr/docs/Web/HTML/Element/table', 'label' => 'MDN : <table>']);
+        self::assertFalse($attached['isError'], $attached['text']);
+        $log = $this->logOf($this->session);
+        self::assertInstanceOf(LessonLog::class, $log);
+        $document = $log->getAttachmentsForSection(LessonLogSection::During)->first();
+        self::assertInstanceOf(LessonLogAttachment::class, $document);
+        self::assertSame(LessonLogAttachmentSourceType::Link, $document->getType());
+        self::assertSame('MDN : <table>', $document->getLabel());
+        self::assertNull($document->getStorageKey());
+    }
+
+    public function testAColleagueWhoDoesNotDeliverTheSeanceCannotAttachToIt(): void
+    {
+        $colleague = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'prof.colleague');
+        $this->program->addTeacher($colleague);
+        $this->entityManager->flush();
+
+        $result = $this->callTool($this->accessTokenFor($colleague), 'lesson_log_attach', ['sessionId' => $this->session->getId(), 'url' => 'https://example.org/']);
+
+        self::assertTrue($result['isError']);
+        self::assertNull($this->logOf($this->session));
+    }
+
+    public function testSomebodyElsesFileCannotBeAttached(): void
+    {
+        $owner = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'prof.owner');
+        $theirs = $this->callTool($this->accessTokenFor($owner), 'file_create', ['title' => 'Privé', 'content' => 'Secret', 'format' => 'md']);
+        self::assertFalse($theirs['isError'], $theirs['text']);
+
+        $result = $this->callTool($this->accessTokenFor($this->teacher), 'lesson_log_attach', ['sessionId' => $this->session->getId(), 'fileId' => $theirs['data']['fileId']]);
+
+        self::assertTrue($result['isError']);
+        self::assertStringContainsString('introuvable', $result['text']);
         self::assertNull($this->logOf($this->session));
     }
 

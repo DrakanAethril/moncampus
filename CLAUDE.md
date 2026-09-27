@@ -231,6 +231,9 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   teacher or co-animator, never staff by role), takes Markdown through the library's renderer and
   sanitizer, **never overwrites a part that says something unless `replace`**, and moves a part's
   visibility only when named — a cahier opened there starts hidden like on screen.
+  `lesson_log_attach` files a document under one part, through the same `EDIT`: a library file as a
+  **reference** (`UploadIntake::store()`, like `file_link`) or an http(s) link. It follows its part's
+  visibility, and the same document filed twice under one part answers the row already there.
   `progression_get` is **read-only**: Claude suggests a progression, the teacher builds it on the
   progression screens (`McpTimetable` holds the shared doors). `format_guide` is assembled from the import assistants' own catalogues,
   so the screen's prompt and the connector's guide cannot drift. `Feature::ClaudeConnector` is off

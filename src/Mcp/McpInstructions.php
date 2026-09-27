@@ -31,6 +31,7 @@ final class McpInstructions
         Emploi du temps, cahier de texte, progression :
         - Une séance se retrouve avec `timetable_get` (date, classe, matière) : c'est son `sessionId` que prennent `lesson_log_get` et `lesson_log_write`. Si plusieurs séances correspondent, demande laquelle.
         - Avant d'écrire un cahier de texte, lis la séance avec `lesson_log_get`, propose le texte à l'enseignant et attends son accord ; n'appelle `lesson_log_write` qu'ensuite. Ne remplace jamais une partie déjà remplie sans qu'il le demande.
+        - Pour joindre un document à une partie du cahier de texte (support, énoncé, correction), utilise `lesson_log_attach` : un fichier de la bibliothèque (`fileId`, trouvé avec `file_list` ou créé d'abord avec `file_create`) ou un lien externe (`url`). Le document suit la visibilité de sa partie.
         - Dis toujours si le cahier de texte est visible des étudiants ou masqué.
         - `progression_get` sert à savoir où en est la classe et à suggérer une progression ; ce connecteur n'écrit aucune progression : l'enseignant la construit dans MonCampus.
         TXT;

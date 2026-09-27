@@ -75,8 +75,14 @@ class StagedUploadStore
         private readonly FilesystemOperator $uploadsStorage,
         private readonly AntivirusScanner $antivirus,
         private readonly ObjectStore $objectStore,
-        private readonly string $appSecret,
+        #[\SensitiveParameter] private readonly string $appSecret,
     ) {
+        // An HMAC under an empty key is one anybody can compute, and the store would go on signing
+        // and verifying as if nothing were wrong - production ran like that, APP_SECRET having never
+        // reached the container. Refused loudly, like App\EcoleDirecte\EcoleDirecteSessionSealer.
+        if ('' === $appSecret) {
+            throw new \LogicException('APP_SECRET is empty: staged upload tokens cannot be signed.');
+        }
     }
 
     /**
@@ -163,6 +169,15 @@ class StagedUploadStore
         // One account never claims another's object, whatever the signature says: the two checks
         // answer different questions - "did we write this token" and "is it yours".
         if ($owner !== $ownerId) {
+            return null;
+        }
+
+        // And the key must be one stage() could have written for that owner - nothing else. claim()
+        // copies the object the token names and then removes it, so a token naming any other key
+        // would read and delete a file that is not the claimer's. The signature already rules that
+        // out; this rules it out again for the day the secret leaks or goes blank. Exact shape rather
+        // than a prefix test, because Flysystem resolves `..` and `staged/12/../../x` is `x`.
+        if (1 !== preg_match('#\A'.preg_quote(self::PREFIX, '#').$owner.'/[0-9a-f]{32}(\.[^/.]+)?\z#', $key)) {
             return null;
         }
 
