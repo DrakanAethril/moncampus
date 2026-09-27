@@ -33,4 +33,14 @@ class OAuthAuthorizationCodeRepository extends ServiceEntityRepository
             ->getQuery()
             ->execute();
     }
+
+    public function countExpiredBefore(\DateTimeImmutable $before): int
+    {
+        return (int) $this->createQueryBuilder('c')
+            ->select('COUNT(c.id)')
+            ->where('c.expiresAt < :before')
+            ->setParameter('before', $before)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }

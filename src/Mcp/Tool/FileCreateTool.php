@@ -12,8 +12,8 @@ use App\Mcp\McpToolCall;
 use App\Mcp\McpToolException;
 use App\Mcp\McpToolResult;
 use App\Service\CourseMaterialRenderer;
-use App\Service\FileLibraryWriteRefused;
 use App\Service\FileLibraryWriter;
+use App\Service\FileLibraryWriteRefused;
 use App\Service\GotenbergUnavailableException;
 use Doctrine\ORM\EntityManagerInterface;
 

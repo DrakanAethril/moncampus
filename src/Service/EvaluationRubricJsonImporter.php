@@ -6,7 +6,6 @@ namespace App\Service;
 
 use App\Entity\Evaluation;
 use App\Entity\EvaluationRubricQuestion;
-use App\Entity\EvaluationRubricSection;
 use App\Enum\RubricSectionKind;
 use Symfony\Contracts\Translation\TranslatorInterface;
 

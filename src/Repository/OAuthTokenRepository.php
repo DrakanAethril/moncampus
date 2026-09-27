@@ -44,4 +44,14 @@ class OAuthTokenRepository extends ServiceEntityRepository
             ->getQuery()
             ->execute();
     }
+
+    public function countExpiredBefore(\DateTimeImmutable $before): int
+    {
+        return (int) $this->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->where('t.expiresAt < :before')
+            ->setParameter('before', $before)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }

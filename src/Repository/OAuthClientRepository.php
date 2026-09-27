@@ -33,17 +33,30 @@ class OAuthClientRepository extends ServiceEntityRepository
      */
     public function deleteUnconsentedBefore(\DateTimeImmutable $before): int
     {
+        return $this->unconsentedBefore($before)
+            ->delete()
+            ->getQuery()
+            ->execute();
+    }
+
+    public function countUnconsentedBefore(\DateTimeImmutable $before): int
+    {
+        return (int) $this->unconsentedBefore($before)
+            ->select('COUNT(c.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    private function unconsentedBefore(\DateTimeImmutable $before): \Doctrine\ORM\QueryBuilder
+    {
         $consented = $this->getEntityManager()->createQueryBuilder()
             ->select('IDENTITY(g.client)')
             ->from(OAuthGrant::class, 'g')
             ->getDQL();
 
         return $this->createQueryBuilder('c')
-            ->delete()
             ->where('c.createdAt < :before')
             ->andWhere(\sprintf('c.id NOT IN (%s)', $consented))
-            ->setParameter('before', $before)
-            ->getQuery()
-            ->execute();
+            ->setParameter('before', $before);
     }
 }

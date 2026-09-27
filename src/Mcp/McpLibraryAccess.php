@@ -19,8 +19,8 @@ use App\Repository\SequenceTemplateRepository;
 use App\Security\Voter\FileLibraryVoter;
 use App\Security\Voter\QuizFolderVoter;
 use App\Security\Voter\QuizTemplateVoter;
-use App\Security\Voter\SequenceTemplateVoter;
 use App\Security\Voter\SequenceFolderVoter;
+use App\Security\Voter\SequenceTemplateVoter;
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 
 /**

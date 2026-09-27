@@ -259,6 +259,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // GuestAccountVoter's answer, one machine at a time.
             '/my/machines' => 200,
             '/profile' => 200,
+            // The Claude connector is a door of its own: a browser session opens nothing there, whatever
+            // the role - only an OAuth access token does (App\Security\McpAccessTokenAuthenticator).
+            '/mcp' => 401,
             '/about' => 200,
             '/help' => 200,
             '/changelog' => 200,
@@ -442,6 +445,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // GuestAccountVoter's answer, one machine at a time.
             '/my/machines' => 200,
             '/profile' => 200,
+            '/mcp' => 401,
             '/about' => 200,
             '/help' => 200,
             '/changelog' => 200,
@@ -609,6 +613,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // GuestAccountVoter's answer, one machine at a time.
             '/my/machines' => 200,
             '/profile' => 200,
+            '/mcp' => 401,
             '/about' => 200,
             '/help' => 200,
             '/changelog' => 200,
@@ -761,6 +766,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // GuestAccountVoter's answer, one machine at a time.
             '/my/machines' => 200,
             '/profile' => 200,
+            '/mcp' => 401,
             '/about' => 200,
             // Open to every account, and empty for anyone no article is addressed to: there is
             // nothing to protect in the help, only content written for someone else.
