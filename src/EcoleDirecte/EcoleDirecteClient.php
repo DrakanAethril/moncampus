@@ -13,10 +13,12 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  * API, so everything here follows what those clients send, as documented by the community
  * (github.com/EduWireApps/ecoledirecte-api-docs) and observed on teacher accounts.
  *
- * **Reading only.** The one call that carries `verbe=post` is the answer to the identity question,
- * which is part of signing in; every other request leaves through read(), which forces
- * `verbe=get` whatever it is given. That guarantee lives here, in the only class that talks to École
- * Directe, rather than in a screen that could forget it.
+ * **Two doors, and no third.** read() forces `verbe=get` whatever it is given. send() is the only
+ * way anything is written, and it knows two verbs - `put` (replace what a cahier de texte slot says)
+ * and `post` (create an evaluation, enter its grades) - never `delete`: the platform does not remove
+ * anything from École Directe. Those guarantees live here, in the only class that talks to École
+ * Directe, rather than in a screen that could forget them. (The answer to the identity question also
+ * carries `verbe=post`; it is part of signing in and has its own method.)
  *
  * **Stateless.** The identifiant and the password are arguments of login() and answerChallenge() and
  * are never kept: not in a property, not in a log line, not in an exception (every parameter that
@@ -45,6 +47,8 @@ class EcoleDirecteClient
     private const int CODE_UNAVAILABLE = 517;
     private const int CODE_CHARTER = 520;
     private const array CODES_TOKEN_DEAD = [520, 521, 525];
+
+    private const array SEND_VERBS = ['put', 'post'];
 
     public function __construct(
         private readonly HttpClientInterface $httpClient,
@@ -125,16 +129,13 @@ class EcoleDirecteClient
      *
      * @throws EcoleDirecteException
      */
-    public function read(EcoleDirecteSession $session, string $path, array $query = [], ?array $body = null): EcoleDirecteReadResult
+    public function read(EcoleDirecteSession $session, string $path, array $query = [], ?array $body = null): EcoleDirecteResult
     {
-        if (!self::isReadablePath($path)) {
+        if (!self::isRoutePath($path)) {
             throw new EcoleDirecteException('ecoleDirecteInvalidPathMessage');
         }
 
-        $base = $session->account->isTeacher() ? $this->ecoleDirecteTeacherApiUrl : $this->ecoleDirecteApiUrl;
-        $url = rtrim($base, '/').'/v3/'.$path.'?'.http_build_query([...$query, 'verbe' => 'get', 'v' => $this->ecoleDirecteAppVersion]);
-
-        [$answer, $handshake] = $this->post($url, $body ?? new \stdClass(), $session->handshake, false);
+        [$answer, $handshake] = $this->post($this->accountUrl($session, $path, [...$query, 'verbe' => 'get']), $body ?? new \stdClass(), $session->handshake, false);
         $code = self::code($answer);
 
         if (\in_array($code, self::CODES_TOKEN_DEAD, true)) {
@@ -147,7 +148,43 @@ class EcoleDirecteClient
             throw new EcoleDirecteException('ecoleDirecteReadRefusedMessage', $code, self::message($answer));
         }
 
-        return new EcoleDirecteReadResult($answer['data'] ?? null, $session->withHandshake($handshake));
+        return new EcoleDirecteResult($answer['data'] ?? null, $session->withHandshake($handshake));
+    }
+
+    /**
+     * One write, on the account's API host. `put` or `post` only - see the class docblock.
+     *
+     * The answer's code is checked here, so a caller never mistakes a refusal for a success: École
+     * Directe answers HTTP 200 with a code 5xx in the body when it refuses.
+     *
+     * @param array<string, mixed> $body
+     *
+     * @throws EcoleDirecteException
+     */
+    public function send(EcoleDirecteSession $session, string $path, string $verbe, array $body): EcoleDirecteResult
+    {
+        if (!\in_array($verbe, self::SEND_VERBS, true)) {
+            throw new \LogicException(\sprintf('École Directe is never sent "%s".', $verbe));
+        }
+
+        if (!self::isRoutePath($path)) {
+            throw new EcoleDirecteException('ecoleDirecteInvalidPathMessage');
+        }
+
+        [$answer, $handshake] = $this->post($this->accountUrl($session, $path, ['verbe' => $verbe]), $body, $session->handshake, false);
+        $code = self::code($answer);
+
+        if (\in_array($code, self::CODES_TOKEN_DEAD, true)) {
+            throw new EcoleDirecteSessionExpiredException($code);
+        }
+
+        if (self::CODE_OK !== $code) {
+            $this->logger->warning('École Directe refused a write with code {code} on {path}.', ['code' => $code, 'path' => $path]);
+
+            throw new EcoleDirecteException('ecoleDirecteSendRefusedMessage', $code, self::message($answer));
+        }
+
+        return new EcoleDirecteResult($answer['data'] ?? null, $session->withHandshake($handshake));
     }
 
     /**
@@ -164,10 +201,10 @@ class EcoleDirecteClient
     }
 
     /**
-     * A path read() accepts: relative, ending in `.awp`, no `..`, no query of its own. The query is
-     * read()'s to build, so nobody can slip a `verbe` into the path.
+     * A path read() and send() accept: relative, ending in `.awp`, no `..`, no query of its own. The
+     * query is theirs to build, so nobody can slip a `verbe` into the path.
      */
-    public static function isReadablePath(string $path): bool
+    public static function isRoutePath(string $path): bool
     {
         return 1 === preg_match('#^[\pL\pN¤%_\-.][\pL\pN¤%_\-./ ]*\.awp$#u', $path) && !str_contains($path, '..');
     }
@@ -383,6 +420,18 @@ class EcoleDirecteClient
         }
 
         return $handshake;
+    }
+
+    /**
+     * A route on the account's own host - teacher accounts are answered by one of their own.
+     *
+     * @param array<string, string> $query
+     */
+    private function accountUrl(EcoleDirecteSession $session, string $path, array $query): string
+    {
+        $base = $session->account->isTeacher() ? $this->ecoleDirecteTeacherApiUrl : $this->ecoleDirecteApiUrl;
+
+        return rtrim($base, '/').'/v3/'.$path.'?'.http_build_query([...$query, 'v' => $this->ecoleDirecteAppVersion]);
     }
 
     /** @param array<string, string> $query */

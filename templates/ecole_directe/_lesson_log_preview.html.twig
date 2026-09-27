@@ -1,0 +1,64 @@
+{# What sending the cahier de texte would change in École Directe, slot by slot - built by
+   App\EcoleDirecte\EcoleDirecteLessonLogPlanner. Only a New or Replace part is ever sent, and only
+   for the rows left ticked. #}
+{% if targets is empty and unmatched is empty and unplaced is empty %}
+    <p class="text-secondary mb-0">{{ 'ecoleDirectePreviewEmptyLabel'|trans }}</p>
+{% else %}
+    {% if targets is not empty %}
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th class="w-1"></th>
+                        <th>{{ 'ecoleDirecteSlotWhenLabel'|trans }}</th>
+                        <th>{{ 'ecoleDirecteSlotContentLabel'|trans }}</th>
+                        <th>{{ 'ecoleDirecteSlotHomeworkLabel'|trans }}</th>
+                        <th>{{ 'ecoleDirectePreviewSourceLabel'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for target in targets %}
+                        <tr>
+                            <td>
+                                {% if target.sendsSomething %}
+                                    <input type="checkbox" class="form-check-input m-0" value="{{ target.key }}" checked
+                                           aria-label="{{ 'ecoleDirectePreviewPickLabel'|trans }}" data-ecole-directe-target="lessonLogKey">
+                                {% endif %}
+                            </td>
+                            <td class="text-nowrap">
+                                {{ target.date|date('d/m') }} {{ target.start }}<br>
+                                <span class="text-secondary small">{{ target.className }} · {{ target.subject }}</span>
+                            </td>
+                            <td class="small">
+                                {% if target.contentState %}
+                                    <twig:Cm:Badge :of="target.contentState"/>
+                                    <div class="text-secondary mt-1">{% set text = target.contentHtml|plain_text|default('') %}{{ text|slice(0, 160) }}{{ text|length > 160 ? '…' }}</div>
+                                {% else %}<span class="text-secondary">—</span>{% endif %}
+                            </td>
+                            <td class="small">
+                                {% if target.homeworkState %}
+                                    <twig:Cm:Badge :of="target.homeworkState"/>
+                                    <div class="text-secondary mt-1">{% set text = target.homeworkHtml|plain_text|default('') %}{{ text|slice(0, 160) }}{{ text|length > 160 ? '…' }}</div>
+                                {% else %}<span class="text-secondary">—</span>{% endif %}
+                            </td>
+                            <td class="small text-secondary">{{ target.sources|join(', ') }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+
+    {% if unmatched is not empty %}
+        <div class="alert alert-warning mt-3 mb-0">
+            <div class="fw-medium">{{ 'ecoleDirectePreviewUnmatchedLabel'|trans }}</div>
+            {{ unmatched|map(entry => entry.label)|join(' ; ') }}
+        </div>
+    {% endif %}
+    {% if unplaced is not empty %}
+        <div class="alert alert-warning mt-3 mb-0">
+            <div class="fw-medium">{{ 'ecoleDirectePreviewUnplacedLabel'|trans }}</div>
+            {{ unplaced|map(entry => entry.label)|join(' ; ') }}
+        </div>
+    {% endif %}
+{% endif %}

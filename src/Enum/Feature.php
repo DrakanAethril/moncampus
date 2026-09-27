@@ -342,9 +342,9 @@ enum Feature: string
             // lit then still reaches only the tools of the features they already have - the
             // connector is a door onto the platform, never a way round its switches.
 
-            // École Directe is named by no role either: it is a read-only prototype that signs a
-            // teacher in to another application from this server, and the administrator tries it on
-            // their own account before any teacher is shown the entry.
+            // École Directe is named by no role either: it is a prototype that signs a teacher in to
+            // another application from this server, reads it and sends to it. Its controllers are
+            // ROLE_ADMIN for now, so ticking a role here would open nothing until they are widened.
 
             // The two class lists are the establishment's own directory rather than a teaching
             // tool (see the nav's comment on them), and so is exporting one: an émargement sheet

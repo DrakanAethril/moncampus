@@ -1,0 +1,18 @@
+{# What was sent to École Directe, part by part - App\EcoleDirecte\EcoleDirecteLessonLogWriter::send().
+   A refused part says why; the others went. #}
+{% if results is empty %}
+    <p class="text-secondary mb-0">{{ 'ecoleDirecteNothingSentLabel'|trans }}</p>
+{% else %}
+    <ul class="list-unstyled mb-0">
+        {% for result in results %}
+            <li class="mb-1">
+                <twig:Cm:Badge tone="{{ result.ok ? 'green' : 'red' }}">{{ (result.ok ? 'ecoleDirecteSentLabel' : 'ecoleDirecteNotSentLabel')|trans }}</twig:Cm:Badge>
+                {{ result.target.date|date('d/m') }} {{ result.target.start }} · {{ result.target.className }} · {{ result.target.subject }}
+                — {{ (result.part == 'seance' ? 'ecoleDirecteSlotContentLabel' : 'ecoleDirecteSlotHomeworkLabel')|trans }}
+                {% if not result.ok %}
+                    <span class="text-danger">: {{ result.messageKey|trans }}{% if result.apiMessage %} {{ 'ecoleDirecteApiSaidLabel'|trans({'%message%': result.apiMessage}) }}{% endif %}</span>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}

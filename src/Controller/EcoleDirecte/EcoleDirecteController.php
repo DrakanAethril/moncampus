@@ -10,10 +10,12 @@ use App\EcoleDirecte\EcoleDirecteException;
 use App\EcoleDirecte\EcoleDirecteLessonLogReader;
 use App\EcoleDirecte\EcoleDirecteLoginOutcome;
 use App\EcoleDirecte\EcoleDirecteSession;
-use App\EcoleDirecte\EcoleDirecteSessionExpiredException;
 use App\EcoleDirecte\EcoleDirecteSessionSealer;
+use App\Entity\Evaluation;
 use App\Entity\User;
 use App\Enum\Feature;
+use App\Repository\EvaluationRepository;
+use App\Security\Voter\EvaluationVoter;
 use App\Service\JsonRequestPayload;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -26,8 +28,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Outils > École Directe: a teacher signs in to their own École Directe account and reads it from
- * here. **A read-only prototype** - it exists to prove that the platform can open a teacher's École
- * Directe from its server before anything is ever sent there.
+ * here - the account, the cahier de texte, and (admins) any route raw. What is *sent* there goes
+ * through App\Controller\EcoleDirecte\EcoleDirecteSendController.
  *
  * The identifiant and the password arrive in the body of one request (twice when École Directe asks
  * its identity question), go straight to App\EcoleDirecte\EcoleDirecteClient and are dropped with the
@@ -35,13 +37,16 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * connection (App\EcoleDirecte\EcoleDirecteSessionSealer), which the page keeps in memory and sends
  * back - so the server holds nothing between two calls either.
  *
- * Teachers and admins only: the account read is a teacher's, and the raw explorer is the admin's
- * tool for finding which reads a future screen needs.
+ * Administrators only for now (App\Controller\EcoleDirecte\EcoleDirecteControllerTrait). Every call
+ * to École Directe answers a button: the page never reads nor writes on its own.
  */
 #[RequiresFeature(Feature::EcoleDirecte)]
 class EcoleDirecteController extends AbstractController
 {
-    private const string CSRF_ID = 'ecole_directe';
+    use EcoleDirecteControllerTrait;
+
+    private const string EVALUATIONS_SINCE = '-12 months';
+    private const int EVALUATIONS_LIMIT = 80;
 
     /** The explorer prints what École Directe answered; past this it is a download, not a read. */
     private const int EXPLORER_MAX_BYTES = 200_000;
@@ -53,12 +58,20 @@ class EcoleDirecteController extends AbstractController
     }
 
     #[Route(path: '/ecole-directe', name: 'app_ecole_directe', methods: ['GET'])]
-    public function index(): Response
+    public function index(EvaluationRepository $evaluations): Response
     {
-        $this->teacher();
+        $teacher = $this->administrator();
+
+        // The evaluations this teacher may send: those of the matières they hold, written by them -
+        // EvaluationVoter::MANAGE, the same rule as entering the grades in the first place.
+        $sendable = array_values(array_filter(
+            $evaluations->findRecentForTeacher($teacher, new \DateTimeImmutable(self::EVALUATIONS_SINCE), self::EVALUATIONS_LIMIT),
+            fn (Evaluation $evaluation): bool => $this->isGranted(EvaluationVoter::MANAGE, $evaluation),
+        ));
 
         return $this->render('ecole_directe/index.html.twig', [
             'csrfId' => self::CSRF_ID,
+            'evaluations' => $sendable,
         ]);
     }
 
@@ -155,7 +168,7 @@ class EcoleDirecteController extends AbstractController
         $payload = JsonRequestPayload::fromRequest($request);
 
         $path = ltrim(trim($payload->string('path')), '/');
-        if (!EcoleDirecteClient::isReadablePath($path)) {
+        if (!EcoleDirecteClient::isRoutePath($path)) {
             return $this->refusal('ecoleDirecteInvalidPathMessage');
         }
 
@@ -197,44 +210,5 @@ class EcoleDirecteController extends AbstractController
             'question' => $outcome->question,
             'choices' => $outcome->choices,
         ]);
-    }
-
-    private function failure(EcoleDirecteException $exception): JsonResponse
-    {
-        $message = $this->translator->trans($exception->getMessage());
-        if ('' !== $exception->apiMessage) {
-            $message .= ' '.$this->translator->trans('ecoleDirecteApiSaidLabel', ['%message%' => $exception->apiMessage]);
-        }
-
-        return $this->json([
-            'ok' => false,
-            'message' => $message,
-            'expired' => $exception instanceof EcoleDirecteSessionExpiredException,
-        ]);
-    }
-
-    private function refusal(string $messageKey): JsonResponse
-    {
-        return $this->json(['ok' => false, 'message' => $this->translator->trans($messageKey), 'expired' => false]);
-    }
-
-    private function guard(Request $request): User
-    {
-        if (!$this->isCsrfTokenValid(self::CSRF_ID, (string) $request->headers->get('X-CSRF-Token'))) {
-            throw $this->createAccessDeniedException('Invalid CSRF token.');
-        }
-
-        return $this->teacher();
-    }
-
-    private function teacher(): User
-    {
-        $user = $this->getUser();
-
-        if (!$user instanceof User || !($this->isGranted('ROLE_TEACHER') || $this->isGranted('ROLE_ADMIN'))) {
-            throw $this->createAccessDeniedException();
-        }
-
-        return $user;
     }
 }

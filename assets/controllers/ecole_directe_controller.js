@@ -2,7 +2,11 @@ import { Controller } from '@hotwired/stimulus';
 
 /**
  * Outils > École Directe: sign in to one's own École Directe account, answer its identity question,
- * then read from it.
+ * read from it, send the cahier de texte and an evaluation's grades to it.
+ *
+ * **Every call to École Directe is a button.** Nothing reads on connect and nothing writes on its
+ * own: signing in shows the account the login answered with, and every further read or send waits
+ * for its own click - the two sends behind a preview the teacher has looked at.
  *
  * The sealed connection the server hands back lives in this controller's memory and nowhere else -
  * not in localStorage, not in a cookie: the platform promised to keep nothing of a teacher's École
@@ -15,8 +19,12 @@ export default class extends Controller {
     static targets = [
         'error', 'loginPanel', 'identifiant', 'password', 'loginButton',
         'challengePanel', 'question', 'choices', 'answerButton',
-        'connectedPanel', 'account', 'lessonLogPanel', 'from', 'to', 'lessonLogButton', 'slots',
+        'connectedPanel', 'account', 'teacherPanels', 'from', 'to', 'lessonLogButton', 'slots',
         'path', 'exploreButton', 'raw',
+        'sendFrom', 'sendTo', 'lessonLogPreviewButton', 'lessonLogPreview', 'lessonLogKey',
+        'lessonLogSendBar', 'lessonLogSendButton', 'lessonLogResult',
+        'gradebookTargetsButton', 'evaluation', 'gradebookTarget', 'gradebookPreviewButton',
+        'gradebookPreview', 'gradebookSendBar', 'gradebookSendButton', 'gradebookResult',
     ];
 
     static values = {
@@ -25,6 +33,11 @@ export default class extends Controller {
         challengeUrl: String,
         lessonLogUrl: String,
         exploreUrl: String,
+        lessonLogPreviewUrl: String,
+        lessonLogSendUrl: String,
+        gradebookTargetsUrl: String,
+        gradebookPreviewUrl: String,
+        gradebookSendUrl: String,
         unreachableMessage: String,
     };
 
@@ -78,11 +91,85 @@ export default class extends Controller {
         }
     }
 
+    /** Reads École Directe and the MonCampus cahier de texte, and shows what sending would change. */
+    async previewLessonLog(event) {
+        event.preventDefault();
+
+        this.lessonLogSendBarTarget.hidden = true;
+        this.lessonLogResultTarget.innerHTML = '';
+        const answer = await this.#read(this.lessonLogPreviewUrlValue, this.#sendSpan(), this.lessonLogPreviewButtonTarget);
+        if (answer) {
+            this.lessonLogPreviewTarget.innerHTML = answer.html;
+            this.lessonLogSendBarTarget.hidden = this.lessonLogKeyTargets.length === 0;
+        }
+    }
+
+    /** Sends the ticked slots - the server reads École Directe again before writing anything. */
+    async sendLessonLog() {
+        const keys = this.lessonLogKeyTargets.filter((box) => box.checked).map((box) => box.value);
+        if (keys.length === 0) {
+            return;
+        }
+
+        const answer = await this.#read(this.lessonLogSendUrlValue, { ...this.#sendSpan(), keys }, this.lessonLogSendButtonTarget);
+        if (answer) {
+            this.lessonLogResultTarget.innerHTML = answer.html;
+            this.lessonLogPreviewTarget.innerHTML = '';
+            this.lessonLogSendBarTarget.hidden = true;
+        }
+    }
+
+    /** Reads, on demand, where in École Directe an evaluation can go. */
+    async loadGradebookTargets() {
+        const answer = await this.#read(this.gradebookTargetsUrlValue, {}, this.gradebookTargetsButtonTarget);
+        if (!answer) {
+            return;
+        }
+
+        const select = this.gradebookTargetTarget;
+        select.querySelectorAll('option:not([value=""])').forEach((option) => option.remove());
+        for (const target of answer.options) {
+            const option = document.createElement('option');
+            option.value = target.key;
+            option.textContent = target.label;
+            select.append(option);
+        }
+    }
+
+    async previewGradebook(event) {
+        event.preventDefault();
+
+        this.gradebookSendBarTarget.hidden = true;
+        this.gradebookResultTarget.innerHTML = '';
+        const answer = await this.#read(this.gradebookPreviewUrlValue, this.#gradebookChoice(), this.gradebookPreviewButtonTarget);
+        if (answer) {
+            this.gradebookPreviewTarget.innerHTML = answer.html;
+            this.gradebookSendBarTarget.hidden = !answer.sendable;
+        }
+    }
+
+    async sendGradebook() {
+        const answer = await this.#read(this.gradebookSendUrlValue, this.#gradebookChoice(), this.gradebookSendButtonTarget);
+        if (answer) {
+            this.gradebookResultTarget.innerHTML = answer.html;
+            this.gradebookPreviewTarget.innerHTML = '';
+            this.gradebookSendBarTarget.hidden = true;
+        }
+    }
+
     forget() {
         this.#session = null;
         this.#pending = null;
         this.accountTarget.innerHTML = '';
         this.slotsTarget.innerHTML = '';
+        this.lessonLogPreviewTarget.innerHTML = '';
+        this.lessonLogResultTarget.innerHTML = '';
+        this.lessonLogSendBarTarget.hidden = true;
+        if (this.hasGradebookPreviewTarget) {
+            this.gradebookPreviewTarget.innerHTML = '';
+            this.gradebookResultTarget.innerHTML = '';
+            this.gradebookSendBarTarget.hidden = true;
+        }
         if (this.hasRawTarget) {
             this.rawTarget.textContent = '';
             this.rawTarget.hidden = true;
@@ -109,7 +196,7 @@ export default class extends Controller {
         this.#pending = null;
         this.passwordTarget.value = '';
         this.accountTarget.innerHTML = answer.html;
-        this.lessonLogPanelTarget.hidden = !answer.teacher;
+        this.teacherPanelsTarget.hidden = !answer.teacher;
         this.#show('connected');
     }
 
@@ -133,6 +220,14 @@ export default class extends Controller {
         }
 
         return null;
+    }
+
+    #sendSpan() {
+        return { from: this.sendFromTarget.value, to: this.sendToTarget.value };
+    }
+
+    #gradebookChoice() {
+        return { evaluation: this.evaluationTarget.value, target: this.gradebookTargetTarget.value };
     }
 
     #credentials() {

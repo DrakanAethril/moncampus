@@ -205,6 +205,33 @@ class EcoleDirecteClientTest extends TestCase
         $client->read($this->teacherSession(), 'salles.awp');
     }
 
+    public function testASendIsPutOrPostOnTheTeacherHostAndARefusalIsNotASuccess(): void
+    {
+        $client = $this->client([
+            new MockResponse($this->json(['code' => 200, 'token' => '', 'message' => '', 'data' => ['idCDT' => 3]])),
+            new MockResponse($this->json(['code' => 210, 'token' => '', 'message' => 'Période close', 'data' => []])),
+        ]);
+
+        $result = $client->send($this->teacherSession(), 'cahierdetexte/seance/SIO1/INFO/2026-09-22.awp', 'put', ['contenuDeSeance' => true]);
+        self::assertSame(['idCDT' => 3], $result->data);
+        self::assertStringStartsWith('https://apip.example/v3/cahierdetexte/seance/SIO1/INFO/2026-09-22.awp?verbe=put&', $this->sent[0]['url']);
+        self::assertSame(['contenuDeSeance' => true], $this->dataOf($this->sent[0]['body']));
+
+        try {
+            $client->send($this->teacherSession(), 'enseignants/1/C/44/periodes/A001/matieres/INFO%C2%A4/notes.awp', 'post', []);
+            self::fail('A code other than 200 must be refused.');
+        } catch (EcoleDirecteException $exception) {
+            self::assertSame('ecoleDirecteSendRefusedMessage', $exception->getMessage());
+            self::assertSame('Période close', $exception->apiMessage);
+        }
+    }
+
+    public function testNothingIsEverDeletedFromEcoleDirecte(): void
+    {
+        $this->expectException(\LogicException::class);
+        $this->client([])->send($this->teacherSession(), 'cahierdetexte/seance/12.awp', 'delete', []);
+    }
+
     public function testTheProbeNeedsNothingButTheGtkCookie(): void
     {
         self::assertTrue($this->client([$this->gtkAnswer()])->probe());
