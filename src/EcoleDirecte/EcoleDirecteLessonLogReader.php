@@ -34,26 +34,48 @@ class EcoleDirecteLessonLogReader
      */
     public function read(EcoleDirecteSession $session, \DateTimeImmutable $from, \DateTimeImmutable $to): array
     {
+        self::assertSpan($from, $to);
+        $raw = $this->rawSlots($session, $from, $to);
+
+        $slots = array_map($this->slot(...), $raw['rows']);
+        usort($slots, static fn (EcoleDirecteSlot $a, EcoleDirecteSlot $b): int => [$a->date?->format('Y-m-d'), $a->start] <=> [$b->date?->format('Y-m-d'), $b->start]);
+
+        return ['slots' => $slots, 'session' => $raw['session']];
+    }
+
+    /**
+     * The slots as École Directe answered them - what sending hands back, content aside. No bound on
+     * the span here: the sending reads a little past the séances it sends, to find each one's next
+     * lesson.
+     *
+     * @return array{rows: list<array<array-key, mixed>>, session: EcoleDirecteSession}
+     *
+     * @throws EcoleDirecteException
+     */
+    public function rawSlots(EcoleDirecteSession $session, \DateTimeImmutable $from, \DateTimeImmutable $to): array
+    {
         if (!$session->account->isTeacher()) {
             throw new EcoleDirecteException('ecoleDirecteNotTeacherMessage');
         }
 
-        if ($to < $from || $from->diff($to)->days > self::MAX_DAYS) {
-            throw new EcoleDirecteException('ecoleDirecteInvalidSpanMessage');
-        }
-
         $result = $this->client->read($session, \sprintf('cahierdetexte/loadslots/%s/%s.awp', $from->format('Y-m-d'), $to->format('Y-m-d')));
 
-        $slots = [];
+        $rows = [];
         foreach (\is_array($result->data) ? $result->data : [] as $row) {
             if (\is_array($row)) {
-                $slots[] = $this->slot($row);
+                $rows[] = $row;
             }
         }
 
-        usort($slots, static fn (EcoleDirecteSlot $a, EcoleDirecteSlot $b): int => [$a->date?->format('Y-m-d'), $a->start] <=> [$b->date?->format('Y-m-d'), $b->start]);
+        return ['rows' => $rows, 'session' => $result->session];
+    }
 
-        return ['slots' => $slots, 'session' => $result->session];
+    /** @throws EcoleDirecteException */
+    public static function assertSpan(\DateTimeImmutable $from, \DateTimeImmutable $to): void
+    {
+        if ($to < $from || $from->diff($to)->days > self::MAX_DAYS) {
+            throw new EcoleDirecteException('ecoleDirecteInvalidSpanMessage');
+        }
     }
 
     /** @param array<array-key, mixed> $row */

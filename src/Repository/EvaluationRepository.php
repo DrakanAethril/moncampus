@@ -66,6 +66,31 @@ class EvaluationRepository extends ServiceEntityRepository
     }
 
     /**
+     * The evaluations of the matières a teacher holds, most recent first - what Outils > École
+     * Directe offers to send. Whether each may actually be sent is EvaluationVoter::MANAGE's answer,
+     * asked by the caller.
+     *
+     * @return list<Evaluation>
+     */
+    public function findRecentForTeacher(User $teacher, \DateTimeImmutable $since, int $limit): array
+    {
+        return $this->createQueryBuilder('e')
+            ->addSelect('t', 'p')
+            ->innerJoin('e.topic', 't')
+            ->innerJoin('t.program', 'p')
+            ->andWhere(':teacher MEMBER OF t.teachers')
+            ->andWhere('t.inactiveDate IS NULL')
+            ->andWhere('e.inactiveDate IS NULL')
+            ->andWhere('e.date >= :since')
+            ->setParameter('teacher', $teacher)
+            ->setParameter('since', $since)
+            ->orderBy('e.date', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * The typed (D/F/S) evaluations the Progression calendars plot - only those carrying a
      * nature, since an untyped evaluation is a plain Carnet de notes row this module knows
      * nothing about (see App\Enum\EvaluationNature).

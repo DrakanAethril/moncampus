@@ -472,10 +472,9 @@
                            nothing are the same defect, and both become reachable as soon as an
                            establishment switches a few of these off. #}
                         {% set tools_run = feature('class_tools') or feature('word_cloud') or feature('quiz_live') %}
-                        {# École Directe signs a *teacher* in to their own account there: staff reach
-                           this menu too, but have no account to read, so the entry asks for the role
-                           the controller does (App\Controller\EcoleDirecte\EcoleDirecteController). #}
-                        {% set tools_ecole_directe = feature('ecole_directe') and (is_granted('ROLE_TEACHER') or is_granted('ROLE_ADMIN')) %}
+                        {# École Directe is tried by administrators only for now, so the entry asks for
+                           the role its controllers do (App\Controller\EcoleDirecte\EcoleDirecteControllerTrait). #}
+                        {% set tools_ecole_directe = feature('ecole_directe') and is_granted('ROLE_ADMIN') %}
                         {% set tools_prepare = feature('progression') or feature('sequence_library') or feature('quiz_library')
                             or feature('file_library') or feature('surveys') or feature('content_sharing') or feature('audio') %}
                         {% set tools_follow = feature('lesson_log') or feature('student_work') or feature('dossiers') or feature('quiz_library')

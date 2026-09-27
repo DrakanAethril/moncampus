@@ -231,16 +231,26 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   for every role; an admin tries it first. `DocumentTextExtractor` reads PDF (poppler's `pdftotext`,
   in the image since this lot), Word, PowerPoint, OpenDocument, Excel and HTML;
   `moncampus-bareme/1` (`EvaluationRubricJsonImporter`) is the barème's document format, read strictly.
-- **École Directe (Outils)** — `src/EcoleDirecte/`, `App\Controller\EcoleDirecte\*`. A teacher signs in to
-  their **own** École Directe account from the platform's server (Aplim publishes no API: this is the
-  private one its website calls, teacher routes on `apip.ecoledirecte.com`). Two rules the code holds:
-  **the identifiant and the password are never kept** - they are arguments of `EcoleDirecteClient`'s
-  login methods, sent again by the browser when the identity question replays the login, and nothing
-  else; what spans requests is the handshake, sealed by `EcoleDirecteSessionSealer` (key derived from
-  APP_SECRET, 10 min sliding, bound to the user) and held in the page's JS memory only. And the client
-  is **stateless** (worker mode): the session travels by value. `Feature::EcoleDirecte` is off for every
-  role. École Directe changes its protocol without notice - an answer the client does not recognise is
-  logged at error level and refused, never guessed at.
+- **École Directe (Outils)** — `src/EcoleDirecte/`, `App\Controller\EcoleDirecte\*`. **ROLE_ADMIN only for
+  now** (`EcoleDirecteControllerTrait::administrator()`, the menu entry, `RoleAccessSmokeTest`). A
+  teacher signs in to their **own** École Directe account from the platform's server (Aplim publishes
+  no API: this is the private one its website calls, teacher routes on `apip.ecoledirecte.com`), reads
+  it, and sends their cahier de texte and an evaluation's grades there. Rules the code holds:
+  - **The identifiant and the password are never kept.** They are arguments of `EcoleDirecteClient`'s
+    login methods, sent again by the browser when the identity question replays the login, and nothing
+    else. What spans requests is the handshake, sealed by `EcoleDirecteSessionSealer` (key derived from
+    APP_SECRET, 10 min sliding, bound to the user) and held in the page's JS memory only. The client is
+    **stateless** (worker mode).
+  - **Two doors on the client.** `read()` forces `verbe=get`; `send()` knows `put` and `post` and throws
+    on anything else. Nothing is ever deleted from École Directe.
+  - **Every call is a button**, and every send is a preview first; the send reads École Directe again
+    before writing. Cahier de texte: séance and slot are matched on day + start time, the whole slot
+    goes back with `verbe=put` and only its base64 `contenu` changed (`EcoleDirecteLessonLogPlanner`
+    says which part lands where). Grades: the evaluation is found by name + date or created, then the
+    grid's students are posted; a student is matched only by exact name, and statuses are written
+    `abs` / `ne` / `(12)` - `EcoleDirecteGradePlanner::noteFor()` is the one place that mapping lives.
+  `Feature::EcoleDirecte` is off for every role. École Directe changes its protocol without notice -
+  an answer the client does not recognise is logged at error level and refused, never guessed at.
 - **Accès aux fonctionnalités** — `App\Enum\Feature` (49 cases) + `#[RequiresFeature]` +
   `App\Security\FeatureAccess`: which features are lit, per role and per formation. Gestion >
   Fonctionnalités is the screen. **The whole Pédagogie family is off by default**, with four
@@ -401,7 +411,7 @@ New per-object rules belong in a Voter, not inline in a controller.
 | Matomo | Analytics, **consent-gated** (`requireConsent`, opt-in banner) | `MATOMO_URL`, `MATOMO_SITE_ID` |
 | Discord | Support-ticket notifications | `DISCORD_WEBHOOK_*` |
 | LDAP | Authentication + directory | `LDAP_*` |
-| École Directe (Aplim) | Teachers sign in to their own account from the server (private API, no stored credentials) | `ECOLEDIRECTE_*` |
+| École Directe (Aplim) | Read and send to one's own teacher account from the server (private API, no stored credentials, admins only for now) | `ECOLEDIRECTE_*` |
 | claude.ai (Anthropic) | Calls the Claude connector (`/mcp`, OAuth) from `160.79.104.0/21` — inbound only, the app never calls Anthropic | — |
 
 `.env.prod.local` **on the development machine holds decoy values.** Never infer the real production

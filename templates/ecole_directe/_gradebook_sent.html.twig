@@ -1,0 +1,12 @@
+{# The evaluation sent - App\EcoleDirecte\EcoleDirecteGradebookWriter::send(). #}
+{% set sent = rows|filter(row => row.state.sends)|length %}
+<div class="alert alert-success mb-3">
+    {{ (created ? 'ecoleDirecteGradebookCreatedLabel' : 'ecoleDirecteGradebookUpdatedLabel')|trans({'%count%': sent}) }}
+</div>
+{% set left = rows|filter(row => not row.state.sends and row.state.value != 'same') %}
+{% if left is not empty %}
+    <div class="alert alert-warning mb-0">
+        <div class="fw-medium">{{ 'ecoleDirecteGradebookLeftLabel'|trans }}</div>
+        {{ left|map(row => row.label ~ ' (' ~ row.state.labelKey|trans ~ ')')|join(' ; ') }}
+    </div>
+{% endif %}
