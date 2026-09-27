@@ -98,7 +98,7 @@
                             </td>
                             <td class="text-end">{{ type.inUseCount }}</td>
                             <td class="text-end">{{ type.onOrderCount ?: '—' }}</td>
-                            <td>{{ type.location ? type.location.name : '—' }}</td>
+                            <td>{{ type.placeName ?? '—' }}</td>
                         </tr>
                     {% else %}
                         <tr><td colspan="7" class="text-center text-secondary">{{ 'equipmentNoTypeText'|trans }}</td></tr>

@@ -29,6 +29,7 @@ class EquipmentItemRepository extends ServiceEntityRepository
         $items = $this->createQueryBuilder('i')
             ->leftJoin('i.room', 'r')->addSelect('r')
             ->leftJoin('i.location', 'l')->addSelect('l')
+            ->leftJoin('i.storageRoom', 'sr')->addSelect('sr')
             ->where('i.type = :type')
             ->setParameter('type', $type)
             ->orderBy('i.codeNumber', 'ASC')

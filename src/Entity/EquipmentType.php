@@ -76,10 +76,17 @@ class EquipmentType
     #[Assert\Length(max: 500)]
     private ?string $supplierReference = null;
 
-    /** Where the spares of this type are kept, and where new pieces land. */
+    /**
+     * Where the spares of this type are kept, and where new pieces land: a storage place of the
+     * inventory's own, or one of the platform's rooms - never both, see setPlace().
+     */
     #[ORM\ManyToOne(targetEntity: EquipmentLocation::class)]
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?EquipmentLocation $location = null;
+
+    #[ORM\ManyToOne(targetEntity: Room::class)]
+    #[ORM\JoinColumn(name: 'storage_room_id', nullable: true, onDelete: 'SET NULL')]
+    private ?Room $storageRoom = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $notes = null;
@@ -229,6 +236,31 @@ class EquipmentType
         $this->location = $location;
 
         return $this;
+    }
+
+    public function getStorageRoom(): ?Room
+    {
+        return $this->storageRoom;
+    }
+
+    /** The one place the spares are kept, whichever of the two lists it comes from. */
+    public function getPlace(): EquipmentLocation|Room|null
+    {
+        return $this->storageRoom ?? $this->location;
+    }
+
+    /** Setting one side clears the other: a type is kept in one place, not two. */
+    public function setPlace(EquipmentLocation|Room|null $place): static
+    {
+        $this->location = $place instanceof EquipmentLocation ? $place : null;
+        $this->storageRoom = $place instanceof Room ? $place : null;
+
+        return $this;
+    }
+
+    public function getPlaceName(): ?string
+    {
+        return $this->getPlace()?->getName();
     }
 
     public function getNotes(): ?string

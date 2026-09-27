@@ -47,9 +47,17 @@ class EquipmentItem
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?Room $room = null;
 
+    /**
+     * Where it is put away when nobody uses it: a storage place or one of the platform's rooms,
+     * never both (setPlace()). Distinct from `$room`, which the journal moves.
+     */
     #[ORM\ManyToOne(targetEntity: EquipmentLocation::class)]
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?EquipmentLocation $location = null;
+
+    #[ORM\ManyToOne(targetEntity: Room::class)]
+    #[ORM\JoinColumn(name: 'storage_room_id', nullable: true, onDelete: 'SET NULL')]
+    private ?Room $storageRoom = null;
 
     #[ORM\Column(name: 'serial_number', length: 120, nullable: true)]
     #[Assert\Length(max: 120)]
@@ -69,7 +77,7 @@ class EquipmentItem
     {
         $this->type = $type;
         $this->codeNumber = $codeNumber;
-        $this->location = $type->getLocation();
+        $this->setPlace($type->getPlace());
         $this->creationDate = new \DateTimeImmutable();
     }
 
@@ -120,6 +128,30 @@ class EquipmentItem
         $this->location = $location;
 
         return $this;
+    }
+
+    public function getStorageRoom(): ?Room
+    {
+        return $this->storageRoom;
+    }
+
+    public function getPlace(): EquipmentLocation|Room|null
+    {
+        return $this->storageRoom ?? $this->location;
+    }
+
+    /** Setting one side clears the other: a piece is put away in one place, not two. */
+    public function setPlace(EquipmentLocation|Room|null $place): static
+    {
+        $this->location = $place instanceof EquipmentLocation ? $place : null;
+        $this->storageRoom = $place instanceof Room ? $place : null;
+
+        return $this;
+    }
+
+    public function getPlaceName(): ?string
+    {
+        return $this->getPlace()?->getName();
     }
 
     public function getSerialNumber(): ?string
