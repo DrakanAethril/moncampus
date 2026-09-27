@@ -8,6 +8,7 @@ use App\Entity\LessonLog;
 use App\Entity\LessonSession;
 use App\Entity\Program;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -69,6 +70,36 @@ class LessonLogRepository extends ServiceEntityRepository
             ->leftJoin('l.attachments', 'a')
             ->where('l.lessonSession IN (:sessions)')
             ->setParameter('sessions', $sessions)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * The cahiers de texte already written for the same matière before this séance, most recent
+     * first - where the class is at, which is what a teacher describing today's séance builds on.
+     *
+     * Only the ones that say something: an opened and abandoned cahier has nothing to tell.
+     *
+     * @return list<LessonLog>
+     */
+    public function findPreviousFilledForTopic(LessonSession $session, int $limit): array
+    {
+        if (null === $session->getTopic() || null === $session->getDay()) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('l')
+            ->addSelect('s')
+            ->innerJoin('l.lessonSession', 's')
+            ->where('s.topic = :topic')
+            ->andWhere('s.day < :day OR (s.day = :day AND s.startHour < :start)')
+            ->andWhere("COALESCE(l.contenuRealise, '') != '' OR COALESCE(l.travailAvantDescription, '') != '' OR COALESCE(l.travailApresDescription, '') != ''")
+            ->setParameter('topic', $session->getTopic())
+            ->setParameter('day', $session->getDay(), Types::DATE_IMMUTABLE)
+            ->setParameter('start', $session->getStartHour(), Types::TIME_IMMUTABLE)
+            ->orderBy('s.day', 'DESC')
+            ->addOrderBy('s.startHour', 'DESC')
+            ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
     }

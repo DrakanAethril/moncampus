@@ -226,7 +226,13 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   document is refused whole at the first invalid item (Claude corrects and resends); no image
   reference crosses (`mediaRef`/`imageKey`); an evaluation it creates is visible to students only
   at a **future** date (D+1 by default); a barème with points entered is never rebuilt; no student
-  name or grade is exposed. `format_guide` is assembled from the import assistants' own catalogues,
+  name or grade is exposed. The emploi du temps (`timetable_get`) hands out the `sessionId` the
+  cahier de texte tools take: `lesson_log_write` passes `LessonLogVoter::EDIT` (the créneau's own
+  teacher or co-animator, never staff by role), takes Markdown through the library's renderer and
+  sanitizer, **never overwrites a part that says something unless `replace`**, and moves a part's
+  visibility only when named — a cahier opened there starts hidden like on screen.
+  `progression_get` is **read-only**: Claude suggests a progression, the teacher builds it on the
+  progression screens (`McpTimetable` holds the shared doors). `format_guide` is assembled from the import assistants' own catalogues,
   so the screen's prompt and the connector's guide cannot drift. `Feature::ClaudeConnector` is off
   for every role; an admin tries it first. `DocumentTextExtractor` reads PDF (poppler's `pdftotext`,
   in the image since this lot), Word, PowerPoint, OpenDocument, Excel and HTML;
