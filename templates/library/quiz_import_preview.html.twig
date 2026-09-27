@@ -57,9 +57,7 @@
                form body because its panels, its radios and its confirm button are three different
                places on the screen. #}
             <div data-controller="quiz-import-destination">
-            <div class="cm-subhead">
-                <div class="cm-subhead__title">{{ 'quizImportDestinationSectionTitle'|trans }}</div>
-            </div>
+            <twig:Cm:Subhead :title="'quizImportDestinationSectionTitle'|trans"/>
             <div class="cm-audio-modes mb-3">
                 {% for choice in form.destination %}
                     <label class="cm-audio-mode">
@@ -104,18 +102,12 @@
                     </div>
 
                     <div data-quiz-import-destination-target="newPanel">
-                        <div class="cm-subhead">
-                            <div class="cm-subhead__title">{{ 'quizSettingsIdentityTitle'|trans }}</div>
-                            <div class="cm-subhead__hint">{{ 'quizImportPreviewIdentityHint'|trans }}</div>
-                        </div>
+                        <twig:Cm:Subhead :title="'quizSettingsIdentityTitle'|trans" :hint="'quizImportPreviewIdentityHint'|trans"/>
                         {{ form_row(form.name) }}
                         {{ form_row(form.subject) }}
                         {{ form_row(form.description) }}
 
-                        <div class="cm-subhead">
-                            <div class="cm-subhead__title">{{ 'quizSettingsDefaultsTitle'|trans }}</div>
-                            <div class="cm-subhead__hint">{{ 'quizSettingsDefaultsHint'|trans }}</div>
-                        </div>
+                        <twig:Cm:Subhead :title="'quizSettingsDefaultsTitle'|trans" :hint="'quizSettingsDefaultsHint'|trans"/>
                         <div class="row g-3">
                             <div class="col-6">{{ form_row(form.defaultQuestionCount) }}</div>
                             <div class="col-6">{{ form_row(form.defaultSecondsPerQuestion) }}</div>
@@ -132,10 +124,7 @@
                 </div>
 
                 <div class="col-12 col-lg-7 d-flex flex-column gap-2">
-                    <div class="cm-subhead">
-                        <div class="cm-subhead__title">{{ 'quizImportPreviewQuestionsTitleTemplate'|trans({'%count%': payload.questions|length}) }}</div>
-                        <div class="cm-subhead__hint">{{ 'quizImportPreviewQuestionsHint'|trans }}</div>
-                    </div>
+                    <twig:Cm:Subhead :title="'quizImportPreviewQuestionsTitleTemplate'|trans({'%count%': payload.questions|length})" :hint="'quizImportPreviewQuestionsHint'|trans"/>
                     {# One rendering for the twelve types, from real transient entities - see the
                        partial's own note. #}
                     <div class="d-flex flex-column gap-2" style="max-height: 640px; overflow-y: auto;">
@@ -151,15 +140,13 @@
                 </div>
             </div>
 
-            <div class="cm-actionbar">
-                <div class="cm-actionbar__buttons">
-                    <a href="{{ path(isInteractive ? 'app_library_quiz_assistant_paste' : 'app_library_quiz_import') }}" class="btn btn-link">{{ 'quizImportPreviewBackLabel'|trans }}</a>
-                    {# The button names where the questions are going - never a bare "Valider". #}
-                    <button type="submit" class="btn btn-primary" data-quiz-import-destination-target="submit"
-                            data-new-label="{{ 'quizImportPreviewConfirmTemplate'|trans({'%count%': payload.questions|length}) }}"
-                            data-existing-label="{{ 'quizImportPreviewConfirmIntoTemplate'|trans({'%count%': payload.questions|length, '%name%': '__NAME__'}) }}">{{ 'quizImportPreviewConfirmTemplate'|trans({'%count%': payload.questions|length}) }}</button>
-                </div>
-            </div>
+            <twig:Cm:ActionBar>
+                <a href="{{ path(isInteractive ? 'app_library_quiz_assistant_paste' : 'app_library_quiz_import') }}" class="btn btn-link">{{ 'quizImportPreviewBackLabel'|trans }}</a>
+                {# The button names where the questions are going - never a bare "Valider". #}
+                <button type="submit" class="btn btn-primary" data-quiz-import-destination-target="submit"
+                        data-new-label="{{ 'quizImportPreviewConfirmTemplate'|trans({'%count%': payload.questions|length}) }}"
+                        data-existing-label="{{ 'quizImportPreviewConfirmIntoTemplate'|trans({'%count%': payload.questions|length, '%name%': '__NAME__'}) }}">{{ 'quizImportPreviewConfirmTemplate'|trans({'%count%': payload.questions|length}) }}</button>
+            </twig:Cm:ActionBar>
             </div>
             {{ form_rest(form) }}
             {{ form_end(form) }}

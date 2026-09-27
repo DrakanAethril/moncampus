@@ -20,9 +20,7 @@
             {{ form_start(form) }}
                 {{ form_errors(form) }}
 
-                <div class="cm-subhead">
-                    <div class="cm-subhead__title">{{ 'skillIdentitySectionTitle'|trans }}</div>
-                </div>
+                <twig:Cm:Subhead :title="'skillIdentitySectionTitle'|trans"/>
                 <div class="row">
                     <div class="col-md-2">{{ form_row(form.code) }}</div>
                     <div class="col-md-10">{{ form_row(form.label) }}</div>
@@ -41,10 +39,7 @@
                     </div>
                 </div>
 
-                <div class="cm-subhead mt-4">
-                    <div class="cm-subhead__title">{{ 'skillOrganisationSectionTitle'|trans }}</div>
-                    <div class="cm-subhead__hint">{{ 'skillOrganisationSectionHint'|trans }}</div>
-                </div>
+                <twig:Cm:Subhead class="mt-4" :title="'skillOrganisationSectionTitle'|trans" :hint="'skillOrganisationSectionHint'|trans"/>
                 <div class="row">
                     <div class="col-md-3">{{ form_row(form.volumeHours) }}</div>
                     <div class="col-md-5">{{ form_row(form.teachingPeriodLabel) }}</div>
@@ -64,15 +59,10 @@
                     </div>
                 </div>
 
-                <div class="cm-subhead mt-4">
-                    <div class="cm-subhead__title">{{ 'skillOccupationSectionTitle'|trans }}</div>
-                </div>
+                <twig:Cm:Subhead class="mt-4" :title="'skillOccupationSectionTitle'|trans"/>
                 {{ form_row(form.occupationDescription) }}
 
-                <div class="cm-subhead mt-4">
-                    <div class="cm-subhead__title">{{ 'skillContentSectionTitle'|trans }}</div>
-                    <div class="cm-subhead__hint">{{ 'skillContentSectionHint'|trans }}</div>
-                </div>
+                <twig:Cm:Subhead class="mt-4" :title="'skillContentSectionTitle'|trans" :hint="'skillContentSectionHint'|trans"/>
                 <div class="row">
                     <div class="col-md-6">
                         {{ form_label(form.knowledgeHtml) }}
@@ -106,23 +96,17 @@
                     </div>
                 </div>
 
-                <div class="cm-subhead mt-4">
-                    <div class="cm-subhead__title">{{ 'skillAssessmentSectionTitle'|trans }}</div>
-                    <div class="cm-subhead__hint">{{ 'skillAssessmentSectionHint'|trans }}</div>
-                </div>
+                <twig:Cm:Subhead class="mt-4" :title="'skillAssessmentSectionTitle'|trans" :hint="'skillAssessmentSectionHint'|trans"/>
                 <div class="row">
                     <div class="col-md-4">{{ form_row(form.diagnosticAssessmentHtml) }}</div>
                     <div class="col-md-4">{{ form_row(form.summativeAssessmentHtml) }}</div>
                     <div class="col-md-4">{{ form_row(form.certifyingAssessmentHtml) }}</div>
                 </div>
 
-                <div class="cm-actionbar">
-                    {% include '_last_modified_meta.html.twig' with {entity: form.vars.data} %}
-                    <div class="cm-actionbar__buttons">
-                        <a href="{{ path(skillRoutes.skills, {id: program.id, groupId: skillGroup.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                        {{ form_widget(form.submit, {'label': isEdit ? 'submitEditAction' : 'submitCreateAction'}) }}
-                    </div>
-                </div>
+                <twig:Cm:ActionBar :lastModified="form.vars.data">
+                    <a href="{{ path(skillRoutes.skills, {id: program.id, groupId: skillGroup.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                    {{ form_widget(form.submit, {'label': isEdit ? 'submitEditAction' : 'submitCreateAction'}) }}
+                </twig:Cm:ActionBar>
                 {{ form_rest(form) }}
             {{ form_end(form) }}
         </div>

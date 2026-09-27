@@ -54,12 +54,10 @@
                     </div>
                 </div>
 
-                <div class="cm-actionbar">
-                    <span class="cm-actionbar__meta">{{ 'gameStatementNewNoteText'|trans }}</span>
-                    <div class="cm-actionbar__buttons">
-                        <button type="submit" class="cm-btn cm-btn--primary">{{ 'gameStatementCreateAction'|trans }}</button>
-                    </div>
-                </div>
+                <twig:Cm:ActionBar>
+                    <twig:block name="meta">{{ 'gameStatementNewNoteText'|trans }}</twig:block>
+                    <button type="submit" class="cm-btn cm-btn--primary">{{ 'gameStatementCreateAction'|trans }}</button>
+                </twig:Cm:ActionBar>
             </form>
         </div>
     </div>

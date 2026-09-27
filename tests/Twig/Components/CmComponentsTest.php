@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Twig\Components;
 
+use App\Entity\User;
 use App\Enum\ReleaseEntryType;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\HttpFoundation\Request;
@@ -147,5 +148,76 @@ class CmComponentsTest extends KernelTestCase
         $this->expectExceptionMessageMatches('/no "secondary" variant/');
 
         $this->renderTwigComponent('Cm:Button', ['variant' => 'secondary'], 'x');
+    }
+
+    /**
+     * The icon file carries the drawing and its stroke; the call site the size and any override.
+     */
+    public function testIconMergesTheCallersAttributesOverTheFile(): void
+    {
+        $twig = self::getContainer()->get(Environment::class);
+        $html = $twig->createTemplate('<twig:ux:icon name="folder" width="15" height="15" stroke-width="2.4" class="x"/>')->render();
+
+        self::assertStringContainsString('viewBox="0 0 24 24"', $html);
+        self::assertStringContainsString('width="15"', $html);
+        self::assertStringContainsString('stroke-width="2.4"', $html);
+        self::assertStringNotContainsString('stroke-width="1.8"', $html);
+        self::assertStringContainsString('class="x"', $html);
+        self::assertStringContainsString('aria-hidden="true"', $html);
+        self::assertStringContainsString('<path d="M3 7a1', $html);
+    }
+
+    public function testActionBarPutsTheMetaLeftAndTheButtonsRight(): void
+    {
+        $crawler = $this->renderTwigComponent('Cm:ActionBar', [], '<button>OK</button>', ['meta' => 'Rien n\'est enregistré'])->crawler();
+
+        self::assertSame('Rien n\'est enregistré', $crawler->filter('.cm-actionbar > span.cm-actionbar__meta')->text());
+        self::assertSame('OK', $crawler->filter('.cm-actionbar > .cm-actionbar__buttons > button')->text());
+    }
+
+    public function testActionBarWithoutMetaDrawsNoEmptyMetaSpan(): void
+    {
+        $crawler = $this->renderTwigComponent('Cm:ActionBar', [], '<button>OK</button>')->crawler();
+
+        self::assertCount(0, $crawler->filter('.cm-actionbar__meta'));
+    }
+
+    /**
+     * « Modifié le … par … » only once somebody has actually modified the thing: an entity that has
+     * never been edited carries a null lastUpdatedDate, and the bar then says nothing.
+     */
+    public function testActionBarSaysWhoLastModifiedOnlyAfterARealEdit(): void
+    {
+        $author = new User('jdupont');
+        $edited = new class($author) {
+            public function __construct(public User $lastUpdatedBy, public ?\DateTimeImmutable $lastUpdatedDate = new \DateTimeImmutable('2026-09-14'))
+            {
+            }
+        };
+        $meta = $this->renderTwigComponent('Cm:ActionBar', ['lastModified' => $edited], '<button>OK</button>')->crawler()->filter('.cm-actionbar__meta');
+        self::assertStringContainsString('14/09/2026', $meta->text());
+        self::assertStringContainsString('jdupont', $meta->text());
+
+        $edited->lastUpdatedDate = null;
+        $crawler = $this->renderTwigComponent('Cm:ActionBar', ['lastModified' => $edited], '<button>OK</button>')->crawler();
+        self::assertCount(0, $crawler->filter('.cm-actionbar__meta'));
+    }
+
+    public function testSubheadEscapesItsTextAndKeepsTheCallersSpacing(): void
+    {
+        $head = $this->renderTwigComponent('Cm:Subhead', ['title' => 'Clés <API>', 'hint' => 'Une par agent', 'style' => 'margin-bottom: 14px'])->crawler()->filter('.cm-subhead');
+
+        self::assertSame('Clés <API>', $head->filter('.cm-subhead__title')->text());
+        self::assertSame('Une par agent', $head->filter('.cm-subhead__hint')->text());
+        self::assertSame('margin-bottom: 14px', $head->attr('style'));
+    }
+
+    public function testSubheadWithAnActionGroupsTitleAndHintOnTheLeft(): void
+    {
+        $head = $this->renderTwigComponent('Cm:Subhead', ['title' => 'Consignes'], null, ['action' => '<button>Copier</button>'])->crawler()->filter('.cm-subhead');
+
+        self::assertSame('Consignes', $head->filter('.cm-subhead > div > .cm-subhead__title')->text());
+        self::assertSame('Copier', $head->filter('.cm-subhead > button')->text());
+        self::assertCount(0, $head->filter('.cm-subhead__hint'));
     }
 }

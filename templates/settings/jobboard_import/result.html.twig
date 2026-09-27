@@ -14,10 +14,7 @@
 
 {% block main %}
     <div class="card" style="padding: 18px">
-        <div class="cm-subhead" style="margin-bottom: 14px">
-            <div class="cm-subhead__title">{{ 'jobboardImportResultDoneText'|trans({'%track%': track}) }}</div>
-            <div class="cm-subhead__hint">{{ 'jobboardImportResultHintText'|trans }}</div>
-        </div>
+        <twig:Cm:Subhead style="margin-bottom: 14px" :title="'jobboardImportResultDoneText'|trans({'%track%': track})" :hint="'jobboardImportResultHintText'|trans"/>
 
         <div class="cm-loan-summary" style="grid-template-columns: repeat({{ blocked > 0 ? 4 : 3 }}, 1fr)">
             <div>
@@ -46,10 +43,7 @@
            gestures, this one records that they were made. The rows themselves live in the history,
            which is where an administrator comes back to them. #}
         {% if learned is not empty %}
-            <div class="cm-subhead" style="margin-top: 22px; margin-bottom: 10px">
-                <div class="cm-subhead__title">{{ 'jobboardImportLearningDoneHeading'|trans }}</div>
-                <div class="cm-subhead__hint">{{ 'jobboardImportLearningDoneHintText'|trans }}</div>
-            </div>
+            <twig:Cm:Subhead style="margin-top: 22px; margin-bottom: 10px" :title="'jobboardImportLearningDoneHeading'|trans" :hint="'jobboardImportLearningDoneHintText'|trans"/>
             <table class="card-table">
                 <thead>
                     <tr>
@@ -76,11 +70,9 @@
             </table>
         {% endif %}
 
-        <div class="cm-actionbar">
-            <div class="cm-actionbar__buttons">
-                <a class="cm-btn" href="{{ path('app_settings_jobboard_import') }}">{{ 'jobboardImportAgainAction'|trans }}</a>
-                <a class="cm-btn cm-btn--primary" href="{{ path('app_jobboard') }}">{{ 'jobboardImportSeeBoardAction'|trans }}</a>
-            </div>
-        </div>
+        <twig:Cm:ActionBar>
+            <a class="cm-btn" href="{{ path('app_settings_jobboard_import') }}">{{ 'jobboardImportAgainAction'|trans }}</a>
+            <a class="cm-btn cm-btn--primary" href="{{ path('app_jobboard') }}">{{ 'jobboardImportSeeBoardAction'|trans }}</a>
+        </twig:Cm:ActionBar>
     </div>
 {% endblock %}

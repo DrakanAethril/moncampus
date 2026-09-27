@@ -139,14 +139,12 @@
                         </div>
                     </div>
                 {% endif %}
-                <div class="cm-actionbar">
-                    <div class="cm-actionbar__buttons">
-                        <a href="{{ path('app_laptops_import') }}" class="btn btn-link">{{ 'laptopImportAnotherFileAction'|trans }}</a>
-                        <button type="submit" class="btn btn-primary" {{ analysis.importable ? '' : 'disabled' }}>
-                            {{ 'laptopImportRunAction'|trans({'%count%': analysis.createCount}) }}
-                        </button>
-                    </div>
-                </div>
+                <twig:Cm:ActionBar>
+                    <a href="{{ path('app_laptops_import') }}" class="btn btn-link">{{ 'laptopImportAnotherFileAction'|trans }}</a>
+                    <button type="submit" class="btn btn-primary" {{ analysis.importable ? '' : 'disabled' }}>
+                        {{ 'laptopImportRunAction'|trans({'%count%': analysis.createCount}) }}
+                    </button>
+                </twig:Cm:ActionBar>
             </form>
         </div>
     </div>

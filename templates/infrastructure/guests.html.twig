@@ -237,17 +237,15 @@
         </div>
 
         {% if pageCount > 1 %}
-            <div class="cm-actionbar" style="margin:0; padding: 12px 18px; border-top: 1px solid var(--cm-border-soft);">
-                <span class="cm-actionbar__meta">{{ 'proxmoxOperationPageMeta'|trans({'%page%': page, '%pages%': pageCount}) }}</span>
-                <div class="cm-actionbar__buttons">
-                    {% if page > 1 %}
-                        <a class="cm-btn cm-btn--outline cm-btn--sm" href="{{ path('app_infrastructure_guests', filters|merge({page: page - 1})) }}">{{ 'proxmoxOperationPreviousAction'|trans }}</a>
-                    {% endif %}
-                    {% if page < pageCount %}
-                        <a class="cm-btn cm-btn--outline cm-btn--sm" href="{{ path('app_infrastructure_guests', filters|merge({page: page + 1})) }}">{{ 'proxmoxOperationNextAction'|trans }}</a>
-                    {% endif %}
-                </div>
-            </div>
+            <twig:Cm:ActionBar style="margin:0; padding: 12px 18px; border-top: 1px solid var(--cm-border-soft);">
+                <twig:block name="meta">{{ 'proxmoxOperationPageMeta'|trans({'%page%': page, '%pages%': pageCount}) }}</twig:block>
+                {% if page > 1 %}
+                    <a class="cm-btn cm-btn--outline cm-btn--sm" href="{{ path('app_infrastructure_guests', filters|merge({page: page - 1})) }}">{{ 'proxmoxOperationPreviousAction'|trans }}</a>
+                {% endif %}
+                {% if page < pageCount %}
+                    <a class="cm-btn cm-btn--outline cm-btn--sm" href="{{ path('app_infrastructure_guests', filters|merge({page: page + 1})) }}">{{ 'proxmoxOperationNextAction'|trans }}</a>
+                {% endif %}
+            </twig:Cm:ActionBar>
         {% endif %}
     </div>
 {% endblock %}

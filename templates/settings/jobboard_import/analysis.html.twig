@@ -14,10 +14,7 @@
 
 {% block main %}
     <div class="card" style="padding: 18px">
-        <div class="cm-subhead" style="margin-bottom: 14px">
-            <div class="cm-subhead__title">{{ fileName }}</div>
-            <div class="cm-subhead__hint">{{ 'jobboardImportAnalysisHintText'|trans({'%track%': track.name}) }}</div>
-        </div>
+        <twig:Cm:Subhead style="margin-bottom: 14px" :title="fileName" :hint="'jobboardImportAnalysisHintText'|trans({'%track%': track.name})"/>
 
         {# Nothing is written while this is on screen. The numbers are what the confirmation actually
            commits to, counted by the same parser the real pass will use. « Ignorées » only appears
@@ -49,10 +46,7 @@
            whether the blacklist he set is the one he meant, and a hundred rows of the same site
            would say it once too often. #}
         {% if blocked > 0 %}
-            <div class="cm-subhead" style="margin-bottom: 18px">
-                <div class="cm-subhead__title">{{ 'jobboardImportBlockedHeading'|trans }}</div>
-                <div class="cm-subhead__hint">{{ 'jobboardImportBlockedHintText'|trans({'%count%': blocked, '%sources%': report.blockedSources|join(', ')}) }}</div>
-            </div>
+            <twig:Cm:Subhead style="margin-bottom: 18px" :title="'jobboardImportBlockedHeading'|trans" :hint="'jobboardImportBlockedHintText'|trans({'%count%': blocked, '%sources%': report.blockedSources|join(', ')})"/>
         {% endif %}
 
         {# What confirming will teach the platform about the sites themselves. Announced before the
@@ -60,10 +54,7 @@
            file: an offer is a row, a domain attached to a site changes where every later offer from
            that host goes. #}
         {% if report.learned is not empty %}
-            <div class="cm-subhead" style="margin-bottom: 10px">
-                <div class="cm-subhead__title">{{ 'jobboardImportLearningHeading'|trans }}</div>
-                <div class="cm-subhead__hint">{{ 'jobboardImportLearningHintText'|trans }}</div>
-            </div>
+            <twig:Cm:Subhead style="margin-bottom: 10px" :title="'jobboardImportLearningHeading'|trans" :hint="'jobboardImportLearningHintText'|trans"/>
             <table class="card-table" style="margin-bottom: 18px">
                 <thead>
                     <tr>
@@ -93,10 +84,7 @@
         {# A refused line never takes the others with it - the rule of the API, kept here so the two
            doors behave identically. Each one is named with its reason before anything is written. #}
         {% if report.rejectedLines is not empty %}
-            <div class="cm-subhead" style="margin-bottom: 10px">
-                <div class="cm-subhead__title">{{ 'jobboardImportRejectedHeading'|trans }}</div>
-                <div class="cm-subhead__hint">{{ 'jobboardImportRejectedHintText'|trans }}</div>
-            </div>
+            <twig:Cm:Subhead style="margin-bottom: 10px" :title="'jobboardImportRejectedHeading'|trans" :hint="'jobboardImportRejectedHintText'|trans"/>
             <table class="card-table" style="margin-bottom: 18px">
                 <thead>
                     <tr>
@@ -119,13 +107,11 @@
 
         <form method="post" action="{{ path('app_settings_jobboard_import_confirm') }}">
             <input type="hidden" name="_token" value="{{ csrf_token('jobboard_import_confirm') }}">
-            <div class="cm-actionbar">
-                <div class="cm-actionbar__meta">{{ 'jobboardImportConfirmMetaText'|trans({'%track%': track.name}) }}</div>
-                <div class="cm-actionbar__buttons">
-                    <a class="cm-btn" href="{{ path('app_settings_jobboard_import') }}">{{ 'jobboardImportBackAction'|trans }}</a>
-                    <button type="submit" class="cm-btn cm-btn--primary">{{ 'jobboardImportConfirmAction'|trans }}</button>
-                </div>
-            </div>
+            <twig:Cm:ActionBar>
+                <twig:block name="meta">{{ 'jobboardImportConfirmMetaText'|trans({'%track%': track.name}) }}</twig:block>
+                <a class="cm-btn" href="{{ path('app_settings_jobboard_import') }}">{{ 'jobboardImportBackAction'|trans }}</a>
+                <button type="submit" class="cm-btn cm-btn--primary">{{ 'jobboardImportConfirmAction'|trans }}</button>
+            </twig:Cm:ActionBar>
         </form>
     </div>
 {% endblock %}

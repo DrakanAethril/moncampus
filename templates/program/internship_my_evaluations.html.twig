@@ -1,6 +1,12 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'internshipMyEvaluationsPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: program.displayShortName, url: path('app_program_students', {id: program.id})},
+        {label: 'programInternshipMyEvaluationsNavLabel'|trans, url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
 {% block page_title %}{{ 'internshipMyEvaluationsPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block main %}

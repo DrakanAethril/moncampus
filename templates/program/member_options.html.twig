@@ -3,6 +3,13 @@
 {# Expects `member` (the User whose options are being edited), `program`, `form`, and
    `backRoute` (the students or teachers settings tab route name to return to). #}
 {% block title %}{{ 'memberOptionsPageHeading'|trans }} - {{ member.displayName ?? member.username }}{% endblock %}
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'programSettingsNavLabel'|trans, url: path('app_program_settings', {id: program.id})},
+        {label: program.displayShortName, url: path(backRoute, {id: program.id})},
+        {label: 'memberOptionsPageHeading'|trans ~ ' - ' ~ (member.displayName ?? member.username), url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
 {% block page_title %}{{ 'memberOptionsPageHeading'|trans }} - {{ member.displayName ?? member.username }}{% endblock %}
 
 {% block main %}

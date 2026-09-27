@@ -109,12 +109,7 @@
 
         {# ── Right column: the prompt that comes out ────────────────────────────────────────── #}
         <div class="col-12 col-lg-7 d-flex flex-column gap-3">
-            <div class="cm-subhead">
-                <div class="cm-subhead__title">{{ 'surveyAssistantPromptSectionTitle'|trans }}</div>
-                <div class="cm-subhead__hint">
-                    {{ (path == pathTranspose ? 'surveyAssistantPromptSectionHintTranspose' : 'surveyAssistantPromptSectionHint')|trans }}
-                </div>
-            </div>
+            <twig:Cm:Subhead :title="'surveyAssistantPromptSectionTitle'|trans" :hint="(path == pathTranspose ? 'surveyAssistantPromptSectionHintTranspose' : 'surveyAssistantPromptSectionHint')|trans"/>
 
             {# Ticking is what keeps the prompt usable: one type ticked gives exactly the « prompt for
                that type », and a questionnaire that only wants des échelles has no use for the four
@@ -139,10 +134,8 @@
         </div>
     </div>
 
-    <div class="cm-actionbar">
-        <div class="cm-actionbar__buttons">
-            <a href="{{ path('app_survey_import') }}" class="btn btn-link">{{ 'surveyAssistantBackActionLabel'|trans }}</a>
-            <button type="submit" form="surveyAssistantPrompt" class="btn btn-primary">{{ 'surveyAssistantPromptContinueActionLabel'|trans }}</button>
-        </div>
-    </div>
+    <twig:Cm:ActionBar>
+        <a href="{{ path('app_survey_import') }}" class="btn btn-link">{{ 'surveyAssistantBackActionLabel'|trans }}</a>
+        <button type="submit" form="surveyAssistantPrompt" class="btn btn-primary">{{ 'surveyAssistantPromptContinueActionLabel'|trans }}</button>
+    </twig:Cm:ActionBar>
 {% endblock %}

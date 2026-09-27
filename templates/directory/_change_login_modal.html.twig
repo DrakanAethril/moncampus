@@ -58,9 +58,7 @@
                         </p>
                     {% endif %}
 
-                    <div class="cm-subhead mt-4 mb-2">
-                        <div class="cm-subhead__title">{{ 'ldapAccountChangeLoginConsequencesTitle'|trans }}</div>
-                    </div>
+                    <twig:Cm:Subhead class="mt-4 mb-2" :title="'ldapAccountChangeLoginConsequencesTitle'|trans"/>
                     <ul class="cm-conseq">
                         <li><span class="cm-conseq__mark">→</span><span>{{ 'ldapAccountChangeLoginConsequenceFolderHtml'|trans({'%old%': editedUser.username})|raw }}</span></li>
                         <li><span class="cm-conseq__mark">→</span><span>{{ 'ldapAccountChangeLoginConsequenceSessionHtml'|trans|raw }}</span></li>

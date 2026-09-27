@@ -84,10 +84,7 @@
 
         <div class="card mb-3" data-controller="copy-block">
             <div class="card-body d-flex flex-column gap-3">
-                <div class="cm-subhead">
-                    <div class="cm-subhead__title">{{ 'sequenceImportHowToSectionTitle'|trans }}</div>
-                    <div class="cm-subhead__hint">{{ 'sequenceImportHowToSectionHint'|trans }}</div>
-                </div>
+                <twig:Cm:Subhead :title="'sequenceImportHowToSectionTitle'|trans" :hint="'sequenceImportHowToSectionHint'|trans"/>
 
                 {# No provider is named and no link leaves the application: imposing one on a school
                    to save a paste is a bad trade. Attaching the files is recommended out loud, or

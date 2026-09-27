@@ -1,6 +1,12 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ (isEdit ? 'announcementEditPageHeading' : 'announcementNewPageHeading')|trans }}{% endblock %}
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'announcementsPageHeading'|trans, url: path('app_announcements')},
+        {label: (isEdit ? 'announcementEditPageHeading' : 'announcementNewPageHeading')|trans, url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
 {% block page_title %}{{ (isEdit ? 'announcementEditPageHeading' : 'announcementNewPageHeading')|trans }}{% endblock %}
 
 {% block main %}

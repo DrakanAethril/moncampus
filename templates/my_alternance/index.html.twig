@@ -2,9 +2,17 @@
 
 {% block title %}{{ 'myAlternanceNavLabel'|trans }}{% endblock %}
 
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'myAlternanceNavLabel'|trans, url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
 {% block page_header %}
     <div class="page-header d-print-none">
         <div class="container-xl">
+            {# This screen draws its own header (the sub-line under the title), so the layout's slot for
+               the trail is not rendered: it has to be called here. #}
+            {{ block('page_breadcrumb') }}
             <div class="row g-2 align-items-center">
                 <div class="col">
                     <h2 class="page-title">{{ 'myAlternanceNavLabel'|trans }}</h2>
@@ -31,7 +39,7 @@
     {% else %}
         {% if banner %}
             <div class="cm-dash-banner">
-                <span class="cm-dash-banner__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 8v5"></path><path d="M12 16.5v.01"></path><circle cx="12" cy="12" r="9"></circle></svg></span>
+                <span class="cm-dash-banner__icon"><twig:ux:icon name="alert-circle" width="20" height="20"/></span>
                 {% if banner.type == 'yourTurn' %}
                     <span class="cm-dash-banner__body">
                         <span class="cm-dash-banner__title">{{ 'myAlternanceBannerYourTurnTitle'|trans({'%period%': banner.period.name}) }}</span>

@@ -1,6 +1,13 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ (isEdit ? 'editFinancialItemPageHeading' : 'newFinancialItemPageHeading')|trans }} - {{ program.displayShortName }}{% endblock %}
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'programSettingsNavLabel'|trans, url: path('app_program_settings', {id: program.id})},
+        {label: program.displayShortName, url: path('app_program_settings_financial', {id: program.id})},
+        {label: (isEdit ? 'editFinancialItemPageHeading' : 'newFinancialItemPageHeading')|trans, url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
 {% block page_title %}{{ (isEdit ? 'editFinancialItemPageHeading' : 'newFinancialItemPageHeading')|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block main %}

@@ -30,12 +30,10 @@
                             <span>{{ 'engagementPendingNoteText'|trans }}</span>
                         </div>
 
-                        <div class="cm-actionbar">
-                            <div class="cm-actionbar__buttons">
-                                <a href="{{ path('app_game') }}" class="cm-btn cm-btn--outline">{{ 'cancelAction'|trans }}</a>
-                                <button type="submit" class="cm-btn cm-btn--primary">{{ 'engagementFileAction'|trans }}</button>
-                            </div>
-                        </div>
+                        <twig:Cm:ActionBar>
+                            <a href="{{ path('app_game') }}" class="cm-btn cm-btn--outline">{{ 'cancelAction'|trans }}</a>
+                            <button type="submit" class="cm-btn cm-btn--primary">{{ 'engagementFileAction'|trans }}</button>
+                        </twig:Cm:ActionBar>
                     {{ form_end(form) }}
                 </div>
             </div>

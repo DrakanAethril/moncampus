@@ -18,10 +18,10 @@
     <li class="cm-picker__folder is-collapsed" data-picker-folder>
         <button type="button" class="cm-picker__folder-row" data-action="library-picker#toggle" aria-expanded="false">
             <span class="cm-picker__caret" aria-hidden="true">
-                <svg width="9" height="9" viewBox="0 0 10 10" fill="currentColor"><path d="M3 1l5 4-5 4z"></path></svg>
+                <twig:ux:icon name="caret-right" width="9" height="9"/>
             </span>
             <span class="cm-picker__ico" aria-hidden="true">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"></path></svg>
+                <twig:ux:icon name="folder" width="15" height="15"/>
             </span>
             <span class="cm-picker__folder-name">{{ row.name }}</span>
         </button>
@@ -42,7 +42,7 @@
     <li class="cm-picker__item" data-picker-item data-value="{{ item.id }}" data-label="{{ item.label }}">
         <button type="button" class="cm-picker__item-row" data-action="library-picker#choose">
             <span class="cm-picker__ico" aria-hidden="true">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"></path><path d="M14 3v5h5M9 13h6M9 17h4"></path></svg>
+                <twig:ux:icon name="file-text" width="15" height="15"/>
             </span>
             <span class="cm-picker__item-name">{{ item.label }}</span>
             {% if countLabel %}

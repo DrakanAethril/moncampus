@@ -98,12 +98,10 @@
             {% endif %}
 
             <div class="cm-fieldset">
-                <div class="cm-actionbar" style="margin-top: 0; border-top: 0; padding-top: 0;">
-                    <div class="cm-actionbar__buttons">
-                        <a href="{{ path('app_infrastructure_guests', {host: host.id}) }}" class="cm-btn cm-btn--outline">{{ 'cancelAction'|trans }}</a>
-                        <button type="submit" class="cm-btn cm-btn--primary">{{ 'proxmoxWizardNextAction'|trans }}</button>
-                    </div>
-                </div>
+                <twig:Cm:ActionBar style="margin-top: 0; border-top: 0; padding-top: 0;">
+                    <a href="{{ path('app_infrastructure_guests', {host: host.id}) }}" class="cm-btn cm-btn--outline">{{ 'cancelAction'|trans }}</a>
+                    <button type="submit" class="cm-btn cm-btn--primary">{{ 'proxmoxWizardNextAction'|trans }}</button>
+                </twig:Cm:ActionBar>
             </div>
         </div>
     </form>

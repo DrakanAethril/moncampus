@@ -1,0 +1,24 @@
+{# The single footer action bar of a screen or a form (design_campus_manager README 8a/8b): a
+   faint line of context on the left, the buttons pushed to the right.
+
+   <twig:Cm:ActionBar :lastModified="quizTemplate">
+       <twig:Cm:Button variant="primary" type="submit">Enregistrer</twig:Cm:Button>
+   </twig:Cm:ActionBar>
+
+   The content is the buttons. The `meta` block is the line on the left; `lastModified` (an
+   entity using AuditableTrait) fills it with « Modifié le … par … » instead - and only once a real
+   edit has happened: lastUpdatedDate stays null until then, and there is nothing honest to claim
+   about a last modification before one exists. #}
+{% props lastModified = null %}
+{% set meta %}{% block meta %}{% endblock %}{% endset %}
+{% if meta|trim is empty and lastModified and lastModified.lastUpdatedDate %}
+    {% set meta = 'lastModifiedByMetaLabel'|trans({'%date%': lastModified.lastUpdatedDate|date('d/m/Y'), '%name%': lastModified.lastUpdatedBy.displayName ?? lastModified.lastUpdatedBy.username}) %}
+{% endif %}
+<div{{ attributes.defaults({class: 'cm-actionbar'}) }}>
+    {% if meta|trim is not empty %}
+        <span class="cm-actionbar__meta">{{ meta }}</span>
+    {% endif %}
+    <div class="cm-actionbar__buttons">
+        {% block content %}{% endblock %}
+    </div>
+</div>

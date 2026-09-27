@@ -10,7 +10,7 @@
 {% block page_title %}{{ 'ufaAlternanceDashboardPageHeading'|trans }}{% endblock %}
 {% block page_actions %}
     <a href="{{ path('app_ufa_alternance_new') }}" class="btn btn-primary">
-        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
+        <twig:ux:icon name="plus" class="icon" width="24" height="24"/>
         {{ 'ufaAlternanceNewButtonLabel'|trans }}
     </a>
 {% endblock %}
@@ -90,7 +90,7 @@
                 {{ 'ufaAlternanceFilterTestDataLabel'|trans }}
             </label>
             <span class="cm-filterbar__search">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="flex: none;"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
+                <twig:ux:icon name="search" width="14" height="14" style="flex: none;"/>
                 <input type="search" name="search" value="{{ search }}" aria-label="{{ 'ufaAlternanceFilterSearchLabel'|trans }}" placeholder="{{ 'ufaAlternanceFilterSearchPlaceholder'|trans }}" data-action="change->auto-submit#submit">
             </span>
         </form>

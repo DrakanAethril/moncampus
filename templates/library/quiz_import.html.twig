@@ -28,10 +28,7 @@
             {{ form_errors(form) }}
             <div class="row g-4 align-items-start">
                 <div class="col-12 col-lg-7 d-flex flex-column gap-3">
-                    <div class="cm-subhead">
-                        <div class="cm-subhead__title">{{ 'quizImportFileSectionTitle'|trans }}</div>
-                        <div class="cm-subhead__hint">{{ 'quizImportFileSectionHint'|trans }}</div>
-                    </div>
+                    <twig:Cm:Subhead :title="'quizImportFileSectionTitle'|trans" :hint="'quizImportFileSectionHint'|trans"/>
                     <div style="max-width: 520px;">
                         {{ form_row(form.file) }}
                     </div>
@@ -43,10 +40,7 @@
                 {# The « format » block only applies to the CSV: a Kahoot report is not written, it is
                    exported as it stands from Kahoot. #}
                 <div class="col-12 col-lg-5 d-flex flex-column gap-2">
-                    <div class="cm-subhead">
-                        <div class="cm-subhead__title">{{ (source == 'kahoot' ? 'quizImportKahootFormatSectionTitle' : 'quizImportFormatSectionTitle')|trans }}</div>
-                        <div class="cm-subhead__hint">{{ (source == 'kahoot' ? 'quizImportKahootFormatSectionHint' : 'quizImportFormatSectionHint')|trans }}</div>
-                    </div>
+                    <twig:Cm:Subhead :title="(source == 'kahoot' ? 'quizImportKahootFormatSectionTitle' : 'quizImportFormatSectionTitle')|trans" :hint="(source == 'kahoot' ? 'quizImportKahootFormatSectionHint' : 'quizImportFormatSectionHint')|trans"/>
                     <div class="d-flex flex-column align-items-start gap-1">
                         {% if source != 'kahoot' %}
                             <a href="{{ path('app_library_quiz_import_help') }}">{{ 'quizImportHelpLinkLabel'|trans }}</a>
@@ -55,12 +49,10 @@
                     </div>
                 </div>
             </div>
-            <div class="cm-actionbar">
-                <div class="cm-actionbar__buttons">
-                    <a href="{{ path('app_library_quiz') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                    <button type="submit" class="btn btn-primary">{{ 'quizImportAnalyseButtonLabel'|trans }}</button>
-                </div>
-            </div>
+            <twig:Cm:ActionBar>
+                <a href="{{ path('app_library_quiz') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                <button type="submit" class="btn btn-primary">{{ 'quizImportAnalyseButtonLabel'|trans }}</button>
+            </twig:Cm:ActionBar>
             {{ form_rest(form) }}
             {{ form_end(form) }}
         </div>

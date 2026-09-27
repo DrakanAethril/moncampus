@@ -9,6 +9,13 @@
 }[memberType] %}
 
 {% block title %}{{ routes.heading|trans }} - {{ program.displayShortName }}{% endblock %}
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'programSettingsNavLabel'|trans, url: path('app_program_settings', {id: program.id})},
+        {label: program.displayShortName, url: path(routes.tab, {id: program.id})},
+        {label: routes.heading|trans, url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
 {% block page_title %}{{ routes.heading|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block main %}

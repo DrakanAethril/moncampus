@@ -31,10 +31,7 @@
                 </div>
 
                 <div class="col-12 col-lg-6">
-                    <div class="cm-subhead">
-                        <div class="cm-subhead__title">{{ 'laptopImportExpectedColumnsTitle'|trans }}</div>
-                        <div class="cm-subhead__hint">{{ 'laptopImportExpectedColumnsHint'|trans }}</div>
-                    </div>
+                    <twig:Cm:Subhead :title="'laptopImportExpectedColumnsTitle'|trans" :hint="'laptopImportExpectedColumnsHint'|trans"/>
                     <div class="table-responsive">
                         <table class="table table-sm table-vcenter">
                             <thead>
@@ -80,12 +77,10 @@
                 </div>
             </div>
 
-            <div class="cm-actionbar">
-                <div class="cm-actionbar__buttons">
-                    <a href="{{ path('app_laptops') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                    <button type="submit" class="btn btn-primary">{{ 'laptopImportCheckFileAction'|trans }}</button>
-                </div>
-            </div>
+            <twig:Cm:ActionBar>
+                <a href="{{ path('app_laptops') }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                <button type="submit" class="btn btn-primary">{{ 'laptopImportCheckFileAction'|trans }}</button>
+            </twig:Cm:ActionBar>
 
             {{ form_rest(form) }}
             {{ form_end(form) }}

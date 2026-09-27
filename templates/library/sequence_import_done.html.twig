@@ -16,16 +16,11 @@
        quizzes, and this is the one screen that can say so. #}
     <div class="card cm-audio-card">
         <div class="cm-audio-card__body d-flex flex-column gap-3">
-            <div class="cm-subhead">
-                <div class="cm-subhead__title">
-                    {{ 'sequenceImportDoneSummaryTemplate'|trans({
+            <twig:Cm:Subhead :title="'sequenceImportDoneSummaryTemplate'|trans({
                         '%titre%': sequenceTemplate.titre,
                         '%seances%': sequenceTemplate.seanceTemplates|length,
                         '%phases%': phaseCount,
-                    }) }}
-                </div>
-                <div class="cm-subhead__hint">{{ 'sequenceImportDoneNextTitle'|trans }}</div>
-            </div>
+                    })" :hint="'sequenceImportDoneNextTitle'|trans"/>
 
             <div class="d-flex flex-column gap-2">
                 <a class="btn" href="{{ path('app_library_sequences_show', {id: sequenceTemplate.id}) }}">

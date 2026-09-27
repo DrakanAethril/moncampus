@@ -24,7 +24,7 @@
                screen said so. It is an affordance, not a handle: the whole <li> stays draggable, so
                a drag started anywhere on the row still works. #}
             <span class="cm-wiki__node-grip" aria-hidden="true">
-                <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor"><circle cx="3" cy="3" r="1.2"></circle><circle cx="7" cy="3" r="1.2"></circle><circle cx="3" cy="7" r="1.2"></circle><circle cx="7" cy="7" r="1.2"></circle><circle cx="3" cy="11" r="1.2"></circle><circle cx="7" cy="11" r="1.2"></circle></svg>
+                <twig:ux:icon name="grip" width="10" height="14"/>
             </span>
         {% endif %}
 
@@ -34,7 +34,7 @@
                     aria-expanded="{{ expanded ? 'true' : 'false' }}"
                     aria-label="{{ 'wikiToggleBranchAction'|trans({'%title%': entry.title}) }}"
                     data-action="wiki-tree#toggleBranch">
-                <svg width="9" height="9" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true"><path d="M3 1l5 4-5 4z"></path></svg>
+                <twig:ux:icon name="caret-right" width="9" height="9"/>
             </button>
         {% else %}
             {# Keeps the titles of childless pages on the same left edge as their siblings'. #}
@@ -59,7 +59,7 @@
                     <button type="submit" class="cm-wiki__node-action"
                             title="{{ 'wikiAddChildPageAction'|trans }}"
                             aria-label="{{ 'wikiAddChildPageOfAction'|trans({'%title%': entry.title}) }}">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+                        <twig:ux:icon name="plus" width="14" height="14"/>
                     </button>
                 </form>
 
@@ -73,7 +73,7 @@
                             data-controller="confirm-submit"
                             data-confirm-submit-message-value="{{ 'wikiDeleteNodeConfirmText'|trans({'%title%': entry.title}) }}"
                             data-action="click->confirm-submit#confirm">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"></path></svg>
+                        <twig:ux:icon name="trash" width="14" height="14"/>
                     </button>
                 </form>
             </span>

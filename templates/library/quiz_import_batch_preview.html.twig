@@ -74,10 +74,7 @@
         {% for quiz in quizzes %}
             <div class="card" data-quiz-import-batch-target="panel" hidden>
                 <div class="card-body">
-                    <div class="cm-subhead">
-                        <div class="cm-subhead__title">{{ 'quizBatchPanelTitleTemplate'|trans({'%number%': loop.index, '%total%': quizzes|length}) }}</div>
-                        <div class="cm-subhead__hint">{{ quiz.payload.fileName }}</div>
-                    </div>
+                    <twig:Cm:Subhead :title="'quizBatchPanelTitleTemplate'|trans({'%number%': loop.index, '%total%': quizzes|length})" :hint="quiz.payload.fileName"/>
 
                     {% if quiz.payload.errors is not empty %}
                         {# Lines the reader could not use. Listed rather than blocking, exactly as on
@@ -101,10 +98,7 @@
 
                     <div class="row g-4 align-items-start">
                         <div class="col-12 col-lg-5 d-flex flex-column gap-3">
-                            <div class="cm-subhead">
-                                <div class="cm-subhead__title">{{ 'quizSettingsIdentityTitle'|trans }}</div>
-                                <div class="cm-subhead__hint">{{ 'quizImportPreviewIdentityHint'|trans }}</div>
-                            </div>
+                            <twig:Cm:Subhead :title="'quizSettingsIdentityTitle'|trans" :hint="'quizImportPreviewIdentityHint'|trans"/>
                             <div>
                                 <label class="form-label" for="quiz-batch-name-{{ quiz.index }}">{{ 'quizTemplateNameFieldLabel'|trans }}</label>
                                 <input type="text" class="form-control" id="quiz-batch-name-{{ quiz.index }}"
@@ -137,10 +131,7 @@
                         </div>
 
                         <div class="col-12 col-lg-7 d-flex flex-column gap-2">
-                            <div class="cm-subhead">
-                                <div class="cm-subhead__title">{{ 'quizImportPreviewQuestionsTitleTemplate'|trans({'%count%': quiz.questions|length}) }}</div>
-                                <div class="cm-subhead__hint">{{ 'quizImportPreviewQuestionsHint'|trans }}</div>
-                            </div>
+                            <twig:Cm:Subhead :title="'quizImportPreviewQuestionsTitleTemplate'|trans({'%count%': quiz.questions|length})" :hint="'quizImportPreviewQuestionsHint'|trans"/>
                             <div class="d-flex flex-column gap-2" style="max-height: 640px; overflow-y: auto;">
                                 {% for question in quiz.questions %}
                                     {% include 'library/_quiz_import_preview_question.html.twig' with {
@@ -159,11 +150,9 @@
 
         <div class="cm-audio-warn mt-3" data-quiz-import-batch-target="empty" hidden>{{ 'quizBatchNothingSelectedHint'|trans }}</div>
 
-        <div class="cm-actionbar">
-            <div class="cm-actionbar__buttons">
-                <a href="{{ path('app_library_quiz_assistant_paste') }}" class="btn btn-link">{{ 'quizBatchBackLabel'|trans }}</a>
-                <button type="submit" class="btn btn-primary" data-quiz-import-batch-target="submit">{{ 'quizBatchConfirmTemplate'|trans({'%count%': quizzes|length}) }}</button>
-            </div>
-        </div>
+        <twig:Cm:ActionBar>
+            <a href="{{ path('app_library_quiz_assistant_paste') }}" class="btn btn-link">{{ 'quizBatchBackLabel'|trans }}</a>
+            <button type="submit" class="btn btn-primary" data-quiz-import-batch-target="submit">{{ 'quizBatchConfirmTemplate'|trans({'%count%': quizzes|length}) }}</button>
+        </twig:Cm:ActionBar>
     </form>
 {% endblock %}

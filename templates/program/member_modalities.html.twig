@@ -3,6 +3,13 @@
 {# Expects `member` (the User whose modalities are being edited), `program`, `form`, and
    `backRoute` (the students settings tab route name to return to). #}
 {% block title %}{{ 'memberModalitiesPageHeading'|trans }} - {{ member.displayName ?? member.username }}{% endblock %}
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'programSettingsNavLabel'|trans, url: path('app_program_settings', {id: program.id})},
+        {label: program.displayShortName, url: path(backRoute, {id: program.id})},
+        {label: 'memberModalitiesPageHeading'|trans ~ ' - ' ~ (member.displayName ?? member.username), url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
 {% block page_title %}{{ 'memberModalitiesPageHeading'|trans }} - {{ member.displayName ?? member.username }}{% endblock %}
 
 {% block main %}
