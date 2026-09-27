@@ -19,6 +19,7 @@ use App\Repository\OAuthClientRepository;
 use App\Repository\UserRepository;
 use App\Security\ExternalServicePasswords;
 use App\Security\FeatureAccess;
+use App\Security\LoginEmailResolver;
 use App\Security\PlatformPasswordCheckUnavailable;
 use App\Service\PlatformActivityRecorder;
 use Doctrine\ORM\EntityManagerInterface;
@@ -72,6 +73,7 @@ class AuthorizeController extends AbstractController
         ClockInterface $clock,
         ExternalServicePasswords $servicePasswords,
         UserRepository $users,
+        LoginEmailResolver $emails,
         FeatureAccess $featureAccess,
         #[Target('external_service_sign_in')] RateLimiterFactoryInterface $limiter,
     ): Response {
@@ -154,13 +156,22 @@ class AuthorizeController extends AbstractController
         // somebody who is not.
         $username = $sessionUser?->getUserIdentifier() ?? $this->parameter($parameters, 'username');
 
-        foreach (['ip:'.$request->getClientIp(), 'user:'.mb_strtolower($username)] as $key) {
+        // The identifier, or the confirmed contact address - the same two the login screen accepts
+        // (App\Security\LoginEmailResolver), so the field means what its label says.
+        $user = match (true) {
+            '' === $username => null,
+            str_contains($username, '@') => $emails->resolve($username),
+            default => $users->findOneBy(['username' => $username]),
+        };
+
+        // Keyed on the account once it is known rather than on what was typed, so alternating its
+        // identifier and its address does not double the attempts on it.
+        $accountKey = $user instanceof User ? 'account:'.$user->getId() : 'user:'.mb_strtolower($username);
+        foreach (['ip:'.$request->getClientIp(), $accountKey] as $key) {
             if (!$limiter->create($key)->consume()->isAccepted()) {
                 return $screen('externalServiceSignInTooManyAttemptsMessage', Response::HTTP_TOO_MANY_REQUESTS, $username);
             }
         }
-
-        $user = '' === $username ? null : $users->findOneBy(['username' => $username]);
 
         try {
             $signIn = $servicePasswords->check($user, self::SERVICE, (string) $request->request->get('servicePassword', ''));

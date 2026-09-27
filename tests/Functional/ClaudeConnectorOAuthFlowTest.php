@@ -185,6 +185,23 @@ class ClaudeConnectorOAuthFlowTest extends FunctionalTestCase
         self::assertStringStartsWith(self::REDIRECT.'?code=', (string) $this->client->getResponse()->headers->get('Location'));
     }
 
+    public function testTheConfirmedContactAddressIdentifiesToo(): void
+    {
+        $teacher = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'prof.claude');
+        $teacher->setContactEmail('prof.claude@example.test');
+        $teacher->setContactEmailVerifiedAt(new \DateTimeImmutable());
+        $this->setServicePassword($teacher);
+        $clientId = $this->registeredClient();
+
+        $crawler = $this->client->request('GET', '/oauth/authorize?'.$this->authorizationQuery($clientId));
+        $this->client->submit($crawler->selectButton('Autoriser')->form([
+            'username' => 'prof.claude@example.test',
+            'servicePassword' => self::SERVICE_PASSWORD,
+        ]));
+
+        self::assertStringStartsWith(self::REDIRECT.'?code=', (string) $this->client->getResponse()->headers->get('Location'));
+    }
+
     public function testTheEstablishmentPasswordOpensNothingHere(): void
     {
         $teacher = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'prof.claude');
@@ -201,6 +218,27 @@ class ClaudeConnectorOAuthFlowTest extends FunctionalTestCase
         self::assertNull($this->client->getResponse()->headers->get('Location'));
         self::assertStringContainsString('Identifiant ou mot de passe du service incorrect', (string) $this->client->getResponse()->getContent());
         self::assertSame([], static::getContainer()->get(OAuthGrantRepository::class)->findBy(['user' => $teacher]));
+    }
+
+    public function testGuessingTheServicePasswordIsCappedPerAccount(): void
+    {
+        $teacher = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'prof.claude');
+        $this->setServicePassword($teacher);
+        $clientId = $this->registeredClient();
+        $query = '/oauth/authorize?'.$this->authorizationQuery($clientId);
+
+        for ($attempt = 1; $attempt <= 11; ++$attempt) {
+            $crawler = $this->client->request('GET', $query);
+            // A new address each time: the cap that matters is the account's.
+            $this->client->setServerParameter('REMOTE_ADDR', '10.9.8.'.$attempt);
+            $this->client->submit($crawler->selectButton('Autoriser')->form(['username' => 'prof.claude', 'servicePassword' => 'Mauvais-Essai#'.$attempt]));
+        }
+        $this->assertResponseStatusCodeSame(429);
+
+        // Even the right password waits now.
+        $crawler = $this->client->request('GET', $query);
+        $this->client->submit($crawler->selectButton('Autoriser')->form(['username' => 'prof.claude', 'servicePassword' => self::SERVICE_PASSWORD]));
+        $this->assertResponseStatusCodeSame(429);
     }
 
     public function testTheEstablishmentPasswordCannotBeChosenAsServicePassword(): void
