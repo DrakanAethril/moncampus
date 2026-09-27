@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Mcp\Tool;
 
 use App\Entity\FileLibraryNode;
+use App\Entity\LessonLogAttachment;
 use App\Entity\LibraryResource;
 use App\Enum\Feature;
 use App\Mcp\McpLibraryAccess;
@@ -19,10 +20,12 @@ use Doctrine\ORM\EntityManagerInterface;
 
 /**
  * The teacher's bibliothèque de fichiers - one folder, or a search across it - with, for each file,
- * the séquences, séances and phases it is attached to. That last part is what lets Claude start from
- * « the files of my VLAN séquence » as well as from a file nobody attached anywhere yet.
+ * the séquences, séances, phases and cahiers de texte it is attached to. That last part is what lets
+ * Claude start from « the files of my VLAN séquence » as well as from a file nobody attached anywhere
+ * yet.
  *
- * The attachments come from one query over App\Entity\LibraryResource. The other places a file can
+ * The attachments come from one query over App\Entity\LibraryResource and one over
+ * App\Entity\LessonLogAttachment - the two kinds of attachment this connector writes. The other places a file can
  * serve (a travail, a class share, a wiki page…) are listed by file_read, one file at a time:
  * App\Service\FileLibraryLinks asks ten tables per file, which a folder of a hundred would multiply.
  */
@@ -48,7 +51,7 @@ final readonly class FileListTool implements McpTool
 
     public function description(): string
     {
-        return 'Liste la bibliothèque de fichiers de l\'enseignant : le contenu d\'un dossier (folderId, la racine par défaut) ou une recherche par nom dans toute la bibliothèque (query). Chaque fichier indique les séquences, séances et phases auxquelles il est rattaché ; `linked: "unlinked"` ne garde que les fichiers rattachés nulle part, `"linked"` que ceux qui le sont. Renvoie aussi l\'arborescence des dossiers. Les fichiers se lisent avec file_read.';
+        return 'Liste la bibliothèque de fichiers de l\'enseignant : le contenu d\'un dossier (folderId, la racine par défaut) ou une recherche par nom dans toute la bibliothèque (query). Chaque fichier indique les séquences, séances, phases et cahiers de texte (kind « lesson_log », id = sessionId) auxquels il est rattaché ; `linked: "unlinked"` ne garde que les fichiers rattachés nulle part, `"linked"` que ceux qui le sont. Renvoie aussi l\'arborescence des dossiers. Les fichiers se lisent avec file_read.';
     }
 
     public function inputSchema(): array
@@ -152,6 +155,31 @@ final readonly class FileListTool implements McpTool
                 null !== $resource->getSeanceTemplate() => ['kind' => 'seance', 'id' => $resource->getSeanceTemplate()->getId(), 'title' => $resource->getSeanceTemplate()->getTitre()],
                 default => ['kind' => 'sequence', 'id' => $resource->getSequenceTemplate()?->getId(), 'title' => $resource->getSequenceTemplate()?->getTitre()],
             };
+        }
+
+        /** @var list<LessonLogAttachment> $lessonLogDocuments */
+        $lessonLogDocuments = $this->entityManager->createQueryBuilder()
+            ->select('a', 'l', 's')
+            ->from(LessonLogAttachment::class, 'a')
+            ->join('a.lessonLog', 'l')
+            ->join('l.lessonSession', 's')
+            ->where('a.libraryNode IN (:files)')
+            ->setParameter('files', $files)
+            ->getQuery()
+            ->getResult();
+
+        foreach ($lessonLogDocuments as $document) {
+            $node = $document->getLibraryNode();
+            $session = $document->getLessonLog()?->getLessonSession();
+            if (null === $node || null === $session) {
+                continue;
+            }
+
+            $attachments[(int) $node->getId()][] = [
+                'kind' => 'lesson_log',
+                'id' => $session->getId(),
+                'title' => \sprintf('%s - %s', $session->getDay()?->format('d/m/Y'), $session->getDisplayName()),
+            ];
         }
 
         return $attachments;

@@ -138,7 +138,7 @@ final readonly class LessonLogWriteTool implements McpTool
         $occupied = [];
         foreach (array_keys($contents) as $part) {
             if (!$replace && SeanceContentResolver::saysSomething($log->getContent(LessonLogSection::from($part)))) {
-                $occupied[] = $this->label(LessonLogSection::from($part));
+                $occupied[] = McpTimetable::sectionLabel(LessonLogSection::from($part));
             }
         }
         if ([] !== $occupied) {
@@ -173,8 +173,8 @@ final readonly class LessonLogWriteTool implements McpTool
                 'Cahier de texte du %s (%s) enregistré : %s. Visibilité pour les étudiants - %s. À vérifier ici : %s',
                 $session->getDay()?->format('d/m/Y'),
                 $session->getDisplayName(),
-                [] === $contents ? 'visibilité seule' : implode(', ', array_map(fn (string $part): string => $this->label(LessonLogSection::from($part)), array_keys($contents))),
-                implode(', ', array_map(fn (LessonLogSection $section): string => $this->label($section).' : '.$this->visibilityLabel($log, $section), LessonLogSection::cases())),
+                [] === $contents ? 'visibilité seule' : implode(', ', array_map(fn (string $part): string => McpTimetable::sectionLabel(LessonLogSection::from($part)), array_keys($contents))),
+                implode(', ', array_map(fn (LessonLogSection $section): string => McpTimetable::sectionLabel($section).' : '.McpTimetable::visibilityLabel($log, $section), LessonLogSection::cases())),
                 $url,
             ),
             [
@@ -190,34 +190,15 @@ final readonly class LessonLogWriteTool implements McpTool
     private function html(string $markdown, LessonLogSection $section): string
     {
         if (mb_strlen($markdown) > self::MAX_LENGTH) {
-            throw new McpToolException(\sprintf('La partie « %s » dépasse %d caractères.', $this->label($section), self::MAX_LENGTH));
+            throw new McpToolException(\sprintf('La partie « %s » dépasse %d caractères.', McpTimetable::sectionLabel($section), self::MAX_LENGTH));
         }
 
         $html = $this->sanitizer->sanitize((string) MarkdownRenderer::toRichHtml($markdown));
 
         if (!SeanceContentResolver::saysSomething($html)) {
-            throw new McpToolException(\sprintf('La partie « %s » ne contient aucun texte une fois mise en forme.', $this->label($section)));
+            throw new McpToolException(\sprintf('La partie « %s » ne contient aucun texte une fois mise en forme.', McpTimetable::sectionLabel($section)));
         }
 
         return $html;
-    }
-
-    private function label(LessonLogSection $section): string
-    {
-        return match ($section) {
-            LessonLogSection::Before => 'avant',
-            LessonLogSection::During => 'pendant',
-            LessonLogSection::After => 'après',
-        };
-    }
-
-    private function visibilityLabel(LessonLog $log, LessonLogSection $section): string
-    {
-        return match ($log->getVisibility($section)) {
-            LessonLogVisibility::Hidden => 'masquée',
-            LessonLogVisibility::Now => 'visible',
-            LessonLogVisibility::AfterSession => 'visible à la fin de la séance',
-            LessonLogVisibility::Scheduled => 'programmée au '.$log->getVisibleAt($section)?->format('d/m/Y H:i'),
-        };
     }
 }
