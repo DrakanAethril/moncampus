@@ -287,13 +287,10 @@
                                 {{ form_row(form.explanation) }}
                             </div>
                         </div>
-                        <div class="cm-actionbar">
-                            {% include '_last_modified_meta.html.twig' with {entity: quizTemplate} %}
-                            <div class="cm-actionbar__buttons">
-                                <a href="{{ path('app_library_quiz_questions', {id: quizTemplate.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-                                {{ form_widget(form.submit) }}
-                            </div>
-                        </div>
+                        <twig:Cm:ActionBar :lastModified="quizTemplate">
+                            <a href="{{ path('app_library_quiz_questions', {id: quizTemplate.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+                            {{ form_widget(form.submit) }}
+                        </twig:Cm:ActionBar>
                         {{ form_rest(form) }}
                         {{ form_end(form) }}
 

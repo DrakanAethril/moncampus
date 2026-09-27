@@ -206,11 +206,9 @@
             </div>
         </div>
 
-        <div class="cm-actionbar">
-            <span class="cm-actionbar__meta">{{ 'gameSettingsScopeNoteText'|trans }}</span>
-            <div class="cm-actionbar__buttons">
-                <button type="submit" class="cm-btn cm-btn--primary">{{ 'submitSaveAction'|trans }}</button>
-            </div>
-        </div>
+        <twig:Cm:ActionBar>
+            <twig:block name="meta">{{ 'gameSettingsScopeNoteText'|trans }}</twig:block>
+            <button type="submit" class="cm-btn cm-btn--primary">{{ 'submitSaveAction'|trans }}</button>
+        </twig:Cm:ActionBar>
     </form>
 {% endblock %}

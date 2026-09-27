@@ -50,7 +50,7 @@
            service built from what they are entitled to know about. #}
         {% for reason in row.item.lockReasons %}
             <span class="cm-lockwhy">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+                <twig:ux:icon name="lock" width="12" height="12" stroke-width="2.2"/>
                 {{ reason }}
             </span>
         {% endfor %}

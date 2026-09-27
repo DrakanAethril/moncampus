@@ -393,11 +393,27 @@ of being recopied: **new markup uses the component, never the raw `cm-*` classes
 | `Cm:Tabs` | `_tabs.html.twig` (deleted) | the `action` block renders in the *caller's* context, so its partial sees the screen's variables |
 | `Cm:Badge` | `<span class="cm-badge cm-badge--…">` | `:of="value"` reads text and colour from a `HasBadge` enum; a hand-typed `tone` must be a `BadgeTone` |
 | `Cm:Button` | `<a/button class="cm-btn …">` | `<a>` with an `href`, else a `<button type="button">`; refuses a variant `app.css` does not draw |
+| `Cm:ActionBar` | `<div class="cm-actionbar">` + `__meta` + `__buttons` | content = the buttons, pushed right; `meta` block on the left; `:lastModified="entity"` writes « Modifié le … par … » only once a real edit exists (replaces `_last_modified_meta.html.twig`, deleted) |
+| `Cm:Subhead` | `<div class="cm-subhead">` + `__title` + `__hint` | `:title` / `:hint` are text, escaped; an `action` block goes on the right |
+
+**Icons** are `symfony/ux-icons`, not a component of ours: one SVG file per icon in `assets/icons/`
+(`folder`, `pencil`, `trash`, `lock`, `plus`…), drawn for the handoffs, rendered with
+`<twig:ux:icon name="folder" width="15" height="15"/>` — or `ux_icon('send', {…})` inside a Twig
+string. The file carries the viewBox and the stroke; an attribute at the call site wins, which is
+how one drawing serves at 12 px and at 20 px. Iconify is switched off in
+`config/packages/ux_icons.yaml`: an unknown name is an error, never a download. Production renders
+nothing for a missing icon rather than fail the page, so `tests/Functional/IconNamesTest.php` checks
+every name a template uses. About 90 `<svg>` stay inline - drawings used once, the Tabler sprite `<use>`s, the
+store logos; a second use is when one becomes a file.
 
 Two call styles, one choice each: `{{ component('Cm:Breadcrumb', {segments: [...]}) }}` when only
 props are passed (a long Twig literal reads better outside an HTML attribute), `<twig:Cm:Tabs
-:tabs="...">` + `<twig:block name="action">` when a block is. Breadcrumb and Tabs are migrated
-everywhere; Button and Badge are migrated **as screens are touched** — some 265 hand-written
+:tabs="...">` + `<twig:block name="action">` when a block is. Breadcrumb, Tabs, Subhead
+(all but a handful whose head carries more than one title and one hint) and the ActionBar in its standard shape are
+migrated everywhere. **24 action bars are deliberately left raw**: primary button on the left
+(content-share duplication), `justify-content-end`, buttons split across both sides - each a layout
+decision, not a leftover, to make with the handoff open. Button and Badge are migrated **as screens
+are touched** — some 265 hand-written
 `cm-btn` and 838 Bootstrap `btn` remain, and that is the backlog, not a second convention.
 `tests/Twig/Components/CmComponentsTest.php` pins each component's markup.
 
@@ -425,10 +441,11 @@ rather than duplicating the block — see `templates/audio_recording/_breadcrumb
 `templates/activity/history.html.twig`. Deliberately suppressing the breadcrumb (`{% block
 page_breadcrumb %}{% endblock %}`) is rare and should carry a comment saying why, as
 `templates/profile/index.html.twig` does — the convention test refuses an empty block without one.
-The rule's first sentence is not yet true: **37 authenticated screens have no `page_breadcrumb` block
-at all** (measured 2026-09-27: `program/timetable`, the weekly template, `signup_list/*`,
-`ticket/my_tickets`, the internship evaluation screens…). The test only checks the trails that
-exist; giving those 37 theirs is a sweep of its own, each trail being a navigation decision.
+The same test refuses an authenticated screen with no trail at all, and a screen that redraws the
+whole `page_header` without calling the trail inside it (`{{ block('page_breadcrumb') }}`, as
+`templates/my_alternance/index.html.twig` does). The 37 screens that had none were given theirs on
+2026-09-27; the sequence library's show/edit screens walk the séquence's folders like the quiz
+screens do (`SequenceLibraryFolderTrait::sequenceFolderTrailOf()`, owner only).
 
 The WYSIWYG editor is **HugeRTE** (MIT TinyMCE fork), vendored under **`public/hugerte/`** and loaded by
 a plain `<script src="/hugerte/hugerte.min.js">`, *not* through AssetMapper. This is deliberate: HugeRTE

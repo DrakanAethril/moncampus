@@ -35,10 +35,7 @@
             <input type="hidden" name="path" value="transpose">
             <button type="submit" class="card cm-audio-card cm-import-choice w-100 text-start border-0">
                 <div class="cm-audio-card__body">
-                    <div class="cm-subhead">
-                        <div class="cm-subhead__title">{{ 'surveyAssistantPathTransposeTitle'|trans }}</div>
-                        <div class="cm-subhead__hint">{{ 'surveyAssistantPathTransposeHint'|trans }}</div>
-                    </div>
+                    <twig:Cm:Subhead :title="'surveyAssistantPathTransposeTitle'|trans" :hint="'surveyAssistantPathTransposeHint'|trans"/>
                     <div class="cm-import-choice__meta">
                         <span class="cm-audio-pill">{{ 'surveyAssistantPathTransposeDurationLabel'|trans }}</span>
                         <span class="cm-import-choice__arrow" aria-hidden="true">→</span>
@@ -54,10 +51,7 @@
             <input type="hidden" name="path" value="subject">
             <button type="submit" class="card cm-audio-card cm-import-choice w-100 text-start border-0">
                 <div class="cm-audio-card__body">
-                    <div class="cm-subhead">
-                        <div class="cm-subhead__title">{{ 'surveyAssistantPathSubjectTitle'|trans }}</div>
-                        <div class="cm-subhead__hint">{{ 'surveyAssistantPathSubjectHint'|trans }}</div>
-                    </div>
+                    <twig:Cm:Subhead :title="'surveyAssistantPathSubjectTitle'|trans" :hint="'surveyAssistantPathSubjectHint'|trans"/>
                     <div class="cm-import-choice__meta">
                         <span class="cm-import-choice__arrow" aria-hidden="true">→</span>
                     </div>

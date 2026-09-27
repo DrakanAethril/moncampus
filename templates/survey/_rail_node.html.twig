@@ -16,7 +16,7 @@
     data-folder-id="{{ row.id }}" data-name="{{ row.name }}" draggable="true">
     <div class="cm-slib__node-row">
         <span class="cm-slib__node-grip" aria-hidden="true">
-            <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor"><circle cx="3" cy="3" r="1.2"></circle><circle cx="7" cy="3" r="1.2"></circle><circle cx="3" cy="7" r="1.2"></circle><circle cx="7" cy="7" r="1.2"></circle><circle cx="3" cy="11" r="1.2"></circle><circle cx="7" cy="11" r="1.2"></circle></svg>
+            <twig:ux:icon name="grip" width="10" height="14"/>
         </span>
 
         {% if hasChildren %}
@@ -25,7 +25,7 @@
                     aria-expanded="{{ expanded ? 'true' : 'false' }}"
                     aria-label="{{ 'surveyFolderToggleBranchAction'|trans({'%name%': row.name}) }}"
                     data-action="survey-library-tree#toggleBranch">
-                <svg width="9" height="9" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true"><path d="M3 1l5 4-5 4z"></path></svg>
+                <twig:ux:icon name="caret-right" width="9" height="9"/>
             </button>
         {% else %}
             <span class="cm-slib__node-toggle cm-slib__node-toggle--empty" aria-hidden="true"></span>
@@ -34,7 +34,7 @@
         <a class="cm-slib__node-link{{ currentFolder and currentFolder.id == row.id ? ' is-current' }}"
            href="{{ path('app_surveys_templates_folder', {folderId: row.id}) }}" title="{{ row.name }}">
             <span class="cm-slib__node-ico" aria-hidden="true">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"></path></svg>
+                <twig:ux:icon name="folder" width="15" height="15"/>
             </span>
             <span class="cm-slib__node-title">{{ row.name }}</span>
         </a>
@@ -53,7 +53,7 @@
                         title="{{ 'surveyFolderRenameAction'|trans }}"
                         aria-label="{{ 'surveyFolderRenameNamedAction'|trans({'%name%': row.name}) }}"
                         data-action="survey-library#promptRenameFolder">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4l9.5-9.5a2.1 2.1 0 0 0-3-3L5 17v3"></path><path d="M13.5 6.5l3 3"></path></svg>
+                    <twig:ux:icon name="pencil" width="14" height="14"/>
                 </button>
             {% endif %}
 
@@ -68,7 +68,7 @@
                         data-controller="confirm-submit"
                         data-confirm-submit-message-value="{{ 'surveyFolderDeleteConfirmText'|trans({'%name%': row.name}) }}"
                         data-action="click->confirm-submit#confirm">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"></path></svg>
+                    <twig:ux:icon name="trash" width="14" height="14"/>
                 </button>
             </form>
         </span>

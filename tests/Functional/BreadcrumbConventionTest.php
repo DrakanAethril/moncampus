@@ -45,6 +45,37 @@ class BreadcrumbConventionTest extends TestCase
         self::assertSame([], $offenders, 'These breadcrumbs do not go through Cm:Breadcrumb.');
     }
 
+    /**
+     * « Every authenticated screen fills the page_breadcrumb block » - a screen that reaches the app
+     * layout without one simply shows no trail, which nothing else would ever notice. Partials
+     * (`_*.html.twig`) are not screens. A screen that redraws the whole page header must call the
+     * trail itself, since the layout's slot for it lives inside that header.
+     */
+    public function testEveryAuthenticatedScreenHasATrail(): void
+    {
+        $sources = iterator_to_array($this->templates());
+        $offenders = [];
+        foreach ($sources as $path => $source) {
+            if (str_starts_with(basename($path), '_') || !$this->reachesAppLayout($path, $sources)) {
+                continue;
+            }
+            $header = $this->blockBody($source, 'page_header');
+            if (null !== $header) {
+                $drawn = str_contains($header, 'Cm:Breadcrumb') || str_contains($header, "block('page_breadcrumb')");
+                $suppressed = '' === trim((string) preg_replace('/\{#.*?#\}/s', '', $header)) && str_contains($source, '{#');
+                if (!$drawn && !$suppressed) {
+                    $offenders[] = $path.' (redraws page_header without the trail)';
+                }
+                continue;
+            }
+            if (!$this->definesBreadcrumb($path, $sources)) {
+                $offenders[] = $path;
+            }
+        }
+
+        self::assertSame([], $offenders, 'These screens show no breadcrumb.');
+    }
+
     public function testNoTemplateWritesAccueilIntoATrail(): void
     {
         $allowed = ['components/Cm/Breadcrumb.html.twig', 'layout/app.html.twig'];
@@ -56,6 +87,41 @@ class BreadcrumbConventionTest extends TestCase
         }
 
         self::assertSame([], $offenders, 'Cm:Breadcrumb prepends « Accueil »; a trail must not name it again.');
+    }
+
+    /**
+     * @param array<string, string> $sources
+     */
+    private function reachesAppLayout(string $path, array $sources, int $depth = 0): bool
+    {
+        $parent = $this->parentOf($sources[$path] ?? '');
+
+        return 'layout/app.html.twig' === $parent
+            || (null !== $parent && $depth < 10 && $this->reachesAppLayout($parent, $sources, $depth + 1));
+    }
+
+    /**
+     * @param array<string, string> $sources
+     */
+    private function definesBreadcrumb(string $path, array $sources, int $depth = 0): bool
+    {
+        $source = $sources[$path] ?? '';
+        if (null !== $this->blockBody($source, 'page_breadcrumb')) {
+            return true;
+        }
+        $parent = $this->parentOf($source);
+
+        return null !== $parent && 'layout/app.html.twig' !== $parent && $depth < 10 && $this->definesBreadcrumb($parent, $sources, $depth + 1);
+    }
+
+    private function parentOf(string $source): ?string
+    {
+        return preg_match("/\\{%\\s*extends\\s+'([^']+)'/", $source, $m) ? $m[1] : null;
+    }
+
+    private function blockBody(string $source, string $block): ?string
+    {
+        return preg_match('/\{%-?\s*block '.$block.'\s*-?%\}(.*?)\{%-?\s*endblock/s', $source, $m) ? $m[1] : null;
     }
 
     private function drawsThroughComponent(string $code): bool

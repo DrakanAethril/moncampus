@@ -1,6 +1,15 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'internshipEvaluatePageHeading'|trans }} — {{ tutorLink.student.displayName ?? tutorLink.student.username }}{% endblock %}
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'ufaNavLabel'|trans, url: path('app_ufa')},
+        {label: 'ufaFormationsNavLabel'|trans, url: path('app_ufa')},
+        {label: program.displayShortName, url: path('app_ufa_formation_tutors', {id: program.id})},
+        {label: 'internshipTutorEvaluationsStatusPageHeading'|trans, url: path('app_ufa_formation_tutors_evaluations', {id: program.id})},
+        {label: 'internshipEvaluatePageHeading'|trans ~ ' — ' ~ (tutorLink.student.displayName ?? tutorLink.student.username), url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
 {% block page_title %}{{ 'internshipEvaluatePageHeading'|trans }} — {{ tutorLink.student.displayName ?? tutorLink.student.username }} ({{ period.name }}){% endblock %}
 
 {% block main %}

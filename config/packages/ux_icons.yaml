@@ -1,0 +1,19 @@
+# Full configuration reference: https://symfony.com/bundles/ux-icons/current/index.html#configuration
+#
+# The platform's icons are the SVG files of assets/icons/ - drawn for the handoffs, named by what
+# they mean (`folder`, `pencil`, `trash`…), rendered with <twig:ux:icon name="folder" width="15" …/>.
+# Each file carries its own viewBox, fill and stroke; an attribute passed at the call site wins.
+# Iconify is switched off: an icon that is not in the folder is an error, never a download.
+ux_icons:
+    default_icon_attributes: {}
+
+    iconify:
+        enabled: false
+
+    # Throw an exception if an icon is not
+    ignore_not_found: false
+
+when@prod:
+    ux_icons:
+        # Suppress exceptions for missing icons in production
+        ignore_not_found: true

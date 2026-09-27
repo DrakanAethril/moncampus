@@ -18,14 +18,14 @@
 {% block main %}
     {% if banner.type == 'late' %}
         <div class="cm-dash-banner cm-dash-banner--danger">
-            <span class="cm-dash-banner__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 8v5"></path><path d="M12 16.5v.01"></path><circle cx="12" cy="12" r="9"></circle></svg></span>
+            <span class="cm-dash-banner__icon"><twig:ux:icon name="alert-circle" width="20" height="20"/></span>
             <span class="cm-dash-banner__body">
                 <span class="cm-dash-banner__text"><strong>{{ 'internshipTutorBannerLateTitle'|trans({'%count%': banner.count}) }}</strong> — {{ 'internshipTutorBannerLateText'|trans({'%student%': banner.row.tutorLink.student.displayName ?? banner.row.tutorLink.student.username}) }}</span>
             </span>
         </div>
     {% elseif banner.type == 'toFill' %}
         <div class="cm-dash-banner">
-            <span class="cm-dash-banner__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 8v5"></path><path d="M12 16.5v.01"></path><circle cx="12" cy="12" r="9"></circle></svg></span>
+            <span class="cm-dash-banner__icon"><twig:ux:icon name="alert-circle" width="20" height="20"/></span>
             <span class="cm-dash-banner__body">
                 <span class="cm-dash-banner__title">{{ 'internshipTutorBannerToFillTitle'|trans({'%count%': banner.count}) }}</span>
                 <span class="cm-dash-banner__text">{{ banner.row.current.period.name }} — {{ banner.row.tutorLink.student.displayName ?? banner.row.tutorLink.student.username }} · {{ 'internshipTutorBannerToFillDeadline'|trans({'%date%': banner.row.current.period.endDate|date('d/m/Y')}) }}</span>
@@ -49,7 +49,7 @@
         {# The tutor has signed, the others have not: the periods stay closed. Without this case, that
            wait fell into the "vous êtes à jour" branch and pointed to the NEXT period. #}
         <div class="cm-dash-banner">
-            <span class="cm-dash-banner__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></span>
+            <span class="cm-dash-banner__icon"><twig:ux:icon name="clock" width="20" height="20" stroke-width="1.7"/></span>
             <span class="cm-dash-banner__body">
                 <span class="cm-dash-banner__title">{{ 'internshipTutorBannerWaitingEngagementTitle'|trans }}</span>
                 <span class="cm-dash-banner__text">{{ 'internshipTutorBannerWaitingEngagementText'|trans({'%student%': banner.row.tutorLink.student.displayName ?? banner.row.tutorLink.student.username}) }}</span>

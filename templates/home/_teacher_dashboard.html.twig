@@ -67,7 +67,7 @@
                                 <span class="fw-bold" style="color: var(--cm-ink); font-size: 13.5px;">{{ session.topic ? session.topic.name : session.displayName }}</span>
                                 <span class="text-secondary" style="font-size: 12px;">{{ 'homeTeacherStudentCountLabel'|trans({'%count%': class.studentCount}) }}</span>
                                 <span class="text-secondary" style="font-size: 12px;">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="vertical-align: -1px;"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+                                    <twig:ux:icon name="clock" width="12" height="12" style="vertical-align: -1px;"/>
                                     {% if session.day|date('Y-m-d') == today|date('Y-m-d') %}
                                         <strong>{{ 'homeTeacherNextSessionTodayLabel'|trans }} {{ session.startHour|date('H:i') }}</strong>
                                     {% else %}

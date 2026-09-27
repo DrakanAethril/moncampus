@@ -20,7 +20,7 @@
         <span class="cm-flib__name">
             {% if node.type.value == 'folder' %}
                 <span class="cm-flib__ext cm-flib__ext--dir" aria-hidden="true">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"></path></svg>
+                    <twig:ux:icon name="folder" width="13" height="13"/>
                 </span>
                 <a href="{{ path('app_file_library_folder', {nodeId: node.id}) }}">{{ node.name }}</a>
             {% else %}

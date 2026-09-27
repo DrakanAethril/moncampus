@@ -1,6 +1,12 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'programSyllabusPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: program.displayShortName, url: path('app_program_students', {id: program.id})},
+        {label: 'programSyllabusNavLabel'|trans, url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
 {% block page_title %}{{ 'programSyllabusPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block main %}

@@ -1,6 +1,14 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ 'internshipStudentEvaluationsStatusPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'ufaNavLabel'|trans, url: path('app_ufa')},
+        {label: 'ufaFormationsNavLabel'|trans, url: path('app_ufa')},
+        {label: program.displayShortName, url: path('app_ufa_formation_tutors', {id: program.id})},
+        {label: 'internshipStudentEvaluationsStatusPageHeading'|trans, url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
 {% block page_title %}{{ 'internshipStudentEvaluationsStatusPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block page_actions %}

@@ -86,10 +86,7 @@
         {# The second list, and the reason it exists: the resolution never refuses an offer whose
            site it does not know, so the only way to see what it decided is to read it here. Nothing
            on this block is a warning - the offers concerned were filed like the others. #}
-        <div class="cm-subhead" style="margin-top: 26px; margin-bottom: 14px">
-            <div class="cm-subhead__title">{{ 'jobboardHistoryLearningHeading'|trans }}</div>
-            <div class="cm-subhead__hint">{{ 'jobboardHistoryLearningHintText'|trans }}</div>
-        </div>
+        <twig:Cm:Subhead style="margin-top: 26px; margin-bottom: 14px" :title="'jobboardHistoryLearningHeading'|trans" :hint="'jobboardHistoryLearningHintText'|trans"/>
 
         <table class="card-table">
             <thead>
@@ -138,11 +135,9 @@
             </tbody>
         </table>
 
-        <div class="cm-actionbar">
-            <div class="cm-actionbar__meta">{{ 'jobboardHistoryLearningFooterText'|trans }}</div>
-            <div class="cm-actionbar__buttons">
-                <a class="cm-btn" href="{{ path('app_settings_jobboard_sources') }}">{{ 'jobboardHistoryLearningSourcesAction'|trans }}</a>
-            </div>
-        </div>
+        <twig:Cm:ActionBar>
+            <twig:block name="meta">{{ 'jobboardHistoryLearningFooterText'|trans }}</twig:block>
+            <a class="cm-btn" href="{{ path('app_settings_jobboard_sources') }}">{{ 'jobboardHistoryLearningSourcesAction'|trans }}</a>
+        </twig:Cm:ActionBar>
     </div>
 {% endblock %}

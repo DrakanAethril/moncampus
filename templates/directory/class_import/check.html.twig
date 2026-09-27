@@ -242,14 +242,12 @@
                         </div>
                     </div>
                 {% endif %}
-                <div class="cm-actionbar">
-                    <div class="cm-actionbar__buttons">
-                        <a href="{{ path('app_directory_class_import') }}" class="btn btn-link">{{ 'classImportAnotherFileAction'|trans }}</a>
-                        <button type="submit" class="btn btn-primary" {{ analysis.importable ? '' : 'disabled' }}>
-                            {{ 'classImportRunAction'|trans({'%count%': analysis.writingCount}) }}
-                        </button>
-                    </div>
-                </div>
+                <twig:Cm:ActionBar>
+                    <a href="{{ path('app_directory_class_import') }}" class="btn btn-link">{{ 'classImportAnotherFileAction'|trans }}</a>
+                    <button type="submit" class="btn btn-primary" {{ analysis.importable ? '' : 'disabled' }}>
+                        {{ 'classImportRunAction'|trans({'%count%': analysis.writingCount}) }}
+                    </button>
+                </twig:Cm:ActionBar>
             </form>
         </div>
     </div>

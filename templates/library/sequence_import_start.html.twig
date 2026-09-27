@@ -31,10 +31,7 @@
     <div class="d-flex flex-column gap-3">
         <a class="card cm-audio-card cm-import-choice" href="{{ path('app_library_sequences_assistant_convert') }}">
             <div class="cm-audio-card__body">
-                <div class="cm-subhead">
-                    <div class="cm-subhead__title">{{ 'sequenceImportChoiceConvertTitle'|trans }}</div>
-                    <div class="cm-subhead__hint">{{ 'sequenceImportChoiceConvertHint'|trans }}</div>
-                </div>
+                <twig:Cm:Subhead :title="'sequenceImportChoiceConvertTitle'|trans" :hint="'sequenceImportChoiceConvertHint'|trans"/>
                 <div class="cm-import-choice__meta">
                     <span class="cm-audio-pill">{{ 'sequenceImportChoiceConvertDurationLabel'|trans }}</span>
                     <span class="cm-import-choice__arrow" aria-hidden="true">→</span>
@@ -44,10 +41,7 @@
 
         <a class="card cm-audio-card cm-import-choice" href="{{ path('app_library_sequences_new') }}">
             <div class="cm-audio-card__body">
-                <div class="cm-subhead">
-                    <div class="cm-subhead__title">{{ 'sequenceImportChoiceManualTitle'|trans }}</div>
-                    <div class="cm-subhead__hint">{{ 'sequenceImportChoiceManualHint'|trans }}</div>
-                </div>
+                <twig:Cm:Subhead :title="'sequenceImportChoiceManualTitle'|trans" :hint="'sequenceImportChoiceManualHint'|trans"/>
                 <div class="cm-import-choice__meta">
                     <span class="cm-import-choice__arrow" aria-hidden="true">→</span>
                 </div>

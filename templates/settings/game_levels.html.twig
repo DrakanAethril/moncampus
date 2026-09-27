@@ -43,10 +43,8 @@
             <span>{{ 'gameLevelLabelsNoteText'|trans }}</span>
         </div>
 
-        <div class="cm-actionbar">
-            <div class="cm-actionbar__buttons">
-                <button type="submit" class="cm-btn cm-btn--primary">{{ 'submitSaveAction'|trans }}</button>
-            </div>
-        </div>
+        <twig:Cm:ActionBar>
+            <button type="submit" class="cm-btn cm-btn--primary">{{ 'submitSaveAction'|trans }}</button>
+        </twig:Cm:ActionBar>
     </form>
 {% endblock %}

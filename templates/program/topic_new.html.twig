@@ -1,6 +1,13 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ (isEdit ? 'editTopicPageHeading' : 'newTopicPageHeading')|trans }} - {{ program.displayShortName }}{% endblock %}
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'programSettingsTimetableTabLabel'|trans, url: path('app_program_timetable_settings', {id: program.id})},
+        {label: program.displayShortName, url: path('app_program_timetable_settings_topics', {id: program.id})},
+        {label: (isEdit ? 'editTopicPageHeading' : 'newTopicPageHeading')|trans, url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
 {% block page_title %}{{ (isEdit ? 'editTopicPageHeading' : 'newTopicPageHeading')|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block main %}

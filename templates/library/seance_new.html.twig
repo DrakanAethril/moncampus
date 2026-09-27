@@ -1,6 +1,11 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ (isEdit ? 'editSeanceTemplatePageHeading' : 'newSeanceTemplatePageHeading')|trans }} - {{ sequenceTemplate.titre }}{% endblock %}
+{% block page_breadcrumb %}
+    {% include 'library/_sequence_breadcrumb.html.twig' with {ancestors: folderTrail, tail: [{label: sequenceTemplate.titre, url: path('app_library_sequences_show', {id: sequenceTemplate.id})}]|merge(isEdit
+        ? [{label: form.vars.data.titre, url: path('app_library_seances_show', {sequenceId: sequenceTemplate.id, id: form.vars.data.id})}, {label: 'editSeanceTemplatePageHeading'|trans, url: app.request.requestUri}]
+        : [{label: 'newSeanceTemplatePageHeading'|trans, url: app.request.requestUri}])} only %}
+{% endblock %}
 {% block page_title %}{{ (isEdit ? 'editSeanceTemplatePageHeading' : 'newSeanceTemplatePageHeading')|trans }} - {{ sequenceTemplate.titre }}{% endblock %}
 
 {% block main %}

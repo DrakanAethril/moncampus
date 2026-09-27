@@ -135,11 +135,9 @@
             </div>
             <div class="card-footer">
                 <span class="text-secondary small">{{ 'classImportBatchStillReachableHint'|trans }}</span>
-                <div class="cm-actionbar">
-                    <div class="cm-actionbar__buttons">
-                        <a href="{{ path('app_directory_users') }}" class="btn btn-primary">{{ 'classImportBatchFinishAction'|trans }}</a>
-                    </div>
-                </div>
+                <twig:Cm:ActionBar>
+                    <a href="{{ path('app_directory_users') }}" class="btn btn-primary">{{ 'classImportBatchFinishAction'|trans }}</a>
+                </twig:Cm:ActionBar>
             </div>
         </div>
     </div>

@@ -77,14 +77,12 @@
                     {% endif %}
                 </div>
                 {% if plan.toCreate is not empty %}
-                    <div class="cm-actionbar" style="margin:0; padding: 12px 18px; border-top: 1px solid var(--cm-border-soft); background: var(--cm-surface-soft);">
+                    <twig:Cm:ActionBar style="margin:0; padding: 12px 18px; border-top: 1px solid var(--cm-border-soft); background: var(--cm-surface-soft);">
                         {# The warning comes BEFORE the action, not after: the passwords are shown
                            once and are never recoverable. #}
-                        <span class="cm-actionbar__meta">{{ 'guestAccountPasswordsWarningText'|trans }}</span>
-                        <div class="cm-actionbar__buttons">
-                            <button type="button" class="cm-btn cm-btn--primary" data-action="guest-accounts#apply">{{ 'guestAccountApplyAction'|trans }}</button>
-                        </div>
-                    </div>
+                        <twig:block name="meta">{{ 'guestAccountPasswordsWarningText'|trans }}</twig:block>
+                        <button type="button" class="cm-btn cm-btn--primary" data-action="guest-accounts#apply">{{ 'guestAccountApplyAction'|trans }}</button>
+                    </twig:Cm:ActionBar>
                 {% endif %}
             </div>
         {% endif %}

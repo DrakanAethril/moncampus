@@ -66,9 +66,7 @@
                         {# UFA section - revealed only while the alternance Modality chip above is
                            checked. #}
                         <div class="d-none mt-3" data-program-section-reveal-target="section">
-                            <div class="cm-subhead">
-                                <div class="cm-subhead__title">{{ 'programUfaSectionTitle'|trans }}</div>
-                            </div>
+                            <twig:Cm:Subhead :title="'programUfaSectionTitle'|trans"/>
                             <div class="row g-3 mt-0">
                                 <div class="col-12">{{ form_row(form.internshipManagementEnabled) }}</div>
                                 <div class="col-12">{{ form_row(form.tsfExportEnabled) }}</div>
@@ -105,9 +103,7 @@
                         </div>
                     </div>
                     <div class="d-none" data-program-section-reveal-target="section">
-                        <div class="cm-subhead">
-                            <div class="cm-subhead__title">{{ 'programTimetableManagementFieldLabel'|trans }}</div>
-                        </div>
+                        <twig:Cm:Subhead :title="'programTimetableManagementFieldLabel'|trans"/>
                         <div class="row g-3 mt-0">
                             <div class="col-md-6">{{ form_row(form.timetableVisibility) }}</div>
                             <div class="col-md-6">{{ form_row(form.syllabusVisibility) }}</div>

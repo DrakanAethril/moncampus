@@ -191,6 +191,7 @@ class SequenceLibraryController extends AbstractController
         }
 
         return $this->render('library/sequence_new.html.twig', [
+            'folderTrail' => $this->sequenceFolderTrailOf($folders, $sequenceTemplate, $this->currentUser()),
             'form' => $form,
             'isEdit' => $isEdit,
             'tagOptions' => $this->libraryTagOptions($niveauTagRepository, $optionTagRepository, $blocTagRepository),
@@ -239,6 +240,7 @@ class SequenceLibraryController extends AbstractController
         LibraryBlocTagRepository $blocTagRepository,
         ContentShareRepository $shares,
         ContentShareAudience $shareAudience,
+        SequenceFolderRepository $folders,
     ): Response {
         // Fetch-joined rather than found: the quiz card reads two collections of quizzes on two levels
         // for every séance (SequenceTemplateRepository::findWithQuizzes()).
@@ -250,6 +252,7 @@ class SequenceLibraryController extends AbstractController
         $existingShares = $canShare ? $shares->findForSubject($sequenceTemplate) : [];
 
         return $this->render('library/sequence_show.html.twig', [
+            'folderTrail' => $this->sequenceFolderTrailOf($folders, $sequenceTemplate, $this->currentUser()),
             'sequenceTemplate' => $sequenceTemplate,
             'canEdit' => $canEdit,
             'canShare' => $canShare,
@@ -378,7 +381,7 @@ class SequenceLibraryController extends AbstractController
     // independent, so the class's pool would show the same séquence twice with no way to tell which
     // one is being taught.
     #[Route(path: '/library/sequences/{id}/instantiate', name: 'app_library_sequences_instantiate')]
-    public function instantiate(int $id, Request $request, SequenceTemplateRepository $repository, ProgramRepository $programRepository, SequenceInstanceRepository $instanceRepository, SequenceInstantiationService $instantiationService, TranslatorInterface $translator): Response
+    public function instantiate(int $id, Request $request, SequenceTemplateRepository $repository, ProgramRepository $programRepository, SequenceInstanceRepository $instanceRepository, SequenceInstantiationService $instantiationService, TranslatorInterface $translator, SequenceFolderRepository $folders): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
@@ -418,6 +421,7 @@ class SequenceLibraryController extends AbstractController
         }
 
         return $this->render('library/sequence_instantiate.html.twig', [
+            'folderTrail' => $this->sequenceFolderTrailOf($folders, $sequenceTemplate, $this->currentUser()),
             'sequenceTemplate' => $sequenceTemplate,
             'form' => $form,
             'instantiatedPrograms' => $instantiatedPrograms,
@@ -453,7 +457,7 @@ class SequenceLibraryController extends AbstractController
 
     #[Route(path: '/library/sequences/{sequenceId}/sessions/new', name: 'app_library_seances_new')]
     #[Route(path: '/library/sequences/{sequenceId}/sessions/{id}/edit', name: 'app_library_seances_edit')]
-    public function seanceForm(int $sequenceId, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, TranslatorInterface $translator, ?int $id = null): Response
+    public function seanceForm(int $sequenceId, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, TranslatorInterface $translator, SequenceFolderRepository $folders, ?int $id = null): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
         $this->denyAccessUnlessGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
@@ -494,6 +498,7 @@ class SequenceLibraryController extends AbstractController
         }
 
         return $this->render('library/seance_new.html.twig', [
+            'folderTrail' => $this->sequenceFolderTrailOf($folders, $sequenceTemplate, $this->currentUser()),
             'form' => $form,
             'isEdit' => $isEdit,
             'sequenceTemplate' => $sequenceTemplate,
@@ -513,6 +518,7 @@ class SequenceLibraryController extends AbstractController
         LibraryBlocTagRepository $blocTagRepository,
         ContentShareRepository $shares,
         ContentShareAudience $shareAudience,
+        SequenceFolderRepository $folders,
     ): Response {
         $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
         $seanceTemplate = $this->findSeanceOrNotFound($seanceRepository, $sequenceTemplate, $id);
@@ -523,6 +529,7 @@ class SequenceLibraryController extends AbstractController
         $existingShares = $canShare ? $shares->findForSubject($seanceTemplate) : [];
 
         return $this->render('library/seance_show.html.twig', [
+            'folderTrail' => $this->sequenceFolderTrailOf($folders, $sequenceTemplate, $this->currentUser()),
             'sequenceTemplate' => $sequenceTemplate,
             'seanceTemplate' => $seanceTemplate,
             'canEdit' => $canEdit,
@@ -620,7 +627,7 @@ class SequenceLibraryController extends AbstractController
 
     #[Route(path: '/library/sequences/{sequenceId}/sessions/{seanceId}/phases/new', name: 'app_library_phases_new')]
     #[Route(path: '/library/sequences/{sequenceId}/sessions/{seanceId}/phases/{id}/edit', name: 'app_library_phases_edit')]
-    public function phaseForm(int $sequenceId, int $seanceId, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, SeancePhaseTemplateRepository $phaseRepository, ?int $id = null): Response
+    public function phaseForm(int $sequenceId, int $seanceId, Request $request, EntityManagerInterface $entityManager, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, SeancePhaseTemplateRepository $phaseRepository, SequenceFolderRepository $folders, ?int $id = null): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
         $this->denyAccessUnlessGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
@@ -647,6 +654,7 @@ class SequenceLibraryController extends AbstractController
         }
 
         return $this->render('library/phase_new.html.twig', [
+            'folderTrail' => $this->sequenceFolderTrailOf($folders, $sequenceTemplate, $this->currentUser()),
             'form' => $form,
             'isEdit' => $isEdit,
             'sequenceTemplate' => $sequenceTemplate,
@@ -655,7 +663,7 @@ class SequenceLibraryController extends AbstractController
     }
 
     #[Route(path: '/library/sequences/{sequenceId}/sessions/{seanceId}/phases/{id}', name: 'app_library_phases_show')]
-    public function phaseShow(int $sequenceId, int $seanceId, int $id, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, SeancePhaseTemplateRepository $phaseRepository, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository): Response
+    public function phaseShow(int $sequenceId, int $seanceId, int $id, SequenceTemplateRepository $sequenceRepository, SeanceTemplateRepository $seanceRepository, SeancePhaseTemplateRepository $phaseRepository, LibraryNiveauTagRepository $niveauTagRepository, LibraryOptionTagRepository $optionTagRepository, LibraryBlocTagRepository $blocTagRepository, SequenceFolderRepository $folders): Response
     {
         $sequenceTemplate = $this->findSequenceOrNotFound($sequenceRepository, $sequenceId);
         $seanceTemplate = $this->findSeanceOrNotFound($seanceRepository, $sequenceTemplate, $seanceId);
@@ -663,6 +671,7 @@ class SequenceLibraryController extends AbstractController
         $canEdit = $this->isGranted(SequenceTemplateVoter::EDIT, $sequenceTemplate);
 
         return $this->render('library/phase_show.html.twig', [
+            'folderTrail' => $this->sequenceFolderTrailOf($folders, $sequenceTemplate, $this->currentUser()),
             'sequenceTemplate' => $sequenceTemplate,
             'seanceTemplate' => $seanceTemplate,
             'phaseTemplate' => $phaseTemplate,

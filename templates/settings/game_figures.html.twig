@@ -57,11 +57,9 @@
                         <span class="cm-field__help">{{ 'gameFigureNoticeHelpText'|trans }}</span>
                     </label>
                 </div>
-                <div class="cm-actionbar">
-                    <div class="cm-actionbar__buttons">
-                        <button type="submit" class="cm-btn cm-btn--primary">{{ 'gameFigureCreateAction'|trans }}</button>
-                    </div>
-                </div>
+                <twig:Cm:ActionBar>
+                    <button type="submit" class="cm-btn cm-btn--primary">{{ 'gameFigureCreateAction'|trans }}</button>
+                </twig:Cm:ActionBar>
             </form>
         </div>
 

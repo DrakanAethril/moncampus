@@ -18,7 +18,7 @@
                  data-override-block-seed-value="{{ contractType.defaultModalitiesHtml }}"
                  data-override-block-height-value="200">
                 <div class="cm-collapse__head" data-action="click->override-block#toggle">
-                    <span class="cm-collapse__chevron"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m9.5 6.5 5 5.5-5 5.5"/></svg></span>
+                    <span class="cm-collapse__chevron"><twig:ux:icon name="chevron-right" width="15" height="15"/></span>
                     <span class="cm-collapse__title">{{ contractType.code.labelKey|trans }}</span>
                     {% if not override %}
                         <span class="cm-collapse__hint">{{ 'ufaModalityNoOwnContentHint'|trans }}</span>
@@ -52,10 +52,8 @@
         {% endfor %}
     </div>
 
-    <div class="cm-actionbar mt-4">
-        <div class="cm-actionbar__buttons">
-            <a href="{{ path('app_ufa_formation_contract_modalities', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-            <button type="submit" class="btn btn-primary">{{ 'submitSaveAction'|trans }}</button>
-        </div>
-    </div>
+    <twig:Cm:ActionBar class="mt-4">
+        <a href="{{ path('app_ufa_formation_contract_modalities', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+        <button type="submit" class="btn btn-primary">{{ 'submitSaveAction'|trans }}</button>
+    </twig:Cm:ActionBar>
 </form>

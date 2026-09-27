@@ -2,7 +2,7 @@
 
 {% if staff.banner %}
     <div class="cm-dash-banner">
-        <span class="cm-dash-banner__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 8v5"></path><path d="M12 16.5v.01"></path><circle cx="12" cy="12" r="9"></circle></svg></span>
+        <span class="cm-dash-banner__icon"><twig:ux:icon name="alert-circle" width="20" height="20"/></span>
         <span class="cm-dash-banner__body">
             {# One line, no count and no subtitle: the banner says that something is pending and
                points at the screen that names it; the detail belongs on /ufa/reminders, which
@@ -21,7 +21,7 @@
    here. #}
 {% if staff.engagementBanner %}
     <div class="cm-dash-banner">
-        <span class="cm-dash-banner__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l9.5-9.5a2.1 2.1 0 0 0-3-3L5 17v3"></path><path d="M13.5 6.5l3 3"></path></svg></span>
+        <span class="cm-dash-banner__icon"><twig:ux:icon name="pencil" width="20" height="20" stroke-width="1.7"/></span>
         <span class="cm-dash-banner__body">
             <span class="cm-dash-banner__title">{{ 'homeStaffBannerEngagementTitle'|trans({'%count%': staff.engagementBanner.count}) }}</span>
             <span class="cm-dash-banner__text">

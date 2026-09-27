@@ -14,7 +14,7 @@
     <div class="d-flex flex-column gap-3">
         <div class="cm-collapse is-open" data-controller="override-block">
             <div class="cm-collapse__head" data-action="click->override-block#toggle">
-                <span class="cm-collapse__chevron"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m9.5 6.5 5 5.5-5 5.5"/></svg></span>
+                <span class="cm-collapse__chevron"><twig:ux:icon name="chevron-right" width="15" height="15"/></span>
                 <span class="cm-collapse__title">{{ 'ufaExamModalityDefaultBlockTitle'|trans }}</span>
                 <span class="cm-collapse__hint">{{ 'internshipExamModalityDefaultSectionHint'|trans }}</span>
             </div>
@@ -39,7 +39,7 @@
                      data-override-block-seed-value="{{ info.examModalityText ?? '' }}"
                      data-override-block-height-value="260">
                     <div class="cm-collapse__head" data-action="click->override-block#toggle">
-                        <span class="cm-collapse__chevron"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m9.5 6.5 5 5.5-5 5.5"/></svg></span>
+                        <span class="cm-collapse__chevron"><twig:ux:icon name="chevron-right" width="15" height="15"/></span>
                         <span class="cm-collapse__title">{{ option.name }}</span>
                         <span class="cm-collapse__hint">{{ 'optionShortNameSubLabel'|trans({'%shortName%': option.shortName}) }}</span>
                         <span class="cm-collapse__state">
@@ -66,12 +66,9 @@
         {% endif %}
     </div>
 
-    <div class="cm-actionbar">
-        {% include '_last_modified_meta.html.twig' with {entity: info} %}
-        <div class="cm-actionbar__buttons">
-            <a href="{{ path('app_ufa_formation_exam_modalities', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-            {{ form_widget(form.submit) }}
-        </div>
-    </div>
+    <twig:Cm:ActionBar :lastModified="info">
+        <a href="{{ path('app_ufa_formation_exam_modalities', {id: program.id}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+        {{ form_widget(form.submit) }}
+    </twig:Cm:ActionBar>
     {{ form_rest(form) }}
 {{ form_end(form) }}

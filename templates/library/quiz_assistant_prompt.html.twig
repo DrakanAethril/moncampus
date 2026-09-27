@@ -194,12 +194,7 @@
         {# ── Right column: the prompt that comes out ────────────────────────────────────────── #}
         <div class="col-12 col-lg-7 d-flex flex-column gap-3">
 
-            <div class="cm-subhead">
-                <div class="cm-subhead__title">{{ 'quizImportPromptSectionTitle'|trans }}</div>
-                <div class="cm-subhead__hint">
-                    {{ (path == pathTranspose ? 'quizImportPromptSectionHintTranspose' : 'quizImportPromptSectionHint')|trans }}
-                </div>
-            </div>
+            <twig:Cm:Subhead :title="'quizImportPromptSectionTitle'|trans" :hint="(path == pathTranspose ? 'quizImportPromptSectionHintTranspose' : 'quizImportPromptSectionHint')|trans"/>
 
             {# Ticking is not a convenience: the twelve fragments concatenated make an unusable prompt,
                and a single type ticked gives exactly the « prompt for this type ». « Concours live »
@@ -231,10 +226,8 @@
         </div>
     </div>
 
-    <div class="cm-actionbar">
-        <div class="cm-actionbar__buttons">
-            <a href="{{ path('app_library_quiz_assistant') }}" class="btn btn-link">{{ 'quizAssistantBackActionLabel'|trans }}</a>
-            <button type="submit" form="quizAssistantPrompt" class="btn btn-primary">{{ 'quizAssistantPromptContinueActionLabel'|trans }}</button>
-        </div>
-    </div>
+    <twig:Cm:ActionBar>
+        <a href="{{ path('app_library_quiz_assistant') }}" class="btn btn-link">{{ 'quizAssistantBackActionLabel'|trans }}</a>
+        <button type="submit" form="quizAssistantPrompt" class="btn btn-primary">{{ 'quizAssistantPromptContinueActionLabel'|trans }}</button>
+    </twig:Cm:ActionBar>
 {% endblock %}

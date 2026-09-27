@@ -155,14 +155,10 @@
         </fieldset>
 
         <div class="cm-fieldset">
-            <div class="cm-actionbar" style="margin-top:0; border-top:0; padding-top:0;">
-                <span class="cm-actionbar__meta">
-                    {% if program %}{{ 'vmBatchSelectionMeta'|trans({'%selected%': selected|length, '%total%': members|length}) }}{% endif %}
-                </span>
-                <div class="cm-actionbar__buttons">
-                    <button type="submit" class="cm-btn cm-btn--outline">{{ 'vmBatchPreviewAction'|trans }}</button>
-                </div>
-            </div>
+            <twig:Cm:ActionBar style="margin-top:0; border-top:0; padding-top:0;">
+                <twig:block name="meta">{% if program %}{{ 'vmBatchSelectionMeta'|trans({'%selected%': selected|length, '%total%': members|length}) }}{% endif %}</twig:block>
+                <button type="submit" class="cm-btn cm-btn--outline">{{ 'vmBatchPreviewAction'|trans }}</button>
+            </twig:Cm:ActionBar>
         </div>
     </form>
 
@@ -307,13 +303,11 @@
             </fieldset>
 
             <div class="cm-fieldset">
-                <div class="cm-actionbar" style="margin-top:0; border-top:0; padding-top:0;">
-                    <span class="cm-actionbar__meta">{{ (perGroup ? 'vmBatchCreateGroupMeta' : 'vmBatchCreateMeta')|trans({'%count%': rows|length}) }}</span>
-                    <div class="cm-actionbar__buttons">
-                        <a href="{{ path('app_infrastructure_batches') }}" class="cm-btn cm-btn--outline">{{ 'cancelAction'|trans }}</a>
-                        <button type="submit" class="cm-btn cm-btn--primary">{{ 'vmBatchCreateAction'|trans }}</button>
-                    </div>
-                </div>
+                <twig:Cm:ActionBar style="margin-top:0; border-top:0; padding-top:0;">
+                    <twig:block name="meta">{{ (perGroup ? 'vmBatchCreateGroupMeta' : 'vmBatchCreateMeta')|trans({'%count%': rows|length}) }}</twig:block>
+                    <a href="{{ path('app_infrastructure_batches') }}" class="cm-btn cm-btn--outline">{{ 'cancelAction'|trans }}</a>
+                    <button type="submit" class="cm-btn cm-btn--primary">{{ 'vmBatchCreateAction'|trans }}</button>
+                </twig:Cm:ActionBar>
             </div>
         </form>
     {% elseif program %}

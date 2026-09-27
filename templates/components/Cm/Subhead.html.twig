@@ -1,0 +1,21 @@
+{# Sub-section head inside a card: a title in the heading face, an optional hint line under it,
+   and an optional `action` block on the right (a « Copier » or « Importer » beside the title).
+
+   <twig:Cm:Subhead :title="'jobboardTokenListHeading'|trans" :hint="'jobboardTokenListHintText'|trans"/>
+
+   Title and hint are text, escaped like any other; a head that needs markup inside them is not
+   this component. Spacing around it is the caller's (a class or a style on the tag). #}
+{% props title, hint = null %}
+{% set action %}{% block action %}{% endblock %}{% endset %}
+<div{{ attributes.defaults({class: 'cm-subhead'}) }}>
+    {% if action|trim is not empty %}
+        <div>
+            <div class="cm-subhead__title">{{ title }}</div>
+            {% if hint is not null %}<div class="cm-subhead__hint">{{ hint }}</div>{% endif %}
+        </div>
+        {{ action }}
+    {% else %}
+        <div class="cm-subhead__title">{{ title }}</div>
+        {% if hint is not null %}<div class="cm-subhead__hint">{{ hint }}</div>{% endif %}
+    {% endif %}
+</div>

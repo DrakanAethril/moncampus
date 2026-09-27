@@ -45,10 +45,7 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-body d-flex flex-column gap-3">
-                    <div class="cm-subhead">
-                        <div class="cm-subhead__title">{{ 'quizImportDocGeneralTitle'|trans }}</div>
-                        <div class="cm-subhead__hint">{{ 'quizImportDocGeneralHint'|trans }}</div>
-                    </div>
+                    <twig:Cm:Subhead :title="'quizImportDocGeneralTitle'|trans" :hint="'quizImportDocGeneralHint'|trans"/>
                     <ul class="mb-0 ps-3 d-flex flex-column gap-1">
                         <li>{{ 'quizImportDocRuleHeaderText'|trans }}</li>
                         <li>{{ 'quizImportDocRuleSeparatorText'|trans }}</li>
@@ -64,10 +61,7 @@
         <div class="col-12 col-xl-7">
             <div class="card h-100">
                 <div class="card-body d-flex flex-column gap-3">
-                    <div class="cm-subhead">
-                        <div class="cm-subhead__title">{{ 'quizImportDocColumnsTitle'|trans }}</div>
-                        <div class="cm-subhead__hint">{{ 'quizImportDocColumnsHint'|trans }}</div>
-                    </div>
+                    <twig:Cm:Subhead :title="'quizImportDocColumnsTitle'|trans" :hint="'quizImportDocColumnsHint'|trans"/>
                     <div class="table-responsive">
                         <table class="table table-vcenter">
                             <thead>
@@ -99,10 +93,7 @@
         <div class="col-12 col-xl-5">
             <div class="card h-100">
                 <div class="card-body d-flex flex-column gap-3">
-                    <div class="cm-subhead">
-                        <div class="cm-subhead__title">{{ 'quizImportDocTypesTitle'|trans }}</div>
-                        <div class="cm-subhead__hint">{{ 'quizImportDocTypesHint'|trans }}</div>
-                    </div>
+                    <twig:Cm:Subhead :title="'quizImportDocTypesTitle'|trans" :hint="'quizImportDocTypesHint'|trans"/>
                     <dl class="mb-0">
                         {% for type in types %}
                             <dt><code>{{ type.name }}</code></dt>
@@ -116,10 +107,7 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-body d-flex flex-column gap-3">
-                    <div class="cm-subhead">
-                        <div class="cm-subhead__title">{{ 'quizImportDocExampleTitle'|trans }}</div>
-                        <div class="cm-subhead__hint">{{ 'quizImportDocExampleHint'|trans }}</div>
-                    </div>
+                    <twig:Cm:Subhead :title="'quizImportDocExampleTitle'|trans" :hint="'quizImportDocExampleHint'|trans"/>
                     <pre class="mb-0 p-3 border rounded" style="overflow-x: auto;"><code>{{ exampleCsv }}</code></pre>
                     <div class="cm-note">
                         <span class="cm-note__icon">i</span>

@@ -68,15 +68,13 @@
                     </label>
                 </div>
 
-                <div class="cm-actionbar">
+                <twig:Cm:ActionBar>
                     {# The bound hint used to sit here. There is no bound any more, and what belongs
                        in its place is the one thing a teacher should read before posting: the motive
                        is what the student sees. #}
-                    <span class="cm-actionbar__meta">{{ 'gameGestureNoQuotaHint'|trans }}</span>
-                    <div class="cm-actionbar__buttons">
-                        <button type="submit" class="cm-btn cm-btn--primary">{{ 'gameGesturePostAction'|trans }}</button>
-                    </div>
-                </div>
+                    <twig:block name="meta">{{ 'gameGestureNoQuotaHint'|trans }}</twig:block>
+                    <button type="submit" class="cm-btn cm-btn--primary">{{ 'gameGesturePostAction'|trans }}</button>
+                </twig:Cm:ActionBar>
             </form>
         </div>
     </div>

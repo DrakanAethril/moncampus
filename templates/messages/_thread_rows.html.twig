@@ -35,7 +35,7 @@
             <span class="cm-mail-row__meta">
                 {% if row.unread %}<span class="cm-mail-row__dot" aria-hidden="true"></span>{% endif %}
                 {% if row.attachmentCount > 0 %}
-                    <span class="cm-mail-row__meta-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M20 12.5 12.3 20a4.5 4.5 0 0 1-6.4-6.4l8-8a3 3 0 0 1 4.3 4.3l-8 8a1.5 1.5 0 0 1-2.2-2.1l7.2-7.2"></path></svg>{{ row.attachmentCount }}</span>
+                    <span class="cm-mail-row__meta-item"><twig:ux:icon name="paperclip" width="12" height="12"/>{{ row.attachmentCount }}</span>
                 {% endif %}
                 {% if row.portee %}
                     <span class="cm-mail-row__meta-item">{{ row.portee }}</span>

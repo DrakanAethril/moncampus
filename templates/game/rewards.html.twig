@@ -121,11 +121,9 @@
                         <textarea name="description" rows="2" maxlength="1000"></textarea>
                     </label>
                 </div>
-                <div class="cm-actionbar">
-                    <div class="cm-actionbar__buttons">
-                        <button type="submit" class="cm-btn cm-btn--primary">{{ 'gameRewardCreateAction'|trans }}</button>
-                    </div>
-                </div>
+                <twig:Cm:ActionBar>
+                    <button type="submit" class="cm-btn cm-btn--primary">{{ 'gameRewardCreateAction'|trans }}</button>
+                </twig:Cm:ActionBar>
             </form>
         </div>
     </div>

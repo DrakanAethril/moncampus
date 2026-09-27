@@ -13,10 +13,7 @@
 {% block page_title %}{{ 'ufaContractImportResultPageHeading'|trans }}{% endblock %}
 
 {% macro label_list(title, hint, labels) %}
-    <div class="cm-subhead">
-        <div class="cm-subhead__title">{{ title }}</div>
-        <div class="cm-subhead__hint">{{ hint }}</div>
-    </div>
+    <twig:Cm:Subhead :title="title" :hint="hint"/>
     {% if labels is empty %}
         <p class="text-secondary">{{ 'ufaContractImportNoneLabel'|trans }}</p>
     {% else %}
@@ -61,12 +58,10 @@
                 <div>{{ 'ufaContractImportResultNoMailNoteText'|trans }}</div>
             </div>
 
-            <div class="cm-actionbar">
-                <div class="cm-actionbar__buttons">
-                    <a href="{{ path('app_ufa_configuration_contract_import') }}" class="btn btn-link">{{ 'ufaContractImportAnotherFileActionLabel'|trans }}</a>
-                    <a href="{{ path('app_ufa') }}" class="btn btn-primary">{{ 'ufaContractImportBackToDashboardActionLabel'|trans }}</a>
-                </div>
-            </div>
+            <twig:Cm:ActionBar>
+                <a href="{{ path('app_ufa_configuration_contract_import') }}" class="btn btn-link">{{ 'ufaContractImportAnotherFileActionLabel'|trans }}</a>
+                <a href="{{ path('app_ufa') }}" class="btn btn-primary">{{ 'ufaContractImportBackToDashboardActionLabel'|trans }}</a>
+            </twig:Cm:ActionBar>
         </div>
     </div>
 {% endblock %}

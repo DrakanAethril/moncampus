@@ -13,9 +13,7 @@
         </div>
         <div class="col-12 col-lg-9">
             <div class="p-3">
-                <div class="cm-subhead">
-                    <div class="cm-subhead__title">{{ 'ufaContractModalitiesDefaultSectionTitle'|trans({'%type%': selectedCode.labelKey|trans}) }}</div>
-                </div>
+                <twig:Cm:Subhead :title="'ufaContractModalitiesDefaultSectionTitle'|trans({'%type%': selectedCode.labelKey|trans})"/>
                 <p class="text-secondary small">{{ 'ufaContractModalitiesBookletHint'|trans }}</p>
                 <textarea class="form-control" rows="12" name="defaultModalitiesHtml"
                           data-controller="hugerte-editor" data-hugerte-editor-height-value="360"
@@ -47,10 +45,8 @@
             {% endif %}
         </div>
     </div>
-    <div class="cm-actionbar p-3 border-top">
-        <div class="cm-actionbar__buttons">
-            <a href="{{ path('app_ufa_configuration_contract_modalities', {type: selectedCode.value}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
-            <button type="submit" class="btn btn-primary">{{ 'submitSaveAction'|trans }}</button>
-        </div>
-    </div>
+    <twig:Cm:ActionBar class="p-3 border-top">
+        <a href="{{ path('app_ufa_configuration_contract_modalities', {type: selectedCode.value}) }}" class="btn btn-link">{{ 'cancelAction'|trans }}</a>
+        <button type="submit" class="btn btn-primary">{{ 'submitSaveAction'|trans }}</button>
+    </twig:Cm:ActionBar>
 </form>
