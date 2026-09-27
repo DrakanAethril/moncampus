@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace App\Form;
 
+use App\Validator\StrongPassword;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\Validator\Constraints\Length;
-use Symfony\Component\Validator\Constraints\NotBlank;
-use Symfony\Component\Validator\Constraints\Regex;
 
 // Self-service AD password change (App\Controller\ProfileController::changePassword()) - not
 // mapped to any entity. newPassword is only ever used to build a new App\Entity\LdapManagePassword
@@ -29,15 +27,9 @@ class ChangePasswordType extends AbstractType
                 'first_options' => ['label' => 'newPasswordFieldLabel'],
                 'second_options' => ['label' => 'newPasswordConfirmationFieldLabel'],
                 'constraints' => [
-                    new NotBlank(),
-                    new Length(min: 12, minMessage: 'newPasswordTooShortMessage'),
-                    // Mirrors the créa's own stated rule: at least one upper/lower/digit/special
-                    // character - "must not contain the username" is checked in the controller
-                    // instead, since it needs the current User to check against.
-                    new Regex(
-                        pattern: '/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/',
-                        message: 'newPasswordComplexityMessage',
-                    ),
+                    // « must not contain the username » is checked in the controller, since it needs
+                    // the current User to check against.
+                    new StrongPassword(),
                 ],
             ])
             ->add('submit', SubmitType::class, [

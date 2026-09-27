@@ -676,16 +676,24 @@ final class HelpContentCatalog
                         <p>Claude agit avec vos droits, et seulement les vôtres : il ne voit que ce que vous voyez dans MonCampus. Il ne supprime rien et ne lance aucun quiz auprès d'une classe. Une évaluation qu'il crée reste masquée aux étudiants jusqu'à sa date de visibilité, fixée par défaut au lendemain.</p>
                         <h2>Le brancher</h2>
                         <ol>
-                            <li>Dans MonCampus, ouvrez <strong>Profil</strong> et copiez l'adresse de la carte <strong>Claude</strong>.</li>
+                            <li>Dans MonCampus, ouvrez <strong>Profil</strong>. Dans la carte <strong>Claude</strong>, définissez le <strong>mot de passe du service</strong> : il est propre à Claude et doit être différent de votre mot de passe d'établissement.</li>
+                            <li>Copiez l'adresse affichée dans la même carte.</li>
                             <li>Dans claude.ai, ouvrez <strong>Paramètres › Connecteurs</strong>, puis <strong>Ajouter un connecteur personnalisé</strong>. Collez l'adresse et validez.</li>
-                            <li>Claude vous renvoie vers MonCampus : connectez-vous si besoin, puis cliquez sur <strong>Autoriser</strong>.</li>
+                            <li>Claude vous renvoie vers MonCampus : saisissez votre identifiant et le mot de passe du service, puis cliquez sur <strong>Autoriser</strong>.</li>
                         </ol>
                         <p>Un abonnement gratuit à Claude suffit pour un connecteur.</p>
                         <h2>Bien s'en servir</h2>
                         <p>Joignez votre support à la conversation, ou nommez le fichier de votre bibliothèque, et dites ce que vous voulez : « fais de ce cours une séquence de quatre séances, puis un quiz de quinze questions rattaché à la dernière ». Claude vous donne à chaque fois le lien vers ce qu'il a créé : ouvrez-le pour vérifier.</p>
                         <h2>Couper la connexion</h2>
-                        <p>La carte <strong>Claude</strong> de votre profil liste vos connexions. <strong>Révoquer</strong> coupe l'accès immédiatement.</p>
+                        <p>La carte <strong>Claude</strong> de votre profil liste vos connexions. <strong>Révoquer</strong> coupe l'accès immédiatement. Changer ou supprimer le mot de passe du service coupe toutes les connexions à la fois.</p>
                         HTML,
+                ],
+                [
+                    'kind' => HelpArticleKind::Faq,
+                    'slug' => 'pourquoi-un-mot-de-passe-pour-claude',
+                    'title' => 'Pourquoi un mot de passe à part pour Claude ?',
+                    'audiences' => [HelpAudience::Teacher, HelpAudience::Staff],
+                    'summary' => "Votre mot de passe d'établissement ouvre les postes, le Wi-Fi et les ressources internes. Il n'est jamais demandé ni utilisé pour un service extérieur : Claude s'autorise avec un mot de passe que vous choisissez pour lui seul, et que vous pouvez supprimer à tout moment sans rien toucher d'autre.",
                 ],
                 [
                     'kind' => HelpArticleKind::Faq,

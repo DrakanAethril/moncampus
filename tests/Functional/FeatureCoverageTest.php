@@ -91,12 +91,14 @@ class FeatureCoverageTest extends KernelTestCase
             'e-CO runners hold no account' => [
                 'api_eco_runner_',
             ],
-            // The OAuth plumbing of the Claude connector that nobody signs in to: the discovery
-            // documents, dynamic client registration and the token endpoint. The caller is
-            // claude.ai's server, with no account to resolve a feature against. Nothing here opens
-            // anything by itself - the consent screen (`app_oauth_authorize`) and /mcp are where the
-            // `claude_connector` feature is enforced, and both carry it.
+            // The OAuth plumbing of the Claude connector: the discovery documents, dynamic client
+            // registration and the token endpoint are called by claude.ai's server, with no account
+            // to resolve a feature against. The consent screen is reached before anybody is known -
+            // it signs the person in with their service password, never the establishment one - so
+            // it asks the feature of the person it has just identified, by hand
+            // (App\Controller\OAuth\AuthorizeController). /mcp carries the attribute itself.
             'the Claude connector\'s clients hold no account' => [
+                'app_oauth_authorize',
                 'app_oauth_protected_resource_metadata',
                 'app_oauth_authorization_server_metadata',
                 'app_oauth_register',

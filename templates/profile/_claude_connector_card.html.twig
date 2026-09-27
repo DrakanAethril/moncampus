@@ -17,6 +17,9 @@
             </button>
         </div>
 
+        {% include 'profile/_external_service_password.html.twig' with {service: service, servicePassword: servicePassword} only %}
+
+        <h3 class="cm-external-service-password__title mt-4">{{ 'claudeConnectorConnectionsTitle'|trans }}</h3>
         {% if connections is empty %}
             <p class="text-secondary mb-0">{{ 'claudeConnectorNoConnectionLabel'|trans }}</p>
         {% else %}

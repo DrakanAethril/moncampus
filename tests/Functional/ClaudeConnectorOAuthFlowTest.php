@@ -6,10 +6,14 @@ namespace App\Tests\Functional;
 
 use App\Entity\OAuthGrant;
 use App\Entity\User;
+use App\Enum\ExternalService;
 use App\Enum\Feature;
 use App\Enum\VisibilityLevel;
 use App\OAuth\Pkce;
 use App\Repository\OAuthGrantRepository;
+use App\Security\ExternalServicePasswords;
+use App\Security\PlatformPasswordCheck;
+use App\Tests\Double\FakePlatformPasswordCheck;
 
 /**
  * The Claude connector, end to end, the way claude.ai drives it: discovery → registration → consent
@@ -21,6 +25,16 @@ class ClaudeConnectorOAuthFlowTest extends FunctionalTestCase
 {
     private const string REDIRECT = 'https://claude.ai/api/mcp/auth_callback';
     private const string VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
+    private const string SERVICE_PASSWORD = 'Service-Claude#2026';
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        static::getContainer()->set(PlatformPasswordCheck::class, new FakePlatformPasswordCheck());
+        // The sign-in limiter keys on the identifier, which every test here shares, and its pool
+        // outlives the run: emptied so each test starts with its ten attempts.
+        static::getContainer()->get('cache.rate_limiter')->clear();
+    }
 
     public function testAnAnonymousCallIsToldWhereToSignIn(): void
     {
@@ -141,6 +155,102 @@ class ClaudeConnectorOAuthFlowTest extends FunctionalTestCase
         $this->assertResponseStatusCodeSame(401);
     }
 
+    public function testWithoutAServicePasswordThereIsNothingToAuthoriseWith(): void
+    {
+        $teacher = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'prof.claude');
+        $clientId = $this->registeredClient();
+
+        $this->client->loginUser($teacher);
+        $crawler = $this->client->request('GET', '/oauth/authorize?'.$this->authorizationQuery($clientId));
+
+        $this->assertResponseIsSuccessful();
+        self::assertCount(0, $crawler->selectButton('Autoriser'));
+        self::assertCount(1, $crawler->filter('a[href^="/profile"]:contains("Définir le mot de passe du service")'));
+    }
+
+    public function testTheServicePasswordAloneSignsInNoLoginNeeded(): void
+    {
+        $teacher = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'prof.claude');
+        $this->setServicePassword($teacher);
+        $clientId = $this->registeredClient();
+
+        // Nobody signed in to MonCampus: the establishment login is never asked for.
+        $crawler = $this->client->request('GET', '/oauth/authorize?'.$this->authorizationQuery($clientId));
+        $this->assertResponseIsSuccessful();
+        $this->client->submit($crawler->selectButton('Autoriser')->form([
+            'username' => 'prof.claude',
+            'servicePassword' => self::SERVICE_PASSWORD,
+        ]));
+
+        self::assertStringStartsWith(self::REDIRECT.'?code=', (string) $this->client->getResponse()->headers->get('Location'));
+    }
+
+    public function testTheEstablishmentPasswordOpensNothingHere(): void
+    {
+        $teacher = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'prof.claude');
+        $this->setServicePassword($teacher);
+        $clientId = $this->registeredClient();
+
+        $crawler = $this->client->request('GET', '/oauth/authorize?'.$this->authorizationQuery($clientId));
+        $this->client->submit($crawler->selectButton('Autoriser')->form([
+            'username' => 'prof.claude',
+            'servicePassword' => FakePlatformPasswordCheck::PLATFORM_PASSWORD,
+        ]));
+
+        $this->assertResponseStatusCodeSame(401);
+        self::assertNull($this->client->getResponse()->headers->get('Location'));
+        self::assertStringContainsString('Identifiant ou mot de passe du service incorrect', (string) $this->client->getResponse()->getContent());
+        self::assertSame([], static::getContainer()->get(OAuthGrantRepository::class)->findBy(['user' => $teacher]));
+    }
+
+    public function testTheEstablishmentPasswordCannotBeChosenAsServicePassword(): void
+    {
+        $teacher = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'prof.claude');
+        $this->client->loginUser($teacher);
+        $this->client->request('GET', '/profile');
+
+        $this->client->request('POST', '/profile/external-services/claude_connector/password', [
+            '_token' => $this->csrfToken('external_service_password_claude_connector'),
+            'password' => FakePlatformPasswordCheck::PLATFORM_PASSWORD,
+            'confirmation' => FakePlatformPasswordCheck::PLATFORM_PASSWORD,
+        ]);
+
+        $this->assertResponseRedirects('/profile#external-service-claude_connector');
+        self::assertNull(static::getContainer()->get(ExternalServicePasswords::class)->find($teacher, ExternalService::ClaudeConnector));
+    }
+
+    public function testChoosingThePasswordFromTheConsentScreenLeadsBackToIt(): void
+    {
+        $teacher = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'prof.claude');
+        $clientId = $this->registeredClient();
+        $this->client->loginUser($teacher);
+        $this->client->request('GET', '/oauth/authorize?'.$this->authorizationQuery($clientId));
+        $this->client->request('POST', '/profile/external-services/claude_connector/password', [
+            '_token' => $this->csrfToken('external_service_password_claude_connector'),
+            'password' => self::SERVICE_PASSWORD,
+            'confirmation' => self::SERVICE_PASSWORD,
+        ]);
+
+        // Back to the same request - its query string normalised by Request::getUri().
+        $location = (string) $this->client->getResponse()->headers->get('Location');
+        self::assertStringStartsWith('http://localhost/oauth/authorize?', $location);
+        self::assertStringContainsString('client_id='.$clientId, $location);
+        self::assertStringContainsString('state=xyz', $location);
+        self::assertNotNull(static::getContainer()->get(ExternalServicePasswords::class)->find($teacher, ExternalService::ClaudeConnector));
+    }
+
+    public function testChangingTheServicePasswordCutsTheConnector(): void
+    {
+        $teacher = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'prof.claude');
+        $tokens = $this->authorizeAndExchange($teacher, $this->registeredClient());
+
+        $this->setServicePassword($teacher, 'Autre-Secret#2027');
+
+        $this->client->getCookieJar()->clear();
+        $this->client->request('POST', '/mcp', server: $this->bearer($tokens['access_token']), content: '{"jsonrpc":"2.0","id":1,"method":"ping"}');
+        $this->assertResponseStatusCodeSame(401);
+    }
+
     public function testRefusingSendsTheClientAnAccessDenied(): void
     {
         $teacher = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'prof.claude');
@@ -167,19 +277,21 @@ class ClaudeConnectorOAuthFlowTest extends FunctionalTestCase
         self::assertNull($this->client->getResponse()->headers->get('Location'));
     }
 
-    public function testTheConsentScreenDoesNotExistWhenTheFeatureIsOff(): void
+    public function testNothingIsAuthorisedWhenTheFeatureIsOff(): void
     {
         $teacher = $this->createUser(['ROLE_USER', 'ROLE_TEACHER'], 'prof.claude');
+        $this->setServicePassword($teacher);
         $clientId = $this->registeredClient();
         static::getContainer()->get('doctrine.orm.entity_manager')
             ->createQuery('UPDATE App\Entity\FeatureRoleSetting s SET s.enabled = false WHERE s.feature = :feature')
             ->setParameter('feature', Feature::ClaudeConnector)
             ->execute();
 
-        $this->client->loginUser($teacher);
-        $this->client->request('GET', '/oauth/authorize?'.$this->authorizationQuery($clientId));
+        $crawler = $this->client->request('GET', '/oauth/authorize?'.$this->authorizationQuery($clientId));
+        $this->client->submit($crawler->selectButton('Autoriser')->form(['username' => 'prof.claude', 'servicePassword' => self::SERVICE_PASSWORD]));
 
-        $this->assertResponseStatusCodeSame(404);
+        $this->assertResponseStatusCodeSame(403);
+        self::assertSame([], static::getContainer()->get(OAuthGrantRepository::class)->findBy(['user' => $teacher]));
     }
 
     /**
@@ -187,10 +299,11 @@ class ClaudeConnectorOAuthFlowTest extends FunctionalTestCase
      */
     private function authorizeAndExchange(User $teacher, string $clientId): array
     {
+        $this->setServicePassword($teacher);
         $this->client->loginUser($teacher);
         $crawler = $this->client->request('GET', '/oauth/authorize?'.$this->authorizationQuery($clientId));
         $this->assertResponseIsSuccessful();
-        $this->client->submit($crawler->selectButton('Autoriser')->form());
+        $this->client->submit($crawler->selectButton('Autoriser')->form(['servicePassword' => self::SERVICE_PASSWORD]));
 
         $location = (string) $this->client->getResponse()->headers->get('Location');
         self::assertStringStartsWith(self::REDIRECT.'?code=', $location);
@@ -210,6 +323,12 @@ class ClaudeConnectorOAuthFlowTest extends FunctionalTestCase
         $this->assertResponseIsSuccessful();
 
         return $this->json();
+    }
+
+    private function setServicePassword(User $user, string $password = self::SERVICE_PASSWORD): void
+    {
+        static::getContainer()->get(ExternalServicePasswords::class)->set($user, ExternalService::ClaudeConnector, $password);
+        static::getContainer()->get('doctrine.orm.entity_manager')->flush();
     }
 
     private function authorizationQuery(string $clientId): string

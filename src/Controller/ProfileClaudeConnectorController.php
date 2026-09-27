@@ -6,10 +6,12 @@ namespace App\Controller;
 
 use App\Attribute\RequiresFeature;
 use App\Entity\User;
+use App\Enum\ExternalService;
 use App\Enum\Feature;
 use App\Enum\PlatformActivityType;
 use App\OAuth\ConnectorUrls;
 use App\Repository\OAuthGrantRepository;
+use App\Security\ExternalServicePasswords;
 use App\Service\PlatformActivityRecorder;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -30,11 +32,13 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[RequiresFeature(Feature::ClaudeConnector)]
 class ProfileClaudeConnectorController extends AbstractController
 {
-    public function card(OAuthGrantRepository $grants, ConnectorUrls $urls, ClockInterface $clock): Response
+    public function card(OAuthGrantRepository $grants, ConnectorUrls $urls, ClockInterface $clock, ExternalServicePasswords $servicePasswords): Response
     {
         return $this->render('profile/_claude_connector_card.html.twig', [
             'connectorUrl' => $urls->mcpUrl(),
             'connections' => $grants->findLiveFor($this->currentUser(), $clock->now()),
+            'service' => ExternalService::ClaudeConnector,
+            'servicePassword' => $servicePasswords->find($this->currentUser(), ExternalService::ClaudeConnector),
         ]);
     }
 
