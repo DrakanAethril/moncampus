@@ -200,8 +200,15 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   need API credits nobody pays — the « Beaupie » handoff is on hold for that reason). Two halves:
   - **OAuth 2.1, hand-rolled and minimal** (`src/OAuth/`, `App\Controller\OAuth\*`): discovery
     (RFC 8414/9728), dynamic client registration (open to the internet by spec, rate-limited, redirect
-    URIs from a closed list: claude.ai/claude.com callbacks and the loopback), a consent screen on the
-    `main` firewall, PKCE S256 only. `OAuthGrant` is the « connection » the profile card lists and
+    URIs from a closed list: claude.ai/claude.com callbacks and the loopback), a consent screen, PKCE
+    S256 only. **The consent screen never takes the establishment password**: it is public and signs
+    the person in with the password they chose for that service in « Mon profil »
+    (`App\Security\ExternalServicePasswords`, `ExternalServicePassword`, one per `ExternalService`).
+    That password is hashed (`external_service` hasher), strong (`App\Validator\StrongPassword`,
+    shared with the account password change) and **must differ from the directory password** —
+    checked by binding with it (`PlatformPasswordCheck`, a directory that cannot be asked means
+    « refuse »), both when chosen and at every sign-in. No service password, no authorisation;
+    changing or removing it revokes every grant. `OAuthGrant` is the « connection » the profile card lists and
     revokes; codes and tokens are selector + hashed verifier like `JobboardToken`, the refresh token
     **rotates**, and replaying a used code or refresh token revokes the whole grant.
   - **MCP, stateless** (`src/Mcp/`, `App\Controller\McpController`): JSON-RPC over POST, one message

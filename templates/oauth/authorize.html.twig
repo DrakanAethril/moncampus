@@ -1,12 +1,14 @@
 {% extends 'security/_auth_card.html.twig' %}
 
-{# The consent screen of the Claude connector (App\Controller\OAuth\AuthorizeController). Reached
-   signed in, so it follows the viewer's theme like the other signed-in auth screens. The form
-   posts the whole authorization request back: the controller checks it again rather than trusting
-   what these hidden fields say. `data-turbo="false"` because both answers redirect to the client's
-   own site, which Turbo's fetch cannot follow. #}
+{# The consent screen of the Claude connector (App\Controller\OAuth\AuthorizeController). It signs
+   the person in with the password they chose for this service in « Mon profil » - never the
+   establishment password, which is why it is public and does not go through /login. A signed-in
+   visitor has their identifier fixed; one who never chose a service password is sent to their
+   profile instead of being offered a field. The form posts the whole authorization request back:
+   the controller checks it again rather than trusting these hidden fields. `data-turbo="false"`
+   because both answers redirect to the client's own site, which Turbo's fetch cannot follow. #}
 
-{% block auth_card_modifier %}cm-authcard--themed{% endblock %}
+{% block auth_card_modifier %}{% if sessionUser %}cm-authcard--themed{% endif %}{% endblock %}
 
 {% block title %}{{ 'oauthConsentPageTitle'|trans }}{% endblock %}
 
@@ -16,7 +18,7 @@
             <svg class="icon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-plug-connected"></use></svg>
         </div>
         <h2>{{ 'oauthConsentHeading'|trans({'%client%': client.clientName}) }}</h2>
-        <p>{{ 'oauthConsentIntro'|trans({'%client%': client.clientName, '%user%': app.user.displayName ?? app.user.userIdentifier}) }}</p>
+        <p>{{ 'oauthConsentIntroServicePassword'|trans({'%client%': client.clientName}) }}</p>
     </div>
 
     <ul class="cm-oauth-consent__list">
@@ -25,15 +27,47 @@
         <li>{{ 'oauthConsentCreateEvaluations'|trans }}</li>
     </ul>
 
-    <p class="cm-authcard__hint">{{ 'oauthConsentRedirectHint'|trans({'%host%': redirectHost}) }}</p>
+    {% if error %}
+        <div class="cm-authcard__alert" role="alert">{{ error|trans }}</div>
+    {% endif %}
 
-    <form method="post" action="{{ path('app_oauth_authorize') }}" class="d-flex flex-column gap-2" data-turbo="false">
+    <form method="post" action="{{ path('app_oauth_authorize') }}" class="d-flex flex-column gap-3" data-turbo="false">
         <input type="hidden" name="_token" value="{{ csrf_token('oauth_authorize') }}">
         {% for name, value in authorization %}
             <input type="hidden" name="{{ name }}" value="{{ value }}">
         {% endfor %}
-        <button type="submit" name="decision" value="allow" class="cm-authcard__btn">{{ 'oauthConsentAllowAction'|trans }}</button>
-        <button type="submit" name="decision" value="deny" class="cm-authcard__btn cm-authcard__btn--secondary">{{ 'oauthConsentDenyAction'|trans }}</button>
+
+        {% if needsServicePassword %}
+            <div class="cm-authcard__banner">
+                <span class="cm-authcard__banner-icon" aria-hidden="true">!</span>
+                <span>{{ 'oauthConsentNeedsServicePasswordText'|trans }}</span>
+            </div>
+            <a href="{{ path('app_profile') }}#external-service-claude_connector" class="cm-authcard__btn">{{ 'oauthConsentSetServicePasswordAction'|trans }}</a>
+        {% else %}
+            <div class="cm-authcard__field-group">
+                <label class="cm-authcard__label" for="oauth-username">{{ 'usernameFieldLabel'|trans }}</label>
+                <div class="cm-authcard__input-wrap">
+                    <input type="text" id="oauth-username" name="username" class="cm-authcard__input" value="{{ username }}"
+                           autocomplete="username" {% if sessionUser %}readonly{% else %}autofocus{% endif %} required>
+                </div>
+            </div>
+            <div class="cm-authcard__field-group" data-controller="password-visibility">
+                <label class="cm-authcard__label" for="oauth-service-password">{{ 'oauthConsentServicePasswordLabel'|trans }}</label>
+                <div class="cm-authcard__input-wrap">
+                    {# autocomplete="off": a browser would otherwise offer the establishment password
+                       it saved for this site and this identifier - the one this field must never get. #}
+                    <input type="password" id="oauth-service-password" name="servicePassword" class="cm-authcard__input cm-authcard__input--password"
+                           autocomplete="off" required {% if sessionUser %}autofocus{% endif %} data-password-visibility-target="input">
+                    <button type="button" class="cm-authcard__eye" aria-pressed="false" title="{{ 'togglePasswordVisibilityHint'|trans }}" aria-label="{{ 'togglePasswordVisibilityHint'|trans }}" data-action="password-visibility#toggle">
+                        <svg class="icon" data-password-visibility-target="shownIcon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-eye"></use></svg>
+                        <svg class="icon d-none" data-password-visibility-target="hiddenIcon"><use href="{{ asset('icons/tabler-sprite.svg') }}#tabler-icon-eye-off"></use></svg>
+                    </button>
+                </div>
+            </div>
+            <p class="cm-authcard__hint">{{ 'oauthConsentRedirectHint'|trans({'%host%': redirectHost}) }}</p>
+            <button type="submit" name="decision" value="allow" class="cm-authcard__btn">{{ 'oauthConsentAllowAction'|trans }}</button>
+        {% endif %}
+        <button type="submit" name="decision" value="deny" class="cm-authcard__btn cm-authcard__btn--secondary" formnovalidate>{{ 'oauthConsentDenyAction'|trans }}</button>
     </form>
 {% endblock %}
 
