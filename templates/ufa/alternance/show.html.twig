@@ -3,11 +3,10 @@
 {% block title %}{{ 'ufaAlternanceShowPageHeading'|trans }} — {{ tutorLink.student.displayName ?? tutorLink.student.username }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'ufaAlternanceDashboardPageHeading'|trans, url: path('app_ufa')},
         {label: tutorLink.student.displayName ?? tutorLink.student.username, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'ufaAlternanceShowPageHeading'|trans }} — {{ tutorLink.student.displayName ?? tutorLink.student.username }}{% endblock %}
 {% block page_actions %}

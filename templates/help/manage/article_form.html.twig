@@ -5,12 +5,11 @@
 {% block title %}{{ heading }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'helpPageHeading'|trans, url: path('app_help')},
         {label: 'helpManagePageHeading'|trans, url: path('app_help_manage')},
         {label: heading, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ heading }}{% endblock %}

@@ -12,11 +12,10 @@
 {% block title %}{{ 'contentShareDuplicateHeading'|trans({'%name%': quiz.name}) }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'contentSharePageHeading'|trans, url: path('app_shares')},
         {label: 'contentShareDuplicateBreadcrumbLabel'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'contentShareDuplicateHeading'|trans({'%name%': quiz.name}) }}{% endblock %}

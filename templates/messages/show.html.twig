@@ -3,11 +3,10 @@
 {% block title %}{{ thread.subject }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'messagesPageHeading'|trans, url: path('app_messages')},
         {label: thread.subject, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'messagesPageHeading'|trans }}{% endblock %}
 {% block page_actions %}{% endblock %}

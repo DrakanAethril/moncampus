@@ -10,13 +10,13 @@
 {% block page_title %}{{ quizTemplate.name }}{% endblock %}
 
 {% block main %}
-    {% include '_tabs.html.twig' with {
+    {{ component('Cm:Tabs', {
         tabs: [
             {url: path('app_library_quiz_settings', {id: quizTemplate.id}), label: 'quizTabSettingsLabel'|trans, active: false},
             {url: path('app_library_quiz_questions', {id: quizTemplate.id}), label: 'quizTabQuestionsLabel'|trans, active: false},
             {url: path('app_library_quiz_test', {id: quizTemplate.id}), label: 'quizTabTestLabel'|trans, active: true},
         ],
-    } %}
+    }) }}
     <div class="card cm-card--tabbed">
         <div class="card-body">
             {% if questions|length == 0 %}

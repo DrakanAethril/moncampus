@@ -1,11 +1,11 @@
 {# The four faces of Configuration > Jobboard, side by side. The nav's submenu points at one tab
    each; the strip is what says they are one screen with four jobs - the key handed to the agent,
    the sites it files into, the file loaded by hand, and the record of what either door deposited. #}
-{% include '_tabs.html.twig' with {
+{{ component('Cm:Tabs', {
     tabs: [
         {url: path('app_settings_jobboard_api'), label: 'jobboardApiNavLabel'|trans, active: activeTab == 'api'},
         {url: path('app_settings_jobboard_sources'), label: 'jobboardSourcesNavLabel'|trans, active: activeTab == 'sources'},
         {url: path('app_settings_jobboard_import'), label: 'jobboardImportNavLabel'|trans, active: activeTab == 'import'},
         {url: path('app_settings_jobboard_history'), label: 'jobboardHistoryNavLabel'|trans, active: activeTab == 'history'},
     ],
-} only %}
+}) }}

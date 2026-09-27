@@ -3,11 +3,10 @@
 {% block title %}{{ 'infrastructureAddressesNavLabel'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
         {label: 'infrastructureAddressesNavLabel'|trans, url: path('app_infrastructure_ip_ranges')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'infrastructureAddressesNavLabel'|trans }}{% endblock %}

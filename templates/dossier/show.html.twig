@@ -3,12 +3,11 @@
 {% block title %}{{ dossier.title }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'toolsNavLabel'|trans, url: path('app_tools_random_draw')},
         {label: 'dossierNavLabel'|trans, url: path('app_dossiers')},
         {label: dossier.title, url: path('app_dossier_show', {id: dossier.id})},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {# The state pill sits inside the title, as the handoff draws it - .page-title is a flex container,

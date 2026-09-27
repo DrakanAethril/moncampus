@@ -3,11 +3,10 @@
 {% block title %}{{ 'programQuizNavLabel'|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'quizTrackingPageHeading'|trans, url: path('app_tools_quiz', {program: program.id})},
         {label: program.displayShortName, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'programQuizNavLabel'|trans }} - {{ program.displayShortName }}{% endblock %}
 

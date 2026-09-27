@@ -3,11 +3,10 @@
 {% block title %}{{ 'engagementDeclareHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'gameProgressHeading'|trans, url: path('app_game')},
         {label: 'engagementDeclareHeading'|trans, url: path('app_game_engagement_new')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'engagementDeclareHeading'|trans }}{% endblock %}
@@ -67,7 +66,7 @@
                                     {{ declaration.kind.labelKey|trans }}
                                     <span class="cm-gm-log__src">{{ declaration.createdAt|date('d/m/Y') }}{% if declaration.refusalReason %} · {{ declaration.refusalReason }}{% endif %}</span>
                                 </span>
-                                <span class="cm-badge cm-badge--{{ declaration.state.badgeVariant }}">{{ declaration.state.labelKey|trans }}</span>
+                                <twig:Cm:Badge :of="declaration.state"/>
                             </div>
                         {% else %}
                             <div class="cm-card-note">{{ 'engagementMineEmptyText'|trans }}</div>

@@ -3,12 +3,11 @@
 {% block title %}{{ range.label }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
         {label: 'infrastructureAddressesNavLabel'|trans, url: path('app_infrastructure_ip_ranges')},
         {label: range.label, url: path('app_infrastructure_ip_range', {id: range.id})},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ range.label }}{% endblock %}
@@ -57,7 +56,7 @@
                                 <tbody>
                                     {% for gap in report.gaps %}
                                         <tr>
-                                            <td style="width:130px"><span class="cm-badge cm-badge--{{ gap.badgeModifier }}">{{ gap.labelKey|trans }}</span></td>
+                                            <td style="width:130px"><twig:Cm:Badge :of="gap"/></td>
                                             <td style="width:130px" class="cm-mono">{{ gap.ip }}</td>
                                             <td>
                                                 {% if gap.kind == 'conflict' %}
@@ -153,8 +152,8 @@
                                 <td><span class="cm-guest__name">{{ allocation.hostname ?? '—' }}</span></td>
                                 <td class="cm-mono">{{ allocation.vmid ?? '—' }}</td>
                                 <td class="cm-mono">{{ allocation.macAddress ?? '—' }}</td>
-                                <td><span class="cm-badge cm-badge--{{ allocation.status.badgeModifier }}">{{ allocation.status.labelKey|trans }}</span></td>
-                                <td><span class="cm-badge cm-badge--{{ allocation.origin.badgeModifier }}">{{ allocation.origin.labelKey|trans }}</span></td>
+                                <td><twig:Cm:Badge :of="allocation.status"/></td>
+                                <td><twig:Cm:Badge :of="allocation.origin"/></td>
                                 <td class="cm-actions">
                                         {% if allocation.isLive %}
                                             <button type="button" class="cm-action--danger" data-action="ip-registry#release" data-ip="{{ allocation.ip }}">{{ 'ipGapReleaseAction'|trans }}</button>

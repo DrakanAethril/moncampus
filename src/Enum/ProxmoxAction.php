@@ -16,7 +16,7 @@ namespace App\Enum;
  * draws two buttons: a polite ACPI request and a power cut are not variants of each other, and
  * nobody should pick the second by accident.
  */
-enum ProxmoxAction: string
+enum ProxmoxAction: string implements HasBadge
 {
     /** POST …/status/start */
     case Start = 'start';
@@ -150,14 +150,14 @@ enum ProxmoxAction: string
     }
 
     /** The badge colour the journal gives it - power actions read as neutral, creation as notable. */
-    public function badgeModifier(): string
+    public function badgeTone(): BadgeTone
     {
         return match ($this) {
-            self::Start, self::Shutdown, self::Stop, self::Reboot => 'gray',
-            self::Clone, self::Create => 'blue',
-            self::Provision => 'teal',
-            self::Console => 'gold',
-            self::PostInstall => 'purple',
+            self::Start, self::Shutdown, self::Stop, self::Reboot => BadgeTone::Gray,
+            self::Clone, self::Create => BadgeTone::Blue,
+            self::Provision => BadgeTone::Teal,
+            self::Console => BadgeTone::Gold,
+            self::PostInstall => BadgeTone::Purple,
         };
     }
 }

@@ -3,12 +3,11 @@
 {% block title %}{{ 'guestAccountsHeading'|trans({'%vmid%': vmid}) }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
         {label: 'infrastructureGuestsNavLabel'|trans, url: path('app_infrastructure_guests', {host: host.id})},
         {label: 'guestAccountsHeading'|trans({'%vmid%': vmid}), url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'guestAccountsHeading'|trans({'%vmid%': vmid}) }}{% endblock %}
@@ -126,8 +125,8 @@
                             <tr>
                                 <td class="cm-mono">{{ account.login }}</td>
                                 <td>{{ account.displayName ?? '—' }}</td>
-                                <td><span class="cm-badge cm-badge--{{ account.state.badgeModifier }}">{{ account.state.labelKey|trans }}</span></td>
-                                <td><span class="cm-badge cm-badge--{{ account.origin.badgeModifier }}">{{ account.origin.labelKey|trans }}</span></td>
+                                <td><twig:Cm:Badge :of="account.state"/></td>
+                                <td><twig:Cm:Badge :of="account.origin"/></td>
                                 <td class="cm-actions">
                                         <button type="button" data-action="guest-accounts#reset" data-login="{{ account.login }}">{{ 'guestAccountResetAction'|trans }}</button>
                                         {% if account.state.value == 'to_remove' %}

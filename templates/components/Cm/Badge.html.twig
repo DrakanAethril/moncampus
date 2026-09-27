@@ -1,0 +1,2 @@
+{# See App\Twig\Components\Cm\Badge. #}
+<span{{ attributes.defaults({class: 'cm-badge cm-badge--' ~ this.tone.value}) }}>{% block content %}{{ this.labelKey ? this.labelKey|trans }}{% endblock %}</span>

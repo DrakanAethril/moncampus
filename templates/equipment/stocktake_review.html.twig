@@ -27,7 +27,7 @@
                                 <tr>
                                     <td class="font-monospace fw-bold">{{ item.code }}</td>
                                     <td>{{ item.type.name }}</td>
-                                    <td>{% include 'equipment/_status_badge.html.twig' with {status: item.status} only %}</td>
+                                    <td><twig:Cm:Badge :of="item.status"/></td>
                                 </tr>
                             {% else %}
                                 <tr><td class="text-center text-secondary">{{ 'equipmentStocktakeNoMissingItemText'|trans }}</td></tr>

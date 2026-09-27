@@ -3,9 +3,9 @@
 {% block title %}{{ (isEdit ? 'editInternshipSkillGroupPageHeading' : 'newInternshipSkillGroupPageHeading')|trans }} - {{ program.displayShortName }}{% endblock %}
 {% block page_breadcrumb %}
     {# Middle segments from the controller - see App\Controller\SkillGroupCrudTrait::skillBreadcrumb(). #}
-    {% include '_breadcrumb.html.twig' with {segments: [{label: 'homeNavLabel'|trans, url: path('app_home')}]
+    {{ component('Cm:Breadcrumb', {segments: []
         |merge(skillBreadcrumb|map(s => {label: s.labelKey ? s.labelKey|trans : s.label, url: s.url}))
-        |merge([{label: (isEdit ? 'editInternshipSkillGroupPageHeading' : 'newInternshipSkillGroupPageHeading')|trans, url: app.request.requestUri}]) } %}
+        |merge([{label: (isEdit ? 'editInternshipSkillGroupPageHeading' : 'newInternshipSkillGroupPageHeading')|trans, url: app.request.requestUri}]) }) }}
 {% endblock %}
 {% block page_title %}{{ (isEdit ? 'editInternshipSkillGroupPageHeading' : 'newInternshipSkillGroupPageHeading')|trans }} - {{ program.displayShortName }}{% endblock %}
 

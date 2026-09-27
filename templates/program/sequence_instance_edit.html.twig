@@ -6,12 +6,11 @@
 {% block title %}{{ 'editSequenceInstancePageHeading'|trans }} - {{ sequenceInstance.titre }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: program.displayShortName, url: path('app_program_timetable', {id: program.id})},
         {label: sequenceInstance.titre, url: backUrl},
         {label: 'editSequenceInstancePageHeading'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'editSequenceInstancePageHeading'|trans }} — {{ sequenceInstance.titre }}{% endblock %}
 

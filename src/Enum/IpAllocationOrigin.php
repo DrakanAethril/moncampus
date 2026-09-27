@@ -17,7 +17,7 @@ namespace App\Enum;
  *                scan must never report them as orphaned when it fails to find a machine holding
  *                them - there is no machine, and there never was.
  */
-enum IpAllocationOrigin: string
+enum IpAllocationOrigin: string implements HasBadge
 {
     case Declared = 'declared';
     case Discovered = 'discovered';
@@ -32,12 +32,12 @@ enum IpAllocationOrigin: string
         };
     }
 
-    public function badgeModifier(): string
+    public function badgeTone(): BadgeTone
     {
         return match ($this) {
-            self::Declared => 'gray',
-            self::Discovered => 'blue',
-            self::External => 'teal',
+            self::Declared => BadgeTone::Gray,
+            self::Discovered => BadgeTone::Blue,
+            self::External => BadgeTone::Teal,
         };
     }
 }

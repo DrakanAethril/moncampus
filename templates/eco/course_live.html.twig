@@ -5,13 +5,12 @@
 {% block title %}{{ course.name }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'ecoParcoursListPageHeading'|trans, url: path('app_eco_parcours')},
         {label: course.parcours.name, url: path('app_eco_parcours_configure', {id: course.parcours.id})},
         {label: 'ecoCourseIndexBreadcrumbLabel'|trans, url: path('app_eco_course_index', {parcoursId: course.parcours.id})},
         {label: 'ecoCourseLiveBreadcrumbLabel'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}
     {{ course.name }}

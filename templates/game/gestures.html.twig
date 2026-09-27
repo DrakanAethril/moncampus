@@ -3,11 +3,10 @@
 {% block title %}{{ 'gameGesturesHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: program.displayShortName, url: path('app_program_timetable', {id: program.id})},
         {label: 'gameGesturesHeading'|trans, url: path('app_program_game_gestures', {id: program.id})},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'gameGesturesHeading'|trans }}{% endblock %}

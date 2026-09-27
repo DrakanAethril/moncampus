@@ -3,11 +3,10 @@
 {% block title %}{{ 'featureOverridesPageHeading'|trans({'%feature%': feature.labelKey|trans}) }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'featureMatrixPageHeading'|trans, url: path('app_features')},
         {label: feature.labelKey|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'featureOverridesPageHeading'|trans({'%feature%': feature.labelKey|trans}) }}{% endblock %}
 

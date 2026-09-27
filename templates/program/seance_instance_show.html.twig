@@ -9,12 +9,11 @@
 {% block title %}{{ seanceInstance.titre }} - {{ program.displayShortName }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: program.displayShortName, url: path('app_program_timetable', {id: program.id})},
         {label: sequenceInstance.titre, url: path('app_program_sequences_show', {id: program.id, sequenceInstanceId: sequenceInstance.id})},
         {label: seanceInstance.titre, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ seanceInstance.titre }}{% endblock %}
 

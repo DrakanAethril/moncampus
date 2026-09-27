@@ -4,9 +4,9 @@
 
 {% block page_breadcrumb %}
     {# Middle segments from the controller - see App\Controller\SkillGroupCrudTrait::skillBreadcrumb(). #}
-    {% include '_breadcrumb.html.twig' with {segments: [{label: 'homeNavLabel'|trans, url: path('app_home')}]
+    {{ component('Cm:Breadcrumb', {segments: []
         |merge(skillBreadcrumb|map(s => {label: s.labelKey ? s.labelKey|trans : s.label, url: s.url}))
-        |merge([{label: skillGroup.label, url: app.request.requestUri}]) } %}
+        |merge([{label: skillGroup.label, url: app.request.requestUri}]) }) }}
 {% endblock %}
 {% block page_title %}{{ 'skillsPageHeading'|trans }} - {{ skillGroup.label }}{% endblock %}
 

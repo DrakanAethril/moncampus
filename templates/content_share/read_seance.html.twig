@@ -11,11 +11,10 @@
 {% block title %}{{ seance.titre }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'contentSharePageHeading'|trans, url: path('app_shares')},
         {label: seance.titre, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ seance.titre }}{% endblock %}

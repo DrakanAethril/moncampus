@@ -8,10 +8,9 @@
 {% block title %}{{ 'wikiSharedPageHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'wikiSharedNavLabel'|trans, url: path('app_wiki_shared')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'wikiSharedPageHeading'|trans }}{% endblock %}

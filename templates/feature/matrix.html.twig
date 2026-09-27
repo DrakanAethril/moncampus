@@ -5,10 +5,9 @@
 {% block page_breadcrumb %}
     {# Two segments: Gestion is a menu with no landing page of its own, so the screen hangs
        straight off Accueil - the same trail the Annuaire screens draw. #}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'featureMatrixPageHeading'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'featureMatrixPageHeading'|trans }}{% endblock %}
 

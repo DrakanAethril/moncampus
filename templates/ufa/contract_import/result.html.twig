@@ -3,13 +3,12 @@
 {% block title %}{{ 'ufaContractImportResultPageHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'ufaNavLabel'|trans, url: path('app_ufa')},
         {label: 'ufaConfigurationNavLabel'|trans, url: path('app_ufa_configuration_formation_center')},
         {label: 'ufaContractImportPageHeading'|trans, url: path('app_ufa_configuration_contract_import')},
         {label: 'ufaContractImportResultPageHeading'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'ufaContractImportResultPageHeading'|trans }}{% endblock %}
 

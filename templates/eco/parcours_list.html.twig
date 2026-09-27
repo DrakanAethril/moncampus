@@ -9,11 +9,10 @@
 {% block title %}{{ 'ecoParcoursListPageHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'ecoNavLabel'|trans, url: path('app_eco_parcours')},
         {label: 'ecoParcoursBreadcrumbLabel'|trans, url: path('app_eco_parcours')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'ecoParcoursListPageHeading'|trans }}{% endblock %}

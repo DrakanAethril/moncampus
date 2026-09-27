@@ -12,7 +12,7 @@ namespace App\Enum;
  * analysis, indexes, refactors - which belongs in the record (the repository is public and under
  * the AGPL) but not in the first thing a teacher reads. The page folds it away for that reason.
  */
-enum ReleaseEntryType: string
+enum ReleaseEntryType: string implements HasBadge
 {
     case Feature = 'nouveaute';
     case Change = 'modification';
@@ -31,14 +31,14 @@ enum ReleaseEntryType: string
         };
     }
 
-    public function badgeClass(): string
+    public function badgeTone(): BadgeTone
     {
         return match ($this) {
-            self::Feature => 'cm-badge--green',
-            self::Change => 'cm-badge--blue',
-            self::Fix => 'cm-badge--gold',
-            self::Internal => 'cm-badge--gray',
-            self::Other => 'cm-badge--teal',
+            self::Feature => BadgeTone::Green,
+            self::Change => BadgeTone::Blue,
+            self::Fix => BadgeTone::Gold,
+            self::Internal => BadgeTone::Gray,
+            self::Other => BadgeTone::Teal,
         };
     }
 

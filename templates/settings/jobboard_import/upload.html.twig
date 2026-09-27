@@ -3,11 +3,10 @@
 {% block title %}{{ 'jobboardSettingsHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'settingsConfigurationNavLabel'|trans, url: path('app_settings_configuration')},
         {label: 'jobboardSettingsHeading'|trans, url: path('app_settings_jobboard_import')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'jobboardSettingsHeading'|trans }}{% endblock %}

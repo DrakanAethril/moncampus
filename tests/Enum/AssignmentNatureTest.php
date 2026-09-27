@@ -21,7 +21,6 @@ class AssignmentNatureTest extends TestCase
         foreach (AssignmentNature::cases() as $nature) {
             self::assertNotSame('', $nature->labelKey(), $nature->value);
             self::assertNotSame('', $nature->hintKey(), $nature->value);
-            self::assertNotSame('', $nature->badgeClass(), $nature->value);
         }
     }
 

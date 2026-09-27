@@ -21,7 +21,7 @@ namespace App\Enum;
  * A released row is kept rather than deleted: it is the history of who held what, and the
  * uniqueness index is written so it stops colliding the moment it is released.
  */
-enum IpAllocationStatus: string
+enum IpAllocationStatus: string implements HasBadge
 {
     case Reserved = 'reserved';
     case Assigned = 'assigned';
@@ -38,13 +38,13 @@ enum IpAllocationStatus: string
         };
     }
 
-    public function badgeModifier(): string
+    public function badgeTone(): BadgeTone
     {
         return match ($this) {
-            self::Reserved => 'gold',
-            self::Assigned => 'blue',
-            self::Confirmed => 'green',
-            self::Released => 'gray',
+            self::Reserved => BadgeTone::Gold,
+            self::Assigned => BadgeTone::Blue,
+            self::Confirmed => BadgeTone::Green,
+            self::Released => BadgeTone::Gray,
         };
     }
 

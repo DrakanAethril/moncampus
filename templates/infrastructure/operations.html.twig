@@ -3,11 +3,10 @@
 {% block title %}{{ 'infrastructureOperationsNavLabel'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
         {label: 'infrastructureOperationsNavLabel'|trans, url: path('app_infrastructure_operations')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'infrastructureOperationsNavLabel'|trans }}{% endblock %}
@@ -68,7 +67,7 @@
                     {% for operation in operations %}
                         <tr>
                             <td class="cm-guest__sub cm-mono">{{ operation.requestedAt|date('d/m · H:i:s') }}</td>
-                            <td><span class="cm-badge cm-badge--{{ operation.action.badgeModifier }}">{{ operation.action.labelKey|trans }}</span></td>
+                            <td><twig:Cm:Badge :of="operation.action"/></td>
                             <td>
                                 {% if operation.guestName %}
                                     <span class="cm-guest__name">{{ operation.guestName }}</span>
@@ -79,7 +78,7 @@
                             </td>
                             <td class="cm-guest__sub">{{ operation.hostLabel }}</td>
                             <td class="cm-guest__sub">{{ operation.requestedByLabel }}</td>
-                            <td><span class="cm-badge cm-badge--{{ operation.status.badgeModifier }}">{{ operation.status.labelKey|trans }}</span></td>
+                            <td><twig:Cm:Badge :of="operation.status"/></td>
                             <td class="cm-guest__sub">
                                 {# Proxmox's own wording, untranslated: a glossary would be one more thing to
                                    keep in step, and the raw string is what is searchable as-is. #}

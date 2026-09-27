@@ -16,7 +16,7 @@
 {% block main %}
     <div class="text-secondary mb-3" style="margin-top: -8px;">
         <a href="{{ path('app_equipment_type_show', {id: item.type.id}) }}">{{ item.type.name }}</a>
-        · {% include 'equipment/_status_badge.html.twig' with {status: item.status} only %}
+        · <twig:Cm:Badge :of="item.status"/>
         {% if item.room %}· {{ item.room.name }}{% endif %}
     </div>
 

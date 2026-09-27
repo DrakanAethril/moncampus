@@ -5,7 +5,6 @@
    the same pattern as templates/audio_recording/_breadcrumb.html.twig. Every segment stays a real
    <a href>, the last one carrying .current, per the application-wide convention. #}
 {% set segments = [
-    {label: 'homeNavLabel'|trans, url: path('app_home')},
     {label: program.displayShortName, url: path('app_program_students', {id: program.id})},
     {label: 'programToolsNavLabel'|trans, url: path('app_program_word_clouds', {id: program.id})},
     {label: 'wordCloudNavLabel'|trans, url: path('app_program_word_clouds', {id: program.id})},
@@ -15,4 +14,4 @@
 {% elseif newLabel is defined %}
     {% set segments = segments|merge([{label: newLabel, url: app.request.requestUri}]) %}
 {% endif %}
-{% include '_breadcrumb.html.twig' with {segments: segments} %}
+{{ component('Cm:Breadcrumb', {segments: segments}) }}

@@ -11,7 +11,7 @@ namespace App\Enum;
  * confirmation button entirely, rather than dropping its own line. An import that half-writes a
  * promotion's contracts is worse than one that refuses - the file gets fixed and re-uploaded.
  */
-enum AlternanceImportSeverity: string
+enum AlternanceImportSeverity: string implements HasBadge
 {
     case Blocking = 'blocking';
     case Warning = 'warning';
@@ -28,12 +28,12 @@ enum AlternanceImportSeverity: string
         };
     }
 
-    public function badgeClass(): string
+    public function badgeTone(): BadgeTone
     {
         return match ($this) {
-            self::Blocking => 'cm-badge--red',
-            self::Warning => 'cm-badge--gold',
-            self::Note => 'cm-badge--gray',
+            self::Blocking => BadgeTone::Red,
+            self::Warning => BadgeTone::Gold,
+            self::Note => BadgeTone::Gray,
         };
     }
 }

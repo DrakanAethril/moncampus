@@ -13,7 +13,7 @@ namespace App\Enum;
  * administrator decides. `kept` is the answer to "I saw it, and I am leaving it there", and it has
  * to be recorded or every run would propose the same removal again.
  */
-enum GuestAccountState: string
+enum GuestAccountState: string implements HasBadge
 {
     /** Wanted, and not on the machine yet. */
     case ToCreate = 'to_create';
@@ -37,13 +37,13 @@ enum GuestAccountState: string
         };
     }
 
-    public function badgeModifier(): string
+    public function badgeTone(): BadgeTone
     {
         return match ($this) {
-            self::ToCreate => 'gold',
-            self::Present => 'green',
-            self::ToRemove => 'red',
-            self::Kept => 'gray',
+            self::ToCreate => BadgeTone::Gold,
+            self::Present => BadgeTone::Green,
+            self::ToRemove => BadgeTone::Red,
+            self::Kept => BadgeTone::Gray,
         };
     }
 

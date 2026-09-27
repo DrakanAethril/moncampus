@@ -3,11 +3,10 @@
 {% block title %}{{ 'dossierNavLabel'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'toolsNavLabel'|trans, url: path('app_tools_random_draw')},
         {label: 'dossierNavLabel'|trans, url: path('app_dossiers')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'dossierNavLabel'|trans }}{% endblock %}

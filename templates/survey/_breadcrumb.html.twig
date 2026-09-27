@@ -2,7 +2,6 @@
    then one entry per folder being opened - depth follows navigation, and a classement three folders
    deep is three real levels. #}
 {% set segments = [
-    {label: 'homeNavLabel'|trans, url: path('app_home')},
     {label: 'surveysPageHeading'|trans, url: path('app_surveys')},
 ] %}
 
@@ -16,4 +15,4 @@
     {% set segments = segments|merge([{label: 'surveyLibrarySearchResultsHeading'|trans, url: path('app_surveys_templates_search', {q: searchTerms})}]) %}
 {% endif %}
 
-{% include '_breadcrumb.html.twig' with {segments: segments} %}
+{{ component('Cm:Breadcrumb', {segments: segments}) }}

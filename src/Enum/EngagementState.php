@@ -14,7 +14,7 @@ namespace App\Enum;
  * A refused declaration **stays in the queue, struck through**, rather than disappearing: it is what
  * stops the same thing from being re-filed three times in the hope of a different reviewer.
  */
-enum EngagementState: string
+enum EngagementState: string implements HasBadge
 {
     case Filed = 'filed';
     case Validated = 'validated';
@@ -29,12 +29,12 @@ enum EngagementState: string
         };
     }
 
-    public function badgeVariant(): string
+    public function badgeTone(): BadgeTone
     {
         return match ($this) {
-            self::Filed => 'gold',
-            self::Validated => 'green',
-            self::Refused => 'gray',
+            self::Filed => BadgeTone::Gold,
+            self::Validated => BadgeTone::Green,
+            self::Refused => BadgeTone::Gray,
         };
     }
 

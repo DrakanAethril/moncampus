@@ -3,11 +3,10 @@
 {% block title %}{{ 'jobboardSettingsHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'settingsConfigurationNavLabel'|trans, url: path('app_settings_configuration')},
         {label: 'jobboardSettingsHeading'|trans, url: path('app_settings_jobboard_api')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'jobboardSettingsHeading'|trans }}{% endblock %}
@@ -104,7 +103,7 @@
             </div>
             <div class="cm-actionbar">
                 <div class="cm-actionbar__buttons">
-                    <button type="submit" class="cm-btn cm-btn--primary">{{ 'jobboardTokenCreateAction'|trans }}</button>
+                    <twig:Cm:Button variant="primary" type="submit">{{ 'jobboardTokenCreateAction'|trans }}</twig:Cm:Button>
                 </div>
             </div>
         </form>
@@ -125,8 +124,8 @@
             </div>
             {# Above the sheet and not under it: sixteen screens of Markdown must not be scrolled
                past to reach the button that copies them. #}
-            <button type="button" class="cm-btn cm-btn--outline" data-action="click->copy-block#copy"
-                    data-copy-block-done-label-param="{{ 'jobboardInstructionsCopiedText'|trans }}">{{ 'jobboardInstructionsCopyAction'|trans }}</button>
+            <twig:Cm:Button variant="outline" data-action="click->copy-block#copy"
+                    data-copy-block-done-label-param="{{ 'jobboardInstructionsCopiedText'|trans }}">{{ 'jobboardInstructionsCopyAction'|trans }}</twig:Cm:Button>
         </div>
         <pre class="cm-jb-instructions" data-copy-block-target="source">{{ instructions }}</pre>
         <div class="cm-jb-sheet__foot">{{ 'jobboardInstructionsNoSecretText'|trans }}</div>

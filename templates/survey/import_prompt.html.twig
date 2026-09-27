@@ -3,12 +3,11 @@
 {% block title %}{{ 'surveyAssistantPromptPageHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'surveysPageHeading'|trans, url: path('app_surveys')},
         {label: 'surveyAssistantBreadcrumbLabel'|trans, url: path('app_survey_import')},
         {label: 'surveyAssistantPromptBreadcrumbLabel'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'surveyAssistantPromptPageHeading'|trans }}{% endblock %}
 

@@ -9,7 +9,6 @@
    "Mon wiki", everything else through « Wikis partagés » - so the trail retraces the way the reader came
    rather than naming a hub that does not exist. #}
 {% set segments = [
-    {label: 'homeNavLabel'|trans, url: path('app_home')},
     {label: 'wikiNavLabel'|trans, url: wiki.personal ? path('app_wiki_personal') : path('app_wiki_shared')},
     {label: wiki.title, url: path('app_wiki_show', {id: wiki.id})},
 ] %}
@@ -22,4 +21,4 @@
 {% for segment in extra|default([]) %}
     {% set segments = segments|merge([segment]) %}
 {% endfor %}
-{% include '_breadcrumb.html.twig' with {segments: segments} %}
+{{ component('Cm:Breadcrumb', {segments: segments}) }}

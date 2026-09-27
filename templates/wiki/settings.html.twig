@@ -30,11 +30,10 @@
 
 {% block page_breadcrumb %}
     {% if isNew %}
-        {% include '_breadcrumb.html.twig' with {segments: [
-            {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {{ component('Cm:Breadcrumb', {segments: [
             {label: 'wikiSharedNavLabel'|trans, url: path('app_wiki_shared')},
             {label: 'wikiNewPageHeading'|trans, url: path('app_wiki_new')},
-        ]} %}
+        ]}) }}
     {% else %}
         {% include 'wiki/_breadcrumb.html.twig' with {
             wiki: wiki,

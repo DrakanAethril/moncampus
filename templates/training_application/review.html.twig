@@ -8,7 +8,7 @@
 {% block title %}{{ 'trainingReviewPageHeading'|trans({'%student%': application.student.displayName ?? application.student.username}) }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% set segments = [{label: 'homeNavLabel'|trans, url: path('app_home')}] %}
+    {% set segments = [] %}
     {% if program %}
         {% set segments = segments|merge([
             {label: program.displayShortName, url: path('app_program_students', {id: program.id})},
@@ -16,7 +16,7 @@
         ]) %}
     {% endif %}
     {% set segments = segments|merge([{label: 'trainingReviewBreadcrumbLabel'|trans, url: app.request.requestUri}]) %}
-    {% include '_breadcrumb.html.twig' with {segments: segments} %}
+    {{ component('Cm:Breadcrumb', {segments: segments}) }}
 {% endblock %}
 
 {% block page_title %}

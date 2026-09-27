@@ -6,18 +6,16 @@
     {# La profondeur suit la navigation, pas l'URL : l'enseignant vient de sa carte, l'administrateur
        vient de la liste des machines de l'hôte. Deux portes, deux fils. #}
     {% if fromAdmin %}
-        {% include '_breadcrumb.html.twig' with {segments: [
-            {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {{ component('Cm:Breadcrumb', {segments: [
             {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
             {label: 'infrastructureGuestsNavLabel'|trans, url: path('app_infrastructure_guests', {host: host.id})},
             {label: machineName, url: app.request.pathInfo},
-        ]} %}
+        ]}) }}
     {% else %}
-        {% include '_breadcrumb.html.twig' with {segments: [
-            {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {{ component('Cm:Breadcrumb', {segments: [
             {label: 'myMachinesHeading'|trans, url: path('app_my_machines')},
             {label: machineName, url: app.request.pathInfo},
-        ]} %}
+        ]}) }}
     {% endif %}
 {% endblock %}
 

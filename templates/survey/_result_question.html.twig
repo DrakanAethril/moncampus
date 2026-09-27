@@ -13,7 +13,7 @@
         <div>
             <div class="cm-result__label">{{ question.label }}</div>
             <div class="text-secondary small">
-                <span class="cm-badge {{ question.type.badgeClass }}">{{ question.type.labelKey|trans }}</span>
+                <twig:Cm:Badge :of="question.type"/>
                 {% if question.isScale and question.type.supportsScale %}<span class="cm-badge cm-badge--teal">{{ 'surveyQuestionScaleBadgeLabel'|trans }}</span>{% endif %}
                 {{ 'surveyResultAnsweredOnTargetedText'|trans({'%answered%': result.answered, '%targeted%': result.targeted}) }}
                 {%- if result.scaleAverage is not null %} · <strong>{{ 'surveyResultScaleAverageText'|trans({'%average%': result.scaleAverage|number_format(2, ',', ' '), '%max%': result.scaleMax}) }}</strong>{% endif %}

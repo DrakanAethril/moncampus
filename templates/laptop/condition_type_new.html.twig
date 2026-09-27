@@ -3,13 +3,12 @@
 {% block title %}{{ (isEdit ? 'editLoanConditionTypePageHeading' : 'newLoanConditionTypePageHeading')|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'ufaNavLabel'|trans, url: path('app_ufa')},
         {label: 'laptopsNavLabel'|trans, url: path('app_laptops_loans')},
         {label: 'laptopsConfigurationTabLabel'|trans, url: path('app_laptops_configuration')},
         {label: (isEdit ? 'editLoanConditionTypePageHeading' : 'newLoanConditionTypePageHeading')|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ (isEdit ? 'editLoanConditionTypePageHeading' : 'newLoanConditionTypePageHeading')|trans }}{% endblock %}
 

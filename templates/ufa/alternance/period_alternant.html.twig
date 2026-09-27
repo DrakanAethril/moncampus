@@ -3,12 +3,11 @@
 {% block title %}{{ 'ufaAlternanceRoleStudentLabel'|trans }} — {{ period.name }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'ufaAlternanceDashboardPageHeading'|trans, url: path('app_ufa')},
         {label: tutorLink.student.displayName ?? tutorLink.student.username, url: path('app_ufa_alternance_show', {id: tutorLink.id})},
         {label: period.name ~ ' — ' ~ 'ufaAlternanceRoleStudentLabel'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ period.name }} — {{ 'ufaAlternanceRoleStudentLabel'|trans }}{% endblock %}
 

@@ -9,7 +9,7 @@ namespace App\Enum;
  * App\Service\LaptopImport\LaptopImportAnalyzer, shown on the verification screen, and decided again
  * from scratch just before anything is written.
  */
-enum LaptopImportAction: string
+enum LaptopImportAction: string implements HasBadge
 {
     /** No machine carries this inventory number nor this serial number: a new row in the fleet. */
     case Create = 'create';
@@ -35,12 +35,12 @@ enum LaptopImportAction: string
         };
     }
 
-    public function badgeClass(): string
+    public function badgeTone(): BadgeTone
     {
         return match ($this) {
-            self::Create => 'cm-badge--green',
-            self::Skip => 'cm-badge--gray',
-            self::Blocked => 'cm-badge--red',
+            self::Create => BadgeTone::Green,
+            self::Skip => BadgeTone::Gray,
+            self::Blocked => BadgeTone::Red,
         };
     }
 }

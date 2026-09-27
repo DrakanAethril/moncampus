@@ -5,12 +5,11 @@
 {% block title %}{{ 'consoleTranscriptHeading'|trans({'%name%': machine_name}) }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
         {label: 'consoleSessionsNavLabel'|trans, url: path('app_infrastructure_console_sessions')},
         {label: machine_name, url: app.request.pathInfo},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'consoleTranscriptHeading'|trans({'%name%': machine_name}) }}{% endblock %}

@@ -5,12 +5,12 @@
 {% block page_breadcrumb %}
     {# The two middle segments come from the controller (skillBreadcrumb): a reader who came in
        through UFA must not be sent back into Paramétrage by the trail. #}
-    {% include '_breadcrumb.html.twig' with {segments: [{label: 'homeNavLabel'|trans, url: path('app_home')}]
+    {{ component('Cm:Breadcrumb', {segments: []
         |merge(skillBreadcrumb|map(s => {label: s.labelKey ? s.labelKey|trans : s.label, url: s.url}))
         |merge([
             {label: skillGroup.label, url: path(skillRoutes.skills, {id: program.id, groupId: skillGroup.id})},
             {label: (isEdit ? 'editSkillPageHeading' : 'newSkillPageHeading')|trans, url: app.request.requestUri},
-        ]) } %}
+        ]) }) }}
 {% endblock %}
 {% block page_title %}{{ (isEdit ? 'editSkillPageHeading' : 'newSkillPageHeading')|trans }} - {{ skillGroup.label }}{% endblock %}
 
