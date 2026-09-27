@@ -19,8 +19,7 @@
     <td class="cm-slib__menu">
         <div class="dropdown">
             <button type="button" class="cm-slib__kebab" data-bs-toggle="dropdown" aria-expanded="false"
-                    data-bs-boundary="viewport"
-                    data-bs-popper-config='{"strategy":"fixed"}'
+                    data-bs-popper-config='{"strategy":"fixed","modifiers":[{"name":"preventOverflow","options":{"boundary":"viewport"}},{"name":"offset","options":{"offset":[0,2]}}]}'
                     aria-label="{{ 'surveyLibraryRowMenuLabel'|trans }}">⋮</button>
             <ul class="dropdown-menu dropdown-menu-end">
                 <li><a class="dropdown-item" href="{{ path('app_survey_launch', {id: template.id}) }}">{{ 'surveyLaunchCampaignActionLabel'|trans }}</a></li>

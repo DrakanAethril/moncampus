@@ -59,10 +59,15 @@
                A `fixed` Popper strategy takes the menu out of that box - it is positioned against the
                viewport and no ancestor's overflow can trim it - and the viewport boundary is what then
                decides whether it opens downwards or flips up. Both are Bootstrap's own options; the
-               alternative was dropping the horizontal scroll the narrow screens need. #}
+               alternative was dropping the horizontal scroll the narrow screens need.
+
+               The boundary goes through popperConfig, never `data-bs-boundary="viewport"`: Tabler 1.4.0
+               initialises every dropdown on page load and turns that attribute into
+               `document.querySelector('.btn')` - the first button of the page as the boundary, or null
+               and a thrown error on a page that has none. popperConfig replaces Bootstrap's modifier
+               list wholesale, hence the offset repeated at its default of [0, 2]. #}
             <button type="button" class="cm-flib__kebab" data-bs-toggle="dropdown" aria-expanded="false"
-                    data-bs-boundary="viewport"
-                    data-bs-popper-config='{"strategy":"fixed"}'
+                    data-bs-popper-config='{"strategy":"fixed","modifiers":[{"name":"preventOverflow","options":{"boundary":"viewport"}},{"name":"offset","options":{"offset":[0,2]}}]}'
                     aria-label="{{ 'fileLibraryRowMenuLabel'|trans }}">⋮</button>
             <ul class="dropdown-menu dropdown-menu-end">
                 {# First entry, above « Créer un travail »: putting a document at a class's disposal
