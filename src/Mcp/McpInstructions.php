@@ -27,5 +27,11 @@ final class McpInstructions
         3. Valide si possible le document (`quiz_validate`, `sequence_validate`) avant de créer ; corrige les erreurs signalées et recommence.
         4. Après chaque création, donne à l'enseignant le lien MonCampus renvoyé par l'outil pour qu'il vérifie.
         5. Une évaluation créée n'est visible des étudiants qu'à sa date de visibilité : signale-la toujours à l'enseignant.
+
+        Emploi du temps, cahier de texte, progression :
+        - Une séance se retrouve avec `timetable_get` (date, classe, matière) : c'est son `sessionId` que prennent `lesson_log_get` et `lesson_log_write`. Si plusieurs séances correspondent, demande laquelle.
+        - Avant d'écrire un cahier de texte, lis la séance avec `lesson_log_get`, propose le texte à l'enseignant et attends son accord ; n'appelle `lesson_log_write` qu'ensuite. Ne remplace jamais une partie déjà remplie sans qu'il le demande.
+        - Dis toujours si le cahier de texte est visible des étudiants ou masqué.
+        - `progression_get` sert à savoir où en est la classe et à suggérer une progression ; ce connecteur n'écrit aucune progression : l'enseignant la construit dans MonCampus.
         TXT;
 }
