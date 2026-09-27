@@ -1,16 +1,9 @@
 import { Controller } from '@hotwired/stimulus';
-// Must run before any @fullcalendar/* plugin import - FullCalendar v5's plugin system relies
-// on this side-effecting module to set up a shared registry first.
-import 'fullcalendar';
 import { Calendar } from '@fullcalendar/core';
 import interactionPlugin from '@fullcalendar/interaction';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
-import frLocaleModule from '@fullcalendar/core/locales/fr';
-
-// jsDelivr's ESM re-bundling of this locale file double-wraps its CJS "exports.default" as
-// { default: { code: 'fr', ... } } instead of the flat locale object - unwrap it defensively.
-const frLocale = frLocaleModule.code ? frLocaleModule : frLocaleModule.default;
+import frLocale from '@fullcalendar/core/locales/fr.js';
 
 /**
  * Weekly lesson-session calendar, ported from the reference app's plain
