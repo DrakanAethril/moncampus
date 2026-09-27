@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\EcoleDirecte;
 
 use App\Entity\Evaluation;
+use App\Entity\User;
+use App\Repository\EcoleDirecteStudentLinkRepository;
 
 /**
  * Sends one MonCampus evaluation and its grades to an École Directe gradebook.
@@ -15,24 +17,27 @@ use App\Entity\Evaluation;
  * grades in, the others left as they were.
  *
  * A grade leaves as École Directe writes it (EcoleDirecteGradePlanner::noteFor()): the number, `abs`,
- * `ne`, or the number in brackets when it does not count. A student whose name matches nobody, or two
- * people, is left out. The preview says so line by line, and send() recomputes it rather than
- * trusting the screen.
+ * `ne`, or the number in brackets when it does not count - brought back to 20 first when the teacher
+ * asked for it (EcoleDirecteGradeOptions), the evaluation then created out of 20. A student whose
+ * name matches nobody, or two people, is left out unless a link remembers who they are there
+ * (App\Entity\EcoleDirecteStudentLink). The preview says so line by line, and send() recomputes it
+ * rather than trusting the screen.
  */
 class EcoleDirecteGradebookWriter
 {
     public function __construct(
         private readonly EcoleDirecteClient $client,
         private readonly EcoleDirecteGradePlanner $planner,
+        private readonly EcoleDirecteStudentLinkRepository $links,
     ) {
     }
 
     /**
-     * @return array{evaluation: ?array<array-key, mixed>, rows: list<EcoleDirecteGradeRow>, ecoleDirecteOnly: list<string>, refusal: ?string, session: EcoleDirecteSession}
+     * @return array{evaluation: ?array<array-key, mixed>, rows: list<EcoleDirecteGradeRow>, ecoleDirecteOnly: array<int, string>, refusal: ?string, coefficientKept: ?float, grid: array<array-key, mixed>, session: EcoleDirecteSession}
      *
      * @throws EcoleDirecteException
      */
-    public function preview(EcoleDirecteSession $session, Evaluation $evaluation, EcoleDirecteGradebookTarget $target): array
+    public function preview(EcoleDirecteSession $session, Evaluation $evaluation, EcoleDirecteGradebookTarget $target, EcoleDirecteGradeOptions $options): array
     {
         if (!$session->account->isTeacher()) {
             throw new EcoleDirecteException('ecoleDirecteNotTeacherMessage');
@@ -41,9 +46,11 @@ class EcoleDirecteGradebookWriter
         $date = $evaluation->getDate()?->format('Y-m-d') ?? throw new EcoleDirecteException('ecoleDirecteEvaluationWithoutDateMessage');
 
         $grid = $this->client->read($session, $target->routeStem($session->account).'/notes.awp');
+        $data = \is_array($grid->data) ? $grid->data : [];
 
         return [
-            ...$this->planner->plan(self::entries($evaluation), \is_array($grid->data) ? $grid->data : [], $evaluation->getName(), $date, $evaluation->getScale()),
+            ...$this->plan($evaluation, $data, $date, $options),
+            'grid' => $data,
             'session' => $grid->session,
         ];
     }
@@ -53,9 +60,9 @@ class EcoleDirecteGradebookWriter
      *
      * @throws EcoleDirecteException
      */
-    public function send(EcoleDirecteSession $session, Evaluation $evaluation, EcoleDirecteGradebookTarget $target): array
+    public function send(EcoleDirecteSession $session, Evaluation $evaluation, EcoleDirecteGradebookTarget $target, EcoleDirecteGradeOptions $options): array
     {
-        $preview = $this->preview($session, $evaluation, $target);
+        $preview = $this->preview($session, $evaluation, $target, $options);
         $session = $preview['session'];
 
         if (null !== $preview['refusal']) {
@@ -76,8 +83,8 @@ class EcoleDirecteGradebookWriter
             $session = $this->client->send($session, $stem.'/devoirs.awp', 'post', ['devoir' => [
                 'libelle' => $evaluation->getName(),
                 'commentaire' => '',
-                'coef' => $evaluation->getCoefficient(),
-                'noteSur' => $evaluation->getScale(),
+                'coef' => $options->coefficient,
+                'noteSur' => $options->scale($evaluation->getScale()),
                 'nonSignificatif' => false,
                 'ccf' => false,
                 'notationLettre' => false,
@@ -98,7 +105,10 @@ class EcoleDirecteGradebookWriter
         $found = EcoleDirecteGradePlanner::findEvaluation($data, $evaluation->getName(), $date)
             ?? throw new EcoleDirecteException('ecoleDirecteEvaluationNotFoundMessage');
 
-        $plan = $this->planner->plan(self::entries($evaluation), $data, $evaluation->getName(), $date, $evaluation->getScale());
+        $plan = $this->plan($evaluation, $data, $date, $options);
+        if (null !== $plan['refusal']) {
+            throw new EcoleDirecteException($plan['refusal']);
+        }
         $values = [];
         foreach ($plan['rows'] as $row) {
             if ($row->state->sends() && null !== $row->ecoleDirecteStudentId) {
@@ -113,9 +123,28 @@ class EcoleDirecteGradebookWriter
         return ['created' => $created, 'rows' => $plan['rows'], 'session' => $session];
     }
 
-    /** @return list<EcoleDirecteGradeEntry> */
-    private static function entries(Evaluation $evaluation): array
+    /**
+     * @param array<array-key, mixed> $grid
+     *
+     * @return array{evaluation: ?array<array-key, mixed>, rows: list<EcoleDirecteGradeRow>, ecoleDirecteOnly: array<int, string>, refusal: ?string, coefficientKept: ?float}
+     */
+    private function plan(Evaluation $evaluation, array $grid, string $date, EcoleDirecteGradeOptions $options): array
     {
+        return $this->planner->plan($this->entries($evaluation, $options), $grid, $evaluation->getName(), $date, $options->scale($evaluation->getScale()), $options->coefficient);
+    }
+
+    /** @return list<EcoleDirecteGradeEntry> */
+    private function entries(Evaluation $evaluation, EcoleDirecteGradeOptions $options): array
+    {
+        $students = [];
+        foreach ($evaluation->getGrades() as $grade) {
+            $student = $grade->getStudent();
+            if ($student instanceof User) {
+                $students[] = $student;
+            }
+        }
+        $links = $this->links->findForStudents($students);
+
         $entries = [];
         foreach ($evaluation->getGrades() as $grade) {
             $student = $grade->getStudent();
@@ -123,10 +152,16 @@ class EcoleDirecteGradebookWriter
                 continue;
             }
 
+            $value = $grade->getValue();
+            $link = $links[$student->getId() ?? 0] ?? null;
             $entries[] = new EcoleDirecteGradeEntry(
                 $student->getFirstname() ?? '',
                 $student->getLastname() ?? '',
-                EcoleDirecteGradePlanner::noteFor($grade->getStatus(), $grade->getValue()),
+                EcoleDirecteGradePlanner::noteFor($grade->getStatus(), null === $value ? null : $options->value($value, $evaluation->getScale())),
+                $student->getId() ?? 0,
+                $link?->getEcoleDirecteId(),
+                $link?->getLastName() ?? '',
+                $link?->getFirstName() ?? '',
             );
         }
 

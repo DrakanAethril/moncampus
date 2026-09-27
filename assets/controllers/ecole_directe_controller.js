@@ -25,6 +25,7 @@ export default class extends Controller {
         'lessonLogSendBar', 'lessonLogSendButton', 'lessonLogResult',
         'gradebookTargetsButton', 'evaluation', 'gradebookTarget', 'gradebookPreviewButton',
         'gradebookPreview', 'gradebookSendBar', 'gradebookSendButton', 'gradebookResult',
+        'coefficient', 'outOf20Field', 'outOf20',
     ];
 
     static values = {
@@ -38,11 +39,20 @@ export default class extends Controller {
         gradebookTargetsUrl: String,
         gradebookPreviewUrl: String,
         gradebookSendUrl: String,
+        gradebookLinkUrl: String,
+        gradebookUnlinkUrl: String,
         unreachableMessage: String,
     };
 
     #session = null;
     #pending = null;
+
+    connect() {
+        // A browser that restored the form after a reload restored the evaluation, not what goes with it.
+        if (this.hasEvaluationTarget) {
+            this.evaluationPicked();
+        }
+    }
 
     disconnect() {
         this.#session = null;
@@ -136,6 +146,41 @@ export default class extends Controller {
         }
     }
 
+    /**
+     * An evaluation picked: its own coefficient, and « ramener sur 20 » offered only when it is not
+     * already out of 20 - ticked when the gradebook itself brings it back to 20 for the average.
+     */
+    evaluationPicked() {
+        const option = this.evaluationTarget.selectedOptions[0];
+        const scale = Number(option?.dataset.scale ?? 20);
+
+        this.coefficientTarget.value = option?.dataset.coefficient || '1';
+        this.outOf20FieldTarget.hidden = !option?.value || Math.abs(scale - 20) < 0.001;
+        this.outOf20Target.checked = !this.outOf20FieldTarget.hidden && option?.dataset.countsOutOf20 === '1';
+    }
+
+    /** A preview only says what would be sent with the choices it was made with. */
+    gradebookChanged() {
+        this.gradebookPreviewTarget.innerHTML = '';
+        this.gradebookResultTarget.innerHTML = '';
+        this.gradebookSendBarTarget.hidden = true;
+    }
+
+    /** Remembers who a MonCampus student is in École Directe, and shows the preview again. */
+    async linkStudent(event) {
+        const student = event.params.student;
+        const select = this.gradebookPreviewTarget.querySelector(`select[data-link-student="${student}"]`);
+        if (!select?.value) {
+            return;
+        }
+
+        await this.#refreshGradebook(this.gradebookLinkUrlValue, { student, ecoleDirecteStudent: select.value }, event.currentTarget);
+    }
+
+    async unlinkStudent(event) {
+        await this.#refreshGradebook(this.gradebookUnlinkUrlValue, { student: event.params.student }, event.currentTarget);
+    }
+
     async previewGradebook(event) {
         event.preventDefault();
 
@@ -227,7 +272,20 @@ export default class extends Controller {
     }
 
     #gradebookChoice() {
-        return { evaluation: this.evaluationTarget.value, target: this.gradebookTargetTarget.value };
+        return {
+            evaluation: this.evaluationTarget.value,
+            target: this.gradebookTargetTarget.value,
+            coefficient: this.coefficientTarget.value,
+            outOf20: !this.outOf20FieldTarget.hidden && this.outOf20Target.checked,
+        };
+    }
+
+    async #refreshGradebook(url, body, button) {
+        const answer = await this.#read(url, { ...this.#gradebookChoice(), ...body }, button);
+        if (answer) {
+            this.gradebookPreviewTarget.innerHTML = answer.html;
+            this.gradebookSendBarTarget.hidden = !answer.sendable;
+        }
     }
 
     #credentials() {

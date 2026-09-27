@@ -1,18 +1,29 @@
 {# What sending one evaluation would write into an École Directe gradebook, student by student -
-   App\EcoleDirecte\EcoleDirecteGradePlanner. #}
+   App\EcoleDirecte\EcoleDirecteGradePlanner. A student École Directe knows under another name is
+   associated from here, once (App\EcoleDirecte\EcoleDirecteStudentLinker): the choice lists the
+   École Directe students of the class nobody is matched to yet. #}
 <p class="mb-2">
     {% if evaluation %}
         {{ 'ecoleDirecteGradebookExistingLabel'|trans({'%name%': subject.name}) }}
     {% else %}
-        {{ 'ecoleDirecteGradebookNewLabel'|trans({'%name%': subject.name, '%scale%': subject.scale, '%coefficient%': subject.coefficient}) }}
+        {{ 'ecoleDirecteGradebookNewLabel'|trans({'%name%': subject.name, '%scale%': scale, '%coefficient%': coefficient}) }}
     {% endif %}
 </p>
+{% if outOf20 %}
+    <p class="mb-2">{{ 'ecoleDirecteGradebookOutOf20Label'|trans({'%scale%': subject.scale}) }}</p>
+{% endif %}
+{% if coefficientKept is not null %}
+    <div class="alert alert-warning">{{ 'ecoleDirecteGradebookCoefficientKeptLabel'|trans({'%existing%': coefficientKept, '%coefficient%': coefficient}) }}</div>
+{% endif %}
 {% if refusal %}
     <div class="alert alert-danger">{{ refusal|trans }}</div>
 {% endif %}
 {% if rows is empty %}
     <p class="text-secondary mb-0">{{ 'ecoleDirecteGradebookNoGradeLabel'|trans }}</p>
 {% else %}
+    {% if ecoleDirecteOnly is not empty and rows|filter(row => row.state.value == 'no_match')|length > 0 %}
+        <p class="text-secondary small mb-2">{{ 'ecoleDirecteLinkHint'|trans }}</p>
+    {% endif %}
     <div class="table-responsive">
         <table class="table table-vcenter card-table">
             <thead>
@@ -26,7 +37,26 @@
             <tbody>
                 {% for row in rows %}
                     <tr>
-                        <td>{{ row.label }}</td>
+                        <td>
+                            <div>{{ row.label }}</div>
+                            {% if row.linkedLabel is not null %}
+                                <div class="text-secondary small d-flex flex-wrap align-items-center gap-2">
+                                    {{ (row.ecoleDirecteStudentId is null ? 'ecoleDirecteLinkedMissingLabel' : 'ecoleDirecteLinkedLabel')|trans({'%name%': row.ecoleDirecteStudentId is null ? row.linkedLabel : row.ecoleDirecteLabel}) }}
+                                    <twig:Cm:Button variant="outline" size="sm" data-action="ecole-directe#unlinkStudent" data-ecole-directe-student-param="{{ row.studentId }}">{{ 'ecoleDirecteUnlinkAction'|trans }}</twig:Cm:Button>
+                                </div>
+                            {% endif %}
+                            {% if row.state.value == 'no_match' and row.studentId > 0 and ecoleDirecteOnly is not empty %}
+                                <div class="d-flex flex-wrap gap-2 mt-1">
+                                    <select class="form-select form-select-sm w-auto" aria-label="{{ 'ecoleDirecteLinkPlaceholder'|trans }}" data-link-student="{{ row.studentId }}">
+                                        <option value="">{{ 'ecoleDirecteLinkPlaceholder'|trans }}</option>
+                                        {% for id, name in ecoleDirecteOnly %}
+                                            <option value="{{ id }}">{{ name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <twig:Cm:Button variant="outline" size="sm" data-action="ecole-directe#linkStudent" data-ecole-directe-student-param="{{ row.studentId }}">{{ 'ecoleDirecteLinkAction'|trans }}</twig:Cm:Button>
+                                </div>
+                            {% endif %}
+                        </td>
                         <td>{{ row.value ?: '—' }}</td>
                         <td>{{ row.current ?: '—' }}</td>
                         <td><twig:Cm:Badge :of="row.state"/></td>

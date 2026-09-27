@@ -30,6 +30,8 @@
          data-ecole-directe-gradebook-targets-url-value="{{ path('app_ecole_directe_gradebook_targets') }}"
          data-ecole-directe-gradebook-preview-url-value="{{ path('app_ecole_directe_gradebook_preview') }}"
          data-ecole-directe-gradebook-send-url-value="{{ path('app_ecole_directe_gradebook_send') }}"
+         data-ecole-directe-gradebook-link-url-value="{{ path('app_ecole_directe_gradebook_link') }}"
+         data-ecole-directe-gradebook-unlink-url-value="{{ path('app_ecole_directe_gradebook_unlink') }}"
          data-ecole-directe-unreachable-message-value="{{ 'ecoleDirecteUnreachableMessage'|trans }}">
 
         <div class="alert alert-info">{{ 'ecoleDirectePrototypeNotice'|trans }}</div>
@@ -132,23 +134,35 @@
                         <div class="mb-3">
                             <twig:Cm:Button variant="outline" size="sm" data-action="ecole-directe#loadGradebookTargets" data-ecole-directe-target="gradebookTargetsButton">{{ 'ecoleDirecteLoadTargetsAction'|trans }}</twig:Cm:Button>
                         </div>
-                        <form class="row g-2 align-items-end mb-3" data-action="submit->ecole-directe#previewGradebook">
-                            <div class="col-md-5">
+                        {# The two options travel with every preview and send; changing either, or
+                           the evaluation, drops a preview that no longer says what would be sent. #}
+                        <form class="row g-2 align-items-end mb-3" data-action="submit->ecole-directe#previewGradebook change->ecole-directe#gradebookChanged input->ecole-directe#gradebookChanged">
+                            <div class="col-md-6">
                                 <label class="form-label" for="ecole-directe-evaluation">{{ 'ecoleDirecteEvaluationLabel'|trans }}</label>
-                                <select class="form-select" id="ecole-directe-evaluation" required data-ecole-directe-target="evaluation">
+                                <select class="form-select" id="ecole-directe-evaluation" required data-ecole-directe-target="evaluation" data-action="ecole-directe#evaluationPicked">
                                     <option value="">{{ 'ecoleDirecteEvaluationPlaceholder'|trans }}</option>
                                     {% for evaluation in evaluations %}
-                                        <option value="{{ evaluation.id }}">{{ evaluation.date ? evaluation.date|date('d/m/Y') ~ ' · ' }}{{ evaluation.topic.program.displayShortName }} · {{ evaluation.topic.name }} · {{ evaluation.name }}</option>
+                                        <option value="{{ evaluation.id }}" data-scale="{{ evaluation.scale }}" data-coefficient="{{ evaluation.coefficient }}" data-counts-out-of20="{{ evaluation.countsOutOf20 ? 1 : 0 }}">{{ evaluation.date ? evaluation.date|date('d/m/Y') ~ ' · ' }}{{ evaluation.topic.program.displayShortName }} · {{ evaluation.topic.name }} · {{ evaluation.name }} ({{ 'ecoleDirecteEvaluationScaleLabel'|trans({'%scale%': evaluation.scale}) }})</option>
                                     {% endfor %}
                                 </select>
                             </div>
-                            <div class="col-md-5">
+                            <div class="col-md-6">
                                 <label class="form-label" for="ecole-directe-gradebook-target">{{ 'ecoleDirecteGradebookTargetLabel'|trans }}</label>
                                 <select class="form-select" id="ecole-directe-gradebook-target" required data-ecole-directe-target="gradebookTarget">
                                     <option value="">{{ 'ecoleDirecteGradebookTargetPlaceholder'|trans }}</option>
                                 </select>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-auto">
+                                <label class="form-label" for="ecole-directe-coefficient">{{ 'ecoleDirecteCoefficientLabel'|trans }}</label>
+                                <input type="number" class="form-control" id="ecole-directe-coefficient" style="width: 8rem" min="0.01" max="100" step="0.01" value="1" required data-ecole-directe-target="coefficient">
+                            </div>
+                            <div class="col-auto" data-ecole-directe-target="outOf20Field" hidden>
+                                <label class="form-check mb-2">
+                                    <input type="checkbox" class="form-check-input" data-ecole-directe-target="outOf20">
+                                    <span class="form-check-label">{{ 'ecoleDirecteOutOf20Label'|trans }}</span>
+                                </label>
+                            </div>
+                            <div class="col-auto">
                                 <twig:Cm:Button variant="outline" type="submit" data-ecole-directe-target="gradebookPreviewButton">{{ 'ecoleDirectePreviewAction'|trans }}</twig:Cm:Button>
                             </div>
                         </form>

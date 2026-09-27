@@ -6,6 +6,7 @@ namespace App\Tests\EcoleDirecte;
 
 use App\EcoleDirecte\EcoleDirecteGradebookTarget;
 use App\EcoleDirecte\EcoleDirecteGradeEntry;
+use App\EcoleDirecte\EcoleDirecteGradeOptions;
 use App\EcoleDirecte\EcoleDirecteGradePlanner;
 use App\EcoleDirecte\EcoleDirecteSubjectCode;
 use App\Enum\EcoleDirecteGradeState;
@@ -58,7 +59,105 @@ class EcoleDirecteGradePlannerTest extends TestCase
         );
         self::assertSame(2, $plan['rows'][1]->ecoleDirecteStudentId, 'a particle kept apart by École Directe still matches');
         self::assertNull($plan['rows'][3]->ecoleDirecteStudentId);
-        self::assertSame(['DUPOND Jean'], $plan['ecoleDirecteOnly']);
+        self::assertSame([4 => 'DUPOND Jean'], $plan['ecoleDirecteOnly']);
+    }
+
+    public function testARememberedLinkMatchesAStudentWhoseNamesDiffer(): void
+    {
+        $grid = $this->grid(existing: true);
+
+        $plan = (new EcoleDirecteGradePlanner())->plan([
+            new EcoleDirecteGradeEntry('Johnny', 'Dupont', '11', 42, 4, 'DUPOND', 'Jean'),
+        ], $grid, 'Contrôle réseaux', '2026-09-22', 20.0);
+
+        $row = $plan['rows'][0];
+        self::assertSame(EcoleDirecteGradeState::New, $row->state);
+        self::assertSame(4, $row->ecoleDirecteStudentId);
+        self::assertSame(42, $row->studentId);
+        self::assertSame('DUPOND Jean', $row->ecoleDirecteLabel);
+        self::assertSame('DUPOND Jean', $row->linkedLabel);
+        self::assertArrayNotHasKey(4, $plan['ecoleDirecteOnly']);
+    }
+
+    public function testALinkWhoseIdMovedIsFoundAgainByTheNameEcoleDirecteGave(): void
+    {
+        $plan = (new EcoleDirecteGradePlanner())->plan([
+            new EcoleDirecteGradeEntry('Johnny', 'Dupont', '11', 42, 999, 'DUPOND', 'Jean'),
+        ], $this->grid(existing: true), 'Contrôle réseaux', '2026-09-22', 20.0);
+
+        self::assertSame(4, $plan['rows'][0]->ecoleDirecteStudentId);
+    }
+
+    public function testALinkToSomeoneOutsideTheClassMatchesNobody(): void
+    {
+        $plan = (new EcoleDirecteGradePlanner())->plan([
+            new EcoleDirecteGradeEntry('Élodie', 'Durand', '15', 42, 999, 'AUTRE', 'Personne'),
+        ], $this->grid(existing: true), 'Contrôle réseaux', '2026-09-22', 20.0);
+
+        self::assertSame(EcoleDirecteGradeState::NoMatch, $plan['rows'][0]->state, 'a link is not second-guessed by the MonCampus name');
+        self::assertSame('AUTRE Personne', $plan['rows'][0]->linkedLabel);
+    }
+
+    public function testALinkOutranksANameMatchOnTheSameStudent(): void
+    {
+        $plan = (new EcoleDirecteGradePlanner())->plan([
+            new EcoleDirecteGradeEntry('Jean', 'Dupond', '8', 41),
+            new EcoleDirecteGradeEntry('Johnny', 'Dupont', '11', 42, 4, 'DUPOND', 'Jean'),
+        ], $this->grid(existing: true), 'Contrôle réseaux', '2026-09-22', 20.0);
+
+        self::assertSame(EcoleDirecteGradeState::NoMatch, $plan['rows'][0]->state);
+        self::assertSame(4, $plan['rows'][1]->ecoleDirecteStudentId);
+    }
+
+    public function testTwoMonCampusStudentsOfTheSameNameSendToNobody(): void
+    {
+        $plan = (new EcoleDirecteGradePlanner())->plan([
+            new EcoleDirecteGradeEntry('Jean', 'Dupond', '8', 41),
+            new EcoleDirecteGradeEntry('Jean', 'Dupond', '11', 42),
+        ], $this->grid(existing: true), 'Contrôle réseaux', '2026-09-22', 20.0);
+
+        self::assertSame([EcoleDirecteGradeState::NoMatch, EcoleDirecteGradeState::NoMatch], array_map(static fn ($row) => $row->state, $plan['rows']));
+    }
+
+    public function testAnotherCoefficientOnAnExistingEvaluationIsReportedNotRefused(): void
+    {
+        $planner = new EcoleDirecteGradePlanner();
+        $grid = $this->grid(existing: true);
+
+        $plan = $planner->plan([], $grid, 'Contrôle réseaux', '2026-09-22', 20.0, 2.0);
+        self::assertNull($plan['refusal']);
+        self::assertSame(1.0, $plan['coefficientKept']);
+
+        self::assertNull($planner->plan([], $grid, 'Contrôle réseaux', '2026-09-22', 20.0, 1.0)['coefficientKept']);
+    }
+
+    public function testGradesBroughtBackTo20(): void
+    {
+        $options = new EcoleDirecteGradeOptions(true, 1.0);
+        self::assertSame(20.0, $options->scale(15.0));
+        self::assertSame(9.33, $options->value(7.0, 15.0));
+        self::assertSame(16.0, $options->value(8.0, 10.0));
+        self::assertSame(12.5, $options->value(12.5, 20.0));
+        self::assertSame('(9.33)', EcoleDirecteGradePlanner::noteFor(GradeStatus::Excluded, $options->value(7.0, 15.0)));
+
+        $raw = new EcoleDirecteGradeOptions(false, 1.0);
+        self::assertSame(15.0, $raw->scale(15.0));
+        self::assertSame(7.0, $raw->value(7.0, 15.0));
+    }
+
+    public function testTheCoefficientMustBeOneEcoleDirecteTakes(): void
+    {
+        self::assertSame(2.5, EcoleDirecteGradeOptions::of(false, 2.5)?->coefficient);
+        self::assertNull(EcoleDirecteGradeOptions::of(false, 0.0));
+        self::assertNull(EcoleDirecteGradeOptions::of(false, -1.0));
+        self::assertNull(EcoleDirecteGradeOptions::of(false, 101.0));
+        self::assertNull(EcoleDirecteGradeOptions::of(false, null));
+    }
+
+    public function testAGridStudentIsReadAsTheLinkRemembersThem(): void
+    {
+        self::assertSame(['id' => 2, 'lastName' => 'de la TOUR', 'firstName' => 'Marc'], EcoleDirecteGradePlanner::gridStudent($this->grid(existing: false), 2));
+        self::assertNull(EcoleDirecteGradePlanner::gridStudent($this->grid(existing: false), 99));
     }
 
     public function testTwoStudentsOfTheSameNameMatchNobody(): void
