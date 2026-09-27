@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace App\Form;
 
 use App\Entity\EquipmentCategory;
-use App\Entity\EquipmentLocation;
 use App\Entity\EquipmentType;
 use App\Repository\EquipmentCategoryRepository;
-use App\Repository\EquipmentLocationRepository;
 use App\Service\Equipment\EquipmentLedger;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
@@ -101,13 +99,8 @@ class EquipmentTypeType extends AbstractType
                 'required' => false,
                 'attr' => ['min' => 0],
             ])
-            ->add('location', EntityType::class, [
-                'label' => 'equipmentTypeLocationFieldLabel',
-                'class' => EquipmentLocation::class,
-                'choice_label' => 'name',
-                'required' => false,
-                'placeholder' => 'equipmentNoLocationPlaceholder',
-                'query_builder' => static fn (EquipmentLocationRepository $repository) => $repository->createQueryBuilder('l')->orderBy('l.name', 'ASC'),
+            ->add('place', EquipmentPlaceType::class, [
+                'current' => $builder->getData() instanceof EquipmentType ? $builder->getData()->getPlace() : null,
             ])
             ->add('supplierReference', TextType::class, [
                 'label' => 'equipmentTypeSupplierReferenceFieldLabel',
