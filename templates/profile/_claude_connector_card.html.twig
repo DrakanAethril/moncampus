@@ -1,0 +1,44 @@
+{# « Mon profil » > Claude (App\Controller\ProfileClaudeConnectorController::card). The address is
+   shown in full here, unlike the download links of Ressources: it is not a secret - it opens nothing
+   without the teacher's own consent - and it is what they have to paste. #}
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">{{ 'claudeConnectorCardTitle'|trans }}</h2>
+    </div>
+    <div class="card-body">
+        <p class="text-secondary">{{ 'claudeConnectorCardHelp'|trans }}</p>
+
+        <div class="input-group mb-3" data-controller="resource-copy-link"
+             data-resource-copy-link-url-value="{{ connectorUrl }}"
+             data-resource-copy-link-copied-label-value="{{ 'claudeConnectorUrlCopiedLabel'|trans }}">
+            <input type="text" class="form-control font-monospace" value="{{ connectorUrl }}" readonly aria-label="{{ 'claudeConnectorUrlLabel'|trans }}">
+            <button type="button" class="btn" data-action="resource-copy-link#copy">
+                <span data-resource-copy-link-target="label">{{ 'claudeConnectorUrlCopyAction'|trans }}</span>
+            </button>
+        </div>
+
+        {% if connections is empty %}
+            <p class="text-secondary mb-0">{{ 'claudeConnectorNoConnectionLabel'|trans }}</p>
+        {% else %}
+            <div class="list-group list-group-flush">
+                {% for grant in connections %}
+                    <div class="list-group-item d-flex align-items-center gap-3 px-0">
+                        <div class="flex-fill">
+                            <div class="fw-medium">{{ grant.client.clientName }}</div>
+                            <div class="text-secondary small">
+                                {{ 'claudeConnectionAuthorizedOnLabel'|trans({'%date%': grant.createdAt|localized_date('d MMMM y')}) }}
+                                {% if grant.lastUsedAt %}
+                                    · {{ 'claudeConnectionLastUsedLabel'|trans({'%date%': grant.lastUsedAt|localized_date('d MMMM y, HH:mm')}) }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <form method="post" action="{{ path('app_profile_claude_connection_revoke', {id: grant.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('profile_claude_connection_revoke') }}">
+                            <button type="submit" class="btn btn-link p-0 text-danger">{{ 'claudeConnectionRevokeAction'|trans }}</button>
+                        </form>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>

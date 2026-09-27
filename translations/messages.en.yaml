@@ -8293,3 +8293,32 @@ equipmentWhere_in_use: "In service"
 # Gestion > Matériel - mobile API
 equipmentApiUnknownActionMessage: "This gesture is not possible on this equipment."
 equipmentApiCauseRequiredMessage: "Choose a cause."
+
+# --- Claude connector (MCP) ---------------------------------------------------------------------
+featureClaudeConnectorLabel: "Claude connector (create from claude.ai)"
+platformActivityClaudeConnectorAuthorizedText: '%user% connected Claude to their account'
+platformActivityClaudeConnectorRevokedText: '%user% disconnected Claude from their account'
+platformActivityClaudeConnectorContentCreatedText: '%user% created content from Claude'
+oauthConsentPageTitle: "Connect Claude"
+oauthConsentHeading: "Connect “%client%” to MonCampus?"
+oauthConsentIntro: "“%client%” will be able to act on your behalf (%user%):"
+oauthConsentReadLibrary: "read your quiz, sequence and file libraries;"
+oauthConsentCreateLibrary: "create quizzes, sequences, course materials and folders in them;"
+oauthConsentCreateEvaluations: "create evaluations and their grading scales in your subjects, hidden from students until their visibility date."
+oauthConsentRedirectHint: "The authorization will be sent back to %host%. You can cut this connection at any time from My profile."
+oauthConsentAllowAction: "Allow"
+oauthConsentDenyAction: "Deny"
+oauthConsentProfileLink: "My profile"
+oauthConsentErrorHeading: "Invalid connection request"
+oauthConsentErrorText: "This application is not recognised by MonCampus, or the return address it gives is not allowed. Start the connection again from Claude."
+oauthConsentHomeLink: "Back to home"
+claudeConnectorCardTitle: "Claude"
+claudeConnectorCardHelp: "To create quizzes, sequences, course materials or grading scales from Claude: in claude.ai, open Settings › Connectors › Add custom connector, and paste this address. Claude will send you back here to authorize the connection."
+claudeConnectorUrlLabel: "Connector address"
+claudeConnectorUrlCopyAction: "Copy"
+claudeConnectorUrlCopiedLabel: "Copied"
+claudeConnectorNoConnectionLabel: "No active connection."
+claudeConnectionAuthorizedOnLabel: "Authorized on %date%"
+claudeConnectionLastUsedLabel: "last used on %date%"
+claudeConnectionRevokeAction: "Revoke"
+claudeConnectionRevokedFlashMessage: "The connection was revoked: Claude no longer has access to your account through it."

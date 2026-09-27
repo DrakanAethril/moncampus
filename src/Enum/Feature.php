@@ -96,6 +96,7 @@ enum Feature: string
     case Eco = 'eco';
     case ActivityHistory = 'activity_history';
     case Equipment = 'equipment';
+    case ClaudeConnector = 'claude_connector';
 
     /**
      * The roles the matrix offers a column for, in the order the screen draws them.
@@ -146,7 +147,7 @@ enum Feature: string
             self::TrainingOffers, self::JobSearch, self::Jobboard => FeatureFamily::Alternance,
 
             self::MyVms, self::Infrastructure, self::GuestConsole, self::Eco,
-            self::ActivityHistory, self::Equipment => FeatureFamily::Technical,
+            self::ActivityHistory, self::Equipment, self::ClaudeConnector => FeatureFamily::Technical,
         };
     }
 
@@ -237,6 +238,7 @@ enum Feature: string
             self::Eco => 'featureEcoLabel',
             self::ActivityHistory => 'featureActivityHistoryLabel',
             self::Equipment => 'featureEquipmentLabel',
+            self::ClaudeConnector => 'featureClaudeConnectorLabel',
         };
     }
 
@@ -332,6 +334,11 @@ enum Feature: string
             // and the technical support. Teachers declare nothing here - a broken mouse in a room
             // reaches the support the way everything else does, through a ticket.
             self::Equipment => ['ROLE_STAFF', 'ROLE_STAFF-LEAD', 'ROLE_SUPPORT-TECH'],
+
+            // The Claude connector is named by no role, like the Jobboard: it ships off for everybody,
+            // the administrator being the only one who can connect on the day it lands. Whoever is
+            // lit then still reaches only the tools of the features they already have - the
+            // connector is a door onto the platform, never a way round its switches.
 
             // The two class lists are the establishment's own directory rather than a teaching
             // tool (see the nav's comment on them), and so is exporting one: an émargement sheet

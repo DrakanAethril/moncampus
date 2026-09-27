@@ -9122,3 +9122,32 @@ equipmentWhere_in_use: "En service"
 # Gestion > Matériel - mobile API
 equipmentApiUnknownActionMessage: "Ce geste n'est pas possible sur ce matériel."
 equipmentApiCauseRequiredMessage: "Choisissez une cause."
+
+# --- Connecteur Claude (MCP) --------------------------------------------------------------------
+featureClaudeConnectorLabel: "Connecteur Claude (créer depuis claude.ai)"
+platformActivityClaudeConnectorAuthorizedText: '%user% a connecté Claude à son compte'
+platformActivityClaudeConnectorRevokedText: '%user% a déconnecté Claude de son compte'
+platformActivityClaudeConnectorContentCreatedText: '%user% a créé un contenu depuis Claude'
+oauthConsentPageTitle: "Connecter Claude"
+oauthConsentHeading: "Connecter « %client% » à MonCampus ?"
+oauthConsentIntro: "« %client% » pourra agir en votre nom (%user%) :"
+oauthConsentReadLibrary: "lire vos bibliothèques de quiz, de séquences et de fichiers ;"
+oauthConsentCreateLibrary: "y créer des quiz, des séquences, des supports de cours et des dossiers ;"
+oauthConsentCreateEvaluations: "créer des évaluations et leurs barèmes dans vos matières, masquées aux étudiants jusqu'à leur date de visibilité."
+oauthConsentRedirectHint: "L'autorisation sera renvoyée à %host%. Vous pourrez couper cette connexion à tout moment depuis Mon profil."
+oauthConsentAllowAction: "Autoriser"
+oauthConsentDenyAction: "Refuser"
+oauthConsentProfileLink: "Mon profil"
+oauthConsentErrorHeading: "Demande de connexion invalide"
+oauthConsentErrorText: "Cette application n'est pas reconnue par MonCampus, ou l'adresse de retour qu'elle indique n'est pas autorisée. Relancez la connexion depuis Claude."
+oauthConsentHomeLink: "Retour à l'accueil"
+claudeConnectorCardTitle: "Claude"
+claudeConnectorCardHelp: "Pour créer des quiz, des séquences, des supports de cours ou des barèmes depuis Claude : dans claude.ai, ouvrez Paramètres › Connecteurs › Ajouter un connecteur personnalisé, et collez cette adresse. Claude vous renverra ici pour autoriser la connexion."
+claudeConnectorUrlLabel: "Adresse du connecteur"
+claudeConnectorUrlCopyAction: "Copier"
+claudeConnectorUrlCopiedLabel: "Copié"
+claudeConnectorNoConnectionLabel: "Aucune connexion active."
+claudeConnectionAuthorizedOnLabel: "Autorisée le %date%"
+claudeConnectionLastUsedLabel: "dernière utilisation le %date%"
+claudeConnectionRevokeAction: "Révoquer"
+claudeConnectionRevokedFlashMessage: "La connexion a été révoquée : Claude n'a plus accès à votre compte par elle."
