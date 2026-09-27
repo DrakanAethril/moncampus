@@ -11,14 +11,13 @@
 {% block title %}{{ heading|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'ufaNavLabel'|trans, url: path('app_ufa')},
         {label: 'ufaFormationsNavLabel'|trans, url: path('app_ufa')},
         {label: program.displayShortName, url: path('app_ufa_formation_documents', {id: program.id})},
         {label: 'ufaFormationDocumentsTabLabel'|trans, url: path('app_ufa_formation_documents', {id: program.id})},
         {label: heading|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ heading|trans }} - {{ program.displayShortName }}{% endblock %}
 

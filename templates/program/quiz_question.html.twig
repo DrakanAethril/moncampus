@@ -1,7 +1,7 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ quizInstance.name }}{% endblock %}
-{% block page_breadcrumb %}{% endblock %}
+{% block page_breadcrumb %}{# No trail on a passation screen: every link on it would be a way out of the attempt. #}{% endblock %}
 {% block page_title %}{{ quizInstance.name }}{% endblock %}
 
 {% block main %}

@@ -7,7 +7,6 @@
 
 {% block page_breadcrumb %}
     {% set segments = [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
         {label: 'documentationPageHeading'|trans, url: path('app_documentation')},
     ] %}
     {% if isEdit %}
@@ -17,7 +16,7 @@
         label: isEdit ? 'documentationEditSegmentLabel'|trans : 'documentationNewHeading'|trans,
         url: isEdit ? path('app_documentation_article_edit', {id: article.id}) : path('app_documentation_article_new'),
     }]) %}
-    {% include '_breadcrumb.html.twig' with {segments: segments} %}
+    {{ component('Cm:Breadcrumb', {segments: segments}) }}
 {% endblock %}
 
 {% block page_title %}{{ isEdit ? 'documentationEditHeading'|trans : 'documentationNewHeading'|trans }}{% endblock %}

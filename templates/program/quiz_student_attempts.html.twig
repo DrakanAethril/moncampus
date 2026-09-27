@@ -3,13 +3,12 @@
 {% block title %}{{ student.displayName ?? student.username }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'quizTrackingPageHeading'|trans, url: path('app_tools_quiz', {program: program.id})},
         {label: program.displayShortName, url: path('app_program_quiz', {id: program.id})},
         {label: 'programQuizResultsBreadcrumbLabel'|trans, url: path('app_program_quiz_show', {id: program.id, instanceId: quizInstance.id})},
         {label: student.displayName ?? student.username, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}
     {{ 'programQuizAttemptsHeadingTemplate'|trans({'%student%': student.displayName ?? student.username}) }}

@@ -10,12 +10,11 @@
 {% block title %}{{ heading }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'documentationPageHeading'|trans, url: path('app_documentation')},
         {label: 'documentationDashboardHeading'|trans, url: path('app_documentation_dashboard')},
         {label: heading, url: path(listRoute)},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ heading }}{% endblock %}

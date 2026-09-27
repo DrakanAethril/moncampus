@@ -22,7 +22,7 @@
                     {%- endif %}
                 </div>
             </div>
-            <span class="cm-badge {{ work.nature.badgeClass }}">{{ work.nature.labelKey|trans }}</span>
+            <twig:Cm:Badge :of="work.nature"/>
             {% if canViewTeacherTools and work.nature.expectsSelfAssessment and work.evaluation %}
                 {# Tracking of the estimates received (5d) - readable by any teacher of the program,
                    not only by whoever may edit the séance, but by no student: the screen it opens

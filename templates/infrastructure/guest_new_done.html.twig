@@ -3,12 +3,11 @@
 {% block title %}{{ 'proxmoxGuestCreatedHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
         {label: 'infrastructureGuestsNavLabel'|trans, url: path('app_infrastructure_guests', {host: host.id})},
         {label: 'proxmoxGuestCreatedHeading'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'proxmoxGuestCreatedHeading'|trans }}{% endblock %}
@@ -32,7 +31,7 @@
                 <span>
                     {{ 'proxmoxGuestCreatedText'|trans({'%name%': operation.guestName, '%vmid%': operation.vmid}) }}
                     {% if operation.status.isSettled %}
-                        <span class="cm-badge cm-badge--{{ operation.status.badgeModifier }}">{{ operation.status.labelKey|trans }}</span>
+                        <twig:Cm:Badge :of="operation.status"/>
                         {% if operation.message %}<div class="cm-guest__sub mt-1">{{ operation.message }}</div>{% endif %}
                     {% else %}
                         {# Followed for as long as it takes, the same way the machines list follows a

@@ -3,13 +3,12 @@
 {% block title %}{{ 'lendLaptopPageHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'ufaNavLabel'|trans, url: path('app_ufa')},
         {label: 'laptopsNavLabel'|trans, url: path('app_laptops_loans')},
         {label: 'laptopsLoanHistoryTabLabel'|trans, url: path('app_laptops_loans')},
         {label: 'lendLaptopPageHeading'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'lendLaptopPageHeading'|trans }}{% endblock %}
 

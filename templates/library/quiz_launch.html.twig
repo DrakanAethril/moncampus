@@ -15,11 +15,10 @@
             {label: 'quizLaunchBreadcrumbLabel'|trans, url: app.request.requestUri},
         ]} only %}
     {% else %}
-        {% include '_breadcrumb.html.twig' with {segments: [
-            {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {{ component('Cm:Breadcrumb', {segments: [
             {label: 'quizTrackingPageHeading'|trans, url: path('app_tools_quiz')},
             {label: 'quizLaunchPageHeading'|trans, url: app.request.requestUri},
-        ]} %}
+        ]}) }}
     {% endif %}
 {% endblock %}
 {% block page_title %}{{ launchHeading }}{% endblock %}

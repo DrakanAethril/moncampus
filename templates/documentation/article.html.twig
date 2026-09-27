@@ -9,11 +9,10 @@
 {% block title %}{{ article.title }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'documentationPageHeading'|trans, url: path('app_documentation')},
         {label: article.title, url: path('app_documentation_article', {id: article.id})},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ article.title }}{% endblock %}

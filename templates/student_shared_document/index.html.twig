@@ -12,10 +12,9 @@
 {% block title %}{{ 'sharedDocumentNavLabel'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'sharedDocumentNavLabel'|trans, url: path('app_student_shared_documents')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'sharedDocumentNavLabel'|trans }}{% endblock %}

@@ -3,11 +3,10 @@
 {% block title %}{{ 'sequenceImportDonePageHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'libraryNavLabel'|trans, url: path('app_library_sequences')},
         {label: sequenceTemplate.titre, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'sequenceImportDonePageHeading'|trans }}{% endblock %}
 

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Service\Network;
 
+use App\Enum\BadgeTone;
+use App\Enum\HasBadge;
+
 /**
  * One way in which the registry and the hypervisor disagree.
  *
@@ -23,7 +26,7 @@ namespace App\Service\Network;
  * None of these actions ever writes to Proxmox. They only bring the registry back into agreement
  * with what exists.
  */
-final readonly class AddressGap
+final readonly class AddressGap implements HasBadge
 {
     public const string CONFLICT = 'conflict';
     public const string DISCOVERED = 'discovered';
@@ -54,14 +57,14 @@ final readonly class AddressGap
         };
     }
 
-    public function badgeModifier(): string
+    public function badgeTone(): BadgeTone
     {
         return match ($this->kind) {
-            self::CONFLICT => 'red',
-            self::DISCOVERED => 'blue',
-            self::ORPHAN => 'gold',
-            self::MOVED => 'purple',
-            default => 'gray',
+            self::CONFLICT => BadgeTone::Red,
+            self::DISCOVERED => BadgeTone::Blue,
+            self::ORPHAN => BadgeTone::Gold,
+            self::MOVED => BadgeTone::Purple,
+            default => BadgeTone::Gray,
         };
     }
 }

@@ -12,7 +12,7 @@ namespace App\Enum;
  * carries its own state, and the batch screen offers to **resume** - which is only meaningful
  * because `failed` and `planned` are distinguishable from `created`.
  */
-enum VmBatchItemStatus: string
+enum VmBatchItemStatus: string implements HasBadge
 {
     /** Named and addressed, nothing asked of the hypervisor yet. */
     case Planned = 'planned';
@@ -39,14 +39,14 @@ enum VmBatchItemStatus: string
         };
     }
 
-    public function badgeModifier(): string
+    public function badgeTone(): BadgeTone
     {
         return match ($this) {
-            self::Planned => 'gray',
-            self::Creating => 'gold',
-            self::Created => 'blue',
-            self::Provisioned => 'green',
-            self::Failed => 'red',
+            self::Planned => BadgeTone::Gray,
+            self::Creating => BadgeTone::Gold,
+            self::Created => BadgeTone::Blue,
+            self::Provisioned => BadgeTone::Green,
+            self::Failed => BadgeTone::Red,
         };
     }
 

@@ -4,11 +4,10 @@
 
 {% block page_breadcrumb %}
     {# Same trail as the student list, which is the neighbouring entry of the same class submenu. #}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: program.displayShortName, url: path('app_program_students', {id: program.id})},
         {label: 'programTeachersPageHeading'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'programTeachersPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
 

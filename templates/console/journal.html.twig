@@ -3,11 +3,10 @@
 {% block title %}{{ 'consoleSessionsNavLabel'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'infrastructureNavLabel'|trans, url: path('app_infrastructure')},
         {label: 'consoleSessionsNavLabel'|trans, url: path('app_infrastructure_console_sessions')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'consoleSessionsNavLabel'|trans }}{% endblock %}
@@ -42,7 +41,7 @@
                 {% endfor %}
             </select>
 
-            <button type="submit" class="cm-btn cm-btn--outline cm-btn--sm">{{ 'proxmoxGuestRefreshAction'|trans }}</button>
+            <twig:Cm:Button variant="outline" size="sm" type="submit">{{ 'proxmoxGuestRefreshAction'|trans }}</twig:Cm:Button>
 
             {# La rétention est dite là où on lit le journal : un écran qui montre sept jours sans
                dire ce qu'il advient du reste laisse croire que tout est gardé. #}

@@ -10,18 +10,16 @@
 
 {% block page_breadcrumb %}
     {% if viewed %}
-        {% include '_breadcrumb.html.twig' with {segments: [
-            {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {{ component('Cm:Breadcrumb', {segments: [
             {label: assignment.program.displayShortName, url: path('app_program_students', {id: assignment.program.id})},
             {label: 'selfAssessmentTrackingPageHeading'|trans, url: path('app_program_self_assessments', {id: assignment.program.id, assignmentId: assignment.id})},
             {label: viewed.displayName ?? viewed.username, url: app.request.requestUri},
-        ]} %}
+        ]}) }}
     {% else %}
-        {% include '_breadcrumb.html.twig' with {segments: [
-            {label: 'homeNavLabel'|trans, url: path('app_home')},
+        {{ component('Cm:Breadcrumb', {segments: [
             {label: 'studentWorkNavLabel'|trans, url: path('app_student_work')},
             {label: 'selfAssessmentComparisonPageHeading'|trans, url: app.request.requestUri},
-        ]} %}
+        ]}) }}
     {% endif %}
 {% endblock %}
 {% block page_title %}

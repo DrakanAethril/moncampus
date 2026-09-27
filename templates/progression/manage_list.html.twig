@@ -3,11 +3,10 @@
 {% block title %}{{ 'progressionManagePageHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'progressionNavLabel'|trans, url: path('app_progression')},
         {label: 'progressionManagePageHeading'|trans, url: path('app_progression_manage')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'progressionManagePageHeading'|trans }}{% endblock %}
 

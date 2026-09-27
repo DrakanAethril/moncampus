@@ -116,7 +116,7 @@ class OperationController extends AbstractController
             'status' => $operation->getStatus()->value,
             'settled' => $operation->getStatus()->isSettled(),
             'label' => $this->translator->trans($operation->getStatus()->labelKey()),
-            'badge' => $operation->getStatus()->badgeModifier(),
+            'badge' => $operation->getStatus()->badgeTone()->value,
             'message' => $operation->getMessage(),
             'durationSeconds' => $operation->durationSeconds(),
         ]);

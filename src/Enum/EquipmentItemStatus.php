@@ -10,7 +10,7 @@ namespace App\Enum;
  *
  * The last three are « hors service »: the piece counts neither as available nor as in use.
  */
-enum EquipmentItemStatus: string
+enum EquipmentItemStatus: string implements HasBadge
 {
     /** In the reserve, ready to replace something - the default of every new piece. */
     case Available = 'available';
@@ -43,15 +43,15 @@ enum EquipmentItemStatus: string
         };
     }
 
-    /** The cm-badge modifier of the status pill. */
-    public function badgeModifier(): string
+    /** The tone of the status badge. */
+    public function badgeTone(): BadgeTone
     {
         return match ($this) {
-            self::Available => 'green',
-            self::InUse => 'blue',
-            self::Missing => 'red',
-            self::OutOfOrder => 'gold',
-            self::Disposed => 'gray',
+            self::Available => BadgeTone::Green,
+            self::InUse => BadgeTone::Blue,
+            self::Missing => BadgeTone::Red,
+            self::OutOfOrder => BadgeTone::Gold,
+            self::Disposed => BadgeTone::Gray,
         };
     }
 }

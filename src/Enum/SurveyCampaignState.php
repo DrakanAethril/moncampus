@@ -11,7 +11,7 @@ namespace App\Enum;
  *
  * The method that answers it lives on the entity: SurveyCampaign::state().
  */
-enum SurveyCampaignState: string
+enum SurveyCampaignState: string implements HasBadge
 {
     /** Not launched yet: no frozen target, still editable. */
     case Draft = 'draft';
@@ -33,13 +33,13 @@ enum SurveyCampaignState: string
         };
     }
 
-    public function badgeClass(): string
+    public function badgeTone(): BadgeTone
     {
         return match ($this) {
-            self::Draft => 'cm-badge--gray',
-            self::Scheduled => 'cm-badge--blue',
-            self::Open => 'cm-badge--green',
-            self::Closed => 'cm-badge--gray',
+            self::Draft => BadgeTone::Gray,
+            self::Scheduled => BadgeTone::Blue,
+            self::Open => BadgeTone::Green,
+            self::Closed => BadgeTone::Gray,
         };
     }
 }

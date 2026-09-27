@@ -11,7 +11,7 @@ namespace App\Enum;
  * filled, which is what makes the cascade real. This enum is how the screens name that one - the
  * pictogram on a row, the label of a type filter, the branch a duplication takes.
  */
-enum ContentShareSubject: string
+enum ContentShareSubject: string implements HasBadge
 {
     case Sequence = 'sequence';
     case Seance = 'seance';
@@ -23,14 +23,14 @@ enum ContentShareSubject: string
      * The colour a row's type badge carries - the five of the mockups, in the palette app.css
      * already declares (`cm-badge--*`), so no new colour enters the design system for this.
      */
-    public function badgeClass(): string
+    public function badgeTone(): BadgeTone
     {
         return match ($this) {
-            self::Sequence => 'cm-badge--blue',
-            self::Seance => 'cm-badge--teal',
-            self::Quiz => 'cm-badge--gold',
-            self::File => 'cm-badge--gray',
-            self::Progression => 'cm-badge--green',
+            self::Sequence => BadgeTone::Blue,
+            self::Seance => BadgeTone::Teal,
+            self::Quiz => BadgeTone::Gold,
+            self::File => BadgeTone::Gray,
+            self::Progression => BadgeTone::Green,
         };
     }
 

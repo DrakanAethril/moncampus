@@ -9,12 +9,11 @@
 {% block title %}{{ 'accessConditionPageHeading'|trans }} - {{ host.accessConditionLabel }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: program.displayShortName, url: parentUrl},
         {label: host.accessConditionLabel, url: backUrl},
         {label: 'accessConditionPageHeading'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ host.accessConditionLabel }}{% endblock %}

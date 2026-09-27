@@ -5,14 +5,13 @@
 {% block title %}{{ 'selfAssessmentTrackingPageHeading'|trans }} - {{ assignment.title }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: program.displayShortName, url: path('app_program_students', {id: program.id})},
         {label: 'lessonLogPageHeading'|trans, url: assignment.lessonSession
             ? path('app_program_timetable_session_log', {id: program.id, sessionId: assignment.lessonSession.id})
             : path('app_program_lesson_logs', {id: program.id})},
         {label: 'selfAssessmentTrackingPageHeading'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'selfAssessmentTrackingPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
 

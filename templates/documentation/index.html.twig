@@ -7,13 +7,12 @@
 
 {% block page_breadcrumb %}
     {% set segments = [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
         {label: 'documentationPageHeading'|trans, url: path('app_documentation')},
     ] %}
     {% for group in scopePath %}
         {% set segments = segments|merge([{label: group.name, url: path('app_documentation_scope', {id: group.id})}]) %}
     {% endfor %}
-    {% include '_breadcrumb.html.twig' with {segments: segments} %}
+    {{ component('Cm:Breadcrumb', {segments: segments}) }}
 {% endblock %}
 
 {% block page_title %}{{ scope ? scope.name : 'documentationPageHeading'|trans }}{% endblock %}

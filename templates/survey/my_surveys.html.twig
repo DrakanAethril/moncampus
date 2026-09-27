@@ -3,10 +3,9 @@
 {% block title %}{{ 'mySurveysPageHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'mySurveysPageHeading'|trans, url: path('app_my_surveys')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'mySurveysPageHeading'|trans }}{% endblock %}

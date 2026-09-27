@@ -5,7 +5,6 @@
    root (App\Controller\QuizLibraryFolderTrait::folderTrailOf(), which answers empty for a reader who
    is not the owner). `tail` carries the screen's own last segments. #}
 {% set segments = [
-    {label: 'homeNavLabel'|trans, url: path('app_home')},
     {label: 'quizLibraryPageHeading'|trans, url: path('app_library_quiz')},
 ] %}
 
@@ -13,4 +12,4 @@
     {% set segments = segments|merge([{label: folder.name, url: path('app_library_quiz_folder', {folderId: folder.id})}]) %}
 {% endfor %}
 
-{% include '_breadcrumb.html.twig' with {segments: segments|merge(tail)} %}
+{{ component('Cm:Breadcrumb', {segments: segments|merge(tail)}) }}

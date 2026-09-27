@@ -6,7 +6,7 @@
    recording. `leaf` adds the last segment ("Nouvel enregistrement", "Statistiques d'écoute"…),
    absent on the list itself. #}
 {% set list_url = program ? path('app_program_tools_audio_recordings', {id: program.id}) : path('app_audio_recordings') %}
-{% set segments = [{label: 'homeNavLabel'|trans, url: path('app_home')}] %}
+{% set segments = [] %}
 {% if program %}
     {% set segments = segments|merge([{label: program.displayShortName, url: path('app_program_students', {id: program.id})}]) %}
 {% endif %}
@@ -17,4 +17,4 @@
 {% if leaf is defined and leaf %}
     {% set segments = segments|merge([{label: leaf, url: app.request.requestUri}]) %}
 {% endif %}
-{% include '_breadcrumb.html.twig' with {segments: segments} %}
+{{ component('Cm:Breadcrumb', {segments: segments}) }}

@@ -293,6 +293,12 @@ Prefer these over re-implementing:
 - `App\Form\FilePickerType` — no form on this platform carries bytes. The picker
   stages each file on its own XHR to `/uploads/stage` and the form submits signed tokens; the field
   declares an `UploadPolicy`, not constraints.
+- `App\Enum\HasBadge` + `App\Enum\BadgeTone` — any value shown as a `.cm-badge` implements it
+  (`labelKey()` + `badgeTone()`), and `<twig:Cm:Badge :of="…"/>` renders it. The pairing of a state
+  with its colour is written on the enum, never as a ternary in a template. Enums drawn in another
+  pill family (`cm-audio-pill`, `cm-wc-tag`, `cm-step`, Tabler's `bg-*-lt`) keep their own
+  `badgeClass()`.
+- `Cm:*` Twig components — see "Design" below.
 - Twig helpers in `src/Twig/`: `is_staff`, `is_program_teacher`, `file_url`, `avatar_url`,
   `visibility_allows`, `structure_nav_*`, `student_nav_*`, `ufa_nav_*`, `unread_message_thread_count`.
 
@@ -364,7 +370,7 @@ Tabler behind rather than conforming to it.
 Current state, which is a deliberate in-between and not an inconsistency:
 - Tabler 1.4.0 CSS/JS are still vendored at `assets/tabler/{css,js}/tabler.min.*` and loaded by
   `templates/base.html.twig`; a lot of markup is still Bootstrap/Tabler-shaped.
-- On top of it, `assets/styles/app.css` (~9 600 lines) implements the handoff design system: 108
+- On top of it, `assets/styles/app.css` (~12 000 lines) implements the handoff design system: 108
   `--cm-*` custom properties (each declared twice, light and dark) used ~4 400 times, and some 2 760
   `cm-*` selectors (`cm-btn`, `cm-badge`, `cm-tabs`, `cm-actionbar`,
   `cm-action--{positive,danger,neutral,warning,off}`, …). New UI should use `cm-*`.
@@ -374,12 +380,33 @@ Current state, which is a deliberate in-between and not an inconsistency:
 
 `templates/layout/app.html.twig` is the authenticated app shell (horizontal navbar, role-dependent, +
 `page_title`/`main` blocks). New authenticated screens extend it. `login` extends `base.html.twig`
-directly so it shows no navbar. Shared `_tabs.html.twig` / `_breadcrumb.html.twig` partials implement
-the global tab + breadcrumb pattern.
+directly so it shows no navbar.
+
+**Twig components** (`symfony/ux-twig-component`, since 2026-09-27) carry the design system's
+recurring pieces, under the `Cm:` prefix: the template in `templates/components/Cm/`, the class, when
+there is a rule to hold, in `src/Twig/Components/Cm/`. A component is where a rule lives once instead
+of being recopied: **new markup uses the component, never the raw `cm-*` classes it renders.**
+
+| Component | Replaces | The rule it holds |
+|---|---|---|
+| `Cm:Breadcrumb` | `_breadcrumb.html.twig` (deleted) | prepends « Accueil » itself, refuses a caller that passes it again |
+| `Cm:Tabs` | `_tabs.html.twig` (deleted) | the `action` block renders in the *caller's* context, so its partial sees the screen's variables |
+| `Cm:Badge` | `<span class="cm-badge cm-badge--…">` | `:of="value"` reads text and colour from a `HasBadge` enum; a hand-typed `tone` must be a `BadgeTone` |
+| `Cm:Button` | `<a/button class="cm-btn …">` | `<a>` with an `href`, else a `<button type="button">`; refuses a variant `app.css` does not draw |
+
+Two call styles, one choice each: `{{ component('Cm:Breadcrumb', {segments: [...]}) }}` when only
+props are passed (a long Twig literal reads better outside an HTML attribute), `<twig:Cm:Tabs
+:tabs="...">` + `<twig:block name="action">` when a block is. Breadcrumb and Tabs are migrated
+everywhere; Button and Badge are migrated **as screens are touched** — some 265 hand-written
+`cm-btn` and 838 Bootstrap `btn` remain, and that is the backlog, not a second convention.
+`tests/Twig/Components/CmComponentsTest.php` pins each component's markup.
 
 **Breadcrumb rule.** Every authenticated screen fills the `page_breadcrumb` block, and **the trail
-always opens on `Accueil`** — `{label: 'homeNavLabel'|trans, url: path('app_home')}`, which the partial
-renders with the house pictogram. This is stated in several handoffs ("commence toujours par Accueil
+always opens on `Accueil`** — which `Cm:Breadcrumb` prepends itself, with the house pictogram,
+pointing at `app_home` (`HomeController` sends a tutor on to their own home). Callers pass only the
+levels *after* it; one that still passes Accueil is refused at render time, and
+`tests/Functional/BreadcrumbConventionTest.php` refuses both a trail drawn outside the component and
+a template naming `homeNavLabel` again. This is stated in several handoffs ("commence toujours par Accueil
 avec picto maison") and holds across the app; a screen that starts its trail on a section name instead
 is a bug, not a variant. After Accueil come the real parent levels, then the current page last:
 
@@ -393,11 +420,15 @@ the rule holds across all 120-odd of them. The "Description technique" handoff, 
 to reach it: it hangs off the profile menu, so it is two segments.
 
 Every segment stays a real `<a href>`, including the last, which carries `.current`. When the trail
-varies between callers of a shared template, build it with `{% set segments = [...] %}` + `|merge`
+varies between callers of a shared template, build it with `{% set segments = [] %}` + `|merge`
 rather than duplicating the block — see `templates/audio_recording/_breadcrumb.html.twig` and
 `templates/activity/history.html.twig`. Deliberately suppressing the breadcrumb (`{% block
 page_breadcrumb %}{% endblock %}`) is rare and should carry a comment saying why, as
-`templates/profile/index.html.twig` does.
+`templates/profile/index.html.twig` does — the convention test refuses an empty block without one.
+The rule's first sentence is not yet true: **37 authenticated screens have no `page_breadcrumb` block
+at all** (measured 2026-09-27: `program/timetable`, the weekly template, `signup_list/*`,
+`ticket/my_tickets`, the internship evaluation screens…). The test only checks the trails that
+exist; giving those 37 theirs is a sweep of its own, each trail being a navigation decision.
 
 The WYSIWYG editor is **HugeRTE** (MIT TinyMCE fork), vendored under **`public/hugerte/`** and loaded by
 a plain `<script src="/hugerte/hugerte.min.js">`, *not* through AssetMapper. This is deliberate: HugeRTE
@@ -405,6 +436,15 @@ fetches its own `skins/`/`themes/`/`plugins/`/`icons/` by relative HTTP at runti
 moment AssetMapper content-hashes those filenames. Upgrading means re-copying the same minified subset
 from a fresh `npm install hugerte` (in a scratch dir, never at the repo root) and checking the Network
 tab for new 404s under `/hugerte/`.
+
+**FullCalendar 6** is vendored too, under `assets/fullcalendar/`, but through AssetMapper: the
+package's raw ESM files, minified one by one without bundling and mapped with `path` entries in
+`importmap.php`. `importmap:require` cannot be used for it: jsDelivr's `+esm` build copies
+FullCalendar's internal classes into two modules that the plugins and the application each import
+one of, and the calendar dies on its first render (`Class constructor … cannot be invoked without
+'new'`). `assets/fullcalendar/README.md` says why the relative imports are rewritten as bare
+specifiers, and how to upgrade. Changing `importmap.php` needs `docker compose restart php` in dev:
+the worker keeps the old map in memory and answers « vendor asset is missing ».
 
 ## Conventions
 

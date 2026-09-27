@@ -11,7 +11,7 @@
     {# The class segment only appears when the viewer may see one: a staff member reaching this
        sheet from a search has no class in mind, and a link they cannot open would be worse than
        none. #}
-    {% set segments = [{label: 'homeNavLabel'|trans, url: path('app_home')}] %}
+    {% set segments = [] %}
     {% if program %}
         {% set segments = segments|merge([
             {label: program.displayShortName, url: path('app_program_students', {id: program.id})},
@@ -19,7 +19,7 @@
         ]) %}
     {% endif %}
     {% set segments = segments|merge([{label: student.displayName ?? student.username, url: app.request.requestUri}]) %}
-    {% include '_breadcrumb.html.twig' with {segments: segments} %}
+    {{ component('Cm:Breadcrumb', {segments: segments}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'studentJobApplicationsPageHeading'|trans({'%student%': student.displayName ?? student.username}) }}{% endblock %}

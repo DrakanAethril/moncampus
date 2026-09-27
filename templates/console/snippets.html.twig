@@ -3,10 +3,9 @@
 {% block title %}{{ 'consoleSnippetsHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'consoleSnippetsHeading'|trans, url: path('app_console_snippets')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'consoleSnippetsHeading'|trans }}{% endblock %}

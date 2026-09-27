@@ -1,0 +1,7 @@
+{# See App\Twig\Components\Cm\Button. #}
+{% set content %}{% block content %}{% endblock %}{% endset %}
+{% if this.href is not null -%}
+    <a href="{{ this.href }}"{{ attributes.defaults({class: this.classes}) }}>{{ content }}</a>
+{%- else -%}
+    <button type="{{ this.type }}"{{ attributes.defaults({class: this.classes}) }}>{{ content }}</button>
+{%- endif %}

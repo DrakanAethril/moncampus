@@ -5,10 +5,9 @@
 {% block page_breadcrumb %}
     {# Two segments: « Ma progression » hangs straight off the main bar, nothing navigates through
        a section to reach it. #}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'gameProgressHeading'|trans, url: path('app_game')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'gameProgressHeading'|trans }}{% endblock %}

@@ -11,12 +11,11 @@
 {% block title %}{{ assignment.title }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'assignmentsListPageHeading'|trans, url: path('app_assignments')},
         {label: assignment.program.displayShortName, url: path('app_assignments', {classe: assignment.program.id})},
         {label: assignment.title, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ assignment.title }}{% endblock %}
@@ -45,9 +44,9 @@
                only for the titulaire of a matière, the carnet being that one teacher's. #}
             {% if canConvertToGrade %}
                 <div class="cm-worksummary__action">
-                    <button type="button" class="cm-btn cm-btn--primary" data-bs-toggle="modal" data-bs-target="#assignment-grade-conversion-modal">
+                    <twig:Cm:Button variant="primary" data-bs-toggle="modal" data-bs-target="#assignment-grade-conversion-modal">
                         {{ (conversionEvaluation ? 'assignmentGradeConversionUpdateAction' : 'assignmentGradeConversionAction')|trans }}
-                    </button>
+                    </twig:Cm:Button>
                 </div>
             {% endif %}
             {# « Télécharger tous les dépôts » - the whole class's files as one archive, a folder per
@@ -55,7 +54,7 @@
                handed something in: an empty ZIP is not an answer to « où en sont-ils ». #}
             {% if assignment.expectsSubmission and depositCount > 0 %}
                 <div class="cm-worksummary__action">
-                    <a class="cm-btn cm-btn--secondary" href="{{ path('app_assignment_submissions_archive', {id: assignment.id}) }}" data-turbo="false">{{ 'assignmentSubmissionsArchiveAction'|trans }}</a>
+                    <twig:Cm:Button variant="outline" href="{{ path('app_assignment_submissions_archive', {id: assignment.id}) }}" data-turbo="false">{{ 'assignmentSubmissionsArchiveAction'|trans }}</twig:Cm:Button>
                 </div>
             {% endif %}
             {# The detailed follow-up - retention curve, skips, focus losses - lives on the video
@@ -63,7 +62,7 @@
                door onto it, not a second reading of it. #}
             {% if assignment.videoResource and (is_staff() or assignment.videoResource.createdBy.id == app.user.id) %}
                 <div class="cm-worksummary__action">
-                    <a class="cm-btn cm-btn--secondary" href="{{ path('app_video_resource_statistics', {resourceId: assignment.videoResource.id}) }}">{{ 'videoResourceStatisticsPageHeading'|trans }}</a>
+                    <twig:Cm:Button variant="outline" href="{{ path('app_video_resource_statistics', {resourceId: assignment.videoResource.id}) }}">{{ 'videoResourceStatisticsPageHeading'|trans }}</twig:Cm:Button>
                 </div>
             {% endif %}
         </div>

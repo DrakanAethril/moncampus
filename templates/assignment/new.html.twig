@@ -13,15 +13,14 @@
 
 {% block page_breadcrumb %}
     {% set segments = [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
         {label: 'assignmentsListPageHeading'|trans, url: path('app_assignments')},
     ] %}
     {% if context.program %}
         {% set segments = segments|merge([{label: context.program.displayShortName, url: path('app_assignments', {classe: context.program.id})}]) %}
     {% endif %}
-    {% include '_breadcrumb.html.twig' with {segments: segments|merge([
+    {{ component('Cm:Breadcrumb', {segments: segments|merge([
         {label: heading_key|trans, url: app.request.requestUri},
-    ])} %}
+    ])}) }}
 {% endblock %}
 
 {# The title names the class as soon as it is chosen - on opening when the entry point knows it,

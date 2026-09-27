@@ -55,7 +55,7 @@ class ActivityHistoryController extends AbstractController
 
         return $this->render('activity/ufa_history.html.twig', [
             'pageTitle' => $translator->trans('activityUfaHistoryPageHeading'),
-            // Breadcrumbs always open on Accueil (activity/history.html.twig adds it); this is the
+            // Breadcrumbs always open on Accueil (the Cm:Breadcrumb component adds it); this is the
             // segment between it and the page, which only the UFA side has.
             'breadcrumbParentLabel' => $translator->trans('ufaAlternanceDashboardPageHeading'),
             'breadcrumbParentPath' => $this->generateUrl('app_ufa'),

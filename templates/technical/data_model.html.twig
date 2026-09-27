@@ -5,11 +5,10 @@
 {# Three segments: this screen is reached from the "Description technique" page, which itself hangs
    off the profile menu - the trail follows navigation. #}
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'technicalPageHeading'|trans, url: path('app_technical')},
         {label: 'technicalDataModelPageHeading'|trans, url: path('app_technical_data_model')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'technicalDataModelPageHeading'|trans }}{% endblock %}

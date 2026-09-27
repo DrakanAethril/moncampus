@@ -24,7 +24,7 @@ namespace App\Enum;
  * is picked (App\Form\AssignmentWizardType, `libraryVideo`), and App\Service\FileLibraryWorkFactory
  * builds the video resource from it exactly as the library's own « Créer un travail » does.
  */
-enum AssignmentNature: string
+enum AssignmentNature: string implements HasBadge
 {
     case ToSubmit = 'to_submit';
     case ToRevise = 'to_revise';
@@ -85,17 +85,17 @@ enum AssignmentNature: string
 
     // Dashboard grammar (PROMPT_CLAUDE_CODE_DASHBOARDS §2): À rendre = blue, À réviser = amber,
     // À préparer / À lire = gray.
-    public function badgeClass(): string
+    public function badgeTone(): BadgeTone
     {
         return match ($this) {
-            self::ToSubmit => 'cm-badge--blue',
-            self::ToRevise => 'cm-badge--gold',
-            self::Quiz => 'cm-badge--purple',
-            self::SelfAssessment => 'cm-badge--blue',
-            self::Listening => 'cm-badge--teal',
-            self::Watching => 'cm-badge--teal',
-            self::Survey => 'cm-badge--purple',
-            self::ToPrepare, self::ToRead, self::Exercices, self::Autre => 'cm-badge--gray',
+            self::ToSubmit => BadgeTone::Blue,
+            self::ToRevise => BadgeTone::Gold,
+            self::Quiz => BadgeTone::Purple,
+            self::SelfAssessment => BadgeTone::Blue,
+            self::Listening => BadgeTone::Teal,
+            self::Watching => BadgeTone::Teal,
+            self::Survey => BadgeTone::Purple,
+            self::ToPrepare, self::ToRead, self::Exercices, self::Autre => BadgeTone::Gray,
         };
     }
 

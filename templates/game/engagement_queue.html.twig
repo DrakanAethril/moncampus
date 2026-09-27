@@ -3,10 +3,9 @@
 {% block title %}{{ 'engagementQueueHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'engagementQueueHeading'|trans, url: path('app_game_engagements')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'engagementQueueHeading'|trans }}{% endblock %}
@@ -58,7 +57,7 @@
                                     <span class="cm-gm-log__src">{{ 'engagementRefusedOnLabel'|trans({'%date%': declaration.reviewedAt|date('d/m/Y')}) }} — « {{ declaration.refusalReason }} »</span>
                                 {% endif %}
                             </td>
-                            <td><span class="cm-badge cm-badge--{{ declaration.state.badgeVariant }}">{{ declaration.state.value == 'filed' ? declaration.kind.labelKey|trans : declaration.state.labelKey|trans }}</span></td>
+                            <td><twig:Cm:Badge :of="declaration.state">{{ declaration.state.value == 'filed' ? declaration.kind.labelKey|trans : declaration.state.labelKey|trans }}</twig:Cm:Badge></td>
                             <td class="text-end cm-gm-log__pts">{{ declaration.state.value == 'refused' ? '—' : '+' ~ declaration.points }}</td>
                             <td class="cm-actions">
                                 {% if declaration.state.value == 'filed' %}

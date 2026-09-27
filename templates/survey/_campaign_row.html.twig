@@ -30,7 +30,7 @@
         </div>
         <div class="text-secondary small">{{ rate.responded }} / {{ rate.targeted }}</div>
     </td>
-    <td><span class="cm-badge {{ campaign.state.badgeClass }}">{{ campaign.state.labelKey|trans }}</span></td>
+    <td><twig:Cm:Badge :of="campaign.state"/></td>
     <td class="text-secondary">{{ campaign.closesAt ? campaign.closesAt|date('d/m/Y H:i') : 'surveyNoDeadlineText'|trans }}</td>
     <td>
         <div class="cm-actionbar cm-actionbar--inline justify-content-end">

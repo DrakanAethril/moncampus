@@ -2,7 +2,6 @@
    then the library, then one entry per folder being opened - depth follows navigation, and a
    classement three folders deep is three real levels. #}
 {% set segments = [
-    {label: 'homeNavLabel'|trans, url: path('app_home')},
     {label: 'toolsNavLabel'|trans, url: path('app_library_sequences')},
     {label: 'librarySequencesPageHeading'|trans, url: path('app_library_sequences')},
 ] %}
@@ -17,4 +16,4 @@
     {% set segments = segments|merge([{label: 'librarySequencesSearchResultsHeading'|trans, url: path('app_library_sequences_search', {q: searchTerms})}]) %}
 {% endif %}
 
-{% include '_breadcrumb.html.twig' with {segments: segments} %}
+{{ component('Cm:Breadcrumb', {segments: segments}) }}

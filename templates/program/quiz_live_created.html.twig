@@ -3,12 +3,11 @@
 {% block title %}{{ 'quizLiveCreatedPageHeading'|trans }} - {{ program.displayShortName }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'quizLiveNavLabel'|trans, url: path('app_tools_quiz_live')},
         {label: program.displayShortName, url: path('app_program_quiz_live_history', {id: program.id})},
         {label: 'quizLiveCreatedPageHeading'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'quizLiveCreatedPageHeading'|trans }}{% endblock %}
 

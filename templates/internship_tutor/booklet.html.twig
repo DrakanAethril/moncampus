@@ -5,10 +5,9 @@
 {% block title %}{{ 'ufaAlternanceLivretPageHeading'|trans }} — {{ tutorLink.student.displayName ?? tutorLink.student.username }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_internship_tutor_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'ufaAlternanceLivretPageHeading'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'ufaAlternanceLivretPageHeading'|trans }} — {{ tutorLink.student.displayName ?? tutorLink.student.username }}{% endblock %}
 {% block page_actions %}

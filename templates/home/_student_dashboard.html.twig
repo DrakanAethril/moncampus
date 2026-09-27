@@ -224,7 +224,7 @@
                                         {% include 'student/_work_watch_link.html.twig' with {assignment: assignment, link_class: 'cm-inline-add'} only %}
                                     {% endif %}
                                     {% if multi %}<span class="cm-dot-badge"><span class="cm-dot-badge__dot" style="background: {{ student.programMeta[assignment.program.id].color }}"></span>{{ assignment.program.displayShortName }}</span>{% endif %}
-                                    <span class="cm-badge {{ assignment.nature.badgeClass }}">{{ assignment.nature.labelKey|trans }}</span>
+                                    <twig:Cm:Badge :of="assignment.nature"/>
                                 </span>
                             </div>
                             {% if not loop.last %}<div style="height: 1px; background: var(--cm-border-soft);"></div>{% endif %}

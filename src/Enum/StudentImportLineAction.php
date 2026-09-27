@@ -11,7 +11,7 @@ namespace App\Enum;
  * Deliberately a smaller set than the analysis's: Decide and Blocked describe a file that was
  * never written, so they can never reach a App\Entity\StudentImportBatchLine.
  */
-enum StudentImportLineAction: string
+enum StudentImportLineAction: string implements HasBadge
 {
     /** An account, its directory request and its class membership. */
     case Create = 'create';
@@ -31,12 +31,12 @@ enum StudentImportLineAction: string
         };
     }
 
-    public function badgeClass(): string
+    public function badgeTone(): BadgeTone
     {
         return match ($this) {
-            self::Create => 'cm-badge--green',
-            self::Attach => 'cm-badge--blue',
-            self::Update => 'cm-badge--gray',
+            self::Create => BadgeTone::Green,
+            self::Attach => BadgeTone::Blue,
+            self::Update => BadgeTone::Gray,
         };
     }
 

@@ -3,12 +3,11 @@
 {% block title %}{{ 'gradebookRubricPageHeading'|trans }} - {{ evaluation.name }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: program.displayShortName, url: path('app_program_students', {id: program.id})},
         {label: 'gradebookNavLabel'|trans, url: path('app_program_gradebook', {id: program.id, topic: evaluation.topic.id})},
         {label: 'gradebookRubricPageHeading'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'gradebookRubricPageHeading'|trans }} - {{ evaluation.name }}{% endblock %}
 

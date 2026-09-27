@@ -8,10 +8,9 @@
 {% block title %}{{ 'myDossiersNavLabel'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'myDossiersNavLabel'|trans, url: path('app_my_dossiers')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'myDossiersNavLabel'|trans }}{% endblock %}

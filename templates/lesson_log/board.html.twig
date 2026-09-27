@@ -11,13 +11,12 @@
    picked, that being one level down. #}
 {% block page_breadcrumb %}
     {% set segments = [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
         {label: 'lessonLogPageHeading'|trans, url: path('app_lesson_logs')},
     ] %}
     {% if program %}
         {% set segments = segments|merge([{label: program.displayShortName, url: path('app_program_lesson_logs', {id: program.id})}]) %}
     {% endif %}
-    {% include '_breadcrumb.html.twig' with {segments: segments} %}
+    {{ component('Cm:Breadcrumb', {segments: segments}) }}
 {% endblock %}
 {% block page_title %}{{ 'lessonLogPageHeading'|trans }}{% if program %} <span class="cm-cdt-title-class">› {{ program.displayShortName }}</span>{% endif %}{% endblock %}
 

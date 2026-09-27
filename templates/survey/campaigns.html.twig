@@ -3,10 +3,9 @@
 {% block title %}{{ 'surveysPageHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'surveysPageHeading'|trans, url: path('app_surveys')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'surveysPageHeading'|trans }}{% endblock %}
@@ -18,7 +17,7 @@
 {% block main %}
     {% include 'survey/_page_head.html.twig' %}
 
-    {% include '_tabs.html.twig' with {tabs: tabs|map(t => {url: t.url, label: t.label|trans, active: t.active, count: t.count})} %}
+    {{ component('Cm:Tabs', {tabs: tabs|map(t => {url: t.url, label: t.label|trans, active: t.active, count: t.count})}) }}
 
     <div class="card cm-card--tabbed">
         <div class="card-body">

@@ -3,13 +3,12 @@
 {% block title %}{{ 'quizAssistantPastePageHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'toolsNavLabel'|trans, url: path('app_library_quiz')},
         {label: 'quizLibraryPageHeading'|trans, url: path('app_library_quiz')},
         {label: 'quizAssistantBreadcrumbLabel'|trans, url: path('app_library_quiz_assistant')},
         {label: 'quizAssistantPasteBreadcrumbLabel'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'quizAssistantPastePageHeading'|trans }}{% endblock %}
 

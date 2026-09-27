@@ -3,11 +3,10 @@
 {% block title %}{{ 'consoleWallHeading'|trans({'%label%': batch.label}) }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'myMachinesHeading'|trans, url: path('app_my_machines')},
         {label: 'consoleWallCrumb'|trans({'%label%': batch.label}), url: app.request.pathInfo},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'consoleWallHeading'|trans({'%label%': batch.label}) }}{% endblock %}

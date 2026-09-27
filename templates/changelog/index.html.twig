@@ -4,10 +4,9 @@
 
 {# Two segments: this screen hangs straight off the profile menu, same shape as "À propos". #}
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'changelogPageHeading'|trans, url: path('app_changelog')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ 'changelogPageHeading'|trans }}{% endblock %}
@@ -41,7 +40,7 @@
                             <ul class="cm-changelog__entries">
                                 {% for entry in product %}
                                     <li data-changelog-filter-target="entry" data-type="{{ entry.type.value }}">
-                                        <span class="cm-badge {{ entry.type.badgeClass }}">{{ entry.type.labelKey|trans }}</span>
+                                        <twig:Cm:Badge :of="entry.type"/>
                                         <span class="cm-changelog__title">{{ entry.title }}</span>
                                         {% if entry.detail %}<span class="cm-changelog__detail">{{ entry.detail }}</span>{% endif %}
                                     </li>
@@ -59,7 +58,7 @@
                                 <ul class="cm-changelog__entries">
                                     {% for entry in internal %}
                                         <li data-changelog-filter-target="entry" data-type="{{ entry.type.value }}">
-                                            <span class="cm-badge {{ entry.type.badgeClass }}">{{ entry.type.labelKey|trans }}</span>
+                                            <twig:Cm:Badge :of="entry.type"/>
                                             <span class="cm-changelog__title">{{ entry.title }}</span>
                                             {% if entry.detail %}<span class="cm-changelog__detail">{{ entry.detail }}</span>{% endif %}
                                         </li>

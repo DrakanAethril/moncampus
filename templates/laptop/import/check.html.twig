@@ -3,14 +3,13 @@
 {% block title %}{{ 'laptopImportCheckPageHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'ufaNavLabel'|trans, url: path('app_ufa')},
         {label: 'laptopsNavLabel'|trans, url: path('app_laptops_loans')},
         {label: 'laptopsInventoryTabLabel'|trans, url: path('app_laptops')},
         {label: 'laptopImportPageHeading'|trans, url: path('app_laptops_import')},
         {label: 'laptopImportCheckPageHeading'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'laptopImportCheckPageHeading'|trans }}{% endblock %}
 
@@ -19,7 +18,7 @@
     <ul class="mb-0 ps-3">
         {% for issue in issues %}
             <li>
-                <span class="cm-badge {{ issue.severity.badgeClass }}">{{ issue.severity.labelKey|trans }}</span>
+                <twig:Cm:Badge :of="issue.severity"/>
                 {{ issue.messageKey|trans(issue.parameters) }}
             </li>
         {% endfor %}
@@ -110,7 +109,7 @@
                             <td>{{ laptop.row.deviceLabel ?: '—' }}</td>
                             <td>{{ laptop.replacementValue }}</td>
                             <td>
-                                <span class="cm-badge {{ laptop.action.badgeClass }}">{{ laptop.action.labelKey|trans }}</span>
+                                <twig:Cm:Badge :of="laptop.action"/>
                                 {% if laptop.issues is not empty %}
                                     <div class="text-secondary small mt-1">{{ helper.issue_list(laptop.issues) }}</div>
                                 {% endif %}

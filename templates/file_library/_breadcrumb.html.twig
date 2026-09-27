@@ -5,7 +5,6 @@
    search results. Depth follows navigation: one segment per ancestor, read off the folder's own
    materialized path. #}
 {% set segments = [
-    {label: 'homeNavLabel'|trans, url: path('app_home')},
     {label: 'fileLibraryNavLabel'|trans, url: path('app_file_library')},
 ] %}
 {% for ancestor in ancestors|default([]) %}
@@ -17,4 +16,4 @@
 {% for segment in extra|default([]) %}
     {% set segments = segments|merge([segment]) %}
 {% endfor %}
-{% include '_breadcrumb.html.twig' with {segments: segments} %}
+{{ component('Cm:Breadcrumb', {segments: segments}) }}

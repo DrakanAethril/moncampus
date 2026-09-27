@@ -3,12 +3,11 @@
 {% block title %}{{ 'classImportPageHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'directoryNavLabel'|trans, url: path('app_directory_users')},
         {label: 'directoryUsersNavLabel'|trans, url: path('app_directory_users')},
         {label: 'classImportPageHeading'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'classImportPageHeading'|trans }}{% endblock %}
 

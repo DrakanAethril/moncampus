@@ -1,11 +1,8 @@
 import { Controller } from '@hotwired/stimulus';
-import 'fullcalendar';
 import { Calendar } from '@fullcalendar/core';
 import interactionPlugin from '@fullcalendar/interaction';
 import timeGridPlugin from '@fullcalendar/timegrid';
-import frLocaleModule from '@fullcalendar/core/locales/fr';
-
-const frLocale = frLocaleModule.code ? frLocaleModule : frLocaleModule.default;
+import frLocale from '@fullcalendar/core/locales/fr.js';
 
 /**
  * "Semaine type" bulk-apply builder (App\Controller\ProgramTimetableSettingsController::weeklyTemplateForm()/

@@ -8,10 +8,9 @@
 {% block page_title %}{{ 'schoolMailPageHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'schoolMailPageHeading'|trans, url: path('app_school_mail')},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block main %}

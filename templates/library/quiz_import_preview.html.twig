@@ -7,12 +7,11 @@
 {% block title %}{{ 'quizImportPreviewPageHeading'|trans }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'quizLibraryPageHeading'|trans, url: path('app_library_quiz')},
         {label: (isInteractive ? 'zoneImportBreadcrumbLabel' : 'quizImportBreadcrumbLabel')|trans, url: path(isInteractive ? 'app_library_quiz_assistant_paste' : 'app_library_quiz_import')},
         {label: 'quizImportPreviewBreadcrumbLabel'|trans, url: app.request.requestUri},
-    ]} %}
+    ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'quizImportPreviewPageHeading'|trans }}{% endblock %}
 

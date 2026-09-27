@@ -3,11 +3,10 @@
 {% block title %}{{ surveyTemplate.name }}{% endblock %}
 
 {% block page_breadcrumb %}
-    {% include '_breadcrumb.html.twig' with {segments: [
-        {label: 'homeNavLabel'|trans, url: path('app_home')},
+    {{ component('Cm:Breadcrumb', {segments: [
         {label: 'surveysPageHeading'|trans, url: path('app_surveys')},
         {label: surveyTemplate.name, url: path('app_survey_template_edit', {id: surveyTemplate.id})},
-    ]} %}
+    ]}) }}
 {% endblock %}
 
 {% block page_title %}{{ surveyTemplate.name }}{% endblock %}
