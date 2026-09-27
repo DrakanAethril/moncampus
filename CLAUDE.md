@@ -256,8 +256,12 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     before writing. Cahier de texte: séance and slot are matched on day + start time, the whole slot
     goes back with `verbe=put` and only its base64 `contenu` changed (`EcoleDirecteLessonLogPlanner`
     says which part lands where). Grades: the evaluation is found by name + date or created, then the
-    grid's students are posted; a student is matched only by exact name, and statuses are written
-    `abs` / `ne` / `(12)` - `EcoleDirecteGradePlanner::noteFor()` is the one place that mapping lives.
+    grid's students are posted; a student is matched by the link remembered for them
+    (`EcoleDirecteStudentLink`, one per student establishment-wide, set by hand from the preview,
+    never guessed), else by exact name, and statuses are written `abs` / `ne` / `(12)` -
+    `EcoleDirecteGradePlanner::noteFor()` is the one place that mapping lives. « Ramener sur 20 »
+    and the coefficient are chosen per send (`EcoleDirecteGradeOptions`); the coefficient only
+    shapes an evaluation the send *creates* - an existing one keeps its own, the preview says so.
   `Feature::EcoleDirecte` is off for every role. École Directe changes its protocol without notice -
   an answer the client does not recognise is logged at error level and refused, never guessed at.
 - **Accès aux fonctionnalités** — `App\Enum\Feature` (49 cases) + `#[RequiresFeature]` +
