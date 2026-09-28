@@ -52,6 +52,26 @@ class EcoParcours
     #[ORM\OneToMany(mappedBy: 'parcours', targetEntity: EcoCourse::class)]
     private Collection $courses;
 
+    /**
+     * The IGN's reading of the ground the parcours covers - legs, rescue access, public forest -
+     * as App\Service\Eco\EcoParcoursTerrainAnalyzer wrote it. A snapshot, not a relation: it is
+     * only ever read whole, and it carries the fingerprint of the positions it was computed for,
+     * so a flag moved since then shows it as out of date instead of silently wrong.
+     *
+     * @var array<string, mixed>|null
+     */
+    #[ORM\Column(name: 'terrain_analysis', type: Types::JSON, nullable: true)]
+    private ?array $terrainAnalysis = null;
+
+    #[ORM\Column(name: 'terrain_analyzed_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $terrainAnalyzedAt = null;
+
+    // Set when an analysis is wanted and not yet written - by the button, or by the last flag of
+    // the parcours being located. The IGN's feature service answers in seconds per request, so the
+    // analysis runs in app:eco:read-terrain, never in the request that asked for it.
+    #[ORM\Column(name: 'terrain_requested_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $terrainRequestedAt = null;
+
     public function __construct(User $teacher)
     {
         $this->teacher = $teacher;
@@ -160,5 +180,111 @@ class EcoParcours
     public function isReady(): bool
     {
         return EcoParcoursStatus::Ready === $this->getStatus();
+    }
+
+    /** @return array<string, mixed>|null */
+    public function getTerrainAnalysis(): ?array
+    {
+        return $this->terrainAnalysis;
+    }
+
+    public function getTerrainAnalyzedAt(): ?\DateTimeImmutable
+    {
+        return $this->terrainAnalyzedAt;
+    }
+
+    /** @param array<string, mixed> $analysis */
+    public function recordTerrainAnalysis(array $analysis, \DateTimeImmutable $analyzedAt): static
+    {
+        $this->terrainAnalysis = $analysis;
+        $this->terrainAnalyzedAt = $analyzedAt;
+        $this->terrainRequestedAt = null;
+
+        return $this;
+    }
+
+    /**
+     * Adds shortest walks to an analysis already written - the pairs of flags runners ran in free
+     * order, which the parcours' own order does not contain.
+     *
+     * @param array<string, float|null> $routes keyed "12-15", see EcoParcoursTerrainAnalyzer::pairKey()
+     */
+    public function addTerrainRoutes(array $routes): static
+    {
+        if (null === $this->terrainAnalysis || [] === $routes) {
+            return $this;
+        }
+
+        $known = \is_array($this->terrainAnalysis['routes'] ?? null) ? $this->terrainAnalysis['routes'] : [];
+        // A new array, not an in-place write: Doctrine compares the JSON column by value.
+        $this->terrainAnalysis = ['routes' => $routes + $known] + $this->terrainAnalysis;
+
+        return $this;
+    }
+
+    /** Whether an analysis exists and was computed for the flags where they stand now. */
+    public function hasCurrentTerrainAnalysis(): bool
+    {
+        return null !== $this->terrainAnalysis
+            && ($this->terrainAnalysis['fingerprint'] ?? null) === $this->locationFingerprint();
+    }
+
+    /**
+     * The shortest walk between two flags, from the current analysis - null when there is none,
+     * when that pair was never routed, or when the router found no way.
+     */
+    public function terrainRouteMeters(string $pairKey): ?float
+    {
+        if (!$this->hasCurrentTerrainAnalysis()) {
+            return null;
+        }
+
+        $routes = $this->terrainAnalysis['routes'] ?? null;
+        $meters = \is_array($routes) ? ($routes[$pairKey] ?? null) : null;
+
+        return is_numeric($meters) ? (float) $meters : null;
+    }
+
+    /** Whether the current analysis has already been asked about this pair, route found or not. */
+    public function hasTerrainRoute(string $pairKey): bool
+    {
+        $routes = $this->terrainAnalysis['routes'] ?? null;
+
+        return $this->hasCurrentTerrainAnalysis() && \is_array($routes) && \array_key_exists($pairKey, $routes);
+    }
+
+    public function getTerrainRequestedAt(): ?\DateTimeImmutable
+    {
+        return $this->terrainRequestedAt;
+    }
+
+    // Asking twice keeps the first date: it is what the queue is ordered on.
+    public function requestTerrainAnalysis(\DateTimeImmutable $requestedAt): static
+    {
+        $this->terrainRequestedAt ??= $requestedAt;
+
+        return $this;
+    }
+
+    /**
+     * Where every flag stands, as one string: what the terrain analysis is stamped with, and what
+     * tells it apart from the parcours as it is now. Rounded to about a metre - a re-scan on the
+     * same spot does not make the analysis stale.
+     */
+    public function locationFingerprint(): string
+    {
+        $parts = [];
+        foreach ($this->checkpoints as $checkpoint) {
+            $parts[] = \sprintf(
+                '%d:%s',
+                (int) $checkpoint->getId(),
+                $checkpoint->isLocated()
+                    ? \sprintf('%.5f,%.5f', (float) $checkpoint->getLatitude(), (float) $checkpoint->getLongitude())
+                    : '-',
+            );
+        }
+        sort($parts);
+
+        return hash('xxh128', implode('|', $parts));
     }
 }

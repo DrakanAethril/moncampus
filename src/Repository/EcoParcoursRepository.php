@@ -30,4 +30,15 @@ class EcoParcoursRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /** The parcours whose terrain analysis has waited longest, if any is waiting. */
+    public function findNextTerrainRequest(): ?EcoParcours
+    {
+        return $this->createQueryBuilder('p')
+            ->where('p.terrainRequestedAt IS NOT NULL')
+            ->orderBy('p.terrainRequestedAt', 'ASC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }

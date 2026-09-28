@@ -70,7 +70,10 @@
             </div>
             <div class="col-6 col-lg">
                 <div class="card card-body">
-                    <div class="text-secondary text-uppercase" style="font-size: 11.5px;">{{ 'ecoResultsElevationLabel'|trans }}</div>
+                    <div class="text-secondary text-uppercase" style="font-size: 11.5px;">
+                        {{- 'ecoResultsElevationLabel'|trans }}
+                        {%- if stats.elevation %} · {{ (stats.elevation.source == 'ign' ? 'ecoResultsElevationSourceIgnLabel' : 'ecoResultsElevationSourceGpsLabel')|trans }}{% endif -%}
+                    </div>
                     <div class="h2 mb-0">
                         {%- if stats.elevation %}+{{ stats.elevation.gain|round }} m <span class="fs-4 text-secondary">/ −{{ stats.elevation.loss|round }} m</span>{% else %}—{% endif -%}
                     </div>
@@ -83,6 +86,45 @@
                 </div>
             </div>
         </div>
+
+        {# What the IGN says about the race: only once app:eco:read-terrain has read its fixes, a
+           few minutes after the course is closed. #}
+        {% if stats.terrain or stats.effortKm is not null %}
+            <div class="eco-kpis mb-3">
+                <div class="eco-kpi">
+                    <div class="eco-kpi__label">{{ 'ecoResultsEffortLabel'|trans }}</div>
+                    <div class="eco-kpi__value">
+                        {{- stats.effortKm is not null ? stats.effortKm|number_format(1, ',') ~ ' km-e' : '—' -}}
+                        {%- if stats.effortSpeedKmh is not null %} <span class="eco-kpi__suffix">· {{ stats.effortSpeedKmh|number_format(1, ',') }} km-e/h</span>{% endif -%}
+                    </div>
+                </div>
+                {% if stats.terrain %}
+                    <div class="eco-kpi">
+                        <div class="eco-kpi__label">{{ 'ecoResultsOffPathLabel'|trans }}</div>
+                        <div class="eco-kpi__value">{{ (stats.terrain.offPathShare * 100)|round }} %</div>
+                    </div>
+                    <div class="eco-kpi">
+                        <div class="eco-kpi__label">{{ 'ecoResultsPathSpeedsLabel'|trans }}</div>
+                        <div class="eco-kpi__value">
+                            {{- stats.terrain.onPathSpeedKmh is not null ? stats.terrain.onPathSpeedKmh|number_format(1, ',') : '—' }}
+                            <span class="eco-kpi__suffix">/ {{ stats.terrain.offPathSpeedKmh is not null ? stats.terrain.offPathSpeedKmh|number_format(1, ',') : '—' }} km/h</span>
+                        </div>
+                    </div>
+                    <div class="eco-kpi">
+                        <div class="eco-kpi__label">{{ 'ecoResultsForestLabel'|trans }}</div>
+                        <div class="eco-kpi__value">
+                            {{- (stats.terrain.forestShare * 100)|round }} %
+                            {%- if stats.terrain.forestSpeedKmh is not null %} <span class="eco-kpi__suffix">· {{ stats.terrain.forestSpeedKmh|number_format(1, ',') }} km/h</span>{% endif -%}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        {% elseif course.status.value == 'closed' and stats.pings is not empty %}
+            <div class="cm-note mb-3">
+                <span class="cm-note__icon">⛰</span>
+                <div>{{ 'ecoResultsTerrainPendingText'|trans }}</div>
+            </div>
+        {% endif %}
 
         {% if map %}
             <div class="card mb-3">
@@ -110,7 +152,8 @@
                         outright - and a rejected value aborts connect(), leaving a blank map. #}
                      data-eco-result-map-compared-value="{{ map.compared ? map.compared|json_encode : '{}' }}"
                      data-eco-result-map-expand-label-value="{{ 'ecoResultsMapExpandLabel'|trans }}"
-                     data-eco-result-map-collapse-label-value="{{ 'ecoResultsMapCollapseLabel'|trans }}"></div>
+                     data-eco-result-map-collapse-label-value="{{ 'ecoResultsMapCollapseLabel'|trans }}"
+                     {{ include('eco/_map_layers_attribute.html.twig') }}></div>
                 <div class="card-footer eco-map__legend">
                     <span class="eco-map__legend-item"><span class="eco-map__legend-swatch eco-map__legend-swatch--trace"></span>{{ 'ecoResultsMapLegendTraceLabel'|trans }}</span>
                     {% if map.compared %}
@@ -144,6 +187,9 @@
                                 <th>{{ 'ecoResultsLegGapColumnLabel'|trans }}</th>
                                 <th>{{ 'ecoResultsLegDistanceColumnLabel'|trans }}</th>
                                 <th>{{ 'ecoResultsLegDetourColumnLabel'|trans }}</th>
+                                <th title="{{ 'ecoResultsLegPathRatioHintText'|trans }}">{{ 'ecoResultsLegPathRatioColumnLabel'|trans }}</th>
+                                <th>{{ 'ecoResultsLegClimbColumnLabel'|trans }}</th>
+                                <th>{{ 'ecoResultsLegOffPathColumnLabel'|trans }}</th>
                                 <th>{{ 'ecoResultsLegSearchColumnLabel'|trans }}</th>
                             </tr>
                         </thead>
@@ -168,6 +214,14 @@
                                             <span class="{{ leg.detourRatio >= 1.5 ? 'text-danger fw-bold' : (leg.detourRatio >= 1.25 ? 'text-warning' : 'text-secondary') }}">×{{ leg.detourRatio|number_format(2, ',') }}</span>
                                         {%- else %}<span class="text-secondary">—</span>{% endif -%}
                                     </td>
+                                    <td>
+                                        {%- if leg.pathRatio is not null -%}
+                                            {# Under 1 the runner beat the paths: they cut across, which is orienteering, not a mistake. #}
+                                            <span class="{{ leg.pathRatio >= 1.3 ? 'text-warning' : (leg.pathRatio < 0.9 ? 'text-success fw-bold' : 'text-secondary') }}" title="{{ 'ecoResultsLegShortestPathTitle'|trans({'%meters%': leg.shortestPathMeters|round}) }}">×{{ leg.pathRatio|number_format(2, ',') }}</span>
+                                        {%- else %}<span class="text-secondary">—</span>{% endif -%}
+                                    </td>
+                                    <td class="text-secondary">{{ leg.climbMeters is not null ? '+' ~ leg.climbMeters|round ~ ' m' : '—' }}</td>
+                                    <td class="text-secondary">{{ leg.offPathShare is not null ? (leg.offPathShare * 100)|round ~ ' %' : '—' }}</td>
                                     <td>
                                         {%- if leg.searchSeconds %}
                                             <span class="{{ leg.searchSeconds >= 60 ? 'text-warning' : 'text-secondary' }}">{{ leg.searchSeconds }} s</span>

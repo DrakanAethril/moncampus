@@ -10,6 +10,7 @@ use App\Entity\EcoPositionPing;
 use App\Entity\EcoRunner;
 use App\Enum\EcoScanResult;
 use App\Repository\EcoPositionPingRepository;
+use App\Service\Eco\EcoTerrainStats;
 
 /**
  * The leg-by-leg reading of one runner's race, on the results screen: how long each leg took, how
@@ -21,6 +22,12 @@ use App\Repository\EcoPositionPingRepository;
  * their own sequence, so the only thing that makes two runners' times comparable is that they
  * covered the same pair of checkpoints; the pair is what legs are keyed and compared on, taken
  * unordered since running B→A covers the same ground as A→B.
+ *
+ * `climbMeters` and `offPathShare` come from the IGN's reading of the fixes (EcoTerrainStats) and
+ * stay null until app:eco:read-terrain has read the race; `shortestPathMeters` is the shortest
+ * walk the paths allow between the two flags, from the parcours' terrain analysis, and
+ * `pathRatio` the ground covered against it - the detour a runner who knew the paths could not
+ * have avoided is taken out, which the straight-line ratio cannot do.
  *
  * `bestSeconds`, `gapSeconds` and `isBest` are not written by legsOf(): analyse() adds them once it
  * has every runner's legs to compare against, which is why they are part of the shape a caller sees.
@@ -34,6 +41,10 @@ use App\Repository\EcoPositionPingRepository;
  *     straightMeters: ?float,
  *     detourRatio: ?float,
  *     searchSeconds: ?int,
+ *     climbMeters: ?float,
+ *     offPathShare: ?float,
+ *     shortestPathMeters: ?float,
+ *     pathRatio: ?float,
  *     points: list<array{float, float}>,
  *     toCheckpointId: int,
  *     fromCheckpointId: int,
@@ -69,6 +80,7 @@ class EcoPerformanceAnalyzer
         private readonly EcoPositionPingRepository $pingRepository,
         private readonly EcoDistanceCalculator $distanceCalculator,
         private readonly EcoTraceCleaner $traceCleaner,
+        private readonly EcoTerrainStats $terrainStats,
     ) {
     }
 
@@ -135,6 +147,10 @@ class EcoPerformanceAnalyzer
             $straight = $this->straightLineMeters($fromCheckpoint, $toCheckpoint);
             $seconds = max(0, $endedAt->getTimestamp() - $startedAt->getTimestamp());
 
+            $fixes = EcoTerrainStats::fixesOf($legPings);
+            $elevation = $this->terrainStats->elevation($fixes);
+            $shortestPath = $runner->getCourse()->getParcours()->terrainRouteMeters($this->pairKey($fromCheckpoint, $toCheckpoint));
+
             $legs[] = [
                 'fromName' => $fromCheckpoint->getName() ?? '',
                 'toName' => $toCheckpoint->getName() ?? '',
@@ -147,6 +163,10 @@ class EcoPerformanceAnalyzer
                     ? $travelled / $straight
                     : null,
                 'searchSeconds' => $this->searchSecondsAt($toCheckpoint, $legPings, $endedAt),
+                'climbMeters' => 'ign' === ($elevation['source'] ?? null) ? $elevation['gain'] : null,
+                'offPathShare' => $this->terrainStats->split($fixes)['offPathShare'] ?? null,
+                'shortestPathMeters' => $shortestPath,
+                'pathRatio' => (null !== $shortestPath && $shortestPath > 50.0 && $travelled > 0.0) ? $travelled / $shortestPath : null,
                 // Kept so the map can redraw one leg on its own - it is what lets the best and the
                 // worst detour be picked out in colour.
                 'points' => $points,

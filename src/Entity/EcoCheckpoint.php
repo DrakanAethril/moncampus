@@ -70,6 +70,22 @@ class EcoCheckpoint
     #[ORM\Column(name: 'located_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $locatedAt = null;
 
+    // What the IGN says about the ground under the flag, read once per position
+    // (App\Service\Eco\EcoCheckpointTerrainReader): the altitude of the terrain model, and the height
+    // of the vegetation around it - under a tall canopy a phone's fix wanders further, which is
+    // what the tolerance advice is built on. All three are cleared by locate(): a moved flag
+    // stands on other ground.
+    #[ORM\Column(name: 'ground_altitude', type: Types::FLOAT, nullable: true)]
+    private ?float $groundAltitude = null;
+
+    #[ORM\Column(name: 'canopy_height', type: Types::FLOAT, nullable: true)]
+    private ?float $canopyHeight = null;
+
+    // Set once the IGN has answered for the current position, even when it had no value to give
+    // (a spot outside its coverage): null means "not asked yet", not "nothing there".
+    #[ORM\Column(name: 'terrain_read_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $terrainReadAt = null;
+
     public function __construct(EcoParcours $parcours)
     {
         $this->parcours = $parcours;
@@ -185,6 +201,33 @@ class EcoCheckpoint
         $this->latitude = $latitude;
         $this->longitude = $longitude;
         $this->locatedAt = $locatedAt;
+        $this->groundAltitude = null;
+        $this->canopyHeight = null;
+        $this->terrainReadAt = null;
+
+        return $this;
+    }
+
+    public function getGroundAltitude(): ?float
+    {
+        return $this->groundAltitude;
+    }
+
+    public function getCanopyHeight(): ?float
+    {
+        return $this->canopyHeight;
+    }
+
+    public function getTerrainReadAt(): ?\DateTimeImmutable
+    {
+        return $this->terrainReadAt;
+    }
+
+    public function recordTerrain(?float $groundAltitude, ?float $canopyHeight, \DateTimeImmutable $readAt): static
+    {
+        $this->groundAltitude = $groundAltitude;
+        $this->canopyHeight = $canopyHeight;
+        $this->terrainReadAt = $readAt;
 
         return $this;
     }
