@@ -12,6 +12,8 @@ services:
       - ./frankenphp/conf.d/20-app.dev.ini:/usr/local/etc/php/app.conf.d/20-app.dev.ini:ro
       # Keep var/ off the bind-mount for faster I/O on Mac/Windows; comment to inspect from the host.
       - /app/var
+      # Shared with `worker` below, as in production - see LOCK_DSN in compose.prod.yaml.
+      - app_locks:/app/var/lock
       # If you develop on Mac or Windows you can remove the vendor/ directory
       #  from the bind-mount for better performance by enabling the next line:
       #- /app/vendor
@@ -49,6 +51,7 @@ services:
       # See https://xdebug.org/docs/all_settings#mode
       XDEBUG_MODE: "${XDEBUG_MODE:-develop}"
       APP_ENV: "${APP_ENV:-dev}"
+      LOCK_DSN: flock:///app/var/lock
     # Injects DATABASE_URL, MERCURE_PUBLISHER_JWT_KEY/MERCURE_SUBSCRIBER_JWT_KEY/MERCURE_JWT_SECRET,
     # LDAP_*, and AWS_*/S3 credentials directly into the container's OS environment - needed
     # because compose.yaml deliberately never assembles these via docker-compose ${} substitution
@@ -190,6 +193,42 @@ services:
     volumes:
       - clamav_db:/var/lib/clamav
 
+  # The scheduler's worker (App\Scheduler\PlatformSchedule), as in compose.prod.yaml - which says
+  # why each setting is what it is. **Opt-in here**: `docker compose --profile worker up -d worker`.
+  # Off by default because the schedule acts on real things - it drains the dev SQS queues (which
+  # the beaup-sqs-check skill does by hand), sounds out the declared hypervisors, and replays the
+  # night's purges on whatever the dev database holds. The code is bind-mounted but the process
+  # does not reload it: `docker compose restart worker` after a change to a command.
+  worker:
+    image: ${IMAGES_PREFIX:-}app-php-dev
+    profiles: [worker]
+    restart: unless-stopped
+    depends_on:
+      php:
+        condition: service_healthy
+    entrypoint: ["docker-php-entrypoint"]
+    command: ["php", "bin/console", "messenger:consume", "scheduler_default", "--time-limit=3600", "--memory-limit=192M", "-v"]
+    healthcheck:
+      disable: true
+    volumes:
+      - ./:/app
+      - ./frankenphp/conf.d/20-app.dev.ini:/usr/local/etc/php/app.conf.d/20-app.dev.ini:ro
+      - /app/var
+      - app_locks:/app/var/lock
+    env_file:
+      - .env.dev.local
+    environment:
+      APP_ENV: "${APP_ENV:-dev}"
+      XDEBUG_MODE: "${XDEBUG_MODE:-develop}"
+      TZ: Europe/Paris
+      DEFAULT_URI: https://${SERVER_NAME:-localhost}:${HTTPS_PORT:-443}
+      MERCURE_URL: ${CADDY_MERCURE_URL:-http://php/.well-known/mercure}
+      MERCURE_PUBLIC_URL: ${CADDY_MERCURE_PUBLIC_URL:-https://${SERVER_NAME:-localhost}:${HTTPS_PORT:-443}/.well-known/mercure}
+      GOTENBERG_URL: http://gotenberg:3000
+      LOCK_DSN: flock:///app/var/lock
+    extra_hosts:
+      - host.docker.internal:host-gateway
+
   # Stand-in Proxmox VE API for the console at /infrastructure, reachable from the php container at
   # https://proxmox-mock:8006 - see docker/proxmox-mock/README.md for the credentials to paste into
   # « Déclarer un hôte ».
@@ -235,6 +274,7 @@ services:
 
 volumes:
   database_data:
+  app_locks:
   ldap_data:
   clamav_db:
   # Named rather than anonymous so the generated CA - and therefore the PEM pasted into a declared

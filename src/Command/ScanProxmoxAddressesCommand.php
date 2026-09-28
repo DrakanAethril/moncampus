@@ -9,7 +9,6 @@ use App\Service\Network\IpAllocator;
 use App\Service\Network\RangeScanner;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Command\LockableTrait;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -26,11 +25,11 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * It also frees abandoned reservations along the way, which is the other slow leak: a creation
  * wizard somebody walked away from holds its address for ever otherwise.
  *
- * Meant for a cron every few minutes. Note that anything writing to the database in this
+ * Scheduled every five minutes (App\Scheduler\PlatformSchedule). Note that anything writing to the database in this
  * application needs MERCURE_URL in its environment - ux-turbo publishes on every flush, CLI
  * included, and the failure surfaces at flush time rather than at start-up.
  *
- * **It locks itself**, so the cron line needs no `flock` - the same posture as the three
+ * **It locks itself** - the same posture as the three
  * `app:mail:*` commands. Two passes at once would be worse here than elsewhere: each one reads the
  * ranges back from their hypervisor and frees the abandoned reservations, so the second would judge
  * on a picture the first is in the middle of redrawing. And a range whose host does not answer is
@@ -42,7 +41,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class ScanProxmoxAddressesCommand extends Command
 {
-    use LockableTrait;
+    use SharedLockableTrait;
 
     public function __construct(
         private readonly IpRangeRepository $ranges,
@@ -62,7 +61,7 @@ class ScanProxmoxAddressesCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        // The lock lives here rather than in the cron line, so that a manual run is protected too.
+        // The lock lives here rather than in the scheduler, so that a manual run is protected too.
         // A skipped pass is a success: the gaps it would have reported are still there next time.
         if (!$this->lock()) {
             $io->comment('Une autre exécution est déjà en cours.');
@@ -129,7 +128,7 @@ class ScanProxmoxAddressesCommand extends Command
         }
 
         if ($gaps > 0) {
-            // Not a failure: gaps are the normal output of a scan, and a cron that alerted on them
+            // Not a failure: gaps are the normal output of a scan, and a schedule that alerted on them
             // would alert every time somebody creates a machine by hand.
             $io->warning(\sprintf('%d écart(s) à traiter dans le registre.', $gaps));
 

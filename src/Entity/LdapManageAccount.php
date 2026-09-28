@@ -95,7 +95,7 @@ class LdapManageAccount
     private ?string $verificationNote = null;
 
     // When this application drew the consequence on its own side - today only a rename rewriting
-    // User::$username. Its job is idempotence: the fiche's polling and the cron command both apply,
+    // User::$username. Its job is idempotence: the fiche's polling and the scheduled command both apply,
     // and they can cross each other.
     #[ORM\Column(name: 'applied_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $appliedAt = null;

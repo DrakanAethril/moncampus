@@ -17,7 +17,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 /**
  * The nightly cleanup of the uploads bucket (design/validated/object-deletion.md, "The purge").
  *
- * One command and one cron line, because there is one thing to say about this platform's bytes:
+ * One command and one scheduled task, because there is one thing to say about this platform's bytes:
  * this is what removes them. It walks App\Entity\DeletedObject and removes every object whose
  * retention window has run out - thirty days for a teacher's deleted course material, one day for
  * the two origins nobody asked to keep:
@@ -47,7 +47,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *   reports success while the bytes remain turns a permission problem into a permanent, invisible
  *   leak - which is the failure the whole design exists to avoid.
  *
- * Cron context note: `symfony/ux-turbo` pings Mercure on every flush, CLI included, so `MERCURE_URL`
+ * Scheduling context note: `symfony/ux-turbo` pings Mercure on every flush, CLI included, so `MERCURE_URL`
  * must be set wherever this runs - the deleted pass flushes on every batch.
  */
 #[AsCommand(

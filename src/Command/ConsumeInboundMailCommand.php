@@ -10,7 +10,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Command\LockableTrait;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -19,7 +18,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 /**
  * Drains the "inbound" SQS queue: every message carries the S3 key of a `.eml` dropped by SES.
  *
- * Designed to be called periodically (cron, every minute) rather than to run permanently. The
+ * Designed to be called periodically (App\Scheduler\PlatformSchedule, every minute) rather than to run permanently. The
  * choice is deliberate: the real flow is counted in tens of mails per day, not per second, and a
  * minute of latency on an application arriving is invisible. In exchange there is no resident
  * process to watch, no memory leak to bound and no restart policy to tune - the command is born,
@@ -38,11 +37,11 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  */
 #[AsCommand(
     name: 'app:mail:consume-inbound',
-    description: 'Vide la file SQS des mails entrants du Courrier pro (à appeler par cron).',
+    description: 'Vide la file SQS des mails entrants du Courrier pro (tâche planifiée).',
 )]
 class ConsumeInboundMailCommand extends Command
 {
-    use LockableTrait;
+    use SharedLockableTrait;
 
     /** The maximum the SQS API allows. */
     private const int BATCH_SIZE = 10;
@@ -78,7 +77,7 @@ class ConsumeInboundMailCommand extends Command
 
         // Two simultaneous runs would process the same messages: idempotency would catch them, but
         // at the cost of doubled work and unreadable logs. The lock lives in the command rather than
-        // in the cron line, so that manual invocations are protected too.
+        // in the scheduler, so that manual invocations are protected too.
         if (!$this->lock()) {
             $io->comment('Une autre exécution est déjà en cours.');
 

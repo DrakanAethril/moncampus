@@ -10,7 +10,6 @@ use App\Service\SchoolMailApplicationRecovery;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Command\LockableTrait;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -20,7 +19,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * Re-reads the Courrier pro mails that belong to a student but to no démarche, and files the ones
  * that name a send - App\Service\SchoolMailApplicationRecovery holds the whole rule.
  *
- * **A repair pass, not a cron.** It exists because the rule it applies was written after those rows
+ * **A repair pass, never scheduled.** It exists because the rule it applies was written after those rows
  * were stored: a delivery failure notice arriving before it existed was filed nowhere, and nothing
  * else will ever look at it again. Once the backlog is caught up, the inbound worker does this at
  * arrival and there is nothing left for a schedule to do.
@@ -31,11 +30,11 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  */
 #[AsCommand(
     name: 'app:mail:relink-applications',
-    description: 'Rattache à leur démarche les mails du Courrier pro laissés sans démarche (rattrapage, pas de cron).',
+    description: 'Rattache à leur démarche les mails du Courrier pro laissés sans démarche (rattrapage, jamais planifié).',
 )]
 class RelinkSchoolMailCommand extends Command
 {
-    use LockableTrait;
+    use SharedLockableTrait;
 
     public function __construct(
         private readonly EmailMessageRepository $messageRepository,

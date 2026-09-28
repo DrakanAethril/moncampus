@@ -1,0 +1,16 @@
+framework:
+    messenger:
+        # Messenger is here for one consumer only: the `worker` service (compose.prod.yaml), which
+        # runs `messenger:consume scheduler_default` - the recurring tasks of App\Scheduler\
+        # PlatformSchedule. There is deliberately no queue transport: everything else dispatched on
+        # the bus (the mailer's SendEmailMessage, the notifier's ChatMessage) has no routing and is
+        # therefore handled synchronously, in the request that sent it, exactly as before.
+        buses:
+            messenger.bus.default:
+                middleware:
+                    # The worker lives for an hour and the database is on another host: each task
+                    # starts on a fresh connection rather than on one the server may have dropped
+                    # while the worker slept. Only acts on messages a worker consumed
+                    # (ConsumedByWorkerStamp), so a mail sent inside a web request keeps its
+                    # connection - and its transaction.
+                    - doctrine_close_connection

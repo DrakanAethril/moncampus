@@ -41,6 +41,12 @@ services:
       # above in this file.
       FRANKENPHP_CONFIG: num_threads 12
       FRANKENPHP_WORKER_CONFIG: num 8
+
+      # Every lock of the platform (App\Command\SharedLockableTrait, the VMID lock of
+      # App\Service\Proxmox\GuestCreator) lives in a directory both this container and `worker`
+      # mount, so a web screen, a manual run and a scheduled task all see the same locks. flock on a
+      # local volume works across containers: same kernel, same inode.
+      LOCK_DSN: flock:///app/var/lock
     volumes:
       # LDAPS certificate verification (App\Service\LdapAdapterFactory, LDAP_TLS_CA_CERT_PATH in
       # .env.prod.local must point at this same in-container path) - ldap-ca.pem is a public CA
@@ -50,6 +56,8 @@ services:
       # of the app image, so logged-in users' sessions survive this container being rebuilt from
       # scratch on every deploy instead of everyone getting silently logged out mid-navigation.
       - php_sessions:/app/var/sessions
+      # Shared with `worker` - see LOCK_DSN above.
+      - app_locks:/app/var/lock
       # Lexik JWT keypair (App\Security\ApiLdapAuthenticator's token signing, used by the mobile
       # apps' POST /api/login - never by web session login) - JWT_SECRET_KEY/JWT_PUBLIC_KEY
       # (.env) point at %kernel.project_dir%/config/jwt/{private,public}.pem. That path is
@@ -62,6 +70,54 @@ services:
       # (via a temp-file-then-rename, which fails outright on a read-only mount), and it's the
       # documented way to (re)generate the keypair, not just to read it afterwards.
       - ./config/jwt:/app/config/jwt
+
+  # The scheduler's worker: every recurring task of the platform (App\Scheduler\PlatformSchedule),
+  # in place of the host crontab that used to `exec` the same commands into `php`.
+  #
+  # Same image as `php`, and it needs the same environment to do the same work: keep `environment`,
+  # `env_file` and the LDAPS certificate in step with `php` above and in compose.yaml - a command
+  # that writes needs MERCURE_URL (ux-turbo pings Mercure on every flush, CLI included), one that
+  # builds a link needs DEFAULT_URI, `app:ldap:apply-account-requests` needs the certificate.
+  #
+  # - `entrypoint` bypasses docker-entrypoint, which runs the migrations: `php` does that on start,
+  #   and two containers migrating at once is how a deploy corrupts a schema. `depends_on` waits
+  #   for `php` to be healthy, i.e. migrated.
+  # - `healthcheck: disable` because the image's own check asks Caddy, which does not run here -
+  #   left inherited, `up --wait` would wait for ever on a worker that is working fine.
+  # - `--time-limit` restarts the process every hour and `restart` brings it back: a PHP process
+  #   that lives for weeks is one whose memory nobody has measured. The schedule is stateful, so a
+  #   task whose minute fell during the restart runs when it comes back.
+  # - `-v` shows the one notice line per task (App\Scheduler\ScheduledCommandLogger) and nothing
+  #   chattier; the log rotation bounds what a line a minute becomes over a year.
+  worker:
+    image: ${IMAGES_PREFIX:-}app-php-prod
+    restart: unless-stopped
+    depends_on:
+      php:
+        condition: service_healthy
+    entrypoint: ['docker-php-entrypoint']
+    command: ['php', 'bin/console', 'messenger:consume', 'scheduler_default', '--time-limit=3600', '--memory-limit=192M', '-v']
+    stop_grace_period: 60s
+    healthcheck:
+      disable: true
+    env_file:
+      - .env.prod.local
+    environment:
+      APP_ENV: prod
+      TZ: Europe/Paris
+      DEFAULT_URI: https://${SERVER_NAME:-localhost}:${HTTPS_PORT:-443}
+      MERCURE_URL: ${CADDY_MERCURE_URL:-http://php/.well-known/mercure}
+      MERCURE_PUBLIC_URL: ${CADDY_MERCURE_PUBLIC_URL:-https://${SERVER_NAME:-localhost}:${HTTPS_PORT:-443}/.well-known/mercure}
+      GOTENBERG_URL: http://gotenberg:3000
+      LOCK_DSN: flock:///app/var/lock
+    volumes:
+      - ./ldap-ca.pem:/etc/moncampus/ldap-ca.pem:ro
+      - app_locks:/app/var/lock
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '5'
 
   # Virus scanning for every upload on the platform (App\Service\AntivirusScanner), reached over
   # clamd's TCP socket at the ANTIVIRUS_DSN set in .env.prod.local (clamav://clamav:3310).
@@ -91,4 +147,5 @@ services:
 
 volumes:
   php_sessions:
+  app_locks:
   clamav_db:
