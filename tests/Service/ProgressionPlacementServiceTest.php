@@ -27,6 +27,7 @@ use App\Repository\SeanceInstanceRepository;
 use App\Repository\TopicRepository;
 use App\Service\ProgressionPlacementService;
 use App\Service\ProgressionSlotPool;
+use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 
@@ -69,6 +70,7 @@ class ProgressionPlacementServiceTest extends TestCase
             new ProgressionSlotPool($this->lessonSessionRepository, $this->topicRepository),
             $this->seanceInstanceRepository,
             $this->placementRepository,
+            $this->entityManager(),
         );
 
         $schoolYear = new SchoolYear(new \DateTimeImmutable('2026-09-01'), new \DateTimeImmutable('2027-06-30'));
@@ -918,6 +920,7 @@ class ProgressionPlacementServiceTest extends TestCase
             new ProgressionSlotPool($this->lessonSessionRepository, $this->topicRepository),
             $this->seanceInstanceRepository,
             $this->placementRepository,
+            $this->entityManager(),
         );
 
         $sequence = $this->sequence();
@@ -982,6 +985,17 @@ class ProgressionPlacementServiceTest extends TestCase
                 ));
             },
         );
+    }
+
+    // validate() hands créneaux over inside a transaction; nothing here flushes, so the manager
+    // only has to run the callback it is given (the flush order itself is pinned against a real
+    // database by tests/Functional/ProgressionValidateSeanceLinkTest.php).
+    private function entityManager(): EntityManagerInterface
+    {
+        $entityManager = $this->createStub(EntityManagerInterface::class);
+        $entityManager->method('wrapInTransaction')->willReturnCallback(static fn (callable $callback): mixed => $callback($entityManager));
+
+        return $entityManager;
     }
 
     private function newTopic(string $name): Topic

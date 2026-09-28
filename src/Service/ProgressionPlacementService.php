@@ -10,8 +10,10 @@ use App\Entity\Progression;
 use App\Entity\ProgressionSeance;
 use App\Entity\ProgressionSeancePlacement;
 use App\Entity\ProgressionSequence;
+use App\Entity\SeanceInstance;
 use App\Repository\ProgressionSeancePlacementRepository;
 use App\Repository\SeanceInstanceRepository;
+use Doctrine\ORM\EntityManagerInterface;
 
 /**
  * The 10 automatic-placement rules of design/design_handoff_progression/README.md §4, in one
@@ -45,6 +47,7 @@ class ProgressionPlacementService
         private readonly ProgressionSlotPool $slotPool,
         private readonly SeanceInstanceRepository $seanceInstanceRepository,
         private readonly ProgressionSeancePlacementRepository $placementRepository,
+        private readonly EntityManagerInterface $entityManager,
     ) {
     }
 
@@ -303,6 +306,11 @@ class ProgressionPlacementService
     {
         $topic = $sequence->getProgression()?->getTopic();
 
+        /** @var array<int, array{instance: SeanceInstance, session: LessonSession}> $links keyed by LessonSession id */
+        $links = [];
+        /** @var list<SeanceInstance> $unlinked */
+        $unlinked = [];
+
         foreach ($sequence->getActiveSeances() as $seance) {
             $placements = $seance->getActivePlacements();
 
@@ -320,12 +328,26 @@ class ProgressionPlacementService
                 }
             }
 
-            $this->linkSeanceInstance($seance, $placements);
+            $instance = $seance->getSeanceInstance();
+            $session = ($placements[0] ?? null)?->getLessonSession();
+            if (null === $instance || null === $session) {
+                continue;
+            }
+
+            // Two séances picked onto one créneau by hand: the later one takes the link, exactly
+            // as it would from a séance validated earlier, and the earlier one is left unlinked.
+            $displaced = $links[(int) $session->getId()]['instance'] ?? null;
+            if (null !== $displaced) {
+                $unlinked[] = $displaced;
+            }
+            $links[(int) $session->getId()] = ['instance' => $instance, 'session' => $session];
         }
+
+        $this->linkSeanceInstances(array_values($links), $unlinked);
     }
 
     /**
-     * Reconnects the séance's library instance to its créneau, which is what marks it "programmée"
+     * Reconnects each séance's library instance to its créneau, which is what marks it "programmée"
      * on the Program-side séquences list.
      *
      * SeanceInstance::$lessonSession is a unique OneToOne, so it can name only ONE créneau. A
@@ -336,26 +358,40 @@ class ProgressionPlacementService
      * The other créneaux are not lost for the lesson log: App\Service\SeanceContentResolver reaches
      * them through the progression's placements, so "pré-remplir" works on all of them.
      *
-     * Any stale link on the same créneau is cleared first - two SeanceInstances pointing at one
-     * LessonSession would violate the unique constraint.
+     * Links change hands here - a séance moved onto the créneau its neighbour is leaving, two
+     * séances swapping - and the unique index is checked row by row, on each UPDATE. Doctrine
+     * orders those UPDATEs by its identity map, not by the order the links were rewritten, so
+     * releasing the old holder and taking the créneau in ONE flush reached MySQL backwards and
+     * died on UNIQ_AE8B31A66C36A50E. Hence two flushes in one transaction: every link about to
+     * move, and every other row still holding a target créneau, is cleared and written first;
+     * the new links go in with the closing flush of wrapInTransaction().
      *
-     * @param list<ProgressionSeancePlacement> $placements
+     * @param list<array{instance: SeanceInstance, session: LessonSession}> $links
+     * @param list<SeanceInstance>                                          $unlinked
      */
-    private function linkSeanceInstance(ProgressionSeance $seance, array $placements): void
+    private function linkSeanceInstances(array $links, array $unlinked): void
     {
-        $instance = $seance->getSeanceInstance();
-        $session = ($placements[0] ?? null)?->getLessonSession();
+        $moving = array_filter($links, static fn (array $link): bool => $link['instance']->getLessonSession() !== $link['session']);
 
-        if (null === $instance || null === $session) {
-            return;
-        }
+        $this->entityManager->wrapInTransaction(function () use ($moving, $unlinked): void {
+            foreach ($unlinked as $instance) {
+                $instance->setLessonSession(null);
+            }
 
-        $occupant = $this->seanceInstanceRepository->findOneByLessonSession($session);
-        if (null !== $occupant && $occupant !== $instance) {
-            $occupant->setLessonSession(null);
-        }
+            if ([] === $moving) {
+                return;
+            }
 
-        $instance->setLessonSession($session);
+            foreach ($moving as $link) {
+                $this->seanceInstanceRepository->findOneByLessonSession($link['session'])?->setLessonSession(null);
+                $link['instance']->setLessonSession(null);
+            }
+            $this->entityManager->flush();
+
+            foreach ($moving as $link) {
+                $link['instance']->setLessonSession($link['session']);
+            }
+        });
     }
 
     /**
