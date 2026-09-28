@@ -26,6 +26,20 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.28'
+      date: '2026-09-28'
+      summary: "La validation d'une progression ne bloque plus quand des séances changent de créneau. Les tâches automatiques de la plateforme sont désormais livrées et surveillées avec elle."
+      entries:
+          - type: fix
+            title: "Valider une progression dont les séances changent de créneau"
+            detail: "Quand une séance prenait le créneau qu'une autre quittait, ou que deux séances échangeaient leur place, la validation échouait."
+          - type: modification
+            title: "Prototype École Directe, réservé à l'administration : notes sur 20, coefficient et correspondance des élèves"
+            detail: "À l'envoi, on choisit le coefficient et, pour une évaluation qui n'est pas sur 20, de ramener les notes sur 20 ; un élève dont le nom diffère entre les deux plateformes s'associe une fois pour toutes."
+          - type: interne
+            title: "Tâches planifiées livrées avec l'application et signalées en cas d'échec"
+          - type: interne
+            title: "Retrait de dépendances inutilisées"
     - version: '2026.09.27.2'
       date: '2026-09-27'
       summary: "Le connecteur Claude, toujours en essai, sait maintenant joindre un document ou un lien au cahier de texte. Le dépôt de fichiers est renforcé."
