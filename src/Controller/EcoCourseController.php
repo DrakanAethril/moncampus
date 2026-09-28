@@ -14,6 +14,7 @@ use App\Entity\EcoRunner;
 use App\Entity\User;
 use App\Enum\EcoCheckpointType;
 use App\Enum\EcoCourseStatus;
+use App\Enum\EcoRunnerStatus;
 use App\Enum\EcoScanResult;
 use App\Enum\Feature;
 use App\Form\EcoCourseType;
@@ -287,6 +288,13 @@ class EcoCourseController extends AbstractController
     ): Response {
         $course = $this->findCourseOrNotFound($repository, $id);
         $runners = $this->sortedByPseudo($course->getRunners()->toArray());
+        // While the race runs, only the runners who have scanned the finish: their race is over
+        // even if the course is not, and a trace still being drawn would read as a finished one.
+        // Picker, comparison and ranks all read this same list, so a runner still out never
+        // shows up here by any door.
+        if (EcoCourseStatus::Closed !== $course->getStatus()) {
+            $runners = array_values(array_filter($runners, static fn (EcoRunner $runner): bool => EcoRunnerStatus::Finished === $runner->getStatus()));
+        }
 
         $selectedRunner = null;
         $selectedId = $this->queryId($request, 'runner');

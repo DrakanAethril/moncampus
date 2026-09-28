@@ -88,7 +88,11 @@
             </div>
         </div>
         <div class="col-12 col-xl-5">
-            <div class="card h-100" data-controller="eco-live" data-eco-live-url-value="{{ path('app_eco_course_live_data', {id: course.id}) }}">
+            <div class="card h-100" data-controller="eco-live"
+                 data-eco-live-url-value="{{ path('app_eco_course_live_data', {id: course.id}) }}"
+                 data-eco-live-results-url-value="{{ path('app_eco_course_results', {id: course.id}) }}"
+                 data-eco-live-finished-label-value="{{ 'ecoLiveFinishedLabel'|trans }}"
+                 data-eco-live-see-race-label-value="{{ 'ecoLiveSeeRaceTitle'|trans }}">
                 <div class="table-responsive">
                     <table class="table table-vcenter card-table">
                         <thead>
@@ -101,7 +105,16 @@
                         <tbody>
                             {% for row in rows %}
                                 <tr data-eco-live-target="row" data-eco-live-runner-id="{{ row.id }}" class="{{ row.sosActive ? 'table-danger' : (row.status != 'finished' and row.isStale ? 'table-warning') }}">
-                                    <td class="fw-bold">{{ row.runner.pseudo }}{{ row.sosActive ? ' 🆘' }}</td>
+                                    {# A runner who has scanned the finish is done even while the race runs:
+                                       their pseudo opens their race on the results screen. #}
+                                    <td class="fw-bold" data-eco-live-target="pseudo">
+                                        {%- if row.status == 'finished' -%}
+                                            <a href="{{ path('app_eco_course_results', {id: course.id, runner: row.id}) }}" title="{{ 'ecoLiveSeeRaceTitle'|trans }}">{{ row.runner.pseudo }}</a>
+                                        {%- else -%}
+                                            {{ row.runner.pseudo }}
+                                        {%- endif -%}
+                                        {{ row.sosActive ? ' 🆘' }}
+                                    </td>
                                     <td data-eco-live-target="checkpoints">
                                         {% if row.status == 'finished' %}
                                             {{ 'ecoLiveFinishedLabel'|trans }}
