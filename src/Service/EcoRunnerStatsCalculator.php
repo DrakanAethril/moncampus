@@ -11,11 +11,15 @@ use App\Entity\EcoRunner;
 use App\Enum\EcoScanResult;
 use App\Repository\EcoAppEventRepository;
 use App\Repository\EcoPositionPingRepository;
+use App\Service\Eco\EcoTerrainStats;
 
 /**
  * Builds the per-participant KPIs/trace shown on the results screen (1i): duration, distance
  * (summed from the GPS trace, see EcoDistanceCalculator), average speed, checkpoint pass/fail
- * counts, and app-exit summary.
+ * counts, and app-exit summary - and, once the IGN has read the trace (EcoTerrainStats), the
+ * elevation on its terrain model, the effort, and the split between paths and cross-country.
+ *
+ * @phpstan-import-type EcoTerrainSplit from EcoTerrainStats
  */
 class EcoRunnerStatsCalculator
 {
@@ -23,10 +27,11 @@ class EcoRunnerStatsCalculator
         private readonly EcoPositionPingRepository $pingRepository,
         private readonly EcoAppEventRepository $appEventRepository,
         private readonly EcoTraceCleaner $traceCleaner,
+        private readonly EcoTerrainStats $terrainStats,
     ) {
     }
 
-    /** @return array{durationSeconds: ?int, distanceMeters: float, averageSpeedKmh: ?float, elevation: ?array{gain: float, loss: float}, checkpointsValidated: int, checkpointsTotal: int, scanFailureCount: int, appEvents: list<EcoAppEvent>, pings: list<EcoPositionPing>} */
+    /** @return array{durationSeconds: ?int, distanceMeters: float, averageSpeedKmh: ?float, elevation: ?array{gain: float, loss: float, source: 'ign'|'gps'}, effortKm: ?float, effortSpeedKmh: ?float, terrain: ?EcoTerrainSplit, checkpointsValidated: int, checkpointsTotal: int, scanFailureCount: int, appEvents: list<EcoAppEvent>, pings: list<EcoPositionPing>} */
     public function calculate(EcoRunner $runner): array
     {
         $pings = $this->pingRepository->findForRunner($runner);
@@ -45,6 +50,11 @@ class EcoRunnerStatsCalculator
             ? ($distanceMeters / 1000) / ($durationSeconds / 3600)
             : null;
 
+        $fixes = EcoTerrainStats::fixesOf($pings);
+        $elevation = $this->terrainStats->elevation($fixes);
+        // Effort only on the IGN's climb: the phone's altitude is too loose to be added to a distance.
+        $effortKm = 'ign' === ($elevation['source'] ?? null) ? EcoTerrainStats::effortKm($distanceMeters, $elevation['gain']) : null;
+
         $scans = $runner->getScans()->toArray();
         $successfulCheckpointIds = array_unique(array_map(
             static fn (EcoCheckpointScan $scan): int => $scan->getCheckpoint()->getId(),
@@ -56,10 +66,12 @@ class EcoRunnerStatsCalculator
             'durationSeconds' => $durationSeconds,
             'distanceMeters' => $distanceMeters,
             'averageSpeedKmh' => $averageSpeedKmh,
-            'elevation' => $this->traceCleaner->elevation(array_map(
-                static fn (EcoPositionPing $ping): ?float => $ping->getAltitude(),
-                $pings,
-            )),
+            'elevation' => $elevation,
+            'effortKm' => $effortKm,
+            'effortSpeedKmh' => (null !== $effortKm && null !== $durationSeconds && $durationSeconds > 0)
+                ? $effortKm / ($durationSeconds / 3600)
+                : null,
+            'terrain' => $this->terrainStats->split($fixes),
             'checkpointsValidated' => \count($successfulCheckpointIds),
             'checkpointsTotal' => $runner->getCourse()->getParcours()->getCheckpoints()->count(),
             'scanFailureCount' => $failureCount,

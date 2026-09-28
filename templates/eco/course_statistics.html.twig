@@ -104,6 +104,8 @@
                         <th>{{ 'ecoStatsCheckpointsColumnLabel'|trans }}</th>
                         <th><button type="button" class="eco-sort" data-action="eco-stats-table#sort" data-eco-stats-table-sort-param="duration" data-eco-stats-table-target="sortOption">{{ 'ecoStatsTimeColumnLabel'|trans }} <span class="eco-sort__arrow">⇅</span></button></th>
                         <th><button type="button" class="eco-sort" data-action="eco-stats-table#sort" data-eco-stats-table-sort-param="distance" data-eco-stats-table-target="sortOption">{{ 'ecoStatsDistanceColumnLabel'|trans }} <span class="eco-sort__arrow">⇅</span></button></th>
+                        <th>{{ 'ecoStatsClimbColumnLabel'|trans }}</th>
+                        <th>{{ 'ecoStatsOffPathColumnLabel'|trans }}</th>
                         <th>{{ 'ecoStatsAppExitsColumnLabel'|trans }}</th>
                         <th>{{ 'ecoStatsScanErrorsColumnLabel'|trans }}</th>
                         <th class="cm-actions"></th>
@@ -129,6 +131,9 @@
                                 {{ fmt.km(row.distanceMeters) }}
                                 {%- if row.gapMeters %} <span class="eco-num__gap">(+{{ (row.gapMeters / 1000)|number_format(1, ',') }} km)</span>{% endif -%}
                             </td>
+                            {# The phone's altitude is noise: only the IGN's climb is worth a column. #}
+                            <td class="eco-num text-secondary">{{ row.elevationSource == 'ign' ? '+' ~ row.elevationGain|round ~ ' m' : '—' }}</td>
+                            <td class="eco-num text-secondary">{{ row.offPathShare is not null ? (row.offPathShare * 100)|round ~ ' %' : '—' }}</td>
                             <td class="text-secondary">{{ row.appExitCount }}</td>
                             <td class="text-secondary">{{ row.scanErrorCount }}</td>
                             <td class="cm-actions">
@@ -136,7 +141,7 @@
                             </td>
                         </tr>
                     {% else %}
-                        <tr><td colspan="7" class="text-secondary">{{ 'ecoCourseNoneYetText'|trans }}</td></tr>
+                        <tr><td colspan="9" class="text-secondary">{{ 'ecoCourseNoneYetText'|trans }}</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -156,6 +161,7 @@
                                 <th>{{ 'ecoStatsSegmentBestTimeColumnLabel'|trans }}</th>
                                 <th>{{ 'ecoStatsSegmentAverageDetourColumnLabel'|trans }}</th>
                                 <th>{{ 'ecoStatsSegmentMinDetourColumnLabel'|trans }}</th>
+                                <th title="{{ 'ecoStatsSegmentShortestPathHintText'|trans }}">{{ 'ecoStatsSegmentShortestPathColumnLabel'|trans }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -174,9 +180,10 @@
                                             <span class="eco-num__owner" title="{{ segment.minDetourPseudo }}">+{{ segment.minDetourMeters|round }} m</span>
                                         {%- else %}—{% endif -%}
                                     </td>
+                                    <td class="eco-num text-secondary">{{ segment.shortestPathMeters is null ? '—' : segment.shortestPathMeters|round ~ ' m' }}</td>
                                 </tr>
                             {% else %}
-                                <tr><td colspan="5" class="text-secondary">{{ 'ecoStatsNoSegmentsText'|trans }}</td></tr>
+                                <tr><td colspan="6" class="text-secondary">{{ 'ecoStatsNoSegmentsText'|trans }}</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>

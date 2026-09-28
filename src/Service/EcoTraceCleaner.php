@@ -65,11 +65,14 @@ class EcoTraceCleaner
      * logged before the column existed, and any phone without an altitude fix.
      *
      * @param list<?float> $rawAltitudes
+     * @param float|null   $minClimbMeters the noise to ignore; the IGN's terrain model is far
+     *                                     steadier than a phone's altitude and gets a smaller one
      *
      * @return array{gain: float, loss: float}|null
      */
-    public function elevation(array $rawAltitudes): ?array
+    public function elevation(array $rawAltitudes, ?float $minClimbMeters = null): ?array
     {
+        $threshold = $minClimbMeters ?? self::MIN_CLIMB_METERS;
         $altitudes = array_values(array_filter($rawAltitudes, static fn (?float $altitude): bool => null !== $altitude));
 
         if (\count($altitudes) < 2) {
@@ -83,7 +86,7 @@ class EcoTraceCleaner
         foreach ($altitudes as $altitude) {
             $delta = $altitude - $reference;
 
-            if (abs($delta) < self::MIN_CLIMB_METERS) {
+            if (abs($delta) < $threshold) {
                 continue;
             }
 

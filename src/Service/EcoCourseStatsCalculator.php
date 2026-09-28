@@ -35,6 +35,7 @@ use App\Enum\EcoScanResult;
  *     detours: list<float>,
  *     minDetourMeters: ?float,
  *     minDetourPseudo: ?string,
+ *     shortestPathMeters: ?float,
  * }
  * @phpstan-type EcoRunnerRow array{
  *     runner: EcoRunner,
@@ -47,6 +48,9 @@ use App\Enum\EcoScanResult;
  *     appExitCount: int,
  *     scanErrorCount: int,
  *     hasSos: bool,
+ *     elevationGain: ?float,
+ *     elevationSource: ?string,
+ *     offPathShare: ?float,
  *     gapSeconds?: ?int,
  *     gapMeters?: ?float,
  * }
@@ -106,6 +110,10 @@ class EcoCourseStatsCalculator
                 // A runner who pressed SOS keeps a red row for the rest of the course's life, even
                 // once the alert was marked handled (screen 1j: "ligne en rouge, stats normales").
                 'hasSos' => null !== $runner->getSosAt(),
+                // Both only once the IGN has read the race - see EcoTerrainStats.
+                'elevationGain' => $stats['elevation']['gain'] ?? null,
+                'elevationSource' => $stats['elevation']['source'] ?? null,
+                'offPathShare' => $stats['terrain']['offPathShare'] ?? null,
             ];
         }
 
@@ -204,6 +212,8 @@ class EcoCourseStatsCalculator
             'detours' => [],
             'minDetourMeters' => null,
             'minDetourPseudo' => null,
+            // The same pair of flags has the same shortest walk whoever ran it.
+            'shortestPathMeters' => $leg['shortestPathMeters'],
         ];
 
         $seconds = (int) $leg['seconds'];
@@ -248,6 +258,7 @@ class EcoCourseStatsCalculator
                 'averageDetourMeters' => [] !== $segment['detours'] ? array_sum($segment['detours']) / \count($segment['detours']) : null,
                 'minDetourMeters' => $segment['minDetourMeters'],
                 'minDetourPseudo' => $segment['minDetourPseudo'],
+                'shortestPathMeters' => $segment['shortestPathMeters'],
             ];
         }
 

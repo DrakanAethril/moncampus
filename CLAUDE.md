@@ -83,6 +83,7 @@ asked — made the second run throw « A lock is already in place ».
 | `app:guest-accounts:prune` | **Maintenance à la demande, jamais planifiée.** Supprime les lignes `guest_account` dont la machine n'existe plus sur l'hyperviseur, ou dont le VMID a été repris depuis par un autre lot — Proxmox rend un numéro dès qu'une machine est détruite, et les lignes de l'ancienne occupante restent classées dessous (cette moitié-là se décide sur les seules données de la plateforme, sans rien demander à l'hyperviseur ; `App\Service\Proxmox\VmidHandover` la ferme à la source lors des créations suivantes). C'est l'état que /infrastructure ne montre pas : ces écrans lisent Proxmox à l'affichage, donc une machine détruite cesse d'y être listée, tandis que ses comptes restent — et « Mes machines virtuelles » est bâti sur ces comptes. Un hôte injoignable ne décide rien : ses comptes sont comptés à part et laissés tels quels. `--dry-run` nomme chaque ligne avant d'y toucher. Jamais planifiée : supprimer est une décision, pas un horaire |
 | `app:ecoledirecte:check` | **Diagnostic, not scheduled.** Runs the one step of an École Directe login that needs no account (the GTK cookie of `login.awp?gtk=1`) and says whether École Directe still answers it from this server. The platform holds no École Directe credentials and must not, so this is the most it can prove on its own |
 | `app:counters:recompute` | **Scheduled, once a night** (`docs/production.md`). Checks every stored counter of the platform (`App\Counter\RecomputableCounter`, one tagged service each) against its source and corrects the drifts - each correction logged at error level, so it reaches Discord: a drift is a bug, not a figure to patch. The counters move in real time with what changes them; this is the safety net. `--counter=`, `--dry-run` |
+| `app:eco:read-terrain` | **Scheduled every minute.** Asks the IGN's Géoplateforme what e-CO's statistics read: the terrain analysis of the oldest parcours waiting for one (button « Analyser le terrain », last flag located, or a race on a parcours never analysed), then the terrain altitude / path / wood of every GPS fix of the oldest closed race not yet read. A Géoplateforme that does not answer is a *warning* and a retry next minute, never a non-zero exit. See `docs/production.md`, « e-CO and the IGN's Géoplateforme » |
 | `app:seed-dev-*`, `app:dev:*`, `app:configure-dev-programs` | **Dev-machine only.** Populate/inject into the local database. These must never be relied on in staging or production. |
 
 ## Runtime architecture (Docker layer)
@@ -302,6 +303,15 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   mobile app (code kept, tab replaced by Quiz).
 - **e-CO** — orienteering races: `EcoCourse`, `EcoParcours`, `EcoCheckpoint`, `EcoRunner`. Runners have
   no account at all; they authenticate by join token, checked manually in `EcoRunnerApiController`.
+  **Maps are the IGN's** (web `assets/controllers/eco_map.js`, mobile `lib/widgets/eco_ign_map.dart`
+  in the e-CO repo): Plan IGN / photos + contour lines / LiDAR relief, keyless WMTS. **What the IGN
+  says about the ground is never read at display**: `app:eco:read-terrain` writes it -
+  `EcoParcours::$terrainAnalysis` (a JSON snapshot stamped with `locationFingerprint()`, so a moved
+  flag shows it stale), `EcoCheckpoint::$groundAltitude`/`$canopyHeight` (the tolerance advice,
+  `App\Service\Eco\EcoToleranceAdvisor`) and per `EcoPositionPing` the terrain altitude and the
+  path/wood flags. The statistics (`App\Service\Eco\EcoTerrainStats`) read those, and fall back to
+  the phone's figures, labelled « GPS », until 90 % of a race's fixes are read. `src/Service/Ign/`
+  holds the one client; `src/Service/Eco/` the terrain rules.
 - **Annuaire / Paramètres** — LDAP directory browsing, structure
   (`Section > Track > Cohort`, `Option`/`Modality`, `SchoolYear`, `Program`), student mail aliases.
 - **Support** — `Ticket`/`TicketComment`/`TicketCategory`, with Discord notification.
@@ -442,6 +452,7 @@ New per-object rules belong in a Voter, not inline in a controller.
 | Discord | Support-ticket notifications | `DISCORD_WEBHOOK_*` |
 | LDAP | Authentication + directory | `LDAP_*` |
 | École Directe (Aplim) | Read and send to one's own teacher account from the server (private API, no stored credentials, admins only for now) | `ECOLEDIRECTE_*` |
+| IGN Géoplateforme | e-CO: map tiles (browser and phone, WMTS) and terrain readings (server: altimetry, BD TOPO WFS, pedestrian routing, reverse geocoding). Open, keyless, Etalab 2.0 - credit the IGN | — |
 | claude.ai (Anthropic) | Calls the Claude connector (`/mcp`, OAuth) from `160.79.104.0/21` — inbound only, the app never calls Anthropic | — |
 
 `.env.prod.local` **on the development machine holds decoy values.** Never infer the real production

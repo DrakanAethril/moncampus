@@ -1,0 +1,127 @@
+{# The IGN's reading of the parcours (App\Service\Eco\EcoParcoursTerrainAnalyzer), on the
+   configuration screen: where it is, the legs as the ground makes them, and the safety sheet.
+   Written by app:eco:read-terrain; while a request is pending the card polls and reloads itself. #}
+{% set pending = parcours.terrainRequestedAt is not null %}
+{% macro meters(value) %}{{ value is null ? '—' : value|round ~ ' m' }}{% endmacro %}
+{% import _self as fmt %}
+
+<div class="card mt-3" id="eco-terrain"
+     {% if pending %}data-controller="eco-terrain-pending" data-eco-terrain-pending-url-value="{{ path('app_eco_parcours_terrain_status', {id: parcours.id}) }}"{% endif %}>
+    <div class="card-header">
+        <div>
+            <h3 class="card-title">{{ 'ecoTerrainHeading'|trans }}</h3>
+            <div class="text-secondary" style="font-size: 12.5px;">
+                {%- if pending -%}
+                    {{ 'ecoTerrainPendingText'|trans }}
+                {%- elseif terrain is not null and parcours.terrainAnalyzedAt -%}
+                    {{ 'ecoTerrainAnalyzedAtText'|trans({'%date%': parcours.terrainAnalyzedAt|date('d/m/Y H:i')}) }}
+                    {%- if not terrainIsCurrent %} · <span class="text-warning">{{ 'ecoTerrainStaleText'|trans }}</span>{% endif -%}
+                {%- else -%}
+                    {{ 'ecoTerrainNeverText'|trans }}
+                {%- endif -%}
+            </div>
+        </div>
+        {% if parcours.locatedCheckpointCount > 0 and not pending %}
+            <form method="post" action="{{ path('app_eco_parcours_terrain_request', {id: parcours.id}) }}" class="ms-auto">
+                <input type="hidden" name="_token" value="{{ csrf_token('eco_parcours_terrain') }}">
+                <twig:Cm:Button variant="outline" size="sm" type="submit">
+                    {{- (terrain is null ? 'ecoTerrainAnalyzeAction' : 'ecoTerrainReanalyzeAction')|trans -}}
+                </twig:Cm:Button>
+            </form>
+        {% endif %}
+    </div>
+
+    {% if terrain is not null and terrain.legs is defined %}
+        <div class="card-body pb-0">
+            {% if terrain.commune or terrain.nearbyPlace %}
+                <p class="mb-2">
+                    <span class="text-secondary">{{ 'ecoTerrainPlaceLabel'|trans }}</span>
+                    {{ terrain.commune ?? '' }}{% if terrain.commune and terrain.nearbyPlace %} · {% endif %}
+                    {%- if terrain.nearbyPlace %}{{ 'ecoTerrainNearbyPlaceText'|trans({'%place%': terrain.nearbyPlace}) }}{% endif %}
+                </p>
+            {% endif %}
+            {% if terrain.publicForests is not empty %}
+                <div class="cm-note cm-note--gold mb-3">
+                    <span class="cm-note__icon">🌲</span>
+                    <div>{{ 'ecoTerrainPublicForestText'|trans({'%forests%': terrain.publicForests|join(', ')}) }}</div>
+                </div>
+            {% endif %}
+            {% if terrain.incomplete %}
+                <div class="cm-note mb-3">
+                    <span class="cm-note__icon">ℹ</span>
+                    <div>{{ 'ecoTerrainIncompleteText'|trans }}</div>
+                </div>
+            {% endif %}
+        </div>
+
+        {% if terrain.legs is not empty %}
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'ecoTerrainLegColumnLabel'|trans }}</th>
+                            <th>{{ 'ecoTerrainStraightColumnLabel'|trans }}</th>
+                            <th title="{{ 'ecoTerrainPathHintText'|trans }}">{{ 'ecoTerrainPathColumnLabel'|trans }}</th>
+                            <th>{{ 'ecoTerrainClimbColumnLabel'|trans }}</th>
+                            <th title="{{ 'ecoTerrainSlopeHintText'|trans }}">{{ 'ecoTerrainSlopeColumnLabel'|trans }}</th>
+                            <th>{{ 'ecoTerrainForestColumnLabel'|trans }}</th>
+                            <th title="{{ 'ecoTerrainEffortHintText'|trans }}">{{ 'ecoTerrainEffortColumnLabel'|trans }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for leg in terrain.legs %}
+                            <tr>
+                                <td class="fw-bold">{{ leg.fromLabel }} → {{ leg.toLabel }}</td>
+                                <td class="eco-num">{{ fmt.meters(leg.straightMeters) }}</td>
+                                <td class="eco-num">
+                                    {{- fmt.meters(leg.pathMeters) -}}
+                                    {# Far longer by the paths: the leg is navigated across country, or not at all. #}
+                                    {%- if leg.pathRatio is not null %} <span class="{{ leg.pathRatio >= 2 ? 'text-warning' : 'text-secondary' }}">(×{{ leg.pathRatio|number_format(1, ',') }})</span>{% endif -%}
+                                </td>
+                                <td class="eco-num">{{ leg.climbMeters is null ? '—' : '+' ~ leg.climbMeters|round ~ ' / −' ~ leg.descentMeters|round ~ ' m' }}</td>
+                                <td class="eco-num {{ leg.maxSlopePercent is not null and leg.maxSlopePercent >= 30 ? 'text-danger fw-bold' : (leg.maxSlopePercent is not null and leg.maxSlopePercent >= 15 ? 'text-warning') }}">{{ leg.maxSlopePercent is null ? '—' : leg.maxSlopePercent ~ ' %' }}</td>
+                                <td class="eco-num text-secondary">{{ leg.forestShare is null ? '—' : (leg.forestShare * 100)|round ~ ' %' }}</td>
+                                <td class="eco-num">{{ leg.effortKm is null ? '—' : leg.effortKm|number_format(2, ',') ~ ' km-e' }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+
+        {# The safety sheet: what the organiser needs before the race - how a rescue reaches each
+           flag, and where water is close. #}
+        <div class="card-header border-top">
+            <h3 class="card-title">{{ 'ecoTerrainSafetyHeading'|trans }}</h3>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'ecoCheckpointNumberColumnLabel'|trans }}</th>
+                        <th>{{ 'ecoTerrainAltitudeColumnLabel'|trans }}</th>
+                        <th title="{{ 'ecoTerrainCanopyHintText'|trans }}">{{ 'ecoTerrainCanopyColumnLabel'|trans }}</th>
+                        <th>{{ 'ecoTerrainRoadColumnLabel'|trans }}</th>
+                        <th>{{ 'ecoTerrainWaterColumnLabel'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set rowsById = {} %}
+                    {% for row in terrain.checkpoints %}{% set rowsById = rowsById|merge({('c' ~ row.id): row}) %}{% endfor %}
+                    {% for checkpoint in parcours.checkpoints|filter(checkpoint => checkpoint.located) %}
+                        {% set row = rowsById['c' ~ checkpoint.id] ?? null %}
+                        <tr>
+                            <td><span class="font-monospace fw-bold">{{ checkpoint.type.shortLetter ?? checkpoint.position }}</span></td>
+                            <td class="eco-num">{{ fmt.meters(checkpoint.groundAltitude) }}</td>
+                            <td class="eco-num">{{ fmt.meters(checkpoint.canopyHeight) }}</td>
+                            {# Past 500 m from a road a stretcher is carried a long way: worth planning. #}
+                            <td class="eco-num {{ row and row.nearestCarRoadMeters is not null and row.nearestCarRoadMeters >= 500 ? 'text-warning fw-bold' }}">{{ row ? fmt.meters(row.nearestCarRoadMeters) : '—' }}</td>
+                            <td class="eco-num {{ row and row.nearestWaterMeters is not null and row.nearestWaterMeters < 30 ? 'text-warning fw-bold' }}">{{ row ? fmt.meters(row.nearestWaterMeters) : '—' }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+    <div class="card-footer text-secondary" style="font-size: 12.5px;">{{ 'ecoTerrainNoteText'|trans }}</div>
+</div>

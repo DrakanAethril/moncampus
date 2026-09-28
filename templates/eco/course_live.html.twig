@@ -74,7 +74,8 @@
                          data-eco-live-map-url-value="{{ path('app_eco_course_live_data', {id: course.id}) }}"
                          data-eco-live-map-checkpoints-value="{{ mapCheckpoints|json_encode }}"
                          data-eco-live-map-expand-label-value="{{ 'ecoResultsMapExpandLabel'|trans }}"
-                         data-eco-live-map-collapse-label-value="{{ 'ecoResultsMapCollapseLabel'|trans }}"></div>
+                         data-eco-live-map-collapse-label-value="{{ 'ecoResultsMapCollapseLabel'|trans }}"
+                         {{ include('eco/_map_layers_attribute.html.twig') }}></div>
                 {% else %}
                     <div class="card-body text-secondary" id="eco-live-map">{{ 'ecoCheckpointMapEmptyText'|trans }}</div>
                 {% endif %}

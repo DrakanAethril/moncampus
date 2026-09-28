@@ -309,6 +309,7 @@ starts the worker by itself: `up --wait` brings it up with the rest.
 | `app:mail:consume-inbound`, `app:mail:consume-events` | every minute | Courrier pro, below |
 | `app:vm-batch:advance` | every minute | CLAUDE.md, « Infrastructure et machines virtuelles » |
 | `app:ldap:apply-account-requests` | every minute | Closing the loop on account operations |
+| `app:eco:read-terrain` | every minute | e-CO and the IGN's Géoplateforme, below |
 | `app:proxmox:check` | every 5 minutes | the command's own docblock |
 | `app:proxmox:scan-addresses` | every 5 minutes, offset by 2 | the command's own docblock |
 | `app:mail:reconcile` | 02:30 | Courrier pro, below |
@@ -376,6 +377,38 @@ Notes:
   level, which is this platform's only alerting threshold) - the messages are recovered either way,
   but the alert is what says the normal path above dropped them. `--since` bounds the scan, seven
   days by default; widen it after an incident, the run costs nothing on objects already stored.
+
+## e-CO and the IGN's Géoplateforme (scheduled)
+
+The e-CO maps (web and mobile) draw the IGN's tiles - Plan IGN, aerial photographs, contour lines,
+LiDAR HD relief - straight from `data.geopf.fr`, in the visitor's browser or phone. And
+`app:eco:read-terrain` asks the Géoplateforme, from the server, what the statistics read:
+
+- **a parcours' terrain analysis** - legs (climb, steepest slope, share of wood, shortest walk by
+  the paths), the safety sheet (nearest road for a vehicle, nearest water per flag), public
+  forests, the place name. Asked by « Analyser le terrain » on the parcours screen, by the last flag
+  of a parcours being located from the mobile app, or by a race run on a parcours never analysed;
+- **the GPS fixes of each closed race** - terrain altitude, on a path or not, in a wood or not -
+  oldest race first, which also works through every race closed before this existed.
+
+What to know:
+
+- **No key, no secret, nothing in `.env`.** The services are open (Licence Ouverte Etalab 2.0) and
+  the only obligation is naming the IGN wherever what it gave is shown - the maps and the terrain
+  card do.
+- **The server must reach `https://data.geopf.fr` out to the internet.** Blocked, every reading
+  simply stays pending: the command logs a *warning* (not an error: an outage of a public service is
+  not ours to page about) and tries again next minute. The screens show the GPS-only figures in
+  the meantime, labelled as such.
+- **Rate limits are per IP and per service** (5 requests/s for altimetry, 10 for routing, 30 for
+  WFS). The client paces itself under them; a 429 would cost five seconds of that service only.
+- **A pass is slow on purpose**: a BD TOPO page takes several seconds (ten, for the roads of a square
+  kilometre, measured 2026-09-28), so an analysis takes some thirty seconds. It delays the other
+  every-minute tasks by that much, once per analysis or race, never continuously.
+- The only call made *during a request* is the reading of the ground under a flag just located from
+  the mobile app, capped at four seconds - past that the flag is saved unread, and the analysis
+  reads it later.
+- Running it by hand: `bin/console app:eco:read-terrain` (it locks itself like the others).
 
 ## Retention: platform log, console transcripts, jobboard offers and OAuth secrets (scheduled)
 
