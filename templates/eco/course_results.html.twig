@@ -3,11 +3,16 @@
 {% block title %}{{ 'ecoCourseResultsPageHeadingTemplate'|trans({'%name%': course.name}) }}{% endblock %}
 
 {% block page_breadcrumb %}
+    {# A race still running is reached from its live screen, not from statistics that only a
+       closed course lists. #}
+    {% set raceSegment = course.status.value == 'in_progress'
+        ? {label: 'ecoCourseLiveBreadcrumbLabel'|trans, url: path('app_eco_course_live', {id: course.id})}
+        : {label: 'ecoStatsBreadcrumbLabelTemplate'|trans({'%name%': course.name}), url: path('app_eco_course_statistics', {id: course.id})} %}
     {{ component('Cm:Breadcrumb', {segments: [
         {label: 'ecoParcoursListPageHeading'|trans, url: path('app_eco_parcours')},
         {label: course.parcours.name, url: path('app_eco_parcours_configure', {id: course.parcours.id})},
         {label: 'ecoCourseIndexBreadcrumbLabel'|trans, url: path('app_eco_course_index', {parcoursId: course.parcours.id})},
-        {label: 'ecoStatsBreadcrumbLabelTemplate'|trans({'%name%': course.name}), url: path('app_eco_course_statistics', {id: course.id})},
+        raceSegment,
         {label: selectedRunner ? selectedRunner.pseudo : 'ecoCourseResultsBreadcrumbLabel'|trans, url: app.request.requestUri},
     ]}) }}
 {% endblock %}
@@ -21,7 +26,7 @@
                     {{- runner.pseudo }}{% if ranks[runner.id] is defined %} — {{ (ranks[runner.id] == 1 ? 'ecoResultsRankFirstLabel' : 'ecoResultsRankLabel')|trans({'%rank%': ranks[runner.id], '%total%': runners|length}) }}{% endif -%}
                 </option>
             {% else %}
-                <option value="">{{ 'ecoCourseNoneYetText'|trans }}</option>
+                <option value="">{{ (course.status.value != 'closed' ? 'ecoResultsNoFinisherYetText' : 'ecoCourseNoneYetText')|trans }}</option>
             {% endfor %}
         </select>
     </form>
@@ -31,6 +36,12 @@
 {% endblock %}
 
 {% block main %}
+    {% if course.status.value == 'in_progress' %}
+        <div class="cm-note mb-3">
+            <span class="cm-note__icon">⏱</span>
+            <div>{{ 'ecoResultsInProgressNoteText'|trans }}</div>
+        </div>
+    {% endif %}
     {% if selectedRunner and stats %}
         <div class="row row-cards mb-3">
             <div class="col-6 col-lg">
@@ -271,6 +282,6 @@
             <div class="card-footer text-secondary" style="font-size: 12.5px;">{{ 'ecoResultsNoteText'|trans }}</div>
         </div>
     {% else %}
-        <div class="text-secondary">{{ 'ecoCourseNoneYetText'|trans }}</div>
+        <div class="text-secondary">{{ (course.status.value != 'closed' ? 'ecoResultsNoFinisherYetText' : 'ecoCourseNoneYetText')|trans }}</div>
     {% endif %}
 {% endblock %}

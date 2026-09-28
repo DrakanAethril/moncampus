@@ -26,6 +26,30 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.28.3'
+      date: '2026-09-28'
+      summary: "e-CO se pilote depuis le téléphone de l'enseignant : courses, réglages du parcours et lecture du terrain de l'IGN. Le coureur retrouve le récapitulatif de sa course dès l'arrivée, et les applications mobiles gardent la connexion sans redemander le mot de passe toutes les heures."
+      entries:
+          - type: nouveaute
+            title: "e-CO : les courses depuis l'application enseignant"
+            detail: "Créer une course sur un parcours prêt, la démarrer puis l'arrêter, sans repasser par l'ordinateur."
+          - type: nouveaute
+            title: "e-CO : réglages du parcours et terrain de l'IGN dans l'application enseignant"
+            detail: "La tolérance de chaque balise se règle depuis le téléphone, avec la valeur conseillée par l'IGN, et la lecture du terrain (tronçons, fiche sécurité) s'y consulte ou s'y demande."
+          - type: nouveaute
+            title: "e-CO : récapitulatif de course pour le coureur"
+            detail: "Dès la balise d'arrivée scannée : temps, distance, vitesse, balises trouvées, dénivelé et temps de chaque tronçon."
+          - type: modification
+            title: "e-CO : le parcours d'un coureur arrivé se consulte sans attendre la fin de la course"
+            detail: "Depuis le suivi en direct, un clic sur le coureur qui a passé l'arrivée ouvre son parcours."
+          - type: fix
+            title: "e-CO : des codes de balise impossibles à deviner"
+            detail: "Les nouveaux parcours reçoivent des codes tirés au hasard ; connaître un code ne permet plus d'en déduire les autres."
+          - type: modification
+            title: "Applications mobiles : la connexion reste ouverte"
+            detail: "Plus besoin de ressaisir son mot de passe au bout d'une heure ; « Mon profil » liste les téléphones connectés et permet d'en déconnecter un."
+          - type: autre
+            title: "Applications mobiles : MonCampus 2.9.0 et e-CO 1.3.0"
     - version: '2026.09.28.2'
       date: '2026-09-28'
       summary: "Les cartes e-CO passent sur les fonds de l'IGN, et les statistiques de course tiennent désormais compte du relief, des chemins et de la forêt. Nouvelles versions Android : MonCampus 2.8.0, qui permet de saisir les mouvements de matériel depuis le téléphone, et e-CO 1.2.0."

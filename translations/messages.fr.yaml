@@ -3468,6 +3468,9 @@ ecoResultsOutcomeManualCodeLabel: 'Code manuel'
 ecoResultsOutcomeOutOfRangeLabel: 'Hors zone'
 ecoResultsNoScansText: "Aucun scan enregistré pour ce coureur."
 ecoResultsNoteText: "Chaque scan enregistre la position GPS, l'écart à la balise et le résultat. Les événements hors réseau sont synchronisés au retour du réseau."
+ecoResultsInProgressNoteText: "La course est en cours : seuls les coureurs qui ont scanné la balise d'arrivée sont consultables ici. Les relevés de terrain de l'IGN arriveront après sa clôture."
+ecoResultsNoFinisherYetText: "Aucun coureur n'a encore scanné la balise d'arrivée."
+ecoLiveSeeRaceTitle: 'Voir son parcours'
 ecoResultsRankLabel: '%rank%e / %total%'
 ecoResultsRankFirstLabel: '1re / %total%'
 ecoStatsPageHeadingTemplate: 'Statistiques — %name%'
@@ -9204,6 +9207,15 @@ claudeConnectionAuthorizedOnLabel: "Autorisée le %date%"
 claudeConnectionLastUsedLabel: "dernière utilisation le %date%"
 claudeConnectionRevokeAction: "Révoquer"
 claudeConnectionRevokedFlashMessage: "La connexion a été révoquée : Claude n'a plus accès à votre compte par elle."
+mobileSessionsCardTitle: "Applications mobiles connectées"
+mobileSessionsCardHelp: "Les téléphones sur lesquels vous êtes connecté. Une session s'arrête d'elle-même après 30 jours sans utilisation ; déconnectez tout de suite un téléphone perdu ou prêté."
+mobileSessionSignedInOnLabel: "Connecté le %date%"
+mobileSessionLastUsedLabel: "dernière activité le %date%"
+mobileSessionRevokeAction: "Déconnecter"
+mobileSessionRevokedFlashMessage: "Le téléphone est déconnecté : il devra se reconnecter d'ici une heure au plus tard."
+mobileAppCampusLabel: "Campus Beaupeyrat"
+mobileAppEcoLabel: "e-CO"
+mobileAppOtherLabel: "Application mobile"
 rubricImportInvalidJsonError: "Le document n'est pas un JSON lisible."
 rubricImportWrongFormatError: "Le document n'est pas au format « %format% »."
 rubricImportNoSectionError: "Le barème ne contient aucune partie."

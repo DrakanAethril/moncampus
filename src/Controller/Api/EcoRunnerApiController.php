@@ -11,11 +11,13 @@ use App\Entity\EcoCourse;
 use App\Entity\EcoPositionPing;
 use App\Entity\EcoRunner;
 use App\Enum\EcoCourseStatus;
+use App\Enum\EcoRunnerStatus;
 use App\Enum\EcoScanMethod;
 use App\Enum\EcoScanResult;
 use App\Repository\EcoAppEventRepository;
 use App\Repository\EcoCourseRepository;
 use App\Repository\EcoRunnerRepository;
+use App\Service\EcoRunnerSummaryBuilder;
 use App\Service\EcoScanService;
 use App\Service\JsonRequestPayload;
 use App\Service\QueryValue;
@@ -99,7 +101,9 @@ class EcoRunnerApiController extends AbstractController
             return $this->json(['error' => 'invalidToken'], 401);
         }
 
-        $shortCode = mb_strtoupper(trim($payload->string('code')));
+        // Typed by hand off a flag, a code may come back with a space in the middle: none of the
+        // codes holds one, so dropping them costs nothing.
+        $shortCode = mb_strtoupper((string) preg_replace('/\s+/u', '', $payload->string('code')));
         $checkpoint = null;
         foreach ($runner->getCourse()->getParcours()->getCheckpoints() as $candidate) {
             if ($candidate->getShortCode() === $shortCode) {
@@ -228,6 +232,28 @@ class EcoRunnerApiController extends AbstractController
         return $this->json($this->formatJoin($runner, $runner->getCourse()));
     }
 
+    /**
+     * The recap the app shows once the finish is scanned: time, distance, pace, climb, the
+     * checkpoints found and the time of each leg (EcoRunnerSummaryBuilder). Only for a runner who
+     * has finished - before that, the race screen is the recap.
+     *
+     * Asked again every time the recap is opened rather than kept by the app: positions still
+     * queued on the phone at the finish arrive a few seconds later and lengthen the distance.
+     */
+    #[Route(path: '/api/eco/runner/summary', name: 'api_eco_runner_summary', methods: ['GET'])]
+    public function summary(Request $request, EcoRunnerRepository $runnerRepository, EcoRunnerSummaryBuilder $summaryBuilder): JsonResponse
+    {
+        $runner = $this->resolveRunner(QueryValue::string($request, 'token'), $runnerRepository);
+        if (null === $runner) {
+            return $this->json(['error' => 'invalidToken'], 401);
+        }
+        if (EcoRunnerStatus::Finished !== $runner->getStatus()) {
+            return $this->json(['error' => 'runnerNotFinished'], 409);
+        }
+
+        return $this->json($summaryBuilder->build($runner));
+    }
+
     private function resolveRunner(string $token, EcoRunnerRepository $runnerRepository): ?EcoRunner
     {
         if ('' === $token) {
@@ -302,7 +328,11 @@ class EcoRunnerApiController extends AbstractController
 
             return [
                 'id' => $checkpoint->getId(),
-                'shortCode' => $checkpoint->getShortCode(),
+                // Never the real code: it is what validates a flag when typed, so handing out the
+                // whole list here would let a runner validate the parcours from the start line.
+                // The key stays, empty, because the app versions already installed read it as a
+                // required string.
+                'shortCode' => '',
                 'name' => $checkpoint->getName(),
                 'position' => $checkpoint->getPosition(),
                 'type' => $checkpoint->getType()->value,

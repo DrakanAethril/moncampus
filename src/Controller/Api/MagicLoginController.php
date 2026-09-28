@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Enum\MobileApp;
 use App\Repository\UserRepository;
+use App\Security\MobileSessions;
+use App\Service\JsonRequestPayload;
 use App\Service\MagicLoginService;
-use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -71,7 +73,7 @@ class MagicLoginController extends AbstractController
     public function consume(
         Request $request,
         MagicLoginService $magicLoginService,
-        JWTTokenManagerInterface $jwtManager,
+        MobileSessions $mobileSessions,
     ): JsonResponse {
         $token = trim((string) $this->payload($request)['token']);
         $user = '' === $token ? null : $magicLoginService->consume($token, $request->getClientIp());
@@ -80,8 +82,12 @@ class MagicLoginController extends AbstractController
             return $this->json(['error' => 'link_expired'], Response::HTTP_GONE);
         }
 
+        // Only moncampus-mobile answers campusmanager:// links, so that is the app when none is named.
+        $declared = JsonRequestPayload::fromRequest($request)->string('client');
+        $app = '' !== $declared ? MobileApp::fromDeclared($declared) : MobileApp::Campus;
+
         return $this->json([
-            'token' => $jwtManager->create($user),
+            ...$mobileSessions->open($user, $app, $request->getClientIp())->toArray(),
             'firstname' => $user->getFirstname(),
         ]);
     }

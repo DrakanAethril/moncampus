@@ -13,6 +13,11 @@ export default class extends Controller {
 
     static values = {
         url: String,
+        // The results screen, without its ?runner= - a runner who scans the finish between two
+        // polls becomes a link here without waiting for a page load.
+        resultsUrl: String,
+        finishedLabel: String,
+        seeRaceLabel: String,
         intervalMs: { type: Number, default: 10000 },
     };
 
@@ -43,8 +48,15 @@ export default class extends Controller {
             rowElement.classList.toggle('table-warning', !row.sosActive && row.status !== 'finished' && row.isStale);
 
             const checkpointsCell = rowElement.querySelector('[data-eco-live-target="checkpoints"]');
-            if (checkpointsCell && row.status !== 'finished') {
-                checkpointsCell.textContent = `${row.checkpointsValidated}/${row.checkpointsTotal}`;
+            if (checkpointsCell) {
+                checkpointsCell.textContent = row.status === 'finished'
+                    ? this.finishedLabelValue
+                    : `${row.checkpointsValidated}/${row.checkpointsTotal}`;
+            }
+
+            const pseudoCell = rowElement.querySelector('[data-eco-live-target="pseudo"]');
+            if (pseudoCell && row.status === 'finished' && !pseudoCell.querySelector('a')) {
+                this.linkPseudo(pseudoCell, row);
             }
 
             const signalCell = rowElement.querySelector('[data-eco-live-target="signal"]');
@@ -55,5 +67,18 @@ export default class extends Controller {
                 signalCell.classList.toggle('text-warning', row.signalWarning);
             }
         });
+    }
+
+    // Built with DOM nodes, never innerHTML: the pseudo is whatever the runner typed on their phone.
+    linkPseudo(cell, row) {
+        const url = new URL(this.resultsUrlValue, window.location.origin);
+        url.searchParams.set('runner', String(row.id));
+
+        const link = document.createElement('a');
+        link.href = url.pathname + url.search;
+        link.title = this.seeRaceLabelValue;
+        link.textContent = row.pseudo;
+
+        cell.replaceChildren(link, document.createTextNode(row.sosActive ? ' 🆘' : ''));
     }
 }

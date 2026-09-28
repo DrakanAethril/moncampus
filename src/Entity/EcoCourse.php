@@ -203,6 +203,35 @@ class EcoCourse
         return $this;
     }
 
+    /**
+     * The two steps of the manual cycle, shared by the web screen 1g and the teacher mobile app so
+     * both move a course the same way. Each answers false, and changes nothing, when the course is
+     * not in the state the step starts from: a second tap on « Démarrer » never restarts the clock.
+     */
+    public function start(\DateTimeImmutable $now): bool
+    {
+        if (EcoCourseStatus::Prepared !== $this->status) {
+            return false;
+        }
+
+        $this->status = EcoCourseStatus::InProgress;
+        $this->startedAt = $now;
+
+        return true;
+    }
+
+    public function close(\DateTimeImmutable $now): bool
+    {
+        if (EcoCourseStatus::InProgress !== $this->status) {
+            return false;
+        }
+
+        $this->status = EcoCourseStatus::Closed;
+        $this->closedAt = $now;
+
+        return true;
+    }
+
     public function getStartedAt(): ?\DateTimeImmutable
     {
         return $this->startedAt;
