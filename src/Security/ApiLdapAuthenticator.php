@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Security;
 
 use App\Entity\User;
+use App\Enum\MobileApp;
 use App\Service\JsonRequestPayload;
-use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -25,13 +25,15 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * bind check via the shared LdapCredentialsVerifier (mobile auth must always go through LDAP too,
  * never a locally-stored password), but reads JSON credentials instead of a form post, and on
  * success returns a JWT instead of redirecting - the api/api_login firewalls (config/packages/
- * security.yaml) are both stateless, so there's no session/CSRF/remember-me involved here.
+ * security.yaml) are both stateless, so there's no session/CSRF/remember-me involved here. The JWT
+ * comes with a refresh token (App\Security\MobileSessions), which is what keeps the app signed in
+ * past the JWT's hour.
  */
 class ApiLdapAuthenticator extends AbstractAuthenticator
 {
     public function __construct(
         private readonly LdapCredentialsVerifier $credentialsVerifier,
-        private readonly JWTTokenManagerInterface $jwtManager,
+        private readonly MobileSessions $mobileSessions,
         private readonly TranslatorInterface $translator,
     ) {
     }
@@ -74,10 +76,15 @@ class ApiLdapAuthenticator extends AbstractAuthenticator
 
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
     {
-        /** @var UserInterface $user */
         $user = $token->getUser();
+        if (!$user instanceof User) {
+            throw new AuthenticationException('Unexpected user class.');
+        }
 
-        return new JsonResponse(['token' => $this->jwtManager->create($user)]);
+        // An app too old to name itself is still signed in, just listed as « Application mobile ».
+        $app = MobileApp::fromDeclared(JsonRequestPayload::fromRequest($request)->string('client'));
+
+        return new JsonResponse($this->mobileSessions->open($user, $app, $request->getClientIp())->toArray());
     }
 
     public function onAuthenticationFailure(Request $request, AuthenticationException $exception): ?Response

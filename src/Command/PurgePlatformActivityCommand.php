@@ -6,6 +6,7 @@ namespace App\Command;
 
 use App\Repository\ConsoleSessionRepository;
 use App\Repository\JobboardOfferRepository;
+use App\Repository\MobileSessionRepository;
 use App\Repository\OAuthAuthorizationCodeRepository;
 use App\Repository\OAuthClientRepository;
 use App\Repository\OAuthTokenRepository;
@@ -49,12 +50,16 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * specification, and each probe leaves a row. Consented clients and their grants stay, as the trace
  * of who acted through the connector.
  *
+ * **A sixth since the mobile refresh tokens: the dead mobile sessions, 30 days after their end**
+ * (App\Entity\MobileSession - run out after 30 idle days, or revoked). A dead session opens nothing,
+ * and « Mon profil » no longer lists it.
+ *
  * To be wired to a scheduled task (once a day is more than enough). With no scheduler, the command
  * stays usable by hand; nothing breaks if it never runs, the tables simply grow.
  */
 #[AsCommand(
     name: 'app:purge-platform-activity',
-    description: 'Applique les rétentions de la plateforme : journal, sessions de console, surveillance de quiz, offres du jobboard, secrets OAuth expirés.',
+    description: 'Applique les rétentions de la plateforme : journal, sessions de console, surveillance de quiz, offres du jobboard, secrets OAuth expirés, sessions mobiles mortes.',
 )]
 class PurgePlatformActivityCommand extends Command
 {
@@ -77,6 +82,7 @@ class PurgePlatformActivityCommand extends Command
         private readonly OAuthTokenRepository $oauthTokens,
         private readonly OAuthAuthorizationCodeRepository $oauthCodes,
         private readonly OAuthClientRepository $oauthClients,
+        private readonly MobileSessionRepository $mobileSessions,
     ) {
         parent::__construct();
     }
@@ -131,6 +137,11 @@ class PurgePlatformActivityCommand extends Command
                 $this->oauthClients->countUnconsentedBefore($oauthThreshold),
                 $oauthThreshold->format('d/m/Y'),
             ));
+            $io->info(\sprintf(
+                '%d session(s) mobile(s) expirée(s) ou révoquée(s) avant le %s seraient supprimées.',
+                $this->mobileSessions->countDeadBefore($oauthThreshold),
+                $oauthThreshold->format('d/m/Y'),
+            ));
 
             return Command::SUCCESS;
         }
@@ -155,6 +166,10 @@ class PurgePlatformActivityCommand extends Command
         $codes = $this->oauthCodes->deleteExpiredBefore($oauthThreshold);
         $clients = $this->oauthClients->deleteUnconsentedBefore($oauthThreshold);
         $io->success(\sprintf('%d jeton(s), %d code(s) et %d client(s) OAuth du connecteur Claude supprimé(s).', $tokens, $codes, $clients));
+
+        // The same 30 days as the connector's secrets, read on the day the session died.
+        $mobile = $this->mobileSessions->deleteDeadBefore($oauthThreshold);
+        $io->success(\sprintf('%d session(s) mobile(s) supprimée(s).', $mobile));
 
         return Command::SUCCESS;
     }

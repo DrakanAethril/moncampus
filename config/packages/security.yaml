@@ -36,6 +36,12 @@ security:
         # LdapCredentialsVerifier the web firewall below uses) and stateless - see
         # App\Security\ApiLdapAuthenticator. Must come before the "api" firewall since Symfony
         # matches firewalls in order and stops at the first pattern match.
+        # The mobile apps' refresh and sign-out (App\Controller\Api\MobileTokenController): the
+        # caller's JWT has typically run out, and the `api` firewall below would refuse that stale
+        # bearer before the refresh token is even read. Holding the refresh token is the credential.
+        api_token:
+            pattern: ^/api/token/
+            security: false
         api_login:
             pattern: ^/api/login
             stateless: true
