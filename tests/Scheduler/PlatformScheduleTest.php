@@ -45,6 +45,7 @@ class PlatformScheduleTest extends KernelTestCase
             'app:purge-platform-activity' => '15 3 * * *',
             'app:counters:recompute' => '45 3 * * *',
             'app:game:close-month' => '30 4 * * *',
+            'app:proxmox:expire-batches' => '0 7 * * *',
         ], $actual);
     }
 

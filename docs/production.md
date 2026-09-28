@@ -316,6 +316,7 @@ starts the worker by itself: `up --wait` brings it up with the rest.
 | `app:purge-platform-activity` | 03:15 | Retention |
 | `app:counters:recompute` | 03:45 | Recomputing the stored counters |
 | `app:game:close-month` | 04:30 | Closing the campus game's months |
+| `app:proxmox:expire-batches` | 07:00 | the command's own docblock (reminds, never destroys) |
 
 What changed, and what to know:
 
