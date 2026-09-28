@@ -31,7 +31,8 @@ namespace App\Service;
  *   on first start and holds roughly 1.5 GB of RAM. Dev gets an opt-in `--profile antivirus`.
  * - **Synchronous in this version.** A 20 M file over clamd's INSTREAM is fast enough to sit inside
  *   a request. The 200 M media ceiling is the case that may not be, and "just make it async" is not
- *   free here - Messenger runs sync:// with no consumer, so an async path means standing one up.
+ *   free here - there is no queue, and the only worker runs the schedule one task at a time, so an
+ *   async path means standing up a transport and a consumer of its own.
  *   Decide it when the media path proves slow, not before.
  * - **The scan happens on the temp file, before a byte reaches S3.** A rejected file never enters
  *   the bucket, so nothing has to be cleaned up after the fact.

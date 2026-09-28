@@ -330,7 +330,7 @@ class DirectoryUserController extends AbstractController
         // The last of the three gestures asked of the directory about this account - the banner at
         // the top of the screen and the « Dernière opération de compte » line both read it. The
         // directory is re-read on the way past, so opening the fiche is already one of the two
-        // things that close the loop; the other is app:ldap:apply-account-requests, in cron.
+        // things that close the loop; the other is app:ldap:apply-account-requests, scheduled every minute.
         //
         // Administrators only, like the gestures themselves: nobody else may act on this row, and a
         // screen that reports on an action it does not offer only invites the question.

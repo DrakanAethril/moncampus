@@ -30,9 +30,9 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * Stimulus poller calls while a task is still running.
  *
  * Polling rather than a queue, and the reason is in this repository rather than in fashion:
- * Messenger here has no worker at all, so routing a long operation to `async` would mean never
- * processing it. Proxmox hands back a UPID and expects to be asked; the screen asks, every two
- * seconds, for at most five minutes.
+ * the platform has no queue for work handed off by a request - its only worker runs the schedule
+ * (App\Scheduler\PlatformSchedule), one task at a time. Proxmox hands back a UPID and expects to
+ * be asked; the screen asks, every two seconds, for at most five minutes.
  */
 #[IsGranted('ROLE_ADMIN')]
 #[RequiresFeature(Feature::Infrastructure)]

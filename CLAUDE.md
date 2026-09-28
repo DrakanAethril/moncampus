@@ -53,10 +53,17 @@ docker compose -f compose.yaml -f compose.prod.yaml build --pull --no-cache
 docker compose -f compose.yaml -f compose.prod.yaml up --wait
 ```
 
-Application commands (`src/Command/`). **They are not all cron-driven** — the table says which is
+Application commands (`src/Command/`). **They are not all scheduled** — the table says which is
 which, and the distinction is worth keeping: a one-off, a diagnostic and a scheduled task each fail
-differently when nobody runs them. Only `app:mail:*` and `app:vm-batch:advance` are actually wired to
-cron on the production host today; `docs/production.md` carries the crontab lines.
+differently when nobody runs them. **There is no crontab any more** (since 2026-09-28): the
+scheduled ones are declared in one place, `App\Scheduler\PlatformSchedule` (Symfony Scheduler), and
+run by the `worker` service — see « Runtime architecture » below and `docs/production.md`,
+« Scheduled tasks ». `PlatformScheduleTest` pins that list, so adding a task is a decision the test
+makes visible. A scheduled command that exits non-zero is logged at error level with its output
+(`App\Scheduler\ScheduledCommandLogger`) and so reaches Discord. A command that locks itself uses
+`App\Command\SharedLockableTrait`, **never Symfony's `LockableTrait`**: the worker runs the same
+command instance again and again in one process, and `LockableTrait` — which releases only when
+asked — made the second run throw « A lock is already in place ».
 
 | Command | Role |
 |---|---|
@@ -64,18 +71,18 @@ cron on the production host today; `docs/production.md` carries the crontab line
 | `app:mail:consume-events` | Pull SES delivery/bounce events, update `EmailEvent`/suppressions |
 | `app:mail:reconcile` | Repair drift between SES state and local rows |
 | `app:mail:backfill-student-aliases` | One-off alias generation for existing students |
-| `app:mail:relink-applications` | **Repair pass, not cron.** Re-reads the Courrier pro mails that have a student but no démarche, and files the ones that *quote* a send: the Message-ID a failure notice copies back, failing that the failing address found among the recipients of that student's own sends — and only when every match agrees on **one** démarche. The whole rule lives in `App\Service\SchoolMailApplicationRecovery`, which the inbound worker now applies on arrival; the command exists only for the rows written before it. `--dry-run` names each mail and the evidence found, which is how it should be read first: it files mails under démarches nobody named |
+| `app:mail:relink-applications` | **Repair pass, not scheduled.** Re-reads the Courrier pro mails that have a student but no démarche, and files the ones that *quote* a send: the Message-ID a failure notice copies back, failing that the failing address found among the recipients of that student's own sends — and only when every match agrees on **one** démarche. The whole rule lives in `App\Service\SchoolMailApplicationRecovery`, which the inbound worker now applies on arrival; the command exists only for the rows written before it. `--dry-run` names each mail and the evidence found, which is how it should be read first: it files mails under démarches nobody named |
 | `app:import-edt-timetable`, `app:import-edt-periods` | Timetable import from the school's EDT export |
 | `app:import-notion-sequences` | One-off import of pedagogical sequences from a Notion export |
-| `app:purge-platform-activity` | Retention: 12 months on `PlatformActivity` and on `QuizAttemptEvent`, **90 days on `ConsoleSession`** with the screen transcripts it carries, **30 days past expiry on the Claude connector's OAuth codes and tokens** (and on the clients nobody ever consented to), and **24 months on `JobboardOffer`** read on the advert's publication date (an offer with no date is judged on the day it was first seen — `sort_date` holds 1000-01-01 for those and reading the threshold against it would empty the board). **Meant to be cron (once a day), and was still not wired to one on 2026-08-22.** That gap matters more since the machine console: the journal at `/infrastructure/console-sessions` prints « Conservation 90 jours » on screen, so a command nobody runs turns that line into a promise nothing keeps. Volume is *not* the argument — a transcript measures a couple of kibibytes — the retention decision is. See `docs/production.md` |
-| `app:antivirus:check` | **Diagnostic, not cron.** Scans a clean file and the EICAR test string through the configured `ANTIVIRUS_DSN`; exits non-zero unless uploads are genuinely being refused. The state it exists for is the silent one — a blank DSN disables scanning without announcing it anywhere |
+| `app:purge-platform-activity` | Retention: 12 months on `PlatformActivity` and on `QuizAttemptEvent`, **90 days on `ConsoleSession`** with the screen transcripts it carries, **30 days past expiry on the Claude connector's OAuth codes and tokens** (and on the clients nobody ever consented to), and **24 months on `JobboardOffer`** read on the advert's publication date (an offer with no date is judged on the day it was first seen — `sort_date` holds 1000-01-01 for those and reading the threshold against it would empty the board). **Scheduled daily at 03:15** — it was never wired to the old crontab, and the schedule is what finally runs it. The journal at `/infrastructure/console-sessions` prints « Conservation 90 jours » on screen, so a command nobody runs turns that line into a promise nothing keeps. Volume is *not* the argument — a transcript measures a couple of kibibytes — the retention decision is. See `docs/production.md` |
+| `app:antivirus:check` | **Diagnostic, not scheduled.** Scans a clean file and the EICAR test string through the configured `ANTIVIRUS_DSN`; exits non-zero unless uploads are genuinely being refused. The state it exists for is the silent one — a blank DSN disables scanning without announcing it anywhere |
 | `app:help:sync-content` | Creates the missing help sections/articles from `App\Help\HelpContentCatalog`; never overwrites what an admin has edited (`--refresh` also rewrites the untouched ones). Run it once after a deploy that adds catalogue entries |
-| `app:vm-batch:advance` | Continues every VM deployment already under way, one machine per pass. **Cron every minute.** It is what makes a deployment survive the browser tab that started it — without it the batch screen's own loop is the only thing pressing, and a closed tab leaves machines cloned and never configured. It never *starts* a deployment: a batch whose machines are all still `planned` is a plan, not an instruction |
-| `app:ldap:apply-account-requests` | Relit l'annuaire pour chaque demande de `ldap_manage_account` que le script consommateur a terminée, et applique la conséquence côté application — aujourd'hui la bascule de `User::$username` après un renommage confirmé. **Cron toutes les minutes.** C'est ce qui fait qu'un onglet fermé ne décide de rien : la fiche sonde la même chose toutes les 2 s, mais la boucle du navigateur n'est jamais ce qui porte le travail. Idempotente (`applied_at`) et verrouillée (`LockableTrait`). Voir `docs/production.md` |
-| `app:proxmox:secrets` | **Diagnostic, not cron.** Says whether the sealed Proxmox secrets still open, and prints a fingerprint of the `PROXMOX_SECRET_KEY` in use. Run it before and after a deploy: a fingerprint that changes means the key is not being carried across releases, which makes every stored token unreadable at once and looks, from the screen, exactly like Proxmox refusing them |
-| `app:guest-accounts:prune` | **Maintenance à la demande, pas cron.** Supprime les lignes `guest_account` dont la machine n'existe plus sur l'hyperviseur, ou dont le VMID a été repris depuis par un autre lot — Proxmox rend un numéro dès qu'une machine est détruite, et les lignes de l'ancienne occupante restent classées dessous (cette moitié-là se décide sur les seules données de la plateforme, sans rien demander à l'hyperviseur ; `App\Service\Proxmox\VmidHandover` la ferme à la source lors des créations suivantes). C'est l'état que /infrastructure ne montre pas : ces écrans lisent Proxmox à l'affichage, donc une machine détruite cesse d'y être listée, tandis que ses comptes restent — et « Mes machines virtuelles » est bâti sur ces comptes. Un hôte injoignable ne décide rien : ses comptes sont comptés à part et laissés tels quels. `--dry-run` nomme chaque ligne avant d'y toucher. Jamais planifiée : supprimer est une décision, pas un horaire |
-| `app:ecoledirecte:check` | **Diagnostic, not cron.** Runs the one step of an École Directe login that needs no account (the GTK cookie of `login.awp?gtk=1`) and says whether École Directe still answers it from this server. The platform holds no École Directe credentials and must not, so this is the most it can prove on its own |
-| `app:counters:recompute` | **Cron, once a night** (`docs/production.md`). Checks every stored counter of the platform (`App\Counter\RecomputableCounter`, one tagged service each) against its source and corrects the drifts - each correction logged at error level, so it reaches Discord: a drift is a bug, not a figure to patch. The counters move in real time with what changes them; this is the safety net. `--counter=`, `--dry-run` |
+| `app:vm-batch:advance` | Continues every VM deployment already under way, one machine per pass. **Scheduled every minute.** It is what makes a deployment survive the browser tab that started it — without it the batch screen's own loop is the only thing pressing, and a closed tab leaves machines cloned and never configured. It never *starts* a deployment: a batch whose machines are all still `planned` is a plan, not an instruction |
+| `app:ldap:apply-account-requests` | Relit l'annuaire pour chaque demande de `ldap_manage_account` que le script consommateur a terminée, et applique la conséquence côté application — aujourd'hui la bascule de `User::$username` après un renommage confirmé. **Scheduled every minute.** C'est ce qui fait qu'un onglet fermé ne décide de rien : la fiche sonde la même chose toutes les 2 s, mais la boucle du navigateur n'est jamais ce qui porte le travail. Idempotente (`applied_at`) et verrouillée (`SharedLockableTrait`). Voir `docs/production.md` |
+| `app:proxmox:secrets` | **Diagnostic, not scheduled.** Says whether the sealed Proxmox secrets still open, and prints a fingerprint of the `PROXMOX_SECRET_KEY` in use. Run it before and after a deploy: a fingerprint that changes means the key is not being carried across releases, which makes every stored token unreadable at once and looks, from the screen, exactly like Proxmox refusing them |
+| `app:guest-accounts:prune` | **Maintenance à la demande, jamais planifiée.** Supprime les lignes `guest_account` dont la machine n'existe plus sur l'hyperviseur, ou dont le VMID a été repris depuis par un autre lot — Proxmox rend un numéro dès qu'une machine est détruite, et les lignes de l'ancienne occupante restent classées dessous (cette moitié-là se décide sur les seules données de la plateforme, sans rien demander à l'hyperviseur ; `App\Service\Proxmox\VmidHandover` la ferme à la source lors des créations suivantes). C'est l'état que /infrastructure ne montre pas : ces écrans lisent Proxmox à l'affichage, donc une machine détruite cesse d'y être listée, tandis que ses comptes restent — et « Mes machines virtuelles » est bâti sur ces comptes. Un hôte injoignable ne décide rien : ses comptes sont comptés à part et laissés tels quels. `--dry-run` nomme chaque ligne avant d'y toucher. Jamais planifiée : supprimer est une décision, pas un horaire |
+| `app:ecoledirecte:check` | **Diagnostic, not scheduled.** Runs the one step of an École Directe login that needs no account (the GTK cookie of `login.awp?gtk=1`) and says whether École Directe still answers it from this server. The platform holds no École Directe credentials and must not, so this is the most it can prove on its own |
+| `app:counters:recompute` | **Scheduled, once a night** (`docs/production.md`). Checks every stored counter of the platform (`App\Counter\RecomputableCounter`, one tagged service each) against its source and corrects the drifts - each correction logged at error level, so it reaches Discord: a drift is a bug, not a figure to patch. The counters move in real time with what changes them; this is the safety net. `--counter=`, `--dry-run` |
 | `app:seed-dev-*`, `app:dev:*`, `app:configure-dev-programs` | **Dev-machine only.** Populate/inject into the local database. These must never be relied on in staging or production. |
 
 ## Runtime architecture (Docker layer)
@@ -93,6 +100,16 @@ worker mode, static files) and is driven by env vars rather than edited; see `do
   stand-in: dev writes to the real S3 bucket under the `dev/` prefix, and the test environment
   swaps the storage for a directory under `var/cache`.
 - `compose.prod.yaml` — prod overlay: `frankenphp_prod` target, secrets injected from the environment.
+  Also the **`worker`** service: same image, `messenger:consume scheduler_default`, i.e. every
+  recurring task of `App\Scheduler\PlatformSchedule`. It bypasses the entrypoint (which migrates —
+  `php` does that) and disables the inherited healthcheck (which asks Caddy — left on, `up --wait`
+  would hang). Its `environment:` repeats `php`'s and must be kept in step: a command that flushes
+  needs `MERCURE_URL`. `php` and `worker` share the `app_locks` volume, which `LOCK_DSN`
+  (`flock:///app/var/lock`) points at — that is what keeps a lock one lock across the two
+  containers (a manual run vs. the scheduled one, the batch screen vs. `app:vm-batch:advance` on a
+  VMID). In dev the worker is opt-in: `docker compose --profile worker up -d worker`.
+  Messenger has no other use: no queue transport, and the mailer's and notifier's messages are
+  handled synchronously, in the request that sends them.
 - `.devcontainer/compose.devcontainer.yaml` — extra overlay for VS Code Dev Containers.
 
 **Multi-stage `Dockerfile`**: `frankenphp_base` (extensions via `install-php-extensions`) →
@@ -151,7 +168,7 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   contested gesture is undone by an *inverse line* (`reversalOf`), never a delete. An entry carries
   the date it happened on, so which month it counts towards is a *reading*, never a condition on
   writing it. Ranking is on a **rate** over a calendar month (`GameMonthScore`), and
-  `app:game:close-month` is the cron that closes one. The six level thresholds are
+  `app:game:close-month` is the scheduled task that closes one. The six level thresholds are
   establishment-wide, in `App\Service\Game\GameLevels`; `GameLevelLabel` holds only their *wording*
   per filière — a threshold that moved between formations would make the avatar's ring mean nothing.
 - **Bibliothèque de fichiers et partages** — `FileLibraryNode`, one table for folders and files.
@@ -176,7 +193,7 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   drives hardware. `ProxmoxHost`/`ProxmoxOperation` talk to Proxmox VE; `VmBatch`/`VmBatchItem`
   deploy one machine per student of a class, `GuestAccount` is the account created on each; the web
   terminal is `ConsoleSession`/`ConsoleBroadcast`/`ConsoleSnippet` over SSH (**not** Proxmox's PTY).
-  Two rules the code depends on: **one pass does exactly one step** (`app:vm-batch:advance`, cron
+  Two rules the code depends on: **one pass does exactly one step** (`app:vm-batch:advance`, scheduled
   every minute, is what makes a deployment survive a closed browser tab), and the application never
   destroys a machine — an expired batch reminds, an administrator deletes in Proxmox.
 - **Matériel (Gestion > Matériel)** - the small-equipment inventory, `App\Controller\Equipment\*`.
@@ -256,8 +273,12 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     before writing. Cahier de texte: séance and slot are matched on day + start time, the whole slot
     goes back with `verbe=put` and only its base64 `contenu` changed (`EcoleDirecteLessonLogPlanner`
     says which part lands where). Grades: the evaluation is found by name + date or created, then the
-    grid's students are posted; a student is matched only by exact name, and statuses are written
-    `abs` / `ne` / `(12)` - `EcoleDirecteGradePlanner::noteFor()` is the one place that mapping lives.
+    grid's students are posted; a student is matched by the link remembered for them
+    (`EcoleDirecteStudentLink`, one per student establishment-wide, set by hand from the preview,
+    never guessed), else by exact name, and statuses are written `abs` / `ne` / `(12)` -
+    `EcoleDirecteGradePlanner::noteFor()` is the one place that mapping lives. « Ramener sur 20 »
+    and the coefficient are chosen per send (`EcoleDirecteGradeOptions`); the coefficient only
+    shapes an evaluation the send *creates* - an existing one keeps its own, the preview says so.
   `Feature::EcoleDirecte` is off for every role. École Directe changes its protocol without notice -
   an answer the client does not recognise is logged at error level and refused, never guessed at.
 - **Accès aux fonctionnalités** — `App\Enum\Feature` (49 cases) + `#[RequiresFeature]` +

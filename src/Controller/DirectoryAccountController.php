@@ -147,7 +147,7 @@ class DirectoryAccountController extends AbstractController
      * It re-reads the directory on the way through (LdapAccountApplier), so the screen is right
      * straight away - but the banner does not depend on it: it is rendered by the server on the
      * fiche itself, and refreshing or coming back from another machine shows the same state. The
-     * polling makes it live, it does not make it exist. The cron command is what carries the work
+     * polling makes it live, it does not make it exist. The scheduled command is what carries the work
      * when nobody is watching.
      */
     #[Route(path: '/directory/users/{id}/account-status', name: 'app_directory_account_status', requirements: ['id' => '\d+'], methods: ['GET'])]

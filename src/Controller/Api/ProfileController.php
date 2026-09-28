@@ -17,6 +17,7 @@ use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
 
 /**
  * Mobile counterpart to ProfileController's contact-email and change-password actions (see that
@@ -29,6 +30,20 @@ use Symfony\Component\Routing\Attribute\Route;
  */
 class ProfileController extends AbstractController
 {
+    // The account behind the token, read by the mobile shell at startup and on every return to the
+    // foreground. "me" has no id in the URL: it is whichever User the api firewall's JWT
+    // authenticated as. The fields are the entity's `user:read` group, a null one is left out
+    // rather than sent as null (the shape the mobile AppUser.fromJson() was written against), and
+    // App\Serializer\UserFeaturesNormalizer adds `features`.
+    #[Route(path: '/api/me', name: 'api_profile_me', methods: ['GET'])]
+    public function me(): JsonResponse
+    {
+        return $this->json($this->currentUser(), context: [
+            'groups' => ['user:read'],
+            AbstractObjectNormalizer::SKIP_NULL_VALUES => true,
+        ]);
+    }
+
     // Mirrors ProfileController::updateContactEmail() - only acts (and only touches
     // verification state) when the value actually changed, same "resubmitting the same value must
     // not reset the pending token" rule.

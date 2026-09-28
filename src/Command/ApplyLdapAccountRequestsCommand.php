@@ -8,7 +8,6 @@ use App\Repository\LdapManageAccountRepository;
 use App\Service\LdapAccountApplier;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Command\LockableTrait;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -24,7 +23,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * confirmed rename never reaches App\Entity\User::$username. It is the lesson of
  * app:vm-batch:advance, and the browser's loop is never the thing that carries the work.
  *
- * A cron every minute is the intent, which is also the rate at which the queue is drained on the
+ * Scheduled every minute (App\Scheduler\PlatformSchedule), which is also the rate at which the queue is drained on the
  * domain controller. Safe at that rate by construction: `applied_at` makes a second pass a no-op,
  * and the lock keeps two passes from crossing at all.
  *
@@ -37,7 +36,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class ApplyLdapAccountRequestsCommand extends Command
 {
-    use LockableTrait;
+    use SharedLockableTrait;
 
     public function __construct(
         private readonly LdapManageAccountRepository $requests,

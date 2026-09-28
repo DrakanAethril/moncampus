@@ -4838,7 +4838,7 @@ technicalSisrHeading: 'Option SISR — infrastructure, systèmes et réseaux'
 
 technicalSisrContainersHeading: 'Conteneurisation'
 technicalSisrContainersIntroText: "L'application ne s'installe pas sur un serveur : elle est empaquetée dans une image Docker, qui contient le serveur web, PHP, ses extensions et le code. La même image tourne sur le poste du développeur et en production, ce qui supprime la classe de pannes du « ça marche chez moi »."
-technicalSisrContainersComposeText: "L'orchestration locale se fait avec Docker Compose, en fichiers superposés : un fichier de base, une surcouche de développement qui ajoute les services de substitution (base de données, annuaire, serveur de messagerie, stockage objet) et le débogueur pas-à-pas, une surcouche de production qui injecte les secrets depuis l'environnement et démarre l'antivirus. Ce dernier n'est pas dans le fichier de base à dessein : il réclame environ 1,5 Go de mémoire, que la chaîne d'intégration n'a aucune raison de payer à chaque exécution."
+technicalSisrContainersComposeText: "L'orchestration locale se fait avec Docker Compose, en fichiers superposés : un fichier de base, une surcouche de développement qui ajoute les services de substitution (base de données, annuaire, serveur de messagerie, stockage objet) et le débogueur pas-à-pas, une surcouche de production qui injecte les secrets depuis l'environnement, démarre l'antivirus et le worker des tâches planifiées. Ce dernier n'est pas dans le fichier de base à dessein : il réclame environ 1,5 Go de mémoire, que la chaîne d'intégration n'a aucune raison de payer à chaque exécution."
 
 technicalSisrServerHeading: 'Serveur applicatif'
 technicalSisrServerIntroText: "FrankenPHP réunit dans un seul processus le serveur HTTP Caddy et l'interpréteur PHP. Il n'y a ni nginx ni PHP-FPM, donc pas de socket entre les deux ni de double configuration à tenir."
@@ -4855,7 +4855,7 @@ technicalServiceStorageText: "Amazon S3 pour les pièces jointes, les enregistre
 technicalServiceAntivirusTerm: 'Analyse antivirale'
 technicalServiceAntivirusText: "ClamAV, dans son propre conteneur. L'application ne lui donne pas un chemin de fichier — les deux conteneurs ne partagent aucun disque — mais lui envoie les octets sur une connexion réseau et lit son verdict. Sa base de signatures, quelques centaines de méga-octets, est conservée dans un volume pour qu'une mise en production ne la retélécharge pas : le temps de ce téléchargement, tous les dépôts seraient refusés. En développement et en intégration continue, le service n'est pas démarré et l'analyse est simplement désactivée."
 technicalServiceMailTerm: 'Courrier'
-technicalServiceMailText: "Amazon SES pour l'envoi. Pour la réception, SES dépose le message dans un compartiment S3 et signale son arrivée dans une file SQS, qu'une tâche planifiée relève. Il n'y a pas de processus résident à surveiller."
+technicalServiceMailText: "Amazon SES pour l'envoi. Pour la réception, SES dépose le message dans un compartiment S3 et signale son arrivée dans une file SQS, qu'une tâche planifiée relève chaque minute."
 technicalServiceProxmoxTerm: 'Hyperviseur'
 technicalServiceProxmoxText: "Proxmox VE, le serveur de virtualisation de l'établissement. La plateforme pilote son API pour cloner, configurer et livrer les machines virtuelles de travaux pratiques, et ouvre une console SSH sur celles qui tournent. Les identifiants d'accès sont chiffrés en base plutôt que stockés en clair."
 technicalServiceMercureTerm: 'Temps réel'
@@ -4875,7 +4875,7 @@ technicalSisrPipelineCiText: "La chaîne d'intégration, elle, monte la pile de 
 
 technicalSisrOpsHeading: 'Exploitation'
 technicalSisrOpsLogsText: "Les journaux sortent au format JSON sur la sortie d'erreur standard, où le moteur de conteneurs les collecte. En production, toute erreur de niveau erreur ou pire est en outre poussée dans un salon Discord, avec un étranglement qui empêche une rafale de saturer le canal."
-technicalSisrOpsCronText: "Les traitements récurrents — relève du courrier entrant, traitement des accusés de réception, suite d'un déploiement de machines virtuelles, application des opérations de comptes, clôture mensuelle du jeu du campus, purge du journal d'activité — sont des commandes en ligne de commande déclenchées par des tâches planifiées, et non des démons. Une commande qui échoue est relancée au cycle suivant sans intervention."
+technicalSisrOpsCronText: "Les traitements récurrents — relève du courrier entrant, traitement des accusés de réception, suite d'un déploiement de machines virtuelles, application des opérations de comptes, clôture mensuelle du jeu du campus, purges nocturnes — sont des commandes en ligne de commande. Leur calendrier est écrit dans le code, en un seul endroit (le composant Scheduler de Symfony), et un conteneur dédié, le worker, les exécute l'une après l'autre : le calendrier est livré avec l'application au lieu de vivre dans la crontab du serveur. Une commande qui échoue est relancée au cycle suivant, et son échec, accompagné de ce qu'elle a affiché, part dans le salon Discord d'exploitation."
 
 technicalSourceText: "Le code source complet est public et publié sous licence AGPL-3.0. Cette licence impose que toute version modifiée mise à disposition sur un réseau publie elle aussi ses sources ; c'est la raison pour laquelle l'adresse du dépôt est accessible depuis l'application."
 
@@ -9259,7 +9259,7 @@ ecoleDirecteSendLessonLogHint: "Vos séances MonCampus sont rapprochées des cr�
 ecoleDirectePreviewAction: "Préparer l'envoi"
 ecoleDirecteSendSelectionAction: "Envoyer vers École Directe"
 ecoleDirecteSendGradebookTitle: "Envoyer une évaluation"
-ecoleDirecteSendGradebookHint: "Crée le devoir dans École Directe s'il n'y existe pas (même nom, même date) puis y saisit les notes : absent devient abs, non évalué ne, une note hors moyenne passe entre parenthèses. Les élèves sont rapprochés par leur nom exact."
+ecoleDirecteSendGradebookHint: "Crée le devoir dans École Directe s'il n'y existe pas (même nom, même date) puis y saisit les notes : absent devient abs, non évalué ne, une note hors moyenne passe entre parenthèses. Les notes peuvent être ramenées sur 20. Les élèves sont rapprochés par leur nom exact, ou par la correspondance enregistrée pour eux."
 ecoleDirecteNoEvaluationLabel: "Aucune évaluation récente que vous puissiez envoyer (il faut en être l'auteur et titulaire de la matière)."
 ecoleDirecteLoadTargetsAction: "Charger mes classes École Directe"
 ecoleDirecteEvaluationLabel: "Évaluation MonCampus"
@@ -9269,7 +9269,7 @@ ecoleDirecteGradebookTargetPlaceholder: "Choisir classe, période et matière"
 ecoleDirecteSendGradebookAction: "Envoyer vers École Directe"
 ecoleDirecteGradebookChoiceMissingMessage: "Choisissez une évaluation que vous pouvez envoyer, et une destination École Directe (chargez d'abord vos classes)."
 ecoleDirecteEvaluationLockedMessage: "Ce devoir est verrouillé dans École Directe (période close ou devoir d'un autre enseignant)."
-ecoleDirecteEvaluationScaleMismatchMessage: "Le devoir existe déjà dans École Directe avec un autre barème : corrigez-le d'un côté ou de l'autre avant d'envoyer."
+ecoleDirecteEvaluationScaleMismatchMessage: "Le devoir existe déjà dans École Directe avec un autre barème : cochez ou décochez « Ramener les notes sur 20 », ou corrigez le barème d'un côté ou de l'autre avant d'envoyer."
 ecoleDirecteEvaluationWithoutDateMessage: "Cette évaluation n'a pas de date : École Directe en exige une."
 ecoleDirecteEvaluationNotFoundMessage: "Le devoir n'a pas été retrouvé dans École Directe après sa création : vérifiez sur son site avant de réessayer."
 ecoleDirecteGradebookExistingLabel: "Le devoir « %name% » existe déjà dans École Directe : ses notes seront mises à jour."
@@ -9282,3 +9282,19 @@ ecoleDirecteGradebookOnlyThereLabel: "Élèves d'École Directe sans note corres
 ecoleDirecteGradebookCreatedLabel: "Devoir créé dans École Directe, %count% note(s) envoyée(s)."
 ecoleDirecteGradebookUpdatedLabel: "%count% note(s) envoyée(s) dans École Directe."
 ecoleDirecteGradebookLeftLabel: "Non envoyées :"
+ecoleDirecteEvaluationScaleLabel: "sur %scale%"
+ecoleDirecteCoefficientLabel: "Coefficient"
+ecoleDirecteOutOf20Label: "Ramener les notes sur 20"
+ecoleDirecteInvalidCoefficientMessage: "Indiquez un coefficient entre 0,01 et 100."
+ecoleDirecteGradebookOutOf20Label: "Les notes sont ramenées sur 20 (barème MonCampus : sur %scale%), arrondies au centième."
+ecoleDirecteGradebookCoefficientKeptLabel: "Le devoir existe déjà dans École Directe avec le coefficient %existing% : il le garde. Le coefficient %coefficient% choisi ici ne s'applique qu'à un devoir créé ; modifiez-le dans École Directe si besoin."
+ecoleDirecteLinkHint: "Un élève qui porte un autre nom dans École Directe s'associe ici, une seule fois : la correspondance est retenue pour tous les envois suivants."
+ecoleDirecteLinkPlaceholder: "Associer à l'élève d'École Directe…"
+ecoleDirecteLinkAction: "Associer"
+ecoleDirecteUnlinkAction: "Dissocier"
+ecoleDirecteLinkedLabel: "Associé à %name% dans École Directe"
+ecoleDirecteLinkedMissingLabel: "Associé à %name%, absent de cette classe dans École Directe"
+ecoleDirecteLinkChoiceMissingMessage: "Choisissez l'élève d'École Directe à associer."
+ecoleDirecteLinkStudentUnknownMessage: "Cet élève n'a pas de note dans cette évaluation."
+ecoleDirecteLinkNotInClassMessage: "Cet élève ne figure pas dans la classe École Directe choisie : relancez l'aperçu."
+ecoleDirecteLinkTakenMessage: "Cet élève d'École Directe est déjà associé à un autre élève de MonCampus : dissociez-le d'abord."

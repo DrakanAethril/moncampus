@@ -9,9 +9,14 @@ use App\EcoleDirecte\EcoleDirecteException;
 use App\EcoleDirecte\EcoleDirecteGradebookCatalog;
 use App\EcoleDirecte\EcoleDirecteGradebookTarget;
 use App\EcoleDirecte\EcoleDirecteGradebookWriter;
+use App\EcoleDirecte\EcoleDirecteGradeOptions;
+use App\EcoleDirecte\EcoleDirecteGradeRow;
 use App\EcoleDirecte\EcoleDirecteLessonLogWriter;
+use App\EcoleDirecte\EcoleDirecteSession;
 use App\EcoleDirecte\EcoleDirecteSessionSealer;
+use App\EcoleDirecte\EcoleDirecteStudentLinker;
 use App\Entity\Evaluation;
+use App\Entity\User;
 use App\Enum\Feature;
 use App\Repository\EvaluationRepository;
 use App\Security\Voter\EvaluationVoter;
@@ -120,24 +125,71 @@ class EcoleDirecteSendController extends AbstractController
         $user = $this->guard($request);
         $payload = JsonRequestPayload::fromRequest($request);
 
-        $evaluation = $this->sendableEvaluation($evaluations, $payload);
-        $target = EcoleDirecteGradebookTarget::fromKey($payload->string('target'));
-        if (null === $evaluation || null === $target) {
-            return $this->refusal('ecoleDirecteGradebookChoiceMissingMessage');
+        $choice = $this->gradebookChoice($evaluations, $payload);
+        if (!\is_array($choice)) {
+            return $this->refusal($choice);
         }
 
         try {
-            $preview = $writer->preview($this->sealer->openSession($payload->string('session'), $user), $evaluation, $target);
+            return $this->gradebookPreviewAnswer($writer, $this->sealer->openSession($payload->string('session'), $user), $user, ...$choice);
         } catch (EcoleDirecteException $exception) {
             return $this->failure($exception);
         }
+    }
 
-        return $this->json([
-            'ok' => true,
-            'session' => $this->sealer->sealSession($preview['session'], $user),
-            'html' => $this->renderView('ecole_directe/_gradebook_preview.html.twig', [...$preview, 'subject' => $evaluation]),
-            'sendable' => null === $preview['refusal'] && [] !== array_filter($preview['rows'], static fn ($row): bool => $row->state->sends()),
-        ]);
+    /**
+     * Remembers who one MonCampus student of the evaluation is in École Directe, then answers the
+     * preview again - the row it was asked from now reads matched.
+     */
+    #[Route(path: '/ecole-directe/gradebook/link', name: 'app_ecole_directe_gradebook_link', methods: ['POST'])]
+    public function gradebookLink(Request $request, EvaluationRepository $evaluations, EcoleDirecteStudentLinker $linker, EcoleDirecteGradebookWriter $writer): JsonResponse
+    {
+        $user = $this->guard($request);
+        $payload = JsonRequestPayload::fromRequest($request);
+
+        $choice = $this->gradebookChoice($evaluations, $payload);
+        if (!\is_array($choice)) {
+            return $this->refusal($choice);
+        }
+        $student = $payload->int('student');
+        $ecoleDirecteStudent = $payload->int('ecoleDirecteStudent');
+        if (null === $student || null === $ecoleDirecteStudent) {
+            return $this->refusal('ecoleDirecteLinkChoiceMissingMessage');
+        }
+
+        try {
+            $session = $linker->link($this->sealer->openSession($payload->string('session'), $user), $choice[0], $choice[1], $student, $ecoleDirecteStudent, $user);
+
+            return $this->gradebookPreviewAnswer($writer, $session, $user, ...$choice);
+        } catch (EcoleDirecteException $exception) {
+            return $this->failure($exception);
+        }
+    }
+
+    /** Forgets who one MonCampus student is in École Directe; they are matched by name again. */
+    #[Route(path: '/ecole-directe/gradebook/unlink', name: 'app_ecole_directe_gradebook_unlink', methods: ['POST'])]
+    public function gradebookUnlink(Request $request, EvaluationRepository $evaluations, EcoleDirecteStudentLinker $linker, EcoleDirecteGradebookWriter $writer): JsonResponse
+    {
+        $user = $this->guard($request);
+        $payload = JsonRequestPayload::fromRequest($request);
+
+        $choice = $this->gradebookChoice($evaluations, $payload);
+        if (!\is_array($choice)) {
+            return $this->refusal($choice);
+        }
+        $student = $payload->int('student');
+        if (null === $student) {
+            return $this->refusal('ecoleDirecteLinkChoiceMissingMessage');
+        }
+
+        try {
+            $session = $this->sealer->openSession($payload->string('session'), $user);
+            $linker->unlink($choice[0], $student);
+
+            return $this->gradebookPreviewAnswer($writer, $session, $user, ...$choice);
+        } catch (EcoleDirecteException $exception) {
+            return $this->failure($exception);
+        }
     }
 
     #[Route(path: '/ecole-directe/gradebook/send', name: 'app_ecole_directe_gradebook_send', methods: ['POST'])]
@@ -146,14 +198,13 @@ class EcoleDirecteSendController extends AbstractController
         $user = $this->guard($request);
         $payload = JsonRequestPayload::fromRequest($request);
 
-        $evaluation = $this->sendableEvaluation($evaluations, $payload);
-        $target = EcoleDirecteGradebookTarget::fromKey($payload->string('target'));
-        if (null === $evaluation || null === $target) {
-            return $this->refusal('ecoleDirecteGradebookChoiceMissingMessage');
+        $choice = $this->gradebookChoice($evaluations, $payload);
+        if (!\is_array($choice)) {
+            return $this->refusal($choice);
         }
 
         try {
-            $sent = $writer->send($this->sealer->openSession($payload->string('session'), $user), $evaluation, $target);
+            $sent = $writer->send($this->sealer->openSession($payload->string('session'), $user), ...$choice);
         } catch (EcoleDirecteException $exception) {
             return $this->failure($exception);
         }
@@ -163,6 +214,49 @@ class EcoleDirecteSendController extends AbstractController
             'session' => $this->sealer->sealSession($sent['session'], $user),
             'html' => $this->renderView('ecole_directe/_gradebook_sent.html.twig', $sent),
         ]);
+    }
+
+    /**
+     * @throws EcoleDirecteException
+     */
+    private function gradebookPreviewAnswer(EcoleDirecteGradebookWriter $writer, EcoleDirecteSession $session, User $user, Evaluation $evaluation, EcoleDirecteGradebookTarget $target, EcoleDirecteGradeOptions $options): JsonResponse
+    {
+        $preview = $writer->preview($session, $evaluation, $target, $options);
+
+        return $this->json([
+            'ok' => true,
+            'session' => $this->sealer->sealSession($preview['session'], $user),
+            'html' => $this->renderView('ecole_directe/_gradebook_preview.html.twig', [
+                ...$preview,
+                'subject' => $evaluation,
+                'scale' => $options->scale($evaluation->getScale()),
+                'coefficient' => $options->coefficient,
+                'outOf20' => $options->outOf20 && $options->scale($evaluation->getScale()) !== $evaluation->getScale(),
+            ]),
+            'sendable' => null === $preview['refusal'] && [] !== array_filter($preview['rows'], static fn (EcoleDirecteGradeRow $row): bool => $row->state->sends()),
+        ]);
+    }
+
+    /**
+     * What the page asked to send, and how: the evaluation, where in École Directe, brought back to
+     * 20 or not, which coefficient. The translation key of the refusal when any of it is missing.
+     *
+     * @return array{0: Evaluation, 1: EcoleDirecteGradebookTarget, 2: EcoleDirecteGradeOptions}|string
+     */
+    private function gradebookChoice(EvaluationRepository $evaluations, JsonRequestPayload $payload): array|string
+    {
+        $evaluation = $this->sendableEvaluation($evaluations, $payload);
+        $target = EcoleDirecteGradebookTarget::fromKey($payload->string('target'));
+        if (null === $evaluation || null === $target) {
+            return 'ecoleDirecteGradebookChoiceMissingMessage';
+        }
+
+        $options = EcoleDirecteGradeOptions::of($payload->bool('outOf20'), $payload->float('coefficient'));
+        if (null === $options) {
+            return 'ecoleDirecteInvalidCoefficientMessage';
+        }
+
+        return [$evaluation, $target, $options];
     }
 
     /**

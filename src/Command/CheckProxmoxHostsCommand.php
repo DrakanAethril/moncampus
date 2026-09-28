@@ -10,7 +10,6 @@ use App\Service\Proxmox\ProxmoxHostChecker;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Command\LockableTrait;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -22,13 +21,13 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * This is what keeps the badges honest. The console never probes a host while a page renders - a
  * list that sounds out N hypervisors is as slow as the worst and as broken as the one that is
  * unplugged - so the screens show the *last known* state, and something has to go and refresh it.
- * A cron every few minutes is the intent; run by hand it is also the quickest way to find out why
+ * Scheduled every five minutes (App\Scheduler\PlatformSchedule); run by hand it is also the quickest way to find out why
  * a host will not answer, since it prints the reason rather than a badge.
  *
  * Exits non-zero when a host is unreachable, so a scheduler notices. `--dry-run` tests without
  * writing anything down, which is what you want when investigating rather than monitoring.
  *
- * **It locks itself**, so the cron line needs no `flock` and a manual run cannot land on top of a
+ * **It locks itself**, so a manual run cannot land on top of a
  * scheduled one - the same posture as the three `app:mail:*` commands. A pass sounds out every
  * declared hypervisor one after the other, and an unplugged host is answered by a timeout rather
  * than a refusal, so a run can outlast the five minutes between two of them; without the lock they
@@ -36,7 +35,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * `--dry-run` is deliberately exempt. It writes nothing, so two of them cannot collide - and the
  * one gesture this lock must never block is the investigation the docblock above recommends:
- * finding out why a host will not answer, while the cron is busy discovering the same thing.
+ * finding out why a host will not answer, while the schedule is busy discovering the same thing.
  */
 #[AsCommand(
     name: 'app:proxmox:check',
@@ -44,7 +43,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class CheckProxmoxHostsCommand extends Command
 {
-    use LockableTrait;
+    use SharedLockableTrait;
 
     public function __construct(
         private readonly ProxmoxHostRepository $repository,
@@ -65,7 +64,7 @@ class CheckProxmoxHostsCommand extends Command
         $io = new SymfonyStyle($input, $output);
         $dryRun = true === $input->getOption('dry-run');
 
-        // The lock lives here rather than in the cron line, so that a manual run is protected too.
+        // The lock lives here rather than in the scheduler, so that a manual run is protected too.
         // A skipped pass is a success: the badges keep the state the running pass is refreshing.
         if (!$dryRun && !$this->lock()) {
             $io->comment('Une autre exécution est déjà en cours.');

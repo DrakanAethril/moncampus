@@ -39,7 +39,7 @@
         <div class="cm-accountband__title">{{ accountStatus.title }}</div>
         {# data-still-running-label: what the banner says once the polling gives up, five minutes in
            (assets/controllers/account_operation_controller.js). « L'opération suit son cours » is the
-           truth - the cron carries it - where a wheel spinning at nothing is not. #}
+           truth - the scheduled task carries it - where a wheel spinning at nothing is not. #}
         <div class="cm-accountband__detail" data-still-running-label="{{ 'ldapAccountBannerStillRunningDetail'|trans|e('html_attr') }}">{{ accountStatus.detail }}</div>
         {% if accountStatus.log %}
             <pre class="cm-accountband__log">{{ accountStatus.log }}</pre>

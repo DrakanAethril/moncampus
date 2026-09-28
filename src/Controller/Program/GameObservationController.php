@@ -93,7 +93,7 @@ class GameObservationController extends AbstractController
      * everything already written is refused by the ledger, so this is idempotent by construction.
      *
      * One flush for the whole class, like the closure does. A very large class against PHP's 30 s
-     * `max_execution_time` is the limit here; the cron pays the same cost nightly without a browser
+     * `max_execution_time` is the limit here; the scheduled closure pays the same cost nightly without a browser
      * waiting on it.
      */
     #[Route(path: '/programs/{id}/game/observation/collect', name: 'app_program_game_observation_collect', requirements: ['id' => '\d+'], methods: ['POST'])]

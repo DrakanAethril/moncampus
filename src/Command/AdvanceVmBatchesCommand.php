@@ -24,7 +24,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * template's address and no account when somebody starts it by hand to see what happened. The
  * screen is now a view on the deployment rather than its engine.
  *
- * A cron every minute is the intent. It is safe at that rate by construction: a pass takes at most
+ * Scheduled every minute (App\Scheduler\PlatformSchedule). It is safe at that rate by construction: a pass takes at most
  * one machine per batch, an item is stamped as attempted before its step so nothing can be taken
  * twice, and the creation itself is behind a lock on the VMID.
  *
@@ -96,7 +96,7 @@ class AdvanceVmBatchesCommand extends Command
                 $failed += $result['failed'];
 
                 // Nothing left that pressing again would move: the rest has refused, and refusing
-                // again on the next tick of the cron is all another pass would achieve.
+                // again on the next tick of the schedule is all another pass would achieve.
                 if (0 === $result['remaining'] || $result['remaining'] <= $result['blocked']) {
                     break;
                 }

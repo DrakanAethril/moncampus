@@ -11,10 +11,15 @@ use App\Enum\GradeStatus;
  * Decides, without sending anything, what one MonCampus evaluation would write into an École Directe
  * gradebook - and builds what École Directe's website posts to save grades.
  *
- * **Students are matched by name, exactly.** MonCampus holds no École Directe identifier, so a
- * MonCampus student is the École Directe student of the class whose surname and first name are the
- * same once accents, case and punctuation are set aside. No such student, or two of them, and the
- * grade is not sent: a grade entered under the wrong child is worse than one entered by hand.
+ * **A student is matched by the identity remembered for them, else by name, exactly.** MonCampus
+ * holds no École Directe identifier of its own: a student whose names differ on the two sides is
+ * linked by hand from the preview (App\Entity\EcoleDirecteStudentLink), and found again by the
+ * École Directe id - or, if École Directe has re-created them, by the name it gave. Everyone else
+ * is the École Directe student of the class whose surname and first name are the same once
+ * accents, case and punctuation are set aside. No such student, two of them, or one École Directe
+ * student claimed by two MonCampus rows, and the grade is not sent: a grade entered under the wrong
+ * child is worse than one entered by hand. A remembered link outranks a name match on the same
+ * student.
  *
  * **The evaluation is found again by its name and date.** Sending twice updates the same École
  * Directe evaluation rather than creating a second one.
@@ -26,11 +31,13 @@ final class EcoleDirecteGradePlanner
 
     /**
      * @param list<EcoleDirecteGradeEntry> $grades
-     * @param array<array-key, mixed>      $grid   the `data` of École Directe's notes route
+     * @param array<array-key, mixed>      $grid        the `data` of École Directe's notes route
+     * @param float                        $scale       the scale the grades are sent out of
+     * @param float|null                   $coefficient the coefficient asked for, compared with an existing evaluation's
      *
-     * @return array{evaluation: ?array<array-key, mixed>, rows: list<EcoleDirecteGradeRow>, ecoleDirecteOnly: list<string>, refusal: ?string}
+     * @return array{evaluation: ?array<array-key, mixed>, rows: list<EcoleDirecteGradeRow>, ecoleDirecteOnly: array<int, string>, refusal: ?string, coefficientKept: ?float}
      */
-    public function plan(array $grades, array $grid, string $name, string $date, float $scale): array
+    public function plan(array $grades, array $grid, string $name, string $date, float $scale, ?float $coefficient = null): array
     {
         $evaluation = self::findEvaluation($grid, $name, $date);
 
@@ -41,6 +48,12 @@ final class EcoleDirecteGradePlanner
             $refusal = 'ecoleDirecteEvaluationScaleMismatchMessage';
         }
 
+        $coefficientKept = null;
+        if (null !== $evaluation && null !== $coefficient && is_numeric($evaluation['coef'] ?? null) && abs((float) $evaluation['coef'] - $coefficient) > 0.001) {
+            $coefficientKept = (float) $evaluation['coef'];
+        }
+
+        $byId = [];
         $byName = [];
         $names = [];
         foreach (self::studentRows($grid) as $row) {
@@ -48,32 +61,62 @@ final class EcoleDirecteGradePlanner
             if (!\is_int($student['id'] ?? null)) {
                 continue;
             }
-            $lastName = trim(self::text($student['particule'] ?? null).' '.self::text($student['nom'] ?? null));
+            $lastName = self::lastNameOf($student);
             $firstName = self::text($student['prenom'] ?? null);
             $key = self::nameKey($firstName, $lastName);
-            $byName[$key][] = ['id' => $student['id'], 'row' => $row];
+            $byId[$student['id']] = $row;
+            $byName[$key][] = $student['id'];
             $names[$student['id']] = trim($lastName.' '.$firstName);
             // A particle École Directe keeps apart may be written into the surname in MonCampus, or not.
             $bare = self::nameKey($firstName, self::text($student['nom'] ?? null));
             if ($bare !== $key) {
-                $byName[$bare][] = ['id' => $student['id'], 'row' => $row];
+                $byName[$bare][] = $student['id'];
+            }
+        }
+
+        // Who each grade would go to, and how it was found - then which École Directe students are
+        // claimed twice, which sends nothing to either claimant a link does not settle.
+        $resolved = [];
+        $claims = [];
+        foreach ($grades as $index => $grade) {
+            $id = null;
+            $viaLink = false;
+            if (null !== $grade->linkedId) {
+                $viaLink = true;
+                $fallback = $byName[self::nameKey($grade->linkedFirstName, $grade->linkedLastName)] ?? [];
+                $id = isset($byId[$grade->linkedId]) ? $grade->linkedId : (1 === \count($fallback) ? $fallback[0] : null);
+            } else {
+                $candidates = $byName[self::nameKey($grade->firstName, $grade->lastName)] ?? [];
+                $id = 1 === \count($candidates) ? $candidates[0] : null;
+            }
+
+            $resolved[$index] = [$id, $viaLink];
+            if (null !== $id) {
+                $claims[$id][] = $viaLink;
             }
         }
 
         $rows = [];
         $matched = [];
-        foreach ($grades as $grade) {
-            $candidates = $byName[self::nameKey($grade->firstName, $grade->lastName)] ?? [];
+        foreach ($grades as $index => $grade) {
+            [$studentId, $viaLink] = $resolved[$index];
             $value = $grade->note ?? '';
 
-            if (1 !== \count($candidates)) {
-                $rows[] = new EcoleDirecteGradeRow($grade->label(), null, $value, '', EcoleDirecteGradeState::NoMatch);
+            if (null !== $studentId) {
+                $links = \count(array_filter($claims[$studentId]));
+                $contested = $viaLink ? $links > 1 : \count($claims[$studentId]) > 1;
+                if ($contested) {
+                    $studentId = null;
+                }
+            }
+
+            if (null === $studentId) {
+                $rows[] = new EcoleDirecteGradeRow($grade->label(), null, $value, '', EcoleDirecteGradeState::NoMatch, $grade->studentId, '', $grade->linkedLabel());
                 continue;
             }
 
-            $studentId = $candidates[0]['id'];
             $matched[$studentId] = true;
-            $current = null === $evaluation ? '' : self::currentNote($candidates[0]['row'], $evaluation);
+            $current = null === $evaluation ? '' : self::currentNote($byId[$studentId], $evaluation);
 
             $state = match (true) {
                 null === $grade->note => EcoleDirecteGradeState::Empty,
@@ -82,17 +125,37 @@ final class EcoleDirecteGradePlanner
                 default => EcoleDirecteGradeState::Replace,
             };
 
-            $rows[] = new EcoleDirecteGradeRow($grade->label(), $studentId, $value, $current, $state);
+            $rows[] = new EcoleDirecteGradeRow($grade->label(), $studentId, $value, $current, $state, $grade->studentId, $names[$studentId] ?? '', $grade->linkedLabel());
         }
 
         $ecoleDirecteOnly = [];
         foreach ($names as $id => $label) {
             if (!isset($matched[$id])) {
-                $ecoleDirecteOnly[] = $label;
+                $ecoleDirecteOnly[$id] = $label;
             }
         }
 
-        return ['evaluation' => $evaluation, 'rows' => $rows, 'ecoleDirecteOnly' => $ecoleDirecteOnly, 'refusal' => $refusal];
+        return ['evaluation' => $evaluation, 'rows' => $rows, 'ecoleDirecteOnly' => $ecoleDirecteOnly, 'refusal' => $refusal, 'coefficientKept' => $coefficientKept];
+    }
+
+    /**
+     * One student of École Directe's grid as the link to them is remembered: id, surname with its
+     * particle, first name. Null when the grid does not hold that id.
+     *
+     * @param array<array-key, mixed> $grid
+     *
+     * @return array{id: int, lastName: string, firstName: string}|null
+     */
+    public static function gridStudent(array $grid, int $id): ?array
+    {
+        foreach (self::studentRows($grid) as $row) {
+            $student = \is_array($row['eleve'] ?? null) ? $row['eleve'] : [];
+            if ($id === ($student['id'] ?? null)) {
+                return ['id' => $id, 'lastName' => self::lastNameOf($student), 'firstName' => self::text($student['prenom'] ?? null)];
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -275,6 +338,12 @@ final class EcoleDirecteGradePlanner
         $note = $cell['note'] ?? null;
 
         return \is_string($note) ? trim($note) : (is_numeric($note) ? (string) $note : '');
+    }
+
+    /** @param array<array-key, mixed> $student */
+    private static function lastNameOf(array $student): string
+    {
+        return trim(self::text($student['particule'] ?? null).' '.self::text($student['nom'] ?? null));
     }
 
     private static function text(mixed $value): string

@@ -157,8 +157,7 @@ class FeatureCoverageTest extends KernelTestCase
         foreach ($router->getRouteCollection() as $name => $route) {
             $controller = $route->getDefault('_controller');
 
-            // Symfony's own routes (`_profiler`, `_wdt`) and API Platform's are not this
-            // application's screens.
+            // Symfony's own routes (`_profiler`, `_wdt`) are not this application's screens.
             if (!\is_string($controller) || !str_starts_with($controller, 'App\\Controller\\')) {
                 continue;
             }

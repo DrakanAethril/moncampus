@@ -16,7 +16,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * Whether École Directe still answers the first half of its login the way
  * App\EcoleDirecte\EcoleDirecteClient expects: the GTK cookie handed out by `login.awp?gtk=1`.
  *
- * **Diagnostic, not cron.** It needs no account - which is the point: the platform holds no École
+ * **Diagnostic, never scheduled.** It needs no account - which is the point: the platform holds no École
  * Directe credentials to test with, and must not. It cannot prove a login works, only that École
  * Directe is reachable from this server and has not changed the step every login starts with. Run it
  * before and after a deploy, and when teachers report that signing in fails for everybody.

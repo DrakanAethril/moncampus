@@ -18,7 +18,7 @@ use Doctrine\ORM\EntityManagerInterface;
  * somebody here has to act on that. Two callers do, deliberately two:
  *
  *  1. the fiche's polling, so the screen is right immediately;
- *  2. App\Command\ApplyLdapAccountRequestsCommand, in cron every minute, so a closed browser tab is
+ *  2. App\Command\ApplyLdapAccountRequestsCommand, scheduled every minute, so a closed browser tab is
  *     not what decides. It is the lesson of app:vm-batch:advance, written into CLAUDE.md: what
  *     makes an operation survive the tab that started it is never the browser's own loop.
  *
@@ -121,7 +121,7 @@ class LdapAccountApplier
             // three sources) and somebody has taken it since. The history counts here as much as a
             // current username does: a login another account was renamed away from is that
             // account's for ever, so handing it over would be exactly the theft this table exists
-            // to prevent. Refusing rather than letting the unique constraint blow up in a cron -
+            // to prevent. Refusing rather than letting the unique constraint blow up in a scheduled task -
             // the directory has already renamed the entry, so this is a state a human has to look
             // at, not one to crash on.
             $request->setVerificationNote(self::NOTE_LOGIN_TAKEN_LOCALLY);
