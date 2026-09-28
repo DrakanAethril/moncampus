@@ -46,7 +46,7 @@ final class PlatformSchedule implements ScheduleProviderInterface
 
     /**
      * Command => cron expression. Kept as data so that PlatformScheduleTest can pin it, and so that
-     * reading the schedule does not mean reading eleven `RecurringMessage::cron()` calls.
+     * reading the schedule does not mean reading twelve `RecurringMessage::cron()` calls.
      *
      * @var array<string, string>
      */
@@ -69,6 +69,9 @@ final class PlatformSchedule implements ScheduleProviderInterface
         'app:purge-platform-activity' => '15 3 * * *',
         'app:counters:recompute' => '45 3 * * *',
         'app:game:close-month' => '30 4 * * *',
+        // The morning, once the night is done: the VM batches whose date has passed, each reminded
+        // about once. It destroys nothing - an administrator deletes in Proxmox.
+        'app:proxmox:expire-batches' => '0 7 * * *',
     ];
 
     public function __construct(
