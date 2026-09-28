@@ -13,6 +13,7 @@ use App\Form\EcoParcoursCreateType;
 use App\Repository\EcoParcoursRepository;
 use App\Security\Voter\EcoParcoursVoter;
 use App\Service\Eco\EcoToleranceAdvisor;
+use App\Service\Eco\EcoToleranceEditor;
 use App\Service\EcoParcoursFactory;
 use App\Service\FormValue;
 use App\Service\GotenbergClient;
@@ -80,7 +81,7 @@ class EcoParcoursController extends AbstractController
     }
 
     #[Route(path: '/eco/parcours/{id}/configure', name: 'app_eco_parcours_configure')]
-    public function configure(int $id, Request $request, EntityManagerInterface $entityManager, EcoParcoursRepository $repository, EcoToleranceAdvisor $toleranceAdvisor): Response
+    public function configure(int $id, Request $request, EntityManagerInterface $entityManager, EcoParcoursRepository $repository, EcoToleranceAdvisor $toleranceAdvisor, EcoToleranceEditor $toleranceEditor): Response
     {
         $parcours = $this->findOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(EcoParcoursVoter::EDIT, $parcours);
@@ -90,17 +91,7 @@ class EcoParcoursController extends AbstractController
                 throw $this->createAccessDeniedException('Invalid CSRF token.');
             }
 
-            $tolerances = PostValue::all($request, 'tolerance');
-            foreach ($parcours->getCheckpoints() as $checkpoint) {
-                $key = (string) $checkpoint->getId();
-                $tolerance = $tolerances[$key] ?? null;
-                if (is_numeric($tolerance)) {
-                    $checkpoint->setToleranceMeters(max(1, (int) $tolerance));
-                }
-            }
-
-            $parcours->setLastUpdatedBy($this->currentUser());
-            $parcours->setLastUpdatedDate(new \DateTimeImmutable());
+            $toleranceEditor->apply($parcours, PostValue::all($request, 'tolerance'), $this->currentUser());
             $entityManager->flush();
 
             $this->addFlash('success', 'ecoParcoursUpdatedFlashMessage');
