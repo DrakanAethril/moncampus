@@ -1,0 +1,162 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Functional;
+
+use App\Entity\EcoCheckpoint;
+use App\Entity\EcoCourse;
+use App\Entity\EcoParcours;
+use App\Entity\User;
+use App\Enum\EcoCheckpointType;
+use App\Service\JsonRequestPayload;
+use Doctrine\ORM\EntityManagerInterface;
+
+/**
+ * One runner's race from the phone to the teacher's screen, while the course is still running:
+ * the runner joins, scans Départ, a flag and Arrivée, and reads their recap; the teacher opens
+ * that runner's race without closing the course, and does not see the runners still out.
+ *
+ * The runner API has no account (^/api/eco/runner is public): the join token is the identity.
+ */
+class EcoRunnerRaceTest extends FunctionalTestCase
+{
+    private User $teacher;
+    private EntityManagerInterface $entityManager;
+    private EcoCourse $course;
+
+    /** @var array<string, EcoCheckpoint> keyed by type */
+    private array $checkpoints = [];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $this->teacher = $this->createUser(['ROLE_USER', 'ROLE_ECO'], 'eco.teacher');
+        $this->course = $this->createRunningCourse();
+    }
+
+    public function testTheRunnerIsNeverHandedTheCheckpointCodes(): void
+    {
+        $join = $this->request('POST', '/api/eco/runner/join', ['pseudo' => 'lilou', 'code' => $this->course->getCode()]);
+
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        $codes = array_map(static fn (JsonRequestPayload $checkpoint): string => $checkpoint->string('shortCode', 'absent'), $join->objects('checkpoints'));
+        self::assertSame(['', '', ''], $codes);
+    }
+
+    public function testTheRecapIsRefusedUntilTheFinishIsScanned(): void
+    {
+        $token = $this->join('lilou');
+        $this->scan($token, EcoCheckpointType::Start);
+
+        $refused = $this->request('GET', '/api/eco/runner/summary?token='.$token);
+
+        self::assertSame(409, $this->client->getResponse()->getStatusCode());
+        self::assertSame('runnerNotFinished', $refused->string('error'));
+    }
+
+    public function testTheRecapCountsTheRegularFlagsAndTimesEachLeg(): void
+    {
+        $token = $this->join('lilou');
+        $this->scan($token, EcoCheckpointType::Start, '2026-09-28T10:00:00+02:00');
+        // Typed by hand with a space in the middle, as read off the flag.
+        $code = (string) $this->checkpoints[EcoCheckpointType::Checkpoint->value]->getShortCode();
+        $this->scan($token, EcoCheckpointType::Checkpoint, '2026-09-28T10:04:00+02:00', substr($code, 0, 3).' '.strtolower(substr($code, 3)));
+        $this->scan($token, EcoCheckpointType::Finish, '2026-09-28T10:10:30+02:00');
+
+        $summary = $this->request('GET', '/api/eco/runner/summary?token='.$token);
+
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        self::assertSame('lilou', $summary->string('pseudo'));
+        self::assertSame(630, $summary->int('durationSeconds'));
+        // Départ and Arrivée are not flags to find: 1/1, like the race screen's header.
+        self::assertSame(1, $summary->int('checkpointsValidated'));
+        self::assertSame(1, $summary->int('checkpointsTotal'));
+        self::assertSame(0, $summary->int('scanFailureCount'));
+        $legs = $summary->objects('legs');
+        self::assertCount(2, $legs);
+        self::assertSame(240, $legs[0]->int('seconds'));
+        self::assertSame(390, $legs[1]->int('seconds'));
+    }
+
+    public function testTheTeacherOpensAFinishedRunnerWhileTheRaceRunsButNotOneStillOut(): void
+    {
+        $finished = $this->join('lilou');
+        $this->scan($finished, EcoCheckpointType::Start);
+        $this->scan($finished, EcoCheckpointType::Checkpoint);
+        $this->scan($finished, EcoCheckpointType::Finish);
+        $racing = $this->join('tomtom');
+        $this->scan($racing, EcoCheckpointType::Start);
+
+        $this->client->loginUser($this->teacher);
+
+        $live = $this->client->request('GET', \sprintf('/eco/courses/%d/live', $this->course->getId()));
+        self::assertResponseIsSuccessful();
+        self::assertCount(1, $live->filter('[data-eco-live-target="pseudo"] a'));
+        self::assertSame('lilou', trim($live->filter('[data-eco-live-target="pseudo"] a')->text()));
+
+        $results = $this->client->request('GET', (string) $live->filter('[data-eco-live-target="pseudo"] a')->attr('href'));
+        self::assertResponseIsSuccessful();
+        $options = $results->filter('select[name="runner"] option')->each(static fn ($option): string => trim($option->text()));
+        self::assertCount(1, $options);
+        self::assertStringStartsWith('lilou', $options[0]);
+    }
+
+    private function join(string $pseudo): string
+    {
+        return $this->request('POST', '/api/eco/runner/join', ['pseudo' => $pseudo, 'code' => $this->course->getCode()])->string('token');
+    }
+
+    private function scan(string $token, EcoCheckpointType $type, ?string $at = null, ?string $code = null): void
+    {
+        $checkpoint = $this->checkpoints[$type->value];
+        $result = $this->request('POST', '/api/eco/runner/scan', [
+            'token' => $token,
+            'code' => $code ?? $checkpoint->getShortCode(),
+            'latitude' => $checkpoint->getLatitude(),
+            'longitude' => $checkpoint->getLongitude(),
+            'scannedAt' => $at ?? (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
+        ]);
+        self::assertSame('success', $result->string('result'), $type->value);
+    }
+
+    /** @param array<string, mixed>|null $body */
+    private function request(string $method, string $path, ?array $body = null): JsonRequestPayload
+    {
+        $this->client->request($method, $path, server: ['CONTENT_TYPE' => 'application/json'], content: null !== $body ? json_encode($body, \JSON_THROW_ON_ERROR) : null);
+
+        return JsonRequestPayload::fromJson((string) $this->client->getResponse()->getContent());
+    }
+
+    /** A start, one flag and a finish, all located, and a course already started on them. */
+    private function createRunningCourse(): EcoCourse
+    {
+        $parcours = new EcoParcours($this->teacher);
+        $parcours->setName('Bois de la Bastide');
+        $parcours->setCreatedBy($this->teacher);
+        $this->entityManager->persist($parcours);
+
+        foreach ([EcoCheckpointType::Start, EcoCheckpointType::Checkpoint, EcoCheckpointType::Finish] as $position => $type) {
+            $checkpoint = new EcoCheckpoint($parcours);
+            $checkpoint->setType($type);
+            $checkpoint->setPosition($position);
+            $checkpoint->setName($type->value);
+            $checkpoint->setShortCode(strtoupper(substr(bin2hex(random_bytes(5)), 0, 7)));
+            $checkpoint->locate(45.83 + $position / 1000, 1.26, new \DateTimeImmutable());
+            $parcours->addCheckpoint($checkpoint);
+            $this->entityManager->persist($checkpoint);
+            $this->checkpoints[$type->value] = $checkpoint;
+        }
+
+        $course = new EcoCourse($parcours, $this->teacher);
+        $course->setName('2NDE B — mercredi');
+        $course->setCode(strtoupper(substr(bin2hex(random_bytes(3)), 0, 6)));
+        $course->start(new \DateTimeImmutable());
+        $this->entityManager->persist($course);
+        $this->entityManager->flush();
+
+        return $course;
+    }
+}

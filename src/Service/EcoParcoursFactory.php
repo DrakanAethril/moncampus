@@ -10,16 +10,24 @@ use App\Entity\User;
 use App\Enum\EcoCheckpointType;
 use App\Repository\EcoCheckpointRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\String\Slugger\AsciiSlugger;
 
 /**
  * Builds a new EcoParcours together with its auto-added Start/Finish checkpoints and N regular
  * ones (screen 1d's note: "+ une balise Départ et une balise Arrivée ajoutées automatiquement") -
  * the only way an EcoParcours is ever created, so this is the single place short codes get
  * generated too.
+ *
+ * A short code is what validates a flag when typed by hand, so it must say nothing about the
+ * others: each one is drawn at random (EcoRandomCode), one character longer than a course code
+ * so the two never read alike - a runner holding both knows which one a field is asking for.
+ * The codes used to be spelt from the parcours' initials and the flag's number (« PVT-B03 »),
+ * and knowing one was knowing them all - a runner could validate the whole parcours from the
+ * start line.
  */
 class EcoParcoursFactory
 {
+    public const int SHORT_CODE_LENGTH = 7;
+
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly EcoCheckpointRepository $checkpointRepository,
@@ -32,13 +40,14 @@ class EcoParcoursFactory
         $parcours->setName($name);
         $parcours->setCreatedBy($teacher);
 
-        $prefix = $this->shortCodePrefix($name);
+        // The codes drawn by this call: none of them is flushed yet, so the repository cannot see them.
+        $drawn = [];
 
         $start = new EcoCheckpoint($parcours);
         $start->setType(EcoCheckpointType::Start);
         $start->setPosition(0);
         $start->setName('Départ');
-        $start->setShortCode($this->uniqueShortCode($prefix.'-DEP'));
+        $start->setShortCode($this->uniqueShortCode($drawn));
         $parcours->addCheckpoint($start);
 
         for ($number = 1; $number <= $checkpointCount; ++$number) {
@@ -46,7 +55,7 @@ class EcoParcoursFactory
             $checkpoint->setType(EcoCheckpointType::Checkpoint);
             $checkpoint->setPosition($number);
             $checkpoint->setName(\sprintf('Balise %d', $number));
-            $checkpoint->setShortCode($this->uniqueShortCode(\sprintf('%s-B%02d', $prefix, $number)));
+            $checkpoint->setShortCode($this->uniqueShortCode($drawn));
             $parcours->addCheckpoint($checkpoint);
         }
 
@@ -54,7 +63,7 @@ class EcoParcoursFactory
         $finish->setType(EcoCheckpointType::Finish);
         $finish->setPosition($checkpointCount + 1);
         $finish->setName('Arrivée');
-        $finish->setShortCode($this->uniqueShortCode($prefix.'-ARR'));
+        $finish->setShortCode($this->uniqueShortCode($drawn));
         $parcours->addCheckpoint($finish);
 
         $this->entityManager->persist($parcours);
@@ -62,33 +71,19 @@ class EcoParcoursFactory
         return $parcours;
     }
 
-    // 2-3 letter uppercase prefix from the parcours name's own words (e.g. "Parc Victor-Thuillat"
-    // -> "PVT"), falling back to the slugged name's first letters for a single-word name (e.g.
-    // "Bastide" -> "BAS") - purely a mnemonic for whoever reads the printed QR codes on 1f, not
-    // itself required to be unique (uniqueShortCode() below is what actually guarantees that).
-    private function shortCodePrefix(string $name): string
+    /**
+     * A code no checkpoint carries yet - neither in the database nor among the ones drawn for this
+     * same parcours. Old-style codes (« PVT-B03 ») cannot collide: they hold a hyphen.
+     *
+     * @param array<string, true> $drawn
+     */
+    private function uniqueShortCode(array &$drawn): string
     {
-        $words = preg_split('/[\s\-]+/', trim($name)) ?: [];
-        $words = array_values(array_filter($words, static fn (string $word): bool => '' !== $word));
+        do {
+            $code = EcoRandomCode::draw(self::SHORT_CODE_LENGTH);
+        } while (isset($drawn[$code]) || null !== $this->checkpointRepository->findOneBy(['shortCode' => $code]));
 
-        if (\count($words) >= 2) {
-            $initials = array_map(static fn (string $word): string => mb_strtoupper(mb_substr($word, 0, 1)), \array_slice($words, 0, 3));
-
-            return implode('', $initials);
-        }
-
-        $slug = (new AsciiSlugger())->slug($name)->upper()->toString();
-
-        return mb_substr($slug, 0, 3) ?: 'PAR';
-    }
-
-    private function uniqueShortCode(string $candidate): string
-    {
-        $code = $candidate;
-        $suffix = 2;
-        while (null !== $this->checkpointRepository->findOneBy(['shortCode' => $code])) {
-            $code = \sprintf('%s-%d', $candidate, $suffix++);
-        }
+        $drawn[$code] = true;
 
         return $code;
     }
