@@ -20,7 +20,6 @@ class GradebookPreviewTemplateTest extends KernelTestCase
     {
         self::bootKernel();
         $twig = self::getContainer()->get(Environment::class);
-        self::assertInstanceOf(Environment::class, $twig);
 
         $html = $twig->render('ecole_directe/_gradebook_preview.html.twig', [
             'evaluation' => ['id' => 77, 'coef' => 1],

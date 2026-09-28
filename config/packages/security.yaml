@@ -44,7 +44,7 @@ security:
             user_checker: App\Security\AccountStatusChecker
             custom_authenticators:
                 - App\Security\ApiLdapAuthenticator
-        # Every other /api/* route (API Platform resources): stateless, Bearer-JWT-authenticated,
+        # Every other /api/* route: stateless, Bearer-JWT-authenticated,
         # issued by api_login above - see config/packages/lexik_jwt_authentication.yaml.
         api:
             pattern: ^/api
