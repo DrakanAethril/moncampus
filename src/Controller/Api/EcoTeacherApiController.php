@@ -13,6 +13,8 @@ use App\Repository\EcoCheckpointRepository;
 use App\Repository\EcoCourseRepository;
 use App\Repository\EcoParcoursRepository;
 use App\Security\Voter\EcoParcoursVoter;
+use App\Service\Eco\EcoCheckpointTerrainReader;
+use App\Service\Eco\EcoToleranceAdvisor;
 use App\Service\EcoLiveTrackingService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -33,6 +35,18 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[RequiresFeature(Feature::Eco)]
 class EcoTeacherApiController extends AbstractController
 {
+    /**
+     * Seconds the IGN is given to read the ground under a flag just located: the teacher is
+     * standing in the wood waiting for the confirmation screen. Past it the flag is saved all the
+     * same, unread, and app:eco:read-terrain reads it with the parcours analysis.
+     */
+    private const float TERRAIN_READ_SECONDS = 4.0;
+
+    public function __construct(
+        private readonly EcoToleranceAdvisor $toleranceAdvisor,
+    ) {
+    }
+
     // Parcours still needing at least one checkpoint located (screen 4b's entry list) - a fully
     // Ready parcours has nothing left to do here, so it's excluded.
     #[Route(path: '/api/eco/teacher/parcours', name: 'api_eco_teacher_parcours', methods: ['GET'])]
@@ -65,7 +79,7 @@ class EcoTeacherApiController extends AbstractController
     // Called after the app scans a checkpoint's QR code on the ground (screen 4b -> 4c) - re-
     // scanning an already-located checkpoint simply overwrites its position (EcoCheckpoint::locate()).
     #[Route(path: '/api/eco/teacher/checkpoints/{id}/locate', name: 'api_eco_teacher_checkpoint_locate', methods: ['POST'])]
-    public function locate(int $id, Request $request, EntityManagerInterface $entityManager, EcoCheckpointRepository $checkpointRepository): JsonResponse
+    public function locate(int $id, Request $request, EntityManagerInterface $entityManager, EcoCheckpointRepository $checkpointRepository, EcoCheckpointTerrainReader $terrainReader): JsonResponse
     {
         $checkpoint = $checkpointRepository->find($id) ?? throw $this->createNotFoundException();
         $this->denyAccessUnlessGranted(EcoParcoursVoter::EDIT, $checkpoint->getParcours());
@@ -78,9 +92,18 @@ class EcoTeacherApiController extends AbstractController
         }
 
         $checkpoint->locate((float) $payload['latitude'], (float) $payload['longitude'], new \DateTimeImmutable());
+        // Saved first: a slow IGN must never cost the teacher the position they walked to.
         $entityManager->flush();
 
+        $terrainReader->read($checkpoint, self::TERRAIN_READ_SECONDS);
+
         $parcours = $checkpoint->getParcours();
+        // The last flag located, or one moved on a parcours already read: the analysis is (re)done.
+        // A re-scan on the same spot leaves the analysis current and asks for nothing.
+        if (($parcours->isReady() || null !== $parcours->getTerrainAnalysis()) && !$parcours->hasCurrentTerrainAnalysis()) {
+            $parcours->requestTerrainAnalysis(new \DateTimeImmutable());
+        }
+        $entityManager->flush();
 
         return $this->json([
             'checkpoint' => $this->formatCheckpoint($checkpoint),
@@ -148,6 +171,10 @@ class EcoTeacherApiController extends AbstractController
             'latitude' => $checkpoint->getLatitude(),
             'longitude' => $checkpoint->getLongitude(),
             'locatedAt' => $checkpoint->getLocatedAt()?->format(\DateTimeInterface::ATOM),
+            // The IGN's reading of the ground under the flag (screen 4c): null until it has answered.
+            'groundAltitude' => $checkpoint->getGroundAltitude(),
+            'canopyHeight' => $checkpoint->getCanopyHeight(),
+            'advisedToleranceMeters' => $this->toleranceAdvisor->adviceFor($checkpoint),
         ];
     }
 

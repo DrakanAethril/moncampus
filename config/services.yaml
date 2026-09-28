@@ -210,6 +210,22 @@ services:
             $proxmoxHttpClient: '@app.proxmox_http_client'
             $proxmoxTicketCache: '@cache.proxmox_ticket'
 
+    # --- e-CO: the IGN's Géoplateforme ---------------------------------------------------------
+    # Its own client for the same worker-mode reason as Proxmox's, but the numbers differ because
+    # so do the callers. The only call made during a request is the altimetry reading of a flag
+    # just located from the mobile app, which passes its own short max_duration; everything else -
+    # BD TOPO features, routes, a race's thousands of fixes - runs in app:eco:read-terrain, from
+    # the worker, where a WFS page that takes ten seconds (measured on 2026-09-28) is normal.
+    app.ign_http_client:
+        class: Symfony\Contracts\HttpClient\HttpClientInterface
+        factory: ['Symfony\Component\HttpClient\HttpClient', 'create']
+        arguments:
+            $defaultOptions: { base_uri: 'https://data.geopf.fr', timeout: 20, max_duration: 40, max_connect_duration: 5 }
+
+    App\Service\Ign\IgnGeoplateformeClient:
+        arguments:
+            $ignHttpClient: '@app.ign_http_client'
+
     # --- Courrier pro ---------------------------------------------------------------------
     # The Courrier pro storage and queues live in *another AWS account* than the uploads above
     # (the one carrying SES and the Route 53 zone) and in another region (eu-west-3, imposed by
@@ -274,3 +290,12 @@ services:
         arguments:
             $mailS3Client: '@mail.s3_client'
             $mailBucket: '%env(AWS_MAIL_BUCKET)%'
+
+when@test:
+    services:
+        # The test suite never reaches the Géoplateforme: an empty MockHttpClient throws on the
+        # first request, which every caller already treats as the IGN being unavailable. A test
+        # that needs answers builds the client itself around its own MockHttpClient.
+        app.ign_http_client:
+            class: Symfony\Component\HttpClient\MockHttpClient
+            arguments: [[]]

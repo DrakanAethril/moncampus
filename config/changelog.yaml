@@ -26,6 +26,19 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.28.2'
+      date: '2026-09-28'
+      summary: "Les cartes e-CO passent sur les fonds de l'IGN, et les statistiques de course tiennent désormais compte du relief, des chemins et de la forêt. Nouvelles versions Android : MonCampus 2.8.0, qui permet de saisir les mouvements de matériel depuis le téléphone, et e-CO 1.2.0."
+      entries:
+          - type: modification
+            title: "e-CO : cartes de l'IGN"
+            detail: "Plan IGN ou photographies aériennes, avec courbes de niveau et relief à superposer ; le fond choisi est retenu d'une visite à l'autre."
+          - type: nouveaute
+            title: "e-CO : le terrain dans les parcours et les statistiques de course"
+            detail: "Chaque parcours indique, tronçon par tronçon, la montée, la pente et la part en forêt, avec les accès utiles à la sécurité ; une balise sous couvert reçoit une tolérance conseillée. Une fois la course relue, dénivelé, effort, part hors chemin et vitesse sur et hors chemin s'appuient sur le relief réel plutôt que sur le seul GPS du téléphone."
+          - type: autre
+            title: "Applications mobiles : MonCampus 2.8.0 et e-CO 1.2.0"
+            detail: "MonCampus permet à l'administration et au support technique d'enregistrer un mouvement de matériel en tapant le code de son étiquette. e-CO affiche les cartes de l'IGN. À télécharger depuis la page Ressources."
     - version: '2026.09.28'
       date: '2026-09-28'
       summary: "La validation d'une progression ne bloque plus quand des séances changent de créneau. Les tâches automatiques de la plateforme sont désormais livrées et surveillées avec elle."

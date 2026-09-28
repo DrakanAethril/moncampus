@@ -1,0 +1,8 @@
+{# The wording of the IGN layer switcher, read by assets/controllers/eco_map.js - one attribute on
+   each e-CO map element, so the three maps name their layers the same way. #}
+data-eco-map-layers="{{ {
+    plan: 'ecoMapLayerPlanLabel'|trans,
+    photo: 'ecoMapLayerPhotoLabel'|trans,
+    contours: 'ecoMapLayerContoursLabel'|trans,
+    relief: 'ecoMapLayerReliefLabel'|trans,
+}|json_encode }}"

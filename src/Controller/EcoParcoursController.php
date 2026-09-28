@@ -12,6 +12,7 @@ use App\Enum\Feature;
 use App\Form\EcoParcoursCreateType;
 use App\Repository\EcoParcoursRepository;
 use App\Security\Voter\EcoParcoursVoter;
+use App\Service\Eco\EcoToleranceAdvisor;
 use App\Service\EcoParcoursFactory;
 use App\Service\FormValue;
 use App\Service\GotenbergClient;
@@ -24,6 +25,7 @@ use Endroid\QrCode\Writer\SvgWriter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\HttpFoundation\HeaderUtils;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -78,7 +80,7 @@ class EcoParcoursController extends AbstractController
     }
 
     #[Route(path: '/eco/parcours/{id}/configure', name: 'app_eco_parcours_configure')]
-    public function configure(int $id, Request $request, EntityManagerInterface $entityManager, EcoParcoursRepository $repository): Response
+    public function configure(int $id, Request $request, EntityManagerInterface $entityManager, EcoParcoursRepository $repository, EcoToleranceAdvisor $toleranceAdvisor): Response
     {
         $parcours = $this->findOrNotFound($repository, $id);
         $this->denyAccessUnlessGranted(EcoParcoursVoter::EDIT, $parcours);
@@ -109,7 +111,62 @@ class EcoParcoursController extends AbstractController
         return $this->render('eco/parcours_configure.html.twig', [
             'parcours' => $parcours,
             'mapCheckpoints' => $this->mapCheckpoints($parcours),
+            'terrain' => $parcours->getTerrainAnalysis(),
+            'terrainIsCurrent' => $parcours->hasCurrentTerrainAnalysis(),
+            'toleranceAdvice' => $this->toleranceAdvice($parcours, $toleranceAdvisor),
         ]);
+    }
+
+    /**
+     * « Analyser le terrain »: asks app:eco:read-terrain for the IGN's reading of the parcours. It
+     * is not done here - the BD TOPO answers in seconds per layer - so the screen says it is under
+     * way and reloads itself once it is written (eco_terrain_pending_controller.js).
+     */
+    #[Route(path: '/eco/parcours/{id}/terrain', name: 'app_eco_parcours_terrain_request', methods: ['POST'])]
+    public function requestTerrain(int $id, Request $request, EntityManagerInterface $entityManager, EcoParcoursRepository $repository): Response
+    {
+        $parcours = $this->findOrNotFound($repository, $id);
+        $this->denyAccessUnlessGranted(EcoParcoursVoter::EDIT, $parcours);
+
+        if (!$this->isCsrfTokenValid('eco_parcours_terrain', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        if ($parcours->getLocatedCheckpointCount() > 0) {
+            $parcours->requestTerrainAnalysis(new \DateTimeImmutable());
+            $entityManager->flush();
+            $this->addFlash('success', 'ecoTerrainRequestedFlashMessage');
+        }
+
+        return $this->redirectToRoute('app_eco_parcours_configure', ['id' => $parcours->getId(), '_fragment' => 'eco-terrain']);
+    }
+
+    // Polled by the configuration screen while an analysis is pending: it reloads once this says no.
+    #[Route(path: '/eco/parcours/{id}/terrain/status', name: 'app_eco_parcours_terrain_status', methods: ['GET'])]
+    public function terrainStatus(int $id, EcoParcoursRepository $repository): JsonResponse
+    {
+        $parcours = $this->findOrNotFound($repository, $id);
+        $this->denyAccessUnlessGranted(EcoParcoursVoter::EDIT, $parcours);
+
+        return $this->json(['pending' => null !== $parcours->getTerrainRequestedAt()]);
+    }
+
+    /**
+     * The tolerance each flag should have under its canopy, when it has less.
+     *
+     * @return array<int, int> checkpoint id => advised metres
+     */
+    private function toleranceAdvice(EcoParcours $parcours, EcoToleranceAdvisor $advisor): array
+    {
+        $advice = [];
+        foreach ($parcours->getCheckpoints() as $checkpoint) {
+            $metres = $advisor->adviceFor($checkpoint);
+            if (null !== $metres) {
+                $advice[(int) $checkpoint->getId()] = $metres;
+            }
+        }
+
+        return $advice;
     }
 
     /**

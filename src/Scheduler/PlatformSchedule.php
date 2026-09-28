@@ -59,6 +59,8 @@ final class PlatformSchedule implements ScheduleProviderInterface
         // them: the screen's own polling loop is never what carries the work.
         'app:vm-batch:advance' => '* * * * *',
         'app:ldap:apply-account-requests' => '* * * * *',
+        // e-CO: what the IGN says about a parcours and about a closed race, too slow for a request.
+        'app:eco:read-terrain' => '* * * * *',
         // The hypervisors' badges and the address ranges, refreshed off the page render. Offset
         // from each other so the two never start in the same minute.
         'app:proxmox:check' => '*/5 * * * *',

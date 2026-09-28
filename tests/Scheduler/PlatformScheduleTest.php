@@ -38,6 +38,7 @@ class PlatformScheduleTest extends KernelTestCase
             'app:mail:consume-events' => '* * * * *',
             'app:vm-batch:advance' => '* * * * *',
             'app:ldap:apply-account-requests' => '* * * * *',
+            'app:eco:read-terrain' => '* * * * *',
             'app:proxmox:check' => '*/5 * * * *',
             'app:proxmox:scan-addresses' => '2-59/5 * * * *',
             'app:mail:reconcile' => '30 2 * * *',

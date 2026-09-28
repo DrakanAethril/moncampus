@@ -48,9 +48,21 @@
                                     <td>
                                         {% set isOverridden = checkpoint.toleranceMeters != constant('App\\Entity\\EcoCheckpoint::DEFAULT_TOLERANCE_METERS') %}
                                         <div class="input-group input-group-flat" style="max-width: 110px;">
-                                            <input type="number" min="1" name="tolerance[{{ checkpoint.id }}]" form="eco-parcours-configure-form" value="{{ checkpoint.toleranceMeters }}" class="form-control"{% if isOverridden %} style="border-color: var(--tblr-yellow); background: var(--tblr-yellow-lt);"{% endif %}>
+                                            <input type="number" min="1" id="eco-tolerance-{{ checkpoint.id }}" name="tolerance[{{ checkpoint.id }}]" form="eco-parcours-configure-form" value="{{ checkpoint.toleranceMeters }}" class="form-control"{% if isOverridden %} style="border-color: var(--tblr-yellow); background: var(--tblr-yellow-lt);"{% endif %}>
                                             <span class="input-group-text">m</span>
                                         </div>
+                                        {# The canopy over this flag calls for a wider radius than it has (EcoToleranceAdvisor):
+                                           one click fills the field, the teacher still saves. #}
+                                        {% if toleranceAdvice[checkpoint.id] is defined %}
+                                            <button type="button" class="eco-tolerance-advice"
+                                                    data-controller="eco-tolerance-advice"
+                                                    data-action="eco-tolerance-advice#apply"
+                                                    data-eco-tolerance-advice-input-param="eco-tolerance-{{ checkpoint.id }}"
+                                                    data-eco-tolerance-advice-meters-param="{{ toleranceAdvice[checkpoint.id] }}"
+                                                    title="{{ 'ecoToleranceAdviceHintText'|trans({'%height%': checkpoint.canopyHeight|round}) }}">
+                                                {{- 'ecoToleranceAdviceLabel'|trans({'%meters%': toleranceAdvice[checkpoint.id]}) -}}
+                                            </button>
+                                        {% endif %}
                                     </td>
                                     <td>
                                         {% if checkpoint.located %}
@@ -78,7 +90,8 @@
                          data-controller="eco-checkpoint-map"
                          data-eco-checkpoint-map-checkpoints-value="{{ mapCheckpoints|json_encode }}"
                          data-eco-checkpoint-map-expand-label-value="{{ 'ecoResultsMapExpandLabel'|trans }}"
-                         data-eco-checkpoint-map-collapse-label-value="{{ 'ecoResultsMapCollapseLabel'|trans }}"></div>
+                         data-eco-checkpoint-map-collapse-label-value="{{ 'ecoResultsMapCollapseLabel'|trans }}"
+                         {{ include('eco/_map_layers_attribute.html.twig') }}></div>
                 {% else %}
                     <div class="card-body text-secondary">{{ 'ecoCheckpointMapEmptyText'|trans }}</div>
                 {% endif %}
@@ -88,7 +101,7 @@
                     {% if toLocate > 0 %}
                         <span class="eco-map__legend-item"><span class="eco-map__legend-swatch eco-map__legend-swatch--tolocate"></span>{{ 'ecoCheckpointMapToLocateLegendLabel'|trans({'%count%': toLocate}) }}</span>
                     {% endif %}
-                    <span class="ms-auto">© OpenStreetMap</span>
+                    <span class="ms-auto">{{ 'ecoMapAttributionText'|trans }}</span>
                 </div>
             </div>
             <div class="cm-note">
@@ -104,4 +117,7 @@
             <button type="submit" class="btn btn-primary">{{ 'submitSaveAction'|trans }}</button>
         </twig:Cm:ActionBar>
     </form>
+
+    {# After the save bar, not inside its form: the analysis has a form of its own. #}
+    {{ include('eco/_parcours_terrain.html.twig') }}
 {% endblock %}

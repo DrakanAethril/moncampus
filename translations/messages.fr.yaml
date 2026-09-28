@@ -3349,7 +3349,61 @@ ecoLiveMapSosLabel: '%pseudo% · SOS'
 ecoLiveMapLegendRacingLabel: 'En course'
 ecoLiveMapLegendStaleLabel: 'Immobile / sans signal'
 ecoLiveMapLegendSosLabel: 'SOS'
-ecoLiveMapAttributionText: '© OpenStreetMap · rafraîchi toutes les 10 s'
+ecoLiveMapAttributionText: '© IGN – Géoplateforme · rafraîchi toutes les 10 s'
+ecoMapAttributionText: '© IGN – Géoplateforme'
+ecoMapLayerPlanLabel: 'Plan IGN'
+ecoMapLayerPhotoLabel: 'Photographies aériennes'
+ecoMapLayerContoursLabel: 'Courbes de niveau'
+ecoMapLayerReliefLabel: 'Relief LiDAR HD'
+ecoResultsElevationSourceIgnLabel: 'IGN'
+ecoResultsElevationSourceGpsLabel: 'GPS'
+ecoResultsEffortLabel: 'Effort'
+ecoResultsOffPathLabel: 'Hors chemin'
+ecoResultsPathSpeedsLabel: 'Vitesse chemin / hors chemin'
+ecoResultsForestLabel: 'En forêt'
+ecoResultsTerrainPendingText: "La lecture IGN de cette course (dénivelé sur le relief, part hors chemin, forêt) est en cours : elle apparaît quelques minutes après la clôture."
+ecoResultsLegPathRatioColumnLabel: 'vs chemins'
+ecoResultsLegPathRatioHintText: "Distance parcourue rapportée au plus court trajet par les routes et sentiers de l'IGN. Sous ×1, le coureur a coupé à travers."
+ecoResultsLegClimbColumnLabel: 'Montée'
+ecoResultsLegOffPathColumnLabel: 'Hors chemin'
+ecoResultsLegShortestPathTitle: 'Plus court par les chemins : %meters% m'
+ecoResultsMapShortestPathLabel: 'Plus court par les chemins : %meters% m'
+ecoResultsMapOffPathLabel: 'Hors chemin : %percent% %'
+ecoStatsClimbColumnLabel: 'D+ (IGN)'
+ecoStatsOffPathColumnLabel: 'Hors chemin'
+ecoStatsSegmentShortestPathColumnLabel: 'Chemins'
+ecoStatsSegmentShortestPathHintText: "Plus court trajet à pied entre les deux balises, par les routes et sentiers de l'IGN."
+ecoToleranceAdviceLabel: 'Conseillé : %meters% m'
+ecoToleranceAdviceHintText: "Végétation de %height% m autour de la balise : sous le couvert, le GPS d'un téléphone dérive davantage."
+ecoTerrainRequestedFlashMessage: "L'analyse du terrain est demandée : elle sera prête d'ici une à deux minutes."
+ecoTerrainHeading: 'Lecture du terrain (IGN)'
+ecoTerrainPendingText: "Analyse en cours auprès de l'IGN… la page se met à jour d'elle-même."
+ecoTerrainAnalyzedAtText: 'Analysé le %date%'
+ecoTerrainStaleText: 'une balise a été déplacée depuis, relancez l’analyse'
+ecoTerrainNeverText: "Pas encore analysé : relief, chemins, forêt et accès des secours, d'après les données de l'IGN."
+ecoTerrainAnalyzeAction: 'Analyser le terrain'
+ecoTerrainReanalyzeAction: "Relancer l'analyse"
+ecoTerrainPlaceLabel: 'Lieu :'
+ecoTerrainNearbyPlaceText: 'près de « %place% »'
+ecoTerrainPublicForestText: "Le parcours passe en forêt publique (%forests%) : une course organisée y demande l'accord de son gestionnaire (ONF ou collectivité propriétaire)."
+ecoTerrainIncompleteText: "Analyse incomplète : l'IGN n'a pas répondu pour une partie des tronçons. Relancez-la plus tard."
+ecoTerrainLegColumnLabel: 'Tronçon'
+ecoTerrainStraightColumnLabel: 'Ligne droite'
+ecoTerrainPathColumnLabel: 'Par les chemins'
+ecoTerrainPathHintText: "Plus court trajet à pied par les routes et sentiers de la BD TOPO. Un rapport élevé : le tronçon se joue à travers bois."
+ecoTerrainClimbColumnLabel: 'Montée / descente'
+ecoTerrainSlopeColumnLabel: 'Pente max.'
+ecoTerrainSlopeHintText: "Pente la plus forte sur 20 m le long de la ligne droite (relief de l'IGN)."
+ecoTerrainForestColumnLabel: 'En forêt'
+ecoTerrainEffortColumnLabel: 'Effort'
+ecoTerrainEffortHintText: 'Kilomètre-effort de la ligne droite : distance + 1 km par 100 m de montée.'
+ecoTerrainSafetyHeading: 'Fiche sécurité'
+ecoTerrainAltitudeColumnLabel: 'Altitude'
+ecoTerrainCanopyColumnLabel: 'Végétation'
+ecoTerrainCanopyHintText: "Hauteur médiane de la végétation autour de la balise (LiDAR HD de l'IGN)."
+ecoTerrainRoadColumnLabel: 'Route carrossable'
+ecoTerrainWaterColumnLabel: "Cours d'eau / plan d'eau"
+ecoTerrainNoteText: "Données IGN – Géoplateforme (BD TOPO, RGE ALTI, LiDAR HD), Licence Ouverte Etalab 2.0. Les distances de la fiche sécurité sont à vol d'oiseau depuis chaque balise."
 ecoLiveRunnerColumnLabel: 'Coureur'
 ecoLiveCheckpointsColumnLabel: 'Balises'
 ecoLiveLastSignalColumnLabel: 'Dernier signal'

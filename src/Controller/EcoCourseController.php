@@ -601,6 +601,14 @@ class EcoCourseController extends AbstractController
             ]);
         }
 
+        if (null !== $leg['shortestPathMeters']) {
+            $lines[] = $translator->trans('ecoResultsMapShortestPathLabel', ['%meters%' => round($leg['shortestPathMeters'])]);
+        }
+
+        if (null !== $leg['offPathShare']) {
+            $lines[] = $translator->trans('ecoResultsMapOffPathLabel', ['%percent%' => round($leg['offPathShare'] * 100)]);
+        }
+
         return $lines;
     }
 
@@ -750,7 +758,7 @@ class EcoCourseController extends AbstractController
 
         $response = new StreamedResponse(function () use ($stats): void {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['Coureur', 'Balises', 'Total balises', 'Temps (s)', 'Ecart au 1er (s)', 'Distance (m)', 'Ecart au meilleur (m)', "Sorties d'app", 'Erreurs de scan']);
+            fputcsv($handle, ['Coureur', 'Balises', 'Total balises', 'Temps (s)', 'Ecart au 1er (s)', 'Distance (m)', 'Ecart au meilleur (m)', "Sorties d'app", 'Erreurs de scan', 'Denivele positif (m)', 'Source du denivele', 'Part hors chemin (%)']);
             foreach ($stats['runners'] as $row) {
                 fputcsv($handle, [
                     $row['pseudo'],
@@ -762,6 +770,9 @@ class EcoCourseController extends AbstractController
                     null !== $row['gapMeters'] ? round($row['gapMeters']) : '',
                     $row['appExitCount'],
                     $row['scanErrorCount'],
+                    null !== $row['elevationGain'] ? round($row['elevationGain']) : '',
+                    $row['elevationSource'] ?? '',
+                    null !== $row['offPathShare'] ? round($row['offPathShare'] * 100) : '',
                 ]);
             }
             fclose($handle);

@@ -5980,6 +5980,26 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .eco-map__legend-swatch--worst { background: #b8493d; }
 .eco-map__legend-swatch--best { background: #1f7a54; }
 
+/* IGN layer switcher (eco_map.js). Leaflet's own toggle is a PNG next to its CSS, which the vendored
+   stylesheet does not carry: the stack of sheets is drawn here instead. */
+/* Three classes: the Leaflet stylesheet is imported by the map controllers, after this one, and its
+   own `.leaflet-retina .leaflet-control-layers-toggle` would otherwise win on order. */
+.eco-map.leaflet-container .leaflet-control-layers-toggle {
+  width: 30px; height: 30px; background-size: 18px 18px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2312507e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3 2 8l10 5 10-5-10-5Z'/%3E%3Cpath d='m2 13 10 5 10-5'/%3E%3Cpath d='m2 17.5 10 5 10-5'/%3E%3C/svg%3E");
+}
+.eco-map.leaflet-container .leaflet-control-layers-expanded { font: 400 12.5px var(--cm-font-ui); color: var(--cm-text); }
+/* The LiDAR shading is opaque grey: multiplied, it darkens the relief into the base map instead of
+   hiding it. */
+.eco-map__relief { mix-blend-mode: multiply; }
+
+/* « Conseillé : 30 m » under a flag's tolerance (parcours screen): a link-like button, gold like the
+   overridden field it fills. */
+.eco-tolerance-advice {
+  display: block; margin-top: 4px; padding: 0; border: 0; background: none;
+  font: 600 11.5px var(--cm-font-ui); color: var(--cm-gold-tx); text-decoration: underline dotted; cursor: pointer;
+}
+
 /* ---------------------------------------------------------------------------------------------
    e-CO - course statistics (handoff screen 1j): the eight headline tiles, the collapsible Coureurs
    block with its filter and its sorts, and the two Segments / Balises tables.
