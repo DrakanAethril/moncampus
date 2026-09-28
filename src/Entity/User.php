@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use ApiPlatform\Metadata\ApiResource;
-use ApiPlatform\Metadata\Get;
 use App\Repository\UserRepository;
-use App\State\CurrentUserProvider;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -17,21 +14,7 @@ use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
-// Only a single custom "/me" operation is exposed for now (the mobile app's home screen), not
-// the full CRUD set API Platform would otherwise generate - there's no product need yet for the
-// API to browse/edit arbitrary users, and exposing that surface prematurely would need its own
-// access-control review. See CurrentUserProvider: "me" has no id in the URL, it's resolved from
-// whichever User the api firewall's JWT authenticated as.
-#[ApiResource(
-    operations: [
-        new Get(
-            uriTemplate: '/me',
-            security: "is_granted('ROLE_USER')",
-            provider: CurrentUserProvider::class,
-        ),
-    ],
-    normalizationContext: ['groups' => ['user:read']],
-)]
+// The `user:read` group is what GET /api/me answers (App\Controller\Api\ProfileController::me()).
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
 #[ORM\UniqueConstraint(name: 'uniq_user_username', columns: ['username'])]

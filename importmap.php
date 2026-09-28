@@ -31,7 +31,6 @@ return [
     'datatables.net-bs5' => ['version' => '2.3.8'],
     'datatables.net' => ['version' => '2.3.8'],
     'datatables.net-bs5/css/dataTables.bootstrap5.min.css' => ['version' => '2.3.8', 'type' => 'css'],
-    'tslib' => ['version' => '2.5.0'],
     'tom-select' => ['version' => '2.6.2'],
     '@orchidjs/sifter' => ['version' => '1.1.0'],
     '@orchidjs/unicode-variants' => ['version' => '1.1.2'],
