@@ -208,6 +208,9 @@
         {% set claude_connector_card %}{{ render(controller('App\\Controller\\ProfileClaudeConnectorController::card')) }}{% endset %}
     {% endif %}
 
+    {# The phones signed in to the mobile API - empty, and so absent, until one is. #}
+    {% set mobile_sessions_card %}{{ render(controller('App\\Controller\\ProfileMobileSessionController::card')) }}{% endset %}
+
     <div class="row g-3 mt-0">
         {% if can_use_messaging %}
             <div class="col-lg-6">
@@ -216,6 +219,7 @@
                     <div class="col-12">{{ change_password_card }}</div>
                     {% if is_granted('ROLE_ADMIN') %}<div class="col-12">{{ ssh_keys_card }}</div>{% endif %}
                     {% if claude_connector_card is defined %}<div class="col-12">{{ claude_connector_card }}</div>{% endif %}
+                    {% if mobile_sessions_card|trim is not empty %}<div class="col-12">{{ mobile_sessions_card }}</div>{% endif %}
                 </div>
             </div>
             <div class="col-lg-6">
@@ -242,6 +246,7 @@
             <div class="col-lg-6">{{ change_password_card }}</div>
             {% if is_granted('ROLE_ADMIN') %}<div class="col-lg-6">{{ ssh_keys_card }}</div>{% endif %}
             {% if claude_connector_card is defined %}<div class="col-lg-6">{{ claude_connector_card }}</div>{% endif %}
+            {% if mobile_sessions_card|trim is not empty %}<div class="col-lg-6">{{ mobile_sessions_card }}</div>{% endif %}
         {% endif %}
     </div>
 {% endblock %}

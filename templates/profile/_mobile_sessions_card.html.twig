@@ -1,0 +1,27 @@
+{# « Mon profil » > Applications mobiles connectées (App\Controller\ProfileMobileSessionController::card).
+   Rendered only when at least one phone holds a session. #}
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">{{ 'mobileSessionsCardTitle'|trans }}</h2>
+    </div>
+    <div class="card-body">
+        <p class="text-secondary">{{ 'mobileSessionsCardHelp'|trans }}</p>
+        <div class="list-group list-group-flush">
+            {% for session in sessions %}
+                <div class="list-group-item d-flex align-items-center gap-3 px-0">
+                    <div class="flex-fill">
+                        <div class="fw-medium">{{ session.app.labelKey|trans }}</div>
+                        <div class="text-secondary small">
+                            {{ 'mobileSessionSignedInOnLabel'|trans({'%date%': session.createdAt|localized_date('d MMMM y')}) }}
+                            · {{ 'mobileSessionLastUsedLabel'|trans({'%date%': session.lastUsedAt|localized_date('d MMMM y, HH:mm')}) }}
+                        </div>
+                    </div>
+                    <form method="post" action="{{ path('app_profile_mobile_session_revoke', {id: session.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('profile_mobile_session_revoke') }}">
+                        <button type="submit" class="btn btn-link p-0 text-danger">{{ 'mobileSessionRevokeAction'|trans }}</button>
+                    </form>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>

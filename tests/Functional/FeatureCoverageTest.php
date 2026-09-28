@@ -61,6 +61,9 @@ class FeatureCoverageTest extends KernelTestCase
                 'app_login',
                 'api_login',
                 'api_magic_login',
+                // The mobile apps' refresh and sign-out: the caller's JWT has run out, so there is
+                // no account to resolve until the refresh token has been read.
+                'api_token_',
                 // The three PublicContactEmailController screens, reached from a link in an e-mail
                 // and therefore possibly by somebody who is not signed in.
                 'app_profile_contact_email_confirm',
