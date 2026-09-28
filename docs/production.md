@@ -296,46 +296,87 @@ real inbox.
    you've also individually verified as recipients. Request production access in the SES console
    before sending to real, unverified recipients (e.g. real staff/student addresses).
 
-## Collecting Courrier pro inbound mail (cron)
+## Scheduled tasks (the `worker` service)
+
+Everything the platform does on its own, on a clock, is declared in **one place**:
+`App\Scheduler\PlatformSchedule`. The `worker` service of `compose.prod.yaml` consumes that schedule
+(`messenger:consume scheduler_default`) and runs each task - the same console commands a crontab on
+this host used to `docker compose exec` into `php`. **There is no crontab any more**, and a deploy
+starts the worker by itself: `up --wait` brings it up with the rest.
+
+| Task | When (Paris time) | Section |
+|---|---|---|
+| `app:mail:consume-inbound`, `app:mail:consume-events` | every minute | Courrier pro, below |
+| `app:vm-batch:advance` | every minute | CLAUDE.md, « Infrastructure et machines virtuelles » |
+| `app:ldap:apply-account-requests` | every minute | Closing the loop on account operations |
+| `app:proxmox:check` | every 5 minutes | the command's own docblock |
+| `app:proxmox:scan-addresses` | every 5 minutes, offset by 2 | the command's own docblock |
+| `app:mail:reconcile` | 02:30 | Courrier pro, below |
+| `app:uploads:purge` | 03:00 | the command's own docblock (design/validated/object-deletion.md) |
+| `app:purge-platform-activity` | 03:15 | Retention |
+| `app:counters:recompute` | 03:45 | Recomputing the stored counters |
+| `app:game:close-month` | 04:30 | Closing the campus game's months |
+
+What changed, and what to know:
+
+- **A failure is heard.** A task that exits non-zero is logged at *error* level with the end of its
+  output, so it reaches Discord like any other production error
+  (`App\Scheduler\ScheduledCommandLogger`). A task that succeeds leaves one notice line:
+  `docker compose -f compose.yaml -f compose.prod.yaml logs worker` is what replaces the
+  `/var/log/moncampus-*.log` files (rotated by Docker at 5 x 10 MB).
+- **One task at a time.** The worker runs the tasks one after the other, so two of them never
+  overlap - and a slow nightly task delays the every-minute ones by its own duration, after which
+  each of those runs once, not once per minute it missed.
+- **The worker restarts itself every hour** (`--time-limit=3600`, brought back by `restart:
+  unless-stopped`) and whenever it passes 192 MB. The schedule is *stateful*: a task whose minute
+  fell during the restart runs when the worker comes back. A redeploy starts a fresh container with
+  no such memory - a nightly task is only skipped if the deploy happens at its very minute.
+- **Locks are shared with `php`.** Both containers mount the `app_locks` volume and read the same
+  `LOCK_DSN` (`flock:///app/var/lock`), so a command run by hand still refuses to start on top of the
+  scheduled one (« Une autre exécution est déjà en cours. »), and the VMID lock of a machine
+  creation is the same for the batch screen and for `app:vm-batch:advance`.
+- **Running a task by hand** is unchanged: `docker compose -f compose.yaml -f compose.prod.yaml exec
+  -T php bin/console <command>` - `--dry-run` where the command has one.
+- **`MERCURE_URL` must be set in the worker's environment** (ux-turbo pings Mercure on every flush,
+  CLI included), which is why its `environment:` repeats `php`'s. Keep the two in step.
+
+**On the first deploy of the worker, empty the host crontab** of every
+`docker compose … exec -T php bin/console app:…` line (`crontab -e` as the user that owns the
+deploy directory). Until then each task runs twice. The shared locks keep the two runs from
+overlapping, and every task tolerates a second pass, but it is noise, not a design.
+
+## Collecting Courrier pro inbound mail (scheduled)
 
 Students' school mailboxes (`@etu.beaupeyrat.org`) are captured by SES, dropped as raw `.eml`
 files into an S3 bucket, and announced on an SQS queue. Nothing is pushed at this application:
 `app:mail:consume-inbound` pulls from that queue, so an unreachable server simply means messages
 wait (14-day queue retention) rather than being lost.
 
-Run it **from cron, not as a long-running service**. The flow is a few dozen mails a day, not a
-few a second, so a minute of latency is invisible - and in exchange there is no resident process
-to supervise, no memory leak to bound and no restart policy to tune. An idle run costs about
-three seconds and exits.
-
-On the production host, as the user that owns the deploy directory:
-
-```cron
-* * * * * cd /srv/moncampus && docker compose -f compose.yaml -f compose.prod.yaml exec -T php bin/console app:mail:consume-inbound >> /var/log/moncampus-mail.log 2>&1
-```
+It runs **every minute, from the schedule** (see « Scheduled tasks » above), and so does
+`app:mail:consume-events` for SES's delivery events. The flow is a few dozen mails a day, not a
+few a second, so a minute of latency is invisible. Each pass drains the queue and returns; the
+command is not a resident consumer of its own, and SQS rather than Messenger carries the retry
+semantics (see the command's docblock).
 
 Notes:
 
-- **`exec`, not `run`** - `run` would spin up a throwaway container every minute, which costs far
-  more than the process it hosts. `exec` reuses the running `php` container.
-- **No `flock` needed in the crontab.** The command locks itself (`LockableTrait`, `LOCK_DSN=flock`),
-  so a run that overlaps a slow predecessor exits immediately with "Une autre exécution est déjà en
-  cours." Because every run `exec`s into the same `php` container, they share the same lock file.
-  Locking inside the command rather than in the crontab also protects manual runs.
+- **The command locks itself** (`App\Command\SharedLockableTrait`, on the shared `LOCK_DSN`), so a
+  manual run that lands on a scheduled one exits immediately with "Une autre exécution est déjà en
+  cours."
 - **Failures are meant to stay in the queue.** A message is deleted only after its database write
   succeeds; five failed attempts move it to the dead-letter queue, where a CloudWatch alarm on
   queue depth reports it. Do not "fix" a failing run by purging the queue.
 - Requires `AWS_MAIL_*` and `MAIL_STUDENT_DOMAIN` in `.env.prod.local` (see
-  `.env.prod.local.example`). Without them the command exits cleanly with a warning, so installing
-  the cron entry before the credentials is harmless.
-- **`app:mail:reconcile` is the safety net behind this one**, nightly: it lists what SES dropped
+  `.env.prod.local.example`). Without them the command exits cleanly with a warning, so the schedule
+  running it before the credentials exist is harmless.
+- **`app:mail:reconcile` is the safety net behind this one**, nightly at 02:30: it lists what SES dropped
   under `incoming/` and replays whatever never reached the database, S3 being the source of truth.
   A pass that had to replay anything **rings the support Discord channel** (it logs at *error*
   level, which is this platform's only alerting threshold) - the messages are recovered either way,
   but the alert is what says the normal path above dropped them. `--since` bounds the scan, seven
   days by default; widen it after an incident, the run costs nothing on objects already stored.
 
-## Retention: platform log, console transcripts, jobboard offers and OAuth secrets (cron)
+## Retention: platform log, console transcripts, jobboard offers and OAuth secrets (scheduled)
 
 `app:purge-platform-activity` deletes the families of rows that nothing else ever removes:
 
@@ -361,25 +402,25 @@ of them would be a handful of megabytes. The argument is that the journal at
 command never runs, that line is a promise nothing keeps, and an interface that misstates what it
 does is worse than one that keeps less.
 
-Once a day is plenty, off-peak. On the production host, as the user that owns the deploy directory:
-
-```cron
-15 3 * * * cd /srv/moncampus && docker compose -f compose.yaml -f compose.prod.yaml exec -T php bin/console app:purge-platform-activity >> /var/log/moncampus-purge.log 2>&1
-```
+Once a day is plenty, off-peak: **03:15, from the schedule** (see « Scheduled tasks » above). It
+had never been wired to the crontab; the schedule is what finally runs it.
 
 Notes:
 
-- **Count before deleting the first time.** `--dry-run` reports what each threshold would remove
-  without touching anything, which on a host where this has never run is worth reading once: the
-  bulk of it will be `PlatformActivity` rows nobody has purged since the table was created.
-- **Every retention is an option**, `--months`, `--console-days` and `--jobboard-months`, so a
-  shorter or longer window is a crontab edit rather than a deploy. The defaults are the documented
-  ones (`--months` covers both the platform log and the supervision journal).
-- **No `flock` needed, and no `LockableTrait` either** - unlike the three `app:mail:*` commands, this
-  one does not lock itself. At one run a day two of them cannot meet; that is the only reason it is
-  safe, so a schedule tighter than the command's own runtime would need the lock added first.
+- **Count before the first deploy that schedules it.** `--dry-run` reports what each threshold
+  would remove without touching anything, and on a host where this has never run it is worth
+  reading once: the bulk of it will be `PlatformActivity` rows nobody has purged since the table was
+  created.
+  `docker compose -f compose.yaml -f compose.prod.yaml exec -T php bin/console app:purge-platform-activity --dry-run`
+- **Every retention is an option**, `--months`, `--console-days` and `--jobboard-months`. The
+  schedule runs the defaults, which are the documented ones (`--months` covers both the platform
+  log and the supervision journal); a different window is a change to
+  `App\Scheduler\PlatformSchedule`, and therefore a deploy.
+- **It does not lock itself**, unlike the `app:mail:*` commands. The worker runs one task at a time,
+  so two scheduled runs cannot meet; a manual run started during the 03:15 one could, and would
+  only delete the same rows twice.
 - Deleting is all it does: nothing is written, nothing is announced, and a run on an empty database
-  exits in a few milliseconds. Installing the entry before there is anything to purge is harmless.
+  exits in a few milliseconds.
 
 ## Opening the Claude connector
 
@@ -407,7 +448,7 @@ To test end to end from the development machine, Claude Code speaks to a local s
 `claude mcp add --transport http moncampus https://localhost/mcp`. claude.ai itself cannot reach a
 laptop - it needs the production host, or a temporary tunnel.
 
-## Closing the loop on account operations (cron)
+## Closing the loop on account operations (scheduled)
 
 `app:ldap:apply-account-requests` reads the directory back for every `ldap_manage_account` request
 the consumer script on the domain controller has finished with, and draws the consequence on this
@@ -419,16 +460,13 @@ administrator who requests a rename and shuts the laptop must not be the reason 
 reaches the application. It is the same lesson as `app:vm-batch:advance`: the browser's own loop is
 never what carries the work.
 
-Every minute, matching the rate the queue is drained at on the domain controller:
-
-```cron
-* * * * * cd /srv/moncampus && docker compose -f compose.yaml -f compose.prod.yaml exec -T php bin/console app:ldap:apply-account-requests >> /var/log/moncampus-ldap-account.log 2>&1
-```
+Every minute, from the schedule (see « Scheduled tasks » above), matching the rate the queue is
+drained at on the domain controller.
 
 Notes:
 
-- **No `flock` needed**, same as the `app:mail:*` commands: it locks itself (`LockableTrait`), and
-  every run `exec`s into the same `php` container, so they share the lock file.
+- **It locks itself**, same as the `app:mail:*` commands (`SharedLockableTrait`, on the lock volume
+  `php` and `worker` share), so a manual run cannot land on top of the scheduled one.
 - **It invents nothing.** A directory that cannot be reached leaves the row exactly as it was, with
   a note saying so, and the next minute tries again. `applied_at` is what makes a second pass a
   no-op, which is what lets it cross the fiche's own polling safely.
@@ -440,10 +478,10 @@ Notes:
 - **The three scripts and the consumer live on the domain controller**, not here - see the
   `Beaupeyrat-scripts` repository (`samba/ldap/`). A queue that fills while nothing drains it shows
   up as rows stuck at « En attente »; that pile-up is the symptom to recognise.
-- Requires nothing else. A run with an empty queue exits in a few milliseconds, so installing the
-  entry before the consumer exists is harmless.
+- Requires nothing else. A run with an empty queue exits in a few milliseconds, so the schedule
+  running it before the consumer exists is harmless.
 
-## Closing the campus game's months (cron)
+## Closing the campus game's months (scheduled)
 
 `app:game:close-month` closes every **calendar month** that has ended and that a formation has asked
 to be ranked, in every formation where the game is running, and pays the month's podium
@@ -461,27 +499,25 @@ the level frames that total has opened. It has to happen whether or not anybody 
 morning, and it must happen exactly once.
 
 Once a day is the right rate: what it reacts to is the calendar, and the calendar moves once a day.
-
-```cron
-30 4 * * * cd /srv/moncampus && docker compose -f compose.yaml -f compose.prod.yaml exec -T php bin/console app:game:close-month >> /var/log/moncampus-game.log 2>&1
-```
+It runs at 04:30, from the schedule (see « Scheduled tasks » above).
 
 Notes:
 
-- **`MERCURE_URL` must be set in this context.** `symfony/ux-turbo` pings Mercure on *every* flush,
-  CLI included, and this command writes a great deal. The failure shows up at flush time rather than
-  at startup, which is what makes it worth stating here rather than discovering it on a closure night.
-- **No `flock` needed**: it locks itself (`LockableTrait`), like the `app:mail:*` commands.
+- **`MERCURE_URL` must be set in the worker's environment.** `symfony/ux-turbo` pings Mercure on
+  *every* flush, CLI included, and this command writes a great deal. The failure shows up at flush
+  time rather than at startup, which is what makes it worth stating here rather than discovering it
+  on a closure night.
+- **It locks itself** (`SharedLockableTrait`), like the `app:mail:*` commands.
 - **Idempotent.** A month already frozen is skipped whole - the snapshot is the guard - and every
   write inside a closure is either bounded by it or refused by the ledger's own duplicate check.
   Running it twice a day is harmless; missing a day only delays a closure, and a month left unclosed
   is picked up on the next run - it walks twelve months back.
 - **`--dry-run` lists what would be closed and writes nothing**, which is the way to read a host's
-  state before installing the entry. `--program` narrows it to one formation.
+  state by hand. `--program` narrows it to one formation.
 - **It also attributes the pseudonyms nobody chose within seven days**, in the same pass: it is the
   same question, asked of the same calendar.
-- **A run where no formation has switched its game on exits immediately, saying so.** Installing the
-  entry before the game is switched on is harmless. The question it asks is « does any formation
+- **A run where no formation has switched its game on exits immediately, saying so.** Scheduling it
+  before the game is switched on is harmless. The question it asks is « does any formation
   play », deliberately **not** « does any role see the game » (which is what it asked until
   2026-08-28): the role matrix holds no `ROLE_ADMIN` row by construction, so a **silent pilot** - the
   game on for one class, `game` unticked for every managed role, read by the administration alone on
@@ -490,12 +526,11 @@ Notes:
   screen or inside a closure, so the pilot's ledger stayed empty, which is the one thing a pilot must
   not do.
 
-> **Still not wired to any cron, and it should be:** `app:purge-platform-activity`, two sections up.
-> The campus game makes that gap wider rather than narrower - `GameEntry` is one row per credited
-> gesture per student, so it is the same kind of table as `PlatformActivity` and falls under the same
-> retention question.
+> **Still open:** `app:purge-platform-activity` (two sections up) is scheduled now, but it does not
+> touch `GameEntry`. That is one row per credited gesture per student - the same kind of table as
+> `PlatformActivity`, and the same retention question, not yet decided.
 
-## Recomputing the stored counters (cron)
+## Recomputing the stored counters (scheduled)
 
 `app:counters:recompute` checks every **stored counter** of the platform against its source and
 corrects the ones that drifted. A stored counter is a value kept on a row rather than summed at
@@ -514,9 +549,7 @@ quiet: each drift is logged at *error* level and so reaches Discord - a counter 
 code path moved a source without moving its counter, and that is a bug to fix, not a figure to patch
 every night.
 
-```cron
-45 3 * * * cd /srv/moncampus && docker compose -f compose.yaml -f compose.prod.yaml exec -T php bin/console app:counters:recompute >> /var/log/moncampus-counters.log 2>&1
-```
+It runs every night at 03:45, from the schedule (see « Scheduled tasks » above).
 
 Notes:
 

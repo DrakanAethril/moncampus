@@ -105,7 +105,7 @@ class IpAllocationRepository extends ServiceEntityRepository
 
     /**
      * Reservations nothing ever came of - an abandoned wizard, a batch somebody walked away from.
-     * Released by the cron so a range does not empty itself one abandoned step at a time.
+     * Released by the scheduled scan so a range does not empty itself one abandoned step at a time.
      *
      * @return list<IpAllocation>
      */

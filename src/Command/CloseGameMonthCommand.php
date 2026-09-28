@@ -11,7 +11,6 @@ use App\Service\Game\GameAliasDrawer;
 use App\Service\Game\GameMonthCloser;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Command\LockableTrait;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -20,7 +19,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 /**
  * Closes every ranked month that has ended, in every formation where the game is running.
  *
- * **Cron, once a day.** A closure is not something a browser tab can be trusted with: it freezes a
+ * **Scheduled, once a day** (App\Scheduler\PlatformSchedule). A closure is not something a browser tab can be trusted with: it freezes a
  * whole class's month, pays the first three of it, moves levels that never come back down and grants
  * the frames that go with them. It has to happen whether or not anybody opened a screen that
  * morning, and it must happen exactly once.
@@ -37,7 +36,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * question, asked of the same calendar.
  *
  * > App\Service\Game\GameLedger writes through Doctrine, and `symfony/ux-turbo` pings Mercure on
- * > **every** flush, CLI included. `MERCURE_URL` must be set in the cron environment, and the failure
+ * > **every** flush, CLI included. `MERCURE_URL` must be set in the worker's environment, and the failure
  * > shows up at flush time rather than at startup. See docs/production.md.
  */
 #[AsCommand(
@@ -46,7 +45,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class CloseGameMonthCommand extends Command
 {
-    use LockableTrait;
+    use SharedLockableTrait;
 
     public function __construct(
         private readonly ProgramRepository $programs,

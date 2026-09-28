@@ -16,7 +16,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 /**
  * The safety net of every stored counter of the platform (App\Counter\RecomputableCounter).
  *
- * **Cron, once a night.** The counters move in real time with what changes them; this pass only
+ * **Scheduled, once a night** (App\Scheduler\PlatformSchedule). The counters move in real time with what changes them; this pass only
  * catches what drifted, and says so - each correction is logged at error level, so in production a
  * drift reaches Discord instead of being patched quietly (App\Counter\CounterRecomputer).
  *

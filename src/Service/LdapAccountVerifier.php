@@ -78,7 +78,7 @@ class LdapAccountVerifier
                 LdapAccountAction::Enable => $this->checkDisabledBit($request->getLogin(), false),
             };
         } catch (LdapException) {
-            // Neither confirmed nor contradicted. The cron command comes back in a minute, and
+            // Neither confirmed nor contradicted. The scheduled command comes back in a minute, and
             // nothing was invented in the meantime.
             $request->setVerificationNote(self::NOTE_DIRECTORY_UNREACHABLE);
 

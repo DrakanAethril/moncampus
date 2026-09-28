@@ -37,7 +37,7 @@ final class GameAccess
     }
 
     /**
-     * Whether any *role* sees the game - what a screen says about itself, never what a cron asks.
+     * Whether any *role* sees the game - what a screen says about itself, never what a scheduled task asks.
      *
      * The formation's own settings screen prints it: a class that has switched its game on while no
      * role has the feature is playing in silence, for the administration alone.
@@ -48,7 +48,7 @@ final class GameAccess
     }
 
     /**
-     * Whether **any formation is playing** - the question a cron asks, and the true statement of
+     * Whether **any formation is playing** - the question a scheduled task asks, and the true statement of
      * « this establishment runs a game ».
      *
      * It used to ask isFeatureOpenForAnyone() instead, and that reading had a hole with a use: the

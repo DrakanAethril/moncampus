@@ -179,10 +179,11 @@ COPY --link --exclude=var --from=frankenphp_prod_builder /app /app
 COPY --chown=www-data:0 --from=frankenphp_prod_builder /app/var /app/var
 RUN chmod g=u /app/var
 
-# Session save_path (config/packages/framework.yaml) - pre-create with the same www-data:0 + g=u
-# ownership as the rest of /app/var, *before* compose.prod.yaml's named volume gets mounted here,
-# so Docker's first-time volume seeding copies these permissions instead of defaulting to root.
-RUN mkdir -p /app/var/sessions && chown www-data:0 /app/var/sessions && chmod g=u /app/var/sessions
+# Session save_path (config/packages/framework.yaml) and the lock directory (LOCK_DSN, shared by
+# the `php` and `worker` containers) - pre-create with the same www-data:0 + g=u ownership as the
+# rest of /app/var, *before* compose.prod.yaml's named volumes get mounted here, so Docker's
+# first-time volume seeding copies these permissions instead of defaulting to root.
+RUN mkdir -p /app/var/sessions /app/var/lock && chown www-data:0 /app/var/sessions /app/var/lock && chmod g=u /app/var/sessions /app/var/lock
 
 COPY --link --chmod=755 frankenphp/docker-entrypoint.sh /usr/local/bin/docker-entrypoint
 

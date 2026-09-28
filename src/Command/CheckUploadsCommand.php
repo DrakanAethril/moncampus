@@ -15,7 +15,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * Proves, from the server, that the runtime can actually write, read **and remove** objects in the
  * uploads bucket (design/validated/object-deletion.md, "app:uploads:check, the probe").
  *
- * A diagnostic, not a cron, built on the model of `app:antivirus:check` - which exists for exactly
+ * A diagnostic, never scheduled, built on the model of `app:antivirus:check` - which exists for exactly
  * this shape of problem: a configuration that fails without announcing itself. The question it
  * answers is factual and cannot be settled by a design document: **does this IAM user hold
  * `s3:DeleteObject`?**

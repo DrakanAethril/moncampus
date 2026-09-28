@@ -33,7 +33,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * students on a new machine. That half is decided from the platform's own records and needs no
  * hypervisor. See App\Service\Guest\StaleGuestAccountPruner.
  *
- * Not a cron. Run it after a session of deleting batches, after redeploying onto numbers that were
+ * Never scheduled. Run it after a session of deleting batches, after redeploying onto numbers that were
  * freed, or when « Mes machines » shows something /infrastructure does not. `--dry-run` names every
  * row it would remove; run that first.
  */

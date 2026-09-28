@@ -10,7 +10,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Command\LockableTrait;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -30,11 +29,11 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  */
 #[AsCommand(
     name: 'app:mail:consume-events',
-    description: "Vide la file SQS des événements d'envoi SES du Courrier pro (à appeler par cron).",
+    description: "Vide la file SQS des événements d'envoi SES du Courrier pro (tâche planifiée).",
 )]
 class ConsumeMailEventsCommand extends Command
 {
-    use LockableTrait;
+    use SharedLockableTrait;
 
     /** The maximum the SQS API allows. */
     private const int BATCH_SIZE = 10;

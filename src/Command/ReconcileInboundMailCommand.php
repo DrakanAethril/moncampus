@@ -11,7 +11,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Command\LockableTrait;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -26,7 +25,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * fired, a queue purged by hand, a DLQ nobody drained - and S3 is the source of truth, so anything
  * lost there is recoverable from here.
  *
- * Meant for a nightly cron. `--since` bounds the scan to recent objects, which is what a nightly run
+ * Scheduled nightly (App\Scheduler\PlatformSchedule). `--since` bounds the scan to recent objects, which is what a nightly run
  * wants; a full sweep stays possible by passing a wide window after an incident.
  *
  * **A pass that had to replay anything rings the support Discord channel.** That is the point of the
@@ -36,11 +35,11 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  */
 #[AsCommand(
     name: 'app:mail:reconcile',
-    description: 'Rejoue les mails déposés sur S3 qui ne sont pas en base (filet de sécurité, à appeler par cron).',
+    description: 'Rejoue les mails déposés sur S3 qui ne sont pas en base (filet de sécurité, tâche planifiée).',
 )]
 class ReconcileInboundMailCommand extends Command
 {
-    use LockableTrait;
+    use SharedLockableTrait;
 
     /** Everything SES drops lands under this prefix - the rest of the bucket is our own filing. */
     private const string INCOMING_PREFIX = 'incoming/';
@@ -132,7 +131,7 @@ class ReconcileInboundMailCommand extends Command
         // The count is a PSR-3 placeholder rather than a concatenation: the Discord handler's
         // throttle signature is computed on the message *template*, so two nights in a row stay one
         // signature and the second is held back by the five-minute cooldown only if it lands within
-        // it - which a nightly cron never does.
+        // it - which the nightly schedule never does.
         if ($replayed > 0 && !$dryRun) {
             $this->logger->error('School mail: reconciliation replayed {replayed} object(s) the queue never delivered - the normal inbound path lost them.', [
                 'replayed' => $replayed,
