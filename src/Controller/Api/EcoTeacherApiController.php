@@ -18,7 +18,9 @@ use App\Repository\EcoCourseRepository;
 use App\Repository\EcoParcoursRepository;
 use App\Security\Voter\EcoParcoursVoter;
 use App\Service\Eco\EcoCheckpointTerrainReader;
+use App\Service\Eco\EcoTerrainSheet;
 use App\Service\Eco\EcoToleranceAdvisor;
+use App\Service\Eco\EcoToleranceEditor;
 use App\Service\EcoCourseCodeGenerator;
 use App\Service\EcoLiveTrackingService;
 use App\Service\JsonRequestPayload;
@@ -101,13 +103,48 @@ class EcoTeacherApiController extends AbstractController
     #[Route(path: '/api/eco/teacher/parcours/{id}', name: 'api_eco_teacher_parcours_show', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function parcoursShow(int $id, EcoParcoursRepository $repository): JsonResponse
     {
+        return $this->json($this->formatParcours($this->findParcoursOrNotFound($repository, $id)));
+    }
+
+    /**
+     * The parcours screen of the app saves the radius of its flags - screen 1e's one edit, through
+     * the same EcoToleranceEditor. Body: {tolerances: {"<checkpoint id>": metres}}; answers the
+     * parcours as it now stands.
+     */
+    #[Route(path: '/api/eco/teacher/parcours/{id}/tolerances', name: 'api_eco_teacher_parcours_tolerances', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function saveTolerances(int $id, Request $request, EntityManagerInterface $entityManager, EcoParcoursRepository $repository, EcoToleranceEditor $toleranceEditor): JsonResponse
+    {
         $parcours = $this->findParcoursOrNotFound($repository, $id);
 
-        return $this->json([
-            'id' => $parcours->getId(),
-            'name' => $parcours->getName(),
-            'checkpoints' => array_map(fn (EcoCheckpoint $checkpoint): array => $this->formatCheckpoint($checkpoint), $parcours->getCheckpoints()->toArray()),
-        ]);
+        $toleranceEditor->apply($parcours, JsonRequestPayload::fromRequest($request)->object('tolerances')->toArray(), $this->currentUser());
+        $entityManager->flush();
+
+        return $this->json($this->formatParcours($parcours));
+    }
+
+    /** The IGN's reading of the parcours - the web's « Terrain » card (EcoTerrainSheet). */
+    #[Route(path: '/api/eco/teacher/parcours/{id}/terrain', name: 'api_eco_teacher_parcours_terrain', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function terrain(int $id, EcoParcoursRepository $repository, EcoTerrainSheet $terrainSheet): JsonResponse
+    {
+        return $this->json($terrainSheet->of($this->findParcoursOrNotFound($repository, $id)));
+    }
+
+    /**
+     * « Analyser le terrain » from the phone: only asks, like the web button - app:eco:read-terrain
+     * does the reading within the minute, and the app polls GET …/terrain until `pending` drops.
+     */
+    #[Route(path: '/api/eco/teacher/parcours/{id}/terrain', name: 'api_eco_teacher_parcours_terrain_request', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function requestTerrain(int $id, EntityManagerInterface $entityManager, EcoParcoursRepository $repository, EcoTerrainSheet $terrainSheet): JsonResponse
+    {
+        $parcours = $this->findParcoursOrNotFound($repository, $id);
+        if (0 === $parcours->getLocatedCheckpointCount()) {
+            return $this->json(['error' => 'noLocatedCheckpoint'], 409);
+        }
+
+        $parcours->requestTerrainAnalysis(new \DateTimeImmutable());
+        $entityManager->flush();
+
+        return $this->json($terrainSheet->of($parcours));
     }
 
     // Called after the app scans a checkpoint's QR code on the ground (screen 4b -> 4c) - re-
@@ -304,6 +341,23 @@ class EcoTeacherApiController extends AbstractController
         ];
     }
 
+    /** @return array<string, mixed> */
+    private function formatParcours(EcoParcours $parcours): array
+    {
+        $checkpoints = $parcours->getCheckpoints()->toArray();
+        usort($checkpoints, static fn (EcoCheckpoint $a, EcoCheckpoint $b): int => $a->getPosition() <=> $b->getPosition());
+
+        return [
+            'id' => $parcours->getId(),
+            'name' => $parcours->getName(),
+            'ready' => $parcours->isReady(),
+            // What the radius field reads against: a flag above or below it was set by hand.
+            'defaultToleranceMeters' => EcoCheckpoint::DEFAULT_TOLERANCE_METERS,
+            'checkpoints' => array_map(fn (EcoCheckpoint $checkpoint): array => $this->formatCheckpoint($checkpoint), $checkpoints),
+        ];
+    }
+
+    /** @return array<string, mixed> */
     private function formatCheckpoint(EcoCheckpoint $checkpoint): array
     {
         return [
