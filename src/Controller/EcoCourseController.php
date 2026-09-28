@@ -127,12 +127,9 @@ class EcoCourseController extends AbstractController
         if (!$this->isCsrfTokenValid('eco_course_start', $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
-        if (EcoCourseStatus::Prepared !== $course->getStatus()) {
+        if (!$course->start(new \DateTimeImmutable())) {
             throw $this->createAccessDeniedException();
         }
-
-        $course->setStatus(EcoCourseStatus::InProgress);
-        $course->setStartedAt(new \DateTimeImmutable());
         $entityManager->flush();
 
         $this->addFlash('success', 'ecoCourseStartedFlashMessage');
@@ -148,12 +145,9 @@ class EcoCourseController extends AbstractController
         if (!$this->isCsrfTokenValid('eco_course_close', $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
-        if (EcoCourseStatus::InProgress !== $course->getStatus()) {
+        if (!$course->close(new \DateTimeImmutable())) {
             throw $this->createAccessDeniedException();
         }
-
-        $course->setStatus(EcoCourseStatus::Closed);
-        $course->setClosedAt(new \DateTimeImmutable());
         $entityManager->flush();
 
         $this->addFlash('success', 'ecoCourseClosedFlashMessage');
