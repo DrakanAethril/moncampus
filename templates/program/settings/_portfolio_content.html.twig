@@ -1,0 +1,113 @@
+{# Formation > Paramétrage > Portfolio (design/validated/portfolio.md, screen 10). The personnel reads
+   it; the administration alone changes it, the designation of the validateurs above all - it is
+   the whole of who decides about a portfolio. #}
+{% set canEdit = is_granted('ROLE_ADMIN') %}
+<div class="card-body cm-pf-page">
+    <form method="post" action="{{ path('app_program_settings_portfolio_save', {id: program.id}) }}" class="cm-pf-page">
+        <input type="hidden" name="_token" value="{{ csrf_token('program_portfolio') }}">
+        <fieldset{{ canEdit ? '' : ' disabled' }} class="cm-pf-page">
+            <label class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="enabled" value="1"{{ program.portfolioEnabled ? ' checked' }}>
+                <span class="form-check-label"><strong>{{ 'programPortfolioEnabledLabel'|trans }}</strong></span>
+            </label>
+            <div class="cm-pf-form">
+                <div class="cm-pf-field">
+                    <label for="pf-referential">{{ 'programPortfolioReferentialLabel'|trans }}</label>
+                    <select id="pf-referential" class="form-select" name="referential">
+                        <option value="">{{ 'portfolioChoosePlaceholder'|trans }}</option>
+                        {% for referential in referentials %}
+                            <option value="{{ referential.id }}"{{ program.portfolioReferential and program.portfolioReferential.id == referential.id ? ' selected' }}>{{ referential.displayName }}</option>
+                        {% endfor %}
+                    </select>
+                    {% if referentials is empty %}<span class="cm-pf-hint">{{ 'programPortfolioNoReferentialHint'|trans }}</span>{% endif %}
+                </div>
+                <div class="cm-pf-field">
+                    <label for="pf-year">{{ 'programPortfolioCursusYearLabel'|trans }}</label>
+                    <select id="pf-year" class="form-select" name="cursusYear">
+                        <option value="">{{ 'portfolioChoosePlaceholder'|trans }}</option>
+                        <option value="1"{{ program.portfolioCursusYear == 1 ? ' selected' }}>{{ 'programPortfolioCursusYearOne'|trans }}</option>
+                        <option value="2"{{ program.portfolioCursusYear == 2 ? ' selected' }}>{{ 'programPortfolioCursusYearTwo'|trans }}</option>
+                    </select>
+                    <span class="cm-pf-hint">{{ 'programPortfolioCursusYearHint'|trans }}</span>
+                </div>
+                <div class="cm-pf-field">
+                    <label for="pf-session">{{ 'programPortfolioSessionLabel'|trans }}</label>
+                    <input id="pf-session" class="form-control" type="number" min="2000" max="2100" name="session" value="{{ program.portfolioExamSession }}" placeholder="{{ 'now'|date('Y') + 1 }}">
+                    <span class="cm-pf-hint">{{ 'programPortfolioSessionHint'|trans }}</span>
+                </div>
+                <div class="cm-pf-field">
+                    <label for="pf-e5">{{ 'programPortfolioE5DeadlineLabel'|trans }}</label>
+                    <input id="pf-e5" class="form-control" type="datetime-local" name="e5Deadline" value="{{ program.portfolioE5Deadline ? program.portfolioE5Deadline|date('Y-m-d\\TH:i') }}">
+                </div>
+                <div class="cm-pf-field">
+                    <label for="pf-e6">{{ 'programPortfolioE6DeadlineLabel'|trans }}</label>
+                    <input id="pf-e6" class="form-control" type="datetime-local" name="e6Deadline" value="{{ program.portfolioE6Deadline ? program.portfolioE6Deadline|date('Y-m-d\\TH:i') }}">
+                    <span class="cm-pf-hint">{{ 'programPortfolioDeadlineHint'|trans }}</span>
+                </div>
+            </div>
+            {% if canEdit %}
+                <twig:Cm:ActionBar><twig:Cm:Button variant="primary" type="submit">{{ 'submitSaveAction'|trans }}</twig:Cm:Button></twig:Cm:ActionBar>
+            {% endif %}
+        </fieldset>
+    </form>
+
+    {% if program.portfolioReferential %}
+        <twig:Cm:Subhead :title="'programPortfolioValidatorsHeading'|trans" :hint="'programPortfolioValidatorsHint'|trans">
+            <twig:block name="action">
+                {% if canEdit and previousProgram %}
+                    <form method="post" action="{{ path('app_program_settings_portfolio_validator_copy', {id: program.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('program_portfolio') }}">
+                        <twig:Cm:Button variant="outline" size="sm" type="submit">{{ 'programPortfolioValidatorsCopyAction'|trans({'%program%': previousProgram.displayShortName}) }}</twig:Cm:Button>
+                    </form>
+                {% endif %}
+            </twig:block>
+        </twig:Cm:Subhead>
+
+        {% if studentsWithoutOption is not empty %}
+            <div class="cm-pf-banner cm-pf-banner--warn">
+                {{ 'programPortfolioStudentsWithoutOptionText'|trans({'%count%': studentsWithoutOption|length, '%names%': studentsWithoutOption|slice(0, 6)|map(s => s.displayName ?? s.username)|join(', ')}) }}
+            </div>
+        {% endif %}
+
+        {% for entry in byOption %}
+            <div class="cm-pf-card cm-pf-card--pad">
+                <div class="cm-pf-row" style="padding:0;border:0">
+                    <div class="cm-pf-row__title">{{ entry.option.shortName }} · {{ entry.option.name }}</div>
+                    {% if entry.validators is empty %}<twig:Cm:Badge tone="red">{{ 'programPortfolioNoValidatorLabel'|trans }}</twig:Cm:Badge>{% endif %}
+                </div>
+                <div class="cm-pf-chips">
+                    {% for row in entry.validators %}
+                        <span class="cm-pf-chip cm-pf-inline">
+                            {{ row.teacher.displayName ?? row.teacher.username }}
+                            {% if program.teachers.contains(row.teacher) == false %}<em class="cm-pf-muted">· {{ 'programPortfolioValidatorNotTeachingLabel'|trans }}</em>{% endif %}
+                            {% if canEdit %}
+                                <form method="post" action="{{ path('app_program_settings_portfolio_validator_withdraw', {id: program.id, validatorId: row.id}) }}" class="d-inline">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('program_portfolio') }}">
+                                    <button type="submit" class="btn btn-link btn-sm p-0" aria-label="{{ 'programPortfolioValidatorWithdrawAction'|trans }}"
+                                            data-controller="confirm-submit" data-action="confirm-submit#confirm"
+                                            data-confirm-submit-message-value="{{ 'programPortfolioValidatorWithdrawConfirm'|trans }}">&times;</button>
+                                </form>
+                            {% endif %}
+                        </span>
+                    {% endfor %}
+                </div>
+                {% if canEdit %}
+                    <form method="post" action="{{ path('app_program_settings_portfolio_validator_add', {id: program.id}) }}" class="cm-pf-inline">
+                        <input type="hidden" name="_token" value="{{ csrf_token('program_portfolio') }}">
+                        <input type="hidden" name="option" value="{{ entry.option.id }}">
+                        <div style="min-width:18rem">
+                            <select name="teacher" required aria-label="{{ 'programPortfolioValidatorPickerLabel'|trans }}"
+                                    data-controller="tom-select"
+                                    data-tom-select-url-value="{{ path('app_program_settings_portfolio_teachers_search', {id: program.id}) }}"
+                                    data-tom-select-minimum-input-length-value="0"
+                                    data-tom-select-placeholder-value="{{ 'programPortfolioValidatorPickerLabel'|trans }}"></select>
+                        </div>
+                        <twig:Cm:Button variant="outline" size="sm" type="submit">{{ 'programPortfolioValidatorAddAction'|trans }}</twig:Cm:Button>
+                    </form>
+                {% endif %}
+            </div>
+        {% else %}
+            <div class="cm-pf-banner cm-pf-banner--warn">{{ 'programPortfolioNoOptionText'|trans }}</div>
+        {% endfor %}
+    {% endif %}
+</div>

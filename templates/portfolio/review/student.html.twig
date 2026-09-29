@@ -1,0 +1,40 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set student = portfolio.student %}
+{% block title %}{{ student.displayName ?? student.username }}{% endblock %}
+{% block page_breadcrumb %}{% include 'portfolio/review/_student_crumbs.html.twig' %}{% endblock %}
+{% block page_title %}{{ 'portfolioStudentHeading'|trans({'%name%': student.displayName ?? student.username}) }}{% if option %} · {{ option.shortName }}{% endif %}{% endblock %}
+
+{% block main %}
+    <div class="cm-pf-page">
+        {% include 'portfolio/_coverage.html.twig' %}
+        <div class="cm-pf-card">
+            <div class="cm-pf-rows">
+                {% for achievement in portfolio.achievements|filter(a => a.state.value != 'draft') %}
+                    <div class="cm-pf-row">
+                        <div>
+                            <a class="cm-pf-row__title" href="{{ path('app_portfolios_achievement', {id: achievement.id}) }}">{{ achievement.title }}</a>
+                            <div class="cm-pf-row__meta">{{ achievement.setting.labelKey|trans }}{% if achievement.startsOn %} · {{ 'portfolioPeriodText'|trans({'%from%': achievement.startsOn|date('d/m/y'), '%to%': (achievement.endsOn ?? achievement.startsOn)|date('d/m/y')}) }}{% endif %}</div>
+                            {% include 'portfolio/_chips.html.twig' %}
+                        </div>
+                        <div class="cm-pf-row__right"><twig:Cm:Badge :of="achievement.state"/></div>
+                    </div>
+                {% else %}
+                    <p class="cm-pf-empty">{{ 'portfolioStudentEmptyText'|trans }}</p>
+                {% endfor %}
+                {% for showcase in portfolio.showcases %}
+                    <div class="cm-pf-row">
+                        <div>
+                            <a class="cm-pf-row__title" href="{{ path('app_portfolios_showcase', {id: showcase.id}) }}">{{ 'portfolioShowcaseNumberTitle'|trans({'%number%': showcase.number}) }} · {{ showcase.achievement.title }}</a>
+                        </div>
+                        <div class="cm-pf-row__right"><twig:Cm:Badge tone="purple">{{ 'portfolioShowcaseBadgeLabel'|trans }}</twig:Cm:Badge><twig:Cm:Badge :of="showcase.state"/></div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="cm-pf-card cm-pf-card--pad">
+            <twig:Cm:Subhead :title="'myPortfolioSynthesisTabLabel'|trans"/>
+            {% include 'portfolio/_synthesis_table.html.twig' with {row_route: 'app_portfolios_achievement'} %}
+        </div>
+    </div>
+{% endblock %}

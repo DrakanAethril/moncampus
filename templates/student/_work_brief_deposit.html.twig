@@ -29,4 +29,12 @@
             ghost: submitted,
         } %}
     {% endif %}
+    {# « Ajouter à mon portfolio » (design/validated/portfolio.md §12): a draft réalisation with this
+       dépôt as its first piece of evidence - only for a student whose formation runs the portfolio. #}
+    {% if submitted and has_portfolio() %}
+        <form method="post" action="{{ path('app_my_portfolio_from_submission', {submissionId: deposit.submission.id}) }}" data-turbo="false">
+            <input type="hidden" name="_token" value="{{ csrf_token('my_portfolio') }}">
+            <button type="submit" class="cm-btn cm-btn--outline cm-btn--sm">{{ 'portfolioFromSubmissionAction'|trans }}</button>
+        </form>
+    {% endif %}
 </div>

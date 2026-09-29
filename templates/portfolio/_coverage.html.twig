@@ -1,0 +1,9 @@
+{# « 5 / 6 compétences du bloc 1 couvertes · Manque : … » - from the table, validated only. #}
+{% if table.columns is not empty %}
+    <div class="cm-pf-cover{{ table.complete ? ' cm-pf-cover--complete' }}">
+        <strong>{{ 'portfolioCoverageText'|trans({'%covered%': table.coveredCount, '%total%': table.columns|length}) }}</strong>
+        {% if not table.complete %}
+            <span>{{ 'portfolioCoverageMissingText'|trans({'%list%': table.missing|map(c => c.label)|join(' · ')}) }}</span>
+        {% endif %}
+    </div>
+{% endif %}

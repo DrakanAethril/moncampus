@@ -1,0 +1,19 @@
+{# Bloc 2 of the option, fiche by fiche - validated fiches only count as covering (R12). #}
+{% if block %}
+    <table class="cm-pf-matrix" style="min-width:0">
+        <thead><tr><th>{{ block.code }} · {{ option ? option.shortName }}</th><th>{{ 'portfolioShowcaseNumberTitle'|trans({'%number%': 1}) }}</th><th>{{ 'portfolioShowcaseNumberTitle'|trans({'%number%': 2}) }}</th><th>{{ 'portfolioShowcaseCoveredColumn'|trans }}</th></tr></thead>
+        <tbody>
+            {% for row in coverage.rows %}
+                <tr>
+                    <td>{{ row.competency.label }}</td>
+                    {% for n in [1, 2] %}
+                        {% set mark = row.byNumber[n] %}
+                        <td class="cm-pf-matrix__n{{ mark == 'retained' ? ' cm-pf-matrix__ok' : (mark == 'pending' ? ' cm-pf-matrix__pending') }}">{{ mark == 'retained' ? '✓' : (mark == 'pending' ? '◌' : '') }}</td>
+                    {% endfor %}
+                    <td class="{{ row.covered ? 'cm-pf-matrix__ok' : 'cm-pf-matrix__none' }}">{{ (row.covered ? 'portfolioYesLabel' : 'portfolioNoLabel')|trans }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% if not coverage.complete %}<p class="cm-pf-hint mb-0">{{ 'portfolioShowcaseIncompleteHint'|trans }}</p>{% endif %}
+{% endif %}

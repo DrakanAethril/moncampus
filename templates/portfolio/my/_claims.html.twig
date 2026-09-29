@@ -1,0 +1,22 @@
+{# One block's competencies to claim: a box each, and - once ticked - the sentence that says what
+   in the réalisation mobilises it (shown by CSS :has, no script). #}
+<div class="cm-pf-field cm-pf-field--wide">
+    <span class="cm-pf-label">{{ heading }}</span>
+    <div class="cm-pf-claims">
+        {% for competency in block.competencies %}
+            {% set claim = achievement ? achievement.claimFor(competency) : null %}
+            {% set checked = posted ? (posted.claim[competency.id] ?? null) == '1' : claim is not null %}
+            {% set why = posted ? (posted.justification[competency.id] ?? '') : (claim ? claim.justification : '') %}
+            <label class="cm-pf-claim">
+                <input type="checkbox" class="form-check-input" name="claim[{{ competency.id }}]" value="1"{{ checked ? ' checked' }}>
+                <span>
+                    <span class="cm-pf-claim__label">{{ competency.label }}</span>
+                    {% if competency.skills is not empty %}<span class="cm-pf-claim__skills d-block">{{ competency.skills|map(s => '▸ ' ~ s)|join(' · ') }}</span>{% endif %}
+                </span>
+                <span class="cm-pf-claim__why">
+                    <textarea class="form-control form-control-sm" name="justification[{{ competency.id }}]" rows="2" placeholder="{{ 'portfolioJustificationPlaceholder'|trans }}" aria-label="{{ 'portfolioJustificationPlaceholder'|trans }}">{{ why }}</textarea>
+                </span>
+            </label>
+        {% endfor %}
+    </div>
+</div>

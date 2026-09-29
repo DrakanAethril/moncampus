@@ -37,6 +37,7 @@ trait SettingsTabTrait
         'programs' => 'pedagogique',
         'period_groups' => 'pedagogique',
         'evaluation_period_groups' => 'pedagogique',
+        'referentials' => 'pedagogique',
     ];
 
     private function renderTab(string $tab): Response

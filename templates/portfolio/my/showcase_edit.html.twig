@@ -1,0 +1,101 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set heading = 'portfolioShowcaseNumberTitle'|trans({'%number%': showcase.number}) %}
+{% block title %}{{ heading }}{% endblock %}
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'myPortfolioNavLabel'|trans, url: path('app_my_portfolio')},
+        {label: 'myPortfolioShowcasesTabLabel'|trans, url: path('app_my_portfolio_showcases')},
+        {label: heading, url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
+{% block page_title %}{{ heading }} · {{ showcase.achievement.title }}{% endblock %}
+
+{% block main %}
+    <div class="cm-pf-page">
+        <div class="cm-pf-inline"><twig:Cm:Badge :of="showcase.state"/>{% if showcase.revision > 0 %}<span class="cm-pf-meta">{{ 'portfolioRevisionText'|trans({'%revision%': showcase.revision}) }}</span>{% endif %}</div>
+        {% set last = showcase.lastReview %}
+        {% if showcase.state.value == 'to_rework' and last and last.comment %}
+            <div class="cm-pf-banner cm-pf-banner--danger"><strong>{{ 'portfolioSentBackText'|trans({'%name%': last.reviewer.displayName ?? last.reviewer.username}) }}</strong><br>{{ last.comment|nl2br }}</div>
+        {% endif %}
+        {% if showcase.validated %}<div class="cm-pf-banner cm-pf-banner--warn">{{ 'portfolioShowcaseValidatedEditWarning'|trans }}</div>{% endif %}
+
+        <div class="cm-pf-card cm-pf-card--pad">
+            <twig:Cm:Subhead :title="'portfolioShowcaseRectoHeading'|trans({'%annex%': option and option.shortName|upper == 'SLAM' ? 'VII-1-B' : 'VII-1-A', '%option%': option ? option.shortName : ''})" :hint="'portfolioShowcaseRectoHint'|trans">
+                <twig:block name="action"><twig:Cm:Button variant="outline" size="sm" href="{{ path('app_my_portfolio_achievement_edit', {id: showcase.achievement.id}) }}">{{ 'portfolioShowcaseEditAchievementAction'|trans }}</twig:Cm:Button></twig:block>
+            </twig:Cm:Subhead>
+            {% include 'portfolio/_showcase_recto.html.twig' %}
+        </div>
+
+        <form method="post" class="cm-pf-page">
+            <input type="hidden" name="_token" value="{{ csrf_token('my_portfolio') }}">
+            <div class="cm-pf-card cm-pf-card--pad">
+                <div class="cm-pf-field">
+                    <label for="sc-conditions">{{ 'portfolioShowcaseConditionsLabel'|trans }}</label>
+                    <textarea id="sc-conditions" name="conditions" class="d-none" data-controller="hugerte-editor" data-hugerte-editor-height-value="180">{{ showcase.conditionsHtml }}</textarea>
+                </div>
+                <div class="cm-pf-field">
+                    <label for="sc-resources">{{ 'portfolioShowcaseResourcesLabel'|trans }}</label>
+                    <textarea id="sc-resources" name="resources" class="d-none" data-controller="hugerte-editor" data-hugerte-editor-height-value="180">{{ showcase.resourcesHtml }}</textarea>
+                </div>
+                <div class="cm-pf-field">
+                    <label for="sc-access">{{ 'portfolioShowcaseAccessLabel'|trans }}</label>
+                    <textarea id="sc-access" name="access" class="d-none" data-controller="hugerte-editor" data-hugerte-editor-height-value="160">{{ showcase.accessHtml }}</textarea>
+                    <span class="cm-pf-hint">{{ 'portfolioShowcaseAccessHint'|trans }}</span>
+                </div>
+            </div>
+            <div class="cm-pf-card cm-pf-card--pad">
+                <twig:Cm:Subhead :title="'portfolioShowcaseVersoHeading'|trans" :hint="'portfolioShowcaseVersoHint'|trans"/>
+                <textarea name="description" class="d-none" data-controller="hugerte-editor" data-hugerte-editor-height-value="360" aria-label="{{ 'portfolioShowcaseVersoHeading'|trans }}">{{ showcase.descriptionHtml }}</textarea>
+                {% if reviewers is not empty %}
+                    <div class="cm-pf-field" style="max-width:24rem">
+                        <label for="sc-reviewer">{{ 'portfolioRequestedReviewerFieldLabel'|trans }}</label>
+                        <select id="sc-reviewer" class="form-select" name="requestedReviewer">
+                            <option value="">{{ 'portfolioRequestedReviewerAnyone'|trans }}</option>
+                            {% for reviewer in reviewers %}
+                                <option value="{{ reviewer.id }}"{{ showcase.requestedReviewer and showcase.requestedReviewer.id == reviewer.id ? ' selected' }}>{{ reviewer.displayName ?? reviewer.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                {% endif %}
+            </div>
+            <twig:Cm:ActionBar>
+                <twig:Cm:Button variant="outline" href="{{ path('app_my_portfolio_showcase_pdf', {number: showcase.number}) }}">{{ 'portfolioShowcasePdfAction'|trans }}</twig:Cm:Button>
+                <button type="submit" name="action" value="save" class="cm-btn cm-btn--outline">{{ 'portfolioSaveDraftAction'|trans }}</button>
+                {% if showcase.state.value in ['draft', 'to_rework'] %}
+                    <button type="submit" name="action" value="submit" class="cm-btn cm-btn--primary">{{ 'portfolioShowcaseSubmitAction'|trans }}</button>
+                {% endif %}
+            </twig:Cm:ActionBar>
+            {% if showcase.state.value in ['draft', 'to_rework'] and submissionErrors is not empty %}
+                <p class="cm-pf-hint">{{ 'portfolioSubmitBlockedHint'|trans }} {{ submissionErrors|map(e => e|trans)|join(' · ') }}</p>
+            {% endif %}
+        </form>
+
+        <div class="cm-pf-card cm-pf-card--pad">
+            <twig:Cm:Subhead :title="'portfolioShowcaseElementsHeading'|trans" :hint="'portfolioShowcaseElementsHint'|trans"/>
+            {% include 'portfolio/_evidence_list.html.twig' with {evidences: showcase.evidences, removeRoute: 'app_my_portfolio_showcase_evidence_remove', removeParams: {number: showcase.number}, warnReopen: showcase.validated} %}
+            {{ form_start(evidenceForm) }}
+                <div class="cm-pf-form">
+                    <div class="cm-pf-field cm-pf-field--wide">{{ form_row(evidenceForm.file) }}</div>
+                    <div class="cm-pf-field">{{ form_row(evidenceForm.label) }}</div>
+                </div>
+                {{ form_row(evidenceForm.submit, {attr: {class: 'cm-btn cm-btn--outline'}}) }}
+            {{ form_end(evidenceForm) }}
+        </div>
+
+        <div class="cm-pf-card cm-pf-card--pad">
+            <twig:Cm:Subhead :title="'portfolioJournalHeading'|trans"/>
+            {% include 'portfolio/_journal.html.twig' with {reviews: showcase.reviews} %}
+        </div>
+
+        {% if showcase.revision == 0 %}
+            <form method="post" action="{{ path('app_my_portfolio_showcase_delete', {number: showcase.number}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('my_portfolio') }}">
+                <twig:Cm:ActionBar>
+                    <button type="submit" class="cm-btn cm-btn--danger" data-controller="confirm-submit" data-action="confirm-submit#confirm"
+                            data-confirm-submit-message-value="{{ 'portfolioShowcaseDeleteConfirm'|trans }}">{{ 'portfolioShowcaseDeleteAction'|trans }}</button>
+                </twig:Cm:ActionBar>
+            </form>
+        {% endif %}
+    </div>
+{% endblock %}

@@ -39,6 +39,7 @@ class PlatformScheduleTest extends KernelTestCase
             'app:vm-batch:advance' => '* * * * *',
             'app:ldap:apply-account-requests' => '* * * * *',
             'app:eco:read-terrain' => '* * * * *',
+            'app:rncp:fetch' => '* * * * *',
             'app:proxmox:check' => '*/5 * * * *',
             'app:proxmox:scan-addresses' => '2-59/5 * * * *',
             'app:mail:reconcile' => '30 2 * * *',
@@ -47,6 +48,7 @@ class PlatformScheduleTest extends KernelTestCase
             'app:counters:recompute' => '45 3 * * *',
             'app:game:close-month' => '30 4 * * *',
             'app:proxmox:expire-batches' => '0 7 * * *',
+            'app:rncp:check' => '30 5 * * 1',
         ], $actual);
     }
 

@@ -1,0 +1,22 @@
+{# The recto of an E6 fiche as far as it is read from the réalisation - greyed: it changes only in
+   the réalisation, and changing it there sends both back to « À valider » (R11). #}
+{% set achievement = showcase.achievement %}
+{% set student = showcase.portfolio.student %}
+<dl class="cm-pf-recto">
+    <div><dt>{{ 'portfolioShowcaseNumberLabel'|trans }}</dt><dd>{{ showcase.number }}</dd></div>
+    <div><dt>{{ 'portfolioShowcaseCandidateLabel'|trans }}</dt><dd>{{ student.lastname|upper }} {{ student.firstname }} · {{ showcase.portfolio.candidateNumber ?? '—' }}</dd></div>
+    <div><dt>{{ 'portfolioShowcaseModeLabel'|trans }}</dt><dd>☒ {{ 'portfolioShowcaseCcfLabel'|trans }}</dd></div>
+    <div><dt>{{ 'portfolioOrganisationFieldLabel'|trans }}</dt><dd>{{ achievement.organisation ?? '—' }}</dd></div>
+    <div><dt>{{ 'portfolioPlaceFieldLabel'|trans }}</dt><dd>{{ achievement.place ?? '—' }}</dd></div>
+    <div><dt>{{ 'portfolioPeriodFieldLabel'|trans }}</dt><dd>{{ achievement.startsOn ? 'portfolioPeriodText'|trans({'%from%': achievement.startsOn|date('d/m/y'), '%to%': (achievement.endsOn ?? achievement.startsOn)|date('d/m/y')}) : '—' }}</dd></div>
+    <div><dt>{{ 'portfolioModalityFieldLabel'|trans }}</dt><dd>{{ (achievement.teamwork ? 'portfolioTeamworkLabel' : 'portfolioAloneLabel')|trans }}</dd></div>
+    <div style="grid-column:1/-1"><dt>{{ 'portfolioTitleFieldLabel'|trans }}</dt><dd>{{ achievement.title }}</dd></div>
+    {% if block %}
+        <div style="grid-column:1/-1"><dt>{{ 'portfolioShowcaseCompetenciesLabel'|trans }}</dt><dd>
+            {% for competency in block.competencies %}
+                {% set claim = achievement.claimFor(competency) %}
+                <span class="me-3">{{ claim and claim.retained ? '☒' : '☐' }} {{ competency.label }}</span>
+            {% endfor %}
+        </dd></div>
+    {% endif %}
+</dl>

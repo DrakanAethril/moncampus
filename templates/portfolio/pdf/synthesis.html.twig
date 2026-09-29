@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    {% include 'portfolio/pdf/_head.html.twig' with {page_size: 'A4 landscape'} %}
+    <title>Tableau de synthèse</title>
+    <style>
+        th.comp { width: 10%; text-align: center; font-size: 8pt; }
+        td.mark { text-align: center; font-weight: bold; }
+        tr.part td { background: #eee; font-weight: bold; font-style: italic; }
+        .docs { display: block; color: #444; font-size: 8.5pt; }
+        td.period { white-space: nowrap; font-size: 9pt; }
+    </style>
+</head>
+<body>
+    <table>
+        <tr><td colspan="{{ table.columns|length + 1 }}"><strong>BTS SERVICES INFORMATIQUES AUX ORGANISATIONS</strong></td><td><strong>{{ table.session ? 'SESSION ' ~ table.session }}</strong></td></tr>
+        <tr><td colspan="{{ table.columns|length + 2 }}" style="text-align:center"><strong>Tableau de synthèse des réalisations professionnelles</strong></td></tr>
+        <tr>
+            <td colspan="{{ (table.columns|length + 2) // 2 }}">NOM et prénom : <strong>{{ table.studentName }}</strong></td>
+            <td colspan="{{ table.columns|length + 2 - (table.columns|length + 2) // 2 }}">N° candidat : <strong>{{ table.candidateNumber }}</strong></td>
+        </tr>
+        <tr>
+            <td colspan="{{ (table.columns|length + 2) // 2 }}">Centre de formation : <strong>{{ table.trainingCentre }}</strong></td>
+            <td colspan="{{ table.columns|length + 2 - (table.columns|length + 2) // 2 }}">Option : {% for option in table.options %}<strong>{{ option.checked ? '☒' : '☐' }} {{ option.label }}</strong>&nbsp;&nbsp;{% endfor %}</td>
+        </tr>
+        <tr><td colspan="{{ table.columns|length + 2 }}">Adresse URL du portfolio : <strong>{{ table.portfolioUrl }}</strong></td></tr>
+        <tr>
+            <th>Réalisations professionnelles (intitulé et liste des documents et productions associés)</th>
+            <th>Période (sous la forme du JJ/MM/AA au JJ/MM/AA)</th>
+            {% for column in table.columns %}<th class="comp">{{ column.label }}</th>{% endfor %}
+        </tr>
+        {% for number, rows in table.sections %}
+            <tr class="part"><td colspan="{{ table.columns|length + 2 }}">{{ ('portfolioSynthesisPart' ~ number)|trans }}</td></tr>
+            {% for row in rows %}
+                <tr>
+                    <td>{{ row.title }}{% if row.documents %}<span class="docs">{{ row.documents }}</span>{% endif %}</td>
+                    <td class="period">{{ row.period }}</td>
+                    {% for column in table.columns %}<td class="mark">{{ (row.cells[column.id] ?? null) == 'retained' ? 'X' }}</td>{% endfor %}
+                </tr>
+            {% else %}
+                <tr><td colspan="{{ table.columns|length + 2 }}">&nbsp;</td></tr>
+            {% endfor %}
+        {% endfor %}
+    </table>
+</body>
+</html>

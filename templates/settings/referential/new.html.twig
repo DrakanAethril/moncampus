@@ -1,0 +1,47 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set heading = (referential is defined ? 'referentialEditPageHeading' : 'referentialNewPageHeading')|trans %}
+{% block title %}{{ heading }}{% endblock %}
+{% block page_breadcrumb %}
+    {% set extra = referential is defined
+        ? [{label: referential.displayName, url: path('app_settings_referentials_show', {id: referential.id})}, {label: heading, url: app.request.requestUri}]
+        : [{label: heading, url: app.request.requestUri}] %}
+    {% include 'settings/referential/_crumbs.html.twig' with {extra: extra} %}
+{% endblock %}
+{% block page_title %}{{ heading }}{% endblock %}
+
+{% block main %}
+    <form method="post" class="cm-pf-page">
+        <input type="hidden" name="_token" value="{{ csrf_token('referential_edit') }}">
+        {% if error %}<div class="cm-pf-banner cm-pf-banner--danger">{{ error|trans }}</div>{% endif %}
+        <div class="cm-pf-card cm-pf-card--pad">
+            <div class="cm-pf-form">
+                <div class="cm-pf-field">
+                    <label for="ref-label">{{ 'referentialLabelFieldLabel'|trans }}</label>
+                    <input id="ref-label" class="form-control" name="label" value="{{ values.label }}" maxlength="120" required placeholder="BTS SIO">
+                </div>
+                <div class="cm-pf-field">
+                    <label for="ref-code">{{ 'referentialCodeFieldLabel'|trans }}</label>
+                    <input id="ref-code" class="form-control" name="code" value="{{ values.code }}" maxlength="60" required placeholder="bts-sio">
+                    <span class="cm-pf-hint">{{ 'referentialCodeFieldHint'|trans }}</span>
+                </div>
+                <div class="cm-pf-field">
+                    <label for="ref-version">{{ 'referentialVersionFieldLabel'|trans }}</label>
+                    <input id="ref-version" class="form-control" name="version" value="{{ values.version }}" maxlength="60" required placeholder="RNCP40792">
+                </div>
+                <div class="cm-pf-field">
+                    <label for="ref-model">{{ 'referentialSynthesisModelFieldLabel'|trans }}</label>
+                    <select id="ref-model" class="form-select" name="synthesisModel" required>
+                        {% for model in enum_cases('App\\Enum\\ReferentialSynthesisModel') %}
+                            <option value="{{ model.value }}"{{ values.synthesisModel == model.value ? ' selected' }}>{{ model.labelKey|trans }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+        <twig:Cm:ActionBar>
+            <twig:Cm:Button variant="outline" href="{{ referential is defined ? path('app_settings_referentials_show', {id: referential.id}) : path('app_settings_referentials') }}">{{ 'cancelAction'|trans }}</twig:Cm:Button>
+            <twig:Cm:Button variant="primary" type="submit">{{ 'submitSaveAction'|trans }}</twig:Cm:Button>
+        </twig:Cm:ActionBar>
+    </form>
+{% endblock %}

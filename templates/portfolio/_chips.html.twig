@@ -1,0 +1,10 @@
+{# The competencies of a réalisation: full when retained, dashed while waiting, struck through
+   when not retained. #}
+{% if achievement.claims is not empty %}
+    <div class="cm-pf-chips">
+        {% for claim in achievement.claims %}
+            {% set tone = claim.state.value == 'retained' ? 'retained' : (claim.state.value == 'not_retained' ? 'rejected' : 'pending') %}
+            <span class="cm-pf-chip cm-pf-chip--{{ tone }}" title="{{ claim.competency.label }} · {{ claim.state.labelKey|trans }}">{{ claim.competency.displayShortLabel }}</span>
+        {% endfor %}
+    </div>
+{% endif %}

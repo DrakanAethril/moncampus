@@ -1,0 +1,20 @@
+{# Every portfolio print: the charset first - without it Chromium guesses GBK and the accents come
+   out as ideograms - then a sober sheet in the examination documents' own typography. #}
+<meta charset="utf-8">
+<style>
+    @page { size: {{ page_size|default('A4') }}; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0 2px 0 0; font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #111; }
+    h1 { font-size: 13pt; margin: 0 0 6px; text-align: center; }
+    h2 { font-size: 11pt; margin: 10px 0 6px; }
+    .box { border: 1px solid #333; padding: 6px 8px; margin-bottom: 6px; }
+    .label { font-weight: bold; }
+    .muted { color: #555; }
+    .page-break { break-before: page; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #333; padding: 4px 5px; vertical-align: top; }
+    .prose p { margin: 0 0 6px; }
+    .prose img, .figure img { max-width: 100%; height: auto; }
+    .figure { margin: 8px 0; break-inside: avoid; }
+    .footer { margin-top: 8px; font-size: 8pt; color: #555; display: flex; justify-content: space-between; }
+</style>

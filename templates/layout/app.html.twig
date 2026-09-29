@@ -201,6 +201,16 @@
                                 </a>
                             </li>
                         {% endif %}
+                        {# « Mon portfolio », right after « Travail à faire » (design/validated/portfolio.md
+                           §4) - only when one of the student's formations runs it: has_portfolio()
+                           asks the same question the screen does, so the entry never opens a 404. #}
+                        {% if is_granted('ROLE_STUDENT') and not is_staff() and has_portfolio() %}
+                            <li class="nav-item {{ current_route starts with 'app_my_portfolio' ? 'active' }}">
+                                <a class="nav-link" href="{{ path('app_my_portfolio') }}"{{ current_route starts with 'app_my_portfolio' ? ' aria-current="page"' }}>
+                                    <span class="nav-link-title">{{ 'myPortfolioNavLabel'|trans }}</span>
+                                </a>
+                            </li>
+                        {% endif %}
                         {# « Ma progression », right after « Travail à faire » exactly as the mockup's
                            bar draws it. Shown only to somebody whose own formation actually plays:
                            game_badge() answers null unless the feature is on *and* the formation has
@@ -477,8 +487,11 @@
                         {% set tools_ecole_directe = feature('ecole_directe') and is_granted('ROLE_ADMIN') %}
                         {% set tools_prepare = feature('progression') or feature('sequence_library') or feature('quiz_library')
                             or feature('file_library') or feature('surveys') or feature('content_sharing') or feature('audio') %}
+                        {# Portfolios: the designated validateurs, and the administration which reads
+                           every class - a teacher who was not designated has no entry (§4). #}
+                        {% set tools_portfolios = feature('portfolio') and (is_staff() or is_portfolio_validator()) %}
                         {% set tools_follow = feature('lesson_log') or feature('student_work') or feature('dossiers') or feature('quiz_library')
-                            or feature('gradebook_entry') or feature('job_search') or tools_ecole_directe %}
+                            or feature('gradebook_entry') or feature('job_search') or tools_ecole_directe or tools_portfolios %}
                         {# « Au-delà d'un diplôme » - what happens to a student after the formation.
                            A group of its own rather than an entry under « Suivre les étudiants »:
                            the jobboard is not about following anybody, it is the market the class
@@ -497,6 +510,7 @@
                                 or current_route starts with 'app_survey'
                                 or current_route starts with 'app_jobboard'
                                 or current_route starts with 'app_dossier'
+                                or current_route starts with 'app_portfolios'
                                 or current_route starts with 'app_ecole_directe' %}
                             {# cm-toolsmenu-host: the panel is centred on the bar rather than on the
                                entry that opens it, so the item gives up being the menu's
@@ -601,6 +615,8 @@
                                        le contenu »: what is prepared is the dossier, what the entry
                                        opens on is who has handed in what. #}
                                     {% if feature('dossiers') %}<a class="dropdown-item {{ current_route starts with 'app_dossier' ? 'active' }}" href="{{ path('app_dossiers') }}">{{ 'dossierNavLabel'|trans }}</a>{% endif %}
+                                    {# « Portfolios », after « Dossiers documentaires » (design/validated/portfolio.md §4). #}
+                                    {% if tools_portfolios %}<a class="dropdown-item {{ current_route starts with 'app_portfolios' ? 'active' }}" href="{{ path('app_portfolios') }}">{{ 'portfoliosNavLabel'|trans }}</a>{% endif %}
                                     {% if feature('quiz_library') %}<a class="dropdown-item {{ current_route == 'app_tools_quiz' ? 'active' }}" href="{{ path('app_tools_quiz') }}">{{ 'quizTrackingPageHeading'|trans }}</a>{% endif %}
                                     {% if feature('gradebook_entry') %}<a class="dropdown-item {{ current_route == 'app_tools_gradebook' ? 'active' }}" href="{{ path('app_tools_gradebook') }}">{{ 'gradebookNavLabel'|trans }}</a>{% endif %}
                                     {% if feature('job_search') %}<a class="dropdown-item {{ current_route == 'app_tools_job_search' ? 'active' }}" href="{{ path('app_tools_job_search') }}">{{ 'jobSearchTrackingNavLabel'|trans }}</a>{% endif %}

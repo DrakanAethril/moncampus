@@ -1,0 +1,127 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ referential.displayName }}{% endblock %}
+{% block page_breadcrumb %}
+    {% include 'settings/referential/_crumbs.html.twig' with {extra: [{label: referential.displayName, url: app.request.requestUri}]} %}
+{% endblock %}
+{% block page_title %}{{ referential.displayName }}{% endblock %}
+
+{% block main %}
+    <div class="cm-pf-page">
+        <div class="cm-pf-card cm-pf-card--pad">
+            <twig:Cm:Subhead :title="'referentialIdentityHeading'|trans">
+                <twig:block name="action">
+                    <twig:Cm:Button variant="outline" size="sm" href="{{ path('app_settings_referentials_edit', {id: referential.id}) }}">{{ 'editActionLabel'|trans }}</twig:Cm:Button>
+                </twig:block>
+            </twig:Cm:Subhead>
+            <dl class="cm-pf-recto">
+                <div><dt>{{ 'referentialCodeFieldLabel'|trans }}</dt><dd>{{ referential.code }}</dd></div>
+                <div><dt>{{ 'referentialVersionFieldLabel'|trans }}</dt><dd>{{ referential.version }}</dd></div>
+                <div><dt>{{ 'referentialSynthesisModelFieldLabel'|trans }}</dt><dd>{{ referential.synthesisModel.labelKey|trans }}</dd></div>
+                {% if referential.rncpCode %}
+                    <div><dt>{{ 'referentialRncpCodeLabel'|trans }}</dt><dd>{{ referential.rncpCode }}{% if referential.level %} · {{ referential.level }}{% endif %}</dd></div>
+                    <div><dt>{{ 'referentialCertifierLabel'|trans }}</dt><dd>{{ referential.certifier ?? '—' }}</dd></div>
+                    <div><dt>{{ 'referentialRegistrationLabel'|trans }}</dt><dd>{{ referential.registeredFrom ? referential.registeredFrom|date('d/m/Y') : '—' }} → {{ referential.registeredUntil ? referential.registeredUntil|date('d/m/Y') : '—' }}</dd></div>
+                {% endif %}
+                {% if referential.replacesRncpCode %}
+                    <div><dt>{{ 'referentialReplacesLabel'|trans }}</dt><dd>
+                        {%- if referential.replaces -%}
+                            <a href="{{ path('app_settings_referentials_show', {id: referential.replaces.id}) }}">{{ referential.replaces.displayName }}</a>
+                        {%- else -%}
+                            {{ referential.replacesRncpCode }}
+                        {%- endif -%}
+                    </dd></div>
+                {% endif %}
+            </dl>
+            {% if referential.rncpTitle %}<p class="cm-pf-meta mb-0">{{ referential.rncpTitle }}</p>{% endif %}
+            {% if referential.rncpSourceDate %}
+                <p class="cm-pf-hint mb-0">{{ 'referentialRncpSourceText'|trans({'%date%': referential.rncpSourceDate|date('d/m/Y')}) }}</p>
+            {% endif %}
+        </div>
+
+        {% for alert in referential.rncpAlerts %}
+            <div class="cm-pf-banner cm-pf-banner--warn">{{ alert|trans({'%until%': referential.rncpWatch.registeredUntil ?? '', '%codes%': (referential.rncpWatch.replacedBy ?? [])|join(', ')}) }}</div>
+        {% endfor %}
+        {% if referential.rncpWatch %}
+            <p class="cm-pf-hint mb-0">{{ 'referentialWatchCheckedText'|trans({'%date%': referential.rncpWatch.checkedAt|date('d/m/Y')}) }}</p>
+        {% endif %}
+        {% if used %}
+            <div class="cm-pf-banner">{{ 'referentialFrozenText'|trans }}</div>
+        {% endif %}
+
+        <form method="post" action="{{ path('app_settings_referentials_short_labels', {id: referential.id}) }}" class="cm-pf-card">
+            <input type="hidden" name="_token" value="{{ csrf_token('referential_edit') }}">
+            <div class="cm-pf-card--pad">
+                <twig:Cm:Subhead :title="'referentialBlocksHeading'|trans" :hint="'referentialBlocksHint'|trans">
+                    <twig:block name="action">
+                        <twig:Cm:Button variant="outline" size="sm" href="{{ path('app_settings_referentials_block_new', {id: referential.id}) }}">{{ 'referentialBlockAddAction'|trans }}</twig:Cm:Button>
+                    </twig:block>
+                </twig:Cm:Subhead>
+            </div>
+            {% for block in referential.blocks %}
+                <div class="cm-pf-part">{{ block.code }}{% if block.rncpCode %} · {{ block.rncpCode }}{% endif %}</div>
+                <div class="cm-pf-card--pad">
+                    <div class="cm-pf-row" style="padding:0;border:0">
+                        <div>
+                            <div class="cm-pf-row__title">{{ block.label }}</div>
+                            <div class="cm-pf-row__meta">
+                                {{ block.role.labelKey|trans }} ·
+                                {% if block.commonCore %}{{ 'referentialBlockCommonCoreLabel'|trans }}{% else %}{{ 'referentialBlockOptionsLabel'|trans({'%options%': block.options|map(o => o.shortName)|join(', ')}) }}{% endif %}
+                            </div>
+                        </div>
+                        <div class="cm-pf-row__right">
+                            <twig:Cm:Button variant="outline" size="sm" href="{{ path('app_settings_referentials_block_edit', {id: referential.id, blockId: block.id}) }}">{{ 'editActionLabel'|trans }}</twig:Cm:Button>
+                        </div>
+                    </div>
+                    {% for competency in block.competencies %}
+                        <div class="cm-pf-decide">
+                            <div>
+                                <div class="cm-pf-claim__label">{{ competency.code }} · {{ competency.label }}</div>
+                                {% if competency.skills is not empty %}<div class="cm-pf-claim__skills">{{ competency.skills|map(s => '▸ ' ~ s)|join(' · ') }}</div>{% endif %}
+                            </div>
+                            <input class="form-control form-control-sm" style="width:9rem" name="shortLabel[{{ competency.id }}]" value="{{ competency.shortLabel }}" maxlength="40" placeholder="{{ 'referentialShortLabelPlaceholder'|trans }}" aria-label="{{ 'referentialShortLabelPlaceholder'|trans }}">
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="cm-pf-empty">{{ 'referentialNoBlockText'|trans }}</p>
+            {% endfor %}
+            {% if referential.blocks is not empty %}
+                <div class="cm-pf-card--pad">
+                    <twig:Cm:ActionBar><twig:Cm:Button variant="primary" type="submit">{{ 'referentialShortLabelsSaveAction'|trans }}</twig:Cm:Button></twig:Cm:ActionBar>
+                </div>
+            {% endif %}
+        </form>
+
+        {% if referential.synthesisModel.value == 'sio_e5' %}
+            <div class="cm-pf-card">
+                <div class="cm-pf-card--pad">
+                    <twig:Cm:Subhead :title="'referentialTemplatesHeading'|trans" :hint="'referentialTemplatesHint'|trans">
+                        <twig:block name="action">
+                            <twig:Cm:Button variant="outline" size="sm" href="{{ path('app_settings_referential_templates', {id: referential.id}) }}">{{ 'referentialTemplatesOpenAction'|trans }}</twig:Cm:Button>
+                        </twig:block>
+                    </twig:Cm:Subhead>
+                </div>
+                <div class="cm-pf-rows">
+                    {% for template in templates %}
+                        <div class="cm-pf-row">
+                            <div>
+                                <span class="cm-pf-row__title">{{ 'referentialTemplateSessionTitle'|trans({'%session%': template.session}) }}</span>
+                                <div class="cm-pf-row__meta">{{ template.originalName }}</div>
+                            </div>
+                            <div class="cm-pf-row__right">
+                                {% if template.inService %}
+                                    <twig:Cm:Badge tone="green">{{ 'referentialTemplateInServiceLabel'|trans }}</twig:Cm:Badge>
+                                {% else %}
+                                    <twig:Cm:Badge tone="gold">{{ 'referentialTemplateNotInServiceLabel'|trans }}</twig:Cm:Badge>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <p class="cm-pf-empty">{{ 'referentialTemplatesEmptyText'|trans }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
