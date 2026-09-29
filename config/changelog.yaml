@@ -26,6 +26,15 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.29'
+      date: '2026-09-29'
+      summary: "Dans l'application e-CO, l'enseignant voit la carte de son parcours sur le fond de l'IGN, balises en place, dès l'ouverture de la fiche terrain."
+      entries:
+          - type: nouveaute
+            title: "e-CO : carte du parcours dans la fiche terrain de l'application enseignant"
+            detail: "Les balises localisées s'affichent dans l'ordre du parcours, sans attendre la lecture du terrain par l'IGN."
+          - type: autre
+            title: "Application e-CO 1.3.1 pour Android"
     - version: '2026.09.28.3'
       date: '2026-09-28'
       summary: "e-CO se pilote depuis le téléphone de l'enseignant : courses, réglages du parcours et lecture du terrain de l'IGN. Le coureur retrouve le récapitulatif de sa course dès l'arrivée, et les applications mobiles gardent la connexion sans redemander le mot de passe toutes les heures."

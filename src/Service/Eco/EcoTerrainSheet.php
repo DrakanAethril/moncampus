@@ -21,6 +21,10 @@ use App\Service\JsonRequestPayload;
  * Whether the reading still describes the flags is `current`: a flag moved since reads the
  * analysis as out of date, which the app says, and asks for a new one.
  *
+ * `flags` is the map drawn above the legs: every located flag where it stands now, in parcours
+ * order. It is not part of the analysis - a parcours never analysed still has its flags to show.
+ *
+ * @phpstan-type EcoTerrainSheetFlag array{id: int, label: string, type: string, name: string, latitude: float, longitude: float}
  * @phpstan-type EcoTerrainSheetLeg array{fromLabel: string, toLabel: string, straightMeters: ?float, pathMeters: ?float, pathRatio: ?float, climbMeters: ?float, descentMeters: ?float, maxSlopePercent: ?float, forestShare: ?float, effortKm: ?float}
  * @phpstan-type EcoTerrainSheetCheckpoint array{id: int, label: string, name: string, groundAltitude: ?float, canopyHeight: ?float, nearestCarRoadMeters: ?float, nearestWaterMeters: ?float, publicForest: ?string}
  * @phpstan-type EcoTerrainSheetData array{
@@ -28,6 +32,7 @@ use App\Service\JsonRequestPayload;
  *     canAnalyze: bool,
  *     analyzedAt: ?string,
  *     current: bool,
+ *     flags: list<EcoTerrainSheetFlag>,
  *     analysis: ?array{commune: ?string, nearbyPlace: ?string, publicForests: list<string>, incomplete: bool, legs: list<EcoTerrainSheetLeg>, checkpoints: list<EcoTerrainSheetCheckpoint>},
  * }
  */
@@ -38,6 +43,7 @@ final class EcoTerrainSheet
     {
         $pending = null !== $parcours->getTerrainRequestedAt();
         $raw = $parcours->getTerrainAnalysis();
+        $located = self::locatedCheckpoints($parcours);
 
         return [
             'pending' => $pending,
@@ -45,20 +51,43 @@ final class EcoTerrainSheet
             'canAnalyze' => !$pending && $parcours->getLocatedCheckpointCount() > 0,
             'analyzedAt' => $parcours->getTerrainAnalyzedAt()?->format(\DateTimeInterface::ATOM),
             'current' => $parcours->hasCurrentTerrainAnalysis(),
-            'analysis' => null !== $raw ? $this->analysis($parcours, JsonRequestPayload::fromArray($raw)) : null,
+            'flags' => array_map(static fn (EcoCheckpoint $checkpoint): array => [
+                'id' => (int) $checkpoint->getId(),
+                'label' => self::labelOf($checkpoint),
+                'type' => $checkpoint->getType()->value,
+                'name' => $checkpoint->getName() ?? '',
+                'latitude' => (float) $checkpoint->getLatitude(),
+                'longitude' => (float) $checkpoint->getLongitude(),
+            ], $located),
+            'analysis' => null !== $raw ? $this->analysis($located, JsonRequestPayload::fromArray($raw)) : null,
         ];
     }
 
-    /** @return array{commune: ?string, nearbyPlace: ?string, publicForests: list<string>, incomplete: bool, legs: list<EcoTerrainSheetLeg>, checkpoints: list<EcoTerrainSheetCheckpoint>} */
-    private function analysis(EcoParcours $parcours, JsonRequestPayload $analysis): array
+    /** @return list<EcoCheckpoint> the flags standing on the ground, in parcours order */
+    private static function locatedCheckpoints(EcoParcours $parcours): array
+    {
+        $checkpoints = array_values(array_filter($parcours->getCheckpoints()->toArray(), static fn (EcoCheckpoint $checkpoint): bool => $checkpoint->isLocated()));
+        usort($checkpoints, static fn (EcoCheckpoint $a, EcoCheckpoint $b): int => $a->getPosition() <=> $b->getPosition());
+
+        return $checkpoints;
+    }
+
+    private static function labelOf(EcoCheckpoint $checkpoint): string
+    {
+        return $checkpoint->getType()->shortLetter() ?? (string) $checkpoint->getPosition();
+    }
+
+    /**
+     * @param list<EcoCheckpoint> $checkpoints
+     *
+     * @return array{commune: ?string, nearbyPlace: ?string, publicForests: list<string>, incomplete: bool, legs: list<EcoTerrainSheetLeg>, checkpoints: list<EcoTerrainSheetCheckpoint>}
+     */
+    private function analysis(array $checkpoints, JsonRequestPayload $analysis): array
     {
         $safetyById = [];
         foreach ($analysis->objects('checkpoints') as $row) {
             $safetyById[(int) $row->int('id', 0)] = $row;
         }
-
-        $checkpoints = array_values(array_filter($parcours->getCheckpoints()->toArray(), static fn (EcoCheckpoint $checkpoint): bool => $checkpoint->isLocated()));
-        usort($checkpoints, static fn (EcoCheckpoint $a, EcoCheckpoint $b): int => $a->getPosition() <=> $b->getPosition());
 
         return [
             'commune' => self::nullableString($analysis, 'commune'),
@@ -85,7 +114,7 @@ final class EcoTerrainSheet
 
                 return [
                     'id' => (int) $checkpoint->getId(),
-                    'label' => $checkpoint->getType()->shortLetter() ?? (string) $checkpoint->getPosition(),
+                    'label' => self::labelOf($checkpoint),
                     'name' => $checkpoint->getName() ?? '',
                     'groundAltitude' => $checkpoint->getGroundAltitude(),
                     'canopyHeight' => $checkpoint->getCanopyHeight(),

@@ -73,6 +73,7 @@ class EcoTeacherParcoursApiTest extends FunctionalTestCase
         $sheet = $this->request('GET', \sprintf('/api/eco/teacher/parcours/%d/terrain', $parcours->getId()));
         self::assertFalse($sheet->bool('canAnalyze', true));
         self::assertNull($sheet->toArray()['analysis'] ?? null);
+        self::assertSame([], $sheet->objects('flags'));
 
         $refused = $this->request('POST', \sprintf('/api/eco/teacher/parcours/%d/terrain', $parcours->getId()));
         self::assertSame(409, $this->client->getResponse()->getStatusCode());
@@ -88,6 +89,12 @@ class EcoTeacherParcoursApiTest extends FunctionalTestCase
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
         self::assertTrue($sheet->bool('pending'));
         self::assertFalse($sheet->bool('canAnalyze', true));
+        // The map above the legs needs no analysis: the flags stand where they were located.
+        $flags = $sheet->objects('flags');
+        self::assertSame(['D', '1', 'A'], array_map(static fn (JsonRequestPayload $flag): string => $flag->string('label'), $flags));
+        self::assertSame('start', $flags[0]->string('type'));
+        self::assertEqualsWithDelta(45.831, $flags[1]->float('latitude'), 1e-9);
+        self::assertSame(1.26, $flags[1]->float('longitude'));
     }
 
     public function testTheReadingCarriesTheLegsAndTheSafetySheetAndGoesStaleWhenAFlagMoves(): void
