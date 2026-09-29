@@ -1,0 +1,31 @@
+{% extends 'layout/app.html.twig' %}
+{# The shell of « Mon portfolio »: its four tabs - Fiches E6 only from the second year of the cursus,
+   where the E6 is prepared. Each screen fills `portfolio_content`. #}
+
+{% set heading = 'myPortfolioHeading'|trans({'%referential%': portfolio.referential.label}) ~ (option ? ' · ' ~ 'myPortfolioOptionSuffix'|trans({'%option%': option.shortName}) : '') %}
+{% block title %}{{ 'myPortfolioNavLabel'|trans }}{% endblock %}
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [{label: 'myPortfolioNavLabel'|trans, url: path('app_my_portfolio')}]}) }}
+{% endblock %}
+{% block page_title %}{{ heading }}{% endblock %}
+
+{% block main %}
+    {% set tabs = [
+        {url: path('app_my_portfolio'), label: 'myPortfolioAchievementsTabLabel'|trans, active: activeTab == 'achievements'},
+        {url: path('app_my_portfolio_synthesis'), label: 'myPortfolioSynthesisTabLabel'|trans, active: activeTab == 'synthesis'},
+    ] %}
+    {% if cursusYear >= 2 %}
+        {% set tabs = tabs|merge([{url: path('app_my_portfolio_showcases'), label: 'myPortfolioShowcasesTabLabel'|trans, active: activeTab == 'showcases'}]) %}
+    {% endif %}
+    {% set tabs = tabs|merge([{url: path('app_my_portfolio_deposit'), label: 'myPortfolioDepositTabLabel'|trans, active: activeTab == 'deposit'}]) %}
+    <twig:Cm:Tabs :tabs="tabs">
+        <twig:block name="action">
+            {% if activeTab == 'achievements' %}
+                <twig:Cm:Button variant="primary" href="{{ path('app_my_portfolio_achievement_new') }}"><twig:ux:icon name="plus" width="15" height="15"/> {{ 'portfolioAchievementNewAction'|trans }}</twig:Cm:Button>
+            {% endif %}
+        </twig:block>
+    </twig:Cm:Tabs>
+    <div class="cm-pf-page mt-3">
+        {% block portfolio_content %}{% endblock %}
+    </div>
+{% endblock %}

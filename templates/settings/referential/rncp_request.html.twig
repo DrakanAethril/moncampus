@@ -1,0 +1,27 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'rncpImportPageHeading'|trans }}{% endblock %}
+{% block page_breadcrumb %}
+    {% include 'settings/referential/_crumbs.html.twig' with {extra: [{label: 'rncpImportPageHeading'|trans, url: app.request.requestUri}]} %}
+{% endblock %}
+{% block page_title %}{{ 'rncpImportPageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <form method="post" class="cm-pf-page">
+        <input type="hidden" name="_token" value="{{ csrf_token('rncp_import') }}">
+        {% if error %}<div class="cm-pf-banner cm-pf-banner--danger">{{ error|trans }}</div>{% endif %}
+        <div class="cm-pf-card cm-pf-card--pad">
+            <p class="mb-0">{{ 'rncpImportIntroText'|trans }}</p>
+            <div class="cm-pf-field" style="max-width:20rem">
+                <label for="rncp-code">{{ 'rncpImportCodeFieldLabel'|trans }}</label>
+                <input id="rncp-code" class="form-control" name="rncpCode" value="{{ code }}" required placeholder="RNCP40792" autofocus>
+                <span class="cm-pf-hint">{{ 'rncpImportCodeFieldHint'|trans }}</span>
+            </div>
+            <p class="cm-pf-hint mb-0">{{ 'rncpImportLicenceText'|trans }}</p>
+        </div>
+        <twig:Cm:ActionBar>
+            <twig:Cm:Button variant="outline" href="{{ path('app_settings_referentials') }}">{{ 'cancelAction'|trans }}</twig:Cm:Button>
+            <twig:Cm:Button variant="primary" type="submit">{{ 'rncpImportFetchAction'|trans }}</twig:Cm:Button>
+        </twig:Cm:ActionBar>
+    </form>
+{% endblock %}

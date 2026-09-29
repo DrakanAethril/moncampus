@@ -1,0 +1,7 @@
+{# « À valider (n) » for the designated validateurs, « Par classe » for them and the administration. #}
+{% set tabs = [] %}
+{% if total is not null %}
+    {% set tabs = tabs|merge([{url: path('app_portfolios'), label: 'portfolioQueueTabLabel'|trans({'%count%': total}), active: activeTab == 'queue'}]) %}
+{% endif %}
+{% set tabs = tabs|merge([{url: path('app_portfolios_classes'), label: 'portfolioClassesTabLabel'|trans, active: activeTab == 'classes'}]) %}
+<twig:Cm:Tabs :tabs="tabs"/>

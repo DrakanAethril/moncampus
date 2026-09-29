@@ -30,7 +30,28 @@
                 <div class="card-body">
                     <div class="mb-2">
                         <div class="fw-bold">{{ 'ufaEnterpriseSiretFieldLabel'|trans }}</div>
-                        <div class="text-secondary">{{ enterprise.siret ?? '—' }}</div>
+                        <div class="text-secondary d-flex flex-wrap align-items-center gap-2">
+                            <span class="font-monospace">{{ enterprise.siret ? enterprise.siret|siret : '—' }}</span>
+                            <twig:Cm:Badge :of="siretStatus"/>
+                        </div>
+                        <div class="text-secondary small">
+                            {% if siretStatus.value == 'confirmed' %}
+                                {{ 'ufaEnterpriseSiretConfirmedByText'|trans({
+                                    '%date%': enterprise.siretConfirmedAt|date('d/m/Y'),
+                                    '%name%': enterprise.siretConfirmedBy ? (enterprise.siretConfirmedBy.displayName ?? enterprise.siretConfirmedBy.username) : '—',
+                                }) }}
+                            {% elseif siretStatus.value == 'set_aside' %}
+                                {{ 'ufaEnterpriseSiretSetAsideText'|trans({'%date%': enterprise.siretSetAsideUntil|date('d/m/Y')}) }}
+                            {% endif %}
+                            <a href="{{ path('app_ufa_enterprise_siret', {id: enterprise.id}) }}">
+                                {{- (enterprise.siret ? 'ufaEnterpriseSiretChangeAction' : 'ufaEnterpriseSiretFindAction')|trans -}}
+                            </a>
+                        </div>
+                        {# R9: a confirmed establishment that has since shut is said here, read after the
+                           page; an État that does not answer leaves this line out entirely. #}
+                        {% if siretStatus.value == 'confirmed' %}
+                            <turbo-frame id="siret-recorded" loading="lazy" src="{{ path('app_ufa_enterprise_siret_establishment', {id: enterprise.id, view: 'fiche'}) }}"></turbo-frame>
+                        {% endif %}
                     </div>
                     <div class="mb-2">
                         <div class="fw-bold">{{ 'ufaEnterprisePhoneFieldLabel'|trans }}</div>

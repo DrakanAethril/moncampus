@@ -12030,3 +12030,121 @@ button.cm-flib__use--n:hover { background: var(--cm-brand); color: #fff; }
 .cm-deadline--soon { color: var(--cm-gold-tx); }
 .cm-deadline--near { color: var(--cm-warn-tx); }
 .cm-deadline--over { color: var(--cm-red-tx); }
+
+/* ===========================================================================================
+   Portfolio des réalisations professionnelles (design/validated/portfolio.md, portfolio-screens.html)
+   One prefix, cm-pf-, for the student's portfolio, the validateur's queue and review screen, the
+   class view and the référentiel administration. Every colour comes from the theme tokens, so the
+   dark theme needs nothing here.
+   =========================================================================================== */
+.cm-pf-page { display: flex; flex-direction: column; gap: 16px; }
+.cm-pf-card { background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: 10px; }
+.cm-pf-card--pad { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+.cm-pf-meta { font-size: 13px; color: var(--cm-muted); }
+.cm-pf-empty { padding: 18px; color: var(--cm-muted); font-size: 14px; }
+.cm-pf-muted { color: var(--cm-muted); }
+
+/* A line of the student's list, the queue, the référentiel list. */
+.cm-pf-rows { display: flex; flex-direction: column; }
+.cm-pf-row {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 14px; align-items: center;
+    padding: 11px 16px; border-bottom: 1px solid var(--cm-border-soft);
+}
+.cm-pf-row:last-child { border-bottom: 0; }
+.cm-pf-row__title { font-weight: 600; color: var(--cm-ink); font-size: 15px; text-decoration: none; }
+a.cm-pf-row__title:hover { text-decoration: underline; }
+.cm-pf-row__meta { font-size: 13px; color: var(--cm-muted); }
+.cm-pf-row__right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.cm-pf-part { padding: 9px 16px; font: 700 11px var(--cm-font-ui); letter-spacing: .5px; text-transform: uppercase; color: var(--cm-faint); background: var(--cm-surface-alt); border-bottom: 1px solid var(--cm-border-soft); }
+.cm-pf-part:first-child { border-radius: 10px 10px 0 0; }
+
+/* A competency mark: full when retained, dashed while waiting, struck through when not retained. */
+.cm-pf-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.cm-pf-chip { font-size: 12px; border: 1px solid var(--cm-border); border-radius: 4px; padding: 0 6px; color: var(--cm-text); white-space: nowrap; }
+.cm-pf-chip--retained { border-color: transparent; background: var(--cm-green-bg); color: var(--cm-green-tx); }
+.cm-pf-chip--pending { border-style: dashed; border-color: var(--cm-blue-tx); color: var(--cm-blue-tx); }
+.cm-pf-chip--rejected { text-decoration: line-through; color: var(--cm-faint); }
+
+/* « 5 / 6 compétences du bloc 1 couvertes · Manque : … » */
+.cm-pf-cover { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; padding: 10px 14px; border-radius: 8px; font-size: 14px; background: var(--cm-gold-bg); color: var(--cm-gold-tx); }
+.cm-pf-cover--complete { background: var(--cm-green-bg); color: var(--cm-green-tx); }
+.cm-pf-cover strong { font-weight: 700; }
+
+.cm-pf-banner { padding: 10px 14px; border-radius: 8px; font-size: 14px; background: var(--cm-blue-bg); color: var(--cm-blue-tx); }
+.cm-pf-banner--warn { background: var(--cm-gold-bg); color: var(--cm-gold-tx); }
+.cm-pf-banner--danger { background: var(--cm-red-bg); color: var(--cm-red-tx); }
+
+/* Forms: the achievement, the E6 fiche, the formation settings. */
+.cm-pf-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px 18px; }
+.cm-pf-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.cm-pf-field--wide { grid-column: 1 / -1; }
+.cm-pf-field > label, .cm-pf-label { font-size: 13px; font-weight: 700; color: var(--cm-ink); }
+.cm-pf-hint { font-size: 12.5px; color: var(--cm-muted); }
+.cm-pf-inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* Claimed competencies, each with its justification. */
+.cm-pf-claims { display: flex; flex-direction: column; gap: 8px; }
+.cm-pf-claim { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 4px 10px; align-items: start; padding: 8px 10px; border: 1px solid var(--cm-border-soft); border-radius: 8px; }
+.cm-pf-claim:has(> input:checked) { border-color: var(--cm-blue-tx); background: var(--cm-blue-bg-soft); }
+.cm-pf-claim > input { margin-top: 4px; }
+.cm-pf-claim__label { font-weight: 600; color: var(--cm-ink); font-size: 14px; }
+.cm-pf-claim__skills { font-size: 12.5px; color: var(--cm-muted); }
+.cm-pf-claim__why { grid-column: 2; display: none; }
+.cm-pf-claim:has(> input:checked) .cm-pf-claim__why { display: block; }
+
+/* The replica of annexe VI-1. */
+.cm-pf-sheetwrap { overflow-x: auto; }
+.cm-pf-sheet { min-width: 860px; width: 100%; border-collapse: collapse; font-size: 13px; background: var(--cm-surface); }
+.cm-pf-sheet th, .cm-pf-sheet td { border: 1px solid var(--cm-border); padding: 6px 8px; vertical-align: top; }
+.cm-pf-sheet th { color: var(--cm-ink); font-weight: 700; font-size: 12px; vertical-align: bottom; background: var(--cm-surface-alt); }
+.cm-pf-sheet th.cm-pf-sheet__comp { width: 9%; text-align: center; }
+.cm-pf-sheet__banner td { font-weight: 700; color: var(--cm-ink); }
+.cm-pf-sheet__part td { background: var(--cm-surface-alt); font-weight: 700; font-style: italic; color: var(--cm-ink); }
+.cm-pf-sheet__mark { text-align: center; font-weight: 700; font-size: 15px; }
+.cm-pf-sheet__mark--retained { color: var(--cm-green-tx); }
+.cm-pf-sheet__mark--pending { color: var(--cm-blue-tx); }
+.cm-pf-sheet__period { white-space: nowrap; color: var(--cm-muted); font-variant-numeric: tabular-nums; }
+.cm-pf-sheet__docs { display: block; color: var(--cm-muted); font-size: 12px; }
+.cm-pf-sheet__cover td { background: var(--cm-highlight-bg); font-weight: 700; color: var(--cm-ink); text-align: center; }
+.cm-pf-sheet__cover td.cm-pf-sheet__gap { color: var(--cm-red-tx); }
+.cm-pf-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--cm-muted); }
+
+/* Class view: students × competencies. */
+.cm-pf-matrix { min-width: 760px; width: 100%; border-collapse: collapse; font-size: 13px; }
+.cm-pf-matrix th, .cm-pf-matrix td { border-bottom: 1px solid var(--cm-border-soft); padding: 7px 8px; text-align: left; }
+.cm-pf-matrix th { font: 700 11px var(--cm-font-ui); color: var(--cm-faint); text-transform: uppercase; letter-spacing: .4px; }
+.cm-pf-matrix td.cm-pf-matrix__n { text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+.cm-pf-matrix__none { background: var(--cm-red-bg); color: var(--cm-red-tx); }
+.cm-pf-matrix__pending { background: var(--cm-blue-bg); color: var(--cm-blue-tx); }
+.cm-pf-matrix__ok { background: var(--cm-green-bg); color: var(--cm-green-tx); }
+
+/* Review: the piece on the left, the decision on the right. */
+.cm-pf-split { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 900px) { .cm-pf-split { grid-template-columns: 1fr; } }
+.cm-pf-decide { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--cm-border-soft); }
+.cm-pf-decide__why { grid-column: 1 / -1; font-size: 12.5px; color: var(--cm-muted); font-style: italic; }
+.cm-pf-seg { display: inline-flex; border: 1px solid var(--cm-border); border-radius: 6px; overflow: hidden; font-size: 12.5px; font-weight: 700; }
+.cm-pf-seg label { padding: 3px 10px; color: var(--cm-muted); cursor: pointer; margin: 0; }
+.cm-pf-seg input { position: absolute; opacity: 0; pointer-events: none; }
+.cm-pf-seg label:has(> input[value="1"]:checked) { background: var(--cm-green-bg); color: var(--cm-green-tx); }
+.cm-pf-seg label:has(> input[value="0"]:checked) { background: var(--cm-red-bg); color: var(--cm-red-tx); }
+.cm-pf-prose { font-size: 14px; color: var(--cm-text); overflow-wrap: anywhere; }
+.cm-pf-prose img { max-width: 100%; height: auto; }
+
+/* The journal of decisions, newest first. */
+.cm-pf-journal { display: flex; flex-direction: column; gap: 8px; }
+.cm-pf-journal__entry { border-left: 3px solid var(--cm-border); padding: 2px 10px; font-size: 13px; }
+.cm-pf-journal__entry--validated { border-left-color: var(--cm-green-tx); }
+.cm-pf-journal__entry--to_rework { border-left-color: var(--cm-red-tx); }
+.cm-pf-journal__comment { white-space: pre-line; color: var(--cm-text); }
+
+/* Evidence list. */
+.cm-pf-evidence { display: flex; gap: 10px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--cm-border-soft); font-size: 14px; }
+.cm-pf-evidence:last-child { border-bottom: 0; }
+.cm-pf-evidence__label { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.cm-pf-evidence__kind { font-size: 12px; color: var(--cm-muted); }
+
+/* The E6 fiche's recto part read from the réalisation - greyed, edited only there. */
+.cm-pf-recto { background: var(--cm-surface-alt); border: 1px dashed var(--cm-border); border-radius: 8px; padding: 12px 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 6px 18px; font-size: 13.5px; }
+.cm-pf-recto dt { font-weight: 700; color: var(--cm-muted); font-size: 12px; }
+.cm-pf-recto dd { margin: 0; color: var(--cm-ink); }

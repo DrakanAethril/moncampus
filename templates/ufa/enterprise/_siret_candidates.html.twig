@@ -1,0 +1,57 @@
+{# The « Propositions » frame of the fiche SIRET (EnterpriseSiretController::candidates()).
+   Every candidate shows what it is and why it is proposed; « Associer » is the only thing that
+   writes, and it leaves the frame (_top) because it ends on another page. #}
+<turbo-frame id="siret-candidates">
+    {% if unavailable %}
+        <div class="card-body">
+            <div class="alert alert-warning mb-0">{{ 'ufaEnterpriseSiretUnavailableText'|trans }}</div>
+        </div>
+    {% elseif candidates is empty %}
+        <div class="card-body text-secondary">
+            {{ searched ? 'ufaEnterpriseSiretNoSearchResultText'|trans : 'ufaEnterpriseSiretNoCandidateText'|trans }}
+        </div>
+    {% else %}
+        <div class="list-group list-group-flush">
+            {% for candidate in candidates %}
+                {% set establishment = candidate.establishment %}
+                {% set recorded = establishment.siret == enterprise.siret %}
+                <div class="list-group-item d-flex flex-wrap flex-md-nowrap gap-3 align-items-start">
+                    <div class="flex-fill" style="min-width: 0;">
+                        <div class="fw-bold">
+                            {{ establishment.fullName }}
+                            {% for other in establishment.otherNames %}<span class="text-secondary fw-normal"> · {{ other }}</span>{% endfor %}
+                        </div>
+                        <div class="text-secondary small">
+                            {{ establishment.address }}
+                            · {{ establishment.open ? 'ufaEnterpriseSiretOpenText'|trans : 'ufaEnterpriseSiretClosedText'|trans }}
+                            {% if establishment.headOffice %}· {{ 'ufaEnterpriseSiretHeadOfficeText'|trans }}{% endif %}
+                            {% if establishment.createdOn %}· {{ 'ufaEnterpriseSiretCreatedInText'|trans({'%year%': establishment.createdOn|date('Y')}) }}{% endif %}
+                        </div>
+                        <div class="d-flex flex-wrap gap-1 mt-1">
+                            {% if recorded %}<twig:Cm:Badge tone="purple">{{ 'ufaEnterpriseSiretRecordedBadgeLabel'|trans }}</twig:Cm:Badge>{% endif %}
+                            {% for evidence in candidate.evidence %}<twig:Cm:Badge :of="evidence"/>{% endfor %}
+                            {% if not establishment.open %}<twig:Cm:Badge tone="red">{{ 'ufaEnterpriseSiretClosedText'|trans }}</twig:Cm:Badge>{% endif %}
+                            {% if candidate.linkedTo %}
+                                {# R8: said before the click, never a reason to refuse it. #}
+                                <a href="{{ path('app_ufa_enterprise_show', {id: candidate.linkedTo.id}) }}" data-turbo-frame="_top" target="_blank" rel="noopener">
+                                    <twig:Cm:Badge tone="gold">{{ 'ufaEnterpriseSiretLinkedToBadgeLabel'|trans({'%name%': candidate.linkedTo.name}) }} ↗</twig:Cm:Badge>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="font-monospace text-nowrap pt-1">{{ establishment.siret|siret }}</div>
+                    <form method="post" action="{{ path('app_ufa_enterprise_siret_associate', {id: enterprise.id}) }}" data-turbo-frame="_top">
+                        <input type="hidden" name="_token" value="{{ csrf_token('enterprise_siret_' ~ enterprise.id) }}">
+                        <input type="hidden" name="siret" value="{{ establishment.siret }}">
+                        {% if queue %}<input type="hidden" name="queue" value="1">{% endif %}
+                        {# Only a right-name, same-address candidate is drawn as the obvious button - a
+                           weak first one (ACOM → Cabinet Robert) must not look like the answer. #}
+                        <twig:Cm:Button variant="{{ loop.first and candidate.likely and 'same_address' in candidate.evidence|map(e => e.value) ? 'primary' : 'outline' }}" size="sm" type="submit">
+                            {{ recorded ? 'ufaEnterpriseSiretConfirmAction'|trans : 'ufaEnterpriseSiretAssociateAction'|trans }}
+                        </twig:Cm:Button>
+                    </form>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</turbo-frame>

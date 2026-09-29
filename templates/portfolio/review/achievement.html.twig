@@ -1,0 +1,66 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ achievement.title }}{% endblock %}
+{% block page_breadcrumb %}
+    {% include 'portfolio/review/_student_crumbs.html.twig' with {extra: [{label: achievement.title, url: app.request.requestUri}]} %}
+{% endblock %}
+{% block page_title %}{{ achievement.title }}{% endblock %}
+
+{% block main %}
+    <div class="cm-pf-page">
+        <div class="cm-pf-inline">
+            <twig:Cm:Badge :of="achievement.state"/>
+            <span class="cm-pf-meta">{{ 'portfolioRevisionText'|trans({'%revision%': achievement.revision}) }}</span>
+            {% if achievement.submittedAt %}<span class="cm-pf-meta">· {{ 'portfolioQueueSubmittedMeta'|trans({'%date%': achievement.submittedAt|date('d/m/Y')}) }}</span>{% endif %}
+        </div>
+        {% if changed is not empty %}
+            <div class="cm-pf-banner cm-pf-banner--warn">
+                {{ 'portfolioReviewChangedSinceText'|trans({'%date%': lastValidation.decidedAt|date('d/m/Y')}) }}
+                <strong>{{ changed|map(k => ('portfolioSnapshotKey_' ~ k)|trans)|join(', ') }}</strong>
+            </div>
+        {% endif %}
+        <div class="cm-pf-split">
+            <div class="cm-pf-page">
+                {% include 'portfolio/_achievement_body.html.twig' with {show_claims: not canDecide} %}
+                <div class="cm-pf-card cm-pf-card--pad">
+                    <twig:Cm:Subhead :title="'portfolioEvidenceHeading'|trans"/>
+                    {% include 'portfolio/_evidence_list.html.twig' with {evidences: achievement.evidences} %}
+                </div>
+                <div class="cm-pf-card cm-pf-card--pad">
+                    <twig:Cm:Subhead :title="'portfolioJournalHeading'|trans"/>
+                    {% include 'portfolio/_journal.html.twig' with {reviews: achievement.reviews} %}
+                </div>
+            </div>
+            {% if canDecide %}
+                <form method="post" action="{{ path('app_portfolios_achievement_decide', {id: achievement.id}) }}" class="cm-pf-card cm-pf-card--pad">
+                    <input type="hidden" name="_token" value="{{ csrf_token('portfolio_review') }}">
+                    <twig:Cm:Subhead :title="'portfolioReviewPerCompetencyHeading'|trans" :hint="'portfolioReviewPerCompetencyHint'|trans"/>
+                    {% for claim in achievement.claims %}
+                        <div class="cm-pf-decide">
+                            <div class="cm-pf-claim__label">{{ claim.competency.label }}{% if claim.competency.block.role.value == 'showcase' %} <span class="cm-pf-hint">({{ claim.competency.block.code }})</span>{% endif %}</div>
+                            <span class="cm-pf-seg" role="radiogroup" aria-label="{{ claim.competency.label }}">
+                                <label><input type="radio" name="retained[{{ claim.competency.id }}]" value="1" required>{{ 'portfolioClaimRetainedLabel'|trans }}</label>
+                                <label><input type="radio" name="retained[{{ claim.competency.id }}]" value="0">{{ 'portfolioReviewNotRetainedShort'|trans }}</label>
+                            </span>
+                            <div class="cm-pf-decide__why">« {{ claim.justification }} »</div>
+                            <input class="form-control form-control-sm" style="grid-column:1/-1" name="claimComment[{{ claim.competency.id }}]" maxlength="500" placeholder="{{ 'portfolioReviewClaimCommentPlaceholder'|trans }}" aria-label="{{ 'portfolioReviewClaimCommentPlaceholder'|trans }}">
+                        </div>
+                    {% endfor %}
+                    <div class="cm-pf-field">
+                        <label for="review-comment">{{ 'portfolioReviewCommentLabel'|trans }}</label>
+                        <textarea id="review-comment" class="form-control" name="comment" rows="4"></textarea>
+                        <span class="cm-pf-hint">{{ 'portfolioReviewCommentHint'|trans }}</span>
+                    </div>
+                    <twig:Cm:ActionBar>
+                        <button type="submit" name="decision" value="to_rework" class="cm-btn cm-btn--outline" formnovalidate>{{ 'portfolioReviewSendBackAction'|trans }}</button>
+                        <button type="submit" name="decision" value="validated" class="cm-btn cm-btn--primary">{{ 'portfolioReviewValidateAction'|trans }}</button>
+                    </twig:Cm:ActionBar>
+                </form>
+            {% else %}
+                <div class="cm-pf-card cm-pf-card--pad">
+                    <p class="cm-pf-meta mb-0">{{ (achievement.state.value == 'submitted' ? 'portfolioReviewReadOnlyText' : 'portfolioReviewNothingToDecideText')|trans }}</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

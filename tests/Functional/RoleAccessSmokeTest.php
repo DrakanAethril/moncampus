@@ -359,6 +359,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/ufa' => 403,
             '/ufa/list' => 403,
             '/ufa/enterprises' => 403,
+            '/ufa/enterprises/siret-review' => 403,
             '/ufa/configuration/contract-import' => 403,
             '/eco/parcours' => 403,
             // Dossiers documentaires. The two sides of the tool are two sets of routes, and this is
@@ -368,6 +369,12 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/my-dossiers' => 200,
             '/dossiers' => 403,
             '/dossiers/new' => 403,
+            // Portfolio: « Mon portfolio » exists only when a formation of the student runs it, and
+            // the fixture's does not; the review side is the designated validateurs' - see
+            // PortfolioAccessTest for both sides with a portfolio in place.
+            '/my/portfolio' => 404,
+            '/portfolios' => 404,
+            '/settings/referentials' => 403,
         ]);
     }
 
@@ -522,6 +529,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/ufa' => 403,
             '/ufa/list' => 403,
             '/ufa/enterprises' => 403,
+            '/ufa/enterprises/siret-review' => 403,
             '/ufa/configuration/contract-import' => 403,
             '/eco/parcours' => 403,
             // Dossiers documentaires: a teacher composes one, and reads « Mes dossiers » as an
@@ -530,6 +538,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/dossiers' => 200,
             '/dossiers/new' => 200,
             '/my-dossiers' => 200,
+            // Portfolio: a teacher nobody designated has no « Portfolios » at all (a 404, not a
+            // refusal), and the référentiels are the administration's.
+            '/portfolios' => 404,
+            '/settings/referentials' => 403,
         ]);
     }
 
@@ -572,6 +584,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/ufa' => 200,
             '/ufa/list' => 200,
             '/ufa/enterprises' => 200,
+            // The SIRET queue hands over to the first employer « à confirmer », or back to the list.
+            '/ufa/enterprises/siret-review' => 302,
             '/ufa/reminders' => 200,
             '/ufa/configuration/contract-import' => 200,
             '/eco/parcours' => 200,
@@ -674,6 +688,13 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // « Mes dossiers » is not an administrator's screen in any useful sense - they are a
             // cible of nothing - but it renders, empty, like every other personal screen here.
             '/my-dossiers' => 200,
+            // Portfolio, the role it is delivered to on the day it ships: the référentiels and the
+            // class view (reading - deciding needs a designation, see PortfolioAccessTest).
+            '/settings/referentials' => 200,
+            '/settings/referentials/new' => 200,
+            '/settings/referentials/rncp' => 200,
+            '/portfolios' => 302,
+            '/portfolios/classes' => 200,
         ]);
     }
 
@@ -841,6 +862,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/ufa' => 403,
             '/ufa/list' => 403,
             '/ufa/enterprises' => 403,
+            '/ufa/enterprises/siret-review' => 403,
             '/ufa/configuration/contract-import' => 403,
             '/eco/parcours' => 403,
         ]);

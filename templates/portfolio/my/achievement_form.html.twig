@@ -1,0 +1,119 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set heading = (achievement ? 'portfolioAchievementEditHeading' : 'portfolioAchievementNewHeading')|trans %}
+{% set v = posted ?? {} %}
+{% block title %}{{ heading }}{% endblock %}
+{% block page_breadcrumb %}
+    {% set segments = [{label: 'myPortfolioNavLabel'|trans, url: path('app_my_portfolio')}] %}
+    {% if achievement %}{% set segments = segments|merge([{label: achievement.title, url: path('app_my_portfolio_achievement', {id: achievement.id})}]) %}{% endif %}
+    {{ component('Cm:Breadcrumb', {segments: segments|merge([{label: heading, url: app.request.requestUri}])}) }}
+{% endblock %}
+{% block page_title %}{{ heading }}{% endblock %}
+
+{% block main %}
+    <form method="post" class="cm-pf-page" data-controller="portfolio-prefill">
+        <input type="hidden" name="_token" value="{{ csrf_token('my_portfolio') }}">
+        {% for error in errors %}<div class="cm-pf-banner cm-pf-banner--danger">{{ error|trans }}</div>{% endfor %}
+        {% if achievement and achievement.validated %}
+            <div class="cm-pf-banner cm-pf-banner--warn">{{ 'portfolioAchievementValidatedEditWarning'|trans }}</div>
+        {% endif %}
+
+        {% if workplaceSources is not empty and not achievement %}
+            <div class="cm-pf-banner cm-pf-inline">
+                <label for="pf-prefill" class="mb-0">{{ 'portfolioPrefillWorkplaceLabel'|trans }}</label>
+                <select id="pf-prefill" class="form-select form-select-sm" style="width:auto" data-action="change->portfolio-prefill#apply">
+                    <option value="">{{ 'portfolioChoosePlaceholder'|trans }}</option>
+                    {% for source in workplaceSources %}
+                        <option value="{{ loop.index0 }}" data-organisation="{{ source.organisation }}" data-place="{{ source.place }}" data-from="{{ source.from }}" data-until="{{ source.until }}">{{ source.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        {% endif %}
+        <div class="cm-pf-card cm-pf-card--pad">
+            <div class="cm-pf-form">
+                <div class="cm-pf-field cm-pf-field--wide">
+                    <label for="pf-title">{{ 'portfolioTitleFieldLabel'|trans }}</label>
+                    <input id="pf-title" class="form-control" name="title" maxlength="255" required value="{{ v.title ?? (achievement ? achievement.title) }}">
+                    <span class="cm-pf-hint">{{ 'portfolioTitleFieldHint'|trans }}</span>
+                </div>
+                <div class="cm-pf-field">
+                    <span class="cm-pf-label">{{ 'portfolioSettingFieldLabel'|trans }}</span>
+                    {% set currentSetting = v.setting ?? (achievement ? achievement.setting.value : 'training') %}
+                    {% for setting in settings %}
+                        <label class="form-check">
+                            <input class="form-check-input" type="radio" name="setting" value="{{ setting.value }}"{{ currentSetting == setting.value ? ' checked' }}>
+                            <span class="form-check-label">{{ setting.labelKey|trans }}</span>
+                        </label>
+                    {% endfor %}
+                    <span class="cm-pf-hint">{{ 'portfolioSettingFieldHint'|trans }}</span>
+                </div>
+                <div class="cm-pf-field">
+                    <span class="cm-pf-label">{{ 'portfolioPeriodFieldLabel'|trans }}</span>
+                    <div class="cm-pf-inline">
+                        <input class="form-control" style="width:auto" type="date" name="startsOn" aria-label="{{ 'portfolioStartsOnFieldLabel'|trans }}" value="{{ v.startsOn ?? (achievement and achievement.startsOn ? achievement.startsOn|date('Y-m-d')) }}">
+                        <span>{{ 'portfolioPeriodToLabel'|trans }}</span>
+                        <input class="form-control" style="width:auto" type="date" name="endsOn" aria-label="{{ 'portfolioEndsOnFieldLabel'|trans }}" value="{{ v.endsOn ?? (achievement and achievement.endsOn ? achievement.endsOn|date('Y-m-d')) }}">
+                    </div>
+                </div>
+                <div class="cm-pf-field">
+                    <label for="pf-org">{{ 'portfolioOrganisationFieldLabel'|trans }}</label>
+                    <input id="pf-org" class="form-control" name="organisation" maxlength="255" value="{{ v.organisation ?? (achievement ? achievement.organisation) }}">
+                </div>
+                <div class="cm-pf-field">
+                    <label for="pf-place">{{ 'portfolioPlaceFieldLabel'|trans }}</label>
+                    <input id="pf-place" class="form-control" name="place" maxlength="255" value="{{ v.place ?? (achievement ? achievement.place) }}">
+                </div>
+                <div class="cm-pf-field">
+                    <span class="cm-pf-label">{{ 'portfolioModalityFieldLabel'|trans }}</span>
+                    {% set team = v is not empty ? (v.teamwork ?? '') == '1' : (achievement ? achievement.teamwork : false) %}
+                    <label class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="teamwork" value="1"{{ team ? ' checked' }}>
+                        <span class="form-check-label">{{ 'portfolioTeamworkLabel'|trans }}</span>
+                    </label>
+                    <textarea class="form-control" name="teamNote" rows="2" placeholder="{{ 'portfolioTeamNotePlaceholder'|trans }}" aria-label="{{ 'portfolioTeamNoteLabel'|trans }}">{{ v.teamNote ?? (achievement ? achievement.teamNote) }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="cm-pf-card cm-pf-card--pad">
+            {% if blocks.synthesis %}
+                {% include 'portfolio/my/_claims.html.twig' with {block: blocks.synthesis, heading: 'portfolioClaimsSynthesisHeading'|trans({'%block%': blocks.synthesis.code})} %}
+            {% endif %}
+            {% if blocks.showcase %}
+                {% include 'portfolio/my/_claims.html.twig' with {block: blocks.showcase, heading: 'portfolioClaimsShowcaseHeading'|trans({'%block%': blocks.showcase.code})} %}
+            {% else %}
+                <p class="cm-pf-hint mb-0">{{ 'portfolioClaimsNoShowcaseHint'|trans }}</p>
+            {% endif %}
+        </div>
+
+        <div class="cm-pf-card cm-pf-card--pad">
+            <div class="cm-pf-field">
+                <label for="pf-description">{{ 'portfolioDescriptionFieldLabel'|trans }}</label>
+                <textarea id="pf-description" name="description" class="d-none" data-controller="hugerte-editor" data-hugerte-editor-height-value="320">{{ v.description ?? (achievement ? achievement.descriptionHtml) }}</textarea>
+                <span class="cm-pf-hint">{{ 'portfolioDescriptionFieldHint'|trans }}</span>
+            </div>
+            {% if reviewers is not empty %}
+                <div class="cm-pf-field" style="max-width:24rem">
+                    <label for="pf-reviewer">{{ 'portfolioRequestedReviewerFieldLabel'|trans }}</label>
+                    {% set currentReviewer = v.requestedReviewer ?? (achievement and achievement.requestedReviewer ? achievement.requestedReviewer.id) %}
+                    <select id="pf-reviewer" class="form-select" name="requestedReviewer">
+                        <option value="">{{ 'portfolioRequestedReviewerAnyone'|trans }}</option>
+                        {% for reviewer in reviewers %}
+                            <option value="{{ reviewer.id }}"{{ currentReviewer == reviewer.id ? ' selected' }}>{{ reviewer.displayName ?? reviewer.username }}</option>
+                        {% endfor %}
+                    </select>
+                    <span class="cm-pf-hint">{{ 'portfolioRequestedReviewerFieldHint'|trans }}</span>
+                </div>
+            {% endif %}
+            {% if not achievement %}<p class="cm-pf-hint mb-0">{{ 'portfolioEvidenceAfterSaveHint'|trans }}</p>{% endif %}
+        </div>
+
+        <twig:Cm:ActionBar>
+            <twig:Cm:Button variant="outline" href="{{ achievement ? path('app_my_portfolio_achievement', {id: achievement.id}) : path('app_my_portfolio') }}">{{ 'cancelAction'|trans }}</twig:Cm:Button>
+            <button type="submit" name="action" value="save" class="cm-btn cm-btn--outline">{{ 'portfolioSaveDraftAction'|trans }}</button>
+            {% if not achievement or achievement.state.value in ['draft', 'to_rework'] %}
+                <button type="submit" name="action" value="submit" class="cm-btn cm-btn--primary">{{ 'portfolioSubmitAction'|trans }}</button>
+            {% endif %}
+        </twig:Cm:ActionBar>
+    </form>
+{% endblock %}

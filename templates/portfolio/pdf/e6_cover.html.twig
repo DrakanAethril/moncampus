@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    {% include 'portfolio/pdf/_head.html.twig' %}
+    <title>Page de présentation du dossier</title>
+</head>
+{% set student = portfolio.student %}
+<body>
+    <p style="text-align:right"><strong>BTS SIO {{ session }}</strong></p>
+    <p style="text-align:center;font-size:12pt"><strong>{{ examTitle }}</strong></p>
+    <h1 style="margin:30px 0">PAGE DE PRÉSENTATION DU DOSSIER</h1>
+    <div class="box" style="font-size:12pt;line-height:2">
+        <div><span class="label">N° d’inscription :</span> {{ portfolio.candidateNumber ?? '………………………………' }}</div>
+        <div><span class="label">NOM :</span> {{ student.lastname|upper }}</div>
+        <div><span class="label">PRÉNOM :</span> {{ student.firstname }}</div>
+    </div>
+    <p class="muted">Date et heure de passage : à ne pas compléter.</p>
+    <p class="muted">Catégorie candidat : à cocher sur l’original d’après la confirmation d’inscription.</p>
+    <p style="margin-top:30px">Dossier : fiche{{ portfolio.showcases|length > 1 ? 's' }} descriptive{{ portfolio.showcases|length > 1 ? 's' }} de réalisation professionnelle, contrôle en cours de formation.</p>
+</body>
+</html>

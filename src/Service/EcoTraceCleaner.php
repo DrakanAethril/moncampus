@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Entity\EcoPositionPing;
+
 /**
  * Turns a raw GPS trace into the two figures the results screen quotes from it: the distance
  * actually covered, and the elevation climbed.
@@ -13,11 +15,29 @@ namespace App\Service;
  * the distance - which then inflates the average speed and every detour ratio built on it. The
  * altitude is noisier still, by a factor of several: an unfiltered climb reads in hundreds of
  * metres on a flat park.
+ *
+ * Wander is not the only noise. Under trees a phone now and then hands out a fix tens of metres
+ * off - a network position, a reflected signal - and the trace jumps there and back: every such
+ * jump clears the 5 m threshold and is summed twice. plausible() takes those fixes out before
+ * anything reads the trace.
  */
 class EcoTraceCleaner
 {
+    /** A fix the phone itself places no closer than this is not read. */
+    public const float MAX_ACCURACY_METERS = 30.0;
+
+    /** Faster than anybody runs through a wood: a fix that far from the last one is a jump. */
+    public const float MAX_SPEED_KMH = 25.0;
+
+    /**
+     * After this many jumps in a row, the next fix is taken whatever it says: the runner has
+     * really moved (a long gap in the trace), or the fix everything was measured against was the
+     * bad one, and refusing for ever would drop the rest of the race.
+     */
+    private const int MAX_REJECTED_IN_A_ROW = 3;
+
     /** A hop shorter than this is GPS wander, not ground covered. */
-    private const float MIN_MOVE_METERS = 5.0;
+    public const float MIN_MOVE_METERS = 5.0;
 
     /** Altitude only counts once it has changed by more than the fix-to-fix noise. */
     private const float MIN_CLIMB_METERS = 3.0;
@@ -25,6 +45,57 @@ class EcoTraceCleaner
     public function __construct(
         private readonly EcoDistanceCalculator $distanceCalculator,
     ) {
+    }
+
+    /**
+     * The fixes worth reading, in their order: those the phone did not call vague, and those that
+     * do not ask the runner to have covered the ground since the last fix kept faster than
+     * MAX_SPEED_KMH. Every figure read off a trace starts from this - the distance, the legs, the
+     * stops, the terrain split, the line drawn on the map.
+     *
+     * @param list<EcoPositionPing> $pings in recording order
+     *
+     * @return list<EcoPositionPing>
+     */
+    public function plausible(array $pings): array
+    {
+        $kept = [];
+        $last = null;
+        $rejectedInARow = 0;
+
+        foreach ($pings as $ping) {
+            $accuracy = $ping->getAccuracy();
+            if (null !== $accuracy && $accuracy > self::MAX_ACCURACY_METERS) {
+                continue;
+            }
+
+            if (null !== $last && $rejectedInARow < self::MAX_REJECTED_IN_A_ROW && $this->isJump($last, $ping)) {
+                ++$rejectedInARow;
+
+                continue;
+            }
+
+            $kept[] = $ping;
+            $last = $ping;
+            $rejectedInARow = 0;
+        }
+
+        return $kept;
+    }
+
+    private function isJump(EcoPositionPing $from, EcoPositionPing $to): bool
+    {
+        $fromAt = $from->getRecordedAt();
+        $toAt = $to->getRecordedAt();
+        if (null === $fromAt || null === $toAt) {
+            return false;
+        }
+
+        // Two fixes stamped the same second are still a second apart as far as a pace goes.
+        $seconds = max(1, $toAt->getTimestamp() - $fromAt->getTimestamp());
+        $metres = $this->distanceCalculator->distanceMeters((float) $from->getLatitude(), (float) $from->getLongitude(), (float) $to->getLatitude(), (float) $to->getLongitude());
+
+        return $metres / $seconds * 3.6 > self::MAX_SPEED_KMH;
     }
 
     /**

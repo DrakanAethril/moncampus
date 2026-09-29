@@ -1,0 +1,86 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set heading = program.displayShortName ~ ' · ' ~ option.shortName %}
+{% block title %}{{ heading }}{% endblock %}
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'toolsNavLabel'|trans, url: path('app_tools_random_draw')},
+        {label: 'portfoliosNavLabel'|trans, url: path('app_portfolios')},
+        {label: heading, url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
+{% block page_title %}{{ heading }}{% endblock %}
+
+{% block main %}
+    {% include 'portfolio/review/_tabs.html.twig' %}
+    <div class="cm-pf-page mt-3">
+        <div class="cm-pf-card cm-pf-card--pad" style="overflow-x:auto">
+            <table class="cm-pf-matrix">
+                <thead>
+                    <tr>
+                        <th>{{ 'portfolioClassStudentColumn'|trans }}</th>
+                        {% for column in overview.columns %}<th title="{{ column.label }}">{{ column.displayShortLabel|length > 14 ? column.code : column.displayShortLabel }}</th>{% endfor %}
+                        <th>{{ 'portfolioClassWorkplaceColumn'|trans }}</th>
+                        <th>{{ 'portfolioClassE6Column'|trans }}</th>
+                        <th>{{ 'portfolioClassDepositColumn'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in overview.rows %}
+                        <tr>
+                            <td>
+                                {% if row.portfolio %}
+                                    <a href="{{ path('app_portfolios_student', {id: row.portfolio.id}) }}">{{ row.student.lastname|upper }} {{ row.student.firstname }}</a>
+                                {% else %}
+                                    {{ row.student.lastname|upper }} {{ row.student.firstname }} <span class="cm-pf-hint">· {{ 'portfolioClassNotOpenedText'|trans }}</span>
+                                {% endif %}
+                            </td>
+                            {% for column in overview.columns %}
+                                {% set cell = row.cells[column.id] %}
+                                <td class="cm-pf-matrix__n {{ cell.validated > 0 ? 'cm-pf-matrix__ok' : (cell.pending > 0 ? 'cm-pf-matrix__pending' : 'cm-pf-matrix__none') }}">{{ cell.validated }}</td>
+                            {% endfor %}
+                            <td class="cm-pf-matrix__n">{{ row.workplace }}</td>
+                            <td>
+                                {% if row.e6 is null or row.e6.count == 0 %}
+                                    <span class="cm-pf-muted">—</span>
+                                {% elseif row.e6.complete %}
+                                    {{ 'portfolioClassE6CompleteText'|trans }}
+                                {% else %}
+                                    {{ 'portfolioClassE6CountText'|trans({'%count%': row.e6.count}) }}{% if row.e6Pending > 0 %} · {{ 'portfolioClassE6PendingText'|trans({'%count%': row.e6Pending}) }}{% endif %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% for exam, deposit in row.deposits %}
+                                    {% if deposit %}
+                                        <div class="cm-pf-inline">
+                                            <span>{{ exam|upper }}</span>
+                                            <twig:Cm:Badge :of="deposit.state"/>
+                                            {% if canEndorse and not deposit.endorsed %}
+                                                <a href="{{ path('app_portfolios_deposit', {id: deposit.id}) }}">{{ 'portfolioDepositCheckAction'|trans }}</a>
+                                            {% else %}
+                                                <a href="{{ path('app_portfolios_deposit', {id: deposit.id}) }}">{{ 'portfolioDepositOpenAction'|trans }}</a>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                {% else %}
+                                {% endfor %}
+                                {% if row.deposits|filter(d => d is not null) is empty %}<span class="cm-pf-muted">{{ 'portfolioClassNotDepositedText'|trans }}</span>{% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="{{ overview.columns|length + 4 }}" class="cm-pf-muted">{{ 'portfolioClassEmptyText'|trans }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="cm-pf-legend">
+                <span class="cm-pf-matrix__ok px-1">{{ 'portfolioClassLegendValidated'|trans }}</span>
+                <span class="cm-pf-matrix__pending px-1">{{ 'portfolioClassLegendPending'|trans }}</span>
+                <span class="cm-pf-matrix__none px-1">{{ 'portfolioClassLegendNone'|trans }}</span>
+            </div>
+        </div>
+        <twig:Cm:ActionBar>
+            <twig:Cm:Button variant="outline" href="{{ path('app_portfolios_class_e5_zip', {programId: program.id, optionId: option.id}) }}">{{ 'portfolioClassE5ZipAction'|trans }}</twig:Cm:Button>
+            <twig:Cm:Button variant="outline" href="{{ path('app_portfolios_class_e6_pdf', {programId: program.id, optionId: option.id}) }}">{{ 'portfolioClassE6PdfAction'|trans }}</twig:Cm:Button>
+        </twig:Cm:ActionBar>
+    </div>
+{% endblock %}

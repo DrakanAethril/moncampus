@@ -26,6 +26,25 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.29.2'
+      date: '2026-09-29'
+      summary: "L'UFA retrouve le SIRET de chaque employeur dans le répertoire de l'État, toujours confirmé par une personne, et l'administration essaie le portfolio E5/E6 du BTS SIO avant son ouverture aux classes. Les statistiques des courses e-CO retrouvent leurs traces GPS."
+      entries:
+          - type: nouveaute
+            title: "Portfolio E5/E6 du BTS SIO, en essai par l'administration avant son ouverture aux classes"
+            detail: "Réalisations professionnelles validées par des enseignants désignés, tableau de synthèse au modèle officiel de la session, fiches de l'épreuve E6 et dépôts des dossiers."
+          - type: nouveaute
+            title: "UFA : le SIRET des employeurs est proposé depuis le répertoire de l'État et confirmé par une personne"
+            detail: "Une file réunit les entreprises dont le SIRET reste à confirmer, et la fiche entreprise signale un établissement fermé depuis."
+          - type: modification
+            title: "UFA : un SIRET saisi à la main est vérifié et montre aussitôt l'établissement qu'il désigne"
+          - type: fix
+            title: "e-CO : les positions GPS se replacent à la bonne heure, et les positions aberrantes sont écartées"
+            detail: "Distances, temps de recherche, dénivelé et vitesses par terrain des courses se calculent de nouveau."
+          - type: fix
+            title: "e-CO : un contrôle scanné hors réseau garde l'heure à laquelle il a été scanné"
+          - type: autre
+            title: "Application e-CO 1.3.3 pour Android"
     - version: '2026.09.29'
       date: '2026-09-29'
       summary: "Dans l'application e-CO, l'enseignant voit la carte de son parcours sur le fond de l'IGN, balises en place, dès l'ouverture de la fiche terrain."

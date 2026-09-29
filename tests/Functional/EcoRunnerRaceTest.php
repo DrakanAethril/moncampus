@@ -7,6 +7,7 @@ namespace App\Tests\Functional;
 use App\Entity\EcoCheckpoint;
 use App\Entity\EcoCourse;
 use App\Entity\EcoParcours;
+use App\Entity\EcoRunner;
 use App\Entity\User;
 use App\Enum\EcoCheckpointType;
 use App\Service\JsonRequestPayload;
@@ -60,6 +61,7 @@ class EcoRunnerRaceTest extends FunctionalTestCase
     public function testTheRecapCountsTheRegularFlagsAndTimesEachLeg(): void
     {
         $token = $this->join('lilou');
+        $this->joinedAt($token, '2026-09-28T09:55:00+02:00');
         $this->scan($token, EcoCheckpointType::Start, '2026-09-28T10:00:00+02:00');
         // Typed by hand with a space in the middle, as read off the flag.
         $code = (string) $this->checkpoints[EcoCheckpointType::Checkpoint->value]->getShortCode();
@@ -79,6 +81,55 @@ class EcoRunnerRaceTest extends FunctionalTestCase
         self::assertCount(2, $legs);
         self::assertSame(240, $legs[0]->int('seconds'));
         self::assertSame(390, $legs[1]->int('seconds'));
+    }
+
+    public function testALegIsMeasuredOnTheFixesTheRunnerSentDuringIt(): void
+    {
+        $token = $this->join('lilou');
+        $this->joinedAt($token, '2026-09-28T09:55:00+02:00');
+        $this->scan($token, EcoCheckpointType::Start, '2026-09-28T10:00:00+02:00');
+        // The phone sends UTC. Kept as UTC wall time, these read back two hours before the scans
+        // and the leg found no fix at all: the flag-to-flag straight line, ~111 m.
+        $this->request('POST', '/api/eco/runner/positions', ['token' => $token, 'points' => [
+            // A detour ~155 m east and back.
+            ['recordedAt' => '2026-09-28T08:01:00.000Z', 'latitude' => 45.8303, 'longitude' => 1.262, 'accuracy' => 6.0],
+            ['recordedAt' => '2026-09-28T08:02:00.000Z', 'latitude' => 45.8307, 'longitude' => 1.262, 'accuracy' => 6.0],
+            // Thrown 1.5 km away in 30 s: a jump, not a runner.
+            ['recordedAt' => '2026-09-28T08:02:30.000Z', 'latitude' => 45.8305, 'longitude' => 1.28, 'accuracy' => 6.0],
+            // Plausible pace, but the phone itself says it does not know within 80 m.
+            ['recordedAt' => '2026-09-28T08:02:40.000Z', 'latitude' => 45.8308, 'longitude' => 1.2635, 'accuracy' => 80.0],
+        ]]);
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        $this->scan($token, EcoCheckpointType::Checkpoint, '2026-09-28T10:04:00+02:00');
+        $this->scan($token, EcoCheckpointType::Finish, '2026-09-28T10:10:30+02:00');
+
+        $legs = $this->request('GET', '/api/eco/runner/summary?token='.$token)->objects('legs');
+
+        // Départ → fix → fix → flag: ~158 + 44 + 158 m.
+        self::assertEqualsWithDelta(360, (int) $legs[0]->int('distanceMeters'), 20);
+    }
+
+    public function testAScanQueuedWithoutNetworkKeepsTheTimeItWasMade(): void
+    {
+        $token = $this->join('lilou');
+        $this->joinedAt($token, '2026-09-28T09:55:00+02:00');
+
+        // The phone's clock, in UTC, sent on reconnection long after.
+        $this->scan($token, EcoCheckpointType::Start, '2026-09-28T08:00:00.000Z');
+
+        self::assertSame('2026-09-28 10:00:00', $this->runner($token)->getStartedAt()?->format('Y-m-d H:i:s'));
+    }
+
+    public function testAPhoneClockOutsideTheRaceIsNotBelieved(): void
+    {
+        $early = $this->join('lilou');
+        $this->scan($early, EcoCheckpointType::Start, '2026-01-01T08:00:00Z');
+        $late = $this->join('tomtom');
+        $this->scan($late, EcoCheckpointType::Start, '2099-01-01T08:00:00Z');
+
+        // Before the runner even joined, or still to come: the time of arrival instead.
+        self::assertEqualsWithDelta(time(), $this->runner($early)->getStartedAt()?->getTimestamp(), 5);
+        self::assertEqualsWithDelta(time(), $this->runner($late)->getStartedAt()?->getTimestamp(), 5);
     }
 
     public function testTheTeacherOpensAFinishedRunnerWhileTheRaceRunsButNotOneStillOut(): void
@@ -107,6 +158,22 @@ class EcoRunnerRaceTest extends FunctionalTestCase
     private function join(string $pseudo): string
     {
         return $this->request('POST', '/api/eco/runner/join', ['pseudo' => $pseudo, 'code' => $this->course->getCode()])->string('token');
+    }
+
+    private function runner(string $token): EcoRunner
+    {
+        $runner = $this->entityManager->getRepository(EcoRunner::class)->findOneBy(['joinToken' => $token]);
+        self::assertInstanceOf(EcoRunner::class, $runner);
+
+        return $runner;
+    }
+
+    /** A race replayed on fixed dates needs a runner who joined before them. */
+    private function joinedAt(string $token, string $at): void
+    {
+        $runner = $this->runner($token);
+        new \ReflectionProperty(EcoRunner::class, 'joinedAt')->setValue($runner, new \DateTimeImmutable($at));
+        $this->entityManager->flush();
     }
 
     private function scan(string $token, EcoCheckpointType $type, ?string $at = null, ?string $code = null): void

@@ -76,6 +76,28 @@ class EcoTerrainStatsTest extends TestCase
         self::assertEqualsWithDelta(0.0, (float) $split['offPathSpeedKmh'], 0.01);
     }
 
+    public function testThePaceIgnoresWanderButKeepsASlowWalk(): void
+    {
+        // A minute standing at a flag in a wood, the phone wandering 3.3 m back and forth every
+        // 5 s - summed raw, 2.3 km/h of walking that never happened...
+        $fixes = [];
+        for ($i = 0; $i <= 12; ++$i) {
+            $fixes[] = $this->fix($i * 5, 0 === $i % 2 ? 0.0 : 0.00003, onPath: false, inForest: true);
+        }
+        // ...then a slow walk along a path, 2.2 m every 5 s: no single hop clears the threshold,
+        // the walk still counts in full.
+        for ($k = 0; $k < 12; ++$k) {
+            $fixes[] = $this->fix(65 + $k * 5, 0.00002 * ($k + 1), onPath: true, inForest: false);
+        }
+
+        $split = $this->stats->split($fixes);
+
+        self::assertNotNull($split);
+        self::assertEqualsWithDelta(0.0, (float) $split['offPathSpeedKmh'], 0.01);
+        // 26.7 m in 55 s.
+        self::assertEqualsWithDelta(1.7, (float) $split['onPathSpeedKmh'], 0.1);
+    }
+
     public function testASilentPhoneCountsForNobody(): void
     {
         $fixes = [

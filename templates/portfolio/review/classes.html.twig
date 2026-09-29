@@ -1,0 +1,30 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'portfoliosNavLabel'|trans }}{% endblock %}
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'toolsNavLabel'|trans, url: path('app_tools_random_draw')},
+        {label: 'portfoliosNavLabel'|trans, url: path('app_portfolios')},
+    ]}) }}
+{% endblock %}
+{% block page_title %}{{ 'portfoliosNavLabel'|trans }}{% endblock %}
+
+{% block main %}
+    {% include 'portfolio/review/_tabs.html.twig' %}
+    <div class="cm-pf-page mt-3">
+        <div class="cm-pf-card">
+            <div class="cm-pf-rows">
+                {% for pair in pairs %}
+                    <div class="cm-pf-row">
+                        <div>
+                            <a class="cm-pf-row__title" href="{{ path('app_portfolios_class', {programId: pair.program.id, optionId: pair.option.id}) }}">{{ pair.program.displayShortName }} · {{ pair.option.shortName }}</a>
+                            <div class="cm-pf-row__meta">{{ pair.program.portfolioReferential.displayName }}{% if pair.program.portfolioCursusYear %} · {{ ('programPortfolioCursusYear' ~ (pair.program.portfolioCursusYear == 1 ? 'One' : 'Two'))|trans }}{% endif %}</div>
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="cm-pf-empty">{{ 'portfolioClassesEmptyText'|trans }}</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

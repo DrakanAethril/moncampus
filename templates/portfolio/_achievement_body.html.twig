@@ -1,0 +1,34 @@
+{# A réalisation as written, in reading - the student's own page and the left pane of the
+   validateur's review screen. #}
+<div class="cm-pf-card cm-pf-card--pad">
+    <div class="cm-pf-meta">
+        {{ achievement.setting.labelKey|trans }}
+        {% if achievement.startsOn %} · {{ 'portfolioPeriodText'|trans({'%from%': achievement.startsOn|date('d/m/Y'), '%to%': (achievement.endsOn ?? achievement.startsOn)|date('d/m/Y')}) }}{% endif %}
+        · {{ (achievement.teamwork ? 'portfolioTeamworkLabel' : 'portfolioAloneLabel')|trans }}
+        {% if achievement.organisation %} · {{ achievement.organisation }}{% endif %}
+        {% if achievement.place %} · {{ achievement.place }}{% endif %}
+    </div>
+    {% if achievement.teamwork and achievement.teamNote %}<p class="mb-0"><strong>{{ 'portfolioTeamNoteLabel'|trans }}</strong> {{ achievement.teamNote }}</p>{% endif %}
+    {% if achievement.descriptionHtml %}
+        <div class="cm-pf-prose">{{ achievement.descriptionHtml|raw }}</div>
+    {% else %}
+        <p class="cm-pf-muted mb-0">{{ 'portfolioDescriptionEmptyText'|trans }}</p>
+    {% endif %}
+</div>
+{% if show_claims is not defined or show_claims %}
+    <div class="cm-pf-card cm-pf-card--pad">
+        <twig:Cm:Subhead :title="'portfolioClaimsHeading'|trans"/>
+        {% for claim in achievement.claims %}
+            <div class="cm-pf-decide">
+                <div>
+                    <div class="cm-pf-claim__label">{{ claim.competency.label }}</div>
+                    <div class="cm-pf-decide__why">« {{ claim.justification }} »</div>
+                    {% if claim.decisionComment %}<div class="cm-pf-hint">{{ claim.decisionComment }}</div>{% endif %}
+                </div>
+                <twig:Cm:Badge :of="claim.state"/>
+            </div>
+        {% else %}
+            <p class="cm-pf-muted mb-0">{{ 'portfolioClaimsEmptyText'|trans }}</p>
+        {% endfor %}
+    </div>
+{% endif %}

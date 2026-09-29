@@ -61,6 +61,7 @@ final class PlatformSchedule implements ScheduleProviderInterface
         'app:ldap:apply-account-requests' => '* * * * *',
         // e-CO: what the IGN says about a parcours and about a closed race, too slow for a request.
         'app:eco:read-terrain' => '* * * * *',
+        'app:rncp:fetch' => '* * * * *',
         // The hypervisors' badges and the address ranges, refreshed off the page render. Offset
         // from each other so the two never start in the same minute.
         'app:proxmox:check' => '*/5 * * * *',
@@ -74,6 +75,7 @@ final class PlatformSchedule implements ScheduleProviderInterface
         // The morning, once the night is done: the VM batches whose date has passed, each reminded
         // about once. It destroys nothing - an administrator deletes in Proxmox.
         'app:proxmox:expire-batches' => '0 7 * * *',
+        'app:rncp:check' => '30 5 * * 1',
     ];
 
     public function __construct(

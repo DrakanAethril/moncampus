@@ -1,0 +1,40 @@
+{# Paramètres > Pédagogique > Référentiels - the national référentiels portfolios are written
+   against, and the France compétences requests still waiting to be applied. #}
+<div class="cm-pf-rows">
+    {% for import in imports %}
+        <div class="cm-pf-row">
+            <div>
+                <a class="cm-pf-row__title" href="{{ path('app_settings_referentials_rncp_show', {id: import.id}) }}">{{ 'rncpImportRowTitle'|trans({'%code%': import.rncpCode}) }}</a>
+                <div class="cm-pf-row__meta">{{ 'rncpImportRequestedMeta'|trans({'%date%': import.requestedAt|date('d/m/Y H:i')}) }}</div>
+            </div>
+            <div class="cm-pf-row__right"><twig:Cm:Badge :of="import.state"/></div>
+        </div>
+    {% endfor %}
+    {% for referential in referentials %}
+        {% set programs = usage[referential.id] ?? [] %}
+        <div class="cm-pf-row">
+            <div>
+                <a class="cm-pf-row__title" href="{{ path('app_settings_referentials_show', {id: referential.id}) }}">{{ referential.displayName }}</a>
+                <div class="cm-pf-row__meta">
+                    {{ referential.rncpTitle ?? referential.code }}
+                    {% if referential.registeredUntil %} · {{ 'referentialRegisteredUntilMeta'|trans({'%date%': referential.registeredUntil|date('d/m/Y')}) }}{% endif %}
+                </div>
+                <div class="cm-pf-row__meta">
+                    {%- if programs is empty -%}
+                        {{ 'referentialUnusedMeta'|trans }}
+                    {%- else -%}
+                        {{ 'referentialUsedByMeta'|trans({'%programs%': programs|map(p => p.displayShortName)|join(', ')}) }}
+                    {%- endif -%}
+                </div>
+            </div>
+            <div class="cm-pf-row__right">
+                {% if referential.rncpAlerts is not empty %}<twig:Cm:Badge tone="gold">{{ 'referentialWatchBadge'|trans }}</twig:Cm:Badge>{% endif %}
+                <span class="cm-pf-meta">{{ 'referentialBlockCountMeta'|trans({'%count%': referential.blocks|length}) }}</span>
+            </div>
+        </div>
+    {% else %}
+        {% if imports is empty %}
+            <p class="cm-pf-empty">{{ 'referentialsEmptyText'|trans }}</p>
+        {% endif %}
+    {% endfor %}
+</div>

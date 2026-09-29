@@ -1,0 +1,65 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set heading = (block ? 'referentialBlockEditPageHeading' : 'referentialBlockNewPageHeading')|trans %}
+{% block title %}{{ heading }}{% endblock %}
+{% block page_breadcrumb %}
+    {% include 'settings/referential/_crumbs.html.twig' with {extra: [
+        {label: referential.displayName, url: path('app_settings_referentials_show', {id: referential.id})},
+        {label: heading, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ heading }}{% endblock %}
+
+{% block main %}
+    <form method="post" class="cm-pf-page">
+        <input type="hidden" name="_token" value="{{ csrf_token('referential_edit') }}">
+        {% if error %}<div class="cm-pf-banner cm-pf-banner--danger">{{ error|trans }}</div>{% endif %}
+        <div class="cm-pf-card cm-pf-card--pad">
+            <div class="cm-pf-form">
+                <div class="cm-pf-field">
+                    <label for="block-code">{{ 'referentialBlockCodeFieldLabel'|trans }}</label>
+                    <input id="block-code" class="form-control" name="code" value="{{ values.code }}" maxlength="20" required>
+                </div>
+                <div class="cm-pf-field">
+                    <label for="block-rncp">{{ 'referentialBlockRncpCodeFieldLabel'|trans }}</label>
+                    <input id="block-rncp" class="form-control" name="rncpCode" value="{{ values.rncpCode }}" maxlength="30" placeholder="RNCP40792BC01">
+                </div>
+                <div class="cm-pf-field cm-pf-field--wide">
+                    <label for="block-label">{{ 'referentialBlockLabelFieldLabel'|trans }}</label>
+                    <input id="block-label" class="form-control" name="label" value="{{ values.label }}" maxlength="500" required>
+                </div>
+                <div class="cm-pf-field">
+                    <label for="block-role">{{ 'referentialBlockRoleFieldLabel'|trans }}</label>
+                    <select id="block-role" class="form-select" name="role" required>
+                        <option value="">{{ 'portfolioChoosePlaceholder'|trans }}</option>
+                        {% for role in roles %}
+                            <option value="{{ role.value }}"{{ values.role == role.value ? ' selected' }}>{{ role.labelKey|trans }}</option>
+                        {% endfor %}
+                    </select>
+                    <span class="cm-pf-hint">{{ 'referentialBlockRoleFieldHint'|trans }}</span>
+                </div>
+                <div class="cm-pf-field">
+                    <span class="cm-pf-label">{{ 'referentialBlockOptionsFieldLabel'|trans }}</span>
+                    <div class="cm-choice-group">
+                        {% for option in options %}
+                            <label class="form-check">
+                                <input class="form-check-input" type="checkbox" name="options[]" value="{{ option.id }}"{{ option.id in values.options ? ' checked' }}>
+                                <span class="form-check-label">{{ option.shortName }} · {{ option.name }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    <span class="cm-pf-hint">{{ 'referentialBlockOptionsFieldHint'|trans }}</span>
+                </div>
+                <div class="cm-pf-field cm-pf-field--wide">
+                    <label for="block-competencies">{{ 'referentialBlockCompetenciesFieldLabel'|trans }}</label>
+                    <textarea id="block-competencies" class="form-control font-monospace" name="competencies" rows="14"{{ competenciesLocked ? ' readonly' }}>{{ values.competencies }}</textarea>
+                    <span class="cm-pf-hint">{{ (competenciesLocked ? 'referentialBlockCompetenciesLockedHint' : 'referentialBlockCompetenciesFieldHint')|trans }}</span>
+                </div>
+            </div>
+        </div>
+        <twig:Cm:ActionBar>
+            <twig:Cm:Button variant="outline" href="{{ path('app_settings_referentials_show', {id: referential.id}) }}">{{ 'cancelAction'|trans }}</twig:Cm:Button>
+            <twig:Cm:Button variant="primary" type="submit">{{ 'submitSaveAction'|trans }}</twig:Cm:Button>
+        </twig:Cm:ActionBar>
+    </form>
+{% endblock %}

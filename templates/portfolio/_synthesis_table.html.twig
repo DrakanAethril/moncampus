@@ -1,0 +1,62 @@
+{# The replica of annexe VI-1, from App\Service\Portfolio\SynthesisTable. ✓ = retained on a
+   validated réalisation; ○ = claimed, waiting (screen only, never exported). The coverage line is
+   not in the official table either. #}
+<div class="cm-pf-sheetwrap">
+    <table class="cm-pf-sheet">
+        <thead>
+            <tr class="cm-pf-sheet__banner">
+                <td colspan="{{ table.columns|length + 1 }}">BTS SERVICES INFORMATIQUES AUX ORGANISATIONS</td>
+                <td>{{ table.session ? 'SESSION ' ~ table.session : '' }}</td>
+            </tr>
+            <tr class="cm-pf-sheet__banner"><td colspan="{{ table.columns|length + 2 }}" style="text-align:center">{{ 'portfolioSynthesisSheetTitle'|trans }}</td></tr>
+            <tr>
+                <td colspan="{{ (table.columns|length + 2) // 2 }}">NOM et prénom : <strong>{{ table.studentName }}</strong></td>
+                <td colspan="{{ table.columns|length + 2 - (table.columns|length + 2) // 2 }}">N° candidat : <strong>{{ table.candidateNumber ?? '—' }}</strong></td>
+            </tr>
+            <tr>
+                <td colspan="{{ (table.columns|length + 2) // 2 }}">Centre de formation : <strong>{{ table.trainingCentre ?? '—' }}</strong></td>
+                <td colspan="{{ table.columns|length + 2 - (table.columns|length + 2) // 2 }}">Option :
+                    {% for option in table.options %}<strong>{{ option.checked ? '☒' : '☐' }} {{ option.label }}</strong>{{ not loop.last ? ' ' }}{% endfor %}
+                </td>
+            </tr>
+            <tr><td colspan="{{ table.columns|length + 2 }}">Adresse URL du portfolio : <strong>{{ table.portfolioUrl ?? '—' }}</strong></td></tr>
+            <tr>
+                <th>{{ 'portfolioSynthesisAchievementsColumn'|trans }}</th>
+                <th>{{ 'portfolioSynthesisPeriodColumn'|trans }}</th>
+                {% for column in table.columns %}<th class="cm-pf-sheet__comp" title="{{ column.skills|join(' · ') }}">{{ column.label }}</th>{% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for number, rows in table.sections %}
+                <tr class="cm-pf-sheet__part"><td colspan="{{ table.columns|length + 2 }}">{{ ('portfolioSynthesisPart' ~ number)|trans }}</td></tr>
+                {% for row in rows %}
+                    <tr>
+                        <td>
+                            {% if row_route|default(null) %}<a href="{{ path(row_route, {id: row.achievement.id}) }}">{{ row.title }}</a>{% else %}{{ row.title }}{% endif %}
+                            {% if row.documents %}<span class="cm-pf-sheet__docs">{{ row.documents }}</span>{% endif %}
+                        </td>
+                        <td class="cm-pf-sheet__period">{{ row.period }}</td>
+                        {% for column in table.columns %}
+                            {% set mark = row.cells[column.id] ?? null %}
+                            <td class="cm-pf-sheet__mark{{ mark ? ' cm-pf-sheet__mark--' ~ mark }}">{{ mark == 'retained' ? '✓' : (mark == 'pending' ? '○' : '') }}</td>
+                        {% endfor %}
+                    </tr>
+                {% else %}
+                    <tr><td colspan="{{ table.columns|length + 2 }}" class="cm-pf-muted">{{ 'portfolioSynthesisPartEmpty'|trans }}</td></tr>
+                {% endfor %}
+            {% endfor %}
+            <tr class="cm-pf-sheet__cover">
+                <td colspan="2" style="text-align:left">{{ 'portfolioSynthesisCoverageRow'|trans }}</td>
+                {% for column in table.columns %}
+                    {% set n = table.coverage[column.id] ?? 0 %}
+                    <td class="{{ n == 0 ? 'cm-pf-sheet__gap' }}">{{ n }}</td>
+                {% endfor %}
+            </tr>
+        </tbody>
+    </table>
+</div>
+<div class="cm-pf-legend">
+    <span><span class="cm-pf-sheet__mark--retained">✓</span> {{ 'portfolioSynthesisLegendRetained'|trans }}</span>
+    {% if table.includesPending %}<span><span class="cm-pf-sheet__mark--pending">○</span> {{ 'portfolioSynthesisLegendPending'|trans }}</span>{% endif %}
+    <span>{{ 'portfolioSynthesisLegendCoverage'|trans }}</span>
+</div>

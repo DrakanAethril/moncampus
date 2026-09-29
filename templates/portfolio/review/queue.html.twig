@@ -1,0 +1,58 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'portfoliosNavLabel'|trans }}{% endblock %}
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'toolsNavLabel'|trans, url: path('app_tools_random_draw')},
+        {label: 'portfoliosNavLabel'|trans, url: path('app_portfolios')},
+    ]}) }}
+{% endblock %}
+{% block page_title %}{{ 'portfoliosNavLabel'|trans }}{% endblock %}
+
+{% block main %}
+    {% include 'portfolio/review/_tabs.html.twig' %}
+    <div class="cm-pf-page mt-3">
+        {% if pairs|length > 1 %}
+            <select class="form-select" style="width:auto" aria-label="{{ 'portfolioQueueFilterLabel'|trans }}" data-controller="select-navigate" data-action="change->select-navigate#go">
+                <option value="{{ path('app_portfolios') }}">{{ 'portfolioQueueFilterAll'|trans }}</option>
+                {% for pair in pairs %}
+                    <option value="{{ path('app_portfolios', {class: pair.key}) }}"{{ currentPair == pair.key ? ' selected' }}>{{ pair.program.displayShortName }} · {{ pair.option.shortName }}</option>
+                {% endfor %}
+            </select>
+        {% endif %}
+        <div class="cm-pf-card">
+            <div class="cm-pf-rows">
+                {% for item in items %}
+                    {% set piece = item.piece %}
+                    {% set isShowcase = piece.number is defined %}
+                    {% set student = item.portfolio.student %}
+                    <div class="cm-pf-row">
+                        <div>
+                            <a class="cm-pf-row__title" href="{{ isShowcase ? path('app_portfolios_showcase', {id: piece.id}) : path('app_portfolios_achievement', {id: piece.id}) }}">
+                                {{ student.displayName ?? student.username }} · {{ item.program.displayShortName }} {{ item.option.shortName }} ·
+                                {% if isShowcase %}{{ 'portfolioShowcaseNumberTitle'|trans({'%number%': piece.number}) }} · {{ piece.achievement.title }}{% else %}{{ piece.title }}{% endif %}
+                            </a>
+                            <div class="cm-pf-row__meta">
+                                {{ 'portfolioQueueSubmittedMeta'|trans({'%date%': piece.submittedAt|date('d/m/Y')}) }}
+                                {% if item.requested %} · <strong>{{ 'portfolioQueueRequestedMeta'|trans }}</strong>{% endif %}
+                                {% if isShowcase %}
+                                    · {{ 'portfolioEvidenceCountText'|trans({'%count%': piece.evidences|length}) }}
+                                {% else %}
+                                    · {{ 'portfolioClaimCountText'|trans({'%count%': piece.claims|length}) }} · {{ 'portfolioEvidenceCountText'|trans({'%count%': piece.evidences|length}) }}
+                                    {% if piece.revision > 1 %} · {{ 'portfolioRevisionText'|trans({'%revision%': piece.revision}) }}{% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="cm-pf-row__right">
+                            {% if isShowcase %}<twig:Cm:Badge tone="purple">{{ 'portfolioShowcaseBadgeLabel'|trans }}</twig:Cm:Badge>{% endif %}
+                            <twig:Cm:Badge :of="piece.state"/>
+                            <twig:Cm:Button variant="outline" size="sm" href="{{ isShowcase ? path('app_portfolios_showcase', {id: piece.id}) : path('app_portfolios_achievement', {id: piece.id}) }}">{{ 'portfolioExamineAction'|trans }}</twig:Cm:Button>
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="cm-pf-empty">{{ 'portfolioQueueEmptyText'|trans }}</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    {% include 'portfolio/pdf/_head.html.twig' %}
+    <title>{{ annex }}</title>
+</head>
+{% set achievement = showcase.achievement %}
+{% set portfolio = showcase.portfolio %}
+{% set student = portfolio.student %}
+<body>
+    <p class="muted" style="margin:0 0 4px">ANNEXE {{ annex }} : Fiche descriptive de réalisation professionnelle (recto)</p>
+    <p style="margin:0 0 8px"><strong>{{ examTitle }}</strong></p>
+    <h1>DESCRIPTION D’UNE RÉALISATION PROFESSIONNELLE</h1>
+    <table style="margin-bottom:6px">
+        <tr>
+            <td><span class="label">N° réalisation :</span> {{ showcase.number }}</td>
+            <td><span class="label">Nom, prénom :</span> {{ student.lastname|upper }} {{ student.firstname }}</td>
+            <td><span class="label">N° candidat :</span> {{ portfolio.candidateNumber }}</td>
+        </tr>
+        <tr>
+            <td>☐ Épreuve ponctuelle</td>
+            <td>☒ Contrôle en cours de formation</td>
+            <td><span class="label">Date :</span> {{ showcase.submittedAt ? showcase.submittedAt|date('d / m / Y') : '...... / ...... / ............' }}</td>
+        </tr>
+    </table>
+    <div class="box"><span class="label">Organisation support de la réalisation professionnelle</span><br>{{ achievement.organisation }}</div>
+    <div class="box">
+        <span class="label">Intitulé de la réalisation professionnelle</span><br>{{ achievement.title }}<br>
+        <span class="label">Période de réalisation :</span> {{ achievement.startsOn ? 'portfolioPeriodText'|trans({'%from%': achievement.startsOn|date('d/m/Y'), '%to%': (achievement.endsOn ?? achievement.startsOn)|date('d/m/Y')}) }}
+        &nbsp;&nbsp; <span class="label">Lieu :</span> {{ achievement.place }}<br>
+        <span class="label">Modalité :</span> {{ achievement.teamwork ? '☐' : '☒' }} Seul(e) &nbsp; {{ achievement.teamwork ? '☒' : '☐' }} En équipe
+    </div>
+    <div class="box">
+        <span class="label">Compétences travaillées</span>
+        {% for competency in block ? block.competencies : [] %}
+            {% set claim = achievement.claimFor(competency) %}
+            <div>{{ claim and claim.retained ? '☒' : '☐' }} {{ competency.label }}</div>
+        {% endfor %}
+    </div>
+    <div class="box"><span class="label">Conditions de réalisation (ressources fournies, résultats attendus)</span><div class="prose">{{ showcase.conditionsHtml|raw }}</div></div>
+    <div class="box"><span class="label">Description des ressources documentaires, matérielles et logicielles utilisées</span><div class="prose">{{ showcase.resourcesHtml|raw }}</div></div>
+    <div class="box"><span class="label">Modalités d’accès aux productions et à leur documentation</span><div class="prose">{{ showcase.accessHtml|raw }}</div></div>
+    <div class="footer"><span>BTS Services informatiques aux organisations</span><span>{{ session ? 'SESSION ' ~ session }}</span></div>
+
+    <div class="page-break">
+        <p class="muted" style="margin:0 0 4px">ANNEXE {{ annex }} : Fiche descriptive de réalisation professionnelle (verso, éventuellement pages suivantes)</p>
+        <p style="margin:0 0 8px"><strong>{{ examTitle }}</strong></p>
+        <div class="box">
+            <span class="label">Descriptif de la réalisation professionnelle, y compris les productions réalisées et schémas explicatifs</span>
+            <div class="prose">{{ showcase.descriptionHtml|raw }}</div>
+            {% for image in images %}
+                <div class="figure"><img src="{{ image.src }}" alt="{{ image.label }}"><div class="muted">{{ image.label }}</div></div>
+            {% endfor %}
+            {% set others = showcase.evidences|filter(e => e.kind.value != 'file' or not e.image) %}
+            {% if others is not empty %}
+                <p class="label" style="margin:8px 0 2px">Productions et documents</p>
+                {% for evidence in others %}<div>• {{ evidence.label }}{% if evidence.url %} — {{ evidence.url }}{% endif %}</div>{% endfor %}
+            {% endif %}
+        </div>
+        <div class="footer"><span>BTS Services informatiques aux organisations</span><span>{{ session ? 'SESSION ' ~ session }}</span></div>
+    </div>
+</body>
+</html>

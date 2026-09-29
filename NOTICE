@@ -95,3 +95,24 @@ convention, and each keeps its own licence:
 
 These are the trademarks of their respective owners and are reproduced to identify the technologies
 in use, not to suggest any endorsement.
+
+
+--------------------------------------------------------------------------------
+Examination documents used as test fixtures
+--------------------------------------------------------------------------------
+
+    tests/Fixtures/portfolio/e5-synthesis-2026.xlsx
+
+is the « Modèle de tableau de synthèse, annexe VI-1 » of the BTS SIO, session
+2026, published by the SIEC (Service interacadémique des examens et concours,
+Éducation nationale). It is a public examination document, NOT covered by the
+AGPL; it is kept only to test the template inspection and is absent from the
+production image. The application never ships an official template: the
+administration uploads the one of each session.
+
+    tests/Fixtures/rncp/export-fiches-rncp-extract.xml
+
+is an extract (fiches RNCP35340 and RNCP40792) of France compétences' export of
+the Répertoire national des certifications professionnelles, published on
+data.gouv.fr under the Licence Ouverte 2.0 (Etalab), 2026-09-29.
+

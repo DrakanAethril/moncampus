@@ -1,0 +1,7 @@
+{# The trail of every référentiel screen: Pédagogique › Référentiels › … - `extra` the levels after. #}
+{% set segments = [
+    {label: 'pedagogiquePageHeading'|trans, url: path('app_settings_structure_school_years')},
+    {label: 'referentialsTabLabel'|trans, url: path('app_settings_referentials')},
+] %}
+{% for segment in extra|default([]) %}{% set segments = segments|merge([segment]) %}{% endfor %}
+{{ component('Cm:Breadcrumb', {segments: segments}) }}

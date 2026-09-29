@@ -4881,6 +4881,60 @@ ufaEnterprisePhoneFieldLabel: 'Phone'
 ufaEnterpriseCityFieldLabel: 'Town'
 ufaEnterpriseAddressFieldLabel: 'Address'
 ufaEnterpriseUpdatedFlashMessage: 'The company has been updated.'
+siretLengthMessage: "A SIRET has 14 digits."
+siretChecksumMessage: "This SIRET does not exist: its check digit does not match. Check each digit."
+enterpriseSiretStatusConfirmedLabel: "Confirmed"
+enterpriseSiretStatusPendingLabel: "To confirm"
+enterpriseSiretStatusMissingLabel: "To find"
+enterpriseSiretStatusSetAsideLabel: "Not found"
+ufaEnterpriseSiretPageHeading: "SIRET"
+ufaEnterpriseSiretNoAddressText: "No address recorded"
+ufaEnterpriseSiretQueuePositionText: "SIRET to confirm: %position% / %total%"
+ufaEnterpriseSiretRecordedConfirmedTitle: "Confirmed SIRET"
+ufaEnterpriseSiretRecordedPendingTitle: "Recorded SIRET, to confirm"
+ufaEnterpriseSiretConfirmedByText: "Confirmed on %date% by %name%."
+ufaEnterpriseSiretReadingRegisterText: "Reading the SIRENE register…"
+ufaEnterpriseSiretCandidatesTitle: "Suggestions"
+ufaEnterpriseSiretCandidatesHint: "Open establishments suggested by the French State's company search API. Nothing is associated without your click: check the address."
+ufaEnterpriseSiretSearchingText: "Searching the State service…"
+ufaEnterpriseSiretSearchLabel: "Search differently"
+ufaEnterpriseSiretSearchPlaceholder: "Name, address, SIREN or SIRET"
+ufaEnterpriseSiretSearchPostalCodeLabel: "Postcode"
+ufaEnterpriseSiretSearchAction: "Search"
+ufaEnterpriseSiretSetAsideText: "Set aside (\"No SIRET to be found\") until %date%."
+ufaEnterpriseSiretNotFoundAction: "No SIRET to be found"
+ufaEnterpriseSiretLaterAction: "Later"
+ufaEnterpriseSiretBackAction: "Back to the company"
+ufaEnterpriseSiretUnavailableText: "The State service is unavailable, try again in a moment. The SIRET can still be typed in by hand in \"Edit company\"."
+ufaEnterpriseSiretNoSearchResultText: "No establishment matches this search."
+ufaEnterpriseSiretNoCandidateText: "No suggestion. Try \"Search differently\" with another name, the address or the SIREN."
+ufaEnterpriseSiretOpenText: "open"
+ufaEnterpriseSiretClosedText: "closed"
+ufaEnterpriseSiretHeadOfficeText: "head office"
+ufaEnterpriseSiretCreatedInText: "created in %year%"
+ufaEnterpriseSiretRecordedBadgeLabel: "Recorded SIRET"
+ufaEnterpriseSiretLinkedToBadgeLabel: "Already associated with \"%name%\""
+ufaEnterpriseSiretConfirmAction: "Confirm"
+ufaEnterpriseSiretAssociateAction: "Associate"
+ufaEnterpriseSiretClosedWarningText: "This establishment has been closed since %date% according to the SIRENE register."
+ufaEnterpriseSiretChooseAnotherAction: "Confirm another SIRET"
+ufaEnterpriseSiretStillOpenText: "Establishment still open according to the SIRENE register."
+ufaEnterpriseSiretUnknownText: "The SIRENE register knows no establishment with this number."
+ufaEnterpriseSiretChangeAction: "Check or change the SIRET"
+ufaEnterpriseSiretFindAction: "Find the SIRET"
+ufaEnterpriseSiretPreviewUnavailableText: "The State service is unavailable: the preview could not be shown."
+ufaEnterpriseSiretPreviewConfirmHint: "Saving will confirm this SIRET in your name."
+ufaEnterpriseSiretInvalidRecordedText: "This number is not a valid SIRET (14 digits and a check digit): it designates no establishment. Associate one of the suggested establishments, or correct it in \"Edit company\"."
+enterpriseSiretStatusSetAsideUntilLabel: "Not found until %date%"
+ufaEnterpriseSiretReviewAction: "SIRET to confirm (%count%)"
+siretEvidenceSameAddressLabel: "Same address"
+siretEvidenceSameStreetLabel: "Same street"
+siretEvidenceSamePostalCodeLabel: "Same postcode"
+siretEvidenceSameCompanyElsewhereLabel: "Same company, other address"
+ufaEnterpriseSiretQueueDoneFlashMessage: "No SIRET left to confirm."
+ufaEnterpriseSiretQueuePassDoneFlashMessage: "End of the queue. The companies skipped with \"Later\" are still in it: they will come back on the next pass."
+ufaEnterpriseSiretConfirmedFlashMessage: "SIRET %siret% confirmed for %name%."
+ufaEnterpriseSiretSetAsideFlashMessage: "%name% is set aside: it will be back in the queue on %date%."
 ufaContractImportPageHeading: 'Import Charlemagne Entreprises'
 ufaContractImportFileSectionTitle: 'The alternance file'
 ufaContractImportFileSectionHint: "The school's export, one line per apprenticeship contract."
@@ -8535,3 +8589,47 @@ ecoleDirecteLinkChoiceMissingMessage: "Pick the École Directe student to associ
 ecoleDirecteLinkStudentUnknownMessage: "This student has no grade in this evaluation."
 ecoleDirecteLinkNotInClassMessage: "This student is not in the chosen École Directe class: run the preview again."
 ecoleDirecteLinkTakenMessage: "This École Directe student is already associated with another MonCampus student: dissociate them first."
+
+# --- Portfolio (E5/E6) - navigation, tabs and states; the rest falls back to French ------------
+featurePortfolioLabel: 'Portfolio E5 / E6'
+myPortfolioNavLabel: 'My portfolio'
+myPortfolioHeading: 'My portfolio · %referential%'
+myPortfolioOptionSuffix: '%option% option'
+myPortfolioAchievementsTabLabel: 'Achievements'
+myPortfolioSynthesisTabLabel: 'Summary table'
+myPortfolioShowcasesTabLabel: 'E6 sheets'
+myPortfolioDepositTabLabel: 'Submission'
+portfoliosNavLabel: 'Portfolios'
+portfolioStateDraftLabel: 'Draft'
+portfolioStateSubmittedLabel: 'To review'
+portfolioStateToReworkLabel: 'To rework'
+portfolioStateValidatedLabel: 'Validated'
+portfolioClaimClaimedLabel: 'Claimed'
+portfolioClaimRetainedLabel: 'Retained'
+portfolioClaimNotRetainedLabel: 'Not retained'
+portfolioSettingTrainingLabel: 'During training'
+portfolioSettingWorkplaceLabel: 'In the workplace'
+portfolioExamE5Label: 'E5 file'
+portfolioExamE6Label: 'E6 file'
+portfolioDepositDepositedLabel: 'Submitted, to endorse'
+portfolioDepositEndorsedLabel: 'Endorsed'
+portfolioDepositToRegulariseLabel: 'To regularise'
+portfolioQueueTabLabel: 'To review (%count%)'
+portfolioClassesTabLabel: 'By class'
+portfolioAchievementNewAction: 'New achievement'
+portfolioSaveDraftAction: 'Save draft'
+portfolioSubmitAction: 'Submit for review'
+portfolioReviewValidateAction: 'Validate'
+portfolioReviewSendBackAction: 'Send back to the student'
+programSettingsPortfolioTabLabel: 'Portfolio'
+referentialsTabLabel: 'Frameworks'
+referentialNewFromRncpAction: 'From France compétences'
+referentialNewManualAction: 'Manually'
+rncpImportPendingLabel: 'Waiting'
+rncpImportRunningLabel: 'Reading'
+rncpImportReadyLabel: 'Ready to apply'
+rncpImportFailedLabel: 'Failed'
+rncpImportAppliedLabel: 'Applied'
+referentialBlockRoleSynthesisLabel: 'Summary table (E5)'
+referentialBlockRoleShowcaseLabel: 'Achievement sheets (E6)'
+referentialBlockRoleNoneLabel: 'None'

@@ -1,0 +1,98 @@
+{% extends 'layout/app.html.twig' %}
+
+{# The fiche SIRET of one employer - design/validated/siret-entreprises.md §4.1. The État's answers
+   arrive in two lazy frames after the page: what the recorded number designates, and the
+   propositions. Nothing on this page writes a SIRET but its buttons (R1). #}
+
+{% block title %}{{ 'ufaEnterpriseSiretPageHeading'|trans }} · {{ enterprise.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'ufaNavLabel'|trans, url: path('app_ufa')},
+        {label: 'ufaEnterprisesPageHeading'|trans, url: path('app_ufa_enterprises')},
+        {label: enterprise.name, url: path('app_ufa_enterprise_show', {id: enterprise.id})},
+        {label: 'ufaEnterpriseSiretPageHeading'|trans, url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
+{% block page_title %}{{ enterprise.name }}{% endblock %}
+
+{% block main %}
+    {% set queue_param = queue ? 1 : null %}
+    <div class="text-secondary mb-3 d-flex flex-wrap align-items-center gap-2" style="margin-top: -8px;">
+        <span>{{ enterprise.address ? enterprise.address|split("\n")|join(' · ') : 'ufaEnterpriseSiretNoAddressText'|trans }}</span>
+        {% if queue %}
+            <span class="ms-auto">{{ 'ufaEnterpriseSiretQueuePositionText'|trans({'%position%': queuePosition, '%total%': queueTotal}) }}</span>
+        {% endif %}
+    </div>
+
+    {% if enterprise.siret %}
+        <div class="card mb-3">
+            <div class="card-header d-flex align-items-center gap-2">
+                <h3 class="card-title mb-0">{{ status.value == 'confirmed' ? 'ufaEnterpriseSiretRecordedConfirmedTitle'|trans : 'ufaEnterpriseSiretRecordedPendingTitle'|trans }}</h3>
+                <span class="font-monospace fs-3 ms-2">{{ enterprise.siret|siret }}</span>
+                <twig:Cm:Badge :of="status" class="ms-auto"/>
+            </div>
+            {% if enterprise.siretConfirmedAt %}
+                <div class="card-body pb-0 text-secondary">
+                    {{ 'ufaEnterpriseSiretConfirmedByText'|trans({
+                        '%date%': enterprise.siretConfirmedAt|date('d/m/Y'),
+                        '%name%': enterprise.siretConfirmedBy ? (enterprise.siretConfirmedBy.displayName ?? enterprise.siretConfirmedBy.username) : '—',
+                    }) }}
+                </div>
+            {% endif %}
+            <turbo-frame id="siret-recorded" loading="lazy" src="{{ path('app_ufa_enterprise_siret_establishment', {id: enterprise.id, view: 'review', queue: queue_param}) }}">
+                <div class="card-body text-secondary"><span class="spinner-border spinner-border-sm me-2" role="status"></span>{{ 'ufaEnterpriseSiretReadingRegisterText'|trans }}</div>
+            </turbo-frame>
+        </div>
+    {% endif %}
+
+    <div class="card mb-3">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title mb-0">{{ 'ufaEnterpriseSiretCandidatesTitle'|trans }}</h3>
+                <div class="text-secondary small">{{ 'ufaEnterpriseSiretCandidatesHint'|trans }}</div>
+            </div>
+        </div>
+        <turbo-frame id="siret-candidates" loading="lazy" src="{{ path('app_ufa_enterprise_siret_candidates', {id: enterprise.id, queue: queue_param}) }}">
+            <div class="card-body text-secondary"><span class="spinner-border spinner-border-sm me-2" role="status"></span>{{ 'ufaEnterpriseSiretSearchingText'|trans }}</div>
+        </turbo-frame>
+        <div class="card-footer">
+            {# A GET into the propositions frame: « Chercher autrement » replaces the cascade with
+               the person's own query - a name, a street, a SIREN or a SIRET. #}
+            <form method="get" action="{{ path('app_ufa_enterprise_siret_candidates', {id: enterprise.id}) }}" data-turbo-frame="siret-candidates" class="row g-2 align-items-end">
+                {% if queue %}<input type="hidden" name="queue" value="1">{% endif %}
+                <div class="col-md-7">
+                    <label class="form-label" for="siret-search-q">{{ 'ufaEnterpriseSiretSearchLabel'|trans }}</label>
+                    <input type="search" class="form-control" id="siret-search-q" name="q" required placeholder="{{ 'ufaEnterpriseSiretSearchPlaceholder'|trans }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="siret-search-postal-code">{{ 'ufaEnterpriseSiretSearchPostalCodeLabel'|trans }}</label>
+                    <input type="text" class="form-control" id="siret-search-postal-code" name="postalCode" inputmode="numeric" maxlength="5" value="{{ postalCode }}">
+                </div>
+                <div class="col-md-2">
+                    <twig:Cm:Button variant="outline" type="submit" class="w-100">{{ 'ufaEnterpriseSiretSearchAction'|trans }}</twig:Cm:Button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <twig:Cm:ActionBar>
+        <twig:block name="meta">
+            {% if status.value == 'set_aside' %}
+                {{ 'ufaEnterpriseSiretSetAsideText'|trans({'%date%': enterprise.siretSetAsideUntil|date('d/m/Y')}) }}
+            {% endif %}
+        </twig:block>
+        {% if status.value != 'confirmed' and status.value != 'set_aside' %}
+            <form method="post" action="{{ path('app_ufa_enterprise_siret_not_found', {id: enterprise.id}) }}" class="d-inline">
+                <input type="hidden" name="_token" value="{{ csrf_token('enterprise_siret_' ~ enterprise.id) }}">
+                {% if queue %}<input type="hidden" name="queue" value="1">{% endif %}
+                <twig:Cm:Button variant="outline" type="submit">{{ 'ufaEnterpriseSiretNotFoundAction'|trans }}</twig:Cm:Button>
+            </form>
+        {% endif %}
+        {% if queue %}
+            <twig:Cm:Button variant="primary" href="{{ path('app_ufa_enterprises_siret_review', {after: enterprise.id}) }}">{{ 'ufaEnterpriseSiretLaterAction'|trans }} →</twig:Cm:Button>
+        {% else %}
+            <twig:Cm:Button variant="outline" href="{{ path('app_ufa_enterprise_show', {id: enterprise.id}) }}">{{ 'ufaEnterpriseSiretBackAction'|trans }}</twig:Cm:Button>
+        {% endif %}
+    </twig:Cm:ActionBar>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends 'portfolio/my/_layout.html.twig' %}
+
+{% block portfolio_content %}
+    {% if block is null %}
+        <div class="cm-pf-banner cm-pf-banner--warn">{{ 'portfolioShowcaseNoBlockText'|trans }}</div>
+    {% endif %}
+    <div class="cm-pf-card">
+        <div class="cm-pf-rows">
+            {% for number in [1, 2] %}
+                {% set showcase = portfolio.showcase(number) %}
+                <div class="cm-pf-row">
+                    {% if showcase %}
+                        <div>
+                            <a class="cm-pf-row__title" href="{{ path('app_my_portfolio_showcase_edit', {number: number}) }}">{{ 'portfolioShowcaseNumberTitle'|trans({'%number%': number}) }} · {{ showcase.achievement.title }}</a>
+                            <div class="cm-pf-row__meta">
+                                {{ 'portfolioShowcaseAchievementValidatedMeta'|trans({'%date%': showcase.achievement.validatedAt ? showcase.achievement.validatedAt|date('d/m/y') : '—'}) }}
+                                {% if showcase.validated and showcase.lastReview %} · {{ 'portfolioShowcaseValidatedMeta'|trans({'%date%': showcase.validatedAt|date('d/m/y'), '%name%': showcase.lastReview.reviewer.politeDisplayName}) }}{% endif %}
+                                · {{ 'portfolioEvidenceCountText'|trans({'%count%': showcase.evidences|length}) }}
+                            </div>
+                        </div>
+                        <div class="cm-pf-row__right">
+                            <twig:Cm:Badge :of="showcase.state"/>
+                            <twig:Cm:Button variant="outline" size="sm" href="{{ path('app_my_portfolio_showcase_pdf', {number: number}) }}">{{ 'portfolioShowcasePdfAction'|trans }}</twig:Cm:Button>
+                        </div>
+                    {% else %}
+                        <div>
+                            <span class="cm-pf-row__title">{{ 'portfolioShowcaseNumberTitle'|trans({'%number%': number}) }}</span>
+                            <div class="cm-pf-row__meta">{{ (candidates is empty ? 'portfolioShowcaseNoCandidateText' : 'portfolioShowcaseOpenHint')|trans }}</div>
+                        </div>
+                        {% if candidates is not empty %}
+                            <form method="post" action="{{ path('app_my_portfolio_showcase_open', {number: number}) }}" class="cm-pf-row__right">
+                                <input type="hidden" name="_token" value="{{ csrf_token('my_portfolio') }}">
+                                <select name="achievement" class="form-select form-select-sm" required aria-label="{{ 'portfolioShowcaseOpenFromLabel'|trans }}">
+                                    <option value="">{{ 'portfolioShowcaseOpenFromLabel'|trans }}</option>
+                                    {% for achievement in candidates %}<option value="{{ achievement.id }}">{{ achievement.title }}</option>{% endfor %}
+                                </select>
+                                <twig:Cm:Button variant="primary" size="sm" type="submit">{{ 'portfolioShowcaseOpenAction'|trans }}</twig:Cm:Button>
+                            </form>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="cm-pf-card cm-pf-card--pad">
+        {% include 'portfolio/_showcase_coverage.html.twig' %}
+    </div>
+    {% if portfolio.showcases is not empty %}
+        <twig:Cm:ActionBar>
+            <twig:Cm:Button variant="outline" href="{{ path('app_my_portfolio_e6_pdf') }}">{{ 'portfolioE6DossierPdfAction'|trans }}</twig:Cm:Button>
+        </twig:Cm:ActionBar>
+    {% endif %}
+{% endblock %}

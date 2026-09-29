@@ -20,7 +20,6 @@ use App\Enum\Feature;
 use App\Form\EcoCourseType;
 use App\Repository\EcoCourseRepository;
 use App\Repository\EcoParcoursRepository;
-use App\Repository\EcoPositionPingRepository;
 use App\Repository\EcoRunnerRepository;
 use App\Security\Voter\EcoParcoursVoter;
 use App\Service\EcoCourseCodeGenerator;
@@ -29,6 +28,7 @@ use App\Service\EcoLiveTrackingService;
 use App\Service\EcoPerformanceAnalyzer;
 use App\Service\EcoRaceRanking;
 use App\Service\EcoRunnerStatsCalculator;
+use App\Service\EcoRunnerTrace;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -282,7 +282,7 @@ class EcoCourseController extends AbstractController
         EcoCourseRepository $repository,
         EcoRunnerStatsCalculator $statsCalculator,
         EcoPerformanceAnalyzer $analyzer,
-        EcoPositionPingRepository $pingRepository,
+        EcoRunnerTrace $runnerTrace,
         TranslatorInterface $translator,
         EcoRaceRanking $ranking,
     ): Response {
@@ -334,7 +334,7 @@ class EcoCourseController extends AbstractController
             'stats' => $stats,
             'analysis' => $analysis,
             'map' => null !== $selectedRunner && null !== $stats
-                ? $this->resultMap($selectedRunner, $stats['pings'], $analysis['stops'], $analysis['legs'], $comparedRunner, $comparedLegs, $pingRepository, $translator)
+                ? $this->resultMap($selectedRunner, $stats['pings'], $analysis['stops'], $analysis['legs'], $comparedRunner, $comparedLegs, $runnerTrace, $translator)
                 : null,
         ]);
     }
@@ -369,7 +369,7 @@ class EcoCourseController extends AbstractController
         array $legs,
         ?EcoRunner $comparedRunner,
         array $comparedLegs,
-        EcoPositionPingRepository $pingRepository,
+        EcoRunnerTrace $runnerTrace,
         TranslatorInterface $translator,
     ): ?array {
         $validatedTimes = [];
@@ -466,7 +466,7 @@ class EcoCourseController extends AbstractController
             'compared' => null !== $comparedRunner
                 ? [
                     'pseudo' => $comparedRunner->getPseudo() ?? '',
-                    'trace' => $this->traceOf($pingRepository->findForRunner($comparedRunner)),
+                    'trace' => $this->traceOf($runnerTrace->of($comparedRunner)),
                 ]
                 : null,
         ];
