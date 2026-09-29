@@ -27,6 +27,11 @@ use App\Service\EcoTraceCleaner;
  * longer than MAX_GAP_SECONDS is a phone that said nothing, and counts for nobody - the same rule
  * as the stops of EcoPerformanceAnalyzer.
  *
+ * The metres behind each pace are read like the race's own distance (EcoTraceCleaner): a hop
+ * counts once the runner is EcoTraceCleaner::MIN_MOVE_METERS from where the last counted one
+ * ended, never fix by fix. Summed raw, the wander of a phone standing at a flag - a few metres
+ * every five seconds - read as walking pace, and a stroll came out above 10 km/h.
+ *
  * @phpstan-type EcoFix array{at: int, latitude: float, longitude: float, gpsAltitude: ?float, groundAltitude: ?float, onPath: ?bool, inForest: ?bool, resolved: bool}
  * @phpstan-type EcoTerrainSplit array{
  *     offPathShare: float,
@@ -133,6 +138,9 @@ final class EcoTerrainStats
 
         $seconds = ['onPath' => 0, 'offPath' => 0, 'forest' => 0, 'open' => 0];
         $meters = ['onPath' => 0.0, 'offPath' => 0.0, 'forest' => 0.0, 'open' => 0.0];
+        // Where the last counted hop ended: short hops accumulate against it, so a slow real walk
+        // still counts in full, only later - given to the stretch in which it clears the threshold.
+        $anchor = $fixes[0] ?? null;
 
         for ($i = 1, $count = \count($fixes); $i < $count; ++$i) {
             $from = $fixes[$i - 1];
@@ -140,10 +148,21 @@ final class EcoTerrainStats
             $elapsed = $to['at'] - $from['at'];
 
             if ($elapsed <= 0 || $elapsed > self::MAX_GAP_SECONDS || !$from['resolved']) {
+                // Nobody's stretch: what the runner covered across it is nobody's either.
+                $anchor = $to;
+
                 continue;
             }
 
-            $distance = $this->distanceCalculator->distanceMeters($from['latitude'], $from['longitude'], $to['latitude'], $to['longitude']);
+            $distance = null !== $anchor
+                ? $this->distanceCalculator->distanceMeters($anchor['latitude'], $anchor['longitude'], $to['latitude'], $to['longitude'])
+                : 0.0;
+            if ($distance >= EcoTraceCleaner::MIN_MOVE_METERS) {
+                $anchor = $to;
+            } else {
+                $distance = 0.0;
+            }
+
             $path = true === $from['onPath'] ? 'onPath' : 'offPath';
             $cover = true === $from['inForest'] ? 'forest' : 'open';
 

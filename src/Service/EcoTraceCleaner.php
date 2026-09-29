@@ -37,7 +37,7 @@ class EcoTraceCleaner
     private const int MAX_REJECTED_IN_A_ROW = 3;
 
     /** A hop shorter than this is GPS wander, not ground covered. */
-    private const float MIN_MOVE_METERS = 5.0;
+    public const float MIN_MOVE_METERS = 5.0;
 
     /** Altitude only counts once it has changed by more than the fix-to-fix noise. */
     private const float MIN_CLIMB_METERS = 3.0;
