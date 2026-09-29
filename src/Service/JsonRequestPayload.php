@@ -104,6 +104,31 @@ final class JsonRequestPayload
         return is_numeric($value) ? (float) $value : $default;
     }
 
+    /**
+     * An instant sent by a client (ISO 8601, any offset), moved into the server's zone - or null
+     * when the key is absent or unreadable.
+     *
+     * The move is the point: Doctrine writes a DATETIME as the object's wall time and reads it
+     * back in the server's zone, so an instant kept in the zone it arrived in ("…Z" from a phone)
+     * comes back shifted by the offset - two hours in summer, one in winter - and lands before
+     * every server-stamped instant it should sit between.
+     */
+    public function instant(string $key): ?\DateTimeImmutable
+    {
+        $raw = $this->string($key);
+        if ('' === $raw) {
+            return null;
+        }
+
+        try {
+            $instant = new \DateTimeImmutable($raw);
+        } catch (\Exception) {
+            return null;
+        }
+
+        return $instant->setTimezone(new \DateTimeZone(date_default_timezone_get()));
+    }
+
     public function bool(string $key, bool $default = false): bool
     {
         $value = $this->data[$key] ?? null;

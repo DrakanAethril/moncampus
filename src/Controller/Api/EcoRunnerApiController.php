@@ -119,8 +119,7 @@ class EcoRunnerApiController extends AbstractController
         $method = 'manual_code' === $payload->string('method') ? EcoScanMethod::ManualCode : EcoScanMethod::QrScan;
         $latitude = $payload->float('latitude');
         $longitude = $payload->float('longitude');
-        $rawScannedAt = $payload->string('scannedAt');
-        $scannedAt = '' !== $rawScannedAt ? new \DateTimeImmutable($rawScannedAt) : new \DateTimeImmutable();
+        $scannedAt = $payload->instant('scannedAt') ?? new \DateTimeImmutable();
 
         $scan = $scanService->scan($runner, $checkpoint, $latitude, $longitude, $scannedAt, $method);
 
@@ -142,21 +141,23 @@ class EcoRunnerApiController extends AbstractController
         $latestLng = null;
 
         foreach ($points as $point) {
-            $rawRecordedAt = $point->string('recordedAt');
+            // The phone sends UTC; instant() brings it into the server's zone, which is what every
+            // scan it will be compared with is stamped in.
+            $recordedAt = $point->instant('recordedAt');
             $latitude = $point->float('latitude');
             $longitude = $point->float('longitude');
             // A point missing any of the three says nothing and is dropped. Note this now also drops
             // a non-numeric coordinate, which the previous cast turned into 0.0 - a real position
             // off the coast of Africa that would have been drawn on the trace.
-            if ('' === $rawRecordedAt || null === $latitude || null === $longitude) {
+            if (null === $recordedAt || null === $latitude || null === $longitude) {
                 continue;
             }
-            $recordedAt = new \DateTimeImmutable($rawRecordedAt);
             // Optional: a phone without an altitude fix simply omits it, and so did every version
-            // of the app released before the field existed.
+            // of the app released before the field existed - as they all omit the accuracy.
             $altitude = $point->float('altitude');
+            $accuracy = $point->float('accuracy');
 
-            $entityManager->persist(new EcoPositionPing($runner, $recordedAt, $latitude, $longitude, $altitude));
+            $entityManager->persist(new EcoPositionPing($runner, $recordedAt, $latitude, $longitude, $altitude, $accuracy));
 
             if (null === $latestAt || $recordedAt > $latestAt) {
                 $latestAt = $recordedAt;
@@ -199,8 +200,7 @@ class EcoRunnerApiController extends AbstractController
         }
 
         $type = $payload->string('type');
-        $rawAt = $payload->string('at');
-        $at = '' !== $rawAt ? new \DateTimeImmutable($rawAt) : new \DateTimeImmutable();
+        $at = $payload->instant('at') ?? new \DateTimeImmutable();
 
         if ('left' === $type) {
             $entityManager->persist(new EcoAppEvent($runner, $at));
