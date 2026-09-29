@@ -1,0 +1,85 @@
+{% extends 'portfolio/my/_layout.html.twig' %}
+
+{% block portfolio_content %}
+    <form method="post" action="{{ path('app_my_portfolio_identity') }}" class="cm-pf-card cm-pf-card--pad">
+        <input type="hidden" name="_token" value="{{ csrf_token('my_portfolio') }}">
+        <div class="cm-pf-form">
+            <div class="cm-pf-field">
+                <label for="dp-candidate">{{ 'portfolioCandidateNumberLabel'|trans }}</label>
+                <input id="dp-candidate" class="form-control" name="candidateNumber" maxlength="30" value="{{ portfolio.candidateNumber }}">
+                <span class="cm-pf-hint">{{ 'portfolioCandidateNumberHint'|trans }}</span>
+            </div>
+            <div class="cm-pf-field">
+                <label for="dp-url">{{ 'portfolioExternalUrlLabel'|trans }}</label>
+                <input id="dp-url" class="form-control" type="url" name="externalUrl" maxlength="500" value="{{ portfolio.externalUrl }}" placeholder="https://">
+                <span class="cm-pf-hint">{{ 'portfolioExternalUrlHint'|trans }}</span>
+            </div>
+        </div>
+        <twig:Cm:ActionBar><twig:Cm:Button variant="outline" type="submit">{{ 'submitSaveAction'|trans }}</twig:Cm:Button></twig:Cm:ActionBar>
+    </form>
+
+    <div class="cm-pf-card cm-pf-card--pad">
+        <twig:Cm:Subhead :title="'portfolioAttestationsHeading'|trans" :hint="'portfolioAttestationsHint'|trans"/>
+        {% include 'portfolio/_evidence_list.html.twig' with {evidences: portfolio.attestations, removeRoute: 'app_my_portfolio_attestation_remove', removeParams: {}} %}
+        {{ form_start(attestationForm) }}
+            <div class="cm-pf-form">
+                <div class="cm-pf-field cm-pf-field--wide">{{ form_row(attestationForm.file) }}</div>
+                <div class="cm-pf-field">{{ form_row(attestationForm.label) }}</div>
+            </div>
+            {{ form_row(attestationForm.submit, {attr: {class: 'cm-btn cm-btn--outline'}}) }}
+        {{ form_end(attestationForm) }}
+    </div>
+
+    <div class="cm-pf-card">
+        <div class="cm-pf-rows">
+            {% for exam in ['e5', 'e6'] %}
+                {% set deadline = exam == 'e5' ? program.portfolioE5Deadline : program.portfolioE6Deadline %}
+                {% set latest = deposits|filter(d => d.exam.value == exam)|first %}
+                <div class="cm-pf-row">
+                    <div>
+                        <span class="cm-pf-row__title">{{ ('portfolioDeposit' ~ exam|upper ~ 'Title')|trans }}</span>
+                        <div class="cm-pf-row__meta">
+                            {{ deadline ? 'portfolioDepositDeadlineMeta'|trans({'%date%': deadline|localized_date('EEEE d MMMM yyyy, HH:mm')}) : 'portfolioDepositNoDeadlineMeta'|trans }}
+                            {% if exam == 'e5' %}
+                                · {{ 'portfolioCoverageText'|trans({'%covered%': table.coveredCount, '%total%': table.columns|length}) }}
+                                {% if not templateInService %} · {{ 'portfolioDepositNoTemplateMeta'|trans }}{% endif %}
+                            {% else %}
+                                · {{ (e6Coverage.complete ? 'portfolioDepositE6CompleteMeta' : 'portfolioDepositE6IncompleteMeta')|trans }}
+                            {% endif %}
+                        </div>
+                        {% for refusal in refusals[exam] %}<div class="cm-pf-hint text-danger">{{ refusal|trans }}</div>{% endfor %}
+                    </div>
+                    <div class="cm-pf-row__right">
+                        {% if latest %}<twig:Cm:Badge :of="latest.state"/>{% endif %}
+                        <form method="post" action="{{ path('app_my_portfolio_deposit_make', {exam: exam}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('my_portfolio') }}">
+                            <button type="submit" class="cm-btn cm-btn--primary cm-btn--sm"{{ refusals[exam] is not empty ? ' disabled' }}
+                                    data-controller="confirm-submit" data-action="confirm-submit#confirm"
+                                    data-confirm-submit-message-value="{{ 'portfolioDepositConfirm'|trans }}">{{ 'portfolioDepositAction'|trans }}</button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="cm-pf-card cm-pf-card--pad">
+        <twig:Cm:Subhead :title="'portfolioDepositHistoryHeading'|trans"/>
+        {% for deposit in deposits %}
+            <div class="cm-pf-decide">
+                <div>
+                    <strong>{{ deposit.exam.labelKey|trans }}</strong> · {{ 'portfolioDepositMadeMeta'|trans({'%date%': deposit.depositedAt|date('d/m/Y H:i')}) }}
+                    {% if deposit.late %} · <span class="text-danger">{{ 'portfolioDepositLateLabel'|trans }}</span>{% endif %}
+                    {% if deposit.checkComment %}<div class="cm-pf-journal__comment">{{ deposit.checkComment }}</div>{% endif %}
+                    <div class="cm-pf-inline">
+                        {% if deposit.pdfKey %}<a href="{{ path('app_my_portfolio_deposit_file', {id: deposit.id, kind: 'pdf'}) }}">PDF</a>{% endif %}
+                        {% if deposit.xlsxKey %}<a href="{{ path('app_my_portfolio_deposit_file', {id: deposit.id, kind: 'xlsx'}) }}">.xlsx</a>{% endif %}
+                    </div>
+                </div>
+                <twig:Cm:Badge :of="deposit.state"/>
+            </div>
+        {% else %}
+            <p class="cm-pf-muted mb-0">{{ 'portfolioDepositHistoryEmpty'|trans }}</p>
+        {% endfor %}
+    </div>
+{% endblock %}

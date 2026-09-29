@@ -1,0 +1,13 @@
+{# Outils › Portfolios › <classe> › <étudiant> › … - `extra` the levels after the student. #}
+{% set student = portfolio.student %}
+{% set segments = [
+    {label: 'toolsNavLabel'|trans, url: path('app_tools_random_draw')},
+    {label: 'portfoliosNavLabel'|trans, url: path('app_portfolios')},
+] %}
+{% if program %}
+    {% set option = option is defined ? option : null %}
+    {% set segments = segments|merge([{label: program.displayShortName, url: path('app_portfolios_classes')}]) %}
+{% endif %}
+{% set segments = segments|merge([{label: student.displayName ?? student.username, url: path('app_portfolios_student', {id: portfolio.id})}]) %}
+{% for segment in extra|default([]) %}{% set segments = segments|merge([segment]) %}{% endfor %}
+{{ component('Cm:Breadcrumb', {segments: segments}) }}

@@ -1,0 +1,22 @@
+{# Evidence of a réalisation, a fiche or the attestations. `removeRoute` + `removeParams` when the
+   viewer may remove (the student, on their own pieces). #}
+<div>
+    {% for evidence in evidences %}
+        <div class="cm-pf-evidence">
+            <span class="cm-pf-evidence__label"><a href="{{ path('app_portfolio_evidence_open', {id: evidence.id}) }}" target="_blank" rel="noopener">{{ evidence.label }}</a></span>
+            <span class="cm-pf-evidence__kind">{{ evidence.kind.labelKey|trans }}</span>
+            {% if removeRoute|default(null) %}
+                <form method="post" action="{{ path(removeRoute, removeParams|merge({evidenceId: evidence.id})) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('my_portfolio') }}">
+                    <button type="submit" class="btn btn-link btn-sm p-0 text-danger" aria-label="{{ 'portfolioEvidenceRemoveAction'|trans }}"
+                            data-controller="confirm-submit" data-action="confirm-submit#confirm"
+                            data-confirm-submit-message-value="{{ (warnReopen|default(false) ? 'portfolioEvidenceRemoveReopenConfirm' : 'portfolioEvidenceRemoveConfirm')|trans }}">
+                        <twig:ux:icon name="trash" width="15" height="15"/>
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+    {% else %}
+        <p class="cm-pf-muted mb-0">{{ 'portfolioEvidenceEmptyText'|trans }}</p>
+    {% endfor %}
+</div>

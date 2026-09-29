@@ -311,6 +311,35 @@ class Program
     #[ORM\Column(name: 'game_track', length: 10, nullable: true, enumType: GameTrack::class)]
     private ?GameTrack $gameTrack = null;
 
+    /**
+     * Portfolio des réalisations professionnelles (design/validated/portfolio.md §7).
+     *
+     * A formation **enables** the portfolio and names the référentiel its students work on; it never
+     * owns a portfolio, which follows the student across years (R1). The cursus year is declared,
+     * never guessed from the formation's name: it is what files a workplace réalisation in the
+     * first- or second-year part of the synthesis table (R4).
+     */
+    #[ORM\Column(name: 'portfolio_enabled', options: ['default' => false])]
+    private bool $portfolioEnabled = false;
+
+    #[ORM\ManyToOne(targetEntity: Referential::class)]
+    #[ORM\JoinColumn(name: 'portfolio_referential_id', nullable: true, onDelete: 'SET NULL')]
+    private ?Referential $portfolioReferential = null;
+
+    #[ORM\Column(name: 'portfolio_cursus_year', type: Types::SMALLINT, nullable: true)]
+    private ?int $portfolioCursusYear = null;
+
+    /** The establishment's deadlines. They lock nothing (R8): a late deposit is marked, never refused. */
+    #[ORM\Column(name: 'portfolio_e5_deadline', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $portfolioE5Deadline = null;
+
+    #[ORM\Column(name: 'portfolio_e6_deadline', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $portfolioE6Deadline = null;
+
+    /** The examination session this class sits - `2027`; picks the official template to fill. */
+    #[ORM\Column(name: 'portfolio_exam_session', nullable: true)]
+    private ?int $portfolioExamSession = null;
+
     public function __construct(string $name, string $shortName, Cohort $cohort, SchoolYear $schoolYear)
     {
         $this->name = $name;
@@ -724,6 +753,84 @@ class Program
         $this->assignmentManagementEnabled = $assignmentManagementEnabled;
 
         return $this;
+    }
+
+    public function isPortfolioEnabled(): bool
+    {
+        return $this->portfolioEnabled;
+    }
+
+    public function setPortfolioEnabled(bool $portfolioEnabled): static
+    {
+        $this->portfolioEnabled = $portfolioEnabled;
+
+        return $this;
+    }
+
+    public function getPortfolioReferential(): ?Referential
+    {
+        return $this->portfolioReferential;
+    }
+
+    public function setPortfolioReferential(?Referential $portfolioReferential): static
+    {
+        $this->portfolioReferential = $portfolioReferential;
+
+        return $this;
+    }
+
+    public function getPortfolioCursusYear(): ?int
+    {
+        return $this->portfolioCursusYear;
+    }
+
+    public function setPortfolioCursusYear(?int $portfolioCursusYear): static
+    {
+        $this->portfolioCursusYear = $portfolioCursusYear;
+
+        return $this;
+    }
+
+    public function getPortfolioE5Deadline(): ?\DateTimeImmutable
+    {
+        return $this->portfolioE5Deadline;
+    }
+
+    public function setPortfolioE5Deadline(?\DateTimeImmutable $portfolioE5Deadline): static
+    {
+        $this->portfolioE5Deadline = $portfolioE5Deadline;
+
+        return $this;
+    }
+
+    public function getPortfolioE6Deadline(): ?\DateTimeImmutable
+    {
+        return $this->portfolioE6Deadline;
+    }
+
+    public function setPortfolioE6Deadline(?\DateTimeImmutable $portfolioE6Deadline): static
+    {
+        $this->portfolioE6Deadline = $portfolioE6Deadline;
+
+        return $this;
+    }
+
+    public function getPortfolioExamSession(): ?int
+    {
+        return $this->portfolioExamSession;
+    }
+
+    public function setPortfolioExamSession(?int $portfolioExamSession): static
+    {
+        $this->portfolioExamSession = $portfolioExamSession;
+
+        return $this;
+    }
+
+    /** The portfolio is live for this class: switched on and pointed at a référentiel. */
+    public function hasPortfolio(): bool
+    {
+        return $this->portfolioEnabled && null !== $this->portfolioReferential;
     }
 
     public function getJobboardVisibility(): VisibilityLevel

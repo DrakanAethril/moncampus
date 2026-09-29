@@ -40,6 +40,16 @@ framework:
             # a different sanitizer instance per App\Controller\SignupListController (each feature
             # gets its own sanitizer target rather than sharing app.message_body across unrelated
             # entities, even though the config happens to be identical today).
+            # The portfolio's long texts - a réalisation's descriptif, an E6 fiche's four rubrics -
+            # written by a student in the same HugeRTE toolbar and read by the validateurs and
+            # printed into the official fiches. Same configuration as the two above, its own
+            # instance per this file's one-sanitizer-per-feature rule.
+            app.portfolio_body:
+                allow_safe_elements: true
+                max_input_length: -1
+                allow_attributes:
+                    style: [span, p, h1, h2, h3, li, blockquote, table, col, td, th]
+
             app.signup_list_description:
                 allow_safe_elements: true
                 max_input_length: -1

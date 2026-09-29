@@ -52,6 +52,7 @@ enum Feature: string
     case WordCloud = 'word_cloud';
     case TsfReferential = 'tsf_referential';
     case Game = 'game';
+    case Portfolio = 'portfolio';
 
     // --- Scolarité ---------------------------------------------------------------------------
 
@@ -133,7 +134,7 @@ enum Feature: string
             self::Video, self::Audio, self::FileLibrary, self::SharedDocuments,
             self::ContentSharing, self::Wiki, self::Documentation, self::Surveys,
             self::ClassTools, self::WordCloud, self::TsfReferential, self::Game,
-            self::Dossiers => FeatureFamily::Pedagogy,
+            self::Dossiers, self::Portfolio => FeatureFamily::Pedagogy,
 
             self::Timetable, self::TimetableSettings, self::EvaluationPlanning,
             self::GradebookEntry, self::GradebookStudent, self::SelfAssessment,
@@ -207,6 +208,7 @@ enum Feature: string
             self::WordCloud => 'featureWordCloudLabel',
             self::TsfReferential => 'featureTsfReferentialLabel',
             self::Game => 'featureGameLabel',
+            self::Portfolio => 'featurePortfolioLabel',
             self::Timetable => 'featureTimetableLabel',
             self::TimetableSettings => 'featureTimetableSettingsLabel',
             self::EvaluationPlanning => 'featureEvaluationPlanningLabel',
@@ -325,6 +327,12 @@ enum Feature: string
             // validateur's screen and the cible's screen are there - but who collects what from
             // whom is an establishment's own decision, and it makes it by ticking a line in
             // Gestion > Fonctionnalités rather than by discovering the entry in a menu.
+
+            // The portfolio (E5/E6) is named by no role either, at the establishment's request: it
+            // ships visible to the administrator alone, who tries it end to end - référentiel,
+            // formation settings, validateurs - before a line of Gestion > Fonctionnalités opens it
+            // to the students and the teachers. Lighting it for teachers still hands the review
+            // screens only to the designated validateurs (App\Service\Portfolio\PortfolioValidators).
 
             // The machines are handed out in class, so the two roles that sit in one.
             self::MyVms => ['ROLE_STUDENT', 'ROLE_TEACHER'],

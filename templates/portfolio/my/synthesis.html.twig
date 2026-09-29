@@ -1,0 +1,16 @@
+{% extends 'portfolio/my/_layout.html.twig' %}
+
+{% block portfolio_content %}
+    <div class="cm-pf-inline">
+        {% if template_in_service is defined and template_in_service %}
+            <twig:Cm:Button variant="primary" href="{{ path('app_my_portfolio_synthesis_xlsx') }}">{{ 'portfolioSynthesisXlsxAction'|trans }}</twig:Cm:Button>
+        {% else %}
+            <span class="cm-pf-banner cm-pf-banner--warn">{{ table.session ? 'portfolioSynthesisNoTemplateText'|trans({'%session%': table.session}) : 'portfolioSynthesisNoSessionText'|trans }}</span>
+        {% endif %}
+        <twig:Cm:Button variant="outline" href="{{ path('app_my_portfolio_synthesis_pdf') }}">{{ 'portfolioSynthesisPdfAction'|trans }}</twig:Cm:Button>
+        <twig:Cm:Button variant="outline" href="{{ path('app_my_portfolio_synthesis', hidePending ? {} : {hidePending: 1}) }}">{{ (hidePending ? 'portfolioSynthesisShowPendingAction' : 'portfolioSynthesisHidePendingAction')|trans }}</twig:Cm:Button>
+    </div>
+    <div class="cm-pf-card cm-pf-card--pad">
+        {% include 'portfolio/_synthesis_table.html.twig' with {row_route: 'app_my_portfolio_achievement'} %}
+    </div>
+{% endblock %}

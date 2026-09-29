@@ -1,0 +1,72 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set heading = deposit.exam.labelKey|trans ~ ' · ' ~ deposit.depositedAt|date('d/m/Y') %}
+{% set option = null %}
+{% block title %}{{ heading }}{% endblock %}
+{% block page_breadcrumb %}
+    {% include 'portfolio/review/_student_crumbs.html.twig' with {extra: [{label: heading, url: app.request.requestUri}]} %}
+{% endblock %}
+{% block page_title %}{{ heading }}{% endblock %}
+
+{% block main %}
+    <div class="cm-pf-page">
+        <div class="cm-pf-inline">
+            <twig:Cm:Badge :of="deposit.state"/>
+            <span class="cm-pf-meta">{{ 'portfolioDepositMadeMeta'|trans({'%date%': deposit.depositedAt|date('d/m/Y H:i')}) }}</span>
+            {% if deposit.deadline %}<span class="cm-pf-meta">· {{ 'portfolioDepositDeadlineMeta'|trans({'%date%': deposit.deadline|date('d/m/Y H:i')}) }}</span>{% endif %}
+            {% if deposit.late %}<twig:Cm:Badge tone="red">{{ 'portfolioDepositLateLabel'|trans }}</twig:Cm:Badge>{% endif %}
+        </div>
+        <div class="cm-pf-split">
+            <div class="cm-pf-card cm-pf-card--pad">
+                <twig:Cm:Subhead :title="'portfolioDepositFilesHeading'|trans"/>
+                <div class="cm-pf-inline">
+                    {% if deposit.pdfKey %}<twig:Cm:Button variant="outline" size="sm" href="{{ path('app_portfolios_deposit_file', {id: deposit.id, kind: 'pdf'}) }}">PDF</twig:Cm:Button>{% endif %}
+                    {% if deposit.xlsxKey %}<twig:Cm:Button variant="outline" size="sm" href="{{ path('app_portfolios_deposit_file', {id: deposit.id, kind: 'xlsx'}) }}">{{ 'portfolioSynthesisXlsxAction'|trans }}</twig:Cm:Button>{% endif %}
+                </div>
+                {% set snapshot = deposit.snapshot %}
+                {% if deposit.exam.value == 'e5' %}
+                    <p class="mb-0">{{ 'portfolioDepositUrlText'|trans }} <a href="{{ snapshot.portfolioUrl }}" target="_blank" rel="noopener">{{ snapshot.portfolioUrl }}</a></p>
+                    <p class="mb-0">{{ (snapshot.complete ? 'portfolioDepositE5CompleteMeta' : 'portfolioDepositE5IncompleteMeta')|trans }}</p>
+                    <p class="mb-0">{{ 'portfolioDepositAttestationsText'|trans({'%count%': snapshot.attestations|length}) }}</p>
+                    {% for evidence in portfolio.attestations %}
+                        <div><a href="{{ path('app_portfolio_evidence_open', {id: evidence.id}) }}" target="_blank" rel="noopener">{{ evidence.label }}</a></div>
+                    {% endfor %}
+                {% else %}
+                    <p class="mb-0">{{ 'portfolioDepositShowcasesText'|trans({'%count%': snapshot.showcases|length}) }} · {{ (snapshot.complete ? 'portfolioDepositE6CompleteMeta' : 'portfolioDepositE6IncompleteMeta')|trans }}</p>
+                {% endif %}
+                {% if deposit.checkedAt %}
+                    <div class="cm-pf-journal__entry cm-pf-journal__entry--{{ deposit.endorsed ? 'validated' : 'to_rework' }}">
+                        {{ 'portfolioDepositCheckedMeta'|trans({'%date%': deposit.checkedAt|date('d/m/Y H:i'), '%name%': deposit.checkedBy.displayName ?? deposit.checkedBy.username}) }}
+                        {% if deposit.checkComment %}<div class="cm-pf-journal__comment">{{ deposit.checkComment }}</div>{% endif %}
+                    </div>
+                {% endif %}
+            </div>
+            {% if canEndorse %}
+                <form method="post" action="{{ path('app_portfolios_deposit_check', {id: deposit.id}) }}" class="cm-pf-card cm-pf-card--pad">
+                    <input type="hidden" name="_token" value="{{ csrf_token('portfolio_review') }}">
+                    <twig:Cm:Subhead :title="(deposit.exam.value == 'e5' ? 'portfolioDepositCheckE5Heading' : 'portfolioDepositCheckE6Heading')|trans" :hint="'portfolioDepositCheckHint'|trans"/>
+                    {% for key in deposit.exam.checklistKeys %}
+                        <label class="form-check">
+                            <input class="form-check-input" type="checkbox" name="checklist[{{ key }}]" value="1"{{ deposit.checklist[key] ?? (key == 'portfolioChecklistInTime' ? not deposit.late : false) ? ' checked' }}>
+                            <span class="form-check-label">{{ key|trans }}</span>
+                        </label>
+                    {% endfor %}
+                    <div class="cm-pf-field">
+                        <label for="check-comment">{{ 'portfolioDepositCheckCommentLabel'|trans }}</label>
+                        <textarea id="check-comment" class="form-control" name="comment" rows="3">{{ deposit.checkComment }}</textarea>
+                    </div>
+                    <twig:Cm:ActionBar><twig:Cm:Button variant="primary" type="submit">{{ 'portfolioDepositCheckAction'|trans }}</twig:Cm:Button></twig:Cm:ActionBar>
+                </form>
+            {% endif %}
+        </div>
+        <div class="cm-pf-card cm-pf-card--pad">
+            <twig:Cm:Subhead :title="'portfolioDepositHistoryHeading'|trans"/>
+            {% for other in history %}
+                <div class="cm-pf-decide">
+                    <a href="{{ path('app_portfolios_deposit', {id: other.id}) }}">{{ other.exam.labelKey|trans }} · {{ other.depositedAt|date('d/m/Y H:i') }}</a>
+                    <twig:Cm:Badge :of="other.state"/>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

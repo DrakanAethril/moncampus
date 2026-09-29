@@ -399,4 +399,56 @@ class ProgramRepository extends ServiceEntityRepository
 
         return $programs;
     }
+
+    /**
+     * Every formation of a student that runs the portfolio, **past years included**, oldest first -
+     * the portfolio follows the student across years (design/validated/portfolio.md, R1), and the
+     * part of the synthesis table a workplace réalisation goes to is read from the cursus year of
+     * the school year its dates fall in (R4).
+     *
+     * @return list<Program>
+     */
+    public function findPortfolioProgramsForStudent(User $student): array
+    {
+        /** @var list<Program> $programs */
+        $programs = $this->createQueryBuilder('p')
+            ->addSelect('y', 'r')
+            ->innerJoin('p.students', 's')
+            ->leftJoin('p.schoolYear', 'y')
+            ->innerJoin('p.portfolioReferential', 'r')
+            ->where('s = :student')
+            ->andWhere('p.portfolioEnabled = true')
+            ->andWhere(':testMode = false OR p.testProgram = true')
+            ->setParameter('student', $student)
+            ->setParameter('testMode', $student->isTestUser())
+            ->orderBy('y.startDate', 'ASC')
+            ->addOrderBy('p.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        return $programs;
+    }
+
+    /**
+     * The active formations running the portfolio - what the class view and the administrator's
+     * lists start from.
+     *
+     * @return list<Program>
+     */
+    public function findActiveWithPortfolio(): array
+    {
+        /** @var list<Program> $programs */
+        $programs = $this->createQueryBuilder('p')
+            ->addSelect('y', 'r')
+            ->leftJoin('p.schoolYear', 'y')
+            ->innerJoin('p.portfolioReferential', 'r')
+            ->where('p.portfolioEnabled = true')
+            ->andWhere('p.inactiveDate IS NULL')
+            ->orderBy('y.startDate', 'DESC')
+            ->addOrderBy('p.shortName', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        return $programs;
+    }
 }

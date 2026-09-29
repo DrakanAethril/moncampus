@@ -1,0 +1,12 @@
+{# The journal of decisions, newest first - read as it was written (R6). #}
+<div class="cm-pf-journal">
+    {% for review in reviews %}
+        <div class="cm-pf-journal__entry cm-pf-journal__entry--{{ review.decision.value }}">
+            <strong>{{ review.decision.labelKey|trans }}</strong>
+            · {{ 'portfolioJournalMeta'|trans({'%revision%': review.revision, '%date%': review.decidedAt|date('d/m/Y H:i'), '%name%': review.reviewer.displayName ?? review.reviewer.username}) }}
+            {% if review.comment %}<div class="cm-pf-journal__comment">{{ review.comment }}</div>{% endif %}
+        </div>
+    {% else %}
+        <p class="cm-pf-muted mb-0">{{ 'portfolioJournalEmptyText'|trans }}</p>
+    {% endfor %}
+</div>

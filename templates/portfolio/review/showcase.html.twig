@@ -1,0 +1,75 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set heading = 'portfolioShowcaseNumberTitle'|trans({'%number%': showcase.number}) ~ ' · ' ~ showcase.achievement.title %}
+{% block title %}{{ heading }}{% endblock %}
+{% block page_breadcrumb %}
+    {% include 'portfolio/review/_student_crumbs.html.twig' with {extra: [{label: heading, url: app.request.requestUri}]} %}
+{% endblock %}
+{% block page_title %}{{ heading }}{% endblock %}
+
+{% block main %}
+    <div class="cm-pf-page">
+        <div class="cm-pf-inline">
+            <twig:Cm:Badge tone="purple">{{ 'portfolioShowcaseBadgeLabel'|trans }}</twig:Cm:Badge>
+            <twig:Cm:Badge :of="showcase.state"/>
+            <span class="cm-pf-meta">{{ 'portfolioRevisionText'|trans({'%revision%': showcase.revision}) }}</span>
+            <a href="{{ path('app_portfolios_achievement', {id: showcase.achievement.id}) }}" class="cm-pf-meta">{{ 'portfolioShowcaseAchievementLink'|trans }} ({{ showcase.achievement.state.labelKey|trans }})</a>
+        </div>
+        <div class="cm-pf-split">
+            <div class="cm-pf-page">
+                <div class="cm-pf-card cm-pf-card--pad">
+                    <twig:Cm:Subhead :title="'portfolioShowcaseRectoHeading'|trans({'%annex%': option and option.shortName|upper == 'SLAM' ? 'VII-1-B' : 'VII-1-A', '%option%': option ? option.shortName : ''})"/>
+                    {% include 'portfolio/_showcase_recto.html.twig' %}
+                    {% for field in ['conditions', 'resources', 'access'] %}
+                        <div>
+                            <div class="cm-pf-label">{{ ('portfolioShowcase' ~ field|capitalize ~ 'Label')|trans }}</div>
+                            {% set html = attribute(showcase, field ~ 'Html') %}
+                            <div class="cm-pf-prose">{{ html ? html|raw : '—' }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="cm-pf-card cm-pf-card--pad">
+                    <twig:Cm:Subhead :title="'portfolioShowcaseVersoHeading'|trans"/>
+                    <div class="cm-pf-prose">{{ showcase.descriptionHtml ? showcase.descriptionHtml|raw : '—' }}</div>
+                </div>
+                <div class="cm-pf-card cm-pf-card--pad">
+                    <twig:Cm:Subhead :title="'portfolioShowcaseElementsHeading'|trans"/>
+                    {% include 'portfolio/_evidence_list.html.twig' with {evidences: showcase.evidences} %}
+                </div>
+                <div class="cm-pf-card cm-pf-card--pad">
+                    {% include 'portfolio/_showcase_coverage.html.twig' %}
+                </div>
+                <div class="cm-pf-card cm-pf-card--pad">
+                    <twig:Cm:Subhead :title="'portfolioJournalHeading'|trans"/>
+                    {% include 'portfolio/_journal.html.twig' with {reviews: showcase.reviews} %}
+                </div>
+            </div>
+            {% if canDecide %}
+                <form method="post" action="{{ path('app_portfolios_showcase_decide', {id: showcase.id}) }}" class="cm-pf-card cm-pf-card--pad">
+                    <input type="hidden" name="_token" value="{{ csrf_token('portfolio_review') }}">
+                    {% if not showcase.achievement.validated %}
+                        <div class="cm-pf-banner cm-pf-banner--warn">{{ 'portfolioReviewShowcaseAchievementNotValidatedError'|trans }}</div>
+                    {% endif %}
+                    <label class="form-check">
+                        <input class="form-check-input" type="checkbox" name="environmentCompliant" value="1">
+                        <span class="form-check-label">{{ 'portfolioReviewEnvironmentLabel'|trans }}</span>
+                    </label>
+                    <div class="cm-pf-field">
+                        <label for="review-comment">{{ 'portfolioReviewCommentLabel'|trans }}</label>
+                        <textarea id="review-comment" class="form-control" name="comment" rows="4"></textarea>
+                        <span class="cm-pf-hint">{{ 'portfolioReviewCommentHint'|trans }}</span>
+                    </div>
+                    <twig:Cm:ActionBar>
+                        <button type="submit" name="decision" value="to_rework" class="cm-btn cm-btn--outline">{{ 'portfolioReviewSendBackAction'|trans }}</button>
+                        <button type="submit" name="decision" value="validated" class="cm-btn cm-btn--primary">{{ 'portfolioReviewValidateAction'|trans }}</button>
+                    </twig:Cm:ActionBar>
+                </form>
+            {% else %}
+                <div class="cm-pf-card cm-pf-card--pad">
+                    <p class="cm-pf-meta mb-0">{{ (showcase.state.value == 'submitted' ? 'portfolioReviewReadOnlyText' : 'portfolioReviewNothingToDecideText')|trans }}</p>
+                    <twig:Cm:Button variant="outline" size="sm" href="{{ path('app_portfolios_showcase_pdf', {id: showcase.id}) }}">{{ 'portfolioShowcasePdfAction'|trans }}</twig:Cm:Button>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

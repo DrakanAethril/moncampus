@@ -239,6 +239,19 @@ services:
         arguments:
             $sireneHttpClient: '@app.sirene_http_client'
 
+    # France compétences' open data on data.gouv.fr (portfolio: « Nouveau référentiel › Depuis France
+    # compétences »). Read by app:rncp:fetch only, never while a screen waits: the daily export is
+    # 74 Mo, so the per-request timeouts are set on the download itself.
+    app.rncp_http_client:
+        class: Symfony\Contracts\HttpClient\HttpClientInterface
+        factory: ['Symfony\Component\HttpClient\HttpClient', 'create']
+        arguments:
+            $defaultOptions: { timeout: 20, max_connect_duration: 10, headers: { 'User-Agent': 'MonCampus (portfolio RNCP import)' } }
+
+    App\Service\Rncp\RncpExportLocator:
+        arguments:
+            $rncpHttpClient: '@app.rncp_http_client'
+
     # --- Courrier pro ---------------------------------------------------------------------
     # The Courrier pro storage and queues live in *another AWS account* than the uploads above
     # (the one carrying SES and the Route 53 zone) and in another region (eu-west-3, imposed by
@@ -315,5 +328,9 @@ when@test:
         # Same for the État's Recherche d'entreprises: a screen that asks it answers « service
         # indisponible », which is exactly the degraded path R10 of the SIRET spec requires.
         app.sirene_http_client:
+            class: Symfony\Component\HttpClient\MockHttpClient
+            arguments: [[]]
+        # And data.gouv.fr: the RNCP import is tested on a local extract of the export.
+        app.rncp_http_client:
             class: Symfony\Component\HttpClient\MockHttpClient
             arguments: [[]]

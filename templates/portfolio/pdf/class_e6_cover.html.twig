@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    {% include 'portfolio/pdf/_head.html.twig' %}
+    <title>Dossiers E6</title>
+</head>
+<body>
+    <h1>Dossiers E6 · {{ program.displayShortName }} · {{ option.shortName }}</h1>
+    <p>{{ count }} dossier{{ count > 1 ? 's' }} — dernier dépôt visé de chaque étudiant.</p>
+    {% if missing is not empty %}
+        <h2>Sans dépôt E6 visé</h2>
+        <ul>{% for name in missing %}<li>{{ name }}</li>{% endfor %}</ul>
+    {% endif %}
+</body>
+</html>

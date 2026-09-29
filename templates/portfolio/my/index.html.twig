@@ -1,0 +1,36 @@
+{% extends 'portfolio/my/_layout.html.twig' %}
+
+{% block portfolio_content %}
+    {% include 'portfolio/_coverage.html.twig' %}
+    {% if portfolio.referential.synthesisBlock is null %}
+        <div class="cm-pf-banner cm-pf-banner--warn">{{ 'myPortfolioNoSynthesisBlockText'|trans }}</div>
+    {% endif %}
+    <div class="cm-pf-card">
+        {% for number, achievements in parts %}
+            <div class="cm-pf-part">{{ ('portfolioSynthesisPart' ~ number)|trans }}</div>
+            <div class="cm-pf-rows">
+                {% for achievement in achievements %}
+                    <div class="cm-pf-row">
+                        <div>
+                            <a class="cm-pf-row__title" href="{{ path('app_my_portfolio_achievement', {id: achievement.id}) }}">{{ achievement.title }}</a>
+                            <div class="cm-pf-row__meta">
+                                {% if achievement.state.value == 'draft' and achievement.startsOn is null %}
+                                    {{ 'portfolioDraftStartedText'|trans({'%date%': achievement.createdAt|date('d/m/Y')}) }}
+                                {% else %}
+                                    {% if achievement.setting.value == 'workplace' and achievement.organisation %}{{ achievement.organisation }} · {% endif %}
+                                    {% if achievement.startsOn %}{{ 'portfolioPeriodText'|trans({'%from%': achievement.startsOn|date('d/m/y'), '%to%': (achievement.endsOn ?? achievement.startsOn)|date('d/m/y')}) }} · {% endif %}
+                                    {{ (achievement.teamwork ? 'portfolioTeamworkLabel' : 'portfolioAloneLabel')|trans }}
+                                    · {{ 'portfolioEvidenceCountText'|trans({'%count%': achievement.evidences|length}) }}
+                                {% endif %}
+                            </div>
+                            {% include 'portfolio/_chips.html.twig' %}
+                        </div>
+                        <div class="cm-pf-row__right"><twig:Cm:Badge :of="achievement.state"/></div>
+                    </div>
+                {% else %}
+                    <p class="cm-pf-empty">{{ 'portfolioSynthesisPartEmpty'|trans }}</p>
+                {% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

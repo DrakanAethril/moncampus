@@ -1,0 +1,68 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set heading = 'referentialTemplatesHeading'|trans %}
+{% block title %}{{ heading }}{% endblock %}
+{% block page_breadcrumb %}
+    {% include 'settings/referential/_crumbs.html.twig' with {extra: [
+        {label: referential.displayName, url: path('app_settings_referentials_show', {id: referential.id})},
+        {label: heading, url: app.request.requestUri},
+    ]} %}
+{% endblock %}
+{% block page_title %}{{ heading }} · {{ referential.label }}{% endblock %}
+
+{% block main %}
+    <div class="cm-pf-page">
+        <p class="cm-pf-meta mb-0">{{ 'referentialTemplatesHint'|trans }}</p>
+
+        {% if inspection and inspection.errors is not empty %}
+            <div class="cm-pf-banner cm-pf-banner--danger">
+                <strong>{{ 'portfolioTemplateRefusedText'|trans }}</strong>
+                <ul class="mb-0">
+                    {% for error in inspection.errors %}<li>{{ error.key|trans }}{% if error.detail %} : « {{ error.detail }} »{% endif %}</li>{% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        <div class="cm-pf-card">
+            <div class="cm-pf-rows">
+                {% for template in templates %}
+                    <div class="cm-pf-row">
+                        <div>
+                            <span class="cm-pf-row__title">{{ 'referentialTemplateSessionTitle'|trans({'%session%': template.session}) }}</span>
+                            <div class="cm-pf-row__meta">
+                                <a href="{{ path('app_settings_referential_template_original', {id: referential.id, templateId: template.id}) }}">{{ template.originalName }}</a>
+                                · {{ 'referentialTemplateLandmarksMeta'|trans({'%count%': template.anchors.columns|default([])|length}) }}
+                                {% if template.anchors.session is defined %} · SESSION {{ template.anchors.session.value }}{% endif %}
+                                {% if template.inService %} · {{ 'referentialTemplateInServiceSinceMeta'|trans({'%date%': template.inServiceAt|date('d/m/Y')}) }}{% endif %}
+                            </div>
+                        </div>
+                        <div class="cm-pf-row__right">
+                            <twig:Cm:Button variant="outline" size="sm" href="{{ path('app_settings_referential_template_preview', {id: referential.id, templateId: template.id}) }}">{{ 'referentialTemplatePreviewAction'|trans }}</twig:Cm:Button>
+                            {% if template.inService %}
+                                <twig:Cm:Badge tone="green">{{ 'referentialTemplateInServiceLabel'|trans }}</twig:Cm:Badge>
+                            {% else %}
+                                <form method="post" action="{{ path('app_settings_referential_template_in_service', {id: referential.id, templateId: template.id}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('referential_template') }}">
+                                    <twig:Cm:Button variant="primary" size="sm" type="submit">{{ 'referentialTemplatePutInServiceAction'|trans }}</twig:Cm:Button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="cm-pf-empty">{{ 'referentialTemplatesEmptyText'|trans }}</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="cm-pf-card cm-pf-card--pad">
+            <twig:Cm:Subhead :title="'referentialTemplateUploadHeading'|trans" :hint="'referentialTemplateUploadHint'|trans"/>
+            {{ form_start(form) }}
+                <div class="cm-pf-form">
+                    <div class="cm-pf-field">{{ form_row(form.session) }}</div>
+                    <div class="cm-pf-field cm-pf-field--wide">{{ form_row(form.file) }}</div>
+                </div>
+                <twig:Cm:ActionBar><twig:Cm:Button variant="primary" type="submit">{{ 'referentialTemplateUploadAction'|trans }}</twig:Cm:Button></twig:Cm:ActionBar>
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}

@@ -9418,3 +9418,438 @@ ecoleDirecteLinkChoiceMissingMessage: "Choisissez l'élève d'École Directe à 
 ecoleDirecteLinkStudentUnknownMessage: "Cet élève n'a pas de note dans cette évaluation."
 ecoleDirecteLinkNotInClassMessage: "Cet élève ne figure pas dans la classe École Directe choisie : relancez l'aperçu."
 ecoleDirecteLinkTakenMessage: "Cet élève d'École Directe est déjà associé à un autre élève de MonCampus : dissociez-le d'abord."
+
+# --- Portfolio des réalisations professionnelles (E5/E6) ---------------------------------------
+featurePortfolioLabel: 'Portfolio E5 / E6'
+myPortfolioNavLabel: 'Mon portfolio'
+myPortfolioHeading: 'Mon portfolio · %referential%'
+myPortfolioOptionSuffix: 'option %option%'
+myPortfolioAchievementsTabLabel: 'Réalisations'
+myPortfolioSynthesisTabLabel: 'Tableau de synthèse'
+myPortfolioShowcasesTabLabel: 'Fiches E6'
+myPortfolioDepositTabLabel: 'Dépôt'
+myPortfolioNoSynthesisBlockText: "Le référentiel de ta formation n'a pas encore de bloc « tableau de synthèse » : l'administration doit le compléter."
+portfoliosNavLabel: 'Portfolios'
+portfolioChoosePlaceholder: 'Choisir…'
+portfolioYesLabel: 'oui'
+portfolioNoLabel: 'non'
+
+portfolioStateDraftLabel: 'Brouillon'
+portfolioStateSubmittedLabel: 'À valider'
+portfolioStateToReworkLabel: 'À reprendre'
+portfolioStateValidatedLabel: 'Validée'
+portfolioClaimClaimedLabel: 'Revendiquée'
+portfolioClaimRetainedLabel: 'Retenue'
+portfolioClaimNotRetainedLabel: 'Non retenue'
+portfolioSettingTrainingLabel: 'En cours de formation'
+portfolioSettingWorkplaceLabel: 'En milieu professionnel'
+portfolioEvidenceFileLabel: 'Fichier'
+portfolioEvidenceLinkLabel: 'Lien'
+portfolioEvidenceSubmissionLabel: 'Travail rendu'
+portfolioReviewValidatedLabel: 'Validée'
+portfolioReviewToReworkLabel: 'Renvoyée'
+portfolioExamE5Label: 'Dossier E5'
+portfolioExamE6Label: 'Dossier E6'
+portfolioDepositDepositedLabel: 'Déposé, à viser'
+portfolioDepositEndorsedLabel: 'Visé'
+portfolioDepositToRegulariseLabel: 'À régulariser'
+
+portfolioAchievementNewAction: 'Nouvelle réalisation'
+portfolioAchievementNewHeading: 'Nouvelle réalisation'
+portfolioAchievementEditHeading: 'Modifier la réalisation'
+portfolioTitleFieldLabel: 'Intitulé court'
+portfolioTitleFieldHint: 'Il apparaît tel quel dans le tableau de synthèse.'
+portfolioSettingFieldLabel: 'Cadre'
+portfolioSettingFieldHint: "Le cadre et les dates décident de la partie du tableau où la réalisation apparaît."
+portfolioPeriodFieldLabel: 'Période'
+portfolioStartsOnFieldLabel: 'Du'
+portfolioEndsOnFieldLabel: 'Au'
+portfolioPeriodToLabel: 'au'
+portfolioPeriodText: 'du %from% au %to%'
+portfolioOrganisationFieldLabel: 'Organisation support'
+portfolioPlaceFieldLabel: 'Lieu'
+portfolioModalityFieldLabel: 'Modalité'
+portfolioTeamworkLabel: 'En équipe'
+portfolioAloneLabel: 'Seul(e)'
+portfolioTeamNoteLabel: 'Avec qui, et quel rôle :'
+portfolioTeamNotePlaceholder: 'Avec qui, et quel était ton rôle ? (si en équipe)'
+portfolioClaimsSynthesisHeading: 'Compétences du bloc 1 mobilisées (%block%)'
+portfolioClaimsShowcaseHeading: "Compétences du bloc 2 de ton option (%block%, pour l'E6)"
+portfolioClaimsNoShowcaseHint: "Les compétences du bloc 2 apparaîtront quand ton option sera renseignée dans ta formation."
+portfolioJustificationPlaceholder: 'Une phrase : ce qui, dans la réalisation, mobilise cette compétence.'
+portfolioDescriptionFieldLabel: 'Descriptif'
+portfolioDescriptionFieldHint: "Ce que tu as fait, en quelques paragraphes. Il pré-remplit le verso d'une fiche E6 ouverte depuis cette réalisation."
+portfolioRequestedReviewerFieldLabel: 'Demander un validateur'
+portfolioRequestedReviewerAnyone: "N'importe quel validateur de mon option"
+portfolioRequestedReviewerFieldHint: "La réalisation arrive en tête chez cette personne et reste ouverte aux autres validateurs."
+portfolioRequestedReviewerText: 'demandée à %name%'
+portfolioEvidenceAfterSaveHint: 'Enregistre le brouillon pour pouvoir joindre des preuves.'
+portfolioSaveDraftAction: 'Enregistrer le brouillon'
+portfolioSubmitAction: 'Soumettre à validation'
+portfolioSubmitBlockedHint: 'Pour soumettre :'
+portfolioAchievementValidatedEditWarning: "Cette réalisation est validée : toute modification la renvoie « À valider » et ses compétences devront être retenues à nouveau."
+portfolioAchievementSavedFlashMessage: 'Réalisation enregistrée.'
+portfolioAchievementSavedNotSubmittedFlashMessage: "La réalisation est enregistrée, mais elle n'a pas pu être soumise :"
+portfolioAchievementSubmittedFlashMessage: 'Réalisation soumise à validation.'
+portfolioAchievementReopenedFlashMessage: 'Réalisation modifiée : elle repart « À valider ».'
+portfolioAchievementDeletedFlashMessage: 'Brouillon supprimé.'
+portfolioAchievementDeleteAction: 'Supprimer le brouillon'
+portfolioAchievementDeleteConfirm: 'Supprimer définitivement ce brouillon ?'
+portfolioAchievementTitleRequiredError: "L'intitulé est obligatoire."
+portfolioAchievementDatesRequiredError: 'Les dates de début et de fin sont obligatoires.'
+portfolioAchievementDatesOrderError: 'La date de fin précède la date de début.'
+portfolioAchievementClaimRequiredError: 'Coche au moins une compétence.'
+portfolioAchievementJustificationRequiredError: 'Chaque compétence cochée demande une phrase de justification.'
+portfolioAchievementTeamNoteRequiredError: 'En équipe : dis avec qui et quel était ton rôle.'
+portfolioDraftStartedText: 'Brouillon commencé le %date%'
+portfolioRevisionText: 'version %revision%'
+portfolioSentBackText: 'Renvoyée par %name% :'
+portfolioDescriptionEmptyText: 'Aucun descriptif.'
+portfolioClaimsHeading: 'Compétences revendiquées'
+portfolioClaimsEmptyText: 'Aucune compétence cochée.'
+portfolioClaimCountText: '{0} aucune compétence|{1} 1 compétence|]1,Inf[ %count% compétences'
+
+portfolioEvidenceHeading: 'Productions et documents associés'
+portfolioEvidenceHint: "Un fichier, un lien (dépôt git, site, maquette) : ce que le validateur ouvre pour décider."
+portfolioEvidenceEmptyText: 'Aucune preuve pour le moment.'
+portfolioEvidenceCountText: '{0} aucune preuve|{1} 1 preuve|]1,Inf[ %count% preuves'
+portfolioEvidenceLabelFieldLabel: 'Libellé'
+portfolioEvidenceLabelFieldHelp: 'Facultatif : le nom du fichier ou le lien sert sinon.'
+portfolioEvidenceFileFieldLabel: 'Fichier ou lien'
+portfolioEvidenceAddAction: 'Ajouter'
+portfolioEvidenceAddedFlashMessage: 'Pièce ajoutée.'
+portfolioEvidenceRemovedFlashMessage: 'Pièce retirée.'
+portfolioEvidenceRemoveAction: 'Retirer la pièce'
+portfolioEvidenceRemoveConfirm: 'Retirer cette pièce ?'
+portfolioEvidenceRemoveReopenConfirm: 'Retirer cette pièce ? La réalisation validée repartira « À valider ».'
+portfolioEvidenceReopenHint: 'Ajouter ou retirer une pièce renvoie la réalisation « À valider ».'
+portfolioEvidenceMissingSourceError: 'Choisis un fichier ou indique un lien.'
+portfolioEvidenceBothSourcesError: 'Un fichier ou un lien, pas les deux.'
+portfolioEvidenceLinkInvalidError: 'Le lien doit commencer par http:// ou https://.'
+
+portfolioJournalHeading: 'Journal des décisions'
+portfolioJournalEmptyText: 'Aucune décision pour le moment.'
+portfolioJournalMeta: 'version %revision%, le %date% par %name%'
+
+portfolioCoverageText: '%covered% / %total% compétences du bloc 1 couvertes'
+portfolioCoverageMissingText: 'Manque : %list%'
+portfolioSynthesisSheetTitle: 'Tableau de synthèse des réalisations professionnelles'
+portfolioSynthesisAchievementsColumn: 'Réalisations professionnelles (intitulé et liste des documents et productions associés)'
+portfolioSynthesisPeriodColumn: 'Période'
+portfolioSynthesisPart1: 'Réalisations en cours de formation'
+portfolioSynthesisPart2: 'Réalisations en milieu professionnel en cours de première année'
+portfolioSynthesisPart3: 'Réalisations en milieu professionnel en cours de seconde année'
+portfolioSynthesisPartEmpty: 'Aucune réalisation pour le moment.'
+portfolioSynthesisCoverageRow: 'Couverture (validé seulement)'
+portfolioSynthesisLegendRetained: 'retenue sur une réalisation validée'
+portfolioSynthesisLegendPending: 'revendiquée, en attente (écran seulement)'
+portfolioSynthesisLegendCoverage: "La ligne de couverture n'existe pas dans le modèle officiel : elle n'est pas exportée."
+portfolioSynthesisXlsxAction: 'Télécharger le modèle officiel (.xlsx)'
+portfolioSynthesisPdfAction: 'Télécharger en PDF'
+portfolioSynthesisHidePendingAction: 'Masquer les réalisations en attente'
+portfolioSynthesisShowPendingAction: 'Montrer les réalisations en attente'
+portfolioSynthesisNoTemplateText: 'Modèle officiel de la session %session% non fourni'
+portfolioSynthesisNoSessionText: "Session d'examen non renseignée pour ta formation"
+
+portfolioShowcase: 'Fiche E6'
+portfolioShowcaseBadgeLabel: 'Fiche E6'
+portfolioShowcaseNumberTitle: 'Fiche n° %number%'
+portfolioShowcaseNumberLabel: 'N° réalisation'
+portfolioShowcaseCandidateLabel: 'Nom, prénom · N° candidat'
+portfolioShowcaseModeLabel: 'Épreuve'
+portfolioShowcaseCcfLabel: 'Contrôle en cours de formation'
+portfolioShowcaseCompetenciesLabel: 'Compétences travaillées'
+portfolioShowcaseCoveredColumn: 'Couvert'
+portfolioShowcaseIncompleteHint: "Les deux fiches doivent, ensemble, couvrir les trois compétences du bloc 2 de ton option. Seule une fiche validée couvre."
+portfolioShowcaseNoBlockText: "Aucun bloc E6 ne correspond à ton option : vérifie avec l'administration que ton option est renseignée."
+portfolioShowcaseNoCandidateText: "Ouvre une fiche depuis une réalisation validée qui a au moins une compétence du bloc 2 retenue."
+portfolioShowcaseOpenHint: 'À ouvrir depuis une réalisation validée.'
+portfolioShowcaseOpenFromLabel: 'Réalisation validée…'
+portfolioShowcaseOpenAction: 'Ouvrir la fiche'
+portfolioShowcaseAchievementValidatedMeta: 'Réalisation validée le %date%'
+portfolioShowcaseValidatedMeta: 'fiche validée le %date% par %name%'
+portfolioShowcasePdfAction: 'Aperçu PDF'
+portfolioE6DossierPdfAction: 'Télécharger le dossier E6 (page de garde + fiches)'
+portfolioShowcaseRectoHeading: 'Recto · annexe %annex% (option %option%)'
+portfolioShowcaseRectoHint: "Repris de la réalisation : il se modifie dans la réalisation, et la modifier renvoie la réalisation et la fiche « À valider »."
+portfolioShowcaseEditAchievementAction: 'Modifier la réalisation'
+portfolioShowcaseConditionsLabel: 'Conditions de réalisation (ressources fournies, résultats attendus)'
+portfolioShowcaseResourcesLabel: 'Description des ressources documentaires, matérielles et logicielles utilisées'
+portfolioShowcaseAccessLabel: "Modalités d'accès aux productions et à leur documentation"
+portfolioShowcaseAccessHint: "Obligatoire pour soumettre. Un compte de démonstration créé pour la commission, jamais ton mot de passe de l'établissement."
+portfolioShowcaseVersoHeading: 'Verso · descriptif de la réalisation, productions et schémas'
+portfolioShowcaseVersoHint: 'Pré-rempli depuis la réalisation. Sans limite de longueur : le verso continue « éventuellement sur les pages suivantes ».'
+portfolioShowcaseElementsHeading: 'Éléments constitutifs'
+portfolioShowcaseElementsHint: 'Les images (schémas, captures) sont imprimées dans le verso de la fiche.'
+portfolioShowcaseSubmitAction: 'Soumettre la fiche'
+portfolioShowcaseSavedFlashMessage: 'Fiche enregistrée.'
+portfolioShowcaseSubmittedFlashMessage: 'Fiche soumise à validation.'
+portfolioShowcaseReopenedFlashMessage: 'Fiche modifiée : elle repart « À valider ».'
+portfolioShowcaseDeletedFlashMessage: "Fiche fermée : l'emplacement est libre."
+portfolioShowcaseDeleteAction: 'Fermer cette fiche'
+portfolioShowcaseDeleteConfirm: "Fermer cette fiche ? Son texte est perdu, l'emplacement et la réalisation sont libérés."
+portfolioShowcaseValidatedEditWarning: 'Cette fiche est validée : toute modification la renvoie « À valider ».'
+portfolioShowcaseSlotTakenError: 'Cet emplacement porte déjà une fiche.'
+portfolioShowcaseNotEligibleError: 'Cette réalisation ne peut pas porter une fiche E6 (validée, au moins une compétence du bloc 2 retenue, pas déjà utilisée).'
+portfolioShowcaseAchievementNotValidatedError: 'La réalisation de cette fiche doit être validée.'
+portfolioShowcaseAccessRequiredError: "Les modalités d'accès aux productions sont obligatoires."
+portfolioShowcaseDescriptionRequiredError: 'Le verso (descriptif) est obligatoire.'
+portfolioShowcaseAchievementLink: 'La réalisation'
+
+portfolioCandidateNumberLabel: 'N° candidat'
+portfolioCandidateNumberHint: "Celui de ta confirmation d'inscription à l'examen."
+portfolioExternalUrlLabel: 'Adresse URL du portfolio'
+portfolioExternalUrlHint: "Ton portfolio en ligne, que la commission consulte. Obligatoire pour déposer l'E5."
+portfolioExternalUrlInvalidError: "L'adresse doit commencer par http:// ou https://."
+portfolioIdentitySavedFlashMessage: 'Enregistré.'
+portfolioAttestationsHeading: 'Attestations de stage ou certificats de travail (E5)'
+portfolioAttestationsHint: 'Signées. Elles accompagnent le dossier E5.'
+portfolioDepositE5Title: 'Dossier E5 · portfolio, tableau de synthèse, attestations'
+portfolioDepositE6Title: 'Dossier E6 · page de garde et fiches n° 1 et n° 2'
+portfolioDepositDeadlineMeta: "Date limite de l'établissement : %date%"
+portfolioDepositNoDeadlineMeta: 'Pas de date limite fixée'
+portfolioDepositNoTemplateMeta: 'modèle officiel non fourni : le dépôt contiendra le PDF seul'
+portfolioDepositE5CompleteMeta: 'bloc 1 entièrement couvert'
+portfolioDepositE5IncompleteMeta: 'bloc 1 incomplet'
+portfolioDepositE6CompleteMeta: 'bloc 2 couvert'
+portfolioDepositE6IncompleteMeta: 'bloc 2 incomplet'
+portfolioDepositAction: 'Déposer'
+portfolioDepositConfirm: 'Déposer ce dossier ? Il est figé tel quel ; tu pourras redéposer si on te le demande.'
+portfolioDepositMadeFlashMessage: 'Dossier déposé.'
+portfolioDepositLateFlashMessage: 'Dossier déposé, après la date limite : il est marqué « hors délai ».'
+portfolioDepositHistoryHeading: 'Dépôts'
+portfolioDepositHistoryEmpty: 'Aucun dépôt pour le moment.'
+portfolioDepositMadeMeta: 'déposé le %date%'
+portfolioDepositLateLabel: 'hors délai'
+portfolioDepositNoProgramError: 'Aucune formation ne porte ton portfolio cette année.'
+portfolioDepositUrlRequiredError: "Renseigne l'adresse de ton portfolio en ligne avant de déposer l'E5."
+portfolioDepositShowcaseRequiredError: "Il faut au moins une fiche E6 validée pour déposer l'E6."
+portfolioDepositFilesHeading: 'Dossier déposé'
+portfolioDepositUrlText: 'Portfolio en ligne :'
+portfolioDepositAttestationsText: '{0} aucune attestation|{1} 1 attestation|]1,Inf[ %count% attestations'
+portfolioDepositShowcasesText: '{0} aucune fiche|{1} 1 fiche|]1,Inf[ %count% fiches'
+portfolioDepositCheckE5Heading: 'Contrôle de conformité (annexe VI-2)'
+portfolioDepositCheckE6Heading: 'Contrôle de conformité (annexe VII-2)'
+portfolioDepositCheckHint: 'Tout coché : le dépôt est visé. Un point non coché : le dépôt est « à régulariser », motif obligatoire.'
+portfolioDepositCheckCommentLabel: "Motif (à l'étudiant)"
+portfolioDepositCheckAction: 'Viser'
+portfolioDepositOpenAction: 'Ouvrir'
+portfolioDepositCheckedMeta: 'Contrôlé le %date% par %name%'
+portfolioDepositEndorsedFlashMessage: 'Dépôt visé.'
+portfolioDepositToRegulariseFlashMessage: "Dépôt marqué « à régulariser » : l'étudiant voit le motif."
+portfolioDepositReasonRequiredError: 'Un dépôt à régulariser demande un motif.'
+portfolioChecklistFilePresent: 'Dossier présent et complet'
+portfolioChecklistInTime: 'Déposé dans les délais'
+portfolioChecklistInternshipDuration: 'Durée de stage suffisante'
+portfolioChecklistAttestationsSigned: 'Attestations signées'
+
+portfolioQueueTabLabel: 'À valider (%count%)'
+portfolioClassesTabLabel: 'Par classe'
+portfolioQueueFilterLabel: 'Classe et option'
+portfolioQueueFilterAll: 'Toutes mes classes'
+portfolioQueueSubmittedMeta: 'soumise le %date%'
+portfolioQueueRequestedMeta: 'vous a été adressée'
+portfolioQueueEmptyText: 'Rien à valider.'
+portfolioExamineAction: 'Examiner'
+portfolioClassesEmptyText: "Aucune classe : l'administration désigne les validateurs dans Formation › Paramétrage › Portfolio."
+portfolioClassStudentColumn: 'Étudiant'
+portfolioClassWorkplaceColumn: 'Milieu pro'
+portfolioClassE6Column: 'E6'
+portfolioClassDepositColumn: 'Dépôt'
+portfolioClassNotOpenedText: 'portfolio non ouvert'
+portfolioClassE6CompleteText: '2 fiches · bloc 2 couvert'
+portfolioClassE6CountText: '{1} 1 fiche|]1,Inf[ %count% fiches'
+portfolioClassE6PendingText: '%count% à valider'
+portfolioClassNotDepositedText: 'Non déposé'
+portfolioClassEmptyText: "Aucun étudiant dans cette classe et cette option."
+portfolioClassLegendValidated: 'réalisations validées qui la retiennent'
+portfolioClassLegendPending: 'seulement en attente'
+portfolioClassLegendNone: 'rien'
+portfolioClassE5ZipAction: 'Exporter les tableaux E5 de la classe (.zip)'
+portfolioClassE6PdfAction: 'Dossiers E6 de la classe (PDF)'
+portfolioStudentHeading: 'Portfolio de %name%'
+portfolioStudentEmptyText: 'Aucune réalisation soumise.'
+
+portfolioReviewPerCompetencyHeading: 'Décision par compétence'
+portfolioReviewPerCompetencyHint: 'Au moins une compétence retenue pour valider.'
+portfolioReviewNotRetainedShort: 'Non'
+portfolioReviewClaimCommentPlaceholder: 'Un mot sur cette compétence (facultatif)'
+portfolioReviewCommentLabel: "Commentaire à l'étudiant"
+portfolioReviewCommentHint: 'Obligatoire pour renvoyer : il dit quoi reprendre.'
+portfolioReviewSendBackAction: "Renvoyer à l'étudiant"
+portfolioReviewValidateAction: 'Valider'
+portfolioReviewReadOnlyText: "Vous lisez cette pièce : seuls les validateurs désignés pour l'option de l'étudiant décident."
+portfolioReviewNothingToDecideText: "Rien à décider : cette pièce n'est pas « À valider »."
+portfolioReviewChangedSinceText: 'Modifiée depuis la version validée le %date% :'
+portfolioReviewEnvironmentLabel: "Environnement technologique conforme à l'annexe II.E"
+portfolioReviewValidatedFlashMessage: 'Validée.'
+portfolioReviewSentBackFlashMessage: "Renvoyée à l'étudiant."
+portfolioReviewNotAwaitingError: "Cette pièce n'attend plus de décision."
+portfolioReviewCommentRequiredError: 'Renvoyer demande un commentaire.'
+portfolioReviewEveryClaimError: 'Pour valider, décidez chaque compétence : retenue ou non.'
+portfolioReviewNoRetainedError: "Aucune compétence retenue : renvoyez la réalisation plutôt que de la valider."
+portfolioReviewEnvironmentRequiredError: "Cochez « environnement technologique conforme à l'annexe II.E » pour valider une fiche."
+portfolioReviewShowcaseAchievementNotValidatedError: "La réalisation de cette fiche n'est pas validée : validez-la d'abord."
+portfolioSnapshotKey_title: 'intitulé'
+portfolioSnapshotKey_setting: 'cadre'
+portfolioSnapshotKey_startsOn: 'date de début'
+portfolioSnapshotKey_endsOn: 'date de fin'
+portfolioSnapshotKey_organisation: 'organisation'
+portfolioSnapshotKey_place: 'lieu'
+portfolioSnapshotKey_teamwork: 'modalité'
+portfolioSnapshotKey_teamNote: 'équipe'
+portfolioSnapshotKey_description: 'descriptif'
+portfolioSnapshotKey_claims: 'compétences'
+portfolioSnapshotKey_evidences: 'preuves'
+
+portfolioTemplateNotXlsxError: "Ce fichier n'est pas un classeur .xlsx lisible."
+portfolioTemplateWriteError: "Le modèle n'a pas pu être rempli."
+portfolioTemplateMissingLandmark: 'Repère introuvable'
+portfolioTemplateMissingColumn: 'Colonne de compétence introuvable'
+portfolioTemplateNoRowsInPart: 'Aucune ligne vierge sous la partie'
+portfolioTemplateNoSynthesisBlock: "Le référentiel n'a pas de bloc « tableau de synthèse »"
+portfolioTemplateSessionMismatch: "La cellule SESSION du fichier ne correspond pas à la session choisie : vérifiez que c'est le bon modèle."
+portfolioTemplateRefusedText: 'Modèle refusé :'
+
+programSettingsPortfolioTabLabel: 'Portfolio'
+programPortfolioEnabledLabel: 'Les étudiants de cette formation tiennent un portfolio'
+programPortfolioReferentialLabel: 'Référentiel'
+programPortfolioNoReferentialHint: "Aucun référentiel : créez-le dans Paramètres › Pédagogique › Référentiels."
+programPortfolioCursusYearLabel: 'Année du cursus'
+programPortfolioCursusYearOne: '1re année'
+programPortfolioCursusYearTwo: '2e année'
+programPortfolioCursusYearHint: "Décide de la partie du tableau d'une réalisation en milieu professionnel, et ouvre les fiches E6 en 2e année."
+programPortfolioSessionLabel: "Session d'examen"
+programPortfolioSessionHint: 'Choisit le modèle officiel du tableau de synthèse.'
+programPortfolioE5DeadlineLabel: 'Date limite de dépôt E5'
+programPortfolioE6DeadlineLabel: 'Date limite de dépôt E6'
+programPortfolioDeadlineHint: 'Elles ne verrouillent rien : un dépôt tardif est accepté et marqué « hors délai ».'
+programPortfolioReferentialRequiredError: 'Choisissez un référentiel pour activer le portfolio.'
+programPortfolioSavedFlashMessage: 'Paramètres du portfolio enregistrés.'
+programPortfolioValidatorsHeading: 'Validateurs par option'
+programPortfolioValidatorsHint: "Seuls ces enseignants valident les réalisations et les fiches E6 de l'option, et visent les dépôts. Ni l'administration ni les autres enseignants de la classe ne décident."
+programPortfolioValidatorsCopyAction: 'Reprendre ceux de %program%'
+programPortfolioValidatorsCopiedFlashMessage: '{0} Aucun validateur à reprendre.|{1} 1 validateur repris.|]1,Inf[ %count% validateurs repris.'
+programPortfolioStudentsWithoutOptionText: '{1} 1 étudiant sans option (%names%) : il est ouvert aux validateurs de toutes les options.|]1,Inf[ %count% étudiants sans option (%names%) : ils sont ouverts aux validateurs de toutes les options.'
+programPortfolioNoValidatorLabel: 'Aucun validateur'
+programPortfolioValidatorNotTeachingLabel: "n'enseigne plus dans la classe"
+programPortfolioValidatorWithdrawAction: 'Retirer ce validateur'
+programPortfolioValidatorWithdrawConfirm: 'Retirer ce validateur ? Ses décisions passées restent.'
+programPortfolioValidatorPickerLabel: 'Enseignant de la formation…'
+programPortfolioValidatorAddAction: 'Désigner'
+programPortfolioValidatorAddedFlashMessage: 'Validateur désigné.'
+programPortfolioValidatorWithdrawnFlashMessage: 'Validateur retiré.'
+programPortfolioValidatorInvalidError: 'Choisissez un enseignant de la formation et une option du référentiel.'
+programPortfolioNoOptionText: "Le référentiel ne nomme aucune option : rattachez ses blocs E6 aux options de l'établissement."
+
+referentialsTabLabel: 'Référentiels'
+referentialsEmptyText: 'Aucun référentiel. Récupérez le BTS SIO chez France compétences (RNCP40792).'
+referentialNewFromRncpAction: 'Depuis France compétences'
+referentialNewManualAction: 'À la main'
+referentialNewPageHeading: 'Nouveau référentiel'
+referentialEditPageHeading: 'Modifier le référentiel'
+referentialLabelFieldLabel: 'Nom court'
+referentialCodeFieldLabel: 'Code'
+referentialCodeFieldHint: 'Commun à toutes les versions : bts-sio.'
+referentialVersionFieldLabel: 'Version'
+referentialSynthesisModelFieldLabel: 'Tableau de synthèse'
+referentialSynthesisSioE5Label: 'BTS SIO · annexe VI-1 (modèle .xlsx officiel)'
+referentialSynthesisGenericLabel: "Générique (écran et PDF, pas de modèle officiel)"
+referentialRequiredFieldsError: 'Nom, code et version sont obligatoires.'
+referentialSynthesisModelRequiredError: 'Choisissez le tableau de synthèse.'
+referentialDuplicateVersionError: 'Un référentiel porte déjà ce code et cette version.'
+referentialCreatedFlashMessage: 'Référentiel créé.'
+referentialUpdatedFlashMessage: 'Référentiel enregistré.'
+referentialIdentityHeading: 'Identité'
+referentialRncpCodeLabel: 'Fiche RNCP'
+referentialCertifierLabel: 'Certificateur'
+referentialRegistrationLabel: 'Enregistrement'
+referentialReplacesLabel: 'Remplace'
+referentialRegisteredUntilMeta: "enregistré jusqu'au %date%"
+referentialRncpSourceText: "Source : France compétences, export open data du %date% (Licence Ouverte 2.0)."
+referentialFrozenText: "Des portfolios utilisent ce référentiel : ses compétences sont figées. Rôles, options et libellés courts restent modifiables ; un référentiel rénové se crée en nouvelle version."
+referentialBlocksHeading: 'Blocs de compétences'
+referentialBlocksHint: "Le rôle dit à quoi sert le bloc à l'examen ; les libellés courts servent aux colonnes étroites de la vue par classe."
+referentialBlockAddAction: 'Ajouter un bloc'
+referentialBlockCommonCoreLabel: 'tronc commun'
+referentialBlockOptionsLabel: 'option %options%'
+referentialNoBlockText: 'Aucun bloc.'
+referentialShortLabelPlaceholder: 'Libellé court'
+referentialShortLabelsSaveAction: 'Enregistrer les libellés courts'
+referentialShortLabelsSavedFlashMessage: 'Libellés courts enregistrés.'
+referentialBlockNewPageHeading: 'Nouveau bloc'
+referentialBlockEditPageHeading: 'Modifier le bloc'
+referentialBlockCodeFieldLabel: 'Code'
+referentialBlockRncpCodeFieldLabel: 'Code RNCP'
+referentialBlockLabelFieldLabel: 'Intitulé du bloc'
+referentialBlockRoleFieldLabel: "Rôle à l'examen"
+referentialBlockRoleFieldHint: 'Un seul bloc « tableau de synthèse » par référentiel.'
+referentialBlockRoleSynthesisLabel: 'Tableau de synthèse (E5)'
+referentialBlockRoleShowcaseLabel: 'Fiches de réalisation (E6)'
+referentialBlockRoleNoneLabel: 'Aucun'
+referentialBlockOptionsFieldLabel: "Options de l'établissement"
+referentialBlockOptionsFieldHint: 'Aucune cochée : tronc commun.'
+referentialBlockCompetenciesFieldLabel: 'Compétences et savoir-faire'
+referentialBlockCompetenciesFieldHint: "Une compétence par ligne commençant par « * », ses savoir-faire en dessous par « o » - le format de France compétences."
+referentialBlockCompetenciesLockedHint: 'Figées : des portfolios revendiquent ces compétences.'
+referentialBlockRequiredFieldsError: 'Code et intitulé sont obligatoires.'
+referentialBlockRoleRequiredError: 'Choisissez le rôle de chaque bloc.'
+referentialBlockCompetenciesUnreadableError: "Aucune compétence lue : commencez chaque compétence par « * »."
+referentialBlockSecondSynthesisError: 'Un autre bloc est déjà le tableau de synthèse.'
+referentialBlockSavedFlashMessage: 'Bloc enregistré.'
+referentialBlockCountMeta: '{0} aucun bloc|{1} 1 bloc|]1,Inf[ %count% blocs'
+referentialUnusedMeta: "Aucune formation ne l'utilise."
+referentialUsedByMeta: 'Utilisé par %programs%'
+
+referentialTemplatesHeading: 'Modèles officiels'
+referentialTemplatesHint: "Le modèle .xlsx du tableau de synthèse (annexe VI-1) est publié chaque année avec la circulaire. Il est contrôlé à l'arrivée par ses repères ; il ne sert aux étudiants qu'une fois mis en service."
+referentialTemplatesOpenAction: 'Gérer les modèles'
+referentialTemplatesEmptyText: 'Aucun modèle téléversé.'
+referentialTemplateSessionTitle: 'Session %session%'
+referentialTemplateInServiceLabel: 'En service'
+referentialTemplateNotInServiceLabel: 'À mettre en service'
+referentialTemplateInServiceSinceMeta: 'en service depuis le %date%'
+referentialTemplateLandmarksMeta: '%count% colonnes reconnues'
+referentialTemplatePreviewAction: 'Aperçu rempli'
+referentialTemplatePutInServiceAction: 'Mettre en service'
+referentialTemplateUploadHeading: 'Téléverser le modèle de la session'
+referentialTemplateUploadHint: "Le fichier de la circulaire, tel quel. Un nouveau fichier pour une session déjà fournie remplace le précédent et doit être remis en service."
+referentialTemplateSessionFieldLabel: 'Session'
+referentialTemplateFileFieldLabel: 'Modèle .xlsx'
+referentialTemplateFileFieldHelp: "« EPREUVE ORALE E5 - MODELE DE TABLEAU DE SYNTHESE ANNEXE VI-1 », sur le site du SIEC."
+referentialTemplateUploadAction: 'Contrôler et enregistrer'
+referentialTemplateAcceptedFlashMessage: 'Modèle accepté : essayez l’aperçu rempli, puis mettez-le en service.'
+referentialTemplateInServiceFlashMessage: 'Modèle mis en service.'
+referentialTemplateE5SynthesisLabel: 'Tableau de synthèse E5'
+
+rncpImportPageHeading: 'Depuis France compétences'
+rncpImportIntroText: "Indiquez le numéro de la fiche RNCP : la plateforme lit l'export open data du jour (data.gouv.fr) et vous montre la fiche avant de créer quoi que ce soit."
+rncpImportCodeFieldLabel: 'Numéro de fiche RNCP'
+rncpImportCodeFieldHint: 'BTS SIO : RNCP40792.'
+rncpImportCodeInvalidError: 'Un numéro de fiche ressemble à RNCP40792.'
+rncpImportLicenceText: 'Données publiées par France compétences sous Licence Ouverte 2.0.'
+rncpImportFetchAction: 'Récupérer'
+rncpImportRowTitle: 'Fiche %code%'
+rncpImportRequestedMeta: 'demandée le %date%'
+rncpImportPendingLabel: 'En attente'
+rncpImportRunningLabel: 'En cours de lecture'
+rncpImportReadyLabel: 'Prête à appliquer'
+rncpImportFailedLabel: 'En échec'
+rncpImportAppliedLabel: 'Appliquée'
+rncpImportWaitingText: "La lecture se fait en arrière-plan, dans la minute (l'export fait 74 Mo). Cette page se met à jour toute seule ; vous pouvez la fermer et revenir."
+rncpImportGiveUpText: "Toujours rien après 15 minutes : la tâche planifiée ne tourne peut-être pas. Rechargez la page plus tard."
+rncpImportRetryAction: 'Relancer'
+rncpImportAppliedText: 'Cette fiche a servi à créer'
+rncpImportAdministrativeHeading: 'Partie administrative'
+rncpImportSourceText: 'Lu dans %file% (%date%).'
+rncpImportStateLabel: 'État'
+rncpImportActiveLabel: 'Active'
+rncpImportInactiveLabel: 'Inactive'
+rncpImportInactiveWarning: "France compétences marque cette fiche inactive : vérifiez qu'il ne s'agit pas d'une version remplacée."
+rncpImportOptionsHeading: 'Options'
+rncpImportOptionsHint: "La fiche nomme des options par une lettre : dites à quelle option de l'établissement chacune correspond."
+rncpImportOptionLetterLabel: 'Option %letter%'
+rncpImportOptionRequiredError: "Chaque option de la fiche doit correspondre à une option de l'établissement."
+rncpImportBlocksHint: "Le rôle de chaque bloc est proposé d'après la circulaire pour le BTS SIO : confirmez-le."
+rncpImportUnreadableBlockText: "La liste de compétences de ce bloc n'a pas été reconnue : complétez-la à la main après création."
+rncpImportApplyAction: 'Créer le référentiel'

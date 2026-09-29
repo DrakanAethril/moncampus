@@ -1,0 +1,125 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set heading = 'rncpImportRowTitle'|trans({'%code%': import.rncpCode}) %}
+{% block title %}{{ heading }}{% endblock %}
+{% block page_breadcrumb %}
+    {% include 'settings/referential/_crumbs.html.twig' with {extra: [{label: heading, url: app.request.requestUri}]} %}
+{% endblock %}
+{% block page_title %}{{ heading }}{% endblock %}
+
+{% block main %}
+    <div class="cm-pf-page">
+        {% if import.state.waiting %}
+            <div class="cm-pf-card cm-pf-card--pad"
+                 data-controller="portfolio-poll"
+                 data-portfolio-poll-url-value="{{ path('app_settings_referentials_rncp_status', {id: import.id}) }}"
+                 data-portfolio-poll-state-value="{{ import.state.value }}">
+                <div class="cm-pf-inline"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span> <strong>{{ import.state.labelKey|trans }}</strong></div>
+                <p class="mb-0">{{ 'rncpImportWaitingText'|trans }}</p>
+                <p class="cm-pf-hint mb-0" data-portfolio-poll-target="giveUp" hidden>{{ 'rncpImportGiveUpText'|trans }}</p>
+            </div>
+        {% elseif import.state.value == 'failed' %}
+            <div class="cm-pf-banner cm-pf-banner--danger">{{ import.error }}</div>
+            <form method="post" action="{{ path('app_settings_referentials_rncp_retry', {id: import.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('rncp_import') }}">
+                <twig:Cm:ActionBar>
+                    <twig:Cm:Button variant="outline" href="{{ path('app_settings_referentials_new') }}">{{ 'referentialNewManualAction'|trans }}</twig:Cm:Button>
+                    <twig:Cm:Button variant="primary" type="submit">{{ 'rncpImportRetryAction'|trans }}</twig:Cm:Button>
+                </twig:Cm:ActionBar>
+            </form>
+        {% elseif import.state.value == 'applied' %}
+            <div class="cm-pf-banner">{{ 'rncpImportAppliedText'|trans }}
+                {% if import.referential %}<a href="{{ path('app_settings_referentials_show', {id: import.referential.id}) }}">{{ import.referential.displayName }}</a>{% endif %}
+            </div>
+        {% else %}
+            {% set payload = import.payload %}
+            <form method="post" action="{{ path('app_settings_referentials_rncp_apply', {id: import.id}) }}" class="cm-pf-page">
+                <input type="hidden" name="_token" value="{{ csrf_token('rncp_import') }}">
+                <div class="cm-pf-card cm-pf-card--pad">
+                    <twig:Cm:Subhead :title="'rncpImportAdministrativeHeading'|trans" :hint="'rncpImportSourceText'|trans({'%file%': import.sourceFile, '%date%': import.sourceDate ? import.sourceDate|date('d/m/Y') : '—'})"/>
+                    <dl class="cm-pf-recto">
+                        <div><dt>{{ 'referentialRncpCodeLabel'|trans }}</dt><dd>{{ payload.numero }} · {{ payload.niveau }}</dd></div>
+                        <div><dt>{{ 'referentialCertifierLabel'|trans }}</dt><dd>{{ payload.certificateurs|join(', ') ?: '—' }}</dd></div>
+                        <div><dt>{{ 'referentialRegistrationLabel'|trans }}</dt><dd>{{ payload.dateEffet ? payload.dateEffet|date('d/m/Y') : '—' }} → {{ payload.dateFinEnregistrement ? payload.dateFinEnregistrement|date('d/m/Y') : '—' }}</dd></div>
+                        <div><dt>{{ 'rncpImportStateLabel'|trans }}</dt><dd>{{ (payload.actif ? 'rncpImportActiveLabel' : 'rncpImportInactiveLabel')|trans }}</dd></div>
+                        {% if payload.anciennes is not empty %}<div><dt>{{ 'referentialReplacesLabel'|trans }}</dt><dd>{{ payload.anciennes|join(', ') }}</dd></div>{% endif %}
+                    </dl>
+                    <p class="cm-pf-meta mb-0">{{ payload.intitule }}</p>
+                    {% if not payload.actif %}<div class="cm-pf-banner cm-pf-banner--warn">{{ 'rncpImportInactiveWarning'|trans }}</div>{% endif %}
+                    <div class="cm-pf-form">
+                        <div class="cm-pf-field">
+                            <label for="imp-label">{{ 'referentialLabelFieldLabel'|trans }}</label>
+                            <input id="imp-label" class="form-control" name="label" value="{{ proposal.label }}" maxlength="120" required>
+                        </div>
+                        <div class="cm-pf-field">
+                            <label for="imp-code">{{ 'referentialCodeFieldLabel'|trans }}</label>
+                            <input id="imp-code" class="form-control" name="code" value="{{ proposal.code }}" maxlength="60" required>
+                        </div>
+                        <div class="cm-pf-field">
+                            <label for="imp-version">{{ 'referentialVersionFieldLabel'|trans }}</label>
+                            <input id="imp-version" class="form-control" name="version" value="{{ proposal.version }}" maxlength="60" required>
+                        </div>
+                        <div class="cm-pf-field">
+                            <label for="imp-model">{{ 'referentialSynthesisModelFieldLabel'|trans }}</label>
+                            <select id="imp-model" class="form-select" name="synthesisModel" required>
+                                {% for model in models %}
+                                    <option value="{{ model.value }}"{{ proposal.synthesisModel == model ? ' selected' }}>{{ model.labelKey|trans }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                {% if proposal.letters is not empty %}
+                    <div class="cm-pf-card cm-pf-card--pad">
+                        <twig:Cm:Subhead :title="'rncpImportOptionsHeading'|trans" :hint="'rncpImportOptionsHint'|trans"/>
+                        <div class="cm-pf-form">
+                            {% for letter, guessed in proposal.letters %}
+                                <div class="cm-pf-field">
+                                    <label for="letter-{{ letter }}">{{ 'rncpImportOptionLetterLabel'|trans({'%letter%': letter}) }}</label>
+                                    <select id="letter-{{ letter }}" class="form-select" name="letter[{{ letter }}]" required>
+                                        <option value="">{{ 'portfolioChoosePlaceholder'|trans }}</option>
+                                        {% for option in options %}
+                                            <option value="{{ option.id }}"{{ guessed == option.id ? ' selected' }}>{{ option.shortName }} · {{ option.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="cm-pf-card">
+                    <div class="cm-pf-card--pad"><twig:Cm:Subhead :title="'referentialBlocksHeading'|trans" :hint="'rncpImportBlocksHint'|trans"/></div>
+                    {% for index, block in blocks %}
+                        <div class="cm-pf-part">{{ block.code }}</div>
+                        <div class="cm-pf-card--pad">
+                            <div class="cm-pf-decide">
+                                <div class="cm-pf-row__title">{{ block.libelle }}</div>
+                                <select class="form-select form-select-sm" name="role[{{ index }}]" required aria-label="{{ 'referentialBlockRoleFieldLabel'|trans }}">
+                                    {% for role in roles %}
+                                        <option value="{{ role.value }}"{{ proposal.blocks[index].role == role ? ' selected' }}>{{ role.labelKey|trans }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            {% for competency in block.competences %}
+                                <div>
+                                    <div class="cm-pf-claim__label">{{ competency.label }}</div>
+                                    {% if competency.skills is not empty %}<div class="cm-pf-claim__skills">{{ competency.skills|map(s => '▸ ' ~ s)|join(' · ') }}</div>{% endif %}
+                                </div>
+                            {% else %}
+                                <div class="cm-pf-banner cm-pf-banner--warn">{{ 'rncpImportUnreadableBlockText'|trans }}</div>
+                                <pre class="cm-pf-hint" style="white-space:pre-wrap">{{ block.texte }}</pre>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <twig:Cm:ActionBar>
+                    <twig:Cm:Button variant="outline" href="{{ path('app_settings_referentials') }}">{{ 'cancelAction'|trans }}</twig:Cm:Button>
+                    <twig:Cm:Button variant="primary" type="submit">{{ 'rncpImportApplyAction'|trans }}</twig:Cm:Button>
+                </twig:Cm:ActionBar>
+            </form>
+        {% endif %}
+    </div>
+{% endblock %}
