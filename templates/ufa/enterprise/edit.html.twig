@@ -19,7 +19,16 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">{{ form_row(form.name) }}</div>
-                    <div class="col-md-3">{{ form_row(form.siret) }}</div>
+                    {# The live preview of what the typed SIRET designates (siret_preview_controller.js). #}
+                    <div class="col-md-3"
+                         data-controller="siret-preview"
+                         data-siret-preview-url-value="{{ path('app_ufa_siret_lookup', {enterprise: enterprise.id}) }}">
+                        {{ form_row(form.siret, {attr: {
+                            'data-siret-preview-target': 'input',
+                            'data-action': 'input->siret-preview#update',
+                        }}) }}
+                        <turbo-frame id="siret-preview" data-siret-preview-target="frame"></turbo-frame>
+                    </div>
                     <div class="col-md-3">{{ form_row(form.phone) }}</div>
                 </div>
                 <div class="row">

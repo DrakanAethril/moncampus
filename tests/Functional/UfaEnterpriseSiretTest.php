@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace App\Tests\Functional;
 
 use App\Entity\Enterprise;
+use App\Entity\InternshipTutorLink;
 use App\Entity\User;
 use App\Enum\EnterpriseSiretStatus;
+use App\Form\InternshipAlternanceType;
 use App\Repository\EnterpriseRepository;
+use App\Validator\Siret;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Form\FormFactoryInterface;
 
 /**
  * The SIRET of an employer, proposed by the État and confirmed by a person
@@ -188,6 +192,81 @@ class UfaEnterpriseSiretTest extends FunctionalTestCase
             ->setParameter('feature', 'ufa_booklet')
             ->execute();
         $this->assertScreens($this->staff, [$path => 404, '/ufa/enterprises/siret-review' => 404]);
+    }
+
+    public function testSavingAChangedNumberConfirmsItButSavingTheSameOneDoesNot(): void
+    {
+        $enterprise = $this->enterprise('LIMOGES METROPOLE', '24871931200030');
+        $this->entityManager->flush();
+        $id = $enterprise->getId();
+        $this->client->loginUser($this->staff);
+
+        // The same number, typed with spaces: nothing was looked at, nothing is confirmed.
+        $this->saveEdit($id, '248 719 312 00030');
+        self::assertSame(EnterpriseSiretStatus::Pending, $this->reloaded($id)->siretStatus($this->now));
+
+        $this->saveEdit($id, '248 719 312 00022');
+        $saved = $this->reloaded($id);
+        self::assertSame('24871931200022', $saved->getSiret());
+        self::assertSame(EnterpriseSiretStatus::Confirmed, $saved->siretStatus($this->now));
+        self::assertSame('secretariat', $saved->getSiretConfirmedBy()?->getUsername());
+
+        $this->saveEdit($id, '');
+        $saved = $this->reloaded($id);
+        self::assertNull($saved->getSiret());
+        self::assertNull($saved->getSiretConfirmedAt());
+    }
+
+    public function testTheEditFormRefusesANumberThatCannotExist(): void
+    {
+        $enterprise = $this->enterprise('LIMOGES METROPOLE', '24871931200030');
+        $this->entityManager->flush();
+        $this->client->loginUser($this->staff);
+
+        $this->saveEdit((int) $enterprise->getId(), '24871931200031');
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertSame('24871931200030', $this->reloaded((int) $enterprise->getId())->getSiret());
+    }
+
+    public function testTheLivePreviewSaysWhenTheEtatIsSilent(): void
+    {
+        $this->client->loginUser($this->staff);
+
+        $this->client->request('GET', '/ufa/siret/lookup?siret=24871931200022');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('turbo-frame#siret-preview', "Service de l'État indisponible");
+
+        $this->client->request('GET', '/ufa/siret/lookup?siret=24871931200023');
+        self::assertSelectorExists('turbo-frame#siret-preview .text-danger');
+    }
+
+    public function testTheNewAlternanceChecksTheFormatOfANewEmployersNumber(): void
+    {
+        $this->client->loginUser($this->staff);
+        $form = static::getContainer()->get(FormFactoryInterface::class)
+            ->create(InternshipAlternanceType::class, new InternshipTutorLink($this->createProgram([], [], $this->staff)));
+
+        $constraints = $form->get('newEnterpriseSiret')->getConfig()->getOption('constraints');
+        self::assertIsArray($constraints);
+        self::assertNotEmpty(array_filter($constraints, static fn (mixed $constraint): bool => $constraint instanceof Siret));
+    }
+
+    private function saveEdit(int $id, string $siret): void
+    {
+        $crawler = $this->client->request('GET', \sprintf('/ufa/enterprises/%d/edit', $id));
+        $form = $crawler->selectButton('enterprise[submit]')->form();
+        $form['enterprise[siret]'] = $siret;
+        $this->client->submit($form);
+    }
+
+    private function reloaded(int $id): Enterprise
+    {
+        $this->entityManager->clear();
+        $enterprise = $this->enterprises->find($id);
+        self::assertNotNull($enterprise);
+
+        return $enterprise;
     }
 
     private function enterprise(string $name, ?string $siret = null, ?string $address = null): Enterprise

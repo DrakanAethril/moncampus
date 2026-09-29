@@ -1,0 +1,34 @@
+{# What a SIRET typed in « Modifier l'entreprise » designates (EnterpriseSiretController::lookup()).
+   The form's own validation says whether the number can exist; this says what it is. #}
+<turbo-frame id="siret-preview">
+    {% if not valid %}
+        <div class="form-text text-danger">{{ 'siretChecksumMessage'|trans }}</div>
+    {% elseif unavailable %}
+        <div class="form-text">{{ 'ufaEnterpriseSiretPreviewUnavailableText'|trans }}</div>
+    {% elseif establishment %}
+        <div class="border rounded p-2 mt-1 small">
+            <div class="fw-bold">
+                {{ establishment.fullName }}
+                {% for other in establishment.otherNames %}<span class="text-secondary fw-normal"> · {{ other }}</span>{% endfor %}
+            </div>
+            <div class="text-secondary">
+                {{ establishment.address }}
+                · {{ establishment.open ? 'ufaEnterpriseSiretOpenText'|trans : 'ufaEnterpriseSiretClosedText'|trans }}
+                {% if establishment.headOffice %}· {{ 'ufaEnterpriseSiretHeadOfficeText'|trans }}{% endif %}
+            </div>
+            {% if not establishment.open or linkedTo %}
+                <div class="d-flex flex-wrap gap-1 mt-1">
+                    {% if not establishment.open %}<twig:Cm:Badge tone="red">{{ 'ufaEnterpriseSiretClosedText'|trans }}</twig:Cm:Badge>{% endif %}
+                    {% if linkedTo %}
+                        <a href="{{ path('app_ufa_enterprise_show', {id: linkedTo.id}) }}" target="_blank" rel="noopener" data-turbo-frame="_top">
+                            <twig:Cm:Badge tone="gold">{{ 'ufaEnterpriseSiretLinkedToBadgeLabel'|trans({'%name%': linkedTo.name}) }} ↗</twig:Cm:Badge>
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+            <div class="text-secondary mt-1">{{ 'ufaEnterpriseSiretPreviewConfirmHint'|trans }}</div>
+        </div>
+    {% else %}
+        <div class="form-text text-warning">{{ 'ufaEnterpriseSiretUnknownText'|trans }}</div>
+    {% endif %}
+</turbo-frame>

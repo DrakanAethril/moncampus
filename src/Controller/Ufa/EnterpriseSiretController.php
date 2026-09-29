@@ -146,6 +146,41 @@ class EnterpriseSiretController extends AbstractController
         ]);
     }
 
+    /**
+     * The live preview of « Modifier l'entreprise »: what a SIRET typed by hand designates, as soon
+     * as it has fourteen digits (siret_preview_controller.js points a frame here). Saving the form
+     * after seeing it is the third gesture that confirms (R4) - hence the other fiche that already
+     * carries the number is said here too, before the save (R8).
+     */
+    #[Route(path: '/ufa/siret/lookup', name: 'app_ufa_siret_lookup', methods: ['GET'])]
+    public function lookup(Request $request, EnterpriseRepository $enterprises, RechercheEntreprisesClient $client): Response
+    {
+        $siret = Siret::normalize(QueryValue::string($request, 'siret'));
+        $valid = Siret::isValid($siret);
+        $establishment = null;
+        $unavailable = false;
+        $linkedTo = null;
+
+        if ($valid) {
+            try {
+                $establishment = $client->establishment($siret);
+            } catch (SireneUnavailableException) {
+                $unavailable = true;
+            }
+
+            $current = $enterprises->findVisible(QueryValue::int($request, 'enterprise'), $this->currentUser());
+            $linkedTo = $enterprises->findOthersBySiret([$siret], $current, $this->currentUser())[$siret] ?? null;
+        }
+
+        return $this->render('ufa/enterprise/_siret_preview.html.twig', [
+            'siret' => $siret,
+            'valid' => $valid,
+            'establishment' => $establishment,
+            'unavailable' => $unavailable,
+            'linkedTo' => $linkedTo,
+        ]);
+    }
+
     /** « Associer » on a candidate, « Confirmer » on the recorded number - a person saw it (R4). */
     #[Route(path: '/ufa/enterprises/{id}/siret/associate', name: 'app_ufa_enterprise_siret_associate', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function associate(int $id, Request $request, EnterpriseRepository $enterprises, EntityManagerInterface $entityManager, TranslatorInterface $translator): Response

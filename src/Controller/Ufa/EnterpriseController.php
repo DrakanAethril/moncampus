@@ -105,6 +105,7 @@ class EnterpriseController extends AbstractController
 
         return $this->render('ufa/enterprise/show.html.twig', [
             'enterprise' => $enterprise,
+            'siretStatus' => $enterprise->siretStatus(new \DateTimeImmutable()),
             'contacts' => $contacts->fromLinks($alternances),
             'alternances' => $alternances,
             'activeCount' => \count(array_filter(
@@ -118,13 +119,23 @@ class EnterpriseController extends AbstractController
     public function edit(int $id, Request $request, EnterpriseRepository $enterprises, EntityManagerInterface $entityManager): Response
     {
         $enterprise = $this->findOrNotFound($id, $enterprises);
+        $siretBefore = $enterprise->getSiret();
 
         $form = $this->createForm(EnterpriseType::class, $enterprise);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $now = new \DateTimeImmutable();
+            $siret = $enterprise->getSiret();
+            // A number changed here was typed beside its preview: saving it is the person's
+            // confirmation (design/validated/siret-entreprises.md, R4). An emptied one has
+            // already lost its confirmation and set-aside in setSiret(); an unchanged one keeps
+            // whatever it had.
+            if (null !== $siret && $siret !== $siretBefore) {
+                $enterprise->confirmSiret($siret, $this->currentUser(), $now);
+            }
             $enterprise->setLastUpdatedBy($this->currentUser());
-            $enterprise->setLastUpdatedDate(new \DateTimeImmutable());
+            $enterprise->setLastUpdatedDate($now);
             $entityManager->flush();
 
             $this->addFlash('success', 'ufaEnterpriseUpdatedFlashMessage');

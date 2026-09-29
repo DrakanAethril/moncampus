@@ -292,7 +292,12 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   a `#[RequiresFeature]`.
 - **UFA** (apprenticeship unit) — `Internship*` entities: alternance periods, the 4-role signature
   wizard of the Livret Alternant, tutor links, evaluations, reminders, plus laptop loans
-  (`Laptop`/`LaptopLoan`) and the UFA configuration screens.
+  (`Laptop`/`LaptopLoan`) and the UFA configuration screens. An employer's SIRET is **proposed by
+  the État and confirmed by a person, never associated automatically** (`src/Service/Sirene/`,
+  `EnterpriseSiretController`, spec `design/validated/siret-entreprises.md`): only « Associer »,
+  « Confirmer » or saving a changed number in « Modifier l'entreprise » stamps
+  `Enterprise::$siretConfirmedAt`; imports and « nouvelle entreprise » leave it « à confirmer », and
+  `EnterpriseRepository::queryPendingSiret()` is the one definition the queue and its counter read.
 - **Stage / recherche d'emploi** — `JobSearch`, `JobApplication`, `TrainingOffer`,
   `TrainingApplication` (postulation with free-form attachments). Note: there is deliberately **no**
   Enterprise entity on this side — the job search names its own démarches; `Enterprise` belongs
@@ -457,6 +462,7 @@ New per-object rules belong in a Voter, not inline in a controller.
 | Discord | Support-ticket notifications | `DISCORD_WEBHOOK_*` |
 | LDAP | Authentication + directory | `LDAP_*` |
 | École Directe (Aplim) | Read and send to one's own teacher account from the server (private API, no stored credentials, admins only for now) | `ECOLEDIRECTE_*` |
+| Recherche d'entreprises (DINUM) | UFA: proposes an employer's SIRET from its name and address (SIRENE + RNE); a person always confirms. Open, keyless, **7 requests/s per IP**, Licence Ouverte. Only the employer's name and address are sent | — |
 | IGN Géoplateforme | e-CO: map tiles (browser and phone, WMTS) and terrain readings (server: altimetry, BD TOPO WFS, pedestrian routing, reverse geocoding). Open, keyless, Etalab 2.0 - credit the IGN | — |
 | claude.ai (Anthropic) | Calls the Claude connector (`/mcp`, OAuth) from `160.79.104.0/21` — inbound only, the app never calls Anthropic | — |
 

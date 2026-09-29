@@ -140,7 +140,7 @@ class EnterpriseRepository extends ServiceEntityRepository
      *
      * @return array<string, Enterprise>
      */
-    public function findOthersBySiret(array $sirets, Enterprise $except, ?User $viewer): array
+    public function findOthersBySiret(array $sirets, ?Enterprise $except, ?User $viewer): array
     {
         if ([] === $sirets) {
             return [];
@@ -151,7 +151,7 @@ class EnterpriseRepository extends ServiceEntityRepository
             ->setParameter('sirets', $sirets)
             ->orderBy('e.id', 'ASC');
 
-        if (null !== $except->getId()) {
+        if (null !== $except?->getId()) {
             $qb->andWhere('e.id <> :except')->setParameter('except', $except->getId());
         }
         if ($viewer?->isTestUser()) {

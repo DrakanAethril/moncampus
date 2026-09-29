@@ -6,8 +6,10 @@
     {% if view == 'fiche' %}
         {% if establishment and not establishment.open %}
             <div class="alert alert-warning mt-2 mb-0">
-                {{ 'ufaEnterpriseSiretClosedWarningText'|trans({'%date%': establishment.closedOn ? establishment.closedOn|date('d/m/Y') : '—'}) }}
-                <a href="{{ path('app_ufa_enterprise_siret', {id: enterprise.id}) }}" data-turbo-frame="_top">{{ 'ufaEnterpriseSiretChooseAnotherAction'|trans }}</a>
+                <div>
+                    {{ 'ufaEnterpriseSiretClosedWarningText'|trans({'%date%': establishment.closedOn ? establishment.closedOn|date('d/m/Y') : '—'}) }}
+                    <a href="{{ path('app_ufa_enterprise_siret', {id: enterprise.id}) }}" data-turbo-frame="_top">{{ 'ufaEnterpriseSiretChooseAnotherAction'|trans }}</a>
+                </div>
             </div>
         {% elseif establishment %}
             <div class="text-secondary small mt-1">{{ 'ufaEnterpriseSiretStillOpenText'|trans }}</div>
