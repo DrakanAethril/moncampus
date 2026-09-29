@@ -1,0 +1,11 @@
+{# The SIRET column of « UFA > Entreprises »: the number, and where it stands (EnterpriseSiretStatus). #}
+<span class="d-inline-flex align-items-center gap-2 text-nowrap">
+    {% if enterprise.siret %}<span class="font-monospace">{{ enterprise.siret|siret }}</span>{% endif %}
+    <a href="{{ path('app_ufa_enterprise_siret', {id: enterprise.id}) }}">
+        {%- if status.value == 'set_aside' -%}
+            <twig:Cm:Badge :of="status">{{ 'enterpriseSiretStatusSetAsideUntilLabel'|trans({'%date%': enterprise.siretSetAsideUntil|date('d/m/Y')}) }}</twig:Cm:Badge>
+        {%- else -%}
+            <twig:Cm:Badge :of="status"/>
+        {%- endif -%}
+    </a>
+</span>

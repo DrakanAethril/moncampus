@@ -9,6 +9,7 @@ use App\Entity\User;
 use App\Repository\EnterpriseRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\UserRepository;
+use App\Service\Sirene\Siret;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -133,7 +134,14 @@ class SeedDevTutorsCommand extends Command
                 $enterpriseName = \sprintf('Entreprise %s %s', $code, $number);
                 if (null === $this->enterpriseRepository->findOneBy(['name' => $enterpriseName])) {
                     $enterprise = new Enterprise($enterpriseName, \sprintf('%d rue de la Formation, 87000 Limoges', $index));
-                    $enterprise->setSiret(\sprintf('%014d', 10000000000000 + crc32($enterpriseName) % 89999999999999));
+                    // Thirteen stable digits, then the one check digit that makes it a SIRET the
+                    // edit form accepts (App\Validator\Siret) - fictitious all the same.
+                    $payload = \sprintf('%013d', 1000000000000 + crc32($enterpriseName) % 8999999999999);
+                    $siret = $payload.'0';
+                    for ($digit = 0; $digit <= 9 && !Siret::isValid($siret); ++$digit) {
+                        $siret = $payload.$digit;
+                    }
+                    $enterprise->setSiret($siret);
                     $enterprise->setPhone(\sprintf('05 55 00 %02d %02d', $index, $index));
                     $enterprise->setCreatedBy($author);
                     $this->entityManager->persist($enterprise);

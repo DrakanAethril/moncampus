@@ -11,6 +11,7 @@ use App\Enum\ContractTypeCode;
 use App\Repository\EnterpriseRepository;
 use App\Service\FormValue;
 use App\Service\InternshipTutorFormResolver;
+use App\Validator\Siret;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -74,7 +75,14 @@ class InternshipAlternanceType extends AbstractType
                 'label' => 'internshipTutorLinkEnterpriseFieldLabel',
             ])
             ->add('newEnterpriseName', TextType::class, ['mapped' => false, 'required' => false, 'label' => 'internshipTutorLinkNewEnterpriseNameFieldLabel'])
-            ->add('newEnterpriseSiret', TextType::class, ['mapped' => false, 'required' => false, 'label' => 'ufaAlternanceNewEnterpriseSiretFieldLabel'])
+            // Format only (R11): typed without a preview, the number stays « à confirmer » and the
+            // employer enters the SIRET queue (design/validated/siret-entreprises.md, R5).
+            ->add('newEnterpriseSiret', TextType::class, [
+                'mapped' => false,
+                'required' => false,
+                'label' => 'ufaAlternanceNewEnterpriseSiretFieldLabel',
+                'constraints' => [new Siret()],
+            ])
             ->add('newEnterpriseAddress', TextareaType::class, ['mapped' => false, 'required' => false, 'label' => 'internshipTutorLinkNewEnterpriseAddressFieldLabel'])
             ->add('newEnterprisePhone', TelType::class, ['mapped' => false, 'required' => false, 'label' => 'ufaAlternanceNewEnterprisePhoneFieldLabel'])
             ->add('contractType', EnumType::class, [

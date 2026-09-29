@@ -226,6 +226,19 @@ services:
         arguments:
             $ignHttpClient: '@app.ign_http_client'
 
+    # The État's Recherche d'entreprises API (SIRENE + RNE), which proposes an employer's SIRET on
+    # « UFA > Entreprises ». Open, keyless, 7 requests/s per IP. Called while a screen waits, so the
+    # timeouts are short - a slow answer degrades to « service indisponible », never to a hung page.
+    app.sirene_http_client:
+        class: Symfony\Contracts\HttpClient\HttpClientInterface
+        factory: ['Symfony\Component\HttpClient\HttpClient', 'create']
+        arguments:
+            $defaultOptions: { base_uri: 'https://recherche-entreprises.api.gouv.fr', timeout: 4, max_duration: 6, max_connect_duration: 3 }
+
+    App\Service\Sirene\RechercheEntreprisesClient:
+        arguments:
+            $sireneHttpClient: '@app.sirene_http_client'
+
     # --- Courrier pro ---------------------------------------------------------------------
     # The Courrier pro storage and queues live in *another AWS account* than the uploads above
     # (the one carrying SES and the Route 53 zone) and in another region (eu-west-3, imposed by
@@ -297,5 +310,10 @@ when@test:
         # first request, which every caller already treats as the IGN being unavailable. A test
         # that needs answers builds the client itself around its own MockHttpClient.
         app.ign_http_client:
+            class: Symfony\Component\HttpClient\MockHttpClient
+            arguments: [[]]
+        # Same for the État's Recherche d'entreprises: a screen that asks it answers « service
+        # indisponible », which is exactly the degraded path R10 of the SIRET spec requires.
+        app.sirene_http_client:
             class: Symfony\Component\HttpClient\MockHttpClient
             arguments: [[]]

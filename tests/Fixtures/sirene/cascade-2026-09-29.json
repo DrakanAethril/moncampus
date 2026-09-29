@@ -1,0 +1,6665 @@
+{
+"recordedOn": "2026-09-29",
+"cases": [
+{
+"name": "INSTITUTION BEAUPEYRAT",
+"address": "9ter, rue Pétiniaud Beaupeyrat\n87000-LIMOGES",
+"review": "choose",
+"sirets": [
+"77571671500013",
+"53373606200019"
+]
+},
+{
+"name": "EVA TEAM",
+"address": "37, route de Poulenat\n87220-BOISSEUIL",
+"review": "ok",
+"sirets": [
+"52525390200023"
+]
+},
+{
+"name": "XEFI LIMOGES SUD",
+"address": "1, impasse de la Pelisserie\n87000-LIMOGES",
+"review": "ok",
+"sirets": [
+"83100971700040"
+]
+},
+{
+"name": "DISI SUD-OUEST",
+"address": "2 rue Jules Ferry\n33090-BORDEAUX CEDEX",
+"review": "ok",
+"sirets": [
+"13001515900010"
+]
+},
+{
+"name": "CH BERNARD DESPLAS",
+"address": "3 RUE JOLIOT CURIE\n23400-BOURGANEUF",
+"review": "choose",
+"sirets": [
+"26230300100016",
+"26230300100032",
+"26230300100040"
+]
+},
+{
+"name": "LIMOGES METROPOLE",
+"address": "19, rue Bernard Palissy\n87031-LIMOGES CEDEX 1",
+"review": "choose",
+"sirets": [
+"24871931200022",
+"24871931200030",
+"24871931200048",
+"24871931200055",
+"24871931200063"
+]
+},
+{
+"name": "GAMAC",
+"address": "Parc d'Activités La Croisière\nCentre d'Affaires Arzana bât. B\n23300-ST MAURICE LA SOUTERRAINE",
+"review": "ok",
+"sirets": [
+"99645012800045"
+]
+},
+{
+"name": "LIJE TECHNOLOGIES",
+"address": "10, avenue Maryse Bastié\n87270-COUZEIX",
+"review": "ok",
+"sirets": [
+"80214258800028"
+]
+},
+{
+"name": "THERA SOFT",
+"address": "44, rue Léonard Samie\n87000-LIMOGES",
+"review": "ok",
+"sirets": [
+"80247422100040"
+]
+},
+{
+"name": "AUDEFI EXPERTISE COMPTABLE",
+"address": "4, rue Legouvé\n87000-LIMOGES",
+"review": "ok",
+"sirets": [
+"48931910300029"
+]
+},
+{
+"name": "BERNIS TRUCKS",
+"address": "3 rue Henri Giffard\nZI Nord\nCS 62072\n87280-LIMOGES",
+"review": "ok",
+"sirets": [
+"30327375900017"
+]
+},
+{
+"name": "Association diocésaine de Tulle",
+"address": "9 quai Gabriel Péri\n19000-TULLE",
+"review": "choose",
+"sirets": [
+"77556685400094",
+"77556685400136",
+"84060881400017",
+"40536552900016"
+]
+},
+{
+"name": "EXPERTISE COMPTEBLE GILLES GROSSET / SARL",
+"address": "26 avenue Foucaud\n87000-LIMOGES",
+"review": "choose",
+"sirets": [
+"50068052500036",
+"39840082000013"
+]
+},
+{
+"name": "SARL ATR LIMOUSIN",
+"address": "5, rue des fourneries\n87270-COUZEIX",
+"review": "ok",
+"sirets": [
+"41397440300029"
+]
+},
+{
+"name": "AGC19 - Cerfance Corrèze",
+"address": "1 rue Robert SCHUMAN\n19000-TULLE",
+"review": "ok",
+"sirets": [
+"48875953100061"
+]
+},
+{
+"name": "TOUT POUR LE FROID SOCIETE NOUVELLE",
+"address": "10, rue Bernard Lathière\n87000-LIMOGES",
+"review": "ok",
+"sirets": [
+"41775597200029"
+]
+},
+{
+"name": "ARCTURUS / ALDEBARAN GESTION",
+"address": "7, Avenue de la Libération\n87000-LIMOGES",
+"review": "ok",
+"sirets": [
+"81520489600014"
+]
+},
+{
+"name": "ACOM LIMOGES SAS",
+"address": "2 AVENUE DU PRESIDENT J. KENNEDY\nLES BUREAUX DU GOLF\n87000-LIMOGES",
+"review": "failure",
+"sirets": [
+"45239671600030"
+]
+},
+{
+"name": "EURL RB EXPERTISE AUDIT ET CONSEIL",
+"address": "19 RUE DU MARECHAL BRUNE\n19100-BRIVE LA GAILLARDE",
+"review": "ok",
+"sirets": [
+"49852484200040"
+]
+},
+{
+"name": "REVIPLAST / SAS",
+"address": "Parc Océalim - 3 rue Jean Mermoz\n87270-COUZEIX",
+"review": "ok",
+"sirets": [
+"50483558800022"
+]
+},
+{
+"name": "DEKRA SERVICES FRANCE",
+"address": "19 RUE STUART MILL\nPA LIMOGES SUD ORANGE\n87008-LIMOGES CEDEX 1",
+"review": "ok",
+"sirets": [
+"81744534900035"
+]
+},
+{
+"name": "REPUBLIQUE DRIVE SAS",
+"address": "17 Place de la Republique\n87000-LIMOGES",
+"review": "ok",
+"sirets": [
+"92200806500026"
+]
+},
+{
+"name": "LIMOGES DIS",
+"address": "Rue Henri Giffard\nZI Nord\n87280-LIMOGES",
+"review": "ok",
+"sirets": [
+"32203303600011"
+]
+},
+{
+"name": "F5 SAINT MICHEL - LE CAFE FEUILLETTE",
+"address": "5-7-9 PLACE SAINT MICHEL\n87000-LIMOGES",
+"review": "ok",
+"sirets": [
+"92977037800016"
+]
+},
+{
+"name": "SARL CALILOFTE - LA MIE CALINE",
+"address": "25 Place de la Motte\n87000-LIMOGES",
+"review": "ok",
+"sirets": [
+"79790753200015"
+]
+},
+{
+"name": "SAS TBG GROUP LASERJUMP",
+"address": "27 RUE AUGUSTE COMTE\n87280-LIMOGES",
+"review": "choose",
+"sirets": [
+"90363604100043",
+"49800610500072",
+"82050560000032",
+"98214167300029"
+]
+},
+{
+"name": "FEDERATION DES COMPAGNONS DU TOUR DE FRANCE",
+"address": "5, rue de la Règle\n87000-LIMOGES",
+"review": "failure",
+"sirets": [
+"49017612000130",
+"99160484400027",
+"33450062600059",
+"77567174600128",
+"39922657000022"
+]
+},
+{
+"name": "LDG MOBILIER / SARL",
+"address": "12, rue Jean Jaurès\n87000-LIMOGES",
+"review": "ok",
+"sirets": [
+"90921330800010"
+]
+},
+{
+"name": "SAS CARROSSERIE COUDERT",
+"address": "247 rue Armand Dutreix\n87000-LIMOGES",
+"review": "ok",
+"sirets": [
+"43295004600024"
+]
+},
+{
+"name": "France Achat International - DEGRIFFSTOCK",
+"address": "345 rue Louis Berton\n13592-AIX EN PROVENCE CEDEX 3",
+"review": "ok",
+"sirets": [
+"40406652400020"
+]
+},
+{
+"name": "SAS CARROSSERIE DE ROMANET",
+"address": "36 rue Hubert Curien\n87000-LIMOGES",
+"review": "choose",
+"sirets": [
+"50929261100027",
+"51073106000024"
+]
+},
+{
+"name": "ENSEMBLE / SAS",
+"address": "Rue Jean-Baptiste Chastaing\n87000-LIMOGES",
+"review": "failure",
+"sirets": [
+"43937187300019",
+"80499026500022",
+"42341738500030",
+"42041336100031",
+"75237541000020"
+]
+},
+{
+"name": "FB SUD SAS",
+"address": "412 RUE DE TOULOUSE\n87000-LIMOGES",
+"review": "ok",
+"sirets": [
+"88811501100015"
+]
+},
+{
+"name": "BRICO SERVICES / SAS",
+"address": "ZAC LES MARTINES RUE NELSON MANDELA\n87200-ST JUNIEN",
+"review": "ok",
+"sirets": [
+"85285557600017"
+]
+},
+{
+"name": "GENERALI / SARL FX AUBERT",
+"address": "1 AVENUE JEAN JAURES\n87300-BELLAC",
+"review": "ok",
+"sirets": [
+"89082164800015"
+]
+},
+{
+"name": "CBA CABINET BAURIAUD ASSOCIES",
+"address": "26 rue AltantisParc d'Ester\nParc d'Ester - BP 96981\n87069-LIMOGES CEDEX",
+"review": "ok",
+"sirets": [
+"34345573900031"
+]
+},
+{
+"name": "SGS-SOLIG GROUPES SERVICE - Centre commercial La Coupole",
+"address": "Centre Commercial la Coupole\n87020-LIMOGES CEDEX 9",
+"review": "ok",
+"sirets": [
+"49436106600025"
+]
+},
+{
+"name": "LVDS CENTRE OUEST / SAS",
+"address": "68 Rue Armand Barbès\n87100-LIMOGES",
+"review": "ok",
+"sirets": [
+"30176910500059"
+]
+},
+{
+"name": "SAS LM SERVICES",
+"address": "11 Rue Ventenat\n87000-LIMOGES",
+"review": "ok",
+"sirets": [
+"95257489500019"
+]
+},
+{
+"name": "AUDEFI EXPERTISE-COMPTABLE",
+"address": "16 RUE BERNARD LATHIERE\n87000-LIMOGES",
+"review": "ok",
+"sirets": [
+"48931910300037"
+]
+},
+{
+"name": "MUTUALITE FRANCAISE LIMOUSINE",
+"address": "LIEU-DIT SAINTE MARIE\n87220-BOISSEUIL",
+"review": "choose",
+"sirets": [
+"77571667300840",
+"77571667300873"
+]
+},
+{
+"name": "BOUGNOTEAU SAS",
+"address": "30 rue Georges Fourest\n87100-LIMOGES",
+"review": "ok",
+"sirets": [
+"77250005400071"
+]
+},
+{
+"name": "LVDS CENTRE OUEST / SAS",
+"address": "3 Chemin des Versannes\n87200-ST JUNIEN",
+"review": "ok",
+"sirets": [
+"30176910500018"
+]
+},
+{
+"name": "INITIATIVE HAUTE-VIENNE",
+"address": "22, boulevard Victor Hugo\n87000-LIMOGES",
+"review": "choose",
+"sirets": [
+"42405604200049"
+]
+},
+{
+"name": "F2J STAMPING BESSINES",
+"address": "2, route de Chateauponsac\nZA La Land du Breuil\n87250-BESSINES SUR GARTEMPE",
+"review": "ok",
+"sirets": [
+"85161528600024"
+]
+}
+],
+"answers": {
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=INSTITUTION+BEAUPEYRAT": {
+"results": [
+{
+"siren": "775716715",
+"nom_complet": "OGEC INSTITUTION BEAUPEYRAT",
+"nom_raison_sociale": "OGEC INSTITUTION BEAUPEYRAT",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "9 T RUE PETINIAUD-BEAUPEYRAT 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1900-01-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "77571671500013"
+},
+{
+"adresse": "10 RUE ARMAND DUTREIX 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1900-01-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"ECOLE PRIMAIRE STE PHILOMENE"
+],
+"nom_commercial": null,
+"siret": "77571671500021"
+},
+{
+"adresse": "9 T RUE PETINIAUD-BEAUPEYRAT 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1985-09-01",
+"date_fermeture": "1994-01-31",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "77571671500039"
+}
+]
+},
+{
+"siren": "533736062",
+"nom_complet": "ASSOCIATION DES ANCIENS ELEVES ET AMIS DE L'INSTITUTION BEAUPEYRAT",
+"nom_raison_sociale": "ASSOCIATION DES ANCIENS ELEVES ET AMIS DE L'INSTITUTION BEAUPEYRAT",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "9 T RUE PETINIAUD-BEAUPEYRAT 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2010-03-18",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "53373606200019"
+}
+]
+},
+{
+"siren": "834118770",
+"nom_complet": "LES PETITS CHANTEURS LIMOUSINS",
+"nom_raison_sociale": "LES PETITS CHANTEURS LIMOUSINS",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "INSTITUTION BEAUPEYRAT 9 T RUE PETINIAUD-BEAUPEYRAT 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2016-10-05",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "83411877000017"
+}
+]
+}
+]
+},
+"code_postal=87220&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=EVA+TEAM": {
+"results": [
+{
+"siren": "525253902",
+"nom_complet": "SARL EVA-TEAM",
+"nom_raison_sociale": "SARL EVA-TEAM",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "37 ROUTE DE POULENAT 87220 BOISSEUIL",
+"code_postal": "87220",
+"date_creation": "2022-11-28",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "52525390200023"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=XEFI+LIMOGES+SUD": {
+"results": []
+},
+"departement=87&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=XEFI+LIMOGES+SUD": {
+"results": [
+{
+"siren": "831009717",
+"nom_complet": "DASAU (XEFI LIMOGES SUD)",
+"nom_raison_sociale": "DASAU",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "18 ROUTE DE LA MERLIE 87430 VERNEUIL-SUR-VIENNE",
+"code_postal": "87430",
+"date_creation": "2021-01-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": [
+"IDEAL MICRO ENTREPRISE"
+],
+"nom_commercial": "XEFI LIMOGES SUD",
+"siret": "83100971700032"
+},
+{
+"adresse": "1 IMPASSE DE LA PELISSERIE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2023-09-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": "IDEAL MICRO ENTREPRISE",
+"siret": "83100971700040"
+},
+{
+"adresse": "1 RUE D'ARGENTON 87100 LIMOGES",
+"code_postal": "87100",
+"date_creation": "2017-07-20",
+"date_fermeture": "2021-01-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": [
+"IDEAL MICRO ENTREPRISE"
+],
+"nom_commercial": "XEFI LIMOGES SUD",
+"siret": "83100971700016"
+},
+{
+"adresse": "1 RUE JEAN MONNET 87170 ISLE",
+"code_postal": "87170",
+"date_creation": "2017-11-19",
+"date_fermeture": "2023-09-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": "IDEAL MICRO ENTREPRISE",
+"siret": "83100971700024"
+}
+]
+}
+]
+},
+"departement=33&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=DISI+SUD-OUEST": {
+"results": [
+{
+"siren": "130015159",
+"nom_complet": "DIRECTION DES SERVICES INFORMATIQUES DU SUD-OUEST (DISI)",
+"nom_raison_sociale": "DIRECTION DES SERVICES INFORMATIQUES DU SUD-OUEST",
+"sigle": "DISI",
+"matching_etablissements": [
+{
+"adresse": "CITE ADMINISTRATIVE RUE JULES FERRY 33200 BORDEAUX",
+"code_postal": "33200",
+"date_creation": "2011-09-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "13001515900010"
+},
+{
+"adresse": "24 RUE FRANCOIS DE SOURDIS 33000 BORDEAUX",
+"code_postal": "33000",
+"date_creation": "2011-09-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"ESI BORDEAUX"
+],
+"nom_commercial": null,
+"siret": "13001515900028"
+},
+{
+"adresse": "CITE ADMINISTRATIVE RUE JULES FERRY 33200 BORDEAUX",
+"code_postal": "33200",
+"date_creation": "2011-09-01",
+"date_fermeture": "2017-09-25",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": [
+"ESI BORDEAUX - SITE OCEAN"
+],
+"nom_commercial": null,
+"siret": "13001515900036"
+}
+]
+}
+]
+},
+"code_postal=23400&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=CH+BERNARD+DESPLAS": {
+"results": [
+{
+"siren": "262303001",
+"nom_complet": "CENTRE HOSPITALIER BERNARD DESPLAS",
+"nom_raison_sociale": "CENTRE HOSPITALIER BERNARD DESPLAS",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "3 RUE JOLIOT CURIE 23400 BOURGANEUF",
+"code_postal": "23400",
+"date_creation": "1983-03-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "26230300100016"
+},
+{
+"adresse": "25 B RUE SIMONE VEIL 23400 BOURGANEUF",
+"code_postal": "23400",
+"date_creation": "1984-12-03",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"EHPAD DU THAURION"
+],
+"nom_commercial": null,
+"siret": "26230300100024"
+},
+{
+"adresse": "3 RUE JOLIOT CURIE 23400 BOURGANEUF",
+"code_postal": "23400",
+"date_creation": "1984-12-03",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"UNITES DE SOINS LONGUE DUREE"
+],
+"nom_commercial": null,
+"siret": "26230300100032"
+},
+{
+"adresse": "3 RUE JOLIOT CURIE 23400 BOURGANEUF",
+"code_postal": "23400",
+"date_creation": "1984-12-03",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"EHPAD BELLEVUE"
+],
+"nom_commercial": null,
+"siret": "26230300100040"
+},
+{
+"adresse": "CHE DE LA VOIE DIEU 23400 BOURGANEUF",
+"code_postal": "23400",
+"date_creation": "1994-01-24",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"SERVICE DE SOINS A DOMICILE"
+],
+"nom_commercial": null,
+"siret": "26230300100057"
+},
+{
+"adresse": "PLACE TOURNOIS 23400 BOURGANEUF",
+"code_postal": "23400",
+"date_creation": "2002-12-25",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"DOTATION NON AFFECTEE"
+],
+"nom_commercial": null,
+"siret": "26230300100065"
+},
+{
+"adresse": "CHE DE LA VOIE DIEU 23400 BOURGANEUF",
+"code_postal": "23400",
+"date_creation": "2005-07-19",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"CENTRE JOUR PERSONNES AGEES"
+],
+"nom_commercial": null,
+"siret": "26230300100081"
+},
+{
+"adresse": "CENTRE HOSPITALIER PLACE TOURNOIS 23400 BOURGANEUF",
+"code_postal": "23400",
+"date_creation": "2001-10-29",
+"date_fermeture": "2018-01-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": [
+"CTRE LOCAL INFORMATION COORDINATION CLIC"
+],
+"nom_commercial": null,
+"siret": "26230300100073"
+},
+{
+"adresse": "LE BOURG 23400 SAINT-PARDOUX-MORTEROLLES",
+"code_postal": "23400",
+"date_creation": "2016-05-01",
+"date_fermeture": "2018-01-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": [
+"MAISON ACCUEIL FAMILIAL PERSONNES AGEES HANDICAPEE"
+],
+"nom_commercial": null,
+"siret": "26230300100115"
+},
+{
+"adresse": "3 RUE JOLIOT CURIE 23400 BOURGANEUF",
+"code_postal": "23400",
+"date_creation": "2026-03-09",
+"date_fermeture": "2026-03-09",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": [
+"CH - DESPLAS BOURGANEUF"
+],
+"nom_commercial": null,
+"siret": "26230300100123"
+}
+]
+}
+]
+},
+"departement=87&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=LIMOGES+METROPOLE": {
+"results": [
+{
+"siren": "248719312",
+"nom_complet": "CU LIMOGES METROPOLE",
+"nom_raison_sociale": "CU LIMOGES METROPOLE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "19 RUE BERNARD PALISSY 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2002-01-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"TRANSPORT DE PERSONNES"
+],
+"nom_commercial": null,
+"siret": "24871931200022"
+},
+{
+"adresse": "19 RUE BERNARD PALISSY 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2003-01-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"CENTRE DE RECYCLAGE"
+],
+"nom_commercial": null,
+"siret": "24871931200030"
+},
+{
+"adresse": "19 RUE BERNARD PALISSY 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2002-01-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"SPANC"
+],
+"nom_commercial": null,
+"siret": "24871931200048"
+},
+{
+"adresse": "19 RUE BERNARD PALISSY 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2003-01-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"CENTRALE D'ENERGIE ET DECHETS"
+],
+"nom_commercial": null,
+"siret": "24871931200055"
+},
+{
+"adresse": "19 RUE BERNARD PALISSY 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2006-01-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"LOTISSEMENT B THYMONNIER"
+],
+"nom_commercial": null,
+"siret": "24871931200063"
+},
+{
+"adresse": "PUY MOULINIER RTE DU PALAIS 87350 PANAZOL",
+"code_postal": "87350",
+"date_creation": "2006-07-17",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"AIRE ACCUEIL GENS DU VOYAGE"
+],
+"nom_commercial": null,
+"siret": "24871931200071"
+},
+{
+"adresse": "19 RUE BERNARD PALISSY 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2006-11-08",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"ZONE ACTIVITE ARTISANALE PEYRILLAC"
+],
+"nom_commercial": null,
+"siret": "24871931200089"
+},
+{
+"adresse": "19 RUE BERNARD PALISSY 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2006-11-08",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"ZONE AGRO ALIMENTAIRE LA RIBIERE"
+],
+"nom_commercial": null,
+"siret": "24871931200097"
+},
+{
+"adresse": "19 RUE BERNARD PALISSY 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2007-01-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"SERVICE ASSAINISSEMENT COLLECTIF"
+],
+"nom_commercial": null,
+"siret": "24871931200105"
+},
+{
+"adresse": "19 RUE BERNARD PALISSY 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2007-09-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"GESTION EAUX PLUVIALES"
+],
+"nom_commercial": null,
+"siret": "24871931200113"
+}
+]
+},
+{
+"siren": "278708516",
+"nom_complet": "OFFICE PUBLIC DE L'HABITAT DE LIMOGES METROPOLE (OPHLM)",
+"nom_raison_sociale": "OFFICE PUBLIC DE L'HABITAT DE LIMOGES METROPOLE",
+"sigle": "OPHLM",
+"matching_etablissements": [
+{
+"adresse": "224 RUE FRANCOIS PERRIN 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1994-12-02",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": [
+"LIMOGES HABITAT"
+],
+"nom_commercial": null,
+"siret": "27870851600028"
+},
+{
+"adresse": "224 RUE FRANCOIS PERRIN 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2005-01-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"AMENAGEMENT DE L'UTAS CITE DES COUTURES"
+],
+"nom_commercial": null,
+"siret": "27870851600036"
+},
+{
+"adresse": "224 RUE FRANCOIS PERRIN 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2005-01-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"LOCAUX MUTUALITE CITE BELLEVUE"
+],
+"nom_commercial": null,
+"siret": "27870851600044"
+},
+{
+"adresse": "224 RUE FRANCOIS PERRIN 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2009-08-04",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"COPROPRIETE LA RESISTANCE LIMOUSINE"
+],
+"nom_commercial": null,
+"siret": "27870851600051"
+},
+{
+"adresse": "224 RUE FRANCOIS PERRIN 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2013-01-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"FOYER DES COUTURES"
+],
+"nom_commercial": null,
+"siret": "27870851600069"
+},
+{
+"adresse": "224 RUE FRANCOIS PERRIN 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2013-01-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"COPROPRIETE IMM CARREFOUR EUROPE BONNAC LA COTE"
+],
+"nom_commercial": null,
+"siret": "27870851600077"
+},
+{
+"adresse": "11 BOULEVARD GAMBETTA 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1983-03-01",
+"date_fermeture": "1994-12-02",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "27870851600010"
+}
+]
+},
+{
+"siren": "331280487",
+"nom_complet": "SOCIETE DES TRANSPORTS EN COMMUN DE LIMOGES METROPOLE (STCLM)",
+"nom_raison_sociale": "SOCIETE DES TRANSPORTS EN COMMUN DE LIMOGES METROPOLE",
+"sigle": "STCLM",
+"matching_etablissements": [
+{
+"adresse": "8 RUE DU CLOS MOREAU 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1985-01-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "33128048700025"
+},
+{
+"adresse": "10 PLACE LEON BETOULLE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2008-10-03",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"TCL"
+],
+"nom_commercial": "BOUTIQUE TCL",
+"siret": "33128048700033"
+},
+{
+"adresse": "6 ALLEE MARGUERITE PEREY 87280 LIMOGES",
+"code_postal": "87280",
+"date_creation": "2023-07-10",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "33128048700041"
+},
+{
+"adresse": "HOTEL DE VILLE 9 PLACE LEON BETOULLE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1985-01-01",
+"date_fermeture": "2008-04-07",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "33128048700017"
+}
+]
+},
+{
+"siren": "440352136",
+"nom_complet": "ABATTOIR DE LIMOGES METROPOLE",
+"nom_raison_sociale": "ABATTOIR DE LIMOGES METROPOLE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "125 RUE DE NEXON 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2002-01-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "44035213600012"
+}
+]
+},
+{
+"siren": "413667544",
+"nom_complet": "ESTER TECHNOPOLE - LIMOGES METROPOLE",
+"nom_raison_sociale": "ESTER TECHNOPOLE - LIMOGES METROPOLE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "PARC D'ESTER 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1997-07-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "41366754400014"
+}
+]
+},
+{
+"siren": "778059329",
+"nom_complet": "CSE SOCIETE DES TRANSPORTS EN COMMUN DE LIMOGES METROPOLE (CSE STCLM)",
+"nom_raison_sociale": "CSE SOCIETE DES TRANSPORTS EN COMMUN DE LIMOGES METROPOLE",
+"sigle": "CSE STCLM",
+"matching_etablissements": [
+{
+"adresse": "8 RUE DU CLOS MOREAU 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1900-01-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "77805932900012"
+}
+]
+},
+{
+"siren": "879990562",
+"nom_complet": "TRANSDEV LIMOGES METROPOLE MOBILITES",
+"nom_raison_sociale": "TRANSDEV LIMOGES METROPOLE MOBILITES",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "PARC D'ESTER 26 RUE ATLANTIS 87280 LIMOGES",
+"code_postal": "87280",
+"date_creation": "1900-01-01",
+"date_fermeture": "2024-07-02",
+"est_siege": true,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "87999056200024"
+}
+]
+},
+{
+"siren": "760500322",
+"nom_complet": "SOCIETE D'EQUIPEMENT DU LIMOUSIN (SELI)",
+"nom_raison_sociale": "SOCIETE D'EQUIPEMENT DU LIMOUSIN",
+"sigle": "SELI",
+"matching_etablissements": [
+{
+"adresse": "HOTEL DE VILLE 9 PLACE LEON BETOULLE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1993-01-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "76050032200051"
+},
+{
+"adresse": "31 AVENUE BAUDIN 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1900-01-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "76050032200028"
+},
+{
+"adresse": "18 BOULEVARD DE LA CITE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1991-11-12",
+"date_fermeture": "2000-08-04",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "76050032200036"
+},
+{
+"adresse": "2 PLACE LEON BETOULLE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1993-01-01",
+"date_fermeture": "1994-01-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "76050032200069"
+},
+{
+"adresse": "PATINOIRE DE LIMOGES BOULEVARD DES PETITS CARMES 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1993-01-01",
+"date_fermeture": "2006-05-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "76050032200077"
+},
+{
+"adresse": "PARC D'ESTER 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1994-01-01",
+"date_fermeture": "1996-01-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "76050032200085"
+}
+]
+},
+{
+"siren": "815620463",
+"nom_complet": "SCALIS (LES VALANDRINES)",
+"nom_raison_sociale": "SCALIS",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "7 RUE VENTENAT 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2017-01-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "81562046300043"
+}
+]
+},
+{
+"siren": "561820481",
+"nom_complet": "NOALIS",
+"nom_raison_sociale": "NOALIS",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "161 RUE ARMAND DUTREIX 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2019-05-27",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "56182048100050"
+}
+]
+}
+]
+},
+"code_postal=23300&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=GAMAC": {
+"results": [
+{
+"siren": "996450128",
+"nom_complet": "GAMAC (GAMAC)",
+"nom_raison_sociale": "GAMAC",
+"sigle": "GAMAC",
+"matching_etablissements": [
+{
+"adresse": "RUE ANDRE ET GUY PICOTY 23300 LA SOUTERRAINE",
+"code_postal": "23300",
+"date_creation": "1988-09-21",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "99645012800037"
+},
+{
+"adresse": "CENTRE D AFFAIRES ARZANA PARC D ACTIVITES DE LA CROISIERE 23300 SAINT-MAURICE-LA-SOUTERRAINE",
+"code_postal": "23300",
+"date_creation": "2017-09-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "99645012800045"
+}
+]
+}
+]
+},
+"code_postal=87270&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=LIJE+TECHNOLOGIES": {
+"results": [
+{
+"siren": "802142588",
+"nom_complet": "LIJE TECHNOLOGIES",
+"nom_raison_sociale": "LIJE TECHNOLOGIES",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "PARC D'ACTIVITE OCEALIM 10 AVENUE MARYSE BASTIE 87270 COUZEIX",
+"code_postal": "87270",
+"date_creation": "2018-02-02",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "80214258800028"
+},
+{
+"adresse": "9 RUE DU ROUGERON 87270 COUZEIX",
+"code_postal": "87270",
+"date_creation": "2014-04-15",
+"date_fermeture": "2018-02-02",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "80214258800010"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=THERA+SOFT": {
+"results": [
+{
+"siren": "802474221",
+"nom_complet": "THERA SOFT",
+"nom_raison_sociale": "THERA SOFT",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "44 RUE LEONARD SAMIE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2020-03-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "80247422100040"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=AUDEFI+EXPERTISE+COMPTABLE": {
+"results": [
+{
+"siren": "489319103",
+"nom_complet": "AUDEFI EXPERTISE COMPTABLE",
+"nom_raison_sociale": "AUDEFI EXPERTISE COMPTABLE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "4 RUE LEGOUVE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2010-10-25",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "48931910300029"
+},
+{
+"adresse": "16 RUE BERNARD LATHIERE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2021-02-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "48931910300037"
+},
+{
+"adresse": "20 BOULEVARD VICTOR HUGO 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2006-03-27",
+"date_fermeture": "2010-10-25",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "48931910300011"
+}
+]
+},
+{
+"siren": "798659736",
+"nom_complet": "GDM HOLDING",
+"nom_raison_sociale": "GDM HOLDING",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "3 PLACE DENIS DUSSOUBS 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2022-09-13",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "79865973600036"
+}
+]
+},
+{
+"siren": "518665682",
+"nom_complet": "ADC EXPERTISE ET FINANCE",
+"nom_raison_sociale": "ADC EXPERTISE ET FINANCE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "6 AV MONTJOVIS 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2009-12-07",
+"date_fermeture": "2010-01-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "51866568200010"
+},
+{
+"adresse": "16 RUE BERNARD LATHIERE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2020-12-21",
+"date_fermeture": "2021-02-28",
+"est_siege": true,
+"etat_administratif": "F",
+"liste_enseignes": [
+"AUDEFI EXPERTISE COMPTABLE"
+],
+"nom_commercial": null,
+"siret": "51866568200036"
+}
+]
+},
+{
+"siren": "432719011",
+"nom_complet": "GPT D'IMAGERIE MEDICALE DU LIMOUSIN",
+"nom_raison_sociale": "GPT D'IMAGERIE MEDICALE DU LIMOUSIN",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "PLACE HENRI QUEUILLE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2000-07-27",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "43271901100012"
+}
+]
+}
+]
+},
+"code_postal=87280&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=BERNIS+TRUCKS": {
+"results": [
+{
+"siren": "303273759",
+"nom_complet": "BERNIS TRUCKS",
+"nom_raison_sociale": "BERNIS TRUCKS",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "ZI NORD 3 RUE HENRI GIFFARD 87280 LIMOGES",
+"code_postal": "87280",
+"date_creation": "1975-01-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": [
+"BERNIS TRUCKS"
+],
+"nom_commercial": null,
+"siret": "30327375900017"
+}
+]
+},
+{
+"siren": "492509674",
+"nom_complet": "BERNIS TRUCKS LEASE (BERNIS FLEET SERVICES)",
+"nom_raison_sociale": "BERNIS TRUCKS LEASE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "ZI NORD 3 RUE HENRI GIFFARD 87280 LIMOGES",
+"code_postal": "87280",
+"date_creation": "2006-10-16",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": "BERNIS FLEET SERVICES",
+"siret": "49250967400015"
+}
+]
+}
+]
+},
+"code_postal=19000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=Association+dioc%C3%A9saine+de+Tulle": {
+"results": []
+},
+"code_postal=19000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=ASSOCIATION+DIOCESAINE+DE+TULLE": {
+"results": []
+},
+"departement=19&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=Association+dioc%C3%A9saine+de+Tulle": {
+"results": []
+},
+"departement=19&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=ASSOCIATION+DIOCESAINE+DE+TULLE": {
+"results": []
+},
+"code_postal=19000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=DIOCESAINE": {
+"results": [
+{
+"siren": "775566854",
+"nom_complet": "ASSOC DIOCESAINE",
+"nom_raison_sociale": "ASSOC DIOCESAINE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "BP 149 21 QUAI GABRIEL PERI 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "2006-10-15",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "77556685400094"
+},
+{
+"adresse": "19 QUAI GABRIEL PERI 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "2023-06-15",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "77556685400136"
+},
+{
+"adresse": "21 AVENUE DE LA BASTILLE 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "1900-01-01",
+"date_fermeture": "2023-06-15",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "77556685400011"
+},
+{
+"adresse": "2 RUE ROC LA PIERRE 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "1957-09-20",
+"date_fermeture": "2007-06-30",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "77556685400037"
+}
+]
+},
+{
+"siren": "777966235",
+"nom_complet": "DIR OEUVRES DIOCESAINES",
+"nom_raison_sociale": "DIR OEUVRES DIOCESAINES",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "21 QUAI GABRIEL PERI 19000 TULLE",
+"code_postal": "19000",
+"date_creation": null,
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "77796623500015"
+}
+]
+},
+{
+"siren": "840608814",
+"nom_complet": "ENSEMBLE POUR LES JEUNES DE CORREZE (EPJ 19) (EPJ 19)",
+"nom_raison_sociale": "ENSEMBLE POUR LES JEUNES DE CORREZE (EPJ 19)",
+"sigle": "EPJ 19",
+"matching_etablissements": [
+{
+"adresse": "MAISON DIOCESAINE 19 QUAI GABRIEL PERI 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "2018-04-09",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "84060881400017"
+}
+]
+}
+]
+},
+"code_postal=19000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=TULLE": {
+"results": [
+{
+"siren": "750656761",
+"nom_complet": "TULLE",
+"nom_raison_sociale": "TULLE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "AVENUE VENTADOUR 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "2014-05-19",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": [
+"NOZ"
+],
+"nom_commercial": null,
+"siret": "75065676100020"
+}
+]
+},
+{
+"siren": "211927207",
+"nom_complet": "COMMUNE DE TULLE",
+"nom_raison_sociale": "COMMUNE DE TULLE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "10 RUE FELIX VIDALIN 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "1983-03-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": [
+"MAIRIE"
+],
+"nom_commercial": null,
+"siret": "21192720700012"
+},
+{
+"adresse": "L'ECOLE DE L'AUZELOU 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "1983-12-21",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"ECOLE MATERNELLE PUBLIQUE"
+],
+"nom_commercial": null,
+"siret": "21192720700269"
+},
+{
+"adresse": "BOULEVARD DE L'AUZELOU 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "1983-12-21",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"ECOLE PRIMAIRE PUBLIQUE"
+],
+"nom_commercial": null,
+"siret": "21192720700277"
+},
+{
+"adresse": "A LA CROIX DE BAR 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "1983-12-21",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"ECOLE PRIMAIRE PUBLIQUE"
+],
+"nom_commercial": null,
+"siret": "21192720700285"
+},
+{
+"adresse": "32 RUE DE LA BARRIERE 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "1983-12-21",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"ECOL MATE JEAN JAURES"
+],
+"nom_commercial": null,
+"siret": "21192720700293"
+},
+{
+"adresse": "A BATICOOP 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "1983-12-21",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"ECOLE PRIMAIRE PUBLIQUE"
+],
+"nom_commercial": null,
+"siret": "21192720700301"
+},
+{
+"adresse": "PL DE LA BRIDE 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "1983-12-21",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"ECOLE ELEMENTAIRE TURGOT"
+],
+"nom_commercial": null,
+"siret": "21192720700319"
+},
+{
+"adresse": "PL DE LA BRIDE 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "1983-12-21",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"ECOL MATE TURGOT"
+],
+"nom_commercial": null,
+"siret": "21192720700327"
+},
+{
+"adresse": "PL DE LA BRIDE 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "1983-12-21",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"ECOLE PRIMAIRE PUBLIQUE TURGOT CYCLE 2"
+],
+"nom_commercial": null,
+"siret": "21192720700335"
+},
+{
+"adresse": "AUX CONDAMINES 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "1983-12-21",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"ECOLE PRIMAIRE PUBLIQUE"
+],
+"nom_commercial": null,
+"siret": "21192720700343"
+}
+]
+},
+{
+"siren": "388162000",
+"nom_complet": "TULLE DISTRIBUTION",
+"nom_raison_sociale": "TULLE DISTRIBUTION",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "A CUEILLE 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "1992-06-11",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "38816200000011"
+},
+{
+"adresse": "RUE DU DR RAMON A CUEILLE 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "2000-03-15",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "38816200000029"
+},
+{
+"adresse": "CENTRE COMMERCIAL DE CUEILLE RUE DU DOCTEUR RAMON 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "2013-06-18",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "38816200000045"
+},
+{
+"adresse": "CENTRE COMMERCIAL DE CUEILLE PL DU FOIRAIL 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "2013-06-19",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "38816200000052"
+},
+{
+"adresse": "78 AVENUE VICTOR HUGO 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "2003-02-04",
+"date_fermeture": "2013-06-19",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "38816200000037"
+}
+]
+},
+{
+"siren": "951700905",
+"nom_complet": "MAGASIN TULLE",
+"nom_raison_sociale": "MAGASIN TULLE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "16 AVENUE VICTOR HUGO 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "2023-04-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "95170090500015"
+},
+{
+"adresse": "QUAI DE CONTINSOUZA AVENUE VENTADOUR 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "2023-04-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"NOZ"
+],
+"nom_commercial": "NOZ",
+"siret": "95170090500023"
+}
+]
+},
+{
+"siren": "797825940",
+"nom_complet": "VEO TULLE",
+"nom_raison_sociale": "VEO TULLE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "ZONE CITEA 36 AVENUE VENTADOUR 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "2015-12-15",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"VEO GRAND PALACE"
+],
+"nom_commercial": "CINEMA VEO GRAND PALACE",
+"siret": "79782594000027"
+}
+]
+},
+{
+"siren": "241927201",
+"nom_complet": "COMMUNAUTE D'AGGLOMERATION TULLE AGGLO",
+"nom_raison_sociale": "COMMUNAUTE D'AGGLOMERATION TULLE AGGLO",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "RUE SYLVAIN COMBES 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "1996-01-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"ZONE D'ACTIVITE"
+],
+"nom_commercial": null,
+"siret": "24192720100038"
+},
+{
+"adresse": "RUE SYLVAIN COMBES 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "2014-04-17",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "24192720100095"
+},
+{
+"adresse": "RUE SYLVAIN COMBES 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "2018-01-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"ASSAINISSEMENT"
+],
+"nom_commercial": null,
+"siret": "24192720100103"
+},
+{
+"adresse": "RUE SYLVAIN COMBES 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "2018-01-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"AMENAGEMENT ECONOMIQUE"
+],
+"nom_commercial": null,
+"siret": "24192720100129"
+},
+{
+"adresse": "RUE SYLVAIN COMBES 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "2019-12-09",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"PARKING MULTIMEDIA AGGLO"
+],
+"nom_commercial": null,
+"siret": "24192720100137"
+},
+{
+"adresse": "4 RUE DU 9 JUIN 1944 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "1993-12-16",
+"date_fermeture": "1995-02-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "24192720100012"
+},
+{
+"adresse": "2 RUE DES MARTYRS 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "1995-02-01",
+"date_fermeture": "1998-09-03",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "24192720100020"
+},
+{
+"adresse": "4 RUE DU 9 JUIN 1944 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "2002-11-19",
+"date_fermeture": "2011-04-21",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": [
+"GESTION FONDS EUROPEEN LEADER PLUS"
+],
+"nom_commercial": null,
+"siret": "24192720100046"
+},
+{
+"adresse": "4 RUE DU 9 JUIN 1944 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "2002-10-25",
+"date_fermeture": "2011-04-21",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": [
+"PLAN LOCAL INSERTION EMPLOI PLIE"
+],
+"nom_commercial": null,
+"siret": "24192720100053"
+},
+{
+"adresse": "RUE SYLVAIN COMBES 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "2004-06-17",
+"date_fermeture": "2017-12-11",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": [
+"SERVICE ASSAINISSEMENT NON COLLECTIF"
+],
+"nom_commercial": null,
+"siret": "24192720100061"
+}
+]
+},
+{
+"siren": "828398172",
+"nom_complet": "GT TULLE (DARTY TULLE)",
+"nom_raison_sociale": "GT TULLE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "QUAI CONTINSOUZA AVENUE VENTADOUR 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "2017-03-15",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": [
+"DARTY"
+],
+"nom_commercial": "DARTY TULLE",
+"siret": "82839817200019"
+}
+]
+},
+{
+"siren": "847891694",
+"nom_complet": "WOK TULLE",
+"nom_raison_sociale": "WOK TULLE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "RUE DU DOCTEUR RAMON 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "2019-01-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": [
+"WOK TULLE"
+],
+"nom_commercial": null,
+"siret": "84789169400014"
+}
+]
+},
+{
+"siren": "405365529",
+"nom_complet": "SCI FJT TULLE",
+"nom_raison_sociale": "SCI FJT TULLE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "25 QUAI GABRIEL PERI 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "1996-02-23",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "40536552900016"
+}
+]
+},
+{
+"siren": "795372895",
+"nom_complet": "TULLE SENTIERS",
+"nom_raison_sociale": "TULLE SENTIERS",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "CENTRE CULTUREL ET SPORTIF DE TULLE 36 AVENUE ALSACE LORRAINE 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "1982-12-23",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "79537289500016"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=EXPERTISE+COMPTEBLE+GILLES+GROSSET+%2F+SARL": {
+"results": []
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=EXPERTISE+COMPTEBLE+GILLES+GROSSET": {
+"results": []
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=SARL": {
+"results": [
+{
+"siren": "398976415",
+"nom_complet": "SARL SEBB (CARADOR)",
+"nom_raison_sociale": "SARL SEBB",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "CTRE COMMERCIAL LOCAL 7 BEAUBREUIL 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2003-02-03",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "39897641500149"
+}
+]
+},
+{
+"siren": "304497852",
+"nom_complet": "SECURITAS FRANCE SARL",
+"nom_raison_sociale": "SECURITAS FRANCE SARL",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "17 B BOULEVARD GEORGES PERIN 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1997-01-01",
+"date_fermeture": "2008-02-29",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "30449785201511"
+}
+]
+},
+{
+"siren": "422500660",
+"nom_complet": "SARL ORGANIDEM (ORGANIDEM)",
+"nom_raison_sociale": "SARL ORGANIDEM",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "LE VITRAIL 38 RUE FRANCOIS CHENIEUX 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2016-03-17",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": "ORGANIDEM",
+"siret": "42250066000069"
+}
+]
+},
+{
+"siren": "478565898",
+"nom_complet": "SARL MS MODE FRANCE",
+"nom_raison_sociale": "SARL MS MODE FRANCE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "RUE DU CLOCHER 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2004-12-24",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"MS MODE"
+],
+"nom_commercial": null,
+"siret": "47856589801315"
+}
+]
+},
+{
+"siren": "388803223",
+"nom_complet": "SARL OTAGO",
+"nom_raison_sociale": "SARL OTAGO",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "34 PLACE DE LA MOTTE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2011-03-15",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "38880322300253"
+}
+]
+},
+{
+"siren": "397995283",
+"nom_complet": "SARL JTH",
+"nom_raison_sociale": "SARL JTH",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "345 F RUE DE TOULOUSE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2014-02-08",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"CENTRAKOR"
+],
+"nom_commercial": "J.T.H.",
+"siret": "39799528300132"
+}
+]
+},
+{
+"siren": "405103300",
+"nom_complet": "DORMESNIL SARL",
+"nom_raison_sociale": "DORMESNIL SARL",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "ZI MAGRE 16 RUE FERNAND MALINVAUD 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2008-01-01",
+"date_fermeture": "2013-10-31",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "40510330000027"
+}
+]
+},
+{
+"siren": "750268963",
+"nom_complet": "ITINERANCE CUIR SARL",
+"nom_raison_sociale": "ITINERANCE CUIR SARL",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "ANGLE RUE JEANTY SARRE 5 RUE JEAN JAURES 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2015-10-16",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": "ITINERANCE CUIR",
+"siret": "75026896300048"
+}
+]
+},
+{
+"siren": "429308604",
+"nom_complet": "INNOV'DECOR SARL",
+"nom_raison_sociale": "INNOV'DECOR SARL",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "24 AV DU PDT JOHN KENNEDY 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2019-05-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42930860400066"
+},
+{
+"adresse": "5 RUE BARTHELEMY THIMONNIER 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2016-11-01",
+"date_fermeture": "2018-12-31",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42930860400058"
+}
+]
+},
+{
+"siren": "444602643",
+"nom_complet": "ELECTRUM SARL",
+"nom_raison_sociale": "ELECTRUM SARL",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "7 RUE DES COOPERATEURS 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2009-09-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "44460264300033"
+},
+{
+"adresse": "95 B RUE MONTMAILLER 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2004-03-15",
+"date_fermeture": "2009-09-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "44460264300025"
+}
+]
+}
+]
+},
+"departement=87&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=EXPERTISE+COMPTEBLE+GILLES+GROSSET+%2F+SARL": {
+"results": []
+},
+"departement=87&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=EXPERTISE+COMPTEBLE+GILLES+GROSSET": {
+"results": []
+},
+"departement=87&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=SARL": {
+"results": [
+{
+"siren": "100100916",
+"nom_complet": "COMPTE TOURS AUTO (SARL)",
+"nom_raison_sociale": "COMPTE TOURS AUTO",
+"sigle": "SARL",
+"matching_etablissements": [
+{
+"adresse": "66 RUE DU MAS LOUBIER 87100 LIMOGES",
+"code_postal": "87100",
+"date_creation": "2026-01-15",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "10010091600012"
+},
+{
+"adresse": "12 CITE VICTOR THUILLAT 87100 LIMOGES",
+"code_postal": "87100",
+"date_creation": "2026-02-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "10010091600038"
+},
+{
+"adresse": "10 RUE JOSEPH-LOUIS LAGRANGE 87100 LIMOGES",
+"code_postal": "87100",
+"date_creation": "2026-04-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "10010091600020"
+}
+]
+},
+{
+"siren": "509548574",
+"nom_complet": "PAVASE (SARL)",
+"nom_raison_sociale": "PAVASE",
+"sigle": "SARL",
+"matching_etablissements": [
+{
+"adresse": "ST MICHEL 87800 MEILHAC",
+"code_postal": "87800",
+"date_creation": "2009-12-01",
+"date_fermeture": "2013-01-15",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "50954857400029"
+}
+]
+},
+{
+"siren": "898747241",
+"nom_complet": "LES BALCONS DE RENOIR (SARL)",
+"nom_raison_sociale": "LES BALCONS DE RENOIR",
+"sigle": "SARL",
+"matching_etablissements": [
+{
+"adresse": "1 IMPASSE DE L'ESTRE 87700 AIXE-SUR-VIENNE",
+"code_postal": "87700",
+"date_creation": "2021-04-14",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "89874724100013"
+}
+]
+},
+{
+"siren": "352739411",
+"nom_complet": "NORMA SARL",
+"nom_raison_sociale": "NORMA SARL",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "41 AVENUE ADRIEN TARRADE 87100 LIMOGES",
+"code_postal": "87100",
+"date_creation": "1993-02-10",
+"date_fermeture": "2013-07-30",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "35273941100689"
+}
+]
+},
+{
+"siren": "398976415",
+"nom_complet": "SARL SEBB (CARADOR)",
+"nom_raison_sociale": "SARL SEBB",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "CTRE COMMERCIAL LOCAL 7 BEAUBREUIL 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2003-02-03",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "39897641500149"
+},
+{
+"adresse": "CENTRE COMMERCIAL BEAUBREUIL PLACE DE BEAUBREUIL 87280 LIMOGES",
+"code_postal": "87280",
+"date_creation": "2003-02-03",
+"date_fermeture": "2015-03-31",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": [
+"CARADOR"
+],
+"nom_commercial": null,
+"siret": "39897641500123"
+}
+]
+},
+{
+"siren": "304497852",
+"nom_complet": "SECURITAS FRANCE SARL",
+"nom_raison_sociale": "SECURITAS FRANCE SARL",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "17 B BOULEVARD GEORGES PERIN 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1997-01-01",
+"date_fermeture": "2008-02-29",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "30449785201511"
+}
+]
+},
+{
+"siren": "422500660",
+"nom_complet": "SARL ORGANIDEM (ORGANIDEM)",
+"nom_raison_sociale": "SARL ORGANIDEM",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "LE VITRAIL 38 RUE FRANCOIS CHENIEUX 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2016-03-17",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": "ORGANIDEM",
+"siret": "42250066000069"
+}
+]
+},
+{
+"siren": "478565898",
+"nom_complet": "SARL MS MODE FRANCE",
+"nom_raison_sociale": "SARL MS MODE FRANCE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "RUE DU CLOCHER 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2004-12-24",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"MS MODE"
+],
+"nom_commercial": null,
+"siret": "47856589801315"
+}
+]
+},
+{
+"siren": "388803223",
+"nom_complet": "SARL OTAGO",
+"nom_raison_sociale": "SARL OTAGO",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "34 PLACE DE LA MOTTE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2011-03-15",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "38880322300253"
+},
+{
+"adresse": "CTRE COMMERCIAL DE BOISSEUIL LOCAL 22 ROUTE DE TOULOUSE 87220 BOISSEUIL",
+"code_postal": "87220",
+"date_creation": "2019-10-15",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"OTAGO"
+],
+"nom_commercial": null,
+"siret": "38880322300428"
+}
+]
+},
+{
+"siren": "917220832",
+"nom_complet": "LEITZ SARL",
+"nom_raison_sociale": "LEITZ SARL",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "20 RUE ANDRE BABLET 87170 ISLE",
+"code_postal": "87170",
+"date_creation": "2001-03-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"LEITZ SERVICES"
+],
+"nom_commercial": null,
+"siret": "91722083200500"
+},
+{
+"adresse": "40 RUE BOILEAU 87100 LIMOGES",
+"code_postal": "87100",
+"date_creation": "1985-05-15",
+"date_fermeture": "2001-03-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "91722083200344"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=GROSSET": {
+"results": [
+{
+"siren": "500680525",
+"nom_complet": "EXPERTISE COMPTABLE GILLES GROSSET (E.C.2G.)",
+"nom_raison_sociale": "EXPERTISE COMPTABLE GILLES GROSSET",
+"sigle": "E.C.2G.",
+"matching_etablissements": [
+{
+"adresse": "26 AVENUE FOUCAUD 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2011-04-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "50068052500036"
+},
+{
+"adresse": "-24 22 RUE DES PETITES MAISONS 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2008-03-01",
+"date_fermeture": "2011-04-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "50068052500028"
+}
+]
+},
+{
+"siren": "513100842",
+"nom_complet": "PICOTY RESEAU",
+"nom_raison_sociale": "PICOTY RESEAU",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "4-8 4 AVENUE BAUDIN 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2012-01-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"AVIA"
+],
+"nom_commercial": null,
+"siret": "51310084200519"
+}
+]
+},
+{
+"siren": "398400820",
+"nom_complet": "EPHELIDE",
+"nom_raison_sociale": "EPHELIDE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "26 AVENUE FOUCAUD 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1994-09-16",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "39840082000013"
+}
+]
+},
+{
+"siren": "100089846",
+"nom_complet": "GERY AND CO ESTATE",
+"nom_raison_sociale": "GERY AND CO ESTATE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "BP 17 64 RUE LEONARD SAMIE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2025-12-26",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "10008984600016"
+}
+]
+},
+{
+"siren": "772500971",
+"nom_complet": "ETABLISSEMENTS GERY ET CIE",
+"nom_raison_sociale": "ETABLISSEMENTS GERY ET CIE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "ZI DE ROMANET 64 RUE LEONARD SAMIE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1995-01-13",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "77250097100035"
+}
+]
+},
+{
+"siren": "305319915",
+"nom_complet": "ENTREPRISE GENERALE EQUIPEMENT ELECTRIQUE DU LIMOUSIN ET DU CENTRE (EGEELEC)",
+"nom_raison_sociale": "ENTREPRISE GENERALE EQUIPEMENT ELECTRIQUE DU LIMOUSIN ET DU CENTRE",
+"sigle": "EGEELEC",
+"matching_etablissements": [
+{
+"adresse": "LD CROCHAT 404 RUE DE TOULOUSE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2021-06-14",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "30531991500057"
+},
+{
+"adresse": "10 RUE DES RECOLLETS 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1982-06-01",
+"date_fermeture": "2001-03-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "30531991500024"
+},
+{
+"adresse": "NOS 22 A 24 22 IMPASSE CHATEAU-GAILLARD 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2001-03-01",
+"date_fermeture": "2014-03-31",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "30531991500032"
+}
+]
+},
+{
+"siren": "803903202",
+"nom_complet": "LIMOUSIN TRAVAUX PUBLICS",
+"nom_raison_sociale": "LIMOUSIN TRAVAUX PUBLICS",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "24 BOULEVARD CARNOT 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2014-07-01",
+"date_fermeture": "2021-11-22",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": "LTP",
+"siret": "80390320200015"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=GILLES": {
+"results": []
+},
+"code_postal=87270&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=SARL+ATR+LIMOUSIN": {
+"results": []
+},
+"code_postal=87270&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=ATR+LIMOUSIN": {
+"results": [
+{
+"siren": "413974403",
+"nom_complet": "ATR LIMOUSIN",
+"nom_raison_sociale": "ATR LIMOUSIN",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "ZONE INDUSTRIELLE NORD 5 RUE DES FOURNERIES 87270 COUZEIX",
+"code_postal": "87270",
+"date_creation": "2015-04-28",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "41397440300029"
+}
+]
+}
+]
+},
+"code_postal=19000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=AGC19+-+Cerfance+Corr%C3%A8ze": {
+"results": []
+},
+"code_postal=19000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=AGC19+CERFANCE+CORREZE": {
+"results": []
+},
+"code_postal=19000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=AGC19": {
+"results": [
+{
+"siren": "488759531",
+"nom_complet": "AGC19",
+"nom_raison_sociale": "AGC19",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "ZONE ARTISANALE TULLE EST 1 RUE ROBERT SCHUMAN 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "2021-12-06",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "48875953100061"
+},
+{
+"adresse": "BUREAU DE TULLE PUY PINCON 19000 TULLE",
+"code_postal": "19000",
+"date_creation": "2005-09-01",
+"date_fermeture": "2021-12-06",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "48875953100012"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=TOUT+POUR+LE+FROID+SOCIETE+NOUVELLE": {
+"results": [
+{
+"siren": "417755972",
+"nom_complet": "TOUT POUR LE FROID SOCIETE NOUVELLE",
+"nom_raison_sociale": "TOUT POUR LE FROID SOCIETE NOUVELLE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "10 RUE BERNARD LATHIERE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2019-11-12",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "41775597200029"
+},
+{
+"adresse": "ZI DE ROMANET 2 RUE JEAN-BAPTISTE SAY 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1998-01-01",
+"date_fermeture": "2019-11-12",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "41775597200011"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=ARCTURUS+%2F+ALDEBARAN+GESTION": {
+"results": []
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=ARCTURUS+ALDEBARAN+GESTION": {
+"results": []
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=ARCTURUS": {
+"results": [
+{
+"siren": "890768971",
+"nom_complet": "ARCTURUS",
+"nom_raison_sociale": "ARCTURUS",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "32 AVENUE DE LA LIBERATION 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2020-08-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "89076897100016"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=ALDEBARAN+GESTION": {
+"results": [
+{
+"siren": "815204896",
+"nom_complet": "ALDEBARAN GESTION",
+"nom_raison_sociale": "ALDEBARAN GESTION",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "7 AVENUE DE LA LIBERATION 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2015-12-14",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "81520489600014"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=ACOM+LIMOGES+SAS": {
+"results": []
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=ACOM+LIMOGES": {
+"results": []
+},
+"departement=87&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=ACOM+LIMOGES+SAS": {
+"results": []
+},
+"departement=87&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=ACOM+LIMOGES": {
+"results": []
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=ACOM": {
+"results": [
+{
+"siren": "452396716",
+"nom_complet": "CABINET ROBERT (CABINET ROBERT)",
+"nom_raison_sociale": "CABINET ROBERT",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "3 RUE MAURICE ROLLINAT 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2026-02-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": "CABINET ROBERT",
+"siret": "45239671600030"
+},
+{
+"adresse": "3 AVENUE DU MIDI 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2004-04-01",
+"date_fermeture": "2019-01-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "45239671600014"
+},
+{
+"adresse": "LES BUREAUX DU GOLF 2 AV DU PDT JOHN KENNEDY 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2019-01-01",
+"date_fermeture": "2026-02-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "45239671600022"
+}
+]
+}
+]
+},
+"code_postal=19100&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=EURL+RB+EXPERTISE+AUDIT+ET+CONSEIL": {
+"results": []
+},
+"code_postal=19100&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=RB+EXPERTISE+AUDIT+ET+CONSEIL": {
+"results": [
+{
+"siren": "498524842",
+"nom_complet": "RB EXPERTISE AUDIT ET CONSEIL",
+"nom_raison_sociale": "RB EXPERTISE AUDIT ET CONSEIL",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "19 RUE MAL BRUNE 19100 BRIVE-LA-GAILLARDE",
+"code_postal": "19100",
+"date_creation": "2025-08-29",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "49852484200040"
+},
+{
+"adresse": "13 RUE BLAISE RAYNAL 19100 BRIVE-LA-GAILLARDE",
+"code_postal": "19100",
+"date_creation": "2007-07-01",
+"date_fermeture": "2009-12-31",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "49852484200016"
+},
+{
+"adresse": "2EME ETAGE 31 AVENUE DE PARIS 19100 BRIVE-LA-GAILLARDE",
+"code_postal": "19100",
+"date_creation": "2009-12-31",
+"date_fermeture": "2011-12-31",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "49852484200024"
+},
+{
+"adresse": "10 RUE MAL BRUNE 19100 BRIVE-LA-GAILLARDE",
+"code_postal": "19100",
+"date_creation": "2011-12-31",
+"date_fermeture": "2025-08-29",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "49852484200032"
+}
+]
+},
+{
+"siren": "982016222",
+"nom_complet": "SCI DRAX",
+"nom_raison_sociale": "SCI DRAX",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "11 T AVENUE TURGOT 19100 BRIVE-LA-GAILLARDE",
+"code_postal": "19100",
+"date_creation": "2023-11-14",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "98201622200019"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=CABINET+LEPETIT+ARVID": {
+"results": []
+},
+"departement=87&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=CABINET+LEPETIT+ARVID": {
+"results": []
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=LEPETIT": {
+"results": [
+{
+"siren": "330011743",
+"nom_complet": "LEPETIT SURGELE",
+"nom_raison_sociale": "LEPETIT SURGELE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "ZI NORD N°2 25 RUE LEON SERPOLLET 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1998-09-01",
+"date_fermeture": "2003-09-30",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "33001174300052"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=ARVID": {
+"results": []
+},
+"code_postal=87270&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=REVIPLAST+%2F+SAS": {
+"results": [
+{
+"siren": "504835588",
+"nom_complet": "SAS REVIPLAST",
+"nom_raison_sociale": "SAS REVIPLAST",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "PARC D ACTIVITES OCEALIM 3 RUE JEAN MERMOZ 87270 COUZEIX",
+"code_postal": "87270",
+"date_creation": "2015-12-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "50483558800022"
+}
+]
+},
+{
+"siren": "802111989",
+"nom_complet": "SCI M.J.T.R.",
+"nom_raison_sociale": "SCI M.J.T.R.",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "3 RUE JEAN MERMOZ 87270 COUZEIX",
+"code_postal": "87270",
+"date_creation": "2021-11-30",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "80211198900025"
+}
+]
+}
+]
+},
+"departement=87&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=DEKRA+SERVICES+FRANCE": {
+"results": [
+{
+"siren": "817445349",
+"nom_complet": "DEKRA SERVICES FRANCE",
+"nom_raison_sociale": "DEKRA SERVICES FRANCE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "PA LIMOGES SUD ORANGE 19 RUE STUART MILL 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2016-03-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "81744534900035"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=REPUBLIQUE+DRIVE+SAS": {
+"results": []
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=REPUBLIQUE+DRIVE": {
+"results": [
+{
+"siren": "922008065",
+"nom_complet": "REPUBLIQUE DRIVE",
+"nom_raison_sociale": "REPUBLIQUE DRIVE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "11 RUE VENTENAT 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2022-12-07",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "92200806500018"
+},
+{
+"adresse": "17 PLACE DE LA REPUBLIQUE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2022-12-13",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"KFC"
+],
+"nom_commercial": null,
+"siret": "92200806500026"
+}
+]
+}
+]
+},
+"code_postal=87280&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=LIMOGES+DIS": {
+"results": [
+{
+"siren": "322033036",
+"nom_complet": "LIMOGES DIS",
+"nom_raison_sociale": "LIMOGES DIS",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "ZI NORD RUE HENRI GIFFARD 87280 LIMOGES",
+"code_postal": "87280",
+"date_creation": "1981-06-16",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "32203303600011"
+},
+{
+"adresse": "10 RUE PIERRE MICHAUX 87280 LIMOGES",
+"code_postal": "87280",
+"date_creation": "2018-04-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"L'AUTO E. LECLERC"
+],
+"nom_commercial": "L'AUTO E. LECLERC",
+"siret": "32203303600052"
+},
+{
+"adresse": "GALERIE MARCHANDE CTRE CIAL E LECLERC 2 RUE HENRI GIFFARD 87280 LIMOGES",
+"code_postal": "87280",
+"date_creation": "2009-11-02",
+"date_fermeture": "2010-03-31",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": [
+"I MODE YOU"
+],
+"nom_commercial": null,
+"siret": "32203303600029"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=F5+SAINT+MICHEL+-+LE+CAFE+FEUILLETTE": {
+"results": [
+{
+"siren": "929770378",
+"nom_complet": "F5 SAINT MICHEL",
+"nom_raison_sociale": "F5 SAINT MICHEL",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "5-7 PLACE SAINT-MICHEL 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2024-06-07",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": [
+"LE CAFE FEUILLETTE"
+],
+"nom_commercial": null,
+"siret": "92977037800016"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=SARL+CALILOFTE+-+LA+MIE+CALINE": {
+"results": []
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=CALILOFTE+LA+MIE+CALINE": {
+"results": [
+{
+"siren": "797907532",
+"nom_complet": "CALILOFTE",
+"nom_raison_sociale": "CALILOFTE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "25 PLACE DE LA MOTTE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2013-10-16",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": [
+"LA MIE CALINE"
+],
+"nom_commercial": null,
+"siret": "79790753200015"
+}
+]
+}
+]
+},
+"code_postal=87280&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=SAS+TBG+GROUP+LASERJUMP": {
+"results": []
+},
+"code_postal=87280&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=TBG+GROUP+LASERJUMP": {
+"results": []
+},
+"departement=87&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=SAS+TBG+GROUP+LASERJUMP": {
+"results": []
+},
+"departement=87&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=TBG+GROUP+LASERJUMP": {
+"results": []
+},
+"code_postal=87280&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=LASERJUMP": {
+"results": []
+},
+"code_postal=87280&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=27+RUE+AUGUSTE+COMTE": {
+"results": [
+{
+"siren": "513073080",
+"nom_complet": "REDEN INVESTISSEMENTS",
+"nom_raison_sociale": "REDEN INVESTISSEMENTS",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "27 RUE AUGUSTE COMTE 87280 LIMOGES",
+"code_postal": "87280",
+"date_creation": "2010-08-18",
+"date_fermeture": "2012-04-17",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "51307308002788"
+}
+]
+},
+{
+"siren": "352645501",
+"nom_complet": "KDI (HUBXML KDI// HUBXML DEV KDI// HUBXML INT KDI)",
+"nom_raison_sociale": "KDI",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "NOS 27 A 31 27 RUE AUGUSTE COMTE 87280 LIMOGES",
+"code_postal": "87280",
+"date_creation": "1999-06-30",
+"date_fermeture": "2017-07-31",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": [
+"KDI BERAUD SUDREAU"
+],
+"nom_commercial": null,
+"siret": "35264550100680"
+}
+]
+},
+{
+"siren": "903636041",
+"nom_complet": "COM AIR",
+"nom_raison_sociale": "COM AIR",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "27 RUE AUGUSTE COMTE 87280 LIMOGES",
+"code_postal": "87280",
+"date_creation": "2023-09-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"ON AIR FITNESS"
+],
+"nom_commercial": null,
+"siret": "90363604100043"
+}
+]
+},
+{
+"siren": "498006105",
+"nom_complet": "EVENTS GAMES",
+"nom_raison_sociale": "EVENTS GAMES",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "27 RUE AUGUSTE COMTE 87280 LIMOGES",
+"code_postal": "87280",
+"date_creation": "2016-12-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": [
+"LASER GAME EVOLUTION"
+],
+"nom_commercial": null,
+"siret": "49800610500072"
+}
+]
+},
+{
+"siren": "820505600",
+"nom_complet": "GROUPE TBG (THE JUMP)",
+"nom_raison_sociale": "GROUPE TBG",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "27 RUE AUGUSTE COMTE 87280 LIMOGES",
+"code_postal": "87280",
+"date_creation": "2024-09-30",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": "THE JUMP",
+"siret": "82050560000032"
+}
+]
+},
+{
+"siren": "982141673",
+"nom_complet": "BCLN",
+"nom_raison_sociale": "BCLN",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "27 RUE AUGUSTE COMTE 87280 LIMOGES",
+"code_postal": "87280",
+"date_creation": "2024-09-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "98214167300029"
+}
+]
+},
+{
+"siren": "322375809",
+"nom_complet": "BERAUD-SUDREAU SA",
+"nom_raison_sociale": "BERAUD-SUDREAU SA",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "27 RUE AUGUSTE COMTE 87280 LIMOGES",
+"code_postal": "87280",
+"date_creation": "1981-12-12",
+"date_fermeture": "1999-06-30",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "32237580900058"
+}
+]
+},
+{
+"siren": "821727872",
+"nom_complet": "TRAMPO LIM PARK (THE JUMP)",
+"nom_raison_sociale": "TRAMPO LIM PARK",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "27 RUE AUGUSTE COMTE 87280 LIMOGES",
+"code_postal": "87280",
+"date_creation": "2016-07-26",
+"date_fermeture": "2024-09-30",
+"est_siege": true,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": "THE JUMP",
+"siret": "82172787200011"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=FEDERATION+DES+COMPAGNONS+DU+TOUR+DE+FRANCE": {
+"results": []
+},
+"departement=87&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=FEDERATION+DES+COMPAGNONS+DU+TOUR+DE+FRANCE": {
+"results": []
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=FEDERATION": {
+"results": [
+{
+"siren": "334500626",
+"nom_complet": "FEDERATION DEPART LEO LAGRANGE",
+"nom_raison_sociale": "FEDERATION DEPART LEO LAGRANGE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "18 RUE TURGOT 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1990-10-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"INSTITUT DE FORMATION LEO LAGRANGE"
+],
+"nom_commercial": null,
+"siret": "33450062600059"
+}
+]
+},
+{
+"siren": "775671746",
+"nom_complet": "FEDERATION NATIONALE TRANSPORTS ROUTIERS (FNTR)",
+"nom_raison_sociale": "FEDERATION NATIONALE TRANSPORTS ROUTIERS",
+"sigle": "FNTR",
+"matching_etablissements": [
+{
+"adresse": "8 COURS BUGEAUD 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1900-01-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "77567174600128"
+}
+]
+},
+{
+"siren": "399226570",
+"nom_complet": "FEDERATION DU LOGEMENT",
+"nom_raison_sociale": "FEDERATION DU LOGEMENT",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "2 CITE LOUIS CASIMIR RANSON 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2005-01-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "39922657000022"
+},
+{
+"adresse": "5 B RUE NEUVE ST ETIENNE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1994-11-20",
+"date_fermeture": "2005-01-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "39922657000014"
+}
+]
+},
+{
+"siren": "778074211",
+"nom_complet": "FEDERATION OEUVRES LAIQUES HAUTE VIENNE (FOL)",
+"nom_raison_sociale": "FEDERATION OEUVRES LAIQUES HAUTE VIENNE",
+"sigle": "FOL",
+"matching_etablissements": [
+{
+"adresse": "22 RUE LIEUTENANT MENIEUX 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2004-09-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "77807421100054"
+},
+{
+"adresse": "44 COURS GAY-LUSSAC 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1900-01-01",
+"date_fermeture": "2004-09-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "77807421100013"
+}
+]
+},
+{
+"siren": "485183032",
+"nom_complet": "FEDERATION DES CONFRERIES LIMOUSINES",
+"nom_raison_sociale": "FEDERATION DES CONFRERIES LIMOUSINES",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "1 PLACE DU PRESIDIAL 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1996-04-25",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "48518303200013"
+}
+]
+},
+{
+"siren": "828327411",
+"nom_complet": "FEDERATION FRANCAISE D AQUARIOPHILIE (F.F.A)",
+"nom_raison_sociale": "FEDERATION FRANCAISE D AQUARIOPHILIE",
+"sigle": "F.F.A",
+"matching_etablissements": [
+{
+"adresse": "AQUARIUM DU LIMOUSIN 2 BOULEVARD GAMBETTA 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2017-11-24",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "82832741100017"
+}
+]
+},
+{
+"siren": "418079422",
+"nom_complet": "FEDERATION HIERO LIMOGES",
+"nom_raison_sociale": "FEDERATION HIERO LIMOGES",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "66 AVENUE DE LA LIBERATION 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2023-02-28",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "41807942200063"
+},
+{
+"adresse": "26 RUE DE NEXON 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1997-06-26",
+"date_fermeture": "2000-07-12",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "41807942200014"
+},
+{
+"adresse": "43 RUE DE LA LOI 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2000-07-12",
+"date_fermeture": "2002-10-03",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "41807942200022"
+},
+{
+"adresse": "30 RUE BANC LEGER 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2002-10-03",
+"date_fermeture": "2004-10-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "41807942200030"
+},
+{
+"adresse": "BP 861 8 RUE VOCHAVE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2004-10-01",
+"date_fermeture": "2016-09-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "41807942200048"
+},
+{
+"adresse": "50 BOULEVARD GAMBETTA 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2016-09-01",
+"date_fermeture": "2023-02-28",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "41807942200055"
+}
+]
+},
+{
+"siren": "351910864",
+"nom_complet": "FEDERATION REGIONALE DE THEATRE (FRT)",
+"nom_raison_sociale": "FEDERATION REGIONALE DE THEATRE",
+"sigle": "FRT",
+"matching_etablissements": [
+{
+"adresse": "44 COURS GAY-LUSSAC 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1987-07-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "35191086400013"
+}
+]
+},
+{
+"siren": "421660960",
+"nom_complet": "FEDERATION SYNDICALE UNITAIRE (FSU)",
+"nom_raison_sociale": "FEDERATION SYNDICALE UNITAIRE",
+"sigle": "FSU",
+"matching_etablissements": [
+{
+"adresse": "24 B RUE DE NEXON 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2004-11-02",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42166096000020"
+},
+{
+"adresse": "239 RUE ARMAND DUTREIX 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1993-01-01",
+"date_fermeture": "2004-11-02",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42166096000012"
+}
+]
+},
+{
+"siren": "529526691",
+"nom_complet": "FEDERATION REGIONALE DES TROMPES DU LIMOUSIN DE LA FEDERATION INTERNATIONALE TROMPES DE FRANCE",
+"nom_raison_sociale": "FEDERATION REGIONALE DES TROMPES DU LIMOUSIN DE LA FEDERATION INTERNATIONALE TROMPES DE FRANCE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "37 RUE HONORE DE BALZAC 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2010-10-05",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "52952669100017"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=COMPAGNONS": {
+"results": [
+{
+"siren": "309979631",
+"nom_complet": "LES COMPAGNONS",
+"nom_raison_sociale": "LES COMPAGNONS",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "3 RUE JEAN JAURES 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2000-04-03",
+"date_fermeture": "2000-11-27",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "30997963100947"
+}
+]
+},
+{
+"siren": "344542287",
+"nom_complet": "LES COMPAGNONS LIMOUSINS",
+"nom_raison_sociale": "LES COMPAGNONS LIMOUSINS",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "ET 20 18 RUE DES PORTES FERREES 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1988-04-07",
+"date_fermeture": "2003-04-20",
+"est_siege": true,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "34454228700018"
+}
+]
+},
+{
+"siren": "384631149",
+"nom_complet": "LES COMPAGNONS DE L'HABITAT",
+"nom_raison_sociale": "LES COMPAGNONS DE L'HABITAT",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "14 PL PAUL PARBELLE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1992-03-02",
+"date_fermeture": "2016-02-17",
+"est_siege": true,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "38463114900018"
+}
+]
+},
+{
+"siren": "403623481",
+"nom_complet": "LES COMPAGNONS LIMOUSINS",
+"nom_raison_sociale": "LES COMPAGNONS LIMOUSINS",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "ET 20 18 RUE DES PORTES FERREES 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1996-01-01",
+"date_fermeture": "2004-12-31",
+"est_siege": true,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "40362348100013"
+}
+]
+},
+{
+"siren": "449494640",
+"nom_complet": "SARL LES COMPAGNONS DU TOIT C.M.A",
+"nom_raison_sociale": "SARL LES COMPAGNONS DU TOIT C.M.A",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "34 RUE ROGER SALENGRO 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2003-07-09",
+"date_fermeture": "2004-04-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "44949464000013"
+}
+]
+},
+{
+"siren": "490176120",
+"nom_complet": "APPART'CITY",
+"nom_raison_sociale": "APPART'CITY",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "CAP A ANGLE DES RUES DU CHAUDRON ET RUE DE LA FILATURE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2014-10-20",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"APPART'CITY"
+],
+"nom_commercial": null,
+"siret": "49017612000130"
+},
+{
+"adresse": "CAP A ANGLE DES RUES DU CHAUDRON ET DE RUE DE LA FILATURE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2014-10-20",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": [
+"APPART'CITY"
+],
+"nom_commercial": null,
+"siret": "49017612000197"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=TOUR": {
+"results": [
+{
+"siren": "539541615",
+"nom_complet": "TOUR D IMAGES",
+"nom_raison_sociale": "TOUR D IMAGES",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "11 RUE CHAMPOLLION 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2010-09-13",
+"date_fermeture": "2017-07-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "53954161500016"
+}
+]
+},
+{
+"siren": "435324728",
+"nom_complet": "DOUBLE TOUR",
+"nom_raison_sociale": "DOUBLE TOUR",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "23 RUE FRANCOIS CHENIEUX 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2006-03-07",
+"date_fermeture": "2006-12-31",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": [
+"PEL-PROTECTION ELECTRONIQUE DU LIMO"
+],
+"nom_commercial": null,
+"siret": "43532472800037"
+}
+]
+},
+{
+"siren": "893218669",
+"nom_complet": "SCI LA TOUR DU CHEVALIER",
+"nom_raison_sociale": "SCI LA TOUR DU CHEVALIER",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "22 RUE PIERRE LEROUX 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2021-02-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "89321866900016"
+}
+]
+},
+{
+"siren": "353147440",
+"nom_complet": "TOUR DU LIMOUSIN ORGANISATION",
+"nom_raison_sociale": "TOUR DU LIMOUSIN ORGANISATION",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "ENSEMBLE ADMINISTRATIF REG 27 BOULEVARD DE LA CORDERIE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1992-09-24",
+"date_fermeture": "2009-02-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "35314744000039"
+}
+]
+},
+{
+"siren": "402399810",
+"nom_complet": "LES AMIS DU TOUR DU LIMOUSIN",
+"nom_raison_sociale": "LES AMIS DU TOUR DU LIMOUSIN",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "ENSEMBLE ADMINISTRATIF 27 BOULEVARD DE LA CORDERIE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1995-08-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "40239981000017"
+}
+]
+},
+{
+"siren": "883093668",
+"nom_complet": "FOOD MOOD TOUR",
+"nom_raison_sociale": "FOOD MOOD TOUR",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "7 RUE GABRIEL FAURE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2020-04-27",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "88309366800019"
+}
+]
+},
+{
+"siren": "489421867",
+"nom_complet": "PACAGE PARTICIPATIONS",
+"nom_raison_sociale": "PACAGE PARTICIPATIONS",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "20 PLACE DE LA MOTTE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2020-12-14",
+"date_fermeture": "2023-07-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "48942186700040"
+}
+]
+},
+{
+"siren": "811082346",
+"nom_complet": "FJA PRODUCTION (FJA TOUR) (FJA)",
+"nom_raison_sociale": "FJA PRODUCTION",
+"sigle": "FJA",
+"matching_etablissements": [
+{
+"adresse": "38 RUE FRANCOIS CHENIEUX 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2015-03-26",
+"date_fermeture": "2022-05-31",
+"est_siege": true,
+"etat_administratif": "F",
+"liste_enseignes": [
+"FJA TOUR"
+],
+"nom_commercial": "FJA TOUR",
+"siret": "81108234600016"
+}
+]
+},
+{
+"siren": "588505354",
+"nom_complet": "CAISSE FEDERALE DE CREDIT MUTUEL SOCIETE A MISSION (APPLICATION LOI PACTE) (CF DE CM)",
+"nom_raison_sociale": "CAISSE FEDERALE DE CREDIT MUTUEL SOCIETE A MISSION (APPLICATION LOI PACTE)",
+"sigle": "CF DE CM",
+"matching_etablissements": [
+{
+"adresse": "13 PLACE JOURDAN 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2013-01-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "58850535401540"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=LDG+MOBILIER+%2F+SARL": {
+"results": []
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=LDG+MOBILIER": {
+"results": [
+{
+"siren": "909213308",
+"nom_complet": "LDG MOBILIER (MAISON-MAISON)",
+"nom_raison_sociale": "LDG MOBILIER",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "12 RUE JEAN JAURES 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2022-02-03",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": [
+"MAISON-MAISON"
+],
+"nom_commercial": "MAISON-MAISON",
+"siret": "90921330800010"
+},
+{
+"adresse": "12 RUE JEAN JAURES 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2023-08-14",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": [
+"MAISON-MAISON"
+],
+"nom_commercial": "MAISON-MAISON",
+"siret": "90921330800028"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=SAS+CARROSSERIE+COUDERT": {
+"results": []
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=CARROSSERIE+COUDERT": {
+"results": [
+{
+"siren": "432950046",
+"nom_complet": "CARROSSERIE COUDERT",
+"nom_raison_sociale": "CARROSSERIE COUDERT",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "NOS 247 ET 249 247 RUE ARMAND DUTREIX 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2000-10-20",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "43295004600024"
+}
+]
+}
+]
+},
+"departement=13&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=France+Achat+International+-+DEGRIFFSTOCK": {
+"results": [
+{
+"siren": "404066524",
+"nom_complet": "FRANCE ACHAT INTERNATIONAL",
+"nom_raison_sociale": "FRANCE ACHAT INTERNATIONAL",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "LES MILLES 345 RUE LOUIS BERTON 13290 AIX-EN-PROVENCE",
+"code_postal": "13290",
+"date_creation": "2019-07-10",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "40406652400020"
+},
+{
+"adresse": "ZAC DE LIOURAT AVENUE DENIS PADOVANI 13127 VITROLLES",
+"code_postal": "13127",
+"date_creation": "2022-01-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"DEGRIFFSTOCK"
+],
+"nom_commercial": "DEGRIFFSTOCK",
+"siret": "40406652400053"
+},
+{
+"adresse": "RN7 PALETTE QUA DE LANGESSE 13100 LE THOLONET",
+"code_postal": "13100",
+"date_creation": "2022-01-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"DEGRIFFSTOCK"
+],
+"nom_commercial": "DEGRIFFSTOCK",
+"siret": "40406652400129"
+},
+{
+"adresse": "BAT C4 CHEMIN DES PENNES AUX PINS 13170 LES PENNES-MIRABEAU",
+"code_postal": "13170",
+"date_creation": "2022-01-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"DEGRIFFSTOCK"
+],
+"nom_commercial": "DEGRIFFSTOCK",
+"siret": "40406652400137"
+},
+{
+"adresse": "102 AVENUE SAINT-EXUPERY 13800 ISTRES",
+"code_postal": "13800",
+"date_creation": "2022-01-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"DEGRIFFSTOCK"
+],
+"nom_commercial": "DEGRIFFSTOCK",
+"siret": "40406652400145"
+},
+{
+"adresse": "LES MILLES 95 RUE VICTOR BALTARD 13290 AIX-EN-PROVENCE",
+"code_postal": "13290",
+"date_creation": "1996-02-20",
+"date_fermeture": "2019-07-10",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "40406652400012"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=SAS+CARROSSERIE+DE+ROMANET": {
+"results": []
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=CARROSSERIE+DE+ROMANET": {
+"results": [
+{
+"siren": "509292611",
+"nom_complet": "CARROSSERIE DE ROMANET",
+"nom_raison_sociale": "CARROSSERIE DE ROMANET",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "ZONE INDUSTRIELLE DE ROMANET 36 RUE HUBERT CURIEN 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2016-03-17",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "50929261100027"
+}
+]
+},
+{
+"siren": "510731060",
+"nom_complet": "CARROSSERIE DE ROMANET",
+"nom_raison_sociale": "CARROSSERIE DE ROMANET",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "ZI DE ROMANET 36 RUE HUBERT CURIEN 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2009-11-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "51073106000024"
+},
+{
+"adresse": "244 RUE ARMAND DUTREIX 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2009-02-23",
+"date_fermeture": "2009-11-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "51073106000016"
+}
+]
+},
+{
+"siren": "894622950",
+"nom_complet": "CARROSSERIE PREMIUM 87",
+"nom_raison_sociale": "CARROSSERIE PREMIUM 87",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "ZONE INDUSTRIELLE DE ROMANET 36 RUE HUBERT CURIEN 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2021-02-26",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "89462295000018"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=ENSEMBLE+%2F+SAS": {
+"results": []
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=ENSEMBLE": {
+"results": [
+{
+"siren": "333454809",
+"nom_complet": "ENSEMBLE HOPE",
+"nom_raison_sociale": "ENSEMBLE HOPE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "9 RUE D'AGUESSEAU 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1985-05-27",
+"date_fermeture": "2012-09-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "33345480900018"
+}
+]
+},
+{
+"siren": "439371873",
+"nom_complet": "JOUONS ENSEMBLE",
+"nom_raison_sociale": "JOUONS ENSEMBLE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "36 RUE D'ANTONY 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2001-09-07",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "43937187300019"
+}
+]
+},
+{
+"siren": "804990265",
+"nom_complet": "BOUGER ENSEMBLE (BE)",
+"nom_raison_sociale": "BOUGER ENSEMBLE",
+"sigle": "BE",
+"matching_etablissements": [
+{
+"adresse": "3 RUE MONTAIGNE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2017-12-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "80499026500022"
+},
+{
+"adresse": "32 BOULEVARD VICTOR HUGO 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2014-10-15",
+"date_fermeture": "2017-12-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "80499026500014"
+}
+]
+},
+{
+"siren": "752375410",
+"nom_complet": "ENSEMBLE VOCAL ARPEGGIO",
+"nom_raison_sociale": "ENSEMBLE VOCAL ARPEGGIO",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "30 RUE PAUL VIGNERAS 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2017-01-23",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "75237541000020"
+}
+]
+},
+{
+"siren": "420413361",
+"nom_complet": "ENSEMBLE VOCAL CRESCENDO (EVL)",
+"nom_raison_sociale": "ENSEMBLE VOCAL CRESCENDO",
+"sigle": "EVL",
+"matching_etablissements": [
+{
+"adresse": "104 RUE EUGENE VARLIN 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2006-12-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42041336100031"
+}
+]
+},
+{
+"siren": "423417385",
+"nom_complet": "ENSEMBLE VOCAL GAUDEAMUS",
+"nom_raison_sociale": "ENSEMBLE VOCAL GAUDEAMUS",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "26 RUE FRANCOIS CHENIEUX 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2017-03-02",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42341738500030"
+},
+{
+"adresse": "9 RUE FITZ-JAMES 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1999-04-20",
+"date_fermeture": "2008-03-04",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42341738500014"
+},
+{
+"adresse": "10 RUE DES TANNERIES 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2008-03-04",
+"date_fermeture": "2017-03-02",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42341738500022"
+}
+]
+},
+{
+"siren": "849602412",
+"nom_complet": "ENSEMBLE VOCAL EVOLIA",
+"nom_raison_sociale": "ENSEMBLE VOCAL EVOLIA",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "30 RUE DES TROIS CHALETS 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1995-11-29",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "84960241200017"
+}
+]
+},
+{
+"siren": "788573798",
+"nom_complet": "ENSEMBLE VOCAL EVOLIA",
+"nom_raison_sociale": "ENSEMBLE VOCAL EVOLIA",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "30 RUE DES TROIS CHALETS 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2021-10-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "78857379800022"
+}
+]
+},
+{
+"siren": "395172869",
+"nom_complet": "ASSOCIATION VIVRE ENSEMBLE",
+"nom_raison_sociale": "ASSOCIATION VIVRE ENSEMBLE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "APPT 483 34 RUE DOMNOLET LAFARGE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1994-05-25",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "39517286900012"
+}
+]
+},
+{
+"siren": "451174346",
+"nom_complet": "L'ENSEMBLE LUCIENNE O'CONNORS",
+"nom_raison_sociale": "L'ENSEMBLE LUCIENNE O'CONNORS",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "249 AVENUE BAUDIN 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2003-07-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "45117434600010"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=SAS": {
+"results": [
+{
+"siren": "885176396",
+"nom_complet": "1MONDE9 (SAS)",
+"nom_raison_sociale": "1MONDE9",
+"sigle": "SAS",
+"matching_etablissements": [
+{
+"adresse": "49 RUE DU CLOCHER 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2020-08-05",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"ANDRE"
+],
+"nom_commercial": null,
+"siret": "88517639600087"
+}
+]
+},
+{
+"siren": "980987598",
+"nom_complet": "ALLURE HOLDING (SAS)",
+"nom_raison_sociale": "ALLURE HOLDING",
+"sigle": "SAS",
+"matching_etablissements": [
+{
+"adresse": "44 AVENUE DES COUTURES 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2024-06-24",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "98098759800029"
+},
+{
+"adresse": "1 RUE BASSE DE LA COMEDIE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2023-10-26",
+"date_fermeture": "2024-06-24",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "98098759800011"
+}
+]
+},
+{
+"siren": "425050556",
+"nom_complet": "CARGLASS S.A.S. (CARGLASS PARE-BRISE COURBEVOIE)",
+"nom_raison_sociale": "CARGLASS S.A.S.",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "27 AVENUE GARIBALDI 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2005-01-01",
+"date_fermeture": "2005-04-11",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": [
+"CARGLASS"
+],
+"nom_commercial": null,
+"siret": "42505055601429"
+}
+]
+},
+{
+"siren": "330267691",
+"nom_complet": "CHAUSSEA SAS",
+"nom_raison_sociale": "CHAUSSEA SAS",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "C C SAINT MARTIAL 39 B AVENUE GARIBALDI 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2013-05-02",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"CHAUSSEA"
+],
+"nom_commercial": "CHAUSSEA",
+"siret": "33026769103678"
+}
+]
+},
+{
+"siren": "380622332",
+"nom_complet": "ARMAND THIERY SAS (AT SAS)",
+"nom_raison_sociale": "ARMAND THIERY SAS",
+"sigle": "AT SAS",
+"matching_etablissements": [
+{
+"adresse": "5 RUE FERRERIE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2016-01-16",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "38062233206099"
+},
+{
+"adresse": "LOT NOA10B LE MALABRE NORD 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2018-10-24",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "38062233206792"
+},
+{
+"adresse": "CENTRE COMM ST MARTIAL - LOCAL N C1 39 B AVENUE GARIBALDI 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2019-03-04",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "38062233206842"
+},
+{
+"adresse": "CTRE COMMERCIAL SAINT MARTIAL -  NOC1A 39 B AVENUE GARIBALDI 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2019-03-04",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "38062233206875"
+}
+]
+},
+{
+"siren": "411207012",
+"nom_complet": "SIXT SAS",
+"nom_raison_sociale": "SIXT SAS",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "8 COURS GAY-LUSSAC 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2019-05-02",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "41120701201607"
+}
+]
+},
+{
+"siren": "413157306",
+"nom_complet": "MINELLI SAS",
+"nom_raison_sociale": "MINELLI SAS",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "MAGASIN N° 5083 2 RUE DU CLOCHER 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1998-03-02",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"MINELLI"
+],
+"nom_commercial": null,
+"siret": "41315730600106"
+},
+{
+"adresse": "GALERIES LAFAYETTE  5178 6 RUE PORTE-TOURNY 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1998-03-02",
+"date_fermeture": "2021-08-28",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "41315730600601"
+}
+]
+},
+{
+"siren": "797476744",
+"nom_complet": "SAS DU MITTELBERG (CABINET VETERINAIRES DES 3 VILLES)",
+"nom_raison_sociale": "SAS DU MITTELBERG",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "69 RUE VICTORIEN SARDOU 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2021-04-30",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"CLINIQUE VETERINAIRE VANTEAUX"
+],
+"nom_commercial": null,
+"siret": "79747674400389"
+}
+]
+},
+{
+"siren": "572158905",
+"nom_complet": "THOMAS COOK SAS",
+"nom_raison_sociale": "THOMAS COOK SAS",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "22 RUE JEAN JAURES 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2008-10-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"THOMAS COOK VOYAGES"
+],
+"nom_commercial": null,
+"siret": "57215890503507"
+}
+]
+},
+{
+"siren": "400461950",
+"nom_complet": "SFR FIBRE SAS",
+"nom_raison_sociale": "SFR FIBRE SAS",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "12 RUE JEAN JAURES 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2012-01-02",
+"date_fermeture": "2016-09-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "40046195000612"
+}
+]
+}
+]
+},
+"departement=87&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=ENSEMBLE+%2F+SAS": {
+"results": []
+},
+"departement=87&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=ENSEMBLE": {
+"results": [
+{
+"siren": "911129567",
+"nom_complet": "ENSEMBLE",
+"nom_raison_sociale": "ENSEMBLE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "1 RUE JEAN-BAPTISTE CHASTAINGT 87100 LIMOGES",
+"code_postal": "87100",
+"date_creation": "2022-03-08",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "91112956700010"
+}
+]
+},
+{
+"siren": "477930853",
+"nom_complet": "LES GOSSES ENSEMBLES",
+"nom_raison_sociale": "LES GOSSES ENSEMBLES",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "MR LE GROIGNEC JEAN YVES 87370 SAINT-SULPICE-LAURIERE",
+"code_postal": "87370",
+"date_creation": "2003-06-05",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "47793085300015"
+}
+]
+},
+{
+"siren": "333454809",
+"nom_complet": "ENSEMBLE HOPE",
+"nom_raison_sociale": "ENSEMBLE HOPE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "FRESSANGES 87260 VICQ-SUR-BREUILH",
+"code_postal": "87260",
+"date_creation": "2012-09-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "33345480900026"
+},
+{
+"adresse": "9 RUE D'AGUESSEAU 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1985-05-27",
+"date_fermeture": "2012-09-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "33345480900018"
+}
+]
+},
+{
+"siren": "439371873",
+"nom_complet": "JOUONS ENSEMBLE",
+"nom_raison_sociale": "JOUONS ENSEMBLE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "36 RUE D'ANTONY 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2001-09-07",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "43937187300019"
+}
+]
+},
+{
+"siren": "804990265",
+"nom_complet": "BOUGER ENSEMBLE (BE)",
+"nom_raison_sociale": "BOUGER ENSEMBLE",
+"sigle": "BE",
+"matching_etablissements": [
+{
+"adresse": "3 RUE MONTAIGNE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2017-12-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "80499026500022"
+},
+{
+"adresse": "32 BOULEVARD VICTOR HUGO 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2014-10-15",
+"date_fermeture": "2017-12-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "80499026500014"
+}
+]
+},
+{
+"siren": "528996036",
+"nom_complet": "ENSEMBLE MADRIGAL",
+"nom_raison_sociale": "ENSEMBLE MADRIGAL",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "10 RUE DE LA GAGNERIE 87510 SAINT-GENCE",
+"code_postal": "87510",
+"date_creation": "2010-09-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "52899603600018"
+}
+]
+},
+{
+"siren": "890791965",
+"nom_complet": "ENSEMBLE POUR COUZEIX",
+"nom_raison_sociale": "ENSEMBLE POUR COUZEIX",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "MAIRIE 176 AVENUE DE LIMOGES 87270 COUZEIX",
+"code_postal": "87270",
+"date_creation": "2020-09-28",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "89079196500019"
+}
+]
+},
+{
+"siren": "752375410",
+"nom_complet": "ENSEMBLE VOCAL ARPEGGIO",
+"nom_raison_sociale": "ENSEMBLE VOCAL ARPEGGIO",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "30 RUE PAUL VIGNERAS 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2017-01-23",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "75237541000020"
+},
+{
+"adresse": "18 RUE MARCEL PAGNOL 87170 ISLE",
+"code_postal": "87170",
+"date_creation": "2012-06-05",
+"date_fermeture": "2017-01-23",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "75237541000012"
+}
+]
+},
+{
+"siren": "420413361",
+"nom_complet": "ENSEMBLE VOCAL CRESCENDO (EVL)",
+"nom_raison_sociale": "ENSEMBLE VOCAL CRESCENDO",
+"sigle": "EVL",
+"matching_etablissements": [
+{
+"adresse": "104 RUE EUGENE VARLIN 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2006-12-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42041336100031"
+},
+{
+"adresse": "CHEZ MME CHARLES 6 AVENUE PRESIDENT COTY 87100 LIMOGES",
+"code_postal": "87100",
+"date_creation": "1998-09-09",
+"date_fermeture": "1999-10-05",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42041336100015"
+},
+{
+"adresse": "23 RUE EMILE ZOLA 87100 LIMOGES",
+"code_postal": "87100",
+"date_creation": "1999-10-05",
+"date_fermeture": "2006-12-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42041336100023"
+}
+]
+},
+{
+"siren": "423417385",
+"nom_complet": "ENSEMBLE VOCAL GAUDEAMUS",
+"nom_raison_sociale": "ENSEMBLE VOCAL GAUDEAMUS",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "26 RUE FRANCOIS CHENIEUX 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2017-03-02",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42341738500030"
+},
+{
+"adresse": "9 RUE FITZ-JAMES 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1999-04-20",
+"date_fermeture": "2008-03-04",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42341738500014"
+},
+{
+"adresse": "10 RUE DES TANNERIES 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2008-03-04",
+"date_fermeture": "2017-03-02",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42341738500022"
+}
+]
+}
+]
+},
+"departement=87&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=SAS": {
+"results": [
+{
+"siren": "885176396",
+"nom_complet": "1MONDE9 (SAS)",
+"nom_raison_sociale": "1MONDE9",
+"sigle": "SAS",
+"matching_etablissements": [
+{
+"adresse": "49 RUE DU CLOCHER 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2020-08-05",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"ANDRE"
+],
+"nom_commercial": null,
+"siret": "88517639600087"
+}
+]
+},
+{
+"siren": "931647481",
+"nom_complet": "HAIR CENTER LIMOGES (SAS)",
+"nom_raison_sociale": "HAIR CENTER LIMOGES",
+"sigle": "SAS",
+"matching_etablissements": [
+{
+"adresse": "1 ALLEE DES CHENES 87110 BOSMIE-L'AIGUILLE",
+"code_postal": "87110",
+"date_creation": "2024-07-22",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "93164748100015"
+},
+{
+"adresse": "14 RUE GEORGES BRIQUET 87100 LIMOGES",
+"code_postal": "87100",
+"date_creation": "2024-07-22",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "93164748100023"
+}
+]
+},
+{
+"siren": "902543339",
+"nom_complet": "4 VENTS IMMO (SAS)",
+"nom_raison_sociale": "4 VENTS IMMO",
+"sigle": "SAS",
+"matching_etablissements": [
+{
+"adresse": "1 HAM DE LA CHAPELLE SAINT ANTOINE 87220 BOISSEUIL",
+"code_postal": "87220",
+"date_creation": "2021-12-18",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "90254333900029"
+},
+{
+"adresse": "14 ALLEE DES TILLEULS 87220 BOISSEUIL",
+"code_postal": "87220",
+"date_creation": "2021-08-20",
+"date_fermeture": "2021-12-18",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "90254333900011"
+}
+]
+},
+{
+"siren": "980987598",
+"nom_complet": "ALLURE HOLDING (SAS)",
+"nom_raison_sociale": "ALLURE HOLDING",
+"sigle": "SAS",
+"matching_etablissements": [
+{
+"adresse": "44 AVENUE DES COUTURES 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2024-06-24",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "98098759800029"
+},
+{
+"adresse": "1 RUE BASSE DE LA COMEDIE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2023-10-26",
+"date_fermeture": "2024-06-24",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "98098759800011"
+}
+]
+},
+{
+"siren": "929267789",
+"nom_complet": "PNEUS SERVICES (SAS)",
+"nom_raison_sociale": "PNEUS SERVICES",
+"sigle": "SAS",
+"matching_etablissements": [
+{
+"adresse": "54 AVENUE DE LA LIBERATION 87350 PANAZOL",
+"code_postal": "87350",
+"date_creation": "2024-05-28",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "92926778900014"
+}
+]
+},
+{
+"siren": "991511395",
+"nom_complet": "ATELIER SEQUENCE (SAS)",
+"nom_raison_sociale": "ATELIER SEQUENCE",
+"sigle": "SAS",
+"matching_etablissements": [
+{
+"adresse": "37 ROUTE DE LA CHAPELLE SAINT-MARTIN 87110 LE VIGEN",
+"code_postal": "87110",
+"date_creation": "2025-09-29",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "99151139500014"
+}
+]
+},
+{
+"siren": "913519450",
+"nom_complet": "H-DEZO (SAS)",
+"nom_raison_sociale": "H-DEZO",
+"sigle": "SAS",
+"matching_etablissements": [
+{
+"adresse": "3 LD LAURERIE 87260 VICQ-SUR-BREUILH",
+"code_postal": "87260",
+"date_creation": "2022-05-13",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "91351945000013"
+}
+]
+},
+{
+"siren": "425050556",
+"nom_complet": "CARGLASS S.A.S. (CARGLASS PARE-BRISE COURBEVOIE)",
+"nom_raison_sociale": "CARGLASS S.A.S.",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "27 AVENUE GARIBALDI 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2005-01-01",
+"date_fermeture": "2005-04-11",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": [
+"CARGLASS"
+],
+"nom_commercial": null,
+"siret": "42505055601429"
+}
+]
+},
+{
+"siren": "330267691",
+"nom_complet": "CHAUSSEA SAS",
+"nom_raison_sociale": "CHAUSSEA SAS",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "ZONE COMMERCIALE LES MARTINES 87200 SAINT JUNIEN",
+"code_postal": "87200",
+"date_creation": "2007-12-03",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "33026769102019"
+}
+]
+},
+{
+"siren": "380622332",
+"nom_complet": "ARMAND THIERY SAS (AT SAS)",
+"nom_raison_sociale": "ARMAND THIERY SAS",
+"sigle": "AT SAS",
+"matching_etablissements": [
+{
+"adresse": "5 RUE FERRERIE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2016-01-16",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "38062233206099"
+},
+{
+"adresse": "LOT NOA10B LE MALABRE NORD 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2018-10-24",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "38062233206792"
+},
+{
+"adresse": "CENTRE COMM ST MARTIAL - LOCAL N C1 39 B AVENUE GARIBALDI 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2019-03-04",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "38062233206842"
+},
+{
+"adresse": "CTRE COMMERCIAL SAINT MARTIAL -  NOC1A 39 B AVENUE GARIBALDI 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2019-03-04",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "38062233206875"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=FB+SUD+SAS": {
+"results": []
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=FB+SUD": {
+"results": [
+{
+"siren": "888115011",
+"nom_complet": "FB SUD",
+"nom_raison_sociale": "FB SUD",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "412 RUE DE TOULOUSE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2020-08-14",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "88811501100015"
+}
+]
+}
+]
+},
+"code_postal=87200&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=BRICO+SERVICES+%2F+SAS": {
+"results": []
+},
+"code_postal=87200&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=BRICO+SERVICES": {
+"results": [
+{
+"siren": "852855576",
+"nom_complet": "BRICO SERVICES SAINT JUNIEN (BRICO SERVICES SAINT JUNIEN)",
+"nom_raison_sociale": "BRICO SERVICES SAINT JUNIEN",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "ZI LES MARTINES AV NELSON MANDELA 87200 SAINT JUNIEN",
+"code_postal": "87200",
+"date_creation": "2019-07-24",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": "BRICO SERVICES SAINT JUNIEN",
+"siret": "85285557600017"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=PATRICE+EL+FIL": {
+"results": []
+},
+"code_postal=87300&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=GENERALI+%2F+SARL+FX+AUBERT": {
+"results": []
+},
+"code_postal=87300&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=GENERALI+FX+AUBERT": {
+"results": []
+},
+"code_postal=87300&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=GENERALI": {
+"results": [
+{
+"siren": "804765477",
+"nom_complet": "ASSURANCES LOIC LE COZ",
+"nom_raison_sociale": "ASSURANCES LOIC LE COZ",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "1-3 1 AVENUE JEAN JAURES 87300 BELLAC",
+"code_postal": "87300",
+"date_creation": "2014-10-17",
+"date_fermeture": "2020-12-31",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": [
+"GENERALI"
+],
+"nom_commercial": null,
+"siret": "80476547700026"
+}
+]
+}
+]
+},
+"code_postal=87300&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=SARL+FX+AUBERT": {
+"results": []
+},
+"code_postal=87300&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=FX+AUBERT": {
+"results": [
+{
+"siren": "890821648",
+"nom_complet": "FX AUBERT",
+"nom_raison_sociale": "FX AUBERT",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "1 AVENUE JEAN JAURES 87300 BELLAC",
+"code_postal": "87300",
+"date_creation": "2020-11-02",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "89082164800015"
+}
+]
+}
+]
+},
+"departement=87&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=CBA+CABINET+BAURIAUD+ASSOCIES": {
+"results": [
+{
+"siren": "343455739",
+"nom_complet": "C.B.A. CABINET-BAURIAUD-ASSOCIES",
+"nom_raison_sociale": "C.B.A. CABINET-BAURIAUD-ASSOCIES",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "IMMEUBLE CASSIOPEE - PARC D'ESTER 26 RUE ATLANTIS 87280 LIMOGES",
+"code_postal": "87280",
+"date_creation": "2006-11-10",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "34345573900031"
+},
+{
+"adresse": "14 12 RUE CRUVEILHIER 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1987-11-18",
+"date_fermeture": "2006-11-10",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "34345573900015"
+},
+{
+"adresse": "47 RUE DU VELODROME 87100 LIMOGES",
+"code_postal": "87100",
+"date_creation": "1999-06-30",
+"date_fermeture": "2006-11-10",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "34345573900023"
+}
+]
+}
+]
+},
+"departement=87&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=SGS-SOLIG+GROUPES+SERVICE+-+Centre+commercial+La+Coupole": {
+"results": [
+{
+"siren": "494361066",
+"nom_complet": "SOLIG GROUPE SERVICES (SGS)",
+"nom_raison_sociale": "SOLIG GROUPE SERVICES",
+"sigle": "SGS",
+"matching_etablissements": [
+{
+"adresse": "12 PLACE DE LA REPUBLIQUE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2007-02-14",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "49436106600017"
+},
+{
+"adresse": "CENTRE COMMERCIAL LA COUPOLE BEAUBREUIL 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2007-06-20",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "49436106600025"
+}
+]
+}
+]
+},
+"departement=87&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=SGS+SOLIG+GROUPES+SERVICE+CENTRE+COMMERCIAL+LA+COUPOLE": {
+"results": [
+{
+"siren": "494361066",
+"nom_complet": "SOLIG GROUPE SERVICES (SGS)",
+"nom_raison_sociale": "SOLIG GROUPE SERVICES",
+"sigle": "SGS",
+"matching_etablissements": [
+{
+"adresse": "12 PLACE DE LA REPUBLIQUE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2007-02-14",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "49436106600017"
+},
+{
+"adresse": "CENTRE COMMERCIAL LA COUPOLE BEAUBREUIL 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2007-06-20",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "49436106600025"
+}
+]
+}
+]
+},
+"departement=87&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=SGS-SOLIG+GROUPES+SERVICE": {
+"results": [
+{
+"siren": "494361066",
+"nom_complet": "SOLIG GROUPE SERVICES (SGS)",
+"nom_raison_sociale": "SOLIG GROUPE SERVICES",
+"sigle": "SGS",
+"matching_etablissements": [
+{
+"adresse": "12 PLACE DE LA REPUBLIQUE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2007-02-14",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "49436106600017"
+},
+{
+"adresse": "CENTRE COMMERCIAL LA COUPOLE BEAUBREUIL 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2007-06-20",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "49436106600025"
+}
+]
+}
+]
+},
+"code_postal=87100&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=LVDS+CENTRE+OUEST+%2F+SAS": {
+"results": []
+},
+"code_postal=87100&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=LVDS+CENTRE+OUEST": {
+"results": [
+{
+"siren": "301769105",
+"nom_complet": "LVDS CENTRE OUEST",
+"nom_raison_sociale": "LVDS CENTRE OUEST",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "68 RUE ARMAND BARBES 87100 LIMOGES",
+"code_postal": "87100",
+"date_creation": "2006-09-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "30176910500059"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=SAS+LM+SERVICES": {
+"results": []
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=LM+SERVICES": {
+"results": [
+{
+"siren": "952574895",
+"nom_complet": "L.M. SERVICES",
+"nom_raison_sociale": "L.M. SERVICES",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "11 RUE VENTENAT 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2023-05-16",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "95257489500019"
+}
+]
+},
+{
+"siren": "425095338",
+"nom_complet": "SOCIETE LM (SARL MASSIAS SERVICES TECHNIQUES)",
+"nom_raison_sociale": "SOCIETE LM",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "9 RUE FRANCOIS VILLON 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2017-03-14",
+"date_fermeture": "2022-05-31",
+"est_siege": true,
+"etat_administratif": "F",
+"liste_enseignes": [
+"SARL MASSIAS SERVICES TECHNIQUES"
+],
+"nom_commercial": "SARL MASSIAS SERVICES TECHNIQUES",
+"siret": "42509533800033"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=AUDEFI+EXPERTISE-COMPTABLE": {
+"results": [
+{
+"siren": "489319103",
+"nom_complet": "AUDEFI EXPERTISE COMPTABLE",
+"nom_raison_sociale": "AUDEFI EXPERTISE COMPTABLE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "4 RUE LEGOUVE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2010-10-25",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "48931910300029"
+},
+{
+"adresse": "16 RUE BERNARD LATHIERE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2021-02-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "48931910300037"
+},
+{
+"adresse": "20 BOULEVARD VICTOR HUGO 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2006-03-27",
+"date_fermeture": "2010-10-25",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "48931910300011"
+}
+]
+},
+{
+"siren": "798659736",
+"nom_complet": "GDM HOLDING",
+"nom_raison_sociale": "GDM HOLDING",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "3 PLACE DENIS DUSSOUBS 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2022-09-13",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "79865973600036"
+}
+]
+},
+{
+"siren": "432719011",
+"nom_complet": "GPT D'IMAGERIE MEDICALE DU LIMOUSIN",
+"nom_raison_sociale": "GPT D'IMAGERIE MEDICALE DU LIMOUSIN",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "PLACE HENRI QUEUILLE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2000-07-27",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "43271901100012"
+}
+]
+},
+{
+"siren": "518665682",
+"nom_complet": "ADC EXPERTISE ET FINANCE",
+"nom_raison_sociale": "ADC EXPERTISE ET FINANCE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "6 AV MONTJOVIS 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2009-12-07",
+"date_fermeture": "2010-01-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "51866568200010"
+},
+{
+"adresse": "16 RUE BERNARD LATHIERE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2020-12-21",
+"date_fermeture": "2021-02-28",
+"est_siege": true,
+"etat_administratif": "F",
+"liste_enseignes": [
+"AUDEFI EXPERTISE COMPTABLE"
+],
+"nom_commercial": null,
+"siret": "51866568200036"
+}
+]
+}
+]
+},
+"code_postal=87220&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=MUTUALITE+FRANCAISE+LIMOUSINE": {
+"results": []
+},
+"departement=87&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=MUTUALITE+FRANCAISE+LIMOUSINE": {
+"results": [
+{
+"siren": "532511193",
+"nom_complet": "SCI PAS A PAS",
+"nom_raison_sociale": "SCI PAS A PAS",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "39 AVENUE GARIBALDI 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2011-05-10",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "53251119300015"
+}
+]
+},
+{
+"siren": "534013461",
+"nom_complet": "LIMOUSIN HOSPITALIER",
+"nom_raison_sociale": "LIMOUSIN HOSPITALIER",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "39 AVENUE GARIBALDI 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2011-07-29",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "53401346100015"
+}
+]
+},
+{
+"siren": "818281370",
+"nom_complet": "RUE D'ISLE",
+"nom_raison_sociale": "RUE D'ISLE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "39 AVENUE GARIBALDI 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2016-01-21",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "81828137000010"
+}
+]
+}
+]
+},
+"code_postal=87220&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=MUTUALITE": {
+"results": [
+{
+"siren": "775716673",
+"nom_complet": "VYV3 COEUR D'AQUITAINE- MUTUALITE FRANCAISE COEUR D'AQUITAINE SSAM",
+"nom_raison_sociale": "VYV3 COEUR D'AQUITAINE- MUTUALITE FRANCAISE COEUR D'AQUITAINE SSAM",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "CRECHE HALTE GARDERIE 16 RUE DE BOURGOGNE 87220 FEYTIAT",
+"code_postal": "87220",
+"date_creation": "2011-01-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"LES DIABLOTINS"
+],
+"nom_commercial": null,
+"siret": "77571667300634"
+},
+{
+"adresse": "CRECHE HALTE GARDERIE 14 RUE FREDERIC LEGRAND 87220 FEYTIAT",
+"code_postal": "87220",
+"date_creation": "2011-01-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"CHAPI-CHAPO"
+],
+"nom_commercial": null,
+"siret": "77571667300642"
+},
+{
+"adresse": "LABORATOIRE PROTHESE DENTAIRE SAINTE MARIE 87220 BOISSEUIL",
+"code_postal": "87220",
+"date_creation": "2013-11-15",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "77571667300840"
+},
+{
+"adresse": "LIEU-DIT SAINTE MARIE 87220 BOISSEUIL",
+"code_postal": "87220",
+"date_creation": "2013-11-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"SIEGE BOISSEUIL"
+],
+"nom_commercial": null,
+"siret": "77571667300873"
+},
+{
+"adresse": "CENTRE DE SANTE POLYVALENT DE FEYTIAT 11 RUE DE LA LAICITE 87220 FEYTIAT",
+"code_postal": "87220",
+"date_creation": "2017-10-16",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"CENTRE DE SANTE POLYVALENT DE FEYTIAT"
+],
+"nom_commercial": null,
+"siret": "77571667301053"
+},
+{
+"adresse": "LE VILARET D OR DE FEYTIAT RUE DE LA LAICITE 87220 FEYTIAT",
+"code_postal": "87220",
+"date_creation": "2017-09-29",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"LE VILARET D OR DE FEYTIAT"
+],
+"nom_commercial": "LE VILARET D OR DE FEYTIAT",
+"siret": "77571667301061"
+},
+{
+"adresse": "CENTRE DE SANTE DENTAIRE DE FEYTIAT 5 PLACE CROIX DES RAMEAUX 87220 FEYTIAT",
+"code_postal": "87220",
+"date_creation": "2013-12-01",
+"date_fermeture": "2017-10-16",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "77571667300808"
+},
+{
+"adresse": "MUT SERVICE SAINTE MARIE 87220 BOISSEUIL",
+"code_postal": "87220",
+"date_creation": "2013-11-01",
+"date_fermeture": "2015-12-31",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": [
+"MUT SERVICE"
+],
+"nom_commercial": null,
+"siret": "77571667300816"
+},
+{
+"adresse": "SSIAD EHPAD SAINTE MARIE 87220 BOISSEUIL",
+"code_postal": "87220",
+"date_creation": "2013-11-01",
+"date_fermeture": "2017-01-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "77571667300832"
+}
+]
+}
+]
+},
+"code_postal=87220&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=FRANCAISE": {
+"results": [
+{
+"siren": "379583107",
+"nom_complet": "GENERALE FRANCAISE DE LITERIE (GENERALE FRANCAISE DE LITERIE G.F.L.) (GFL)",
+"nom_raison_sociale": "GENERALE FRANCAISE DE LITERIE",
+"sigle": "GFL",
+"matching_etablissements": [
+{
+"adresse": "6 HAM DE LA CHAPELLE SAINT-ANTOINE 87220 BOISSEUIL",
+"code_postal": "87220",
+"date_creation": "2021-12-01",
+"date_fermeture": "2023-03-29",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": [
+"MALITERIE.COM"
+],
+"nom_commercial": null,
+"siret": "37958310700691"
+}
+]
+},
+{
+"siren": "775716673",
+"nom_complet": "VYV3 COEUR D'AQUITAINE- MUTUALITE FRANCAISE COEUR D'AQUITAINE SSAM",
+"nom_raison_sociale": "VYV3 COEUR D'AQUITAINE- MUTUALITE FRANCAISE COEUR D'AQUITAINE SSAM",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "CRECHE HALTE GARDERIE 16 RUE DE BOURGOGNE 87220 FEYTIAT",
+"code_postal": "87220",
+"date_creation": "2011-01-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"LES DIABLOTINS"
+],
+"nom_commercial": null,
+"siret": "77571667300634"
+},
+{
+"adresse": "CRECHE HALTE GARDERIE 14 RUE FREDERIC LEGRAND 87220 FEYTIAT",
+"code_postal": "87220",
+"date_creation": "2011-01-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"CHAPI-CHAPO"
+],
+"nom_commercial": null,
+"siret": "77571667300642"
+},
+{
+"adresse": "LABORATOIRE PROTHESE DENTAIRE SAINTE MARIE 87220 BOISSEUIL",
+"code_postal": "87220",
+"date_creation": "2013-11-15",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "77571667300840"
+},
+{
+"adresse": "LIEU-DIT SAINTE MARIE 87220 BOISSEUIL",
+"code_postal": "87220",
+"date_creation": "2013-11-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"SIEGE BOISSEUIL"
+],
+"nom_commercial": null,
+"siret": "77571667300873"
+},
+{
+"adresse": "CENTRE DE SANTE POLYVALENT DE FEYTIAT 11 RUE DE LA LAICITE 87220 FEYTIAT",
+"code_postal": "87220",
+"date_creation": "2017-10-16",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"CENTRE DE SANTE POLYVALENT DE FEYTIAT"
+],
+"nom_commercial": null,
+"siret": "77571667301053"
+},
+{
+"adresse": "LE VILARET D OR DE FEYTIAT RUE DE LA LAICITE 87220 FEYTIAT",
+"code_postal": "87220",
+"date_creation": "2017-09-29",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"LE VILARET D OR DE FEYTIAT"
+],
+"nom_commercial": "LE VILARET D OR DE FEYTIAT",
+"siret": "77571667301061"
+},
+{
+"adresse": "CENTRE DE SANTE DENTAIRE DE FEYTIAT 5 PLACE CROIX DES RAMEAUX 87220 FEYTIAT",
+"code_postal": "87220",
+"date_creation": "2013-12-01",
+"date_fermeture": "2017-10-16",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "77571667300808"
+},
+{
+"adresse": "MUT SERVICE SAINTE MARIE 87220 BOISSEUIL",
+"code_postal": "87220",
+"date_creation": "2013-11-01",
+"date_fermeture": "2015-12-31",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": [
+"MUT SERVICE"
+],
+"nom_commercial": null,
+"siret": "77571667300816"
+},
+{
+"adresse": "SSIAD EHPAD SAINTE MARIE 87220 BOISSEUIL",
+"code_postal": "87220",
+"date_creation": "2013-11-01",
+"date_fermeture": "2017-01-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "77571667300832"
+}
+]
+},
+{
+"siren": "450048053",
+"nom_complet": "AUTO ECOLE FRANCAISE FEYTIAT (AEF FEYTIAT)",
+"nom_raison_sociale": "AUTO ECOLE FRANCAISE FEYTIAT",
+"sigle": "AEF FEYTIAT",
+"matching_etablissements": [
+{
+"adresse": "LOT DE LA HAIE DES PRES ALLEE D'ITALIE 87220 FEYTIAT",
+"code_postal": "87220",
+"date_creation": "2004-02-06",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "45004805300026"
+}
+]
+},
+{
+"siren": "448166454",
+"nom_complet": "COMITE DEPARTEMENTAL DE LA FEDERATION FRANCAISE DE BOWLING ET SPORTS DE QUILLES DE LA HAUTE-VIENNE (C.D. FFBSQ 87)",
+"nom_raison_sociale": "COMITE DEPARTEMENTAL DE LA FEDERATION FRANCAISE DE BOWLING ET SPORTS DE QUILLES DE LA HAUTE-VIENNE",
+"sigle": "C.D. FFBSQ 87",
+"matching_etablissements": [
+{
+"adresse": "LE CROUZY 87220 BOISSEUIL",
+"code_postal": "87220",
+"date_creation": "1997-02-19",
+"date_fermeture": "2013-10-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "44816645400018"
+}
+]
+},
+{
+"siren": "319971248",
+"nom_complet": "LA BRIDE FRANCAISE",
+"nom_raison_sociale": "LA BRIDE FRANCAISE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "L HERMITAGE 87220 FEYTIAT",
+"code_postal": "87220",
+"date_creation": null,
+"date_fermeture": "1985-12-25",
+"est_siege": true,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "31997124800020"
+}
+]
+},
+{
+"siren": "753221803",
+"nom_complet": "MALITERIE",
+"nom_raison_sociale": "MALITERIE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "6 HAM DE LA CHAPELLE SAINT-ANTOINE 87220 BOISSEUIL",
+"code_postal": "87220",
+"date_creation": "2021-12-01",
+"date_fermeture": "2023-03-29",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": [
+"MALITERIE.COM"
+],
+"nom_commercial": null,
+"siret": "75322180300673"
+}
+]
+}
+]
+},
+"code_postal=87220&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=LIMOUSINE": {
+"results": [
+{
+"siren": "382742013",
+"nom_complet": "CAISSE D'EPARGNE ET DE PREVOYANCE D'AUVERGNE ET DU LIMOUSIN (CEPAL OU CAISSE D'EP)",
+"nom_raison_sociale": "CAISSE D'EPARGNE ET DE PREVOYANCE D'AUVERGNE ET DU LIMOUSIN",
+"sigle": "CEPAL OU CAISSE D'EP",
+"matching_etablissements": [
+{
+"adresse": "CTRE COMMERCIAL CARREFOUR RTE N 20 87220 BOISSEUIL",
+"code_postal": "87220",
+"date_creation": "2003-04-30",
+"date_fermeture": "2006-06-13",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "38274201302426"
+}
+]
+},
+{
+"siren": "412395709",
+"nom_complet": "EUROVIA POITOU CHARENTES LIMOUSIN",
+"nom_raison_sociale": "EUROVIA POITOU CHARENTES LIMOUSIN",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "ZI LE PONTEIX 87220 FEYTIAT",
+"code_postal": "87220",
+"date_creation": "1997-07-01",
+"date_fermeture": "2003-11-05",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "41239570900105"
+}
+]
+},
+{
+"siren": "844117374",
+"nom_complet": "ALTERNANCE LIMOUSIN (GROUPE ALTERNANCE LIMOGES)",
+"nom_raison_sociale": "ALTERNANCE LIMOUSIN",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "4 RUE THOMAS EDISON 87220 FEYTIAT",
+"code_postal": "87220",
+"date_creation": "2026-08-06",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": "GROUPE ALTERNANCE LIMOGES",
+"siret": "84411737400067"
+}
+]
+},
+{
+"siren": "503679870",
+"nom_complet": "LIMOUSIN ASSISTANCE",
+"nom_raison_sociale": "LIMOUSIN ASSISTANCE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "ZA LA PLAINE 87220 BOISSEUIL",
+"code_postal": "87220",
+"date_creation": "2011-05-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": [
+"LIMOUSIN ASSISTANCE"
+],
+"nom_commercial": null,
+"siret": "50367987000033"
+}
+]
+},
+{
+"siren": "559804422",
+"nom_complet": "VEOLIA PROPRETE LIMOUSIN (SVE)",
+"nom_raison_sociale": "VEOLIA PROPRETE LIMOUSIN",
+"sigle": "SVE",
+"matching_etablissements": [
+{
+"adresse": "LES COTEAUX DE L'AUZETTE RUE THOMAS EDISON 87220 FEYTIAT",
+"code_postal": "87220",
+"date_creation": "2008-01-02",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "55980442200249"
+}
+]
+},
+{
+"siren": "447966490",
+"nom_complet": "LIMOUSIN MATERIAUX",
+"nom_raison_sociale": "LIMOUSIN MATERIAUX",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "PARC LA VALOINE 11 ALL BREGUET 87220 FEYTIAT",
+"code_postal": "87220",
+"date_creation": "2014-09-01",
+"date_fermeture": "2018-07-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": [
+"TERRES DE FENETRE"
+],
+"nom_commercial": null,
+"siret": "44796649000040"
+}
+]
+},
+{
+"siren": "849566146",
+"nom_complet": "CLOTURES & PORTAILS DU LIMOUSIN",
+"nom_raison_sociale": "CLOTURES & PORTAILS DU LIMOUSIN",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "7 RUE DES TRAMWAYS 87220 FEYTIAT",
+"code_postal": "87220",
+"date_creation": "2024-02-01",
+"date_fermeture": null,
+"est_siege": false,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "84956614600031"
+}
+]
+},
+{
+"siren": "478488216",
+"nom_complet": "ASSOCIATION LIMOUSINE DES CHALLENGES",
+"nom_raison_sociale": "ASSOCIATION LIMOUSINE DES CHALLENGES",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "BP 211 4 RUE THOMAS EDISON 87220 FEYTIAT",
+"code_postal": "87220",
+"date_creation": "2011-04-01",
+"date_fermeture": "2012-11-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "47848821600043"
+}
+]
+},
+{
+"siren": "338305105",
+"nom_complet": "LIMOUSIN HYDRAULIQUE",
+"nom_raison_sociale": "LIMOUSIN HYDRAULIQUE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "ZI DU PONTEIX 19 RUE LOUIS ARMAND 87220 FEYTIAT",
+"code_postal": "87220",
+"date_creation": "1990-05-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "33830510500029"
+}
+]
+},
+{
+"siren": "429380553",
+"nom_complet": "VIVRE AVEC EN LIMOUSIN (VAL)",
+"nom_raison_sociale": "VIVRE AVEC EN LIMOUSIN",
+"sigle": "VAL",
+"matching_etablissements": [
+{
+"adresse": "LA LANDE DU CHAZEAUD 2 IMPASSE MAURICE CHEVALIER 87220 FEYTIAT",
+"code_postal": "87220",
+"date_creation": "2008-01-01",
+"date_fermeture": "2023-01-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42938055300041"
+}
+]
+}
+]
+},
+"code_postal=87100&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=BOUGNOTEAU+SAS": {
+"results": [
+{
+"siren": "772500054",
+"nom_complet": "BOUGNOTEAU SAS",
+"nom_raison_sociale": "BOUGNOTEAU SAS",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "30 RUE GEORGES FOUREST 87100 LIMOGES",
+"code_postal": "87100",
+"date_creation": "1995-06-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "77250005400071"
+},
+{
+"adresse": "20 RUE KRUGER 87100 LIMOGES",
+"code_postal": "87100",
+"date_creation": "1987-01-01",
+"date_fermeture": "1995-06-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "77250005400055"
+}
+]
+}
+]
+},
+"code_postal=87200&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=LVDS+CENTRE+OUEST+%2F+SAS": {
+"results": []
+},
+"code_postal=87200&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=LVDS+CENTRE+OUEST": {
+"results": [
+{
+"siren": "301769105",
+"nom_complet": "LVDS CENTRE OUEST",
+"nom_raison_sociale": "LVDS CENTRE OUEST",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "3 CHEMIN DES VERSANNES 87200 SAINT-JUNIEN",
+"code_postal": "87200",
+"date_creation": "1989-09-07",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "30176910500018"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=INITIATIVE+HAUTE-VIENNE": {
+"results": [
+{
+"siren": "424056042",
+"nom_complet": "INITIATIVE HAUTE VIENNE",
+"nom_raison_sociale": "INITIATIVE HAUTE VIENNE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "43 AVENUE DES CASSEAUX 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2025-12-22",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42405604200049"
+},
+{
+"adresse": "11 RUE CHARLES GIDE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1999-07-01",
+"date_fermeture": "2002-01-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42405604200015"
+},
+{
+"adresse": "BP 403 16 PLACE JOURDAN 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2002-01-01",
+"date_fermeture": "2019-10-18",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42405604200023"
+},
+{
+"adresse": "22 BOULEVARD VICTOR HUGO 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2019-10-18",
+"date_fermeture": "2025-12-22",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42405604200031"
+}
+]
+}
+]
+},
+"code_postal=87000&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=INITIATIVE+HAUTE+VIENNE": {
+"results": [
+{
+"siren": "424056042",
+"nom_complet": "INITIATIVE HAUTE VIENNE",
+"nom_raison_sociale": "INITIATIVE HAUTE VIENNE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "43 AVENUE DES CASSEAUX 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2025-12-22",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42405604200049"
+},
+{
+"adresse": "11 RUE CHARLES GIDE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1999-07-01",
+"date_fermeture": "2002-01-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42405604200015"
+},
+{
+"adresse": "BP 403 16 PLACE JOURDAN 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2002-01-01",
+"date_fermeture": "2019-10-18",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42405604200023"
+},
+{
+"adresse": "22 BOULEVARD VICTOR HUGO 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2019-10-18",
+"date_fermeture": "2025-12-22",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42405604200031"
+}
+]
+}
+]
+},
+"departement=87&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=INITIATIVE+HAUTE-VIENNE": {
+"results": [
+{
+"siren": "424056042",
+"nom_complet": "INITIATIVE HAUTE VIENNE",
+"nom_raison_sociale": "INITIATIVE HAUTE VIENNE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "43 AVENUE DES CASSEAUX 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2025-12-22",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42405604200049"
+},
+{
+"adresse": "11 RUE CHARLES GIDE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1999-07-01",
+"date_fermeture": "2002-01-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42405604200015"
+},
+{
+"adresse": "BP 403 16 PLACE JOURDAN 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2002-01-01",
+"date_fermeture": "2019-10-18",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42405604200023"
+},
+{
+"adresse": "22 BOULEVARD VICTOR HUGO 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2019-10-18",
+"date_fermeture": "2025-12-22",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42405604200031"
+}
+]
+}
+]
+},
+"departement=87&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=INITIATIVE+HAUTE+VIENNE": {
+"results": [
+{
+"siren": "424056042",
+"nom_complet": "INITIATIVE HAUTE VIENNE",
+"nom_raison_sociale": "INITIATIVE HAUTE VIENNE",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "43 AVENUE DES CASSEAUX 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2025-12-22",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42405604200049"
+},
+{
+"adresse": "11 RUE CHARLES GIDE 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "1999-07-01",
+"date_fermeture": "2002-01-01",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42405604200015"
+},
+{
+"adresse": "BP 403 16 PLACE JOURDAN 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2002-01-01",
+"date_fermeture": "2019-10-18",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42405604200023"
+},
+{
+"adresse": "22 BOULEVARD VICTOR HUGO 87000 LIMOGES",
+"code_postal": "87000",
+"date_creation": "2019-10-18",
+"date_fermeture": "2025-12-22",
+"est_siege": false,
+"etat_administratif": "F",
+"liste_enseignes": null,
+"nom_commercial": null,
+"siret": "42405604200031"
+}
+]
+}
+]
+},
+"code_postal=87250&include=matching_etablissements%2Csiege&minimal=true&per_page=10&q=F2J+STAMPING+BESSINES": {
+"results": [
+{
+"siren": "851615286",
+"nom_complet": "F2J STAMPING BESSINES (LE METAL TECHNIQUE)",
+"nom_raison_sociale": "F2J STAMPING BESSINES",
+"sigle": null,
+"matching_etablissements": [
+{
+"adresse": "ZA LA LANDE DU BREUIL 2 ROUTE DE CHATEAUPONSAC 87250 BESSINES-SUR-GARTEMPE",
+"code_postal": "87250",
+"date_creation": "2019-07-01",
+"date_fermeture": null,
+"est_siege": true,
+"etat_administratif": "A",
+"liste_enseignes": null,
+"nom_commercial": "LE METAL TECHNIQUE",
+"siret": "85161528600024"
+}
+]
+}
+]
+}
+}
+}
