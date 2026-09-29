@@ -1325,6 +1325,12 @@ ufaEnterprisePhoneFieldLabel: 'Téléphone'
 ufaEnterpriseCityFieldLabel: 'Ville'
 ufaEnterpriseAddressFieldLabel: 'Adresse'
 ufaEnterpriseUpdatedFlashMessage: "L'entreprise a été mise à jour."
+siretLengthMessage: "Un SIRET compte 14 chiffres."
+siretChecksumMessage: "Ce SIRET n'existe pas : sa clé de contrôle ne correspond pas. Vérifiez chaque chiffre."
+enterpriseSiretStatusConfirmedLabel: "Confirmé"
+enterpriseSiretStatusPendingLabel: "À confirmer"
+enterpriseSiretStatusMissingLabel: "À trouver"
+enterpriseSiretStatusSetAsideLabel: "Introuvable"
 
 ufaDashboardPageHeading: 'UFA'
 ufaConfigurationPageHeading: 'UFA'

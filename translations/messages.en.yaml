@@ -4881,6 +4881,12 @@ ufaEnterprisePhoneFieldLabel: 'Phone'
 ufaEnterpriseCityFieldLabel: 'Town'
 ufaEnterpriseAddressFieldLabel: 'Address'
 ufaEnterpriseUpdatedFlashMessage: 'The company has been updated.'
+siretLengthMessage: "A SIRET has 14 digits."
+siretChecksumMessage: "This SIRET does not exist: its check digit does not match. Check each digit."
+enterpriseSiretStatusConfirmedLabel: "Confirmed"
+enterpriseSiretStatusPendingLabel: "To confirm"
+enterpriseSiretStatusMissingLabel: "To find"
+enterpriseSiretStatusSetAsideLabel: "Not found"
 ufaContractImportPageHeading: 'Import Charlemagne Entreprises'
 ufaContractImportFileSectionTitle: 'The alternance file'
 ufaContractImportFileSectionHint: "The school's export, one line per apprenticeship contract."

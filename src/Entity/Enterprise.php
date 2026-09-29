@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\EnterpriseSiretStatus;
 use App\Repository\EnterpriseRepository;
+use App\Service\Sirene\Siret;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -19,6 +21,14 @@ use Symfony\Component\Validator\Constraints as Assert;
 class Enterprise
 {
     use AuditableTrait;
+
+    /**
+     * How long « Pas de SIRET trouvable » keeps an employer out of the SIRET queue - long enough
+     * for a company that has only just been created to reach SIRENE, short enough for it to be
+     * looked at again within the school year (design/validated/siret-entreprises.md, R7 and §9).
+     * The one place the delay is written: no expiry date is stored, it is computed on reading.
+     */
+    public const int SIRET_SET_ASIDE_DAYS = 90;
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -51,8 +61,32 @@ class Enterprise
     #[ORM\Column(name: 'email_domain', length: 255, nullable: true)]
     private ?string $emailDomain = null;
 
+    /** Stored as its fourteen digits, whatever spacing it was typed with (Siret::normalize()). */
     #[ORM\Column(length: 20, nullable: true)]
     private ?string $siret = null;
+
+    /**
+     * When a person associated or confirmed the SIRET while seeing what it designates - the only way
+     * one becomes « confirmé » (R4). Null for every number imported, typed without a preview, or
+     * recorded before the rule existed: those are « à confirmer ». Nothing automatic ever sets it.
+     */
+    #[ORM\Column(name: 'siret_confirmed_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $siretConfirmedAt = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'siret_confirmed_by_id', nullable: true, onDelete: 'SET NULL')]
+    private ?User $siretConfirmedBy = null;
+
+    /**
+     * « Pas de SIRET trouvable » - a dated set-aside, not a verdict: the employer leaves the queue and
+     * comes back SIRET_SET_ASIDE_DAYS later (R7). It never empties a SIRET already recorded.
+     */
+    #[ORM\Column(name: 'siret_not_found_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $siretNotFoundAt = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'siret_not_found_by_id', nullable: true, onDelete: 'SET NULL')]
+    private ?User $siretNotFoundBy = null;
 
     #[ORM\Column(length: 30, nullable: true)]
     private ?string $phone = null;
@@ -135,11 +169,91 @@ class Enterprise
         return $this->siret;
     }
 
+    /**
+     * A SIRET recorded without anyone vouching for it - the « nouvelle entreprise » of an alternance
+     * (R5), a form that saves before stamping. A different number is a new question: whatever was
+     * confirmed or set aside about the old one no longer holds.
+     */
     public function setSiret(?string $siret): static
     {
+        $siret = null !== $siret ? Siret::normalize($siret) : null;
+        $siret = '' !== $siret ? $siret : null;
+
+        if ($siret !== $this->siret) {
+            $this->siretConfirmedAt = null;
+            $this->siretConfirmedBy = null;
+            $this->siretNotFoundAt = null;
+            $this->siretNotFoundBy = null;
+        }
+
         $this->siret = $siret;
 
         return $this;
+    }
+
+    /** « Associer » or « Confirmer »: a person saw what this number designates and said yes (R4). */
+    public function confirmSiret(string $siret, User $by, \DateTimeImmutable $at): static
+    {
+        $this->setSiret($siret);
+        $this->siretConfirmedAt = $at;
+        $this->siretConfirmedBy = $by;
+        $this->siretNotFoundAt = null;
+        $this->siretNotFoundBy = null;
+
+        return $this;
+    }
+
+    /** « Pas de SIRET trouvable » - out of the queue for SIRET_SET_ASIDE_DAYS, SIRET left as it is (R7). */
+    public function markSiretNotFound(User $by, \DateTimeImmutable $at): static
+    {
+        $this->siretNotFoundAt = $at;
+        $this->siretNotFoundBy = $by;
+
+        return $this;
+    }
+
+    public function getSiretConfirmedAt(): ?\DateTimeImmutable
+    {
+        return $this->siretConfirmedAt;
+    }
+
+    public function getSiretConfirmedBy(): ?User
+    {
+        return $this->siretConfirmedBy;
+    }
+
+    public function getSiretNotFoundAt(): ?\DateTimeImmutable
+    {
+        return $this->siretNotFoundAt;
+    }
+
+    public function getSiretNotFoundBy(): ?User
+    {
+        return $this->siretNotFoundBy;
+    }
+
+    /** The day a « Pas de SIRET trouvable » runs out, or null when there is none. */
+    public function getSiretSetAsideUntil(): ?\DateTimeImmutable
+    {
+        return $this->siretNotFoundAt?->modify(\sprintf('+%d days', self::SIRET_SET_ASIDE_DAYS));
+    }
+
+    /**
+     * The same reading EnterpriseRepository::queryPendingSiret() makes in SQL - the two must agree,
+     * and EnterpriseSiretStatusTest holds them to it.
+     */
+    public function siretStatus(\DateTimeImmutable $now): EnterpriseSiretStatus
+    {
+        if (null !== $this->siretConfirmedAt) {
+            return EnterpriseSiretStatus::Confirmed;
+        }
+
+        $until = $this->getSiretSetAsideUntil();
+        if (null !== $until && $until > $now) {
+            return EnterpriseSiretStatus::SetAside;
+        }
+
+        return null !== $this->siret ? EnterpriseSiretStatus::Pending : EnterpriseSiretStatus::Missing;
     }
 
     public function getPhone(): ?string
