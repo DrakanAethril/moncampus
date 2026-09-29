@@ -70,6 +70,106 @@ class EnterpriseRepository extends ServiceEntityRepository
     }
 
     /**
+     * One employer as the given reader may see it - a test account is confined to test employers
+     * here as everywhere else (App\Security\StructureAccessChecker::matchesTestMode()); the other
+     * way round is open, somebody has to set the test world up.
+     */
+    public function findVisible(int $id, User $viewer): ?Enterprise
+    {
+        $enterprise = $this->find($id);
+
+        if (null === $enterprise || ($viewer->isTestUser() && !$enterprise->isTestEnterprise())) {
+            return null;
+        }
+
+        return $enterprise;
+    }
+
+    /**
+     * « À confirmer » - **the one definition** the SIRET queue, its counter and its « suivante »
+     * all read (design/validated/siret-entreprises.md, §4.2): an active employer the reader may see,
+     * whose SIRET nobody has confirmed, and which is not set aside - or whose set-aside has run out.
+     * Enterprise::siretStatus() makes the same reading on one row, and must agree with this one.
+     */
+    public function queryPendingSiret(\DateTimeImmutable $now, ?User $viewer): QueryBuilder
+    {
+        return $this->queryMatching(null, $viewer)
+            ->andWhere('e.siretConfirmedAt IS NULL')
+            ->andWhere('e.siretNotFoundAt IS NULL OR e.siretNotFoundAt <= :setAsideCutoff')
+            ->setParameter('setAsideCutoff', $now->modify(\sprintf('-%d days', Enterprise::SIRET_SET_ASIDE_DAYS)));
+    }
+
+    public function countPendingSiret(\DateTimeImmutable $now, ?User $viewer): int
+    {
+        return (int) $this->queryPendingSiret($now, $viewer)
+            ->select('COUNT(e.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /** How many are ahead of this id in the queue - its position, less one. */
+    public function countPendingSiretBefore(int $id, \DateTimeImmutable $now, ?User $viewer): int
+    {
+        return (int) $this->queryPendingSiret($now, $viewer)
+            ->select('COUNT(e.id)')
+            ->andWhere('e.id < :id')
+            ->setParameter('id', $id)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /** The next employer of the queue, in id order, after the given one (0 for the first). */
+    public function findNextPendingSiret(int $afterId, \DateTimeImmutable $now, ?User $viewer): ?Enterprise
+    {
+        $next = $this->queryPendingSiret($now, $viewer)
+            ->andWhere('e.id > :after')
+            ->setParameter('after', $afterId)
+            ->orderBy('e.id', 'ASC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        return $next instanceof Enterprise ? $next : null;
+    }
+
+    /**
+     * The other fiches already carrying one of these SIRETs, by SIRET (R8) - active or not, since a
+     * duplicate is a duplicate either way; within what the reader may see.
+     *
+     * @param list<string> $sirets
+     *
+     * @return array<string, Enterprise>
+     */
+    public function findOthersBySiret(array $sirets, Enterprise $except, ?User $viewer): array
+    {
+        if ([] === $sirets) {
+            return [];
+        }
+
+        $qb = $this->createQueryBuilder('e')
+            ->where('e.siret IN (:sirets)')
+            ->setParameter('sirets', $sirets)
+            ->orderBy('e.id', 'ASC');
+
+        if (null !== $except->getId()) {
+            $qb->andWhere('e.id <> :except')->setParameter('except', $except->getId());
+        }
+        if ($viewer?->isTestUser()) {
+            $qb->andWhere('e.testEnterprise = true');
+        }
+
+        $bySiret = [];
+        /** @var list<Enterprise> $others */
+        $others = $qb->getQuery()->getResult();
+        foreach ($others as $other) {
+            $siret = (string) $other->getSiret();
+            $bySiret[$siret] ??= $other;
+        }
+
+        return $bySiret;
+    }
+
+    /**
      * The rows both of the above read, before either the paging or the counting: same WHERE on both
      * sides, so the total can never describe a different set from the page underneath it.
      */

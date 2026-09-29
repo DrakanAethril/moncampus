@@ -9,6 +9,13 @@
     ]}) }}
 {% endblock %}
 {% block page_title %}{{ 'ufaEnterprisesPageHeading'|trans }}{% endblock %}
+{% block page_actions %}
+    {# The SIRET queue (design/validated/siret-entreprises.md §4.2): one employer at a time, a click
+       each - there is no « tout accepter ». #}
+    {% if pendingSiretCount > 0 %}
+        <twig:Cm:Button variant="primary" href="{{ path('app_ufa_enterprises_siret_review') }}">{{ 'ufaEnterpriseSiretReviewAction'|trans({'%count%': pendingSiretCount}) }}</twig:Cm:Button>
+    {% endif %}
+{% endblock %}
 
 {% block main %}
     <div class="cm-subhead mb-3">
@@ -28,7 +35,7 @@
          data-datatable-columns-value="{{ [
              {data: 'name', render: 'html'},
              {data: 'city'},
-             {data: 'siret'},
+             {data: 'siret', render: 'html'},
              {data: 'activeAlternances'},
              {data: 'creationDate'},
          ]|json_encode }}"

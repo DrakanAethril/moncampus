@@ -46,9 +46,11 @@ class EnterpriseController extends AbstractController
     use UfaAlternanceTrait;
 
     #[Route(path: '/ufa/enterprises', name: 'app_ufa_enterprises', methods: ['GET'])]
-    public function index(): Response
+    public function index(EnterpriseRepository $enterprises): Response
     {
-        return $this->render('ufa/enterprise/index.html.twig');
+        return $this->render('ufa/enterprise/index.html.twig', [
+            'pendingSiretCount' => $enterprises->countPendingSiret(new \DateTimeImmutable(), $this->currentUser()),
+        ]);
     }
 
     #[Route(path: '/ufa/enterprises/data', name: 'app_ufa_enterprises_data', methods: ['GET'])]
@@ -61,13 +63,14 @@ class EnterpriseController extends AbstractController
         $page = $enterprises->findPageOrderedByMostRecent($params->start, $params->length, $params->search, $viewer);
         // One query for the whole page rather than one per row - see countActiveByEnterprise().
         $activeCounts = $tutorLinks->countActiveByEnterprise($page);
+        $now = new \DateTimeImmutable();
 
         return $this->json([
             'draw' => $params->draw,
             'recordsTotal' => $total,
             'recordsFiltered' => '' !== $params->search ? $enterprises->countMatching($params->search, $viewer) : $total,
             'data' => array_map(
-                function (Enterprise $enterprise) use ($activeCounts): array {
+                function (Enterprise $enterprise) use ($activeCounts, $now): array {
                     $id = (int) $enterprise->getId();
 
                     return [
@@ -80,7 +83,11 @@ class EnterpriseController extends AbstractController
                             htmlspecialchars($enterprise->getName()),
                         ),
                         'city' => $enterprise->getCity() ?? '—',
-                        'siret' => $enterprise->getSiret() ?? '—',
+                        // The number and its state (EnterpriseSiretStatus), linking to the fiche SIRET.
+                        'siret' => $this->renderView('ufa/enterprise/_siret_cell.html.twig', [
+                            'enterprise' => $enterprise,
+                            'status' => $enterprise->siretStatus($now),
+                        ]),
                         'activeAlternances' => $activeCounts[$id] ?? 0,
                         'creationDate' => $enterprise->getCreationDate()->format('d/m/Y'),
                     ];
@@ -133,17 +140,10 @@ class EnterpriseController extends AbstractController
 
     /**
      * A test account is confined to the test world here as everywhere else: a real employer simply
-     * does not exist for it. The other way round is deliberately open - somebody has to be able to
-     * set the test world up (App\Security\StructureAccessChecker::matchesTestMode()).
+     * does not exist for it (EnterpriseRepository::findVisible()).
      */
     private function findOrNotFound(int $id, EnterpriseRepository $enterprises): Enterprise
     {
-        $enterprise = $enterprises->find($id);
-
-        if (!$enterprise instanceof Enterprise || ($this->currentUser()->isTestUser() && !$enterprise->isTestEnterprise())) {
-            throw $this->createNotFoundException();
-        }
-
-        return $enterprise;
+        return $enterprises->findVisible($id, $this->currentUser()) ?? throw $this->createNotFoundException();
     }
 }

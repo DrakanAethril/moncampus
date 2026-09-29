@@ -1,0 +1,47 @@
+{# What the recorded SIRET designates, read from the register (EnterpriseSiretController::establishment()).
+   Two uses: `review` on the fiche SIRET, where « Confirmer » is pressed on it; `fiche` on the
+   employer's fiche, where it only speaks up when a confirmed establishment has shut (R9) - and
+   says nothing at all when the État does not answer. #}
+<turbo-frame id="siret-recorded">
+    {% if view == 'fiche' %}
+        {% if establishment and not establishment.open %}
+            <div class="alert alert-warning mt-2 mb-0">
+                {{ 'ufaEnterpriseSiretClosedWarningText'|trans({'%date%': establishment.closedOn ? establishment.closedOn|date('d/m/Y') : '—'}) }}
+                <a href="{{ path('app_ufa_enterprise_siret', {id: enterprise.id}) }}" data-turbo-frame="_top">{{ 'ufaEnterpriseSiretChooseAnotherAction'|trans }}</a>
+            </div>
+        {% elseif establishment %}
+            <div class="text-secondary small mt-1">{{ 'ufaEnterpriseSiretStillOpenText'|trans }}</div>
+        {% endif %}
+    {% else %}
+        <div class="card-body">
+            {% if invalid %}
+                <div class="alert alert-warning mb-0">{{ 'ufaEnterpriseSiretInvalidRecordedText'|trans }}</div>
+            {% elseif unavailable %}
+                <div class="alert alert-warning mb-3">{{ 'ufaEnterpriseSiretUnavailableText'|trans }}</div>
+            {% elseif establishment %}
+                <div class="fw-bold">
+                    {{ establishment.fullName }}
+                    {% for other in establishment.otherNames %}<span class="text-secondary fw-normal"> · {{ other }}</span>{% endfor %}
+                </div>
+                <div class="text-secondary">
+                    {{ establishment.address }}
+                    · {{ establishment.open ? 'ufaEnterpriseSiretOpenText'|trans : 'ufaEnterpriseSiretClosedText'|trans }}
+                    {% if establishment.headOffice %}· {{ 'ufaEnterpriseSiretHeadOfficeText'|trans }}{% endif %}
+                </div>
+                {% if not establishment.open %}
+                    <div class="alert alert-warning mt-2 mb-0">{{ 'ufaEnterpriseSiretClosedWarningText'|trans({'%date%': establishment.closedOn ? establishment.closedOn|date('d/m/Y') : '—'}) }}</div>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-warning mb-0">{{ 'ufaEnterpriseSiretUnknownText'|trans }}</div>
+            {% endif %}
+            {% if status.value != 'confirmed' and establishment %}
+                <form method="post" action="{{ path('app_ufa_enterprise_siret_associate', {id: enterprise.id}) }}" data-turbo-frame="_top" class="mt-3 text-end">
+                    <input type="hidden" name="_token" value="{{ csrf_token('enterprise_siret_' ~ enterprise.id) }}">
+                    <input type="hidden" name="siret" value="{{ enterprise.siret }}">
+                    {% if queue %}<input type="hidden" name="queue" value="1">{% endif %}
+                    <twig:Cm:Button variant="primary" type="submit">{{ 'ufaEnterpriseSiretConfirmAction'|trans }}</twig:Cm:Button>
+                </form>
+            {% endif %}
+        </div>
+    {% endif %}
+</turbo-frame>

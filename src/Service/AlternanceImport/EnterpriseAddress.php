@@ -24,8 +24,12 @@ namespace App\Service\AlternanceImport;
  */
 class EnterpriseAddress
 {
-    /** "87000-LIMOGES", "33090-BORDEAUX CEDEX", and the "87000 LIMOGES" spelling for good measure. */
-    private const string POSTAL_LINE_PATTERN = '/^\d{5}\s*[-\s]\s*(.+)$/u';
+    /**
+     * "87000-LIMOGES", "33090-BORDEAUX CEDEX", and the "87000 LIMOGES" spelling for good measure.
+     * Public because App\Service\Sirene\EmployerLocation reads the same line back out of a stored
+     * address - one pattern for both, so what the import writes is what the SIRET search reads.
+     */
+    public const string POSTAL_LINE_PATTERN = '/^\d{5}\s*[-\s]\s*(.+)$/u';
 
     /** The address to store: the block minus the line that merely repeats the company name. */
     public function postalAddress(string $raw, string $enterpriseName): ?string
