@@ -119,11 +119,31 @@ class EcoRunnerApiController extends AbstractController
         $method = 'manual_code' === $payload->string('method') ? EcoScanMethod::ManualCode : EcoScanMethod::QrScan;
         $latitude = $payload->float('latitude');
         $longitude = $payload->float('longitude');
-        $scannedAt = $payload->instant('scannedAt') ?? new \DateTimeImmutable();
+        $scannedAt = $this->scanTime($payload->instant('scannedAt'), $runner);
 
         $scan = $scanService->scan($runner, $checkpoint, $latitude, $longitude, $scannedAt, $method);
 
         return $this->json($this->formatScan($scan));
+    }
+
+    /**
+     * When the scan was made, as the phone says - a scan queued without network reaches the server
+     * minutes later, and stamped on arrival it moved the start or the finish, and the race's time
+     * with it. The phone's clock is believed only between the runner's joining and now: one set to
+     * the wrong day does not get to write the race's time, which is then the time of arrival, as
+     * for an app too old to send it. Compared to the second: the phone's instant has no fraction.
+     */
+    private function scanTime(?\DateTimeImmutable $claimed, EcoRunner $runner): \DateTimeImmutable
+    {
+        $now = new \DateTimeImmutable();
+
+        if (null === $claimed
+            || $claimed->getTimestamp() > $now->getTimestamp()
+            || $claimed->getTimestamp() < $runner->getJoinedAt()->getTimestamp()) {
+            return $now;
+        }
+
+        return $claimed;
     }
 
     #[Route(path: '/api/eco/runner/positions', name: 'api_eco_runner_positions', methods: ['POST'])]
