@@ -8,6 +8,7 @@ use App\Attribute\RequiresFeature;
 use App\Enum\Feature;
 use App\Repository\ReferentialTemplateRepository;
 use App\Service\Portfolio\PortfolioContext;
+use App\Service\Portfolio\PortfolioPrefill;
 use App\Service\Portfolio\PortfolioSectionResolver;
 use App\Service\Portfolio\PortfolioSynthesis;
 use App\Service\QueryValue;
@@ -35,7 +36,7 @@ class MyPortfolioController extends AbstractController
     }
 
     #[Route(path: '/my/portfolio', name: 'app_my_portfolio', methods: ['GET'])]
-    public function index(PortfolioSectionResolver $sections): Response
+    public function index(PortfolioSectionResolver $sections, PortfolioPrefill $prefill): Response
     {
         $portfolio = $this->myPortfolio($this->context);
         $years = $this->context->yearSpans($portfolio);
@@ -55,6 +56,7 @@ class MyPortfolioController extends AbstractController
             'option' => $this->context->optionOfPortfolio($portfolio),
             'cursusYear' => $this->context->cursusYear($portfolio),
             'activeTab' => 'achievements',
+            'engagementCandidates' => $prefill->engagementCandidates($portfolio),
         ]);
     }
 

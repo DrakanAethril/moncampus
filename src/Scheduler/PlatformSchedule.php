@@ -75,6 +75,7 @@ final class PlatformSchedule implements ScheduleProviderInterface
         // The morning, once the night is done: the VM batches whose date has passed, each reminded
         // about once. It destroys nothing - an administrator deletes in Proxmox.
         'app:proxmox:expire-batches' => '0 7 * * *',
+        'app:rncp:check' => '30 5 * * 1',
     ];
 
     public function __construct(

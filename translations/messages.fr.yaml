@@ -9853,3 +9853,18 @@ rncpImportOptionRequiredError: "Chaque option de la fiche doit correspondre à u
 rncpImportBlocksHint: "Le rôle de chaque bloc est proposé d'après la circulaire pour le BTS SIO : confirmez-le."
 rncpImportUnreadableBlockText: "La liste de compétences de ce bloc n'a pas été reconnue : complétez-la à la main après création."
 rncpImportApplyAction: 'Créer le référentiel'
+portfolioFromSubmissionAction: 'Ajouter à mon portfolio'
+portfolioFromSubmissionFlashMessage: "Brouillon de réalisation créé depuis ton dépôt : complète-le, puis soumets-le."
+portfolioFromSubmissionDefaultTitle: 'Travail rendu'
+portfolioFromSubmissionEvidenceLabel: 'Travail rendu : %title%'
+portfolioEngagementsAvailableText: '{1} 1 engagement validé peut devenir une réalisation (développement professionnel).|]1,Inf[ %count% engagements validés peuvent devenir des réalisations (développement professionnel).'
+portfolioEngagementsImportAction: 'Importer mes engagements validés'
+portfolioEngagementsImportedFlashMessage: '{0} Aucun engagement à importer.|{1} 1 brouillon créé : complète-le, puis soumets-le.|]1,Inf[ %count% brouillons créés : complète-les, puis soumets-les.'
+portfolioFromEngagementJustification: 'Engagement validé : %kind%.'
+portfolioPrefillWorkplaceLabel: 'Pré-remplir depuis mon alternance ou mon stage :'
+homePortfolioPendingText: '{1} 1 pièce de portfolio à valider|]1,Inf[ %count% pièces de portfolio à valider'
+referentialWatchInactiveAlert: 'France compétences marque désormais cette fiche inactive.'
+referentialWatchEndChangedAlert: "La fin d'enregistrement de la fiche a changé : %until%."
+referentialWatchReplacedAlert: 'Une nouvelle fiche remplace celle-ci : %codes%. Créez-la en nouvelle version du référentiel ; les classes en cours finissent sur celle-ci.'
+referentialWatchCheckedText: 'Fiche relue chez France compétences le %date%.'
+referentialWatchBadge: 'Fiche RNCP modifiée'

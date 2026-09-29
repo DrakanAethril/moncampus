@@ -28,6 +28,7 @@
                 </div>
             </div>
             <div class="cm-pf-row__right">
+                {% if referential.rncpAlerts is not empty %}<twig:Cm:Badge tone="gold">{{ 'referentialWatchBadge'|trans }}</twig:Cm:Badge>{% endif %}
                 <span class="cm-pf-meta">{{ 'referentialBlockCountMeta'|trans({'%count%': referential.blocks|length}) }}</span>
             </div>
         </div>

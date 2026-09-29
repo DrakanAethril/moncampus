@@ -97,4 +97,12 @@ final class RncpFicheReaderTest extends TestCase
         self::assertTrue(ReferentialLabelMatcher::same('Répondre aux incidents et aux demandes d’assistance', 'repondre aux incidents et aux demandes d\'assistance'));
         self::assertFalse(ReferentialLabelMatcher::same('Gérer les données', 'Gérer le patrimoine informatique'));
     }
+
+    public function testTheWatchFindsTheFicheThatReplacesAnother(): void
+    {
+        $reader = new RncpFicheReader();
+
+        self::assertSame(['RNCP40792'], $reader->replacing(self::FIXTURE, 'RNCP35340'));
+        self::assertSame([], $reader->replacing(self::FIXTURE, 'RNCP40792'));
+    }
 }

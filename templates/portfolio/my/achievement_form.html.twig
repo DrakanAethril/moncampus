@@ -11,13 +11,24 @@
 {% block page_title %}{{ heading }}{% endblock %}
 
 {% block main %}
-    <form method="post" class="cm-pf-page">
+    <form method="post" class="cm-pf-page" data-controller="portfolio-prefill">
         <input type="hidden" name="_token" value="{{ csrf_token('my_portfolio') }}">
         {% for error in errors %}<div class="cm-pf-banner cm-pf-banner--danger">{{ error|trans }}</div>{% endfor %}
         {% if achievement and achievement.validated %}
             <div class="cm-pf-banner cm-pf-banner--warn">{{ 'portfolioAchievementValidatedEditWarning'|trans }}</div>
         {% endif %}
 
+        {% if workplaceSources is not empty and not achievement %}
+            <div class="cm-pf-banner cm-pf-inline">
+                <label for="pf-prefill" class="mb-0">{{ 'portfolioPrefillWorkplaceLabel'|trans }}</label>
+                <select id="pf-prefill" class="form-select form-select-sm" style="width:auto" data-action="change->portfolio-prefill#apply">
+                    <option value="">{{ 'portfolioChoosePlaceholder'|trans }}</option>
+                    {% for source in workplaceSources %}
+                        <option value="{{ loop.index0 }}" data-organisation="{{ source.organisation }}" data-place="{{ source.place }}" data-from="{{ source.from }}" data-until="{{ source.until }}">{{ source.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        {% endif %}
         <div class="cm-pf-card cm-pf-card--pad">
             <div class="cm-pf-form">
                 <div class="cm-pf-field cm-pf-field--wide">

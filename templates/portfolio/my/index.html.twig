@@ -2,6 +2,13 @@
 
 {% block portfolio_content %}
     {% include 'portfolio/_coverage.html.twig' %}
+    {% if engagementCandidates is not empty %}
+        <form method="post" action="{{ path('app_my_portfolio_import_engagements') }}" class="cm-pf-banner cm-pf-inline">
+            <input type="hidden" name="_token" value="{{ csrf_token('my_portfolio') }}">
+            <span>{{ 'portfolioEngagementsAvailableText'|trans({'%count%': engagementCandidates|length}) }}</span>
+            <twig:Cm:Button variant="outline" size="sm" type="submit">{{ 'portfolioEngagementsImportAction'|trans }}</twig:Cm:Button>
+        </form>
+    {% endif %}
     {% if portfolio.referential.synthesisBlock is null %}
         <div class="cm-pf-banner cm-pf-banner--warn">{{ 'myPortfolioNoSynthesisBlockText'|trans }}</div>
     {% endif %}

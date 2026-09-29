@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional;
 
+use App\Entity\Assignment;
+use App\Entity\AssignmentSubmission;
+use App\Entity\EngagementDeclaration;
 use App\Entity\Option;
 use App\Entity\Portfolio;
 use App\Entity\PortfolioAchievement;
@@ -15,6 +18,8 @@ use App\Entity\Referential;
 use App\Entity\ReferentialBlock;
 use App\Entity\ReferentialCompetency;
 use App\Entity\User;
+use App\Enum\AssignmentAudienceType;
+use App\Enum\EngagementKind;
 use App\Enum\ReferentialBlockRole;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -169,6 +174,50 @@ final class PortfolioAccessTest extends FunctionalTestCase
         self::assertTrue($achievement?->isValidated());
         self::assertTrue($achievement->getClaims()->first()->isRetained());
         self::assertCount(1, $achievement->getReviews());
+    }
+
+    public function testValidatedEngagementsAndWorkHandedInBecomeDrafts(): void
+    {
+        $engagement = new EngagementDeclaration($this->sisrStudent, $this->program, EngagementKind::Certification);
+        $engagement->setDescription("Certification Cisco CCNA 1\nObtenue en mai.");
+        $engagement->validate($this->sisrValidator);
+        $assignment = new Assignment($this->program);
+        $assignment->setTitle('TP 6 · Supervision');
+        $assignment->setDueDate(new \DateTimeImmutable('-1 day'));
+        $assignment->setVisibleAt(new \DateTimeImmutable('-1 week'));
+        $assignment->setAudienceType(AssignmentAudienceType::Program);
+        $assignment->setCreatedBy($this->sisrValidator);
+        $submission = new AssignmentSubmission($assignment, $this->sisrStudent);
+        $this->entityManager->persist($engagement);
+        $this->entityManager->persist($assignment);
+        $this->entityManager->persist($submission);
+        $this->entityManager->flush();
+
+        $this->client->loginUser($this->sisrStudent);
+        $this->client->request('GET', '/my/portfolio');
+        self::assertSelectorTextContains('body', 'Importer mes engagements validés');
+
+        $this->client->request('POST', '/my/portfolio/engagements/import', ['_token' => $this->csrfToken('my_portfolio')]);
+        self::assertResponseRedirects('/my/portfolio');
+        $this->client->request('POST', '/my/portfolio/engagements/import', ['_token' => $this->csrfToken('my_portfolio')]);
+
+        $this->client->request('POST', '/my/portfolio/achievements/from-submission/'.$submission->getId(), ['_token' => $this->csrfToken('my_portfolio')]);
+        self::assertResponseRedirects();
+
+        $this->entityManager->clear();
+        $portfolio = $this->entityManager->getRepository(Portfolio::class)->findOneBy(['student' => $this->sisrStudent->getId()]);
+        $titles = array_map(static fn (PortfolioAchievement $a): string => $a->getTitle(), $portfolio?->getAchievements()->toArray() ?? []);
+        self::assertContains('TP 6 · Supervision', $titles);
+        self::assertCount(1, array_filter($titles, static fn (string $t): bool => str_contains($t, 'CCNA')), 'imported once, whatever the number of clicks');
+
+        foreach ($portfolio?->getAchievements() ?? [] as $achievement) {
+            if (str_contains($achievement->getTitle(), 'CCNA')) {
+                self::assertSame('draft', $achievement->getState()->value);
+            }
+            if ('TP 6 · Supervision' === $achievement->getTitle()) {
+                self::assertSame('submission', $achievement->getEvidences()->first()->getKind()->value);
+            }
+        }
     }
 
     private function option(string $name): Option

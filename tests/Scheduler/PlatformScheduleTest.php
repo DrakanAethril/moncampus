@@ -48,6 +48,7 @@ class PlatformScheduleTest extends KernelTestCase
             'app:counters:recompute' => '45 3 * * *',
             'app:game:close-month' => '30 4 * * *',
             'app:proxmox:expire-batches' => '0 7 * * *',
+            'app:rncp:check' => '30 5 * * 1',
         ], $actual);
     }
 

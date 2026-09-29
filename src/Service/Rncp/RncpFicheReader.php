@@ -37,6 +37,16 @@ final class RncpFicheReader
      */
     public function readFromZip(string $zipPath, string $rncpCode): ?array
     {
+        return $this->readFromUri($this->xmlEntryOf($zipPath), $rncpCode);
+    }
+
+    /**
+     * The `zip://` address of the XML inside an export archive.
+     *
+     * @throws RncpReadException
+     */
+    private function xmlEntryOf(string $zipPath): string
+    {
         $zip = new \ZipArchive();
 
         if (true !== $zip->open($zipPath)) {
@@ -57,7 +67,7 @@ final class RncpFicheReader
             throw new RncpReadException('L’archive ne contient aucun fichier XML.');
         }
 
-        return $this->readFromUri('zip://'.$zipPath.'#'.$entry, $rncpCode);
+        return 'zip://'.$zipPath.'#'.$entry;
     }
 
     /**
@@ -107,6 +117,56 @@ final class RncpFicheReader
         }
 
         return null;
+    }
+
+    /**
+     * The fiches that name `$rncpCode` among the certifications they replace - a renovated diploma.
+     *
+     * @return list<string> their numbers
+     *
+     * @throws RncpReadException
+     */
+    public function replacing(string $uri, string $rncpCode): array
+    {
+        $reader = new \XMLReader();
+        if (!@$reader->open($uri, 'UTF-8', \LIBXML_NONET | \LIBXML_COMPACT)) {
+            throw new RncpReadException('Le fichier XML de France compétences ne s’ouvre pas.');
+        }
+
+        $needle = '<ID_FICHE_ANCIENNE_CERTIFICATION>'.strtoupper(trim($rncpCode)).'</ID_FICHE_ANCIENNE_CERTIFICATION>';
+        $found = [];
+
+        try {
+            while (@$reader->read()) {
+                if (\XMLReader::ELEMENT === $reader->nodeType && 'FICHE' === $reader->name) {
+                    break;
+                }
+            }
+
+            while (\XMLReader::ELEMENT === $reader->nodeType && 'FICHE' === $reader->name) {
+                $xml = $reader->readOuterXml();
+                if (str_contains($xml, $needle) && 1 === preg_match('/<NUMERO_FICHE>([^<]+)<\/NUMERO_FICHE>/', $xml, $match)) {
+                    $found[] = trim($match[1]);
+                }
+                if (!@$reader->next('FICHE')) {
+                    break;
+                }
+            }
+        } finally {
+            $reader->close();
+        }
+
+        return $found;
+    }
+
+    /**
+     * @return list<string>
+     *
+     * @throws RncpReadException
+     */
+    public function replacingFromZip(string $zipPath, string $rncpCode): array
+    {
+        return $this->replacing($this->xmlEntryOf($zipPath), $rncpCode);
     }
 
     /**

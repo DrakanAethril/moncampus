@@ -39,6 +39,12 @@
             {% endif %}
         </div>
 
+        {% for alert in referential.rncpAlerts %}
+            <div class="cm-pf-banner cm-pf-banner--warn">{{ alert|trans({'%until%': referential.rncpWatch.registeredUntil ?? '', '%codes%': (referential.rncpWatch.replacedBy ?? [])|join(', ')}) }}</div>
+        {% endfor %}
+        {% if referential.rncpWatch %}
+            <p class="cm-pf-hint mb-0">{{ 'referentialWatchCheckedText'|trans({'%date%': referential.rncpWatch.checkedAt|date('d/m/Y')}) }}</p>
+        {% endif %}
         {% if used %}
             <div class="cm-pf-banner">{{ 'referentialFrozenText'|trans }}</div>
         {% endif %}

@@ -82,6 +82,16 @@ class Referential
     #[ORM\Column(name: 'synthesis_model', length: 20, enumType: ReferentialSynthesisModel::class)]
     private ReferentialSynthesisModel $synthesisModel = ReferentialSynthesisModel::Generic;
 
+    /**
+     * What the weekly watch (`app:rncp:check`) last read about this fiche in France compétences'
+     * export: `checkedAt`, `active`, `registeredUntil`, `replacedBy` (list of RNCP numbers). Null
+     * until the first watch, or for a référentiel typed by hand.
+     *
+     * @var array<string, mixed>|null
+     */
+    #[ORM\Column(name: 'rncp_watch', type: Types::JSON, nullable: true)]
+    private ?array $rncpWatch = null;
+
     #[ORM\Column(name: 'creation_date', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $creationDate;
 
@@ -264,6 +274,49 @@ class Referential
         $this->synthesisModel = $synthesisModel;
 
         return $this;
+    }
+
+    /** @return array<string, mixed>|null */
+    public function getRncpWatch(): ?array
+    {
+        return $this->rncpWatch;
+    }
+
+    /**
+     * @param array<string, mixed>|null $rncpWatch
+     */
+    public function setRncpWatch(?array $rncpWatch): static
+    {
+        $this->rncpWatch = $rncpWatch;
+
+        return $this;
+    }
+
+    /**
+     * What the watch found worth an administrator's attention: the fiche turned inactive, its end
+     * of registration moved, or another fiche now replaces it.
+     *
+     * @return list<string> translation keys
+     */
+    public function getRncpAlerts(): array
+    {
+        $watch = $this->rncpWatch;
+        if (null === $watch) {
+            return [];
+        }
+
+        $alerts = [];
+        if (false === ($watch['active'] ?? true)) {
+            $alerts[] = 'referentialWatchInactiveAlert';
+        }
+        if (\is_string($watch['registeredUntil'] ?? null) && $watch['registeredUntil'] !== $this->registeredUntil?->format('Y-m-d')) {
+            $alerts[] = 'referentialWatchEndChangedAlert';
+        }
+        if (\is_array($watch['replacedBy'] ?? null) && [] !== $watch['replacedBy']) {
+            $alerts[] = 'referentialWatchReplacedAlert';
+        }
+
+        return $alerts;
     }
 
     public function getCreationDate(): \DateTimeImmutable

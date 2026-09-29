@@ -87,6 +87,11 @@ class PortfolioAchievement
     #[ORM\JoinColumn(name: 'source_submission_id', nullable: true, onDelete: 'SET NULL')]
     private ?AssignmentSubmission $sourceSubmission = null;
 
+    /** The validated engagement this réalisation was imported from (« Importer mes engagements »). */
+    #[ORM\ManyToOne(targetEntity: EngagementDeclaration::class)]
+    #[ORM\JoinColumn(name: 'source_engagement_id', nullable: true, onDelete: 'SET NULL')]
+    private ?EngagementDeclaration $sourceEngagement = null;
+
     #[ORM\Column(name: 'created_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
 
@@ -277,6 +282,18 @@ class PortfolioAchievement
     public function setSourceSubmission(?AssignmentSubmission $sourceSubmission): static
     {
         $this->sourceSubmission = $sourceSubmission;
+
+        return $this;
+    }
+
+    public function getSourceEngagement(): ?EngagementDeclaration
+    {
+        return $this->sourceEngagement;
+    }
+
+    public function setSourceEngagement(?EngagementDeclaration $sourceEngagement): static
+    {
+        $this->sourceEngagement = $sourceEngagement;
 
         return $this;
     }

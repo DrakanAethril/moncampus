@@ -5,6 +5,16 @@
    goes with it, rather than leaving a strip whose « Voir l'agenda » link answers 404. #}
 {% if feature('agenda') %}{% include 'home/_events_row.html.twig' with {events: events} %}{% endif %}
 
+{# « Réalisations à valider » - the designated portfolio validateurs only (design/validated/portfolio.md
+   §4), and only while something waits: a card saying « 0 » every day is one nobody reads. #}
+{% set portfolio_pending = portfolio_queue_count() %}
+{% if portfolio_pending > 0 %}
+    <div class="cm-pf-banner cm-pf-inline mb-3">
+        <strong>{{ 'homePortfolioPendingText'|trans({'%count%': portfolio_pending}) }}</strong>
+        <twig:Cm:Button variant="outline" size="sm" href="{{ path('app_portfolios') }}">{{ 'portfolioExamineAction'|trans }}</twig:Cm:Button>
+    </div>
+{% endif %}
+
 {# Both columns read the timetable: the teacher's own day, and the next session of each of their
    classes. With « Emploi du temps » switched off there is no timetable to read them from - the
    establishment keeps it elsewhere - so the strip goes rather than showing hours nobody maintains

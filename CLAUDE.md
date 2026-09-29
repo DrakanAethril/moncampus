@@ -84,6 +84,8 @@ asked — made the second run throw « A lock is already in place ».
 | `app:ecoledirecte:check` | **Diagnostic, not scheduled.** Runs the one step of an École Directe login that needs no account (the GTK cookie of `login.awp?gtk=1`) and says whether École Directe still answers it from this server. The platform holds no École Directe credentials and must not, so this is the most it can prove on its own |
 | `app:counters:recompute` | **Scheduled, once a night** (`docs/production.md`). Checks every stored counter of the platform (`App\Counter\RecomputableCounter`, one tagged service each) against its source and corrects the drifts - each correction logged at error level, so it reaches Discord: a drift is a bug, not a figure to patch. The counters move in real time with what changes them; this is the safety net. `--counter=`, `--dry-run` |
 | `app:eco:read-terrain` | **Scheduled every minute.** Asks the IGN's Géoplateforme what e-CO's statistics read: the terrain analysis of the oldest parcours waiting for one (button « Analyser le terrain », last flag located, or a race on a parcours never analysed), then the terrain altitude / path / wood of every GPS fix of the oldest closed race not yet read. A Géoplateforme that does not answer is a *warning* and a retry next minute, never a non-zero exit. See `docs/production.md`, « e-CO and the IGN's Géoplateforme » |
+| `app:rncp:fetch` | **Scheduled every minute.** Serves the « Récupérer chez France compétences » requests of the portfolio's Référentiels tab: finds the day's `export-fiches-rncp-v4-1-*.zip` through the data.gouv.fr API (no URL written down), downloads it once into `var/rncp/`, streams through it (`XMLReader` over `zip://`) and writes the fiche into the `RncpImport`. Nothing requested, nothing downloaded. A network failure is « En échec » on screen, never a non-zero exit. `--file=` reads a local export |
+| `app:rncp:check` | **Scheduled Mondays 05:30.** Rereads each référentiel's RNCP fiche - still active, end of registration, a fiche that now replaces it - into `Referential::$rncpWatch`; the Référentiels screen turns a change into a banner, logged at *warning*. Never rewrites a référentiel: a new fiche is a new version |
 | `app:seed-dev-*`, `app:dev:*`, `app:configure-dev-programs` | **Dev-machine only.** Populate/inject into the local database. These must never be relied on in staging or production. |
 
 ## Runtime architecture (Docker layer)
@@ -282,6 +284,25 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     shapes an evaluation the send *creates* - an existing one keeps its own, the preview says so.
   `Feature::EcoleDirecte` is off for every role. École Directe changes its protocol without notice -
   an answer the client does not recognise is logged at error level and refused, never guessed at.
+- **Portfolio E5 / E6** (BTS SIO) — `src/Service/Portfolio/`, `App\Controller\Portfolio\*`, spec
+  `design/validated/portfolio.md`. **`Feature::Portfolio` is off for every role: administrators
+  only, until Gestion › Fonctionnalités opens it.** A `Portfolio` follows the **student**, not the
+  class (UNIQUE student + `Referential`, across SIO 1 and SIO 2); a `Program` only *enables* it and
+  names the référentiel, its cursus year, session and deadlines. The `Referential` is national and
+  separate from the livret's `SkillGroup`/`Skill`, imported from France compétences (`src/Service/Rncp/`,
+  `app:rncp:fetch`) - « France compétences proposes, the administrator decides » the option letters
+  and each block's role (E5 synthesis / E6 fiches / none). **Only a `PortfolioValidator` decides**:
+  designated by an admin per class **and** option, still teaching in the class - no admin, referent
+  or other teacher bypass (`App\Service\Portfolio\PortfolioValidators`, the one rule the voter,
+  the queue, the menu and the home card read). A validation covers one `revision`: a validated
+  réalisation that changes, evidence included, goes back to « À valider », its E6 fiche with it.
+  The E5 table is **computed** (`PortfolioSynthesis`, the only reading for screen, class view,
+  .xlsx, PDF and deposit): only a retained claim on a validated réalisation ticks. The official
+  .xlsx is **uploaded per session** (`ReferentialTemplate`), inspected by landmarks
+  (`E5TemplateInspector`) and filled by `E5SynthesisXlsxWriter` (ZipArchive + DOM, rows added when a
+  part overflows) - never shipped in the code, never another year's. Deposits are frozen snapshots;
+  deadlines lock nothing. The commission has no access at all. Students have no file library, so
+  evidence is an upload, a link or a piece of work handed in.
 - **Accès aux fonctionnalités** — `App\Enum\Feature` (49 cases) + `#[RequiresFeature]` +
   `App\Security\FeatureAccess`: which features are lit, per role and per formation. Gestion >
   Fonctionnalités is the screen. **The whole Pédagogie family is off by default**, with four
@@ -440,9 +461,9 @@ password hash is ever stored locally.
 `ROLE_STUDENT`, `ROLE_TUTOR` (external apprenticeship tutors), `ROLE_SUPPORT-TECH`, `ROLE_ECO`,
 `ROLE_EXTERNAL`. `ROLE_TUTOR` and `ROLE_EXTERNAL` are both excluded from message recipients.
 
-**Fine-grained checks** are Voters (`src/Security/Voter/`, 24 of them: Assignment, AudienceTargetable,
+**Fine-grained checks** are Voters (`src/Security/Voter/`, 25 of them: Assignment, AudienceTargetable,
 DocumentationArticle, EcoParcours, Evaluation, FileLibrary, GameGesture, GuestAccount, GuestConsole,
-InternshipTutorLink, LessonLog, MessageThread, Progression, ProxmoxHost, QuizFolder, QuizTemplate,
+InternshipTutorLink, LessonLog, MessageThread, Portfolio, Progression, ProxmoxHost, QuizFolder, QuizTemplate,
 SequenceFolder, SequenceInstance, SequenceTemplate, SignupList, Survey, SurveyFolder, Ticket, Wiki).
 New per-object rules belong in a Voter, not inline in a controller.
 
@@ -464,6 +485,7 @@ New per-object rules belong in a Voter, not inline in a controller.
 | École Directe (Aplim) | Read and send to one's own teacher account from the server (private API, no stored credentials, admins only for now) | `ECOLEDIRECTE_*` |
 | Recherche d'entreprises (DINUM) | UFA: proposes an employer's SIRET from its name and address (SIRENE + RNE); a person always confirms. Open, keyless, **7 requests/s per IP**, Licence Ouverte. Only the employer's name and address are sent | — |
 | IGN Géoplateforme | e-CO: map tiles (browser and phone, WMTS) and terrain readings (server: altimetry, BD TOPO WFS, pedestrian routing, reverse geocoding). Open, keyless, Etalab 2.0 - credit the IGN | — |
+| data.gouv.fr (France compétences) | Portfolio: the RNCP fiche of a référentiel, read from the daily open-data export by `app:rncp:fetch` / `app:rncp:check` - never during a request. Open, keyless, Licence Ouverte 2.0 | — |
 | claude.ai (Anthropic) | Calls the Claude connector (`/mcp`, OAuth) from `160.79.104.0/21` — inbound only, the app never calls Anthropic | — |
 
 `.env.prod.local` **on the development machine holds decoy values.** Never infer the real production

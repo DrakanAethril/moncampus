@@ -310,6 +310,7 @@ starts the worker by itself: `up --wait` brings it up with the rest.
 | `app:vm-batch:advance` | every minute | CLAUDE.md, « Infrastructure et machines virtuelles » |
 | `app:ldap:apply-account-requests` | every minute | Closing the loop on account operations |
 | `app:eco:read-terrain` | every minute | e-CO and the IGN's Géoplateforme, below |
+| `app:rncp:fetch` | every minute | Portfolio: France compétences' open data, below |
 | `app:proxmox:check` | every 5 minutes | the command's own docblock |
 | `app:proxmox:scan-addresses` | every 5 minutes, offset by 2 | the command's own docblock |
 | `app:mail:reconcile` | 02:30 | Courrier pro, below |
@@ -318,6 +319,7 @@ starts the worker by itself: `up --wait` brings it up with the rest.
 | `app:counters:recompute` | 03:45 | Recomputing the stored counters |
 | `app:game:close-month` | 04:30 | Closing the campus game's months |
 | `app:proxmox:expire-batches` | 07:00 | the command's own docblock (reminds, never destroys) |
+| `app:rncp:check` | Mondays 05:30 | Portfolio: France compétences' open data, below |
 
 What changed, and what to know:
 
@@ -455,6 +457,29 @@ Notes:
   only delete the same rows twice.
 - Deleting is all it does: nothing is written, nothing is announced, and a run on an empty database
   exits in a few milliseconds.
+
+## Portfolio: France compétences' open data (scheduled)
+
+The portfolio's référentiels (design/validated/portfolio.md §8) are read from France compétences'
+daily export on data.gouv.fr (Licence Ouverte 2.0, no key). Two tasks, both from the schedule:
+
+- `app:rncp:fetch`, **every minute**, serves the « Récupérer chez France compétences » requests of
+  Paramètres > Pédagogique > Référentiels. With nothing requested it does nothing and downloads
+  nothing. When there is a request it asks the data.gouv.fr API for the day's
+  `export-fiches-rncp-v4-1-*.zip` (about 74 Mo), downloads it once into `var/rncp/` (older copies
+  removed) and streams through it. The server must reach `www.data.gouv.fr` and
+  `static.data.gouv.fr` over HTTPS.
+- `app:rncp:check`, **Mondays at 05:30**, reads each référentiel's fiche again and records whether
+  it is still active, its end of registration and any fiche that now replaces it; the Référentiels
+  screen shows a change as a banner. A change is logged at *warning* level, not error.
+
+Neither exits non-zero on a network failure: the request shows « En échec » with the reason and
+« Relancer », and the watch tries again the next week. On a server that cannot reach data.gouv.fr,
+download the export elsewhere and run `bin/console app:rncp:fetch --file=/path/to/export.zip`.
+
+The official E5 template (annexe VI-1) is **not** in the code: the administration uploads the .xlsx
+of each session in Référentiels > BTS SIO > Modèles officiels, and nothing exports an .xlsx for a
+session without a template in service.
 
 ## Opening the Claude connector
 

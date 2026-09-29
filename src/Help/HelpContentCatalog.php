@@ -47,6 +47,7 @@ final class HelpContentCatalog
             $this->classroomTools(),
             $this->contentPreparation(),
             $this->alternance(),
+            $this->portfolio(),
             $this->configuration(),
             $this->glossary(),
         ];
@@ -794,6 +795,66 @@ final class HelpContentCatalog
                     'title' => 'Un tuteur en entreprise a-t-il un compte MonCampus ?',
                     'audiences' => [HelpAudience::Staff],
                     'summary' => "Oui : le tuteur se connecte avec un compte qui ne lui donne accès qu'aux alternances qu'il suit. Il n'apparaît pas dans les destinataires de la messagerie.",
+                ],
+            ],
+        ];
+    }
+
+    /** @return CatalogSection */
+    private function portfolio(): array
+    {
+        return [
+            'slug' => 'portfolio',
+            'title' => 'Portfolio E5 / E6',
+            'description' => 'Réalisations professionnelles, tableau de synthèse, fiches E6, dépôts',
+            'audiences' => [HelpAudience::Student, HelpAudience::Teacher, HelpAudience::Staff],
+            'articles' => [
+                [
+                    'kind' => HelpArticleKind::Article,
+                    'slug' => 'tenir-mon-portfolio',
+                    'title' => 'Tenir mon portfolio',
+                    'audiences' => [HelpAudience::Student],
+                    'summary' => "Tu décris chaque réalisation professionnelle et les compétences qu'elle mobilise ; un enseignant désigné valide ; le tableau de synthèse de l'E5 se remplit tout seul.",
+                    'body' => <<<'HTML'
+                        <h2>Une réalisation</h2>
+                        <p><strong>Mon portfolio &gt; Nouvelle réalisation</strong> : un intitulé court, le cadre (en formation ou en milieu professionnel), les dates, l'organisation. Coche les compétences mobilisées et écris, pour chacune, <strong>une phrase</strong> qui dit ce qui, dans la réalisation, la mobilise : c'est ce que lit l'enseignant pour décider. Joins ensuite tes preuves : un fichier ou un lien (dépôt git, site, maquette).</p>
+                        <h2>La validation</h2>
+                        <p>« Soumettre à validation » envoie la réalisation aux enseignants désignés pour ta classe et ton option. Chaque compétence est retenue ou non. Une réalisation renvoyée dit toujours pourquoi. Une réalisation validée que tu modifies repart « À valider ».</p>
+                        <h2>Le tableau de synthèse</h2>
+                        <p>Il se calcule : une case n'est cochée que par une compétence retenue sur une réalisation validée. À l'écran, un cercle signale une compétence encore en attente ; il n'est jamais exporté. Le modèle officiel .xlsx de ta session se télécharge dès que l'administration l'a fourni.</p>
+                        <h2>Les fiches E6 et le dépôt</h2>
+                        <p>En 2e année, ouvre tes deux fiches E6 depuis des réalisations validées qui retiennent des compétences du bloc 2 de ton option. L'onglet <strong>Dépôt</strong> réunit ton n° candidat, l'adresse de ton portfolio en ligne (obligatoire pour l'E5) et tes attestations de stage, puis un bouton « Déposer » par épreuve.</p>
+                        HTML,
+                ],
+                [
+                    'kind' => HelpArticleKind::Article,
+                    'slug' => 'valider-des-portfolios',
+                    'title' => 'Valider des portfolios',
+                    'audiences' => [HelpAudience::Teacher],
+                    'summary' => "Seuls les enseignants désignés par l'administration pour une classe et une option valident ; ils trouvent leur file dans Outils › Portfolios.",
+                    'body' => <<<'HTML'
+                        <h2>La file</h2>
+                        <p><strong>Outils &gt; Suivre les étudiants &gt; Portfolios</strong>. L'onglet « À valider » réunit les réalisations et les fiches E6 soumises par les étudiants des classes et options pour lesquelles vous êtes désigné, les plus anciennes d'abord. Une pièce qui vous a été adressée arrive en tête.</p>
+                        <h2>Décider</h2>
+                        <p>Pour chaque compétence revendiquée : <strong>Retenue</strong> ou <strong>Non</strong>. Il en faut au moins une retenue pour valider. Renvoyer à l'étudiant demande un commentaire. Pour une fiche E6, cochez « environnement technologique conforme à l'annexe II.E ».</p>
+                        <h2>Par classe et dépôts</h2>
+                        <p>L'onglet « Par classe » compte, par étudiant, les réalisations validées qui retiennent chaque compétence du bloc 1. La colonne Dépôt ouvre le contrôle de conformité : tout coché, le dépôt est visé ; sinon, il est « à régulariser » avec un motif. Les exports de classe partent des derniers dépôts visés.</p>
+                        HTML,
+                ],
+                [
+                    'kind' => HelpArticleKind::Article,
+                    'slug' => 'parametrer-le-portfolio',
+                    'title' => 'Paramétrer le portfolio',
+                    'audiences' => [HelpAudience::Staff],
+                    'summary' => 'Le référentiel se récupère chez France compétences, le modèle .xlsx se téléverse à chaque session, et chaque classe désigne ses validateurs par option.',
+                    'body' => <<<'HTML'
+                        <h2>Le référentiel</h2>
+                        <p><strong>Paramètres &gt; Pédagogique &gt; Référentiels &gt; Depuis France compétences</strong> : saisissez le numéro de fiche (BTS SIO : RNCP40792). La fiche est lue en arrière-plan dans la minute ; vérifiez l'aperçu, associez « Option A » et « Option B » aux options de l'établissement, confirmez le rôle de chaque bloc, créez.</p>
+                        <h2>Le modèle officiel</h2>
+                        <p>Dans le référentiel, <strong>Modèles officiels</strong> : téléversez le .xlsx de l'annexe VI-1 publié avec la circulaire de la session. Il est contrôlé par ses repères ; essayez l'aperçu rempli, puis mettez-le en service.</p>
+                        <h2>La classe</h2>
+                        <p><strong>Formation &gt; Paramétrage &gt; Portfolio</strong> : activez, choisissez le référentiel, l'année du cursus, la session et les dates limites (elles ne verrouillent rien), puis désignez les validateurs de chaque option. Eux seuls décident.</p>
+                        HTML,
                 ],
             ],
         ];

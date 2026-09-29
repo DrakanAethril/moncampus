@@ -9,10 +9,12 @@ use App\Entity\PortfolioAchievement;
 use App\Enum\Feature;
 use App\Enum\PortfolioSetting;
 use App\Form\PortfolioEvidenceType;
+use App\Repository\AssignmentSubmissionRepository;
 use App\Service\Portfolio\AchievementInput;
 use App\Service\Portfolio\PortfolioAchievementWriter;
 use App\Service\Portfolio\PortfolioContext;
 use App\Service\Portfolio\PortfolioEvidenceIntake;
+use App\Service\Portfolio\PortfolioPrefill;
 use App\Service\Portfolio\PortfolioSnapshot;
 use App\Service\Portfolio\PortfolioValidators;
 use Doctrine\ORM\EntityManagerInterface;
@@ -22,6 +24,7 @@ use Symfony\Component\HtmlSanitizer\HtmlSanitizerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * « Nouvelle réalisation » and the student's own réalisation (design/validated/portfolio.md, screen 2).
@@ -41,6 +44,7 @@ class MyAchievementController extends AbstractController
         private readonly PortfolioAchievementWriter $writer,
         private readonly PortfolioValidators $validators,
         private readonly EntityManagerInterface $entityManager,
+        private readonly PortfolioPrefill $prefill,
         #[Target('app.portfolio_body')]
         private readonly HtmlSanitizerInterface $sanitizer,
     ) {
@@ -108,6 +112,7 @@ class MyAchievementController extends AbstractController
             'errors' => $errors,
             'settings' => PortfolioSetting::cases(),
             'posted' => $request->isMethod('POST') && null === $achievement ? $request->request->all() : null,
+            'workplaceSources' => $this->prefill->workplaceSources($student),
         ]);
     }
 
@@ -219,5 +224,42 @@ class MyAchievementController extends AbstractController
         }
 
         throw $this->createNotFoundException();
+    }
+
+    /** « Ajouter à mon portfolio » from a piece of work handed in - a draft, the dépôt as evidence. */
+    #[Route(path: '/my/portfolio/achievements/from-submission/{submissionId}', name: 'app_my_portfolio_from_submission', requirements: ['submissionId' => '\d+'], methods: ['POST'])]
+    public function fromSubmission(int $submissionId, Request $request, AssignmentSubmissionRepository $submissions): Response
+    {
+        $portfolio = $this->myPortfolio($this->context);
+        $this->assertToken($request);
+        $submission = $submissions->find($submissionId);
+
+        if (null === $submission || $submission->getStudent()?->getId() !== $this->currentUser()->getId()) {
+            throw $this->createNotFoundException();
+        }
+
+        $achievement = $this->prefill->fromSubmission($portfolio, $submission);
+        $this->entityManager->persist($achievement);
+        $this->entityManager->flush();
+        $this->addFlash('success', 'portfolioFromSubmissionFlashMessage');
+
+        return $this->redirectToRoute('app_my_portfolio_achievement_edit', ['id' => $achievement->getId()]);
+    }
+
+    /** « Importer mes engagements validés » - one draft per validated engagement not imported yet. */
+    #[Route(path: '/my/portfolio/engagements/import', name: 'app_my_portfolio_import_engagements', methods: ['POST'])]
+    public function importEngagements(Request $request, TranslatorInterface $translator): Response
+    {
+        $portfolio = $this->myPortfolio($this->context);
+        $this->assertToken($request);
+
+        $created = $this->prefill->importEngagements($portfolio);
+        foreach ($created as $achievement) {
+            $this->entityManager->persist($achievement);
+        }
+        $this->entityManager->flush();
+        $this->addFlash('success', $translator->trans('portfolioEngagementsImportedFlashMessage', ['%count%' => \count($created)]));
+
+        return $this->redirectToRoute('app_my_portfolio');
     }
 }
