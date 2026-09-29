@@ -10,7 +10,6 @@ use App\Entity\EcoPositionPing;
 use App\Entity\EcoRunner;
 use App\Enum\EcoScanResult;
 use App\Repository\EcoAppEventRepository;
-use App\Repository\EcoPositionPingRepository;
 use App\Service\Eco\EcoTerrainStats;
 
 /**
@@ -24,7 +23,7 @@ use App\Service\Eco\EcoTerrainStats;
 class EcoRunnerStatsCalculator
 {
     public function __construct(
-        private readonly EcoPositionPingRepository $pingRepository,
+        private readonly EcoRunnerTrace $trace,
         private readonly EcoAppEventRepository $appEventRepository,
         private readonly EcoTraceCleaner $traceCleaner,
         private readonly EcoTerrainStats $terrainStats,
@@ -34,9 +33,10 @@ class EcoRunnerStatsCalculator
     /** @return array{durationSeconds: ?int, distanceMeters: float, averageSpeedKmh: ?float, elevation: ?array{gain: float, loss: float, source: 'ign'|'gps'}, effortKm: ?float, effortSpeedKmh: ?float, terrain: ?EcoTerrainSplit, checkpointsValidated: int, checkpointsTotal: int, scanFailureCount: int, appEvents: list<EcoAppEvent>, pings: list<EcoPositionPing>} */
     public function calculate(EcoRunner $runner): array
     {
-        $pings = $this->pingRepository->findForRunner($runner);
-        // Filtered rather than summed fix by fix: see EcoTraceCleaner for why the raw sum reads
-        // several hundred metres long on a trace that never left the wood.
+        // Jumps already out (EcoRunnerTrace), and wander filtered rather than summed fix by fix:
+        // see EcoTraceCleaner for why the raw sum reads several hundred metres long on a trace
+        // that never left the wood.
+        $pings = $this->trace->of($runner);
         $distanceMeters = $this->traceCleaner->travelledMeters(array_map(
             static fn (EcoPositionPing $ping): array => [(float) $ping->getLatitude(), (float) $ping->getLongitude()],
             $pings,

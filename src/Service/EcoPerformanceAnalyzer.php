@@ -9,7 +9,6 @@ use App\Entity\EcoCheckpointScan;
 use App\Entity\EcoPositionPing;
 use App\Entity\EcoRunner;
 use App\Enum\EcoScanResult;
-use App\Repository\EcoPositionPingRepository;
 use App\Service\Eco\EcoTerrainStats;
 
 /**
@@ -77,7 +76,7 @@ class EcoPerformanceAnalyzer
     private const int MAX_FIX_GAP_SECONDS = 120;
 
     public function __construct(
-        private readonly EcoPositionPingRepository $pingRepository,
+        private readonly EcoRunnerTrace $trace,
         private readonly EcoDistanceCalculator $distanceCalculator,
         private readonly EcoTraceCleaner $traceCleaner,
         private readonly EcoTerrainStats $terrainStats,
@@ -91,7 +90,7 @@ class EcoPerformanceAnalyzer
      */
     public function analyse(EcoRunner $runner, array $courseRunners): array
     {
-        $pings = $this->pingRepository->findForRunner($runner);
+        $pings = $this->trace->of($runner);
         $legs = $this->legsOf($runner, $pings);
         $bestTimes = $this->bestLegSeconds($courseRunners);
 

@@ -12,7 +12,9 @@ use Doctrine\ORM\Mapping as ORM;
 // batches by the mobile app's offline queue (App\Controller\Api\EcoTelemetryController, not
 // built in this phase), so $recordedAt is the phone's own clock at capture time, not server
 // receipt time - it's what makes replaying a batch that arrived late still land in the right
-// place on the trace.
+// place on the trace. It is stored in the server's zone like every other instant of the
+// platform: the phone sends UTC, and a fix kept as UTC wall time read back two hours before the
+// scans it sits between (JsonRequestPayload::instant() converts it on arrival).
 #[ORM\Entity(repositoryClass: \App\Repository\EcoPositionPingRepository::class)]
 #[ORM\Table(name: 'eco_position_ping')]
 #[ORM\Index(name: 'eco_position_ping_runner_recorded_idx', columns: ['runner_id', 'recorded_at'])]
@@ -45,6 +47,12 @@ class EcoPositionPing
     #[ORM\Column(type: Types::FLOAT, nullable: true)]
     private ?float $altitude = null;
 
+    // Radius in metres of the phone's own confidence in this fix, null on every ping logged by an
+    // app that did not send it. A fix the phone itself calls vague is kept, but read by nothing:
+    // see EcoTraceCleaner::plausible().
+    #[ORM\Column(type: Types::FLOAT, nullable: true)]
+    private ?float $accuracy = null;
+
     // What the IGN says about the ground under this fix, written after the race by
     // app:eco:read-terrain (App\Service\Eco\EcoPingTerrainResolver): the altitude of the terrain
     // model - the elevation gain built on it no longer depends on the phone's barometer or GPS -
@@ -63,18 +71,24 @@ class EcoPositionPing
     #[ORM\Column(name: 'terrain_resolved', options: ['default' => false])]
     private bool $terrainResolved = false;
 
-    public function __construct(EcoRunner $runner, \DateTimeImmutable $recordedAt, float $latitude, float $longitude, ?float $altitude = null)
+    public function __construct(EcoRunner $runner, \DateTimeImmutable $recordedAt, float $latitude, float $longitude, ?float $altitude = null, ?float $accuracy = null)
     {
         $this->runner = $runner;
         $this->recordedAt = $recordedAt;
         $this->latitude = $latitude;
         $this->longitude = $longitude;
         $this->altitude = $altitude;
+        $this->accuracy = $accuracy;
     }
 
     public function getAltitude(): ?float
     {
         return $this->altitude;
+    }
+
+    public function getAccuracy(): ?float
+    {
+        return $this->accuracy;
     }
 
     public function getId(): ?int
