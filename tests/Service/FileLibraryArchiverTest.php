@@ -81,13 +81,43 @@ class FileLibraryArchiverTest extends TestCase
     }
 
     /**
+     * What a student is handed: a video shared to a class is watched on the platform, so the archive
+     * leaves it out - and keeps the folder it sat in, now empty, because the shape is what was shared.
+     */
+    public function testTheArchiveCanLeaveTheVideosOut(): void
+    {
+        $tree = $this->tree();
+        $tree['capsule'] = $this->node(11, 'capsule.MP4', FileLibraryNodeType::File, '/10/7/', $tree['archives']);
+
+        $this->assertArrayHasKey('Archives/capsule.MP4', $this->entriesOf($tree));
+
+        $entries = $this->entriesOf($tree, withVideos: false);
+        $this->assertArrayNotHasKey('Archives/capsule.MP4', $entries);
+        $this->assertArrayHasKey('Archives/', $entries);
+        $this->assertArrayHasKey('note.txt', $entries);
+    }
+
+    /**
+     * A folder that held only videos has nothing left once they are out, and libzip then deletes the
+     * archive rather than write an empty one - the response pointed at a missing file and answered
+     * 500. An empty archive is still an archive.
+     */
+    public function testAFolderOfVideosOnlyStillGivesAnArchive(): void
+    {
+        $root = $this->node(10, 'Capsules', FileLibraryNodeType::Folder, '/', null);
+        $tree = ['root' => $root, 'capsule' => $this->node(11, 'capsule.mp4', FileLibraryNodeType::File, '/10/', $root)];
+
+        $this->assertSame([], $this->entriesOf($tree, withVideos: false));
+    }
+
+    /**
      * @param array<string, FileLibraryNode> $tree
      *
      * @return array<string, string> entry name => its content ('' for a directory)
      */
-    private function entriesOf(array $tree): array
+    private function entriesOf(array $tree, bool $withVideos = true): array
     {
-        $response = $this->respond($tree);
+        $response = $this->respond($tree, $withVideos);
         $zip = new \ZipArchive();
         $zip->open((string) $response->getFile()->getRealPath());
 
@@ -105,7 +135,7 @@ class FileLibraryArchiverTest extends TestCase
     }
 
     /** @param array<string, FileLibraryNode> $tree */
-    private function respond(array $tree): BinaryFileResponse
+    private function respond(array $tree, bool $withVideos = true): BinaryFileResponse
     {
         $repository = $this->createStub(FileLibraryNodeRepository::class);
         $repository->method('findSubtree')->willReturn(array_values($tree));
@@ -113,7 +143,7 @@ class FileLibraryArchiverTest extends TestCase
         $files = $this->createStub(FileUploadService::class);
         $files->method('read')->willReturnCallback(static fn (string $key): string => 'bytes of '.basename($key));
 
-        return (new FileLibraryArchiver(new FileLibrarySubtree($repository), $files))->respond($tree['root']);
+        return (new FileLibraryArchiver(new FileLibrarySubtree($repository), $files))->respond($tree['root'], $withVideos);
     }
 
     /** @return array<string, FileLibraryNode> */

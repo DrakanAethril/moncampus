@@ -6,6 +6,7 @@ namespace App\Entity;
 
 use App\Enum\FileLibraryNodeType;
 use App\Repository\FileLibraryNodeRepository;
+use App\Service\UploadPolicy;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -308,6 +309,15 @@ class FileLibraryNode
     public function isDeleted(): bool
     {
         return null !== $this->deletedAt;
+    }
+
+    /**
+     * A video file: played in the platform's own player, never handed over
+     * (App\Service\UploadPolicy::isVideo()). A folder is never one, whatever it is called.
+     */
+    public function isVideo(): bool
+    {
+        return $this->isFile() && UploadPolicy::isVideo($this->name);
     }
 
     /** The extension of the display name, lowercased - what the row's coloured tile shows. */
