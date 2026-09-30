@@ -362,6 +362,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/ufa/enterprises/siret-review' => 403,
             '/ufa/configuration/contract-import' => 403,
             '/eco/parcours' => 403,
+            '/eco/pwa-probe' => 403,
             // Dossiers documentaires. The two sides of the tool are two sets of routes, and this is
             // what keeps them apart: a cible reads « Mes dossiers » and nothing else, the whole
             // management side being gated to teachers and staff. What the *feature* delivers is a
@@ -532,6 +533,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/ufa/enterprises/siret-review' => 403,
             '/ufa/configuration/contract-import' => 403,
             '/eco/parcours' => 403,
+            '/eco/pwa-probe' => 403,
             // Dossiers documentaires: a teacher composes one, and reads « Mes dossiers » as an
             // empty list - the cible screens are open to whoever a dossier names, and a dossier
             // names nobody here.
@@ -589,6 +591,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/ufa/reminders' => 200,
             '/ufa/configuration/contract-import' => 200,
             '/eco/parcours' => 200,
+            '/eco/pwa-probe' => 200,
             '/assignments' => 200,
             '/progression' => 200,
             '/library/sequences' => 200,
@@ -865,6 +868,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/ufa/enterprises/siret-review' => 403,
             '/ufa/configuration/contract-import' => 403,
             '/eco/parcours' => 403,
+            '/eco/pwa-probe' => 403,
         ]);
     }
 
@@ -958,6 +962,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             '/tools/file-library' => 200,
             '/features' => 200,
             '/eco/parcours' => 200,
+            '/eco/pwa-probe' => 200,
             '/ufa' => 200,
             '/ufa/list' => 200,
             '/shares' => 200,

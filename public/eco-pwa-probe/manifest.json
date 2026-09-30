@@ -1,0 +1,16 @@
+{
+    "name": "e-CO — test PWA",
+    "short_name": "e-CO test",
+    "description": "Relève du GPS dans le navigateur, pour comparer une PWA à l'application e-CO.",
+    "lang": "fr",
+    "start_url": "/eco/pwa-probe",
+    "scope": "/eco/pwa-probe",
+    "display": "standalone",
+    "orientation": "portrait",
+    "background_color": "#12344d",
+    "theme_color": "#1B6BA8",
+    "icons": [
+        { "src": "/eco-pwa-probe/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+        { "src": "/eco-pwa-probe/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+    ]
+}

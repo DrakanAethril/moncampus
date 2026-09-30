@@ -205,6 +205,17 @@ class UploadPolicyTest extends TestCase
         self::assertFalse(UploadPolicy::servesInline('README'));
     }
 
+    public function testTheVideosAreTheOnesThePlayersServe(): void
+    {
+        // Watched on the platform, never handed over: the shared-documents screens read this.
+        self::assertTrue(UploadPolicy::isVideo('capsule.mp4'));
+        self::assertTrue(UploadPolicy::isVideo('Capsule.MOV'));
+        self::assertTrue(UploadPolicy::isVideo('cours.webm'));
+        self::assertFalse(UploadPolicy::isVideo('podcast.mp3'));
+        self::assertFalse(UploadPolicy::isVideo('mp4'));
+        self::assertFalse(UploadPolicy::isVideo('notes.pdf'));
+    }
+
     // --- The containment invariant itself --------------------------------------------------
 
     public function testNarrowingsStayInsideThePlatformList(): void

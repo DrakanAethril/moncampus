@@ -86,9 +86,17 @@
                                     {# « Télécharger » first, « Ouvrir » second: the same pair, in the
                                        same order, on both screens. A folder gives back its whole
                                        subtree as one archive - the label says so, because a click
-                                       that answers with a .zip should not be a surprise. #}
-                                    <a class="cm-btn cm-btn--sm cm-btn--outline" href="{{ path('app_student_shared_document_download', {id: share.id}) }}">{{ (node.folder ? 'sharedDocumentDownloadFolderAction' : 'sharedDocumentDownloadAction')|trans }}</a>
-                                    <a class="cm-btn cm-btn--sm cm-btn--outline" href="{{ path('app_student_shared_document_open', {id: share.id}) }}">{{ (node.folder ? 'sharedDocumentBrowseAction' : 'sharedDocumentOpenAction')|trans }}</a>
+                                       that answers with a .zip should not be a surprise.
+
+                                       A video has one gesture, « Visionner »: it is watched on the
+                                       platform and never handed over, so there is nothing to put
+                                       in the first slot. #}
+                                    {% if node.video %}
+                                        <a class="cm-btn cm-btn--sm cm-btn--outline" href="{{ path('app_student_shared_document_open', {id: share.id}) }}">{{ 'sharedDocumentWatchAction'|trans }}</a>
+                                    {% else %}
+                                        <a class="cm-btn cm-btn--sm cm-btn--outline" href="{{ path('app_student_shared_document_download', {id: share.id}) }}">{{ (node.folder ? 'sharedDocumentDownloadFolderAction' : 'sharedDocumentDownloadAction')|trans }}</a>
+                                        <a class="cm-btn cm-btn--sm cm-btn--outline" href="{{ path('app_student_shared_document_open', {id: share.id}) }}">{{ (node.folder ? 'sharedDocumentBrowseAction' : 'sharedDocumentOpenAction')|trans }}</a>
+                                    {% endif %}
                                 </td>
                             </tr>
                         {% endfor %}

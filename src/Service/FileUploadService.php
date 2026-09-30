@@ -32,6 +32,9 @@ class FileUploadService
      */
     public const string CLICK_LIFETIME = '+15 minutes';
 
+    /** How long a video's playback address answers - see playbackUrl(). */
+    public const string PLAYBACK_LIFETIME = '+2 hours';
+
     /**
      * A download address signed *into a page*, which has to outlive the page it sits in - a tab
      * left open over a weekend, or a Turbo snapshot restored by the back button. Seven days is what
@@ -225,6 +228,25 @@ class FileUploadService
     public function attachmentUrl(string $key, string $name, string $lifetime = self::CLICK_LIFETIME): string
     {
         return $this->presignedUrl($key, $name, 'attachment', $lifetime);
+    }
+
+    /**
+     * The address a <video> element plays from, for a file that is watched and never handed over.
+     *
+     * Signed like the two above - the CDN address is permanent and unauthenticated, which is the
+     * one thing a video kept on the platform must not have - and served `inline`, so the address
+     * pasted into a tab plays rather than saves. It is still an address: whoever reads it from the
+     * page's network panel holds the file for as long as it lives. That is why the lifetime is
+     * short, and why it is asked for by the player rather than laid into the page.
+     *
+     * The lifetime has to outlast one sitting, not one click: the element fetches the file in
+     * ranges as it plays and as the student seeks, and every one of those requests is checked
+     * against the signature. Two hours covers any course video watched in one go; past that, the
+     * page is reloaded and signs again.
+     */
+    public function playbackUrl(string $key, string $name): string
+    {
+        return $this->presignedUrl($key, $name, 'inline', self::PLAYBACK_LIFETIME);
     }
 
     private function presignedUrl(string $key, string $name, string $disposition, string $lifetime): string

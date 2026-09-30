@@ -1,0 +1,185 @@
+{% extends 'layout/app.html.twig' %}
+
+{# « Test PWA » - see App\Controller\EcoPwaProbeController. A measurement page for one question
+   (does a browser keep reading the GPS once the screen is locked?), so it follows no handoff: it
+   borrows .cm-stat / .cm-note and nothing else. Every figure is computed by
+   eco_pwa_probe_controller.js from what the phone recorded; nothing here is rendered server-side. #}
+
+{% block title %}{{ 'ecoPwaProbePageHeading'|trans }}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {# Makes the page installable on its own (display: standalone), which is the mode a PWA of
+       e-CO would run in - the wake lock and the background behaviour are not the same in a tab. #}
+    <link rel="manifest" href="/eco-pwa-probe/manifest.json">
+    <meta name="theme-color" content="#1B6BA8">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="e-CO test">
+{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'ecoNavLabel'|trans, url: path('app_eco_parcours')},
+        {label: 'ecoPwaProbeBreadcrumbLabel'|trans, url: path('app_eco_pwa_probe')},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'ecoPwaProbePageHeading'|trans }}{% endblock %}
+
+{% block main %}
+    {% set labels = {
+        statusIdle: 'ecoPwaProbeStatusIdle'|trans,
+        statusRunning: 'ecoPwaProbeStatusRunning'|trans,
+        statusStopped: 'ecoPwaProbeStatusStopped'|trans,
+        statusDenied: 'ecoPwaProbeStatusDenied'|trans,
+        statusUnsupported: 'ecoPwaProbeStatusUnsupported'|trans,
+        statusNoStorage: 'ecoPwaProbeStatusNoStorage'|trans,
+        statusCopied: 'ecoPwaProbeStatusCopied'|trans,
+        statusCopyFailed: 'ecoPwaProbeStatusCopyFailed'|trans,
+        startLabel: 'ecoPwaProbeStartAction'|trans,
+        startConfirmLabel: 'ecoPwaProbeStartConfirmAction'|trans,
+        noGap: 'ecoPwaProbeNoGap'|trans,
+        noEvent: 'ecoPwaProbeNoEvent'|trans,
+        gapHidden: 'ecoPwaProbeGapHidden'|trans,
+        gapVisible: 'ecoPwaProbeGapVisible'|trans,
+        yes: 'ecoPwaProbeYes'|trans,
+        no: 'ecoPwaProbeNo'|trans,
+        displayStandalone: 'ecoPwaProbeDisplayStandalone'|trans,
+        displayBrowser: 'ecoPwaProbeDisplayBrowser'|trans,
+        wakeLockUnsupported: 'ecoPwaProbeWakeLockUnsupported'|trans,
+        permission_granted: 'ecoPwaProbePermissionGranted'|trans,
+        permission_prompt: 'ecoPwaProbePermissionPrompt'|trans,
+        permission_denied: 'ecoPwaProbePermissionDenied'|trans,
+        event_start: 'ecoPwaProbeEventStart'|trans,
+        event_stop: 'ecoPwaProbeEventStop'|trans,
+        event_hidden: 'ecoPwaProbeEventHidden'|trans,
+        event_visible: 'ecoPwaProbeEventVisible'|trans,
+        event_pagehide: 'ecoPwaProbeEventPagehide'|trans,
+        event_pageshow: 'ecoPwaProbeEventPageshow'|trans,
+        event_freeze: 'ecoPwaProbeEventFreeze'|trans,
+        event_resume: 'ecoPwaProbeEventResume'|trans,
+        event_closed: 'ecoPwaProbeEventClosed'|trans,
+        event_reload: 'ecoPwaProbeEventReload'|trans,
+        event_left: 'ecoPwaProbeEventLeft'|trans,
+        event_online: 'ecoPwaProbeEventOnline'|trans,
+        event_offline: 'ecoPwaProbeEventOffline'|trans,
+        event_wakeLockOn: 'ecoPwaProbeEventWakeLockOn'|trans,
+        event_wakeLockOff: 'ecoPwaProbeEventWakeLockOff'|trans,
+        event_wakeLockError: 'ecoPwaProbeEventWakeLockError'|trans,
+        event_geoError: 'ecoPwaProbeEventGeoError'|trans,
+    } %}
+
+    <div class="cm-eco-probe"
+         data-controller="eco-pwa-probe"
+         data-eco-pwa-probe-labels-value="{{ labels|json_encode }}">
+        <div class="cm-note mb-3">
+            <span class="cm-note__icon">i</span>
+            <div>
+                <p class="mb-1">{{ 'ecoPwaProbeNoteText'|trans }}</p>
+                <p class="mb-0">{{ 'ecoPwaProbeInstallText'|trans }}</p>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-body">
+                <p class="cm-eco-probe__status" data-eco-pwa-probe-target="status" role="status" aria-live="polite">{{ 'ecoPwaProbeStatusIdle'|trans }}</p>
+
+                <div class="cm-eco-probe__controls">
+                    <twig:Cm:Button variant="primary" data-eco-pwa-probe-target="start" data-action="eco-pwa-probe#start">{{ 'ecoPwaProbeStartAction'|trans }}</twig:Cm:Button>
+                    <twig:Cm:Button variant="danger" data-eco-pwa-probe-target="stop" data-action="eco-pwa-probe#stop" disabled>{{ 'ecoPwaProbeStopAction'|trans }}</twig:Cm:Button>
+                    <label class="form-check mb-0">
+                        <input type="checkbox" class="form-check-input" data-eco-pwa-probe-target="wakeLock" data-action="change->eco-pwa-probe#toggleWakeLock">
+                        <span class="form-check-label">{{ 'ecoPwaProbeWakeLockLabel'|trans }}</span>
+                    </label>
+                </div>
+                <p class="cm-eco-probe__hint" data-eco-pwa-probe-target="wakeLockHint">{{ 'ecoPwaProbeWakeLockHint'|trans }}</p>
+            </div>
+        </div>
+
+        <div class="cm-statgrid mb-3">
+            <div class="cm-stat" data-eco-pwa-probe-target="summaryItem">
+                <span class="cm-stat__value" data-eco-pwa-probe-target="duration">—</span>
+                <span class="cm-stat__label">{{ 'ecoPwaProbeDurationLabel'|trans }}</span>
+            </div>
+            <div class="cm-stat" data-eco-pwa-probe-target="summaryItem">
+                <span class="cm-stat__value" data-eco-pwa-probe-target="fixCount">—</span>
+                <span class="cm-stat__label">{{ 'ecoPwaProbeFixCountLabel'|trans }}</span>
+                <span class="cm-stat__hint">{{ 'ecoPwaProbeFixCountHint'|trans }}</span>
+            </div>
+            <div class="cm-stat" data-eco-pwa-probe-target="summaryItem">
+                <span class="cm-stat__value" data-eco-pwa-probe-target="visibleCoverage">—</span>
+                <span class="cm-stat__label">{{ 'ecoPwaProbeVisibleCoverageLabel'|trans }}</span>
+                <span class="cm-stat__hint">{{ 'ecoPwaProbeCoverageHint'|trans }}</span>
+            </div>
+            <div class="cm-stat" data-eco-pwa-probe-target="summaryItem">
+                <span class="cm-stat__value" data-eco-pwa-probe-target="hiddenCoverage">—</span>
+                <span class="cm-stat__label">{{ 'ecoPwaProbeHiddenCoverageLabel'|trans }}</span>
+                <span class="cm-stat__hint">{{ 'ecoPwaProbeCoverageHint'|trans }}</span>
+            </div>
+            <div class="cm-stat" data-eco-pwa-probe-target="summaryItem">
+                <span class="cm-stat__value" data-eco-pwa-probe-target="hiddenTime">—</span>
+                <span class="cm-stat__label">{{ 'ecoPwaProbeHiddenTimeLabel'|trans }}</span>
+            </div>
+            <div class="cm-stat" data-eco-pwa-probe-target="summaryItem">
+                <span class="cm-stat__value" data-eco-pwa-probe-target="longestGap">—</span>
+                <span class="cm-stat__label">{{ 'ecoPwaProbeLongestGapLabel'|trans }}</span>
+            </div>
+            <div class="cm-stat" data-eco-pwa-probe-target="summaryItem">
+                <span class="cm-stat__value" data-eco-pwa-probe-target="accuracy">—</span>
+                <span class="cm-stat__label">{{ 'ecoPwaProbeAccuracyLabel'|trans }}</span>
+                <span class="cm-stat__hint">{{ 'ecoPwaProbeAccuracyHint'|trans }}</span>
+            </div>
+            <div class="cm-stat" data-eco-pwa-probe-target="summaryItem">
+                <span class="cm-stat__value" data-eco-pwa-probe-target="altitude">—</span>
+                <span class="cm-stat__label">{{ 'ecoPwaProbeAltitudeLabel'|trans }}</span>
+                <span class="cm-stat__hint">{{ 'ecoPwaProbeAltitudeHint'|trans }}</span>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-12 col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header"><h3 class="card-title">{{ 'ecoPwaProbeGapsHeading'|trans }}</h3></div>
+                    <div class="card-body">
+                        <ul class="cm-eco-probe__log" data-eco-pwa-probe-target="gaps"></ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header"><h3 class="card-title">{{ 'ecoPwaProbeEventsHeading'|trans }}</h3></div>
+                    <div class="card-body">
+                        <ul class="cm-eco-probe__log" data-eco-pwa-probe-target="events"></ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header"><h3 class="card-title">{{ 'ecoPwaProbeBrowserHeading'|trans }}</h3></div>
+                    <div class="card-body">
+                        <dl class="cm-eco-probe__capabilities">
+                            {% for capability in ['secureContext', 'permission', 'displayMode', 'wakeLock', 'barcodeDetector', 'vibrate', 'backgroundSync', 'userAgent'] %}
+                                <dt>{{ ('ecoPwaProbeCapability_' ~ capability)|trans }}</dt>
+                                <dd data-eco-pwa-probe-target="capability" data-capability="{{ capability }}">—</dd>
+                            {% endfor %}
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header"><h3 class="card-title">{{ 'ecoPwaProbeExportHeading'|trans }}</h3></div>
+                    <div class="card-body">
+                        <p class="cm-eco-probe__hint">{{ 'ecoPwaProbeExportHint'|trans }}</p>
+                        <div class="cm-eco-probe__controls">
+                            <twig:Cm:Button variant="outline" size="sm" data-action="eco-pwa-probe#copySummary">{{ 'ecoPwaProbeCopyAction'|trans }}</twig:Cm:Button>
+                            <twig:Cm:Button variant="outline" size="sm" data-action="eco-pwa-probe#exportJson">{{ 'ecoPwaProbeExportJsonAction'|trans }}</twig:Cm:Button>
+                            <twig:Cm:Button variant="outline" size="sm" data-action="eco-pwa-probe#exportGpx">{{ 'ecoPwaProbeExportGpxAction'|trans }}</twig:Cm:Button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

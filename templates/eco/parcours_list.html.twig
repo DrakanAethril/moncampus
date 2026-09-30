@@ -17,6 +17,9 @@
 
 {% block page_title %}{{ 'ecoParcoursListPageHeading'|trans }}{% endblock %}
 {% block page_actions %}
+    {# The one way in to the PWA measurement page (EcoPwaProbeController): it hangs off e-CO and
+       nothing else links to it. #}
+    <twig:Cm:Button variant="outline" href="{{ path('app_eco_pwa_probe') }}">{{ 'ecoPwaProbeLinkLabel'|trans }}</twig:Cm:Button>
     <a href="{{ path('app_eco_parcours_new') }}" class="btn btn-primary">{{ 'ecoParcoursNewButtonLabel'|trans }}</a>
 {% endblock %}
 
