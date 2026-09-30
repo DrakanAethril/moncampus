@@ -337,7 +337,13 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   `App\Service\Eco\EcoToleranceAdvisor`) and per `EcoPositionPing` the terrain altitude and the
   path/wood flags. The statistics (`App\Service\Eco\EcoTerrainStats`) read those, and fall back to
   the phone's figures, labelled « GPS », until 90 % of a race's fixes are read. `src/Service/Ign/`
-  holds the one client; `src/Service/Eco/` the terrain rules.
+  holds the one client; `src/Service/Eco/` the terrain rules. A parcours is **shared** with
+  colleagues holding ROLE_TEACHER **and** ROLE_ECO (`EcoParcours::$sharedWith`,
+  `App\Service\Eco\EcoParcoursSharing`): same rights as its creator, `isManagedBy()` is the one
+  rule. A « Balises spécifiques » course runs on Départ, Arrivée and the flags it names, in order or
+  not: **`EcoCourse::getRaceCheckpoints()` is the only list a course is read through** (scan,
+  ranking, maps, statistics, runner API), never the parcours' own - and the runner app is sent
+  `runnerMode()` (imposed/free order), which it already understands.
 - **Annuaire / Paramètres** — LDAP directory browsing, structure
   (`Section > Track > Cohort`, `Option`/`Modality`, `SchoolYear`, `Program`), student mail aliases.
 - **Support** — `Ticket`/`TicketComment`/`TicketCategory`, with Discord notification.

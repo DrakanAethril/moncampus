@@ -45,7 +45,16 @@
                 <tbody>
                     {% for row in rows %}
                         <tr>
-                            <td class="cm-eco-list__name">{{ row.name }}</td>
+                            <td class="cm-eco-list__name">
+                                {{ row.name }}
+                                {# Mine and shared with me, one list: a parcours someone else created
+                                   names them, one I share says with how many. #}
+                                {% if row.sharedByLabel %}
+                                    <div class="cm-eco-list__sub">{{ row.sharedByLabel }}</div>
+                                {% elseif row.sharedWithCount > 0 %}
+                                    <div class="cm-eco-list__sub">{{ 'ecoParcoursSharedWithCountLabel'|trans({'%count%': row.sharedWithCount}) }}</div>
+                                {% endif %}
+                            </td>
                             <td>{{ row.checkpointsLabel }}</td>
                             <td><span class="cm-eco-pill cm-eco-pill--{{ row.statusValue }}">{{ row.statusLabel }}</span></td>
                             <td>{{ row.coursesLabel }}</td>

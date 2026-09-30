@@ -86,6 +86,45 @@ class EcoTeacherCourseApiTest extends FunctionalTestCase
         self::assertSame(30, $payload->object('course')->int('timeLimitMinutes'));
     }
 
+    public function testASpecificCheckpointsCourseNeedsAFlagAndKeepsItsOrderChoice(): void
+    {
+        $parcours = $this->createParcours('Bois de la Bastide', located: true);
+        $flag = $parcours->getRegularCheckpoints()[0];
+        $foreign = $this->createParcours('Ailleurs', located: true)->getRegularCheckpoints()[0];
+        $path = \sprintf('/api/eco/teacher/parcours/%d/courses', $parcours->getId());
+
+        $options = $this->request('GET', $path)->object('options');
+        self::assertSame([$flag->getId()], array_map(static fn (JsonRequestPayload $row): ?int => $row->int('id'), $options->objects('checkpoints')));
+
+        // A flag of another parcours is no flag of this one: nothing is left chosen.
+        $refused = $this->request('POST', $path, ['name' => 'Balises', 'mode' => 'specific_checkpoints', 'specificCheckpointIds' => [$foreign->getId()]]);
+        self::assertSame(422, $this->client->getResponse()->getStatusCode());
+        self::assertNotSame('', $refused->object('fields')->string('specificCheckpoints'));
+
+        $payload = $this->request('POST', $path, [
+            'name' => 'Balises',
+            'mode' => 'specific_checkpoints',
+            'specificCheckpointIds' => [$flag->getId()],
+            'specificOrdered' => false,
+            'timeLimitMinutes' => 20,
+        ]);
+        self::assertSame(201, $this->client->getResponse()->getStatusCode());
+        $course = $payload->object('course');
+        self::assertSame([$flag->getId()], $course->ids('specificCheckpointIds'));
+        self::assertFalse($course->bool('specificOrdered', true));
+        // In the order of one's choice the race is played against the clock.
+        self::assertSame(20, $course->int('timeLimitMinutes'));
+
+        $ordered = $this->request('POST', $path, [
+            'name' => 'Balises dans l’ordre',
+            'mode' => 'specific_checkpoints',
+            'specificCheckpointIds' => [$flag->getId()],
+            'specificOrdered' => true,
+            'timeLimitMinutes' => 20,
+        ])->object('course');
+        self::assertNull($ordered->int('timeLimitMinutes'));
+    }
+
     public function testACourseWithoutANameIsRefusedAndSaysWhichField(): void
     {
         $parcours = $this->createParcours('Bois de la Bastide', located: true);

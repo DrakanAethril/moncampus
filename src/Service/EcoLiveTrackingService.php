@@ -87,7 +87,7 @@ class EcoLiveTrackingService
             'pseudo' => $runner->getPseudo() ?? '',
             'status' => $runner->getStatus()->value,
             'checkpointsValidated' => $validatedCount,
-            'checkpointsTotal' => $runner->getCourse()->getParcours()->getCheckpoints()->count(),
+            'checkpointsTotal' => \count($runner->getCourse()->getRaceCheckpoints()),
             'sosActive' => $runner->isSosActive(),
             'isStale' => $this->isStale($runner),
             // max(0, ...) - a runner's phone clock can drift slightly ahead of the server's, which

@@ -8,7 +8,6 @@ use App\Entity\EcoCheckpoint;
 use App\Entity\EcoCheckpointScan;
 use App\Entity\EcoRunner;
 use App\Enum\EcoCheckpointType;
-use App\Enum\EcoCourseMode;
 use App\Enum\EcoRunnerStatus;
 use App\Enum\EcoScanMethod;
 use App\Enum\EcoScanResult;
@@ -21,9 +20,12 @@ use Doctrine\ORM\EntityManagerInterface;
  * so the same logic backs both a real QR scan and a manual short-code entry (EcoScanMethod).
  *
  * Order: a runner must scan Start before anything else counts, and Finish only once already
- * racing. In App\Enum\EcoCourseMode::ImposedOrder, a regular checkpoint scanned before its turn is
- * rejected as out-of-order regardless of GPS distance - FreeOrder/Score don't enforce sequence at
- * all (only Start-first/Finish-last, which every mode requires).
+ * racing. In a race run in order (EcoCourse::isOrdered(): Ordre imposé, or « Balises spécifiques »
+ * in order), a regular checkpoint scanned before its turn is rejected as out-of-order regardless of
+ * GPS distance - the other races don't enforce sequence at all (only Start-first/Finish-last, which
+ * every mode requires). « Next » is read over the race's own flags (EcoCourse::getRaceCheckpoints()):
+ * a flag the course leaves out is never the one expected. The caller only ever hands in a flag of
+ * the race - the runner API answers checkpointNotFound for any other.
  */
 class EcoScanService
 {
@@ -81,7 +83,7 @@ class EcoScanService
             return $this->withinTolerance($checkpoint, $distanceMeters) ? EcoScanResult::Success : EcoScanResult::OutOfRange;
         }
 
-        if (EcoCourseMode::ImposedOrder === $runner->getCourse()->getMode() && !$this->isNextExpected($runner, $checkpoint)) {
+        if ($runner->getCourse()->isOrdered() && !$this->isNextExpected($runner, $checkpoint)) {
             return EcoScanResult::OutOfOrder;
         }
 
@@ -102,11 +104,10 @@ class EcoScanService
             array_filter($runner->getScans()->toArray(), static fn (EcoCheckpointScan $scan): bool => EcoScanResult::Success === $scan->getResult()),
         );
 
-        $remaining = array_filter(
-            $runner->getCourse()->getParcours()->getCheckpoints()->toArray(),
+        $remaining = array_values(array_filter(
+            $runner->getCourse()->getRaceCheckpoints(),
             static fn (EcoCheckpoint $checkpoint): bool => EcoCheckpointType::Start !== $checkpoint->getType() && !\in_array($checkpoint->getPosition(), $validatedPositions, true),
-        );
-        usort($remaining, static fn (EcoCheckpoint $a, EcoCheckpoint $b): int => $a->getPosition() <=> $b->getPosition());
+        ));
 
         $expected = $remaining[0] ?? null;
 

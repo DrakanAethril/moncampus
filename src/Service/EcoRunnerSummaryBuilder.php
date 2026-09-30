@@ -62,7 +62,7 @@ class EcoRunnerSummaryBuilder
         $analysis = $this->analyzer->analyse($runner, [$runner]);
 
         $regular = array_filter(
-            $course->getParcours()->getCheckpoints()->toArray(),
+            $course->getRaceCheckpoints(),
             static fn (EcoCheckpoint $checkpoint): bool => EcoCheckpointType::Checkpoint === $checkpoint->getType(),
         );
         $validatedRegular = array_unique(array_map(
@@ -80,7 +80,8 @@ class EcoRunnerSummaryBuilder
             'pseudo' => $runner->getPseudo() ?? '',
             'courseName' => $course->getName() ?? '',
             'parcoursName' => $course->getParcours()->getName() ?? '',
-            'mode' => $course->getMode()->value,
+            // As the runner app knows it - see EcoCourse::runnerMode().
+            'mode' => $course->runnerMode(),
             'startedAt' => $runner->getStartedAt()?->format(\DateTimeInterface::ATOM),
             'finishedAt' => $runner->getFinishedAt()?->format(\DateTimeInterface::ATOM),
             'durationSeconds' => $stats['durationSeconds'],

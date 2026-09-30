@@ -1,0 +1,48 @@
+{# The mode of an e-CO course and what hangs off it - shared by screen 1g's creation panel and the
+   edit screen. « Balises spécifiques » opens the flag picker and the order choice; the allowance is
+   only for a race not run in order (eco_course_mode_controller). #}
+{% set modeDescriptionKeys = {
+    'imposed_order': 'ecoCourseModeImposedOrderDescription',
+    'free_order': 'ecoCourseModeFreeOrderDescription',
+    'score': 'ecoCourseModeScoreDescription',
+    'specific_checkpoints': 'ecoCourseModeSpecificCheckpointsDescription',
+} %}
+<div class="d-flex flex-column gap-2" data-controller="eco-course-mode">
+    <label class="form-label">{{ 'ecoCourseModeFieldLabel'|trans }}</label>
+    {% for choice in form.mode %}
+        <label class="cm-radiocard">
+            {{ form_widget(choice, {attr: {'data-eco-course-mode-target': 'mode', 'data-action': 'eco-course-mode#refresh'}}) }}
+            <span class="cm-radiocard__dot"></span>
+            <span>
+                <span class="cm-radiocard__title d-block">{{ choice.vars.label|trans }}</span>
+                <span class="cm-radiocard__desc">{{ modeDescriptionKeys[choice.vars.value]|trans }}</span>
+            </span>
+        </label>
+    {% endfor %}
+    {{ form_errors(form.mode) }}
+    <div class="cm-eco-specific" data-eco-course-mode-target="specificPanel">
+        <div>
+            <span class="form-label">{{ form.specificOrdered.vars.label|trans }}</span>
+            <div class="d-flex flex-wrap gap-3">
+                {% for choice in form.specificOrdered %}
+                    {{ form_widget(choice, {attr: {'data-eco-course-mode-target': 'order', 'data-action': 'eco-course-mode#refresh'}}) }}
+                {% endfor %}
+            </div>
+        </div>
+        <div>
+            <span class="form-label">{{ form.specificCheckpoints.vars.label|trans }}</span>
+            {# Checkbox group rather than a <select multiple>, per this app's form convention. Départ
+               and Arrivée are not offered: every race has them. #}
+            <div class="cm-eco-specific__checks">
+                {% for choice in form.specificCheckpoints %}
+                    {{ form_widget(choice) }}
+                {% endfor %}
+            </div>
+            {{ form_errors(form.specificCheckpoints) }}
+            <div class="form-hint">{{ 'ecoCourseSpecificCheckpointsHintText'|trans }}</div>
+        </div>
+    </div>
+    <div data-eco-course-mode-target="timePanel" style="max-width: 320px;">
+        {{ form_row(form.timeLimitMinutes) }}
+    </div>
+</div>

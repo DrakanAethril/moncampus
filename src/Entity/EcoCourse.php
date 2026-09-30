@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\EcoCheckpointType;
 use App\Enum\EcoCourseMode;
 use App\Enum\EcoCourseStatus;
 use App\Enum\EcoMapVisibility;
@@ -12,11 +13,18 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 /**
  * One run of a Ready EcoParcours - see reference/e-CO.dc.html screen 1g. Manual 3-state cycle
  * (Prepared -> InProgress -> Closed, see EcoCourseStatus); runners join with $code + a pseudo,
  * no account (App\Entity\EcoRunner).
+ *
+ * « Balises spécifiques » (EcoCourseMode::SpecificCheckpoints) runs the course on a subset of the
+ * parcours: Départ, Arrivée and the flags named in $specificCheckpoints, in order or not
+ * ($specificOrdered). For that race the other flags do not exist - getRaceCheckpoints() is the one
+ * list every reading of a course goes through (scan, ranking, live map, statistics, runner app),
+ * never the parcours' own.
  */
 #[ORM\Entity(repositoryClass: \App\Repository\EcoCourseRepository::class)]
 #[ORM\Table(name: 'eco_course')]
@@ -63,6 +71,23 @@ class EcoCourse
     #[ORM\Column(name: 'time_limit_minutes', nullable: true)]
     private ?int $timeLimitMinutes = null;
 
+    /**
+     * The regular flags a « Balises spécifiques » course is run on. Empty, and ignored, in every
+     * other mode. Départ and Arrivée are never listed: every race has them.
+     *
+     * @var Collection<int, EcoCheckpoint>
+     */
+    #[ORM\ManyToMany(targetEntity: EcoCheckpoint::class)]
+    #[ORM\JoinTable(name: 'eco_course_checkpoint')]
+    #[ORM\JoinColumn(name: 'course_id', onDelete: 'CASCADE')]
+    #[ORM\InverseJoinColumn(name: 'checkpoint_id', onDelete: 'CASCADE')]
+    private Collection $specificCheckpoints;
+
+    // « Dans l'ordre » (ranked on time, like Ordre imposé) or « Dans l'ordre de son choix » (a time
+    // allowance, like Ordre libre). Only read in « Balises spécifiques ».
+    #[ORM\Column(name: 'specific_ordered', options: ['default' => true])]
+    private bool $specificOrdered = true;
+
     #[ORM\Column(length: 20, enumType: EcoCourseStatus::class)]
     private EcoCourseStatus $status = EcoCourseStatus::Prepared;
 
@@ -89,6 +114,7 @@ class EcoCourse
         $this->teacher = $teacher;
         $this->runners = new ArrayCollection();
         $this->teams = new ArrayCollection();
+        $this->specificCheckpoints = new ArrayCollection();
         $this->creationDate = new \DateTimeImmutable();
     }
 
@@ -141,6 +167,109 @@ class EcoCourse
         $this->mode = $mode;
 
         return $this;
+    }
+
+    /** @return Collection<int, EcoCheckpoint> */
+    public function getSpecificCheckpoints(): Collection
+    {
+        return $this->specificCheckpoints;
+    }
+
+    // A flag of another parcours, Départ or Arrivée is never kept: none of them can be chosen.
+    public function addSpecificCheckpoint(EcoCheckpoint $checkpoint): static
+    {
+        if ($checkpoint->getParcours() === $this->parcours
+            && EcoCheckpointType::Checkpoint === $checkpoint->getType()
+            && !$this->specificCheckpoints->contains($checkpoint)) {
+            $this->specificCheckpoints->add($checkpoint);
+        }
+
+        return $this;
+    }
+
+    public function removeSpecificCheckpoint(EcoCheckpoint $checkpoint): static
+    {
+        $this->specificCheckpoints->removeElement($checkpoint);
+
+        return $this;
+    }
+
+    public function isSpecificOrdered(): bool
+    {
+        return $this->specificOrdered;
+    }
+
+    public function setSpecificOrdered(bool $specificOrdered): static
+    {
+        $this->specificOrdered = $specificOrdered;
+
+        return $this;
+    }
+
+    public function isSpecificCheckpoints(): bool
+    {
+        return EcoCourseMode::SpecificCheckpoints === $this->mode;
+    }
+
+    /** Whether a runner must take the flags in position order - what Ordre imposé means. */
+    public function isOrdered(): bool
+    {
+        return EcoCourseMode::ImposedOrder === $this->mode
+            || ($this->isSpecificCheckpoints() && $this->specificOrdered);
+    }
+
+    // A race run in order is ranked on time: there is no allowance to run out of.
+    public function isTimeLimited(): bool
+    {
+        return !$this->isOrdered();
+    }
+
+    /**
+     * The mode as the runner app knows it. The app predates « Balises spécifiques » and only tells
+     * apart « in order » (imposed_order) from « as you like » (free_order, score): a subset course
+     * is one of those two, run over fewer flags - which getRaceCheckpoints() already hands it.
+     */
+    public function runnerMode(): string
+    {
+        if (!$this->isSpecificCheckpoints()) {
+            return $this->mode->value;
+        }
+
+        return $this->specificOrdered ? EcoCourseMode::ImposedOrder->value : EcoCourseMode::FreeOrder->value;
+    }
+
+    /**
+     * The flags this race is run on, in position order: the whole parcours, or in « Balises
+     * spécifiques » its Départ, its Arrivée and the flags chosen.
+     *
+     * @return list<EcoCheckpoint>
+     */
+    public function getRaceCheckpoints(): array
+    {
+        $checkpoints = array_values(array_filter(
+            $this->parcours->getCheckpoints()->toArray(),
+            fn (EcoCheckpoint $checkpoint): bool => !$this->isSpecificCheckpoints()
+                || EcoCheckpointType::Checkpoint !== $checkpoint->getType()
+                || $this->specificCheckpoints->contains($checkpoint),
+        ));
+        usort($checkpoints, static fn (EcoCheckpoint $a, EcoCheckpoint $b): int => $a->getPosition() <=> $b->getPosition());
+
+        return $checkpoints;
+    }
+
+    public function hasRaceCheckpoint(EcoCheckpoint $checkpoint): bool
+    {
+        return \in_array($checkpoint, $this->getRaceCheckpoints(), true);
+    }
+
+    #[Assert\Callback]
+    public function validateSpecificCheckpoints(ExecutionContextInterface $context): void
+    {
+        if ($this->isSpecificCheckpoints() && $this->specificCheckpoints->isEmpty()) {
+            $context->buildViolation('ecoCourseSpecificCheckpointsRequiredMessage')
+                ->atPath('specificCheckpoints')
+                ->addViolation();
+        }
     }
 
     public function isTeamsEnabled(): bool

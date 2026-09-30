@@ -19,6 +19,11 @@ use Symfony\Component\Validator\Constraints as Assert;
  * (App\Service\EcoParcoursFactory adds both at creation, alongside the requested number of
  * regular checkpoints) plus zero or more numbered ones in between - getStatus() below reflects
  * whether every checkpoint has been located yet from the mobile app.
+ *
+ * Shareable: $sharedWith lists colleagues (ROLE_TEACHER and ROLE_ECO both) who hold every right the
+ * creator holds - configure, locate, run courses, delete, share further. $teacher stays the creator,
+ * named on the list, but is not a privilege: isManagedBy() is the one rule, which the voter and both
+ * repositories' "mine and shared with me" queries read.
  */
 #[ORM\Entity(repositoryClass: EcoParcoursRepository::class)]
 #[ORM\Table(name: 'eco_parcours')]
@@ -52,6 +57,14 @@ class EcoParcours
     #[ORM\OneToMany(mappedBy: 'parcours', targetEntity: EcoCourse::class)]
     private Collection $courses;
 
+    /** @var Collection<int, User> */
+    #[ORM\ManyToMany(targetEntity: User::class)]
+    #[ORM\JoinTable(name: 'eco_parcours_share')]
+    #[ORM\JoinColumn(name: 'parcours_id', onDelete: 'CASCADE')]
+    #[ORM\InverseJoinColumn(name: 'user_id', onDelete: 'CASCADE')]
+    #[ORM\OrderBy(['lastname' => 'ASC', 'firstname' => 'ASC'])]
+    private Collection $sharedWith;
+
     /**
      * The IGN's reading of the ground the parcours covers - legs, rescue access, public forest -
      * as App\Service\Eco\EcoParcoursTerrainAnalyzer wrote it. A snapshot, not a relation: it is
@@ -77,6 +90,7 @@ class EcoParcours
         $this->teacher = $teacher;
         $this->checkpoints = new ArrayCollection();
         $this->courses = new ArrayCollection();
+        $this->sharedWith = new ArrayCollection();
         $this->creationDate = new \DateTimeImmutable();
     }
 
@@ -88,6 +102,35 @@ class EcoParcours
     public function getTeacher(): ?User
     {
         return $this->teacher;
+    }
+
+    /** @return Collection<int, User> */
+    public function getSharedWith(): Collection
+    {
+        return $this->sharedWith;
+    }
+
+    // The creator is never among the people it is shared with: they hold it already.
+    public function shareWith(User $user): static
+    {
+        if ($user !== $this->teacher && !$this->sharedWith->contains($user)) {
+            $this->sharedWith->add($user);
+        }
+
+        return $this;
+    }
+
+    public function unshareWith(User $user): static
+    {
+        $this->sharedWith->removeElement($user);
+
+        return $this;
+    }
+
+    /** Whether this person holds the parcours - created it, or had it shared with them. */
+    public function isManagedBy(User $user): bool
+    {
+        return $this->teacher === $user || $this->sharedWith->contains($user);
     }
 
     public function getName(): ?string
