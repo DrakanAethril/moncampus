@@ -34,6 +34,8 @@ This applies in particular to:
     assets/images/apple-touch-icon.png
     assets/images/app-icons/
     assets/images/livret-alternant/
+    public/eco-pwa-probe/icon-192.png
+    public/eco-pwa-probe/icon-512.png
 
 If you fork this project, replace those files with your own branding. You are
 free to keep, modify and redistribute the code that references them.
