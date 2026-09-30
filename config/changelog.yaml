@@ -26,6 +26,17 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.30'
+      date: '2026-09-30'
+      summary: "Une vidéo partagée se regarde désormais sur la plateforme, sans pouvoir être téléchargée. Télécharger un dossier partagé qui ne contient aucun fichier ne tombe plus en erreur."
+      entries:
+          - type: modification
+            title: "Documents partagés : une vidéo se visionne sur la plateforme et ne se télécharge plus"
+            detail: "Le bouton « Visionner » ouvre un lecteur intégré ; l'archive d'un dossier partagé laisse les vidéos de côté, et l'écran du dossier le signale."
+          - type: fix
+            title: "Télécharger un dossier partagé vide, ou qui ne contient que des vidéos, ne provoque plus d'erreur"
+          - type: interne
+            title: "e-CO : page de mesure du GPS dans le navigateur, pour évaluer une version web de l'application de course"
     - version: '2026.09.29.2'
       date: '2026-09-29'
       summary: "L'UFA retrouve le SIRET de chaque employeur dans le répertoire de l'État, toujours confirmé par une personne, et l'administration essaie le portfolio E5/E6 du BTS SIO avant son ouverture aux classes. Les statistiques des courses e-CO retrouvent leurs traces GPS."
