@@ -42,13 +42,14 @@ class EcoCourseRepository extends ServiceEntityRepository
     }
 
     // Teacher mobile app's live-tracking entry list (screen 4d) - every InProgress course across
-    // any of this teacher's parcours, not just ones they personally created.
+    // any of this teacher's parcours - created or shared with them - not just the courses they
+    // personally started.
     /** @return list<EcoCourse> */
     public function findInProgressForTeacher(User $teacher): array
     {
         return $this->createQueryBuilder('c')
             ->join('c.parcours', 'p')
-            ->where('p.teacher = :teacher')
+            ->where('p.teacher = :teacher OR :teacher MEMBER OF p.sharedWith')
             ->andWhere('c.status = :status')
             ->setParameter('teacher', $teacher)
             ->setParameter('status', EcoCourseStatus::InProgress)

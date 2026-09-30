@@ -10,6 +10,8 @@ enum EcoCourseMode: string
     case ImposedOrder = 'imposed_order';
     case FreeOrder = 'free_order';
     case Score = 'score';
+    // A subset of the parcours' flags, in order or not - see App\Entity\EcoCourse::$specificCheckpoints.
+    case SpecificCheckpoints = 'specific_checkpoints';
 
     public function labelKey(): string
     {
@@ -17,6 +19,7 @@ enum EcoCourseMode: string
             self::ImposedOrder => 'ecoCourseModeImposedOrderLabel',
             self::FreeOrder => 'ecoCourseModeFreeOrderLabel',
             self::Score => 'ecoCourseModeScoreLabel',
+            self::SpecificCheckpoints => 'ecoCourseModeSpecificCheckpointsLabel',
         };
     }
 
@@ -26,6 +29,7 @@ enum EcoCourseMode: string
             self::ImposedOrder => 'ecoCourseModeImposedOrderDescription',
             self::FreeOrder => 'ecoCourseModeFreeOrderDescription',
             self::Score => 'ecoCourseModeScoreDescription',
+            self::SpecificCheckpoints => 'ecoCourseModeSpecificCheckpointsDescription',
         };
     }
 }

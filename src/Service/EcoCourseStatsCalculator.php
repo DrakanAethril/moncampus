@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-use App\Entity\EcoCheckpoint;
 use App\Entity\EcoCourse;
 use App\Entity\EcoRunner;
 use App\Enum\EcoCheckpointType;
@@ -75,7 +74,7 @@ class EcoCourseStatsCalculator
     {
         /** @var list<EcoRunner> $runners */
         $runners = array_values($course->getRunners()->toArray());
-        $checkpointTotal = $course->getParcours()->getCheckpoints()->count();
+        $checkpointTotal = \count($course->getRaceCheckpoints());
 
         $rows = [];
         $segments = [];
@@ -277,8 +276,7 @@ class EcoCourseStatsCalculator
      */
     private function checkpointRows(EcoCourse $course, array $runners, array $searchSecondsByCheckpoint): array
     {
-        $checkpoints = $course->getParcours()->getCheckpoints()->toArray();
-        usort($checkpoints, static fn (EcoCheckpoint $a, EcoCheckpoint $b): int => $a->getPosition() <=> $b->getPosition());
+        $checkpoints = $course->getRaceCheckpoints();
 
         $foundBy = [];
         $scanDistances = [];

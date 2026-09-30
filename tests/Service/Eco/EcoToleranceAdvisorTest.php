@@ -21,7 +21,7 @@ class EcoToleranceAdvisorTest extends TestCase
         $advisor = new EcoToleranceAdvisor();
 
         self::assertNull($advisor->recommended(null));
-        self::assertSame(EcoCheckpoint::DEFAULT_TOLERANCE_METERS, $advisor->recommended(0.0));
+        self::assertSame(EcoToleranceAdvisor::OPEN_GROUND_METERS, $advisor->recommended(0.0));
         self::assertSame(25, $advisor->recommended(6.5));
         self::assertSame(30, $advisor->recommended(22.0));
     }

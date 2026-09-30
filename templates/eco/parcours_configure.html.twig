@@ -108,6 +108,32 @@
                 <span class="cm-note__icon">📍</span>
                 <div>{{ 'ecoCheckpointLocationNoteText'|trans }}</div>
             </div>
+            {# Its own form, outside the save bar's: sharing is saved on its own button. #}
+            <div class="card" id="eco-share">
+                <div class="card-body d-flex flex-column gap-2">
+                    <twig:Cm:Subhead :title="'ecoParcoursShareTitle'|trans" :hint="'ecoParcoursShareHintText'|trans"/>
+                    <div class="text-secondary" style="font-size: 12.5px;">
+                        {{ 'ecoParcoursCreatedByLabel'|trans({'%name%': parcours.teacher.displayName ?? parcours.teacher.username}) }}
+                    </div>
+                    <form method="post" action="{{ path('app_eco_parcours_share', {id: parcours.id}) }}" class="d-flex flex-column gap-2">
+                        <input type="hidden" name="_token" value="{{ csrf_token('eco_parcours_share') }}">
+                        <label class="form-label mb-0" for="eco-share-users">{{ 'ecoParcoursShareFieldLabel'|trans }}</label>
+                        {# Picking Users always goes through tomselect + ajax; the endpoint offers only
+                           teachers who run e-CO, and the save re-checks every id. #}
+                        <select id="eco-share-users" name="sharedWith[]" multiple
+                                data-controller="tom-select"
+                                data-tom-select-url-value="{{ path('app_eco_parcours_share_candidates', {parcours: parcours.id}) }}"
+                                data-tom-select-placeholder-value="{{ 'ecoParcoursSharePlaceholder'|trans }}">
+                            {% for user in parcours.sharedWith %}
+                                <option value="{{ user.id }}" selected>{{ user.displayName ?? user.username }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="text-end">
+                            <twig:Cm:Button type="submit" variant="outline">{{ 'ecoParcoursShareSubmitLabel'|trans }}</twig:Cm:Button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
     <form id="eco-parcours-configure-form" method="post">

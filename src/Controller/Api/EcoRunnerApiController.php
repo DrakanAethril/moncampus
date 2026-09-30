@@ -26,6 +26,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Mobile API for e-CO runners - no account at all (config/packages/security.yaml carves
@@ -39,6 +40,10 @@ use Symfony\Component\Routing\Attribute\Route;
  */
 class EcoRunnerApiController extends AbstractController
 {
+    public function __construct(private readonly TranslatorInterface $translator)
+    {
+    }
+
     #[Route(path: '/api/eco/runner/join', name: 'api_eco_runner_join', methods: ['POST'])]
     public function join(Request $request, EcoCourseRepository $courseRepository, EntityManagerInterface $entityManager): JsonResponse
     {
@@ -86,7 +91,8 @@ class EcoRunnerApiController extends AbstractController
         return $this->json([
             'name' => $course->getName(),
             'parcoursName' => $course->getParcours()->getName(),
-            'mode' => $course->getMode()->value,
+            'mode' => $course->runnerMode(),
+            'modeLabel' => $this->modeLabel($course),
             'status' => $course->getStatus()->value,
             'joinable' => EcoCourseStatus::InProgress === $course->getStatus(),
         ]);
@@ -105,7 +111,9 @@ class EcoRunnerApiController extends AbstractController
         // codes holds one, so dropping them costs nothing.
         $shortCode = mb_strtoupper((string) preg_replace('/\s+/u', '', $payload->string('code')));
         $checkpoint = null;
-        foreach ($runner->getCourse()->getParcours()->getCheckpoints() as $candidate) {
+        // Only the race's own flags: in « Balises spécifiques » the others do not exist for it, so
+        // their code is as unknown as a mistyped one.
+        foreach ($runner->getCourse()->getRaceCheckpoints() as $candidate) {
             if ($candidate->getShortCode() === $shortCode) {
                 $checkpoint = $candidate;
 
@@ -274,6 +282,17 @@ class EcoRunnerApiController extends AbstractController
         return $this->json($summaryBuilder->build($runner));
     }
 
+    /** « ordre imposé », or « balises spécifiques · dans l'ordre » - lower case, as the app writes it under the parcours name. */
+    private function modeLabel(EcoCourse $course): string
+    {
+        $label = $this->translator->trans($course->getMode()->labelKey());
+        if ($course->isSpecificCheckpoints()) {
+            $label .= ' · '.$this->translator->trans($course->isSpecificOrdered() ? 'ecoCourseSpecificOrderedLabel' : 'ecoCourseSpecificFreeOrderLabel');
+        }
+
+        return mb_strtolower($label);
+    }
+
     private function resolveRunner(string $token, EcoRunnerRepository $runnerRepository): ?EcoRunner
     {
         if ('' === $token) {
@@ -306,7 +325,10 @@ class EcoRunnerApiController extends AbstractController
             'courseName' => $course->getName(),
             // The parcours name is the subtitle of the runner header (screens 1b/2b/3f).
             'parcoursName' => $course->getParcours()->getName(),
-            'mode' => $course->getMode()->value,
+            // The app predates « Balises spécifiques »: it is told « in order » or « as you like »
+            // (EcoCourse::runnerMode()), and the label says what the teacher chose.
+            'mode' => $course->runnerMode(),
+            'modeLabel' => $this->modeLabel($course),
             'mapVisibility' => $course->getMapVisibility()->value,
             'timeLimitMinutes' => $course->getTimeLimitMinutes(),
             'startedAt' => $runner->getStartedAt()?->format(\DateTimeInterface::ATOM),
@@ -323,8 +345,7 @@ class EcoRunnerApiController extends AbstractController
     /** @param list<int> $validatedIds */
     private function formatCheckpointsForMap(EcoCourse $course, array $validatedIds): array
     {
-        $checkpoints = $course->getParcours()->getCheckpoints()->toArray();
-        usort($checkpoints, static fn (EcoCheckpoint $a, EcoCheckpoint $b): int => $a->getPosition() <=> $b->getPosition());
+        $checkpoints = $course->getRaceCheckpoints();
 
         $nextId = null;
         foreach ($checkpoints as $checkpoint) {

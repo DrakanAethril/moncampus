@@ -32,7 +32,12 @@
                                 <tr>
                                     <td class="fw-bold">{{ course.name }}</td>
                                     <td><span class="eco-code">{{ course.code }}</span></td>
-                                    <td>{{ course.mode.labelKey|trans }}</td>
+                                    <td>
+                                        {{ course.mode.labelKey|trans }}
+                                        {% if course.specificCheckpoints is not empty and course.mode.value == 'specific_checkpoints' %}
+                                            <div class="text-secondary" style="font-size: 12.5px;">{{ (course.specificOrdered ? 'ecoCourseSpecificOrderedSummary' : 'ecoCourseSpecificFreeSummary')|trans({'%count%': course.specificCheckpoints|length}) }}</div>
+                                        {% endif %}
+                                    </td>
                                     <td><span class="badge {{ course.status.badgeClass }}">{{ course.status.labelKey|trans }}</span></td>
                                     <td>{{ course.runners|length > 0 ? course.runners|length : '—' }}</td>
                                     <td class="cm-actions">
@@ -75,28 +80,7 @@
                     {{ form_start(form) }}
                     {{ form_errors(form) }}
                     {{ form_row(form.name) }}
-                    {% set modeDescriptionKeys = {
-                        'imposed_order': 'ecoCourseModeImposedOrderDescription',
-                        'free_order': 'ecoCourseModeFreeOrderDescription',
-                        'score': 'ecoCourseModeScoreDescription',
-                    } %}
-                    <div class="d-flex flex-column gap-2" data-controller="radio-reveal">
-                        <label class="form-label">{{ 'ecoCourseModeFieldLabel'|trans }}</label>
-                        {% for choice in form.mode %}
-                            <label class="cm-radiocard">
-                                {{ form_widget(choice, {attr: {'data-radio-reveal-target': 'radio', 'data-action': 'radio-reveal#refresh'}}) }}
-                                <span class="cm-radiocard__dot"></span>
-                                <span>
-                                    <span class="cm-radiocard__title d-block">{{ choice.vars.label|trans }}</span>
-                                    <span class="cm-radiocard__desc">{{ modeDescriptionKeys[choice.vars.value]|trans }}</span>
-                                </span>
-                            </label>
-                        {% endfor %}
-                        {# The time allowance only applies to the modes that are played against the clock. #}
-                        <div data-radio-reveal-target="panel" data-radio-reveal-for="free_order score">
-                            {{ form_row(form.timeLimitMinutes) }}
-                        </div>
-                    </div>
+                    {{ include('eco/_course_mode_fields.html.twig') }}
                     {{ form_row(form.mapVisibility) }}
                     <div class="form-hint">{{ 'ecoCourseMapVisibilityHintText'|trans }}</div>
                     <div class="d-flex flex-column gap-2">

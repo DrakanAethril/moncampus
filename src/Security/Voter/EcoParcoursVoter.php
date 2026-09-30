@@ -11,8 +11,9 @@ use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Vote;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
-// An EcoParcours is a teacher's personal e-CO content - only its owning teacher, or staff, may
-// configure/locate/delete it or manage its courses. Mirrors QuizTemplateVoter exactly.
+// An EcoParcours is a teacher's e-CO content - its creator and the colleagues it is shared with
+// (EcoParcours::isManagedBy(), the same rights for all of them), or staff, may configure/locate/
+// delete/share it or manage its courses.
 class EcoParcoursVoter extends Voter
 {
     public const string EDIT = 'ECO_PARCOURS_EDIT';
@@ -36,6 +37,6 @@ class EcoParcoursVoter extends Voter
             return false;
         }
 
-        return $this->accessChecker->isStaff() || $parcours->getTeacher() === $user;
+        return $this->accessChecker->isStaff() || $parcours->isManagedBy($user);
     }
 }

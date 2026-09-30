@@ -200,9 +200,24 @@ class EcoTeacherApiController extends AbstractController
                     'value' => $mode->value,
                     'label' => $this->translator->trans($mode->labelKey()),
                     'description' => $this->translator->trans($mode->descriptionKey()),
-                    // Imposed order is ranked on time: there is no allowance to run out of.
+                    // Imposed order is ranked on time: there is no allowance to run out of. In
+                    // « Balises spécifiques » it depends on the order chosen: only « in order » is.
                     'timeLimited' => EcoCourseMode::ImposedOrder !== $mode,
+                    // « Balises spécifiques »: the app shows the flags to pick and the order choice.
+                    'checkpointSelection' => EcoCourseMode::SpecificCheckpoints === $mode,
                 ], EcoCourseMode::cases()),
+                // What « Balises spécifiques » picks from: the numbered flags, Départ and Arrivée
+                // being part of every race.
+                'checkpoints' => array_map(static fn (EcoCheckpoint $checkpoint): array => [
+                    'id' => $checkpoint->getId(),
+                    'name' => $checkpoint->getName(),
+                    'note' => $checkpoint->getNote(),
+                    'position' => $checkpoint->getPosition(),
+                ], $parcours->getRegularCheckpoints()),
+                'specificOrders' => [
+                    ['value' => true, 'label' => $this->translator->trans('ecoCourseSpecificOrderedLabel')],
+                    ['value' => false, 'label' => $this->translator->trans('ecoCourseSpecificFreeOrderLabel')],
+                ],
                 'mapVisibilities' => array_map(fn (EcoMapVisibility $visibility): array => [
                     'value' => $visibility->value,
                     'label' => $this->translator->trans($visibility->labelKey()),
@@ -233,7 +248,10 @@ class EcoTeacherApiController extends AbstractController
         $form->submit([
             'name' => trim($payload->string('name')),
             'mode' => $mode,
-            'timeLimitMinutes' => (null !== $timeLimit && EcoCourseMode::ImposedOrder->value !== $mode) ? (string) $timeLimit : null,
+            // Dropped by the form when the race is run in order (EcoCourseType's POST_SUBMIT).
+            'timeLimitMinutes' => null !== $timeLimit ? (string) $timeLimit : null,
+            'specificOrdered' => $payload->bool('specificOrdered', true) ? '1' : '0',
+            'specificCheckpoints' => array_map(static fn (int $checkpointId): string => (string) $checkpointId, $payload->ids('specificCheckpointIds')),
             'mapVisibility' => $mapVisibility,
             // A checkbox reads any submitted value as ticked: null is what unticks it.
             'teamsEnabled' => $payload->bool('teamsEnabled', $course->isTeamsEnabled()) ? '1' : null,
@@ -311,7 +329,8 @@ class EcoTeacherApiController extends AbstractController
             'elapsedMinutes' => null !== $startedAt ? intdiv((new \DateTimeImmutable())->getTimestamp() - $startedAt->getTimestamp(), 60) : null,
             'checkpoints' => array_values(array_map(
                 fn (EcoCheckpoint $checkpoint): array => $this->formatCheckpoint($checkpoint),
-                array_filter($course->getParcours()->getCheckpoints()->toArray(), static fn (EcoCheckpoint $checkpoint): bool => $checkpoint->isLocated()),
+                // The race's flags: in « Balises spécifiques » the others are not part of it.
+                array_filter($course->getRaceCheckpoints(), static fn (EcoCheckpoint $checkpoint): bool => $checkpoint->isLocated()),
             )),
             'runners' => array_map(static fn ($runner): array => $liveTracking->runnerLiveRow($runner), $runners),
         ]);
@@ -330,6 +349,12 @@ class EcoTeacherApiController extends AbstractController
             'statusLabel' => $this->translator->trans($course->getStatus()->labelKey()),
             'mode' => $course->getMode()->value,
             'modeLabel' => $this->translator->trans($course->getMode()->labelKey()),
+            // « Balises spécifiques »: « 4 balises, dans l'ordre » under the mode on the course card.
+            'modeDetail' => $course->isSpecificCheckpoints()
+                ? $this->translator->trans($course->isSpecificOrdered() ? 'ecoCourseSpecificOrderedSummary' : 'ecoCourseSpecificFreeSummary', ['%count%' => $course->getSpecificCheckpoints()->count()])
+                : null,
+            'specificOrdered' => $course->isSpecificCheckpoints() ? $course->isSpecificOrdered() : null,
+            'specificCheckpointIds' => array_values(array_map(static fn (EcoCheckpoint $checkpoint): int => (int) $checkpoint->getId(), $course->getSpecificCheckpoints()->toArray())),
             'timeLimitMinutes' => $course->getTimeLimitMinutes(),
             'mapVisibility' => $course->getMapVisibility()->value,
             'teamsEnabled' => $course->isTeamsEnabled(),

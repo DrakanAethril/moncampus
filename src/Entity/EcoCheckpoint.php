@@ -23,8 +23,10 @@ class EcoCheckpoint
 {
     // Applied to a checkpoint at creation (App\Service\EcoParcoursFactory) as its starting
     // tolerance value - not a fallback read at scan-validation time, since every checkpoint always
-    // has its own stored, editable value (screen 1e's "surchargeable par balise" input).
-    public const int DEFAULT_TOLERANCE_METERS = 20;
+    // has its own stored, editable value (screen 1e's "surchargeable par balise" input). Raised from
+    // 20 m on 2026-09-30: a phone's fix in the field refused runners standing at the flag. Only new
+    // flags take it - an existing flag keeps the radius it was given.
+    public const int DEFAULT_TOLERANCE_METERS = 60;
 
     #[ORM\Id]
     #[ORM\GeneratedValue]

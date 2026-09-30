@@ -12,6 +12,7 @@ use App\Enum\Feature;
 use App\Form\EcoParcoursCreateType;
 use App\Repository\EcoParcoursRepository;
 use App\Security\Voter\EcoParcoursVoter;
+use App\Service\Eco\EcoParcoursSharing;
 use App\Service\Eco\EcoToleranceAdvisor;
 use App\Service\Eco\EcoToleranceEditor;
 use App\Service\EcoParcoursFactory;
@@ -19,6 +20,7 @@ use App\Service\FormValue;
 use App\Service\GotenbergClient;
 use App\Service\GotenbergUnavailableException;
 use App\Service\PostValue;
+use App\Service\QueryValue;
 use Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Endroid\QrCode\Builder\Builder;
@@ -54,6 +56,57 @@ class EcoParcoursController extends AbstractController
                 $repository->findForTeacher($this->currentUser()),
             ),
         ]);
+    }
+
+    /**
+     * The sharing picker's ajax endpoint (tom-select): teachers who run e-CO, never the viewer nor
+     * the parcours' creator. The save re-checks every id - a picker is a convenience, never the
+     * control (EcoParcoursSharing::apply()).
+     */
+    #[Route(path: '/eco/parcours/share/candidates', name: 'app_eco_parcours_share_candidates', methods: ['GET'])]
+    public function shareCandidates(Request $request, EcoParcoursRepository $repository, EcoParcoursSharing $sharing): JsonResponse
+    {
+        $parcours = null;
+        $parcoursId = QueryValue::nullableInt($request, 'parcours');
+        if (null !== $parcoursId) {
+            $parcours = $this->findOrNotFound($repository, $parcoursId);
+            $this->denyAccessUnlessGranted(EcoParcoursVoter::EDIT, $parcours);
+        }
+
+        $limit = 20;
+        $candidates = $sharing->candidates($this->currentUser(), $parcours, QueryValue::trimmed($request, 'q'), $limit);
+
+        return $this->json([
+            'results' => array_map(static fn (User $user): array => [
+                'id' => $user->getId(),
+                'text' => $user->getDisplayName() ?? $user->getUsername(),
+            ], $candidates),
+            'pagination' => ['more' => \count($candidates) === $limit],
+        ]);
+    }
+
+    // « Partage » card of screen 1e: whoever may edit the parcours may rewrite who else holds it.
+    #[Route(path: '/eco/parcours/{id}/share', name: 'app_eco_parcours_share', methods: ['POST'])]
+    public function share(int $id, Request $request, EntityManagerInterface $entityManager, EcoParcoursRepository $repository, EcoParcoursSharing $sharing): Response
+    {
+        $parcours = $this->findOrNotFound($repository, $id);
+        $this->denyAccessUnlessGranted(EcoParcoursVoter::EDIT, $parcours);
+
+        if (!$this->isCsrfTokenValid('eco_parcours_share', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $sharing->apply($parcours, PostValue::intList($request, 'sharedWith'), $this->currentUser());
+        $entityManager->flush();
+
+        $this->addFlash('success', 'ecoParcoursSharedFlashMessage');
+
+        // Someone who took themselves off the list no longer reaches the screen they were on.
+        if (!$this->isGranted(EcoParcoursVoter::EDIT, $parcours)) {
+            return $this->redirectToRoute('app_eco_parcours');
+        }
+
+        return $this->redirectToRoute('app_eco_parcours_configure', ['id' => $parcours->getId(), '_fragment' => 'eco-share']);
     }
 
     #[Route(path: '/eco/parcours/new', name: 'app_eco_parcours_new')]
@@ -275,9 +328,11 @@ class EcoParcoursController extends AbstractController
         return $this->redirectToRoute('app_eco_parcours');
     }
 
-    /** @return array{id: int, name: string, checkpointsLabel: string, statusValue: string, statusLabel: string, coursesLabel: string, updatedAt: string, isReady: bool} */
+    /** @return array{id: int, name: string, sharedByLabel: ?string, sharedWithCount: int, checkpointsLabel: string, statusValue: string, statusLabel: string, coursesLabel: string, updatedAt: string, isReady: bool} */
     private function rowForParcours(EcoParcours $parcours, TranslatorInterface $translator): array
     {
+        $creator = $parcours->getTeacher();
+
         $status = $parcours->getStatus();
         $courseCount = $parcours->getCourses()->count();
         $updatedAt = $parcours->getLastUpdatedDate() ?? $parcours->getCreationDate();
@@ -285,6 +340,11 @@ class EcoParcoursController extends AbstractController
         return [
             'id' => $parcours->getId(),
             'name' => $parcours->getName() ?? '',
+            // A parcours someone else created, shared with the reader: the list says by whom.
+            'sharedByLabel' => $creator !== $this->currentUser() && null !== $creator
+                ? $translator->trans('ecoParcoursSharedByLabel', ['%name%' => $creator->getDisplayName() ?? $creator->getUsername()])
+                : null,
+            'sharedWithCount' => $parcours->getSharedWith()->count(),
             'checkpointsLabel' => \sprintf('%d + D/A', \count($parcours->getRegularCheckpoints())),
             'statusValue' => $status->value,
             'statusLabel' => $this->statusLabel($parcours, $translator),

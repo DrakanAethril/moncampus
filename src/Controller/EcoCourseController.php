@@ -171,6 +171,11 @@ class EcoCourseController extends AbstractController
         $copy = new EcoCourse($course->getParcours(), $this->currentUser());
         $copy->setName($translator->trans('ecoCourseDuplicateNameTemplate', ['%name%' => $course->getName()]));
         $copy->setMode($course->getMode());
+        $copy->setTimeLimitMinutes($course->getTimeLimitMinutes());
+        $copy->setSpecificOrdered($course->isSpecificOrdered());
+        foreach ($course->getSpecificCheckpoints() as $checkpoint) {
+            $copy->addSpecificCheckpoint($checkpoint);
+        }
         $copy->setTeamsEnabled($course->isTeamsEnabled());
         $copy->setMapVisibility($course->getMapVisibility());
         $copy->setSafetyAlertsEnabled($course->isSafetyAlertsEnabled());
@@ -221,11 +226,8 @@ class EcoCourseController extends AbstractController
      */
     private function liveMapCheckpoints(EcoCourse $course): array
     {
-        $checkpoints = $course->getParcours()->getCheckpoints()->toArray();
-        usort($checkpoints, static fn (EcoCheckpoint $a, EcoCheckpoint $b): int => $a->getPosition() <=> $b->getPosition());
-
         $markers = [];
-        foreach ($checkpoints as $checkpoint) {
+        foreach ($course->getRaceCheckpoints() as $checkpoint) {
             if (!$checkpoint->isLocated()) {
                 continue;
             }
@@ -352,7 +354,7 @@ class EcoCourseController extends AbstractController
     }
 
     /**
-     * What the results map draws: the runner's own GPS trace, and every checkpoint of the parcours
+     * What the results map draws: the runner's own GPS trace, and every checkpoint of the race
      * with whether that runner validated it. Null when there is nothing to draw - a runner who
      * never sent a position, or a parcours whose checkpoints were never located.
      *
@@ -393,11 +395,8 @@ class EcoCourseController extends AbstractController
             }
         }
 
-        $checkpoints = $runner->getCourse()->getParcours()->getCheckpoints()->toArray();
-        usort($checkpoints, static fn (EcoCheckpoint $a, EcoCheckpoint $b): int => $a->getPosition() <=> $b->getPosition());
-
         $drawn = [];
-        foreach ($checkpoints as $checkpoint) {
+        foreach ($runner->getCourse()->getRaceCheckpoints() as $checkpoint) {
             if (!$checkpoint->isLocated()) {
                 continue;
             }
@@ -827,7 +826,7 @@ class EcoCourseController extends AbstractController
      */
     private function ranks(array $runners, EcoRaceRanking $ranking): array
     {
-        $checkpointTotal = [] !== $runners ? $runners[0]->getCourse()->getParcours()->getCheckpoints()->count() : 0;
+        $checkpointTotal = [] !== $runners ? \count($runners[0]->getCourse()->getRaceCheckpoints()) : 0;
 
         $runs = [];
         foreach ($runners as $runner) {
