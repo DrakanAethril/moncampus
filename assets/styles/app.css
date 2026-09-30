@@ -5881,6 +5881,19 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
 .cm-eco-list__table tbody tr:hover { background: var(--cm-blue-bg); }
 
 .cm-eco-list__name { font-weight: 600; }
+/* « Balises spécifiques » (templates/eco/_course_mode_fields.html.twig): the order choice and the
+   flags, set in under the mode cards they depend on. */
+.cm-eco-specific {
+    display: flex; flex-direction: column; gap: 12px;
+    padding: 12px 14px; border: 1px solid var(--cm-border-soft); border-radius: 8px;
+    background: var(--cm-surface-alt);
+}
+.cm-eco-specific__checks {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px 16px;
+    max-height: 260px; overflow-y: auto;
+}
+/* Under the name: who shared the parcours with the reader, or how many they share it with. */
+.cm-eco-list__sub { font-weight: 400; font-size: 12.5px; color: var(--cm-muted); }
 .cm-eco-list__date { color: var(--cm-muted); }
 .cm-eco-list__empty { color: var(--cm-faint); }
 .cm-eco-list__foot {

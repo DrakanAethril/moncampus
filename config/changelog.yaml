@@ -26,6 +26,23 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.09.30.2'
+      date: '2026-09-30'
+      summary: "e-CO : un parcours se partage désormais entre collègues, et une course peut ne porter que sur quelques balises choisies, dans l'ordre ou non. La tolérance de validation d'une nouvelle balise passe à 60 mètres."
+      entries:
+          - type: nouveaute
+            title: "e-CO : un parcours se partage avec des collègues enseignants e-CO, qui en ont alors tous les droits"
+            detail: "La liste des parcours montre les siens et ceux partagés, avec le nom de la personne qui les a créés."
+          - type: nouveaute
+            title: "e-CO : nouveau type de course « Balises spécifiques »"
+            detail: "Seules les balises cochées font partie de la course, à trouver dans l'ordre ou dans l'ordre de son choix ; les autres sont ignorées."
+          - type: modification
+            title: "e-CO : la tolérance de validation d'une nouvelle balise passe de 20 à 60 mètres"
+            detail: "Les balises déjà posées gardent la leur."
+          - type: fix
+            title: "e-CO : le menu s'affiche pour les enseignants qui ont accès à e-CO, plus seulement pour l'administration"
+          - type: autre
+            title: "Application e-CO 1.4.0 pour Android : création des courses « Balises spécifiques » depuis le téléphone"
     - version: '2026.09.30'
       date: '2026-09-30'
       summary: "Une vidéo partagée se regarde désormais sur la plateforme, sans pouvoir être téléchargée. Télécharger un dossier partagé qui ne contient aucun fichier ne tombe plus en erreur."

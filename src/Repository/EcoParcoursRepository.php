@@ -19,12 +19,17 @@ class EcoParcoursRepository extends ServiceEntityRepository
         parent::__construct($registry, EcoParcours::class);
     }
 
-    /** @return list<EcoParcours> */
+    /**
+     * The parcours this teacher holds: those they created and those shared with them, one list -
+     * a shared parcours carries every right its creator has (EcoParcours::isManagedBy()).
+     *
+     * @return list<EcoParcours>
+     */
     public function findForTeacher(User $teacher): array
     {
         return $this->createQueryBuilder('p')
             ->addSelect('COALESCE(p.lastUpdatedDate, p.creationDate) AS HIDDEN sortDate')
-            ->where('p.teacher = :teacher')
+            ->where('p.teacher = :teacher OR :teacher MEMBER OF p.sharedWith')
             ->setParameter('teacher', $teacher)
             ->orderBy('sortDate', 'DESC')
             ->getQuery()

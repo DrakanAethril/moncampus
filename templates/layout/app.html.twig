@@ -683,10 +683,11 @@
                             {% endif %}
                         {% endif %}
                         {# Top-level item, deliberately not nested under Gestion (unlike the mockup's generic
-                           header) - visual-only, menu-only gate to ROLE_ADMIN per explicit product request
-                           (tighter than EcoParcoursController's own ROLE_ECO/staff access-control, which is
-                           unchanged - this only hides the link, it doesn't restrict the route). #}
-                        {% if is_granted('ROLE_ADMIN') and feature('eco') %}
+                           header). Drawn for exactly who the e-CO controllers let in - ROLE_ECO, admin,
+                           staff, staff-lead - once the feature is lit for them. It used to be ROLE_ADMIN
+                           alone, which left the very role e-CO exists for with screens it could open and
+                           no link to them. #}
+                        {% if feature('eco') and (is_granted('ROLE_ECO') or is_granted('ROLE_ADMIN') or is_granted('ROLE_STAFF') or is_granted('ROLE_STAFF-LEAD')) %}
                             <li class="nav-item {{ current_route starts with 'app_eco_' ? 'active' }}">
                                 <a class="nav-link" href="{{ path('app_eco_parcours') }}"{{ current_route starts with 'app_eco_' ? ' aria-current="page"' }}>
                                     <span class="nav-link-title">{{ 'ecoNavLabel'|trans }}</span>

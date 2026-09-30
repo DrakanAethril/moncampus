@@ -73,7 +73,7 @@ class EcoRunnerStatsCalculator
                 : null,
             'terrain' => $this->terrainStats->split($fixes),
             'checkpointsValidated' => \count($successfulCheckpointIds),
-            'checkpointsTotal' => $runner->getCourse()->getParcours()->getCheckpoints()->count(),
+            'checkpointsTotal' => \count($runner->getCourse()->getRaceCheckpoints()),
             'scanFailureCount' => $failureCount,
             'appEvents' => $this->appEventRepository->findBy(['runner' => $runner], ['leftAt' => 'ASC']),
             'pings' => $pings,

@@ -10,10 +10,11 @@ use App\Security\StructureAccessChecker;
 use App\Security\Voter\EcoParcoursVoter;
 
 /**
- * Un parcours e-CO se modifie par le personnel ou par l'enseignant qui l'a créé.
+ * An e-CO parcours is edited by staff, by the teacher who created it, or by a colleague it is
+ * shared with.
  *
- * Two independent doors - staff, or ownership - so both are pinned, along with the case where
- * neither applies.
+ * Independent doors - staff, creation, sharing - so each is pinned, along with the case where
+ * none applies.
  */
 class EcoParcoursVoterTest extends VoterTestCase
 {
@@ -27,10 +28,7 @@ class EcoParcoursVoterTest extends VoterTestCase
 
     private function subject(?User $owner): EcoParcours
     {
-        $subject = $this->createStub(EcoParcours::class);
-        $subject->method('getTeacher')->willReturn($owner);
-
-        return $subject;
+        return new EcoParcours($owner ?? $this->user(['ROLE_USER', 'ROLE_TEACHER'], 'nobody'));
     }
 
     public function testOwnerEditsWithoutBeingStaff(): void
@@ -55,6 +53,21 @@ class EcoParcoursVoterTest extends VoterTestCase
 
         $this->assertDenied($this->voter(false), $other, $this->subject($owner), EcoParcoursVoter::EDIT);
         $this->assertDenied($this->voter(false), null, $this->subject($owner), EcoParcoursVoter::EDIT);
+    }
+
+    public function testAColleagueItIsSharedWithEditsLikeItsCreator(): void
+    {
+        $owner = $this->user(['ROLE_USER', 'ROLE_TEACHER', 'ROLE_ECO'], 'owner');
+        $colleague = $this->user(['ROLE_USER', 'ROLE_TEACHER', 'ROLE_ECO'], 'colleague');
+        $parcours = $this->subject($owner);
+
+        $this->assertDenied($this->voter(false), $colleague, $parcours, EcoParcoursVoter::EDIT);
+
+        $parcours->shareWith($colleague);
+        $this->assertGranted($this->voter(false), $colleague, $parcours, EcoParcoursVoter::EDIT);
+
+        $parcours->unshareWith($colleague);
+        $this->assertDenied($this->voter(false), $colleague, $parcours, EcoParcoursVoter::EDIT);
     }
 
     public function testForeignAttributesAndSubjectsAreLeftAlone(): void
