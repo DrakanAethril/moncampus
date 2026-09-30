@@ -5888,6 +5888,21 @@ a.cm-sheet__mail-tag:hover { border-color: var(--cm-brand); color: var(--cm-bran
     font-size: 13px; color: var(--cm-faint);
 }
 
+/* « Test PWA » (templates/eco/pwa_probe.html.twig) - a measurement page read on a phone, hence two
+   stat columns at phone width where .cm-statgrid drops to one: eight tiles stacked one per line
+   push the log out of the first screen. */
+.cm-eco-probe__status { font-weight: 600; color: var(--cm-ink); margin-bottom: 12px; }
+.cm-eco-probe__controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.cm-eco-probe__hint { font-size: 12.5px; color: var(--cm-faint); margin: 10px 0 0; }
+@media (max-width: 575.98px) { .cm-eco-probe .cm-statgrid { grid-template-columns: repeat(2, 1fr); } }
+.cm-eco-probe__log { list-style: none; margin: 0; padding: 0; max-height: 320px; overflow-y: auto; font-size: 13px; }
+.cm-eco-probe__log li { padding: 4px 0; border-bottom: 1px solid var(--cm-border-soft); }
+.cm-eco-probe__log li:last-child { border-bottom: 0; }
+.cm-eco-probe__time { font-family: var(--cm-font-mono); color: var(--cm-muted); }
+.cm-eco-probe__capabilities { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px 12px; margin: 0; font-size: 13px; }
+.cm-eco-probe__capabilities dt { font-weight: 600; color: var(--cm-ink); }
+.cm-eco-probe__capabilities dd { margin: 0; overflow-wrap: anywhere; color: var(--cm-muted); }
+
 /* Status pill. The glyph belongs to the drawing, not to the text: "●" for a ready parcours, "◐" for
    a partly located one, "○" for a draft - hence the ::before rather than a character glued into the
    translations.
