@@ -200,6 +200,13 @@ final class UploadPolicy
      */
     private const array INLINE = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'gif', 'avif', 'bmp', 'tif', 'tiff'];
 
+    /**
+     * What a screen plays in a player of its own rather than hands over - see isVideo().
+     *
+     * @var list<string>
+     */
+    private const array VIDEO = ['mp4', 'webm', 'mov'];
+
     /** @param array<string, list<string>> $accepted */
     private function __construct(
         private readonly array $accepted,
@@ -334,6 +341,20 @@ final class UploadPolicy
         $segments = self::segmentsOf($filename);
 
         return [] !== $segments && \in_array($segments[\count($segments) - 1], self::INLINE, true);
+    }
+
+    /**
+     * Is this file a video - watched on the platform, never handed over?
+     *
+     * The rule the screens hold is "a video is played, not downloaded": no « Télécharger » on its
+     * row, no route that answers one, and no place in a folder's archive. Static for the same reason
+     * as servesInline(): it is a property of the file, not of the field that accepted it.
+     */
+    public static function isVideo(string $filename): bool
+    {
+        $segments = self::segmentsOf($filename);
+
+        return [] !== $segments && \in_array($segments[\count($segments) - 1], self::VIDEO, true);
     }
 
     // --- The declared narrowings ------------------------------------------------------------

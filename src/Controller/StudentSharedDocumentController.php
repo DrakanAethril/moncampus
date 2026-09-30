@@ -48,6 +48,12 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * Every row carries the *other* gesture too: download() saves rather than opens, and answers for a
  * folder with the archive of its whole subtree. The two share their resolution, so what a student
  * may download is by construction what they may open - there is no second place to get that wrong.
+ *
+ * **A video is watched, never handed over** (App\Service\UploadPolicy::isVideo()). open() answers
+ * it with a player screen of the platform's own instead of the file's address, the address itself
+ * is asked for by that player (playback()) and lives two hours, download() refuses it, and a
+ * folder's archive leaves it out. None of that makes a video impossible to save - a browser that
+ * plays a file has it - but no gesture of the platform offers it, and no link it prints does.
  */
 #[IsGranted('ROLE_STUDENT')]
 #[RequiresFeature(Feature::SharedDocuments)]
@@ -87,15 +93,50 @@ class StudentSharedDocumentController extends AbstractController
         $shared = $share->getLibraryNode();
         $node = $this->nodeToServe($share, $request, $nodes);
 
+        if ($node->isVideo()) {
+            return $this->render('student_shared_document/watch.html.twig', [
+                'share' => $share,
+                'shared' => $shared,
+                'node' => $node,
+            ]);
+        }
+
         if ($node->isFile()) {
             return $this->redirect($fileUploads->downloadUrl($this->storageKeyOrNotFound($node), $node->getName()));
         }
 
+        $rows = $this->subtree->rows($shared);
+
         return $this->render('student_shared_document/folder.html.twig', [
             'share' => $share,
             'node' => $shared,
-            'rows' => $this->subtree->rows($shared),
+            'rows' => $rows,
+            'holdsVideos' => [] !== array_filter($rows, static fn (array $row): bool => $row['node']->isVideo()),
         ]);
+    }
+
+    /**
+     * The playback address of a shared video, asked for by the player of the watching screen rather
+     * than laid into the page: the HTML never carries it, and this is where the right to watch is
+     * checked again - the share may have closed since the screen was opened.
+     *
+     * Only a video answers. Any other file has « Ouvrir » for that, and a route that signed an
+     * address for whatever `?node=` names would be a second download route under another name.
+     */
+    #[Route(path: '/my/shared-documents/{id}/playback', name: 'app_student_shared_document_playback', requirements: ['id' => '\\d+'], methods: ['GET'])]
+    public function playback(
+        int $id,
+        Request $request,
+        FileUploadService $fileUploads,
+        FileLibraryNodeRepository $nodes,
+    ): Response {
+        $node = $this->nodeToServe($this->readableShareOrNotFound($id), $request, $nodes);
+
+        if (!$node->isVideo()) {
+            throw $this->createNotFoundException();
+        }
+
+        return $this->json(['url' => $fileUploads->playbackUrl($this->storageKeyOrNotFound($node), $node->getName())]);
     }
 
     /**
@@ -109,6 +150,10 @@ class StudentSharedDocumentController extends AbstractController
      *
      * It resolves the share and the node exactly as open() does, and for the same reason: a link
      * already on the screen proves nothing about a window that has since closed.
+     *
+     * A video is refused - watched on the platform, never handed over - and left out of a folder's
+     * archive for the same reason: the rows offer no « Télécharger » on it, and a URL typed by hand
+     * must not be the way round that.
      */
     #[Route(path: '/my/shared-documents/{id}/download', name: 'app_student_shared_document_download', requirements: ['id' => '\\d+'], methods: ['GET'])]
     public function download(
@@ -122,7 +167,11 @@ class StudentSharedDocumentController extends AbstractController
         $node = $this->nodeToServe($share, $request, $nodes);
 
         if ($node->isFolder()) {
-            return $archiver->respond($node);
+            return $archiver->respond($node, withVideos: false);
+        }
+
+        if ($node->isVideo()) {
+            throw $this->createNotFoundException();
         }
 
         return $this->redirect($fileUploads->attachmentUrl($this->storageKeyOrNotFound($node), $node->getName()));

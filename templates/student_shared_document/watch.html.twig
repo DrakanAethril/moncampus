@@ -1,0 +1,45 @@
+{% extends 'layout/app.html.twig' %}
+
+{# A video shared to the class, watched on the platform.
+
+   The screen exists so that « Ouvrir » on a video never hands the file over: the address is the
+   player's to ask for (StudentSharedDocumentController::playback()), short-lived, and nothing on
+   the page offers to save it. No tracking, no rule about skipping - that is the Visionnage
+   travail's screen (templates/student/work_video.html.twig); this is a document, read as the student
+   pleases. #}
+
+{% block title %}{{ node.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {% set segments = [{label: 'sharedDocumentNavLabel'|trans, url: path('app_student_shared_documents')}] %}
+    {% if node.id != shared.id %}
+        {% set segments = segments|merge([{label: shared.name, url: path('app_student_shared_document_open', {id: share.id})}]) %}
+    {% endif %}
+    {% set segments = segments|merge([{label: node.name, url: app.request.requestUri}]) %}
+    {{ component('Cm:Breadcrumb', {segments: segments}) }}
+{% endblock %}
+
+{% block page_title %}{{ node.name }}{% endblock %}
+
+{% block main %}
+    <p class="text-secondary">{{ 'sharedDocumentVideoSharedByText'|trans({
+        '%teacher%': share.teacher.displayName,
+        '%topic%': share.topic ? share.topic.name : ('sharedDocumentNoTopicLabel'|trans),
+    }) }}</p>
+
+    <section class="card cm-audio-card cm-video-block"
+             data-controller="shared-video"
+             data-shared-video-playback-url-value="{{ path('app_student_shared_document_playback', node.id != shared.id ? {id: share.id, node: node.id} : {id: share.id}) }}">
+        <div class="cm-audio-card__body">
+            {# `controlslist="nodownload"` takes the entry out of Chrome's own menu, and the
+               controller refuses the context menu, whose « Enregistrer la vidéo sous… » is the other
+               door every browser has. Neither is a lock - a browser that plays a file has it - but
+               the platform offers no gesture that saves it. #}
+            <video class="cm-video-player" controls controlslist="nodownload" preload="none" playsinline
+                   {% if node.posterStorageKey %}poster="{{ file_url(node.posterStorageKey) }}"{% endif %}
+                   data-shared-video-target="player"
+                   data-action="contextmenu->shared-video#refuseMenu error->shared-video#failed"></video>
+            <p class="text-danger mb-0" data-shared-video-target="unavailable" hidden>{{ 'sharedDocumentVideoUnavailableText'|trans }}</p>
+        </div>
+    </section>
+{% endblock %}

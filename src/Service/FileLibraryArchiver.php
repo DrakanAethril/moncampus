@@ -33,7 +33,13 @@ class FileLibraryArchiver
     ) {
     }
 
-    public function respond(FileLibraryNode $folder): BinaryFileResponse
+    /**
+     * `$withVideos: false` leaves the videos out - what a student is handed, a video shared to a
+     * class being watched on the platform and never downloaded (App\Service\UploadPolicy::isVideo()).
+     * The folders that held them stay in the archive, empty if that is all they held: the shape is
+     * still the one that was shared.
+     */
+    public function respond(FileLibraryNode $folder, bool $withVideos = true): BinaryFileResponse
     {
         $path = tempnam(sys_get_temp_dir(), 'library-');
 
@@ -68,7 +74,7 @@ class FileLibraryArchiver
 
             $key = $node->getStorageKey();
 
-            if (null === $key) {
+            if (null === $key || (!$withVideos && $node->isVideo())) {
                 continue;
             }
 
@@ -76,6 +82,14 @@ class FileLibraryArchiver
         }
 
         $zip->close();
+
+        // libzip writes nothing for an archive with no entry - it deletes the file instead - and the
+        // response would then point at a path that no longer exists: a 500 on an empty folder, or on
+        // one that held only videos once they are left out. An empty archive is 22 bytes, its
+        // end-of-central-directory record alone.
+        if (!is_file($path)) {
+            file_put_contents($path, "PK\x05\x06".str_repeat("\0", 18));
+        }
 
         $response = new BinaryFileResponse($path);
         $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, $this->sanitise($folder->getName()).'.zip');
