@@ -127,7 +127,7 @@ class EcoRunnerApiController extends AbstractController
         $method = 'manual_code' === $payload->string('method') ? EcoScanMethod::ManualCode : EcoScanMethod::QrScan;
         $latitude = $payload->float('latitude');
         $longitude = $payload->float('longitude');
-        $scannedAt = $this->scanTime($payload->instant('scannedAt'), $runner);
+        $scannedAt = $this->phoneTime($payload->instant('scannedAt'), $runner);
 
         $scan = $scanService->scan($runner, $checkpoint, $latitude, $longitude, $scannedAt, $method);
 
@@ -135,13 +135,14 @@ class EcoRunnerApiController extends AbstractController
     }
 
     /**
-     * When the scan was made, as the phone says - a scan queued without network reaches the server
-     * minutes later, and stamped on arrival it moved the start or the finish, and the race's time
-     * with it. The phone's clock is believed only between the runner's joining and now: one set to
-     * the wrong day does not get to write the race's time, which is then the time of arrival, as
-     * for an app too old to send it. Compared to the second: the phone's instant has no fraction.
+     * When something happened, as the phone says - a scan or an app event queued without network
+     * reaches the server minutes later, and stamped on arrival it moved the start or the finish
+     * (and the race's time with it), or the time the runner left the app. The phone's clock is
+     * believed only between the runner's joining and now: one set to the wrong day does not get to
+     * write the race's times, which are then the time of arrival, as for an app too old to send
+     * one. Compared to the second: the phone's instant has no fraction.
      */
-    private function scanTime(?\DateTimeImmutable $claimed, EcoRunner $runner): \DateTimeImmutable
+    private function phoneTime(?\DateTimeImmutable $claimed, EcoRunner $runner): \DateTimeImmutable
     {
         $now = new \DateTimeImmutable();
 
@@ -228,7 +229,8 @@ class EcoRunnerApiController extends AbstractController
         }
 
         $type = $payload->string('type');
-        $at = $payload->instant('at') ?? new \DateTimeImmutable();
+        // Dated by the phone when it happened: a « left » queued in a dead zone arrives much later.
+        $at = $this->phoneTime($payload->instant('at'), $runner);
 
         if ('left' === $type) {
             $entityManager->persist(new EcoAppEvent($runner, $at));

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <!-- Replaced by flutter build's --base-href: the PWA is served by moncampus under /eco-app/
+       (tool/build_pwa.sh). -->
+  <base href="/eco-app/">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Courses d'orientation de l'établissement : scan des balises, chrono et carte.">
+  <meta name="theme-color" content="#12344d">
+
+  <!-- iOS: launched from the home screen without Safari's bars. -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="e-CO">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" href="favicon.png">
+
+  <title>e-CO</title>
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    html, body { margin: 0; height: 100%; background: #12344d; }
+    /* The Android splash (flutter_native_splash: navy + the badge), drawn until the first frame. */
+    #eco-splash { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+    #eco-splash img { width: 192px; height: 192px; }
+  </style>
+
+  <!-- The offline queue, before the app: lib/services/offline_queue_storage_web.dart calls it. -->
+  <script src="eco_queue.js"></script>
+  <!-- The QR reader mobile_scanner would otherwise fetch from unpkg.com at the first scan - in a
+       wood, without network. The id is the one the package looks for before loading it itself. -->
+  <script id="mobile-scanner-barcode-reader" src="zxing/zxing.min.js" defer></script>
+</head>
+<body>
+  <div id="eco-splash"><img src="icons/splash.png" alt=""></div>
+  <script>
+    window.addEventListener('flutter-first-frame', () => {
+      document.getElementById('eco-splash')?.remove();
+      // What the app has loaded so far, for the service worker to keep (eco_sw.js, 'eco-warm').
+      navigator.serviceWorker?.ready.then((registration) => registration.active?.postMessage({
+        type: 'eco-warm',
+        urls: performance.getEntriesByType('resource').map((entry) => entry.name),
+      }));
+    });
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

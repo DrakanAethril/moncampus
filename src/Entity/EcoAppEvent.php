@@ -66,7 +66,9 @@ class EcoAppEvent
     public function markReturned(\DateTimeImmutable $returnedAt): static
     {
         $this->returnedAt = $returnedAt;
-        $this->durationSeconds = $returnedAt->getTimestamp() - $this->leftAt->getTimestamp();
+        // Never negative: a departure sent by an app too old to date it is stamped on arrival,
+        // possibly after the return the next version dates on the phone.
+        $this->durationSeconds = max(0, $returnedAt->getTimestamp() - $this->leftAt->getTimestamp());
 
         return $this;
     }

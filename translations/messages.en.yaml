@@ -3166,6 +3166,12 @@ resourcesIosStep1SafariText: 'Open the download link in Safari and accept the in
 resourcesIosStep2TrustProfileText: 'Settings → General → VPN & Device Management → trust the "Institution Beaupeyrat" profile.'
 resourcesMobileIosStep3LaunchText: 'Launch MonCampus from the home screen.'
 resourcesEcoIosStep3PermissionsText: 'Launch e-CO, allow <b>camera</b> and <b>precise location</b>.'
+resourcesWebPlatformLabel: 'Web version (PWA)'
+resourcesPwaMetaTemplate: 'Browser · v%version%'
+resourcesOpenWebAction: '↗ Open the web version'
+resourcesEcoWebStep1OpenText: 'Open the link in <b>Chrome</b> (Android) or <b>Safari</b> (iPhone).'
+resourcesEcoWebStep2InstallText: 'Add it to the home screen: ⋮ menu → "Install app" on Android, Share button → "Add to Home Screen" on iPhone.'
+resourcesEcoWebStep3PermissionsText: 'Launch e-CO from the home screen, allow <b>camera</b> and <b>precise location</b>.'
 resourcesEcoRaceDayTipText: 'Tip: install the app <b>before</b> race day (the field sometimes has no signal). The app then works offline during the race.'
 
 # Progression pédagogique (design/design_handoff_progression)

@@ -24,7 +24,7 @@
     {% include 'company_search/_source_switch.html.twig' with {active: 'pool'} %}
 
     <div class="cm-cs">
-        <form class="cm-cs-filters" method="get" action="{{ path('app_enterprise_pool') }}">
+        <form class="cm-cs-filters" data-controller="sticky-rail" method="get" action="{{ path('app_enterprise_pool') }}">
             {% if canFilterKinds %}
                 <div class="cm-cs-filters__group">
                     <h2 class="cm-cs-filters__title">{{ 'enterprisePoolHostedHeading'|trans }}</h2>

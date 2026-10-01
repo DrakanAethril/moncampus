@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional;
 
+use App\Entity\EcoAppEvent;
 use App\Entity\EcoCheckpoint;
 use App\Entity\EcoCourse;
 use App\Entity\EcoParcours;
@@ -130,6 +131,30 @@ class EcoRunnerRaceTest extends FunctionalTestCase
         // Before the runner even joined, or still to come: the time of arrival instead.
         self::assertEqualsWithDelta(time(), $this->runner($early)->getStartedAt()?->getTimestamp(), 5);
         self::assertEqualsWithDelta(time(), $this->runner($late)->getStartedAt()?->getTimestamp(), 5);
+    }
+
+    public function testAnAppEventQueuedWithoutNetworkKeepsTheTimeItHappened(): void
+    {
+        $token = $this->join('lilou');
+        $this->joinedAt($token, '2026-09-28T09:55:00+02:00');
+
+        $this->request('POST', '/api/eco/runner/app-events', ['token' => $token, 'type' => 'left', 'at' => '2026-09-28T08:10:00.000Z']);
+        self::assertSame('2026-09-28 10:10:00', $this->runner($token)->getAppLeftAt()?->format('Y-m-d H:i:s'));
+
+        $this->request('POST', '/api/eco/runner/app-events', ['token' => $token, 'type' => 'returned', 'at' => '2026-09-28T08:12:30.000Z']);
+        $event = $this->entityManager->getRepository(EcoAppEvent::class)->findOneBy(['runner' => $this->runner($token)]);
+        self::assertInstanceOf(EcoAppEvent::class, $event);
+        self::assertSame(150, $event->getDurationSeconds());
+        self::assertNull($this->runner($token)->getAppLeftAt());
+    }
+
+    public function testAnAppEventDatedOutsideTheRaceIsStampedOnArrival(): void
+    {
+        $token = $this->join('lilou');
+
+        $this->request('POST', '/api/eco/runner/app-events', ['token' => $token, 'type' => 'left', 'at' => '2099-01-01T08:00:00Z']);
+
+        self::assertEqualsWithDelta(time(), $this->runner($token)->getAppLeftAt()?->getTimestamp(), 5);
     }
 
     public function testTheTeacherOpensAFinishedRunnerWhileTheRaceRunsButNotOneStillOut(): void

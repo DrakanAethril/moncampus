@@ -26,6 +26,22 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.10.01.2'
+      date: '2026-10-01'
+      summary: "e-CO se lance désormais aussi depuis un navigateur, sans installer d'application, ce qui ouvre les courses aux iPhone ; la course continue hors connexion. L'export d'une période du livret de l'alternant redevient rapide."
+      entries:
+          - type: nouveaute
+            title: "e-CO existe en version web, à ouvrir depuis le navigateur du téléphone, iPhone compris"
+            detail: "La page Ressources la propose à côté de l'application Android, avec son QR code ; scans et passages hors connexion partent dès que le réseau revient."
+          - type: fix
+            title: "e-CO : une course reprend après un rechargement hors connexion, et les sorties d'application sont datées à l'heure exacte"
+          - type: autre
+            title: "e-CO 1.4.1 pour Android"
+          - type: fix
+            title: "Livret de l'alternant : l'export d'une seule période n'échoue plus sur les livrets les plus fournis"
+            detail: "Il est aussi plus rapide, comme l'export complet."
+          - type: modification
+            title: "Recherche d'entreprises : les filtres restent à l'écran pendant qu'on fait défiler les résultats"
     - version: '2026.10.01'
       date: '2026-10-01'
       summary: "L'administration essaie une recherche d'entreprises dans le registre de l'État et un vivier des entreprises qui ont accueilli nos étudiants en stage ou en alternance, avant leur ouverture. Les démarches de recherche de stage accueillent une note de l'étudiant, et terminer une recherche demande ce qu'elle a donné."
