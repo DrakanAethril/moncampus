@@ -3690,6 +3690,9 @@ resourcesPwaMetaTemplate: 'Navigateur · v%version%'
 resourcesOpenWebAction: '↗ Ouvrir la version web'
 resourcesEcoWebStep1OpenText: 'Ouvrez le lien dans <b>Chrome</b> (Android) ou <b>Safari</b> (iPhone).'
 resourcesEcoWebStep2InstallText: 'Ajoutez-la à l’écran d’accueil : menu ⋮ → « Installer l’application » sous Android, bouton Partager → « Sur l’écran d’accueil » sur iPhone.'
+resourcesMobileWebStep1OpenText: 'Ouvrez le lien dans <b>Chrome</b> (Android) ou <b>Safari</b> (iPhone).'
+resourcesMobileWebStep2InstallText: 'Ajoutez-la à l’écran d’accueil : menu ⋮ → « Installer l’application » sous Android, bouton Partager → « Sur l’écran d’accueil » sur iPhone.'
+resourcesMobileWebStep3LoginText: 'Lancez-la depuis l’écran d’accueil et connectez-vous avec vos identifiants Campus.'
 resourcesEcoWebStep3PermissionsText: 'Lancez e-CO depuis l’écran d’accueil, autorisez <b>caméra</b> et <b>localisation précise</b>.'
 resourcesEcoRaceDayTipText: "Conseil : faites installer l'app <b>avant</b> le jour de la course (réseau parfois absent sur le terrain). L'app fonctionne ensuite hors ligne pendant la course."
 
@@ -9372,6 +9375,7 @@ mobileSessionLastUsedLabel: "dernière activité le %date%"
 mobileSessionRevokeAction: "Déconnecter"
 mobileSessionRevokedFlashMessage: "Le téléphone est déconnecté : il devra se reconnecter d'ici une heure au plus tard."
 mobileAppCampusLabel: "Campus Beaupeyrat"
+mobileAppCampusWebLabel: "Campus Beaupeyrat (web)"
 mobileAppEcoLabel: "e-CO"
 mobileAppOtherLabel: "Application mobile"
 rubricImportInvalidJsonError: "Le document n'est pas un JSON lisible."

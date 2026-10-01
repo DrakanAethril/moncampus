@@ -23,7 +23,13 @@ Treat any leftover template documentation (`docs/*.md`, parts of the README) as 
 as a description of this app.
 
 Companion repositories (separate git repos, same staging workflow):
-- `/Users/Shared/Projets/Flutter/moncampus-mobile` — the student/teacher mobile app.
+- `/Users/Shared/Projets/Flutter/moncampus-mobile` — the student/teacher mobile app. It also runs
+  **as a PWA at `/campus-app/`** (`public/campus-app/`, a build output of that repo's
+  `tool/build_pwa.sh`, never edited here — its README says what the web build changes): same
+  origin as the API and Mercure, so no URL compiled in; it declares `client: moncampus-web`, which
+  makes the magic link open `/campus-app/?login=…` instead of `campusmanager://` and lists its
+  sessions apart in « Mon profil » (`MobileApp::CampusWeb`). The Ressources page offers it next to
+  the APK.
 - `/Users/Shared/Beaupeyrat/e-CO` — the orienteering-race app (GitHub `e-co-mobile`).
 
 ## Commands

@@ -81,6 +81,13 @@
 	redir /eco-app /eco-app/ 308
 	rewrite /eco-app/ /eco-app/index.html
 
+	# The Campus PWA (public/campus-app/, built by the moncampus-mobile repo's tool/build_pwa.sh):
+	# the same three rules, for the same reasons.
+	@campusApp path /campus-app/*
+	header @campusApp ?Cache-Control "no-cache"
+	redir /campus-app /campus-app/ 308
+	rewrite /campus-app/ /campus-app/index.html
+
 	@phpRoute {
 		not path /.well-known/mercure*
 		not file {path}

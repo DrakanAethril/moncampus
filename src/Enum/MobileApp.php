@@ -11,6 +11,9 @@ namespace App\Enum;
 enum MobileApp: string
 {
     case Campus = 'moncampus';
+    // The same app compiled for the browser (public/campus-app/): its sessions are listed apart,
+    // a browser being signed out on its own.
+    case CampusWeb = 'moncampus-web';
     case Eco = 'eco';
     case Other = 'other';
 
@@ -23,6 +26,7 @@ enum MobileApp: string
     {
         return match ($this) {
             self::Campus => 'mobileAppCampusLabel',
+            self::CampusWeb => 'mobileAppCampusWebLabel',
             self::Eco => 'mobileAppEcoLabel',
             self::Other => 'mobileAppOtherLabel',
         };

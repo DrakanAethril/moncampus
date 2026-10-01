@@ -3171,6 +3171,9 @@ resourcesPwaMetaTemplate: 'Browser · v%version%'
 resourcesOpenWebAction: '↗ Open the web version'
 resourcesEcoWebStep1OpenText: 'Open the link in <b>Chrome</b> (Android) or <b>Safari</b> (iPhone).'
 resourcesEcoWebStep2InstallText: 'Add it to the home screen: ⋮ menu → "Install app" on Android, Share button → "Add to Home Screen" on iPhone.'
+resourcesMobileWebStep1OpenText: 'Open the link in <b>Chrome</b> (Android) or <b>Safari</b> (iPhone).'
+resourcesMobileWebStep2InstallText: 'Add it to the home screen: ⋮ menu → "Install app" on Android, Share button → "Add to Home Screen" on iPhone.'
+resourcesMobileWebStep3LoginText: 'Launch it from the home screen and sign in with your Campus credentials.'
 resourcesEcoWebStep3PermissionsText: 'Launch e-CO from the home screen, allow <b>camera</b> and <b>precise location</b>.'
 resourcesEcoRaceDayTipText: 'Tip: install the app <b>before</b> race day (the field sometimes has no signal). The app then works offline during the race.'
 
@@ -8543,6 +8546,7 @@ mobileSessionLastUsedLabel: "last active on %date%"
 mobileSessionRevokeAction: "Sign out"
 mobileSessionRevokedFlashMessage: "The phone is signed out: it will have to sign in again within the hour at the latest."
 mobileAppCampusLabel: "Campus Beaupeyrat"
+mobileAppCampusWebLabel: "Campus Beaupeyrat (web)"
 mobileAppEcoLabel: "e-CO"
 mobileAppOtherLabel: "Mobile app"
 rubricImportInvalidJsonError: "The document is not readable JSON."
