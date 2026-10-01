@@ -120,6 +120,31 @@ class ClassBoardLayoutTest extends TestCase
         $this->layout->normalize([$this->widget('random_draw', 'a', ['drawId' => '12; DROP'])]);
     }
 
+    /** A drawing's key is the server's: the stored one wins, a sent one must name this very widget. */
+    public function testADrawingKeyCannotPointAtAnotherObject(): void
+    {
+        $own = 'class-board/7/w1-0123456789abcdef.png';
+        $kept = $this->layout->normalize([$this->widget('drawing', 'w1', ['key' => $own])], [], 7)[0];
+        self::assertSame($own, $this->config($kept)['key']);
+
+        foreach (['avatars/someone.png', 'class-board/8/w1-0123456789abcdef.png', 'class-board/7/w2-0123456789abcdef.png'] as $forged) {
+            $widget = $this->layout->normalize([$this->widget('drawing', 'w1', ['key' => $forged])], [], 7)[0];
+            self::assertNull($this->config($widget)['key'], $forged);
+        }
+
+        $stored = [['id' => 'w1', 'type' => 'drawing', 'config' => ['key' => $own]]];
+        $widget = $this->layout->normalize([$this->widget('drawing', 'w1', ['key' => 'class-board/7/w1-ffffffffffffffff.png'])], $stored, 7)[0];
+        self::assertSame($own, $this->config($widget)['key']);
+    }
+
+    public function testTheDockOffersEveryWidgetOnce(): void
+    {
+        $offered = array_merge(...array_values(ClassBoardWidgetType::dock()));
+
+        self::assertCount(\count(ClassBoardWidgetType::cases()), $offered);
+        self::assertSame(ClassBoardWidgetType::cases(), array_values(array_filter(ClassBoardWidgetType::cases(), static fn (ClassBoardWidgetType $type): bool => \in_array($type, $offered, true))));
+    }
+
     public function testEveryWidgetTypeHasAPartialAndAnIcon(): void
     {
         $root = \dirname(__DIR__, 3);

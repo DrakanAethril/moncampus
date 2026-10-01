@@ -1,0 +1,9 @@
+{% set config = widget.config %}
+<label class="cm-cb-field">{{ 'classBoardWordCloudField'|trans }}
+    <select class="cm-cb-input" name="cloudId" data-kind="id" data-rerender>
+        <option value="">{{ 'classBoardChooseOption'|trans }}</option>
+        {% for cloud in data.clouds ?? [] %}
+            <option value="{{ cloud.id }}" {{ config.cloudId == cloud.id ? 'selected' }}>{{ cloud.label }}</option>
+        {% endfor %}
+    </select>
+</label>
