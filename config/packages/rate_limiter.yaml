@@ -60,3 +60,22 @@ framework:
             policy: sliding_window
             limit: 8
             interval: '15 minutes'
+
+        # The État's Recherche d'entreprises API allows 7 requests per second **per IP**, and the
+        # whole platform is one IP (App\Service\Sirene\RechercheEntreprisesClient). One bucket for
+        # every worker of the container, keyed on a constant: six tokens a second, so the UFA's
+        # SIRET queue and a class searching « Trouver une entreprise » at once share the quota
+        # instead of each believing it has all of it. The storage is the shared cache, the lock the
+        # application's (LOCK_DSN), so two workers never spend the same token.
+        sirene_api:
+            policy: token_bucket
+            limit: 6
+            rate: { interval: '1 second', amount: 6 }
+
+        # « Trouver une entreprise », keyed "user:<id>". Not a punishment: sixty searches in ten
+        # minutes is far beyond anybody reading results, and a filter wired to fire on every
+        # keystroke - or a script - stops here instead of eating the platform's API quota.
+        company_search:
+            policy: sliding_window
+            limit: 60
+            interval: '10 minutes'

@@ -78,6 +78,83 @@ class JobApplicationRepository extends ServiceEntityRepository
     }
 
     /**
+     * This student's démarches about these establishments of the register, every class included -
+     * « Dans mes démarches » on a page of results.
+     *
+     * @param list<string> $sirets
+     *
+     * @return array<string, JobApplication> keyed by SIRET, the most recently created one kept
+     */
+    public function findForStudentBySirets(User $student, array $sirets): array
+    {
+        if ([] === $sirets) {
+            return [];
+        }
+
+        $found = [];
+        foreach ($this->createQueryBuilder('a')
+            ->addSelect('m')
+            ->leftJoin('a.emailMessages', 'm')
+            ->andWhere('a.student = :student')
+            ->andWhere('a.siret IN (:sirets)')
+            ->setParameter('student', $student)
+            ->setParameter('sirets', array_values(array_unique($sirets)))
+            ->orderBy('a.createdAt', 'ASC')
+            ->getQuery()
+            ->getResult() as $application) {
+            $found[(string) $application->getSiret()] = $application;
+        }
+
+        return $found;
+    }
+
+    /** @return list<string> every SIRET this student has a démarche about */
+    public function findSiretsForStudent(User $student): array
+    {
+        $rows = $this->createQueryBuilder('a')
+            ->select('DISTINCT a.siret AS siret')
+            ->andWhere('a.student = :student')
+            ->andWhere('a.siret IS NOT NULL')
+            ->setParameter('student', $student)
+            ->getQuery()
+            ->getScalarResult();
+
+        return array_values(array_filter(array_map(static fn (array $row): string => (string) ($row['siret'] ?? ''), $rows)));
+    }
+
+    /**
+     * How many démarches « à écrire » - nothing sent, nothing received - each of these students has.
+     *
+     * @param list<User> $students
+     *
+     * @return array<int, int> keyed by student id
+     */
+    public function countToWriteByStudent(array $students): array
+    {
+        if ([] === $students) {
+            return [];
+        }
+
+        /** @var list<array{student: int|string, total: int|string}> $rows */
+        $rows = $this->createQueryBuilder('a')
+            ->select('IDENTITY(a.student) AS student, COUNT(a.id) AS total')
+            ->leftJoin('a.emailMessages', 'm')
+            ->andWhere('a.student IN (:students)')
+            ->andWhere('m.id IS NULL')
+            ->setParameter('students', $students)
+            ->groupBy('a.student')
+            ->getQuery()
+            ->getScalarResult();
+
+        $counts = [];
+        foreach ($rows as $row) {
+            $counts[(int) $row['student']] = (int) $row['total'];
+        }
+
+        return $counts;
+    }
+
+    /**
      * A démarche belongs to a student *and* to the class they opened it in, and a null program is a
      * value of its own here - hence IS NULL rather than a parameter, which would never match.
      */

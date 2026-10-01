@@ -1,0 +1,32 @@
+{# Under a démarche of « Candidatures »: the company it is about, the student's note - read by their
+   teachers, which the field says - and, for a démarche « à écrire », « Retirer ».
+   Parameters: application, filter, schoolDepartment. #}
+<div class="cm-jobapp-lead">
+    {% if application.siret %}
+        <a class="cm-cs-link" href="{{ application.enterprise ? path('app_enterprise_pool_show', {id: application.enterprise.id}) : path('app_company_search_establishment', {siret: application.siret}) }}">{{ 'myJobApplicationsCompanyFicheAction'|trans }}</a>
+    {% elseif feature('company_search') %}
+        <a class="cm-cs-link" href="{{ path('app_company_search', {searched: 1, q: application.name, deps: schoolDepartment, unknown: 1}) }}">{{ 'myJobApplicationsFindInRegistryAction'|trans }}</a>
+    {% endif %}
+
+    <details class="cm-jobapp-lead__note"{{ application.toWrite or application.studentNote ? ' open' }}>
+        <summary>{{ application.studentNote ? 'myJobApplicationsNoteLabel'|trans : 'myJobApplicationsAddNoteAction'|trans }}</summary>
+        <form method="post" action="{{ path('app_my_job_application_note', {id: application.id, filter: filter}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('job_application_note') }}">
+            <textarea name="note" class="form-control form-control-sm" rows="2" maxlength="2000"
+                      aria-label="{{ 'myJobApplicationsNoteLabel'|trans }}"
+                      placeholder="{{ 'myJobApplicationsNotePlaceholder'|trans }}">{{ application.studentNote }}</textarea>
+            <span class="cm-jobapp-lead__hint">{{ 'myJobApplicationsNoteTeachersHint'|trans }}</span>
+            <twig:Cm:Button size="sm" variant="outline" type="submit">{{ 'myJobApplicationsNoteSaveAction'|trans }}</twig:Cm:Button>
+        </form>
+    </details>
+
+    {% if application.toWrite %}
+        <form method="post" action="{{ path('app_my_job_application_remove', {id: application.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('job_application_remove') }}">
+            <button type="submit" class="cm-cs-link"
+                    data-controller="confirm-submit"
+                    data-confirm-submit-message-value="{{ 'myJobApplicationsRemoveConfirm'|trans({'%name%': application.name}) }}"
+                    data-action="click->confirm-submit#confirm">{{ 'myJobApplicationsRemoveAction'|trans }}</button>
+        </form>
+    {% endif %}
+</div>

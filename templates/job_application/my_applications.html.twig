@@ -12,6 +12,12 @@
     ]}) }}
 {% endblock %}
 
+{% block page_actions %}
+    {% if feature('company_search') %}
+        <twig:Cm:Button variant="outline" href="{{ path('app_company_search') }}"><twig:ux:icon name="search" width="14" height="14" aria-hidden="true"/> {{ 'myJobApplicationsFindCompaniesAction'|trans }}</twig:Cm:Button>
+    {% endif %}
+{% endblock %}
+
 {% block main %}
     {% if searchClosed %}
         {# "Mark as finished" on the teacher side: the mailbox stays readable, sending is off. We
@@ -27,7 +33,7 @@
                 {% for value in filters %}
                     <a href="{{ path('app_my_job_applications', {filter: value}) }}"
                        class="cm-jobapp-filter{{ filter == value ? ' is-active' }}">
-                        {{ ('myJobApplicationsFilter' ~ value|capitalize ~ 'Label')|trans }}
+                        {{ ('myJobApplicationsFilter' ~ value|capitalize ~ 'Label')|trans }}{% if value == 'to_write' and toWriteCount > 0 %} ({{ toWriteCount }}){% endif %}
                     </a>
                 {% endfor %}
             </span>
@@ -39,7 +45,7 @@
             {% for row in rows %}
                 {% set application = row.application %}
                 {% set summary = row.summary %}
-                <div class="cm-jobapp-row{{ row.latestReply ? ' is-latest-reply' }}">
+                <div class="cm-jobapp-row{{ row.latestReply ? ' is-latest-reply' }}" id="application-{{ application.id }}">
                     <span class="cm-jobapp-row__dot cm-jobapp-row__dot--{{ row.accent }}"></span>
                     <div class="cm-jobapp-row__main">
                         <span class="cm-jobapp-row__name">
@@ -56,6 +62,7 @@
                         </span>
                     </div>
 
+                    {% include 'job_application/_lead_extra.html.twig' with {application: application, filter: filter, schoolDepartment: schoolDepartment} %}
                     <span class="cm-jobapp-row__side">
                         <span class="cm-jobapp-row__mails">
                             {{ 'jobApplicationMailCountLabel'|trans({'%count%': summary.mailCount}) }}
@@ -70,9 +77,13 @@
                         {# The link opens the mailbox on this application, in the folder that has
                            something to read: the inbox when a reply came in, Sent otherwise -
                            without which half the applications would lead to an empty list. #}
-                        <a class="cm-jobapp-row__link" href="{{ path(summary.replyAt ? 'app_school_mail' : 'app_school_mail_sent', {application: application.id}) }}">
-                            {{ 'myJobApplicationsViewMailsAction'|trans }}
-                        </a>
+                        {% if application.toWrite %}
+                            <twig:Cm:Button size="sm" variant="primary" href="{{ path('app_school_mail_compose', {for: application.id}) }}">{{ 'companySearchWriteAction'|trans }}</twig:Cm:Button>
+                        {% else %}
+                            <a class="cm-jobapp-row__link" href="{{ path(summary.replyAt ? 'app_school_mail' : 'app_school_mail_sent', {application: application.id}) }}">
+                                {{ 'myJobApplicationsViewMailsAction'|trans }}
+                            </a>
+                        {% endif %}
                     </span>
                 </div>
             {% endfor %}

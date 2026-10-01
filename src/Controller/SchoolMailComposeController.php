@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Attribute\RequiresFeature;
 use App\Entity\EmailMessage;
+use App\Entity\JobApplication;
 use App\Entity\SchoolMailDraft;
 use App\Entity\User;
 use App\Enum\Feature;
@@ -73,8 +74,14 @@ class SchoolMailComposeController extends AbstractController
         $reply = $draft?->getReplyTo() ?? $this->resolveReply($request, $student);
 
         // A reply stays in the démarche of the mail it answers: the student is not asked again what
-        // they already said when they wrote first.
+        // they already said when they wrote first. « Écrire » from a company of « Trouver une
+        // entreprise » (`?for=`) opens on the démarche it kept - the student's own, nobody else's.
         $application = $reply?->getJobApplication()?->getName() ?? '';
+        $kept = QueryValue::int($request, 'for');
+        if ('' === $application && $kept > 0) {
+            $chosen = $this->entityManager->find(JobApplication::class, $kept);
+            $application = null !== $chosen && $chosen->getStudent() === $student ? $chosen->getName() : '';
+        }
 
         if (null !== $draft) {
             return $this->renderCompose($student, [

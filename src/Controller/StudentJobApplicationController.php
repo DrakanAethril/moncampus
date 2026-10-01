@@ -58,12 +58,18 @@ class StudentJobApplicationController extends AbstractController
         $student = $this->findOrDenyAccess($id);
 
         $rows = [];
-        $counters = ['applications' => 0, 'replies' => 0, 'failed' => 0, 'followUps' => 0];
+        $counters = ['applications' => 0, 'replies' => 0, 'failed' => 0, 'followUps' => 0, 'toWrite' => 0];
 
         foreach ($this->applicationRepository->findForStudent($student) as $application) {
             $summary = $this->summaryBuilder->summarize($application);
 
-            ++$counters['applications'];
+            // A company kept from « Trouver une entreprise », nothing sent yet: not a démarche made,
+            // a démarche to make - counted apart (design/validated/vivier-entreprises.md §6.3).
+            if ($application->isToWrite()) {
+                ++$counters['toWrite'];
+            } else {
+                ++$counters['applications'];
+            }
             $counters['replies'] += null !== $summary['replyAt'] ? 1 : 0;
             $counters['failed'] += $summary['failed'] ? 1 : 0;
             // "Relances à faire": an application whose chip says it has been waiting past the
@@ -77,7 +83,10 @@ class StudentJobApplicationController extends AbstractController
             ];
         }
 
-        usort($rows, static fn (array $left, array $right): int => ($right['summary']['lastActivityAt'] <=> $left['summary']['lastActivityAt']));
+        // « À écrire » first - where a student who has kept twelve companies and written to none
+        // needs a hand - then the démarche that moved last.
+        usort($rows, static fn (array $left, array $right): int => [$right['application']->isToWrite(), $right['summary']['lastActivityAt']]
+            <=> [$left['application']->isToWrite(), $left['summary']['lastActivityAt']]);
 
         return $this->render('job_application/student_sheet.html.twig', [
             'student' => $student,

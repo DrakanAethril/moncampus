@@ -1,0 +1,39 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'enterprisePoolImportAction'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'companySearchPageHeading'|trans, url: path('app_company_search')},
+        {label: 'enterprisePoolPageHeading'|trans, url: path('app_enterprise_pool')},
+        {label: 'enterprisePoolImportAction'|trans, url: path('app_enterprise_pool_import')},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'enterprisePoolImportAction'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="cm-cs-fiche">
+        <div class="cm-cs-fiche__main">
+            <section class="cm-cs-card">
+                <h2 class="cm-cs-card__title">{{ 'enterpriseImportFileHeading'|trans }}</h2>
+                {{ form_start(form) }}
+                    {{ form_errors(form) }}
+                    {{ form_row(form.file) }}
+                    <twig:Cm:ActionBar>
+                        <twig:Cm:Button variant="primary" type="submit">{{ 'enterpriseImportAnalyzeAction'|trans }}</twig:Cm:Button>
+                    </twig:Cm:ActionBar>
+                {{ form_end(form) }}
+            </section>
+        </div>
+        <aside class="cm-cs-fiche__side">
+            <section class="cm-cs-card">
+                <h2 class="cm-cs-card__title">{{ 'enterpriseImportModelHeading'|trans }}</h2>
+                <p class="cm-cs-card__sub">{{ 'enterpriseImportModelText'|trans }}</p>
+                <div class="cm-cs-tags">{% for column in columns %}<span class="cm-cs-tag">{{ column }}</span>{% endfor %}</div>
+                <p class="cm-cs-card__sub">{{ 'enterpriseImportRulesText'|trans }}</p>
+                <a class="cm-cs-link" href="{{ path('app_enterprise_pool_import_template') }}" data-turbo="false">{{ 'enterpriseImportTemplateAction'|trans }}</a>
+            </section>
+        </aside>
+    </div>
+{% endblock %}

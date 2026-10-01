@@ -303,7 +303,7 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   part overflows) - never shipped in the code, never another year's. Deposits are frozen snapshots;
   deadlines lock nothing. The commission has no access at all. Students have no file library, so
   evidence is an upload, a link or a piece of work handed in.
-- **Accès aux fonctionnalités** — `App\Enum\Feature` (49 cases) + `#[RequiresFeature]` +
+- **Accès aux fonctionnalités** — `App\Enum\Feature` (59 cases) + `#[RequiresFeature]` +
   `App\Security\FeatureAccess`: which features are lit, per role and per formation. Gestion >
   Fonctionnalités is the screen. **The whole Pédagogie family is off by default**, with four
   exceptions named in `Feature::defaultRoles()` (`student_work`, `shared_documents`, `wiki` for
@@ -320,9 +320,31 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   `Enterprise::$siretConfirmedAt`; imports and « nouvelle entreprise » leave it « à confirmer », and
   `EnterpriseRepository::queryPendingSiret()` is the one definition the queue and its counter read.
 - **Stage / recherche d'emploi** — `JobSearch`, `JobApplication`, `TrainingOffer`,
-  `TrainingApplication` (postulation with free-form attachments). Note: there is deliberately **no**
-  Enterprise entity on this side — the job search names its own démarches; `Enterprise` belongs
-  exclusively to UFA.
+  `TrainingApplication` (postulation with free-form attachments). The job search names its own
+  démarches: a démarche is never *made* an `Enterprise`, it may only *point at* one of the vivier
+  (and at a SIRET) when the student kept it from « Trouver une entreprise » - see the next entry.
+- **Trouver une entreprise et vivier d'entreprises** — `App\Controller\CompanySearch\*`,
+  `src/Service/CompanySearch/`, `src/Service/EnterprisePool/`, spec `design/validated/vivier-entreprises.md`.
+  **`Feature::CompanySearch` and `Feature::EnterprisePool` are off for every role: administrators
+  only, until Gestion › Fonctionnalités opens them.** Two halves:
+  - **the search** reads the État's register (`RechercheEntreprisesClient::browse()`) through
+    `CompanySearchCriteria`, the one place filters become API parameters. Categories are **one list
+    for the whole establishment** (`CompanySearchCategory`, kept by ROLE_ADMIN), sole traders are
+    out unless a box says otherwise, and around a commune (`/near_point`) the API filters on activity
+    only - size, type and sole traders are then checked page by page (`CompanySearchCriteria::keeps()`);
+  - **the vivier** is `Enterprise`, no longer the UFA's alone: `EnterpriseHosting` (a **stage** or an
+    **alternance**, never added together, never defaulted), `EnterpriseContact` (communicable to
+    students only when ticked), `EnterpriseTeacherContact`, `EnterpriseNote` (the team's, **never
+    read by a student**). The UFA's alternances are **read** from `InternshipTutorLink`, never
+    copied: `EnterpriseHostings` is the one reading and drops a stored duplicate. A line of the
+    register is recognised by **confirmed** SIRET only; choosing an establishment in the register
+    confirms it (same rule as the SIRET queue), an import never does.
+  `EnterpriseVoter` holds the whole « qui voit quoi »: the hostings and shared contacts to all, the
+  team's part to teachers/staff once `enterprise_pool` is lit, the students' names, the two filters on
+  stage/alternance and every write to ROLE_ADMIN. A student's « Garder » is a `JobApplication` with no
+  mail yet (« à écrire », derived, never a status), carrying the SIRET; its `studentNote` is read by
+  their teachers. « Marquer terminé » on 1a asks the outcome: « Stage trouvé » enters the vivier,
+  « Alternance trouvée » does not (the UFA contract will).
 - **Courrier pro** — student mailboxes: `EmailAlias`, `EmailMessage`, `EmailAttachment`,
   `EmailEvent`, suppressions. Inbound via SES→S3→SQS, outbound via SES.
 - **Messagerie** — `MessageThread`/`Message`, audience-resolved. Present on web, **not** exposed in the
@@ -467,10 +489,11 @@ password hash is ever stored locally.
 `ROLE_STUDENT`, `ROLE_TUTOR` (external apprenticeship tutors), `ROLE_SUPPORT-TECH`, `ROLE_ECO`,
 `ROLE_EXTERNAL`. `ROLE_TUTOR` and `ROLE_EXTERNAL` are both excluded from message recipients.
 
-**Fine-grained checks** are Voters (`src/Security/Voter/`, 25 of them: Assignment, AudienceTargetable,
-DocumentationArticle, EcoParcours, Evaluation, FileLibrary, GameGesture, GuestAccount, GuestConsole,
-InternshipTutorLink, LessonLog, MessageThread, Portfolio, Progression, ProxmoxHost, QuizFolder, QuizTemplate,
-SequenceFolder, SequenceInstance, SequenceTemplate, SignupList, Survey, SurveyFolder, Ticket, Wiki).
+**Fine-grained checks** are Voters (`src/Security/Voter/`, 28 of them: Assignment, AudienceTargetable,
+DocumentationArticle, Dossier, EcoParcours, Enterprise, Evaluation, FileLibrary, GameGesture, GuestAccount,
+GuestConsole, InternshipTutorLink, LessonLog, MessageThread, Portfolio, Progression, ProxmoxHost, QuizFolder,
+QuizTemplate, SequenceFolder, SequenceInstance, SequenceTemplate, SignupList, Survey, SurveyFolder, Ticket,
+Wiki, WordCloud).
 New per-object rules belong in a Voter, not inline in a controller.
 
 `src/Security/Ldap*Syncer.php` also **writes** provisioning requests (`LdapManageUser`,
@@ -489,8 +512,9 @@ New per-object rules belong in a Voter, not inline in a controller.
 | Discord | Support-ticket notifications | `DISCORD_WEBHOOK_*` |
 | LDAP | Authentication + directory | `LDAP_*` |
 | École Directe (Aplim) | Read and send to one's own teacher account from the server (private API, no stored credentials, admins only for now) | `ECOLEDIRECTE_*` |
-| Recherche d'entreprises (DINUM) | UFA: proposes an employer's SIRET from its name and address (SIRENE + RNE); a person always confirms. Open, keyless, **7 requests/s per IP**, Licence Ouverte. Only the employer's name and address are sent | — |
-| IGN Géoplateforme | e-CO: map tiles (browser and phone, WMTS) and terrain readings (server: altimetry, BD TOPO WFS, pedestrian routing, reverse geocoding). Open, keyless, Etalab 2.0 - credit the IGN | — |
+| Recherche d'entreprises (DINUM) | UFA: proposes an employer's SIRET from its name and address (SIRENE + RNE); a person always confirms. « Trouver une entreprise »: the register searched by NAF code, département or radius. Open, keyless, **7 requests/s per IP** - one shared token bucket (`sirene_api`) and a day's cache (`cache.sirene`) for the whole platform. Licence Ouverte. Only search criteria and employers' names and addresses are sent, nothing about a student | — |
+| Google Maps (JavaScript API) | « Trouver une entreprise » and the vivier's fiches: the map, loaded **only after the visitor agrees** (`google_map_controller.js`, cookie `google_maps_consent`); itineraries are plain links, the billed Directions API is never called. An empty key draws no map | `GOOGLE_MAPS_API_KEY` |
+| IGN Géoplateforme | e-CO: map tiles (browser and phone, WMTS) and terrain readings (server: altimetry, BD TOPO WFS, pedestrian routing, reverse geocoding). « Trouver une entreprise »: forward geocoding of a commune (never an address) and of the school. Open, keyless, Etalab 2.0 - credit the IGN | — |
 | data.gouv.fr (France compétences) | Portfolio: the RNCP fiche of a référentiel, read from the daily open-data export by `app:rncp:fetch` / `app:rncp:check` - never during a request. Open, keyless, Licence Ouverte 2.0 | — |
 | claude.ai (Anthropic) | Calls the Claude connector (`/mcp`, OAuth) from `160.79.104.0/21` — inbound only, the app never calls Anthropic | — |
 

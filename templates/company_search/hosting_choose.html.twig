@@ -1,0 +1,58 @@
+{# « Ajouter un accueil », step 1: which company - design/validated/vivier-entreprises.md §7.1. #}
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'enterprisePoolAddHostingAction'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'companySearchPageHeading'|trans, url: path('app_company_search')},
+        {label: 'enterprisePoolAddHostingAction'|trans, url: path('app_enterprise_pool_hosting_choose')},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'enterprisePoolAddHostingAction'|trans }}{% endblock %}
+
+{% block main %}
+    <p class="cm-cs-lede">{{ 'enterprisePoolChooseLede'|trans }}</p>
+
+    <div class="cm-cs-fiche">
+        <div class="cm-cs-fiche__main">
+            <section class="cm-cs-card" data-controller="enterprise-lookup"
+                     data-enterprise-lookup-url-value="{{ path('app_enterprise_pool_lookup') }}"
+                     data-enterprise-lookup-registry-action-value="{{ path('app_enterprise_pool_from_registry') }}"
+                     data-enterprise-lookup-token-value="{{ csrf_token('enterprise_from_registry') }}"
+                     data-enterprise-lookup-pool-label-value="{{ 'enterprisePoolLookupPoolHeading'|trans }}"
+                     data-enterprise-lookup-registry-label-value="{{ 'enterprisePoolLookupRegistryHeading'|trans }}"
+                     data-enterprise-lookup-unavailable-label-value="{{ 'companySearchUnavailableError'|trans }}"
+                     data-enterprise-lookup-empty-label-value="{{ 'enterprisePoolLookupEmptyText'|trans }}">
+                <h2 class="cm-cs-card__title">{{ 'enterprisePoolChooseHeading'|trans }}</h2>
+                <label class="cm-cs-field" for="enterprise-lookup-term">
+                    <span>{{ 'enterprisePoolLookupLabel'|trans }}</span>
+                    <input type="search" id="enterprise-lookup-term" class="form-control" autocomplete="off"
+                           placeholder="{{ 'enterprisePoolLookupPlaceholder'|trans }}"
+                           data-enterprise-lookup-target="input" data-action="input->enterprise-lookup#lookup">
+                </label>
+                <label class="cm-cs-field" for="enterprise-lookup-dep">
+                    <span>{{ 'enterprisePoolLookupDepartmentLabel'|trans }}</span>
+                    <input type="text" id="enterprise-lookup-dep" class="form-control form-control-sm" maxlength="3" value="{{ department }}"
+                           placeholder="87" data-enterprise-lookup-target="department" data-action="input->enterprise-lookup#lookup">
+                </label>
+                <div class="cm-cs-lookup" data-enterprise-lookup-target="results" aria-live="polite"></div>
+            </section>
+        </div>
+        <aside class="cm-cs-fiche__side">
+            <section class="cm-cs-card">
+                <h2 class="cm-cs-card__title">{{ 'enterprisePoolCreateHeading'|trans }}</h2>
+                <p class="cm-cs-card__sub">{{ 'enterprisePoolCreateText'|trans }}</p>
+                <form method="post" action="{{ path('app_enterprise_pool_create') }}" class="cm-cs-stack">
+                    <input type="hidden" name="_token" value="{{ csrf_token('enterprise_create') }}">
+                    <label class="cm-cs-field" for="enterprise-create-name"><span>{{ 'enterprisePoolCreateNameLabel'|trans }}</span>
+                        <input type="text" id="enterprise-create-name" name="name" class="form-control form-control-sm" required maxlength="255"></label>
+                    <label class="cm-cs-field" for="enterprise-create-city"><span>{{ 'enterprisePoolCreateCityLabel'|trans }}</span>
+                        <input type="text" id="enterprise-create-city" name="city" class="form-control form-control-sm" maxlength="255"></label>
+                    <twig:Cm:Button size="sm" variant="outline" type="submit">{{ 'enterprisePoolCreateAction'|trans }}</twig:Cm:Button>
+                </form>
+            </section>
+        </aside>
+    </div>
+{% endblock %}

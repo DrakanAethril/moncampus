@@ -1,0 +1,22 @@
+{# What the vivier knows of one establishment of the register - App\Service\EnterprisePool\PoolAnnotations.
+   Stage and alternance are always two badges, never one count (D2). The team's part (teacher
+   contacts, number of notes) is only in `entry` when EnterpriseVoter let the controller ask for it.
+   Parameter: entry. #}
+<span class="cm-cs-badges">
+    {% if entry.summary %}
+        {% for line in entry.summary.lines %}
+            <twig:Cm:Badge tone="{{ line.kind.badgeTone.value }}">{{ line.kind.labelKey|trans }} · {{ line.domain }} · {{ line.years|join(', ') }}</twig:Cm:Badge>
+        {% endfor %}
+    {% else %}
+        <twig:Cm:Badge tone="teal">{{ 'enterprisePoolKnownBadge'|trans }}</twig:Cm:Badge>
+    {% endif %}
+    {% for name in entry.teacherContacts %}
+        <twig:Cm:Badge tone="gray">{{ 'enterprisePoolTeacherContactBadge'|trans({'%name%': name}) }}</twig:Cm:Badge>
+    {% endfor %}
+    {% if entry.noteCount > 0 %}
+        <twig:Cm:Badge tone="gray">{{ 'enterprisePoolNoteCountBadge'|trans({'%count%': entry.noteCount}) }}</twig:Cm:Badge>
+    {% endif %}
+    {% if entry.sharedContactCount > 0 %}
+        <twig:Cm:Badge tone="purple">{{ 'enterprisePoolSharedContactBadge'|trans({'%count%': entry.sharedContactCount}) }}</twig:Cm:Badge>
+    {% endif %}
+</span>

@@ -26,6 +26,22 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.10.01'
+      date: '2026-10-01'
+      summary: "L'administration essaie une recherche d'entreprises dans le registre de l'État et un vivier des entreprises qui ont accueilli nos étudiants en stage ou en alternance, avant leur ouverture. Les démarches de recherche de stage accueillent une note de l'étudiant, et terminer une recherche demande ce qu'elle a donné."
+      entries:
+          - type: nouveaute
+            title: "Recherche d'entreprises pour trouver un stage, en essai par l'administration avant son ouverture"
+            detail: "Par activité, département ou autour d'une commune, taille et type de structure ; chaque entreprise a sa fiche, avec carte, itinéraire et pistes pour trouver un contact."
+          - type: nouveaute
+            title: "Vivier d'entreprises, en essai par l'administration : où nos étudiants ont fait un stage ou une alternance"
+            detail: "Historique saisi ou importé, filières et années d'accueil, contacts, enseignants qui connaissent l'entreprise et notes de l'équipe."
+          - type: modification
+            title: "Candidatures : chaque démarche peut porter une note de l'étudiant, que ses enseignants lisent"
+          - type: modification
+            title: "Suivi des recherches : terminer une recherche demande si un stage ou une alternance a été trouvé, et chez qui"
+          - type: interne
+            title: "Le registre des entreprises de l'État est interrogé avec un cache et un débit partagés par toute la plateforme"
     - version: '2026.09.30.2'
       date: '2026-09-30'
       summary: "e-CO : un parcours se partage désormais entre collègues, et une course peut ne porter que sur quelques balises choisies, dans l'ordre ou non. La tolérance de validation d'une nouvelle balise passe à 60 mètres."

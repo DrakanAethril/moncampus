@@ -5,15 +5,20 @@ declare(strict_types=1);
 namespace App\Service\Sirene;
 
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Target;
+use Symfony\Component\RateLimiter\Exception\MaxWaitDurationExceededException;
+use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
  * The État's « API Recherche d'entreprises » (recherche-entreprises.api.gouv.fr, DINUM): the SIRENE
  * and RNE registers, searchable by name, address, SIREN or SIRET. Open - no key, Licence Ouverte -
- * and limited to **7 requests per second per IP**, which the client stays under by spacing its own
- * calls. The pause is kept on the instance, which in worker mode outlives the request: harmless, a
- * timestamp that is too old only means no pause.
+ * and limited to **7 requests per second per IP** - one IP for the whole platform. The client stays
+ * under it through the `sirene_api` token bucket, shared by every worker of the container: the
+ * per-instance pause it used before protected one process out of eight, which was enough for the
+ * UFA's SIRET queue and not for a class searching « Trouver une entreprise » at once. A call that
+ * would wait more than MAX_WAIT for its token is an outage like any other (R7 of the vivier spec).
  *
  * Only an employer's name and address are ever sent, never anything about an alternant.
  *
@@ -28,26 +33,81 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  * @phpstan-type Establishment array{
  *     siret?: mixed, adresse?: mixed, code_postal?: mixed, etat_administratif?: mixed,
  *     est_siege?: mixed, date_creation?: mixed, date_fermeture?: mixed,
- *     liste_enseignes?: mixed, nom_commercial?: mixed
+ *     liste_enseignes?: mixed, nom_commercial?: mixed, latitude?: mixed, longitude?: mixed,
+ *     activite_principale?: mixed, tranche_effectif_salarie?: mixed, libelle_commune?: mixed
  * }
  * @phpstan-type Company array{
  *     siren?: mixed, nom_complet?: mixed, nom_raison_sociale?: mixed, sigle?: mixed,
- *     matching_etablissements?: mixed
+ *     matching_etablissements?: mixed, siege?: mixed, activite_principale?: mixed,
+ *     tranche_effectif_salarie?: mixed, categorie_entreprise?: mixed, nature_juridique?: mixed
  * }
  */
 class RechercheEntreprisesClient
 {
-    /** The published limit is 7/s; a little over 1/7 s between two calls keeps clear of it. */
-    private const float MIN_INTERVAL = 0.15;
-
     private const int PER_PAGE = 10;
 
-    private float $lastCallAt = 0.0;
+    /** Seconds a call may wait for its token before the register counts as unavailable. */
+    private const float MAX_WAIT = 2.0;
+
+    /** INSEE's legal-form code of an entrepreneur individuel (catégorie juridique 1000). */
+    private const string INDIVIDUAL_LEGAL_FORM = '1000';
 
     public function __construct(
         private readonly HttpClientInterface $sireneHttpClient,
         private readonly LoggerInterface $logger,
+        #[Target('sirene_api')]
+        private readonly RateLimiterFactoryInterface $sireneApiLimiter,
     ) {
+    }
+
+    /**
+     * One page of « Trouver une entreprise »: `/search` (filters only, no name needed) or
+     * `/near_point` (around a commune). The parameters come whole from
+     * App\Service\CompanySearch\CompanySearchCriteria; this method only adds the paging and the
+     * shape of the answer, and keeps the **open** establishments - a company left with none in the
+     * zone is dropped from the page and counted in RegistryPage::$dropped.
+     *
+     * @param '/search'|'/near_point' $endpoint
+     * @param array<string, string>   $parameters
+     */
+    public function browse(string $endpoint, array $parameters, int $page): RegistryPage
+    {
+        $page = max(1, min($page, intdiv(RegistryPage::MAX_RESULTS, RegistryPage::PER_PAGE)));
+        $data = $this->request($endpoint, [
+            ...$parameters,
+            'page' => $page,
+            'per_page' => RegistryPage::PER_PAGE,
+            'minimal' => 'true',
+            'include' => 'matching_etablissements,siege',
+        ]);
+
+        $companies = [];
+        $dropped = 0;
+        foreach ($this->companiesOf($data) as $company) {
+            $establishments = [];
+            foreach ($this->establishmentsOf($company) as $establishment) {
+                $candidate = $this->candidate($company, $establishment);
+                if ($candidate->open) {
+                    $establishments[] = $candidate;
+                }
+            }
+
+            if ([] === $establishments) {
+                ++$dropped;
+                continue;
+            }
+
+            $companies[] = $this->registryCompany($company, $establishments);
+        }
+
+        return new RegistryPage(
+            total: $this->intOf($data['total_results'] ?? null),
+            page: $page,
+            totalPages: $this->intOf($data['total_pages'] ?? null),
+            companies: $companies,
+            dropped: $dropped,
+            readAt: new \DateTimeImmutable(),
+        );
     }
 
     /**
@@ -105,27 +165,85 @@ class RechercheEntreprisesClient
     }
 
     /**
+     * One establishment **with its company** - the fiche of « Trouver une entreprise ». Closed ones
+     * included, like establishment(): a fiche kept by a student must still open, and say it shut.
+     */
+    public function company(string $siret): ?RegistryCompany
+    {
+        $siret = Siret::normalize($siret);
+
+        foreach ($this->results(['q' => $siret, 'per_page' => 1, 'minimal' => 'true', 'include' => 'matching_etablissements,siege']) as $company) {
+            foreach ($this->establishmentsOf($company) as $establishment) {
+                if (($establishment['siret'] ?? null) === $siret) {
+                    return $this->registryCompany($company, [$this->candidate($company, $establishment)]);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param Company                     $company
+     * @param list<EstablishmentCandidate> $establishments
+     */
+    private function registryCompany(array $company, array $establishments): RegistryCompany
+    {
+        $siege = $company['siege'] ?? null;
+
+        return new RegistryCompany(
+            siren: $establishments[0]->siren,
+            fullName: $establishments[0]->fullName,
+            activityCode: $this->stringOrNull($company['activite_principale'] ?? null),
+            employeeBracket: $this->stringOrNull($company['tranche_effectif_salarie'] ?? null),
+            category: $this->stringOrNull($company['categorie_entreprise'] ?? null),
+            headOffice: \is_array($siege) && \is_string($siege['siret'] ?? null) ? $this->candidate($company, $siege) : null,
+            establishments: $establishments,
+            individual: self::INDIVIDUAL_LEGAL_FORM === $this->stringOrNull($company['nature_juridique'] ?? null),
+            legalForm: $this->stringOrNull($company['nature_juridique'] ?? null),
+        );
+    }
+
+    /**
      * @param array<string, scalar> $parameters
      *
      * @return list<Company>
      */
     private function results(array $parameters): array
     {
+        return $this->companiesOf($this->request('/search', $parameters));
+    }
+
+    /**
+     * @param array<string, scalar> $parameters
+     *
+     * @return array<array-key, mixed>
+     */
+    private function request(string $endpoint, array $parameters): array
+    {
         $this->pace();
 
         try {
-            $response = $this->sireneHttpClient->request('GET', '/search', ['query' => $parameters]);
+            $response = $this->sireneHttpClient->request('GET', $endpoint, ['query' => $parameters]);
             $status = $response->getStatusCode();
 
             if (200 !== $status) {
                 throw new SireneUnavailableException(\sprintf('Recherche d\'entreprises answered HTTP %d.', $status));
             }
 
-            $data = $response->toArray(false);
+            return $response->toArray(false);
         } catch (ExceptionInterface $exception) {
             throw new SireneUnavailableException(\sprintf('Recherche d\'entreprises unreachable: %s', $exception->getMessage()), 0, $exception);
         }
+    }
 
+    /**
+     * @param array<array-key, mixed> $data
+     *
+     * @return list<Company>
+     */
+    private function companiesOf(array $data): array
+    {
         $results = $data['results'] ?? null;
         if (!\is_array($results)) {
             $this->refuse('search answer without results');
@@ -197,7 +315,23 @@ class RechercheEntreprisesClient
             headOffice: true === ($establishment['est_siege'] ?? null),
             createdOn: $this->dateOrNull($establishment['date_creation'] ?? null),
             closedOn: $this->dateOrNull($establishment['date_fermeture'] ?? null),
+            latitude: $this->floatOrNull($establishment['latitude'] ?? null),
+            longitude: $this->floatOrNull($establishment['longitude'] ?? null),
+            activityCode: $this->stringOrNull($establishment['activite_principale'] ?? null),
+            employeeBracket: $this->stringOrNull($establishment['tranche_effectif_salarie'] ?? null),
+            city: $this->stringOrNull($establishment['libelle_commune'] ?? null),
         );
+    }
+
+    /** The API writes coordinates as strings (« 45.859338617 »). */
+    private function floatOrNull(mixed $value): ?float
+    {
+        return is_numeric($value) ? (float) $value : null;
+    }
+
+    private function intOf(mixed $value): int
+    {
+        return is_numeric($value) ? (int) $value : 0;
     }
 
     private function stringOrNull(mixed $value): ?string
@@ -214,15 +348,18 @@ class RechercheEntreprisesClient
         return \DateTimeImmutable::createFromFormat('!Y-m-d', $value) ?: null;
     }
 
+    /**
+     * Waits for a token of the platform-wide bucket. Past MAX_WAIT the register is « unavailable »
+     * for this call: a page that answers « réessayez » beats a page that hangs, and beats the IP
+     * being throttled for everybody.
+     */
     private function pace(): void
     {
-        $elapsed = microtime(true) - $this->lastCallAt;
-
-        if ($elapsed < self::MIN_INTERVAL) {
-            usleep((int) ((self::MIN_INTERVAL - $elapsed) * 1_000_000));
+        try {
+            $this->sireneApiLimiter->create('recherche-entreprises')->reserve(1, self::MAX_WAIT)->wait();
+        } catch (MaxWaitDurationExceededException $exception) {
+            throw new SireneUnavailableException('Recherche d\'entreprises: platform quota reached.', 0, $exception);
         }
-
-        $this->lastCallAt = microtime(true);
     }
 
     private function refuse(string $what): never

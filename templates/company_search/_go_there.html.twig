@@ -1,0 +1,20 @@
+{# « Y aller » - the distance from the school as the crow flies, and itinerary links that open in
+   Google Maps on public transport. No travel time is shown: that would need Google's routing
+   service, which is billed (vivier spec §8.1). The map itself is drawn by google_map_controller.js
+   once the person has agreed to load Google's script. Parameters: establishment, schoolPlace, name. #}
+{% set destination = establishment.latitude is not null ? establishment.latitude ~ ',' ~ establishment.longitude : establishment.address %}
+<section class="cm-cs-card">
+    <h2 class="cm-cs-card__title">{{ 'companySearchGoThereHeading'|trans }}</h2>
+    {% if establishment.latitude is not null %}
+        {% include 'company_search/_google_map.html.twig' with {markers: [{latitude: establishment.latitude, longitude: establishment.longitude, title: name}], height: 'small'} %}
+    {% endif %}
+    {% if schoolPlace and establishment.latitude is not null %}
+        <p class="cm-cs-card__sub">{{ 'companySearchFromSchoolKm'|trans({'%km%': distance_km(schoolPlace.latitude, schoolPlace.longitude, establishment.latitude, establishment.longitude)|number_format(1, ',', ' ')}) }}</p>
+    {% endif %}
+    <ul class="cm-cs-links">
+        {% if schoolPlace %}
+            <li><a href="https://www.google.com/maps/dir/?api=1&amp;origin={{ (schoolPlace.latitude ~ ',' ~ schoolPlace.longitude)|url_encode }}&amp;destination={{ destination|url_encode }}&amp;travelmode=transit" target="_blank" rel="noopener noreferrer">{{ 'companySearchRouteFromSchoolAction'|trans }} ↗</a></li>
+        {% endif %}
+        <li><a href="https://www.google.com/maps/dir/?api=1&amp;destination={{ destination|url_encode }}&amp;travelmode=transit" target="_blank" rel="noopener noreferrer">{{ 'companySearchRouteFromElsewhereAction'|trans }} ↗</a></li>
+    </ul>
+</section>

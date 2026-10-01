@@ -273,6 +273,9 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // administrator's. That the feature ships **off for every role** is the matrix's
             // business and is pinned by FeatureDefaultsTest.
             '/jobboard' => 200,
+            '/company-search' => 200,
+            '/company-search/categories' => 403,
+            '/enterprises' => 403,
             '/settings/jobboard/api' => 403,
             '/settings/jobboard/sources' => 403,
             '/settings/jobboard/import' => 403,
@@ -462,6 +465,10 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // Jobboard: the board is readable, the keys handed to the collecting agent are not a
             // teacher's business.
             '/jobboard' => 200,
+            '/company-search' => 200,
+            '/company-search/categories' => 403,
+            '/enterprises' => 200,
+            '/enterprises/import' => 403,
             '/settings/jobboard/api' => 403,
             '/settings/jobboard/sources' => 403,
             '/settings/jobboard/import' => 403,
@@ -640,6 +647,11 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // even though nobody is delivered it - and the two configuration screens are theirs
             // alone: the ingestion keys, and the manual import of a file of offers.
             '/jobboard' => 200,
+            '/company-search' => 200,
+            '/company-search/categories' => 200,
+            '/enterprises' => 200,
+            '/enterprises/hostings/choose' => 200,
+            '/enterprises/import' => 200,
             '/settings/jobboard/api' => 200,
             '/settings/jobboard/sources' => 200,
             '/settings/jobboard/import' => 200,
@@ -802,6 +814,8 @@ class RoleAccessSmokeTest extends FunctionalTestCase
             // nothing at all - they belong to no formation, so their perimeter is empty. An empty
             // board rather than a 404: the feature exists, it simply has nothing for them.
             '/jobboard' => 200,
+            '/company-search' => 200,
+            '/enterprises' => 403,
             '/settings/jobboard/api' => 403,
             '/settings/jobboard/sources' => 403,
             '/settings/jobboard/import' => 403,

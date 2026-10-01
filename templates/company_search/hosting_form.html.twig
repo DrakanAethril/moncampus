@@ -1,0 +1,80 @@
+{# « Ajouter un accueil », step 2 - and its correction. The type has no default (D2). #}
+{% extends 'layout/app.html.twig' %}
+
+{% set heading = isNew ? 'enterprisePoolAddHostingAction'|trans : 'enterprisePoolEditHostingAction'|trans %}
+
+{% block title %}{{ heading }} · {{ enterprise.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'companySearchPageHeading'|trans, url: path('app_company_search')},
+        {label: enterprise.name, url: path('app_enterprise_pool_show', {id: enterprise.id})},
+        {label: heading, url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ heading }} · {{ enterprise.name }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+                {{ form_errors(form) }}
+                <twig:Cm:Subhead :title="'enterpriseHostingSectionHosting'|trans"/>
+                <div class="row g-3">
+                    <div class="col-md-4">{{ form_row(form.kind) }}</div>
+                    <div class="col-md-4">{{ form_row(form.yearStart) }}</div>
+                    <div class="col-md-4"></div>
+                    <div class="col-md-6">{{ form_row(form.track) }}</div>
+                    <div class="col-md-6">{{ form_row(form.option) }}</div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="hosting-student">{{ 'enterpriseHostingStudentFieldLabel'|trans }}</label>
+                        <select id="hosting-student" name="student_id"
+                                data-controller="tom-select"
+                                data-tom-select-url-value="{{ path('app_enterprise_pool_student_search') }}"
+                                data-tom-select-minimum-input-length-value="2"
+                                data-tom-select-placeholder-value="{{ 'enterpriseHostingStudentPlaceholder'|trans }}">
+                            <option value=""></option>
+                            {% if hosting.student %}
+                                <option value="{{ hosting.student.id }}" selected>{{ hosting.student.displayName ?? hosting.student.username }}</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">{{ form_row(form.studentName) }}</div>
+                    <div class="col-md-3">{{ form_row(form.startDate) }}</div>
+                    <div class="col-md-3">{{ form_row(form.endDate) }}</div>
+                    <div class="col-md-6">{{ form_row(form.missions) }}</div>
+                </div>
+
+                <twig:Cm:Subhead :title="'enterpriseHostingSectionTutor'|trans" :hint="'enterpriseHostingSectionTutorHint'|trans"/>
+                <div class="row g-3">
+                    <div class="col-md-6">{{ form_row(form.contact) }}</div>
+                    <div class="col-md-6"></div>
+                    <div class="col-md-3">{{ form_row(form.newContactName) }}</div>
+                    <div class="col-md-3">{{ form_row(form.newContactJobTitle) }}</div>
+                    <div class="col-md-3">{{ form_row(form.newContactEmail) }}</div>
+                    <div class="col-md-3">{{ form_row(form.newContactPhone) }}</div>
+                    <div class="col-12">{{ form_row(form.newContactShareable) }}</div>
+                </div>
+
+                <twig:Cm:ActionBar>
+                    <twig:Cm:Button variant="outline" href="{{ path('app_enterprise_pool_show', {id: enterprise.id}) }}">{{ 'cancelAction'|trans }}</twig:Cm:Button>
+                    {% if isNew %}
+                        <twig:Cm:Button variant="outline" type="submit" name="save_and_add" value="1">{{ 'enterpriseHostingSaveAndAddAction'|trans }}</twig:Cm:Button>
+                    {% endif %}
+                    <twig:Cm:Button variant="primary" type="submit">{{ 'enterpriseHostingSaveAction'|trans }}</twig:Cm:Button>
+                </twig:Cm:ActionBar>
+            {{ form_end(form) }}
+
+            {% if not isNew %}
+                <form method="post" action="{{ path('app_enterprise_pool_hosting_withdraw', {id: hosting.id}) }}" class="mt-3">
+                    <input type="hidden" name="_token" value="{{ csrf_token('enterprise_hosting_withdraw') }}">
+                    <button type="submit" class="cm-cs-link"
+                            data-controller="confirm-submit"
+                            data-confirm-submit-message-value="{{ 'enterpriseHostingWithdrawConfirm'|trans }}"
+                            data-action="click->confirm-submit#confirm">{{ 'enterpriseHostingWithdrawAction'|trans }}</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
