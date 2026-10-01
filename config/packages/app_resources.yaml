@@ -13,8 +13,8 @@ parameters:
             ios_bundle_id: 'fr.beaupeyrat.moncampus'
         eco:
             name: 'e-CO'
-            version: '1.4.0'
-            updated_at: '2026-09-30'
+            version: '1.4.1'
+            updated_at: '2026-10-01'
             android_size: '74 Mo'
             ios_size: '36 Mo'
             ios_bundle_id: 'fr.beaupeyrat.eco'
