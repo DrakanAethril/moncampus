@@ -1,6 +1,7 @@
 {# Mobile counterpart of magic_login.html.twig (design_handoff_mobile, tour 6): the button opens
    the app itself through its deep link scheme rather than the website, so the phone that receives
-   the mail is the phone that gets logged in. #}
+   the mail is the phone that gets logged in. Asked from the PWA (webAppUrl), it opens that page
+   instead, which no deep link reaches. #}
 {% extends 'emails/_layout.html.twig' %}
 
 {% block subject %}{{ 'magicLoginEmailSubject'|trans }}{% endblock %}
@@ -17,7 +18,7 @@
     <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 24px 0;">
         <tr>
             <td style="border-radius: 9px; background-color: #1B6BA8;">
-                <a href="campusmanager://login/{{ token }}" style="display: inline-block; padding: 10px 20px; color: #ffffff; text-decoration: none; font-weight: 600;">
+                <a href="{{ webAppUrl ? webAppUrl ~ '?login=' ~ token : 'campusmanager://login/' ~ token }}" style="display: inline-block; padding: 10px 20px; color: #ffffff; text-decoration: none; font-weight: 600;">
                     Ouvrir l'application
                 </a>
             </td>

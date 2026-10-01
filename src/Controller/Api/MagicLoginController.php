@@ -53,6 +53,11 @@ class MagicLoginController extends AbstractController
             $magicLoginService->requestMobileLink(
                 $userRepository->findOneBy(['contactEmail' => $email]),
                 $request->getClientIp(),
+                // The PWA cannot be reached by the app's deep link: the mail opens the PWA itself,
+                // on this server, which is where it is served from (public/campus-app/).
+                MobileApp::CampusWeb === $this->declaredApp($request)
+                    ? $request->getSchemeAndHttpHost().'/campus-app/'
+                    : null,
             );
         }
 
@@ -82,14 +87,20 @@ class MagicLoginController extends AbstractController
             return $this->json(['error' => 'link_expired'], Response::HTTP_GONE);
         }
 
-        // Only moncampus-mobile answers campusmanager:// links, so that is the app when none is named.
-        $declared = JsonRequestPayload::fromRequest($request)->string('client');
-        $app = '' !== $declared ? MobileApp::fromDeclared($declared) : MobileApp::Campus;
-
         return $this->json([
-            ...$mobileSessions->open($user, $app, $request->getClientIp())->toArray(),
+            ...$mobileSessions->open($user, $this->declaredApp($request), $request->getClientIp())->toArray(),
             'firstname' => $user->getFirstname(),
         ]);
+    }
+
+    /**
+     * Only moncampus-mobile answers campusmanager:// links, so that is the app when none is named.
+     */
+    private function declaredApp(Request $request): MobileApp
+    {
+        $declared = JsonRequestPayload::fromRequest($request)->string('client');
+
+        return '' !== $declared ? MobileApp::fromDeclared($declared) : MobileApp::Campus;
     }
 
     /** @return array{email: string, token: string} */
