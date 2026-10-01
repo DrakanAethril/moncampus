@@ -8,8 +8,10 @@
 //
 // Two senders on one queue would post the same items twice (the server keeps every position it
 // is given), so a pass of either holds the same Web Lock. A pass removes an item only once the
-// server has answered it, and stops a kind of item at its first failure to keep the order - the
-// rules of QueueProcessor, which flush() below repeats for the service worker.
+// server has answered it - accepted, or refused for good (a 4xx but 408/429), which would be
+// refused again - and stops a kind of item at its first failure otherwise, to keep the order. The
+// rules of QueueProcessor (lib/services/queue_processor.dart), which flush() below repeats for the
+// service worker: change one, change the other.
 (function (scope) {
     'use strict';
 
@@ -18,6 +20,8 @@
     const LOCK = 'eco-queue-flush';
     const SYNC_TAG = 'eco-queue';
     const SEQUENTIAL = ['scan', 'sos', 'app_event'];
+    // QueueProcessor.positionBatchSize.
+    const POSITION_BATCH_SIZE = 200;
 
     let database = null;
 
@@ -104,7 +108,18 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body),
         });
-        if (!response.ok) throw new Error(`${path} answered ${response.status}`);
+        if (!response.ok) {
+            const error = new Error(`${path} answered ${response.status}`);
+            error.status = response.status;
+            throw error;
+        }
+    }
+
+    // ApiException.isRefusal: the server said no for good. No status at all is the network.
+    function isRefusal(error) {
+        const status = error && error.status;
+
+        return status >= 400 && status < 500 && status !== 408 && status !== 429;
     }
 
     // Positions go in one call per runner, scans / SOS / app events one by one - as
@@ -118,12 +133,15 @@
             byToken.get(item.token).push(item);
         }
         for (const [token, group] of byToken) {
-            try {
-                await post(origin, '/api/eco/runner/positions', { token, points: group.map((item) => item.payload) });
-            } catch (error) {
-                continue;
+            for (let start = 0; start < group.length; start += POSITION_BATCH_SIZE) {
+                const batch = group.slice(start, start + POSITION_BATCH_SIZE);
+                try {
+                    await post(origin, '/api/eco/runner/positions', { token, points: batch.map((item) => item.payload) });
+                } catch (error) {
+                    if (!isRefusal(error)) break;
+                }
+                for (const item of batch) await remove(item.id);
             }
-            for (const item of group) await remove(item.id);
         }
     }
 
@@ -144,10 +162,11 @@
                 } else if ('sos' === type) {
                     await post(origin, '/api/eco/runner/sos', { token: item.token });
                 } else {
-                    await post(origin, '/api/eco/runner/app-events', { token: item.token, type: item.payload.type });
+                    const { type, at } = item.payload;
+                    await post(origin, '/api/eco/runner/app-events', { token: item.token, type, ...(at != null ? { at } : {}) });
                 }
             } catch (error) {
-                return;
+                if (!isRefusal(error)) return;
             }
             await remove(item.id);
         }
