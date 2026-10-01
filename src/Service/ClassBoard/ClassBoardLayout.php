@@ -36,6 +36,8 @@ final class ClassBoardLayout
     public const int MAX_TEAMS = 12;
     public const int URL_MAX = 2_000;
     public const int TEXT_MAX = 50_000;
+    public const int MAX_PHASES = 30;
+    public const int PHASE_NAME_MAX = 160;
 
     /** The pictograms of the « Consignes » widget, in display order. */
     public const array INSTRUCTIONS = ['silence', 'whisper', 'alone', 'pair', 'group', 'hand', 'screens_off', 'screens_on'];
@@ -237,6 +239,25 @@ final class ClassBoardLayout
             ClassBoardWidgetType::QrCode => [
                 'url' => trim($config->string('url', self::URL_MAX, '')),
             ],
+            // Today's slot is found again at every opening - nothing of it is kept.
+            ClassBoardWidgetType::Session => [],
+            ClassBoardWidgetType::SessionPlan => [
+                'source' => $config->choice('source', ['session', 'library', 'manual'], 'session'),
+                'seanceId' => $config->id('seanceId'),
+                'phases' => $this->phases($config),
+            ],
+            ClassBoardWidgetType::Work => [
+                'rows' => $config->int('rows', 1, 10, 5),
+            ],
+            // A library file is kept as its id, never as an address: the address is signed again
+            // at every opening.
+            ClassBoardWidgetType::Media => [
+                'fileId' => $config->id('fileId'),
+            ],
+            ClassBoardWidgetType::Video => [
+                'url' => trim($config->string('url', self::URL_MAX, '')),
+                'fileId' => $config->id('fileId'),
+            ],
         };
     }
 
@@ -258,6 +279,24 @@ final class ClassBoardLayout
             'time' => $time,
             'details' => $config->bool('details', true),
         ];
+    }
+
+    /**
+     * Phases typed by hand: a name and a duration in MINUTES, like a library séance's.
+     *
+     * @return list<array{name: string, minutes: int}>
+     */
+    private function phases(ConfigReader $config): array
+    {
+        $phases = [];
+        foreach ($config->objects('phases', self::MAX_PHASES) as $phase) {
+            $phases[] = [
+                'name' => trim($phase->string('name', self::PHASE_NAME_MAX, '')),
+                'minutes' => $phase->int('minutes', 1, 600, 10),
+            ];
+        }
+
+        return $phases;
     }
 
     /** @return list<array{name: string, score: int}> */

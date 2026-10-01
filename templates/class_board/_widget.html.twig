@@ -14,7 +14,9 @@
      data-widget-type="{{ type.value }}"
      data-x="{{ widget.x }}" data-y="{{ widget.y }}" data-w="{{ widget.w }}" data-h="{{ widget.h }}" data-z="{{ widget.z }}"
      data-config="{{ widget.config|json_encode }}"
-     {% if not locked %}data-controller="{{ type.controller }}"{% endif %}
+     {# Its own controller only once there is something to drive: a locked widget or one whose source
+        is gone has no body to drive, and its gear panel is read by the board controller alone. #}
+     {% if data.state == 'ok' %}data-controller="{{ type.controller }}"{% endif %}
      style="left: {{ widget.x }}%; top: {{ widget.y }}%; width: {{ widget.w }}%; height: {{ widget.h }}%; z-index: {{ widget.z }};">
     <div class="cm-cb-w__head" data-action="pointerdown->class-board#startMove">
         {{ ux_icon(type.icon, {class: 'cm-cb-w__icon'}) }}

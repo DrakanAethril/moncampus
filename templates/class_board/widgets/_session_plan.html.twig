@@ -1,0 +1,17 @@
+{# Déroulé de séance: the phases of the séance - NAME AND DURATION ONLY, never the teacher's notes,
+   the difficulties, the materials or the content (§6). From the séance placed on today's slot, from
+   a séance of the library, or typed by hand. #}
+<div class="cm-cb-w__meta">{{ data.sourceLabel }}</div>
+<ol class="cm-cb-phases" data-class-board-session-plan-target="list"
+    data-phases="{{ data.phases|json_encode }}" data-manual="{{ data.manual ? '1' : '0' }}"
+    data-minutes="{{ 'classBoardMinutesShort'|trans({'%count%': '__N__'}) }}"
+    data-empty="{{ data.emptyMessage }}"></ol>
+<div class="cm-cb-w__buttons">
+    <button type="button" class="cm-cb-btn cm-cb-btn--round" data-action="class-board-session-plan#previous" aria-label="{{ 'classBoardPreviousPhaseAction'|trans }}">{{ ux_icon('chevron-left') }}</button>
+    <button type="button" class="cm-cb-btn cm-cb-btn--round cm-cb-btn--primary" data-action="class-board-session-plan#toggle" aria-label="{{ 'classBoardStartPauseAction'|trans }}">
+        <span data-class-board-session-plan-target="playIcon">{{ ux_icon('player-play') }}</span>
+        <span data-class-board-session-plan-target="pauseIcon" hidden>{{ ux_icon('player-pause') }}</span>
+    </button>
+    <button type="button" class="cm-cb-btn cm-cb-btn--round" data-action="class-board-session-plan#next" aria-label="{{ 'classBoardNextPhaseAction'|trans }}">{{ ux_icon('chevron-right') }}</button>
+    <span class="cm-cb-w__meta" data-class-board-session-plan-target="total" data-label="{{ 'classBoardPlanEndsInLabel'|trans({'%count%': '__N__'}) }}"></span>
+</div>

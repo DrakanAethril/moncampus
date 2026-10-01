@@ -1,0 +1,14 @@
+{# Image / PDF: a file of the teacher's library, its address signed again at every opening - the
+   layout keeps only the file's id. A PDF opens in the browser's own reader. #}
+{% if data.file %}
+    <div class="cm-cb-w__meta">{{ data.file.name }}</div>
+    <div class="cm-cb-media">
+        {% if data.file.kind == 'pdf' %}
+            <iframe src="{{ data.file.url }}" title="{{ data.file.name }}"></iframe>
+        {% else %}
+            <img src="{{ data.file.url }}" alt="{{ data.file.name }}">
+        {% endif %}
+    </div>
+{% else %}
+    <div class="cm-cb-w__locked">{{ 'classBoardMediaEmptyMessage'|trans }}</div>
+{% endif %}

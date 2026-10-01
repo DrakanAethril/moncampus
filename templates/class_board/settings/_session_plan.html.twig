@@ -1,0 +1,28 @@
+{% set config = widget.config %}
+<div class="cm-cb-field">{{ 'classBoardPlanSourceField'|trans }}
+    <div class="cm-cb-field-row" role="radiogroup" aria-label="{{ 'classBoardPlanSourceField'|trans }}">
+        <label><input type="radio" name="source" value="session" data-rerender {{ config.source == 'session' ? 'checked' }}> {{ 'classBoardPlanSourceSessionLabel'|trans }}</label>
+        <label><input type="radio" name="source" value="library" data-rerender {{ config.source == 'library' ? 'checked' }}> {{ 'classBoardPlanSourceLibraryLabel'|trans }}</label>
+        <label><input type="radio" name="source" value="manual" data-rerender {{ config.source == 'manual' ? 'checked' }}> {{ 'classBoardPlanSourceManualLabel'|trans }}</label>
+    </div>
+</div>
+{% if config.source == 'library' %}
+    <label class="cm-cb-field">{{ 'classBoardPlanSeanceField'|trans }}
+        <select class="cm-cb-input" name="seanceId" data-kind="id" data-rerender>
+            <option value="">{{ 'classBoardChooseOption'|trans }}</option>
+            {% for seance in data.seances ?? [] %}
+                <option value="{{ seance.id }}" {{ config.seanceId == seance.id ? 'selected' }}>{{ seance.label }}</option>
+            {% endfor %}
+        </select>
+    </label>
+{% elseif config.source == 'manual' %}
+    <div class="cm-cb-field">{{ 'classBoardPlanPhasesField'|trans }}
+        <div class="cm-cb-phase-editor" data-class-board-session-plan-target="editor"
+             data-name-placeholder="{{ 'classBoardPlanPhaseNamePlaceholder'|trans }}"
+             data-minutes-label="{{ 'classBoardPlanPhaseMinutesLabel'|trans }}"
+             data-remove-label="{{ 'classBoardPlanPhaseRemoveAction'|trans }}"></div>
+    </div>
+    <div class="cm-cb-field-row">
+        <button type="button" class="cm-cb-btn cm-cb-btn--small" data-class-board-session-plan-target="addButton" data-action="class-board-session-plan#addPhase">{{ 'classBoardPlanPhaseAddAction'|trans }}</button>
+    </div>
+{% endif %}
