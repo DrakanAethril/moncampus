@@ -12275,3 +12275,34 @@ a.cm-pf-row__title:hover { text-decoration: underline; }
 .cm-cs-iconbtn { display: inline-grid; place-items: center; width: 30px; height: 30px; border: 1px solid var(--cm-border); border-radius: 6px; background: var(--cm-surface); color: var(--cm-muted); }
 .cm-cs-iconbtn:hover:not([disabled]) { color: var(--cm-brand-strong); border-color: var(--cm-brand); }
 .cm-cs-iconbtn[disabled] { opacity: .35; }
+.cm-cs-hostings { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.cm-cs-hostings + .cm-cs-hostings { margin-top: 6px; }
+.cm-cs-hostings .table-responsive { width: 100%; }
+.cm-cs-table { margin: 0; font-size: 13px; }
+.cm-cs-table th { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: var(--cm-muted); font-weight: 600; }
+.cm-cs-tablewrap { background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: 10px; }
+.cm-cs-row--error td { background: var(--cm-red-bg); }
+.cm-cs-row--skipped td { color: var(--cm-faint); }
+.cm-cs-note { border-left: 3px solid var(--cm-gold); background: var(--cm-surface-alt); border-radius: 0 6px 6px 0; padding: 6px 10px; display: flex; flex-direction: column; gap: 3px; }
+.cm-cs-note__body { margin: 0; font-size: 13.5px; color: var(--cm-ink); white-space: pre-line; }
+.cm-cs-note__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 12px; color: var(--cm-muted); }
+.cm-cs-note__edit summary { color: var(--cm-brand-strong); cursor: pointer; }
+.cm-cs-note__edit form, .cm-cs-note__form, .cm-cs-declare form, .cm-cs-stack { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; margin-top: 4px; }
+.cm-cs-note__edit textarea, .cm-cs-note__form textarea, .cm-cs-declare input { width: 100%; }
+.cm-cs-declare summary { font-size: 13px; font-weight: 600; color: var(--cm-brand-strong); cursor: pointer; }
+.cm-cs-contact { display: flex; flex-direction: column; gap: 2px; padding: 6px 0; border-bottom: 1px dashed var(--cm-border-soft); }
+.cm-cs-contact:last-of-type { border-bottom: 0; }
+.cm-cs-contact__name { font-weight: 700; color: var(--cm-ink); font-size: 13.5px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.cm-cs-contact__detail { font-size: 12.5px; color: var(--cm-muted); overflow-wrap: anywhere; }
+.cm-cs-contact__actions { display: flex; gap: 10px; align-items: center; }
+.cm-cs-contact form { margin: 0; }
+.cm-cs-lookup { display: flex; flex-direction: column; gap: 4px; }
+.cm-cs-lookup__heading { font-size: 11px; font-weight: 700; color: var(--cm-faint); text-transform: uppercase; letter-spacing: .6px; margin-top: 8px; }
+.cm-cs-lookup__item { display: block; margin: 0; }
+.cm-cs-lookup__item, .cm-cs-lookup__item button { text-align: left; width: 100%; border: 1px solid var(--cm-border); border-radius: 8px; background: var(--cm-surface); padding: 6px 10px; color: var(--cm-text); text-decoration: none; font-size: 13px; }
+form.cm-cs-lookup__item { border: 0; padding: 0; }
+.cm-cs-lookup__item strong { display: block; color: var(--cm-ink); }
+.cm-cs-lookup__item span { display: block; color: var(--cm-muted); font-size: 12px; }
+.cm-cs-lookup__item:hover, .cm-cs-lookup__item button:hover { border-color: var(--cm-brand); }
+.cm-cs-card__title { flex-wrap: wrap; }
+.cm-cs-card__title .cm-badge { letter-spacing: .2px; text-transform: none; }

@@ -10,6 +10,7 @@ use App\Enum\CompanyOrganisationType;
 use App\Enum\EmployeeBand;
 use App\Enum\Feature;
 use App\Repository\CompanySearchCategoryRepository;
+use App\Security\Voter\EnterpriseVoter;
 use App\Service\CompanySearch\CompanySearchCriteria;
 use App\Service\CompanySearch\CompanySearchCriteriaFactory;
 use App\Service\CompanySearch\CompanySearchService;
@@ -17,11 +18,11 @@ use App\Service\CompanySearch\CompanySearchThrottledException;
 use App\Service\CompanySearch\NafNomenclature;
 use App\Service\CompanySearch\ResultRows;
 use App\Service\CompanySearch\SchoolLocation;
+use App\Service\EnterprisePool\PoolAnnotations;
 use App\Service\Ign\GeocodedPlace;
 use App\Service\Ign\IgnGeoplateformeClient;
 use App\Service\Ign\IgnUnavailableException;
 use App\Service\QueryValue;
-use App\Service\Sirene\RegistryCompany;
 use App\Service\Sirene\SireneUnavailableException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -46,6 +47,7 @@ class CompanySearchController extends AbstractController
         private readonly CompanySearchCategoryRepository $categories,
         private readonly ResultRows $rows,
         private readonly SchoolLocation $school,
+        private readonly PoolAnnotations $pool,
     ) {
     }
 
@@ -79,14 +81,25 @@ class CompanySearchController extends AbstractController
             $origin = null !== $schoolPlace ? [$schoolPlace->latitude, $schoolPlace->longitude] : null;
         }
 
+        $rows = [];
+        if (null !== $page) {
+            $pool = $this->pool->forCompanies($page->companies, $this->currentUser(), $this->isGranted(EnterpriseVoter::VIEW_TEACHER_CONTACTS));
+            foreach ($page->companies as $company) {
+                $row = $this->rows->company($company, $origin);
+                $row['pool'] = [
+                    'establishments' => array_intersect_key($pool['establishments'], array_flip(array_column($row['establishments'], 'siret'))),
+                    'elsewhere' => $pool['elsewhere'][$company->siren] ?? [],
+                ];
+                $rows[] = $row;
+            }
+        }
+
         return $this->render('company_search/index.html.twig', [
             'criteria' => $criteria,
             'searched' => $searched,
             'problem' => $problem,
             'page' => $page,
-            'rows' => null !== $page
-                ? array_map(fn (RegistryCompany $company): array => $this->rows->company($company, $origin), $page->companies)
-                : [],
+            'rows' => $rows,
             'distanceFromSchool' => null === $criteria->origin() && null !== $origin,
             'groups' => $this->categories->findGroupedByTheme(),
             'bands' => EmployeeBand::cases(),

@@ -1,0 +1,258 @@
+{# The fiche of a company of the vivier - design/validated/vivier-entreprises.md §8.2.
+   Every block is shown to whom EnterpriseVoter shows it: the hostings to all (stage and alternance
+   told apart, never the students' names but for an administrator), the contacts declared
+   « communicables » to all, the rest of the contacts, the teachers who know the company and the
+   team's notes to teachers and the administration only. #}
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ enterprise.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'companySearchPageHeading'|trans, url: back},
+        {label: enterprise.name, url: path('app_enterprise_pool_show', {id: enterprise.id})},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ enterprise.name }}{% endblock %}
+
+{% block page_actions %}
+    {% block enterprise_actions %}
+        {% if is_granted('ENTERPRISE_MANAGE', enterprise) %}
+            <twig:Cm:Button variant="outline" href="{{ path('app_enterprise_pool_hosting_new', {enterprise: enterprise.id}) }}">{{ 'enterprisePoolAddHostingAction'|trans }}</twig:Cm:Button>
+            <twig:Cm:Button variant="outline" href="{{ path('app_enterprise_pool_contact_new', {id: enterprise.id}) }}">{{ 'enterprisePoolAddContactAction'|trans }}</twig:Cm:Button>
+        {% endif %}
+    {% endblock %}
+{% endblock %}
+
+{% block main %}
+    {% if registryUnavailable %}
+        <div class="alert alert-warning" role="alert">{{ 'companySearchUnavailableError'|trans }}</div>
+    {% endif %}
+    {% set establishment = company ? company.establishments[0] : null %}
+    {% if establishment and not establishment.open %}
+        <div class="alert alert-warning" role="alert">
+            {{ establishment.closedOn ? 'companySearchClosedOnNotice'|trans({'%date%': establishment.closedOn|date('d/m/Y')}) : 'companySearchClosedNotice'|trans }}
+        </div>
+    {% endif %}
+
+    <div class="cm-cs-fiche">
+        <div class="cm-cs-fiche__main">
+            {% if company %}
+                {% include 'company_search/_registry_cards.html.twig' with {company: company, establishment: establishment} %}
+            {% else %}
+                <section class="cm-cs-card">
+                    <h2 class="cm-cs-card__title">{{ 'companySearchFicheCompanyHeading'|trans }}</h2>
+                    <dl class="cm-cs-kv">
+                        <dt>{{ 'companySearchFicheAddressLabel'|trans }}</dt>
+                        <dd style="white-space: pre-line">{{ enterprise.address ?? enterprise.city ?? '—' }}</dd>
+                        <dt>SIRET</dt>
+                        <dd>
+                            {% if enterprise.siret %}<span class="cm-cs-kv__code">{{ enterprise.siret|siret }}</span>{% endif %}
+                            <twig:Cm:Badge :of="siretStatus"/>
+                        </dd>
+                    </dl>
+                    <p class="cm-cs-card__sub">{{ 'enterprisePoolNoConfirmedSiretText'|trans }}</p>
+                </section>
+            {% endif %}
+
+            <section class="cm-cs-card" id="hostings">
+                <h2 class="cm-cs-card__title">{{ 'enterprisePoolHostingsHeading'|trans }}</h2>
+                {% set showStudents = is_granted('ENTERPRISE_VIEW_HOSTED_STUDENTS', enterprise) %}
+                {% set anyHosting = false %}
+                {% for group in hostingsByKind %}
+                    <div class="cm-cs-hostings">
+                        <twig:Cm:Badge :of="group.kind">{{ group.kind.pluralLabelKey|trans }} · {{ group.records|length }}</twig:Cm:Badge>
+                        {% if group.records is not empty %}
+                            {% set anyHosting = true %}
+                            <div class="table-responsive">
+                                <table class="table table-sm cm-cs-table">
+                                    <thead>
+                                        <tr>
+                                            <th>{{ 'enterprisePoolYearColumn'|trans }}</th>
+                                            <th>{{ 'enterprisePoolDomainColumn'|trans }}</th>
+                                            {% if showStudents %}<th>{{ 'enterprisePoolStudentColumn'|trans }}</th>{% endif %}
+                                            {% if team %}<th>{{ 'enterprisePoolTutorColumn'|trans }}</th>{% endif %}
+                                            <th>{{ 'enterprisePoolMissionsColumn'|trans }}</th>
+                                            {% if showStudents %}<th></th>{% endif %}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for record in group.records %}
+                                            <tr>
+                                                <td>{{ record.schoolYear }}</td>
+                                                <td>{{ record.domain }}</td>
+                                                {% if showStudents %}<td>{{ record.studentLabel }}{% if record.student is null %} <span class="cm-cs-kv__code">{{ 'enterprisePoolNoAccountLabel'|trans }}</span>{% endif %}</td>{% endif %}
+                                                {% if team %}<td>{{ record.tutorName ?? '—' }}</td>{% endif %}
+                                                <td>{{ record.missions ?? '—' }}</td>
+                                                {% if showStudents %}
+                                                    <td class="text-end">
+                                                        {% if record.fromUfa %}
+                                                            <a href="{{ path('app_ufa_alternance_show', {id: record.alternance.id}) }}">{{ 'enterprisePoolUfaContractLabel'|trans }}</a>
+                                                        {% elseif record.hosting %}
+                                                            <a href="{{ path('app_enterprise_pool_hosting_edit', {id: record.hosting.id}) }}">{{ 'enterprisePoolEditHostingAction'|trans }}</a>
+                                                        {% endif %}
+                                                    </td>
+                                                {% endif %}
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                {% if not anyHosting %}
+                    <p class="cm-cs-card__sub">{{ 'enterprisePoolNoHostingText'|trans }}</p>
+                {% endif %}
+            </section>
+
+            {% if is_granted('ENTERPRISE_VIEW_STAFF_NOTES', enterprise) %}
+                <section class="cm-cs-card" id="notes">
+                    <h2 class="cm-cs-card__title">
+                        {{ 'enterprisePoolNotesHeading'|trans }}
+                        <twig:Cm:Badge tone="gray">{{ 'enterprisePoolNotesHiddenBadge'|trans }}</twig:Cm:Badge>
+                    </h2>
+                    {% for note in notes %}
+                        <div class="cm-cs-note">
+                            <p class="cm-cs-note__body">{{ note.body }}</p>
+                            <div class="cm-cs-note__meta">
+                                {{ note.author ? (note.author.displayName ?? note.author.username) : '—' }} · {{ note.createdAt|date('d/m/Y') }}
+                                {% if note.updatedAt %} · {{ 'enterprisePoolNoteEditedLabel'|trans }}{% endif %}
+                                {% if note.author == app.user %}
+                                    <details class="cm-cs-note__edit">
+                                        <summary>{{ 'enterprisePoolNoteEditAction'|trans }}</summary>
+                                        <form method="post" action="{{ path('app_enterprise_pool_note_edit', {id: enterprise.id, noteId: note.id}) }}">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('enterprise_note_edit') }}">
+                                            <textarea name="body" class="form-control form-control-sm" rows="3" maxlength="4000" aria-label="{{ 'enterprisePoolNoteEditAction'|trans }}">{{ note.body }}</textarea>
+                                            <twig:Cm:Button size="sm" variant="primary" type="submit">{{ 'enterprisePoolNoteSaveAction'|trans }}</twig:Cm:Button>
+                                        </form>
+                                    </details>
+                                {% endif %}
+                                {% if note.author == app.user or is_granted('ENTERPRISE_MANAGE', enterprise) %}
+                                    <form method="post" action="{{ path('app_enterprise_pool_note_delete', {id: enterprise.id, noteId: note.id}) }}" class="d-inline">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('enterprise_note_delete') }}">
+                                        <button type="submit" class="cm-cs-link"
+                                                data-controller="confirm-submit"
+                                                data-confirm-submit-message-value="{{ 'enterprisePoolNoteDeleteConfirm'|trans }}"
+                                                data-action="click->confirm-submit#confirm">{{ 'enterprisePoolNoteDeleteAction'|trans }}</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <p class="cm-cs-card__sub">{{ 'enterprisePoolNoNoteText'|trans }}</p>
+                    {% endfor %}
+                    {% if is_granted('ENTERPRISE_WRITE_STAFF_NOTE', enterprise) %}
+                        <form method="post" action="{{ path('app_enterprise_pool_note_add', {id: enterprise.id}) }}" class="cm-cs-note__form">
+                            <input type="hidden" name="_token" value="{{ csrf_token('enterprise_note') }}">
+                            <textarea name="body" class="form-control" rows="2" maxlength="4000" required
+                                      aria-label="{{ 'enterprisePoolNotePlaceholder'|trans }}"
+                                      placeholder="{{ 'enterprisePoolNotePlaceholder'|trans }}"></textarea>
+                            <twig:Cm:Button size="sm" variant="primary" type="submit">{{ 'enterprisePoolNoteAddAction'|trans }}</twig:Cm:Button>
+                        </form>
+                    {% endif %}
+                </section>
+            {% endif %}
+        </div>
+
+        <aside class="cm-cs-fiche__side">
+            {% block fiche_side_top %}{% endblock %}
+
+            {% if establishment %}
+                {% include 'company_search/_go_there.html.twig' with {establishment: establishment, schoolPlace: schoolPlace, name: enterprise.name} %}
+            {% endif %}
+
+            <section class="cm-cs-card" id="contacts">
+                <h2 class="cm-cs-card__title">{{ 'enterprisePoolContactsHeading'|trans }}</h2>
+                {% for contact in declaredContacts %}
+                    <div class="cm-cs-contact">
+                        <span class="cm-cs-contact__name">
+                            {{ contact.name }}
+                            {% if team %}
+                                {% if contact.shareableWithStudents %}
+                                    <twig:Cm:Badge tone="purple">{{ 'enterprisePoolShareableBadge'|trans }}</twig:Cm:Badge>
+                                {% else %}
+                                    <twig:Cm:Badge tone="gray">{{ 'enterprisePoolTeamOnlyBadge'|trans }}</twig:Cm:Badge>
+                                {% endif %}
+                            {% endif %}
+                        </span>
+                        <span class="cm-cs-contact__detail">{{ [contact.jobTitle, contact.email, contact.phone]|filter(v => v)|join(' · ') }}</span>
+                        {% if contact.note and team %}<span class="cm-cs-contact__detail">{{ contact.note }}</span>{% endif %}
+                        {% if is_granted('ENTERPRISE_MANAGE', enterprise) %}
+                            <span class="cm-cs-contact__actions">
+                                <a class="cm-cs-link" href="{{ path('app_enterprise_pool_contact_edit', {id: enterprise.id, contactId: contact.id}) }}">{{ 'enterprisePoolContactEditAction'|trans }}</a>
+                                <form method="post" action="{{ path('app_enterprise_pool_contact_withdraw', {id: enterprise.id, contactId: contact.id}) }}" class="d-inline">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('enterprise_contact_withdraw') }}">
+                                    <button type="submit" class="cm-cs-link"
+                                            data-controller="confirm-submit"
+                                            data-confirm-submit-message-value="{{ 'enterprisePoolContactWithdrawConfirm'|trans({'%name%': contact.name}) }}"
+                                            data-action="click->confirm-submit#confirm">{{ 'enterprisePoolContactWithdrawAction'|trans }}</button>
+                                </form>
+                            </span>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                {% for tutor in tutors %}
+                    <div class="cm-cs-contact">
+                        <span class="cm-cs-contact__name">{{ tutor.tutor.displayName ?? tutor.tutor.username }} <twig:Cm:Badge tone="green">{{ 'enterprisePoolUfaTutorBadge'|trans }}</twig:Cm:Badge></span>
+                        <span class="cm-cs-contact__detail">{{ [tutor.tutor.contactEmail, tutor.tutor.phoneNumber]|filter(v => v)|join(' · ') }}</span>
+                    </div>
+                {% endfor %}
+                {% if declaredContacts is empty and tutors is empty %}
+                    <p class="cm-cs-card__sub">{{ (team ? 'enterprisePoolNoContactTeamText' : 'enterprisePoolNoContactText')|trans }}</p>
+                {% endif %}
+            </section>
+
+            {% if is_granted('ENTERPRISE_VIEW_TEACHER_CONTACTS', enterprise) %}
+                <section class="cm-cs-card">
+                    <h2 class="cm-cs-card__title">
+                        {{ 'enterprisePoolTeacherContactsHeading'|trans }}
+                        <twig:Cm:Badge tone="gray">{{ 'enterprisePoolNotesHiddenBadge'|trans }}</twig:Cm:Badge>
+                    </h2>
+                    {% for contact in teacherContacts %}
+                        <div class="cm-cs-contact">
+                            <span class="cm-cs-contact__name">{{ contact.teacher.displayName ?? contact.teacher.username }}</span>
+                            {% if contact.note %}<span class="cm-cs-contact__detail">« {{ contact.note }} »</span>{% endif %}
+                            {% if contact.teacher == app.user or is_granted('ENTERPRISE_MANAGE', enterprise) %}
+                                <form method="post" action="{{ path('app_enterprise_pool_teacher_contact_withdraw', {id: enterprise.id, contactId: contact.id}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('enterprise_teacher_contact_withdraw') }}">
+                                    <button type="submit" class="cm-cs-link">{{ (contact.teacher == app.user ? 'enterprisePoolTeacherContactWithdrawSelfAction' : 'enterprisePoolTeacherContactWithdrawAction')|trans }}</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <p class="cm-cs-card__sub">{{ 'enterprisePoolNoTeacherContactText'|trans }}</p>
+                    {% endfor %}
+                    {% if is_granted('ENTERPRISE_DECLARE_TEACHER_CONTACT', enterprise) %}
+                        <details class="cm-cs-declare">
+                            <summary>{{ (myTeacherContact ? 'enterprisePoolTeacherContactUpdateAction' : 'enterprisePoolTeacherContactDeclareAction')|trans }}</summary>
+                            <form method="post" action="{{ path('app_enterprise_pool_teacher_contact', {id: enterprise.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('enterprise_teacher_contact') }}">
+                                <input type="text" name="note" class="form-control form-control-sm" maxlength="500"
+                                       value="{{ myTeacherContact ? myTeacherContact.note }}"
+                                       aria-label="{{ 'enterprisePoolTeacherContactNotePlaceholder'|trans }}"
+                                       placeholder="{{ 'enterprisePoolTeacherContactNotePlaceholder'|trans }}">
+                                <twig:Cm:Button size="sm" variant="primary" type="submit">{{ 'enterprisePoolTeacherContactSaveAction'|trans }}</twig:Cm:Button>
+                            </form>
+                        </details>
+                    {% endif %}
+                </section>
+            {% endif %}
+
+            {% if establishment and (declaredContacts is empty or not team) %}
+                {% include 'company_search/_how_to_reach.html.twig' with {establishment: establishment, name: enterprise.name} %}
+            {% endif %}
+
+            {% if is_granted('ENTERPRISE_MANAGE', enterprise) %}
+                <section class="cm-cs-card">
+                    <h2 class="cm-cs-card__title">{{ 'enterprisePoolAdminHeading'|trans }}</h2>
+                    <ul class="cm-cs-links">
+                        <li><a href="{{ path('app_ufa_enterprise_siret', {id: enterprise.id}) }}">{{ 'enterprisePoolCheckSiretAction'|trans }}</a></li>
+                        <li><a href="{{ path('app_ufa_enterprise_edit', {id: enterprise.id}) }}">{{ 'enterprisePoolEditEnterpriseAction'|trans }}</a></li>
+                    </ul>
+                </section>
+            {% endif %}
+        </aside>
+    </div>
+{% endblock %}

@@ -144,6 +144,34 @@ class UserRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
+    /**
+     * Students, former ones included - « Ajouter un accueil » records the history of the vivier,
+     * and a student of 2019 left long ago. Same test-world asymmetry as searchTutors() below, and
+     * the same reason for picking the role in PHP.
+     *
+     * @return list<User>
+     */
+    public function searchStudents(string $search, int $limit, ?User $viewer = null): array
+    {
+        $qb = $this->createQueryBuilder('u')
+            ->where('u.firstname LIKE :search OR u.lastname LIKE :search OR u.username LIKE :search')
+            ->setParameter('search', '%'.$search.'%')
+            ->orderBy('u.lastname', 'ASC')
+            ->addOrderBy('u.firstname', 'ASC')
+            ->setMaxResults(200);
+
+        if (true === $viewer?->isTestUser()) {
+            $qb->andWhere('u.testUser = true');
+        }
+
+        $students = array_values(array_filter(
+            $qb->getQuery()->getResult(),
+            static fn (User $user): bool => \in_array('ROLE_STUDENT', $user->getRoles(), true),
+        ));
+
+        return \array_slice($students, 0, $limit);
+    }
+
     // Backs the "Rechercher un tuteur existant" tom-select ajax field on the alternance forms
     // (32a/32b, see App\Controller\Ufa\AlternanceController::tutorSearch()). Searches tutor
     // ACCOUNTS, deliberately NOT the alternances they already hold the way

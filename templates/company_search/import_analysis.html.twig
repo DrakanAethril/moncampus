@@ -1,0 +1,74 @@
+{# « Importer l'historique » ② - the analysis. Nothing is written yet; one blocking line refuses
+   the whole file. #}
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'enterpriseImportAnalysisHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'companySearchPageHeading'|trans, url: path('app_company_search')},
+        {label: 'enterprisePoolPageHeading'|trans, url: path('app_enterprise_pool')},
+        {label: 'enterprisePoolImportAction'|trans, url: path('app_enterprise_pool_import')},
+        {label: 'enterpriseImportAnalysisHeading'|trans, url: path('app_enterprise_pool_import_analysis')},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'enterpriseImportAnalysisHeading'|trans }}{% endblock %}
+
+{% block main %}
+    <p class="cm-cs-lede">{{ 'enterpriseImportAnalysisLede'|trans({'%file%': fileName ?? ''}) }}</p>
+
+    {% if analysis.blockingCount > 0 %}
+        <div class="alert alert-danger" role="alert">{{ 'enterpriseImportBlockingNotice'|trans({'%count%': analysis.blockingCount}) }}</div>
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            {{ 'enterpriseImportSummaryNotice'|trans({'%hostings%': analysis.importableCount, '%enterprises%': analysis.newEnterpriseCount, '%skipped%': analysis.skippedCount}) }}
+        </div>
+    {% endif %}
+
+    <div class="table-responsive cm-cs-tablewrap">
+        <table class="table table-sm cm-cs-table">
+            <thead>
+                <tr>
+                    <th>{{ 'enterpriseImportLineColumn'|trans }}</th>
+                    <th>{{ 'enterpriseImportKindColumn'|trans }}</th>
+                    <th>{{ 'enterprisePoolYearColumn'|trans }}</th>
+                    <th>{{ 'enterprisePoolDomainColumn'|trans }}</th>
+                    <th>{{ 'enterprisePoolStudentColumn'|trans }}</th>
+                    <th>{{ 'enterprisePoolEnterpriseColumn'|trans }}</th>
+                    <th>{{ 'enterpriseImportVerdictColumn'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for line in analysis.lines %}
+                    <tr class="{{ line.blocking ? 'cm-cs-row--error' : (line.skipped ? 'cm-cs-row--skipped') }}">
+                        <td>{{ line.row.line }}</td>
+                        <td>{% if line.kind %}<twig:Cm:Badge :of="line.kind"/>{% else %}—{% endif %}</td>
+                        <td>{{ line.yearStart ? line.yearStart ~ '-' ~ (line.yearStart + 1) : line.row.get('annee') }}</td>
+                        <td>{{ line.track ? line.track.name : line.row.get('filiere') }}{% if line.option %} · {{ line.option.name }}{% endif %}</td>
+                        <td>{{ line.student ? (line.student.displayName ?? line.student.username) : (line.studentName ?? '—') }}</td>
+                        <td>
+                            {{ line.enterprise ? line.enterprise.name : line.enterpriseName }}
+                            <div class="cm-cs-kv__code">{{ ('enterpriseImportVerdict_' ~ line.enterpriseVerdict)|trans }}</div>
+                        </td>
+                        <td>
+                            {% for error in line.errors %}<div class="text-danger">{{ error.key|trans(error.params) }}</div>{% endfor %}
+                            {% for warning in line.warnings %}<div class="cm-cs-kv__code">{{ warning.key|trans(warning.params) }}</div>{% endfor %}
+                            {% if not line.blocking and line.warnings is empty %}<span class="text-success">{{ 'enterpriseImportOkLabel'|trans }}</span>{% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <twig:Cm:ActionBar>
+        <twig:Cm:Button variant="outline" href="{{ path('app_enterprise_pool_import') }}">{{ 'enterpriseImportOtherFileAction'|trans }}</twig:Cm:Button>
+        {% if analysis.importable %}
+            <form method="post" action="{{ path('app_enterprise_pool_import_confirm') }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('enterprise_hosting_import') }}">
+                <twig:Cm:Button variant="primary" type="submit">{{ 'enterpriseImportConfirmAction'|trans({'%count%': analysis.importableCount}) }}</twig:Cm:Button>
+            </form>
+        {% endif %}
+    </twig:Cm:ActionBar>
+{% endblock %}

@@ -18,9 +18,13 @@
     {% if is_granted('ROLE_ADMIN') %}
         <twig:Cm:Button variant="outline" href="{{ path('app_company_search_categories') }}">{{ 'companyCategoriesPageHeading'|trans }}</twig:Cm:Button>
     {% endif %}
+    {% if is_granted('ENTERPRISE_MANAGE') and feature('enterprise_pool') %}
+        <twig:Cm:Button variant="primary" href="{{ path('app_enterprise_pool_hosting_choose') }}">{{ 'enterprisePoolAddHostingAction'|trans }}</twig:Cm:Button>
+    {% endif %}
 {% endblock %}
 
 {% block main %}
+    {% include 'company_search/_source_switch.html.twig' with {active: 'registry'} %}
     <p class="cm-cs-lede">{{ 'companySearchLede'|trans }}</p>
 
     <div class="cm-cs">

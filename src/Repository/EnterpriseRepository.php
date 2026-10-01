@@ -170,6 +170,70 @@ class EnterpriseRepository extends ServiceEntityRepository
     }
 
     /**
+     * The employers of the vivier whose **confirmed** SIRET is one of these - how a line of the
+     * register is recognised (design/validated/vivier-entreprises.md, R8). An unconfirmed number
+     * proves nothing, so it recognises nothing.
+     *
+     * @param list<string> $sirets
+     *
+     * @return array<string, Enterprise> keyed by SIRET
+     */
+    public function findConfirmedBySirets(array $sirets, ?User $viewer): array
+    {
+        if ([] === $sirets) {
+            return [];
+        }
+
+        $found = [];
+        foreach ($this->queryMatching(null, $viewer)
+            ->andWhere('e.siret IN (:sirets)')
+            ->andWhere('e.siretConfirmedAt IS NOT NULL')
+            ->setParameter('sirets', array_values(array_unique($sirets)))
+            ->getQuery()
+            ->getResult() as $enterprise) {
+            $found[(string) $enterprise->getSiret()] = $enterprise;
+        }
+
+        return $found;
+    }
+
+    /**
+     * The employers of the vivier with a confirmed SIRET inside one of these companies (SIREN, the
+     * nine first digits) - « stage dans un autre établissement de l'entreprise ».
+     *
+     * @param list<string> $sirens
+     *
+     * @return list<Enterprise>
+     */
+    public function findConfirmedBySirens(array $sirens, ?User $viewer): array
+    {
+        if ([] === $sirens) {
+            return [];
+        }
+
+        return $this->queryMatching(null, $viewer)
+            ->andWhere('SUBSTRING(e.siret, 1, 9) IN (:sirens)')
+            ->andWhere('e.siretConfirmedAt IS NOT NULL')
+            ->setParameter('sirens', array_values(array_unique($sirens)))
+            ->getQuery()
+            ->getResult();
+    }
+
+    /** Any employer already carrying this number, confirmed or not - so one SIRET is never two fiches. */
+    public function findOneBySiret(string $siret, ?User $viewer): ?Enterprise
+    {
+        $enterprise = $this->queryMatching(null, $viewer)
+            ->andWhere('e.siret = :siret')
+            ->setParameter('siret', $siret)
+            ->orderBy('e.siretConfirmedAt', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        return $enterprise instanceof Enterprise ? $enterprise : null;
+    }
+
+    /**
      * The rows both of the above read, before either the paging or the counting: same WHERE on both
      * sides, so the total can never describe a different set from the page underneath it.
      */

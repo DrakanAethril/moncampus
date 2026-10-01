@@ -1,0 +1,40 @@
+{# The register's two cards - the company, then this establishment. Parameters: company, establishment. #}
+<section class="cm-cs-card">
+    <h2 class="cm-cs-card__title">{{ 'companySearchFicheCompanyHeading'|trans }}</h2>
+    {% if company.otherNames is not empty %}<p class="cm-cs-card__sub">{{ company.otherNames|join(' · ') }}</p>{% endif %}
+    <dl class="cm-cs-kv">
+        <dt>{{ 'companySearchFicheActivityLabel'|trans }}</dt>
+        <dd>{{ company.activityLabel ?? company.activityCode ?? '—' }}{% if company.activityCode %} <span class="cm-cs-kv__code">{{ company.activityCode }}</span>{% endif %}</dd>
+        <dt>{{ 'companySearchFicheCompanySizeLabel'|trans }}</dt>
+        <dd>{{ company.size.key|trans(company.size.params) }}{% if company.category %} · {{ company.category }}{% endif %}</dd>
+        {% if company.headOffice and not establishment.headOffice %}
+            <dt>{{ 'companySearchHeadOfficeLabel'|trans }}</dt>
+            <dd>{{ company.headOffice.address }}</dd>
+        {% endif %}
+        {% if company.individual %}
+            <dt>{{ 'companySearchFicheLegalFormLabel'|trans }}</dt>
+            <dd>{{ 'companySearchIndividualLabel'|trans }}</dd>
+        {% endif %}
+    </dl>
+</section>
+
+<section class="cm-cs-card">
+    <h2 class="cm-cs-card__title">{{ 'companySearchFicheEstablishmentHeading'|trans }}</h2>
+    <dl class="cm-cs-kv">
+        <dt>{{ 'companySearchFicheAddressLabel'|trans }}</dt>
+        <dd>{{ establishment.address }}{% if establishment.headOffice %} · {{ 'companySearchHeadOfficeLabel'|trans }}{% endif %}</dd>
+        {% if establishment.activityLabel and establishment.activityLabel != company.activityLabel %}
+            <dt>{{ 'companySearchFicheEstablishmentActivityLabel'|trans }}</dt>
+            <dd>{{ establishment.activityLabel }}</dd>
+        {% endif %}
+        <dt>{{ 'companySearchFicheEstablishmentSizeLabel'|trans }}</dt>
+        <dd>{{ establishment.size ? establishment.size.key|trans(establishment.size.params) : 'employeeBracketUnknownLabel'|trans }}</dd>
+        {% if establishment.createdOn %}
+            <dt>{{ 'companySearchFicheOpenSinceLabel'|trans }}</dt>
+            <dd>{{ establishment.createdOn|date('Y') }}</dd>
+        {% endif %}
+        <dt>SIRET</dt>
+        <dd class="cm-cs-kv__code">{{ establishment.siret|siret }}</dd>
+    </dl>
+</section>
+

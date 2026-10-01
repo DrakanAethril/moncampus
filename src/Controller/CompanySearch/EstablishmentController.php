@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Controller\CompanySearch;
 
 use App\Attribute\RequiresFeature;
+use App\Entity\User;
 use App\Enum\Feature;
+use App\Repository\EnterpriseRepository;
 use App\Service\CompanySearch\CompanySearchService;
 use App\Service\CompanySearch\ResultRows;
 use App\Service\CompanySearch\SchoolLocation;
@@ -27,9 +29,17 @@ use Symfony\Component\Routing\Attribute\Route;
 class EstablishmentController extends AbstractController
 {
     #[Route(path: '/company-search/establishments/{siret}', name: 'app_company_search_establishment', requirements: ['siret' => '\d{14}'], methods: ['GET'])]
-    public function show(string $siret, Request $request, CompanySearchService $search, ResultRows $rows, SchoolLocation $school): Response
+    public function show(string $siret, Request $request, CompanySearchService $search, ResultRows $rows, SchoolLocation $school, EnterpriseRepository $enterprises): Response
     {
         $siret = Siret::normalize($siret);
+
+        // An employer of ours: its fiche is the vivier's, which says everything this one does and
+        // what the establishment knows of it besides (R8 - a confirmed SIRET only).
+        $user = $this->getUser();
+        $known = $user instanceof User ? ($enterprises->findConfirmedBySirets([$siret], $user)[$siret] ?? null) : null;
+        if (null !== $known && null === $known->getInactiveDate()) {
+            return $this->redirectToRoute('app_enterprise_pool_show', ['id' => $known->getId(), 'back' => $this->backUrl($request)]);
+        }
         $unavailable = false;
         $company = null;
 
