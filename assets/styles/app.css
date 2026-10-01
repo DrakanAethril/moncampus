@@ -12187,9 +12187,11 @@ a.cm-pf-row__title:hover { text-decoration: underline; }
 .cm-cs-filters {
     width: 272px; flex: none; background: var(--cm-surface); border: 1px solid var(--cm-border);
     border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 16px;
-    position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto;
 }
-@media (max-width: 860px) { .cm-cs-filters { width: 100%; position: static; max-height: none; } }
+/* The rail flows with the page on purpose: neither sticky nor bounded. Bounded, it scrolled inside
+   itself as soon as it outgrew the window, even when the results were shorter than it; sticky
+   without a bound, its foot (the search button) would sit out of reach until the end of the list. */
+@media (max-width: 860px) { .cm-cs-filters { width: 100%; } }
 .cm-cs-filters__group { display: flex; flex-direction: column; gap: 6px; }
 .cm-cs-filters__group + .cm-cs-filters__group { border-top: 1px dashed var(--cm-border); padding-top: 14px; }
 .cm-cs-filters__title {
