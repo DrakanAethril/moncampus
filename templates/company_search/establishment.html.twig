@@ -1,0 +1,25 @@
+{# The fiche of an establishment of the register - design/validated/vivier-entreprises.md §8.2.
+   Shared by the registry route and, once it knows the company, the vivier's own fiche. #}
+{% extends 'layout/app.html.twig' %}
+
+{% set title = company ? company.name : siret %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'companySearchPageHeading'|trans, url: back},
+        {label: title, url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block main %}
+    {% if unavailable %}
+        <div class="alert alert-warning" role="alert">{{ 'companySearchUnavailableError'|trans }}</div>
+    {% else %}
+        {% set establishment = company.establishments[0] %}
+        {% include 'company_search/_establishment_body.html.twig' with {company: company, establishment: establishment, schoolPlace: schoolPlace, mine: mine, back: app.request.requestUri} %}
+    {% endif %}
+{% endblock %}

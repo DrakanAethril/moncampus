@@ -30,3 +30,11 @@ framework:
             cache.proxmox_ticket:
                 adapter: cache.app
                 default_lifetime: 6000
+
+            # Pages of the État's company register (« Trouver une entreprise »,
+            # App\Service\CompanySearch\CompanySearchService). SIRENE is published once a day,
+            # so a page read this morning is still true tonight: thirty students running the same
+            # search in class cost one call instead of thirty, against a quota of 7/s per IP.
+            cache.sirene:
+                adapter: cache.app
+                default_lifetime: 86400

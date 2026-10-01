@@ -89,6 +89,8 @@ enum Feature: string
     case TrainingOffers = 'training_offers';
     case JobSearch = 'job_search';
     case Jobboard = 'jobboard';
+    case CompanySearch = 'company_search';
+    case EnterprisePool = 'enterprise_pool';
 
     // --- Technique ---------------------------------------------------------------------------
 
@@ -146,7 +148,8 @@ enum Feature: string
             self::Help => FeatureFamily::Communication,
 
             self::UfaBooklet, self::MyAlternance, self::TutorEvaluations, self::LaptopLoans,
-            self::TrainingOffers, self::JobSearch, self::Jobboard => FeatureFamily::Alternance,
+            self::TrainingOffers, self::JobSearch, self::Jobboard, self::CompanySearch,
+            self::EnterprisePool => FeatureFamily::Alternance,
 
             self::MyVms, self::Infrastructure, self::GuestConsole, self::Eco,
             self::ActivityHistory, self::Equipment, self::ClaudeConnector => FeatureFamily::Technical,
@@ -236,6 +239,8 @@ enum Feature: string
             self::TrainingOffers => 'featureTrainingOffersLabel',
             self::JobSearch => 'featureJobSearchLabel',
             self::Jobboard => 'featureJobboardLabel',
+            self::CompanySearch => 'featureCompanySearchLabel',
+            self::EnterprisePool => 'featureEnterprisePoolLabel',
             self::MyVms => 'featureMyVmsLabel',
             self::Infrastructure => 'featureInfrastructureLabel',
             self::GuestConsole => 'featureGuestConsoleLabel',
@@ -333,6 +338,13 @@ enum Feature: string
             // formation settings, validateurs - before a line of Gestion > Fonctionnalités opens it
             // to the students and the teachers. Lighting it for teachers still hands the review
             // screens only to the designated validateurs (App\Service\Portfolio\PortfolioValidators).
+
+            // « Trouver une entreprise » and the « vivier d'entreprises » are named by no role either,
+            // at the establishment's request (design/validated/vivier-entreprises.md): both ship
+            // visible to the administrator alone, who tries the search, enters the history and
+            // fills the pool before Gestion > Fonctionnalités opens either to anybody. They are
+            // two lines because they are two decisions: the search can be opened to students long
+            // before the pool's screens are opened to teachers.
 
             // The machines are handed out in class, so the two roles that sit in one.
             self::MyVms => ['ROLE_STUDENT', 'ROLE_TEACHER'],

@@ -1,0 +1,8 @@
+{# « Registre de l'État » / « Vivier » - two sources of the same question, for whoever may read the
+   vivier (EnterpriseVoter::BROWSE_POOL). A student has the register alone. Parameter: active. #}
+{% if is_granted('ENTERPRISE_BROWSE_POOL') %}
+    <twig:Cm:Tabs :tabs="[
+        {url: path('app_company_search'), label: 'companySearchSourceRegistryTab'|trans, active: active == 'registry'},
+        {url: path('app_enterprise_pool'), label: 'companySearchSourcePoolTab'|trans, active: active == 'pool'},
+    ]"/>
+{% endif %}

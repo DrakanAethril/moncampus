@@ -1,0 +1,11 @@
+{# « Dans mes démarches » - à écrire, or the date of the first mail sent. Parameter: application. #}
+{% set firstOut = application.emailMessages|filter(m => m.direction.value == 'outbound')|first %}
+<twig:Cm:Badge tone="gold">
+    {%- if application.toWrite -%}
+        {{ 'companySearchMineToWriteBadge'|trans }}
+    {%- elseif firstOut -%}
+        {{ 'companySearchMineSentBadge'|trans({'%date%': (firstOut.messageDate ?? firstOut.createdAt)|date('d/m')}) }}
+    {%- else -%}
+        {{ 'companySearchMineBadge'|trans }}
+    {%- endif -%}
+</twig:Cm:Badge>

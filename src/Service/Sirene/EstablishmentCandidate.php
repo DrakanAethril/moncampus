@@ -30,6 +30,13 @@ final readonly class EstablishmentCandidate
         public bool $headOffice,
         public ?\DateTimeImmutable $createdOn,
         public ?\DateTimeImmutable $closedOn,
+        public ?float $latitude = null,
+        public ?float $longitude = null,
+        /** The establishment's own NAF code - may differ from its company's (CGI Limoges: 70.22Z). */
+        public ?string $activityCode = null,
+        /** INSEE headcount bracket of this establishment, `NN` or null when unknown. */
+        public ?string $employeeBracket = null,
+        public ?string $city = null,
     ) {
     }
 

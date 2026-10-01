@@ -91,6 +91,27 @@ class Enterprise
     #[ORM\Column(length: 30, nullable: true)]
     private ?string $phone = null;
 
+    /*
+     * What the register said about the confirmed establishment, the last time it was read
+     * (design/validated/vivier-entreprises.md §5.1) - so the vivier filters on a département, a
+     * radius or an activity without asking the API for every company of the list. Written by
+     * App\Service\EnterprisePool\RegistrySnapshot, never typed by anybody.
+     */
+    #[ORM\Column(name: 'postal_code', length: 10, nullable: true)]
+    private ?string $postalCode = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?float $latitude = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?float $longitude = null;
+
+    #[ORM\Column(name: 'naf_code', length: 10, nullable: true)]
+    private ?string $nafCode = null;
+
+    #[ORM\Column(name: 'registry_read_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $registryReadAt = null;
+
     // Set only by "créer une alternance de test" (see App\Form\InternshipAlternanceType), and only
     // on an Enterprise that submission itself created - picking an existing employer for a test
     // alternance never turns that real company into a fake one. Same asymmetry as
@@ -266,6 +287,47 @@ class Enterprise
         $this->phone = $phone;
 
         return $this;
+    }
+
+    /**
+     * The register's word on this employer's establishment - its postcode, where it stands, its
+     * company's activity. Empties nothing it is not given: a register that knows no coordinates
+     * leaves the previous ones rather than unplacing the company.
+     */
+    public function recordRegistry(?string $postalCode, ?float $latitude, ?float $longitude, ?string $nafCode, \DateTimeImmutable $at): static
+    {
+        $this->postalCode = $postalCode ?? $this->postalCode;
+        $this->latitude = $latitude ?? $this->latitude;
+        $this->longitude = $longitude ?? $this->longitude;
+        $this->nafCode = $nafCode ?? $this->nafCode;
+        $this->registryReadAt = $at;
+
+        return $this;
+    }
+
+    public function getPostalCode(): ?string
+    {
+        return $this->postalCode;
+    }
+
+    public function getLatitude(): ?float
+    {
+        return $this->latitude;
+    }
+
+    public function getLongitude(): ?float
+    {
+        return $this->longitude;
+    }
+
+    public function getNafCode(): ?string
+    {
+        return $this->nafCode;
+    }
+
+    public function getRegistryReadAt(): ?\DateTimeImmutable
+    {
+        return $this->registryReadAt;
     }
 
     public function isTestEnterprise(): bool

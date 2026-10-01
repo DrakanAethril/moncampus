@@ -386,6 +386,35 @@ class InternshipTutorLinkRepository extends ServiceEntityRepository
      *
      * @return list<InternshipTutorLink>
      */
+    /**
+     * Every alternance of several employers at once - the vivier's badges for a whole page of
+     * results in one query (App\Service\EnterprisePool\EnterpriseHostings).
+     *
+     * @param list<Enterprise> $enterprises
+     *
+     * @return list<InternshipTutorLink>
+     */
+    public function findAllForEnterprises(array $enterprises): array
+    {
+        if ([] === $enterprises) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('l')
+            ->addSelect('st', 'tu', 'p', 'c', 't', 'sy')
+            ->leftJoin('l.student', 'st')
+            ->leftJoin('l.tutor', 'tu')
+            ->leftJoin('l.program', 'p')
+            ->leftJoin('p.cohort', 'c')
+            ->leftJoin('c.track', 't')
+            ->leftJoin('p.schoolYear', 'sy')
+            ->where('l.enterprise IN (:enterprises)')
+            ->setParameter('enterprises', $enterprises)
+            ->orderBy('l.contractStartDate', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
     public function findAllForEnterprise(Enterprise $enterprise): array
     {
         return $this->createQueryBuilder('l')

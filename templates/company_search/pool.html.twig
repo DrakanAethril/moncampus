@@ -1,0 +1,148 @@
+{# « Vivier » - the employers the establishment knows (design/validated/vivier-entreprises.md §8.1).
+   Stage and alternance stay two columns; the filters on them are the administrator's alone. #}
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'enterprisePoolPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'companySearchPageHeading'|trans, url: path('app_company_search')},
+        {label: 'enterprisePoolPageHeading'|trans, url: path('app_enterprise_pool')},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'enterprisePoolPageHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    {% if is_granted('ENTERPRISE_MANAGE') %}
+        <twig:Cm:Button variant="outline" href="{{ path('app_enterprise_pool_import') }}">{{ 'enterprisePoolImportAction'|trans }}</twig:Cm:Button>
+        <twig:Cm:Button variant="primary" href="{{ path('app_enterprise_pool_hosting_choose') }}">{{ 'enterprisePoolAddHostingAction'|trans }}</twig:Cm:Button>
+    {% endif %}
+{% endblock %}
+
+{% block main %}
+    {% include 'company_search/_source_switch.html.twig' with {active: 'pool'} %}
+
+    <div class="cm-cs">
+        <form class="cm-cs-filters" method="get" action="{{ path('app_enterprise_pool') }}">
+            {% if canFilterKinds %}
+                <div class="cm-cs-filters__group">
+                    <h2 class="cm-cs-filters__title">{{ 'enterprisePoolHostedHeading'|trans }}</h2>
+                    {% for kind in kinds %}
+                        <label class="cm-cs-check">
+                            <input type="checkbox" name="kind[]" value="{{ kind.value }}"{{ kind in filters.kinds ? ' checked' }}>
+                            <span>{{ ('enterprisePoolHosted' ~ kind.value|capitalize ~ 'Filter')|trans }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="cm-cs-filters__group">
+                <h2 class="cm-cs-filters__title">{{ 'enterprisePoolDomainHeading'|trans }}</h2>
+                <label class="cm-cs-field" for="pool-track"><span>{{ 'enterpriseHostingTrackFieldLabel'|trans }}</span>
+                    <select id="pool-track" name="track" class="form-select form-select-sm">
+                        <option value="">{{ 'enterprisePoolAnyTrack'|trans }}</option>
+                        {% for track in tracks %}<option value="{{ track.id }}"{{ filters.track == track ? ' selected' }}>{{ track.name }}</option>{% endfor %}
+                    </select></label>
+                <label class="cm-cs-field" for="pool-option"><span>{{ 'enterpriseHostingOptionFieldLabel'|trans }}</span>
+                    <select id="pool-option" name="option" class="form-select form-select-sm">
+                        <option value="">{{ 'enterprisePoolAnyOption'|trans }}</option>
+                        {% for option in options %}<option value="{{ option.id }}"{{ filters.option == option ? ' selected' }}>{{ option.name }}</option>{% endfor %}
+                    </select></label>
+                <label class="cm-cs-field" for="pool-since"><span>{{ 'enterprisePoolSinceLabel'|trans }}</span>
+                    <select id="pool-since" name="since" class="form-select form-select-sm">
+                        <option value="">{{ 'enterprisePoolAnyYear'|trans }}</option>
+                        {% for year in years %}<option value="{{ year }}"{{ filters.sinceYear == year ? ' selected' }}>{{ year }}-{{ year + 1 }}</option>{% endfor %}
+                    </select></label>
+            </div>
+
+            <div class="cm-cs-filters__group">
+                <h2 class="cm-cs-filters__title">{{ 'companySearchWhatHeading'|trans }}</h2>
+                <label class="cm-cs-field" for="pool-name"><span>{{ 'companySearchKeywordLabel'|trans }}</span>
+                    <input type="search" id="pool-name" name="name" class="form-control form-control-sm" value="{{ filters.name }}"></label>
+                {% for group in groups %}
+                    {% for category in group.categories|filter(c => not c.solo) %}
+                        <label class="cm-cs-check">
+                            <input type="checkbox" name="cat[]" value="{{ category.id }}"{{ category in filters.categories ? ' checked' }}>
+                            <span>{{ category.label }}</span>
+                        </label>
+                    {% endfor %}
+                {% endfor %}
+            </div>
+
+            <div class="cm-cs-filters__group">
+                <h2 class="cm-cs-filters__title">{{ 'companySearchWhereHeading'|trans }}</h2>
+                <input type="text" name="deps" class="form-control form-control-sm" value="{{ filters.departments|join(', ') }}"
+                       placeholder="87, 19" aria-label="{{ 'companySearchWhereDepartmentsLabel'|trans }}">
+                <p class="cm-cs-filters__hint">{{ 'enterprisePoolWhereHint'|trans }}</p>
+            </div>
+
+            <div class="cm-cs-filters__group">
+                <h2 class="cm-cs-filters__title">{{ 'enterprisePoolTeamHeading'|trans }}</h2>
+                <label class="cm-cs-check">
+                    <input type="checkbox" name="teacher" value="1"{{ filters.withTeacherContact ? ' checked' }}>
+                    <span>{{ 'enterprisePoolWithTeacherContactFilter'|trans }}</span>
+                </label>
+                <label class="cm-cs-check">
+                    <input type="checkbox" name="pending" value="1"{{ filters.pendingSiretOnly ? ' checked' }}>
+                    <span>{{ 'enterprisePoolPendingSiretFilter'|trans }}</span>
+                </label>
+            </div>
+
+            <div class="cm-cs-filters__buttons">
+                <twig:Cm:Button variant="primary" type="submit">{{ 'companySearchSubmitAction'|trans }}</twig:Cm:Button>
+                <a class="cm-cs-link" href="{{ path('app_enterprise_pool') }}">{{ 'companySearchResetAction'|trans }}</a>
+            </div>
+        </form>
+
+        <section class="cm-cs-results">
+            <div class="cm-cs-results__head"><b>{{ 'companySearchResultCount'|trans({'%count%': total}) }}</b></div>
+            {% if rows is empty %}
+                <div class="cm-cs-empty"><p>{{ 'enterprisePoolEmptyText'|trans }}</p></div>
+            {% else %}
+                <div class="table-responsive cm-cs-tablewrap">
+                    <table class="table cm-cs-table">
+                        <thead>
+                            <tr>
+                                <th>{{ 'enterprisePoolEnterpriseColumn'|trans }}</th>
+                                <th>{{ 'enterprisePoolCityColumn'|trans }}</th>
+                                <th>{{ 'hostingKindStagePluralLabel'|trans }}</th>
+                                <th>{{ 'hostingKindAlternancePluralLabel'|trans }}</th>
+                                <th>{{ 'enterprisePoolLastHostingColumn'|trans }}</th>
+                                <th>{{ 'enterprisePoolTeamHeading'|trans }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in rows %}
+                                {% set enterprise = row.enterprise %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ path('app_enterprise_pool_show', {id: enterprise.id, back: back}) }}"><b>{{ enterprise.name }}</b></a>
+                                        {% if enterprise.siretConfirmedAt is null %} <twig:Cm:Badge tone="gold">{{ 'enterprisePoolSiretPendingBadge'|trans }}</twig:Cm:Badge>{% endif %}
+                                    </td>
+                                    <td>{{ enterprise.city ?? '—' }}{% if enterprise.postalCode %} <span class="cm-cs-kv__code">{{ enterprise.postalCode }}</span>{% endif %}</td>
+                                    {% for kind in kinds %}
+                                        <td>
+                                            {% for line in row.summary.lines|filter(l => l.kind == kind) %}
+                                                <div><twig:Cm:Badge :of="kind">{{ line.domain }}</twig:Cm:Badge> <span class="cm-cs-kv__code">{{ line.years|join(', ') }}</span></div>
+                                            {% else %}—{% endfor %}
+                                        </td>
+                                    {% endfor %}
+                                    <td>{{ row.lastYear ? row.lastYear ~ '-' ~ (row.lastYear + 1) : '—' }}</td>
+                                    <td>{{ row.teacherContacts > 0 ? 'enterprisePoolTeacherContactCount'|trans({'%count%': row.teacherContacts}) : '—' }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if pages > 1 %}
+                    <nav class="cm-cs-pager" aria-label="{{ 'companySearchPagerLabel'|trans }}">
+                        {% if filters.page > 1 %}<a href="{{ path('app_enterprise_pool', filters.toQuery(filters.page - 1)) }}">‹ {{ 'companySearchPreviousPageAction'|trans }}</a>{% else %}<span></span>{% endif %}
+                        <span>{{ 'companySearchPageOf'|trans({'%page%': filters.page, '%pages%': pages}) }}</span>
+                        {% if filters.page < pages %}<a href="{{ path('app_enterprise_pool', filters.toQuery(filters.page + 1)) }}">{{ 'companySearchNextPageAction'|trans }} ›</a>{% else %}<span></span>{% endif %}
+                    </nav>
+                {% endif %}
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

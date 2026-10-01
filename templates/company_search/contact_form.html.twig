@@ -1,0 +1,36 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set heading = isNew ? 'enterprisePoolAddContactAction'|trans : 'enterprisePoolContactEditAction'|trans %}
+
+{% block title %}{{ heading }} · {{ enterprise.name }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'companySearchPageHeading'|trans, url: path('app_company_search')},
+        {label: enterprise.name, url: path('app_enterprise_pool_show', {id: enterprise.id})},
+        {label: heading, url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ heading }} · {{ enterprise.name }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+                <div class="row g-3">
+                    <div class="col-md-6">{{ form_row(form.name) }}</div>
+                    <div class="col-md-6">{{ form_row(form.jobTitle) }}</div>
+                    <div class="col-md-6">{{ form_row(form.email) }}</div>
+                    <div class="col-md-6">{{ form_row(form.phone) }}</div>
+                    <div class="col-12">{{ form_row(form.note) }}</div>
+                    <div class="col-12">{{ form_row(form.shareableWithStudents) }}</div>
+                </div>
+                <twig:Cm:ActionBar>
+                    <twig:Cm:Button variant="outline" href="{{ path('app_enterprise_pool_show', {id: enterprise.id, _fragment: 'contacts'}) }}">{{ 'cancelAction'|trans }}</twig:Cm:Button>
+                    <twig:Cm:Button variant="primary" type="submit">{{ 'enterpriseHostingSaveAction'|trans }}</twig:Cm:Button>
+                </twig:Cm:ActionBar>
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}
