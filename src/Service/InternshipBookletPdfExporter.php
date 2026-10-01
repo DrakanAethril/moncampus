@@ -48,7 +48,9 @@ class InternshipBookletPdfExporter
      */
     public function export(InternshipTutorLink $tutorLink, \Closure $renderView): string
     {
-        return $this->printBooklet($tutorLink, $renderView)['pdf'];
+        $parts = $this->printBooklet($this->bookletData($tutorLink), $renderView, self::MAX_PRINTS)['parts'];
+
+        return $this->gotenbergClient->mergePdfs($parts);
     }
 
     /**
@@ -57,6 +59,11 @@ class InternshipBookletPdfExporter
      * complete document name the same page for the same content, which is what the follow-up visit
      * relies on when both are on the table - so the complete booklet is measured first.
      *
+     * Measured, not printed: the sommaire is a single page whatever numbers it carries, so a first
+     * print already lands every heading on its final page. Running the complete export's loop and
+     * merge here as well cost up to a dozen Gotenberg calls and overran max_execution_time
+     * (production, 2026-10-01), while the complete export alone still fitted.
+     *
      * @param \Closure(string, array<string, mixed>): string $renderView bound to the calling
      *                                                                    controller's renderView()
      *
@@ -64,17 +71,23 @@ class InternshipBookletPdfExporter
      */
     public function exportPeriod(InternshipTutorLink $tutorLink, InternshipEvaluationPeriod $period, \Closure $renderView): string
     {
-        $booklet = $this->printBooklet($tutorLink, $renderView);
+        $data = $this->bookletData($tutorLink);
+
+        /** @var list<array{period: InternshipEvaluationPeriod}> $periods */
+        $periods = \is_array($data['periods'] ?? null) ? $data['periods'] : [];
+        $periodIds = array_map(static fn (array $entry): ?int => $entry['period']->getId(), $periods);
 
         // Period anchors are numbered by position in the booklet (section-period-1, -2, ...).
-        $position = array_search($period->getId(), $booklet['periodIds'], true);
+        $position = array_search($period->getId(), $periodIds, true);
         if (false === $position) {
             throw new \InvalidArgumentException('This evaluation period is not part of the booklet.');
         }
-        $firstPage = $booklet['pages']['section-period-'.($position + 1)] ?? throw new \UnexpectedValueException('The period was not found in the printed booklet.');
+
+        $pages = $this->printBooklet($data, $renderView, 1)['pages'];
+        $firstPage = $pages['section-period-'.($position + 1)] ?? throw new \UnexpectedValueException('The period was not found in the printed booklet.');
 
         // The cover takes one number before the period's first page, unprinted.
-        return $this->print($booklet['data'], $renderView, [
+        return $this->print($data, $renderView, [
             'bookletSlice' => 'period',
             'bookletPartialPeriodId' => $period->getId(),
             'pageOffset' => $firstPage - 2,
@@ -82,18 +95,24 @@ class InternshipBookletPdfExporter
     }
 
     /**
+     * @return array<string, mixed>
+     */
+    private function bookletData(InternshipTutorLink $tutorLink): array
+    {
+        return $this->bookletBuilder->build($tutorLink) + ['assetBaseUrl' => 'http://php', 'pdfExport' => true];
+    }
+
+    /**
+     * Prints the booklet until its sommaire carries the pages it is printed on, at most $maxPrints
+     * times. Returns the parts in order, uploaded files included, for the caller to merge - or not.
+     *
+     * @param array<string, mixed>                           $data
      * @param \Closure(string, array<string, mixed>): string $renderView
      *
-     * @return array{pdf: non-empty-string, pages: array<string, int>, periodIds: list<int|null>, data: array<string, mixed>}
+     * @return array{parts: non-empty-list<string>, pages: array<string, int>}
      */
-    private function printBooklet(InternshipTutorLink $tutorLink, \Closure $renderView): array
+    private function printBooklet(array $data, \Closure $renderView, int $maxPrints): array
     {
-        $data = $this->bookletBuilder->build($tutorLink) + ['assetBaseUrl' => 'http://php', 'pdfExport' => true];
-
-        /** @var list<array{period: InternshipEvaluationPeriod}> $periods */
-        $periods = \is_array($data['periods'] ?? null) ? $data['periods'] : [];
-        $periodIds = array_map(static fn (array $entry): ?int => $entry['period']->getId(), $periods);
-
         $calendarPdf = \is_string($data['calendarFileKey'] ?? null) ? $this->fileUploadService->read($data['calendarFileKey']) : null;
         $timetablePdf = \is_string($data['timetableFileKey'] ?? null) ? $this->fileUploadService->read($data['timetableFileKey']) : null;
 
@@ -102,14 +121,18 @@ class InternshipBookletPdfExporter
             for ($printed = 1;; ++$printed) {
                 $pdf = $this->print($data, $renderView, ['tocPages' => $tocPages]);
                 $pages = PdfNamedDestinations::read($pdf);
-                if ($pages === $tocPages || self::MAX_PRINTS === $printed) {
+                if ($pages === $tocPages || $maxPrints === $printed) {
                     break;
                 }
                 $tocPages = $pages;
             }
 
-            return ['pdf' => $pdf, 'pages' => $pages, 'periodIds' => $periodIds, 'data' => $data];
+            return ['parts' => [$pdf], 'pages' => $pages];
         }
+
+        // The uploaded files do not change between prints: counted once.
+        $calendarPageCount = null !== $calendarPdf ? $this->gotenbergClient->countPdfPages($calendarPdf) : 0;
+        $timetablePageCount = null !== $timetablePdf ? $this->gotenbergClient->countPdfPages($timetablePdf) : 0;
 
         // The 'after' part depends only on how many pages come before it, so it is printed again
         // only when that number moves.
@@ -125,11 +148,11 @@ class InternshipBookletPdfExporter
             // The sections an uploaded file IS start on its first page.
             if (null !== $calendarPdf) {
                 $pages['section-ii'] = $pages['section-ii-1'] = $offset + 1;
-                $offset += $this->gotenbergClient->countPdfPages($calendarPdf);
+                $offset += $calendarPageCount;
             }
             if (null !== $timetablePdf) {
                 $pages['section-ii-2'] = $offset + 1;
-                $offset += $this->gotenbergClient->countPdfPages($timetablePdf);
+                $offset += $timetablePageCount;
             }
 
             if ($offset !== $afterOffset) {
@@ -139,15 +162,13 @@ class InternshipBookletPdfExporter
             }
             $pages += $afterPages;
 
-            if ($pages === $tocPages || self::MAX_PRINTS === $printed) {
+            if ($pages === $tocPages || $maxPrints === $printed) {
                 break;
             }
             $tocPages = $pages;
         }
 
-        $pdf = $this->gotenbergClient->mergePdfs(array_values(array_filter([$before, $calendarPdf, $timetablePdf, $after])));
-
-        return ['pdf' => $pdf, 'pages' => $pages, 'periodIds' => $periodIds, 'data' => $data];
+        return ['parts' => array_values(array_filter([$before, $calendarPdf, $timetablePdf, $after])), 'pages' => $pages];
     }
 
     /**
