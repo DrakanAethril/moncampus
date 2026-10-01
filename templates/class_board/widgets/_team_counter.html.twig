@@ -1,0 +1,6 @@
+{# Compteur d'équipes: points per team, ±1. Teams are typed by hand or taken from a lot of groups.
+   It writes nothing into the Jeu du campus (§1.11) - the scores live on the board alone. #}
+<div class="cm-cb-teams" data-class-board-team-counter-target="teams"
+     data-team-label="{{ 'classBoardTeamNumberLabel'|trans({'%number%': '__N__'}) }}"
+     data-group-label="{{ 'classBoardGroupNumberLabel'|trans({'%number%': '__N__'}) }}"
+     data-members="{{ (data.lot ? data.lot.groups : [])|json_encode }}"></div>

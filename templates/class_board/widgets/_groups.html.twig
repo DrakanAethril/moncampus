@@ -1,0 +1,17 @@
+{# Groupes: a saved lot of groups, the teacher's own or a colleague's shared one - read, never
+   changed. « Rapporteur » picks one member per group, in the page only. #}
+{% if data.lot %}
+    <div class="cm-cb-w__meta">{{ 'classBoardGroupsLotLabel'|trans }} <b>{{ data.lot.name }}</b></div>
+    <div class="cm-cb-groups">
+        {% for members in data.lot.groups %}
+            <div class="cm-cb-groups__group" data-class-board-groups-target="group">
+                <b>{{ 'classBoardGroupNumberLabel'|trans({'%number%': loop.index}) }}
+                    <button type="button" class="cm-cb-btn cm-cb-btn--small" data-action="class-board-groups#reporter">{{ 'classBoardGroupsReporterAction'|trans }}</button>
+                </b>
+                {% for member in members %}<span>{{ member }}</span>{% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="cm-cb-w__locked">{{ data.lots is empty ? 'classBoardGroupsNoLotMessage'|trans : 'classBoardGroupsChooseLotMessage'|trans }}</div>
+{% endif %}

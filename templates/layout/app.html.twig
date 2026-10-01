@@ -556,6 +556,10 @@
                                     {% if feature('class_tools') %}
                                         <a class="dropdown-item {{ current_route == 'app_tools_random_draw' ? 'active' }}" href="{{ path('app_tools_random_draw') }}">{{ 'programToolsRandomDrawNavLabel'|trans }}</a>
                                         <a class="dropdown-item {{ current_route == 'app_tools_group_creation' ? 'active' }}" href="{{ path('app_tools_group_creation') }}">{{ 'programToolsGroupCreationNavLabel'|trans }}</a>
+                                        {# Multi-class by nature - a board may be linked to a class
+                                           or to none - so it goes straight to the list, never
+                                           through the class picker. #}
+                                        <a class="dropdown-item {{ current_route starts with 'app_class_board' ? 'active' }}" href="{{ path('app_class_board_index') }}">{{ 'classBoardNavLabel'|trans }}</a>
                                     {% endif %}
                                     {# Right after « Création de groupes », and gated on its own
                                        feature rather than on class_tools: the word cloud is the one

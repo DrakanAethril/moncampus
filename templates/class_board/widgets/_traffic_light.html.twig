@@ -1,0 +1,9 @@
+{# Feu: red, orange or green - the colour is saved. #}
+<div class="cm-cb-light">
+    {% for color in ['red', 'orange', 'green'] %}
+        <button type="button" class="cm-cb-light__lamp cm-cb-light__lamp--{{ color }}" data-color="{{ color }}"
+                aria-pressed="{{ widget.config.color == color ? 'true' : 'false' }}"
+                aria-label="{{ ('classBoardLight' ~ color|capitalize ~ 'Label')|trans }}"
+                data-class-board-traffic-light-target="lamp" data-action="class-board-traffic-light#choose"></button>
+    {% endfor %}
+</div>

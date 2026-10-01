@@ -1,0 +1,11 @@
+{# Chronomètre: elapsed time to the tenth. Nothing of it is saved. #}
+<div class="cm-cb-stopwatch">
+    <div class="cm-cb-stopwatch__digits cm-cb-num"><span data-class-board-stopwatch-target="digits">00:00</span><small data-class-board-stopwatch-target="tenths">,0</small></div>
+</div>
+<div class="cm-cb-w__buttons">
+    <button type="button" class="cm-cb-btn cm-cb-btn--round cm-cb-btn--primary" data-action="class-board-stopwatch#toggle" aria-label="{{ 'classBoardStartPauseAction'|trans }}">
+        <span data-class-board-stopwatch-target="playIcon">{{ ux_icon('player-play') }}</span>
+        <span data-class-board-stopwatch-target="pauseIcon" hidden>{{ ux_icon('player-pause') }}</span>
+    </button>
+    <button type="button" class="cm-cb-btn cm-cb-btn--round" data-action="class-board-stopwatch#reset" aria-label="{{ 'classBoardResetAction'|trans }}">{{ ux_icon('rotate') }}</button>
+</div>

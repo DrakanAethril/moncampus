@@ -1,0 +1,12 @@
+{# QR code: the code of an address typed under it, drawn by the platform (WidgetController::qrCode)
+   - the address goes to no third party. #}
+<div class="cm-cb-qr">
+    <div class="cm-cb-qr__box">
+        <img alt="" data-class-board-qr-code-target="image" data-url="{{ path('app_class_board_qr_code') }}"
+             {% if widget.config.url %}src="{{ path('app_class_board_qr_code', {text: widget.config.url}) }}"{% else %}hidden{% endif %}>
+        <span class="cm-cb-w__meta" data-class-board-qr-code-target="empty" {{ widget.config.url ? 'hidden' }}>{{ 'classBoardQrEmptyMessage'|trans }}</span>
+    </div>
+    <input type="url" class="cm-cb-input" value="{{ widget.config.url }}" maxlength="2000"
+           placeholder="https://…" aria-label="{{ 'classBoardQrUrlLabel'|trans }}"
+           data-class-board-qr-code-target="input" data-action="change->class-board-qr-code#change">
+</div>
