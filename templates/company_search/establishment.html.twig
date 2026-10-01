@@ -20,6 +20,6 @@
         <div class="alert alert-warning" role="alert">{{ 'companySearchUnavailableError'|trans }}</div>
     {% else %}
         {% set establishment = company.establishments[0] %}
-        {% include 'company_search/_establishment_body.html.twig' with {company: company, establishment: establishment, schoolPlace: schoolPlace} %}
+        {% include 'company_search/_establishment_body.html.twig' with {company: company, establishment: establishment, schoolPlace: schoolPlace, mine: mine, back: app.request.requestUri} %}
     {% endif %}
 {% endblock %}

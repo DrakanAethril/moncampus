@@ -9,6 +9,7 @@ use App\Entity\User;
 use App\Enum\Feature;
 use App\Repository\EnterpriseRepository;
 use App\Service\CompanySearch\CompanySearchService;
+use App\Service\CompanySearch\MineOnFiche;
 use App\Service\CompanySearch\ResultRows;
 use App\Service\CompanySearch\SchoolLocation;
 use App\Service\QueryValue;
@@ -29,7 +30,7 @@ use Symfony\Component\Routing\Attribute\Route;
 class EstablishmentController extends AbstractController
 {
     #[Route(path: '/company-search/establishments/{siret}', name: 'app_company_search_establishment', requirements: ['siret' => '\d{14}'], methods: ['GET'])]
-    public function show(string $siret, Request $request, CompanySearchService $search, ResultRows $rows, SchoolLocation $school, EnterpriseRepository $enterprises): Response
+    public function show(string $siret, Request $request, CompanySearchService $search, ResultRows $rows, SchoolLocation $school, EnterpriseRepository $enterprises, MineOnFiche $mine): Response
     {
         $siret = Siret::normalize($siret);
 
@@ -62,6 +63,7 @@ class EstablishmentController extends AbstractController
             'company' => null !== $company ? $rows->company($company, $origin) : null,
             'schoolPlace' => $schoolPlace,
             'back' => $this->backUrl($request),
+            'mine' => $mine->for($user instanceof User ? $user : null, $this->isGranted('ROLE_STUDENT'), $siret),
         ]);
     }
 

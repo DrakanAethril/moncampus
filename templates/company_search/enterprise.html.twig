@@ -157,7 +157,9 @@
         </div>
 
         <aside class="cm-cs-fiche__side">
-            {% block fiche_side_top %}{% endblock %}
+            {% if mine %}
+                {% include 'company_search/_mine_card.html.twig' with {mine: mine, siret: enterprise.siret, back: app.request.requestUri} %}
+            {% endif %}
 
             {% if establishment %}
                 {% include 'company_search/_go_there.html.twig' with {establishment: establishment, schoolPlace: schoolPlace, name: enterprise.name} %}

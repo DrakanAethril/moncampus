@@ -50,6 +50,10 @@ final readonly class CompanySearchCriteria
         public CompanyOrganisationType $organisationType = CompanyOrganisationType::Any,
         public bool $includeIndividuals = false,
         public int $page = 1,
+        /** A student's « Masquer mes démarches » - applied to the page, never sent to the API. */
+        public bool $hideMine = false,
+        /** « Carte » rather than « Liste » - how the page is drawn, never sent to the API. */
+        public bool $map = false,
     ) {
     }
 
@@ -218,6 +222,8 @@ final readonly class CompanySearchCriteria
             'type' => $this->organisationType->value,
             'individuals' => $this->includeIndividuals ? 1 : 0,
             'page' => $page ?? $this->page,
+            'hide_mine' => $this->hideMine ? 1 : 0,
+            'view' => $this->map ? 'map' : '',
         ];
 
         if (self::WHERE_COMMUNE === $this->where) {

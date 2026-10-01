@@ -1,0 +1,58 @@
+{# « Terminer la recherche » - design/validated/vivier-entreprises.md §6.4. #}
+{% extends 'layout/app.html.twig' %}
+
+{% set studentName = student.displayName ?? student.username %}
+
+{% block title %}{{ 'jobSearchCloseHeading'|trans({'%student%': studentName}) }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: program.displayShortName, url: path('app_program_students', {id: program.id})},
+        {label: 'jobSearchTrackingPageHeading'|trans, url: path('app_program_job_searches', {id: program.id})},
+        {label: 'jobSearchCloseHeading'|trans({'%student%': studentName}), url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'jobSearchCloseHeading'|trans({'%student%': studentName}) }}{% endblock %}
+
+{% block main %}
+    <form method="post" action="{{ path('app_program_job_search_close', {id: program.id, studentId: student.id}) }}" class="cm-cs-closeform">
+        <input type="hidden" name="_token" value="{{ csrf_token('job_search_close') }}">
+
+        <section class="cm-cs-card">
+            <h2 class="cm-cs-card__title">{{ 'jobSearchCloseOutcomeHeading'|trans }}</h2>
+            {% for kind in kinds %}
+                <label class="cm-cs-option">
+                    <input type="radio" name="outcome" value="{{ kind.value }}">
+                    <span><b>{{ ('jobSearchCloseFound' ~ kind.value|capitalize)|trans }}</b>
+                        <span class="cm-cs-card__sub">{{ ('jobSearchCloseFound' ~ kind.value|capitalize ~ 'Hint')|trans }}</span></span>
+                </label>
+            {% endfor %}
+            <label class="cm-cs-option">
+                <input type="radio" name="outcome" value="" checked>
+                <span><b>{{ 'jobSearchCloseOther'|trans }}</b></span>
+            </label>
+        </section>
+
+        <section class="cm-cs-card">
+            <h2 class="cm-cs-card__title">{{ 'jobSearchCloseWhereHeading'|trans }}</h2>
+            {% for application in applications %}
+                <label class="cm-cs-option">
+                    <input type="radio" name="application" value="{{ application.id }}">
+                    <span><b>{{ application.name }}</b>
+                        <span class="cm-cs-card__sub">
+                            {{ application.siret ? ('SIRET ' ~ application.siret|siret) : 'jobSearchCloseNoSiretHint'|trans }}
+                            {% if application.toWrite %} · {{ 'studentJobApplicationsToWriteBadge'|trans }}{% endif %}
+                        </span></span>
+                </label>
+            {% else %}
+                <p class="cm-cs-card__sub">{{ 'jobSearchCloseNoApplicationText'|trans }}</p>
+            {% endfor %}
+        </section>
+
+        <twig:Cm:ActionBar>
+            <twig:Cm:Button variant="outline" href="{{ path('app_program_job_searches', {id: program.id}) }}">{{ 'cancelAction'|trans }}</twig:Cm:Button>
+            <twig:Cm:Button variant="primary" type="submit">{{ 'jobSearchCloseSubmitAction'|trans }}</twig:Cm:Button>
+        </twig:Cm:ActionBar>
+    </form>
+{% endblock %}

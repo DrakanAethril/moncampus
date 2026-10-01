@@ -1,0 +1,32 @@
+{# « Vous et cette entreprise » - a student's own démarche about this establishment.
+   Parameters: mine (MineOnFiche::for()), siret, back. #}
+<section class="cm-cs-card">
+    <h2 class="cm-cs-card__title">{{ 'companySearchMineHeading'|trans }}</h2>
+    {% if mine.application %}
+        {% set application = mine.application %}
+        <p class="cm-cs-card__sub">
+            {{ 'companySearchMineDemarcheText'|trans({'%name%': application.name}) }}
+            {% include 'company_search/_mine_badge.html.twig' with {application: application} %}
+        </p>
+        <div class="cm-cs-stack">
+            <twig:Cm:Button size="sm" variant="primary" href="{{ path('app_school_mail_compose', {for: application.id}) }}">{{ 'companySearchWriteAction'|trans }}</twig:Cm:Button>
+            <a class="cm-cs-link" href="{{ path('app_my_job_applications', {filter: application.toWrite ? 'to_write' : 'all'}) }}">{{ 'companySearchMyApplicationsAction'|trans }}</a>
+        </div>
+    {% else %}
+        <p class="cm-cs-card__sub">{{ 'companySearchMineNoneText'|trans }}</p>
+        {% include 'company_search/_keep_button.html.twig' with {siret: siret, back: back} %}
+        {% if mine.attachable is not empty %}
+            <form method="post" action="{{ path('app_company_search_attach') }}" class="cm-cs-stack">
+                <input type="hidden" name="_token" value="{{ csrf_token('company_search_attach') }}">
+                <input type="hidden" name="siret" value="{{ siret }}">
+                <input type="hidden" name="back" value="{{ back }}">
+                <label class="cm-cs-field" for="attach-application"><span>{{ 'companySearchAttachLabel'|trans }}</span>
+                    <select id="attach-application" name="application" class="form-select form-select-sm" required>
+                        <option value="">{{ 'companySearchAttachPlaceholder'|trans }}</option>
+                        {% for candidate in mine.attachable %}<option value="{{ candidate.id }}">{{ candidate.name }}</option>{% endfor %}
+                    </select></label>
+                <twig:Cm:Button size="sm" variant="outline" type="submit">{{ 'companySearchAttachAction'|trans }}</twig:Cm:Button>
+            </form>
+        {% endif %}
+    {% endif %}
+</section>

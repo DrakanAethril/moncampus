@@ -17,10 +17,12 @@ use Symfony\Component\Validator\Constraints as Assert;
  * (design_handoff_stage_alternance, screens 2a and 2b, which group mails by démarche).
  *
  * The student names it themselves when writing their first mail ("Néopixel", "mairie - service
- * info"). It is deliberately **not** an App\Entity\Enterprise: that entity belongs to the UFA
- * module, where a company is a shared, staff-curated record tied to contracts and tutors. A student
- * looking for a placement is not filling that repository in - they are keeping track of who they
- * wrote to, under whatever name makes sense to them.
+ * info"), or keeps a company from « Trouver une entreprise », which opens a démarche with nothing
+ * sent yet - « à écrire » (design/validated/vivier-entreprises.md §6). It is deliberately **not**
+ * an App\Entity\Enterprise: the vivier is a shared record of the establishment, a démarche is the
+ * student's own track of who they wrote to, under whatever name makes sense to them. A démarche may
+ * point at an employer of the vivier ($enterprise) and at an establishment of the register
+ * ($siret) - only ever by the student's own gesture.
  *
  * Grouping happens per démarche and not per mail: a send, its follow-up and the reply received all
  * belong to the same one. The démarche carries the context (position, contact); the
@@ -77,6 +79,29 @@ class JobApplication
 
     #[ORM\Column(length: 20, enumType: JobApplicationOrigin::class)]
     private JobApplicationOrigin $origin = JobApplicationOrigin::Spontaneous;
+
+    /**
+     * The establishment of the État's register this démarche is about - set only by a gesture of
+     * the student (« Garder » on « Trouver une entreprise », or « Rattacher » on a fiche), never
+     * guessed for a démarche named by hand (design/validated/vivier-entreprises.md §6.2). It is how
+     * a result line says « dans mes démarches » and how a closed search feeds the vivier.
+     */
+    #[ORM\Column(length: 14, nullable: true)]
+    private ?string $siret = null;
+
+    /** The employer of the vivier carrying that SIRET, when the establishment knows it. */
+    #[ORM\ManyToOne(targetEntity: Enterprise::class)]
+    #[ORM\JoinColumn(name: 'enterprise_id', nullable: true, onDelete: 'SET NULL')]
+    private ?Enterprise $enterprise = null;
+
+    /**
+     * The student's own note - where they found a contact, when to call back. **Read by their
+     * teachers** (D9), and the screen says so under the field; the team's own notes about the
+     * student stay in JobSearchNote, which the student never reads.
+     */
+    #[ORM\Column(name: 'student_note', type: Types::TEXT, nullable: true)]
+    #[Assert\Length(max: 2000)]
+    private ?string $studentNote = null;
 
     #[ORM\Column(name: 'created_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
@@ -178,6 +203,52 @@ class JobApplication
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
+    }
+
+    public function getSiret(): ?string
+    {
+        return $this->siret;
+    }
+
+    public function setSiret(?string $siret): static
+    {
+        $this->siret = $siret;
+
+        return $this;
+    }
+
+    public function getEnterprise(): ?Enterprise
+    {
+        return $this->enterprise;
+    }
+
+    public function setEnterprise(?Enterprise $enterprise): static
+    {
+        $this->enterprise = $enterprise;
+
+        return $this;
+    }
+
+    public function getStudentNote(): ?string
+    {
+        return $this->studentNote;
+    }
+
+    public function setStudentNote(?string $studentNote): static
+    {
+        $studentNote = null !== $studentNote ? trim($studentNote) : null;
+        $this->studentNote = '' !== $studentNote ? $studentNote : null;
+
+        return $this;
+    }
+
+    /**
+     * « À écrire »: nothing has gone out or come in yet - a company kept from « Trouver une
+     * entreprise ». Read, never stored: there is no status on a démarche (R7).
+     */
+    public function isToWrite(): bool
+    {
+        return $this->emailMessages->isEmpty();
     }
 
     /** @return Collection<int, EmailMessage> */

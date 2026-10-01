@@ -28,6 +28,8 @@
             {% endif %}
             {% if row.mine is defined and row.mine[establishment.siret] is defined %}
                 {% include 'company_search/_mine_badge.html.twig' with {application: row.mine[establishment.siret]} %}
+            {% elseif canKeep|default(false) %}
+                {% include 'company_search/_keep_button.html.twig' with {siret: establishment.siret, back: back} %}
             {% endif %}
         </div>
         {% if loop.last and loop.length > 2 %}</details>{% endif %}

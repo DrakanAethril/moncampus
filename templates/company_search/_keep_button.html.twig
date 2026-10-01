@@ -1,0 +1,7 @@
+{# « Garder » - opens a démarche « à écrire » on this establishment. Parameters: siret, back. #}
+<form method="post" action="{{ path('app_company_search_keep') }}" class="cm-cs-keep">
+    <input type="hidden" name="_token" value="{{ csrf_token('company_search_keep') }}">
+    <input type="hidden" name="siret" value="{{ siret }}">
+    <input type="hidden" name="back" value="{{ back }}">
+    <button type="submit" class="cm-cs-link"><twig:ux:icon name="star" width="13" height="13" aria-hidden="true"/> {{ 'companySearchKeepAction'|trans }}</button>
+</form>

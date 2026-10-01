@@ -87,6 +87,7 @@
                         <th>{{ 'jobSearchTrackingFailedColumnLabel'|trans }}</th>
                         <th>{{ 'jobSearchTrackingRepliesColumnLabel'|trans }}</th>
                         <th>{{ 'jobSearchTrackingLastSentColumnLabel'|trans }}</th>
+                        <th>{{ 'jobSearchTrackingToWriteColumnLabel'|trans }}</th>
                         <th class="text-end">{{ 'jobSearchTrackingSearchesColumnLabel'|trans }}</th>
                     </tr>
                 </thead>
@@ -108,6 +109,7 @@
                             <td{{ row.mailboxOpen and row.stats.failed > 0 ? ' class="cm-jobsearch-failed"' }}>{{ row.mailboxOpen ? row.stats.failed : '—' }}</td>
                             <td>{{ row.mailboxOpen ? row.stats.replies : '—' }}</td>
                             <td>{{ row.mailboxOpen and row.stats.lastSentAt ? row.stats.lastSentAt|date('d/m') : '—' }}</td>
+                            <td>{{ row.toWrite > 0 ? row.toWrite : '—' }}</td>
                             <td class="text-end">
                                 <span class="cm-jobsearch-actions">
                                     {% if not row.mailboxOpen %}
@@ -133,10 +135,9 @@
                                                 <button type="submit" class="cm-jobsearch-link">{{ 'jobSearchReopenAction'|trans }}</button>
                                             </form>
                                         {% else %}
-                                            <form method="post" action="{{ path('app_program_job_search_close', {id: program.id, studentId: student.id}) }}">
-                                                <input type="hidden" name="_token" value="{{ csrf_token('job_search_close') }}">
-                                                <button type="submit" class="cm-jobsearch-link">{{ 'jobSearchCloseAction'|trans }}</button>
-                                            </form>
+                                            {# A page rather than a click: it asks what the search
+                                               ended on, which is how a stage found feeds the vivier. #}
+                                            <a class="cm-jobsearch-link" href="{{ path('app_program_job_search_close_form', {id: program.id, studentId: student.id}) }}">{{ 'jobSearchCloseAction'|trans }}</a>
                                         {% endif %}
                                         <a class="cm-jobapp-row__link" href="{{ path('app_student_job_applications', {id: student.id}) }}">{{ 'jobSearchTrackingSheetAction'|trans }}</a>
                                     {% endif %}
@@ -145,7 +146,7 @@
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="7" class="text-secondary">{{ 'jobSearchTrackingEmptyLabel'|trans }}</td>
+                            <td colspan="8" class="text-secondary">{{ 'jobSearchTrackingEmptyLabel'|trans }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>

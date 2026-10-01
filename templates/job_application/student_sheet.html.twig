@@ -36,7 +36,7 @@
 
     <div class="cm-sheet">
         <div class="cm-sheet__main">
-            <div class="cm-statgrid cm-statgrid--4 mb-3">
+            <div class="cm-statgrid cm-statgrid--{{ counters.toWrite > 0 ? 5 : 4 }} mb-3">
                 <div class="cm-stat">
                     <div class="cm-stat__label cm-stat__label--kpi">{{ 'studentJobApplicationsCountLabel'|trans }}</div>
                     <div class="cm-stat__value">{{ counters.applications }}</div>
@@ -53,6 +53,12 @@
                     <div class="cm-stat__label cm-stat__label--kpi">{{ 'studentJobApplicationsFollowUpsLabel'|trans }}</div>
                     <div class="cm-stat__value">{{ counters.followUps }}</div>
                 </div>
+                {% if counters.toWrite > 0 %}
+                    <div class="cm-stat">
+                        <div class="cm-stat__label cm-stat__label--kpi">{{ 'studentJobApplicationsToWriteLabel'|trans }}</div>
+                        <div class="cm-stat__value">{{ counters.toWrite }}</div>
+                    </div>
+                {% endif %}
             </div>
 
             <div class="card">
@@ -76,6 +82,7 @@
                                 · {{ application.origin.labelKey|trans }}
                             </span>
                             <span class="cm-sheet__meta">
+                                {% if application.toWrite %}<twig:Cm:Badge tone="gold">{{ 'studentJobApplicationsToWriteBadge'|trans }}</twig:Cm:Badge>{% endif %}
                                 <span class="cm-jobapp-row__mails">
                                     {{ 'jobApplicationMailCountLabel'|trans({'%count%': summary.mailCount}) }}
                                     {%- if summary.replyAttachmentCount > 0 %} · {{ 'jobApplicationAttachmentCountLabel'|trans({'%count%': summary.replyAttachmentCount}) }}{% endif %}
@@ -88,6 +95,16 @@
                             </span>
                         </summary>
 
+                        {% if application.studentNote or application.siret %}
+                            <div class="cm-sheet__lead">
+                                {% if application.siret %}
+                                    <a class="cm-cs-link" href="{{ application.enterprise ? path('app_enterprise_pool_show', {id: application.enterprise.id}) : path('app_company_search_establishment', {siret: application.siret}) }}">{{ 'myJobApplicationsCompanyFicheAction'|trans }}</a>
+                                {% endif %}
+                                {% if application.studentNote %}
+                                    <p class="cm-sheet__lead-note"><span>{{ 'studentJobApplicationsStudentNoteLabel'|trans }}</span> {{ application.studentNote }}</p>
+                                {% endif %}
+                            </div>
+                        {% endif %}
                         <div class="cm-sheet__mails">
                             {% for message in application.emailMessages %}
                                 {% include 'job_application/_mail.html.twig' with {message: message} only %}

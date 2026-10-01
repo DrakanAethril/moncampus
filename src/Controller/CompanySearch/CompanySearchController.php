@@ -10,6 +10,8 @@ use App\Enum\CompanyOrganisationType;
 use App\Enum\EmployeeBand;
 use App\Enum\Feature;
 use App\Repository\CompanySearchCategoryRepository;
+use App\Repository\JobApplicationRepository;
+use App\Security\FeatureAccess;
 use App\Security\Voter\EnterpriseVoter;
 use App\Service\CompanySearch\CompanySearchCriteria;
 use App\Service\CompanySearch\CompanySearchCriteriaFactory;
@@ -48,6 +50,8 @@ class CompanySearchController extends AbstractController
         private readonly ResultRows $rows,
         private readonly SchoolLocation $school,
         private readonly PoolAnnotations $pool,
+        private readonly JobApplicationRepository $applications,
+        private readonly FeatureAccess $features,
     ) {
     }
 
@@ -82,10 +86,24 @@ class CompanySearchController extends AbstractController
         }
 
         $rows = [];
+        $hidden = 0;
+        $canKeep = $this->canKeep();
         if (null !== $page) {
+            $sirets = [];
+            foreach ($page->companies as $company) {
+                foreach ($company->establishments as $establishment) {
+                    $sirets[] = $establishment->siret;
+                }
+            }
+            $mine = $canKeep ? $this->applications->findForStudentBySirets($this->currentUser(), $sirets) : [];
             $pool = $this->pool->forCompanies($page->companies, $this->currentUser(), $this->isGranted(EnterpriseVoter::VIEW_TEACHER_CONTACTS));
             foreach ($page->companies as $company) {
                 $row = $this->rows->company($company, $origin);
+                $row['mine'] = array_intersect_key($mine, array_flip(array_column($row['establishments'], 'siret')));
+                if ($canKeep && $criteria->hideMine && [] !== $row['mine']) {
+                    ++$hidden;
+                    continue;
+                }
                 $row['pool'] = [
                     'establishments' => array_intersect_key($pool['establishments'], array_flip(array_column($row['establishments'], 'siret'))),
                     'elsewhere' => $pool['elsewhere'][$company->siren] ?? [],
@@ -100,6 +118,8 @@ class CompanySearchController extends AbstractController
             'problem' => $problem,
             'page' => $page,
             'rows' => $rows,
+            'hiddenMine' => $hidden,
+            'canKeep' => $canKeep,
             'distanceFromSchool' => null === $criteria->origin() && null !== $origin,
             'groups' => $this->categories->findGroupedByTheme(),
             'bands' => EmployeeBand::cases(),
@@ -135,6 +155,12 @@ class CompanySearchController extends AbstractController
             'latitude' => round($place->latitude, 5),
             'longitude' => round($place->longitude, 5),
         ], $places));
+    }
+
+    /** « Garder » is a student's, and lands in « Candidatures », which the Courrier pro carries. */
+    private function canKeep(): bool
+    {
+        return $this->isGranted('ROLE_STUDENT') && $this->features->isEnabled(Feature::SchoolMail, $this->currentUser());
     }
 
     private function currentUser(): User

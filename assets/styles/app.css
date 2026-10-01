@@ -12306,3 +12306,30 @@ form.cm-cs-lookup__item { border: 0; padding: 0; }
 .cm-cs-lookup__item:hover, .cm-cs-lookup__item button:hover { border-color: var(--cm-brand); }
 .cm-cs-card__title { flex-wrap: wrap; }
 .cm-cs-card__title .cm-badge { letter-spacing: .2px; text-transform: none; }
+/* « Candidatures »: the company, the note and « Retirer » of a démarche, on a line of their own
+   under it (design/validated/vivier-entreprises.md §6). */
+.cm-jobapp-row { flex-wrap: wrap; }
+.cm-jobapp-lead { order: 3; flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 16px; padding-left: 21px; font-size: 12.5px; }
+.cm-jobapp-lead form { margin: 0; }
+.cm-jobapp-lead__note { flex: 1 1 320px; }
+.cm-jobapp-lead__note summary { font-weight: 600; color: var(--cm-brand-strong); cursor: pointer; }
+.cm-jobapp-lead__note form { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; margin-top: 4px; }
+.cm-jobapp-lead__note textarea { width: 100%; background: var(--cm-gold-bg-soft); }
+.cm-jobapp-lead__hint { font-size: 11.5px; color: var(--cm-muted); }
+.cm-cs-keep { display: inline; margin: 0; }
+/* Screen 2a with « À écrire »: a fifth tile, and the student's note above the mails. */
+@media (min-width: 992px) { .cm-statgrid--5 { grid-template-columns: repeat(5, 1fr); } }
+.cm-sheet__lead { padding: 8px 18px 0; background: var(--cm-surface-soft); display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.cm-sheet__lead-note { margin: 0; background: var(--cm-gold-bg-soft); border-radius: 6px; padding: 6px 10px; color: var(--cm-ink); white-space: pre-line; }
+.cm-sheet__lead-note span { font-weight: 600; color: var(--cm-gold-deep); }
+.cm-cs-closeform { display: flex; flex-direction: column; gap: 16px; max-width: 760px; }
+.cm-cs-option { display: grid; grid-template-columns: 18px 1fr; gap: 8px; align-items: start; border: 1px solid var(--cm-border); border-radius: 8px; padding: 8px 10px; margin: 0; cursor: pointer; }
+.cm-cs-option:has(input:checked) { border-color: var(--cm-brand); background: var(--cm-blue-bg-soft); }
+.cm-cs-option input { margin-top: 4px; }
+.cm-cs-option .cm-cs-card__sub { display: block; }
+.cm-cs-viewswitch { display: inline-flex; align-self: flex-start; border: 1px solid var(--cm-border); border-radius: 8px; overflow: hidden; background: var(--cm-surface); }
+.cm-cs-viewswitch a { padding: 4px 14px; font-size: 12.5px; font-weight: 600; color: var(--cm-muted); text-decoration: none; }
+.cm-cs-viewswitch a.is-active { background: var(--cm-brand-strong); color: var(--cm-surface); }
+.cm-cs-legend { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--cm-red-tx); vertical-align: middle; }
+.cm-cs-legend--known { background: var(--cm-green-tx); }
+.cm-cs-legend--mine { background: var(--cm-gold-deep); }

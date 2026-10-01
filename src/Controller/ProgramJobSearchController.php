@@ -10,13 +10,16 @@ use App\Entity\Program;
 use App\Entity\TrainingApplication;
 use App\Entity\User;
 use App\Enum\Feature;
+use App\Enum\HostingKind;
 use App\Enum\TrainingApplicationState;
 use App\Repository\EmailMessageRepository;
+use App\Repository\JobApplicationRepository;
 use App\Repository\JobSearchRepository;
 use App\Repository\ProgramRepository;
 use App\Repository\TrainingApplicationRepository;
 use App\Repository\TrainingOfferRepository;
 use App\Security\StructureAccessChecker;
+use App\Service\EnterprisePool\SearchOutcomeRecorder;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -49,6 +52,7 @@ class ProgramJobSearchController extends AbstractController
         private readonly TrainingOfferRepository $trainingOfferRepository,
         private readonly StructureAccessChecker $accessChecker,
         private readonly EntityManagerInterface $entityManager,
+        private readonly JobApplicationRepository $jobApplicationRepository,
     ) {
     }
 
@@ -60,6 +64,7 @@ class ProgramJobSearchController extends AbstractController
         $stats = $this->messageRepository->statsForStudents($students);
         $closed = $this->searchRepository->findClosedIndexedByStudentId($students);
         $applications = $this->trainingApplicationRepository->findForStudentsIndexedByStudentId($students);
+        $toWrite = $this->jobApplicationRepository->countToWriteByStudent($students);
 
         /** @var User $viewer */
         $viewer = $this->getUser();
@@ -85,6 +90,8 @@ class ProgramJobSearchController extends AbstractController
                 'student' => $student,
                 'stats' => $studentStats,
                 'closedSearch' => $closed[$student->getId()] ?? null,
+                // Companies kept from « Trouver une entreprise » with nothing sent yet.
+                'toWrite' => $toWrite[$student->getId()] ?? 0,
                 'mailboxOpen' => $mailboxOpen,
                 'pendingApplication' => $pending,
                 // Whether *this* teacher may open it: the review screen is the validators' own.
@@ -115,8 +122,27 @@ class ProgramJobSearchController extends AbstractController
         ]);
     }
 
+    /**
+     * « Terminer la recherche » asks what the search ended on before closing it - a stage found
+     * feeds the vivier (design/validated/vivier-entreprises.md §6.4). Answering is not required:
+     * « autre / sans suite » closes exactly as before.
+     */
+    #[Route(path: '/programs/{id}/job-search-tracking/{studentId}/close', name: 'app_program_job_search_close_form', requirements: ['id' => '\d+', 'studentId' => '\d+'], methods: ['GET'])]
+    public function closeForm(int $id, int $studentId): Response
+    {
+        $program = $this->findOrDenyAccess($id);
+        $student = $this->findStudentOrFail($program, $studentId);
+
+        return $this->render('program/job_search_close.html.twig', [
+            'program' => $program,
+            'student' => $student,
+            'applications' => $this->jobApplicationRepository->findForStudent($student),
+            'kinds' => HostingKind::cases(),
+        ]);
+    }
+
     #[Route(path: '/programs/{id}/job-search-tracking/{studentId}/close', name: 'app_program_job_search_close', requirements: ['id' => '\d+', 'studentId' => '\d+'], methods: ['POST'])]
-    public function close(int $id, int $studentId, Request $request): Response
+    public function close(int $id, int $studentId, Request $request, SearchOutcomeRecorder $outcomes): Response
     {
         $program = $this->findOrDenyAccess($id);
         $student = $this->findStudentOrFail($program, $studentId);
@@ -132,6 +158,15 @@ class ProgramJobSearchController extends AbstractController
             $search = (new JobSearch())
                 ->setStudent($student)
                 ->setClosedBy($closedBy);
+
+            $kind = HostingKind::tryFrom((string) $request->request->get('outcome', ''));
+            $application = $this->jobApplicationRepository->find((int) $request->request->get('application', 0));
+            if (null !== $application && $application->getStudent() !== $student) {
+                $application = null;
+            }
+            if (!$outcomes->record($search, $kind, $application, $program, $closedBy)) {
+                $this->addFlash('warning', 'jobSearchCloseNotInPoolFlash');
+            }
 
             $this->entityManager->persist($search);
             $this->entityManager->flush();

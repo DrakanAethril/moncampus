@@ -20,6 +20,7 @@ use App\Repository\EnterpriseTeacherContactRepository;
 use App\Repository\InternshipTutorLinkRepository;
 use App\Security\Voter\EnterpriseVoter;
 use App\Service\CompanySearch\CompanySearchService;
+use App\Service\CompanySearch\MineOnFiche;
 use App\Service\CompanySearch\ResultRows;
 use App\Service\CompanySearch\SchoolLocation;
 use App\Service\EnterpriseContacts;
@@ -65,6 +66,7 @@ class EnterprisePoolController extends AbstractController
         ResultRows $rows,
         SchoolLocation $school,
         RegistrySnapshot $snapshot,
+        MineOnFiche $mine,
     ): Response {
         $enterprise = $this->findOrNotFound($id);
         $viewer = $this->currentUser();
@@ -110,6 +112,7 @@ class EnterprisePoolController extends AbstractController
             'myTeacherContact' => $this->isGranted(EnterpriseVoter::DECLARE_TEACHER_CONTACT, $enterprise) ? $teacherContacts->findOneFor($enterprise, $viewer) : null,
             'notes' => $this->isGranted(EnterpriseVoter::VIEW_STAFF_NOTES, $enterprise) ? $notes->findFor($enterprise) : [],
             'back' => $this->backUrl($request),
+            'mine' => null !== $enterprise->getSiretConfirmedAt() ? $mine->for($viewer, $this->isGranted('ROLE_STUDENT'), $enterprise->getSiret()) : null,
         ]);
     }
 

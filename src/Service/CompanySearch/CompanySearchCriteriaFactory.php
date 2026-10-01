@@ -72,6 +72,8 @@ class CompanySearchCriteriaFactory
             organisationType: CompanyOrganisationType::tryFrom(QueryValue::string($request, 'type')) ?? CompanyOrganisationType::Any,
             includeIndividuals: QueryValue::bool($request, 'individuals'),
             page: max(1, QueryValue::int($request, 'page', 1)),
+            hideMine: QueryValue::bool($request, 'hide_mine'),
+            map: 'map' === QueryValue::string($request, 'view'),
         );
     }
 

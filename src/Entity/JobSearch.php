@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\HostingKind;
 use App\Repository\JobSearchRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
@@ -40,6 +41,19 @@ class JobSearch
     #[ORM\JoinColumn(name: 'closed_by_id', nullable: true, onDelete: 'SET NULL')]
     private ?User $closedBy = null;
 
+    /**
+     * What the search ended on, when the teacher said so: a stage or an alternance found - null for
+     * « autre / sans suite » and for every search closed before the question was asked
+     * (design/validated/vivier-entreprises.md §6.4).
+     */
+    #[ORM\Column(name: 'outcome_kind', length: 20, nullable: true, enumType: HostingKind::class)]
+    private ?HostingKind $outcomeKind = null;
+
+    /** The démarche it ended on, when one of the student's. */
+    #[ORM\ManyToOne(targetEntity: JobApplication::class)]
+    #[ORM\JoinColumn(name: 'outcome_application_id', nullable: true, onDelete: 'SET NULL')]
+    private ?JobApplication $outcomeApplication = null;
+
     public function __construct()
     {
         $this->closedAt = new \DateTimeImmutable();
@@ -75,6 +89,24 @@ class JobSearch
     public function setClosedBy(?User $closedBy): static
     {
         $this->closedBy = $closedBy;
+
+        return $this;
+    }
+
+    public function getOutcomeKind(): ?HostingKind
+    {
+        return $this->outcomeKind;
+    }
+
+    public function getOutcomeApplication(): ?JobApplication
+    {
+        return $this->outcomeApplication;
+    }
+
+    public function setOutcome(?HostingKind $kind, ?JobApplication $application): static
+    {
+        $this->outcomeKind = $kind;
+        $this->outcomeApplication = null !== $kind ? $application : null;
 
         return $this;
     }
