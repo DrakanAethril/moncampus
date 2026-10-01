@@ -1,0 +1,15 @@
+{% set config = widget.config %}
+<label class="cm-cb-field">{{ 'classBoardVideoUrlField'|trans }}
+    <input type="url" class="cm-cb-input" name="url" maxlength="2000" value="{{ config.url }}" placeholder="https://…" data-rerender>
+</label>
+{% if data.files is defined and data.files is not empty %}
+    <label class="cm-cb-field">{{ 'classBoardVideoFileField'|trans }}
+        <select class="cm-cb-input" name="fileId" data-kind="id" data-rerender>
+            <option value="">{{ 'classBoardNoneOption'|trans }}</option>
+            {% for file in data.files %}
+                <option value="{{ file.id }}" {{ config.fileId == file.id ? 'selected' }}>{{ file.label }}</option>
+            {% endfor %}
+        </select>
+    </label>
+{% endif %}
+<div class="cm-cb-hint">{{ 'classBoardVideoHint'|trans }}</div>

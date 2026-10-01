@@ -298,9 +298,10 @@ export default class extends Controller {
         if (!panel || !field.name) {
             return;
         }
-        // A text field writes as it is typed; a select, a box or a radio answers its change.
-        const textual = field.tagName === 'INPUT' && ['text', 'url', 'time', 'number'].includes(field.type);
-        if ((event.type === 'input') !== textual) {
+        // A text field writes as it is typed; a select, a box, a radio - and a field the server has
+        // to redraw from, such as a video's address - answers its change.
+        const live = field.tagName === 'INPUT' && ['text', 'url', 'time', 'number'].includes(field.type) && !('rerender' in field.dataset);
+        if ((event.type === 'input') !== live) {
             return;
         }
 

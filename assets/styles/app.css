@@ -12616,3 +12616,40 @@ form.cm-cs-lookup__item { border: 0; padding: 0; }
 @media (prefers-reduced-motion: reduce) {
     .cm-cb-w.is-ringing, .cm-cb-die.is-rolling { animation: none; }
 }
+
+/* board, lot 2: the séance, its plan, the work set, a library file, a video */
+.cm-cb-session { display: flex; flex-direction: column; gap: .45em; min-height: 0; overflow: auto; }
+.cm-cb-session__when { font-size: .95em; color: var(--cb-muted); font-variant-numeric: tabular-nums; }
+.cm-cb-session__title { font-family: var(--cm-font-title); font-size: 1.7em; font-weight: 600; color: var(--cb-navy); line-height: 1.15; }
+.cm-cb-session__sub { font-size: 1em; color: var(--cb-text); font-weight: 600; }
+.cm-cb-session__objectives { margin: 0; padding-left: 1.2em; font-size: 1.12em; color: var(--cb-ink); display: grid; gap: .2em; }
+.cm-cb-session__objectives-html { font-size: 1.12em; color: var(--cb-ink); }
+.cm-cb-session__objectives-html > :last-child { margin-bottom: 0; }
+.cm-cb-session__pick { align-self: flex-start; font-size: .85em; max-width: 100%; }
+.cm-cb-tag { display: inline-block; font-size: .78em; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--cb-gold-text); background: var(--cb-gold-bg); border-radius: 999px; padding: .1em .6em; }
+.cm-cb-phases { list-style: none; margin: 0; padding: 0; display: grid; gap: .35em; flex: 1; min-height: 0; overflow: auto; align-content: start; }
+.cm-cb-phase { display: grid; grid-template-columns: 1.6em 1fr auto; gap: .5em; align-items: center; padding: .35em .6em; border-radius: .55em; color: var(--cb-muted); font-size: .95em; line-height: 1.2; }
+.cm-cb-phase__n { width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--cb-soft); display: inline-flex; align-items: center; justify-content: center; font-size: .82em; font-weight: 700; }
+.cm-cb-phase.is-done { text-decoration: line-through; opacity: .6; }
+.cm-cb-phase.is-done .cm-cb-phase__n { background: #e3ede6; color: #25543c; }
+.cm-cb-phase.is-current { background: var(--cb-navy); color: #fff; padding: .55em .6em .7em; }
+.cm-cb-phase.is-current .cm-cb-phase__n { background: var(--cb-gold); color: #2b210c; }
+.cm-cb-phase__left { font-variant-numeric: tabular-nums; font-size: .92em; }
+.cm-cb-phase.is-current .cm-cb-phase__left { font-size: 1.5em; font-weight: 700; }
+.cm-cb-phase__bar { grid-column: 1 / -1; height: .35em; background: rgba(255, 255, 255, .18); border-radius: 1em; overflow: hidden; display: none; }
+.cm-cb-phase.is-current .cm-cb-phase__bar { display: block; }
+.cm-cb-phase__bar i { display: block; height: 100%; width: 0; background: var(--cb-gold); }
+.cm-cb-phase-editor { display: grid; gap: .3em; }
+.cm-cb-phase-editor__row { display: grid; grid-template-columns: 1fr 4.5em auto; gap: .3em; }
+.cm-cb-work { list-style: none; margin: 0; padding: 0; display: grid; gap: .45em; overflow: auto; min-height: 0; align-content: start; }
+.cm-cb-work li { display: grid; grid-template-columns: 1fr auto; gap: .2em .6em; border-bottom: 1px solid var(--cb-line); padding-bottom: .4em; font-size: 1.08em; color: var(--cb-ink); }
+.cm-cb-work li small { grid-column: 1; color: var(--cb-muted); font-size: .82em; }
+.cm-cb-work__due { font-weight: 700; color: var(--cb-brand); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cm-cb-media { flex: 1; min-height: 0; border-radius: .6em; display: flex; align-items: center; justify-content: center; overflow: hidden; background: var(--cb-soft); }
+.cm-cb-media--dark { background: #0e1a22; }
+.cm-cb-media img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+.cm-cb-media iframe, .cm-cb-media video, .cm-cb-media object { width: 100%; height: 100%; border: 0; display: block; background: #000; }
+.cm-cb-media object, .cm-cb-w--media .cm-cb-media iframe { background: #fff; }
+.cm-cb-media__open { align-self: flex-end; display: inline-flex; align-items: center; gap: .35em; font-size: .9em; font-weight: 600; color: var(--cb-brand); text-decoration: none; }
+.cm-cb-media__open:hover { text-decoration: underline; }
+.cm-cb-media__open svg { width: 1.1em; height: 1.1em; }

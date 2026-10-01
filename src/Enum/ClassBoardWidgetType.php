@@ -18,6 +18,14 @@ namespace App\Enum;
  */
 enum ClassBoardWidgetType: string
 {
+    /** The order of the dock, within each family - the mockup's, not the order of the cases. */
+    private const array DOCK_ORDER = [
+        'timer', 'stopwatch', 'clock',
+        'random_draw', 'groups', 'session', 'session_plan', 'work', 'quiz_live', 'word_cloud', 'team_counter',
+        'traffic_light', 'sound_level', 'instructions',
+        'text', 'drawing', 'media', 'video', 'visualizer', 'qr_code', 'dice',
+    ];
+
     case Timer = 'timer';
     case Stopwatch = 'stopwatch';
     case Clock = 'clock';
@@ -29,6 +37,11 @@ enum ClassBoardWidgetType: string
     case Text = 'text';
     case QrCode = 'qr_code';
     case Dice = 'dice';
+    case Session = 'session';
+    case SessionPlan = 'session_plan';
+    case Work = 'work';
+    case Media = 'media';
+    case Video = 'video';
 
     public function labelKey(): string
     {
@@ -44,6 +57,11 @@ enum ClassBoardWidgetType: string
             self::Text => 'classBoardWidgetTextLabel',
             self::QrCode => 'classBoardWidgetQrCodeLabel',
             self::Dice => 'classBoardWidgetDiceLabel',
+            self::Session => 'classBoardWidgetSessionLabel',
+            self::SessionPlan => 'classBoardWidgetSessionPlanLabel',
+            self::Work => 'classBoardWidgetWorkLabel',
+            self::Media => 'classBoardWidgetMediaLabel',
+            self::Video => 'classBoardWidgetVideoLabel',
         };
     }
 
@@ -51,9 +69,9 @@ enum ClassBoardWidgetType: string
     {
         return match ($this) {
             self::Timer, self::Stopwatch, self::Clock => ClassBoardWidgetFamily::Time,
-            self::RandomDraw, self::Groups, self::TeamCounter => ClassBoardWidgetFamily::ClassGroup,
+            self::RandomDraw, self::Groups, self::Session, self::SessionPlan, self::Work, self::TeamCounter => ClassBoardWidgetFamily::ClassGroup,
             self::TrafficLight, self::Instructions => ClassBoardWidgetFamily::Ambiance,
-            self::Text, self::QrCode, self::Dice => ClassBoardWidgetFamily::Content,
+            self::Text, self::Media, self::Video, self::QrCode, self::Dice => ClassBoardWidgetFamily::Content,
         };
     }
 
@@ -65,7 +83,12 @@ enum ClassBoardWidgetType: string
      */
     public function features(): array
     {
-        return [];
+        return match ($this) {
+            self::Session => [Feature::Timetable],
+            self::Work => [Feature::StudentWork],
+            self::Media => [Feature::FileLibrary],
+            default => [],
+        };
     }
 
     /**
@@ -76,7 +99,7 @@ enum ClassBoardWidgetType: string
     public function readsClass(): bool
     {
         return match ($this) {
-            self::RandomDraw, self::Groups => true,
+            self::RandomDraw, self::Groups, self::Session, self::SessionPlan, self::Work => true,
             default => false,
         };
     }
@@ -87,7 +110,7 @@ enum ClassBoardWidgetType: string
     public function hasSettings(): bool
     {
         return match ($this) {
-            self::Clock, self::RandomDraw, self::Groups, self::TeamCounter => true,
+            self::Clock, self::RandomDraw, self::Groups, self::TeamCounter, self::SessionPlan, self::Work, self::Media, self::Video => true,
             default => false,
         };
     }
@@ -109,6 +132,11 @@ enum ClassBoardWidgetType: string
             self::Text => 'typography',
             self::QrCode => 'qrcode',
             self::Dice => 'dice',
+            self::Session => 'calendar',
+            self::SessionPlan => 'list-details',
+            self::Work => 'clipboard-check',
+            self::Media => 'photo',
+            self::Video => 'video',
         };
     }
 
@@ -131,6 +159,11 @@ enum ClassBoardWidgetType: string
             self::Text => [26, 30],
             self::QrCode => [18, 44],
             self::Dice => [24, 30],
+            self::Session => [24, 36],
+            self::SessionPlan => [24, 46],
+            self::Work => [28, 32],
+            self::Media => [30, 40],
+            self::Video => [34, 44],
         };
 
         return ['w' => (float) $width, 'h' => (float) $height];
@@ -155,8 +188,11 @@ enum ClassBoardWidgetType: string
         foreach (ClassBoardWidgetFamily::cases() as $family) {
             $dock[$family->value] = [];
         }
-        foreach (self::cases() as $type) {
-            $dock[$type->family()->value][] = $type;
+        foreach (self::DOCK_ORDER as $value) {
+            $type = self::tryFrom($value);
+            if (null !== $type) {
+                $dock[$type->family()->value][] = $type;
+            }
         }
 
         return $dock;
