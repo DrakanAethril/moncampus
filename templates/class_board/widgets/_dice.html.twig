@@ -1,0 +1,9 @@
+{# Dés: one to six dice and their total. Only the number of dice is saved. #}
+<div class="cm-cb-dice" data-class-board-dice-target="tray"></div>
+<div class="cm-cb-w__buttons">
+    <button type="button" class="cm-cb-btn" data-step="-1" data-action="class-board-dice#count" aria-label="{{ 'classBoardDiceFewerAction'|trans }}">−</button>
+    <span class="cm-cb-w__meta" data-class-board-dice-target="count" data-one="{{ 'classBoardDiceOneLabel'|trans }}" data-many="{{ 'classBoardDiceManyLabel'|trans({'%count%': '__N__'}) }}"></span>
+    <button type="button" class="cm-cb-btn" data-step="1" data-action="class-board-dice#count" aria-label="{{ 'classBoardDiceMoreAction'|trans }}">+</button>
+    <button type="button" class="cm-cb-btn cm-cb-btn--primary" data-action="class-board-dice#roll">{{ 'classBoardDiceRollAction'|trans }}</button>
+    <span class="cm-cb-w__meta" data-class-board-dice-target="total" data-label="{{ 'classBoardDiceTotalLabel'|trans({'%total%': '__N__'}) }}"></span>
+</div>

@@ -1,0 +1,30 @@
+{# Minuteur: the ring empties as the time runs, turns red under the last minute, and rings at
+   zero. Only the duration is saved; the remaining time never is - reopening the board puts the
+   timer back to its start (§3). #}
+<div class="cm-cb-timer">
+    <div class="cm-cb-timer__dial">
+        <svg viewBox="0 0 100 100" aria-hidden="true">
+            <circle cx="50" cy="50" r="44" class="cm-cb-timer__track"></circle>
+            <circle cx="50" cy="50" r="44" class="cm-cb-timer__arc" transform="rotate(-90 50 50)" data-class-board-timer-target="arc"></circle>
+        </svg>
+        <div class="cm-cb-timer__digits">
+            <b class="cm-cb-num" data-class-board-timer-target="digits"></b>
+            <span data-class-board-timer-target="status"
+                  data-running="{{ 'classBoardTimerRunningStatus'|trans({'%minutes%': '__MIN__'}) }}"
+                  data-paused="{{ 'classBoardTimerPausedStatus'|trans }}"
+                  data-done="{{ 'classBoardTimerDoneStatus'|trans }}"></span>
+        </div>
+    </div>
+    <div class="cm-cb-w__buttons">
+        <button type="button" class="cm-cb-btn" data-seconds="-60" data-action="class-board-timer#adjust" aria-label="{{ 'classBoardTimerMinusAction'|trans }}">−1</button>
+        {% for minutes in [5, 10, 15, 20] %}
+            <button type="button" class="cm-cb-btn" data-minutes="{{ minutes }}" data-action="class-board-timer#preset">{{ minutes }}</button>
+        {% endfor %}
+        <button type="button" class="cm-cb-btn" data-seconds="60" data-action="class-board-timer#adjust" aria-label="{{ 'classBoardTimerPlusAction'|trans }}">+1</button>
+        <button type="button" class="cm-cb-btn cm-cb-btn--round cm-cb-btn--primary" data-action="class-board-timer#toggle" aria-label="{{ 'classBoardStartPauseAction'|trans }}">
+            <span data-class-board-timer-target="playIcon">{{ ux_icon('player-play') }}</span>
+            <span data-class-board-timer-target="pauseIcon" hidden>{{ ux_icon('player-pause') }}</span>
+        </button>
+        <button type="button" class="cm-cb-btn cm-cb-btn--round" data-action="class-board-timer#reset" aria-label="{{ 'classBoardResetAction'|trans }}">{{ ux_icon('rotate') }}</button>
+    </div>
+</div>

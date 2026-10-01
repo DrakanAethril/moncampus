@@ -1,0 +1,10 @@
+{% set config = widget.config %}
+<label class="cm-cb-field">{{ 'classBoardGroupsLotField'|trans }}
+    <select class="cm-cb-input" name="batchId" data-kind="id" data-rerender>
+        <option value="">{{ 'classBoardChooseOption'|trans }}</option>
+        {% for lot in data.lots ?? [] %}
+            <option value="{{ lot.id }}" {{ config.batchId == lot.id ? 'selected' }}>{{ lot.name }}</option>
+        {% endfor %}
+    </select>
+</label>
+<div class="cm-cb-hint">{{ 'classBoardGroupsLotHint'|trans }}</div>
