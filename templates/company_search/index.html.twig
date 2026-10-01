@@ -28,7 +28,7 @@
     <p class="cm-cs-lede">{{ 'companySearchLede'|trans }}</p>
 
     <div class="cm-cs">
-        <form class="cm-cs-filters" method="get" action="{{ path('app_company_search') }}">
+        <form class="cm-cs-filters" data-controller="sticky-rail" method="get" action="{{ path('app_company_search') }}">
             <input type="hidden" name="searched" value="1">
 
             <div class="cm-cs-filters__group">
