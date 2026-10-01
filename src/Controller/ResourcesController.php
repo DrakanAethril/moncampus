@@ -42,8 +42,13 @@ class ResourcesController extends AbstractController
     #[IsGranted(new Expression(self::ECO_ACCESS_EXPRESSION))]
     public function ecoApp(Request $request): Response
     {
+        // The PWA: the same Flutter app built for the browser, served from public/eco-app/ (the
+        // e-CO repo's tool/build_pwa.sh) - the way onto an iPhone while no IPA can be signed.
+        $webUrl = $request->getSchemeAndHttpHost().'/eco-app/';
+
         return $this->render('resources/application_eco.html.twig', [
             'resourceApp' => $this->appViewData('eco', $request),
+            'webApp' => ['url' => $webUrl, 'qr' => $this->qrSvg($webUrl)],
         ]);
     }
 

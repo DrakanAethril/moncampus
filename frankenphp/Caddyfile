@@ -70,6 +70,17 @@
 	@hugerte path /hugerte/*
 	header @hugerte ?Cache-Control "public, max-age=86400"
 
+	# The e-CO PWA (public/eco-app/, built by the e-CO repo's tool/build_pwa.sh) keeps its file
+	# names across builds - main.dart.js above all - so every fetch revalidates (a 304 once the
+	# ETag matches). Its service worker is what keeps it offline, not the HTTP cache: a stale
+	# imported eco_queue.js or main.dart.js would otherwise outlive the build that wrote it.
+	@ecoApp path /eco-app/*
+	header @ecoApp ?Cache-Control "no-cache"
+	# A directory is not a `file` to @phpRoute below, so /eco-app/ would reach Symfony's 404. And the
+	# slash matters: the service worker's scope is /eco-app/, which /eco-app is not inside.
+	redir /eco-app /eco-app/ 308
+	rewrite /eco-app/ /eco-app/index.html
+
 	@phpRoute {
 		not path /.well-known/mercure*
 		not file {path}
