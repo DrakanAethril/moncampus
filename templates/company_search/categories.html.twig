@@ -1,0 +1,74 @@
+{# « Catégories d'entreprises » - one list for the whole establishment (vivier spec, D5). #}
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'companyCategoriesPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'companySearchPageHeading'|trans, url: path('app_company_search')},
+        {label: 'companyCategoriesPageHeading'|trans, url: path('app_company_search_categories')},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'companyCategoriesPageHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    <twig:Cm:Button variant="primary" href="{{ path('app_company_search_category_new') }}">{{ 'companyCategoryNewAction'|trans }}</twig:Cm:Button>
+{% endblock %}
+
+{% block main %}
+    <p class="cm-cs-lede">{{ 'companyCategoriesLede'|trans }}</p>
+
+    {% for group in groups %}
+        <twig:Cm:Subhead :title="group.theme.labelKey|trans"/>
+        <div class="cm-cs-catlist">
+            {% for category in group.categories %}
+                <div class="cm-cs-catrow">
+                    <div class="cm-cs-catrow__main">
+                        <b>{{ category.label }}</b>
+                        {% if category.hint %}<span class="cm-cs-catrow__hint">{{ category.hint }}</span>{% endif %}
+                        <div class="cm-cs-tags">
+                            {% for code in category.nafCodes %}
+                                <span class="cm-cs-tag" title="{{ nomenclature.label(code) }}">{{ code }}</span>
+                            {% endfor %}
+                            {% if category.flag %}<span class="cm-cs-tag">{{ category.flag.labelKey|trans }}</span>{% endif %}
+                            {% if category.minimumBand %}<span class="cm-cs-tag">{{ category.minimumBand.labelKey|trans }}</span>{% endif %}
+                            {% if category.solo %}<span class="cm-cs-catrow__hint">{{ 'companySearchSoloCategoryHint'|trans }}</span>{% endif %}
+                        </div>
+                    </div>
+                    <div class="cm-cs-catrow__actions">
+                        {% if department %}
+                            <form method="post" action="{{ path('app_company_search_category_count', {id: category.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('company_category_count') }}">
+                                <twig:Cm:Button size="sm" variant="outline" type="submit">{{ 'companyCategoryCountAction'|trans({'%department%': department}) }}</twig:Cm:Button>
+                            </form>
+                        {% endif %}
+                        {% for direction in ['up', 'down'] %}
+                            <form method="post" action="{{ path('app_company_search_category_move', {id: category.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('company_category_move') }}">
+                                <input type="hidden" name="direction" value="{{ direction }}">
+                                <button type="submit" class="cm-cs-iconbtn" aria-label="{{ ('companyCategoryMove' ~ direction|capitalize ~ 'Action')|trans }}"{{ (direction == 'up' and loop.parent.loop.first) or (direction == 'down' and loop.parent.loop.last) ? ' disabled' }}>{{ direction == 'up' ? '↑' : '↓' }}</button>
+                            </form>
+                        {% endfor %}
+                        <a class="cm-cs-iconbtn" href="{{ path('app_company_search_category_edit', {id: category.id}) }}" aria-label="{{ 'companyCategoryEditAction'|trans }}"><twig:ux:icon name="pencil" width="15" height="15"/></a>
+                        <form method="post" action="{{ path('app_company_search_category_delete', {id: category.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('company_category_delete') }}">
+                            <button type="submit" class="cm-cs-iconbtn" aria-label="{{ 'companyCategoryDeleteAction'|trans }}"
+                                    data-controller="confirm-submit"
+                                    data-confirm-submit-message-value="{{ 'companyCategoryDeleteConfirm'|trans({'%label%': category.label}) }}"
+                                    data-action="click->confirm-submit#confirm"><twig:ux:icon name="trash" width="15" height="15"/></button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="cm-cs-welcome">
+            <p>{{ 'companyCategoriesEmptyText'|trans }}</p>
+            <form method="post" action="{{ path('app_company_search_category_starter') }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('company_category_starter') }}">
+                <twig:Cm:Button variant="primary" type="submit">{{ 'companyCategoryStarterAction'|trans }}</twig:Cm:Button>
+            </form>
+        </div>
+    {% endfor %}
+{% endblock %}

@@ -119,7 +119,7 @@ class SiretCandidateFinderTest extends TestCase
         $enterprises = $this->createStub(EnterpriseRepository::class);
         $enterprises->method('findOthersBySiret')->willReturn([]);
 
-        return new SiretCandidateFinder(new RechercheEntreprisesClient($http, new RecordingLogger()), $enterprises);
+        return new SiretCandidateFinder(new RechercheEntreprisesClient($http, new RecordingLogger(), RechercheEntreprisesClientTest::limiter()), $enterprises);
     }
 
     /** @return array{cases: list<array{name: string, address: string, review: string, sirets: list<string>}>, answers: array<string, mixed>} */

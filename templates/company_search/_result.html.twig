@@ -1,0 +1,47 @@
+{# One company of « Trouver une entreprise », its open establishments of the zone underneath.
+   Parameters: row (App\Service\CompanySearch\ResultRows CompanyRow, plus `pool` and `mine` when
+   the vivier and the démarches have something to say about it), criteria. #}
+{% set back = path('app_company_search', criteria.toQuery()) %}
+<article class="cm-cs-result">
+    <div class="cm-cs-result__top">
+        <h3 class="cm-cs-result__name">
+            {{ row.name }}
+            {% if row.otherNames is not empty %}<small>· {{ row.otherNames|join(', ') }}</small>{% endif %}
+        </h3>
+        <span class="cm-cs-result__size">{{ row.size.key|trans(row.size.params) }}{% if row.category %} · {{ row.category }}{% endif %}</span>
+    </div>
+    <div class="cm-cs-result__activity">
+        {{ row.activityLabel ?? row.activityCode ?? '—' }}
+        {% if row.individual %} · <span class="cm-cs-result__flag">{{ 'companySearchIndividualLabel'|trans }}</span>{% endif %}
+    </div>
+
+    {% for establishment in row.establishments %}
+        {% if loop.index == 3 %}<details class="cm-cs-result__more"><summary>{{ 'companySearchMoreEstablishments'|trans({'%count%': row.establishments|length - 2}) }}</summary>{% endif %}
+        <div class="cm-cs-estab">
+            <twig:ux:icon name="map-pin" width="14" height="14" aria-hidden="true"/>
+            <a href="{{ path('app_company_search_establishment', {siret: establishment.siret, back: back}) }}">{{ establishment.address }}</a>
+            {% if establishment.distanceKm is not null %}<span class="cm-cs-estab__meta">· {{ 'companySearchDistanceKm'|trans({'%km%': establishment.distanceKm|number_format(1, ',', ' ')}) }}</span>{% endif %}
+            {% if establishment.headOffice %}<span class="cm-cs-estab__meta">· {{ 'companySearchHeadOfficeLabel'|trans }}</span>{% endif %}
+            {% if establishment.size %}<span class="cm-cs-estab__meta">· {{ 'companySearchEstablishmentSize'|trans({'%size%': establishment.size.key|trans(establishment.size.params)}) }}</span>{% endif %}
+            {% if row.pool is defined and row.pool.establishments[establishment.siret] is defined %}
+                {% include 'company_search/_pool_badges.html.twig' with {summary: row.pool.establishments[establishment.siret]} %}
+            {% endif %}
+            {% if row.mine is defined and row.mine[establishment.siret] is defined %}
+                {% include 'company_search/_mine_badge.html.twig' with {application: row.mine[establishment.siret]} %}
+            {% endif %}
+        </div>
+        {% if loop.last and loop.length > 2 %}</details>{% endif %}
+    {% endfor %}
+
+    {% if row.pool is defined and row.pool.elsewhere is not empty %}
+        <div class="cm-cs-badges">
+            {% for kind in row.pool.elsewhere %}
+                <twig:Cm:Badge tone="gray">{{ ('companySearchHostedElsewhere' ~ kind.value|capitalize)|trans }}</twig:Cm:Badge>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="cm-cs-result__foot">
+        <twig:Cm:Button size="sm" variant="outline" href="{{ path('app_company_search_establishment', {siret: row.establishments[0].siret, back: back}) }}">{{ 'companySearchViewAction'|trans }}</twig:Cm:Button>
+    </div>
+</article>

@@ -498,7 +498,11 @@
                            is being prepared for. It joins the union below for the same reason as
                            the other three: a menu that opens on nothing is the same defect as a
                            header with nothing under it. #}
-                        {% set tools_beyond = feature('jobboard') and jobboard_visible() %}
+                        {% set tools_jobboard = feature('jobboard') and jobboard_visible() %}
+                        {# « Trouver une entreprise » sits with the Jobboard: both look outward, at the
+                           companies a class could join (design/validated/vivier-entreprises.md). #}
+                        {% set tools_company_search = feature('company_search') %}
+                        {% set tools_beyond = tools_jobboard or tools_company_search %}
                         {% if (is_granted('ROLE_TEACHER') or is_staff()) and (tools_run or tools_prepare or tools_follow or tools_beyond) %}
                             {% set tools_is_active = current_route starts with 'app_tools_'
                                 or current_route starts with 'app_program_word_cloud'
@@ -511,7 +515,9 @@
                                 or current_route starts with 'app_jobboard'
                                 or current_route starts with 'app_dossier'
                                 or current_route starts with 'app_portfolios'
-                                or current_route starts with 'app_ecole_directe' %}
+                                or current_route starts with 'app_ecole_directe'
+                                or current_route starts with 'app_company_search'
+                                or current_route starts with 'app_enterprise_pool' %}
                             {# cm-toolsmenu-host: the panel is centred on the bar rather than on the
                                entry that opens it, so the item gives up being the menu's
                                positioning context - see .cm-toolsmenu-host in app.css. #}
@@ -626,7 +632,8 @@
                                     {% if tools_beyond %}
                                     <div class="cm-toolsmenu__col" role="group" aria-labelledby="tools-group-beyond">
                                     <h6 class="dropdown-header" id="tools-group-beyond">{{ 'toolsGroupBeyondDiplomaLabel'|trans }}</h6>
-                                    <a class="dropdown-item {{ current_route starts with 'app_jobboard' ? 'active' }}" href="{{ path('app_jobboard') }}">{{ 'jobboardNavLabel'|trans }}</a>
+                                    {% if tools_jobboard %}<a class="dropdown-item {{ current_route starts with 'app_jobboard' ? 'active' }}" href="{{ path('app_jobboard') }}">{{ 'jobboardNavLabel'|trans }}</a>{% endif %}
+                                    {% if tools_company_search %}<a class="dropdown-item {{ current_route starts with 'app_company_search' or current_route starts with 'app_enterprise_pool' ? 'active' }}" href="{{ path('app_company_search') }}">{{ 'companySearchPageHeading'|trans }}</a>{% endif %}
                                     </div>
                                     {% endif %}
                                     </div>

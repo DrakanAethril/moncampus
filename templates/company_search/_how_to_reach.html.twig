@@ -1,0 +1,13 @@
+{# « Comment les contacter ? » - the register holds no telephone, e-mail or website, and the fiche
+   says so instead of letting a student look for them. Every link opens outside the platform;
+   nothing is fetched by it. Parameters: establishment, name. #}
+{% set searchTerms = name ~ ' ' ~ (establishment.city ?? '') %}
+<section class="cm-cs-card">
+    <h2 class="cm-cs-card__title">{{ 'companySearchHowToReachHeading'|trans }}</h2>
+    <p class="cm-cs-card__sub">{{ 'companySearchHowToReachText'|trans }}</p>
+    <ul class="cm-cs-links">
+        <li><a href="https://duckduckgo.com/?q={{ searchTerms|url_encode }}" target="_blank" rel="noopener noreferrer">{{ 'companySearchWebSearchAction'|trans({'%name%': searchTerms}) }} ↗</a></li>
+        <li><a href="https://annuaire-entreprises.data.gouv.fr/etablissement/{{ establishment.siret }}" target="_blank" rel="noopener noreferrer">{{ 'companySearchOfficialDirectoryAction'|trans }} ↗</a></li>
+        <li><a href="https://www.linkedin.com/search/results/companies/?keywords={{ name|url_encode }}" target="_blank" rel="noopener noreferrer">{{ 'companySearchLinkedinAction'|trans }} ↗</a></li>
+    </ul>
+</section>

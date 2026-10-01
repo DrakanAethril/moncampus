@@ -1,0 +1,24 @@
+{# A Google map, drawn only once the person has agreed: loading Google's script hands their IP
+   address to Google, so it is asked first, like Matomo, and the answer is remembered in a cookie
+   (google_map_controller.js). Refusing loses nothing - every place is also a link and an address.
+   Parameters: markers (list of {latitude, longitude, title, subtitle?, url?, tone?}), height
+   ('small' | 'tall'). #}
+{% set apiKey = google_maps_api_key() %}
+{% if apiKey %}
+    <div class="cm-cs-map cm-cs-map--{{ height|default('small') }}" data-controller="google-map"
+         data-google-map-api-key-value="{{ apiKey }}"
+         data-google-map-markers-value="{{ markers|json_encode }}">
+        <div class="cm-cs-map__consent" data-google-map-target="consent" hidden>
+            <p>{{ 'googleMapConsentText'|trans }}</p>
+            <div class="cm-cs-map__buttons">
+                <twig:Cm:Button size="sm" variant="primary" data-action="google-map#accept">{{ 'googleMapConsentAcceptAction'|trans }}</twig:Cm:Button>
+                <twig:Cm:Button size="sm" variant="outline" data-action="google-map#decline">{{ 'googleMapConsentDeclineAction'|trans }}</twig:Cm:Button>
+            </div>
+        </div>
+        <p class="cm-cs-map__declined" data-google-map-target="declined" hidden>
+            {{ 'googleMapDeclinedText'|trans }}
+            <button type="button" class="cm-cs-link" data-action="google-map#ask">{{ 'googleMapShowAction'|trans }}</button>
+        </p>
+        <div class="cm-cs-map__canvas" data-google-map-target="canvas" hidden></div>
+    </div>
+{% endif %}

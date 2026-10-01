@@ -1,0 +1,190 @@
+{# « Trouver une entreprise » - design/validated/vivier-entreprises.md §8.1.
+
+   A GET form on the left, the register's answer on the right. Nothing is searched on a first
+   visit: the screen opens on the school's département and says what it is for. #}
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ 'companySearchPageHeading'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'companySearchPageHeading'|trans, url: path('app_company_search')},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'companySearchPageHeading'|trans }}{% endblock %}
+
+{% block page_actions %}
+    {% if is_granted('ROLE_ADMIN') %}
+        <twig:Cm:Button variant="outline" href="{{ path('app_company_search_categories') }}">{{ 'companyCategoriesPageHeading'|trans }}</twig:Cm:Button>
+    {% endif %}
+{% endblock %}
+
+{% block main %}
+    <p class="cm-cs-lede">{{ 'companySearchLede'|trans }}</p>
+
+    <div class="cm-cs">
+        <form class="cm-cs-filters" method="get" action="{{ path('app_company_search') }}">
+            <input type="hidden" name="searched" value="1">
+
+            <div class="cm-cs-filters__group">
+                <h2 class="cm-cs-filters__title">{{ 'companySearchWhatHeading'|trans }}</h2>
+                {% for group in groups %}
+                    <div class="cm-cs-filters__theme">{{ group.theme.labelKey|trans }}</div>
+                    {% for category in group.categories %}
+                        <label class="cm-cs-check" title="{{ category.hint }}">
+                            <input type="checkbox" name="cat[]" value="{{ category.id }}"{{ category in criteria.categories ? ' checked' }}>
+                            <span>
+                                {{ category.label }}
+                                {% if category.solo %}<span class="cm-cs-check__sub">{{ 'companySearchSoloCategoryHint'|trans }}</span>{% endif %}
+                                {% if category.hint %}<span class="cm-cs-check__sub">{{ category.hint }}</span>{% endif %}
+                            </span>
+                        </label>
+                    {% endfor %}
+                {% else %}
+                    <p class="cm-cs-filters__hint">{{ 'companySearchNoCategoryHint'|trans }}</p>
+                {% endfor %}
+
+                <details class="cm-cs-advanced"{{ criteria.nafCodes is not empty ? ' open' }}>
+                    <summary>{{ 'companySearchNafHeading'|trans }}</summary>
+                    <div class="cm-cs-naf" data-controller="naf-picker" data-naf-picker-url-value="{{ path('app_company_search_naf') }}">
+                        <input type="hidden" name="naf" value="{{ criteria.nafCodes|join(',') }}" data-naf-picker-target="value">
+                        <div class="cm-cs-tags" data-naf-picker-target="tags"></div>
+                        <input type="search" class="form-control form-control-sm" autocomplete="off"
+                               id="company-search-naf" aria-label="{{ 'companySearchNafPlaceholder'|trans }}"
+                               placeholder="{{ 'companySearchNafPlaceholder'|trans }}"
+                               data-naf-picker-target="input" data-action="input->naf-picker#lookup keydown->naf-picker#keydown">
+                        <ul class="cm-cs-suggest" data-naf-picker-target="list" hidden></ul>
+                    </div>
+                </details>
+
+                <label class="cm-cs-field" for="company-search-q">
+                    <span>{{ 'companySearchKeywordLabel'|trans }}</span>
+                    <input type="search" id="company-search-q" name="q" class="form-control form-control-sm" value="{{ criteria.query }}" maxlength="100">
+                </label>
+            </div>
+
+            <div class="cm-cs-filters__group">
+                <h2 class="cm-cs-filters__title">{{ 'companySearchWhereHeading'|trans }}</h2>
+                <label class="cm-cs-check">
+                    <input type="radio" name="where" value="departments"{{ criteria.where == 'departments' ? ' checked' }}>
+                    <span>{{ 'companySearchWhereDepartmentsLabel'|trans }}</span>
+                </label>
+                <input type="text" name="deps" class="form-control form-control-sm" id="company-search-deps"
+                       aria-label="{{ 'companySearchWhereDepartmentsLabel'|trans }}"
+                       value="{{ criteria.departments|join(', ') }}" placeholder="87, 19">
+
+                <label class="cm-cs-check">
+                    <input type="radio" name="where" value="commune"{{ criteria.where == 'commune' ? ' checked' }}>
+                    <span>{{ 'companySearchWhereCommuneLabel'|trans }}</span>
+                </label>
+                <div class="cm-cs-commune" data-controller="commune-picker" data-commune-picker-url-value="{{ path('app_company_search_communes') }}">
+                    <input type="hidden" name="lat" value="{{ criteria.latitude }}" data-commune-picker-target="latitude">
+                    <input type="hidden" name="lon" value="{{ criteria.longitude }}" data-commune-picker-target="longitude">
+                    <input type="search" name="commune" class="form-control form-control-sm" autocomplete="off" id="company-search-commune"
+                           aria-label="{{ 'companySearchWhereCommuneLabel'|trans }}"
+                           value="{{ criteria.communeLabel }}" placeholder="{{ 'companySearchCommunePlaceholder'|trans }}"
+                           data-commune-picker-target="input" data-action="input->commune-picker#lookup">
+                    <ul class="cm-cs-suggest" data-commune-picker-target="list" hidden></ul>
+                    <div class="cm-cs-commune__row">
+                        <label for="company-search-radius">{{ 'companySearchRadiusLabel'|trans }}</label>
+                        <select name="radius" id="company-search-radius" class="form-select form-select-sm">
+                            {% for radius in radii %}
+                                <option value="{{ radius }}"{{ criteria.radius == radius ? ' selected' }}>{{ radius }} km</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <p class="cm-cs-filters__hint">{{ 'companySearchCommuneHint'|trans }}</p>
+                    {% if schoolPlace %}
+                        <button type="button" class="cm-cs-link" data-action="commune-picker#pick"
+                                data-label="{{ 'companySearchAroundSchoolLabel'|trans }}"
+                                data-latitude="{{ schoolPlace.latitude|round(5) }}" data-longitude="{{ schoolPlace.longitude|round(5) }}">
+                            {{ 'companySearchAroundSchoolAction'|trans }}
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="cm-cs-filters__group">
+                <h2 class="cm-cs-filters__title">{{ 'companySearchSizeHeading'|trans }}</h2>
+                {% for band in bands %}
+                    <label class="cm-cs-check">
+                        <input type="checkbox" name="size[]" value="{{ band.value }}"{{ band in criteria.bands ? ' checked' }}>
+                        <span>{{ band.labelKey|trans }}</span>
+                    </label>
+                {% endfor %}
+                <label class="cm-cs-check">
+                    <input type="checkbox" name="unknown" value="1"{{ criteria.includeUnknownSize ? ' checked' }}>
+                    <span>{{ 'companySearchUnknownSizeLabel'|trans }}</span>
+                </label>
+                <p class="cm-cs-filters__hint">{{ 'companySearchSizeHint'|trans }}</p>
+            </div>
+
+            <div class="cm-cs-filters__group">
+                <h2 class="cm-cs-filters__title">{{ 'companySearchTypeHeading'|trans }}</h2>
+                {% for type in organisationTypes %}
+                    <label class="cm-cs-check">
+                        <input type="radio" name="type" value="{{ type.value }}"{{ criteria.organisationType == type ? ' checked' }}>
+                        <span>{{ type.labelKey|trans }}</span>
+                    </label>
+                {% endfor %}
+                <label class="cm-cs-check">
+                    <input type="checkbox" name="individuals" value="1"{{ criteria.includeIndividuals ? ' checked' }}>
+                    <span>{{ 'companySearchIncludeIndividualsLabel'|trans }}</span>
+                </label>
+            </div>
+
+            <div class="cm-cs-filters__buttons">
+                <twig:Cm:Button variant="primary" type="submit">{{ 'companySearchSubmitAction'|trans }}</twig:Cm:Button>
+                <a class="cm-cs-link" href="{{ path('app_company_search') }}">{{ 'companySearchResetAction'|trans }}</a>
+            </div>
+        </form>
+
+        <section class="cm-cs-results" aria-live="polite">
+            {% if problem %}
+                <div class="alert alert-warning" role="alert">{{ problem|trans }}</div>
+            {% endif %}
+
+            {% if not searched %}
+                <div class="cm-cs-welcome">
+                    <h2>{{ 'companySearchWelcomeHeading'|trans }}</h2>
+                    <p>{{ 'companySearchWelcomeText'|trans }}</p>
+                </div>
+            {% elseif page %}
+                <div class="cm-cs-results__head">
+                    <span>
+                        <b>{{ 'companySearchResultCount'|trans({'%count%': page.total}) }}</b>
+                        {% if page.capped %} · {{ 'companySearchCappedHint'|trans }}{% endif %}
+                    </span>
+                    {% if distanceFromSchool %}<span class="cm-cs-results__note">{{ 'companySearchDistanceFromSchoolHint'|trans }}</span>{% endif %}
+                </div>
+
+                {% for row in rows %}
+                    {% include 'company_search/_result.html.twig' with {row: row, criteria: criteria} %}
+                {% else %}
+                    <div class="cm-cs-empty">
+                        <p>{{ 'companySearchNoResultText'|trans }}</p>
+                        <p class="cm-cs-results__note">{{ 'companySearchNoResultHint'|trans }}</p>
+                    </div>
+                {% endfor %}
+
+                {% if page.lastReachablePage > 1 or page.dropped > 0 %}
+                    <nav class="cm-cs-pager" aria-label="{{ 'companySearchPagerLabel'|trans }}">
+                        {% if page.page > 1 %}
+                            <a href="{{ path('app_company_search', criteria.toQuery(page.page - 1)) }}">‹ {{ 'companySearchPreviousPageAction'|trans }}</a>
+                        {% else %}<span></span>{% endif %}
+                        <span>
+                            {{ 'companySearchPageOf'|trans({'%page%': page.page, '%pages%': page.lastReachablePage}) }}
+                            {% if page.dropped > 0 %} · {{ 'companySearchDroppedHint'|trans({'%count%': page.dropped}) }}{% endif %}
+                        </span>
+                        {% if page.page < page.lastReachablePage %}
+                            <a href="{{ path('app_company_search', criteria.toQuery(page.page + 1)) }}">{{ 'companySearchNextPageAction'|trans }} ›</a>
+                        {% else %}<span></span>{% endif %}
+                    </nav>
+                {% endif %}
+            {% endif %}
+
+            <p class="cm-cs-credit">{{ 'companySearchCredit'|trans }}</p>
+        </section>
+    </div>
+{% endblock %}

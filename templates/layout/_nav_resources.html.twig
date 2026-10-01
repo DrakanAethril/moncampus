@@ -14,6 +14,7 @@
 {% set resources_is_active = current_route starts with 'app_resources_' or current_route starts with 'app_documentation' or current_route starts with 'app_wiki'
     or current_route starts with 'app_student_shared_document' or current_route starts with 'app_my_dossier' or current_route starts with 'app_school_mail' or current_route starts with 'app_training_'
     or current_route == 'app_my_job_applications' or current_route starts with 'app_my_courses'
+    or (is_pure_student and (current_route starts with 'app_company_search' or current_route starts with 'app_enterprise_pool'))
     or (is_pure_student and current_route starts with 'app_program_quiz_') %}
 {# Each entry's condition is read once into a variable, and the same variables decide both whether
    the entry renders and whether the dropdown renders at all. Written the other way round - a
@@ -45,6 +46,9 @@
    Both doors ask the perimeter as well as the feature: a formation that keeps its jobboard masked
    leaves its students an entry onto a board that could only ever be empty. #}
 {% set resources_jobboard = is_pure_student and feature('jobboard') and jobboard_visible() %}
+{# « Trouver une entreprise », next to the Jobboard and for the same reason: a student looking for a
+   stage reads both. Every other profile reaches it from Outils > « Au-delà d'un diplôme ». #}
+{% set resources_company_search = is_pure_student and feature('company_search') %}
 {# « Dossiers documentaires » — the cible's side of the feature, and the last entry of the menu.
    Only for somebody a dossier is actually addressed to, like « Mes machines virtuelles » and the
    shared wikis above: the feature is lit for a whole role while a dossier is asked of one class at
@@ -53,7 +57,7 @@
 {% set resources_dossiers = is_granted('ROLE_STUDENT') and not is_staff() and feature('dossiers') and has_dossiers(app.user) %}
 {% if resources_shared_documents or resources_dossiers or resources_my_vms or resources_school_mail or resources_job_applications
     or resources_wiki or resources_course_space or resources_quiz_programs is not empty or resources_documentation or resources_apps
-    or resources_jobboard %}
+    or resources_jobboard or resources_company_search %}
 <li class="nav-item dropdown {{ resources_is_active ? 'active' }}">
     <a class="nav-link dropdown-toggle" href="#navbar-resources" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false"{{ resources_is_active ? ' aria-current="page"' }}>
         <span class="nav-link-title">{{ 'resourcesNavLabel'|trans }}</span>
@@ -141,6 +145,9 @@
         {% endif %}
         {% if resources_jobboard %}
             <a class="dropdown-item {{ current_route starts with 'app_jobboard' ? 'active' }}" href="{{ path('app_jobboard') }}">{{ 'jobboardNavLabel'|trans }}</a>
+        {% endif %}
+        {% if resources_company_search %}
+            <a class="dropdown-item {{ current_route starts with 'app_company_search' or current_route starts with 'app_enterprise_pool' ? 'active' }}" href="{{ path('app_company_search') }}">{{ 'companySearchPageHeading'|trans }}</a>
         {% endif %}
         {% if resources_dossiers %}
             <a class="dropdown-item {{ current_route starts with 'app_my_dossier' ? 'active' }}" href="{{ path('app_my_dossiers') }}">{{ 'dossierNavLabel'|trans }}</a>

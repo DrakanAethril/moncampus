@@ -1,0 +1,35 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set heading = isNew ? 'companyCategoryNewAction'|trans : category.label %}
+
+{% block title %}{{ heading }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'companySearchPageHeading'|trans, url: path('app_company_search')},
+        {label: 'companyCategoriesPageHeading'|trans, url: path('app_company_search_categories')},
+        {label: heading, url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ heading }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+                {{ form_row(form.theme) }}
+                {{ form_row(form.label) }}
+                {{ form_row(form.hint) }}
+                <p class="cm-cs-lede">{{ 'companyCategoryDefinitionHint'|trans }}</p>
+                {{ form_row(form.nafCodes) }}
+                {{ form_row(form.flag) }}
+                {{ form_row(form.minimumBand) }}
+                <twig:Cm:ActionBar>
+                    <twig:Cm:Button variant="outline" href="{{ path('app_company_search_categories') }}">{{ 'cancelAction'|trans }}</twig:Cm:Button>
+                    <twig:Cm:Button variant="primary" type="submit">{{ 'companyCategorySaveAction'|trans }}</twig:Cm:Button>
+                </twig:Cm:ActionBar>
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}

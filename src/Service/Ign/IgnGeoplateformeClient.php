@@ -209,6 +209,58 @@ class IgnGeoplateformeClient
         return $features;
     }
 
+    /**
+     * Forward geocoding - « Autour d'une commune » on « Trouver une entreprise », and the school's
+     * own address. `municipality` keeps to communes: what a student types is never more precise
+     * than a town, and nothing more precise is ever sent (vivier spec, R5).
+     *
+     * @param 'municipality'|'housenumber'|'street'|null $type
+     *
+     * @return list<GeocodedPlace>
+     */
+    public function places(string $query, ?string $type = null, int $limit = 5): array
+    {
+        $query = trim($query);
+        if (mb_strlen($query) < 3) {
+            return [];
+        }
+
+        $parameters = ['q' => $query, 'limit' => $limit, 'index' => 'address'];
+        if (null !== $type) {
+            $parameters['type'] = $type;
+        }
+
+        $data = $this->getJson('geocoding', '/geocodage/search', $parameters);
+        $features = $data['features'] ?? null;
+        if (!\is_array($features)) {
+            $this->refuse('geocoding', 'search answer without features');
+        }
+
+        $places = [];
+        foreach ($features as $feature) {
+            $properties = \is_array($feature) ? ($feature['properties'] ?? null) : null;
+            $geometry = \is_array($feature) ? ($feature['geometry'] ?? null) : null;
+            $coordinates = \is_array($geometry) ? ($geometry['coordinates'] ?? null) : null;
+            $label = \is_array($properties) ? ($properties['label'] ?? null) : null;
+
+            if (!\is_array($properties) || !\is_string($label) || !\is_array($coordinates) || !is_numeric($coordinates[0] ?? null) || !is_numeric($coordinates[1] ?? null)) {
+                continue;
+            }
+
+            $postcode = $properties['postcode'] ?? null;
+            $citycode = $properties['citycode'] ?? null;
+            $places[] = new GeocodedPlace(
+                label: $label,
+                postalCode: \is_string($postcode) ? $postcode : null,
+                cityCode: \is_string($citycode) ? $citycode : null,
+                latitude: (float) $coordinates[1],
+                longitude: (float) $coordinates[0],
+            );
+        }
+
+        return $places;
+    }
+
     /** The commune a point stands in, by name - null outside France or when the index has none. */
     public function communeAt(float $latitude, float $longitude): ?string
     {
