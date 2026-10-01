@@ -1,0 +1,10 @@
+{# Nuage de mots: the existing projection screen of a cloud of the class, as it is - its students
+   still answer from their own space (§1.5). That screen asks for full screen as it opens, and a
+   same-origin frame is allowed to: inside the board it must not, hence `fullscreen 'none'`. #}
+{% if data.cloud %}
+    <div class="cm-cb-media">
+        <iframe src="{{ data.cloud.url }}" title="{{ data.cloud.name }}" allow="fullscreen 'none'"></iframe>
+    </div>
+{% else %}
+    <div class="cm-cb-w__locked">{{ data.clouds is empty ? 'classBoardWordCloudNoneMessage'|trans : 'classBoardWordCloudChooseMessage'|trans }}</div>
+{% endif %}

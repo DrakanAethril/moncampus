@@ -1,0 +1,19 @@
+{# Niveau sonore: a RELATIVE level, 0 to 100, read from the computer's microphone - not decibels,
+   and the screen does not pretend otherwise (§7). Nothing is recorded and nothing leaves the
+   computer. The microphone is asked for at the first use, never on opening the board. #}
+<div class="cm-cb-sound"
+     data-calm="{{ 'classBoardSoundCalmLabel'|trans }}" data-rising="{{ 'classBoardSoundRisingLabel'|trans }}" data-loud="{{ 'classBoardSoundLoudLabel'|trans }}">
+    <div class="cm-cb-sound__state" data-class-board-sound-level-target="state">—</div>
+    <div class="cm-cb-sound__gauge" aria-hidden="true">
+        {% for cell in 1..24 %}<i data-class-board-sound-level-target="cell"></i>{% endfor %}
+        <span class="cm-cb-sound__threshold" data-class-board-sound-level-target="mark"></span>
+    </div>
+    <label class="cm-cb-sound__slider">{{ 'classBoardSoundThresholdLabel'|trans }}
+        <input type="range" min="30" max="95" value="{{ widget.config.threshold }}" data-class-board-sound-level-target="threshold" data-action="input->class-board-sound-level#setThreshold">
+    </label>
+    <div class="cm-cb-w__buttons" data-class-board-sound-level-target="start">
+        <button type="button" class="cm-cb-btn cm-cb-btn--primary" data-action="class-board-sound-level#start">{{ 'classBoardSoundStartAction'|trans }}</button>
+    </div>
+    <div class="cm-cb-w__meta" data-class-board-sound-level-target="message"
+         data-denied="{{ 'classBoardMicrophoneDeniedMessage'|trans }}" data-unavailable="{{ 'classBoardMicrophoneUnavailableMessage'|trans }}">{{ 'classBoardSoundPrivacyHint'|trans }}</div>
+</div>

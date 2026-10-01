@@ -9,6 +9,7 @@ use App\Enum\ClassBoardBackground;
 use App\Enum\Feature;
 use App\Repository\ClassBoardRepository;
 use App\Security\Voter\ClassBoardVoter;
+use App\Service\ClassBoard\ClassBoardDrawings;
 use App\Service\ClassBoard\ClassBoardLayout;
 use App\Service\ClassBoard\ClassBoardNaming;
 use App\Service\ClassBoard\ClassBoardView;
@@ -22,6 +23,7 @@ use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Mercure\Authorization;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -38,13 +40,19 @@ class BoardController extends AbstractController
     public const string CSRF_TOKEN_ID = 'class_board';
 
     #[Route(path: '/tools/boards/{id}', name: 'app_class_board_show', methods: ['GET'], requirements: ['id' => '\d+'])]
-    public function show(int $id, ClassBoardRepository $repository, ClassBoardView $view, ClassBoardWidgetData $widgetData): Response
+    public function show(int $id, Request $request, ClassBoardRepository $repository, ClassBoardView $view, ClassBoardWidgetData $widgetData, Authorization $mercureAuthorization): Response
     {
         $board = $this->findBoard($id, $repository);
+        $widgets = $view->widgets($board);
+
+        $topics = $view->mercureTopics($widgets);
+        if ([] !== $topics) {
+            $mercureAuthorization->setCookie($request, $topics, [], [], 'subscriber');
+        }
 
         return $this->render('class_board/show.html.twig', [
             'board' => $board,
-            'widgets' => $view->widgets($board),
+            'widgets' => $widgets,
             'dock' => $view->dock($board, $this->currentUser()),
             'classState' => $widgetData->classState($board),
             'backgrounds' => ClassBoardBackground::cases(),
@@ -55,7 +63,7 @@ class BoardController extends AbstractController
     // started from an older revision than the stored one is refused (409) - the same board open in
     // another tab has written since, and overwriting it would erase that tab's work in silence.
     #[Route(path: '/tools/boards/{id}/layout', name: 'app_class_board_save', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function save(int $id, Request $request, ClassBoardRepository $repository, ClassBoardLayout $layout, EntityManagerInterface $entityManager, LoggerInterface $logger): JsonResponse
+    public function save(int $id, Request $request, ClassBoardRepository $repository, ClassBoardLayout $layout, ClassBoardDrawings $drawings, EntityManagerInterface $entityManager, LoggerInterface $logger): JsonResponse
     {
         $this->assertCsrf($request);
         $board = $this->findBoard($id, $repository, ClassBoardVoter::EDIT);
@@ -72,13 +80,14 @@ class BoardController extends AbstractController
         }
 
         try {
-            $widgets = $layout->normalizeJson($content, $board->getLayout());
+            $widgets = $layout->normalizeJson($content, $board->getLayout(), $board->getId());
         } catch (InvalidClassBoardLayoutException $exception) {
             $logger->warning('Class board layout refused: {reason}', ['reason' => $exception->getMessage(), 'board' => $board->getId()]);
 
             return $this->json(['error' => 'invalid_layout'], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
+        $drawings->forgetRemoved($board->getLayout(), $widgets);
         $board->setLayout($widgets)->setBackground($background)->touch();
         $entityManager->flush();
 

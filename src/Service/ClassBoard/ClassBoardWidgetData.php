@@ -81,6 +81,7 @@ final class ClassBoardWidgetData
         private readonly VideoEmbed $videoEmbed,
         private readonly TranslatorInterface $translator,
         private readonly ClockInterface $clock,
+        private readonly ClassBoardLiveData $liveData,
     ) {
     }
 
@@ -116,6 +117,8 @@ final class ClassBoardWidgetData
             ClassBoardWidgetType::Work => $this->work($board, $config),
             ClassBoardWidgetType::Media => $this->media($board, $config),
             ClassBoardWidgetType::Video => $this->video($board, $config),
+            ClassBoardWidgetType::QuizLive => $this->liveData->quizLive($board),
+            ClassBoardWidgetType::WordCloud => $this->liveData->wordCloud($board, $config),
             default => ['state' => self::OK],
         };
     }

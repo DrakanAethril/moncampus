@@ -42,6 +42,11 @@ enum ClassBoardWidgetType: string
     case Work = 'work';
     case Media = 'media';
     case Video = 'video';
+    case SoundLevel = 'sound_level';
+    case Visualizer = 'visualizer';
+    case Drawing = 'drawing';
+    case QuizLive = 'quiz_live';
+    case WordCloud = 'word_cloud';
 
     public function labelKey(): string
     {
@@ -62,6 +67,11 @@ enum ClassBoardWidgetType: string
             self::Work => 'classBoardWidgetWorkLabel',
             self::Media => 'classBoardWidgetMediaLabel',
             self::Video => 'classBoardWidgetVideoLabel',
+            self::SoundLevel => 'classBoardWidgetSoundLevelLabel',
+            self::Visualizer => 'classBoardWidgetVisualizerLabel',
+            self::Drawing => 'classBoardWidgetDrawingLabel',
+            self::QuizLive => 'classBoardWidgetQuizLiveLabel',
+            self::WordCloud => 'classBoardWidgetWordCloudLabel',
         };
     }
 
@@ -69,9 +79,9 @@ enum ClassBoardWidgetType: string
     {
         return match ($this) {
             self::Timer, self::Stopwatch, self::Clock => ClassBoardWidgetFamily::Time,
-            self::RandomDraw, self::Groups, self::Session, self::SessionPlan, self::Work, self::TeamCounter => ClassBoardWidgetFamily::ClassGroup,
-            self::TrafficLight, self::Instructions => ClassBoardWidgetFamily::Ambiance,
-            self::Text, self::Media, self::Video, self::QrCode, self::Dice => ClassBoardWidgetFamily::Content,
+            self::RandomDraw, self::Groups, self::Session, self::SessionPlan, self::Work, self::QuizLive, self::WordCloud, self::TeamCounter => ClassBoardWidgetFamily::ClassGroup,
+            self::TrafficLight, self::SoundLevel, self::Instructions => ClassBoardWidgetFamily::Ambiance,
+            self::Text, self::Drawing, self::Media, self::Video, self::Visualizer, self::QrCode, self::Dice => ClassBoardWidgetFamily::Content,
         };
     }
 
@@ -87,6 +97,8 @@ enum ClassBoardWidgetType: string
             self::Session => [Feature::Timetable],
             self::Work => [Feature::StudentWork],
             self::Media => [Feature::FileLibrary],
+            self::QuizLive => [Feature::QuizLive],
+            self::WordCloud => [Feature::WordCloud],
             default => [],
         };
     }
@@ -99,7 +111,7 @@ enum ClassBoardWidgetType: string
     public function readsClass(): bool
     {
         return match ($this) {
-            self::RandomDraw, self::Groups, self::Session, self::SessionPlan, self::Work => true,
+            self::RandomDraw, self::Groups, self::Session, self::SessionPlan, self::Work, self::QuizLive, self::WordCloud => true,
             default => false,
         };
     }
@@ -110,7 +122,7 @@ enum ClassBoardWidgetType: string
     public function hasSettings(): bool
     {
         return match ($this) {
-            self::Clock, self::RandomDraw, self::Groups, self::TeamCounter, self::SessionPlan, self::Work, self::Media, self::Video => true,
+            self::Clock, self::RandomDraw, self::Groups, self::TeamCounter, self::SessionPlan, self::Work, self::Media, self::Video, self::QuizLive, self::WordCloud => true,
             default => false,
         };
     }
@@ -137,6 +149,11 @@ enum ClassBoardWidgetType: string
             self::Work => 'clipboard-check',
             self::Media => 'photo',
             self::Video => 'video',
+            self::SoundLevel => 'volume',
+            self::Visualizer => 'webcam',
+            self::Drawing => 'pen',
+            self::QuizLive => 'bolt',
+            self::WordCloud => 'cloud',
         };
     }
 
@@ -164,6 +181,11 @@ enum ClassBoardWidgetType: string
             self::Work => [28, 32],
             self::Media => [30, 40],
             self::Video => [34, 44],
+            self::SoundLevel => [22, 34],
+            self::Visualizer => [30, 40],
+            self::Drawing => [34, 46],
+            self::QuizLive => [28, 30],
+            self::WordCloud => [30, 36],
         };
 
         return ['w' => (float) $width, 'h' => (float) $height];
@@ -189,10 +211,8 @@ enum ClassBoardWidgetType: string
             $dock[$family->value] = [];
         }
         foreach (self::DOCK_ORDER as $value) {
-            $type = self::tryFrom($value);
-            if (null !== $type) {
-                $dock[$type->family()->value][] = $type;
-            }
+            $type = self::from($value);
+            $dock[$type->family()->value][] = $type;
         }
 
         return $dock;

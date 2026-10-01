@@ -1,0 +1,20 @@
+{# Dessin: freehand, five colours, an eraser, « Tout effacer ». Saved as a PNG in the uploads
+   storage after each stroke - the layout keeps its key, the bytes come back from the board's own
+   origin so the canvas stays writable (WidgetController::showDrawing()). #}
+{% set colors = ['#12344d', '#1b6ba8', '#c9452f', '#2e8b57', '#c9a04e'] %}
+<div class="cm-cb-draw-tools">
+    {% for color in colors %}
+        <button type="button" class="cm-cb-swatch" style="background: {{ color }}" data-color="{{ color }}"
+                aria-pressed="{{ loop.first ? 'true' : 'false' }}" aria-label="{{ 'classBoardDrawingColorLabel'|trans({'%number%': loop.index}) }}"
+                data-class-board-drawing-target="tool" data-action="class-board-drawing#pick"></button>
+    {% endfor %}
+    <button type="button" class="cm-cb-btn cm-cb-btn--small" data-color="eraser" aria-pressed="false" data-class-board-drawing-target="tool" data-action="class-board-drawing#pick">{{ 'classBoardDrawingEraserAction'|trans }}</button>
+    <button type="button" class="cm-cb-btn cm-cb-btn--small" data-action="class-board-drawing#clear">{{ 'classBoardDrawingClearAction'|trans }}</button>
+    <span class="cm-cb-w__meta" data-class-board-drawing-target="status" data-failed="{{ 'classBoardDrawingNotSavedStatus'|trans }}"></span>
+</div>
+<canvas class="cm-cb-canvas" width="1600" height="1000"
+        data-class-board-drawing-target="canvas"
+        data-upload-url="{{ path('app_class_board_drawing_store', {id: board.id, widgetId: widget.id}) }}"
+        {% if widget.config.key %}data-image-url="{{ path('app_class_board_drawing_show', {id: board.id, widgetId: widget.id, key: widget.config.key}) }}"{% endif %}
+        data-key="{{ widget.config.key }}"
+        data-action="pointerdown->class-board-drawing#down pointermove->class-board-drawing#move pointerup->class-board-drawing#up pointercancel->class-board-drawing#up"></canvas>

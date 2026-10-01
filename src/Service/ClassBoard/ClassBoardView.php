@@ -84,6 +84,28 @@ final class ClassBoardView
         return $dock;
     }
 
+    /**
+     * The Mercure topics the page has to read - the host topic of a live contest, for its count of
+     * connected students. The controllers turn them into the subscriber cookie, as the projector
+     * screen does.
+     *
+     * @param list<array{widget: array<string, mixed>, type: ClassBoardWidgetType, data: array<string, mixed>}> $views
+     *
+     * @return list<string>
+     */
+    public function mercureTopics(array $views): array
+    {
+        $topics = [];
+        foreach ($views as $view) {
+            $session = $view['data']['session'] ?? null;
+            if (ClassBoardWidgetType::QuizLive === $view['type'] && \is_array($session) && \is_string($session['topic'] ?? null)) {
+                $topics[] = $session['topic'];
+            }
+        }
+
+        return array_values(array_unique($topics));
+    }
+
     public function offered(ClassBoardWidgetType $type, User $user): bool
     {
         foreach ($type->features() as $feature) {

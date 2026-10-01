@@ -9,6 +9,7 @@ use App\Entity\ClassBoard;
 use App\Enum\Feature;
 use App\Repository\ClassBoardRepository;
 use App\Security\Voter\ClassBoardVoter;
+use App\Service\ClassBoard\ClassBoardDrawings;
 use App\Service\ClassBoard\ClassBoardDuplicator;
 use App\Service\ClassBoard\ClassBoardNaming;
 use App\Service\ClassBoard\ClassBoardPrograms;
@@ -147,10 +148,11 @@ class ListController extends AbstractController
     }
 
     #[Route(path: '/tools/boards/{id}/delete', name: 'app_class_board_delete', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function delete(int $id, Request $request, ClassBoardRepository $repository, EntityManagerInterface $entityManager): Response
+    public function delete(int $id, Request $request, ClassBoardRepository $repository, ClassBoardDrawings $drawings, EntityManagerInterface $entityManager): Response
     {
         $this->assertCsrf($request);
         $board = $this->findBoard($id, $repository, ClassBoardVoter::DELETE);
+        $drawings->forgetAll($board);
         $entityManager->remove($board);
         $entityManager->flush();
 

@@ -23,6 +23,7 @@ use App\Security\FeatureAccess;
 use App\Security\LessonLogEditors;
 use App\Security\ProgramTimetableAccess;
 use App\Security\StructureAccessChecker;
+use App\Service\ClassBoard\ClassBoardLiveData;
 use App\Service\ClassBoard\ClassBoardWidgetData;
 use App\Service\ClassBoard\TodaySlots;
 use App\Service\ClassBoard\VideoEmbed;
@@ -147,6 +148,7 @@ class ClassBoardWidgetDataTest extends TestCase
             new VideoEmbed(),
             $translator,
             new MockClock($now),
+            $this->createStub(ClassBoardLiveData::class),
         );
     }
 

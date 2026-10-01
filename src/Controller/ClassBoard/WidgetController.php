@@ -10,17 +10,21 @@ use App\Enum\ClassBoardWidgetType;
 use App\Enum\Feature;
 use App\Repository\ClassBoardRepository;
 use App\Security\Voter\ClassBoardVoter;
+use App\Service\ClassBoard\ClassBoardDrawings;
 use App\Service\ClassBoard\ClassBoardLayout;
 use App\Service\ClassBoard\ClassBoardView;
 use App\Service\ClassBoard\InvalidClassBoardLayoutException;
 use App\Service\JsonRequestPayload;
 use App\Service\QueryValue;
+use Doctrine\ORM\EntityManagerInterface;
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Writer\SvgWriter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Mercure\Authorization;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -36,7 +40,7 @@ class WidgetController extends AbstractController
     use ClassBoardControllerTrait;
 
     #[Route(path: '/tools/boards/{id}/widgets', name: 'app_class_board_widget_new', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function new(int $id, Request $request, ClassBoardRepository $repository, ClassBoardLayout $layout, ClassBoardView $view): Response
+    public function new(int $id, Request $request, ClassBoardRepository $repository, ClassBoardLayout $layout, ClassBoardView $view, Authorization $mercureAuthorization): Response
     {
         $this->assertCsrf($request);
         $board = $this->findBoard($id, $repository, ClassBoardVoter::EDIT);
@@ -53,22 +57,22 @@ class WidgetController extends AbstractController
             return new Response('', Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        return $this->renderWidget($board, $view->widget($board, $widget));
+        return $this->renderWidget($board, $view->widget($board, $widget), $request, $view, $mercureAuthorization);
     }
 
     #[Route(path: '/tools/boards/{id}/widgets/render', name: 'app_class_board_widget_render', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function redraw(int $id, Request $request, ClassBoardRepository $repository, ClassBoardLayout $layout, ClassBoardView $view): Response
+    public function redraw(int $id, Request $request, ClassBoardRepository $repository, ClassBoardLayout $layout, ClassBoardView $view, Authorization $mercureAuthorization): Response
     {
         $this->assertCsrf($request);
         $board = $this->findBoard($id, $repository, ClassBoardVoter::EDIT);
 
         try {
-            $widgets = $layout->normalize([JsonRequestPayload::fromRequest($request)->object('widget')->toArray()], $board->getLayout());
+            $widgets = $layout->normalize([JsonRequestPayload::fromRequest($request)->object('widget')->toArray()], $board->getLayout(), $board->getId());
         } catch (InvalidClassBoardLayoutException) {
             return new Response('', Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        return $this->renderWidget($board, $view->widget($board, $widgets[0]));
+        return $this->renderWidget($board, $view->widget($board, $widgets[0]), $request, $view, $mercureAuthorization);
     }
 
     // The QR code of an address typed in the widget, drawn here rather than by a script in the
@@ -90,13 +94,60 @@ class WidgetController extends AbstractController
         ]);
     }
 
+    // A « Dessin » widget's PNG, sent whole after each stroke. The key comes back to the page, which
+    // keeps it in the widget's configuration; ClassBoardDrawings puts it into the stored layout too.
+    #[Route(path: '/tools/boards/{id}/drawings/{widgetId}', name: 'app_class_board_drawing_store', methods: ['POST'], requirements: ['id' => '\d+', 'widgetId' => '[A-Za-z0-9_-]{1,40}'])]
+    public function storeDrawing(int $id, string $widgetId, Request $request, ClassBoardRepository $repository, ClassBoardDrawings $drawings, EntityManagerInterface $entityManager): JsonResponse
+    {
+        $this->assertCsrf($request);
+        $board = $this->findBoard($id, $repository, ClassBoardVoter::EDIT);
+
+        try {
+            $key = $drawings->store($board, $widgetId, $request->getContent(), QueryValue::trimmed($request, 'replaced') ?: null);
+        } catch (\InvalidArgumentException) {
+            return $this->json(['error' => 'invalid_drawing'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+        $entityManager->flush();
+
+        return $this->json(['key' => $key]);
+    }
+
+    // The drawing, from the board's own origin: drawn back onto a <canvas>, an image from another
+    // origin would make the canvas unreadable, and the next save impossible.
+    #[Route(path: '/tools/boards/{id}/drawings/{widgetId}', name: 'app_class_board_drawing_show', methods: ['GET'], requirements: ['id' => '\d+', 'widgetId' => '[A-Za-z0-9_-]{1,40}'])]
+    public function showDrawing(int $id, string $widgetId, Request $request, ClassBoardRepository $repository, ClassBoardDrawings $drawings): Response
+    {
+        $board = $this->findBoard($id, $repository);
+        $key = QueryValue::trimmed($request, 'key');
+        if (!ClassBoardDrawings::isKeyOf($key, (int) $board->getId(), $widgetId)) {
+            throw $this->createNotFoundException();
+        }
+
+        try {
+            $bytes = $drawings->read($key);
+        } catch (\Throwable) {
+            throw $this->createNotFoundException();
+        }
+
+        return new Response($bytes, Response::HTTP_OK, [
+            'Content-Type' => 'image/png',
+            // The key changes with every save, so a key's bytes never do.
+            'Cache-Control' => 'private, max-age=31536000, immutable',
+        ]);
+    }
+
     /**
      * @param array{widget: array<string, mixed>, type: ClassBoardWidgetType, data: array<string, mixed>}|null $view
      */
-    private function renderWidget(ClassBoard $board, ?array $view): Response
+    private function renderWidget(ClassBoard $board, ?array $view, Request $request, ClassBoardView $views, Authorization $mercureAuthorization): Response
     {
         if (null === $view) {
             return new Response('', Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $topics = $views->mercureTopics([$view]);
+        if ([] !== $topics) {
+            $mercureAuthorization->setCookie($request, $topics, [], [], 'subscriber');
         }
 
         return $this->render('class_board/_widget.html.twig', ['board' => $board, 'view' => $view]);

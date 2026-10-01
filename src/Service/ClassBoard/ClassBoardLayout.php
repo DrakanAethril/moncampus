@@ -53,12 +53,13 @@ final class ClassBoardLayout
      *
      * @param list<array<string, mixed>> $previous the stored layout, for the values only the server
      *                                             may set (a drawing's storage key)
+     * @param int|null                   $boardId  the board, to recognise its own drawings' keys
      *
      * @return list<array<string, mixed>>
      *
      * @throws InvalidClassBoardLayoutException
      */
-    public function normalizeJson(string $json, array $previous = []): array
+    public function normalizeJson(string $json, array $previous = [], ?int $boardId = null): array
     {
         if (\strlen($json) > self::MAX_BYTES) {
             throw new InvalidClassBoardLayoutException('Layout document too large.');
@@ -69,7 +70,7 @@ final class ClassBoardLayout
             throw new InvalidClassBoardLayoutException('Layout document has no widget list.');
         }
 
-        return $this->normalize($decoded['widgets'], $previous);
+        return $this->normalize($decoded['widgets'], $previous, $boardId);
     }
 
     /**
@@ -80,7 +81,7 @@ final class ClassBoardLayout
      *
      * @throws InvalidClassBoardLayoutException
      */
-    public function normalize(array $widgets, array $previous = []): array
+    public function normalize(array $widgets, array $previous = [], ?int $boardId = null): array
     {
         if (!array_is_list($widgets)) {
             throw new InvalidClassBoardLayoutException('Widgets must be a list.');
@@ -102,7 +103,7 @@ final class ClassBoardLayout
             if (!\is_array($widget)) {
                 throw new InvalidClassBoardLayoutException(\sprintf('Widget #%d is not an object.', $index));
             }
-            $entry = $this->widget($widget, $previousById);
+            $entry = $this->widget($widget, $previousById, $boardId);
             if (isset($seen[$entry['id']])) {
                 throw new InvalidClassBoardLayoutException(\sprintf('Widget id "%s" used twice.', $entry['id']));
             }
@@ -155,7 +156,7 @@ final class ClassBoardLayout
      *
      * @return array{id: string, type: string, x: float, y: float, w: float, h: float, z: int, config: array<string, mixed>}
      */
-    private function widget(array $widget, array $previousById): array
+    private function widget(array $widget, array $previousById, ?int $boardId = null): array
     {
         $id = $widget['id'] ?? null;
         if (!\is_string($id) || !self::isValidId($id)) {
@@ -192,7 +193,7 @@ final class ClassBoardLayout
             'w' => round($width, 2),
             'h' => round($height, 2),
             'z' => max(0, min(100_000, $z)),
-            'config' => $this->config($type, new ConfigReader($config, $id), \is_array($previousConfig) ? $previousConfig : []),
+            'config' => $this->config($type, new ConfigReader($config, $id), \is_array($previousConfig) ? $previousConfig : [], $id, $boardId),
         ];
     }
 
@@ -204,7 +205,7 @@ final class ClassBoardLayout
      *
      * @return array<string, mixed>
      */
-    private function config(ClassBoardWidgetType $type, ConfigReader $config, array $previousConfig): array
+    private function config(ClassBoardWidgetType $type, ConfigReader $config, array $previousConfig, string $widgetId, ?int $boardId): array
     {
         return match ($type) {
             ClassBoardWidgetType::Timer => [
@@ -258,6 +259,22 @@ final class ClassBoardLayout
                 'url' => trim($config->string('url', self::URL_MAX, '')),
                 'fileId' => $config->id('fileId'),
             ],
+            // A relative level, not decibels: only the threshold above which the widget warns.
+            ClassBoardWidgetType::SoundLevel => [
+                'threshold' => $config->int('threshold', 30, 95, 70),
+            ],
+            // The camera is chosen at every opening - device ids change from one computer to the next.
+            ClassBoardWidgetType::Visualizer => [
+                'mirror' => $config->bool('mirror', false),
+            ],
+            ClassBoardWidgetType::Drawing => [
+                'key' => $this->drawingKey($config, $previousConfig, $widgetId, $boardId),
+            ],
+            // The session is found again at every opening; nothing of it is kept.
+            ClassBoardWidgetType::QuizLive => [],
+            ClassBoardWidgetType::WordCloud => [
+                'cloudId' => $config->id('cloudId'),
+            ],
         };
     }
 
@@ -279,6 +296,26 @@ final class ClassBoardLayout
             'time' => $time,
             'details' => $config->bool('details', true),
         ];
+    }
+
+    /**
+     * The storage key of a drawing is the server's, never the page's: the one already stored wins,
+     * and a key sent by the page is only taken when nothing is stored yet and it names this very
+     * widget's own drawing (ClassBoardDrawings::isKeyOf()) - a forged key cannot point the board,
+     * and later its deletion, at somebody else's object.
+     *
+     * @param array<array-key, mixed> $previousConfig
+     */
+    private function drawingKey(ConfigReader $config, array $previousConfig, string $widgetId, ?int $boardId): ?string
+    {
+        $stored = $previousConfig['key'] ?? null;
+        if (\is_string($stored) && '' !== $stored) {
+            return $stored;
+        }
+
+        $sent = $config->string('key', 200, '');
+
+        return null !== $boardId && ClassBoardDrawings::isKeyOf($sent, $boardId, $widgetId) ? $sent : null;
     }
 
     /**

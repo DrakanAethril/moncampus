@@ -295,7 +295,8 @@ export default class extends Controller {
     applySetting(event) {
         const field = event.target;
         const panel = field.closest('[data-class-board-panel]');
-        if (!panel || !field.name) {
+        // A form inside a panel - the quiz launch - is its own, never the widget's configuration.
+        if (!panel || !field.name || field.closest('form')) {
             return;
         }
         // A text field writes as it is typed; a select, a box, a radio - and a field the server has
@@ -338,6 +339,29 @@ export default class extends Controller {
             const chosen = panel.querySelector(`[name="${name}"]:checked`)?.value;
             field.disabled = chosen !== value;
         });
+    }
+
+    // The « Quiz live » launch, posted to the route of Outils › Concours live. That route answers by
+    // a redirect: to the contest it created, or back to its own form with a flash when the choice
+    // was refused - which is how the two are told apart here.
+    async launchQuiz(event) {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const widget = form.closest('[data-widget-id]');
+        const message = form.querySelector('[data-class-board-launch-message]');
+        message.hidden = true;
+        try {
+            const response = await fetch(form.dataset.createUrl, { method: 'POST', body: new FormData(form) });
+            if (!response.ok || !/\/quiz\/live\/\d+$/.test(new URL(response.url).pathname)) {
+                message.hidden = false;
+                return;
+            }
+        } catch {
+            message.hidden = false;
+            return;
+        }
+        this.closeSettings();
+        this.rerender(widget);
     }
 
     // ------------------------------------------------------------------ saving
