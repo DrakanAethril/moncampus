@@ -3685,6 +3685,12 @@ resourcesIosStep1SafariText: "Ouvrez le lien de téléchargement dans Safari et 
 resourcesIosStep2TrustProfileText: 'Réglages → Général → VPN et gestion de l’appareil → faites confiance au profil « Institution Beaupeyrat ».'
 resourcesMobileIosStep3LaunchText: 'Lancez MonCampus depuis l’écran d’accueil.'
 resourcesEcoIosStep3PermissionsText: 'Lancez e-CO, autorisez <b>caméra</b> et <b>localisation précise</b>.'
+resourcesWebPlatformLabel: 'Version web (PWA)'
+resourcesPwaMetaTemplate: 'Navigateur · v%version%'
+resourcesOpenWebAction: '↗ Ouvrir la version web'
+resourcesEcoWebStep1OpenText: 'Ouvrez le lien dans <b>Chrome</b> (Android) ou <b>Safari</b> (iPhone).'
+resourcesEcoWebStep2InstallText: 'Ajoutez-la à l’écran d’accueil : menu ⋮ → « Installer l’application » sous Android, bouton Partager → « Sur l’écran d’accueil » sur iPhone.'
+resourcesEcoWebStep3PermissionsText: 'Lancez e-CO depuis l’écran d’accueil, autorisez <b>caméra</b> et <b>localisation précise</b>.'
 resourcesEcoRaceDayTipText: "Conseil : faites installer l'app <b>avant</b> le jour de la course (réseau parfois absent sur le terrain). L'app fonctionne ensuite hors ligne pendant la course."
 
 # Progression pédagogique (design/design_handoff_progression)
