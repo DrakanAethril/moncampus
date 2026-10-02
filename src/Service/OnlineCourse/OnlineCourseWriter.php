@@ -12,6 +12,7 @@ use App\Repository\OnlineCourseRepository;
 use App\Repository\OnlineCourseTagRepository;
 use App\Service\HelpSlug;
 use Doctrine\ORM\EntityManagerInterface;
+use League\CommonMark\GithubFlavoredMarkdownConverter;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizerInterface;
 
@@ -83,6 +84,23 @@ class OnlineCourseWriter
     {
         $course->setDescription(null === $html ? null : $this->sanitizer->sanitize($html));
         $course->touch();
+    }
+
+    /**
+     * A description written in Markdown - what the Claude connector sends. Rendered by the same
+     * converter as a handout written by Claude (App\Service\CourseMaterialRenderer), raw HTML
+     * escaped, then through the same sanitizer as a description typed on the screen.
+     */
+    public function describeMarkdown(OnlineCourse $course, string $markdown): void
+    {
+        if ('' === trim($markdown)) {
+            $this->describe($course, null);
+
+            return;
+        }
+
+        $converter = new GithubFlavoredMarkdownConverter(['html_input' => 'escape', 'allow_unsafe_links' => false]);
+        $this->describe($course, (string) $converter->convert($markdown));
     }
 
     /**
