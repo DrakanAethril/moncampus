@@ -1,0 +1,20 @@
+{# Teams come from a lot of groups (only when the board's class may be read), or are named by hand
+   below - the names are the widget controller's, not the generic fields'. #}
+{% set config = widget.config %}
+{% if data.lots is not empty %}
+    <label class="cm-cb-field">{{ 'classBoardTeamsFromLotField'|trans }}
+        <select class="cm-cb-input" name="batchId" data-kind="id" data-rerender>
+            <option value="">{{ 'classBoardTeamsByHandOption'|trans }}</option>
+            {% for lot in data.lots %}
+                <option value="{{ lot.id }}" {{ config.batchId == lot.id ? 'selected' }}>{{ lot.name }}</option>
+            {% endfor %}
+        </select>
+    </label>
+{% endif %}
+<div class="cm-cb-field">{{ 'classBoardTeamsNamesField'|trans }}
+    <div class="cm-cb-team-names" data-class-board-team-counter-target="names"></div>
+</div>
+<div class="cm-cb-field-row">
+    <button type="button" class="cm-cb-btn cm-cb-btn--small" data-class-board-team-counter-target="addButton" data-action="class-board-team-counter#addTeam">{{ 'classBoardTeamsAddAction'|trans }}</button>
+    <button type="button" class="cm-cb-btn cm-cb-btn--small" data-action="class-board-team-counter#resetScores">{{ 'classBoardTeamsResetAction'|trans }}</button>
+</div>

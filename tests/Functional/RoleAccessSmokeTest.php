@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional;
 
+use App\Entity\ClassBoard;
 use App\Entity\EvaluationPeriod;
 use App\Entity\EvaluationPeriodGroup;
 use App\Entity\FeatureRoleSetting;
@@ -1302,6 +1303,34 @@ class RoleAccessSmokeTest extends FunctionalTestCase
 
         $this->switchOffEveryRole(Feature::EcoleDirecte);
         $this->assertScreens($this->admin, ['/ecole-directe' => 200]);
+    }
+
+    /**
+     * The virtual board (design/validated/tableau-virtuel.md, §2): a teacher's tool, under
+     * class_tools - a student and a tutor are delivered nothing, so the screen does not exist for
+     * them. And a board is its owner's alone: an administrator opening a teacher's board gets the
+     * 404 of a board that does not exist, not a 403.
+     */
+    public function testTheVirtualBoardIsItsOwnersAlone(): void
+    {
+        $this->assertScreens($this->teacher, ['/tools/boards' => 200]);
+        $this->assertScreens($this->admin, ['/tools/boards' => 200]);
+        $this->assertScreens($this->student, ['/tools/boards' => 404]);
+        $this->assertScreens($this->tutor, ['/tools/boards' => 404]);
+
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $board = new ClassBoard(
+            $entityManager->getReference(User::class, $this->teacher->getId()),
+            'Tableau du smoke test',
+            $entityManager->getReference(Program::class, $this->program->getId()),
+        );
+        $entityManager->persist($board);
+        $entityManager->flush();
+        $path = '/tools/boards/'.$board->getId();
+
+        $this->assertScreens($this->teacher, [$path => 200]);
+        $this->assertScreens($this->admin, [$path => 404]);
+        $this->assertScreens($this->student, [$path => 404]);
     }
 
     /**

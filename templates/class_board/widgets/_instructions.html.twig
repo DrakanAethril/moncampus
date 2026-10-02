@@ -1,0 +1,20 @@
+{# Consignes: the pictograms lit for the activity under way. Which ones are lit is saved. #}
+{% set rules = [
+    {key: 'silence', icon: 'volume-off', label: 'classBoardInstructionSilenceLabel'},
+    {key: 'whisper', icon: 'volume-low', label: 'classBoardInstructionWhisperLabel'},
+    {key: 'alone', icon: 'user', label: 'classBoardInstructionAloneLabel'},
+    {key: 'pair', icon: 'users', label: 'classBoardInstructionPairLabel'},
+    {key: 'group', icon: 'users-group', label: 'classBoardInstructionGroupLabel'},
+    {key: 'hand', icon: 'hand-stop', label: 'classBoardInstructionHandLabel'},
+    {key: 'screens_off', icon: 'laptop-off', label: 'classBoardInstructionScreensOffLabel'},
+    {key: 'screens_on', icon: 'laptop', label: 'classBoardInstructionScreensOnLabel'},
+] %}
+<div class="cm-cb-rules">
+    {% for rule in rules %}
+        <button type="button" class="cm-cb-rules__item" data-rule="{{ rule.key }}"
+                aria-pressed="{{ rule.key in widget.config.on ? 'true' : 'false' }}"
+                data-class-board-instructions-target="item" data-action="class-board-instructions#toggle">
+            {{ ux_icon(rule.icon) }}<span>{{ rule.label|trans }}</span>
+        </button>
+    {% endfor %}
+</div>

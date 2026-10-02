@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <!-- Replaced by flutter build's --base-href: the PWA is served by moncampus under /campus-app/
+       (tool/build_pwa.sh). -->
+  <base href="/campus-app/">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Emploi du temps, travaux, cours, quiz et concours de l'établissement.">
+  <meta name="theme-color" content="#12344d">
+
+  <!-- iOS: launched from the home screen without Safari's bars. -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Campus">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" href="favicon.png">
+
+  <title>Campus Beaupeyrat</title>
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    html, body { margin: 0; height: 100%; background: #12344d; }
+    /* The Android splash (flutter_native_splash: navy + the emblem), drawn until the first frame. */
+    #campus-splash { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+    #campus-splash img { width: 192px; height: 192px; }
+  </style>
+
+  <!-- What the browser does where the phone has a plugin: lib/services/platform_bridge_web.dart
+       calls it. -->
+  <script src="campus_web.js"></script>
+</head>
+<body>
+  <div id="campus-splash"><img src="icons/splash.png" alt=""></div>
+  <script>
+    window.addEventListener('flutter-first-frame', () => {
+      document.getElementById('campus-splash')?.remove();
+      // What the app has loaded so far, for the service worker to keep (campus_sw.js, 'campus-warm').
+      navigator.serviceWorker?.ready.then((registration) => registration.active?.postMessage({
+        type: 'campus-warm',
+        urls: performance.getEntriesByType('resource').map((entry) => entry.name),
+      }));
+    });
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

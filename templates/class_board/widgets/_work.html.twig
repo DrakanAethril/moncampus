@@ -1,0 +1,15 @@
+{# Travail à faire: the next deadlines of the work THIS teacher gave the class, already visible to
+   the students - title, nature, date. Never a state per student (handed in, late) (§6). #}
+{% if data.items is empty %}
+    <div class="cm-cb-w__locked">{{ 'classBoardWorkEmptyMessage'|trans }}</div>
+{% else %}
+    <ul class="cm-cb-work">
+        {% for item in data.items %}
+            <li>
+                <span>{{ item.title }}</span>
+                <span class="cm-cb-work__due">{{ item.dueLabel }}</span>
+                <small>{{ item.nature }}</small>
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}

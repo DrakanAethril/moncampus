@@ -17,3 +17,5 @@ public/downloads/*.apk filter=lfs diff=lfs merge=lfs -text
 public/downloads/*.ipa filter=lfs diff=lfs merge=lfs -text
 # The e-CO PWA is a build output (the e-CO repo's tool/build_pwa.sh): kept byte for byte, never normalised.
 public/eco-app/** -text
+# The Campus PWA likewise (the moncampus-mobile repo's tool/build_pwa.sh).
+public/campus-app/** -text

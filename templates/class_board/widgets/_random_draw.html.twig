@@ -1,0 +1,39 @@
+{# Tirage au sort: the random draw tool's list, filter and replacement rule (§6). Linked to a saved
+   draw, every draw is written into that draw's history through the tool's own route, so the tool
+   and the board show the same « déjà tirés ». Without one, who has been drawn lives in the page and
+   is forgotten at the next opening - the last name drawn is never saved. #}
+{% set draw = data.draw %}
+<div class="cm-cb-draw"
+     data-class-board-random-draw-target="root"
+     data-students="{{ data.students|json_encode }}"
+     data-drawn="{{ (draw ? draw.drawnIds : [])|json_encode }}"
+     data-option="{{ data.optionId ?? '' }}"
+     data-allow-repeat="{{ data.allowRepeat ? '1' : '0' }}"
+     {% if draw %}
+         data-update-url="{{ path('app_program_tools_random_draw_update', {id: data.program.id, drawId: draw.id}) }}"
+         data-csrf="{{ csrf_token('program_random_draw') }}"
+     {% endif %}
+     data-everyone-drawn="{{ 'classBoardDrawEveryoneDrawnMessage'|trans }}"
+     data-count-label="{{ 'classBoardDrawCountLabel'|trans({'%drawn%': '__D__', '%total%': '__T__'}) }}">
+    <div class="cm-cb-draw__options">
+        <span class="cm-cb-w__meta">
+            {% if draw %}{{ 'classBoardDrawSavedLabel'|trans }} <b>{{ draw.name }}</b>{% else %}{{ 'classBoardDrawUnsavedLabel'|trans }}{% endif %}
+        </span>
+        <span class="cm-cb-draw__pills">
+            {% if data.options is not empty %}
+                <button type="button" class="cm-cb-pill" data-option="" data-class-board-random-draw-target="optionPill" data-action="class-board-random-draw#chooseOption">{{ 'classBoardDrawWholeClassLabel'|trans }}</button>
+                {% for option in data.options %}
+                    <button type="button" class="cm-cb-pill" data-option="{{ option.id }}" data-class-board-random-draw-target="optionPill" data-action="class-board-random-draw#chooseOption">{{ option.label }}</button>
+                {% endfor %}
+            {% endif %}
+            <button type="button" class="cm-cb-pill" data-class-board-random-draw-target="repeatPill" data-action="class-board-random-draw#toggleRepeat">{{ 'classBoardDrawWithoutReplacementLabel'|trans }}</button>
+        </span>
+    </div>
+    <div class="cm-cb-draw__name" data-class-board-random-draw-target="name">—</div>
+    <div class="cm-cb-w__buttons">
+        <button type="button" class="cm-cb-btn cm-cb-btn--primary cm-cb-btn--large" data-action="class-board-random-draw#draw">{{ 'classBoardDrawAction'|trans }}</button>
+        <button type="button" class="cm-cb-btn" data-action="class-board-random-draw#restart">{{ 'classBoardDrawRestartAction'|trans }}</button>
+        <span class="cm-cb-w__meta" data-class-board-random-draw-target="count"></span>
+    </div>
+    <div class="cm-cb-draw__drawn" data-class-board-random-draw-target="drawn"></div>
+</div>

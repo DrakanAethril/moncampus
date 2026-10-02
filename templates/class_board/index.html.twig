@@ -1,0 +1,169 @@
+{% extends 'layout/app.html.twig' %}
+
+{# « Tableau virtuel », the list (design/validated/tableau-virtuel.md, §2; mockup
+   design/validated/tableau-virtuel-screens.html, « Mes tableaux »). Two segments of trail: the
+   screen hangs off the Outils menu and goes through no class. Creating, renaming and deleting all
+   happen in panels inside the page - no dialog, no confirm(). #}
+
+{% block title %}{{ 'classBoardNavLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'classBoardNavLabel'|trans, url: path('app_class_board_index')},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'classBoardNavLabel'|trans }}{% endblock %}
+
+{% block main %}
+    {% set csrf = csrf_token('class_board_list') %}
+    <div class="cm-cb-list" data-controller="class-board-list">
+        <div class="cm-cb-list__toolbar">
+            <form class="cm-filterbar" method="get" action="{{ path('app_class_board_index') }}" data-controller="auto-submit">
+                <label class="cm-filterbar__field">
+                    <span class="visually-hidden">{{ 'classBoardFilterLabel'|trans }}</span>
+                    <select name="class" class="cm-filterbar__select" data-action="auto-submit#submit">
+                        <option value="">{{ 'classBoardAllClassesOption'|trans }}</option>
+                        {% for program in filterPrograms %}
+                            <option value="{{ program.id }}" {{ filter == program.id ~ '' ? 'selected' }}>{{ program.displayShortName }}</option>
+                        {% endfor %}
+                        <option value="none" {{ filter == 'none' ? 'selected' }}>{{ 'classBoardWithoutClassLabel'|trans }}</option>
+                    </select>
+                </label>
+            </form>
+            <twig:Cm:Button variant="primary" data-action="class-board-list#openNew" data-class-board-list-target="newButton">
+                <twig:ux:icon name="plus" width="16" height="16"/>{{ 'classBoardNewAction'|trans }}
+            </twig:Cm:Button>
+        </div>
+
+        <form class="cm-cb-list__panel" method="post" action="{{ path('app_class_board_create') }}"
+              data-class-board-list-target="newPanel" hidden>
+            <input type="hidden" name="_token" value="{{ csrf }}">
+            <twig:Cm:Subhead :title="'classBoardNewPanelHeading'|trans"/>
+            <div class="cm-cb-list__fields">
+                <label class="cm-cb-list__field">
+                    <span>{{ 'classBoardNameFieldLabel'|trans }}</span>
+                    <input type="text" name="name" maxlength="255" value="{{ proposedName }}" required data-class-board-list-target="newName">
+                </label>
+                <div class="cm-cb-list__radios" role="radiogroup" aria-label="{{ 'classBoardClassFieldLabel'|trans }}">
+                    <label><input type="radio" name="link" value="none" {{ linkablePrograms is empty ? 'checked' }} data-action="class-board-list#syncLink"> {{ 'classBoardWithoutClassLabel'|trans }}</label>
+                    {% if linkablePrograms is not empty %}
+                        <label><input type="radio" name="link" value="class" checked data-action="class-board-list#syncLink"> {{ 'classBoardWithClassLabel'|trans }}</label>
+                        <select name="program" aria-label="{{ 'classBoardClassFieldLabel'|trans }}" data-class-board-list-target="newProgram">
+                            {% if linkablePrograms|length > 1 %}<option value="" disabled selected>{{ 'classBoardChooseClassPlaceholder'|trans }}</option>{% endif %}
+                            {% for program in linkablePrograms %}
+                                <option value="{{ program.id }}">{{ program.displayShortName }}</option>
+                            {% endfor %}
+                        </select>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="cm-cb-list__buttons">
+                <twig:Cm:Button variant="primary" type="submit">{{ 'classBoardCreateAndOpenAction'|trans }}</twig:Cm:Button>
+                <twig:Cm:Button variant="outline" data-action="class-board-list#closeNew">{{ 'classBoardCancelAction'|trans }}</twig:Cm:Button>
+            </div>
+        </form>
+
+
+
+        <div class="cm-cb-list__card">
+            <table class="cm-cb-list__table">
+                <thead>
+                    <tr>
+                        <th>{{ 'classBoardBoardColumnLabel'|trans }}</th>
+                        <th>{{ 'classBoardClassColumnLabel'|trans }}</th>
+                        <th>{{ 'classBoardWidgetsColumnLabel'|trans }}</th>
+                        <th>{{ 'classBoardUpdatedColumnLabel'|trans }}</th>
+                        <th><span class="visually-hidden">{{ 'classBoardActionsColumnLabel'|trans }}</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for board in boards %}
+                        <tr data-class-board-list-target="row" data-board-id="{{ board.id }}">
+                            <td class="cm-cb-list__name">{{ board.name }}</td>
+                            <td>
+                                {% if board.program %}
+                                    <twig:Cm:Badge tone="blue">{{ board.program.displayShortName }}</twig:Cm:Badge>
+                                {% else %}
+                                    <twig:Cm:Badge tone="gray">{{ 'classBoardWithoutClassLabel'|trans }}</twig:Cm:Badge>
+                                {% endif %}
+                            </td>
+                            <td class="cm-cb-list__num">{{ board.widgetCount }}</td>
+                            <td class="cm-cb-list__num">
+                                {% if board.updatedAt|date('Y-m-d') == 'now'|date('Y-m-d') %}
+                                    {{ 'classBoardUpdatedTodayLabel'|trans({'%time%': board.updatedAt|date('H:i')}) }}
+                                {% else %}
+                                    {{ board.updatedAt|date('d/m/Y') }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="cm-cb-list__actions">
+                                    <twig:Cm:Button variant="outline" size="sm" href="{{ path('app_class_board_show', {id: board.id}) }}">
+                                        <twig:ux:icon name="external-link" width="15" height="15"/>{{ 'classBoardOpenAction'|trans }}
+                                    </twig:Cm:Button>
+                                    <button type="button" class="cm-cb-list__icon" aria-label="{{ 'classBoardRenameAction'|trans }}" title="{{ 'classBoardRenameAction'|trans }}"
+                                            data-action="class-board-list#openRename" data-board-id="{{ board.id }}">
+                                        <twig:ux:icon name="pencil" width="16" height="16"/>
+                                    </button>
+                                    <form method="post" action="{{ path('app_class_board_duplicate', {id: board.id}) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf }}">
+                                        <button type="submit" class="cm-cb-list__icon" aria-label="{{ 'classBoardDuplicateAction'|trans }}" title="{{ 'classBoardDuplicateAction'|trans }}">
+                                            <twig:ux:icon name="copy" width="16" height="16"/>
+                                        </button>
+                                    </form>
+                                    <button type="button" class="cm-cb-list__icon cm-cb-list__icon--danger" aria-label="{{ 'classBoardDeleteAction'|trans }}" title="{{ 'classBoardDeleteAction'|trans }}"
+                                            data-action="class-board-list#openDelete" data-board-id="{{ board.id }}">
+                                        <twig:ux:icon name="trash" width="16" height="16"/>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="cm-cb-list__inline" data-class-board-list-target="renameRow" data-board-id="{{ board.id }}" hidden>
+                            <td colspan="5">
+                                <form method="post" action="{{ path('app_class_board_rename', {id: board.id}) }}" class="cm-cb-list__inline-form">
+                                    <input type="hidden" name="_token" value="{{ csrf }}">
+                                    <label class="cm-cb-list__field">
+                                        <span>{{ 'classBoardNameFieldLabel'|trans }}</span>
+                                        <input type="text" name="name" maxlength="255" value="{{ board.name }}" required>
+                                    </label>
+                                    <label class="cm-cb-list__field">
+                                        <span>{{ 'classBoardClassFieldLabel'|trans }}</span>
+                                        <select name="program">
+                                            <option value="">{{ 'classBoardWithoutClassLabel'|trans }}</option>
+                                            {% set current = board.program %}
+                                            {% if current and current not in linkablePrograms %}
+                                                <option value="{{ current.id }}" selected>{{ current.displayShortName }}</option>
+                                            {% endif %}
+                                            {% for program in linkablePrograms %}
+                                                <option value="{{ program.id }}" {{ current and current.id == program.id ? 'selected' }}>{{ program.displayShortName }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </label>
+                                    <div class="cm-cb-list__buttons">
+                                        <twig:Cm:Button variant="primary" size="sm" type="submit">{{ 'classBoardSaveAction'|trans }}</twig:Cm:Button>
+                                        <twig:Cm:Button variant="outline" size="sm" data-action="class-board-list#closeInline">{{ 'classBoardCancelAction'|trans }}</twig:Cm:Button>
+                                    </div>
+                                    <p class="cm-cb-list__hint">{{ 'classBoardChangeClassHint'|trans }}</p>
+                                </form>
+                            </td>
+                        </tr>
+                        <tr class="cm-cb-list__inline cm-cb-list__inline--danger" data-class-board-list-target="deleteRow" data-board-id="{{ board.id }}" hidden>
+                            <td colspan="5">
+                                <form method="post" action="{{ path('app_class_board_delete', {id: board.id}) }}" class="cm-cb-list__inline-form">
+                                    <input type="hidden" name="_token" value="{{ csrf }}">
+                                    <span>{{ 'classBoardDeleteConfirmMessage'|trans({'%name%': board.name}) }}</span>
+                                    <div class="cm-cb-list__buttons">
+                                        <twig:Cm:Button variant="danger" size="sm" type="submit">{{ 'classBoardDeleteAction'|trans }}</twig:Cm:Button>
+                                        <twig:Cm:Button variant="outline" size="sm" data-action="class-board-list#closeInline">{{ 'classBoardCancelAction'|trans }}</twig:Cm:Button>
+                                    </div>
+                                </form>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="5" class="cm-cb-list__empty">{{ filter == '' ? 'classBoardNoneYetMessage'|trans : 'classBoardNoneForFilterMessage'|trans }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

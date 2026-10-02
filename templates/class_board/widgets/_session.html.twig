@@ -1,0 +1,32 @@
+{# Séance du jour: the slot of the class under way, else the next one of the day; any other slot of
+   the day can be shown instead, in the page only. Of the library séance placed on it, the title,
+   its sequence and its OBJECTIVES - nothing else of the sheet is projected (§1.10). #}
+{% if data.slots is empty %}
+    <div class="cm-cb-w__locked">{{ 'classBoardSessionNoSlotMessage'|trans }}</div>
+{% else %}
+    {% if data.slots|length > 1 %}
+        <select class="cm-cb-input cm-cb-session__pick" aria-label="{{ 'classBoardSessionPickLabel'|trans }}" data-action="class-board-session#choose">
+            {% for slot in data.slots %}
+                <option value="{{ slot.key }}" {{ slot.key == data.current ? 'selected' }}>{{ slot.label }}</option>
+            {% endfor %}
+        </select>
+    {% endif %}
+    {% for slot in data.slots %}
+        <div class="cm-cb-session" data-class-board-session-target="slot" data-slot="{{ slot.key }}" {{ slot.key != data.current ? 'hidden' }}>
+            <div class="cm-cb-session__when">{{ slot.when }}{% if slot.room %} · {{ slot.room }}{% endif %}</div>
+            {% if slot.sequence %}<div><span class="cm-cb-tag">{{ slot.sequence }}</span></div>{% endif %}
+            {% if slot.title %}
+                <div class="cm-cb-session__title">{{ slot.title }}</div>
+                {% if slot.objectives is not empty %}
+                    <div class="cm-cb-session__sub">{{ 'classBoardSessionObjectivesLabel'|trans }}</div>
+                    <ul class="cm-cb-session__objectives">
+                        {% for objective in slot.objectives %}<li>{{ objective }}</li>{% endfor %}
+                    </ul>
+                {% endif %}
+            {% else %}
+                <div class="cm-cb-session__title">{{ slot.topic }}</div>
+                <div class="cm-cb-w__meta">{{ 'classBoardSessionNoSeanceMessage'|trans }}</div>
+            {% endif %}
+        </div>
+    {% endfor %}
+{% endif %}

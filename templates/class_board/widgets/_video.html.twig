@@ -1,0 +1,19 @@
+{# Vidéo: the player of the address the teacher pasted, or a video of their library - and always
+   « Ouvrir dans un onglet », because a site may refuse to be framed without the browser saying so
+   (§7). A library file is signed again at every opening; the layout keeps only its id. #}
+{% if data.embed %}
+    <div class="cm-cb-media cm-cb-media--dark">
+        {% if data.embed.kind == 'video' %}
+            <video src="{{ data.embed.src }}" controls preload="metadata" playsinline></video>
+        {% else %}
+            <iframe src="{{ data.embed.src }}" title="{{ 'classBoardWidgetVideoLabel'|trans }}"
+                    allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen
+                    referrerpolicy="strict-origin-when-cross-origin"></iframe>
+        {% endif %}
+    </div>
+    {% if data.embed.url %}
+        <a class="cm-cb-media__open" href="{{ data.embed.url }}" target="_blank" rel="noopener noreferrer">{{ ux_icon('external-link') }}{{ 'classBoardOpenInTabAction'|trans }}</a>
+    {% endif %}
+{% else %}
+    <div class="cm-cb-w__locked">{{ 'classBoardVideoEmptyMessage'|trans }}</div>
+{% endif %}

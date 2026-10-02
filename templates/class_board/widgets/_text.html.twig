@@ -1,0 +1,6 @@
+{# Texte: rich text in large type, written on the board itself. Stored through the same sanitizer
+   as the library's HugeRTE contents; printed back from that stored, sanitized copy. #}
+<div class="cm-cb-text" contenteditable="true" spellcheck="true"
+     aria-label="{{ 'classBoardWidgetTextLabel'|trans }}"
+     data-placeholder="{{ 'classBoardTextPlaceholder'|trans }}"
+     data-class-board-text-target="editor" data-action="input->class-board-text#edit">{{ widget.config.html|raw }}</div>

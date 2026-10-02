@@ -1,0 +1,52 @@
+{# One widget of the board: its frame (head to move it, gear, close, corner to resize it) around the
+   partial of its type, templates/class_board/widgets/_<type>.html.twig. Drawn the same way on the
+   board and by the widget endpoint, which is how a widget added from the dock arrives.
+
+   data-config is the widget's stored configuration, the one thing its own controller writes back
+   when a setting changes; the board controller reads it, with the position, at every save. #}
+{% set widget = view.widget %}
+{% set type = view.type %}
+{% set data = view.data %}
+{% set locked = data.state in ['no_class', 'not_teaching'] %}
+<div class="cm-cb-w cm-cb-w--{{ type.value|replace({'_': '-'}) }}"
+     data-class-board-target="widget"
+     data-widget-id="{{ widget.id }}"
+     data-widget-type="{{ type.value }}"
+     data-x="{{ widget.x }}" data-y="{{ widget.y }}" data-w="{{ widget.w }}" data-h="{{ widget.h }}" data-z="{{ widget.z }}"
+     data-config="{{ widget.config|json_encode }}"
+     {# Its own controller only once there is something to drive: a locked widget or one whose source
+        is gone has no body to drive, and its gear panel is read by the board controller alone. #}
+     {% if data.state == 'ok' %}data-controller="{{ type.controller }}"{% endif %}
+     style="left: {{ widget.x }}%; top: {{ widget.y }}%; width: {{ widget.w }}%; height: {{ widget.h }}%; z-index: {{ widget.z }};">
+    <div class="cm-cb-w__head" data-action="pointerdown->class-board#startMove">
+        {{ ux_icon(type.icon, {class: 'cm-cb-w__icon'}) }}
+        <span class="cm-cb-w__title">{{ type.labelKey|trans }}</span>
+        {% if type.hasSettings and not locked %}
+            <button type="button" class="cm-cb-w__head-btn" aria-expanded="false"
+                    aria-label="{{ 'classBoardWidgetSettingsAction'|trans({'%widget%': type.labelKey|trans}) }}"
+                    data-action="class-board#toggleSettings">{{ ux_icon('settings') }}</button>
+        {% endif %}
+        <button type="button" class="cm-cb-w__head-btn"
+                aria-label="{{ 'classBoardWidgetRemoveAction'|trans({'%widget%': type.labelKey|trans}) }}"
+                data-action="class-board#removeWidget">{{ ux_icon('x') }}</button>
+    </div>
+    <div class="cm-cb-w__body">
+        {% if data.state == 'no_class' %}
+            <div class="cm-cb-w__locked"><strong>{{ type.labelKey|trans }}</strong>{{ 'classBoardWidgetNeedsClassMessage'|trans }}</div>
+        {% elseif data.state == 'not_teaching' %}
+            <div class="cm-cb-w__locked"><strong>{{ type.labelKey|trans }}</strong>{{ 'classBoardWidgetNotTeachingMessage'|trans }}</div>
+        {% elseif data.state == 'source_missing' %}
+            <div class="cm-cb-w__locked"><strong>{{ 'classBoardWidgetSourceMissingHeading'|trans }}</strong>{{ 'classBoardWidgetSourceMissingMessage'|trans }}</div>
+        {% else %}
+            {% include 'class_board/widgets/_' ~ type.value ~ '.html.twig' %}
+        {% endif %}
+    </div>
+    {% if type.hasSettings and not locked %}
+        <div class="cm-cb-w__panel" data-class-board-panel hidden>
+            <div class="cm-cb-w__panel-title">{{ 'classBoardWidgetSettingsHeading'|trans({'%widget%': type.labelKey|trans}) }}</div>
+            {% include 'class_board/settings/_' ~ type.value ~ '.html.twig' %}
+            <button type="button" class="cm-cb-btn cm-cb-btn--primary" data-action="class-board#closeSettings">{{ 'classBoardDoneAction'|trans }}</button>
+        </div>
+    {% endif %}
+    <div class="cm-cb-w__resize" aria-hidden="true" data-action="pointerdown->class-board#startResize"></div>
+</div>

@@ -62,10 +62,14 @@ class MagicLoginService
      * the mail carries a deep link that opens the app rather than a web URL, and the token only
      * lives 15 minutes.
      *
+     * The same app compiled as a PWA (public/campus-app/) answers no `campusmanager://` link: it
+     * names its own address in $webAppUrl, and the mail then opens that page with the token in
+     * `?login=`, which the app trades exactly like the deep link's.
+     *
      * Silently a no-op for the same reason as requestLink(): the app always shows "lien envoyé",
      * whether or not the address belongs to an eligible account.
      */
-    public function requestMobileLink(?User $user, ?string $requestIp): void
+    public function requestMobileLink(?User $user, ?string $requestIp, ?string $webAppUrl = null): void
     {
         $token = $this->issueToken($user, $requestIp, self::MOBILE_TOKEN_TTL_MINUTES);
 
@@ -80,6 +84,7 @@ class MagicLoginService
             ->context([
                 'user' => $user,
                 'token' => $token,
+                'webAppUrl' => $webAppUrl,
                 'minutes' => self::MOBILE_TOKEN_TTL_MINUTES,
             ]));
     }

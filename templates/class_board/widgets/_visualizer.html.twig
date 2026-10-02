@@ -1,0 +1,17 @@
+{# Visualiseur: the computer's camera, live - a document camera, a copy, an object. Nothing is
+   recorded and nothing leaves the computer (§7). The camera is chosen at every opening: device
+   ids change from one computer to the next. #}
+<div class="cm-cb-camera">
+    <div class="cm-cb-camera__bar">
+        <select class="cm-cb-input" aria-label="{{ 'classBoardCameraChoiceLabel'|trans }}" data-class-board-visualizer-target="devices" data-action="class-board-visualizer#choose" hidden></select>
+        <label class="cm-cb-camera__mirror"><input type="checkbox" {{ widget.config.mirror ? 'checked' }} data-class-board-visualizer-target="mirror" data-action="class-board-visualizer#toggleMirror"> {{ 'classBoardCameraMirrorLabel'|trans }}</label>
+    </div>
+    <div class="cm-cb-media cm-cb-media--dark">
+        <video autoplay playsinline muted data-class-board-visualizer-target="video" hidden></video>
+        <div class="cm-cb-camera__idle" data-class-board-visualizer-target="idle">
+            <button type="button" class="cm-cb-btn cm-cb-btn--primary" data-action="class-board-visualizer#start">{{ 'classBoardCameraStartAction'|trans }}</button>
+            <span data-class-board-visualizer-target="message"
+                  data-denied="{{ 'classBoardCameraDeniedMessage'|trans }}" data-unavailable="{{ 'classBoardCameraUnavailableMessage'|trans }}">{{ 'classBoardCameraPrivacyHint'|trans }}</span>
+        </div>
+    </div>
+</div>

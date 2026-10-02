@@ -1,0 +1,17 @@
+{# The fields carry the config key they set (name) and its kind; the board controller writes them
+   into the widget's configuration and tells the widget. #}
+{% set config = widget.config %}
+<label class="cm-cb-field">{{ 'classBoardClockLabelField'|trans }} <span>{{ 'classBoardOptionalLabel'|trans }}</span>
+    <input type="text" class="cm-cb-input" name="label" maxlength="60" value="{{ config.label }}" placeholder="{{ 'classBoardClockLabelPlaceholder'|trans }}">
+</label>
+<div class="cm-cb-field-row" role="radiogroup" aria-label="{{ 'classBoardClockModeLabel'|trans }}">
+    <label><input type="radio" name="mode" value="live" {{ config.mode == 'live' ? 'checked' }}> {{ 'classBoardClockLiveLabel'|trans }}</label>
+    <label><input type="radio" name="mode" value="fixed" {{ config.mode == 'fixed' ? 'checked' }}> {{ 'classBoardClockFixedLabel'|trans }}</label>
+</div>
+<label class="cm-cb-field">{{ 'classBoardClockFixedTimeField'|trans }}
+    <input type="time" class="cm-cb-input" name="time" value="{{ config.time }}" data-enabled-when="mode=fixed">
+</label>
+<div class="cm-cb-field-row">
+    <label><input type="checkbox" name="details" {{ config.details ? 'checked' }} data-enabled-when="mode=live"> {{ 'classBoardClockDetailsLabel'|trans }}</label>
+</div>
+<div class="cm-cb-hint">{{ 'classBoardClockHint'|trans }}</div>

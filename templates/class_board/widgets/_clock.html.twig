@@ -1,0 +1,12 @@
+{# Horloge: the current time, or a fixed time typed by the teacher (start, end, « sortie
+   autorisée », a student's end time), with an optional label above it. The label is the
+   teacher's own text - the platform never fills it, from the accommodations or anywhere else (§8).
+   Seconds and date disappear when the widget is too small to carry them. #}
+<div class="cm-cb-clock" data-class-board-clock-target="face"
+     data-days="{{ 'classBoardClockDays'|trans }}" data-months="{{ 'classBoardClockMonths'|trans }}"
+     data-first="{{ 'classBoardClockFirstOfMonth'|trans }}">
+    <span class="cm-cb-clock__label" data-class-board-clock-target="label"></span>
+    <b class="cm-cb-clock__time cm-cb-num" data-class-board-clock-target="time"></b>
+    <span class="cm-cb-clock__seconds cm-cb-num" data-class-board-clock-target="seconds"></span>
+    <span class="cm-cb-clock__date" data-class-board-clock-target="date"></span>
+</div>

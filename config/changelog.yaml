@@ -26,6 +26,19 @@
 # there is nothing to say about it here.
 
 releases:
+    - version: '2026.10.02'
+      date: '2026-10-02'
+      summary: "Un tableau virtuel arrive dans les outils pour animer la classe : un écran à projeter que chaque enseignant compose avec un minuteur, des consignes, la séance du jour, un quiz en direct et bien d'autres. L'application mobile s'ouvre désormais aussi depuis un navigateur, sans rien installer, iPhone compris."
+      entries:
+          - type: nouveaute
+            title: "Tableau virtuel : un écran à projeter en classe, que chaque enseignant compose à sa main"
+            detail: "Minuteur, chronomètre, horloge, feu, consignes, texte, QR code, dés, compteur d'équipes, tirage au sort, groupes, dessin, visualiseur et niveau sonore de la salle (rien n'est enregistré) ; les tableaux sont personnels, liés ou non à une classe, et s'enregistrent tout seuls."
+          - type: nouveaute
+            title: "Tableau virtuel : la séance du jour, son déroulé, le travail à faire, un document, une vidéo, un quiz en direct ou un nuage de mots s'affichent sur le tableau"
+            detail: "D'une séance, seuls le titre, la séquence, les objectifs, puis le nom et la durée des phases sont projetés ; le travail à faire est celui que l'enseignant a donné lui-même."
+          - type: nouveaute
+            title: "L'application mobile existe en version web, à ouvrir depuis le navigateur du téléphone, iPhone compris"
+            detail: "La page Ressources la propose à côté de l'application Android, avec son QR code ; le lien de connexion reçu par mail s'y ouvre directement, et ses sessions apparaissent à part dans « Mon profil »."
     - version: '2026.10.01.2'
       date: '2026-10-01'
       summary: "e-CO se lance désormais aussi depuis un navigateur, sans installer d'application, ce qui ouvre les courses aux iPhone ; la course continue hors connexion. L'export d'une période du livret de l'alternant redevient rapide."

@@ -1,0 +1,21 @@
+{# Quiz live: the class's contest under way - how the students join it (MonCampus › Quiz, or the
+   QR code), who is connected - and the way to its projection screen, which drives it. With none,
+   the gear launches one through the route of Outils › Concours live. The students keep their own
+   screens (§1.5). #}
+{% if data.session %}
+    {% set session = data.session %}
+    <div class="cm-cb-w__meta">{{ 'classBoardQuizLiveRunningLabel'|trans }} <b>{{ session.name }}</b>{% if not session.hostedByOwner %} · {{ 'classBoardQuizLiveHostLabel'|trans({'%name%': session.hostName}) }}{% endif %}</div>
+    <div class="cm-cb-live"
+         data-class-board-quiz-live-target="live" data-hub-url="{{ session.hubUrl }}" data-topic="{{ session.topic }}">
+        <div class="cm-cb-live__text">
+            <div class="cm-cb-live__count"><b class="cm-cb-num" data-class-board-quiz-live-target="count">{{ session.participants }}</b> {{ 'classBoardQuizLiveConnectedLabel'|trans }}</div>
+            <div class="cm-cb-w__meta">{{ 'classBoardQuizLiveJoinHint'|trans }}</div>
+            {% if session.projectorUrl %}
+                <a class="cm-cb-btn cm-cb-btn--primary cm-cb-live__open" href="{{ session.projectorUrl }}" target="_blank" rel="noopener">{{ ux_icon('external-link') }} {{ 'classBoardQuizLiveProjectorAction'|trans }}</a>
+            {% endif %}
+        </div>
+        <div class="cm-cb-qr__box cm-cb-live__qr"><img src="{{ path('app_class_board_qr_code', {text: session.joinUrl}) }}" alt="{{ 'classBoardQuizLiveQrAlt'|trans }}"></div>
+    </div>
+{% else %}
+    <div class="cm-cb-w__locked">{{ data.templates is empty ? 'classBoardQuizLiveNoQuizMessage'|trans : 'classBoardQuizLiveNoneMessage'|trans }}</div>
+{% endif %}

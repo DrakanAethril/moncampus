@@ -23,7 +23,13 @@ Treat any leftover template documentation (`docs/*.md`, parts of the README) as 
 as a description of this app.
 
 Companion repositories (separate git repos, same staging workflow):
-- `/Users/Shared/Projets/Flutter/moncampus-mobile` — the student/teacher mobile app.
+- `/Users/Shared/Projets/Flutter/moncampus-mobile` — the student/teacher mobile app. It also runs
+  **as a PWA at `/campus-app/`** (`public/campus-app/`, a build output of that repo's
+  `tool/build_pwa.sh`, never edited here — its README says what the web build changes): same
+  origin as the API and Mercure, so no URL compiled in; it declares `client: moncampus-web`, which
+  makes the magic link open `/campus-app/?login=…` instead of `campusmanager://` and lists its
+  sessions apart in « Mon profil » (`MobileApp::CampusWeb`). The Ressources page offers it next to
+  the APK.
 - `/Users/Shared/Beaupeyrat/e-CO` — the orienteering-race app (GitHub `e-co-mobile`).
 
 ## Commands
@@ -156,6 +162,21 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   The séquence library is the one that differs, and only there: a séquence row is dragged to
   **reorder** the folder (the ⠿ handle), never to file it, so filing goes through « Déplacer vers… »
   alone — one row cannot mean two things while being dragged.
+- **Tableau virtuel** (Outils › Animer la classe) — `ClassBoard`, `App\Controller\ClassBoard\*`,
+  `src/Service/ClassBoard/`, spec `design/validated/tableau-virtuel.md`. A Digiscreen-like board for
+  the projector, under `Feature::ClassTools`: **personal** (`ClassBoardVoter`, owner only, admin
+  included, 404 for anyone else), linked to a class or to none, one window (no pilot screen). The
+  widgets are **one JSON document** saved whole, 2 s after the last change, refused on a stale
+  `revision` (two tabs) and refused whole at its first invalid element by `ClassBoardLayout`, the
+  only door - which keeps what was *set*, never what runs. `ClassBoardWidgetType` is the catalogue
+  the dock, the validation and the partials (`templates/class_board/widgets/_<type>.html.twig`) all
+  read. What a widget reads of the class goes through `ClassBoardWidgetData`, asked again at every
+  opening, with the source screen's own rules: « Travail à faire » lists the owner's own work only,
+  « Déroulé » shows a phase's name and duration and nothing else of it, slots are converted from
+  hours to minutes once (`TodaySlots`). A drawing is a PNG under `class-board/{board}/{widget}-…`,
+  a key the layout only ever takes from the server or for that very widget (`ClassBoardDrawings`).
+  The board writes nothing students see elsewhere; a saved draw's history goes through the random
+  draw tool's own route.
 - **Quiz** — `QuizTemplate`/`QuizQuestion` (library, filed in `QuizFolder`s) → `QuizInstance`
   (launched snapshot) → `QuizAttempt` (passation). Live multiplayer (`QuizLiveSession`) runs over
   Mercure/SSE. The « mode contrôle » times each question **server-side**

@@ -1,0 +1,9 @@
+{% set config = widget.config %}
+<label class="cm-cb-field">{{ 'classBoardWorkRowsField'|trans }}
+    <select class="cm-cb-input" name="rows" data-kind="int" data-rerender>
+        {% for count in 1..10 %}
+            <option value="{{ count }}" {{ config.rows == count ? 'selected' }}>{{ count }}</option>
+        {% endfor %}
+    </select>
+</label>
+<div class="cm-cb-hint">{{ 'classBoardWorkHint'|trans }}</div>

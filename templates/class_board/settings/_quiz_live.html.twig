@@ -1,0 +1,36 @@
+{# The launch: the same route as Outils › Concours live (app_program_quiz_live_create), the same
+   library picker in a modal. The select stays the field - no `required`, the server holds the rule. #}
+{% if data.session is defined and data.session %}
+    <div class="cm-cb-hint">{{ 'classBoardQuizLiveAlreadyRunningHint'|trans }}</div>
+{% elseif data.templates is defined and data.templates is not empty %}
+    <form class="cm-cb-live-launch" data-controller="library-picker" data-create-url="{{ data.createUrl }}"
+          data-action="submit->class-board#launchQuiz">
+        <input type="hidden" name="_token" value="{{ csrf_token('quiz_live_create') }}">
+        <div class="cm-cb-field">{{ 'classBoardQuizLiveQuizField'|trans }}
+            {% embed '_library_picker_field.html.twig' with {placeholder: 'classBoardQuizLiveChooseQuiz'|trans, templates: data.templates} only %}
+                {% block select %}
+                    <select name="templateId" class="cm-pickfield__select">
+                        <option value="">{{ placeholder }}</option>
+                        {% for template in templates %}
+                            <option value="{{ template.id }}">{{ template.label }}</option>
+                        {% endfor %}
+                    </select>
+                {% endblock %}
+            {% endembed %}
+        </div>
+        <label class="cm-cb-field">{{ 'classBoardQuizLiveNameField'|trans }} <span>{{ 'classBoardOptionalLabel'|trans }}</span>
+            <input type="text" class="cm-cb-input" name="name" maxlength="255">
+        </label>
+        <button type="submit" class="cm-cb-btn cm-cb-btn--primary">{{ 'classBoardQuizLiveLaunchAction'|trans }}</button>
+        <div class="cm-cb-hint" data-class-board-launch-message hidden>{{ 'classBoardQuizLiveLaunchFailedMessage'|trans }}</div>
+        {% include '_library_picker.html.twig' with {
+            tree: data.pickerTree,
+            title: 'classBoardQuizLiveChooseQuiz'|trans,
+            search_placeholder: 'quizPickerSearchPlaceholder'|trans,
+            count_label: 'quizQuestionsCountLabel'|trans,
+            empty_message: 'classBoardQuizLiveNoQuizMessage'|trans,
+        } only %}
+    </form>
+{% else %}
+    <div class="cm-cb-hint">{{ 'classBoardQuizLiveNoQuizMessage'|trans }}</div>
+{% endif %}
