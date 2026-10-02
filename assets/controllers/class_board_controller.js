@@ -2,8 +2,8 @@ import { Controller } from '@hotwired/stimulus';
 import { readConfig } from '../class_board/widget_controller.js';
 
 // The virtual board (design/validated/tableau-virtuel.md): the 16:9 surface, moving and resizing
-// widgets, the dock, the backgrounds, full screen, the black screen, the keyboard shortcuts, and the
-// automatic save.
+// widgets - by hand, or to the whole, a half or a quarter of the surface from their head - the dock,
+// the backgrounds, full screen, the black screen, the keyboard shortcuts, and the automatic save.
 //
 // The board owns the document; each widget owns its own behaviour (one controller per widget type,
 // assets/controllers/class_board_*_controller.js) and its configuration, which it writes onto its
@@ -17,6 +17,10 @@ const CHROME_IDLE_MS = 3000;
 const TICK_MS = 200;
 const MIN_WIDTH = 6;
 const MIN_HEIGHT = 10;
+// Room a settings panel needs beside its widget, in percent of the surface's width.
+const PANEL_ROOM = 24;
+// The surface is 16:9: one percent of its height, in percent of its width.
+const HEIGHT_TO_WIDTH = 9 / 16;
 
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
@@ -42,6 +46,9 @@ export default class extends Controller {
         this.saveTimer = null;
         this.currentName = this.nameTarget.textContent.trim();
         this.openPanel = null;
+        // The box each widget had before it was given a preset size, by widget id - in the page
+        // only, and by id rather than by element so that a widget redrawn by the server keeps it.
+        this.boxesBeforePreset = new Map();
 
         this.tickInterval = setInterval(() => window.dispatchEvent(new CustomEvent('class-board:tick')), TICK_MS);
 
@@ -66,10 +73,16 @@ export default class extends Controller {
         this.element.addEventListener('class-board:rerender', this.onRerender);
 
         // A touched widget comes to the front - delegated, so widgets added later need nothing.
+        // The front widget is also the one widget drawn over the two bars (app.css): given the
+        // whole surface, a half or a quarter of it, a widget reaches the edges, and its head has to
+        // stay in reach. Touching anything else - a bar, the dock, the background - lets it go, and
+        // the bars are whole again.
         this.innerTarget.addEventListener('pointerdown', (event) => {
             const widget = event.target.closest('[data-widget-id]');
             if (widget) {
                 this.bringToFront(widget);
+            } else {
+                this.widgetTargets.forEach((other) => other.classList.remove('is-front'));
             }
         });
         // The settings panels are read the same way for every widget: a field names the config key
@@ -164,6 +177,74 @@ export default class extends Controller {
             width: `${widget.dataset.w}%`,
             height: `${widget.dataset.h}%`,
         });
+        this.showPreset(widget);
+    }
+
+    // ------------------------------------------------------------------ whole, half, quarter of the surface
+
+    widgetTargetConnected(widget) {
+        this.showPreset(widget);
+    }
+
+    // The head's three size buttons. A half is the left or the right one, a quarter one of the four
+    // corners - whichever the widget already sits in, by its centre; dragging it by its head then
+    // takes it to another. Pressing the size a widget already has puts it back where it was.
+    resizeTo(event) {
+        const widget = event.currentTarget.closest('[data-widget-id]');
+        const size = event.currentTarget.dataset.size;
+        const box = this.box(widget);
+        const current = this.presetOf(box);
+
+        if (current === size) {
+            this.place(widget, this.boxesBeforePreset.get(widget.dataset.widgetId) ?? this.defaultBox(widget));
+        } else {
+            if (current === null) {
+                this.boxesBeforePreset.set(widget.dataset.widgetId, box);
+            }
+            this.place(widget, this.presetBox(size, box));
+        }
+        if (this.openPanel?.widget === widget) {
+            this.positionPanel(widget, this.openPanel.panel);
+        }
+        this.markDirty();
+    }
+
+    presetBox(size, box) {
+        const x = box.x + box.w / 2 <= 50 ? 0 : 50;
+        const y = box.y + box.h / 2 <= 50 ? 0 : 50;
+        if (size === 'full') {
+            return { x: 0, y: 0, w: 100, h: 100 };
+        }
+        return size === 'half' ? { x, y: 0, w: 50, h: 100 } : { x, y, w: 50, h: 50 };
+    }
+
+    // Which of the three sizes a box is, read from the box itself: a widget brought to a half by
+    // its corner is a half, and one dragged off its corner no longer is a quarter.
+    presetOf(box) {
+        const at = (value, target) => Math.abs(value - target) < 0.5;
+        const column = at(box.x, 0) || at(box.x, 50);
+        if (at(box.w, 100) && at(box.h, 100)) {
+            return 'full';
+        }
+        if (at(box.w, 50) && at(box.h, 100) && column) {
+            return 'half';
+        }
+        return at(box.w, 50) && at(box.h, 50) && column && (at(box.y, 0) || at(box.y, 50)) ? 'quarter' : null;
+    }
+
+    // Where a second press goes when the page remembers no earlier box - the board was opened with
+    // the widget already at that size: the size the dock gives it, in the middle.
+    defaultBox(widget) {
+        const w = parseFloat(widget.dataset.defaultW) || 30;
+        const h = parseFloat(widget.dataset.defaultH) || 40;
+        return { x: (100 - w) / 2, y: (100 - h) / 2, w, h };
+    }
+
+    showPreset(widget) {
+        const preset = this.presetOf(this.box(widget));
+        widget.querySelectorAll('.cm-cb-w__sizes [data-size]').forEach((button) => {
+            button.setAttribute('aria-pressed', String(button.dataset.size === preset));
+        });
     }
 
     topZ() {
@@ -234,6 +315,7 @@ export default class extends Controller {
             return;
         }
         const wasOpen = this.openPanel?.widget === widget;
+        const wasFront = widget.classList.contains('is-front');
         const html = await this.post(this.renderUrlValue, { widget: this.serialize(widget) }, 'text');
         if (html === null) {
             this.setStatus(this.labels.failed);
@@ -243,6 +325,7 @@ export default class extends Controller {
             this.openPanel = null;
         }
         const fresh = this.insertWidget(html, widget);
+        fresh?.classList.toggle('is-front', wasFront);
         if (fresh && wasOpen) {
             this.showSettings(fresh);
         }
@@ -286,10 +369,16 @@ export default class extends Controller {
         this.openPanel = null;
     }
 
-    // Beside the widget, on whichever side has room.
+    // Beside the widget, on whichever side has room - and over it when neither has, which is the
+    // case of a widget as wide as the surface. Never taller than what is left of the surface below
+    // the widget's top: a quarter in a bottom corner still shows its last field.
     positionPanel(widget, panel) {
         const box = this.box(widget);
-        panel.classList.toggle('is-left', box.x + box.w + 24 > 100);
+        const right = box.x + box.w + PANEL_ROOM <= 100;
+        const left = box.x >= PANEL_ROOM;
+        panel.classList.toggle('is-left', !right && left);
+        panel.classList.toggle('is-inside', !right && !left);
+        panel.style.maxHeight = `${Math.max(12, (96 - box.y) * HEIGHT_TO_WIDTH)}cqw`;
     }
 
     applySetting(event) {

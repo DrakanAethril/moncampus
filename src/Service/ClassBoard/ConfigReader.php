@@ -122,12 +122,14 @@ final class ConfigReader
     }
 
     /**
+     * @param int|null $max none when the list is bounded by the size of the document alone
+     *
      * @return list<self>
      */
-    public function objects(string $key, int $max): array
+    public function objects(string $key, ?int $max = null): array
     {
         $value = $this->data[$key] ?? [];
-        if (!\is_array($value) || !array_is_list($value) || \count($value) > $max) {
+        if (!\is_array($value) || !array_is_list($value) || (null !== $max && \count($value) > $max)) {
             throw $this->invalid($key);
         }
 

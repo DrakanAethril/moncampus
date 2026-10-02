@@ -190,7 +190,9 @@ final class ClassBoardWidgetData
     }
 
     /**
-     * A saved lot of groups, the teacher's own or one a colleague shared - read, never changed.
+     * What « Création de groupes » works from - the class list and its options - so the widget draws
+     * groups with the tool's own panel. A saved lot, the teacher's own or one a colleague shared, is
+     * only what the widget opens on: it is read, never changed, and nothing drawn here is saved.
      *
      * @param array<array-key, mixed> $config
      *
@@ -202,16 +204,24 @@ final class ClassBoardWidgetData
         $lots = $this->readableLots($board->getOwner(), $program);
         $batchId = \is_int($config['batchId'] ?? null) ? $config['batchId'] : null;
 
-        if (null === $batchId) {
-            return ['state' => self::OK, 'lots' => $this->lotChoices($lots), 'lot' => null];
-        }
-
-        $lot = $lots[$batchId] ?? null;
-        if (null === $lot) {
+        $lot = null === $batchId ? null : ($lots[$batchId] ?? null);
+        if (null !== $batchId && null === $lot) {
             return ['state' => self::SOURCE_MISSING, 'lots' => $this->lotChoices($lots)];
         }
 
-        return ['state' => self::OK, 'lots' => $this->lotChoices($lots), 'lot' => $this->lotView($lot, $program)];
+        $students = $this->roster($program);
+
+        return [
+            'state' => self::OK,
+            'program' => $program,
+            'students' => $students,
+            'options' => array_values(array_map(
+                static fn (Option $option): array => ['id' => (int) $option->getId(), 'shortName' => $option->getShortName(), 'color' => $option->getColor()],
+                $program->getOptions()->toArray(),
+            )),
+            'lots' => $this->lotChoices($lots),
+            'lot' => null === $lot ? null : $this->lotMembers($lot, $students),
+        ];
     }
 
     /**
@@ -640,7 +650,32 @@ final class ClassBoardWidgetData
     }
 
     /**
-     * A lot hydrated against the current class list: a student who has left is dropped, as on the
+     * A lot as the group creation tool loads one: each member with what the class list says of them
+     * today, a student who has left dropped.
+     *
+     * @param list<array{id: int, name: string, shortName: string, optionIds: list<int>}> $roster
+     *
+     * @return array{id: int, name: string, groups: list<list<array{id: int, name: string, shortName: string, optionIds: list<int>}>>}
+     */
+    private function lotMembers(GroupBatch $lot, array $roster): array
+    {
+        $byId = array_column($roster, null, 'id');
+
+        return [
+            'id' => (int) $lot->getId(),
+            'name' => $lot->getName(),
+            'groups' => array_map(
+                static fn (array $ids): array => array_values(array_filter(array_map(
+                    static fn (int $id): ?array => $byId[$id] ?? null,
+                    $ids,
+                ))),
+                $lot->getGroups(),
+            ),
+        ];
+    }
+
+    /**
+     * A lot's groups as names, for the team counter: a student who has left is dropped, as on the
      * group creation screen.
      *
      * @return array{id: int, name: string, groups: list<list<string>>}
