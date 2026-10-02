@@ -1,10 +1,8 @@
 import WidgetController from '../class_board/widget_controller.js';
 
 // Compteur d'équipes of the virtual board: points per team, ±1, saved with the board. Teams are
-// typed by hand, or taken from a lot of groups - one team per group. Nothing reaches the Jeu du
-// campus.
-const MAX_TEAMS = 12;
-
+// typed by hand, or taken from a lot of groups - one team per group - and as many as wanted: the
+// cards wrap and the widget scrolls. Nothing reaches the Jeu du campus.
 /* stimulusFetch: 'lazy' */
 export default class extends WidgetController {
     static targets = ['teams', 'names', 'addButton'];
@@ -50,7 +48,7 @@ export default class extends WidgetController {
     }
 
     addTeam() {
-        if (this.teams.length >= MAX_TEAMS || this.members.length > 0) {
+        if (this.members.length > 0) {
             return;
         }
         this.teams.push({ name: '', score: 0 });
@@ -115,7 +113,7 @@ export default class extends WidgetController {
                 this.namesTarget.appendChild(row);
             });
             if (this.hasAddButtonTarget) {
-                this.addButtonTarget.hidden = this.members.length > 0 || this.teams.length >= MAX_TEAMS;
+                this.addButtonTarget.hidden = this.members.length > 0;
             }
         }
     }

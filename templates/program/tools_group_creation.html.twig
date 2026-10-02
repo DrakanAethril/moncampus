@@ -83,66 +83,9 @@
             </div>
 
             <div class="cm-grp-layout">
-                <div class="cm-grp-panel">
-                    <div class="cm-grp-section">
-                        <span class="cm-grp-label">{{ 'programToolsDistributionLabel'|trans }}</span>
-                        <div class="cm-grp-segmented">
-                            <button type="button" class="cm-grp-segmented__opt" data-group-creation-target="modeSizeBtn" data-action="click->group-creation#setModeSize">{{ 'programToolsModeSizeLabel'|trans }}</button>
-                            <button type="button" class="cm-grp-segmented__opt" data-group-creation-target="modeCountBtn" data-action="click->group-creation#setModeCount">{{ 'programToolsModeCountLabel'|trans }}</button>
-                        </div>
-                        <div class="cm-grp-stepper">
-                            <button type="button" class="cm-grp-stepper__btn" data-action="click->group-creation#decrementValue">−</button>
-                            <div class="cm-grp-stepper__value" data-group-creation-target="stepperValue">3</div>
-                            <button type="button" class="cm-grp-stepper__btn" data-action="click->group-creation#incrementValue">+</button>
-                            <span class="cm-grp-stepper__unit" data-group-creation-target="stepperUnit"></span>
-                        </div>
-                        {% if program.options is not empty %}
-                            <select class="form-select form-select-sm" data-group-creation-target="optionSelect" data-action="change->group-creation#setOption">
-                                <option value="all">{{ 'programToolsAllStudentsOptionLabel'|trans }}</option>
-                                {% for option in program.options %}
-                                    <option value="{{ option.id }}">{{ option.shortName }}</option>
-                                {% endfor %}
-                            </select>
-                        {% endif %}
-                    </div>
-
-                    <div class="cm-grp-section">
-                        <span class="cm-grp-label">{{ 'programToolsAbsentLabel'|trans }}</span>
-                        <div class="cm-grp-search">
-                            <input type="text" class="form-control form-control-sm" placeholder="{{ 'programToolsAbsentSearchPlaceholder'|trans }}" data-group-creation-target="absentInput" data-action="input->group-creation#searchAbsent">
-                            <div class="cm-grp-suggestions" data-group-creation-target="absentSuggestions" hidden></div>
-                        </div>
-                        <div class="cm-grp-tags" data-group-creation-target="absentTags"></div>
-                    </div>
-
-                    <div class="cm-grp-section">
-                        <span class="cm-grp-label">{{ 'programToolsConstraintsLabel'|trans }}</span>
-                        <div class="cm-grp-segmented">
-                            <button type="button" class="cm-grp-segmented__opt" data-group-creation-target="mixiteFreeBtn" data-action="click->group-creation#setMixiteFree">{{ 'programToolsMixiteFreeLabel'|trans }}</button>
-                            <button type="button" class="cm-grp-segmented__opt" data-group-creation-target="mixiteMixedBtn" data-action="click->group-creation#setMixiteMixed">{{ 'programToolsMixiteMixedLabel'|trans }}</button>
-                            <button type="button" class="cm-grp-segmented__opt" data-group-creation-target="mixiteHomoBtn" data-action="click->group-creation#setMixiteHomo">{{ 'programToolsMixiteHomoLabel'|trans }}</button>
-                        </div>
-                        <div class="cm-grp-hint">{{ 'programToolsMixiteHintLabel'|trans }}</div>
-                        <div class="cm-grp-pair-row">
-                            <select class="form-select form-select-sm" data-group-creation-target="pairASelect"><option value="">{{ 'programToolsPairAPlaceholder'|trans }}</option></select>
-                            <select class="form-select form-select-sm" data-group-creation-target="pairBSelect"><option value="">{{ 'programToolsPairBPlaceholder'|trans }}</option></select>
-                        </div>
-                        <div class="cm-grp-pair-actions">
-                            <button type="button" class="cm-grp-pair-btn" data-action="click->group-creation#addSeparatePair">✕ {{ 'programToolsAddSeparateLabel'|trans }}</button>
-                            <button type="button" class="cm-grp-pair-btn" data-action="click->group-creation#addTogetherPair">+ {{ 'programToolsAddTogetherLabel'|trans }}</button>
-                        </div>
-                        <div class="cm-grp-tags" data-group-creation-target="pairChips"></div>
-                    </div>
-
-                    <div class="cm-grp-error" data-group-creation-target="error" hidden></div>
-
-                    <button type="button" class="cm-grp-create-btn" data-action="click->group-creation#createGroups">{{ 'programToolsCreateGroupsButtonLabel'|trans }}</button>
-                    <button type="button" class="cm-grp-reshuffle-btn" data-group-creation-target="reshuffleBtn" data-action="click->group-creation#reshuffleGroups" hidden>{{ 'programToolsReshuffleButtonLabel'|trans }}</button>
-                    {# Only while a saved lot is on screen: it is the one thing that can have gone
-                       stale, a fresh draw being by definition the class as it is right now. #}
-                    <button type="button" class="cm-grp-recalc-btn" data-group-creation-target="recalculateBtn" data-action="click->group-creation#recalculateRoster" title="{{ 'programToolsRecalculateButtonTitle'|trans }}" hidden>{{ 'programToolsRecalculateButtonLabel'|trans }}</button>
-                    <div class="cm-grp-summary" data-group-creation-target="summary"></div>
-                </div>
+                {# Shared with the virtual board's « Groupes » widget, which draws groups with this
+                   very panel and saves none of them. #}
+                {% include 'program/_group_creation_panel.html.twig' with {options: program.options} only %}
 
                 <div class="cm-grp-results">
                     <div class="cm-grp-toolbar" data-group-creation-target="toolbar" hidden>

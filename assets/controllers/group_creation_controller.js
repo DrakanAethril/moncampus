@@ -6,6 +6,13 @@ import { Controller } from '@hotwired/stimulus';
 // generateUrlValue) whose result is rendered here as draggable/lockable group cards. State lives
 // on `this` (same convention as random_draw_controller.js), mutated by each action and re-drawn
 // through the specific render*() a change actually affects, never a full teardown/rebuild.
+//
+// The virtual board's « Groupes » widget is driven by this same controller
+// (templates/class_board/widgets/_groups.html.twig): the left panel is one partial, the draw one
+// route. What the widget leaves out - the lots' banners, the toolbar that saves, shares and exports,
+// the projector view - are targets it does not carry, which is why each of those is asked for with
+// has*Target before it is touched. What it adds: the settings it was left with (settingsValue), a
+// saved lot to open on (initialLotValue), and « Rapporteur » on each card (the reporterLabel label).
 /* stimulusFetch: 'lazy' */
 export default class extends Controller {
     static targets = [
@@ -36,14 +43,21 @@ export default class extends Controller {
         shareLotUrl: String,
         csrfToken: String,
         labels: Object,
+        settings: Object,
+        initialLot: Object,
     };
 
     connect() {
-        this.gMode = 'taille';
-        this.gValue = 3;
-        this.gOption = 'all';
+        this.optionsById = new Map(this.optionsValue.map((option) => [option.id, option]));
+
+        // Read once: an Object value is parsed again at every access.
+        const settings = this.settingsValue;
+        this.gMode = settings.mode === 'nombre' ? 'nombre' : 'taille';
+        this.gValue = Math.min(Math.max(Number.isInteger(settings.value) ? settings.value : 3, 2), this.maxValue());
+        // An option that has since left the class reads as no filter at all.
+        this.gOption = this.optionsById.has(settings.optionId) ? String(settings.optionId) : 'all';
         this.absentIds = new Set();
-        this.mixite = 'libre';
+        this.mixite = ['mixte', 'homogene'].includes(settings.mixite) ? settings.mixite : 'libre';
         this.pairsSep = [];
         this.pairsTog = [];
         this.groups = null;
@@ -69,12 +83,10 @@ export default class extends Controller {
         // Shortened names by default: the group cards are read from across a room, and a class
         // knows its own first names. Applies to the cards, the fullscreen view and the exports -
         // NOT to the absent/pair pickers below, where a surname is what tells two "Célia L." apart.
-        this.nameFormat = 'short';
-
-        this.optionsById = new Map(this.optionsValue.map((option) => [option.id, option]));
+        this.nameFormat = settings.nameFormat === 'full' ? 'full' : 'short';
 
         this.onFullscreenChange = () => {
-            if (!document.fullscreenElement) {
+            if (!document.fullscreenElement && this.hasFullscreenTarget) {
                 this.fullscreenTarget.hidden = true;
             }
         };
@@ -89,11 +101,19 @@ export default class extends Controller {
         this.renderGroups();
         this.renderLotsBar();
         this.renderSharedLotsBar();
-        this.setActiveSegment(this.modeSizeBtnTarget, true);
-        this.setActiveSegment(this.modeCountBtnTarget, false);
-        this.setActiveSegment(this.mixiteFreeBtnTarget, true);
-        this.setActiveSegment(this.mixiteMixedBtnTarget, false);
-        this.setActiveSegment(this.mixiteHomoBtnTarget, false);
+        this.renderSegments();
+        if (this.hasOptionSelectTarget) {
+            this.optionSelectTarget.value = this.gOption;
+        }
+        if (this.hasNameFormatSelectTarget) {
+            this.nameFormatSelectTarget.value = this.nameFormat;
+        }
+
+        const initialLot = this.initialLotValue;
+        if (Array.isArray(initialLot.groups)) {
+            // Never a lot to write back to from here: it opens the way a colleague's does.
+            this.loadLot(initialLot, false);
+        }
     }
 
     disconnect() {
@@ -108,43 +128,64 @@ export default class extends Controller {
     setNameFormat(event) {
         this.nameFormat = event.target.value;
         this.renderGroups();
+        this.notifySettings();
+    }
+
+    // The settings a host may want to keep - the board's widget stores them with the board. The
+    // absentees and the pairs are not among them: they are of the day, and name students.
+    notifySettings() {
+        this.dispatch('settings', {
+            detail: {
+                mode: this.gMode,
+                value: this.gValue,
+                optionId: this.gOption === 'all' ? null : Number(this.gOption),
+                mixite: this.mixite,
+                nameFormat: this.nameFormat,
+            },
+        });
     }
 
     // ---------- Répartition ----------
 
+    // Groups of 2 to 8, or 2 to 10 groups.
+    maxValue() {
+        return this.gMode === 'taille' ? 8 : 10;
+    }
+
     setModeSize() {
-        this.gMode = 'taille';
-        this.gValue = Math.min(Math.max(this.gValue, 2), 8);
-        this.setActiveSegment(this.modeSizeBtnTarget, true);
-        this.setActiveSegment(this.modeCountBtnTarget, false);
-        this.renderStepperLimits();
-        this.renderStepper();
+        this.setMode('taille');
     }
 
     setModeCount() {
-        this.gMode = 'nombre';
-        this.gValue = Math.min(Math.max(this.gValue, 2), 10);
-        this.setActiveSegment(this.modeSizeBtnTarget, false);
-        this.setActiveSegment(this.modeCountBtnTarget, true);
+        this.setMode('nombre');
+    }
+
+    setMode(mode) {
+        this.gMode = mode;
+        this.gValue = Math.min(Math.max(this.gValue, 2), this.maxValue());
+        this.renderSegments();
         this.renderStepperLimits();
         this.renderStepper();
+        this.notifySettings();
     }
 
     incrementValue() {
-        const max = this.gMode === 'taille' ? 8 : 10;
-        this.gValue = Math.min(max, this.gValue + 1);
+        this.gValue = Math.min(this.maxValue(), this.gValue + 1);
         this.renderStepper();
+        this.notifySettings();
     }
 
     decrementValue() {
         this.gValue = Math.max(2, this.gValue - 1);
         this.renderStepper();
+        this.notifySettings();
     }
 
     setOption(event) {
         this.gOption = event.target.value;
         this.renderPairOptions();
         this.renderSummary();
+        this.notifySettings();
     }
 
     // ---------- Absents ----------
@@ -216,24 +257,21 @@ export default class extends Controller {
     // ---------- Contraintes ----------
 
     setMixiteFree() {
-        this.mixite = 'libre';
-        this.setActiveSegment(this.mixiteFreeBtnTarget, true);
-        this.setActiveSegment(this.mixiteMixedBtnTarget, false);
-        this.setActiveSegment(this.mixiteHomoBtnTarget, false);
+        this.setMixite('libre');
     }
 
     setMixiteMixed() {
-        this.mixite = 'mixte';
-        this.setActiveSegment(this.mixiteFreeBtnTarget, false);
-        this.setActiveSegment(this.mixiteMixedBtnTarget, true);
-        this.setActiveSegment(this.mixiteHomoBtnTarget, false);
+        this.setMixite('mixte');
     }
 
     setMixiteHomo() {
-        this.mixite = 'homogene';
-        this.setActiveSegment(this.mixiteFreeBtnTarget, false);
-        this.setActiveSegment(this.mixiteMixedBtnTarget, false);
-        this.setActiveSegment(this.mixiteHomoBtnTarget, true);
+        this.setMixite('homogene');
+    }
+
+    setMixite(mixite) {
+        this.mixite = mixite;
+        this.renderSegments();
+        this.notifySettings();
     }
 
     renderPairOptions() {
@@ -339,8 +377,12 @@ export default class extends Controller {
         this.stepperValueTarget.textContent = this.gValue;
     }
 
-    setActiveSegment(element, active) {
-        element.classList.toggle('is-active', active);
+    renderSegments() {
+        this.modeSizeBtnTarget.classList.toggle('is-active', this.gMode === 'taille');
+        this.modeCountBtnTarget.classList.toggle('is-active', this.gMode === 'nombre');
+        this.mixiteFreeBtnTarget.classList.toggle('is-active', this.mixite === 'libre');
+        this.mixiteMixedBtnTarget.classList.toggle('is-active', this.mixite === 'mixte');
+        this.mixiteHomoBtnTarget.classList.toggle('is-active', this.mixite === 'homogene');
     }
 
     // ---------- Create / reshuffle ----------
@@ -504,7 +546,9 @@ export default class extends Controller {
     renderGroups() {
         const hasGroups = Array.isArray(this.groups) && this.groups.length > 0;
         this.emptyStateTarget.hidden = hasGroups;
-        this.toolbarTarget.hidden = !hasGroups;
+        if (this.hasToolbarTarget) {
+            this.toolbarTarget.hidden = !hasGroups;
+        }
         this.dndHintTarget.hidden = !hasGroups;
         this.reshuffleBtnTarget.hidden = !hasGroups;
         this.gridTarget.replaceChildren();
@@ -538,6 +582,17 @@ export default class extends Controller {
         count.textContent = `· ${members.length}`;
         head.appendChild(count);
 
+        // « Rapporteur », where the host asks for it: one member of the group picked at random, in
+        // the page only - the next drawing of the grid forgets it.
+        if (this.labelsValue.reporterLabel) {
+            const reporter = document.createElement('button');
+            reporter.type = 'button';
+            reporter.className = 'cm-grp-card__reporter';
+            reporter.textContent = this.labelsValue.reporterLabel;
+            reporter.addEventListener('click', () => this.pickReporter(card));
+            head.appendChild(reporter);
+        }
+
         const lock = document.createElement('span');
         lock.className = 'cm-grp-card__lock';
         lock.textContent = locked ? this.labelsValue.lockedLabel : this.labelsValue.lockLabel;
@@ -565,6 +620,14 @@ export default class extends Controller {
         card.appendChild(body);
 
         return card;
+    }
+
+    pickReporter(card) {
+        const rows = [...card.querySelectorAll('.cm-grp-member')];
+        rows.forEach((row) => row.classList.remove('is-picked'));
+        if (rows.length > 0) {
+            rows[Math.floor(Math.random() * rows.length)].classList.add('is-picked');
+        }
     }
 
     buildMemberRow(member) {
@@ -621,6 +684,10 @@ export default class extends Controller {
     // ---------- Lots ----------
 
     renderLotsBar() {
+        if (!this.hasLotsBarTarget) {
+            return;
+        }
+
         this.lotsBarTarget.hidden = this.lots.length === 0;
         this.lotsChipsTarget.replaceChildren();
 
@@ -666,6 +733,10 @@ export default class extends Controller {
     // only thing being chosen between - the lot's own name - to repeat what the row's presence
     // already says.
     renderSharedLotsBar() {
+        if (!this.hasSharedLotsBarTarget) {
+            return;
+        }
+
         this.sharedLotsBarTarget.hidden = this.sharedLots.length === 0;
         this.sharedLotsChipsTarget.replaceChildren();
 
@@ -688,7 +759,9 @@ export default class extends Controller {
     loadLot(lot, owned = true) {
         this.groups = lot.groups.map((group) => group.map((student) => ({ ...student, optionId: student.optionIds?.[0] ?? student.optionId ?? null })));
         this.lockedIndices = new Set();
-        this.lotNameInputTarget.value = lot.name;
+        if (this.hasLotNameInputTarget) {
+            this.lotNameInputTarget.value = lot.name;
+        }
         this.setCurrentLot(owned ? lot.id : null, { loaded: true });
         this.renderGroups();
     }

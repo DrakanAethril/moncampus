@@ -176,7 +176,13 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   hours to minutes once (`TodaySlots`). A drawing is a PNG under `class-board/{board}/{widget}-…`,
   a key the layout only ever takes from the server or for that very widget (`ClassBoardDrawings`).
   The board writes nothing students see elsewhere; a saved draw's history goes through the random
-  draw tool's own route.
+  draw tool's own route. **« Groupes » is the group creation tool's left panel, not a copy of it**:
+  one partial (`program/_group_creation_panel.html.twig`), the tool's own
+  `group_creation_controller.js` nested in the widget, the tool's own routes - minus saving: no lot
+  is ever written from the board, and the layout keeps the panel's settings, never the groups, the
+  absentees or the pairs. Every widget's head carries three sizes (whole surface, half, quarter):
+  they only write `x`/`y`/`w`/`h`, and the widget in hand (`.is-front`) is drawn over the two bars
+  so that a head taken to the top edge stays in reach.
 - **Quiz** — `QuizTemplate`/`QuizQuestion` (library, filed in `QuizFolder`s) → `QuizInstance`
   (launched snapshot) → `QuizAttempt` (passation). Live multiplayer (`QuizLiveSession`) runs over
   Mercure/SSE. The « mode contrôle » times each question **server-side**
