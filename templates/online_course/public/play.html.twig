@@ -1,0 +1,43 @@
+{% extends 'base.html.twig' %}
+
+{# A material alone in the whole window (design/validated/cours-en-ligne.md, §7) - the requirement
+   is that a dynamic material opens full page although the CDN serves it. So this screen is nothing
+   but its frame: no shell, no margin, no second scrollbar.
+
+   One thing of the platform's stays on it, a small floating bar: the way back, and full screen. It
+   folds into a handle after three seconds, and it cannot simply reappear « when the mouse moves » -
+   over a frame from another origin the page hears no mouse at all. The handle is what stays within
+   reach (assets/controllers/online_course_player_controller.js). #}
+
+{% block title %}{{ course.title }}{% endblock %}
+
+{% block body %}
+    {% set label = material.label ?? material.kind.labelKey|trans %}
+    <div class="cm-play" data-controller="online-course-player">
+        {% if material.kind.isBundle and not frameAllowed %}
+            <p class="cm-play__refused">{{ 'onlineCoursePublicFrameRefusedLabel'|trans }}</p>
+        {% elseif material.kind.isBundle %}
+            <iframe class="cm-play__frame" src="{{ url }}" title="{{ course.title }} · {{ label }}"
+                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+                    allow="fullscreen" allowfullscreen></iframe>
+        {% else %}
+            <iframe class="cm-play__frame" src="{{ url }}" title="{{ course.title }} · {{ label }}"></iframe>
+        {% endif %}
+
+        <div class="cm-play__bar" data-online-course-player-target="bar"
+             data-action="mouseenter->online-course-player#wake mouseleave->online-course-player#rest focusin->online-course-player#wake">
+            <button type="button" class="cm-play__handle" data-action="online-course-player#wake"
+                    aria-label="{{ 'onlineCoursePlayShowBarAction'|trans }}" title="{{ 'onlineCoursePlayShowBarAction'|trans }}">
+                <twig:ux:icon name="grip" width="16" height="16"/>
+            </button>
+            <div class="cm-play__actions">
+                <a class="cm-play__btn" href="{{ backUrl }}">
+                    <twig:ux:icon name="arrow-left" width="15" height="15"/>{{ 'onlineCoursePlayBackAction'|trans }}
+                </a>
+                <button type="button" class="cm-play__btn" data-online-course-player-target="fullscreen" data-action="online-course-player#fullscreen">
+                    <twig:ux:icon name="maximize" width="15" height="15"/>{{ 'onlineCourseFullscreenAction'|trans }}
+                </button>
+            </div>
+        </div>
+    </div>
+{% endblock %}

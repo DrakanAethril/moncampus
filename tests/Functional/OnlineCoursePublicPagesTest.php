@@ -9,6 +9,7 @@ use App\Entity\OnlineCoursePage;
 use App\Entity\User;
 use App\Enum\OnlineCourseMaterialKind;
 use App\Enum\OnlineCourseStatus;
+use App\Service\OnlineCourse\OnlineCourseContentOrigin;
 use App\Service\OnlineCourse\OnlineCourseHandleRefused;
 use App\Service\OnlineCourse\OnlineCourseMaterialRefused;
 use App\Service\OnlineCourse\OnlineCourseMaterialStore;
@@ -215,6 +216,106 @@ class OnlineCoursePublicPagesTest extends FunctionalTestCase
         $store->add($course, OnlineCourseMaterialKind::Video, $this->pdf('pas-une-video.pdf'));
     }
 
+    public function testAnInteractiveCourseIsUnpackedIntoAFolderOfItsOwn(): void
+    {
+        $store = static::getContainer()->get(OnlineCourseMaterialStore::class);
+        $storage = static::getContainer()->get('uploads.storage');
+        $course = $this->course($this->teacher, 'Les jointures SQL');
+
+        $material = $store->add($course, OnlineCourseMaterialKind::Interactive, $this->archive([
+            'cours/index.html' => '<h1>Les jointures</h1>',
+            'cours/assets/app.js' => 'console.log(1)',
+            'cours/.DS_Store' => '',
+        ]));
+        $this->em->flush();
+
+        $live = $material->getLive();
+        self::assertNotNull($live);
+        self::assertSame(2, $live->getFileCount());
+        self::assertStringEndsWith('/r1/index.html', $live->getStorageKey());
+        self::assertStringStartsWith('online-courses/'.$course->getId().'/'.$course->getStorageToken().'/', $live->getStorageKey());
+        self::assertSame('<h1>Les jointures</h1>', $storage->read($live->getStorageKey()));
+        self::assertTrue($storage->fileExists($live->getStoragePrefix().'assets/app.js'));
+        self::assertFalse($storage->fileExists($live->getStoragePrefix().'.DS_Store'));
+
+        // The interactive course is what the page opens on, although the PDF was there first.
+        self::assertSame(0, $material->getPosition());
+        self::assertSame(1, $course->findMaterialBySlug('pdf')?->getPosition());
+
+        // A new archive is a new folder: the address of the bytes changes, the material's does not.
+        $store->replace($material, $this->archive(['index.html' => '<h1>Version 2</h1>']));
+        $this->em->flush();
+        self::assertSame('interactive', $material->getSlug());
+        self::assertStringEndsWith('/r2/index.html', (string) $material->getLive()?->getStorageKey());
+        self::assertSame('<h1>Les jointures</h1>', $storage->read((string) $material->getOther()?->getStorageKey()));
+    }
+
+    public function testARefusedArchiveLeavesTheMaterialAsItWas(): void
+    {
+        $store = static::getContainer()->get(OnlineCourseMaterialStore::class);
+        $course = $this->course($this->teacher, 'Les jointures SQL');
+        $material = $store->add($course, OnlineCourseMaterialKind::Interactive, $this->archive(['index.html' => '<h1>Bon</h1>']));
+        $this->em->flush();
+
+        try {
+            $store->replace($material, $this->archive(['index.html' => 'a', 'evil.php' => '<?php']));
+            self::fail('An archive holding a PHP file was published.');
+        } catch (OnlineCourseMaterialRefused $refused) {
+            self::assertSame('onlineCourseBundleForbiddenFileMessage', $refused->getMessage());
+        }
+
+        self::assertSame(1, $material->getLiveRevisionNumber());
+        self::assertCount(1, $material->getRevisions());
+    }
+
+    public function testAPageWrittenAsTextBecomesAnInteractiveCourse(): void
+    {
+        $store = static::getContainer()->get(OnlineCourseMaterialStore::class);
+        $course = $this->course($this->teacher, 'Les jointures SQL');
+
+        $material = $store->addInteractivePage($course, '<!doctype html><title>Cours</title><h1>Écrit par Claude</h1>');
+        $this->em->flush();
+
+        self::assertSame(OnlineCourseMaterialKind::Interactive, $material->getKind());
+        $live = $material->getLive();
+        self::assertNotNull($live);
+        self::assertSame(1, $live->getFileCount());
+        self::assertStringContainsString('Écrit par Claude', static::getContainer()->get('uploads.storage')->read($live->getStorageKey()));
+
+        $this->expectException(OnlineCourseMaterialRefused::class);
+        $store->addInteractivePage($course, '   ');
+    }
+
+    /**
+     * The frame of an interactive course is drawn exactly when the content origin is another host
+     * than the application - and never otherwise, where the screens say the course cannot be shown
+     * rather than run it as the platform. Which of the two this environment is depends on its
+     * configuration (a CDN domain or none), so the test reads the guard and pins the screens to it;
+     * the guard itself is pinned by tests/Service/OnlineCourse/OnlineCourseContentOriginTest.php.
+     */
+    public function testAnInteractiveCourseIsFramedOnlyFromAnotherOrigin(): void
+    {
+        $this->page($this->teacher, 'tharaud');
+        $course = $this->course($this->teacher, 'Les jointures SQL', publish: true);
+        static::getContainer()->get(OnlineCourseMaterialStore::class)->add($course, OnlineCourseMaterialKind::Interactive, $this->archive(['index.html' => '<h1>Cours</h1>']));
+        $this->em->flush();
+
+        $isolated = static::getContainer()->get(OnlineCourseContentOrigin::class)->isIsolatedFrom('localhost');
+
+        foreach (['/courses/tharaud/les-jointures-sql/interactive', '/courses/tharaud/les-jointures-sql/interactive/play'] as $path) {
+            $this->assertAnonymous($path, 200);
+            $html = (string) $this->client->getResponse()->getContent();
+
+            self::assertSame($isolated, str_contains($html, 'sandbox="allow-scripts allow-same-origin'), $path);
+            self::assertSame(!$isolated, str_contains($html, 'ne peut pas être affiché'), $path);
+            self::assertStringNotContainsString('allow-top-navigation', $html, $path);
+        }
+
+        // A PDF has a full page too; a video has none, the browser's own controls being enough.
+        $this->assertAnonymous('/courses/tharaud/les-jointures-sql/pdf/play', 200);
+        $this->assertAnonymous('/courses/tharaud/les-jointures-sql/interactive/play/more', 404);
+    }
+
     private function assertAnonymous(string $path, int $expected): void
     {
         $this->client->getCookieJar()->clear();
@@ -246,6 +347,24 @@ class OnlineCoursePublicPagesTest extends FunctionalTestCase
         $this->em->flush();
 
         return $course;
+    }
+
+    /**
+     * @param array<string, string> $files
+     */
+    private function archive(array $files): UploadedFile
+    {
+        $path = tempnam(sys_get_temp_dir(), 'course-zip-');
+        self::assertIsString($path);
+
+        $zip = new \ZipArchive();
+        self::assertTrue($zip->open($path, \ZipArchive::OVERWRITE));
+        foreach ($files as $name => $contents) {
+            $zip->addFromString($name, $contents);
+        }
+        $zip->close();
+
+        return new UploadedFile($path, 'cours.zip', 'application/zip', null, true);
     }
 
     private function pdf(string $name): UploadedFile

@@ -65,6 +65,7 @@
     </div>
 
     {% if current %}
+        <div data-controller="online-course-player">
         <div class="cm-pub-tools">
             <nav class="cm-pub-tabs" aria-label="{{ 'onlineCoursePublicMaterialsLabel'|trans }}">
                 {% for material in course.materials %}
@@ -75,9 +76,24 @@
                     </a>
                 {% endfor %}
             </nav>
+            {# A material shown in a frame opens alone in the window (§7); an interactive course
+               goes full screen as well. A video has the browser's own controls for both. #}
+            {% if currentUrl and (current.kind.isBundle or current.kind.isDocument) %}
+                <div class="cm-pub-tools__buttons">
+                    <twig:Cm:Button variant="primary" size="sm" href="{{ path('app_public_courses_play', {handle: page.handle, slug: course.slug, material: current.slug}) }}">
+                        <twig:ux:icon name="external-link" width="15" height="15"/>{{ 'onlineCourseFullPageAction'|trans }}
+                    </twig:Cm:Button>
+                    {% if current.kind.isBundle and frameAllowed %}
+                        <twig:Cm:Button variant="outline" size="sm" data-online-course-player-target="fullscreen" data-action="online-course-player#fullscreen">
+                            <twig:ux:icon name="maximize" width="15" height="15"/>{{ 'onlineCourseFullscreenAction'|trans }}
+                        </twig:Cm:Button>
+                    {% endif %}
+                </div>
+            {% endif %}
         </div>
 
         {{ include('online_course/public/_material.html.twig', {material: current, url: currentUrl}) }}
+        </div>
     {% else %}
         <p class="cm-pub-empty">{{ 'onlineCoursePublicNoMaterialLabel'|trans }}</p>
     {% endif %}

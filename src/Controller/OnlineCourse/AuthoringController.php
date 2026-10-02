@@ -212,6 +212,6 @@ class AuthoringController extends AbstractController
      */
     public static function offeredKinds(): array
     {
-        return [OnlineCourseMaterialKind::Pdf, OnlineCourseMaterialKind::Summary, OnlineCourseMaterialKind::Video];
+        return [OnlineCourseMaterialKind::Interactive, OnlineCourseMaterialKind::Pdf, OnlineCourseMaterialKind::Summary, OnlineCourseMaterialKind::Video];
     }
 }

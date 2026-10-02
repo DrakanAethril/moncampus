@@ -355,6 +355,22 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     **copied** here, unlike everywhere else where a link is a reference (`OnlineCourseMaterialStore`).
   - `OnlineCourseMaterialKind` is the catalogue of natures (what each accepts, its label, its
     player); `OnlineCourseTag` is **per author** (UNIQUE owner + normalized label), created by typing.
+  - **An interactive course is a `.zip` holding an `index.html`**, unpacked file by file under the
+    revision's folder by `OnlineCourseBundlePublisher` - **the only door HTML and JavaScript enter the
+    bucket by** (`html`/`js` stay « archive only » in `UploadPolicy` everywhere else).
+    `OnlineCourseBundleReader` decides first, writing nothing: a closed list of web file types, each
+    served under the type that list gives it; one file outside it, a path that leaves the folder or
+    a missing index refuses the **whole** archive and names the file. The macOS litter and one
+    wrapping folder are tolerated.
+  - **The isolation of a course's JavaScript is the origin**: it runs on the CDN's host, in a
+    sandboxed frame with no `allow-top-navigation`, and reads neither the session nor the page.
+    `OnlineCourseContentOrigin::isIsolatedFrom()` is asked before a frame is drawn - a content host
+    equal to the application's draws no frame and logs an error.
+  - **A dynamic material opens full page although the CDN serves it** (the user called it crucial):
+    `/courses/{handle}/{slug}/{material}/play` is nothing but the frame, 100 % of the window
+    (`templates/online_course/public/play.html.twig`). Its floating bar folds into a handle rather
+    than « reappearing when the mouse moves »: over a frame from another origin the page hears no
+    mouse at all (`online_course_player_controller.js`).
 - **Accès aux fonctionnalités** — `App\Enum\Feature` (59 cases) + `#[RequiresFeature]` +
   `App\Security\FeatureAccess`: which features are lit, per role and per formation. Gestion >
   Fonctionnalités is the screen. **The whole Pédagogie family is off by default**, with four
