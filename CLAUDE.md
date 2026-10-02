@@ -371,6 +371,15 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
     (`templates/online_course/public/play.html.twig`). Its floating bar folds into a handle rather
     than « reappearing when the mouse moves »: over a frame from another origin the page hears no
     mouse at all (`online_course_player_controller.js`).
+  - **The Claude connector manages courses and their materials** (`course_list`, `course_get`,
+    `course_tag_list`, `course_create`, `course_update`, `course_material_add`,
+    `course_material_replace`, `course_publish`, `course_unpublish`; `App\Mcp\McpOnlineCourses`).
+    Thin, like every tool: the same Voter, the same `OnlineCourseWriter` / `OnlineCourseMaterialStore`
+    as the screens. A course created by Claude is **always a draft** and publishing is a second call
+    - « Claude peut publier » was the user's decision; an update names its fields and writes no
+    other; a material takes exactly one source (`fileId` copied from the bibliothèque, `html` for an
+    interactive course, `markdown` rendered as a PDF); nothing is deleted. `format_guide` has a
+    `cours_interactif` entry (`InteractiveCourseGuide`, French prompt text).
 - **Accès aux fonctionnalités** — `App\Enum\Feature` (59 cases) + `#[RequiresFeature]` +
   `App\Security\FeatureAccess`: which features are lit, per role and per formation. Gestion >
   Fonctionnalités is the screen. **The whole Pédagogie family is off by default**, with four
