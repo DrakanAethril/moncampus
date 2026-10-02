@@ -1,0 +1,68 @@
+{% extends 'base.html.twig' %}
+
+{# The shell of the screens read without an account (design/validated/cours-en-ligne.md, §5): a
+   teacher's public page and the courses on it. Deliberately not layout/app.html.twig - a visitor
+   has no menu to be shown, and the application's bar would promise screens that ask for an account.
+
+   What it carries: the page the visitor is on as its only « home » (there is nothing above a
+   teacher's page), the theme switch, a way in for somebody who has an account and a way back for
+   somebody already signed in, and the link to the source code - AGPL §13 covers a visitor too.
+
+   A trail drawn here opens on the teacher's page, never on « Accueil », which leads to a screen
+   that asks for an account: Cm:Breadcrumb is therefore not used, and
+   tests/Functional/BreadcrumbConventionTest.php only looks at the screens of the app layout. #}
+
+{% block title %}{% block public_title %}{% endblock %}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {% block public_meta %}{% endblock %}
+{% endblock %}
+
+{% block body %}
+    {% set current_theme = app.user ? app.user.themePreference : app.request.cookies.get('theme') %}
+    <div class="cm-pub {% block public_modifier %}{% endblock %}">
+        <header class="cm-pub__bar">
+            <a class="cm-pub__brand" href="{% block public_home_url %}{{ path('app_home') }}{% endblock %}">
+                <span class="cm-pub__medallion"><img src="{{ asset('images/embleme-white.png') }}" alt=""></span>
+                <span class="cm-pub__brand-name">{% block public_home_label %}Institution Beaupeyrat{% endblock %}</span>
+            </a>
+            <div class="cm-pub__right">
+                <span class="cm-theme"
+                      data-controller="theme"
+                      data-theme-authenticated-value="{{ app.user ? 'true' : 'false' }}"
+                      {% if app.user %}
+                          data-theme-save-url-value="{{ path('app_profile_theme') }}"
+                          data-theme-token-value="{{ csrf_token('profile_theme') }}"
+                      {% endif %}>
+                    <button type="button" class="{{ current_theme != 'dark' ? 'is-on' }}" data-action="theme#setLight" aria-label="{{ 'themeLightLabel'|trans }}">☀</button>
+                    <button type="button" class="{{ current_theme == 'dark' ? 'is-on' }}" data-action="theme#setDark" aria-label="{{ 'themeDarkLabel'|trans }}">☾</button>
+                </span>
+                {% if app.user %}
+                    <span class="cm-pub__who">{{ app.user.displayName ?? app.user.userIdentifier }}</span>
+                    <twig:Cm:Button variant="outline" size="sm" href="{{ path('app_home') }}">{{ 'publicShellBackAction'|trans }}</twig:Cm:Button>
+                {% else %}
+                    <twig:Cm:Button variant="outline" size="sm" href="{{ path('app_login') }}">{{ 'publicShellSignInAction'|trans }}</twig:Cm:Button>
+                {% endif %}
+            </div>
+        </header>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="cm-pub__flash cm-pub__flash--{{ label }}" role="status">{{ message|trans }}</div>
+            {% endfor %}
+        {% endfor %}
+
+        <main class="cm-pub__main">
+            {% block public_main %}{% endblock %}
+        </main>
+
+        <footer class="cm-pub__foot">
+            <span>Institution Beaupeyrat</span>
+            {% set source_url = public_source_url() %}
+            {% if source_url %}
+                <a href="{{ source_url }}" target="_blank" rel="noopener">{{ 'publicShellSourceLink'|trans }}</a>
+            {% endif %}
+        </footer>
+    </div>
+{% endblock %}

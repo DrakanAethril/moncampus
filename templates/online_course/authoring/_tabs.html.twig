@@ -1,0 +1,14 @@
+{# The three tabs of « Cours en ligne » (design/validated/cours-en-ligne.md, §8). `active` names
+   the one the screen is on. #}
+<twig:Cm:Tabs :tabs="[
+    {url: path('app_online_courses'), label: 'onlineCourseTabCoursesLabel'|trans, active: active == 'courses'},
+    {url: path('app_online_courses_page'), label: 'onlineCourseTabPageLabel'|trans, active: active == 'page'},
+]">
+    <twig:block name="action">
+        {% if active == 'courses' %}
+            <twig:Cm:Button variant="primary" href="{{ path('app_online_courses_new') }}">
+                <twig:ux:icon name="plus" width="16" height="16"/>{{ 'onlineCourseNewAction'|trans }}
+            </twig:Cm:Button>
+        {% endif %}
+    </twig:block>
+</twig:Cm:Tabs>
