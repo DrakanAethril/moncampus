@@ -37,6 +37,13 @@ class BucketWritePathsTest extends TestCase
         // bucket before any form is submitted (design/validated/file-library.md), which is exactly
         // the shape this list exists to keep honest - it writes, so it scans.
         \App\Service\StagedUploadStore::class,
+        // The fifth: an interactive course's archive is unpacked into the bucket file by file
+        // (design/validated/cours-en-ligne.md §6), which no existing path could do - they all write
+        // one object under the disposition App\Service\UploadPolicy decides, and a web page has to
+        // be written under its own type. It scans the archive before it reads a single entry. The
+        // one thing it writes unscanned is a page of text the Claude connector composed, which is
+        // not a file anybody handed over.
+        \App\Service\OnlineCourse\OnlineCourseBundlePublisher::class,
     ];
 
     /**

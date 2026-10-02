@@ -12971,3 +12971,39 @@ a.cm-pub-tag:hover { color: var(--cm-ink); text-decoration: none; }
 .cm-pub-box { background: var(--cm-surface); border: 1px solid var(--cm-border); border-radius: var(--cm-radius); padding: 14px 16px; }
 .cm-pub-box__title { font: 600 16px var(--cm-font-title); color: var(--cm-ink); margin: 0 0 8px; }
 .cm-pub-siblings { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; }
+
+/* ---------- Interactive course: the frame, and the full page ---------- */
+.cm-pub-viewer--interactive { background: #0b1620; }
+.cm-pub-viewer__frame { display: block; width: 100%; height: min(78vh, 900px); border: 0; background: #fff; }
+.cm-pub-viewer:fullscreen { border: 0; border-radius: 0; background: #fff; }
+.cm-pub-viewer:fullscreen .cm-pub-viewer__frame { height: 100%; }
+/* The full-page screen (templates/online_course/public/play.html.twig) is nothing but its frame:
+   fixed to the window so that neither the body's margins nor a banner above it take a pixel, and
+   sized in dvh so a phone's retracting bars do not leave a strip under it. */
+.cm-play { position: fixed; inset: 0; background: #fff; }
+.cm-play__frame { display: block; width: 100%; height: 100vh; height: 100dvh; border: 0; }
+.cm-play:fullscreen .cm-play__frame { height: 100%; }
+.cm-play__refused { margin: 0; padding: 40px 24px; text-align: center; color: var(--cm-muted); }
+.cm-play__bar {
+    position: absolute; top: 10px; right: 10px; z-index: 2; display: flex; align-items: center; gap: 6px;
+    padding: 5px; border-radius: 999px; background: rgba(18, 52, 77, .92); box-shadow: var(--cm-shadow-pop);
+    transition: opacity .2s;
+}
+.cm-play__handle {
+    display: none; width: 30px; height: 30px; border: 0; border-radius: 50%; cursor: pointer;
+    background: transparent; color: #fff; place-items: center;
+}
+.cm-play__actions { display: flex; gap: 6px; }
+.cm-play__btn {
+    display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 999px; cursor: pointer;
+    padding: 6px 12px; background: transparent; color: #fff; font: 600 12.5px var(--cm-font-ui); text-decoration: none;
+}
+.cm-play__btn:hover { background: rgba(255, 255, 255, .16); color: #fff; text-decoration: none; }
+.cm-play__btn:focus-visible, .cm-play__handle:focus-visible { outline: 2px solid var(--cm-gold); outline-offset: 1px; }
+.cm-play__btn[hidden] { display: none; }
+.cm-play__bar.is-resting { opacity: .45; padding: 3px; }
+.cm-play__bar.is-resting .cm-play__actions { display: none; }
+.cm-play__bar.is-resting .cm-play__handle { display: grid; }
+.cm-play__bar.is-resting:hover, .cm-play__bar.is-resting:focus-within { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .cm-play__bar { transition: none; } }
+.cm-oc-errors .invalid-feedback { display: block; font-size: 13.5px; }

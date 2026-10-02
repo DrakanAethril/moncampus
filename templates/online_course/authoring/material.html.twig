@@ -26,7 +26,15 @@
         <div class="card-body">
             {{ form_start(form) }}
                 {% if form.label is defined %}{{ form_row(form.label) }}{% endif %}
-                {{ form_row(form.file) }}
+                {# The picker's parent is a hidden field, whose row draws the widget and nothing else:
+                   the label, the help and - above all - the reason an archive was refused are
+                   drawn here by hand. #}
+                <div class="mb-3">
+                    {{ form_label(form.file) }}
+                    {{ form_widget(form.file) }}
+                    {{ form_help(form.file) }}
+                    <div class="cm-oc-errors">{{ form_errors(form.file) }}</div>
+                </div>
                 {% if material %}
                     <p class="cm-oc-lede">{{ 'onlineCourseMaterialReplaceHint'|trans }}</p>
                 {% endif %}

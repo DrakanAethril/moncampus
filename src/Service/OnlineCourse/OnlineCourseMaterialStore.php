@@ -30,12 +30,16 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
  *   library take a public course offline. The copy is what lets the two live apart.
  * - **The revision before the live one is kept**, so that going back is a button; anything older is
  *   handed to the deferred purge, like every removal on this platform.
+ *
+ * An interactive course does not come through storeFile(): its archive is unpacked by
+ * App\Service\OnlineCourse\OnlineCourseBundlePublisher, the only door HTML enters the bucket by.
  */
 class OnlineCourseMaterialStore
 {
     public function __construct(
         private readonly UploadIntake $intake,
         private readonly FileUploadService $fileUploads,
+        private readonly OnlineCourseBundlePublisher $bundles,
         private readonly EntityManagerInterface $entityManager,
         private readonly HelpSlug $slug,
     ) {
@@ -50,7 +54,7 @@ class OnlineCourseMaterialStore
 
         $material = new OnlineCourseMaterial($course, $kind, $this->uniqueSlug($course, $kind));
         $material->setLabel($label);
-        $material->setPosition($this->nextPosition($course));
+        $this->place($course, $material);
         $this->writeRevision($material, $file);
 
         $course->addMaterial($material);
@@ -72,6 +76,44 @@ class OnlineCourseMaterialStore
         // The revision that was already waiting behind the live one goes: two are kept, never three.
         $stale = $material->getOther();
         $this->writeRevision($material, $file);
+        if (null !== $stale) {
+            $this->discard($material, $stale);
+        }
+
+        $material->getCourse()->touch();
+    }
+
+    /**
+     * An interactive course written as one HTML page - what the Claude connector produces. It takes
+     * the same road as an archive, as an archive of a single file.
+     *
+     * @throws OnlineCourseMaterialRefused
+     */
+    public function addInteractivePage(OnlineCourse $course, string $html, ?string $label = null): OnlineCourseMaterial
+    {
+        $material = new OnlineCourseMaterial($course, OnlineCourseMaterialKind::Interactive, $this->uniqueSlug($course, OnlineCourseMaterialKind::Interactive));
+        $material->setLabel($label);
+        $this->place($course, $material);
+        $material->publishRevision($this->bundles->publishPage($material, $html));
+
+        $course->addMaterial($material);
+        $course->touch();
+        $this->entityManager->persist($material);
+
+        return $material;
+    }
+
+    /**
+     * @throws OnlineCourseMaterialRefused
+     */
+    public function replaceInteractivePage(OnlineCourseMaterial $material, string $html): void
+    {
+        if (!$material->getKind()->isBundle()) {
+            throw new OnlineCourseMaterialRefused('onlineCourseMaterialNotInteractiveMessage');
+        }
+
+        $stale = $material->getOther();
+        $material->publishRevision($this->bundles->publishPage($material, $html));
         if (null !== $stale) {
             $this->discard($material, $stale);
         }
@@ -134,7 +176,9 @@ class OnlineCourseMaterialStore
     private function writeRevision(OnlineCourseMaterial $material, UploadedFile|StagedUpload|FileLibraryNode $file): void
     {
         if ($material->getKind()->isBundle()) {
-            throw new OnlineCourseMaterialRefused('onlineCourseMaterialWrongTypeMessage', ['%extensions%' => 'pdf, mp4']);
+            $material->publishRevision($this->bundles->publishArchive($material, $file));
+
+            return;
         }
 
         $number = $material->nextRevisionNumber();
@@ -211,13 +255,31 @@ class OnlineCourseMaterialStore
         return $slug;
     }
 
-    private function nextPosition(OnlineCourse $course): int
+    /**
+     * Where a new material goes among its course's: before the first one whose nature comes later
+     * in the catalogue's own order, else last. An interactive course added to a course that already
+     * has its PDF therefore becomes the tab the page opens on - which is what its author most
+     * likely wants, and one drag away from anything else.
+     */
+    private function place(OnlineCourse $course, OnlineCourseMaterial $material): void
     {
-        $position = -1;
-        foreach ($course->getMaterials() as $material) {
-            $position = max($position, $material->getPosition());
+        $ordered = [];
+        $placed = false;
+
+        foreach ($course->getMaterials() as $existing) {
+            if (!$placed && $existing->getKind()->defaultRank() > $material->getKind()->defaultRank()) {
+                $ordered[] = $material;
+                $placed = true;
+            }
+            $ordered[] = $existing;
         }
 
-        return $position + 1;
+        if (!$placed) {
+            $ordered[] = $material;
+        }
+
+        foreach ($ordered as $position => $each) {
+            $each->setPosition($position);
+        }
     }
 }
