@@ -1,0 +1,19 @@
+{# One material of a course, shown by the player its nature calls for
+   (App\Enum\OnlineCourseMaterialKind). `url` is its address on the CDN: a PDF is handed to the
+   browser's own reader, a video to a <video> element, and neither goes through the application. #}
+{% set live = material.live %}
+<div class="cm-pub-viewer cm-pub-viewer--{{ material.kind.value }}">
+    {% if not live or not url %}
+        <p class="cm-pub-empty">{{ 'onlineCoursePublicMaterialMissingLabel'|trans }}</p>
+    {% elseif material.kind.isDocument %}
+        <iframe class="cm-pub-viewer__document" src="{{ url }}" title="{{ material.label ?? material.kind.labelKey|trans }}" loading="lazy"></iframe>
+        <p class="cm-pub-viewer__fallback">
+            <twig:Cm:Button variant="outline" size="sm" href="{{ url }}" target="_blank" rel="noopener">
+                <twig:ux:icon name="external-link" width="15" height="15"/>{{ 'onlineCoursePublicOpenDocumentAction'|trans }}
+            </twig:Cm:Button>
+            <span>{{ live.originalName }} · {{ byte_size(live.fileSize) }}</span>
+        </p>
+    {% elseif material.kind.value == 'video' %}
+        <video class="cm-pub-viewer__video" controls preload="metadata" playsinline src="{{ url }}"></video>
+    {% endif %}
+</div>

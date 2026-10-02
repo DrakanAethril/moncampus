@@ -1,0 +1,45 @@
+{# The card of a course (App\Form\OnlineCourseType), on its creation screen and on its own. The tag
+   field is the documentation's - one hidden field holding the labels, chips drawn from it, and a
+   suggestion list fed by the author's own vocabulary (documentation_tags_controller.js). #}
+{{ form_row(form.title) }}
+{% if page is defined and page %}
+    <div class="mb-3">
+        {{ form_label(form.slug) }}
+        <div class="cm-oc-address">
+            <span class="cm-oc-address__prefix">/courses/{{ page.handle }}/</span>
+            {{ form_widget(form.slug) }}
+        </div>
+        {{ form_help(form.slug) }}
+        {{ form_errors(form.slug) }}
+    </div>
+{% else %}
+    {{ form_row(form.slug) }}
+{% endif %}
+{{ form_row(form.summary) }}
+<div class="mb-3">
+    {{ form_label(form.description) }}
+    {{ form_widget(form.description, {attr: {
+        class: 'd-none',
+        'data-controller': 'hugerte-editor',
+        'data-hugerte-editor-height-value': 260,
+    }}) }}
+    {{ form_errors(form.description) }}
+</div>
+<div class="mb-3"
+     data-controller="documentation-tags"
+     data-documentation-tags-url-value="{{ path('app_online_courses_tags') }}"
+     data-documentation-tags-create-label-value="{{ 'onlineCourseCreateTagLabel'|trans }}">
+    <label class="form-label">{{ 'onlineCourseTagsFieldLabel'|trans }}</label>
+    {{ form_widget(form.tags, {attr: {'data-documentation-tags-target': 'field'}}) }}
+    <div class="cm-doc-pills" data-documentation-tags-target="chips"></div>
+    <div class="cm-doc-tags__input">
+        <input type="text" class="form-control" autocomplete="off"
+               placeholder="{{ 'onlineCourseTagInputPlaceholder'|trans }}"
+               aria-label="{{ 'onlineCourseTagsFieldLabel'|trans }}"
+               data-documentation-tags-target="input"
+               data-action="input->documentation-tags#search keydown->documentation-tags#keydown">
+        <ul class="cm-doc-tags__suggestions" data-documentation-tags-target="suggestions" hidden></ul>
+    </div>
+    <small class="form-hint">{{ 'onlineCourseTagsFieldHelp'|trans }}</small>
+</div>
+{{ form_row(form.estimatedMinutes) }}

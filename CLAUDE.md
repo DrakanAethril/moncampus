@@ -330,6 +330,31 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   part overflows) - never shipped in the code, never another year's. Deposits are frozen snapshots;
   deadlines lock nothing. The commission has no access at all. Students have no file library, so
   evidence is an upload, a link or a piece of work handed in.
+- **Cours en ligne** (Outils › Préparer du contenu) — `App\Controller\OnlineCourse\*`,
+  `src/Service/OnlineCourse/`, spec `design/validated/cours-en-ligne.md`. **`Feature::OnlineCourses`
+  is off for every role: administrators only, until Gestion › Fonctionnalités opens it.** A teacher
+  puts courses online on **their own public page**, `/courses/{handle}`, read **without an account**
+  (`^/courses/` is `PUBLIC_ACCESS`; the public controllers carry no `#[RequiresFeature]` and extend
+  `layout/public.html.twig`, not the app shell). **There is no catalogue across teachers** - it was
+  proposed and refused; `/courses` alone matches no route and nothing lists the pages. Named
+  `OnlineCourse` because « Mes cours » already means the course space of a class. Rules the code holds:
+  - **A course is its author's alone**, administrators included (`OnlineCourseVoter`, 404 never 403);
+    the one thing an administrator holds on somebody else's is UNPUBLISH. It is born a **draft**
+    whoever creates it; publishing asks for a title, a summary, a material and a page with an
+    address (`OnlineCourseWriter::publishRefusals()` names all that is missing); a published course
+    is taken offline before it is deleted.
+  - **The page's address changes at any time**, during diffusion included: every address a page
+    carried keeps its row (`OnlineCoursePageHandle`, UNIQUE), so the old one answers a 301 and is
+    never given to another teacher (`OnlineCoursePageHandles`). It is never the login. A course's own
+    slug, by contrast, is frozen by its first publication (`OnlineCourse::$publishedAt`, never cleared).
+  - **Every material is served by the CDN** (`OnlineCourseContentOrigin`), never by the application.
+    A material's files are **revisions**, each in a folder of its own -
+    `online-courses/{course}/{token}/{segment}/r{n}/` - so replacing changes the address of the
+    bytes and never the address of the material; the revision before the live one is kept (« Revenir
+    à la révision »), older ones go to the deferred purge. A file picked from the bibliothèque is
+    **copied** here, unlike everywhere else where a link is a reference (`OnlineCourseMaterialStore`).
+  - `OnlineCourseMaterialKind` is the catalogue of natures (what each accepts, its label, its
+    player); `OnlineCourseTag` is **per author** (UNIQUE owner + normalized label), created by typing.
 - **Accès aux fonctionnalités** — `App\Enum\Feature` (59 cases) + `#[RequiresFeature]` +
   `App\Security\FeatureAccess`: which features are lit, per role and per formation. Gestion >
   Fonctionnalités is the screen. **The whole Pédagogie family is off by default**, with four
@@ -520,9 +545,9 @@ password hash is ever stored locally.
 `ROLE_STUDENT`, `ROLE_TUTOR` (external apprenticeship tutors), `ROLE_SUPPORT-TECH`, `ROLE_ECO`,
 `ROLE_EXTERNAL`. `ROLE_TUTOR` and `ROLE_EXTERNAL` are both excluded from message recipients.
 
-**Fine-grained checks** are Voters (`src/Security/Voter/`, 28 of them: Assignment, AudienceTargetable,
+**Fine-grained checks** are Voters (`src/Security/Voter/`, 29 of them: Assignment, AudienceTargetable,
 DocumentationArticle, Dossier, EcoParcours, Enterprise, Evaluation, FileLibrary, GameGesture, GuestAccount,
-GuestConsole, InternshipTutorLink, LessonLog, MessageThread, Portfolio, Progression, ProxmoxHost, QuizFolder,
+GuestConsole, InternshipTutorLink, LessonLog, MessageThread, OnlineCourse, Portfolio, Progression, ProxmoxHost, QuizFolder,
 QuizTemplate, SequenceFolder, SequenceInstance, SequenceTemplate, SignupList, Survey, SurveyFolder, Ticket,
 Wiki, WordCloud).
 New per-object rules belong in a Voter, not inline in a controller.
