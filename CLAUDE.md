@@ -284,7 +284,7 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   **Files reach the platform, the platform never fetches them**: `file_upload` takes a small
   file as base64; `file_upload_url` hands out an address (`/mcp/uploads/{secret}`,
   `App\Entity\McpUploadSlot`) that Claude's sandbox sends **one** file to with
-  `curl -X PUT --data-binary`. The address is bound beforehand to the teacher, the connection, the
+  `curl -X PUT -H "Content-Type: application/octet-stream" --data-binary` - Caddy forces that type on the path anyway (`@mcpUpload`): curl's default form type made `Request::createFromGlobals()` decode the file as form fields and die on `max_input_vars`. The address is bound beforehand to the teacher, the connection, the
   folder, the name, the exact size and an optional SHA-256; it lives 15 minutes, serves once
   (spent by an atomic UPDATE, a refused send spends it too) and dies with its connection. Its own
   `mcp_upload` firewall turns the secret into the teacher (`McpUploadSlotAuthenticator`, the

@@ -26,6 +26,10 @@ use Symfony\Component\Routing\Attribute\Route;
  * The other half of `file_upload_url` (App\Mcp\Tool\FileUploadUrlTool): the address Claude's sandbox
  * sends one file to, with `curl -X PUT --data-binary @file "<uploadUrl>"`.
  *
+ * The body reaches it as `application/octet-stream` whatever the client said: Caddy rewrites the
+ * header on this path (frankenphp/Caddyfile, « @mcpUpload »), because curl's default form type
+ * made PHP decode a binary file as form fields before routing.
+ *
  * The `mcp_upload` firewall has already turned the secret into the teacher
  * (App\Security\McpUploadSlotAuthenticator), so what follows asks the ordinary questions: the
  * features lit for them, the folder through the library's voter, and the file through

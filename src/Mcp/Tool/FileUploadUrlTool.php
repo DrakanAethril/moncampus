@@ -22,7 +22,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 /**
  * An address to send one file to, for the files Claude holds in its own sandbox and that are too
  * large to write as base64 (file_upload): a polycopié, a .zip of slides with their fonts, a video.
- * Claude then runs `curl -X PUT --data-binary @file "<uploadUrl>"`, and App\Controller\McpUploadController
+ * Claude then runs `curl -X PUT -H "Content-Type: application/octet-stream" --data-binary @file "<uploadUrl>"`, and App\Controller\McpUploadController
  * puts the bytes into the library **through the same gates as an upload** - App\Service\FileLibraryWriter.
  *
  * The platform never fetches anything itself: the bytes come to it, from whoever holds the address.
@@ -60,7 +60,7 @@ final readonly class FileUploadUrlTool implements McpTool
 
     public function description(): string
     {
-        return 'Pour déposer dans la bibliothèque de fichiers un fichier que tu détiens (PDF, archive .zip, vidéo, image…) sans l\'écrire en base64. Donne son nom avec l\'extension, sa taille exacte en octets (`size`), le dossier (`folderId`, facultatif) et, si possible, son empreinte SHA-256. Renvoie `uploadUrl`, valable '.self::LIFETIME_MINUTES.' minutes et pour un seul envoi : envoie le fichier avec `curl -X PUT --data-binary @fichier "<uploadUrl>"`. La réponse donne le `fileId`, à passer ensuite à course_material_add, lesson_log_attach, etc. Mêmes contrôles qu\'un dépôt dans MonCampus (types acceptés, plafond par type, quota, antivirus) ; un envoi refusé consomme l\'adresse, demande-en une autre.';
+        return 'Pour déposer dans la bibliothèque de fichiers un fichier que tu détiens (PDF, archive .zip, vidéo, image…) sans l\'écrire en base64. Donne son nom avec l\'extension, sa taille exacte en octets (`size`), le dossier (`folderId`, facultatif) et, si possible, son empreinte SHA-256. Renvoie `uploadUrl`, valable '.self::LIFETIME_MINUTES.' minutes et pour un seul envoi : envoie le fichier avec `curl -X PUT -H "Content-Type: application/octet-stream" --data-binary @fichier "<uploadUrl>"`. La réponse donne le `fileId`, à passer ensuite à course_material_add, lesson_log_attach, etc. Mêmes contrôles qu\'un dépôt dans MonCampus (types acceptés, plafond par type, quota, antivirus) ; un envoi refusé consomme l\'adresse, demande-en une autre.';
     }
 
     public function inputSchema(): array
@@ -132,7 +132,7 @@ final readonly class FileUploadUrlTool implements McpTool
         $uploadUrl = $this->links->url('app_mcp_upload', ['secret' => $secret->secret]);
 
         return McpToolResult::data(
-            \sprintf('Adresse d\'envoi prête pour « %s » (%d octets), valable %d minutes et pour un seul envoi : curl -X PUT --data-binary @fichier "%s"', $name, $size, self::LIFETIME_MINUTES, $uploadUrl),
+            \sprintf('Adresse d\'envoi prête pour « %s » (%d octets), valable %d minutes et pour un seul envoi : curl -X PUT -H "Content-Type: application/octet-stream" --data-binary @fichier "%s"', $name, $size, self::LIFETIME_MINUTES, $uploadUrl),
             ['uploadUrl' => $uploadUrl, 'expiresAt' => $slot->getExpiresAt()->format(\DATE_ATOM), 'maxBytes' => $size],
         );
     }
