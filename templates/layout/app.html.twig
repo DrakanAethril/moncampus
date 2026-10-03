@@ -211,6 +211,16 @@
                                 </a>
                             </li>
                         {% endif %}
+                        {# « Parcours » (design/validated/cours-en-ligne.md §10): the learning paths the student
+                           has started. Shown once there is one - a path is discovered by its link, never
+                           by browsing a list, so an entry before that would open on nothing. #}
+                        {% if is_granted('ROLE_STUDENT') and not is_staff() and feature('learning_paths') and has_started_learning_path() %}
+                            <li class="nav-item {{ current_route starts with 'app_learning_path' ? 'active' }}">
+                                <a class="nav-link" href="{{ path('app_learning_paths') }}"{{ current_route starts with 'app_learning_path' ? ' aria-current="page"' }}>
+                                    <span class="nav-link-title">{{ 'learningPathNavLabel'|trans }}</span>
+                                </a>
+                            </li>
+                        {% endif %}
                         {# « Ma progression », right after « Travail à faire » exactly as the mockup's
                            bar draws it. Shown only to somebody whose own formation actually plays:
                            game_badge() answers null unless the feature is on *and* the formation has

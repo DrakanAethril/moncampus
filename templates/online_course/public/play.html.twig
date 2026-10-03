@@ -37,6 +37,12 @@
                 <button type="button" class="cm-play__btn" data-online-course-player-target="fullscreen" data-action="online-course-player#fullscreen">
                     <twig:ux:icon name="maximize" width="15" height="15"/>{{ 'onlineCourseFullscreenAction'|trans }}
                 </button>
+                {# Inside a learning path the bar also leads on: the full page must not be a dead end. #}
+                {% if nextUrl|default(null) %}
+                    <a class="cm-play__btn" href="{{ nextUrl }}">
+                        {{ 'learningPathNextStepAction'|trans }}<twig:ux:icon name="chevron-right" width="15" height="15"/>
+                    </a>
+                {% endif %}
             </div>
         </div>
     </div>

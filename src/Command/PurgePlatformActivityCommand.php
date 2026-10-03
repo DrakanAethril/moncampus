@@ -6,6 +6,7 @@ namespace App\Command;
 
 use App\Repository\ConsoleSessionRepository;
 use App\Repository\JobboardOfferRepository;
+use App\Repository\LearningPathEnrollmentRepository;
 use App\Repository\MobileSessionRepository;
 use App\Repository\OAuthAuthorizationCodeRepository;
 use App\Repository\OAuthClientRepository;
@@ -54,12 +55,18 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * (App\Entity\MobileSession - run out after 30 idle days, or revoked). A dead session opens nothing,
  * and « Mon profil » no longer lists it.
  *
+ * **A seventh since the learning paths: a follow-up untouched for 24 months**
+ * (App\Entity\LearningPathEnrollment - with the steps it opened and its quiz attempts). It names a
+ * person and their scores, and the follow-up screen announces the duration to the author; the path
+ * page tells the person their progress is followed. Read on the last activity, not on the start: a
+ * path somebody is still working through is not old.
+ *
  * To be wired to a scheduled task (once a day is more than enough). With no scheduler, the command
  * stays usable by hand; nothing breaks if it never runs, the tables simply grow.
  */
 #[AsCommand(
     name: 'app:purge-platform-activity',
-    description: 'Applique les rétentions de la plateforme : journal, sessions de console, surveillance de quiz, offres du jobboard, secrets OAuth expirés, sessions mobiles mortes.',
+    description: 'Applique les rétentions de la plateforme : journal, sessions de console, surveillance de quiz, offres du jobboard, secrets OAuth expirés, sessions mobiles mortes, suivis de parcours inactifs.',
 )]
 class PurgePlatformActivityCommand extends Command
 {
@@ -74,6 +81,9 @@ class PurgePlatformActivityCommand extends Command
     /** Expired OAuth codes and tokens, and never-consented clients, of the Claude connector. */
     private const int OAUTH_RETENTION_DAYS = 30;
 
+    /** A learning-path follow-up, read on its last activity. Twenty-four months. */
+    private const int LEARNING_PATH_RETENTION_MONTHS = 24;
+
     public function __construct(
         private readonly PlatformActivityRepository $repository,
         private readonly ConsoleSessionRepository $consoleSessions,
@@ -83,6 +93,7 @@ class PurgePlatformActivityCommand extends Command
         private readonly OAuthAuthorizationCodeRepository $oauthCodes,
         private readonly OAuthClientRepository $oauthClients,
         private readonly MobileSessionRepository $mobileSessions,
+        private readonly LearningPathEnrollmentRepository $learningPathEnrollments,
     ) {
         parent::__construct();
     }
@@ -105,6 +116,7 @@ class PurgePlatformActivityCommand extends Command
         $jobboardMonths = max(1, (int) $input->getOption('jobboard-months'));
         $jobboardThreshold = new \DateTimeImmutable(\sprintf('-%d months', $jobboardMonths));
         $oauthThreshold = new \DateTimeImmutable(\sprintf('-%d days', self::OAUTH_RETENTION_DAYS));
+        $learningPathThreshold = new \DateTimeImmutable(\sprintf('-%d months', self::LEARNING_PATH_RETENTION_MONTHS));
 
         if ($input->getOption('dry-run')) {
             $count = (int) $this->repository->createQueryBuilder('a')
@@ -142,6 +154,11 @@ class PurgePlatformActivityCommand extends Command
                 $this->mobileSessions->countDeadBefore($oauthThreshold),
                 $oauthThreshold->format('d/m/Y'),
             ));
+            $io->info(\sprintf(
+                '%d suivi(s) de parcours inactif(s) depuis le %s seraient supprimés.',
+                (int) $this->learningPathEnrollments->createQueryBuilder('e')->select('COUNT(e.id)')->where('e.lastActivityAt < :threshold')->setParameter('threshold', $learningPathThreshold)->getQuery()->getSingleScalarResult(),
+                $learningPathThreshold->format('d/m/Y'),
+            ));
 
             return Command::SUCCESS;
         }
@@ -170,6 +187,9 @@ class PurgePlatformActivityCommand extends Command
         // The same 30 days as the connector's secrets, read on the day the session died.
         $mobile = $this->mobileSessions->deleteDeadBefore($oauthThreshold);
         $io->success(\sprintf('%d session(s) mobile(s) supprimée(s).', $mobile));
+
+        $followUps = $this->learningPathEnrollments->purgeInactiveSince($learningPathThreshold);
+        $io->success(\sprintf('%d suivi(s) de parcours inactif(s) depuis le %s supprimé(s).', $followUps, $learningPathThreshold->format('d/m/Y')));
 
         return Command::SUCCESS;
     }

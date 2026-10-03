@@ -1,0 +1,61 @@
+{% extends 'layout/app.html.twig' %}
+
+{# « Cours en ligne › Mes parcours » (design/validated/cours-en-ligne.md, §10): the author's own
+   learning paths. A path is followed by people holding an account, and only through its link or
+   the « Parcours » tab of the author's page - it has no public address. #}
+
+{% block title %}{{ 'onlineCourseTabPathsLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'onlineCourseNavLabel'|trans, url: path('app_online_courses')},
+        {label: 'onlineCourseTabPathsLabel'|trans, url: path('app_online_courses_paths')},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'onlineCourseNavLabel'|trans }}{% endblock %}
+
+{% block main %}
+    {{ include('online_course/authoring/_tabs.html.twig', {active: 'paths'}) }}
+
+    <div class="card cm-card--tabbed">
+        <div class="card-body">
+            {% if paths is empty %}
+                <p class="cm-oc-empty">{{ 'learningPathListEmptyLabel'|trans }}</p>
+            {% else %}
+                <table class="cm-oc-table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'learningPathColumnLabel'|trans }}</th>
+                            <th>{{ 'onlineCourseStatusColumnLabel'|trans }}</th>
+                            <th>{{ 'learningPathStepsColumnLabel'|trans }}</th>
+                            <th>{{ 'learningPathFollowersColumnLabel'|trans }}</th>
+                            <th>{{ 'onlineCourseUpdatedColumnLabel'|trans }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for path in paths %}
+                            {% set quizzes = path.steps|filter(step => step.quiz)|length %}
+                            <tr>
+                                <td>
+                                    <a class="cm-oc-table__title" href="{{ path('app_online_courses_path_edit', {id: path.id}) }}">{{ path.title }}</a>
+                                    {% if path.summary %}<span class="cm-oc-table__summary">{{ path.summary }}</span>{% endif %}
+                                </td>
+                                <td><twig:Cm:Badge :of="path.status"/></td>
+                                <td>{{ 'learningPathStepsSummaryLabel'|trans({'%courses%': path.steps|length - quizzes, '%quizzes%': quizzes}) }}</td>
+                                <td>
+                                    {% if followers[path.id] > 0 %}
+                                        <a href="{{ path('app_online_courses_path_tracking', {id: path.id}) }}">{{ 'learningPathFollowerCountLabel'|trans({'%count%': followers[path.id]}) }}</a>
+                                    {% else %}
+                                        <span class="cm-oc-table__none">{{ 'learningPathNoFollowerLabel'|trans }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="cm-oc-table__date">{{ path.updatedAt|date('d/m/Y') }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

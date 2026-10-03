@@ -43,7 +43,7 @@ final readonly class CoursePublishTool implements McpTool
 
     public function description(): string
     {
-        return 'Met en ligne un cours de l\'enseignant, sur sa page publique (lisible sans compte). Il faut un titre, un résumé, au moins un support, et que l\'enseignant ait choisi l\'adresse de sa page. Renvoie le lien public. Après la première publication, l\'adresse du cours ne change plus.';
+        return 'Met en ligne un cours de l\'enseignant : sur sa page publique (lisible sans compte), ou réservé aux parcours avec `visibility: "path_only"`. Il faut un titre, un résumé, au moins un support, et que l\'enseignant ait choisi l\'adresse de sa page. Renvoie le lien public. Après la première publication, l\'adresse du cours ne change plus.';
     }
 
     public function inputSchema(): array
@@ -52,6 +52,7 @@ final readonly class CoursePublishTool implements McpTool
             'type' => 'object',
             'properties' => [
                 'courseId' => ['type' => 'integer', 'description' => 'Identifiant du cours (course_list).'],
+                'visibility' => ['type' => 'string', 'enum' => ['public', 'path_only'], 'default' => 'public', 'description' => '« public » : sur la page publique de l\'enseignant. « path_only » : réservé aux parcours, lisible seulement depuis une étape ouverte d\'un parcours. Sur un cours déjà publié, change sa visibilité.'],
             ],
             'required' => ['courseId'],
             'additionalProperties' => false,
@@ -74,14 +75,16 @@ final readonly class CoursePublishTool implements McpTool
         $course = $this->onlineCourses->course($call->requiredId('courseId'), OnlineCourseVoter::PUBLISH);
 
         try {
-            $this->writer->publish($course, OnlineCourseStatus::PublicCourse);
+            $this->writer->publish($course, 'path_only' === $call->arguments->string('visibility') ? OnlineCourseStatus::PathOnly : OnlineCourseStatus::PublicCourse);
         } catch (OnlineCoursePublicationRefused) {
             throw new McpToolException('Ce cours ne peut pas encore être publié. Il manque :', $this->onlineCourses->missing($course));
         }
         $this->entityManager->flush();
 
         return McpToolResult::data(
-            \sprintf('Le cours « %s » est en ligne : %s', $course->getTitle(), (string) $this->onlineCourses->publicUrl($course)),
+            OnlineCourseStatus::PathOnly === $course->getStatus()
+                ? \sprintf('Le cours « %s » est en ligne, réservé aux parcours : il n\'apparaît pas sur la page publique et se lit depuis un parcours.', $course->getTitle())
+                : \sprintf('Le cours « %s » est en ligne : %s', $course->getTitle(), (string) $this->onlineCourses->publicUrl($course)),
             $this->onlineCourses->describe($course),
         );
     }

@@ -5,16 +5,22 @@ declare(strict_types=1);
 namespace App\Mcp;
 
 use App\Entity\FileLibraryNode;
+use App\Entity\LearningPath;
+use App\Entity\LearningPathStep;
 use App\Entity\OnlineCourse;
 use App\Entity\OnlineCourseMaterial;
 use App\Entity\User;
 use App\Enum\OnlineCourseMaterialKind;
+use App\Repository\LearningPathRepository;
 use App\Repository\OnlineCourseMaterialRepository;
 use App\Repository\OnlineCoursePageRepository;
 use App\Repository\OnlineCourseRepository;
+use App\Security\Voter\LearningPathVoter;
 use App\Security\Voter\OnlineCourseVoter;
 use App\Service\CourseMaterialRenderer;
 use App\Service\GotenbergUnavailableException;
+use App\Service\LearningPath\LearningPathRefused;
+use App\Service\LearningPath\LearningPathWriter;
 use App\Service\OnlineCourse\OnlineCourseContentOrigin;
 use App\Service\OnlineCourse\OnlineCourseMaterialRefused;
 use App\Service\OnlineCourse\OnlineCourseWriter;
@@ -48,6 +54,8 @@ final readonly class McpOnlineCourses
         private CourseMaterialRenderer $renderer,
         private McpLinks $links,
         private TranslatorInterface $translator,
+        private LearningPathRepository $paths,
+        private LearningPathWriter $pathWriter,
     ) {
     }
 
@@ -150,6 +158,61 @@ final readonly class McpOnlineCourses
 
         // test: true - the file was written here, it never came through PHP's upload handling.
         return ['file' => new UploadedFile($path, ('' === $name ? 'support' : $name).'.pdf', 'application/pdf', null, true), 'html' => null];
+    }
+
+    public function path(int $id, string $attribute = LearningPathVoter::EDIT): LearningPath
+    {
+        $path = $this->paths->find($id);
+
+        return $path instanceof LearningPath && $this->authorization->isGranted($attribute, $path)
+            ? $path
+            : throw new McpToolException(\sprintf('Parcours %d introuvable parmi vos parcours.', $id));
+    }
+
+    /**
+     * A path as every path tool answers it. How many people follow it is a count and nothing more:
+     * who they are and how far they got is the follow-up screen's, which no tool reads.
+     *
+     * @return array<string, mixed>
+     */
+    public function describePath(LearningPath $path): array
+    {
+        return [
+            'pathId' => $path->getId(),
+            'title' => $path->getTitle(),
+            'status' => $path->getStatus()->value,
+            'summary' => $path->getSummary(),
+            'steps' => array_map(static fn (LearningPathStep $step): array => [
+                'type' => $step->getType()->value,
+                'title' => $step->getTitle(),
+                'courseId' => $step->getCourse()?->getId(),
+                'courseStatus' => $step->getCourse()?->getStatus()->value,
+                'quizId' => $step->getQuizTemplate()?->getId(),
+                'passPercent' => $step->isQuiz() ? $step->getPassPercent() : null,
+                'questionCount' => $step->isQuiz() ? $step->getQuestionCount() : null,
+                'available' => $step->isAvailable(),
+            ], $path->orderedSteps()),
+            'followerCount' => $this->pathWriter->followerCount($path),
+            'editUrl' => $this->links->url('app_online_courses_path_edit', ['id' => $path->getId()]),
+            'followUrl' => $this->followUrl($path),
+            'missingToPublish' => array_map(fn (string $reason): string => $this->translator->trans($reason, [], 'messages', 'fr'), $this->pathWriter->publishRefusals($path)),
+        ];
+    }
+
+    public function followUrl(LearningPath $path): string
+    {
+        return $this->links->url('app_learning_path_show', ['id' => $path->getId()]);
+    }
+
+    /** A refusal of the path writer, its nested reason translated too. */
+    public function pathRefusal(LearningPathRefused $refused): McpToolException
+    {
+        $parameters = $refused->parameters;
+        if (isset($parameters['%reason%'])) {
+            $parameters['%reason%'] = $this->translator->trans($parameters['%reason%'], [], 'messages', 'fr');
+        }
+
+        return new McpToolException($this->translator->trans($refused->getMessage(), $parameters, 'messages', 'fr'));
     }
 
     /**

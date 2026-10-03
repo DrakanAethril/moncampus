@@ -1,0 +1,178 @@
+{% extends 'layout/app.html.twig' %}
+
+{# Composing a learning path (design/validated/cours-en-ligne.md, §10): its card on the left, its
+   ordered steps on the right - a course, or a validation quiz wherever the author wants one. Two
+   courses may follow each other with nothing between them; nothing asks for a quiz.
+
+   Each step row says what the lock does for that course: a public course stays readable on the
+   author's page, so the path guides more than it hides; a course reserved for paths is read nowhere
+   else, so its lock is a real one. #}
+
+{% block title %}{{ path.title }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'onlineCourseNavLabel'|trans, url: path('app_online_courses')},
+        {label: 'onlineCourseTabPathsLabel'|trans, url: path('app_online_courses_paths')},
+        {label: path.title, url: path('app_online_courses_path_edit', {id: path.id})},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ path.title }}{% endblock %}
+
+{% block main %}
+    {% set csrf = csrf_token('learning_path_authoring') %}
+    {% set follow_url = url('app_learning_path_show', {id: path.id}) %}
+
+    <div class="cm-oc-state">
+        <div class="cm-oc-state__meta">
+            <twig:Cm:Badge :of="path.status"/>
+            <span>{{ 'onlineCourseUpdatedOnLabel'|trans({'%date%': path.updatedAt|date('d/m/Y')}) }}</span>
+            {% if path.published %}<a href="{{ follow_url }}" class="cm-oc-state__url">{{ follow_url }}</a>{% endif %}
+        </div>
+        <div class="cm-oc-state__buttons">
+            {% if followerCount > 0 %}
+                <twig:Cm:Button variant="outline" href="{{ path('app_online_courses_path_tracking', {id: path.id}) }}">
+                    <twig:ux:icon name="users" width="15" height="15"/>{{ 'learningPathTrackingAction'|trans({'%count%': followerCount}) }}
+                </twig:Cm:Button>
+            {% endif %}
+            <twig:Cm:Button variant="outline" href="{{ path('app_learning_path_show', {id: path.id}) }}">
+                <twig:ux:icon name="external-link" width="15" height="15"/>{{ 'learningPathWalkThroughAction'|trans }}
+            </twig:Cm:Button>
+            {% if path.published %}
+                <form method="post" action="{{ path('app_online_courses_path_unpublish', {id: path.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf }}">
+                    <twig:Cm:Button variant="danger" type="submit"
+                                    data-controller="confirm-submit" data-action="confirm-submit#confirm"
+                                    data-confirm-submit-message-value="{{ 'learningPathUnpublishConfirmMessage'|trans }}">{{ 'onlineCourseUnpublishAction'|trans }}</twig:Cm:Button>
+                </form>
+            {% else %}
+                <form method="post" action="{{ path('app_online_courses_path_delete', {id: path.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf }}">
+                    <twig:Cm:Button variant="outline" type="submit"
+                                    data-controller="confirm-submit" data-action="confirm-submit#confirm"
+                                    data-confirm-submit-message-value="{{ (followerCount > 0 ? 'learningPathDeleteFollowedConfirmMessage' : 'learningPathDeleteConfirmMessage')|trans({'%count%': followerCount}) }}">
+                        <twig:ux:icon name="trash" width="15" height="15"/>{{ 'onlineCourseDeleteAction'|trans }}
+                    </twig:Cm:Button>
+                </form>
+                <form method="post" action="{{ path('app_online_courses_path_publish', {id: path.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf }}">
+                    <twig:Cm:Button variant="gold" type="submit" :disabled="publishRefusals is not empty">{{ 'onlineCoursePublishAction'|trans }}</twig:Cm:Button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if not path.published and publishRefusals is not empty %}
+        <div class="cm-oc-notice cm-oc-notice--list">
+            <span>{{ 'learningPathPublishMissingLabel'|trans }}</span>
+            <ul>{% for reason in publishRefusals %}<li>{{ reason|trans }}</li>{% endfor %}</ul>
+        </div>
+    {% endif %}
+
+    <div class="cm-oc-edit">
+        <div class="card">
+            <div class="card-body">
+                <twig:Cm:Subhead :title="'onlineCourseCardHeading'|trans" :hint="'learningPathCardHint'|trans"/>
+                {{ form_start(form) }}
+                    {{ include('online_course/authoring/_path_form.html.twig') }}
+                    <twig:Cm:ActionBar>
+                        <twig:Cm:Button variant="primary" type="submit">{{ 'submitSaveAction'|trans }}</twig:Cm:Button>
+                    </twig:Cm:ActionBar>
+                {{ form_end(form) }}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <twig:Cm:Subhead :title="'learningPathStepsHeading'|trans" :hint="'learningPathStepsHint'|trans"/>
+
+                {% if steps is empty %}
+                    <p class="cm-oc-empty">{{ 'learningPathNoStepYetLabel'|trans }}</p>
+                {% else %}
+                    <div class="cm-oc-materials"
+                         data-controller="sortable-reorder"
+                         data-sortable-reorder-url-value="{{ path('app_online_courses_path_step_order', {id: path.id}) }}"
+                         data-sortable-reorder-token-value="{{ csrf }}">
+                        {% for step in steps %}
+                            {% set course = step.course %}
+                            {% set quiz = step.quizTemplate %}
+                            <div class="cm-oc-material cm-lp-editstep" data-sortable-reorder-id-param="{{ step.id }}">
+                                <span class="cm-oc-material__grip sortable-reorder-handle" title="{{ 'learningPathStepReorderHint'|trans }}"><twig:ux:icon name="grip" width="16" height="16"/></span>
+                                <twig:Cm:Badge :of="step.type"/>
+                                <div class="cm-oc-material__what">
+                                    <b>{{ step.title ?: 'learningPathStepGoneLabel'|trans }}</b>
+                                    {% if step.quiz %}
+                                        <span>
+                                            {% if quiz %}
+                                                {{ 'learningPathQuizDrawLabel'|trans({'%count%': step.questionCount ?? quiz.questions|length, '%total%': quiz.questions|length}) }}
+                                                · {{ 'learningPathQuizClosesLabel'|trans }}
+                                            {% else %}
+                                                {{ 'learningPathQuizGoneLabel'|trans }}
+                                            {% endif %}
+                                        </span>
+                                        <form method="post" class="cm-lp-editstep__quiz" action="{{ path('app_online_courses_path_step_update', {id: path.id, stepId: step.id}) }}">
+                                            <input type="hidden" name="_token" value="{{ csrf }}">
+                                            <label>{{ 'learningPathThresholdFieldLabel'|trans }}
+                                                <input type="number" name="passPercent" min="1" max="100" value="{{ step.passPercent }}" class="form-control form-control-sm" required> %</label>
+                                            <label>{{ 'learningPathQuestionCountFieldLabel'|trans }}
+                                                <input type="number" name="questionCount" min="1" value="{{ step.questionCount }}" placeholder="{{ 'learningPathAllQuestionsPlaceholder'|trans }}" class="form-control form-control-sm"></label>
+                                            <button type="submit" class="cm-oc-link">{{ 'submitSaveAction'|trans }}</button>
+                                        </form>
+                                    {% elseif course %}
+                                        <span>
+                                            {% if course.status.value == 'public' %}{{ 'learningPathCoursePublicLabel'|trans }}
+                                            {% elseif course.status.value == 'path_only' %}{{ 'learningPathCoursePathOnlyLabel'|trans }}
+                                            {% else %}{{ 'learningPathCourseDraftLabel'|trans }}{% endif %}
+                                            · <a href="{{ path('app_online_courses_edit', {id: course.id}) }}">{{ 'learningPathOpenCourseCardAction'|trans }}</a>
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                <div class="cm-oc-material__actions">
+                                    <form method="post" action="{{ path('app_online_courses_path_step_remove', {id: path.id, stepId: step.id}) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf }}">
+                                        <button type="submit" class="cm-oc-icon cm-oc-icon--danger" title="{{ 'learningPathStepRemoveAction'|trans }}" aria-label="{{ 'learningPathStepRemoveAction'|trans }}"
+                                                data-controller="confirm-submit" data-action="confirm-submit#confirm"
+                                                data-confirm-submit-message-value="{{ (followerCount > 0 ? 'learningPathStepRemoveFollowedConfirmMessage' : 'learningPathStepRemoveConfirmMessage')|trans }}">
+                                            <twig:ux:icon name="trash" width="16" height="16"/>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="cm-lp-add">
+                    <form method="post" class="cm-lp-add__row" action="{{ path('app_online_courses_path_step_add', {id: path.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf }}">
+                        <input type="hidden" name="type" value="course">
+                        <label class="visually-hidden" for="path-add-course">{{ 'learningPathAddCourseLabel'|trans }}</label>
+                        <select id="path-add-course" name="course" class="form-select form-select-sm" required>
+                            <option value="" disabled selected>{{ 'learningPathChooseCoursePlaceholder'|trans }}</option>
+                            {% for course in courses %}
+                                <option value="{{ course.id }}">{{ course.title }} ({{ course.status.labelKey|trans }})</option>
+                            {% endfor %}
+                        </select>
+                        <twig:Cm:Button variant="outline" size="sm" type="submit">{{ 'learningPathAddCourseAction'|trans }}</twig:Cm:Button>
+                    </form>
+                    <form method="post" class="cm-lp-add__row" action="{{ path('app_online_courses_path_step_add', {id: path.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf }}">
+                        <input type="hidden" name="type" value="quiz">
+                        <label class="visually-hidden" for="path-add-quiz">{{ 'learningPathAddQuizLabel'|trans }}</label>
+                        <select id="path-add-quiz" name="quiz" class="form-select form-select-sm" required>
+                            <option value="" disabled selected>{{ 'learningPathChooseQuizPlaceholder'|trans }}</option>
+                            {% for quiz in quizzes %}
+                                <option value="{{ quiz.id }}">{{ quiz.folder ? quiz.folder.name ~ ' › ' }}{{ quiz.name }} ({{ 'learningPathQuestionCountLabel'|trans({'%count%': quiz.questions|length}) }})</option>
+                            {% endfor %}
+                        </select>
+                        <label class="cm-lp-add__small">{{ 'learningPathThresholdFieldLabel'|trans }}
+                            <input type="number" name="passPercent" min="1" max="100" value="70" class="form-control form-control-sm" required> %</label>
+                        <twig:Cm:Button variant="outline" size="sm" type="submit">{{ 'learningPathAddQuizAction'|trans }}</twig:Cm:Button>
+                    </form>
+                    <p class="cm-oc-lede">{{ 'learningPathQuizOptionalHint'|trans }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

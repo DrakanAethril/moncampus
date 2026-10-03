@@ -1,0 +1,75 @@
+{% extends 'layout/app.html.twig' %}
+
+{# A validation quiz, before it is taken (design/validated/cours-en-ligne.md, §10): what it asks
+   for, how far the person is from it, and every go they already had at it. As many attempts as
+   wanted, a new draw each time, the best score kept. #}
+
+{% set quiz = view.step.quizTemplate %}
+{% set running = view.attempts|filter(attempt => not attempt.finished)|first %}
+
+{% block title %}{{ quiz.name }} · {{ path.title }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'learningPathNavLabel'|trans, url: path('app_learning_paths')},
+        {label: path.title, url: path('app_learning_path_show', {id: path.id})},
+        {label: quiz.name, url: path('app_learning_path_step', {id: path.id, number: view.number})},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'learningPathQuizPrefixLabel'|trans }} · {{ quiz.name }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body">
+            <p class="cm-lp-head__meta">{{ 'learningPathStepOfLabel'|trans({'%number%': view.number, '%total%': progress.steps|length}) }}</p>
+            <div class="cm-lp-quiz">
+                <div>
+                    <p class="cm-lp-quiz__rule">{{ 'learningPathQuizRuleLabel'|trans({'%percent%': view.step.passPercent}) }}</p>
+                    <p class="cm-oc-lede">{{ 'learningPathQuizHowLabel'|trans }}</p>
+                </div>
+                <div class="cm-lp-quiz__state">
+                    {% if view.validated %}
+                        <twig:Cm:Badge tone="green">{{ 'learningPathValidatedLabel'|trans }}</twig:Cm:Badge>
+                    {% elseif view.bestScore is not null %}
+                        <twig:Cm:Badge tone="gold">{{ 'learningPathToValidateLabel'|trans }}</twig:Cm:Badge>
+                    {% endif %}
+                    {% if view.bestScore is not null %}
+                        <span class="cm-lp-quiz__best">{{ view.bestScore }} %</span>
+                        <span class="cm-lp-head__meta">{{ 'learningPathBestScoreShortLabel'|trans }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <form method="post" action="{{ path('app_learning_path_attempt_start', {id: path.id, number: view.number}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('learning_path_quiz') }}">
+                <twig:Cm:Button variant="primary" type="submit">
+                    {{ (running ? 'learningPathQuizResumeAction' : (view.attempts is empty ? 'learningPathQuizTakeAction' : 'learningPathQuizAgainAction'))|trans }}
+                </twig:Cm:Button>
+            </form>
+
+            {% if view.finishedAttempts is not empty %}
+                <table class="cm-oc-table cm-lp-attempts">
+                    <thead><tr>
+                        <th>{{ 'learningPathAttemptColumnLabel'|trans }}</th>
+                        <th>{{ 'learningPathAttemptDateColumnLabel'|trans }}</th>
+                        <th>{{ 'learningPathAttemptScoreColumnLabel'|trans }}</th>
+                        <th></th>
+                    </tr></thead>
+                    <tbody>
+                        {% for attempt in view.finishedAttempts %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td class="cm-oc-table__date">{{ attempt.finishedAt|date('d/m/Y H:i') }}</td>
+                                <td>{{ attempt.scorePercent }} % <span class="cm-oc-table__none">({{ attempt.correctCount }} / {{ attempt.questionCount }})</span></td>
+                                <td><a href="{{ path('app_learning_path_attempt', {id: path.id, number: view.number, attemptId: attempt.id}) }}">{{ 'learningPathAttemptSeeAction'|trans }}</a></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        </div>
+    </div>
+
+    {{ include('learning_path/_step_nav.html.twig') }}
+{% endblock %}
