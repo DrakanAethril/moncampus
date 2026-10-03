@@ -1342,7 +1342,7 @@ class RoleAccessSmokeTest extends FunctionalTestCase
      */
     public function testOnlineCoursesAreWrittenByTheirAuthorAlone(): void
     {
-        $screens = ['/tools/online-courses', '/tools/online-courses/new', '/tools/online-courses/page', '/tools/online-courses/tags'];
+        $screens = ['/tools/online-courses', '/tools/online-courses/new', '/tools/online-courses/page', '/tools/online-courses/tags', '/tools/online-courses/paths', '/tools/online-courses/paths/new'];
 
         $this->assertScreens($this->teacher, array_fill_keys($screens, 200));
         $this->assertScreens($this->admin, array_fill_keys($screens, 200));
@@ -1358,6 +1358,18 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->assertScreens($this->teacher, [$card => 200, $card.'/materials/new/pdf' => 200, $card.'/materials/new/nope' => 404]);
         $this->assertScreens($this->admin, [$card => 404, $card.'/materials/new/pdf' => 404]);
         $this->assertScreens($this->student, [$card => 404]);
+    }
+
+    /**
+     * Following a learning path (design/validated/cours-en-ligne.md, §10) asks for an account and
+     * nothing more: « Mes parcours » answers every role the feature is lit for, an empty list
+     * included. LearningPathFollowTest pins the rest - the plan, the doors, the follow-up.
+     */
+    public function testMyLearningPathsAnswerEveryAccount(): void
+    {
+        foreach ([$this->student, $this->teacher, $this->admin, $this->tutor] as $user) {
+            $this->assertScreens($user, ['/paths' => 200]);
+        }
     }
 
     /**

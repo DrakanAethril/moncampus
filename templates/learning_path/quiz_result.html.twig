@@ -1,0 +1,64 @@
+{% extends 'layout/app.html.twig' %}
+
+{# The end of an attempt (design/validated/cours-en-ligne.md, §10): its score against the threshold,
+   and the correction - each question asked, right or wrong, with its explanation. The questions are
+   the ones frozen in the attempt; a quiz edited in the library since then rewrites nothing here. #}
+
+{% set quiz = view.step.quizTemplate %}
+{% set passed = (attempt.scorePercent ?? 0) >= view.step.passPercent %}
+
+{% block title %}{{ view.step.title }} · {{ path.title }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'learningPathNavLabel'|trans, url: path('app_learning_paths')},
+        {label: path.title, url: path('app_learning_path_show', {id: path.id})},
+        {label: view.step.title, url: path('app_learning_path_step', {id: path.id, number: view.number})},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'learningPathQuizPrefixLabel'|trans }} · {{ view.step.title }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body">
+            <div class="cm-lp-result cm-lp-result--{{ passed ? 'passed' : 'failed' }}">
+                <span class="cm-lp-result__score">{{ attempt.scorePercent ?? 0 }} %</span>
+                <span class="cm-lp-result__text">
+                    <b>{{ (passed ? 'learningPathResultPassedLabel' : 'learningPathResultFailedLabel')|trans({'%percent%': view.step.passPercent}) }}</b>
+                    <span>{{ 'learningPathResultCountLabel'|trans({'%correct%': attempt.correctCount, '%total%': attempt.questionCount}) }}</span>
+                </span>
+            </div>
+
+            <ol class="cm-lp-correction">
+                {% for drawn in attempt.questions %}
+                    <li class="cm-lp-correction__item cm-lp-correction__item--{{ drawn.correct ? 'right' : 'wrong' }}">
+                        <span class="cm-lp-correction__mark">
+                            <twig:ux:icon name="{{ drawn.correct ? 'check' : 'x' }}" width="14" height="14"/>
+                        </span>
+                        <span class="cm-lp-correction__text">
+                            <b>{{ drawn.label ?: 'learningPathQuestionUntitledLabel'|trans }}</b>
+                            {% if explanations[drawn.id] is defined %}
+                                <span>{{ explanations[drawn.id] }}</span>
+                            {% endif %}
+                        </span>
+                    </li>
+                {% endfor %}
+            </ol>
+
+            <div class="cm-lp-stepnav">
+                <form method="post" action="{{ path('app_learning_path_attempt_start', {id: path.id, number: view.number}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('learning_path_quiz') }}">
+                    <twig:Cm:Button variant="outline" type="submit">{{ 'learningPathQuizAgainAction'|trans }}</twig:Cm:Button>
+                </form>
+                {% if view.validated and next %}
+                    <twig:Cm:Button variant="primary" href="{{ path('app_learning_path_step', {id: path.id, number: next.number}) }}">
+                        {{ 'learningPathNextStepAction'|trans }}<twig:ux:icon name="chevron-right" width="15" height="15"/>
+                    </twig:Cm:Button>
+                {% else %}
+                    <twig:Cm:Button variant="outline" href="{{ path('app_learning_path_show', {id: path.id}) }}">{{ 'learningPathBackToPlanAction'|trans }}</twig:Cm:Button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,14 @@
+{# The foot of a step: back to the plan, on to the step after it. « Étape suivante » is offered as
+   soon as there is one to go to; whether it opens is the next step's own door to say. #}
+<div class="cm-lp-stepnav">
+    <twig:Cm:Button variant="outline" href="{{ path('app_learning_path_show', {id: path.id}) }}">
+        <twig:ux:icon name="arrow-left" width="15" height="15"/>{{ 'learningPathBackToPlanAction'|trans }}
+    </twig:Cm:Button>
+    {% if next %}
+        <twig:Cm:Button variant="primary" href="{{ path('app_learning_path_step', {id: path.id, number: next.number}) }}">
+            {{ 'learningPathNextStepAction'|trans }}<twig:ux:icon name="chevron-right" width="15" height="15"/>
+        </twig:Cm:Button>
+    {% elseif progress.completed %}
+        <twig:Cm:Badge tone="green">{{ 'learningPathCompletedLabel'|trans }}</twig:Cm:Badge>
+    {% endif %}
+</div>

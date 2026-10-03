@@ -10,6 +10,7 @@ use App\Enum\Feature;
 use App\Enum\OnlineCourseMaterialKind;
 use App\Enum\OnlineCourseStatus;
 use App\Form\OnlineCourseType;
+use App\Repository\LearningPathRepository;
 use App\Repository\OnlineCoursePageRepository;
 use App\Repository\OnlineCourseRepository;
 use App\Repository\OnlineCourseTagRepository;
@@ -75,7 +76,7 @@ class AuthoringController extends AbstractController
             'statusFilter' => $status,
             'tagFilter' => $tag,
             'tags' => $tags,
-            'statuses' => [OnlineCourseStatus::Draft, OnlineCourseStatus::PublicCourse],
+            'statuses' => OnlineCourseStatus::cases(),
         ]);
     }
 
@@ -105,7 +106,7 @@ class AuthoringController extends AbstractController
     }
 
     #[Route(path: '/tools/online-courses/{id}', name: 'app_online_courses_edit', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
-    public function edit(int $id, Request $request, OnlineCourseRepository $courses, OnlineCoursePageRepository $pages, OnlineCourseTagRepository $tags, OnlineCourseWriter $writer, EntityManagerInterface $entityManager): Response
+    public function edit(int $id, Request $request, OnlineCourseRepository $courses, OnlineCoursePageRepository $pages, OnlineCourseTagRepository $tags, OnlineCourseWriter $writer, EntityManagerInterface $entityManager, LearningPathRepository $paths): Response
     {
         $course = $this->findCourse($id, $courses);
         $form = $this->createForm(OnlineCourseType::class, $course);
@@ -135,6 +136,7 @@ class AuthoringController extends AbstractController
             'page' => $pages->findOneByOwner($course->getOwner()),
             'publishRefusals' => $writer->publishRefusals($course),
             'kinds' => self::offeredKinds(),
+            'paths' => $paths->findUsingCourse($course),
         ]);
     }
 
@@ -144,10 +146,15 @@ class AuthoringController extends AbstractController
         $this->assertCsrf($request, self::CSRF_TOKEN_ID);
         $course = $this->findCourse($id, $courses, OnlineCourseVoter::PUBLISH);
 
+        // Public by default; « Réservé aux parcours » keeps it off the author's page, read only from
+        // an opened step of a path. The same gesture moves a published course between the two.
+        $status = 'path_only' === $request->request->getString('visibility') ? OnlineCourseStatus::PathOnly : OnlineCourseStatus::PublicCourse;
+
         try {
-            $writer->publish($course);
+            $wasPublished = $course->isPublished();
+            $writer->publish($course, $status);
             $entityManager->flush();
-            $this->addFlash('success', 'onlineCoursePublishedFlashMessage');
+            $this->addFlash('success', $wasPublished ? 'onlineCourseVisibilityChangedFlashMessage' : 'onlineCoursePublishedFlashMessage');
         } catch (OnlineCoursePublicationRefused $refused) {
             foreach ($refused->reasons as $reason) {
                 $this->addFlash('error', $reason);
@@ -181,10 +188,18 @@ class AuthoringController extends AbstractController
     }
 
     #[Route(path: '/tools/online-courses/{id}/delete', name: 'app_online_courses_delete', requirements: ['id' => '\d+'], methods: ['POST'])]
-    public function delete(int $id, Request $request, OnlineCourseRepository $courses, OnlineCourseWriter $writer): Response
+    public function delete(int $id, Request $request, OnlineCourseRepository $courses, OnlineCourseWriter $writer, LearningPathRepository $paths): Response
     {
         $this->assertCsrf($request, self::CSRF_TOKEN_ID);
         $course = $this->findCourse($id, $courses);
+
+        // A course a path lines up is taken out of the path first: deleting it would take the step
+        // - and what its followers did on it - along silently.
+        if ([] !== $paths->findUsingCourse($course)) {
+            $this->addFlash('error', 'onlineCourseDeleteUsedByPathFlashMessage');
+
+            return $this->redirectToRoute('app_online_courses_edit', ['id' => $course->getId()]);
+        }
 
         if (!$this->isGranted(OnlineCourseVoter::DELETE, $course)) {
             $this->addFlash('error', 'onlineCourseDeletePublishedFlashMessage');

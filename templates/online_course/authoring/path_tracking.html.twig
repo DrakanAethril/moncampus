@@ -1,0 +1,125 @@
+{% extends 'layout/app.html.twig' %}
+
+{# The follow-up of a learning path (design/validated/cours-en-ligne.md, §11): one row per person
+   who started it, unfolding onto every step they opened and every attempt they made. Read by the
+   path's author alone - administrators included in the « nobody else » - and announced to the
+   person on the path's own page. #}
+
+{% block title %}{{ 'learningPathTrackingHeading'|trans }} · {{ path.title }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'onlineCourseNavLabel'|trans, url: path('app_online_courses')},
+        {label: 'onlineCourseTabPathsLabel'|trans, url: path('app_online_courses_paths')},
+        {label: path.title, url: path('app_online_courses_path_edit', {id: path.id})},
+        {label: 'learningPathTrackingHeading'|trans, url: path('app_online_courses_path_tracking', {id: path.id})},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'learningPathTrackingHeading'|trans }} · {{ path.title }}{% endblock %}
+
+{% macro sort_link(label, key, sort, descending, path_id, class_filter) %}
+    {% set active = sort == key %}
+    <a class="cm-lp-sort{{ active ? ' is-active' }}" href="{{ path('app_online_courses_path_tracking', {id: path_id, sort: key, dir: active and not descending ? 'desc' : null, class: class_filter}) }}">
+        {{ label }}{% if active %} {{ descending ? '↓' : '↑' }}{% endif %}
+    </a>
+{% endmacro %}
+
+{% block main %}
+    {% import _self as t %}
+    <div class="cm-oc-state">
+        <div class="cm-oc-state__meta">
+            <span>{{ 'learningPathTrackingCountLabel'|trans({'%started%': startedCount, '%completed%': completedCount}) }}</span>
+        </div>
+        <div class="cm-oc-state__buttons">
+            {% if classes is not empty %}
+                <form method="get" action="{{ path('app_online_courses_path_tracking', {id: path.id}) }}" data-controller="auto-submit">
+                    <input type="hidden" name="sort" value="{{ sort }}">
+                    <label class="visually-hidden" for="tracking-class">{{ 'learningPathTrackingClassFilterLabel'|trans }}</label>
+                    <select id="tracking-class" name="class" class="cm-filterbar__select" data-action="auto-submit#submit">
+                        <option value="">{{ 'learningPathTrackingAllClassesOption'|trans }}</option>
+                        {% for id, label in classes %}
+                            <option value="{{ id }}" {{ classFilter == id ? 'selected' }}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
+            {% endif %}
+            <twig:Cm:Button variant="outline" href="{{ path('app_online_courses_path_tracking_export', {id: path.id, class: classFilter}) }}">
+                {{ 'learningPathTrackingExportAction'|trans }}
+            </twig:Cm:Button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            {% if rows is empty %}
+                <p class="cm-oc-empty">{{ (startedCount == 0 ? 'learningPathTrackingEmptyLabel' : 'learningPathTrackingNoMatchLabel')|trans }}</p>
+            {% else %}
+                <div class="cm-lp-tracking" data-controller="row-detail">
+                    <table class="cm-oc-table">
+                        <thead>
+                            <tr>
+                                <th>{{ t.sort_link('learningPathTrackingPersonColumn'|trans, 'name', sort, descending, path.id, classFilter) }}</th>
+                                <th>{{ t.sort_link('learningPathTrackingClassColumn'|trans, 'class', sort, descending, path.id, classFilter) }}</th>
+                                <th>{{ t.sort_link('learningPathTrackingStartedColumn'|trans, 'started', sort, descending, path.id, classFilter) }}</th>
+                                <th>{{ t.sort_link('learningPathTrackingProgressColumn'|trans, 'progress', sort, descending, path.id, classFilter) }}</th>
+                                <th>{{ t.sort_link('learningPathTrackingQuizColumn'|trans, 'quiz', sort, descending, path.id, classFilter) }}</th>
+                                <th>{{ t.sort_link('learningPathTrackingActivityColumn'|trans, 'activity', sort, descending, path.id, classFilter) }}</th>
+                                <th>{{ t.sort_link('learningPathTrackingCompletedColumn'|trans, 'completed', sort, descending, path.id, classFilter) }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in rows %}
+                                {% set progress = row.progress %}
+                                {% set enrollment = progress.enrollment %}
+                                <tr>
+                                    <td>
+                                        <button type="button" class="cm-oc-link" aria-expanded="false"
+                                                data-action="row-detail#toggle" data-row-detail-id-param="{{ enrollment.id }}">{{ row.name }} ▾</button>
+                                    </td>
+                                    <td>{{ row.classes|join(', ') ?: '—' }}</td>
+                                    <td class="cm-oc-table__date">{{ enrollment.startedAt|date('d/m/Y') }}</td>
+                                    <td class="cm-oc-table__date">
+                                        <span class="cm-lp-bar cm-lp-bar--inline"><span style="width: {{ progress.percent }}%"></span></span>
+                                        {{ progress.doneCount }} / {{ progress.totalCount }}
+                                    </td>
+                                    <td class="cm-oc-table__date">{{ progress.validatedQuizCount }} / {{ progress.quizCount }}</td>
+                                    <td class="cm-oc-table__date">{{ enrollment.lastActivityAt|date('d/m/Y') }}</td>
+                                    <td>{% if enrollment.completedAt %}<twig:Cm:Badge tone="green">{{ enrollment.completedAt|date('d/m/Y') }}</twig:Cm:Badge>{% else %}—{% endif %}</td>
+                                </tr>
+                                <tr class="cm-lp-detail" data-row-detail-target="detail" data-row-detail-id="{{ enrollment.id }}" hidden>
+                                    <td colspan="7">
+                                        <ol>
+                                            {% for view in progress.steps %}
+                                                <li>
+                                                    <b>{% if view.step.quiz %}{{ 'learningPathQuizPrefixLabel'|trans }} · {% endif %}{{ view.step.title ?: 'learningPathStepGoneLabel'|trans }}</b>
+                                                    {% if view.state.value == 'unavailable' %}
+                                                        · {{ 'learningPathStepUnavailableLabel'|trans }}
+                                                    {% elseif view.step.quiz %}
+                                                        ({{ 'learningPathThresholdLabel'|trans({'%percent%': view.step.passPercent}) }})
+                                                        {% for attempt in view.finishedAttempts %}
+                                                            · {{ 'learningPathTrackingAttemptLabel'|trans({'%score%': attempt.scorePercent, '%date%': attempt.finishedAt|date('d/m H:i'), '%minutes%': ((attempt.durationSeconds ?? 0) / 60)|round(0, 'ceil')}) }}
+                                                        {% else %}
+                                                            · {{ view.state.value == 'locked' ? 'learningPathTrackingClosedLabel'|trans : 'learningPathTrackingNoAttemptLabel'|trans }}
+                                                        {% endfor %}
+                                                        {% if view.validated %}· <twig:Cm:Badge tone="green">{{ 'learningPathValidatedOnLabel'|trans({'%date%': view.validatedAt ? view.validatedAt|date('d/m') : ''}) }}</twig:Cm:Badge>
+                                                        {% elseif view.finishedAttempts is not empty %}· <twig:Cm:Badge tone="gold">{{ 'learningPathToValidateLabel'|trans }}</twig:Cm:Badge>{% endif %}
+                                                    {% elseif view.openedAt %}
+                                                        · {{ 'learningPathOpenedOnLabel'|trans({'%date%': view.openedAt|date('d/m/Y H:i')}) }}
+                                                    {% else %}
+                                                        · {{ view.state.value == 'locked' ? 'learningPathTrackingClosedLabel'|trans : 'learningPathTrackingNotOpenedLabel'|trans }}
+                                                    {% endif %}
+                                                </li>
+                                            {% endfor %}
+                                        </ol>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+            <p class="cm-oc-lede cm-lp-retention">{{ 'learningPathTrackingRetentionNotice'|trans }}</p>
+        </div>
+    </div>
+{% endblock %}

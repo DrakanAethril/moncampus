@@ -37,6 +37,12 @@
                 </twig:Cm:Button>
             {% endif %}
             {% if course.published %}
+                {# Moving between « Public » and « Réservé aux parcours » is the publish gesture again. #}
+                <form method="post" action="{{ path('app_online_courses_publish', {id: course.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf }}">
+                    <input type="hidden" name="visibility" value="{{ course.status.value == 'public' ? 'path_only' : 'public' }}">
+                    <twig:Cm:Button variant="outline" type="submit">{{ (course.status.value == 'public' ? 'onlineCourseMakePathOnlyAction' : 'onlineCourseMakePublicAction')|trans }}</twig:Cm:Button>
+                </form>
                 <form method="post" action="{{ path('app_online_courses_unpublish', {id: course.id}) }}">
                     <input type="hidden" name="_token" value="{{ csrf }}">
                     <twig:Cm:Button variant="danger" type="submit"
@@ -52,13 +58,29 @@
                         <twig:ux:icon name="trash" width="15" height="15"/>{{ 'onlineCourseDeleteAction'|trans }}
                     </twig:Cm:Button>
                 </form>
-                <form method="post" action="{{ path('app_online_courses_publish', {id: course.id}) }}">
+                <form method="post" class="cm-oc-publish" action="{{ path('app_online_courses_publish', {id: course.id}) }}">
                     <input type="hidden" name="_token" value="{{ csrf }}">
+                    <label class="visually-hidden" for="course-visibility">{{ 'onlineCourseVisibilityLabel'|trans }}</label>
+                    <select id="course-visibility" name="visibility" class="form-select form-select-sm">
+                        <option value="public">{{ 'onlineCourseVisibilityPublicOption'|trans }}</option>
+                        <option value="path_only">{{ 'onlineCourseVisibilityPathOnlyOption'|trans }}</option>
+                    </select>
                     <twig:Cm:Button variant="gold" type="submit" :disabled="publishRefusals is not empty">{{ 'onlineCoursePublishAction'|trans }}</twig:Cm:Button>
                 </form>
             {% endif %}
         </div>
     </div>
+
+    {% if course.status.value == 'path_only' %}
+        <div class="cm-oc-notice cm-oc-notice--quiet"><span>{{ 'onlineCoursePathOnlyNotice'|trans }}</span></div>
+    {% endif %}
+    {% if paths is not empty %}
+        <div class="cm-oc-notice cm-oc-notice--quiet">
+            <span>{{ 'onlineCourseUsedByPathsLabel'|trans }}
+                {% for path in paths %}<a href="{{ path('app_online_courses_path_edit', {id: path.id}) }}">{{ path.title }}</a>{{ not loop.last ? ', ' }}{% endfor %}
+            </span>
+        </div>
+    {% endif %}
 
     {% if not course.published and publishRefusals is not empty %}
         <div class="cm-oc-notice cm-oc-notice--list">

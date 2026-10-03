@@ -1,0 +1,43 @@
+{% extends 'layout/app.html.twig' %}
+
+{# One question of a validation quiz (design/validated/cours-en-ligne.md, §10), drawn by the very
+   partials the passation uses (quiz/_question_take_body.html.twig) - twelve types, written once.
+   No verdict here: the correction comes at the end of the attempt. #}
+
+{% set quiz = view.step.quizTemplate %}
+
+{% block title %}{{ quiz.name }} · {{ path.title }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'learningPathNavLabel'|trans, url: path('app_learning_paths')},
+        {label: path.title, url: path('app_learning_path_show', {id: path.id})},
+        {label: quiz.name, url: path('app_learning_path_step', {id: path.id, number: view.number})},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'learningPathQuizPrefixLabel'|trans }} · {{ quiz.name }}{% endblock %}
+
+{% block main %}
+    <div class="cm-lp-question">
+        <div class="cm-lp-question__head">
+            <twig:Cm:Badge tone="blue">{{ question.type.shortLabelKey|trans }}</twig:Cm:Badge>
+            <span>{{ 'learningPathQuestionOfLabel'|trans({'%number%': index + 1, '%total%': attempt.questionCount}) }}</span>
+            <span class="cm-lp-bar"><span style="width: {{ (100 * index / attempt.questionCount)|round }}%"></span></span>
+        </div>
+        <form method="post" class="cm-lp-question__body"
+              action="{{ path('app_learning_path_attempt', {id: path.id, number: view.number, attemptId: attempt.id}) }}"
+              {{ include('quiz/_question_take_attributes.html.twig') }}>
+            <input type="hidden" name="_token" value="{{ csrf_token('learning_path_quiz') }}">
+            <input type="hidden" name="index" value="{{ index }}">
+
+            {{ include('quiz/_question_take_body.html.twig') }}
+
+            <div class="cm-lp-question__foot">
+                <twig:Cm:Button variant="primary" type="submit">
+                    {{ (index + 1 == attempt.questionCount ? 'learningPathQuestionFinishAction' : 'learningPathQuestionNextAction')|trans }}
+                </twig:Cm:Button>
+            </div>
+        </form>
+    </div>
+{% endblock %}

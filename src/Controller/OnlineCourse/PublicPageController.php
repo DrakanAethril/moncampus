@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller\OnlineCourse;
 
+use App\Enum\Feature;
+use App\Repository\LearningPathRepository;
+use App\Security\FeatureAccess;
 use App\Service\OnlineCourse\OnlineCoursePageHandles;
 use App\Service\OnlineCourse\OnlineCoursePublicPage;
 use App\Service\QueryValue;
@@ -30,7 +33,7 @@ class PublicPageController extends AbstractController
     use PublicCourseTrait;
 
     #[Route(path: '/courses/{handle}', name: 'app_public_courses_page', requirements: ['handle' => '[a-z0-9]+(?:-[a-z0-9]+)*'], methods: ['GET'])]
-    public function __invoke(string $handle, Request $request, OnlineCoursePageHandles $handles, OnlineCoursePublicPage $publicPage): Response
+    public function __invoke(string $handle, Request $request, OnlineCoursePageHandles $handles, OnlineCoursePublicPage $publicPage, LearningPathRepository $paths, FeatureAccess $features): Response
     {
         $page = $this->pageOrRedirect($handle, $request, $handles);
         if ($page instanceof RedirectResponse) {
@@ -50,6 +53,11 @@ class PublicPageController extends AbstractController
         $courses = $publicPage->filter($all, $search, $tagKeys);
         $byTheme = 'themes' === QueryValue::trimmed($request, 'view');
 
+        // The teacher's learning paths, for a signed-in visitor the establishment lets follow them -
+        // and nothing about them for anybody else: not a tab, not a count.
+        $learningPaths = null !== $viewer && $features->isEnabled(Feature::LearningPaths) ? $paths->findPublishedForOwner($page->getOwner()) : [];
+        $showPaths = [] !== $learningPaths && 'paths' === QueryValue::trimmed($request, 'tab');
+
         return $this->render('online_course/public/page.html.twig', [
             'page' => $page,
             'isOwner' => $isOwner,
@@ -60,6 +68,8 @@ class PublicPageController extends AbstractController
             'chips' => $publicPage->chips($all, $tagKeys),
             'search' => $search,
             'tagKeys' => $tagKeys,
+            'learningPaths' => $learningPaths,
+            'showPaths' => $showPaths,
         ]);
     }
 

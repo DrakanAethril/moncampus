@@ -40,5 +40,7 @@ final class McpInstructions
         - `course_create` crée toujours un brouillon. Ajoute ensuite les supports avec `course_material_add`, puis publie avec `course_publish` seulement si l'enseignant l'a demandé ; donne-lui alors le lien public.
         - Avant d'écrire un cours interactif, appelle `format_guide` avec « cours_interactif ». Avant de taguer, lis `course_tag_list` et réutilise les tags existants.
         - Sur un cours déjà publié, une modification ou un remplacement de support est visible aussitôt : dis-le à l'enseignant. La révision remplacée reste disponible sur la fiche du cours.
+        - Un parcours (`path_*`) enchaîne des cours de l'enseignant ; un quiz de validation se pose là où il le demande, jamais par défaut. Un parcours ne se suit qu'avec un compte. Un cours « réservé aux parcours » (`course_publish` avec `visibility: "path_only"`) n'apparaît pas sur la page publique.
+        - Le suivi des personnes qui suivent un parcours n'est accessible qu'à l'écran : ne prétends pas le connaître.
         TXT;
 }

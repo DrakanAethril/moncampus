@@ -1,0 +1,61 @@
+{% extends 'layout/app.html.twig' %}
+
+{# A course, read as a step of a learning path (design/validated/cours-en-ligne.md, §10): the same
+   materials and the same players as on its author's public page, inside the application's shell -
+   and the only place a course reserved for learning paths is read at all. #}
+
+{% block title %}{{ course.title }} · {{ path.title }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'learningPathNavLabel'|trans, url: path('app_learning_paths')},
+        {label: path.title, url: path('app_learning_path_show', {id: path.id})},
+        {label: course.title, url: path('app_learning_path_step', {id: path.id, number: view.number})},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ course.title }}{% endblock %}
+
+{% block main %}
+    <p class="cm-lp-head__meta">
+        {{ 'learningPathStepOfLabel'|trans({'%number%': view.number, '%total%': progress.steps|length}) }}
+        {% if course.estimatedMinutes %}· {{ include('online_course/_duration.html.twig', {minutes: course.estimatedMinutes}) }}{% endif %}
+    </p>
+
+    {% if current %}
+        <div data-controller="online-course-player">
+            <div class="cm-pub-tools">
+                <nav class="cm-pub-tabs" aria-label="{{ 'onlineCoursePublicMaterialsLabel'|trans }}">
+                    {% for material in course.materials %}
+                        <a class="cm-pub-tabs__tab {{ material == current ? 'is-active' }}"
+                           href="{{ path('app_learning_path_step', {id: path.id, number: view.number, material: material.slug}) }}"
+                           {{ material == current ? 'aria-current="page"' }}>
+                            <twig:ux:icon name="{{ material.kind.icon }}" width="15" height="15"/>{{ material.label ?? material.kind.labelKey|trans }}
+                        </a>
+                    {% endfor %}
+                </nav>
+                {% if currentUrl and (current.kind.isBundle or current.kind.isDocument) %}
+                    <div class="cm-pub-tools__buttons">
+                        <twig:Cm:Button variant="primary" size="sm" href="{{ path('app_learning_path_play', {id: path.id, number: view.number, material: current.slug}) }}">
+                            <twig:ux:icon name="external-link" width="15" height="15"/>{{ 'onlineCourseFullPageAction'|trans }}
+                        </twig:Cm:Button>
+                        {% if current.kind.isBundle and frameAllowed %}
+                            <twig:Cm:Button variant="outline" size="sm" data-online-course-player-target="fullscreen" data-action="online-course-player#fullscreen">
+                                <twig:ux:icon name="maximize" width="15" height="15"/>{{ 'onlineCourseFullscreenAction'|trans }}
+                            </twig:Cm:Button>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+            {{ include('online_course/public/_material.html.twig', {material: current, url: currentUrl}) }}
+        </div>
+    {% else %}
+        <p class="cm-pub-empty">{{ 'onlineCoursePublicNoMaterialLabel'|trans }}</p>
+    {% endif %}
+
+    {% if course.description %}
+        <div class="card mt-3"><div class="card-body cm-pub-prose">{{ course.description|raw }}</div></div>
+    {% endif %}
+
+    {{ include('learning_path/_step_nav.html.twig') }}
+{% endblock %}
