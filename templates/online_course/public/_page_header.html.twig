@@ -1,0 +1,32 @@
+{# The head of a teacher's public page and of each course on it (design/validated/cours-en-ligne.md,
+   §19 and §21): the teacher's banner in place of the shell's bar, with in its top right corner the
+   way back and the user menu for somebody signed in, the theme and « Se connecter » for a visitor.
+
+   Variables: page; banner_url and banner_heading, handed to the banner as they are (see
+   online_course/_page_banner.html.twig). #}
+{% embed 'online_course/_page_banner.html.twig' with {
+    banner_title: page.title,
+    title_color: page.titleColor,
+    banner_color: page.bannerColor,
+    banner_height: page.bannerHeight,
+    image_key: page.bannerImageKey,
+    banner_url: banner_url ?? null,
+    banner_heading: banner_heading ?? true,
+} %}
+    {% block bar %}
+        <div class="cm-pub-banner__bar">
+            {% if app.user %}
+                <twig:Cm:Button variant="outline" size="sm" href="{{ path('app_home') }}">{{ 'publicShellBackAction'|trans }}</twig:Cm:Button>
+                {# The app shell's own menu, avatar alone: theme, profile and sign-out live in it. #}
+                <div class="cm-pub-banner__user">{{ include('layout/_user_menu.html.twig', {compact: true}) }}</div>
+            {% else %}
+                {% set visitor_theme = app.request.cookies.get('theme') %}
+                <span class="cm-theme" data-controller="theme" data-theme-authenticated-value="false">
+                    <button type="button" class="{{ visitor_theme != 'dark' ? 'is-on' }}" data-action="theme#setLight" aria-label="{{ 'themeLightLabel'|trans }}">☀</button>
+                    <button type="button" class="{{ visitor_theme == 'dark' ? 'is-on' }}" data-action="theme#setDark" aria-label="{{ 'themeDarkLabel'|trans }}">☾</button>
+                </span>
+                <twig:Cm:Button variant="outline" size="sm" href="{{ path('app_login') }}">{{ 'publicShellSignInAction'|trans }}</twig:Cm:Button>
+            {% endif %}
+        </div>
+    {% endblock %}
+{% endembed %}

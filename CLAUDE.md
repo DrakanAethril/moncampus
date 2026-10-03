@@ -357,7 +357,9 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   - **A teacher's page is theirs, not the establishment's**: their banner (`OnlineCoursePage`'s
     title, colours, height in px and optional picture - `OnlineCourseImageStore` - drawn by
     `online_course/_page_banner.html.twig` for the page and for the « Ma page » preview alike)
-    replaces the shell's bar; no emblem, no teacher name, no footer. The courses come in rows -
+    replaces the shell's bar; no emblem, no teacher name, no footer - and so on each course's page
+    too, where the banner's title leads back to the teacher's page (`_page_header.html.twig`, one
+    copy for both). The courses come in rows -
     « Récemment mis à jour », then one per tag in alphabetical order - each cut to one line by
     `online_course_row_controller.js`; « Voir tout » is `?tag=` / `?view=recent` on the same
     address. A signed-in visitor gets the app's own user menu (`layout/_user_menu.html.twig`,

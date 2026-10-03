@@ -12,8 +12,9 @@
    that asks for an account: Cm:Breadcrumb is therefore not used, and
    tests/Functional/BreadcrumbConventionTest.php only looks at the screens of the app layout.
 
-   A teacher's page (online_course/public/page.html.twig) replaces the bar with its own banner and
-   draws no footer: `public_header` and `public_footer` are there for it. Its courses keep both. #}
+   A teacher's page (online_course/public/page.html.twig) and each of its courses replace the bar
+   with the teacher's banner and draw no footer: `public_header` and `public_footer` are there for
+   them. A course's test screens keep both. #}
 
 {% block title %}{% block public_title %}{% endblock %}{% endblock %}
 

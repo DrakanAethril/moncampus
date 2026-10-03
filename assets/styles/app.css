@@ -12955,6 +12955,10 @@ form.cm-cs-lookup__item { border: 0; padding: 0; }
     font: 600 clamp(26px, 4.2vw, 42px)/1.15 var(--cm-font-title); color: var(--cm-pub-banner-ink, #fff); overflow-wrap: anywhere;
 }
 .cm-pub-banner.has-image .cm-pub-banner__title { text-shadow: 0 1px 14px rgba(0, 0, 0, .35); }
+/* On a course's page the banner's title leads back to the teacher's page. */
+.cm-pub-banner__link, .cm-pub-banner__link:hover { color: inherit; text-decoration: none; }
+.cm-pub-banner__link:hover { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; }
+.cm-pub-banner__link:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; border-radius: 2px; }
 .cm-pub-banner__bar { position: absolute; z-index: 2; top: 14px; right: 18px; display: flex; align-items: center; gap: 10px; }
 .cm-pub-banner__bar .cm-btn--outline { background: var(--cm-surface); border-color: var(--cm-border); color: var(--cm-ink); box-shadow: 0 1px 4px rgba(18, 52, 77, .18); }
 .cm-pub-banner__bar .cm-btn--outline:hover { background: var(--cm-surface-alt); color: var(--cm-ink); }
@@ -13065,6 +13069,8 @@ a.cm-pub-tag:hover { color: var(--cm-ink); text-decoration: none; }
 .cm-pub-tabs__tab:last-child { border-right: 0; }
 .cm-pub-tabs__tab:hover { background: var(--cm-surface-alt); color: var(--cm-ink); text-decoration: none; }
 .cm-pub-tabs__tab.is-active { background: var(--cm-blue-bg); color: var(--cm-blue-tx); }
+/* « Test », after the materials: not one of them, so it reads as a link of its own. */
+.cm-pub-tabs__tab--test { color: var(--cm-brand); }
 .cm-pub-tools__buttons { display: flex; gap: 8px; flex-wrap: wrap; }
 .cm-pub-viewer { border: 1px solid var(--cm-border); border-radius: var(--cm-radius); background: var(--cm-surface); overflow: hidden; }
 .cm-pub-viewer .cm-pub-empty { border: 0; margin: 0; }
