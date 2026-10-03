@@ -74,6 +74,12 @@ class FeatureCoverageTest extends KernelTestCase
                 // establishment runs - « la plateforme redémarre » is not switchable, and a
                 // catalogue entry could only ever hide the warning from the people who need it.
                 'app_deployment_notice_',
+                // « Cours en ligne », the public half (design/validated/cours-en-ligne.md §3): a
+                // teacher's public page and the courses on it are read by visitors who hold no
+                // account, so the resolver would answer « off » and 404 the very pages the feature
+                // exists to publish. What makes them exist is a published course; writing and
+                // publishing one is guarded (app_online_courses_*).
+                'app_public_courses_',
             ],
             // The mobile app's own account plumbing. Same reason as the row above, one step later:
             // an account that cannot read its profile cannot be told what it may see.

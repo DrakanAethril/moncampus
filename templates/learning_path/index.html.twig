@@ -1,0 +1,43 @@
+{% extends 'layout/app.html.twig' %}
+
+{# « Mes parcours » (design/validated/cours-en-ligne.md, §10): the paths this person has started,
+   and nothing else - there is no catalogue of paths, any more than there is one of courses. A path
+   is discovered by the link its teacher hands out, or from the « Parcours » tab of their page. #}
+
+{% block title %}{{ 'learningPathNavLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'learningPathNavLabel'|trans, url: path('app_learning_paths')},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'learningPathNavLabel'|trans }}{% endblock %}
+
+{% block main %}
+    {% if rows is empty %}
+        <div class="card"><div class="card-body">
+            <p class="cm-oc-empty">{{ 'learningPathNoneStartedLabel'|trans }}</p>
+        </div></div>
+    {% else %}
+        <div class="cm-lp-list">
+            {% for row in rows %}
+                <a class="cm-lp-card" href="{{ path('app_learning_path_show', {id: row.path.id}) }}">
+                    <span class="cm-lp-card__title">{{ row.path.title }}</span>
+                    <span class="cm-lp-card__meta">
+                        {{ row.path.owner.displayName ?? row.path.owner.userIdentifier }}
+                        · {{ 'learningPathStartedOnLabel'|trans({'%date%': row.progress.enrollment.startedAt|date('d/m/Y')}) }}
+                    </span>
+                    <span class="cm-lp-bar"><span style="width: {{ row.progress.percent }}%"></span></span>
+                    <span class="cm-lp-card__meta">
+                        {% if row.progress.completed %}
+                            <twig:Cm:Badge tone="green">{{ 'learningPathCompletedLabel'|trans }}</twig:Cm:Badge>
+                        {% else %}
+                            {{ 'learningPathStepsDoneLabel'|trans({'%done%': row.progress.doneCount, '%total%': row.progress.totalCount}) }}
+                        {% endif %}
+                    </span>
+                </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}

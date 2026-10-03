@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Service\ClassBoard;
 
 use App\Enum\ClassBoardWidgetType;
+use App\Enum\GroupCreationMode;
+use App\Enum\GroupMixite;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizerInterface;
 
@@ -33,7 +35,6 @@ final class ClassBoardLayout
     public const float MIN_HEIGHT = 10.0;
     public const int CLOCK_LABEL_MAX = 60;
     public const int TEAM_NAME_MAX = 40;
-    public const int MAX_TEAMS = 12;
     public const int URL_MAX = 2_000;
     public const int TEXT_MAX = 50_000;
     public const int MAX_PHASES = 30;
@@ -221,8 +222,16 @@ final class ClassBoardLayout
                 'optionId' => $config->id('optionId'),
                 'allowRepeat' => $config->bool('allowRepeat', false),
             ],
+            // The settings of the group creation panel, and the saved lot the widget opens on. The
+            // groups drawn are never kept, nor the absentees and the pairs, which are of the day.
             ClassBoardWidgetType::Groups => [
                 'batchId' => $config->id('batchId'),
+                'mode' => $config->choice('mode', array_column(GroupCreationMode::cases(), 'value'), GroupCreationMode::Size->value),
+                'value' => $config->int('value', 2, 10, 3),
+                'optionId' => $config->id('optionId'),
+                'mixite' => $config->choice('mixite', array_column(GroupMixite::cases(), 'value'), GroupMixite::Free->value),
+                'nameFormat' => $config->choice('nameFormat', ['short', 'full'], 'short'),
+                'panel' => $config->bool('panel', true),
             ],
             ClassBoardWidgetType::TeamCounter => [
                 'batchId' => $config->id('batchId'),
@@ -336,11 +345,17 @@ final class ClassBoardLayout
         return $phases;
     }
 
-    /** @return list<array{name: string, score: int}> */
+    /**
+     * As many teams as the teacher adds: a lot of groups makes one team per group, and a count
+     * stopped at a number would refuse the whole board for a lot one group larger. The document's
+     * own size (MAX_BYTES) is the only bound.
+     *
+     * @return list<array{name: string, score: int}>
+     */
     private function teams(ConfigReader $config): array
     {
         $teams = [];
-        foreach ($config->objects('teams', self::MAX_TEAMS) as $team) {
+        foreach ($config->objects('teams') as $team) {
             $teams[] = [
                 'name' => trim($team->string('name', self::TEAM_NAME_MAX, '')),
                 'score' => $team->int('score', -9999, 99999, 0),

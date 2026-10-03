@@ -1,0 +1,120 @@
+{% extends 'layout/public.html.twig' %}
+
+{# The page of one course (design/validated/cours-en-ligne.md, §5): its card, one tab per material,
+   and the material itself, read from the CDN - the application serves no byte of it. Each tab is a
+   link to the material's own address, so the page a teacher points a class at is exactly the one
+   they are looking at. #}
+
+{% block public_title %}{{ course.title }} · {{ page.title }}{% endblock %}
+
+{% block public_meta %}
+    <meta name="description" content="{{ course.summary }}">
+    <meta property="og:title" content="{{ course.title }}">
+    <meta property="og:description" content="{{ course.summary }}">
+    <meta property="og:type" content="article">
+    {% if not course.published %}<meta name="robots" content="noindex">{% endif %}
+{% endblock %}
+
+{% block public_home_url %}{{ path('app_public_courses_page', {handle: page.handle}) }}{% endblock %}
+{% block public_home_label %}{{ page.title }}{% endblock %}
+
+{% block public_main %}
+    {% if not course.published %}
+        <div class="cm-pub__notice">
+            {{ 'onlineCoursePublicDraftNotice'|trans }}
+            <a href="{{ path('app_online_courses_edit', {id: course.id}) }}">{{ 'onlineCoursePublicBackToCardAction'|trans }}</a>
+        </div>
+    {% elseif isOwner %}
+        <div class="cm-pub__notice cm-pub__notice--quiet">
+            {{ 'onlineCoursePublicOwnerNotice'|trans }}
+            <a href="{{ path('app_online_courses_edit', {id: course.id}) }}">{{ 'onlineCoursePublicBackToCardAction'|trans }}</a>
+        </div>
+    {% elseif canUnpublish %}
+        {# An administrator on somebody else's course: the one gesture they hold on it. #}
+        <form class="cm-pub__notice cm-pub__notice--quiet" method="post" action="{{ path('app_online_courses_unpublish', {id: course.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('online_course') }}">
+            {{ 'onlineCoursePublicAdminNotice'|trans }}
+            <twig:Cm:Button variant="danger" size="sm" type="submit"
+                            data-controller="confirm-submit" data-action="confirm-submit#confirm"
+                            data-confirm-submit-message-value="{{ 'onlineCourseUnpublishConfirmMessage'|trans }}">{{ 'onlineCourseUnpublishAction'|trans }}</twig:Cm:Button>
+        </form>
+    {% endif %}
+
+    <nav class="cm-pub-crumb">
+        <a href="{{ path('app_public_courses_page', {handle: page.handle}) }}">{{ page.title }}</a>
+        {% for tag in course.tags|slice(0, 1) %}
+            <span aria-hidden="true">›</span>
+            <a href="{{ path('app_public_courses_page', {handle: page.handle, tag: [tag.normalizedLabel]}) }}">{{ tag.label }}</a>
+        {% endfor %}
+        <span aria-hidden="true">›</span>
+        <a class="current" href="{{ path('app_public_courses_course', {handle: page.handle, slug: course.slug}) }}" aria-current="page">{{ course.title }}</a>
+    </nav>
+
+    <div class="cm-pub-head">
+        <h1 class="cm-pub-head__title">{{ course.title }}</h1>
+        <p class="cm-pub-head__meta">
+            {% if course.tags is not empty %}
+                <span class="cm-pub-tags">
+                    {% for tag in course.tags %}<a class="cm-pub-tag" href="{{ path('app_public_courses_page', {handle: page.handle, tag: [tag.normalizedLabel]}) }}">{{ tag.label }}</a>{% endfor %}
+                </span>
+            {% endif %}
+            {% if course.estimatedMinutes %}<span>{{ include('online_course/_duration.html.twig', {minutes: course.estimatedMinutes}) }}</span>{% endif %}
+            <span>{{ 'onlineCoursePublicUpdatedLabel'|trans({'%date%': course.updatedAt|localized_date('d MMMM yyyy')}) }}</span>
+            <span>{{ course.owner.displayName ?? page.title }}</span>
+        </p>
+    </div>
+
+    {% if current %}
+        <div data-controller="online-course-player">
+        <div class="cm-pub-tools">
+            <nav class="cm-pub-tabs" aria-label="{{ 'onlineCoursePublicMaterialsLabel'|trans }}">
+                {% for material in course.materials %}
+                    <a class="cm-pub-tabs__tab {{ material == current ? 'is-active' }}"
+                       href="{{ path('app_public_courses_course', {handle: page.handle, slug: course.slug, material: material.slug}) }}"
+                       {{ material == current ? 'aria-current="page"' }}>
+                        <twig:ux:icon name="{{ material.kind.icon }}" width="15" height="15"/>{{ material.label ?? material.kind.labelKey|trans }}
+                    </a>
+                {% endfor %}
+            </nav>
+            {# A material shown in a frame opens alone in the window (§7); an interactive course
+               goes full screen as well. A video has the browser's own controls for both. #}
+            {% if currentUrl and (current.kind.isBundle or current.kind.isDocument) %}
+                <div class="cm-pub-tools__buttons">
+                    <twig:Cm:Button variant="primary" size="sm" href="{{ path('app_public_courses_play', {handle: page.handle, slug: course.slug, material: current.slug}) }}">
+                        <twig:ux:icon name="external-link" width="15" height="15"/>{{ 'onlineCourseFullPageAction'|trans }}
+                    </twig:Cm:Button>
+                    {% if current.kind.isBundle and frameAllowed %}
+                        <twig:Cm:Button variant="outline" size="sm" data-online-course-player-target="fullscreen" data-action="online-course-player#fullscreen">
+                            <twig:ux:icon name="maximize" width="15" height="15"/>{{ 'onlineCourseFullscreenAction'|trans }}
+                        </twig:Cm:Button>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+
+        {{ include('online_course/public/_material.html.twig', {material: current, url: currentUrl}) }}
+        </div>
+    {% else %}
+        <p class="cm-pub-empty">{{ 'onlineCoursePublicNoMaterialLabel'|trans }}</p>
+    {% endif %}
+
+    <div class="cm-pub-below">
+        {% if course.description %}
+            <section class="cm-pub-box">
+                <h2 class="cm-pub-box__title">{{ 'onlineCoursePublicAboutHeading'|trans }}</h2>
+                <div class="cm-pub-prose">{{ course.description|raw }}</div>
+            </section>
+        {% endif %}
+        {% if siblings is not empty %}
+            <section class="cm-pub-box">
+                <h2 class="cm-pub-box__title">{{ 'onlineCoursePublicSiblingsHeading'|trans }}</h2>
+                <ul class="cm-pub-siblings">
+                    {% for sibling in siblings %}
+                        <li><a href="{{ path('app_public_courses_course', {handle: page.handle, slug: sibling.slug}) }}">{{ sibling.title }}</a></li>
+                    {% endfor %}
+                    <li><a href="{{ path('app_public_courses_page', {handle: page.handle}) }}">{{ 'onlineCoursePublicAllCoursesAction'|trans }}</a></li>
+                </ul>
+            </section>
+        {% endif %}
+    </div>
+{% endblock %}

@@ -1,17 +1,69 @@
-{# Groupes: a saved lot of groups, the teacher's own or a colleague's shared one - read, never
-   changed. « Rapporteur » picks one member per group, in the page only. #}
-{% if data.lot %}
-    <div class="cm-cb-w__meta">{{ 'classBoardGroupsLotLabel'|trans }} <b>{{ data.lot.name }}</b></div>
-    <div class="cm-cb-groups">
-        {% for members in data.lot.groups %}
-            <div class="cm-cb-groups__group" data-class-board-groups-target="group">
-                <b>{{ 'classBoardGroupNumberLabel'|trans({'%number%': loop.index}) }}
-                    <button type="button" class="cm-cb-btn cm-cb-btn--small" data-action="class-board-groups#reporter">{{ 'classBoardGroupsReporterAction'|trans }}</button>
-                </b>
-                {% for member in members %}<span>{{ member }}</span>{% endfor %}
-            </div>
-        {% endfor %}
-    </div>
+{# Groupes: the left panel of Outils › Création de groupes, on the board - the same partial, the same
+   controller (group_creation_controller.js), the same routes, so groups are drawn here exactly as
+   they are there: distribution, absentees, mixité, pairs to separate or keep together, locked
+   groups, re-draw, recalculation. The one thing left out is saving: nothing drawn here becomes a
+   lot, and a saved lot chosen with the gear is only what the widget opens on - read, never changed.
+
+   What the board keeps is what was set (mode, size, option, mixité, name format, panel shown or
+   not), never the groups, the absentees or the pairs. « Rapporteur » picks one member of a group,
+   in the page only. #}
+{% set config = widget.config %}
+{% if data.students is empty %}
+    <div class="cm-cb-w__locked">{{ 'programToolsNoStudentsMessage'|trans }}</div>
 {% else %}
-    <div class="cm-cb-w__locked">{{ data.lots is empty ? 'classBoardGroupsNoLotMessage'|trans : 'classBoardGroupsChooseLotMessage'|trans }}</div>
+    <div class="cm-cb-grp{{ (config.panel ?? true) ? '' : ' is-panel-hidden' }}"
+         data-class-board-groups-target="root"
+         data-controller="group-creation"
+         data-action="group-creation:settings->class-board-groups#keepSettings"
+         data-group-creation-students-value="{{ data.students|json_encode }}"
+         data-group-creation-options-value="{{ data.options|json_encode }}"
+         data-group-creation-settings-value="{{ config|json_encode }}"
+         {% if data.lot %}data-group-creation-initial-lot-value="{{ data.lot|json_encode }}"{% endif %}
+         data-group-creation-generate-url-value="{{ path('app_program_tools_group_creation_generate', {id: data.program.id}) }}"
+         data-group-creation-recalculate-url-value="{{ path('app_program_tools_group_creation_recalculate', {id: data.program.id}) }}"
+         data-group-creation-csrf-token-value="{{ csrf_token('program_group_creation') }}"
+         data-group-creation-labels-value="{{ {
+             perGroupUnit: 'programToolsPerGroupUnitLabel'|trans,
+             groupsUnit: 'programToolsGroupsUnitLabel'|trans,
+             summaryTemplate: 'programToolsGroupSummaryTemplateLabel'|trans,
+             studentWordSingular: 'programToolsStudentWordSingularLabel'|trans,
+             studentWordPlural: 'programToolsStudentWordPluralLabel'|trans,
+             groupWordSingular: 'programToolsGroupWordSingularLabel'|trans,
+             groupWordPlural: 'programToolsGroupWordPluralLabel'|trans,
+             networkErrorMessage: 'programToolsNetworkErrorMessage'|trans,
+             pairIncompleteMessage: 'programToolsPairIncompleteMessage'|trans,
+             pairSameStudentMessage: 'programToolsPairSameStudentMessage'|trans,
+             pairDuplicateMessage: 'programToolsPairDuplicateMessage'|trans,
+             pairNotAddedMessage: 'programToolsPairNotAddedMessage'|trans,
+             groupTitleTemplate: 'programToolsGroupTitleTemplateLabel'|trans,
+             lockedLabel: 'programToolsLockedLabel'|trans,
+             lockLabel: 'programToolsLockLabel'|trans,
+             recalculateUpToDateToast: 'programToolsRecalculateUpToDateToast'|trans,
+             recalculateDoneToast: 'programToolsRecalculateDoneToast'|trans,
+             recalculateAllLockedMessage: 'programToolsRecalculateAllLockedMessage'|trans,
+             reporterLabel: 'classBoardGroupsReporterAction'|trans,
+         }|json_encode }}">
+        <div class="cm-cb-grp__bar">
+            <button type="button" class="cm-cb-pill" aria-pressed="{{ (config.panel ?? true) ? 'true' : 'false' }}"
+                    data-class-board-groups-target="panelToggle"
+                    data-action="class-board-groups#togglePanel">{{ 'classBoardGroupsPanelToggle'|trans }}</button>
+            {% if data.lot %}
+                <span class="cm-cb-w__meta">{{ 'classBoardGroupsLotLabel'|trans }} <b>{{ data.lot.name }}</b></span>
+            {% endif %}
+            <select class="cm-cb-input cm-cb-grp__names" aria-label="{{ 'programToolsNameFormatFieldLabel'|trans }}"
+                    data-group-creation-target="nameFormatSelect" data-action="change->group-creation#setNameFormat">
+                <option value="short">{{ 'programToolsNameFormatShortLabel'|trans }}</option>
+                <option value="full">{{ 'programToolsNameFormatFullLabel'|trans }}</option>
+            </select>
+        </div>
+        <div class="cm-cb-grp__layout">
+            {% include 'program/_group_creation_panel.html.twig' with {options: data.options, input_class: 'cm-cb-input', select_class: 'cm-cb-input'} only %}
+            <div class="cm-cb-grp__results">
+                <div class="cm-grp-grid" data-group-creation-target="grid"></div>
+                <div class="cm-grp-dnd-hint" data-group-creation-target="dndHint" hidden>{{ 'programToolsDndHintLabel'|trans }}</div>
+                <div class="cm-grp-empty" data-group-creation-target="emptyState">{{ 'classBoardGroupsEmptyMessage'|trans }}</div>
+            </div>
+        </div>
+        <div class="cm-grp-toast" data-group-creation-target="toast" hidden></div>
+    </div>
 {% endif %}

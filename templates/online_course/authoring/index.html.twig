@@ -1,0 +1,99 @@
+{% extends 'layout/app.html.twig' %}
+
+{# « Cours en ligne », the author's own list (design/validated/cours-en-ligne.md, §8). Two segments
+   of trail: the screen hangs off the Outils menu and goes through no class. #}
+
+{% block title %}{{ 'onlineCourseNavLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'onlineCourseNavLabel'|trans, url: path('app_online_courses')},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'onlineCourseNavLabel'|trans }}{% endblock %}
+
+{% block main %}
+    {% if not page %}
+        <div class="cm-oc-notice">
+            <span>{{ 'onlineCourseNoPageNotice'|trans }}</span>
+            <twig:Cm:Button variant="gold" size="sm" href="{{ path('app_online_courses_page') }}">{{ 'onlineCourseChooseAddressAction'|trans }}</twig:Cm:Button>
+        </div>
+    {% endif %}
+
+    {{ include('online_course/authoring/_tabs.html.twig', {active: 'courses'}) }}
+
+    <div class="card cm-card--tabbed">
+        <div class="card-body">
+            <form class="cm-filterbar cm-oc-filters" method="get" action="{{ path('app_online_courses') }}" data-controller="auto-submit">
+                <label class="cm-filterbar__field">
+                    <span>{{ 'onlineCourseStatusFilterLabel'|trans }}</span>
+                    <select name="status" class="cm-filterbar__select" data-action="auto-submit#submit">
+                        <option value="">{{ 'onlineCourseAllStatusesOption'|trans }}</option>
+                        {% for status in statuses %}
+                            <option value="{{ status.value }}" {{ statusFilter == status ? 'selected' }}>{{ status.labelKey|trans }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                {% if tags is not empty %}
+                    <label class="cm-filterbar__field">
+                        <span>{{ 'onlineCourseTagFilterLabel'|trans }}</span>
+                        <select name="tag" class="cm-filterbar__select" data-action="auto-submit#submit">
+                            <option value="">{{ 'onlineCourseAllTagsOption'|trans }}</option>
+                            {% for key, label in tags %}
+                                <option value="{{ key }}" {{ tagFilter == key ? 'selected' }}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                {% endif %}
+                {% if page %}
+                    <a class="cm-oc-filters__public" href="{{ path('app_public_courses_page', {handle: page.handle}) }}" target="_blank" rel="noopener">
+                        <twig:ux:icon name="external-link" width="15" height="15"/>{{ 'onlineCourseSeePublicPageAction'|trans }}
+                    </a>
+                {% endif %}
+            </form>
+
+            {% if courses is empty %}
+                <p class="cm-oc-empty">{{ (total == 0 ? 'onlineCourseListEmptyLabel' : 'onlineCourseListNoMatchLabel')|trans }}</p>
+            {% else %}
+                <table class="cm-oc-table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'onlineCourseCourseColumnLabel'|trans }}</th>
+                            <th>{{ 'onlineCourseStatusColumnLabel'|trans }}</th>
+                            <th>{{ 'onlineCourseMaterialsColumnLabel'|trans }}</th>
+                            <th>{{ 'onlineCourseTagsColumnLabel'|trans }}</th>
+                            <th>{{ 'onlineCourseUpdatedColumnLabel'|trans }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for course in courses %}
+                            <tr>
+                                <td>
+                                    <a class="cm-oc-table__title" href="{{ path('app_online_courses_edit', {id: course.id}) }}">{{ course.title }}</a>
+                                    {% if course.summary %}<span class="cm-oc-table__summary">{{ course.summary }}</span>{% endif %}
+                                </td>
+                                <td><twig:Cm:Badge :of="course.status"/></td>
+                                <td>
+                                    <span class="cm-oc-badges">
+                                        {% for material in course.materials %}
+                                            <twig:Cm:Badge :tone="material.kind.badgeTone.value">{{ material.label ?? material.kind.shortLabelKey|trans }}</twig:Cm:Badge>
+                                        {% else %}
+                                            <span class="cm-oc-table__none">{{ 'onlineCourseNoMaterialLabel'|trans }}</span>
+                                        {% endfor %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="cm-pub-tags">
+                                        {% for tag in course.tags %}<span class="cm-pub-tag">{{ tag.label }}</span>{% endfor %}
+                                    </span>
+                                </td>
+                                <td class="cm-oc-table__date">{{ course.updatedAt|date('d/m/Y') }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

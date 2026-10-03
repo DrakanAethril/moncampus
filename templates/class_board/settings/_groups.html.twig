@@ -1,7 +1,8 @@
+{# The saved lot the widget opens on - optional: without one, it starts empty and draws. #}
 {% set config = widget.config %}
-<label class="cm-cb-field">{{ 'classBoardGroupsLotField'|trans }}
+<label class="cm-cb-field">{{ 'classBoardGroupsLotField'|trans }} <span>{{ 'classBoardOptionalLabel'|trans }}</span>
     <select class="cm-cb-input" name="batchId" data-kind="id" data-rerender>
-        <option value="">{{ 'classBoardChooseOption'|trans }}</option>
+        <option value="">{{ 'classBoardGroupsNoLotOption'|trans }}</option>
         {% for lot in data.lots ?? [] %}
             <option value="{{ lot.id }}" {{ config.batchId == lot.id ? 'selected' }}>{{ lot.name }}</option>
         {% endfor %}

@@ -111,6 +111,41 @@ class ClassBoardLayoutTest extends TestCase
         self::assertSame(['durationSeconds' => 900], $widget['config']);
     }
 
+    /**
+     * The groups widget keeps the settings of the group creation panel - never the groups drawn, the
+     * absentees or the pairs - and a layout stored before it had any reads as the panel's defaults.
+     */
+    public function testTheGroupsWidgetKeepsThePanelSettingsAndNothingDrawn(): void
+    {
+        $bare = $this->layout->normalize([$this->widget('groups', 'a', ['batchId' => 4])])[0];
+        self::assertSame(
+            ['batchId' => 4, 'mode' => 'taille', 'value' => 3, 'optionId' => null, 'mixite' => 'libre', 'nameFormat' => 'short', 'panel' => true],
+            $bare['config'],
+        );
+
+        $set = $this->layout->normalize([$this->widget('groups', 'a', [
+            'mode' => 'nombre', 'value' => 25, 'optionId' => 7, 'mixite' => 'mixte', 'nameFormat' => 'full', 'panel' => false,
+            'groups' => [[1, 2], [3]], 'absentIds' => [4], 'separatePairs' => [[1, 3]],
+        ])])[0];
+        self::assertSame(
+            ['batchId' => null, 'mode' => 'nombre', 'value' => 10, 'optionId' => 7, 'mixite' => 'mixte', 'nameFormat' => 'full', 'panel' => false],
+            $set['config'],
+        );
+
+        $this->expectException(InvalidClassBoardLayoutException::class);
+        $this->layout->normalize([$this->widget('groups', 'a', ['mixite' => 'au hasard'])]);
+    }
+
+    /** No ceiling on the teams of a counter: a lot of thirty groups makes thirty teams. */
+    public function testATeamCounterTakesAsManyTeamsAsWanted(): void
+    {
+        $teams = array_map(static fn (int $index): array => ['name' => 'Équipe '.$index, 'score' => $index], range(1, 30));
+
+        $widget = $this->layout->normalize([$this->widget('team_counter', 'a', ['teams' => $teams])])[0];
+
+        self::assertSame($teams, $this->config($widget)['teams']);
+    }
+
     public function testAReferenceIsAPositiveIdOrNothing(): void
     {
         $widget = $this->layout->normalize([$this->widget('random_draw', 'a', ['drawId' => 12])])[0];

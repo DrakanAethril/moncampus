@@ -1,0 +1,19 @@
+{# The data attributes a form that asks one question needs on its own element, by question type: the
+   Stimulus controller that drives a texte à trous, a zone, a légende or an appariement, with its
+   values. Included **inside the opening <form> tag**, by every screen that draws a question with
+   quiz/_question_take_body.html.twig. #}
+{% set is_blanks = question.type.value == 'texte_a_trous' %}
+{% set is_zone = question.type.value == 'zone' %}
+{% set is_legende = question.type.value == 'legende' %}
+{% set is_apparier = question.type.value == 'apparier' %}
+{% set is_numeric = question.type.usesNumericConfig %}
+{% set is_short = question.type.value == 'reponse_courte' %}
+
+{% if is_blanks %}data-controller="quiz-blanks-take"
+data-quiz-blanks-take-mode-value="{{ question.blankMode.value }}"
+data-quiz-blanks-take-count-template-value="{{ 'quizBlankFilledCountTemplate'|trans }}"{% endif %}
+{% if is_zone %}data-controller="quiz-zone-take" data-quiz-zone-take-hint-ids-value="[]"{% endif %}
+{% if is_legende %}data-controller="quiz-legende-take"
+data-quiz-legende-take-count-template-value="{{ 'quizLegendePlacedCountTemplate'|trans }}"{% endif %}
+{% if is_apparier %}data-controller="quiz-apparier-take"
+data-quiz-apparier-take-count-template-value="{{ 'quizApparierPlacedCountTemplate'|trans }}"{% endif %}

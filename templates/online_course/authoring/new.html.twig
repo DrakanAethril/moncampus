@@ -1,0 +1,30 @@
+{% extends 'layout/app.html.twig' %}
+
+{# A new course: its card only. It is created as a draft, and its materials are added from the
+   card's own screen, each of them carrying a file (design/validated/cours-en-ligne.md, §8). #}
+
+{% block title %}{{ 'onlineCourseNewAction'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'onlineCourseNavLabel'|trans, url: path('app_online_courses')},
+        {label: 'onlineCourseNewAction'|trans, url: path('app_online_courses_new')},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'onlineCourseNewAction'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+                {{ include('online_course/authoring/_form.html.twig') }}
+                <twig:Cm:ActionBar>
+                    <twig:block name="meta">{{ 'onlineCourseNewDraftHint'|trans }}</twig:block>
+                    <twig:Cm:Button variant="outline" href="{{ path('app_online_courses') }}">{{ 'cancelAction'|trans }}</twig:Cm:Button>
+                    <twig:Cm:Button variant="primary" type="submit">{{ 'onlineCourseCreateAction'|trans }}</twig:Cm:Button>
+                </twig:Cm:ActionBar>
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}

@@ -211,6 +211,16 @@
                                 </a>
                             </li>
                         {% endif %}
+                        {# « Parcours » (design/validated/cours-en-ligne.md §10): the learning paths the student
+                           has started. Shown once there is one - a path is discovered by its link, never
+                           by browsing a list, so an entry before that would open on nothing. #}
+                        {% if is_granted('ROLE_STUDENT') and not is_staff() and feature('learning_paths') and has_started_learning_path() %}
+                            <li class="nav-item {{ current_route starts with 'app_learning_path' ? 'active' }}">
+                                <a class="nav-link" href="{{ path('app_learning_paths') }}"{{ current_route starts with 'app_learning_path' ? ' aria-current="page"' }}>
+                                    <span class="nav-link-title">{{ 'learningPathNavLabel'|trans }}</span>
+                                </a>
+                            </li>
+                        {% endif %}
                         {# « Ma progression », right after « Travail à faire » exactly as the mockup's
                            bar draws it. Shown only to somebody whose own formation actually plays:
                            game_badge() answers null unless the feature is on *and* the formation has
@@ -486,7 +496,8 @@
                            the role its controllers do (App\Controller\EcoleDirecte\EcoleDirecteControllerTrait). #}
                         {% set tools_ecole_directe = feature('ecole_directe') and is_granted('ROLE_ADMIN') %}
                         {% set tools_prepare = feature('progression') or feature('sequence_library') or feature('quiz_library')
-                            or feature('file_library') or feature('surveys') or feature('content_sharing') or feature('audio') %}
+                            or feature('file_library') or feature('surveys') or feature('content_sharing') or feature('audio')
+                            or feature('online_courses') %}
                         {# Portfolios: the designated validateurs, and the administration which reads
                            every class - a teacher who was not designated has no entry (§4). #}
                         {% set tools_portfolios = feature('portfolio') and (is_staff() or is_portfolio_validator()) %}
@@ -511,6 +522,7 @@
                                 or current_route starts with 'app_library_'
                                 or current_route starts with 'app_file_library'
                                 or current_route starts with 'app_shares'
+                                or current_route starts with 'app_online_courses'
                                 or current_route starts with 'app_survey'
                                 or current_route starts with 'app_jobboard'
                                 or current_route starts with 'app_dossier'
@@ -612,6 +624,12 @@
                                        read or write a share. #}
                                     {% if feature('content_sharing') %}<a class="dropdown-item {{ current_route starts with 'app_shares' ? 'active' }}" href="{{ path('app_shares') }}">{{ 'contentShareNavLabel'|trans }}</a>{% endif %}
                                     {% if feature('audio') %}<a class="dropdown-item {{ current_route starts with 'app_audio_recording' ? 'active' }}" href="{{ path('app_audio_recordings') }}">{{ 'audioRecordingsNavLabel'|trans }}</a>{% endif %}
+                                    {# « Cours en ligne » closes « Préparer du contenu »: it is where
+                                       prepared content leaves the platform for a public page
+                                       (design/validated/cours-en-ligne.md §8). Like its neighbours it
+                                       needs no condition of its own - this menu is already gated on
+                                       ROLE_TEACHER or isStaff(), which is who its controllers admit. #}
+                                    {% if feature('online_courses') %}<a class="dropdown-item {{ current_route starts with 'app_online_courses' ? 'active' }}" href="{{ path('app_online_courses') }}">{{ 'onlineCourseNavLabel'|trans }}</a>{% endif %}
                                     </div>
                                     {% endif %}
                                     {% if tools_follow %}

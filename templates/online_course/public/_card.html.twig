@@ -1,0 +1,29 @@
+{# One course on its author's public page (design/validated/cours-en-ligne.md, §5): what it is
+   about, its tags, and which materials it comes with - the interactive course named first and in
+   bold when there is one, since it is the one a reader is most likely looking for. #}
+{% set kinds = [] %}
+{% for material in course.materials %}
+    {% if material.kind not in kinds %}{% set kinds = kinds|merge([material.kind]) %}{% endif %}
+{% endfor %}
+<a class="cm-pub-card" href="{{ path('app_public_courses_course', {handle: page.handle, slug: course.slug}) }}">
+    <span class="cm-pub-card__band cm-pub-card__band--{{ (course.id % 4) + 1 }}">
+        {% for tag in course.tags|slice(0, 1) %}{{ tag.label }}{% else %}{{ 'onlineCourseNavLabel'|trans }}{% endfor %}
+    </span>
+    <span class="cm-pub-card__body">
+        <span class="cm-pub-card__title">{{ course.title }}</span>
+        <span class="cm-pub-card__summary">{{ course.summary }}</span>
+        {% if course.tags is not empty %}
+            <span class="cm-pub-tags">
+                {% for tag in course.tags %}<span class="cm-pub-tag">{{ tag.label }}</span>{% endfor %}
+            </span>
+        {% endif %}
+        <span class="cm-pub-card__kinds">
+            {% for kind in kinds %}
+                <span class="{{ kind.isBundle ? 'is-main' }}">{{ kind.shortLabelKey|trans }}</span>
+            {% endfor %}
+            {% if course.estimatedMinutes %}
+                <span class="cm-pub-card__duration">{{ include('online_course/_duration.html.twig', {minutes: course.estimatedMinutes}) }}</span>
+            {% endif %}
+        </span>
+    </span>
+</a>

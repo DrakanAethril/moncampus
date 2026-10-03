@@ -1,0 +1,11 @@
+{# « ≈ 45 min », « ≈ 1 h 30 »: an estimate in minutes (App\Entity\OnlineCourse::$estimatedMinutes),
+   drawn the same on a course card, a course page and the author's list. #}
+{% if minutes %}
+    {%- if minutes < 60 -%}
+        {{ 'onlineCourseDurationMinutesLabel'|trans({'%minutes%': minutes}) }}
+    {%- elseif minutes % 60 == 0 -%}
+        {{ 'onlineCourseDurationHoursLabel'|trans({'%hours%': minutes // 60}) }}
+    {%- else -%}
+        {{ 'onlineCourseDurationHoursMinutesLabel'|trans({'%hours%': minutes // 60, '%minutes%': '%02d'|format(minutes % 60)}) }}
+    {%- endif -%}
+{% endif %}

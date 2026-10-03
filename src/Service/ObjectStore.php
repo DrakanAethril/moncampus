@@ -96,6 +96,7 @@ class ObjectStore
         'programs' => 'program',
         'wiki' => 'wiki',
         'documentation' => 'documentation',
+        'online-courses' => 'online-course',
         'staged' => 'staged',
         'diagnostics' => 'diagnostics',
     ];

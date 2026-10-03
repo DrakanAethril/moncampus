@@ -1,0 +1,48 @@
+{% extends 'layout/app.html.twig' %}
+
+{# One material of a course - a new one of a given nature, or a new file for one that exists
+   (design/validated/cours-en-ligne.md, §8). The field accepts what the nature says it accepts
+   (App\Enum\OnlineCourseMaterialKind); replacing keeps the tab and its address, and the file being
+   replaced stays one click away on the course's card. #}
+
+{% set heading = material
+    ? 'onlineCourseMaterialReplaceHeading'|trans({'%material%': material.label ?? material.kind.labelKey|trans})
+    : 'onlineCourseMaterialNewHeading'|trans({'%kind%': kind.labelKey|trans}) %}
+
+{% block title %}{{ heading }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'onlineCourseNavLabel'|trans, url: path('app_online_courses')},
+        {label: course.title, url: path('app_online_courses_edit', {id: course.id})},
+        {label: heading, url: app.request.requestUri},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ heading }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+                {% if form.label is defined %}{{ form_row(form.label) }}{% endif %}
+                {# The picker's parent is a hidden field, whose row draws the widget and nothing else:
+                   the label, the help and - above all - the reason an archive was refused are
+                   drawn here by hand. #}
+                <div class="mb-3">
+                    {{ form_label(form.file) }}
+                    {{ form_widget(form.file) }}
+                    {{ form_help(form.file) }}
+                    <div class="cm-oc-errors">{{ form_errors(form.file) }}</div>
+                </div>
+                {% if material %}
+                    <p class="cm-oc-lede">{{ 'onlineCourseMaterialReplaceHint'|trans }}</p>
+                {% endif %}
+                <twig:Cm:ActionBar>
+                    <twig:Cm:Button variant="outline" href="{{ path('app_online_courses_edit', {id: course.id}) }}">{{ 'cancelAction'|trans }}</twig:Cm:Button>
+                    <twig:Cm:Button variant="primary" type="submit">{{ (material ? 'onlineCourseMaterialReplaceAction' : 'onlineCourseMaterialAddAction')|trans }}</twig:Cm:Button>
+                </twig:Cm:ActionBar>
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}

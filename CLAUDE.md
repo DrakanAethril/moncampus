@@ -80,7 +80,7 @@ asked — made the second run throw « A lock is already in place ».
 | `app:mail:relink-applications` | **Repair pass, not scheduled.** Re-reads the Courrier pro mails that have a student but no démarche, and files the ones that *quote* a send: the Message-ID a failure notice copies back, failing that the failing address found among the recipients of that student's own sends — and only when every match agrees on **one** démarche. The whole rule lives in `App\Service\SchoolMailApplicationRecovery`, which the inbound worker now applies on arrival; the command exists only for the rows written before it. `--dry-run` names each mail and the evidence found, which is how it should be read first: it files mails under démarches nobody named |
 | `app:import-edt-timetable`, `app:import-edt-periods` | Timetable import from the school's EDT export |
 | `app:import-notion-sequences` | One-off import of pedagogical sequences from a Notion export |
-| `app:purge-platform-activity` | Retention: 12 months on `PlatformActivity` and on `QuizAttemptEvent`, **90 days on `ConsoleSession`** with the screen transcripts it carries, **30 days past expiry on the Claude connector's OAuth codes and tokens** (and on the clients nobody ever consented to, and on the dead mobile sessions), and **24 months on `JobboardOffer`** read on the advert's publication date (an offer with no date is judged on the day it was first seen — `sort_date` holds 1000-01-01 for those and reading the threshold against it would empty the board). **Scheduled daily at 03:15** — it was never wired to the old crontab, and the schedule is what finally runs it. The journal at `/infrastructure/console-sessions` prints « Conservation 90 jours » on screen, so a command nobody runs turns that line into a promise nothing keeps. Volume is *not* the argument — a transcript measures a couple of kibibytes — the retention decision is. See `docs/production.md` |
+| `app:purge-platform-activity` | Retention: 12 months on `PlatformActivity` and on `QuizAttemptEvent`, **24 months after the last activity on a learning-path follow-up** (`LearningPathEnrollment`, with its visits and attempts), **90 days on `ConsoleSession`** with the screen transcripts it carries, **30 days past expiry on the Claude connector's OAuth codes and tokens** (and on the clients nobody ever consented to, and on the dead mobile sessions), and **24 months on `JobboardOffer`** read on the advert's publication date (an offer with no date is judged on the day it was first seen — `sort_date` holds 1000-01-01 for those and reading the threshold against it would empty the board). **Scheduled daily at 03:15** — it was never wired to the old crontab, and the schedule is what finally runs it. The journal at `/infrastructure/console-sessions` prints « Conservation 90 jours » on screen, so a command nobody runs turns that line into a promise nothing keeps. Volume is *not* the argument — a transcript measures a couple of kibibytes — the retention decision is. See `docs/production.md` |
 | `app:antivirus:check` | **Diagnostic, not scheduled.** Scans a clean file and the EICAR test string through the configured `ANTIVIRUS_DSN`; exits non-zero unless uploads are genuinely being refused. The state it exists for is the silent one — a blank DSN disables scanning without announcing it anywhere |
 | `app:help:sync-content` | Creates the missing help sections/articles from `App\Help\HelpContentCatalog`; never overwrites what an admin has edited (`--refresh` also rewrites the untouched ones). Run it once after a deploy that adds catalogue entries |
 | `app:vm-batch:advance` | Continues every VM deployment already under way, one machine per pass. **Scheduled every minute.** It is what makes a deployment survive the browser tab that started it — without it the batch screen's own loop is the only thing pressing, and a closed tab leaves machines cloned and never configured. It never *starts* a deployment: a batch whose machines are all still `planned` is a plan, not an instruction |
@@ -176,7 +176,13 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   hours to minutes once (`TodaySlots`). A drawing is a PNG under `class-board/{board}/{widget}-…`,
   a key the layout only ever takes from the server or for that very widget (`ClassBoardDrawings`).
   The board writes nothing students see elsewhere; a saved draw's history goes through the random
-  draw tool's own route.
+  draw tool's own route. **« Groupes » is the group creation tool's left panel, not a copy of it**:
+  one partial (`program/_group_creation_panel.html.twig`), the tool's own
+  `group_creation_controller.js` nested in the widget, the tool's own routes - minus saving: no lot
+  is ever written from the board, and the layout keeps the panel's settings, never the groups, the
+  absentees or the pairs. Every widget's head carries three sizes (whole surface, half, quarter):
+  they only write `x`/`y`/`w`/`h`, and the widget in hand (`.is-front`) is drawn over the two bars
+  so that a head taken to the top edge stays in reach.
 - **Quiz** — `QuizTemplate`/`QuizQuestion` (library, filed in `QuizFolder`s) → `QuizInstance`
   (launched snapshot) → `QuizAttempt` (passation). Live multiplayer (`QuizLiveSession`) runs over
   Mercure/SSE. The « mode contrôle » times each question **server-side**
@@ -324,6 +330,77 @@ Roughly, by navigation entry — this is the fastest way to find where a feature
   part overflows) - never shipped in the code, never another year's. Deposits are frozen snapshots;
   deadlines lock nothing. The commission has no access at all. Students have no file library, so
   evidence is an upload, a link or a piece of work handed in.
+- **Cours en ligne** (Outils › Préparer du contenu) — `App\Controller\OnlineCourse\*`,
+  `src/Service/OnlineCourse/`, spec `design/validated/cours-en-ligne.md`. **`Feature::OnlineCourses`
+  is off for every role: administrators only, until Gestion › Fonctionnalités opens it.** A teacher
+  puts courses online on **their own public page**, `/courses/{handle}`, read **without an account**
+  (`^/courses/` is `PUBLIC_ACCESS`; the public controllers carry no `#[RequiresFeature]` and extend
+  `layout/public.html.twig`, not the app shell). **There is no catalogue across teachers** - it was
+  proposed and refused; `/courses` alone matches no route and nothing lists the pages. Named
+  `OnlineCourse` because « Mes cours » already means the course space of a class. Rules the code holds:
+  - **A course is its author's alone**, administrators included (`OnlineCourseVoter`, 404 never 403);
+    the one thing an administrator holds on somebody else's is UNPUBLISH. It is born a **draft**
+    whoever creates it; publishing asks for a title, a summary, a material and a page with an
+    address (`OnlineCourseWriter::publishRefusals()` names all that is missing); a published course
+    is taken offline before it is deleted.
+  - **The page's address changes at any time**, during diffusion included: every address a page
+    carried keeps its row (`OnlineCoursePageHandle`, UNIQUE), so the old one answers a 301 and is
+    never given to another teacher (`OnlineCoursePageHandles`). It is never the login. A course's own
+    slug, by contrast, is frozen by its first publication (`OnlineCourse::$publishedAt`, never cleared).
+  - **Every material is served by the CDN** (`OnlineCourseContentOrigin`), never by the application.
+    A material's files are **revisions**, each in a folder of its own -
+    `online-courses/{course}/{token}/{segment}/r{n}/` - so replacing changes the address of the
+    bytes and never the address of the material; the revision before the live one is kept (« Revenir
+    à la révision »), older ones go to the deferred purge. A file picked from the bibliothèque is
+    **copied** here, unlike everywhere else where a link is a reference (`OnlineCourseMaterialStore`).
+  - `OnlineCourseMaterialKind` is the catalogue of natures (what each accepts, its label, its
+    player); `OnlineCourseTag` is **per author** (UNIQUE owner + normalized label), created by typing.
+  - **An interactive course is a `.zip` holding an `index.html`**, unpacked file by file under the
+    revision's folder by `OnlineCourseBundlePublisher` - **the only door HTML and JavaScript enter the
+    bucket by** (`html`/`js` stay « archive only » in `UploadPolicy` everywhere else).
+    `OnlineCourseBundleReader` decides first, writing nothing: a closed list of web file types, each
+    served under the type that list gives it; one file outside it, a path that leaves the folder or
+    a missing index refuses the **whole** archive and names the file. The macOS litter and one
+    wrapping folder are tolerated.
+  - **The isolation of a course's JavaScript is the origin**: it runs on the CDN's host, in a
+    sandboxed frame with no `allow-top-navigation`, and reads neither the session nor the page.
+    `OnlineCourseContentOrigin::isIsolatedFrom()` is asked before a frame is drawn - a content host
+    equal to the application's draws no frame and logs an error.
+  - **A dynamic material opens full page although the CDN serves it** (the user called it crucial):
+    `/courses/{handle}/{slug}/{material}/play` is nothing but the frame, 100 % of the window
+    (`templates/online_course/public/play.html.twig`). Its floating bar folds into a handle rather
+    than « reappearing when the mouse moves »: over a frame from another origin the page hears no
+    mouse at all (`online_course_player_controller.js`).
+  - **The Claude connector manages courses and their materials** (`course_list`, `course_get`,
+    `course_tag_list`, `course_create`, `course_update`, `course_material_add`,
+    `course_material_replace`, `course_publish`, `course_unpublish`; `App\Mcp\McpOnlineCourses`).
+    Thin, like every tool: the same Voter, the same `OnlineCourseWriter` / `OnlineCourseMaterialStore`
+    as the screens. A course created by Claude is **always a draft** and publishing is a second call
+    - « Claude peut publier » was the user's decision; an update names its fields and writes no
+    other; a material takes exactly one source (`fileId` copied from the bibliothèque, `html` for an
+    interactive course, `markdown` rendered as a PDF); nothing is deleted. `format_guide` has a
+    `cours_interactif` entry (`InteractiveCourseGuide`, French prompt text).
+  - **Learning paths** (`LearningPath*`, `src/Service/LearningPath/`, `App\Controller\LearningPath\*`):
+    an ordered run of the author's own courses, with a **validation quiz wherever the author puts
+    one - never required**. Composing one is `online_courses` (Cours en ligne › Mes parcours);
+    *following* one is `Feature::LearningPaths`, also off for every role. **Nothing of a path is read
+    without an account**: its routes are `/paths/…`, outside the `^/courses/` opening, and it has no
+    public address. The rule is `LearningPathRule`, a pure function: a step is open when every quiz
+    before it is validated (best score ≥ threshold, *read*, never stored); a step once opened stays
+    open; an unavailable step (course offline, quiz deleted) is skipped. `LearningPathBoard` loads the
+    facts once per screen and is read by the follower's plan and the author's follow-up alike; every
+    step's door asks it again. A course can be **« Réservé aux parcours »** (`OnlineCourseStatus::PathOnly`):
+    off the author's page, read only from an opened step - its CDN files stay reachable by whoever
+    has their address, which the spec accepts. The quiz is a library `QuizTemplate`, attempted in
+    `LearningPathQuizAttempt` (questions frozen, unlimited attempts, new draw each time, correction at
+    the end), graded by `VideoCueGrader`/`QuizAnswerChecker` and drawn with
+    `templates/quiz/_question_take_body.html.twig`, the partial the video markers share - never a
+    `QuizInstance`, which belongs to a class. The **follow-up is read by the path's author alone,
+    administrators not included** (`LearningPathVoter::TRACK`), is announced to the follower, is not
+    exposed by the connector, and is purged 24 months after the last activity
+    (`app:purge-platform-activity`). Connector tools `path_list`, `path_get`, `path_create`,
+    `path_set_steps` (a whole list, kept steps kept, refused if it would drop a step people worked
+    on) and `path_publish`.
 - **Accès aux fonctionnalités** — `App\Enum\Feature` (59 cases) + `#[RequiresFeature]` +
   `App\Security\FeatureAccess`: which features are lit, per role and per formation. Gestion >
   Fonctionnalités is the screen. **The whole Pédagogie family is off by default**, with four
@@ -514,9 +591,9 @@ password hash is ever stored locally.
 `ROLE_STUDENT`, `ROLE_TUTOR` (external apprenticeship tutors), `ROLE_SUPPORT-TECH`, `ROLE_ECO`,
 `ROLE_EXTERNAL`. `ROLE_TUTOR` and `ROLE_EXTERNAL` are both excluded from message recipients.
 
-**Fine-grained checks** are Voters (`src/Security/Voter/`, 28 of them: Assignment, AudienceTargetable,
+**Fine-grained checks** are Voters (`src/Security/Voter/`, 30 of them: Assignment, AudienceTargetable,
 DocumentationArticle, Dossier, EcoParcours, Enterprise, Evaluation, FileLibrary, GameGesture, GuestAccount,
-GuestConsole, InternshipTutorLink, LessonLog, MessageThread, Portfolio, Progression, ProxmoxHost, QuizFolder,
+GuestConsole, InternshipTutorLink, LearningPath, LessonLog, MessageThread, OnlineCourse, Portfolio, Progression, ProxmoxHost, QuizFolder,
 QuizTemplate, SequenceFolder, SequenceInstance, SequenceTemplate, SignupList, Survey, SurveyFolder, Ticket,
 Wiki, WordCloud).
 New per-object rules belong in a Voter, not inline in a controller.

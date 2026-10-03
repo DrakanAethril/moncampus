@@ -1,0 +1,31 @@
+{% extends 'layout/app.html.twig' %}
+
+{# A new learning path: its card only. It is created as a draft, and its steps are added on its own
+   screen (design/validated/cours-en-ligne.md, §10). #}
+
+{% block title %}{{ 'learningPathNewAction'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'onlineCourseNavLabel'|trans, url: path('app_online_courses')},
+        {label: 'onlineCourseTabPathsLabel'|trans, url: path('app_online_courses_paths')},
+        {label: 'learningPathNewAction'|trans, url: path('app_online_courses_path_new')},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'learningPathNewAction'|trans }}{% endblock %}
+
+{% block main %}
+    <div class="card">
+        <div class="card-body">
+            {{ form_start(form) }}
+                {{ include('online_course/authoring/_path_form.html.twig') }}
+                <twig:Cm:ActionBar>
+                    <twig:block name="meta">{{ 'learningPathNewDraftHint'|trans }}</twig:block>
+                    <twig:Cm:Button variant="outline" href="{{ path('app_online_courses_paths') }}">{{ 'cancelAction'|trans }}</twig:Cm:Button>
+                    <twig:Cm:Button variant="primary" type="submit">{{ 'learningPathCreateAction'|trans }}</twig:Cm:Button>
+                </twig:Cm:ActionBar>
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}

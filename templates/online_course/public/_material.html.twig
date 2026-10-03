@@ -1,0 +1,34 @@
+{# One material of a course, shown by the player its nature calls for
+   (App\Enum\OnlineCourseMaterialKind). `url` is its address on the CDN: an interactive course runs
+   in a frame from that other origin, a PDF is handed to the browser's own reader, a video to a
+   <video> element - none of them goes through the application.
+
+   The frame of an interactive course is sandboxed on top of being another origin: scripts, its own
+   storage, forms, pop-ups and dialogs, and nothing that would let it take the page elsewhere (no
+   allow-top-navigation). `frameAllowed` is App\Controller\OnlineCourse\PublicCourseController's
+   guard: false when the CDN turns out to be the application's own host. #}
+{% set live = material.live %}
+{% set label = material.label ?? material.kind.labelKey|trans %}
+<div class="cm-pub-viewer cm-pub-viewer--{{ material.kind.value }}" data-online-course-player-target="stage">
+    {% if not live or not url %}
+        <p class="cm-pub-empty">{{ 'onlineCoursePublicMaterialMissingLabel'|trans }}</p>
+    {% elseif material.kind.isBundle %}
+        {% if frameAllowed %}
+            <iframe class="cm-pub-viewer__frame" src="{{ url }}" title="{{ label }}"
+                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+                    allow="fullscreen" allowfullscreen></iframe>
+        {% else %}
+            <p class="cm-pub-empty">{{ 'onlineCoursePublicFrameRefusedLabel'|trans }}</p>
+        {% endif %}
+    {% elseif material.kind.isDocument %}
+        <iframe class="cm-pub-viewer__document" src="{{ url }}" title="{{ label }}" loading="lazy"></iframe>
+        <p class="cm-pub-viewer__fallback">
+            <twig:Cm:Button variant="outline" size="sm" href="{{ url }}" target="_blank" rel="noopener">
+                <twig:ux:icon name="external-link" width="15" height="15"/>{{ 'onlineCoursePublicOpenDocumentAction'|trans }}
+            </twig:Cm:Button>
+            <span>{{ live.originalName }} · {{ byte_size(live.fileSize) }}</span>
+        </p>
+    {% elseif material.kind.value == 'video' %}
+        <video class="cm-pub-viewer__video" controls preload="metadata" playsinline src="{{ url }}"></video>
+    {% endif %}
+</div>

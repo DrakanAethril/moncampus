@@ -1,0 +1,12 @@
+{# The card of a learning path (App\Form\LearningPathType). #}
+{{ form_row(form.title) }}
+{{ form_row(form.summary) }}
+<div class="mb-3">
+    {{ form_label(form.description) }}
+    {{ form_widget(form.description, {attr: {
+        class: 'd-none',
+        'data-controller': 'hugerte-editor',
+        'data-hugerte-editor-height-value': 220,
+    }}) }}
+    {{ form_errors(form.description) }}
+</div>

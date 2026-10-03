@@ -1,0 +1,73 @@
+{# One library question, drawn to be answered: its statement and the fields of its type, each type
+   by the partial the passation already uses (templates/program/_quiz_*_take.html.twig). Twelve
+   types are twelve rendering rules, written once.
+
+   Shared by the marker inside a video (student/_video_cue_question) and the validation quiz of a
+   learning path (learning_path/quiz_question). The field names are the passation's own - answers[],
+   blanks[], zones[], placements[], pairs[], numeric - which is what App\Service\VideoCueGrader reads.
+
+   Expects what App\Service\QuizQuestionTakeView::of() gathers. #}
+{% set is_blanks = question.type.value == 'texte_a_trous' %}
+{% set is_zone = question.type.value == 'zone' %}
+{% set is_legende = question.type.value == 'legende' %}
+{% set is_apparier = question.type.value == 'apparier' %}
+{% set is_numeric = question.type.usesNumericConfig %}
+{% set is_short = question.type.value == 'reponse_courte' %}
+
+
+{# A texte à trous and a numérique ARE their own statement - the sentence carries the blanks,
+   the statement carries the drawn values - so they are not repeated as a heading above. #}
+{% if not is_blanks and not is_numeric %}
+    <div class="cm-video-cue-card__label">{{ question.label }}</div>
+    {% if question.imageStorageKey and not is_zone and not is_legende %}
+        <img src="{{ file_url(question.imageStorageKey) }}" alt="" class="cm-video-cue-card__image">
+    {% endif %}
+{% endif %}
+
+{% if is_blanks %}
+    {% include 'program/_quiz_blanks_take.html.twig' with {question: question, word_bank: wordBank} only %}
+{% elseif is_zone %}
+    {% include 'program/_quiz_zone_take.html.twig' with {
+        question: question,
+        image_url: question.imageStorageKey ? file_url(question.imageStorageKey) : null,
+        hint_ids: [],
+    } only %}
+{% elseif is_legende %}
+    {% include 'program/_quiz_legende_take.html.twig' with {
+        question: question,
+        image_url: question.imageStorageKey ? file_url(question.imageStorageKey) : null,
+        zone_choices: zoneChoices,
+    } only %}
+{% elseif is_short %}
+    {% include 'program/_quiz_short_answer_take.html.twig' with {question: question} only %}
+{% elseif is_numeric %}
+    {# Formatted here, like every other caller of the partial: a raw float renders "2.5"
+       where the rest of the app writes "2,5". #}
+    {% include 'program/_quiz_numeric_take.html.twig' with {
+        question: question,
+        variables: numeric_display_variables(question, numericVariables),
+    } only %}
+{% elseif is_apparier %}
+    {% include 'program/_quiz_apparier_take.html.twig' with {
+        question: question,
+        matching_pairs: matchingPairs,
+        matching_choices: matchingChoices,
+    } only %}
+{% elseif question.type.value == 'ordre' %}
+    {% include 'program/_quiz_ordre_take.html.twig' with {
+        answers: answers,
+        field_name: 'answers[]',
+    } only %}
+{% else %}
+    {% set inputType = question.type.value == 'qcm_multi' ? 'checkbox' : 'radio' %}
+    <div class="d-flex flex-column gap-2">
+        {% for answer in answers %}
+            <label class="cm-radiocard">
+                <input type="{{ inputType }}" name="answers[]" value="{{ answer.id }}" class="form-check-input" style="position:absolute;opacity:0;width:1px;height:1px;">
+                <span class="cm-radiocard__dot" style="{{ inputType == 'checkbox' ? 'border-radius:5px;' }}"></span>
+                <span class="cm-radiocard__title" style="font-weight:400;">{{ answer.label }}</span>
+            </label>
+        {% endfor %}
+    </div>
+{% endif %}
+

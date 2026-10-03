@@ -11,12 +11,12 @@ use App\Entity\User;
 use App\Entity\VideoCueAnswer;
 use App\Entity\VideoCuePoint;
 use App\Enum\Feature;
-use App\Enum\QuestionType;
 use App\Repository\AssignmentRepository;
 use App\Repository\VideoCueAnswerRepository;
 use App\Repository\VideoCuePointRepository;
 use App\Service\AssignmentAudienceResolver;
 use App\Service\PostValue;
+use App\Service\QuizQuestionTakeView;
 use App\Service\VideoCueGrader;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -157,32 +157,10 @@ class StudentVideoCueController extends AbstractController
      */
     private function questionView(Assignment $assignment, VideoCuePoint $cuePoint, QuizQuestion $question, VideoCueGrader $grader): array
     {
-        $answers = $question->getAnswers()->toArray();
-        // An "ordre" is answered by rearranging: handing the rows in their stored order would be
-        // handing the answer.
-        if (QuestionType::Ordre === $question->getType()) {
-            shuffle($answers);
-        }
-
-        $wordBank = $question->getWordBank();
-        shuffle($wordBank);
-        $zoneChoices = $question->getLegendeChoices();
-        shuffle($zoneChoices);
-        $matchingChoices = $question->getMatchingChoices();
-        shuffle($matchingChoices);
-        $matchingPairs = $question->getMatchingPairs();
-        shuffle($matchingPairs);
-
         return [
             'assignment' => $assignment,
             'cuePoint' => $cuePoint,
-            'question' => $question,
-            'answers' => $answers,
-            'wordBank' => $wordBank,
-            'zoneChoices' => $zoneChoices,
-            'matchingChoices' => $matchingChoices,
-            'matchingPairs' => $matchingPairs,
-            'numericVariables' => $grader->variablesFor($question, (int) $this->currentUser()->getId(), (int) $cuePoint->getId()),
+            ...QuizQuestionTakeView::of($question, $grader->variablesFor($question, (int) $this->currentUser()->getId(), (int) $cuePoint->getId())),
         ];
     }
 

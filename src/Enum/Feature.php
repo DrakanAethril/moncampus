@@ -53,6 +53,8 @@ enum Feature: string
     case TsfReferential = 'tsf_referential';
     case Game = 'game';
     case Portfolio = 'portfolio';
+    case OnlineCourses = 'online_courses';
+    case LearningPaths = 'learning_paths';
 
     // --- Scolarité ---------------------------------------------------------------------------
 
@@ -136,7 +138,7 @@ enum Feature: string
             self::Video, self::Audio, self::FileLibrary, self::SharedDocuments,
             self::ContentSharing, self::Wiki, self::Documentation, self::Surveys,
             self::ClassTools, self::WordCloud, self::TsfReferential, self::Game,
-            self::Dossiers, self::Portfolio => FeatureFamily::Pedagogy,
+            self::Dossiers, self::Portfolio, self::OnlineCourses, self::LearningPaths => FeatureFamily::Pedagogy,
 
             self::Timetable, self::TimetableSettings, self::EvaluationPlanning,
             self::GradebookEntry, self::GradebookStudent, self::SelfAssessment,
@@ -212,6 +214,8 @@ enum Feature: string
             self::TsfReferential => 'featureTsfReferentialLabel',
             self::Game => 'featureGameLabel',
             self::Portfolio => 'featurePortfolioLabel',
+            self::OnlineCourses => 'featureOnlineCoursesLabel',
+            self::LearningPaths => 'featureLearningPathsLabel',
             self::Timetable => 'featureTimetableLabel',
             self::TimetableSettings => 'featureTimetableSettingsLabel',
             self::EvaluationPlanning => 'featureEvaluationPlanningLabel',
@@ -338,6 +342,15 @@ enum Feature: string
             // formation settings, validateurs - before a line of Gestion > Fonctionnalités opens it
             // to the students and the teachers. Lighting it for teachers still hands the review
             // screens only to the designated validateurs (App\Service\Portfolio\PortfolioValidators).
+
+            // « Cours en ligne » is named by no role either (design/validated/cours-en-ligne.md §3):
+            // writing and publishing courses on a public page ships visible to the administrator
+            // alone, and Gestion > Fonctionnalités opens it to the teachers once tried. The public
+            // pages themselves carry no feature - a visitor has no role - and exist as soon as a
+            // course is published. « Parcours » - following a learning path, which always asks for
+            // an account - is its own line and is named by no role either: composing a path is the
+            // author's tool (`online_courses`), following one is what an establishment opens to its
+            // students when it decides to.
 
             // « Trouver une entreprise » and the « vivier d'entreprises » are named by no role either,
             // at the establishment's request (design/validated/vivier-entreprises.md): both ship

@@ -169,7 +169,7 @@ enum ClassBoardWidgetType: string
             self::Stopwatch => [22, 26],
             self::Clock => [13, 30],
             self::RandomDraw => [24, 40],
-            self::Groups => [30, 44],
+            self::Groups => [50, 72],
             self::TeamCounter => [26, 38],
             self::TrafficLight => [9, 42],
             self::Instructions => [25, 38],

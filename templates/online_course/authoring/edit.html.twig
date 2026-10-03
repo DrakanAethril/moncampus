@@ -1,0 +1,180 @@
+{% extends 'layout/app.html.twig' %}
+
+{# The card of a course, from its author's side (design/validated/cours-en-ligne.md, §8): what the
+   public page shows of it on the left, its materials on the right, and above them the state it is
+   in with the gestures that change it.
+
+   The three gestures - put online, take offline, delete - are forms of their own, outside the
+   card's form: a button inside it would post the card along with the gesture. #}
+
+{% block title %}{{ course.title }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'onlineCourseNavLabel'|trans, url: path('app_online_courses')},
+        {label: course.title, url: path('app_online_courses_edit', {id: course.id})},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ course.title }}{% endblock %}
+
+{% block main %}
+    {% set csrf = csrf_token('online_course') %}
+    {% set public_url = page ? path('app_public_courses_course', {handle: page.handle, slug: course.slug}) : null %}
+
+    <div class="cm-oc-state">
+        <div class="cm-oc-state__meta">
+            <twig:Cm:Badge :of="course.status"/>
+            <span>{{ 'onlineCourseUpdatedOnLabel'|trans({'%date%': course.updatedAt|date('d/m/Y')}) }}</span>
+            {% if course.published and public_url %}
+                <a href="{{ public_url }}" target="_blank" rel="noopener" class="cm-oc-state__url">{{ public_url }}</a>
+            {% endif %}
+        </div>
+        <div class="cm-oc-state__buttons">
+            {% if public_url %}
+                <twig:Cm:Button variant="outline" href="{{ public_url }}" target="_blank" rel="noopener">
+                    <twig:ux:icon name="external-link" width="15" height="15"/>{{ (course.published ? 'onlineCourseSeePublicCourseAction' : 'onlineCoursePreviewAction')|trans }}
+                </twig:Cm:Button>
+            {% endif %}
+            {% if course.published %}
+                {# Moving between « Public » and « Réservé aux parcours » is the publish gesture again. #}
+                <form method="post" action="{{ path('app_online_courses_publish', {id: course.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf }}">
+                    <input type="hidden" name="visibility" value="{{ course.status.value == 'public' ? 'path_only' : 'public' }}">
+                    <twig:Cm:Button variant="outline" type="submit">{{ (course.status.value == 'public' ? 'onlineCourseMakePathOnlyAction' : 'onlineCourseMakePublicAction')|trans }}</twig:Cm:Button>
+                </form>
+                <form method="post" action="{{ path('app_online_courses_unpublish', {id: course.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf }}">
+                    <twig:Cm:Button variant="danger" type="submit"
+                                    data-controller="confirm-submit" data-action="confirm-submit#confirm"
+                                    data-confirm-submit-message-value="{{ 'onlineCourseUnpublishConfirmMessage'|trans }}">{{ 'onlineCourseUnpublishAction'|trans }}</twig:Cm:Button>
+                </form>
+            {% else %}
+                <form method="post" action="{{ path('app_online_courses_delete', {id: course.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf }}">
+                    <twig:Cm:Button variant="outline" type="submit"
+                                    data-controller="confirm-submit" data-action="confirm-submit#confirm"
+                                    data-confirm-submit-message-value="{{ 'onlineCourseDeleteConfirmMessage'|trans }}">
+                        <twig:ux:icon name="trash" width="15" height="15"/>{{ 'onlineCourseDeleteAction'|trans }}
+                    </twig:Cm:Button>
+                </form>
+                <form method="post" class="cm-oc-publish" action="{{ path('app_online_courses_publish', {id: course.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf }}">
+                    <label class="visually-hidden" for="course-visibility">{{ 'onlineCourseVisibilityLabel'|trans }}</label>
+                    <select id="course-visibility" name="visibility" class="form-select form-select-sm">
+                        <option value="public">{{ 'onlineCourseVisibilityPublicOption'|trans }}</option>
+                        <option value="path_only">{{ 'onlineCourseVisibilityPathOnlyOption'|trans }}</option>
+                    </select>
+                    <twig:Cm:Button variant="gold" type="submit" :disabled="publishRefusals is not empty">{{ 'onlineCoursePublishAction'|trans }}</twig:Cm:Button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if course.status.value == 'path_only' %}
+        <div class="cm-oc-notice cm-oc-notice--quiet"><span>{{ 'onlineCoursePathOnlyNotice'|trans }}</span></div>
+    {% endif %}
+    {% if paths is not empty %}
+        <div class="cm-oc-notice cm-oc-notice--quiet">
+            <span>{{ 'onlineCourseUsedByPathsLabel'|trans }}
+                {% for path in paths %}<a href="{{ path('app_online_courses_path_edit', {id: path.id}) }}">{{ path.title }}</a>{{ not loop.last ? ', ' }}{% endfor %}
+            </span>
+        </div>
+    {% endif %}
+
+    {% if not course.published and publishRefusals is not empty %}
+        <div class="cm-oc-notice cm-oc-notice--list">
+            <span>{{ 'onlineCoursePublishMissingLabel'|trans }}</span>
+            <ul>
+                {% for reason in publishRefusals %}
+                    <li>
+                        {{ reason|trans }}
+                        {% if reason == 'onlineCoursePublishNeedsPageMessage' %}
+                            <a href="{{ path('app_online_courses_page') }}">{{ 'onlineCourseChooseAddressAction'|trans }}</a>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    <div class="cm-oc-edit">
+        <div class="card">
+            <div class="card-body">
+                <twig:Cm:Subhead :title="'onlineCourseCardHeading'|trans" :hint="'onlineCourseCardHint'|trans"/>
+                {{ form_start(form) }}
+                    {{ include('online_course/authoring/_form.html.twig') }}
+                    <twig:Cm:ActionBar>
+                        <twig:Cm:Button variant="primary" type="submit">{{ 'submitSaveAction'|trans }}</twig:Cm:Button>
+                    </twig:Cm:ActionBar>
+                {{ form_end(form) }}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <twig:Cm:Subhead :title="'onlineCourseMaterialsHeading'|trans" :hint="'onlineCourseMaterialsHint'|trans"/>
+
+                {% if course.materials is empty %}
+                    <p class="cm-oc-empty">{{ 'onlineCourseNoMaterialYetLabel'|trans }}</p>
+                {% else %}
+                    <div class="cm-oc-materials"
+                         data-controller="sortable-reorder"
+                         data-sortable-reorder-url-value="{{ path('app_online_courses_material_order', {id: course.id}) }}"
+                         data-sortable-reorder-token-value="{{ csrf }}">
+                        {% for material in course.materials %}
+                            {% set live = material.live %}
+                            {% set other = material.other %}
+                            <div class="cm-oc-material" data-sortable-reorder-id-param="{{ material.id }}">
+                                <span class="cm-oc-material__grip sortable-reorder-handle" title="{{ 'onlineCourseMaterialReorderHint'|trans }}"><twig:ux:icon name="grip" width="16" height="16"/></span>
+                                <twig:Cm:Badge :tone="material.kind.badgeTone.value">{{ material.kind.shortLabelKey|trans }}</twig:Cm:Badge>
+                                <div class="cm-oc-material__what">
+                                    <b>{{ material.label ?? material.kind.labelKey|trans }}</b>
+                                    {% if live %}
+                                        <span>
+                                            {{ live.originalName }}
+                                            {% if live.fileCount %}· {{ 'onlineCourseMaterialFileCountLabel'|trans({'%count%': live.fileCount}) }}{% endif %}
+                                            · {{ byte_size(live.fileSize) }}
+                                            · {{ 'onlineCourseMaterialRevisionLabel'|trans({'%number%': live.number, '%date%': live.createdAt|date('d/m/Y')}) }}
+                                        </span>
+                                    {% endif %}
+                                    {% if other %}
+                                        <form method="post" action="{{ path('app_online_courses_material_restore', {id: course.id, materialId: material.id}) }}" class="cm-oc-material__restore">
+                                            <input type="hidden" name="_token" value="{{ csrf }}">
+                                            <button type="submit" class="cm-oc-link">
+                                                {{ (other.number < live.number ? 'onlineCourseMaterialRestorePreviousAction' : 'onlineCourseMaterialRestoreNextAction')|trans({'%number%': other.number, '%date%': other.createdAt|date('d/m/Y')}) }}
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                                <div class="cm-oc-material__actions">
+                                    <a class="cm-oc-icon" href="{{ path('app_online_courses_material_replace', {id: course.id, materialId: material.id}) }}"
+                                       title="{{ 'onlineCourseMaterialReplaceAction'|trans }}" aria-label="{{ 'onlineCourseMaterialReplaceAction'|trans }}">
+                                        <twig:ux:icon name="rotate" width="16" height="16"/>
+                                    </a>
+                                    <form method="post" action="{{ path('app_online_courses_material_remove', {id: course.id, materialId: material.id}) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf }}">
+                                        <button type="submit" class="cm-oc-icon cm-oc-icon--danger" title="{{ 'onlineCourseMaterialRemoveAction'|trans }}" aria-label="{{ 'onlineCourseMaterialRemoveAction'|trans }}"
+                                                data-controller="confirm-submit" data-action="confirm-submit#confirm"
+                                                data-confirm-submit-message-value="{{ 'onlineCourseMaterialRemoveConfirmMessage'|trans }}">
+                                            <twig:ux:icon name="trash" width="16" height="16"/>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="cm-oc-add">
+                    <span>{{ 'onlineCourseAddMaterialLabel'|trans }}</span>
+                    {% for kind in kinds %}
+                        <twig:Cm:Button variant="outline" size="sm" href="{{ path('app_online_courses_material_new', {id: course.id, kind: kind.value}) }}">
+                            <twig:ux:icon name="{{ kind.icon }}" width="15" height="15"/>{{ kind.labelKey|trans }}
+                        </twig:Cm:Button>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -29,6 +29,7 @@ use App\Service\ClassBoard\TodaySlots;
 use App\Service\ClassBoard\VideoEmbed;
 use App\Service\FileUploadService;
 use App\Service\HtmlPlainText;
+use Doctrine\Common\Collections\ArrayCollection;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Clock\MockClock;
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
@@ -107,6 +108,30 @@ class ClassBoardWidgetDataTest extends TestCase
         self::assertSame('ok', $data['state']);
         self::assertIsArray($data['items']);
         self::assertSame(['Le mien, plus tôt', 'Le mien'], array_column($data['items'], 'title'));
+    }
+
+    /**
+     * The groups widget draws with the group creation tool's panel, so it is handed what that panel
+     * works from; a saved lot is only what it opens on, and one that is gone says so.
+     */
+    public function testTheGroupsWidgetIsHandedTheClassAndNeedsNoLot(): void
+    {
+        $checker = $this->createStub(StructureAccessChecker::class);
+        $checker->method('isProgramTeacher')->willReturn(true);
+        $data = $this->widgetData($this->createStub(AssignmentRepository::class), $checker, new \DateTimeImmutable());
+        $program = $this->createStub(Program::class);
+        $program->method('getStudents')->willReturn(new ArrayCollection());
+        $program->method('getOptions')->willReturn(new ArrayCollection());
+        $board = new ClassBoard(new User('owner'), 'Tableau', $program);
+
+        $free = $data->forWidget($board, ['id' => 'w1', 'type' => 'groups', 'config' => ['batchId' => null]]);
+        self::assertSame(ClassBoardWidgetData::OK, $free['state']);
+        self::assertNull($free['lot']);
+        self::assertSame([], $free['students']);
+        self::assertSame([], $free['options']);
+
+        $gone = $data->forWidget($board, ['id' => 'w1', 'type' => 'groups', 'config' => ['batchId' => 9]]);
+        self::assertSame(ClassBoardWidgetData::SOURCE_MISSING, $gone['state']);
     }
 
     public function testAClassWidgetOfABoardWhoseClassIsNoLongerTaughtSaysSo(): void

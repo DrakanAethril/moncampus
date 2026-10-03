@@ -1,0 +1,64 @@
+{% extends 'layout/app.html.twig' %}
+
+{# « Ma page » (design/validated/cours-en-ligne.md, §8): the address, the title and the
+   presentation of the teacher's public page. The address may change at any time - the screen says
+   that the one being left keeps redirecting, which is what makes changing it during diffusion safe. #}
+
+{% block title %}{{ 'onlineCourseTabPageLabel'|trans }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'onlineCourseNavLabel'|trans, url: path('app_online_courses')},
+        {label: 'onlineCourseTabPageLabel'|trans, url: path('app_online_courses_page')},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ 'onlineCourseNavLabel'|trans }}{% endblock %}
+
+{% block main %}
+    {{ include('online_course/authoring/_tabs.html.twig', {active: 'page'}) }}
+
+    <div class="card cm-card--tabbed">
+        <div class="card-body">
+            {% if page %}
+                {% set public_url = url('app_public_courses_page', {handle: page.handle}) %}
+                <div class="cm-oc-notice cm-oc-notice--quiet">
+                    <span>
+                        {{ (publicCount > 0 ? 'onlineCoursePageOnlineNotice' : 'onlineCoursePageOfflineNotice')|trans }}
+                        <a href="{{ public_url }}" target="_blank" rel="noopener">{{ public_url }}</a>
+                    </span>
+                </div>
+            {% else %}
+                <p class="cm-oc-lede">{{ 'onlineCoursePageIntroHint'|trans }}</p>
+            {% endif %}
+
+            {{ form_start(form) }}
+                <div class="mb-3">
+                    {{ form_label(form.handle) }}
+                    <div class="cm-oc-address">
+                        <span class="cm-oc-address__prefix">/courses/</span>
+                        {{ form_widget(form.handle) }}
+                    </div>
+                    {{ form_help(form.handle) }}
+                    {{ form_errors(form.handle) }}
+                    {% if formerHandles is not empty %}
+                        <small class="form-hint">{{ 'onlineCoursePageFormerHandlesLabel'|trans({'%handles%': formerHandles|map(handle => '/courses/' ~ handle)|join(', ')}) }}</small>
+                    {% endif %}
+                </div>
+                {{ form_row(form.title) }}
+                <div class="mb-3">
+                    {{ form_label(form.introduction) }}
+                    {{ form_widget(form.introduction, {attr: {
+                        class: 'd-none',
+                        'data-controller': 'hugerte-editor',
+                        'data-hugerte-editor-height-value': 200,
+                    }}) }}
+                    {{ form_errors(form.introduction) }}
+                </div>
+                <twig:Cm:ActionBar>
+                    <twig:Cm:Button variant="primary" type="submit">{{ 'submitSaveAction'|trans }}</twig:Cm:Button>
+                </twig:Cm:ActionBar>
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}

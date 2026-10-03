@@ -1,0 +1,100 @@
+{% extends 'layout/app.html.twig' %}
+
+{# The plan of a learning path, as one person sees it (design/validated/cours-en-ligne.md, §10):
+   each step with its state, and - for a step a validation quiz keeps closed - the sentence that
+   says which quiz, and how far the person is from it. The plan showing a lock is not what keeps the
+   step closed: the step's own route asks the rule again. #}
+
+{% block title %}{{ path.title }}{% endblock %}
+
+{% block page_breadcrumb %}
+    {{ component('Cm:Breadcrumb', {segments: [
+        {label: 'learningPathNavLabel'|trans, url: path('app_learning_paths')},
+        {label: path.title, url: path('app_learning_path_show', {id: path.id})},
+    ]}) }}
+{% endblock %}
+
+{% block page_title %}{{ path.title }}{% endblock %}
+
+{% block main %}
+    {% set next = progress.next %}
+    {% if not path.published %}
+        <div class="cm-oc-notice">{{ 'learningPathDraftPreviewNotice'|trans }}</div>
+    {% endif %}
+
+    <div class="cm-lp-head">
+        <div class="cm-lp-head__text">
+            <p class="cm-lp-head__meta">
+                {{ 'learningPathByLabel'|trans({'%name%': path.owner.displayName ?? path.owner.userIdentifier}) }}
+                · {{ 'learningPathStepCountLabel'|trans({'%count%': progress.totalCount}) }}
+                {% if progress.quizCount > 0 %}· {{ 'learningPathQuizCountLabel'|trans({'%count%': progress.quizCount}) }}{% endif %}
+                {% if enrollment %}· {{ 'learningPathStartedOnLabel'|trans({'%date%': enrollment.startedAt|date('d/m/Y')}) }}{% endif %}
+            </p>
+            {% if path.summary %}<p class="cm-lp-head__summary">{{ path.summary }}</p>{% endif %}
+        </div>
+        <div class="cm-lp-head__action">
+            {% if not enrollment %}
+                <form method="post" action="{{ path('app_learning_path_start', {id: path.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('learning_path') }}">
+                    <twig:Cm:Button variant="gold" type="submit">{{ 'learningPathStartAction'|trans }}</twig:Cm:Button>
+                </form>
+            {% elseif progress.completed %}
+                <twig:Cm:Badge tone="green">{{ 'learningPathCompletedOnLabel'|trans({'%date%': enrollment.completedAt ? enrollment.completedAt|date('d/m/Y') : ''}) }}</twig:Cm:Badge>
+            {% elseif next %}
+                <twig:Cm:Button variant="primary" href="{{ path('app_learning_path_step', {id: path.id, number: next.number}) }}">{{ 'learningPathContinueAction'|trans }}</twig:Cm:Button>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if enrollment %}
+        <div class="cm-lp-progress">
+            <span class="cm-lp-bar"><span style="width: {{ progress.percent }}%"></span></span>
+            <span>{{ 'learningPathStepsDoneLabel'|trans({'%done%': progress.doneCount, '%total%': progress.totalCount}) }}</span>
+        </div>
+    {% endif %}
+    {# Said before the first click and kept afterwards: the follow-up names people. #}
+    <p class="cm-lp-notice">{{ 'learningPathTrackingNotice'|trans }}</p>
+
+    {% if path.description %}
+        <div class="card mb-3"><div class="card-body cm-pub-prose">{{ path.description|raw }}</div></div>
+    {% endif %}
+
+    <ol class="cm-lp-steps">
+        {% for view in progress.steps %}
+            {% set state = view.state.value %}
+            {% set is_next = enrollment and next and next.number == view.number %}
+            <li class="cm-lp-step cm-lp-step--{{ state }}{{ is_next ? ' is-next' }}">
+                <span class="cm-lp-step__num">
+                    {% if state == 'done' %}<twig:ux:icon name="check" width="14" height="14"/>
+                    {% elseif state == 'locked' %}<twig:ux:icon name="lock" width="13" height="13"/>
+                    {% else %}{{ view.number }}{% endif %}
+                </span>
+                <span class="cm-lp-step__text">
+                    <b>{% if view.step.quiz %}{{ 'learningPathQuizPrefixLabel'|trans }} · {% endif %}{{ view.step.title ?: 'learningPathStepGoneLabel'|trans }}</b>
+                    {% if state == 'unavailable' %}
+                        <span>{{ 'learningPathStepUnavailableLabel'|trans }}</span>
+                    {% elseif state == 'locked' and view.lockedBy %}
+                        <span class="cm-lp-step__why">{{ 'learningPathLockedReasonLabel'|trans({'%quiz%': view.lockedBy.title, '%percent%': view.lockedBy.passPercent}) }}</span>
+                    {% elseif view.step.quiz %}
+                        <span>
+                            {{ 'learningPathThresholdLabel'|trans({'%percent%': view.step.passPercent}) }}
+                            {% if view.bestScore is not null %}· {{ 'learningPathBestScoreLabel'|trans({'%score%': view.bestScore, '%count%': view.finishedAttempts|length}) }}{% endif %}
+                        </span>
+                    {% elseif view.openedAt %}
+                        <span>{{ 'learningPathOpenedOnLabel'|trans({'%date%': view.openedAt|date('d/m/Y')}) }}</span>
+                    {% endif %}
+                </span>
+                <span class="cm-lp-step__side">
+                    {% if view.step.quiz and state == 'done' %}<twig:Cm:Badge tone="green">{{ 'learningPathValidatedLabel'|trans }}</twig:Cm:Badge>
+                    {% elseif view.step.quiz and state == 'open' and view.bestScore is not null %}<twig:Cm:Badge tone="gold">{{ 'learningPathToValidateLabel'|trans }}</twig:Cm:Badge>
+                    {% endif %}
+                    {% if enrollment and view.state.reachable %}
+                        <twig:Cm:Button :variant="is_next ? 'primary' : 'outline'" size="sm" href="{{ path('app_learning_path_step', {id: path.id, number: view.number}) }}">
+                            {{ (view.step.quiz ? (state == 'done' ? 'learningPathQuizAgainAction' : 'learningPathQuizTakeAction') : (state == 'done' ? 'learningPathReviewAction' : 'learningPathOpenAction'))|trans }}
+                        </twig:Cm:Button>
+                    {% endif %}
+                </span>
+            </li>
+        {% endfor %}
+    </ol>
+{% endblock %}

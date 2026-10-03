@@ -10,6 +10,7 @@ use App\Entity\EvaluationPeriodGroup;
 use App\Entity\FeatureRoleSetting;
 use App\Entity\GuestAccount;
 use App\Entity\IpRange;
+use App\Entity\OnlineCourse;
 use App\Entity\Program;
 use App\Entity\Progression;
 use App\Entity\ProxmoxHost;
@@ -1331,6 +1332,44 @@ class RoleAccessSmokeTest extends FunctionalTestCase
         $this->assertScreens($this->teacher, [$path => 200]);
         $this->assertScreens($this->admin, [$path => 404]);
         $this->assertScreens($this->student, [$path => 404]);
+    }
+
+    /**
+     * « Cours en ligne », the author's side (design/validated/cours-en-ligne.md, §3): a teacher's
+     * tool under online_courses - a student and a tutor are delivered nothing. A course is its
+     * author's alone: an administrator opening a teacher's card gets the 404 of a course that does
+     * not exist. The public pages have a test of their own (OnlineCoursePublicPagesTest).
+     */
+    public function testOnlineCoursesAreWrittenByTheirAuthorAlone(): void
+    {
+        $screens = ['/tools/online-courses', '/tools/online-courses/new', '/tools/online-courses/page', '/tools/online-courses/tags', '/tools/online-courses/paths', '/tools/online-courses/paths/new'];
+
+        $this->assertScreens($this->teacher, array_fill_keys($screens, 200));
+        $this->assertScreens($this->admin, array_fill_keys($screens, 200));
+        $this->assertScreens($this->student, array_fill_keys($screens, 404));
+        $this->assertScreens($this->tutor, array_fill_keys($screens, 404));
+
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $course = new OnlineCourse($entityManager->getReference(User::class, $this->teacher->getId()), 'Cours du smoke test', 'cours-du-smoke-test');
+        $entityManager->persist($course);
+        $entityManager->flush();
+        $card = '/tools/online-courses/'.$course->getId();
+
+        $this->assertScreens($this->teacher, [$card => 200, $card.'/materials/new/pdf' => 200, $card.'/materials/new/nope' => 404]);
+        $this->assertScreens($this->admin, [$card => 404, $card.'/materials/new/pdf' => 404]);
+        $this->assertScreens($this->student, [$card => 404]);
+    }
+
+    /**
+     * Following a learning path (design/validated/cours-en-ligne.md, §10) asks for an account and
+     * nothing more: « Mes parcours » answers every role the feature is lit for, an empty list
+     * included. LearningPathFollowTest pins the rest - the plan, the doors, the follow-up.
+     */
+    public function testMyLearningPathsAnswerEveryAccount(): void
+    {
+        foreach ([$this->student, $this->teacher, $this->admin, $this->tutor] as $user) {
+            $this->assertScreens($user, ['/paths' => 200]);
+        }
     }
 
     /**

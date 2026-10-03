@@ -34,5 +34,13 @@ final class McpInstructions
         - Pour joindre un document à une partie du cahier de texte (support, énoncé, correction), utilise `lesson_log_attach` : un fichier de la bibliothèque (`fileId`, trouvé avec `file_list` ou créé d'abord avec `file_create`) ou un lien externe (`url`). Le document suit la visibilité de sa partie.
         - Dis toujours si le cahier de texte est visible des étudiants ou masqué.
         - `progression_get` sert à savoir où en est la classe et à suggérer une progression ; ce connecteur n'écrit aucune progression : l'enseignant la construit dans MonCampus.
+
+        Cours en ligne (si les outils `course_*` sont proposés) :
+        - Un cours en ligne est publié sur la page publique de l'enseignant, lisible sans compte. Il porte une fiche (titre, résumé, description, tags, durée) et des supports : cours interactif, version PDF, fiche de synthèse, vidéo.
+        - `course_create` crée toujours un brouillon. Ajoute ensuite les supports avec `course_material_add`, puis publie avec `course_publish` seulement si l'enseignant l'a demandé ; donne-lui alors le lien public.
+        - Avant d'écrire un cours interactif, appelle `format_guide` avec « cours_interactif ». Avant de taguer, lis `course_tag_list` et réutilise les tags existants.
+        - Sur un cours déjà publié, une modification ou un remplacement de support est visible aussitôt : dis-le à l'enseignant. La révision remplacée reste disponible sur la fiche du cours.
+        - Un parcours (`path_*`) enchaîne des cours de l'enseignant ; un quiz de validation se pose là où il le demande, jamais par défaut. Un parcours ne se suit qu'avec un compte. Un cours « réservé aux parcours » (`course_publish` avec `visibility: "path_only"`) n'apparaît pas sur la page publique.
+        - Le suivi des personnes qui suivent un parcours n'est accessible qu'à l'écran : ne prétends pas le connaître.
         TXT;
 }

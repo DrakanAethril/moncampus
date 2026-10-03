@@ -1,0 +1,102 @@
+{% extends 'layout/public.html.twig' %}
+
+{# A teacher's public page (design/validated/cours-en-ligne.md, §5): their published courses, and
+   nothing else - no parcours for a visitor, no other teacher. The filters are plain links and a
+   GET form: the page is the same with or without JavaScript, and every state of it has an address
+   that can be handed out. #}
+
+{% block public_title %}{{ page.title }}{% endblock %}
+
+{% block public_meta %}
+    {# A plain slice rather than |u.truncate: twig/string-extra is not installed. #}
+    <meta name="description" content="{{ (page.introduction ? page.introduction|plain_text : 'onlineCoursePublicPageDescription'|trans({'%title%': page.title}))|slice(0, 180) }}">
+    <meta property="og:title" content="{{ page.title }}">
+    <meta property="og:type" content="website">
+{% endblock %}
+
+{% block public_home_url %}{{ path('app_public_courses_page', {handle: page.handle}) }}{% endblock %}
+{% block public_home_label %}{{ page.title }}{% endblock %}
+
+{% block public_main %}
+    {% set base = {handle: page.handle, q: search ?: null, view: byTheme ? 'themes' : null} %}
+
+    {% if isOwner and total == 0 %}
+        <div class="cm-pub__notice">{{ 'onlineCoursePublicPageEmptyOwnerNotice'|trans }}</div>
+    {% endif %}
+
+    <div class="cm-pub-head">
+        <h1 class="cm-pub-head__title">{{ page.title }}</h1>
+        <p class="cm-pub-head__sub">{{ 'onlineCoursePublicPageCountLabel'|trans({'%count%': total}) }}</p>
+        {% if page.introduction %}
+            <div class="cm-pub-head__intro cm-pub-prose">{{ page.introduction|raw }}</div>
+        {% endif %}
+    </div>
+
+    {% if learningPaths is not empty %}
+        <div class="cm-pub-pagetabs">
+            <span class="cm-filterbar__segmented">
+                <a class="cm-filterbar__seg {{ not showPaths ? 'is-active' }}" href="{{ path('app_public_courses_page', {handle: page.handle}) }}">{{ 'onlineCoursePublicCoursesTab'|trans({'%count%': total}) }}</a>
+                <a class="cm-filterbar__seg {{ showPaths ? 'is-active' }}" href="{{ path('app_public_courses_page', {handle: page.handle, tab: 'paths'}) }}">{{ 'onlineCoursePublicPathsTab'|trans({'%count%': learningPaths|length}) }}</a>
+            </span>
+        </div>
+    {% endif %}
+
+    {% if showPaths %}
+        <div class="cm-pub-cards">
+            {% for learningPath in learningPaths %}
+                <a class="cm-pub-card" href="{{ path('app_learning_path_show', {id: learningPath.id}) }}">
+                    <span class="cm-pub-card__band cm-pub-card__band--4">{{ 'learningPathCardBandLabel'|trans({'%count%': learningPath.steps|length}) }}</span>
+                    <span class="cm-pub-card__body">
+                        <span class="cm-pub-card__title">{{ learningPath.title }}</span>
+                        <span class="cm-pub-card__summary">{{ learningPath.summary }}</span>
+                    </span>
+                </a>
+            {% endfor %}
+        </div>
+    {% else %}
+    <div class="cm-pub-filters">
+        <form class="cm-pub-search" method="get" action="{{ path('app_public_courses_page', {handle: page.handle}) }}" role="search">
+            {% for key in tagKeys %}<input type="hidden" name="tag[]" value="{{ key }}">{% endfor %}
+            {% if byTheme %}<input type="hidden" name="view" value="themes">{% endif %}
+            <label class="visually-hidden" for="public-course-search">{{ 'onlineCoursePublicSearchLabel'|trans }}</label>
+            <input type="search" id="public-course-search" name="q" value="{{ search }}" placeholder="{{ 'onlineCoursePublicSearchPlaceholder'|trans }}" autocomplete="off">
+            <twig:Cm:Button variant="outline" size="sm" type="submit">{{ 'onlineCoursePublicSearchAction'|trans }}</twig:Cm:Button>
+        </form>
+        <div class="cm-filterbar__segmented" role="group" aria-label="{{ 'onlineCoursePublicViewLabel'|trans }}">
+            <a class="cm-filterbar__seg {{ not byTheme ? 'is-active' }}" href="{{ path('app_public_courses_page', base|merge({view: null, tag: tagKeys})) }}">{{ 'onlineCoursePublicViewAllLabel'|trans }}</a>
+            <a class="cm-filterbar__seg {{ byTheme ? 'is-active' }}" href="{{ path('app_public_courses_page', base|merge({view: 'themes', tag: tagKeys})) }}">{{ 'onlineCoursePublicViewThemesLabel'|trans }}</a>
+        </div>
+    </div>
+
+    {% if chips is not empty %}
+        <nav class="cm-pub-chips" aria-label="{{ 'onlineCoursePublicTagsLabel'|trans }}">
+            <a class="cm-pub-chip {{ tagKeys is empty ? 'is-active' }}" href="{{ path('app_public_courses_page', base) }}">{{ 'onlineCoursePublicAllTagsLabel'|trans }} <small>{{ total }}</small></a>
+            {% for chip in chips %}
+                {% set next = chip.active ? tagKeys|filter(key => key != chip.key) : tagKeys|merge([chip.key]) %}
+                <a class="cm-pub-chip {{ chip.active ? 'is-active' }}" href="{{ path('app_public_courses_page', base|merge({tag: next})) }}"{{ chip.active ? ' aria-current="true"' }}>{{ chip.label }} <small>{{ chip.count }}</small></a>
+            {% endfor %}
+        </nav>
+    {% endif %}
+
+    {% if courses is empty %}
+        <p class="cm-pub-empty">{{ (total == 0 ? 'onlineCoursePublicNoCourseYetLabel' : 'onlineCoursePublicNoMatchLabel')|trans }}</p>
+    {% elseif byTheme %}
+        {% for group in groups %}
+            <section class="cm-pub-group">
+                <h2 class="cm-pub-group__title">{{ group.label ?: 'onlineCoursePublicUntaggedLabel'|trans }}</h2>
+                <div class="cm-pub-cards">
+                    {% for course in group.courses %}
+                        {{ include('online_course/public/_card.html.twig') }}
+                    {% endfor %}
+                </div>
+            </section>
+        {% endfor %}
+    {% else %}
+        <div class="cm-pub-cards">
+            {% for course in courses %}
+                {{ include('online_course/public/_card.html.twig') }}
+            {% endfor %}
+        </div>
+    {% endif %}
+    {% endif %}
+{% endblock %}
