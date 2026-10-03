@@ -1,8 +1,12 @@
 {% extends 'layout/app.html.twig' %}
 
-{# « Ma page » (design/validated/cours-en-ligne.md, §8): the address, the title and the
+{# « Ma page » (design/validated/cours-en-ligne.md, §8): the address, the banner and the
    presentation of the teacher's public page. The address may change at any time - the screen says
-   that the one being left keeps redirecting, which is what makes changing it during diffusion safe. #}
+   that the one being left keeps redirecting, which is what makes changing it during diffusion safe.
+
+   The banner is previewed with the public page's own partial, at its real height, and follows the
+   title, the two colours and the height as they are typed (online_course_banner_preview_controller.js); a new picture shows once
+   saved - the picker has no image of it to give before. #}
 
 {% block title %}{{ 'onlineCourseTabPageLabel'|trans }}{% endblock %}
 
@@ -45,7 +49,46 @@
                         <small class="form-hint">{{ 'onlineCoursePageFormerHandlesLabel'|trans({'%handles%': formerHandles|map(handle => '/courses/' ~ handle)|join(', ')}) }}</small>
                     {% endif %}
                 </div>
-                {{ form_row(form.title) }}
+                <div data-controller="online-course-banner-preview">
+                    <div class="mb-3">
+                        <span class="form-label">{{ 'onlineCoursePageBannerPreviewLabel'|trans }}</span>
+                        <div class="cm-oc-banner-preview" data-online-course-banner-preview-target="preview">
+                            {% embed 'online_course/_page_banner.html.twig' with {
+                                banner_title: form.title.vars.value,
+                                title_color: page ? page.titleColor : form.titleColor.vars.value,
+                                banner_color: page ? page.bannerColor : form.bannerColor.vars.value,
+                                banner_height: page ? page.bannerHeight : form.bannerHeight.vars.value,
+                                image_key: page ? page.bannerImageKey : null,
+                            } only %}{% endembed %}
+                        </div>
+                    </div>
+                    {{ form_row(form.title, {attr: {'data-online-course-banner-preview-target': 'title', 'data-action': 'online-course-banner-preview#refresh'}}) }}
+                    <div class="row">
+                        <div class="col-sm-4">{{ form_row(form.titleColor, {attr: {'data-online-course-banner-preview-target': 'titleColor', 'data-action': 'online-course-banner-preview#refresh'}}) }}</div>
+                        <div class="col-sm-4">{{ form_row(form.bannerColor, {attr: {'data-online-course-banner-preview-target': 'bannerColor', 'data-action': 'online-course-banner-preview#refresh'}}) }}</div>
+                        <div class="col-sm-4">
+                            {{ form_label(form.bannerHeight) }}
+                            <div class="input-group">
+                                {{ form_widget(form.bannerHeight, {attr: {'data-online-course-banner-preview-target': 'height', 'data-action': 'online-course-banner-preview#refresh'}}) }}
+                                <span class="input-group-text">px</span>
+                            </div>
+                            {{ form_help(form.bannerHeight) }}
+                            {{ form_errors(form.bannerHeight) }}
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    {{ form_label(form.bannerImage) }}
+                    {{ form_widget(form.bannerImage) }}
+                    {{ form_help(form.bannerImage) }}
+                    {{ form_errors(form.bannerImage) }}
+                    {% if page and page.bannerImageKey %}
+                        {{ form_row(form.removeBannerImage) }}
+                    {% else %}
+                        {# Nothing to remove - still rendered, so form_end()'s rest does not draw it unstyled. #}
+                        <div hidden>{{ form_widget(form.removeBannerImage) }}</div>
+                    {% endif %}
+                </div>
                 <div class="mb-3">
                     {{ form_label(form.introduction) }}
                     {{ form_widget(form.introduction, {attr: {

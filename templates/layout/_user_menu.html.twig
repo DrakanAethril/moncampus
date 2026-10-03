@@ -1,0 +1,117 @@
+{# The user's own menu - avatar, profile, theme, help, À propos, sign-out - drawn by the app shell
+   and by a teacher's public course page for a visitor who is signed in
+   (design/validated/cours-en-ligne.md, §5). One copy, so the two cannot drift.
+
+   Variables:
+   - `compact` (default false): the avatar alone, without the name and login beside it - the public
+     page draws it over a banner whose colours are the teacher's;
+   - `impersonation` (default false): « Se connecter en tant que », which opens a modal only the app
+     shell carries. #}
+{% set current_theme = app.user.themePreference %}
+<div class="nav-item dropdown">
+    {% set navbar_avatar_url = avatar_url(app.user) %}
+    {# The campus game's badge, when this person plays one (design/validated/
+       gamification.md, screen 4 - the handoff's #3c kept as it is). The ring says
+       the level of the whole cursus, the band underneath turns into a filled bar
+       carrying the way to the next one, and the second line under the name
+       becomes the displayed title instead of the login. Nobody else's bar
+       changes: game_badge() answers null for a teacher, for a staff account and
+       for every formation that has not switched its game on. #}
+    {% set game_user_badge = game_user_badge is defined ? game_user_badge : game_badge(app.user) %}
+    <a href="#" class="nav-link d-flex align-items-center lh-1 text-reset p-0 cm-user__toggle" data-bs-toggle="dropdown" aria-label="{{ 'openUserMenuLabel'|trans }}">
+        {% if not (compact ?? false) %}
+            <div class="d-none d-xl-block cm-user__id">
+                <div class="cm-user__name">{{ app.user.displayName ?? app.user.username }}</div>
+                <div class="cm-user__login">{{ game_user_badge ? game_user_badge.title : app.user.username }}</div>
+            </div>
+        {% endif %}
+        {% if game_user_badge %}
+            <span class="cm-user__avatar cm-user__avatar--game">
+                {% include 'game/_avatar.html.twig' with {badge: game_user_badge, small: true, progress: true} %}
+            </span>
+        {% else %}
+            <span class="cm-user__avatar"{% if navbar_avatar_url %} style="background-image: url({{ navbar_avatar_url }})"{% endif %}>{% if not navbar_avatar_url %}{{ app.user.initials|default((app.user.displayName ?? app.user.username)|slice(0, 1)|upper) }}{% endif %}</span>
+        {% endif %}
+    </a>
+    {# No name/identity header inside this menu: the bar already shows who is
+       logged in right next to the avatar, and repeating it here only forced the
+       menu wider than its own entries. #}
+    <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow cm-user__menu">
+        <a href="{{ path('app_profile') }}" class="dropdown-item">{{ 'profileNavLabel'|trans }}</a>
+        {# « Leveling » sits with the profile because that is what it is: the
+           student's own reading of their own game. It appears only for somebody
+           who actually plays one - game_badge() answers null otherwise. #}
+        {% if game_user_badge %}
+            <a href="{{ path('app_game_leveling') }}" class="dropdown-item">{{ 'gameLevelingHeading'|trans }}</a>
+        {% endif %}
+        {% if is_granted('ROLE_TEACHER') and feature('timetable') %}
+            <a href="{{ path('app_teacher_timetable') }}" class="dropdown-item">{{ 'teacherTimetableNavLabel'|trans }}</a>
+        {% endif %}
+        {# « Mes machines virtuelles » for a teacher who is not an administrator:
+           an administrator reaches every machine through Infrastructure, and two
+           doors to two different screens is how somebody ends up on the wrong
+           one. Students read the same entry from the Ressources dropdown, which
+           is their whole navigation. Shown only to somebody who has a machine. #}
+        {% if is_granted('ROLE_TEACHER') and not is_granted('ROLE_ADMIN') and feature('my_vms') and has_virtual_machines(app.user) %}
+            <a href="{{ path('app_my_machines') }}" class="dropdown-item">{{ 'myMachinesNavLabel'|trans }}</a>
+        {% endif %}
+        {# Séquences/Séances, Progression pédagogique and Quiz used to sit here.
+           They moved to the top bar's "Outils" menu (design_handoff_menu_outils,
+           "Migration depuis la section Profil") and are deliberately NOT left
+           behind here as well: one entry point per tool, and this menu is about
+           the account, not about teaching. #}
+        <div class="dropdown-divider"></div>
+        <div class="cm-usermenu__theme"
+             data-controller="theme"
+             data-theme-authenticated-value="true"
+             data-theme-save-url-value="{{ path('app_profile_theme') }}"
+             data-theme-token-value="{{ csrf_token('profile_theme') }}">
+            <span>{{ 'themeNavLabel'|trans }}</span>
+            <span class="cm-theme">
+                <button type="button" class="{{ current_theme != 'dark' ? 'is-on' }}" data-action="theme#setLight" aria-pressed="{{ current_theme != 'dark' ? 'true' : 'false' }}" aria-label="{{ 'themeLightLabel'|trans }}">☀</button>
+                <button type="button" class="{{ current_theme == 'dark' ? 'is-on' }}" data-action="theme#setDark" aria-pressed="{{ current_theme == 'dark' ? 'true' : 'false' }}" aria-label="{{ 'themeDarkLabel'|trans }}">☾</button>
+            </span>
+        </div>
+        <div class="dropdown-divider"></div>
+        {# "À propos" carries the AGPL §13 source-code offer (see
+           App\Controller\AboutController), so it has to be reachable from every
+           authenticated page - this menu is the one element present on all of
+           them. Kept out of the theme block above and separated from Déconnexion
+           below so it reads as its own entry. #}
+        {# "Aide" sits right above "À propos", in the same group
+           (design_handoff_aide, créa 1c: one entry, in the profile menu, and
+           nowhere else). Teachers, staff and admins only for now: articles
+           addressed to students and tutors can already be written, but neither
+           role is given a way in yet. /help itself stays open to any
+           authenticated user and simply shows them nothing. #}
+        {% if (is_granted('ROLE_TEACHER') or is_staff()) and feature('help') %}
+            <a href="{{ path('app_help') }}" class="dropdown-item">{{ 'helpPageHeading'|trans }}</a>
+        {% endif %}
+        {# "Changelog" stays in English on purpose - see App\Controller\ChangelogController. #}
+        <a href="{{ path('app_changelog') }}" class="dropdown-item">{{ 'changelogPageHeading'|trans }}</a>
+        {# Open to every role: the source is public and the school teaches the BTS SIO,
+           so the students using this app are also its readership. #}
+        <a href="{{ path('app_technical') }}" class="dropdown-item">{{ 'technicalPageHeading'|trans }}</a>
+        <a href="{{ path('app_about') }}" class="dropdown-item">{{ 'aboutNavLabel'|trans }}</a>
+        {# « Se connecter en tant que » - administrators only, and the one entry
+           of this menu that is not about the account it belongs to. It is not a
+           Feature and carries no catalogue entry (see
+           App\Controller\ImpersonationController): there is nothing here for an
+           establishment to switch on.
+
+           `not is_granted('IS_IMPERSONATOR')` is belt and braces - an
+           impersonating session already holds the target's roles, so ROLE_ADMIN
+           is false anyway - but it says in one place what the rule is: one hop,
+           never a chain. #}
+        {% if (impersonation ?? false) and is_granted('ROLE_ADMIN') and not is_granted('IS_IMPERSONATOR') %}
+            <div class="dropdown-divider"></div>
+            <a href="#" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#impersonation-modal">{{ 'impersonateNavLabel'|trans }}</a>
+        {% endif %}
+        <div class="dropdown-divider"></div>
+        {# data-turbo-prefetch="false": Turbo prefetches a link's href on hover by
+           default - for most links that's harmless, but /logout is a GET route
+           that destroys the session immediately, so hovering alone would log the
+           user out (silently, until their next click reveals it). #}
+        <a href="{{ path('app_logout') }}" class="dropdown-item text-danger" data-turbo-prefetch="false">{{ 'logoutAction'|trans }}</a>
+    </div>
+</div>

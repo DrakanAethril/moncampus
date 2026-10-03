@@ -1,0 +1,25 @@
+{# The banner at the top of a teacher's public page (design/validated/cours-en-ligne.md, §5): the
+   title the teacher chose, centred, in the colour they chose, over their background colour and,
+   when there is one, their picture. The teacher's name is written nowhere else on the page - it is
+   theirs to put in the title.
+
+   Shared, through {% embed %}, by the public page and by the preview of « Ma page », so the teacher
+   sees the banner a visitor will. Both colours are `#rrggbb` and the height a number by
+   construction (App\Entity\OnlineCoursePage) - and checked again here, since the preview may be
+   drawn from a submission the form has just refused: nothing else reaches the style attribute.
+
+   The height is the teacher's too, in pixels, a quarter less on a phone (app.css).
+
+   Variables: banner_title, title_color, banner_color, banner_height, image_key (nullable); the `bar` block holds
+   what sits in the top right corner. #}
+{% set title_color = title_color matches '/^#[0-9a-fA-F]{6}$/' ? title_color : '#ffffff' %}
+{% set banner_color = banner_color matches '/^#[0-9a-fA-F]{6}$/' ? banner_color : '#12344d' %}
+{% set banner_height = banner_height matches '/^[0-9]{1,4}$/' ? banner_height : 230 %}
+<header class="cm-pub-banner {{ image_key ? 'has-image' }}" style="--cm-pub-banner-bg: {{ banner_color }}; --cm-pub-banner-ink: {{ title_color }}; --cm-pub-banner-height: {{ banner_height }}px;">
+    {% if image_key %}
+        {# Decorative: the title says what the page is. #}
+        <img class="cm-pub-banner__image" src="{{ file_url(image_key) }}" alt="">
+    {% endif %}
+    {% block bar %}{% endblock %}
+    <h1 class="cm-pub-banner__title">{{ banner_title }}</h1>
+</header>

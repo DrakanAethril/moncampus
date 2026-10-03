@@ -43,7 +43,32 @@ class OnlineCoursePage
     #[Assert\Length(max: 150)]
     private string $title;
 
-    /** Sanitized HTML, shown under the title. */
+    /**
+     * The banner at the top of the page: the title is centred in it, in `$titleColor`, over
+     * `$bannerColor` and, when there is one, over a picture (`$bannerImageKey`, under
+     * `online-courses/pages/{id}/banner/`, written by App\Service\OnlineCourse\OnlineCourseImageStore).
+     * The colours are `#rrggbb`, what an `<input type="color">` sends; the height is in pixels,
+     * between MIN_BANNER_HEIGHT and MAX_BANNER_HEIGHT.
+     */
+    public const string DEFAULT_BANNER_COLOR = '#12344d';
+    public const int DEFAULT_BANNER_HEIGHT = 230;
+    public const int MIN_BANNER_HEIGHT = 120;
+    public const int MAX_BANNER_HEIGHT = 600;
+    public const string DEFAULT_TITLE_COLOR = '#ffffff';
+
+    #[ORM\Column(length: 7)]
+    private string $bannerColor = self::DEFAULT_BANNER_COLOR;
+
+    #[ORM\Column(length: 7)]
+    private string $titleColor = self::DEFAULT_TITLE_COLOR;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $bannerImageKey = null;
+
+    #[ORM\Column]
+    private int $bannerHeight = self::DEFAULT_BANNER_HEIGHT;
+
+    /** Sanitized HTML, shown under the banner. */
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $introduction = null;
 
@@ -119,6 +144,60 @@ class OnlineCoursePage
         return $this;
     }
 
+    public function getBannerColor(): string
+    {
+        return $this->bannerColor;
+    }
+
+    public function setBannerColor(string $color): static
+    {
+        $this->bannerColor = self::color($color, self::DEFAULT_BANNER_COLOR);
+        $this->touch();
+
+        return $this;
+    }
+
+    public function getTitleColor(): string
+    {
+        return $this->titleColor;
+    }
+
+    public function setTitleColor(string $color): static
+    {
+        $this->titleColor = self::color($color, self::DEFAULT_TITLE_COLOR);
+        $this->touch();
+
+        return $this;
+    }
+
+    public function getBannerHeight(): int
+    {
+        return $this->bannerHeight;
+    }
+
+    /** Kept within the bounds rather than refused: the form already says them. */
+    public function setBannerHeight(int $height): static
+    {
+        $this->bannerHeight = max(self::MIN_BANNER_HEIGHT, min(self::MAX_BANNER_HEIGHT, $height));
+        $this->touch();
+
+        return $this;
+    }
+
+    public function getBannerImageKey(): ?string
+    {
+        return $this->bannerImageKey;
+    }
+
+    /** Only App\Service\OnlineCourse\OnlineCourseImageStore calls this: it also purges the one replaced. */
+    public function setBannerImageKey(?string $key): static
+    {
+        $this->bannerImageKey = $key;
+        $this->touch();
+
+        return $this;
+    }
+
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
@@ -127,6 +206,17 @@ class OnlineCoursePage
     public function getUpdatedAt(): \DateTimeImmutable
     {
         return $this->updatedAt;
+    }
+
+    /**
+     * The colour lands in a `style` attribute of a public page: anything but `#rrggbb` falls back
+     * to the default rather than reach it.
+     */
+    private static function color(string $color, string $default): string
+    {
+        $color = strtolower(trim($color));
+
+        return 1 === preg_match('/^#[0-9a-f]{6}$/', $color) ? $color : $default;
     }
 
     private function touch(): void

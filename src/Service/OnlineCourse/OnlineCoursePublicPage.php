@@ -11,17 +11,16 @@ use App\Repository\OnlineCourseRepository;
 
 /**
  * What a teacher's public page shows (design/validated/cours-en-ligne.md, §5): their public
- * courses, searched and filtered, and the tags to filter them by.
+ * courses, the most recently updated first, in a row per tag, searched and filtered.
  *
- * One place answers « which courses are on this page », so the list, the tag counts and the
- * « par thème » view cannot disagree - and so the page exists exactly when list() has something to
- * show, which is what the controller's 404 reads.
+ * One place answers « which courses are on this page », so the rows, their counts and the page of
+ * one row cannot disagree - and so the page exists exactly when all() has something to show, which
+ * is what the controller's 404 reads.
  *
- * The filtering is done in PHP on purpose: a page holds one teacher's courses, a few dozen at most,
- * already loaded with their tags and materials to draw the cards.
+ * The sorting and filtering are done in PHP on purpose: a page holds one teacher's courses, a few
+ * dozen at most, already loaded with their tags and materials to draw the cards.
  *
- * @phpstan-type TagChip array{label: string, key: string, count: int, active: bool}
- * @phpstan-type TagGroup array{label: string, key: string, courses: list<OnlineCourse>}
+ * @phpstan-type TagRow array{label: string, key: string, courses: list<OnlineCourse>}
  */
 class OnlineCoursePublicPage
 {
@@ -36,11 +35,27 @@ class OnlineCoursePublicPage
     }
 
     /**
+     * The page's courses, the most recently updated first - a course never edited since it was
+     * created counts from its creation, which is what `updatedAt` holds until then. Every row and
+     * every list of the page keeps this order.
+     *
      * @return list<OnlineCourse>
      */
     public function all(OnlineCoursePage $page): array
     {
-        return $this->courses->findPublicForOwner($page->getOwner());
+        return self::newestFirst($this->courses->findPublicForOwner($page->getOwner()));
+    }
+
+    /**
+     * @param list<OnlineCourse> $courses
+     *
+     * @return list<OnlineCourse>
+     */
+    public static function newestFirst(array $courses): array
+    {
+        usort($courses, static fn (OnlineCourse $a, OnlineCourse $b): int => [$b->getUpdatedAt(), $b->getId()] <=> [$a->getUpdatedAt(), $a->getId()]);
+
+        return $courses;
     }
 
     /**
@@ -78,48 +93,19 @@ class OnlineCoursePublicPage
     }
 
     /**
-     * The filter chips: every tag a public course of this page carries, with how many carry it.
-     *
-     * @param list<OnlineCourse> $courses the page's courses, unfiltered
-     * @param list<string>       $activeKeys
-     *
-     * @return list<TagChip>
-     */
-    public function chips(array $courses, array $activeKeys): array
-    {
-        $chips = [];
-        foreach ($courses as $course) {
-            foreach ($course->getTags() as $tag) {
-                $key = $tag->getNormalizedLabel();
-                $chips[$key] ??= ['label' => $tag->getLabel(), 'key' => $key, 'count' => 0, 'active' => \in_array($key, $activeKeys, true)];
-                ++$chips[$key]['count'];
-            }
-        }
-
-        uasort($chips, static fn (array $a, array $b): int => strcoll($a['key'], $b['key']));
-
-        return array_values($chips);
-    }
-
-    /**
-     * « Par thème »: one row per tag. A course with two tags sits in two rows, and a course with
-     * none sits in a last, unnamed one - leaving it out would make it unreachable from that view.
+     * The rows of the page: one per tag, in alphabetical order, each keeping the order of the
+     * courses it is given. A course with two tags sits in two rows. A course with none sits in no
+     * row - the « récemment mis à jour » row above them all holds every course of the page.
      *
      * @param list<OnlineCourse> $courses
      *
-     * @return list<TagGroup>
+     * @return list<TagRow>
      */
     public function groups(array $courses): array
     {
         $groups = [];
-        $untagged = [];
 
         foreach ($courses as $course) {
-            if ($course->getTags()->isEmpty()) {
-                $untagged[] = $course;
-
-                continue;
-            }
             foreach ($course->getTags() as $tag) {
                 $key = $tag->getNormalizedLabel();
                 $groups[$key] ??= ['label' => $tag->getLabel(), 'key' => $key, 'courses' => []];
@@ -128,12 +114,7 @@ class OnlineCoursePublicPage
         }
 
         uasort($groups, static fn (array $a, array $b): int => strcoll($a['key'], $b['key']));
-        $groups = array_values($groups);
 
-        if ([] !== $untagged) {
-            $groups[] = ['label' => '', 'key' => '', 'courses' => $untagged];
-        }
-
-        return $groups;
+        return array_values($groups);
     }
 }
