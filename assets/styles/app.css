@@ -13009,16 +13009,17 @@ form.cm-cs-lookup__item { border: 0; padding: 0; }
 }
 .cm-pub-card:hover { border-color: var(--cm-brand); text-decoration: none; color: var(--cm-text); }
 /* A course's cover (online_course/public/_card.html.twig): its picture or, without one, the band's
-   tint; the natures of its materials as pictograms in the corner; its summary over the whole cover
-   when the card is hovered or focused. */
+   tint; its summary over the whole cover when the card is hovered or focused. */
 .cm-pub-card__cover { position: relative; aspect-ratio: 16 / 9; overflow: hidden; }
 .cm-pub-card__image { display: block; width: 100%; height: 100%; object-fit: cover; background: var(--cm-border-soft); }
-.cm-pub-card__kinds { position: absolute; top: 10px; left: 10px; display: flex; gap: 6px; margin: 0; padding: 0; list-style: none; }
+/* The natures of its materials, on the card's last line, left. Each sits above the title's stretched
+   link so that hovering it shows its name (`title`). */
+.cm-pub-card__kinds { display: flex; gap: 5px; margin: 0; padding: 0; list-style: none; }
 .cm-pub-card__kind {
-    display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
-    background: rgba(18, 52, 77, .78); color: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, .25);
+    position: relative; z-index: 1; display: grid; place-items: center; width: 30px; height: 20px;
+    border-radius: 4px; background: var(--cm-border-soft); color: var(--cm-muted); cursor: default;
 }
-.cm-pub-card__kind.is-main { background: var(--cm-brand); }
+.cm-pub-card__kind.is-main { background: var(--cm-brand); color: #fff; }
 .cm-pub-card__cover .cm-pub-card__summary {
     /* Under no pointer: a click on it still reaches the title's link stretched below. */
     position: absolute; inset: 0; z-index: 1; margin: 0; padding: 14px 18px; overflow: hidden; pointer-events: none;

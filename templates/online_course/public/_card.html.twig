@@ -1,6 +1,7 @@
-{# One course on its author's public page (design/validated/cours-en-ligne.md, §5 and §20): a large
-   cover - the course's picture, or a tint when it has none - carrying one pictogram per nature of
-   material, the interactive course's set apart; then the title, the duration and « Test ».
+{# One course on its author's public page (design/validated/cours-en-ligne.md, §5, §20 and §22): a
+   large cover - the course's picture, or a tint when it has none; then the title, and on the last
+   line one pictogram per nature of material on the left (the interactive course's set apart, its
+   name in a tooltip), the duration and « Test » on the right.
 
    The summary is drawn over the cover and shows when the card is hovered or holds the focus. It
    stays in the markup, so a screen reader reads it with the card. The tags are not on the card:
@@ -19,24 +20,24 @@
             {# Decorative: the title right below says what the course is. #}
             <img class="cm-pub-card__image" src="{{ file_url(course.imageKey) }}" alt="" loading="lazy">
         {% endif %}
-        {% if kinds is not empty %}
-            <ul class="cm-pub-card__kinds" aria-label="{{ 'onlineCourseMaterialsHeading'|trans }}">
-                {% for kind in kinds %}
-                    <li class="cm-pub-card__kind {{ kind.isBundle ? 'is-main' }}">
-                        <twig:ux:icon name="{{ kind.icon }}" width="16" height="16"/>
-                        <span class="visually-hidden">{{ kind.labelKey|trans }}</span>
-                    </li>
-                {% endfor %}
-            </ul>
-        {% endif %}
         {% if course.summary %}
             <p class="cm-pub-card__summary">{{ course.summary }}</p>
         {% endif %}
     </div>
     <div class="cm-pub-card__body">
         <a class="cm-pub-card__title cm-pub-card__link" href="{{ path('app_public_courses_course', {handle: page.handle, slug: course.slug}) }}">{{ course.title }}</a>
-        {% if course.estimatedMinutes or course.hasTest %}
+        {% if kinds is not empty or course.estimatedMinutes or course.hasTest %}
             <span class="cm-pub-card__meta">
+                {% if kinds is not empty %}
+                    <ul class="cm-pub-card__kinds" aria-label="{{ 'onlineCourseMaterialsHeading'|trans }}">
+                        {% for kind in kinds %}
+                            <li class="cm-pub-card__kind {{ kind.isBundle ? 'is-main' }}" title="{{ kind.labelKey|trans }}">
+                                <twig:ux:icon name="{{ kind.icon }}" width="14" height="14"/>
+                                <span class="visually-hidden">{{ kind.labelKey|trans }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
                 {% if course.estimatedMinutes %}
                     <span class="cm-pub-card__duration">{{ include('online_course/_duration.html.twig', {minutes: course.estimatedMinutes}) }}</span>
                 {% endif %}
